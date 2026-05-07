@@ -1,0 +1,133 @@
+/* =========================================
+   KOTLOV Custom Styles
+========================================= */
+
+html,
+body {
+    font-family: 'Manrope', sans-serif !important;
+    letter-spacing: 0 !important;
+    color: #111 !important;
+}
+
+/* Общий текст */
+body,
+.tf-header,
+.box-nav-menu,
+.nav-category-wrap,
+.form_search-product,
+input,
+button,
+a,
+span,
+div,
+p,
+li {
+    font-family: 'Manrope', sans-serif !important;
+    letter-spacing: 0 !important;
+}
+
+/* =========================================
+   Верхняя черная строка
+========================================= */
+
+.header-top,
+.tf-topbar {
+    font-size: 13px !important;
+    font-weight: 500 !important;
+}
+
+/* =========================================
+   Главное меню
+========================================= */
+
+.box-nav-menu .item-link {
+    font-size: 15px !important;
+    font-weight: 500 !important;
+    color: #111 !important;
+    transition: 0.2s ease;
+}
+
+.box-nav-menu .item-link:hover {
+    color: #c62828 !important;
+}
+
+/* =========================================
+   Кнопка каталога
+========================================= */
+
+.btn-nav-drop,
+.name-category {
+    font-size: 16px !important;
+    font-weight: 600 !important;
+    letter-spacing: 0 !important;
+}
+
+/* =========================================
+   Поиск
+========================================= */
+
+.form_search-product {
+    border-radius: 10px !important;
+}
+
+.form_search-product input {
+    font-size: 15px !important;
+    font-weight: 400 !important;
+    color: #111 !important;
+}
+
+.form_search-product input::placeholder {
+    color: #999 !important;
+}
+
+/* =========================================
+   Иконки справа
+========================================= */
+
+.nav-icon-item {
+    color: #111 !important;
+}
+
+.nav-icon-item.has-text span {
+    font-size: 14px !important;
+    font-weight: 400 !important;
+    line-height: 1.2 !important;
+}
+
+/* =========================================
+   Логотип
+========================================= */
+
+.logo-site img {
+    max-height: 34px;
+}
+
+/* =========================================
+   Header spacing
+========================================= */
+
+.header-inner {
+    min-height: 88px;
+}
+
+.header-bottom {
+    min-height: 90px;
+}
+
+/* =========================================
+   Убираем fashion-стили шаблона
+========================================= */
+
+.cus-text {
+    letter-spacing: 0 !important;
+    text-transform: none !important;
+}
+
+/* =========================================
+   Hover эффекты
+========================================= */
+
+a {
+    transition: 0.2s ease;
+}
+

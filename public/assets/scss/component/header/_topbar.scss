@@ -1,0 +1,46 @@
+@use "../../abstracts/index"as *;
+
+
+.tf-topbar {
+    padding-top: 12px;
+    padding-bottom: 12px;
+    position: relative;
+    z-index: 101;
+
+    .br-line {
+        &.fake-class {
+            position: absolute;
+            left: 0;
+            right: 0;
+        }
+    }
+}
+
+.swiper-topbar {
+    height: 26px;
+}
+
+.topbar-s2 {
+    position: relative;
+
+    &::after {
+        content: "";
+        position: absolute;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        height: 1px;
+        background: var(--line);
+    }
+}
+
+.topbar-s3 {
+    padding-top: 9px;
+    padding-bottom: 9px;
+}
+
+.tf-topbar {
+    .tf-dropdown-select.type-currencies>.dropdown-menu {
+        width: max-content !important;
+    }
+}
