@@ -7,7 +7,6 @@
                 <span class="icon icon-MapPin"></span>
                 <a href="#citySelector" data-bs-toggle="offcanvas" class="text-white d-flex align-items-center gap-1">
 
-                    <span class="icon icon-MapPin"></span>
 
                     <span>{{ $geo ?? 'Минск' }}</span>
 
@@ -48,59 +47,153 @@
                     </a>
                 </div>
 
-                <div class="header-left">
-                    <div class="box-open-header-bottom m-0">
-                        <div class="btn-open-header-bottom cs-pointer">
-                            <i class="icon icon-List fs-24"></i>
-                        </div>
-                    </div>
+               <div class="header-left">
+    <div class="box-open-header-bottom m-0">
+        <div class="btn-open-header-bottom cs-pointer">
+            <i class="icon icon-List fs-24"></i>
+        </div>
+    </div>
 
-                    <a href="/" class="logo-site">
-                        <img loading="lazy" width="150" height="30" src="{{ asset('img/logo.svg') }}" alt="KOTLOV">
+    <a href="/" class="logo-site">
+        <img loading="lazy" width="150" height="30" src="{{ asset('img/logo.svg') }}" alt="KOTLOV">
+    </a>
+
+    <div class="d-none d-xl-block">
+        <nav class="box-navigation">
+            <ul class="box-nav-menu">
+
+               <!-- MOBILE CATALOG -->
+<li class="menu-item d-xl-none">
+    <a href="#" class="item-link">
+        <span class="text cus-text">Каталог товаров</span>
+    </a>
+
+    <div class="sub-menu">
+
+        <div class="mega-menu-item menu-lv-2">
+            <div class="menu-heading">Котлы</div>
+            <ul class="sub-menu_list">
+                <li><a href="/kotly/gazovye" class="sub-menu_link">Газовые</a></li>
+                <li><a href="/kotly/tverdotoplivnye" class="sub-menu_link">Твердотопливные</a></li>
+                <li><a href="/kotly/elektricheskie" class="sub-menu_link">Электрические</a></li>
+                <li><a href="/kotly/pelletnye" class="sub-menu_link">Пеллетные</a></li>
+                <li><a href="/kotly/kombinirovannye" class="sub-menu_link">Комбинированные</a></li>
+            </ul>
+        </div>
+
+        <div class="mega-menu-item menu-lv-2">
+            <div class="menu-heading">Тепловые насосы</div>
+            <ul class="sub-menu_list">
+                <li><a href="/teplovye-nasosy/vozduh-voda" class="sub-menu_link">Воздух-вода</a></li>
+                <li><a href="/teplovye-nasosy/monoblok" class="sub-menu_link">Моноблок</a></li>
+                <li><a href="/teplovye-nasosy/split" class="sub-menu_link">Сплит-системы</a></li>
+                <li><a href="/teplovye-nasosy/invertornye" class="sub-menu_link">Инверторные</a></li>
+            </ul>
+        </div>
+
+        <div class="mega-menu-item menu-lv-2">
+            <div class="menu-heading">Пеллетные горелки</div>
+            <ul class="sub-menu_list">
+                <li><a href="/pelletnye-gorelki/25-kvt" class="sub-menu_link">До 25 кВт</a></li>
+                <li><a href="/pelletnye-gorelki/50-kvt" class="sub-menu_link">До 50 кВт</a></li>
+                <li><a href="/pelletnye-gorelki/100-kvt" class="sub-menu_link">До 100 кВт</a></li>
+                <li><a href="/pelletnye-gorelki/promyshlennye" class="sub-menu_link">Промышленные</a></li>
+            </ul>
+        </div>
+
+        <div class="mega-menu-item menu-lv-2">
+            <div class="menu-heading">Водонагреватели</div>
+            <ul class="sub-menu_list">
+                <li><a href="/vodonagrevateli/gazovye" class="sub-menu_link">Газовые</a></li>
+                <li><a href="/vodonagrevateli/elektricheskie" class="sub-menu_link">Электрические</a></li>
+                <li><a href="/vodonagrevateli/kosvennye" class="sub-menu_link">Косвенные</a></li>
+                <li><a href="/vodonagrevateli/protochnye" class="sub-menu_link">Проточные</a></li>
+            </ul>
+        </div>
+
+        <div class="mega-menu-item menu-lv-2">
+            <div class="menu-heading">Отопление</div>
+            <ul class="sub-menu_list">
+                <li><a href="/radiatory" class="sub-menu_link">Радиаторы</a></li>
+                <li><a href="/teplyj-pol" class="sub-menu_link">Тёплый пол</a></li>
+                <li><a href="/nasosy/cirkulyacionnye" class="sub-menu_link">Циркуляционные насосы</a></li>
+                <li><a href="/truby-i-fitingi" class="sub-menu_link">Трубы и фитинги</a></li>
+            </ul>
+        </div>
+
+        <div class="mega-menu-item menu-lv-2">
+            <div class="menu-heading">Печи и камины</div>
+            <ul class="sub-menu_list">
+                <li><a href="/pechki" class="sub-menu_link">Печи</a></li>
+                <li><a href="/kaminy/topki" class="sub-menu_link">Каминные топки</a></li>
+                <li><a href="/kaminy/pechi-kaminy" class="sub-menu_link">Печи-камины</a></li>
+                <li><a href="/dymohody" class="sub-menu_link">Дымоходы</a></li>
+            </ul>
+        </div>
+
+        <div class="mega-menu-item menu-lv-2">
+            <div class="menu-heading">Для бани</div>
+            <ul class="sub-menu_list">
+                <li><a href="/dlya-bani/pechi" class="sub-menu_link">Печи для бани</a></li>
+                <li><a href="/dlya-bani/elektrokamenki" class="sub-menu_link">Электрокаменки</a></li>
+                <li><a href="/dlya-bani/kamni" class="sub-menu_link">Камни для бани</a></li>
+                <li><a href="/dlya-bani/aksessuary" class="sub-menu_link">Аксессуары</a></li>
+            </ul>
+        </div>
+
+        <div class="mega-menu-item menu-lv-2">
+            <div class="menu-heading">Водоснабжение и климат</div>
+            <ul class="sub-menu_list">
+                <li><a href="/vodosnabzhenie" class="sub-menu_link">Водоснабжение</a></li>
+                <li><a href="/klimat" class="sub-menu_link">Климат</a></li>
+                <li><a href="/catalog" class="sub-menu_link">Весь каталог</a></li>
+            </ul>
+        </div>
+
+    </div>
+</li>
+
+                <!-- MAIN MENU -->
+                <li class="menu-item">
+                    <a href="/installers" class="item-link">
+                        <span class="text cus-text">Монтаж</span>
                     </a>
+                </li>
 
-                    <div class="d-none d-xl-block">
-                        <nav class="box-navigation">
-                            <ul class="box-nav-menu">
-                                <li class="menu-item">
-                                    <a href="/installers" class="item-link">
-                                        <span class="text cus-text">Монтаж</span>
-                                    </a>
-                                </li>
+                <li class="menu-item">
+                    <a href="/brands" class="item-link">
+                        <span class="text cus-text">Бренды</span>
+                    </a>
+                </li>
 
-                                <li class="menu-item">
-                                    <a href="/brands" class="item-link">
-                                        <span class="text cus-text">Бренды</span>
-                                    </a>
-                                </li>
+                <li class="menu-item">
+                    <a href="/akcii" class="item-link">
+                        <span class="text cus-text">Акции</span>
+                    </a>
+                </li>
 
-                                <li class="menu-item">
-                                    <a href="/akcii" class="item-link">
-                                        <span class="text cus-text">Акции</span>
-                                    </a>
-                                </li>
+                <li class="menu-item">
+                    <a href="/blog" class="item-link">
+                        <span class="text cus-text">Статьи</span>
+                    </a>
+                </li>
 
-                                <li class="menu-item">
-                                    <a href="/blog" class="item-link">
-                                        <span class="text cus-text">Статьи</span>
-                                    </a>
-                                </li>
+                <li class="menu-item">
+                    <a href="/dostavka" class="item-link">
+                        <span class="text cus-text">Доставка</span>
+                    </a>
+                </li>
 
-                                <li class="menu-item">
-                                    <a href="/dostavka" class="item-link">
-                                        <span class="text cus-text">Доставка</span>
-                                    </a>
-                                </li>
+                <li class="menu-item">
+                    <a href="/contacts" class="item-link">
+                        <span class="text cus-text">Контакты</span>
+                    </a>
+                </li>
 
-                                <li class="menu-item">
-                                    <a href="/contacts" class="item-link">
-                                        <span class="text cus-text">Контакты</span>
-                                    </a>
-                                </li>
-                            </ul>
-                        </nav>
-                    </div>
-                </div>
+            </ul>
+        </nav>
+    </div>
+</div>
 
                 <div class="header-right">
                     <ul class="nav-icon-list d-xl-none">
@@ -152,10 +245,20 @@
                     <ul class="box-nav-category active-item radius-12">
 
                         <li class="has-sub-nav-category">
-                            <a href="/kotly" class="nav-category_link">
-                                Котлы
-                                <i class="icon icon-CaretRightThin"></i>
-                            </a>
+     <a href="/kotly" class="nav-category_link">
+      <span class="d-flex align-items-center gap-2">
+
+        <img
+            src="{{ asset('icons/heater--b.svg') }}"
+            alt="Котлы"
+            class="cat-icon"
+        >
+
+        <span>Котлы</span>
+    </span>
+
+    <i class="icon icon-CaretRightThin"></i>
+</a>
 
                             <div class="sub-nav-category">
                                 <div class="tf-grid-layout xl-col-3">
@@ -189,9 +292,19 @@
 
                         <li class="has-sub-nav-category">
     <a href="/teplovye-nasosy" class="nav-category_link">
-        Тепловые насосы
-        <i class="icon icon-CaretRightThin"></i>
-    </a>
+    <span class="d-flex align-items-center gap-2">
+
+        <img
+            src="{{ asset('icons/hvac.svg') }}"
+            alt="Тепловые насосы"
+            class="cat-icon"
+        >
+
+        <span>Тепловые насосы</span>
+    </span>
+
+    <i class="icon icon-CaretRightThin"></i>
+</a>
 
     <div class="sub-nav-category">
         <div class="tf-grid-layout xl-col-3">
@@ -223,7 +336,16 @@
 
 <li class="has-sub-nav-category">
     <a href="/pelletnye-gorelki" class="nav-category_link">
-        Пеллетные горелки
+         <span class="d-flex align-items-center gap-2">
+
+        <img
+            src="{{ asset('icons/fire_p.svg') }}"
+            alt="Пеллетные горелки"
+            class="cat-icon"
+        >
+
+        <span>Пеллетные горелки</span>
+    </span>
         <i class="icon icon-CaretRightThin"></i>
     </a>
 
@@ -258,7 +380,17 @@
 
                         <li class="has-sub-nav-category">
                             <a href="/vodonagrevateli" class="nav-category_link">
-                                Водонагреватели
+   <span class="d-flex align-items-center gap-2">
+
+        <img
+            src="{{ asset('icons/temperature--water.svg') }}"
+            alt="Водонагреватели"
+            class="cat-icon"
+        >
+
+        <span>Водонагреватели</span>
+    </span>
+                               
                                 <i class="icon icon-CaretRightThin"></i>
                             </a>
 
@@ -288,16 +420,19 @@
                                     </div>
                                 </div>
                             </div>
-                        </li>
-
-                        <li class="has-sub-nav-category">
-                            <a href="/otoplenie" class="nav-category_link">
-                                Отопление
-                                <i class="icon icon-CaretRightThin"></i>
-                            </a>
-
-                            <div class="sub-nav-category">
-                                <div class="tf-grid-layout xl-col-3">
+                            </li>
+                            
+                            <li class="has-sub-nav-category">
+                                <a href="/otoplenie" class="nav-category_link">
+                                    <span class="d-flex align-items-center gap-2">
+                                        <img src="{{ asset('icons/heater.svg') }}" alt="Отопление" class="cat-icon">
+                                        <span>Отопление</span>
+                                    </span>
+                                    <i class="icon icon-CaretRightThin"></i>
+                                </a>
+                            
+                                <div class="sub-nav-category">
+                                    <div class="tf-grid-layout xl-col-3">
                                     <div class="sub-nav-category_list">
                                         <div class="sub-nav__title fw-semibold">Оборудование</div>
                                         <a href="/radiatory" class="sub-nav__link tf-btn-line">Радиаторы</a>
@@ -323,15 +458,20 @@
                                     </div>
                                 </div>
                             </div>
-                        </li>
-
-                        <li class="has-sub-nav-category">
-                            <a href="/pechki" class="nav-category_link">
-                                Печи
-                                <i class="icon icon-CaretRightThin"></i>
-                            </a>
-
-                            <div class="sub-nav-category">
+                            </li>
+                            
+                            <li class="has-sub-nav-category">
+                                <a href="/pechki" class="nav-category_link">
+                                    <span class="d-flex align-items-center gap-2">
+                            
+                                        <img src="{{ asset('icons/campfire.svg') }}" alt="Печи" class="cat-icon">
+                            
+                                        <span>Печи</span>
+                                    </span>
+                                    <i class="icon icon-CaretRightThin"></i>
+                                </a>
+                            
+                                <div class="sub-nav-category">
                                 <div class="tf-grid-layout xl-col-3">
                                     <div class="sub-nav-category_list">
                                         <div class="sub-nav__title fw-semibold">Печи</div>
@@ -361,7 +501,12 @@
 
                         <li class="has-sub-nav-category">
                             <a href="/dlya-bani" class="nav-category_link">
-                                Для бани
+                                 <span class="d-flex align-items-center gap-2">
+                            
+                                        <img src="{{ asset('icons/sauna.svg') }}" alt="Для бани" class="cat-icon">
+                            
+                                        <span>Для бани</span>
+                                    </span>
                                 <i class="icon icon-CaretRightThin"></i>
                             </a>
 
@@ -396,7 +541,12 @@
 
                         <li class="has-sub-nav-category">
                             <a href="/kaminy" class="nav-category_link">
-                                Камины
+                                <span class="d-flex align-items-center gap-2">
+                            
+                                        <img src="{{ asset('icons/fireplace.svg') }}" alt="Камины" class="cat-icon">
+                            
+                                        <span>Камины</span>
+                                    </span>
                                 <i class="icon icon-CaretRightThin"></i>
                             </a>
 
@@ -430,7 +580,12 @@
 
                         <li class="has-sub-nav-category">
                             <a href="/dymohody" class="nav-category_link">
-                                Дымоходы
+                                 <span class="d-flex align-items-center gap-2">
+                            
+                                        <img src="{{ asset('icons/chimney.svg') }}" alt="Дымоходы" class="cat-icon">
+                            
+                                        <span>Дымоходы</span>
+                                    </span>
                                 <i class="icon icon-CaretRightThin"></i>
                             </a>
 
@@ -464,15 +619,25 @@
                         </li>
 
                         <li>
-                            <a href="/vodоснабжение" class="nav-category_link">
-                                Водоснабжение
+                            <a href="/vodosnabzhenie" class="nav-category_link">
+                                 <span class="d-flex align-items-center gap-2">
+                            
+                                        <img src="{{ asset('icons/droplet.svg') }}" alt="Водоснабжение" class="cat-icon">
+                            
+                                        <span>Водоснабжение</span>
+                                    </span>
                                 <i class="icon icon-CaretRightThin"></i>
                             </a>
                         </li>
 
                         <li>
                             <a href="/klimat" class="nav-category_link">
-                                Климат
+                                  <span class="d-flex align-items-center gap-2">
+                            
+                                        <img src="{{ asset('icons/air.svg') }}" alt="Климат" class="cat-icon">
+                            
+                                        <span>Климат</span>
+                                    </span>
                                 <i class="icon icon-CaretRightThin"></i>
                             </a>
                         </li>

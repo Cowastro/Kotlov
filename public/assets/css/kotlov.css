@@ -131,3 +131,31 @@ a {
     transition: 0.2s ease;
 }
 
+.cat-icon{
+    width:20px;
+    height:20px;
+    object-fit:contain;
+    flex-shrink:0;
+    opacity:.9;
+}
+.nav-category_link {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    gap: 12px;
+}
+
+.nav-category_link > span {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.sub-nav__link {
+    color: #555 !important;
+    font-size: 15px !important;
+}
+
+.sub-nav__link:hover {
+    color: #c62828 !important;
+}

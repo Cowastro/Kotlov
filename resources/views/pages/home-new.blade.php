@@ -24,109 +24,173 @@
 
         <!-- Banner Slider -->
         <div class="tf-slideshow  tf-btn-swiper-main">
-            <!-- Return Shipping -->
-            <div class="infiniteSlide-text-v03 mb-40">
-                <div class="infiniteSlide infiniteSlide-wrapper" data-clone="5">
-                    <p class="text fw-medium">FREE SHIPPING ON ALL ORDERS OVER $20.00</p>
-                    <i class="icon-Star2"></i>
-                    <p class="text fw-medium">RETURNS ARE FREE WITHIN 14 DAYS
-                    </p>
-                    <i class="icon-Star2"></i>
-                    <p class="text fw-medium">SECURE PAYMENT WITH EVERY PURCHASE</p>
-                    <i class="icon-Star2"></i>
-                    <p class="text fw-medium">FREE SHIPPING ON ALL ORDERS OVER $20.00</p>
-                    <i class="icon-Star2"></i>
-                    <p class="text fw-medium">RETURNS ARE FREE WITHIN 14 DAYS
-                    </p>
-                    <i class="icon-Star2"></i>
-                </div>
-            </div>
-            <!-- /Return Shipping -->
+           <!-- Marketplace Info Line -->
+<div class="infiniteSlide-text-v03 mb-40">
+    <div class="infiniteSlide infiniteSlide-wrapper" data-clone="5">
+
+        <p class="text fw-medium">
+            Отопление · Тепловые насосы · Камины · Дымоходные системы
+        </p>
+
+        <i class="icon-Star2"></i>
+
+        <p class="text fw-medium">
+            Подбор оборудования для дома и бизнеса
+        </p>
+
+        <i class="icon-Star2"></i>
+
+        <p class="text fw-medium">
+            Монтаж и инженерные решения по всей Беларуси
+        </p>
+
+        <i class="icon-Star2"></i>
+
+        <p class="text fw-medium">
+            Marketplace отопительного оборудования KOTLOV.BY
+        </p>
+
+        <i class="icon-Star2"></i>
+
+        <p class="text fw-medium">
+            Более 20 лет опыта в сфере отопления
+        </p>
+
+        <i class="icon-Star2"></i>
+
+    </div>
+</div>
             <div class="container-full">
                 <div dir="ltr" class="swiper tf-swiper sw-slide-show slider_effect_fade" data-preview="1"
                     data-tablet="1" data-mobile="1" data-auto="true" data-delay="3000" data-loop="true"
                     data-space-lg="30" data-space-md="20" data-space="15">
                     <div class="swiper-wrapper">
                         <!-- item 1 -->
-                        <div class="swiper-slide">
-                            <div class="slider-wrap slideshow-wrap rounded-20 overflow-hidden">
-                                <div class="sld_image">
-                                    <img width="1770" height="680" loading="eager" decoding="async"
-                                        src="assets/images/slider/slider-34.jpg" alt="Slider"
-                                        class="lazyload scale-item  scale-item-1">
-                                </div>
-                                <div class="sld_content type-4">
-                                    <div class="content-sld_wrap">
-                                        <h6 class="mb-12 fade-item fade-item-1">BUILT TO LAST</h6>
-                                        <div class="h1 mb-20 fade-item fade-item-2">Products Crafted To Withstand Time
-                                        </div>
-                                        <p class="text-body-1 fade-item fade-item-3 mb-32">Durable materials with
-                                            reliable performance, helping every build stand stronger, safer, and
-                                            confidently on schedule.
-                                        </p>
-                                        <div class="fade-item fade-item-4">
-                                            <a href="shop-default.html"
-                                                class="tf-btn btn-white animate-btn animate-dark  ">
-                                                Explore More
-                                            </a>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        <!-- item 2 -->
-                        <div class="swiper-slide">
-                            <div class="slider-wrap slideshow-wrap rounded-20 overflow-hidden">
-                                <div class="sld_image">
-                                    <img width="1770" height="680" loading="eager" decoding="async"
-                                        src="assets/images/slider/slider-35.jpg" alt="Slider"
-                                        class="lazyload scale-item  scale-item-1">
-                                </div>
-                                <div class="sld_content type-4">
-                                    <div class="content-sld_wrap">
-                                        <h6 class="mb-12 text-white fade-item fade-item-1">PRECISION IN CONTROL</h6>
-                                        <div class="h1 mb-12 text-white fade-item fade-item-2">Electrical Meters Built
-                                            for the Job</div>
-                                        <p class="text-body-1 text-white fade-item fade-item-3 mb-32">Reliable readings
-                                            of voltage, current, and more—helping professionals work safer, faster, and
-                                            with total confidence.
-                                        </p>
-                                        <div class="fade-item fade-item-4">
-                                            <a href="shop-default.html"
-                                                class="tf-btn btn-white animate-btn animate-dark  ">
-                                                Explore More
-                                            </a>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        <!-- item 3 -->
-                        <div class="swiper-slide">
-                            <div class="slider-wrap slideshow-wrap rounded-20 overflow-hidden">
-                                <div class="sld_image">
-                                    <img width="1770" height="680" loading="eager" decoding="async"
-                                        src="assets/images/slider/slider-36.jpg" alt="Slider"
-                                        class="lazyload scale-item  scale-item-1">
-                                </div>
-                                <div class="sld_content type-4">
-                                    <div class="content-sld_wrap">
-                                        <h6 class="mb-12 fade-item fade-item-1">ENGINEERED FOR CONTROL</h6>
-                                        <div class="h1 mb-20 fade-item fade-item-2">Strong Tools For Serious Work
-                                        </div>
-                                        <p class="text-body-1 fade-item fade-item-3 mb-32">Durable steel tools
-                                            delivering strong grip and reliable performance on every job.
-                                        </p>
-                                        <div class="fade-item fade-item-4">
-                                            <a href="shop-default.html"
-                                                class="tf-btn btn-white animate-btn animate-dark  ">
-                                                Explore More
-                                            </a>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
+  <div class="swiper-slide">
+    <div class="slider-wrap slideshow-wrap rounded-20 overflow-hidden">
+        <div class="sld_image">
+            <img
+                width="1770"
+                height="680"
+                loading="eager"
+                decoding="async"
+                src="{{ asset('img/hero/heatpump-hero.jpg') }}"
+                alt="Тепловые насосы"
+                class="lazyload scale-item scale-item-1"
+            >
+        </div>
+
+        <div class="sld_content type-4">
+            <div class="content-sld_wrap">
+                <h6 class="mb-12 text-white fade-item fade-item-1">
+                    ТЕПЛОВЫЕ НАСОСЫ
+                </h6>
+
+                <div class="h1 mb-12 text-white fade-item fade-item-2">
+                    Тепловые насосы для дома и бизнеса
+                </div>
+
+                <p class="text-body-1 text-white fade-item fade-item-3 mb-32">
+                    Подбор, поставка и монтаж современных систем отопления под ваш объект.
+                </p>
+
+                <div class="fade-item fade-item-4">
+                    <a
+                        href="/teplovye-nasosy"
+                        class="tf-btn btn-white animate-btn animate-dark"
+                    >
+                        Перейти в каталог
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+                       <!-- item 2 -->
+<div class="swiper-slide">
+    <div class="slider-wrap slideshow-wrap rounded-20 overflow-hidden">
+
+        <div class="sld_image">
+            <img
+                width="1770"
+                height="680"
+                loading="eager"
+                decoding="async"
+                src="{{ asset('img/hero/home.jpg') }}"
+                alt="Котлы и отопление"
+                class="lazyload scale-item scale-item-1"
+            >
+        </div>
+
+        <div class="sld_content type-4">
+            <div class="content-sld_wrap">
+
+                <h6 class="mb-12 text-white fade-item fade-item-1">
+                    КОТЛЫ И ОТОПЛЕНИЕ
+                </h6>
+
+                <div class="h1 mb-12 text-white fade-item fade-item-2">
+                    Надёжные решения для отопления дома
+                </div>
+
+                <p class="text-body-1 text-white fade-item fade-item-3 mb-32">
+                    Котлы, бойлеры, радиаторы и инженерные решения
+                    для современных частных домов.
+                </p>
+
+                <div class="fade-item fade-item-4">
+                    <a
+                        href="/kotly"
+                        class="tf-btn btn-white animate-btn animate-dark"
+                    >
+                        Перейти в каталог
+                    </a>
+                </div>
+
+            </div>
+        </div>
+
+    </div>
+</div>
+                       
+                       <!-- item 3 -->
+<div class="swiper-slide">
+    <div class="slider-wrap slideshow-wrap rounded-20 overflow-hidden">
+        <div class="sld_image">
+            <img width="1770" height="680"
+                 loading="eager"
+                 decoding="async"
+                 src="{{ asset('img/hero/fireplace_home.jpg') }}"
+                 alt="Камины и каминные топки"
+                 class="lazyload scale-item scale-item-1">
+        </div>
+
+        <div class="sld_content type-4">
+            <div class="content-sld_wrap">
+                <h6 class="mb-12 text-white fade-item fade-item-1">
+                    КАМИНЫ И ТОПКИ
+                </h6>
+
+                <div class="h1 mb-20 text-white fade-item fade-item-2">
+                    Тепло и уют<br>
+                    в современном интерьере
+                </div>
+
+                <p class="text-body-1 text-white fade-item fade-item-3 mb-32">
+                    Каминные топки, облицовки и готовые решения
+                    для частных домов, квартир и загородных резиденций.
+                </p>
+
+                <div class="fade-item fade-item-4">
+                    <a href="/kaminy"
+                       class="tf-btn btn-white animate-btn animate-dark">
+                        Перейти в каталог
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
                     </div>
                     <div class="sw-line-default tf-sw-pagination"></div>
                 </div>
@@ -134,236 +198,245 @@
 
         </div>
         <!-- /Banner Slider -->
-        <!-- Categories -->
-        <section class="themesFlat flat-spacing">
-            <div class="container">
-                <div class="sect-heading type-2 text-center wow fadeInUp">
-                    <h3 class="s-title">
-                        Construction Categories
-                    </h3>
-                    <p class="s-desc text-body-1 cl-text-2">
-                        Essential tools and equipment designed for professional building work.
-                    </p>
+      <!-- Categories -->
+<section class="themesFlat flat-spacing">
+    <div class="container">
+        <div class="sect-heading type-2 text-center wow fadeInUp">
+            <h3 class="s-title">
+                Популярные разделы
+            </h3>
+            <p class="s-desc text-body-1 cl-text-2">
+                Основные категории отопительного оборудования, инженерных систем и решений для дома.
+            </p>
+        </div>
+
+        <div dir="ltr"
+             class="swiper tf-swiper swiper-cate"
+             data-preview="5"
+             data-tablet="4"
+             data-mobile-sm="3"
+             data-mobile="2"
+             data-space-lg="40"
+             data-space-md="20"
+             data-space="10"
+             data-pagination="2"
+             data-pagination-sm="2"
+             data-pagination-md="3"
+             data-pagination-lg="5"
+             data-grid="2">
+
+            <div class="swiper-wrapper">
+
+                <div class="swiper-slide">
+                    <a href="/kotly" class="category-v04 hover-img wow fadeInUp">
+                        <div class="cate-image img-style">
+                            <img loading="lazy" width="240" height="180"
+                                 src="{{ asset('img/popular/boiler_img.jpg') }}"
+                                 alt="Котлы">
+                        </div>
+                        <div class="cate-content text-center">
+                            <div class="h5 cate_name link-underline-text">Котлы</div>
+                            <p class="cate_quantity text-caption-01 cl-text-2">Газовые, твердотопливные, электрические</p>
+                        </div>
+                    </a>
                 </div>
-                <div dir="ltr" class="swiper tf-swiper swiper-cate" data-preview="5" data-tablet="4" data-mobile-sm="3"
-                    data-mobile="2" data-space-lg="40" data-space-md="20" data-space="10" data-pagination="2"
-                    data-pagination-sm="2" data-pagination-md="3" data-pagination-lg="5" data-grid="2">
-                    <div class="swiper-wrapper">
-                        <!-- slide 1 -->
-                        <div class="swiper-slide">
-                            <a href="shop-default.html" class="category-v04 hover-img wow fadeInUp">
-                                <div class="cate-image img-style">
-                                    <img loading="lazy" width="240" height="180"
-                                        src="assets/images/category/cate-48.jpg" alt="Image">
-                                </div>
-                                <div class="cate-content text-center">
-                                    <div class="h5 cate_name link-underline-text">Power Tools</div>
-                                    <p class="cate_quantity text-caption-01 cl-text-2">
-                                        20 Products
-                                    </p>
-                                </div>
-                            </a>
+
+                <div class="swiper-slide">
+                    <a href="/teplovye-nasosy" class="category-v04 hover-img wow fadeInUp">
+                        <div class="cate-image img-style">
+                            <img loading="lazy" width="240" height="180"
+                                 src="{{ asset('img/popular/heatpump.jpg') }}"
+                                 alt="Тепловые насосы">
                         </div>
-                        <!-- slide 2 -->
-                        <div class="swiper-slide">
-                            <a href="shop-default.html" class="category-v04 hover-img wow fadeInUp">
-                                <div class="cate-image img-style">
-                                    <img loading="lazy" width="240" height="180"
-                                        src="assets/images/category/cate-49.jpg" alt="Image">
-                                </div>
-                                <div class="cate-content text-center">
-                                    <div class="h5 cate_name link-underline-text">Hand Tools</div>
-                                    <p class="cate_quantity text-caption-01 cl-text-2">
-                                        31 Products
-                                    </p>
-                                </div>
-                            </a>
+                        <div class="cate-content text-center">
+                            <div class="h5 cate_name link-underline-text">Тепловые насосы</div>
+                            <p class="cate_quantity text-caption-01 cl-text-2">Современное отопление для дома</p>
                         </div>
-                        <!-- slide 3 -->
-                        <div class="swiper-slide">
-                            <a href="shop-default.html" class="category-v04 hover-img wow fadeInUp">
-                                <div class="cate-image img-style">
-                                    <img loading="lazy" width="240" height="180"
-                                        src="assets/images/category/cate-50.jpg" alt="Image">
-                                </div>
-                                <div class="cate-content text-center">
-                                    <div class="h5 cate_name link-underline-text">Safety Gear</div>
-                                    <p class="cate_quantity text-caption-01 cl-text-2">
-                                        18 Products
-                                    </p>
-                                </div>
-                            </a>
-                        </div>
-                        <!-- slide 4 -->
-                        <div class="swiper-slide">
-                            <a href="shop-default.html" class="category-v04 hover-img wow fadeInUp">
-                                <div class="cate-image img-style">
-                                    <img loading="lazy" width="240" height="180"
-                                        src="assets/images/category/cate-51.jpg" alt="Image">
-                                </div>
-                                <div class="cate-content text-center">
-                                    <div class="h5 cate_name link-underline-text">Measuring Tools</div>
-                                    <p class="cate_quantity text-caption-01 cl-text-2">
-                                        32 Products
-                                    </p>
-                                </div>
-                            </a>
-                        </div>
-                        <!-- slide 5 -->
-                        <div class="swiper-slide">
-                            <a href="shop-default.html" class="category-v04 hover-img wow fadeInUp">
-                                <div class="cate-image img-style">
-                                    <img loading="lazy" width="240" height="180"
-                                        src="assets/images/category/cate-52.jpg" alt="Image">
-                                </div>
-                                <div class="cate-content text-center">
-                                    <div class="h5 cate_name link-underline-text">Cutting Tools</div>
-                                    <p class="cate_quantity text-caption-01 cl-text-2">
-                                        32 Products
-                                    </p>
-                                </div>
-                            </a>
-                        </div>
-                        <!-- slide 6 -->
-                        <div class="swiper-slide">
-                            <a href="shop-default.html" class="category-v04 hover-img wow fadeInUp">
-                                <div class="cate-image img-style">
-                                    <img loading="lazy" width="240" height="180"
-                                        src="assets/images/category/cate-53.jpg" alt="Image">
-                                </div>
-                                <div class="cate-content text-center">
-                                    <div class="h5 cate_name link-underline-text">Drilling Tools</div>
-                                    <p class="cate_quantity text-caption-01 cl-text-2">
-                                        20 Products
-                                    </p>
-                                </div>
-                            </a>
-                        </div>
-                        <!-- slide 7 -->
-                        <div class="swiper-slide">
-                            <a href="shop-default.html" class="category-v04 hover-img wow fadeInUp">
-                                <div class="cate-image img-style">
-                                    <img loading="lazy" width="240" height="180"
-                                        src="assets/images/category/cate-54.jpg" alt="Image">
-                                </div>
-                                <div class="cate-content text-center">
-                                    <div class="h5 cate_name link-underline-text">Fastening Tools</div>
-                                    <p class="cate_quantity text-caption-01 cl-text-2">
-                                        18 Products
-                                    </p>
-                                </div>
-                            </a>
-                        </div>
-                        <!-- slide 8 -->
-                        <div class="swiper-slide">
-                            <a href="shop-default.html" class="category-v04 hover-img wow fadeInUp">
-                                <div class="cate-image img-style">
-                                    <img loading="lazy" width="240" height="180"
-                                        src="assets/images/category/cate-55.jpg" alt="Image">
-                                </div>
-                                <div class="cate-content text-center">
-                                    <div class="h5 cate_name link-underline-text">Lifting Gear</div>
-                                    <p class="cate_quantity text-caption-01 cl-text-2">
-                                        18 Products
-                                    </p>
-                                </div>
-                            </a>
-                        </div>
-                        <!-- slide 9 -->
-                        <div class="swiper-slide">
-                            <a href="shop-default.html" class="category-v04 hover-img wow fadeInUp">
-                                <div class="cate-image img-style">
-                                    <img loading="lazy" width="240" height="180"
-                                        src="assets/images/category/cate-56.jpg" alt="Image">
-                                </div>
-                                <div class="cate-content text-center">
-                                    <div class="h5 cate_name link-underline-text">Electrical Tools</div>
-                                    <p class="cate_quantity text-caption-01 cl-text-2">
-                                        26 Products
-                                    </p>
-                                </div>
-                            </a>
-                        </div>
-                        <!-- slide 10 -->
-                        <div class="swiper-slide">
-                            <a href="shop-default.html" class="category-v04 hover-img wow fadeInUp">
-                                <div class="cate-image img-style">
-                                    <img loading="lazy" width="240" height="180"
-                                        src="assets/images/category/cate-57.jpg" alt="Image">
-                                </div>
-                                <div class="cate-content text-center">
-                                    <div class="h5 cate_name link-underline-text">Site Equipment</div>
-                                    <p class="cate_quantity text-caption-01 cl-text-2">
-                                        32 Products
-                                    </p>
-                                </div>
-                            </a>
-                        </div>
-                    </div>
-                    <div class="sw-dot-default tf-sw-pagination"></div>
+                    </a>
                 </div>
+
+                <div class="swiper-slide">
+                    <a href="/pelletnye-gorelki" class="category-v04 hover-img wow fadeInUp">
+                        <div class="cate-image img-style">
+                            <img loading="lazy" width="240" height="180"
+                                 src="{{ asset('img/popular/pellet_burner.jpg') }}"
+                                 alt="Пеллетные горелки">
+                        </div>
+                        <div class="cate-content text-center">
+                            <div class="h5 cate_name link-underline-text">Пеллетные горелки</div>
+                            <p class="cate_quantity text-caption-01 cl-text-2">Автоматизация отопления</p>
+                        </div>
+                    </a>
+                </div>
+
+                <div class="swiper-slide">
+                    <a href="/kaminy" class="category-v04 hover-img wow fadeInUp">
+                        <div class="cate-image img-style">
+                            <img loading="lazy" width="240" height="180"
+                                 src="{{ asset('img/popular/fireplace.jpg') }}"
+                                 alt="Камины">
+                        </div>
+                        <div class="cate-content text-center">
+                            <div class="h5 cate_name link-underline-text">Камины</div>
+                            <p class="cate_quantity text-caption-01 cl-text-2">Топки, облицовки и аксессуары</p>
+                        </div>
+                    </a>
+                </div>
+
+                <div class="swiper-slide">
+                    <a href="/dymohody" class="category-v04 hover-img wow fadeInUp">
+                        <div class="cate-image img-style">
+                            <img loading="lazy" width="240" height="180"
+                                 src="{{ asset('img/popular/chimney.jpg') }}"
+                                 alt="Дымоходы">
+                        </div>
+                        <div class="cate-content text-center">
+                            <div class="h5 cate_name link-underline-text">Дымоходы</div>
+                            <p class="cate_quantity text-caption-01 cl-text-2">Системы отвода дыма</p>
+                        </div>
+                    </a>
+                </div>
+
+                <div class="swiper-slide">
+                    <a href="/otoplenie" class="category-v04 hover-img wow fadeInUp">
+                        <div class="cate-image img-style">
+                            <img loading="lazy" width="240" height="180"
+                                 src="{{ asset('img/popular/heater.jpg') }}"
+                                 alt="Отопление">
+                        </div>
+                        <div class="cate-content text-center">
+                            <div class="h5 cate_name link-underline-text">Отопление</div>
+                            <p class="cate_quantity text-caption-01 cl-text-2">Радиаторы, тёплый пол, трубы</p>
+                        </div>
+                    </a>
+                </div>
+
+                <div class="swiper-slide">
+                    <a href="/dlya-bani" class="category-v04 hover-img wow fadeInUp">
+                        <div class="cate-image img-style">
+                            <img loading="lazy" width="240" height="180"
+                                 src="{{ asset('img/popular/sauna.jpg') }}"
+                                 alt="Для бани">
+                        </div>
+                        <div class="cate-content text-center">
+                            <div class="h5 cate_name link-underline-text">Для бани</div>
+                            <p class="cate_quantity text-caption-01 cl-text-2">Печи, камни и аксессуары</p>
+                        </div>
+                    </a>
+                </div>
+
+                <div class="swiper-slide">
+                    <a href="/vodosnabzhenie" class="category-v04 hover-img wow fadeInUp">
+                        <div class="cate-image img-style">
+                            <img loading="lazy" width="240" height="180"
+                                 src="{{ asset('img/popular/droplet.jpg') }}"
+                                 alt="Водоснабжение">
+                        </div>
+                        <div class="cate-content text-center">
+                            <div class="h5 cate_name link-underline-text">Водоснабжение</div>
+                            <p class="cate_quantity text-caption-01 cl-text-2">Насосы, трубы и комплектующие</p>
+                        </div>
+                    </a>
+                </div>
+
+                <div class="swiper-slide">
+                    <a href="/klimat" class="category-v04 hover-img wow fadeInUp">
+                        <div class="cate-image img-style">
+                            <img loading="lazy" width="240" height="180"
+                                 src="{{ asset('img/popular/air.jpg') }}"
+                                 alt="Климат">
+                        </div>
+                        <div class="cate-content text-center">
+                            <div class="h5 cate_name link-underline-text">Климат</div>
+                            <p class="cate_quantity text-caption-01 cl-text-2">Вентиляция и климатические решения</p>
+                        </div>
+                    </a>
+                </div>
+
+                <div class="swiper-slide">
+                    <a href="/catalog" class="category-v04 hover-img wow fadeInUp">
+                        <div class="cate-image img-style">
+                            <img loading="lazy" width="240" height="180"
+                                 src="{{ asset('img/popular/catalog.jpg') }}"
+                                 alt="Весь каталог">
+                        </div>
+                        <div class="cate-content text-center">
+                            <div class="h5 cate_name link-underline-text">Весь каталог</div>
+                            <p class="cate_quantity text-caption-01 cl-text-2">Все товары и разделы KOTLOV</p>
+                        </div>
+                    </a>
+                </div>
+
             </div>
-        </section>
-        <!-- /Categories -->
+
+            <div class="sw-dot-default tf-sw-pagination"></div>
+        </div>
+    </div>
+</section>
+<!-- /Categories -->
         <!-- Top Pick -->
         <section class="section-top-pick-v02 flat-animate-tab">
             <div class="container">
                 <div class="sect-heading type-2 has-col-right">
                     <div class="wow fadeInUp">
-                        <h3 class="s-title">
-                            Top Picks This Week
-                        </h3>
-                        <p class="s-desc text-body-1 cl-text-2">
-                            Weekly Favorites Selected With Care To Support Your Wellbeing.
-                        </p>
+                       <h3 class="s-title">
+    Хиты продаж
+</h3>
+<p class="s-desc text-body-1 cl-text-2">
+    Популярные товары и решения для отопления, которые чаще всего выбирают покупатели KOTLOV.BY.
+</p>
                     </div>
                     <div class="col-right overflow-auto wow fadeInUp" data-wow-delay="0.1s">
                         <ul class="tab-btn-wrap-v2" role="tablist">
                             <li class="nav-tab-item" role="presentation">
-                                <a href="#medications" data-bs-toggle="tab" class="tf-btn-tab active" role="tab">
-                                    <span class="fw-semibold">Medications</span>
+                                <a href="#kotly" data-bs-toggle="tab" class="tf-btn-tab active" role="tab">
+                                    <span class="fw-semibold">Котлы</span>
                                 </a>
                             </li>
                             <li class="nav-tab-item" role="presentation">
-                                <a href="#devices" data-bs-toggle="tab" class="tf-btn-tab" role="tab">
-                                    <span class="fw-semibold">Devices</span>
+                                <a href="#teplovye-nasosy" data-bs-toggle="tab" class="tf-btn-tab" role="tab">
+                                    <span class="fw-semibold">Тепловые насосы</span>
                                 </a>
                             </li>
                             <li class="nav-tab-item" role="presentation">
-                                <a href="#wellness" data-bs-toggle="tab" class="tf-btn-tab" role="tab">
-                                    <span class="fw-semibold">Wellness</span>
+                                <a href="#kaminy" data-bs-toggle="tab" class="tf-btn-tab" role="tab">
+                                    <span class="fw-semibold">Камины</span>
                                 </a>
                             </li>
                             <li class="nav-tab-item" role="presentation">
                                 <a href="#offers" data-bs-toggle="tab" class="tf-btn-tab" role="tab">
-                                    <span class="fw-semibold">Offers</span>
+                                    <span class="fw-semibold">Акции</span>
                                 </a>
                             </li>
                         </ul>
                     </div>
                 </div>
                 <div class="tab-content">
-                    <div class="tab-pane active show" id="medications" role="tabpanel">
+                    <div class="tab-pane active show" id="kotly" role="tabpanel">
                         <div class="wrap-prd">
                             <div class="col-prd-1">
-                                <div class="banner-image-text type-abs style-18 v2 mb-20">
-                                    <a href="shop-default.html" class="bn-image img-style">
-                                        <img loading="lazy" width="450" height="608"
-                                            src="assets/images/section/banner-54.jpg" alt="Image">
-                                    </a>
-                                    <div class="bn-content wow fadeInUp">
-                                        <a href="shop-default.html" class="title text-white h3 fw-medium link mb-8">
-                                            Top Quality <br class="d-xxl-block d-none"> Accessories
-                                        </a>
-                                        <p class="desc text-body-1 text-white mb-28">
-                                            Discover Premium Parts to <br class="d-xxl-block d-none"> Enhance
-                                            Performance.
-                                        </p>
-                                        <a href="shop-default.html" class="tf-btn btn-white hv-primary">
-                                            Shop Now
-                                        </a>
-                                    </div>
-                                </div>
+ <div class="banner-image-text type-abs style-18 v2 mb-20">
+    <a href="/kotly" class="bn-image img-style">
+        <img loading="lazy" width="450" height="608"
+            src="{{ asset('img/banners/baner_boiler1.jpg') }}" alt="Отопительные котлы">
+    </a>
+
+    <div class="bn-content wow fadeInUp">
+    <a href="/kotly" class="title text-white h3 fw-medium link mb-8">
+        Отопительные<br>котлы
+    </a>
+
+    <p class="desc text-body-1 text-white mb-28">
+        Газовые, твердотопливные,
+        электрические и пеллетные
+        котлы.
+    </p>
+
+    <a href="/kotly" class="tf-btn btn-white hv-primary">
+        Перейти в каталог
+    </a>
+</div>
+</div>
                                 <div class="tf-grid-layout tf-col-2 gap-20">
                                     <div class="card-product product-style_stroke">
                                         <div class="card-product_wrapper square">
@@ -3718,61 +3791,69 @@
     </main>
     <!-- Mobile Menu -->
     <div class="offcanvas offcanvas-start canvas-mb" id="mobileMenu">
-        <div class="canvas-header">
-            <span class="icon-close-popup" data-bs-dismiss="offcanvas">
-                <i class="icon icon-X2"></i>
-            </span>
-            <form class="form-search-nav">
-                <fieldset>
-                    <input type="text" placeholder="What are you looking for?" required>
-                </fieldset>
-                <button type="submit" class="btn-action">
-                    <i class="icon icon-MagnifyingGlass"></i>
-                </button>
-            </form>
+    <div class="canvas-header">
+        <span class="icon-close-popup" data-bs-dismiss="offcanvas">
+            <i class="icon icon-X2"></i>
+        </span>
+
+        <form action="/search" method="get" class="form-search-nav">
+            <fieldset>
+                <input
+                    type="text"
+                    name="q"
+                    placeholder="Поиск по каталогу"
+                    required
+                >
+            </fieldset>
+
+            <button type="submit" class="btn-action">
+                <i class="icon icon-MagnifyingGlass"></i>
+            </button>
+        </form>
+    </div>
+
+    <div class="canvas-body">
+        <div class="mb-content-top">
+            <ul class="nav-ul-mb" id="wrapper-menu-navigation">
+                <li><a href="/installers">Монтаж</a></li>
+                <li><a href="/brands">Бренды</a></li>
+                <li><a href="/akcii">Акции</a></li>
+                <li><a href="/blog">Статьи</a></li>
+                <li><a href="/dostavka">Доставка</a></li>
+                <li><a href="/contacts">Контакты</a></li>
+                <li><a href="/partners">Партнёрам</a></li>
+            </ul>
         </div>
-        <div class="canvas-body">
-            <div class="mb-content-top">
-                <ul class="nav-ul-mb" id="wrapper-menu-navigation"></ul>
-            </div>
-            <div class="need-help-wrap">
-                <p class="nd-title h6 fw-medium mb-16">Need Help?</p>
-                <p class="lh-26 cl-text-2 mb-4">
-                    600 N Michigan Ave, Chicago, IL 60611, USA
-                </p>
-                <a href="https://www.google.com/maps?q=600+N+Michigan+Ave+Chicago,+IL+60611+USA" target="_blank"
-                    class="text-decoration-underline text-primary lh-26 mb-16">
-                    Open in Maps
-                </a>
-                <a href="mailto:hi.amere@gmail.com" class="cl-text-2 link mb-8">
-                    hi.amere@gmail.com
-                </a>
-                <a href="tel:3156666688" class="cl-text-2 link">
-                    315-666-6688
-                </a>
-            </div>
-        </div>
-        <div class="canvas-footer">
-            <div class="d-flex justify-content-center border-end">
-                <div class="tf-currencies">
-                    <select class="tf-dropdown-select style-default type-currencies">
-                        <option selected data-thumbnail="assets/images/country/us.png">(USD $)</option>
-                        <option data-thumbnail="assets/images/country/vn.png">(VND ₫)</option>
-                    </select>
-                </div>
-            </div>
-            <div class="d-flex justify-content-center">
-                <div class="tf-languages">
-                    <select class="tf-dropdown-select style-default type-languages">
-                        <option>English</option>
-                        <option>العربية</option>
-                        <option>简体中文</option>
-                        <option>اردو</option>
-                    </select>
-                </div>
-            </div>
+
+        <div class="need-help-wrap">
+            <p class="nd-title h6 fw-medium mb-16">Нужна помощь?</p>
+
+            <p class="lh-26 cl-text-2 mb-4">
+                Минск, ул. Селицкого, 39Б, каб. 23
+            </p>
+
+            <a
+                href="https://www.google.com/maps?q=Минск,+ул.+Селицкого,+39Б"
+                target="_blank"
+                class="text-decoration-underline text-primary lh-26 mb-16"
+            >
+                Открыть на карте
+            </a>
+
+            <a href="mailto:info@kotlov.by" class="cl-text-2 link mb-8">
+                info@kotlov.by
+            </a>
+
+            <a href="tel:+375293544041" class="cl-text-2 link">
+                +375 (29) 354-40-41
+            </a>
+
+            <p class="lh-26 cl-text-2 mt-8 mb-0">
+                Пн–Пт: 9:00–18:00
+            </p>
         </div>
     </div>
+</div>
     <!-- /Mobile Menu -->
     <!-- Toolbar -->
     <div class="tf-toolbar-bottom">
