@@ -2,8 +2,7 @@
 
 @section('content')
 
-    <body>
-        <!-- Scroll Top -->
+            <!-- Scroll Top -->
         <button id="goTop">
             <span class="border-progress"></span>
             <span class="ic-wrap">
@@ -348,30 +347,33 @@
                                 Популярные товары и решения для отопления, которые чаще всего выбирают покупатели KOTLOV.BY.
                             </p>
                         </div>
-                        <div class="col-right overflow-auto wow fadeInUp" data-wow-delay="0.1s">
-                            <ul class="tab-btn-wrap-v2" role="tablist">
-                                <li class="nav-tab-item" role="presentation">
-                                    <a href="#kotly" data-bs-toggle="tab" class="tf-btn-tab active" role="tab">
-                                        <span class="fw-semibold">Котлы</span>
-                                    </a>
-                                </li>
-                                <li class="nav-tab-item" role="presentation">
-                                    <a href="#teplovye-nasosy" data-bs-toggle="tab" class="tf-btn-tab" role="tab">
-                                        <span class="fw-semibold">Тепловые насосы</span>
-                                    </a>
-                                </li>
-                                <li class="nav-tab-item" role="presentation">
-                                    <a href="#kaminy" data-bs-toggle="tab" class="tf-btn-tab" role="tab">
-                                        <span class="fw-semibold">Камины</span>
-                                    </a>
-                                </li>
-                                <li class="nav-tab-item" role="presentation">
-                                    <a href="#offers" data-bs-toggle="tab" class="tf-btn-tab" role="tab">
-                                        <span class="fw-semibold">Акции</span>
-                                    </a>
-                                </li>
-                            </ul>
-                        </div>
+                        {{-- Замени ТОЛЬКО блок div.col-right в секции "Хиты продаж" --}}
+<div class="col-right wow fadeInUp" data-wow-delay="0.1s">
+    <div class="overflow-auto" style="position: relative;">
+        <ul class="tab-btn-wrap-v2" role="tablist" style="flex-wrap: nowrap; padding-bottom: 4px;">
+            <li class="nav-tab-item" role="presentation">
+                <a href="#kotly" data-bs-toggle="tab" class="tf-btn-tab active" role="tab">
+                    <span class="fw-semibold" style="white-space: nowrap;">Котлы</span>
+                </a>
+            </li>
+            <li class="nav-tab-item" role="presentation">
+                <a href="#teplovye-nasosy" data-bs-toggle="tab" class="tf-btn-tab" role="tab">
+                    <span class="fw-semibold" style="white-space: nowrap;">Тепл. насосы</span>
+                </a>
+            </li>
+            <li class="nav-tab-item" role="presentation">
+                <a href="#kaminy" data-bs-toggle="tab" class="tf-btn-tab" role="tab">
+                    <span class="fw-semibold" style="white-space: nowrap;">Камины</span>
+                </a>
+            </li>
+            <li class="nav-tab-item" role="presentation">
+                <a href="#offers" data-bs-toggle="tab" class="tf-btn-tab" role="tab">
+                    <span class="fw-semibold" style="white-space: nowrap;">Акции</span>
+                </a>
+            </li>
+        </ul>
+    </div>
+</div>
                     </div>
                     <div class="tab-content">
                         <div class="tab-pane active show" id="kotly" role="tabpanel">
@@ -399,429 +401,58 @@
                                             </a>
                                         </div>
                                     </div>
-                                   <div class="tf-grid-layout tf-col-2 gap-20">
-    <div class="card-product product-style_stroke">
-    <div class="card-product_wrapper square">
-        <a href="#" class="product-img">
-            <img class="img-product" loading="lazy" width="330" height="330"
-                src="{{ asset('img/products/product-placeholder.jpg') }}" alt="Товар KOTLOV">
-            <img class="img-hover" loading="lazy" width="330" height="330"
-                src="{{ asset('img/products/product-placeholder.jpg') }}" alt="Товар KOTLOV">
-        </a>
-
-        <ul class="product-action_list">
-            <li class="wishlist">
-                <a href="#;" class="hover-tooltip tooltip-left box-icon">
-                    <span class="icon icon-heart"></span>
-                    <span class="tooltip">В избранное</span>
-                </a>
-            </li>
-
-            <li class="compare">
-                <a href="#compare" data-bs-toggle="offcanvas" class="hover-tooltip tooltip-left box-icon">
-                    <span class="icon icon-ArrowsLeftRight"></span>
-                    <span class="tooltip">Сравнить</span>
-                </a>
-            </li>
-
-            <li>
-                <a href="#quickView" data-bs-toggle="offcanvas" class="hover-tooltip tooltip-left box-icon">
-                    <span class="icon icon-Eye"></span>
-                    <span class="tooltip">Быстрый просмотр</span>
-                </a>
-            </li>
-        </ul>
-
-        <ul class="product-badge_list">
-            <li class="product-badge_item text-caption-01 sale">
-                Хит продаж
-            </li>
-        </ul>
-
-        <div class="product-action_bot">
-            <a href="#shoppingCart" data-bs-toggle="offcanvas" class="tf-btn btn-white small w-100">
-                В корзину
-            </a>
-        </div>
-    </div>
-
-    <div class="card-product_info">
-        <a href="#" class="name-product lh-24 fw-medium link-underline-text">
-            Название товара
-        </a>
-
-        <div class="star-wrap d-flex align-items-center">
-            <i class="icon icon-Star"></i>
-            <i class="icon icon-Star"></i>
-            <i class="icon icon-Star"></i>
-            <i class="icon icon-Star"></i>
-            <i class="icon icon-Star"></i>
-        </div>
-
-        <div class="price-wrap">
-            <span class="price-new text-primary fw-semibold">
-                Цена по запросу
-            </span>
-        </div>
-    </div>
-</div>
-
-    <div class="card-product product-style_stroke">
-        <div class="card-product_wrapper square">
-            <a href="/product/metal-fach-sdg-17" class="product-img">
-                <img class="img-product" loading="lazy" width="330" height="330"
-                    src="{{ asset('img/products/metal-fach-sdg-17.jpg') }}" alt="Metal-Fach SDG 17 кВт">
-                <img class="img-hover" loading="lazy" width="330" height="330"
-                    src="{{ asset('img/products/metal-fach-sdg-17.jpg') }}" alt="Metal-Fach SDG 17 кВт">
-            </a>
-
-            <ul class="product-action_list">
-                <li class="wishlist">
-                    <a href="#;" class="hover-tooltip tooltip-left box-icon">
-                        <span class="icon icon-heart"></span>
-                        <span class="tooltip">В избранное</span>
-                    </a>
-                </li>
-                <li class="compare">
-                    <a href="#compare" data-bs-toggle="offcanvas" class="hover-tooltip tooltip-left box-icon">
-                        <span class="icon icon-ArrowsLeftRight"></span>
-                        <span class="tooltip">Сравнить</span>
-                    </a>
-                </li>
-                <li>
-                    <a href="#quickView" data-bs-toggle="offcanvas" class="hover-tooltip tooltip-left box-icon">
-                        <span class="icon icon-Eye"></span>
-                        <span class="tooltip">Быстрый просмотр</span>
-                    </a>
-                </li>
-            </ul>
-
-            <ul class="product-badge_list">
-                <li class="product-badge_item text-caption-01 new">Новинка</li>
-            </ul>
-
-            <div class="product-action_bot">
-                <a href="#shoppingCart" data-bs-toggle="offcanvas" class="tf-btn btn-white small w-100">
-                    В корзину
-                </a>
-            </div>
-        </div>
-
-        <div class="card-product_info">
-            <a href="/product/metal-fach-sdg-17" class="name-product lh-24 fw-medium link-underline-text">
-                Metal-Fach SDG 17 кВт
-            </a>
-
-            <div class="star-wrap d-flex align-items-center">
-                <i class="icon icon-Star"></i>
-                <i class="icon icon-Star"></i>
-                <i class="icon icon-Star"></i>
-                <i class="icon icon-Star"></i>
-                <i class="icon icon-Star"></i>
-            </div>
-
-            <div class="price-wrap">
-                <span class="price-new text-primary fw-semibold">3 750 BYN</span>
-            </div>
-        </div>
-    </div>
-</div>
-                                </div>
-                               <div class="col-prd-2">
-    <div class="tf-grid-layout tf-col-2 lg-col-3 gap-20">
-
-        <div class="card-product product-style_stroke">
-            <div class="card-product_wrapper square">
-                <a href="/product/defro-gamma-15" class="product-img">
-                    <img class="img-product" loading="lazy" width="330" height="330"
-                        src="{{ asset('img/products/defro-gamma-15.jpg') }}" alt="DEFRO Gamma 15 кВт">
-                    <img class="img-hover" loading="lazy" width="330" height="330"
-                        src="{{ asset('img/products/defro-gamma-15.jpg') }}" alt="DEFRO Gamma 15 кВт">
-                </a>
-
-                <ul class="product-action_list">
-                    <li class="wishlist"><a href="#;" class="hover-tooltip tooltip-left box-icon"><span class="icon icon-heart"></span><span class="tooltip">В избранное</span></a></li>
-                    <li class="compare"><a href="#compare" data-bs-toggle="offcanvas" class="hover-tooltip tooltip-left box-icon"><span class="icon icon-ArrowsLeftRight"></span><span class="tooltip">Сравнить</span></a></li>
-                    <li><a href="#quickView" data-bs-toggle="offcanvas" class="hover-tooltip tooltip-left box-icon"><span class="icon icon-Eye"></span><span class="tooltip">Быстрый просмотр</span></a></li>
-                </ul>
-
-                <ul class="product-badge_list">
-                    <li class="product-badge_item text-caption-01 sale">Хит</li>
-                </ul>
-
-                <div class="product-action_bot">
-                    <a href="#shoppingCart" data-bs-toggle="offcanvas" class="tf-btn btn-white small w-100">
-                        В корзину
-                    </a>
-                </div>
-            </div>
-
-            <div class="card-product_info">
-                <a href="/product/defro-gamma-15" class="name-product lh-24 fw-medium link-underline-text">
-                    DEFRO Gamma 15 кВт
-                </a>
-                <div class="star-wrap d-flex align-items-center">
-                    <i class="icon icon-Star"></i><i class="icon icon-Star"></i><i class="icon icon-Star"></i><i class="icon icon-Star"></i><i class="icon icon-Star"></i>
-                </div>
-                <div class="price-wrap">
-                    <span class="price-new text-primary fw-semibold">5 420 BYN</span>
-                </div>
-            </div>
-        </div>
-
-        <div class="card-product product-style_stroke">
-            <div class="card-product_wrapper square">
-                <a href="/product/metal-fach-smart-bio-15" class="product-img">
-                    <img class="img-product" loading="lazy" width="330" height="330"
-                        src="{{ asset('img/products/metal-fach-smart-bio-15.jpg') }}" alt="Metal-Fach Smart Bio 15 кВт">
-                    <img class="img-hover" loading="lazy" width="330" height="330"
-                        src="{{ asset('img/products/metal-fach-smart-bio-15.jpg') }}" alt="Metal-Fach Smart Bio 15 кВт">
-                </a>
-
-                <ul class="product-action_list">
-                    <li class="wishlist"><a href="#;" class="hover-tooltip tooltip-left box-icon"><span class="icon icon-heart"></span><span class="tooltip">В избранное</span></a></li>
-                    <li class="compare"><a href="#compare" data-bs-toggle="offcanvas" class="hover-tooltip tooltip-left box-icon"><span class="icon icon-ArrowsLeftRight"></span><span class="tooltip">Сравнить</span></a></li>
-                    <li><a href="#quickView" data-bs-toggle="offcanvas" class="hover-tooltip tooltip-left box-icon"><span class="icon icon-Eye"></span><span class="tooltip">Быстрый просмотр</span></a></li>
-                </ul>
-
-                <ul class="product-badge_list">
-                    <li class="product-badge_item text-caption-01 new">Новинка</li>
-                </ul>
-
-                <div class="product-action_bot">
-                    <a href="#shoppingCart" data-bs-toggle="offcanvas" class="tf-btn btn-white small w-100">
-                        В корзину
-                    </a>
-                </div>
-            </div>
-
-            <div class="card-product_info">
-                <a href="/product/metal-fach-smart-bio-15" class="name-product lh-24 fw-medium link-underline-text">
-                    Metal-Fach Smart Bio 15 кВт
-                </a>
-                <div class="star-wrap d-flex align-items-center">
-                    <i class="icon icon-Star"></i><i class="icon icon-Star"></i><i class="icon icon-Star"></i><i class="icon icon-Star"></i><i class="icon icon-Star"></i>
-                </div>
-                <div class="price-wrap">
-                    <span class="price-new text-primary fw-semibold">6 300 BYN</span>
-                </div>
-            </div>
-        </div>
-
-        <div class="card-product product-style_stroke">
-            <div class="card-product_wrapper square">
-                <a href="/product/kostrzewa-twin-bio-ne-16" class="product-img">
-                    <img class="img-product" loading="lazy" width="330" height="330"
-                        src="{{ asset('img/products/kostrzewa-twin-bio-ne-16.jpg') }}" alt="Kostrzewa Twin Bio NE 16 кВт">
-                    <img class="img-hover" loading="lazy" width="330" height="330"
-                        src="{{ asset('img/products/kostrzewa-twin-bio-ne-16.jpg') }}" alt="Kostrzewa Twin Bio NE 16 кВт">
-                </a>
-
-                <ul class="product-action_list">
-                    <li class="wishlist"><a href="#;" class="hover-tooltip tooltip-left box-icon"><span class="icon icon-heart"></span><span class="tooltip">В избранное</span></a></li>
-                    <li class="compare"><a href="#compare" data-bs-toggle="offcanvas" class="hover-tooltip tooltip-left box-icon"><span class="icon icon-ArrowsLeftRight"></span><span class="tooltip">Сравнить</span></a></li>
-                    <li><a href="#quickView" data-bs-toggle="offcanvas" class="hover-tooltip tooltip-left box-icon"><span class="icon icon-Eye"></span><span class="tooltip">Быстрый просмотр</span></a></li>
-                </ul>
-
-                <div class="product-action_bot">
-                    <a href="#shoppingCart" data-bs-toggle="offcanvas" class="tf-btn btn-white small w-100">
-                        В корзину
-                    </a>
-                </div>
-            </div>
-
-            <div class="card-product_info">
-                <a href="/product/kostrzewa-twin-bio-ne-16" class="name-product lh-24 fw-medium link-underline-text">
-                    Kostrzewa Twin Bio NE 16 кВт
-                </a>
-                <div class="star-wrap d-flex align-items-center">
-                    <i class="icon icon-Star"></i><i class="icon icon-Star"></i><i class="icon icon-Star"></i><i class="icon icon-Star"></i><i class="icon icon-Star"></i>
-                </div>
-                <div class="price-wrap">
-                    <span class="price-new text-primary fw-semibold">8 950 BYN</span>
-                </div>
-            </div>
-        </div>
-
-        <div class="card-product product-style_stroke">
-            <div class="card-product_wrapper square">
-                <a href="/product/attack-slx-20" class="product-img">
-                    <img class="img-product" loading="lazy" width="330" height="330"
-                        src="{{ asset('img/products/attack-slx-20.jpg') }}" alt="Attack SLX 20 кВт">
-                    <img class="img-hover" loading="lazy" width="330" height="330"
-                        src="{{ asset('img/products/attack-slx-20.jpg') }}" alt="Attack SLX 20 кВт">
-                </a>
-
-                <ul class="product-action_list">
-                    <li class="wishlist"><a href="#;" class="hover-tooltip tooltip-left box-icon"><span class="icon icon-heart"></span><span class="tooltip">В избранное</span></a></li>
-                    <li class="compare"><a href="#compare" data-bs-toggle="offcanvas" class="hover-tooltip tooltip-left box-icon"><span class="icon icon-ArrowsLeftRight"></span><span class="tooltip">Сравнить</span></a></li>
-                    <li><a href="#quickView" data-bs-toggle="offcanvas" class="hover-tooltip tooltip-left box-icon"><span class="icon icon-Eye"></span><span class="tooltip">Быстрый просмотр</span></a></li>
-                </ul>
-
-                <div class="product-action_bot">
-                    <a href="#shoppingCart" data-bs-toggle="offcanvas" class="tf-btn btn-white small w-100">
-                        В корзину
-                    </a>
-                </div>
-            </div>
-
-            <div class="card-product_info">
-                <a href="/product/attack-slx-20" class="name-product lh-24 fw-medium link-underline-text">
-                    Attack SLX 20 кВт
-                </a>
-                <div class="star-wrap d-flex align-items-center">
-                    <i class="icon icon-Star"></i><i class="icon icon-Star"></i><i class="icon icon-Star"></i><i class="icon icon-Star"></i><i class="icon icon-Star"></i>
-                </div>
-                <div class="price-wrap">
-                    <span class="price-new text-primary fw-semibold">7 600 BYN</span>
-                </div>
-            </div>
-        </div>
-
-        <div class="card-product product-style_stroke">
-            <div class="card-product_wrapper square">
-                <a href="/product/elektrokotel-kospel-ekco-ln2-12" class="product-img">
-                    <img class="img-product" loading="lazy" width="330" height="330"
-                        src="{{ asset('img/products/kospel-ekco-ln2-12.jpg') }}" alt="Kospel EKCO LN2 12 кВт">
-                    <img class="img-hover" loading="lazy" width="330" height="330"
-                        src="{{ asset('img/products/kospel-ekco-ln2-12.jpg') }}" alt="Kospel EKCO LN2 12 кВт">
-                </a>
-
-                <ul class="product-action_list">
-                    <li class="wishlist"><a href="#;" class="hover-tooltip tooltip-left box-icon"><span class="icon icon-heart"></span><span class="tooltip">В избранное</span></a></li>
-                    <li class="compare"><a href="#compare" data-bs-toggle="offcanvas" class="hover-tooltip tooltip-left box-icon"><span class="icon icon-ArrowsLeftRight"></span><span class="tooltip">Сравнить</span></a></li>
-                    <li><a href="#quickView" data-bs-toggle="offcanvas" class="hover-tooltip tooltip-left box-icon"><span class="icon icon-Eye"></span><span class="tooltip">Быстрый просмотр</span></a></li>
-                </ul>
-
-                <ul class="product-badge_list">
-                    <li class="product-badge_item text-caption-01 sale">Акция</li>
-                </ul>
-
-                <div class="product-action_bot">
-                    <a href="#shoppingCart" data-bs-toggle="offcanvas" class="tf-btn btn-white small w-100">
-                        В корзину
-                    </a>
-                </div>
-            </div>
-
-            <div class="card-product_info">
-                <a href="/product/elektrokotel-kospel-ekco-ln2-12" class="name-product lh-24 fw-medium link-underline-text">
-                    Kospel EKCO LN2 12 кВт
-                </a>
-                <div class="star-wrap d-flex align-items-center">
-                    <i class="icon icon-Star"></i><i class="icon icon-Star"></i><i class="icon icon-Star"></i><i class="icon icon-Star"></i><i class="icon icon-Star"></i>
-                </div>
-                <div class="price-wrap">
-                    <span class="price-new text-primary fw-semibold">2 980 BYN</span>
-                </div>
-            </div>
-        </div>
-
-        <div class="card-product product-style_stroke">
-            <div class="card-product_wrapper square">
-                <a href="/product/teplodar-kupper-praktik-14" class="product-img">
-                    <img class="img-product" loading="lazy" width="330" height="330"
-                        src="{{ asset('img/products/teplodar-kupper-praktik-14.jpg') }}" alt="Теплодар Куппер Практик 14">
-                    <img class="img-hover" loading="lazy" width="330" height="330"
-                        src="{{ asset('img/products/teplodar-kupper-praktik-14.jpg') }}" alt="Теплодар Куппер Практик 14">
-                </a>
-
-                <ul class="product-action_list">
-                    <li class="wishlist"><a href="#;" class="hover-tooltip tooltip-left box-icon"><span class="icon icon-heart"></span><span class="tooltip">В избранное</span></a></li>
-                    <li class="compare"><a href="#compare" data-bs-toggle="offcanvas" class="hover-tooltip tooltip-left box-icon"><span class="icon icon-ArrowsLeftRight"></span><span class="tooltip">Сравнить</span></a></li>
-                    <li><a href="#quickView" data-bs-toggle="offcanvas" class="hover-tooltip tooltip-left box-icon"><span class="icon icon-Eye"></span><span class="tooltip">Быстрый просмотр</span></a></li>
-                </ul>
-
-                <div class="product-action_bot">
-                    <a href="#shoppingCart" data-bs-toggle="offcanvas" class="tf-btn btn-white small w-100">
-                        В корзину
-                    </a>
-                </div>
-            </div>
-
-            <div class="card-product_info">
-                <a href="/product/teplodar-kupper-praktik-14" class="name-product lh-24 fw-medium link-underline-text">
-                    Теплодар Куппер Практик 14
-                </a>
-                <div class="star-wrap d-flex align-items-center">
-                    <i class="icon icon-Star"></i><i class="icon icon-Star"></i><i class="icon icon-Star"></i><i class="icon icon-Star"></i><i class="icon icon-Star"></i>
-                </div>
-                <div class="price-wrap">
-                    <span class="price-new text-primary fw-semibold">2 650 BYN</span>
-                </div>
-            </div>
-        </div>
-
-    </div>
-</div>
-                            </div>
-                        </div>
-                        <div class="tab-pane" id="devices" role="tabpanel">
-                            <div class="wrap-prd">
-                                <div class="col-prd-1">
-                                    <div class="banner-image-text type-abs style-18 mb-20">
-                                        <a href="shop-default.html" class="bn-image img-style">
-                                            <img loading="lazy" width="450" height="608"
-                                                src="assets/images/section/banner-54.jpg" alt="Image">
-                                        </a>
-                                        <div class="bn-content wow fadeInUp">
-                                            <a href="shop-default.html" class="title text-white h2 fw-medium link">
-                                                Discover Your <br class="d-xxl-block d-none"> New Green
-                                            </a>
-                                            <p class="desc text-caption-01 text-white mb-28">
-                                                Handpicked selections perfect for <br class="d-xxl-block d-none"> modern
-                                                homes
-                                            </p>
-                                            <a href="shop-default.html" class="tf-btn btn-white animate-btn animate-dark">
-                                                Shop Now
-                                            </a>
-                                        </div>
-                                    </div>
                                     <div class="tf-grid-layout tf-col-2 gap-20">
                                         <div class="card-product product-style_stroke">
                                             <div class="card-product_wrapper square">
-                                                <a href="product-detail.html" class="product-img">
+                                                <a href="#" class="product-img">
                                                     <img class="img-product" loading="lazy" width="330" height="330"
-                                                        src="assets/images/product/construction/product-4.jpg"
-                                                        alt="Product">
+                                                        src="{{ asset('img/products/product-placeholder.jpg') }}"
+                                                        alt="Товар KOTLOV">
                                                     <img class="img-hover" loading="lazy" width="330" height="330"
-                                                        src="assets/images/product/construction/product-4.jpg"
-                                                        alt="Product">
+                                                        src="{{ asset('img/products/product-placeholder.jpg') }}"
+                                                        alt="Товар KOTLOV">
                                                 </a>
+
                                                 <ul class="product-action_list">
                                                     <li class="wishlist">
                                                         <a href="#;" class="hover-tooltip tooltip-left box-icon">
                                                             <span class="icon icon-heart"></span>
-                                                            <span class="tooltip">Add to Wishlist</span>
+                                                            <span class="tooltip">В избранное</span>
                                                         </a>
                                                     </li>
                                                     <li class="compare">
                                                         <a href="#compare" data-bs-toggle="offcanvas"
                                                             class="hover-tooltip tooltip-left box-icon">
                                                             <span class="icon icon-ArrowsLeftRight"></span>
-                                                            <span class="tooltip">Compare</span>
+                                                            <span class="tooltip">Сравнить</span>
                                                         </a>
                                                     </li>
                                                     <li>
                                                         <a href="#quickView" data-bs-toggle="offcanvas"
                                                             class="hover-tooltip tooltip-left box-icon">
                                                             <span class="icon icon-Eye"></span>
-                                                            <span class="tooltip">Quick view</span>
+                                                            <span class="tooltip">Быстрый просмотр</span>
                                                         </a>
                                                     </li>
                                                 </ul>
+
+                                                <ul class="product-badge_list">
+                                                    <li class="product-badge_item text-caption-01 sale">Хит продаж</li>
+                                                </ul>
+
                                                 <div class="product-action_bot">
                                                     <a href="#shoppingCart" data-bs-toggle="offcanvas"
-                                                        class="tf-btn btn-white small  w-100">
-                                                        Add to Cart
+                                                        class="tf-btn btn-white small w-100">
+                                                        В корзину
                                                     </a>
                                                 </div>
                                             </div>
+
                                             <div class="card-product_info">
-                                                <a href="product-detail.html"
-                                                    class="name-product lh-24 fw-medium link-underline-text">
-                                                    M18 FUEL™ 7" / 9" Large Angle Grinder (Tool Only)
+                                                <a href="#" class="name-product lh-24 fw-medium link-underline-text">
+                                                    Название товара №1
                                                 </a>
+
                                                 <div class="star-wrap d-flex align-items-center">
                                                     <i class="icon icon-Star"></i>
                                                     <i class="icon icon-Star"></i>
@@ -829,58 +460,64 @@
                                                     <i class="icon icon-Star"></i>
                                                     <i class="icon icon-Star"></i>
                                                 </div>
+
                                                 <div class="price-wrap">
-                                                    <span class="price-new text-primary fw-semibold">$39.99</span>
+                                                    <span class="price-new text-primary fw-semibold">Цена по запросу</span>
                                                 </div>
                                             </div>
                                         </div>
+
                                         <div class="card-product product-style_stroke">
                                             <div class="card-product_wrapper square">
-                                                <a href="product-detail.html" class="product-img">
+                                                <a href="#" class="product-img">
                                                     <img class="img-product" loading="lazy" width="330" height="330"
-                                                        src="assets/images/product/construction/product-5.jpg"
-                                                        alt="Product">
+                                                        src="{{ asset('img/products/product-placeholder.jpg') }}"
+                                                        alt="Товар KOTLOV">
                                                     <img class="img-hover" loading="lazy" width="330" height="330"
-                                                        src="assets/images/product/construction/product-5.jpg"
-                                                        alt="Product">
+                                                        src="{{ asset('img/products/product-placeholder.jpg') }}"
+                                                        alt="Товар KOTLOV">
                                                 </a>
+
                                                 <ul class="product-action_list">
                                                     <li class="wishlist">
                                                         <a href="#;" class="hover-tooltip tooltip-left box-icon">
                                                             <span class="icon icon-heart"></span>
-                                                            <span class="tooltip">Add to Wishlist</span>
+                                                            <span class="tooltip">В избранное</span>
                                                         </a>
                                                     </li>
                                                     <li class="compare">
                                                         <a href="#compare" data-bs-toggle="offcanvas"
                                                             class="hover-tooltip tooltip-left box-icon">
                                                             <span class="icon icon-ArrowsLeftRight"></span>
-                                                            <span class="tooltip">Compare</span>
+                                                            <span class="tooltip">Сравнить</span>
                                                         </a>
                                                     </li>
                                                     <li>
                                                         <a href="#quickView" data-bs-toggle="offcanvas"
                                                             class="hover-tooltip tooltip-left box-icon">
                                                             <span class="icon icon-Eye"></span>
-                                                            <span class="tooltip">Quick view</span>
+                                                            <span class="tooltip">Быстрый просмотр</span>
                                                         </a>
                                                     </li>
                                                 </ul>
+
                                                 <ul class="product-badge_list">
-                                                    <li class="product-badge_item text-caption-01 sale">-25%</li>
+                                                    <li class="product-badge_item text-caption-01 new">Новинка</li>
                                                 </ul>
+
                                                 <div class="product-action_bot">
                                                     <a href="#shoppingCart" data-bs-toggle="offcanvas"
-                                                        class="tf-btn btn-white small  w-100">
-                                                        Add to Cart
+                                                        class="tf-btn btn-white small w-100">
+                                                        В корзину
                                                     </a>
                                                 </div>
                                             </div>
+
                                             <div class="card-product_info">
-                                                <a href="product-detail.html"
-                                                    class="name-product lh-24 fw-medium link-underline-text">
-                                                    Plumeria Champa White Flower Plant
+                                                <a href="#" class="name-product lh-24 fw-medium link-underline-text">
+                                                    Название товара №2
                                                 </a>
+
                                                 <div class="star-wrap d-flex align-items-center">
                                                     <i class="icon icon-Star"></i>
                                                     <i class="icon icon-Star"></i>
@@ -888,9 +525,9 @@
                                                     <i class="icon icon-Star"></i>
                                                     <i class="icon icon-Star"></i>
                                                 </div>
+
                                                 <div class="price-wrap">
-                                                    <span class="price-new text-primary fw-semibold">$44.99</span>
-                                                    <span class="price-old text-caption-01 cl-text-3">$54.99</span>
+                                                    <span class="price-new text-primary fw-semibold">Цена по запросу</span>
                                                 </div>
                                             </div>
                                         </div>
@@ -898,53 +535,58 @@
                                 </div>
                                 <div class="col-prd-2">
                                     <div class="tf-grid-layout tf-col-2 lg-col-3 gap-20">
+
                                         <div class="card-product product-style_stroke">
                                             <div class="card-product_wrapper square">
-                                                <a href="product-detail.html" class="product-img">
+                                                <a href="#" class="product-img">
                                                     <img class="img-product" loading="lazy" width="330" height="330"
-                                                        src="assets/images/product/construction/product-1.jpg"
-                                                        alt="Product">
+                                                        src="{{ asset('img/products/product-placeholder.jpg') }}"
+                                                        alt="Товар KOTLOV">
                                                     <img class="img-hover" loading="lazy" width="330" height="330"
-                                                        src="assets/images/product/construction/product-1.jpg"
-                                                        alt="Product">
+                                                        src="{{ asset('img/products/product-placeholder.jpg') }}"
+                                                        alt="Товар KOTLOV">
                                                 </a>
+
                                                 <ul class="product-action_list">
                                                     <li class="wishlist">
                                                         <a href="#;" class="hover-tooltip tooltip-left box-icon">
                                                             <span class="icon icon-heart"></span>
-                                                            <span class="tooltip">Add to Wishlist</span>
+                                                            <span class="tooltip">В избранное</span>
                                                         </a>
                                                     </li>
                                                     <li class="compare">
                                                         <a href="#compare" data-bs-toggle="offcanvas"
                                                             class="hover-tooltip tooltip-left box-icon">
                                                             <span class="icon icon-ArrowsLeftRight"></span>
-                                                            <span class="tooltip">Compare</span>
+                                                            <span class="tooltip">Сравнить</span>
                                                         </a>
                                                     </li>
                                                     <li>
                                                         <a href="#quickView" data-bs-toggle="offcanvas"
                                                             class="hover-tooltip tooltip-left box-icon">
                                                             <span class="icon icon-Eye"></span>
-                                                            <span class="tooltip">Quick view</span>
+                                                            <span class="tooltip">Быстрый просмотр</span>
                                                         </a>
                                                     </li>
                                                 </ul>
+
                                                 <ul class="product-badge_list">
-                                                    <li class="product-badge_item text-caption-01 sale">-25%</li>
+                                                    <li class="product-badge_item text-caption-01 sale">Хит продаж</li>
                                                 </ul>
+
                                                 <div class="product-action_bot">
                                                     <a href="#shoppingCart" data-bs-toggle="offcanvas"
-                                                        class="tf-btn btn-white small  w-100">
-                                                        Add to Cart
+                                                        class="tf-btn btn-white small w-100">
+                                                        В корзину
                                                     </a>
                                                 </div>
                                             </div>
+
                                             <div class="card-product_info">
-                                                <a href="product-detail.html"
-                                                    class="name-product lh-24 fw-medium link-underline-text">
-                                                    Milwaukee M12 FUEL 1/2inch Hammer Drill (Bare Tool)
+                                                <a href="#" class="name-product lh-24 fw-medium link-underline-text">
+                                                    Название товара №1
                                                 </a>
+
                                                 <div class="star-wrap d-flex align-items-center">
                                                     <i class="icon icon-Star"></i>
                                                     <i class="icon icon-Star"></i>
@@ -952,59 +594,64 @@
                                                     <i class="icon icon-Star"></i>
                                                     <i class="icon icon-Star"></i>
                                                 </div>
+
                                                 <div class="price-wrap">
-                                                    <span class="price-new text-primary fw-semibold">$35.99</span>
-                                                    <span class="price-old text-caption-01 cl-text-3">$49.99</span>
+                                                    <span class="price-new text-primary fw-semibold">Цена по запросу</span>
                                                 </div>
                                             </div>
                                         </div>
+
                                         <div class="card-product product-style_stroke">
                                             <div class="card-product_wrapper square">
-                                                <a href="product-detail.html" class="product-img">
+                                                <a href="#" class="product-img">
                                                     <img class="img-product" loading="lazy" width="330" height="330"
-                                                        src="assets/images/product/construction/product-2.jpg"
-                                                        alt="Product">
+                                                        src="{{ asset('img/products/product-placeholder.jpg') }}"
+                                                        alt="Товар KOTLOV">
                                                     <img class="img-hover" loading="lazy" width="330" height="330"
-                                                        src="assets/images/product/construction/product-2.jpg"
-                                                        alt="Product">
+                                                        src="{{ asset('img/products/product-placeholder.jpg') }}"
+                                                        alt="Товар KOTLOV">
                                                 </a>
+
                                                 <ul class="product-action_list">
                                                     <li class="wishlist">
                                                         <a href="#;" class="hover-tooltip tooltip-left box-icon">
                                                             <span class="icon icon-heart"></span>
-                                                            <span class="tooltip">Add to Wishlist</span>
+                                                            <span class="tooltip">В избранное</span>
                                                         </a>
                                                     </li>
                                                     <li class="compare">
                                                         <a href="#compare" data-bs-toggle="offcanvas"
                                                             class="hover-tooltip tooltip-left box-icon">
                                                             <span class="icon icon-ArrowsLeftRight"></span>
-                                                            <span class="tooltip">Compare</span>
+                                                            <span class="tooltip">Сравнить</span>
                                                         </a>
                                                     </li>
                                                     <li>
                                                         <a href="#quickView" data-bs-toggle="offcanvas"
                                                             class="hover-tooltip tooltip-left box-icon">
                                                             <span class="icon icon-Eye"></span>
-                                                            <span class="tooltip">Quick view</span>
+                                                            <span class="tooltip">Быстрый просмотр</span>
                                                         </a>
                                                     </li>
                                                 </ul>
+
                                                 <ul class="product-badge_list">
-                                                    <li class="product-badge_item text-caption-01 new">NEW</li>
+                                                    <li class="product-badge_item text-caption-01 new">Новинка</li>
                                                 </ul>
+
                                                 <div class="product-action_bot">
                                                     <a href="#shoppingCart" data-bs-toggle="offcanvas"
-                                                        class="tf-btn btn-white small  w-100">
-                                                        Add to Cart
+                                                        class="tf-btn btn-white small w-100">
+                                                        В корзину
                                                     </a>
                                                 </div>
                                             </div>
+
                                             <div class="card-product_info">
-                                                <a href="product-detail.html"
-                                                    class="name-product lh-24 fw-medium link-underline-text">
-                                                    Klein Tools Digital Angle Gauge/Level
+                                                <a href="#" class="name-product lh-24 fw-medium link-underline-text">
+                                                    Название товара №2
                                                 </a>
+
                                                 <div class="star-wrap d-flex align-items-center">
                                                     <i class="icon icon-Star"></i>
                                                     <i class="icon icon-Star"></i>
@@ -1012,58 +659,60 @@
                                                     <i class="icon icon-Star"></i>
                                                     <i class="icon icon-Star"></i>
                                                 </div>
+
                                                 <div class="price-wrap">
-                                                    <span class="price-new text-primary fw-semibold">$20.00</span>
+                                                    <span class="price-new text-primary fw-semibold">Цена по запросу</span>
                                                 </div>
                                             </div>
                                         </div>
+
                                         <div class="card-product product-style_stroke">
                                             <div class="card-product_wrapper square">
-                                                <a href="product-detail.html" class="product-img">
+                                                <a href="#" class="product-img">
                                                     <img class="img-product" loading="lazy" width="330" height="330"
-                                                        src="assets/images/product/construction/product-3.jpg"
-                                                        alt="Product">
+                                                        src="{{ asset('img/products/product-placeholder.jpg') }}"
+                                                        alt="Товар KOTLOV">
                                                     <img class="img-hover" loading="lazy" width="330" height="330"
-                                                        src="assets/images/product/construction/product-3.jpg"
-                                                        alt="Product">
+                                                        src="{{ asset('img/products/product-placeholder.jpg') }}"
+                                                        alt="Товар KOTLOV">
                                                 </a>
+
                                                 <ul class="product-action_list">
                                                     <li class="wishlist">
                                                         <a href="#;" class="hover-tooltip tooltip-left box-icon">
                                                             <span class="icon icon-heart"></span>
-                                                            <span class="tooltip">Add to Wishlist</span>
+                                                            <span class="tooltip">В избранное</span>
                                                         </a>
                                                     </li>
                                                     <li class="compare">
                                                         <a href="#compare" data-bs-toggle="offcanvas"
                                                             class="hover-tooltip tooltip-left box-icon">
                                                             <span class="icon icon-ArrowsLeftRight"></span>
-                                                            <span class="tooltip">Compare</span>
+                                                            <span class="tooltip">Сравнить</span>
                                                         </a>
                                                     </li>
                                                     <li>
                                                         <a href="#quickView" data-bs-toggle="offcanvas"
                                                             class="hover-tooltip tooltip-left box-icon">
                                                             <span class="icon icon-Eye"></span>
-                                                            <span class="tooltip">Quick view</span>
+                                                            <span class="tooltip">Быстрый просмотр</span>
                                                         </a>
                                                     </li>
                                                 </ul>
-                                                <ul class="product-badge_list">
-                                                    <li class="product-badge_item text-caption-01 sale">-25%</li>
-                                                </ul>
+
                                                 <div class="product-action_bot">
                                                     <a href="#shoppingCart" data-bs-toggle="offcanvas"
-                                                        class="tf-btn btn-white small  w-100">
-                                                        Add to Cart
+                                                        class="tf-btn btn-white small w-100">
+                                                        В корзину
                                                     </a>
                                                 </div>
                                             </div>
+
                                             <div class="card-product_info">
-                                                <a href="product-detail.html"
-                                                    class="name-product lh-24 fw-medium link-underline-text">
-                                                    ProFlex Impact Driver Bit Set, 40-Piece - 33801 | Klein Tools
+                                                <a href="#" class="name-product lh-24 fw-medium link-underline-text">
+                                                    Название товара №3
                                                 </a>
+
                                                 <div class="star-wrap d-flex align-items-center">
                                                     <i class="icon icon-Star"></i>
                                                     <i class="icon icon-Star"></i>
@@ -1071,59 +720,60 @@
                                                     <i class="icon icon-Star"></i>
                                                     <i class="icon icon-Star"></i>
                                                 </div>
+
                                                 <div class="price-wrap">
-                                                    <span class="price-new text-primary fw-semibold">$14.99</span>
-                                                    <span class="price-old text-caption-01 cl-text-3">$19.99</span>
+                                                    <span class="price-new text-primary fw-semibold">Цена по запросу</span>
                                                 </div>
                                             </div>
                                         </div>
+
                                         <div class="card-product product-style_stroke">
                                             <div class="card-product_wrapper square">
-                                                <a href="product-detail.html" class="product-img">
+                                                <a href="#" class="product-img">
                                                     <img class="img-product" loading="lazy" width="330" height="330"
-                                                        src="assets/images/product/construction/product-6.jpg"
-                                                        alt="Product">
+                                                        src="{{ asset('img/products/product-placeholder.jpg') }}"
+                                                        alt="Товар KOTLOV">
                                                     <img class="img-hover" loading="lazy" width="330" height="330"
-                                                        src="assets/images/product/construction/product-6.jpg"
-                                                        alt="Product">
+                                                        src="{{ asset('img/products/product-placeholder.jpg') }}"
+                                                        alt="Товар KOTLOV">
                                                 </a>
+
                                                 <ul class="product-action_list">
                                                     <li class="wishlist">
                                                         <a href="#;" class="hover-tooltip tooltip-left box-icon">
                                                             <span class="icon icon-heart"></span>
-                                                            <span class="tooltip">Add to Wishlist</span>
+                                                            <span class="tooltip">В избранное</span>
                                                         </a>
                                                     </li>
                                                     <li class="compare">
                                                         <a href="#compare" data-bs-toggle="offcanvas"
                                                             class="hover-tooltip tooltip-left box-icon">
                                                             <span class="icon icon-ArrowsLeftRight"></span>
-                                                            <span class="tooltip">Compare</span>
+                                                            <span class="tooltip">Сравнить</span>
                                                         </a>
                                                     </li>
                                                     <li>
                                                         <a href="#quickView" data-bs-toggle="offcanvas"
                                                             class="hover-tooltip tooltip-left box-icon">
                                                             <span class="icon icon-Eye"></span>
-                                                            <span class="tooltip">Quick view</span>
+                                                            <span class="tooltip">Быстрый просмотр</span>
                                                         </a>
                                                     </li>
                                                 </ul>
-                                                <ul class="product-badge_list">
-                                                    <li class="product-badge_item text-caption-01 sale">-25%</li>
-                                                </ul>
+
                                                 <div class="product-action_bot">
                                                     <a href="#shoppingCart" data-bs-toggle="offcanvas"
-                                                        class="tf-btn btn-white small  w-100">
-                                                        Add to Cart
+                                                        class="tf-btn btn-white small w-100">
+                                                        В корзину
                                                     </a>
                                                 </div>
                                             </div>
+
                                             <div class="card-product_info">
-                                                <a href="product-detail.html"
-                                                    class="name-product lh-24 fw-medium link-underline-text">
-                                                    General Purpose Gloves - Milwaukee® Impact
+                                                <a href="#" class="name-product lh-24 fw-medium link-underline-text">
+                                                    Название товара №4
                                                 </a>
+
                                                 <div class="star-wrap d-flex align-items-center">
                                                     <i class="icon icon-Star"></i>
                                                     <i class="icon icon-Star"></i>
@@ -1131,59 +781,64 @@
                                                     <i class="icon icon-Star"></i>
                                                     <i class="icon icon-Star"></i>
                                                 </div>
+
                                                 <div class="price-wrap">
-                                                    <span class="price-new text-primary fw-semibold">$11.99</span>
-                                                    <span class="price-old text-caption-01 cl-text-3">$15.99</span>
+                                                    <span class="price-new text-primary fw-semibold">Цена по запросу</span>
                                                 </div>
                                             </div>
                                         </div>
+
                                         <div class="card-product product-style_stroke">
                                             <div class="card-product_wrapper square">
-                                                <a href="product-detail.html" class="product-img">
+                                                <a href="#" class="product-img">
                                                     <img class="img-product" loading="lazy" width="330" height="330"
-                                                        src="assets/images/product/construction/product-7.jpg"
-                                                        alt="Product">
+                                                        src="{{ asset('img/products/product-placeholder.jpg') }}"
+                                                        alt="Товар KOTLOV">
                                                     <img class="img-hover" loading="lazy" width="330" height="330"
-                                                        src="assets/images/product/construction/product-7.jpg"
-                                                        alt="Product">
+                                                        src="{{ asset('img/products/product-placeholder.jpg') }}"
+                                                        alt="Товар KOTLOV">
                                                 </a>
+
                                                 <ul class="product-action_list">
                                                     <li class="wishlist">
                                                         <a href="#;" class="hover-tooltip tooltip-left box-icon">
                                                             <span class="icon icon-heart"></span>
-                                                            <span class="tooltip">Add to Wishlist</span>
+                                                            <span class="tooltip">В избранное</span>
                                                         </a>
                                                     </li>
                                                     <li class="compare">
                                                         <a href="#compare" data-bs-toggle="offcanvas"
                                                             class="hover-tooltip tooltip-left box-icon">
                                                             <span class="icon icon-ArrowsLeftRight"></span>
-                                                            <span class="tooltip">Compare</span>
+                                                            <span class="tooltip">Сравнить</span>
                                                         </a>
                                                     </li>
                                                     <li>
                                                         <a href="#quickView" data-bs-toggle="offcanvas"
                                                             class="hover-tooltip tooltip-left box-icon">
                                                             <span class="icon icon-Eye"></span>
-                                                            <span class="tooltip">Quick view</span>
+                                                            <span class="tooltip">Быстрый просмотр</span>
                                                         </a>
                                                     </li>
                                                 </ul>
+
                                                 <ul class="product-badge_list">
-                                                    <li class="product-badge_item text-caption-01 sale">-25%</li>
+                                                    <li class="product-badge_item text-caption-01 sale">Акция</li>
                                                 </ul>
+
                                                 <div class="product-action_bot">
                                                     <a href="#shoppingCart" data-bs-toggle="offcanvas"
-                                                        class="tf-btn btn-white small  w-100">
-                                                        Add to Cart
+                                                        class="tf-btn btn-white small w-100">
+                                                        В корзину
                                                     </a>
                                                 </div>
                                             </div>
+
                                             <div class="card-product_info">
-                                                <a href="product-detail.html"
-                                                    class="name-product lh-24 fw-medium link-underline-text">
-                                                    Smart Helmet Will Boost Industrial Safety & Efficiency
+                                                <a href="#" class="name-product lh-24 fw-medium link-underline-text">
+                                                    Название товара №5
                                                 </a>
+
                                                 <div class="star-wrap d-flex align-items-center">
                                                     <i class="icon icon-Star"></i>
                                                     <i class="icon icon-Star"></i>
@@ -1191,59 +846,60 @@
                                                     <i class="icon icon-Star"></i>
                                                     <i class="icon icon-Star"></i>
                                                 </div>
+
                                                 <div class="price-wrap">
-                                                    <span class="price-new text-primary fw-semibold">$16.50</span>
-                                                    <span class="price-old text-caption-01 cl-text-3">$21.99</span>
+                                                    <span class="price-new text-primary fw-semibold">Цена по запросу</span>
                                                 </div>
                                             </div>
                                         </div>
+
                                         <div class="card-product product-style_stroke">
                                             <div class="card-product_wrapper square">
-                                                <a href="product-detail.html" class="product-img">
+                                                <a href="#" class="product-img">
                                                     <img class="img-product" loading="lazy" width="330" height="330"
-                                                        src="assets/images/product/construction/product-8.jpg"
-                                                        alt="Product">
+                                                        src="{{ asset('img/products/product-placeholder.jpg') }}"
+                                                        alt="Товар KOTLOV">
                                                     <img class="img-hover" loading="lazy" width="330" height="330"
-                                                        src="assets/images/product/construction/product-8.jpg"
-                                                        alt="Product">
+                                                        src="{{ asset('img/products/product-placeholder.jpg') }}"
+                                                        alt="Товар KOTLOV">
                                                 </a>
+
                                                 <ul class="product-action_list">
                                                     <li class="wishlist">
                                                         <a href="#;" class="hover-tooltip tooltip-left box-icon">
                                                             <span class="icon icon-heart"></span>
-                                                            <span class="tooltip">Add to Wishlist</span>
+                                                            <span class="tooltip">В избранное</span>
                                                         </a>
                                                     </li>
                                                     <li class="compare">
                                                         <a href="#compare" data-bs-toggle="offcanvas"
                                                             class="hover-tooltip tooltip-left box-icon">
                                                             <span class="icon icon-ArrowsLeftRight"></span>
-                                                            <span class="tooltip">Compare</span>
+                                                            <span class="tooltip">Сравнить</span>
                                                         </a>
                                                     </li>
                                                     <li>
                                                         <a href="#quickView" data-bs-toggle="offcanvas"
                                                             class="hover-tooltip tooltip-left box-icon">
                                                             <span class="icon icon-Eye"></span>
-                                                            <span class="tooltip">Quick view</span>
+                                                            <span class="tooltip">Быстрый просмотр</span>
                                                         </a>
                                                     </li>
                                                 </ul>
-                                                <ul class="product-badge_list">
-                                                    <li class="product-badge_item text-caption-01 sale">-25%</li>
-                                                </ul>
+
                                                 <div class="product-action_bot">
                                                     <a href="#shoppingCart" data-bs-toggle="offcanvas"
-                                                        class="tf-btn btn-white small  w-100">
-                                                        Add to Cart
+                                                        class="tf-btn btn-white small w-100">
+                                                        В корзину
                                                     </a>
                                                 </div>
                                             </div>
+
                                             <div class="card-product_info">
-                                                <a href="product-detail.html"
-                                                    class="name-product lh-24 fw-medium link-underline-text">
-                                                    Tracer Complete Deep Hole Marking Kit
+                                                <a href="#" class="name-product lh-24 fw-medium link-underline-text">
+                                                    Название товара №6
                                                 </a>
+
                                                 <div class="star-wrap d-flex align-items-center">
                                                     <i class="icon icon-Star"></i>
                                                     <i class="icon icon-Star"></i>
@@ -1251,141 +907,97 @@
                                                     <i class="icon icon-Star"></i>
                                                     <i class="icon icon-Star"></i>
                                                 </div>
+
                                                 <div class="price-wrap">
-                                                    <span class="price-new text-primary fw-semibold">$12.00</span>
-                                                    <span class="price-old text-caption-01 cl-text-3">$16.99</span>
+                                                    <span class="price-new text-primary fw-semibold">Цена по запросу</span>
                                                 </div>
                                             </div>
                                         </div>
+
                                     </div>
                                 </div>
                             </div>
                         </div>
-                        <div class="tab-pane" id="wellness" role="tabpanel">
+                        <div class="tab-pane" id="teplovye-nasosy" role="tabpanel">
                             <div class="wrap-prd">
                                 <div class="col-prd-1">
-                                    <div class="banner-image-text type-abs style-18 mb-20">
-                                        <a href="shop-default.html" class="bn-image img-style">
+                                    <div class="banner-image-text type-abs style-18 v2 mb-20">
+                                        <a href="/teplovye-nasosy" class="bn-image img-style">
                                             <img loading="lazy" width="450" height="608"
-                                                src="assets/images/section/banner-54.jpg" alt="Image">
+                                                src="{{ asset('img/banners/banner_pump.jpg') }}" alt="Тепловые насосы">
                                         </a>
+
                                         <div class="bn-content wow fadeInUp">
-                                            <a href="shop-default.html" class="title text-white h2 fw-medium link">
-                                                Discover Your <br class="d-xxl-block d-none"> New Green
+                                            <a href="/teplovye-nasosy" class="title text-white h3 fw-medium link mb-8">
+                                                Тепловые<br>насосы
                                             </a>
-                                            <p class="desc text-caption-01 text-white mb-28">
-                                                Handpicked selections perfect for <br class="d-xxl-block d-none"> modern
-                                                homes
+
+                                            <p class="desc text-body-1 text-white mb-28">
+                                                Отопление, охлаждение
+                                                и горячая вода
+                                                круглый год.
                                             </p>
-                                            <a href="shop-default.html" class="tf-btn btn-white animate-btn animate-dark">
-                                                Shop Now
+
+                                            <a href="/teplovye-nasosy" class="tf-btn btn-white hv-primary">
+                                                Перейти в каталог
                                             </a>
                                         </div>
                                     </div>
                                     <div class="tf-grid-layout tf-col-2 gap-20">
+
                                         <div class="card-product product-style_stroke">
                                             <div class="card-product_wrapper square">
-                                                <a href="product-detail.html" class="product-img">
+                                                <a href="#" class="product-img">
                                                     <img class="img-product" loading="lazy" width="330" height="330"
-                                                        src="assets/images/product/construction/product-4.jpg"
-                                                        alt="Product">
+                                                        src="{{ asset('img/products/product-placeholder.jpg') }}"
+                                                        alt="Товар KOTLOV">
                                                     <img class="img-hover" loading="lazy" width="330" height="330"
-                                                        src="assets/images/product/construction/product-4.jpg"
-                                                        alt="Product">
+                                                        src="{{ asset('img/products/product-placeholder.jpg') }}"
+                                                        alt="Товар KOTLOV">
                                                 </a>
+
                                                 <ul class="product-action_list">
                                                     <li class="wishlist">
                                                         <a href="#;" class="hover-tooltip tooltip-left box-icon">
                                                             <span class="icon icon-heart"></span>
-                                                            <span class="tooltip">Add to Wishlist</span>
+                                                            <span class="tooltip">В избранное</span>
                                                         </a>
                                                     </li>
                                                     <li class="compare">
                                                         <a href="#compare" data-bs-toggle="offcanvas"
                                                             class="hover-tooltip tooltip-left box-icon">
                                                             <span class="icon icon-ArrowsLeftRight"></span>
-                                                            <span class="tooltip">Compare</span>
+                                                            <span class="tooltip">Сравнить</span>
                                                         </a>
                                                     </li>
                                                     <li>
                                                         <a href="#quickView" data-bs-toggle="offcanvas"
                                                             class="hover-tooltip tooltip-left box-icon">
                                                             <span class="icon icon-Eye"></span>
-                                                            <span class="tooltip">Quick view</span>
+                                                            <span class="tooltip">Быстрый просмотр</span>
                                                         </a>
                                                     </li>
                                                 </ul>
-                                                <div class="product-action_bot">
-                                                    <a href="#shoppingCart" data-bs-toggle="offcanvas"
-                                                        class="tf-btn btn-white small  w-100">
-                                                        Add to Cart
-                                                    </a>
-                                                </div>
-                                            </div>
-                                            <div class="card-product_info">
-                                                <a href="product-detail.html"
-                                                    class="name-product lh-24 fw-medium link-underline-text">
-                                                    M18 FUEL™ 7" / 9" Large Angle Grinder (Tool Only)
-                                                </a>
-                                                <div class="star-wrap d-flex align-items-center">
-                                                    <i class="icon icon-Star"></i>
-                                                    <i class="icon icon-Star"></i>
-                                                    <i class="icon icon-Star"></i>
-                                                    <i class="icon icon-Star"></i>
-                                                    <i class="icon icon-Star"></i>
-                                                </div>
-                                                <div class="price-wrap">
-                                                    <span class="price-new text-primary fw-semibold">$39.99</span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div class="card-product product-style_stroke">
-                                            <div class="card-product_wrapper square">
-                                                <a href="product-detail.html" class="product-img">
-                                                    <img class="img-product" loading="lazy" width="330" height="330"
-                                                        src="assets/images/product/construction/product-5.jpg"
-                                                        alt="Product">
-                                                    <img class="img-hover" loading="lazy" width="330" height="330"
-                                                        src="assets/images/product/construction/product-5.jpg"
-                                                        alt="Product">
-                                                </a>
-                                                <ul class="product-action_list">
-                                                    <li class="wishlist">
-                                                        <a href="#;" class="hover-tooltip tooltip-left box-icon">
-                                                            <span class="icon icon-heart"></span>
-                                                            <span class="tooltip">Add to Wishlist</span>
-                                                        </a>
-                                                    </li>
-                                                    <li class="compare">
-                                                        <a href="#compare" data-bs-toggle="offcanvas"
-                                                            class="hover-tooltip tooltip-left box-icon">
-                                                            <span class="icon icon-ArrowsLeftRight"></span>
-                                                            <span class="tooltip">Compare</span>
-                                                        </a>
-                                                    </li>
-                                                    <li>
-                                                        <a href="#quickView" data-bs-toggle="offcanvas"
-                                                            class="hover-tooltip tooltip-left box-icon">
-                                                            <span class="icon icon-Eye"></span>
-                                                            <span class="tooltip">Quick view</span>
-                                                        </a>
-                                                    </li>
-                                                </ul>
+
                                                 <ul class="product-badge_list">
-                                                    <li class="product-badge_item text-caption-01 sale">-25%</li>
+                                                    <li class="product-badge_item text-caption-01 sale">
+                                                        Хит продаж
+                                                    </li>
                                                 </ul>
+
                                                 <div class="product-action_bot">
                                                     <a href="#shoppingCart" data-bs-toggle="offcanvas"
-                                                        class="tf-btn btn-white small  w-100">
-                                                        Add to Cart
+                                                        class="tf-btn btn-white small w-100">
+                                                        В корзину
                                                     </a>
                                                 </div>
                                             </div>
+
                                             <div class="card-product_info">
-                                                <a href="product-detail.html"
-                                                    class="name-product lh-24 fw-medium link-underline-text">
-                                                    Plumeria Champa White Flower Plant
+                                                <a href="#" class="name-product lh-24 fw-medium link-underline-text">
+                                                    Название товара №1
                                                 </a>
+
                                                 <div class="star-wrap d-flex align-items-center">
                                                     <i class="icon icon-Star"></i>
                                                     <i class="icon icon-Star"></i>
@@ -1393,63 +1005,247 @@
                                                     <i class="icon icon-Star"></i>
                                                     <i class="icon icon-Star"></i>
                                                 </div>
+
                                                 <div class="price-wrap">
-                                                    <span class="price-new text-primary fw-semibold">$44.99</span>
-                                                    <span class="price-old text-caption-01 cl-text-3">$54.99</span>
+                                                    <span class="price-new text-primary fw-semibold">
+                                                        Цена по запросу
+                                                    </span>
                                                 </div>
                                             </div>
                                         </div>
+
+                                        <div class="card-product product-style_stroke">
+                                            <div class="card-product_wrapper square">
+                                                <a href="#" class="product-img">
+                                                    <img class="img-product" loading="lazy" width="330" height="330"
+                                                        src="{{ asset('img/products/product-placeholder.jpg') }}"
+                                                        alt="Товар KOTLOV">
+                                                    <img class="img-hover" loading="lazy" width="330" height="330"
+                                                        src="{{ asset('img/products/product-placeholder.jpg') }}"
+                                                        alt="Товар KOTLOV">
+                                                </a>
+
+                                                <ul class="product-action_list">
+                                                    <li class="wishlist">
+                                                        <a href="#;" class="hover-tooltip tooltip-left box-icon">
+                                                            <span class="icon icon-heart"></span>
+                                                            <span class="tooltip">В избранное</span>
+                                                        </a>
+                                                    </li>
+                                                    <li class="compare">
+                                                        <a href="#compare" data-bs-toggle="offcanvas"
+                                                            class="hover-tooltip tooltip-left box-icon">
+                                                            <span class="icon icon-ArrowsLeftRight"></span>
+                                                            <span class="tooltip">Сравнить</span>
+                                                        </a>
+                                                    </li>
+                                                    <li>
+                                                        <a href="#quickView" data-bs-toggle="offcanvas"
+                                                            class="hover-tooltip tooltip-left box-icon">
+                                                            <span class="icon icon-Eye"></span>
+                                                            <span class="tooltip">Быстрый просмотр</span>
+                                                        </a>
+                                                    </li>
+                                                </ul>
+
+                                                <ul class="product-badge_list">
+                                                    <li class="product-badge_item text-caption-01 new">
+                                                        Новинка
+                                                    </li>
+                                                </ul>
+
+                                                <div class="product-action_bot">
+                                                    <a href="#shoppingCart" data-bs-toggle="offcanvas"
+                                                        class="tf-btn btn-white small w-100">
+                                                        В корзину
+                                                    </a>
+                                                </div>
+                                            </div>
+
+                                            <div class="card-product_info">
+                                                <a href="#" class="name-product lh-24 fw-medium link-underline-text">
+                                                    Название товара №2
+                                                </a>
+
+                                                <div class="star-wrap d-flex align-items-center">
+                                                    <i class="icon icon-Star"></i>
+                                                    <i class="icon icon-Star"></i>
+                                                    <i class="icon icon-Star"></i>
+                                                    <i class="icon icon-Star"></i>
+                                                    <i class="icon icon-Star"></i>
+                                                </div>
+
+                                                <div class="price-wrap">
+                                                    <span class="price-new text-primary fw-semibold">
+                                                        Цена по запросу
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        </div>
+
                                     </div>
                                 </div>
                                 <div class="col-prd-2">
                                     <div class="tf-grid-layout tf-col-2 lg-col-3 gap-20">
+
+                                        @for ($i = 1; $i <= 6; $i++)
+                                            <div class="card-product product-style_stroke">
+                                                <div class="card-product_wrapper square">
+
+                                                    <a href="#" class="product-img">
+                                                        <img class="img-product" loading="lazy" width="330" height="330"
+                                                            src="{{ asset('img/products/product-placeholder.jpg') }}"
+                                                            alt="Товар KOTLOV">
+
+                                                        <img class="img-hover" loading="lazy" width="330" height="330"
+                                                            src="{{ asset('img/products/product-placeholder.jpg') }}"
+                                                            alt="Товар KOTLOV">
+                                                    </a>
+
+                                                    <ul class="product-action_list">
+                                                        <li class="wishlist">
+                                                            <a href="#;" class="hover-tooltip tooltip-left box-icon">
+                                                                <span class="icon icon-heart"></span>
+                                                                <span class="tooltip">В избранное</span>
+                                                            </a>
+                                                        </li>
+
+                                                        <li class="compare">
+                                                            <a href="#compare" data-bs-toggle="offcanvas"
+                                                                class="hover-tooltip tooltip-left box-icon">
+                                                                <span class="icon icon-ArrowsLeftRight"></span>
+                                                                <span class="tooltip">Сравнить</span>
+                                                            </a>
+                                                        </li>
+
+                                                        <li>
+                                                            <a href="#quickView" data-bs-toggle="offcanvas"
+                                                                class="hover-tooltip tooltip-left box-icon">
+                                                                <span class="icon icon-Eye"></span>
+                                                                <span class="tooltip">Быстрый просмотр</span>
+                                                            </a>
+                                                        </li>
+                                                    </ul>
+
+                                                    <div class="product-action_bot">
+                                                        <a href="#shoppingCart" data-bs-toggle="offcanvas"
+                                                            class="tf-btn btn-white small w-100">
+                                                            В корзину
+                                                        </a>
+                                                    </div>
+
+                                                </div>
+
+                                                <div class="card-product_info">
+
+                                                    <a href="#" class="name-product lh-24 fw-medium link-underline-text">
+                                                        Название товара №{{ $i }}
+                                                    </a>
+
+                                                    <div class="star-wrap d-flex align-items-center">
+                                                        <i class="icon icon-Star"></i>
+                                                        <i class="icon icon-Star"></i>
+                                                        <i class="icon icon-Star"></i>
+                                                        <i class="icon icon-Star"></i>
+                                                        <i class="icon icon-Star"></i>
+                                                    </div>
+
+                                                    <div class="price-wrap">
+                                                        <span class="price-new text-primary fw-semibold">
+                                                            Цена по запросу
+                                                        </span>
+                                                    </div>
+
+                                                </div>
+                                            </div>
+                                        @endfor
+
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="tab-pane" id="kaminy" role="tabpanel">
+                            <div class="wrap-prd">
+                                <div class="col-prd-1">
+                                    <div class="banner-image-text type-abs style-18 v2 mb-20">
+                                        <a href="/kaminy" class="bn-image img-style">
+                                            <img loading="lazy" width="450" height="608"
+                                                src="{{ asset('img/banners/banner-fireplace1.jpg') }}" alt="Камины">
+                                        </a>
+
+                                        <div class="bn-content wow fadeInUp">
+                                            <a href="/kaminy" class="title text-white h3 fw-medium link mb-8">
+                                                Камины<br>и топки
+                                            </a>
+
+                                            <p class="desc text-body-1 text-white mb-28">
+                                                Каминные топки,
+                                                печи-камины и готовые
+                                                решения для дома.
+                                            </p>
+
+                                            <a href="/kaminy" class="tf-btn btn-white hv-primary">
+                                                Перейти в каталог
+                                            </a>
+                                        </div>
+                                    </div>
+                                    <div class="tf-grid-layout tf-col-2 gap-20">
+
                                         <div class="card-product product-style_stroke">
                                             <div class="card-product_wrapper square">
-                                                <a href="product-detail.html" class="product-img">
+                                                <a href="#" class="product-img">
                                                     <img class="img-product" loading="lazy" width="330" height="330"
-                                                        src="assets/images/product/construction/product-1.jpg"
-                                                        alt="Product">
+                                                        src="{{ asset('img/products/product-placeholder.jpg') }}"
+                                                        alt="Товар KOTLOV">
                                                     <img class="img-hover" loading="lazy" width="330" height="330"
-                                                        src="assets/images/product/construction/product-1.jpg"
-                                                        alt="Product">
+                                                        src="{{ asset('img/products/product-placeholder.jpg') }}"
+                                                        alt="Товар KOTLOV">
                                                 </a>
+
                                                 <ul class="product-action_list">
                                                     <li class="wishlist">
                                                         <a href="#;" class="hover-tooltip tooltip-left box-icon">
                                                             <span class="icon icon-heart"></span>
-                                                            <span class="tooltip">Add to Wishlist</span>
+                                                            <span class="tooltip">В избранное</span>
                                                         </a>
                                                     </li>
+
                                                     <li class="compare">
                                                         <a href="#compare" data-bs-toggle="offcanvas"
                                                             class="hover-tooltip tooltip-left box-icon">
                                                             <span class="icon icon-ArrowsLeftRight"></span>
-                                                            <span class="tooltip">Compare</span>
+                                                            <span class="tooltip">Сравнить</span>
                                                         </a>
                                                     </li>
+
                                                     <li>
                                                         <a href="#quickView" data-bs-toggle="offcanvas"
                                                             class="hover-tooltip tooltip-left box-icon">
                                                             <span class="icon icon-Eye"></span>
-                                                            <span class="tooltip">Quick view</span>
+                                                            <span class="tooltip">Быстрый просмотр</span>
                                                         </a>
                                                     </li>
                                                 </ul>
+
                                                 <ul class="product-badge_list">
-                                                    <li class="product-badge_item text-caption-01 sale">-25%</li>
+                                                    <li class="product-badge_item text-caption-01 sale">
+                                                        Хит продаж
+                                                    </li>
                                                 </ul>
+
                                                 <div class="product-action_bot">
                                                     <a href="#shoppingCart" data-bs-toggle="offcanvas"
-                                                        class="tf-btn btn-white small  w-100">
-                                                        Add to Cart
+                                                        class="tf-btn btn-white small w-100">
+                                                        В корзину
                                                     </a>
                                                 </div>
                                             </div>
+
                                             <div class="card-product_info">
-                                                <a href="product-detail.html"
-                                                    class="name-product lh-24 fw-medium link-underline-text">
-                                                    Milwaukee M12 FUEL 1/2inch Hammer Drill (Bare Tool)
+                                                <a href="#" class="name-product lh-24 fw-medium link-underline-text">
+                                                    Название товара №1
                                                 </a>
+
                                                 <div class="star-wrap d-flex align-items-center">
                                                     <i class="icon icon-Star"></i>
                                                     <i class="icon icon-Star"></i>
@@ -1457,59 +1253,70 @@
                                                     <i class="icon icon-Star"></i>
                                                     <i class="icon icon-Star"></i>
                                                 </div>
+
                                                 <div class="price-wrap">
-                                                    <span class="price-new text-primary fw-semibold">$35.99</span>
-                                                    <span class="price-old text-caption-01 cl-text-3">$49.99</span>
+                                                    <span class="price-new text-primary fw-semibold">
+                                                        Цена по запросу
+                                                    </span>
                                                 </div>
                                             </div>
                                         </div>
+
                                         <div class="card-product product-style_stroke">
                                             <div class="card-product_wrapper square">
-                                                <a href="product-detail.html" class="product-img">
+                                                <a href="#" class="product-img">
                                                     <img class="img-product" loading="lazy" width="330" height="330"
-                                                        src="assets/images/product/construction/product-2.jpg"
-                                                        alt="Product">
+                                                        src="{{ asset('img/products/product-placeholder.jpg') }}"
+                                                        alt="Товар KOTLOV">
                                                     <img class="img-hover" loading="lazy" width="330" height="330"
-                                                        src="assets/images/product/construction/product-2.jpg"
-                                                        alt="Product">
+                                                        src="{{ asset('img/products/product-placeholder.jpg') }}"
+                                                        alt="Товар KOTLOV">
                                                 </a>
+
                                                 <ul class="product-action_list">
                                                     <li class="wishlist">
                                                         <a href="#;" class="hover-tooltip tooltip-left box-icon">
                                                             <span class="icon icon-heart"></span>
-                                                            <span class="tooltip">Add to Wishlist</span>
+                                                            <span class="tooltip">В избранное</span>
                                                         </a>
                                                     </li>
+
                                                     <li class="compare">
                                                         <a href="#compare" data-bs-toggle="offcanvas"
                                                             class="hover-tooltip tooltip-left box-icon">
                                                             <span class="icon icon-ArrowsLeftRight"></span>
-                                                            <span class="tooltip">Compare</span>
+                                                            <span class="tooltip">Сравнить</span>
                                                         </a>
                                                     </li>
+
                                                     <li>
                                                         <a href="#quickView" data-bs-toggle="offcanvas"
                                                             class="hover-tooltip tooltip-left box-icon">
                                                             <span class="icon icon-Eye"></span>
-                                                            <span class="tooltip">Quick view</span>
+                                                            <span class="tooltip">Быстрый просмотр</span>
                                                         </a>
                                                     </li>
                                                 </ul>
+
                                                 <ul class="product-badge_list">
-                                                    <li class="product-badge_item text-caption-01 new">NEW</li>
+                                                    <li class="product-badge_item text-caption-01 new">
+                                                        Новинка
+                                                    </li>
                                                 </ul>
+
                                                 <div class="product-action_bot">
                                                     <a href="#shoppingCart" data-bs-toggle="offcanvas"
-                                                        class="tf-btn btn-white small  w-100">
-                                                        Add to Cart
+                                                        class="tf-btn btn-white small w-100">
+                                                        В корзину
                                                     </a>
                                                 </div>
                                             </div>
+
                                             <div class="card-product_info">
-                                                <a href="product-detail.html"
-                                                    class="name-product lh-24 fw-medium link-underline-text">
-                                                    Klein Tools Digital Angle Gauge/Level
+                                                <a href="#" class="name-product lh-24 fw-medium link-underline-text">
+                                                    Название товара №2
                                                 </a>
+
                                                 <div class="star-wrap d-flex align-items-center">
                                                     <i class="icon icon-Star"></i>
                                                     <i class="icon icon-Star"></i>
@@ -1517,251 +1324,94 @@
                                                     <i class="icon icon-Star"></i>
                                                     <i class="icon icon-Star"></i>
                                                 </div>
+
                                                 <div class="price-wrap">
-                                                    <span class="price-new text-primary fw-semibold">$20.00</span>
+                                                    <span class="price-new text-primary fw-semibold">
+                                                        Цена по запросу
+                                                    </span>
                                                 </div>
                                             </div>
                                         </div>
-                                        <div class="card-product product-style_stroke">
-                                            <div class="card-product_wrapper square">
-                                                <a href="product-detail.html" class="product-img">
-                                                    <img class="img-product" loading="lazy" width="330" height="330"
-                                                        src="assets/images/product/construction/product-3.jpg"
-                                                        alt="Product">
-                                                    <img class="img-hover" loading="lazy" width="330" height="330"
-                                                        src="assets/images/product/construction/product-3.jpg"
-                                                        alt="Product">
-                                                </a>
-                                                <ul class="product-action_list">
-                                                    <li class="wishlist">
-                                                        <a href="#;" class="hover-tooltip tooltip-left box-icon">
-                                                            <span class="icon icon-heart"></span>
-                                                            <span class="tooltip">Add to Wishlist</span>
-                                                        </a>
-                                                    </li>
-                                                    <li class="compare">
-                                                        <a href="#compare" data-bs-toggle="offcanvas"
-                                                            class="hover-tooltip tooltip-left box-icon">
-                                                            <span class="icon icon-ArrowsLeftRight"></span>
-                                                            <span class="tooltip">Compare</span>
-                                                        </a>
-                                                    </li>
-                                                    <li>
-                                                        <a href="#quickView" data-bs-toggle="offcanvas"
-                                                            class="hover-tooltip tooltip-left box-icon">
-                                                            <span class="icon icon-Eye"></span>
-                                                            <span class="tooltip">Quick view</span>
-                                                        </a>
-                                                    </li>
-                                                </ul>
-                                                <ul class="product-badge_list">
-                                                    <li class="product-badge_item text-caption-01 sale">-25%</li>
-                                                </ul>
-                                                <div class="product-action_bot">
-                                                    <a href="#shoppingCart" data-bs-toggle="offcanvas"
-                                                        class="tf-btn btn-white small  w-100">
-                                                        Add to Cart
+
+                                    </div>
+                                </div>
+                                <div class="col-prd-2">
+                                    <div class="tf-grid-layout tf-col-2 lg-col-3 gap-20">
+
+                                        @for ($i = 1; $i <= 6; $i++)
+                                            <div class="card-product product-style_stroke">
+
+                                                <div class="card-product_wrapper square">
+
+                                                    <a href="#" class="product-img">
+                                                        <img class="img-product" loading="lazy" width="330" height="330"
+                                                            src="{{ asset('img/products/product-placeholder.jpg') }}"
+                                                            alt="Товар KOTLOV">
+
+                                                        <img class="img-hover" loading="lazy" width="330" height="330"
+                                                            src="{{ asset('img/products/product-placeholder.jpg') }}"
+                                                            alt="Товар KOTLOV">
                                                     </a>
-                                                </div>
-                                            </div>
-                                            <div class="card-product_info">
-                                                <a href="product-detail.html"
-                                                    class="name-product lh-24 fw-medium link-underline-text">
-                                                    ProFlex Impact Driver Bit Set, 40-Piece - 33801 | Klein Tools
-                                                </a>
-                                                <div class="star-wrap d-flex align-items-center">
-                                                    <i class="icon icon-Star"></i>
-                                                    <i class="icon icon-Star"></i>
-                                                    <i class="icon icon-Star"></i>
-                                                    <i class="icon icon-Star"></i>
-                                                    <i class="icon icon-Star"></i>
-                                                </div>
-                                                <div class="price-wrap">
-                                                    <span class="price-new text-primary fw-semibold">$14.99</span>
-                                                    <span class="price-old text-caption-01 cl-text-3">$19.99</span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div class="card-product product-style_stroke">
-                                            <div class="card-product_wrapper square">
-                                                <a href="product-detail.html" class="product-img">
-                                                    <img class="img-product" loading="lazy" width="330" height="330"
-                                                        src="assets/images/product/construction/product-6.jpg"
-                                                        alt="Product">
-                                                    <img class="img-hover" loading="lazy" width="330" height="330"
-                                                        src="assets/images/product/construction/product-6.jpg"
-                                                        alt="Product">
-                                                </a>
-                                                <ul class="product-action_list">
-                                                    <li class="wishlist">
-                                                        <a href="#;" class="hover-tooltip tooltip-left box-icon">
-                                                            <span class="icon icon-heart"></span>
-                                                            <span class="tooltip">Add to Wishlist</span>
+
+                                                    <ul class="product-action_list">
+                                                        <li class="wishlist">
+                                                            <a href="#;" class="hover-tooltip tooltip-left box-icon">
+                                                                <span class="icon icon-heart"></span>
+                                                                <span class="tooltip">В избранное</span>
+                                                            </a>
+                                                        </li>
+
+                                                        <li class="compare">
+                                                            <a href="#compare" data-bs-toggle="offcanvas"
+                                                                class="hover-tooltip tooltip-left box-icon">
+                                                                <span class="icon icon-ArrowsLeftRight"></span>
+                                                                <span class="tooltip">Сравнить</span>
+                                                            </a>
+                                                        </li>
+
+                                                        <li>
+                                                            <a href="#quickView" data-bs-toggle="offcanvas"
+                                                                class="hover-tooltip tooltip-left box-icon">
+                                                                <span class="icon icon-Eye"></span>
+                                                                <span class="tooltip">Быстрый просмотр</span>
+                                                            </a>
+                                                        </li>
+                                                    </ul>
+
+                                                    <div class="product-action_bot">
+                                                        <a href="#shoppingCart" data-bs-toggle="offcanvas"
+                                                            class="tf-btn btn-white small w-100">
+                                                            В корзину
                                                         </a>
-                                                    </li>
-                                                    <li class="compare">
-                                                        <a href="#compare" data-bs-toggle="offcanvas"
-                                                            class="hover-tooltip tooltip-left box-icon">
-                                                            <span class="icon icon-ArrowsLeftRight"></span>
-                                                            <span class="tooltip">Compare</span>
-                                                        </a>
-                                                    </li>
-                                                    <li>
-                                                        <a href="#quickView" data-bs-toggle="offcanvas"
-                                                            class="hover-tooltip tooltip-left box-icon">
-                                                            <span class="icon icon-Eye"></span>
-                                                            <span class="tooltip">Quick view</span>
-                                                        </a>
-                                                    </li>
-                                                </ul>
-                                                <ul class="product-badge_list">
-                                                    <li class="product-badge_item text-caption-01 sale">-25%</li>
-                                                </ul>
-                                                <div class="product-action_bot">
-                                                    <a href="#shoppingCart" data-bs-toggle="offcanvas"
-                                                        class="tf-btn btn-white small  w-100">
-                                                        Add to Cart
+                                                    </div>
+
+                                                </div>
+
+                                                <div class="card-product_info">
+
+                                                    <a href="#" class="name-product lh-24 fw-medium link-underline-text">
+                                                        Название товара №{{ $i }}
                                                     </a>
+
+                                                    <div class="star-wrap d-flex align-items-center">
+                                                        <i class="icon icon-Star"></i>
+                                                        <i class="icon icon-Star"></i>
+                                                        <i class="icon icon-Star"></i>
+                                                        <i class="icon icon-Star"></i>
+                                                        <i class="icon icon-Star"></i>
+                                                    </div>
+
+                                                    <div class="price-wrap">
+                                                        <span class="price-new text-primary fw-semibold">
+                                                            Цена по запросу
+                                                        </span>
+                                                    </div>
+
                                                 </div>
+
                                             </div>
-                                            <div class="card-product_info">
-                                                <a href="product-detail.html"
-                                                    class="name-product lh-24 fw-medium link-underline-text">
-                                                    General Purpose Gloves - Milwaukee® Impact
-                                                </a>
-                                                <div class="star-wrap d-flex align-items-center">
-                                                    <i class="icon icon-Star"></i>
-                                                    <i class="icon icon-Star"></i>
-                                                    <i class="icon icon-Star"></i>
-                                                    <i class="icon icon-Star"></i>
-                                                    <i class="icon icon-Star"></i>
-                                                </div>
-                                                <div class="price-wrap">
-                                                    <span class="price-new text-primary fw-semibold">$11.99</span>
-                                                    <span class="price-old text-caption-01 cl-text-3">$15.99</span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div class="card-product product-style_stroke">
-                                            <div class="card-product_wrapper square">
-                                                <a href="product-detail.html" class="product-img">
-                                                    <img class="img-product" loading="lazy" width="330" height="330"
-                                                        src="assets/images/product/construction/product-7.jpg"
-                                                        alt="Product">
-                                                    <img class="img-hover" loading="lazy" width="330" height="330"
-                                                        src="assets/images/product/construction/product-7.jpg"
-                                                        alt="Product">
-                                                </a>
-                                                <ul class="product-action_list">
-                                                    <li class="wishlist">
-                                                        <a href="#;" class="hover-tooltip tooltip-left box-icon">
-                                                            <span class="icon icon-heart"></span>
-                                                            <span class="tooltip">Add to Wishlist</span>
-                                                        </a>
-                                                    </li>
-                                                    <li class="compare">
-                                                        <a href="#compare" data-bs-toggle="offcanvas"
-                                                            class="hover-tooltip tooltip-left box-icon">
-                                                            <span class="icon icon-ArrowsLeftRight"></span>
-                                                            <span class="tooltip">Compare</span>
-                                                        </a>
-                                                    </li>
-                                                    <li>
-                                                        <a href="#quickView" data-bs-toggle="offcanvas"
-                                                            class="hover-tooltip tooltip-left box-icon">
-                                                            <span class="icon icon-Eye"></span>
-                                                            <span class="tooltip">Quick view</span>
-                                                        </a>
-                                                    </li>
-                                                </ul>
-                                                <ul class="product-badge_list">
-                                                    <li class="product-badge_item text-caption-01 sale">-25%</li>
-                                                </ul>
-                                                <div class="product-action_bot">
-                                                    <a href="#shoppingCart" data-bs-toggle="offcanvas"
-                                                        class="tf-btn btn-white small  w-100">
-                                                        Add to Cart
-                                                    </a>
-                                                </div>
-                                            </div>
-                                            <div class="card-product_info">
-                                                <a href="product-detail.html"
-                                                    class="name-product lh-24 fw-medium link-underline-text">
-                                                    Smart Helmet Will Boost Industrial Safety & Efficiency
-                                                </a>
-                                                <div class="star-wrap d-flex align-items-center">
-                                                    <i class="icon icon-Star"></i>
-                                                    <i class="icon icon-Star"></i>
-                                                    <i class="icon icon-Star"></i>
-                                                    <i class="icon icon-Star"></i>
-                                                    <i class="icon icon-Star"></i>
-                                                </div>
-                                                <div class="price-wrap">
-                                                    <span class="price-new text-primary fw-semibold">$16.50</span>
-                                                    <span class="price-old text-caption-01 cl-text-3">$21.99</span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div class="card-product product-style_stroke">
-                                            <div class="card-product_wrapper square">
-                                                <a href="product-detail.html" class="product-img">
-                                                    <img class="img-product" loading="lazy" width="330" height="330"
-                                                        src="assets/images/product/construction/product-8.jpg"
-                                                        alt="Product">
-                                                    <img class="img-hover" loading="lazy" width="330" height="330"
-                                                        src="assets/images/product/construction/product-8.jpg"
-                                                        alt="Product">
-                                                </a>
-                                                <ul class="product-action_list">
-                                                    <li class="wishlist">
-                                                        <a href="#;" class="hover-tooltip tooltip-left box-icon">
-                                                            <span class="icon icon-heart"></span>
-                                                            <span class="tooltip">Add to Wishlist</span>
-                                                        </a>
-                                                    </li>
-                                                    <li class="compare">
-                                                        <a href="#compare" data-bs-toggle="offcanvas"
-                                                            class="hover-tooltip tooltip-left box-icon">
-                                                            <span class="icon icon-ArrowsLeftRight"></span>
-                                                            <span class="tooltip">Compare</span>
-                                                        </a>
-                                                    </li>
-                                                    <li>
-                                                        <a href="#quickView" data-bs-toggle="offcanvas"
-                                                            class="hover-tooltip tooltip-left box-icon">
-                                                            <span class="icon icon-Eye"></span>
-                                                            <span class="tooltip">Quick view</span>
-                                                        </a>
-                                                    </li>
-                                                </ul>
-                                                <ul class="product-badge_list">
-                                                    <li class="product-badge_item text-caption-01 sale">-25%</li>
-                                                </ul>
-                                                <div class="product-action_bot">
-                                                    <a href="#shoppingCart" data-bs-toggle="offcanvas"
-                                                        class="tf-btn btn-white small  w-100">
-                                                        Add to Cart
-                                                    </a>
-                                                </div>
-                                            </div>
-                                            <div class="card-product_info">
-                                                <a href="product-detail.html"
-                                                    class="name-product lh-24 fw-medium link-underline-text">
-                                                    Tracer Complete Deep Hole Marking Kit
-                                                </a>
-                                                <div class="star-wrap d-flex align-items-center">
-                                                    <i class="icon icon-Star"></i>
-                                                    <i class="icon icon-Star"></i>
-                                                    <i class="icon icon-Star"></i>
-                                                    <i class="icon icon-Star"></i>
-                                                    <i class="icon icon-Star"></i>
-                                                </div>
-                                                <div class="price-wrap">
-                                                    <span class="price-new text-primary fw-semibold">$12.00</span>
-                                                    <span class="price-old text-caption-01 cl-text-3">$16.99</span>
-                                                </div>
-                                            </div>
-                                        </div>
+                                        @endfor
+
                                     </div>
                                 </div>
                             </div>
@@ -1769,128 +1419,86 @@
                         <div class="tab-pane" id="offers" role="tabpanel">
                             <div class="wrap-prd">
                                 <div class="col-prd-1">
-                                    <div class="banner-image-text type-abs style-18 mb-20">
-                                        <a href="shop-default.html" class="bn-image img-style">
+                                    <div class="banner-image-text type-abs style-18 v2 mb-20">
+                                        <a href="/akcii" class="bn-image img-style">
                                             <img loading="lazy" width="450" height="608"
-                                                src="assets/images/section/banner-54.jpg" alt="Image">
+                                                src="{{ asset('img/banners/banner-sale.jpg') }}"
+                                                alt="Акции и специальные предложения">
                                         </a>
+
                                         <div class="bn-content wow fadeInUp">
-                                            <a href="shop-default.html" class="title text-white h2 fw-medium link">
-                                                Discover Your <br class="d-xxl-block d-none"> New Green
+                                            <a href="/akcii" class="title text-white h3 fw-medium link mb-8">
+                                                Акции<br>и скидки
                                             </a>
-                                            <p class="desc text-caption-01 text-white mb-28">
-                                                Handpicked selections perfect for <br class="d-xxl-block d-none"> modern
-                                                homes
+
+                                            <p class="desc text-body-1 text-white mb-28">
+                                                Специальные предложения
+                                                и выгодные скидки
                                             </p>
-                                            <a href="shop-default.html" class="tf-btn btn-white animate-btn animate-dark">
-                                                Shop Now
+
+                                            <a href="/akcii" class="tf-btn btn-white hv-primary">
+                                                Смотреть акции
                                             </a>
                                         </div>
                                     </div>
                                     <div class="tf-grid-layout tf-col-2 gap-20">
+
                                         <div class="card-product product-style_stroke">
                                             <div class="card-product_wrapper square">
-                                                <a href="product-detail.html" class="product-img">
+                                                <a href="#" class="product-img">
                                                     <img class="img-product" loading="lazy" width="330" height="330"
-                                                        src="assets/images/product/construction/product-4.jpg"
-                                                        alt="Product">
+                                                        src="{{ asset('img/products/product-placeholder.jpg') }}"
+                                                        alt="Акционный товар">
+
                                                     <img class="img-hover" loading="lazy" width="330" height="330"
-                                                        src="assets/images/product/construction/product-4.jpg"
-                                                        alt="Product">
+                                                        src="{{ asset('img/products/product-placeholder.jpg') }}"
+                                                        alt="Акционный товар">
                                                 </a>
+
                                                 <ul class="product-action_list">
                                                     <li class="wishlist">
                                                         <a href="#;" class="hover-tooltip tooltip-left box-icon">
                                                             <span class="icon icon-heart"></span>
-                                                            <span class="tooltip">Add to Wishlist</span>
+                                                            <span class="tooltip">В избранное</span>
                                                         </a>
                                                     </li>
+
                                                     <li class="compare">
                                                         <a href="#compare" data-bs-toggle="offcanvas"
                                                             class="hover-tooltip tooltip-left box-icon">
                                                             <span class="icon icon-ArrowsLeftRight"></span>
-                                                            <span class="tooltip">Compare</span>
+                                                            <span class="tooltip">Сравнить</span>
                                                         </a>
                                                     </li>
+
                                                     <li>
                                                         <a href="#quickView" data-bs-toggle="offcanvas"
                                                             class="hover-tooltip tooltip-left box-icon">
                                                             <span class="icon icon-Eye"></span>
-                                                            <span class="tooltip">Quick view</span>
+                                                            <span class="tooltip">Быстрый просмотр</span>
                                                         </a>
                                                     </li>
                                                 </ul>
-                                                <div class="product-action_bot">
-                                                    <a href="#shoppingCart" data-bs-toggle="offcanvas"
-                                                        class="tf-btn btn-white small  w-100">
-                                                        Add to Cart
-                                                    </a>
-                                                </div>
-                                            </div>
-                                            <div class="card-product_info">
-                                                <a href="product-detail.html"
-                                                    class="name-product lh-24 fw-medium link-underline-text">
-                                                    M18 FUEL™ 7" / 9" Large Angle Grinder (Tool Only)
-                                                </a>
-                                                <div class="star-wrap d-flex align-items-center">
-                                                    <i class="icon icon-Star"></i>
-                                                    <i class="icon icon-Star"></i>
-                                                    <i class="icon icon-Star"></i>
-                                                    <i class="icon icon-Star"></i>
-                                                    <i class="icon icon-Star"></i>
-                                                </div>
-                                                <div class="price-wrap">
-                                                    <span class="price-new text-primary fw-semibold">$39.99</span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div class="card-product product-style_stroke">
-                                            <div class="card-product_wrapper square">
-                                                <a href="product-detail.html" class="product-img">
-                                                    <img class="img-product" loading="lazy" width="330" height="330"
-                                                        src="assets/images/product/construction/product-5.jpg"
-                                                        alt="Product">
-                                                    <img class="img-hover" loading="lazy" width="330" height="330"
-                                                        src="assets/images/product/construction/product-5.jpg"
-                                                        alt="Product">
-                                                </a>
-                                                <ul class="product-action_list">
-                                                    <li class="wishlist">
-                                                        <a href="#;" class="hover-tooltip tooltip-left box-icon">
-                                                            <span class="icon icon-heart"></span>
-                                                            <span class="tooltip">Add to Wishlist</span>
-                                                        </a>
-                                                    </li>
-                                                    <li class="compare">
-                                                        <a href="#compare" data-bs-toggle="offcanvas"
-                                                            class="hover-tooltip tooltip-left box-icon">
-                                                            <span class="icon icon-ArrowsLeftRight"></span>
-                                                            <span class="tooltip">Compare</span>
-                                                        </a>
-                                                    </li>
-                                                    <li>
-                                                        <a href="#quickView" data-bs-toggle="offcanvas"
-                                                            class="hover-tooltip tooltip-left box-icon">
-                                                            <span class="icon icon-Eye"></span>
-                                                            <span class="tooltip">Quick view</span>
-                                                        </a>
-                                                    </li>
-                                                </ul>
+
                                                 <ul class="product-badge_list">
-                                                    <li class="product-badge_item text-caption-01 sale">-25%</li>
+                                                    <li class="product-badge_item text-caption-01 sale">
+                                                        -20%
+                                                    </li>
                                                 </ul>
+
                                                 <div class="product-action_bot">
                                                     <a href="#shoppingCart" data-bs-toggle="offcanvas"
-                                                        class="tf-btn btn-white small  w-100">
-                                                        Add to Cart
+                                                        class="tf-btn btn-white small w-100">
+                                                        В корзину
                                                     </a>
                                                 </div>
                                             </div>
+
                                             <div class="card-product_info">
-                                                <a href="product-detail.html"
-                                                    class="name-product lh-24 fw-medium link-underline-text">
-                                                    M18 FUEL™ 7" / 9" Large Angle Grinder (Tool Only)
+                                                <a href="#" class="name-product lh-24 fw-medium link-underline-text">
+                                                    Акционный товар №1
                                                 </a>
+
                                                 <div class="star-wrap d-flex align-items-center">
                                                     <i class="icon icon-Star"></i>
                                                     <i class="icon icon-Star"></i>
@@ -1898,375 +1506,172 @@
                                                     <i class="icon icon-Star"></i>
                                                     <i class="icon icon-Star"></i>
                                                 </div>
+
                                                 <div class="price-wrap">
-                                                    <span class="price-new text-primary fw-semibold">$44.99</span>
-                                                    <span class="price-old text-caption-01 cl-text-3">$54.99</span>
+                                                    <span class="price-new text-primary fw-semibold">
+                                                        Цена по запросу
+                                                    </span>
                                                 </div>
                                             </div>
                                         </div>
+
+                                        <div class="card-product product-style_stroke">
+                                            <div class="card-product_wrapper square">
+                                                <a href="#" class="product-img">
+                                                    <img class="img-product" loading="lazy" width="330" height="330"
+                                                        src="{{ asset('img/products/product-placeholder.jpg') }}"
+                                                        alt="Акционный товар">
+
+                                                    <img class="img-hover" loading="lazy" width="330" height="330"
+                                                        src="{{ asset('img/products/product-placeholder.jpg') }}"
+                                                        alt="Акционный товар">
+                                                </a>
+
+                                                <ul class="product-action_list">
+                                                    <li class="wishlist">
+                                                        <a href="#;" class="hover-tooltip tooltip-left box-icon">
+                                                            <span class="icon icon-heart"></span>
+                                                            <span class="tooltip">В избранное</span>
+                                                        </a>
+                                                    </li>
+
+                                                    <li class="compare">
+                                                        <a href="#compare" data-bs-toggle="offcanvas"
+                                                            class="hover-tooltip tooltip-left box-icon">
+                                                            <span class="icon icon-ArrowsLeftRight"></span>
+                                                            <span class="tooltip">Сравнить</span>
+                                                        </a>
+                                                    </li>
+
+                                                    <li>
+                                                        <a href="#quickView" data-bs-toggle="offcanvas"
+                                                            class="hover-tooltip tooltip-left box-icon">
+                                                            <span class="icon icon-Eye"></span>
+                                                            <span class="tooltip">Быстрый просмотр</span>
+                                                        </a>
+                                                    </li>
+                                                </ul>
+
+                                                <ul class="product-badge_list">
+                                                    <li class="product-badge_item text-caption-01 sale">
+                                                        -30%
+                                                    </li>
+                                                </ul>
+
+                                                <div class="product-action_bot">
+                                                    <a href="#shoppingCart" data-bs-toggle="offcanvas"
+                                                        class="tf-btn btn-white small w-100">
+                                                        В корзину
+                                                    </a>
+                                                </div>
+                                            </div>
+
+                                            <div class="card-product_info">
+                                                <a href="#" class="name-product lh-24 fw-medium link-underline-text">
+                                                    Акционный товар №2
+                                                </a>
+
+                                                <div class="star-wrap d-flex align-items-center">
+                                                    <i class="icon icon-Star"></i>
+                                                    <i class="icon icon-Star"></i>
+                                                    <i class="icon icon-Star"></i>
+                                                    <i class="icon icon-Star"></i>
+                                                    <i class="icon icon-Star"></i>
+                                                </div>
+
+                                                <div class="price-wrap">
+                                                    <span class="price-new text-primary fw-semibold">
+                                                        Цена по запросу
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        </div>
+
                                     </div>
                                 </div>
                                 <div class="col-prd-2">
                                     <div class="tf-grid-layout tf-col-2 lg-col-3 gap-20">
-                                        <div class="card-product product-style_stroke">
-                                            <div class="card-product_wrapper square">
-                                                <a href="product-detail.html" class="product-img">
-                                                    <img class="img-product" loading="lazy" width="330" height="330"
-                                                        src="assets/images/product/construction/product-1.jpg"
-                                                        alt="Product">
-                                                    <img class="img-hover" loading="lazy" width="330" height="330"
-                                                        src="assets/images/product/construction/product-1.jpg"
-                                                        alt="Product">
-                                                </a>
-                                                <ul class="product-action_list">
-                                                    <li class="wishlist">
-                                                        <a href="#;" class="hover-tooltip tooltip-left box-icon">
-                                                            <span class="icon icon-heart"></span>
-                                                            <span class="tooltip">Add to Wishlist</span>
-                                                        </a>
-                                                    </li>
-                                                    <li class="compare">
-                                                        <a href="#compare" data-bs-toggle="offcanvas"
-                                                            class="hover-tooltip tooltip-left box-icon">
-                                                            <span class="icon icon-ArrowsLeftRight"></span>
-                                                            <span class="tooltip">Compare</span>
-                                                        </a>
-                                                    </li>
-                                                    <li>
-                                                        <a href="#quickView" data-bs-toggle="offcanvas"
-                                                            class="hover-tooltip tooltip-left box-icon">
-                                                            <span class="icon icon-Eye"></span>
-                                                            <span class="tooltip">Quick view</span>
-                                                        </a>
-                                                    </li>
-                                                </ul>
-                                                <ul class="product-badge_list">
-                                                    <li class="product-badge_item text-caption-01 sale">-25%</li>
-                                                </ul>
-                                                <div class="product-action_bot">
-                                                    <a href="#shoppingCart" data-bs-toggle="offcanvas"
-                                                        class="tf-btn btn-white small  w-100">
-                                                        Add to Cart
+
+                                        @for ($i = 1; $i <= 6; $i++)
+                                            <div class="card-product product-style_stroke">
+
+                                                <div class="card-product_wrapper square">
+
+                                                    <a href="#" class="product-img">
+                                                        <img class="img-product" loading="lazy" width="330" height="330"
+                                                            src="{{ asset('img/products/product-placeholder.jpg') }}"
+                                                            alt="Акционный товар">
+
+                                                        <img class="img-hover" loading="lazy" width="330" height="330"
+                                                            src="{{ asset('img/products/product-placeholder.jpg') }}"
+                                                            alt="Акционный товар">
                                                     </a>
-                                                </div>
-                                            </div>
-                                            <div class="card-product_info">
-                                                <a href="product-detail.html"
-                                                    class="name-product lh-24 fw-medium link-underline-text">
-                                                    Milwaukee M12 FUEL 1/2inch Hammer Drill (Bare Tool)
-                                                </a>
-                                                <div class="star-wrap d-flex align-items-center">
-                                                    <i class="icon icon-Star"></i>
-                                                    <i class="icon icon-Star"></i>
-                                                    <i class="icon icon-Star"></i>
-                                                    <i class="icon icon-Star"></i>
-                                                    <i class="icon icon-Star"></i>
-                                                </div>
-                                                <div class="price-wrap">
-                                                    <span class="price-new text-primary fw-semibold">$35.99</span>
-                                                    <span class="price-old text-caption-01 cl-text-3">$49.99</span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div class="card-product product-style_stroke">
-                                            <div class="card-product_wrapper square">
-                                                <a href="product-detail.html" class="product-img">
-                                                    <img class="img-product" loading="lazy" width="330" height="330"
-                                                        src="assets/images/product/construction/product-2.jpg"
-                                                        alt="Product">
-                                                    <img class="img-hover" loading="lazy" width="330" height="330"
-                                                        src="assets/images/product/construction/product-2.jpg"
-                                                        alt="Product">
-                                                </a>
-                                                <ul class="product-action_list">
-                                                    <li class="wishlist">
-                                                        <a href="#;" class="hover-tooltip tooltip-left box-icon">
-                                                            <span class="icon icon-heart"></span>
-                                                            <span class="tooltip">Add to Wishlist</span>
+
+                                                    <ul class="product-action_list">
+                                                        <li class="wishlist">
+                                                            <a href="#;" class="hover-tooltip tooltip-left box-icon">
+                                                                <span class="icon icon-heart"></span>
+                                                                <span class="tooltip">В избранное</span>
+                                                            </a>
+                                                        </li>
+
+                                                        <li class="compare">
+                                                            <a href="#compare" data-bs-toggle="offcanvas"
+                                                                class="hover-tooltip tooltip-left box-icon">
+                                                                <span class="icon icon-ArrowsLeftRight"></span>
+                                                                <span class="tooltip">Сравнить</span>
+                                                            </a>
+                                                        </li>
+
+                                                        <li>
+                                                            <a href="#quickView" data-bs-toggle="offcanvas"
+                                                                class="hover-tooltip tooltip-left box-icon">
+                                                                <span class="icon icon-Eye"></span>
+                                                                <span class="tooltip">Быстрый просмотр</span>
+                                                            </a>
+                                                        </li>
+                                                    </ul>
+
+                                                    <ul class="product-badge_list">
+                                                        <li class="product-badge_item text-caption-01 sale">
+                                                            -{{ rand(10, 40) }}%
+                                                        </li>
+                                                    </ul>
+
+                                                    <div class="product-action_bot">
+                                                        <a href="#shoppingCart" data-bs-toggle="offcanvas"
+                                                            class="tf-btn btn-white small w-100">
+                                                            В корзину
                                                         </a>
-                                                    </li>
-                                                    <li class="compare">
-                                                        <a href="#compare" data-bs-toggle="offcanvas"
-                                                            class="hover-tooltip tooltip-left box-icon">
-                                                            <span class="icon icon-ArrowsLeftRight"></span>
-                                                            <span class="tooltip">Compare</span>
-                                                        </a>
-                                                    </li>
-                                                    <li>
-                                                        <a href="#quickView" data-bs-toggle="offcanvas"
-                                                            class="hover-tooltip tooltip-left box-icon">
-                                                            <span class="icon icon-Eye"></span>
-                                                            <span class="tooltip">Quick view</span>
-                                                        </a>
-                                                    </li>
-                                                </ul>
-                                                <ul class="product-badge_list">
-                                                    <li class="product-badge_item text-caption-01 new">NEW</li>
-                                                </ul>
-                                                <div class="product-action_bot">
-                                                    <a href="#shoppingCart" data-bs-toggle="offcanvas"
-                                                        class="tf-btn btn-white small  w-100">
-                                                        Add to Cart
+                                                    </div>
+
+                                                </div>
+
+                                                <div class="card-product_info">
+
+                                                    <a href="#" class="name-product lh-24 fw-medium link-underline-text">
+                                                        Акционный товар №{{ $i }}
                                                     </a>
+
+                                                    <div class="star-wrap d-flex align-items-center">
+                                                        <i class="icon icon-Star"></i>
+                                                        <i class="icon icon-Star"></i>
+                                                        <i class="icon icon-Star"></i>
+                                                        <i class="icon icon-Star"></i>
+                                                        <i class="icon icon-Star"></i>
+                                                    </div>
+
+                                                    <div class="price-wrap">
+                                                        <span class="price-new text-primary fw-semibold">
+                                                            Цена по запросу
+                                                        </span>
+                                                    </div>
+
                                                 </div>
+
                                             </div>
-                                            <div class="card-product_info">
-                                                <a href="product-detail.html"
-                                                    class="name-product lh-24 fw-medium link-underline-text">
-                                                    Klein Tools Digital Angle Gauge/Level
-                                                </a>
-                                                <div class="star-wrap d-flex align-items-center">
-                                                    <i class="icon icon-Star"></i>
-                                                    <i class="icon icon-Star"></i>
-                                                    <i class="icon icon-Star"></i>
-                                                    <i class="icon icon-Star"></i>
-                                                    <i class="icon icon-Star"></i>
-                                                </div>
-                                                <div class="price-wrap">
-                                                    <span class="price-new text-primary fw-semibold">$20.00</span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div class="card-product product-style_stroke">
-                                            <div class="card-product_wrapper square">
-                                                <a href="product-detail.html" class="product-img">
-                                                    <img class="img-product" loading="lazy" width="330" height="330"
-                                                        src="assets/images/product/construction/product-3.jpg"
-                                                        alt="Product">
-                                                    <img class="img-hover" loading="lazy" width="330" height="330"
-                                                        src="assets/images/product/construction/product-3.jpg"
-                                                        alt="Product">
-                                                </a>
-                                                <ul class="product-action_list">
-                                                    <li class="wishlist">
-                                                        <a href="#;" class="hover-tooltip tooltip-left box-icon">
-                                                            <span class="icon icon-heart"></span>
-                                                            <span class="tooltip">Add to Wishlist</span>
-                                                        </a>
-                                                    </li>
-                                                    <li class="compare">
-                                                        <a href="#compare" data-bs-toggle="offcanvas"
-                                                            class="hover-tooltip tooltip-left box-icon">
-                                                            <span class="icon icon-ArrowsLeftRight"></span>
-                                                            <span class="tooltip">Compare</span>
-                                                        </a>
-                                                    </li>
-                                                    <li>
-                                                        <a href="#quickView" data-bs-toggle="offcanvas"
-                                                            class="hover-tooltip tooltip-left box-icon">
-                                                            <span class="icon icon-Eye"></span>
-                                                            <span class="tooltip">Quick view</span>
-                                                        </a>
-                                                    </li>
-                                                </ul>
-                                                <ul class="product-badge_list">
-                                                    <li class="product-badge_item text-caption-01 sale">-25%</li>
-                                                </ul>
-                                                <div class="product-action_bot">
-                                                    <a href="#shoppingCart" data-bs-toggle="offcanvas"
-                                                        class="tf-btn btn-white small  w-100">
-                                                        Add to Cart
-                                                    </a>
-                                                </div>
-                                            </div>
-                                            <div class="card-product_info">
-                                                <a href="product-detail.html"
-                                                    class="name-product lh-24 fw-medium link-underline-text">
-                                                    ProFlex Impact Driver Bit Set, 40-Piece - 33801 | Klein Tools
-                                                </a>
-                                                <div class="star-wrap d-flex align-items-center">
-                                                    <i class="icon icon-Star"></i>
-                                                    <i class="icon icon-Star"></i>
-                                                    <i class="icon icon-Star"></i>
-                                                    <i class="icon icon-Star"></i>
-                                                    <i class="icon icon-Star"></i>
-                                                </div>
-                                                <div class="price-wrap">
-                                                    <span class="price-new text-primary fw-semibold">$14.99</span>
-                                                    <span class="price-old text-caption-01 cl-text-3">$19.99</span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div class="card-product product-style_stroke">
-                                            <div class="card-product_wrapper square">
-                                                <a href="product-detail.html" class="product-img">
-                                                    <img class="img-product" loading="lazy" width="330" height="330"
-                                                        src="assets/images/product/construction/product-6.jpg"
-                                                        alt="Product">
-                                                    <img class="img-hover" loading="lazy" width="330" height="330"
-                                                        src="assets/images/product/construction/product-6.jpg"
-                                                        alt="Product">
-                                                </a>
-                                                <ul class="product-action_list">
-                                                    <li class="wishlist">
-                                                        <a href="#;" class="hover-tooltip tooltip-left box-icon">
-                                                            <span class="icon icon-heart"></span>
-                                                            <span class="tooltip">Add to Wishlist</span>
-                                                        </a>
-                                                    </li>
-                                                    <li class="compare">
-                                                        <a href="#compare" data-bs-toggle="offcanvas"
-                                                            class="hover-tooltip tooltip-left box-icon">
-                                                            <span class="icon icon-ArrowsLeftRight"></span>
-                                                            <span class="tooltip">Compare</span>
-                                                        </a>
-                                                    </li>
-                                                    <li>
-                                                        <a href="#quickView" data-bs-toggle="offcanvas"
-                                                            class="hover-tooltip tooltip-left box-icon">
-                                                            <span class="icon icon-Eye"></span>
-                                                            <span class="tooltip">Quick view</span>
-                                                        </a>
-                                                    </li>
-                                                </ul>
-                                                <ul class="product-badge_list">
-                                                    <li class="product-badge_item text-caption-01 sale">-25%</li>
-                                                </ul>
-                                                <div class="product-action_bot">
-                                                    <a href="#shoppingCart" data-bs-toggle="offcanvas"
-                                                        class="tf-btn btn-white small  w-100">
-                                                        Add to Cart
-                                                    </a>
-                                                </div>
-                                            </div>
-                                            <div class="card-product_info">
-                                                <a href="product-detail.html"
-                                                    class="name-product lh-24 fw-medium link-underline-text">
-                                                    General Purpose Gloves - Milwaukee® Impact
-                                                </a>
-                                                <div class="star-wrap d-flex align-items-center">
-                                                    <i class="icon icon-Star"></i>
-                                                    <i class="icon icon-Star"></i>
-                                                    <i class="icon icon-Star"></i>
-                                                    <i class="icon icon-Star"></i>
-                                                    <i class="icon icon-Star"></i>
-                                                </div>
-                                                <div class="price-wrap">
-                                                    <span class="price-new text-primary fw-semibold">$11.99</span>
-                                                    <span class="price-old text-caption-01 cl-text-3">$15.99</span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div class="card-product product-style_stroke">
-                                            <div class="card-product_wrapper square">
-                                                <a href="product-detail.html" class="product-img">
-                                                    <img class="img-product" loading="lazy" width="330" height="330"
-                                                        src="assets/images/product/construction/product-7.jpg"
-                                                        alt="Product">
-                                                    <img class="img-hover" loading="lazy" width="330" height="330"
-                                                        src="assets/images/product/construction/product-7.jpg"
-                                                        alt="Product">
-                                                </a>
-                                                <ul class="product-action_list">
-                                                    <li class="wishlist">
-                                                        <a href="#;" class="hover-tooltip tooltip-left box-icon">
-                                                            <span class="icon icon-heart"></span>
-                                                            <span class="tooltip">Add to Wishlist</span>
-                                                        </a>
-                                                    </li>
-                                                    <li class="compare">
-                                                        <a href="#compare" data-bs-toggle="offcanvas"
-                                                            class="hover-tooltip tooltip-left box-icon">
-                                                            <span class="icon icon-ArrowsLeftRight"></span>
-                                                            <span class="tooltip">Compare</span>
-                                                        </a>
-                                                    </li>
-                                                    <li>
-                                                        <a href="#quickView" data-bs-toggle="offcanvas"
-                                                            class="hover-tooltip tooltip-left box-icon">
-                                                            <span class="icon icon-Eye"></span>
-                                                            <span class="tooltip">Quick view</span>
-                                                        </a>
-                                                    </li>
-                                                </ul>
-                                                <ul class="product-badge_list">
-                                                    <li class="product-badge_item text-caption-01 sale">-25%</li>
-                                                </ul>
-                                                <div class="product-action_bot">
-                                                    <a href="#shoppingCart" data-bs-toggle="offcanvas"
-                                                        class="tf-btn btn-white small  w-100">
-                                                        Add to Cart
-                                                    </a>
-                                                </div>
-                                            </div>
-                                            <div class="card-product_info">
-                                                <a href="product-detail.html"
-                                                    class="name-product lh-24 fw-medium link-underline-text">
-                                                    Smart Helmet Will Boost Industrial Safety & Efficiency
-                                                </a>
-                                                <div class="star-wrap d-flex align-items-center">
-                                                    <i class="icon icon-Star"></i>
-                                                    <i class="icon icon-Star"></i>
-                                                    <i class="icon icon-Star"></i>
-                                                    <i class="icon icon-Star"></i>
-                                                    <i class="icon icon-Star"></i>
-                                                </div>
-                                                <div class="price-wrap">
-                                                    <span class="price-new text-primary fw-semibold">$16.50</span>
-                                                    <span class="price-old text-caption-01 cl-text-3">$21.99</span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div class="card-product product-style_stroke">
-                                            <div class="card-product_wrapper square">
-                                                <a href="product-detail.html" class="product-img">
-                                                    <img class="img-product" loading="lazy" width="330" height="330"
-                                                        src="assets/images/product/construction/product-8.jpg"
-                                                        alt="Product">
-                                                    <img class="img-hover" loading="lazy" width="330" height="330"
-                                                        src="assets/images/product/construction/product-8.jpg"
-                                                        alt="Product">
-                                                </a>
-                                                <ul class="product-action_list">
-                                                    <li class="wishlist">
-                                                        <a href="#;" class="hover-tooltip tooltip-left box-icon">
-                                                            <span class="icon icon-heart"></span>
-                                                            <span class="tooltip">Add to Wishlist</span>
-                                                        </a>
-                                                    </li>
-                                                    <li class="compare">
-                                                        <a href="#compare" data-bs-toggle="offcanvas"
-                                                            class="hover-tooltip tooltip-left box-icon">
-                                                            <span class="icon icon-ArrowsLeftRight"></span>
-                                                            <span class="tooltip">Compare</span>
-                                                        </a>
-                                                    </li>
-                                                    <li>
-                                                        <a href="#quickView" data-bs-toggle="offcanvas"
-                                                            class="hover-tooltip tooltip-left box-icon">
-                                                            <span class="icon icon-Eye"></span>
-                                                            <span class="tooltip">Quick view</span>
-                                                        </a>
-                                                    </li>
-                                                </ul>
-                                                <ul class="product-badge_list">
-                                                    <li class="product-badge_item text-caption-01 sale">-25%</li>
-                                                </ul>
-                                                <div class="product-action_bot">
-                                                    <a href="#shoppingCart" data-bs-toggle="offcanvas"
-                                                        class="tf-btn btn-white small  w-100">
-                                                        Add to Cart
-                                                    </a>
-                                                </div>
-                                            </div>
-                                            <div class="card-product_info">
-                                                <a href="product-detail.html"
-                                                    class="name-product lh-24 fw-medium link-underline-text">
-                                                    Tracer Complete Deep Hole Marking Kit
-                                                </a>
-                                                <div class="star-wrap d-flex align-items-center">
-                                                    <i class="icon icon-Star"></i>
-                                                    <i class="icon icon-Star"></i>
-                                                    <i class="icon icon-Star"></i>
-                                                    <i class="icon icon-Star"></i>
-                                                    <i class="icon icon-Star"></i>
-                                                </div>
-                                                <div class="price-wrap">
-                                                    <span class="price-new text-primary fw-semibold">$12.00</span>
-                                                    <span class="price-old text-caption-01 cl-text-3">$16.99</span>
-                                                </div>
-                                            </div>
-                                        </div>
+                                        @endfor
+
                                     </div>
                                 </div>
                             </div>
@@ -2275,2679 +1680,388 @@
                 </div>
             </section>
             <!-- /Top Pick -->
-            <!-- Section Arrival -->
-            <section class="section-thumbs-arrival style-2  flat-spacing">
-                <div class="container-full">
-                    <div class="tf-grid-layout xl-col-3 md-col-2 gap-15">
-                        <div class="content order-1 order-md-0">
-                            <div class="heading">
-                                <p class="h6">BEST SELL OF THE WEEK</p>
-                                <h1>The Future Of Construction</h1>
-                                <p class="text-body-1 cl-text-2">Beautiful foliage, crafted planters, and must-have tools
-                                    that help you build a relaxing green sanctuary indoors.</p>
-                            </div>
-                            <div class="thumbs-prd">
-                                <div class="prd-image">
-                                    <img loading="lazy" width="100" height="100"
-                                        src="assets/images/product/construction/product-arrival.jpg" alt="Image">
-                                </div>
-                                <div class="prd-info">
-                                    <a href="product-detail.html" class="info_name text-body-1 link">
-                                        Boat neck sweater
-                                    </a>
-                                    <div class="info_price">
-                                        <div class="price-wrap">
-                                            <span class="price-new font-outfit ">$29,99</span>
-                                            <span class="price-old text-caption-01 cl-text-2 font-outfit">$39.99</span>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="prd-action">
-                                    <a href="#shoppingCart" data-bs-toggle="offcanvas"
-                                        class="hover-tooltip tooltip-left btn-action">
-                                        <i class="icon icon-Handbag"></i>
-                                        <span class="tooltip">Add to Cart</span>
-                                    </a>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="hover-img4">
-                            <div class="img-style4 w-100 h-100">
-                                <img class="img-cove" width="580" height="580" loading="lazy" decoding="async"
-                                    src="assets/images/section/banner-55.jpg" alt="banner">
-                            </div>
-                        </div>
-                        <div class="hover-img4 d-none d-xl-block">
-                            <div class="img-style4 w-100 h-100">
-                                <img class="img-cove" width="580" height="580" loading="lazy" decoding="async"
-                                    src="assets/images/section/banner-56.jpg" alt="banner">
-                            </div>
-                        </div>
-                    </div>
+{{-- Секция "Почему KOTLOV" --}}
+{{-- Секция "Почему KOTLOV" --}}
+<section class="flat-spacing">
+    <div class="container">
+        <div class="row align-items-center g-5">
+
+            <div class="col-lg-5">
+                <div class="rounded-20 overflow-hidden">
+                    <img class="w-100 d-block" width="580" height="725"
+                        loading="lazy" decoding="async"
+                        src="{{ asset('img/about/why-kotlov.jpg') }}"
+                        alt="Монтаж отопительного оборудования KOTLOV.BY"
+                        style="object-fit: cover; aspect-ratio: 4/5;">
                 </div>
-            </section>
-            <!-- /Section Arrival -->
-            <!-- Top Pick -->
-            <section class="">
-                <div class="container">
-                    <div class="sect-heading type-2 text-center wow fadeInUp">
-                        <h3 class="s-title">
-                            Top Picks This Week
-                        </h3>
-                        <p class="s-desc text-body-1 cl-text-2">
-                            Weekly Favorites Selected With Care To Support Your Wellbeing.
+            </div>
+
+            <div class="col-lg-7">
+                <div class="ps-lg-5">
+
+                    <div class="wow fadeInUp mb-40">
+                        <p class="text-caption-01 cl-text-2 mb-8 fw-semibold"
+                            style="letter-spacing: 0.08em; text-transform: uppercase;">
+                            KOTLOV.BY — МАРКЕТПЛЕЙС ОТОПЛЕНИЯ
+                        </p>
+                        <h2 class="mb-12">Почему выбирают нас</h2>
+                        <p class="text-body-1 cl-text-2">
+                            Более 14 лет помогаем белорусским семьям и бизнесу с отоплением.
+                            Не просто продаём — подбираем, доставляем и монтируем.
                         </p>
                     </div>
-                    <div dir="ltr" class="swiper tf-swiper wrap-sw-over" data-preview="4" data-tablet="3" data-mobile="2"
-                        data-space-lg="30" data-space-md="20" data-space="10" data-pagination-sm="1" data-pagination-md="3"
-                        data-pagination-lg="4">
-                        <div class="swiper-wrapper">
-                            <!-- slide 1 -->
-                            <div class="swiper-slide">
-                                <div class="card-product product-style_stroke">
-                                    <div class="card-product_wrapper square">
-                                        <a href="product-detail.html" class="product-img">
-                                            <img class="img-product" loading="lazy" width="330" height="330"
-                                                src="assets/images/product/construction/product-9.jpg" alt="Product">
-                                            <img class="img-hover" loading="lazy" width="330" height="330"
-                                                src="assets/images/product/construction/product-9.jpg" alt="Product">
-                                        </a>
-                                        <ul class="product-action_list">
-                                            <li class="wishlist">
-                                                <a href="#;" class="hover-tooltip tooltip-left box-icon">
-                                                    <span class="icon icon-heart"></span>
-                                                    <span class="tooltip">Add to Wishlist</span>
-                                                </a>
-                                            </li>
-                                            <li class="compare">
-                                                <a href="#compare" data-bs-toggle="offcanvas"
-                                                    class="hover-tooltip tooltip-left box-icon">
-                                                    <span class="icon icon-ArrowsLeftRight"></span>
-                                                    <span class="tooltip">Compare</span>
-                                                </a>
-                                            </li>
-                                            <li>
-                                                <a href="#quickView" data-bs-toggle="offcanvas"
-                                                    class="hover-tooltip tooltip-left box-icon">
-                                                    <span class="icon icon-Eye"></span>
-                                                    <span class="tooltip">Quick view</span>
-                                                </a>
-                                            </li>
-                                        </ul>
-                                        <div class="product-action_bot">
-                                            <a href="#shoppingCart" data-bs-toggle="offcanvas"
-                                                class="tf-btn btn-white small  w-100">
-                                                Add to Cart
-                                            </a>
-                                        </div>
-                                    </div>
-                                    <div class="card-product_info">
-                                        <a href="product-detail.html"
-                                            class="name-product lh-24 fw-medium link-underline-text">
-                                            Makita A-94786 12-Inch 40 Tooth Ultra Coated Mitersaw Blade.
-                                        </a>
-                                        <div class="star-wrap d-flex align-items-center">
-                                            <i class="icon icon-Star"></i>
-                                            <i class="icon icon-Star"></i>
-                                            <i class="icon icon-Star"></i>
-                                            <i class="icon icon-Star"></i>
-                                            <i class="icon icon-Star"></i>
-                                        </div>
-                                        <div class="price-wrap">
-                                            <span class="price-new text-primary fw-semibold">$19.99</span>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            <!-- slide 2 -->
-                            <div class="swiper-slide">
-                                <div class="card-product product-style_stroke">
-                                    <div class="card-product_wrapper square">
-                                        <a href="product-detail.html" class="product-img">
-                                            <img class="img-product" loading="lazy" width="330" height="330"
-                                                src="assets/images/product/construction/product-10.jpg" alt="Product">
-                                            <img class="img-hover" loading="lazy" width="330" height="330"
-                                                src="assets/images/product/construction/product-10.jpg" alt="Product">
-                                        </a>
-                                        <ul class="product-action_list">
-                                            <li class="wishlist">
-                                                <a href="#;" class="hover-tooltip tooltip-left box-icon">
-                                                    <span class="icon icon-heart"></span>
-                                                    <span class="tooltip">Add to Wishlist</span>
-                                                </a>
-                                            </li>
-                                            <li class="compare">
-                                                <a href="#compare" data-bs-toggle="offcanvas"
-                                                    class="hover-tooltip tooltip-left box-icon">
-                                                    <span class="icon icon-ArrowsLeftRight"></span>
-                                                    <span class="tooltip">Compare</span>
-                                                </a>
-                                            </li>
-                                            <li>
-                                                <a href="#quickView" data-bs-toggle="offcanvas"
-                                                    class="hover-tooltip tooltip-left box-icon">
-                                                    <span class="icon icon-Eye"></span>
-                                                    <span class="tooltip">Quick view</span>
-                                                </a>
-                                            </li>
-                                        </ul>
-                                        <ul class="product-badge_list">
-                                            <li class="product-badge_item text-caption-01 sale">-25%</li>
-                                        </ul>
-                                        <div class="product-action_bot">
-                                            <a href="#shoppingCart" data-bs-toggle="offcanvas"
-                                                class="tf-btn btn-white small  w-100">
-                                                Add to Cart
-                                            </a>
-                                        </div>
-                                        <div class="product-marquee_sale">
-                                            <div class="marquee-wrapper">
-                                                <div class="initial-child-container">
-                                                    <!-- 1 -->
-                                                    <div class="marquee-child-item">
-                                                        HOT SALE 25% OFF
-                                                    </div>
-                                                    <i class="icon icon-Star2"></i>
-                                                    <!-- 2 -->
-                                                    <div class="marquee-child-item">
-                                                        HOT SALE 25% OFF
-                                                    </div>
-                                                    <i class="icon icon-Star2"></i>
-                                                    <!-- 3 -->
-                                                    <div class="marquee-child-item">
-                                                        HOT SALE 25% OFF
-                                                    </div>
-                                                    <i class="icon icon-Star2"></i>
-                                                    <!-- 4 -->
-                                                    <div class="marquee-child-item">
-                                                        HOT SALE 25% OFF
-                                                    </div>
-                                                    <i class="icon icon-Star2"></i>
-                                                    <!-- 5 -->
-                                                    <div class="marquee-child-item">
-                                                        HOT SALE 25% OFF
-                                                    </div>
-                                                    <i class="icon icon-Star2"></i>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="card-product_info">
-                                        <a href="product-detail.html"
-                                            class="name-product lh-24 fw-medium link-underline-text">
-                                            Cancelling Hearing Protection Earmuffs For Slotted Hard Hats.
-                                        </a>
-                                        <div class="star-wrap d-flex align-items-center">
-                                            <i class="icon icon-Star"></i>
-                                            <i class="icon icon-Star"></i>
-                                            <i class="icon icon-Star"></i>
-                                            <i class="icon icon-Star"></i>
-                                            <i class="icon icon-Star"></i>
-                                        </div>
-                                        <div class="price-wrap">
-                                            <span class="price-new text-primary fw-semibold">$44.99</span>
-                                            <span class="price-old text-caption-01 cl-text-3">$59.99</span>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            <!-- slide 3 -->
-                            <div class="swiper-slide">
-                                <div class="card-product product-style_stroke">
-                                    <div class="card-product_wrapper square">
-                                        <a href="product-detail.html" class="product-img">
-                                            <img class="img-product" loading="lazy" width="330" height="330"
-                                                src="assets/images/product/construction/product-2.jpg" alt="Product">
-                                            <img class="img-hover" loading="lazy" width="330" height="330"
-                                                src="assets/images/product/construction/product-2.jpg" alt="Product">
-                                        </a>
-                                        <ul class="product-action_list">
-                                            <li class="wishlist">
-                                                <a href="#;" class="hover-tooltip tooltip-left box-icon">
-                                                    <span class="icon icon-heart"></span>
-                                                    <span class="tooltip">Add to Wishlist</span>
-                                                </a>
-                                            </li>
-                                            <li class="compare">
-                                                <a href="#compare" data-bs-toggle="offcanvas"
-                                                    class="hover-tooltip tooltip-left box-icon">
-                                                    <span class="icon icon-ArrowsLeftRight"></span>
-                                                    <span class="tooltip">Compare</span>
-                                                </a>
-                                            </li>
-                                            <li>
-                                                <a href="#quickView" data-bs-toggle="offcanvas"
-                                                    class="hover-tooltip tooltip-left box-icon">
-                                                    <span class="icon icon-Eye"></span>
-                                                    <span class="tooltip">Quick view</span>
-                                                </a>
-                                            </li>
-                                        </ul>
-                                        <ul class="product-badge_list">
-                                            <li class="product-badge_item text-caption-01 new">NEW</li>
-                                        </ul>
-                                        <div class="product-action_bot">
-                                            <a href="#shoppingCart" data-bs-toggle="offcanvas"
-                                                class="tf-btn btn-white small  w-100">
-                                                Add to Cart
-                                            </a>
-                                        </div>
-                                    </div>
-                                    <div class="card-product_info">
-                                        <a href="product-detail.html"
-                                            class="name-product lh-24 fw-medium link-underline-text">
-                                            Rubber Hammer, 16oz rubber mallet With fiberglass Handle
-                                        </a>
-                                        <div class="star-wrap d-flex align-items-center">
-                                            <i class="icon icon-Star"></i>
-                                            <i class="icon icon-Star"></i>
-                                            <i class="icon icon-Star"></i>
-                                            <i class="icon icon-Star"></i>
-                                            <i class="icon icon-Star"></i>
-                                        </div>
-                                        <div class="price-wrap">
-                                            <span class="price-new text-primary fw-semibold">$15.49</span>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            <!-- slide 4 -->
-                            <div class="swiper-slide">
-                                <div class="card-product product-style_stroke">
-                                    <div class="card-product_wrapper square">
-                                        <a href="product-detail.html" class="product-img">
-                                            <img class="img-product" loading="lazy" width="330" height="330"
-                                                src="assets/images/product/construction/product-11.jpg" alt="Product">
-                                            <img class="img-hover" loading="lazy" width="330" height="330"
-                                                src="assets/images/product/construction/product-11.jpg" alt="Product">
-                                        </a>
-                                        <ul class="product-action_list">
-                                            <li class="wishlist">
-                                                <a href="#;" class="hover-tooltip tooltip-left box-icon">
-                                                    <span class="icon icon-heart"></span>
-                                                    <span class="tooltip">Add to Wishlist</span>
-                                                </a>
-                                            </li>
-                                            <li class="compare">
-                                                <a href="#compare" data-bs-toggle="offcanvas"
-                                                    class="hover-tooltip tooltip-left box-icon">
-                                                    <span class="icon icon-ArrowsLeftRight"></span>
-                                                    <span class="tooltip">Compare</span>
-                                                </a>
-                                            </li>
-                                            <li>
-                                                <a href="#quickView" data-bs-toggle="offcanvas"
-                                                    class="hover-tooltip tooltip-left box-icon">
-                                                    <span class="icon icon-Eye"></span>
-                                                    <span class="tooltip">Quick view</span>
-                                                </a>
-                                            </li>
-                                        </ul>
-                                        <ul class="product-badge_list">
-                                            <li class="product-badge_item text-caption-01 sale">-25%</li>
-                                        </ul>
-                                        <div class="product-action_bot">
-                                            <a href="#shoppingCart" data-bs-toggle="offcanvas"
-                                                class="tf-btn btn-white small  w-100">
-                                                Add to Cart
-                                            </a>
-                                        </div>
-                                    </div>
-                                    <div class="card-product_info">
-                                        <a href="product-detail.html"
-                                            class="name-product lh-24 fw-medium link-underline-text">
-                                            SKIL 15 Amp 7-1/4 Inch Circular Saw with Single Beam Laser Guide
-                                        </a>
-                                        <div class="star-wrap d-flex align-items-center">
-                                            <i class="icon icon-Star"></i>
-                                            <i class="icon icon-Star"></i>
-                                            <i class="icon icon-Star"></i>
-                                            <i class="icon icon-Star"></i>
-                                            <i class="icon icon-Star"></i>
-                                        </div>
-                                        <div class="price-wrap">
-                                            <span class="price-new text-primary fw-semibold">$34.99</span>
-                                            <span class="price-old text-caption-01 cl-text-3">$59.99</span>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="sw-dot-default tf-sw-pagination"></div>
-                    </div>
-                </div>
-            </section>
-            <!-- /Top Pick -->
-            <!-- Banner Countdown -->
-            <div class="container flat-spacing">
-                <div class="banner-countdown-v01 style-4 ">
-                    <div class="banner-img">
-                        <img class="img-cover" width="1410" height="180" loading="lazy" decoding="async"
-                            src="assets/images/section/banner-countdown.jpg" alt="banner">
-                    </div>
-                    <div class="content">
-                        <div class="col-left">
-                            <h2 class="text-white mb-8">Hurry! Deals On</h2>
-                            <p class="text-white text-body-1">Up to 50% Off Selected Styles. Don't Miss Out.</p>
-                        </div>
-                        <div class="countdown-v01 text-white">
-                            <div class="js-countdown cd-has-zero cd-custom" data-timer="1093120"
-                                data-labels="Days,Hours,Mins,Secs">
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <!-- /Banner Countdown -->
-            <!-- Lookbook -->
-            <div class="">
-                <div class="container-full">
-                    <div dir="ltr" class="swiper tf-swiper swiper-type-number rounded-top-20">
-                        <div class="swiper-wrapper">
-                            <!-- slide 1 -->
-                            <div class="swiper-slide">
-                                <div class="banner-lookbook wrap-lookbook_hover style-2">
-                                    <img class="img-banner" loading="lazy" width="1920" height="640"
-                                        src="assets/images/section/banner-lookbook-12.jpg" alt="Image">
-                                    <div class="lookbook-item position13">
-                                        <div class="dropdown dropup-center dropdown-custom dropend">
-                                            <div role="dialog" class="tf-pin-btn bundle-pin-item" data-bs-toggle="dropdown"
-                                                aria-expanded="false">
-                                                <span></span>
-                                            </div>
-                                            <div class="dropdown-menu pst-2">
-                                                <div class="lookbook-product">
-                                                    <a href="product-detail.html" class="image">
-                                                        <img width="88" height="88"
-                                                            src="assets/images/product/construction/product-2.jpg"
-                                                            alt="Product">
-                                                    </a>
-                                                    <div class="content">
-                                                        <a href="product-detail.html"
-                                                            class="name-prd link fw-medium lh-24 text-line-clamp-2">
-                                                            MC300 Wireless Over-Ear
-                                                        </a>
-                                                        <div class="price-wrap">
-                                                            <span class="price-new text-primary fw-semibold">$39,99</span>
-                                                            <span class="price-old text-caption-01 cl-text-3">$49.99</span>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="lookbook-item position14">
-                                        <div class="dropdown dropup-center dropdown-custom dropstart">
-                                            <div role="dialog" class="tf-pin-btn bundle-pin-item" data-bs-toggle="dropdown"
-                                                aria-expanded="false">
-                                                <span></span>
-                                            </div>
-                                            <div class="dropdown-menu pst-2">
-                                                <div class="lookbook-product">
-                                                    <a href="product-detail.html" class="image">
-                                                        <img width="88" height="88"
-                                                            src="assets/images/product/construction/product-1.jpg"
-                                                            alt="Product">
-                                                    </a>
-                                                    <div class="content">
-                                                        <a href="product-detail.html"
-                                                            class="name-prd link fw-medium lh-24 text-line-clamp-2">
-                                                            MC300 Wireless Over-Ear
-                                                        </a>
-                                                        <div class="price-wrap">
-                                                            <span class="price-new text-primary fw-semibold">$29.99</span>
-                                                            <span class="price-old text-caption-01 cl-text-3">$39.99</span>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="lookbook-item position15">
-                                        <div class="dropdown dropup-center dropdown-custom dropstart">
-                                            <div role="dialog" class="tf-pin-btn bundle-pin-item" data-bs-toggle="dropdown"
-                                                aria-expanded="false">
-                                                <span></span>
-                                            </div>
-                                            <div class="dropdown-menu pst-2">
-                                                <div class="lookbook-product">
-                                                    <a href="product-detail.html" class="image">
-                                                        <img width="88" height="88"
-                                                            src="assets/images/product/construction/product-1.jpg"
-                                                            alt="Product">
-                                                    </a>
-                                                    <div class="content">
-                                                        <a href="product-detail.html"
-                                                            class="name-prd link fw-medium lh-24 text-line-clamp-2">
-                                                            MC300 Wireless Over-Ear
-                                                        </a>
-                                                        <div class="price-wrap">
-                                                            <span class="price-new text-primary fw-semibold">$49.99</span>
-                                                            <span class="price-old text-caption-01 cl-text-3">$59.99</span>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            <!-- slide 2 -->
-                            <div class="swiper-slide">
-                                <div class="banner-lookbook wrap-lookbook_hover style-2">
-                                    <img class="img-banner" loading="lazy" width="1920" height="640"
-                                        src="assets/images/section/banner-lookbook-14.jpg" alt="Image">
-                                    <div class="lookbook-item position24">
-                                        <div class="dropdown dropup-center dropdown-custom dropstart">
-                                            <div role="dialog" class="tf-pin-btn bundle-pin-item" data-bs-toggle="dropdown"
-                                                aria-expanded="false">
-                                                <span></span>
-                                            </div>
-                                            <div class="dropdown-menu pst-2">
-                                                <div class="lookbook-product">
-                                                    <a href="product-detail.html" class="image">
-                                                        <img width="88" height="88"
-                                                            src="assets/images/product/construction/product-11.jpg"
-                                                            alt="Product">
-                                                    </a>
-                                                    <div class="content">
-                                                        <a href="product-detail.html"
-                                                            class="name-prd link fw-medium lh-24 text-line-clamp-2">
-                                                            SKIL 15 Amp 7-1/4 Inch Circular Saw with Single Beam Laser Guide
-                                                        </a>
-                                                        <div class="price-wrap">
-                                                            <span class="price-new text-primary fw-semibold">$62,99</span>
-                                                            <span class="price-old text-caption-01 cl-text-3">$79.99</span>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        <!-- <div class="sw-dot-default tf-sw-pagination"></div> -->
 
-                        <div class="box-nav-pag">
-                            <p class="title lh-24">Shop The Look</p>
-                            <div class="nav-pag_wrap">
-                                <div class="nav-prev-swiper">
-                                    <i class="icon icon-ArrowLeft"></i>
-                                </div>
-                                <div class="pagination-fraction text-body-1"></div>
-                                <div class="nav-next-swiper">
-                                    <i class="icon icon-ArrowRight"></i>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="infiniteSlide-brand style-2 wow fadeInUp ">
-                        <div class="infiniteSlide infiniteSlide-wrapper" data-clone="3">
-                            <div class="infiniteSlide-item">
-                                <div class="img-brand">
-                                    <img width="112" height="30" src="assets/images/brand/bohome.png" alt="Image">
-                                </div>
-                            </div>
-                            <div class="infiniteSlide-item">
-                                <div class="img-brand">
-                                    <img width="170" height="60" src="assets/images/brand/living.png" alt="Image">
-                                </div>
-                            </div>
-                            <div class="infiniteSlide-item">
-                                <div class="img-brand">
-                                    <img width="150" height="24" src="assets/images/brand/west-elm.png" alt="Image">
-                                </div>
-                            </div>
-                            <div class="infiniteSlide-item">
-                                <div class="img-brand">
-                                    <img width="196" height="12" src="assets/images/brand/anthro.png" alt="Image">
-                                </div>
-                            </div>
-                            <div class="infiniteSlide-item">
-                                <div class="img-brand">
-                                    <img width="99" height="60" src="assets/images/brand/stanza-2.png" alt="Image">
-                                </div>
-                            </div>
-                            <div class="infiniteSlide-item">
-                                <div class="img-brand">
-                                    <img width="219" height="24" src="assets/images/brand/urban.png" alt="Image">
-                                </div>
-                            </div>
-                            <div class="infiniteSlide-item">
-                                <div class="img-brand">
-                                    <img width="106" height="60" src="assets/images/brand/crate.png" alt="Image">
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <!-- /Lookbook -->
-            <!-- Banner Product Single -->
-            <section class="banner-product-single style-thumbs-position section-image-zoom flat-spacing ">
-                <div class="container">
-                    <div class="sect-heading type-2 text-center wow fadeInUp">
-                        <h3 class="s-title">
-                            Top Picks This Week
-                        </h3>
-                        <p class="s-desc text-body-1 cl-text-2">
-                            Weekly Favorites Selected With Care To Support Your Wellbeing.
-                        </p>
-                    </div>
-                    <div class="row">
-                        <div class="col-lg-6">
-                            <div class="tf-product-media-wrap sticky-top pe-0">
-                                <div class="product-thumbs-slider style-row row_left ">
-                                    <div class="flat-wrap-media-product">
-                                        <div dir="ltr" class="swiper tf-product-media-main" id="gallery-swiper-started"
-                                            data-spacing="0">
-                                            <div class="swiper-wrapper">
-                                                <!-- item 1 -->
-                                                <div class="swiper-slide" data-color="yellow" data-size="L">
-                                                    <a href="assets/images/product/single/detail-11.jpg" target="_blank"
-                                                        class="item" data-pswp-width="1000px" data-pswp-height="1000px">
-                                                        <img loading="lazy" width="576" height="768" class="tf-image-zoom"
-                                                            data-zoom="assets/images/product/single/detail-11.jpg"
-                                                            src="assets/images/product/single/detail-11.jpg"
-                                                            alt="img-product">
-                                                    </a>
-                                                </div>
-                                                <!-- item 2 -->
-                                                <div class="swiper-slide" data-color="yellow" data-size="S">
-                                                    <a href="assets/images/product/single/detail-11_1.jpg" target="_blank"
-                                                        class="item" data-pswp-width="1000px" data-pswp-height="1000px">
-                                                        <img loading="lazy" width="576" height="768" class="tf-image-zoom"
-                                                            data-zoom="assets/images/product/single/detail-11_1.jpg"
-                                                            src="assets/images/product/single/detail-11_1.jpg"
-                                                            alt="img-product">
-                                                    </a>
-                                                </div>
-                                                <!-- item 3 -->
-                                                <div class="swiper-slide" data-color="yellow" data-size="M">
-                                                    <a href="assets/images/product/single/detail-11_2.jpg" target="_blank"
-                                                        class="item" data-pswp-width="1000px" data-pswp-height="1000px">
-                                                        <img loading="lazy" width="576" height="768" class="tf-image-zoom"
-                                                            data-zoom="assets/images/product/single/detail-11_2.jpg"
-                                                            src="assets/images/product/single/detail-11_2.jpg"
-                                                            alt="img-product">
-                                                    </a>
-                                                </div>
-                                                <!-- item 4 -->
-                                                <div class="swiper-slide" data-color="yellow" data-size="XL">
-                                                    <a href="assets/images/product/single/detail-11_3.jpg" target="_blank"
-                                                        class="item" data-pswp-width="1000px" data-pswp-height="1000px">
-                                                        <img loading="lazy" width="576" height="768" class="tf-image-zoom"
-                                                            data-zoom="assets/images/product/single/detail-11_3.jpg"
-                                                            src="assets/images/product/single/detail-11_3.jpg"
-                                                            alt="img-product">
-                                                    </a>
-                                                </div>
-                                                <!-- item 5 -->
-                                                <div class="swiper-slide" data-color="orange" data-size="M">
-                                                    <a href="assets/images/product/single/detail-11_4.jpg" target="_blank"
-                                                        class="item" data-pswp-width="1000px" data-pswp-height="1000px">
-                                                        <img loading="lazy" width="576" height="768" class="tf-image-zoom"
-                                                            data-zoom="assets/images/product/single/detail-11_4.jpg"
-                                                            src="assets/images/product/single/detail-11_4.jpg"
-                                                            alt="img-product">
-                                                    </a>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div dir="ltr" class="swiper tf-product-media-thumbs other-image-zoom thumbs-position"
-                                        data-direction="vertical" data-preview="5">
-                                        <div class="swiper-wrapper stagger-wrap">
-                                            <!-- item 1 -->
-                                            <div class="swiper-slide stagger-item">
-                                                <div class="item">
-                                                    <img loading="lazy" width="82" height="110"
-                                                        src="assets/images/product/single/detail-11.jpg" alt="Image">
-                                                </div>
-                                            </div>
-                                            <!-- item 2 -->
-                                            <div class="swiper-slide stagger-item">
-                                                <div class="item">
-                                                    <img loading="lazy" width="82" height="110"
-                                                        src="assets/images/product/single/detail-11_1.jpg" alt="Image">
-                                                </div>
-                                            </div>
-                                            <!-- item 3 -->
-                                            <div class="swiper-slide stagger-item">
-                                                <div class="item">
-                                                    <img loading="lazy" width="82" height="110"
-                                                        src="assets/images/product/single/detail-11_2.jpg" alt="Image">
-                                                </div>
-                                            </div>
-                                            <!-- item 4 -->
-                                            <div class="swiper-slide stagger-item">
-                                                <div class="item">
-                                                    <img loading="lazy" width="82" height="110"
-                                                        src="assets/images/product/single/detail-11_3.jpg" alt="Image">
-                                                </div>
-                                            </div>
-                                            <!-- item 5 -->
-                                            <div class="swiper-slide stagger-item">
-                                                <div class="item">
-                                                    <img loading="lazy" width="82" height="110"
-                                                        src="assets/images/product/single/detail-11_4.jpg" alt="Image">
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-lg-6">
-                            <div class="tf-product-info-wrap position-relative mt-md-0">
-                                <div class="tf-zoom-main sticky-top"></div>
-                                <div class="tf-product-info-list other-image-zoom">
-                                    <div class="tf-product-info-heading">
-                                        <p class="product-infor-cate text-caption-01 mb-4">
-                                            Construction
-                                        </p>
-                                        <h3 class="product-infor-name mb-12">
-                                            Cordless Impact Driver Kit
-                                        </h3>
-                                        <div class="product-infor-meta mb-20">
-                                            <div class="meta_rate">
-                                                <div class="star-wrap normal d-flex align-items-center">
-                                                    <i class="icon icon-Star"></i>
-                                                    <i class="icon icon-Star"></i>
-                                                    <i class="icon icon-Star"></i>
-                                                    <i class="icon icon-Star"></i>
-                                                    <i class="icon icon-Star"></i>
-                                                </div>
-                                                <span class="text-caption-01 cl-text-2">
-                                                    (134 reviews)
-                                                </span>
-                                            </div>
-                                            <div class="br-line type-vertical"></div>
-                                            <div class="meta_sold">
-                                                <i class="icon icon-Lightning text-primary"></i>
-                                                <span class="text-caption-01 cl-text-1">18 sold in last 32 hours</span>
-                                            </div>
-                                            <div class="br-line type-vertical"></div>
-                                            <div class="meta_prd_code text-caption-01">
-                                                <span class="cl-text-2">SKU:</span>
-                                                <span>53453412</span>
-                                            </div>
-                                        </div>
-                                        <div class="product-infor-price mb-12">
-                                            <h4 class="price-on-sale">$399.00</h4>
-                                            <div class="br-line type-vertical"></div>
-                                            <p class="cl-text-3 text-decoration-line-through">$450.00</p>
-                                            <span class="badge-sale text-white fw-semibold text-caption-02">
-                                                -25%
-                                            </span>
-                                        </div>
-                                        <p class="product-infor-desc cl-text-2 mb-12">
-                                            Our signature removable magnetic ear pads are easily replaceable and provide
-                                            serious sound isolation.
-                                        </p>
-                                        <div class="product-infor-reality lh-24">
-                                            <div class="ic d-flex">
-                                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none"
-                                                    xmlns="http://www.w3.org/2000/svg">
-                                                    <rect width="24" height="24" rx="4" fill="#101010" />
-                                                    <path
-                                                        d="M19.4569 11.7975C19.435 11.7481 18.9056 10.5738 17.7287 9.39687C16.1606 7.82875 14.18 7 12 7C9.81999 7 7.83937 7.82875 6.27124 9.39687C5.09437 10.5738 4.56249 11.75 4.54312 11.7975C4.51469 11.8614 4.5 11.9306 4.5 12.0006C4.5 12.0706 4.51469 12.1398 4.54312 12.2037C4.56499 12.2531 5.09437 13.4269 6.27124 14.6038C7.83937 16.1713 9.81999 17 12 17C14.18 17 16.1606 16.1713 17.7287 14.6038C18.9056 13.4269 19.435 12.2531 19.4569 12.2037C19.4853 12.1398 19.5 12.0706 19.5 12.0006C19.5 11.9306 19.4853 11.8614 19.4569 11.7975ZM12 14.5C11.5055 14.5 11.0222 14.3534 10.6111 14.0787C10.1999 13.804 9.87951 13.4135 9.69029 12.9567C9.50107 12.4999 9.45157 11.9972 9.54803 11.5123C9.64449 11.0273 9.88259 10.5819 10.2322 10.2322C10.5819 9.8826 11.0273 9.6445 11.5123 9.54804C11.9972 9.45157 12.4999 9.50108 12.9567 9.6903C13.4135 9.87952 13.804 10.2 14.0787 10.6111C14.3534 11.0222 14.5 11.5055 14.5 12C14.5 12.663 14.2366 13.2989 13.7678 13.7678C13.2989 14.2366 12.663 14.5 12 14.5Z"
-                                                        fill="white" />
-                                                </svg>
-                                            </div>
-                                            <span class="text-caption-01">
-                                                28 people are viewing this right now
-                                            </span>
-                                        </div>
-                                    </div>
-                                    <div class="br-line"></div>
-                                    <div class="tf-product-variant">
-                                        <div class="variant-picker-item variant-color">
-                                            <div class="variant-picker-label">
-                                                <div>
-                                                    Colors:
-                                                    <span
-                                                        class="variant-picker-label-value value-currentColor text-capitalize fw-medium">Gray</span>
-                                                </div>
-                                            </div>
-                                            <div class="variant-picker-values">
-                                                <div class="hover-tooltip tooltip-bot color-btn style-image"
-                                                    data-color="yellow">
-                                                    <!-- <span class="check-color bg-blue-1"></span> -->
-                                                    <div class="img">
-                                                        <img loading="lazy" width="60" height="60"
-                                                            src="assets/images/product/single/detail-11.jpg"
-                                                            data-src="assets/images/product/single/detail-11.jpg" alt="img">
-                                                    </div>
-                                                    <span class="tooltip">Yellow</span>
-                                                </div>
-                                                <div class="hover-tooltip tooltip-bot color-btn style-image active"
-                                                    data-color="orange">
-                                                    <!-- <span class="check-color bg-blue-1"></span> -->
-                                                    <div class="img">
-                                                        <img loading="lazy" width="60" height="60"
-                                                            src="assets/images/product/single/detail-11_4.jpg"
-                                                            data-src="assets/images/product/single/detail-11_4.jpg"
-                                                            alt="img">
-                                                    </div>
-                                                    <span class="tooltip">Orange</span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div class="tf-product-total-quantity">
-                                            <p class="">
-                                                Quantity:
-                                            </p>
-                                            <div class="group-action">
-                                                <div class="wg-quantity">
-                                                    <button class="btn-quantity btn-decrease">
-                                                        <i class="icon icon-minus"></i>
-                                                    </button>
-                                                    <input class="quantity-product" type="text" name="number" value="1">
-                                                    <button class="btn-quantity btn-increase">
-                                                        <i class="icon icon-plus"></i>
-                                                    </button>
-                                                </div>
-                                                <a href="#shoppingCart" data-bs-toggle="offcanvas"
-                                                    class="btn-action-price tf-btn type-xl animate-btn w-100">
-                                                    Add To Cart
-                                                    <span
-                                                        class="d-none d-sm-block d-md-none d-lg-block">&nbsp;-&nbsp;</span>
-                                                    <span
-                                                        class="price-add d-none d-sm-block d-md-none d-lg-block">$79.99</span>
-                                                </a>
-                                            </div>
-                                            <a href="#shoppingCart" data-bs-toggle="offcanvas"
-                                                class="tf-btn type-xl  w-100 btn-third ">
-                                                <span class="cl-text-main">
-                                                    Buy It Now
-                                                </span>
-                                            </a>
-                                        </div>
-                                    </div>
-                                    <div class="tf-product-extra-link justify-content-between mb-4 ">
-                                        <a href="#compare" data-bs-toggle="offcanvas"
-                                            class="product-extra-icon link fw-medium">
-                                            <i class="icon icon-ArrowsLeftRight"></i>
-                                            Compare
-                                        </a>
-                                        <a href="#ask" data-bs-toggle="modal" class="product-extra-icon link fw-medium">
-                                            <i class="icon icon-Question"></i>
-                                            Ask A Question
-                                        </a>
-                                        <a href="#findSize" data-bs-toggle="modal"
-                                            class="product-extra-icon link fw-medium">
-                                            <i class="icon icon-Ruler"></i>
-                                            Size Guide
-                                        </a>
-                                        <a href="#share" data-bs-toggle="modal" class="product-extra-icon link fw-medium">
-                                            <i class="icon icon-ShareNetwork"></i>
-                                            Share
-                                        </a>
-                                    </div>
-                                    <div class="">
-                                        <a href="product-detail.html" class="tf-btn-line-2 fw-semibold style-primary pb-4">
-                                            View All Details
-                                        </a>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </section>
-            <!-- /Banner Product Single -->
-            <!-- Testimonials -->
-            <section class="">
-                <div class="container-full">
-                    <div class="sect-heading type-2 text-center wow fadeInUp">
-                        <h3 class="s-title">
-                            Loved By Happy Parents
-                        </h3>
-                        <p class="s-desc text-body-1 cl-text-2">
-                            Real stories from moms and dads who trust us with their baby's care.
-                        </p>
-                    </div>
-                    <div dir="ltr" class="swiper tf-swiper" data-preview="4" data-tablet="3" data-mobile-sm="2"
-                        data-mobile="1" data-space-lg="20" data-space-md="15" data-space="10" data-pagination="2"
-                        data-pagination-sm="1" data-pagination-md="3" data-pagination-lg="4">
-                        <div class="swiper-wrapper">
-                            <!-- slide 1 -->
-                            <div class="swiper-slide">
-                                <div class="testimonial-v01 style-2 type-3 wow fadeInLeft">
-                                    <div class="tes-content">
-                                        <div class="tes_avatar">
-                                            <img loading="lazy" width="60" height="60"
-                                                src="assets/images/avatar/avatar-4.jpg" alt="Image">
-                                        </div>
-                                        <div class="star-wrap d-flex align-items-center">
-                                            <i class="icon icon-Star fs-24"></i>
-                                            <i class="icon icon-Star fs-24"></i>
-                                            <i class="icon icon-Star fs-24"></i>
-                                            <i class="icon icon-Star fs-24"></i>
-                                            <i class="icon icon-Star fs-24"></i>
-                                        </div>
-                                        <div class="tes_author">
-                                            <div class="h6 author-name">Emma Collins</div>
-                                            <div class="author-verified">
-                                                <i class="icon icon-CheckCircle1"></i>
-                                                <span class="text cl-text-2">
-                                                    Verified Buyer
-                                                </span>
-                                            </div>
-                                        </div>
-                                        <p class="tes_text h6 fw-medium text-capitalize">
-                                            "The baby onesies are incredibly soft, super cozy, and gentle on delicate
-                                            skin
-                                            my newborn sleeps so peacefully now!"
-                                        </p>
-                                        <div class="tes_product">
-                                            <div class="product-image">
-                                                <img loading="lazy" width="60" height="60"
-                                                    src="assets/images/product/construction/product-1.jpg" alt="Image">
-                                            </div>
-                                            <div class="product-infor">
-                                                <a href="product-detail.html"
-                                                    class="prd_name link fw-medium lh-24 text-line-clamp-1">
-                                                    Gentle Comfort for Mess...
-                                                </a>
-                                                <p class="prd_price fw-semibold text-primary">$29.99</p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            <!-- slide 2 -->
-                            <div class="swiper-slide">
-                                <div class="testimonial-v01 style-2 type-3 wow fadeInLeft" data-wow-delay="0.1s">
-                                    <div class="tes-content">
-                                        <div class="tes_avatar">
-                                            <img loading="lazy" width="60" height="60"
-                                                src="assets/images/avatar/avatar-5.jpg" alt="Image">
-                                        </div>
-                                        <div class="star-wrap d-flex align-items-center">
-                                            <i class="icon icon-Star fs-24"></i>
-                                            <i class="icon icon-Star fs-24"></i>
-                                            <i class="icon icon-Star fs-24"></i>
-                                            <i class="icon icon-Star fs-24"></i>
-                                            <i class="icon icon-Star fs-24"></i>
-                                        </div>
-                                        <div class="tes_author">
-                                            <div class="h6 author-name">Michael Carter</div>
-                                            <div class="author-verified">
-                                                <i class="icon icon-CheckCircle1"></i>
-                                                <span class="text cl-text-2">
-                                                    Verified Buyer
-                                                </span>
-                                            </div>
-                                        </div>
-                                        <p class="tes_text h6 fw-medium text-capitalize">
-                                            "Finally found bottles that don’t leak, clean easily, save time, and make
-                                            feeding so much simpler. Total lifesaver for busy parents!"
-                                        </p>
-                                        <div class="tes_product">
-                                            <div class="product-image">
-                                                <img loading="lazy" width="60" height="60"
-                                                    src="assets/images/product/construction/product-9.jpg" alt="Image">
-                                            </div>
-                                            <div class="product-infor">
-                                                <a href="product-detail.html"
-                                                    class="prd_name link fw-medium lh-24 text-line-clamp-1">
-                                                    Frigg Moon Natural...
-                                                </a>
-                                                <p class="prd_price fw-semibold text-primary">$69.99</p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            <!-- slide 3 -->
-                            <div class="swiper-slide">
-                                <div class="testimonial-v01 style-2 type-3 wow fadeInLeft" data-wow-delay="0.2s">
-                                    <div class="tes-content">
-                                        <div class="tes_avatar">
-                                            <img loading="lazy" width="60" height="60"
-                                                src="assets/images/avatar/avatar-6.jpg" alt="Image">
-                                        </div>
-                                        <div class="star-wrap d-flex align-items-center">
-                                            <i class="icon icon-Star fs-24"></i>
-                                            <i class="icon icon-Star fs-24"></i>
-                                            <i class="icon icon-Star fs-24"></i>
-                                            <i class="icon icon-Star fs-24"></i>
-                                            <i class="icon icon-Star fs-24"></i>
-                                        </div>
-                                        <div class="tes_author">
-                                            <div class="h6 author-name">Olivia Brooks</div>
-                                            <div class="author-verified">
-                                                <i class="icon icon-CheckCircle1"></i>
-                                                <span class="text cl-text-2">
-                                                    Verified Buyer
-                                                </span>
-                                            </div>
-                                        </div>
-                                        <p class="tes_text h6 fw-medium text-capitalize">
-                                            "Everything feels carefully designed, beautifully made, and filled with
-                                            genuine
-                                            care. You can tell parents built this brand with heart."
-                                        </p>
-                                        <div class="tes_product">
-                                            <div class="product-image">
-                                                <img loading="lazy" width="60" height="60"
-                                                    src="assets/images/product/construction/product-5.jpg" alt="Image">
-                                            </div>
-                                            <div class="product-infor">
-                                                <a href="product-detail.html"
-                                                    class="prd_name link fw-medium lh-24 text-line-clamp-1">
-                                                    Little Dine Wooden High...
-                                                </a>
-                                                <p class="prd_price fw-semibold text-primary">$69.99</p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            <!-- slide 4 -->
-                            <div class="swiper-slide">
-                                <div class="testimonial-v01 style-2 type-3 wow fadeInLeft" data-wow-delay="0.3s">
-                                    <div class="tes-content">
-                                        <div class="tes_avatar">
-                                            <img loading="lazy" width="60" height="60"
-                                                src="assets/images/avatar/avatar-7.jpg" alt="Image">
-                                        </div>
-                                        <div class="star-wrap d-flex align-items-center">
-                                            <i class="icon icon-Star fs-24"></i>
-                                            <i class="icon icon-Star fs-24"></i>
-                                            <i class="icon icon-Star fs-24"></i>
-                                            <i class="icon icon-Star fs-24"></i>
-                                            <i class="icon icon-Star fs-24"></i>
-                                        </div>
-                                        <div class="tes_author">
-                                            <div class="h6 author-name">Daniel Walker</div>
-                                            <div class="author-verified">
-                                                <i class="icon icon-CheckCircle1"></i>
-                                                <span class="text cl-text-2">
-                                                    Verified Buyer
-                                                </span>
-                                            </div>
-                                        </div>
-                                        <p class="tes_text h6 fw-medium text-capitalize">
-                                            "Delivery was fast, packaging absolutely adorable, product quality truly
-                                            amazing, every little detail felt genuinely cared for."
-                                        </p>
-                                        <div class="tes_product">
-                                            <div class="product-image">
-                                                <img loading="lazy" width="60" height="60"
-                                                    src="assets/images/product/construction/product-6.jpg" alt="Image">
-                                            </div>
-                                            <div class="product-infor">
-                                                <a href="product-detail.html"
-                                                    class="prd_name link fw-medium lh-24 text-line-clamp-1">
-                                                    Activity Walk Behind...
-                                                </a>
-                                                <p class="prd_price fw-semibold text-primary">$69.99</p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="sw-line-default style-2 tf-sw-pagination"></div>
-                    </div>
-                </div>
-            </section>
-            <!-- /Testimonials -->
-            <!-- Blog -->
-            <section class="flat-spacing">
-                <div class="container">
-                    <div class="sect-heading type-2 text-center wow fadeInUp">
-                        <h3 class="s-title">
-                            Insights For Happier Pets
-                        </h3>
-                        <p class="s-desc text-body-1 cl-text-2">
-                            Discover caring tips and daily inspiration for your furry friends.
-                        </p>
-                    </div>
-                    <div dir="ltr" class="swiper tf-swiper" data-preview="3" data-tablet="2" data-mobile-sm="2"
-                        data-mobile="1" data-space-lg="30" data-space-md="20" data-space="10" data-pagination="1"
-                        data-pagination-sm="2" data-pagination-md="2" data-pagination-lg="3">
-                        <div class="swiper-wrapper">
-                            <!-- slide 1 -->
-                            <div class="swiper-slide">
-                                <article class="article-blog hover-img wow fadeInUp">
-                                    <a href="blog-single.html" class="blog-image img-style">
-                                        <img loading="lazy" width="900" height="675" src="assets/images/blog/blog-35.jpg"
-                                            alt="Image">
-                                        <div class="wrap-tags d-flex gap-12">
-                                            <span class="tag text-caption-01 ">WOOD</span>
-                                        </div>
-                                    </a>
-                                    <div class="blog-content">
-                                        <p class="entry-date text-caption-01 fw-semibold cl-text-3">13 August</p>
-                                        <h4 class="entry-title">
-                                            <a href="blog-single.html" class="link-underline link text-capitalize ">
-                                                How to Keep Your Pet Calm and Happy at Home
-                                            </a>
-                                        </h4>
-                                        <p class="entry-desc cl-text-2">
-                                            Simple daily routines to ease anxiety, strengthen trust, and create a peaceful
-                                            bond between you.
-                                        </p>
-                                    </div>
-                                </article>
-                            </div>
-                            <!-- slide 2 -->
-                            <div class="swiper-slide">
-                                <article class="article-blog hover-img wow fadeInUp" data-wow-delay="0.1s">
-                                    <a href="blog-single.html" class="blog-image img-style">
-                                        <img loading="lazy" width="900" height="675" src="assets/images/blog/blog-36.jpg"
-                                            alt="Image">
-                                        <div class="wrap-tags d-flex gap-12">
-                                            <span class="tag text-caption-01 ">CONSTRUCTION</span>
-                                        </div>
-                                    </a>
-                                    <div class="blog-content">
-                                        <p class="entry-date text-caption-01 fw-semibold cl-text-3">15 August</p>
-                                        <h4 class="entry-title">
-                                            <a href="blog-single.html" class="link-underline link text-capitalize ">
-                                                Choosing the Right Food for Your Active, Growing Dog
-                                            </a>
-                                        </h4>
-                                        <p class="entry-desc cl-text-2">
-                                            A complete guide to balanced nutrition, portion control, taste preferences, and
-                                            how to support energy.
-                                        </p>
-                                    </div>
-                                </article>
-                            </div>
-                            <!-- slide 3 -->
-                            <div class="swiper-slide">
-                                <article class="article-blog hover-img wow fadeInUp" data-wow-delay="0.2s">
-                                    <a href="blog-single.html" class="blog-image img-style">
-                                        <img loading="lazy" width="900" height="675" src="assets/images/blog/blog-37.jpg"
-                                            alt="Image">
-                                        <div class="wrap-tags d-flex gap-12">
-                                            <span class="tag text-caption-01 ">PLUMBER</span>
-                                        </div>
-                                    </a>
-                                    <div class="blog-content">
-                                        <p class="entry-date text-caption-01 fw-semibold cl-text-3">18 August</p>
-                                        <h4 class="entry-title">
-                                            <a href="blog-single.html" class="link-underline link text-capitalize ">
-                                                Why Your Playful Cat Needs More Fun Every Day
-                                            </a>
-                                        </h4>
-                                        <p class="entry-desc cl-text-2">
-                                            Discover how regular play improves health, strengthens your bond, and keeps your
-                                            cat curious.
-                                        </p>
-                                    </div>
-                                </article>
-                            </div>
-                        </div>
-                        <div class="sw-line-default style-2 tf-sw-pagination"></div>
-                    </div>
-                </div>
-            </section>
-            <!-- /Blog -->
-            <!-- Footer -->
-            <footer class="tf-footer footer-s5 bg-dark">
-                <div class="flat-spacing-4">
-                    <div class="container-full">
-                        <div dir="ltr" class="swiper tf-swiper" data-preview="4" data-tablet="3" data-mobile-sm="2"
-                            data-mobile="1" data-space-lg="30" data-space-md="20" data-space="10" data-pagination="1"
-                            data-pagination-sm="2" data-pagination-md="3" data-pagination-lg="4">
-                            <div class="swiper-wrapper">
-                                <!-- slide 1 -->
-                                <div class="swiper-slide">
-                                    <div class="box-icon_V01 style-3 wow fadeInLeft">
-                                        <span class="icon text-white">
-                                            <i class="icon-ArrowUDownLeft"></i>
-                                        </span>
-                                        <div class="content">
-                                            <div class="h6 title text-white">14-Day Returns</div>
-                                            <p class="text cl-text-3">Risk-free shopping with easy returns.</p>
-                                        </div>
-                                    </div>
-                                </div>
-                                <!-- slide 2 -->
-                                <div class="swiper-slide">
-                                    <div class="box-icon_V01 style-3 wow fadeInLeft">
-                                        <span class="icon text-white">
-                                            <i class="icon-Package"></i>
-                                        </span>
-                                        <div class="content">
-                                            <div class="h6 title text-white">Free Shipping</div>
-                                            <p class="text cl-text-3">No extra costs, just the price you see.</p>
-                                        </div>
-                                    </div>
-                                </div>
-                                <!-- slide 3 -->
-                                <div class="swiper-slide">
-                                    <div class="box-icon_V01 style-3 wow fadeInLeft">
-                                        <span class="icon text-white">
-                                            <i class="icon-Headset"></i>
-                                        </span>
-                                        <div class="content">
-                                            <div class="h6 title text-white">24/7 Support</div>
-                                            <p class="text cl-text-3">24/7 support, always here just for you.</p>
-                                        </div>
-                                    </div>
-                                </div>
-                                <!-- slide 4 -->
-                                <div class="swiper-slide">
-                                    <div class="box-icon_V01 style-3 wow fadeInLeft">
-                                        <span class="icon text-white">
-                                            <i class="icon-SealPercent"></i>
-                                        </span>
-                                        <div class="content">
-                                            <div class="h6 title text-white">Member Discounts</div>
-                                            <p class="text cl-text-3">Special prices for our loyal customers.</p>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="sw-line-default tf-sw-pagination"></div>
-                        </div>
-                    </div>
-                </div>
-                <div class="position-relative">
-                    <div class="br-line fake-class top-0 bg-white_10"></div>
-                    <div class="br-line fake-class bottom-0 bg-white_10 d-none d-sm-flex"></div>
-                    <div class="container-full">
-                        <div class="footer-inner flat-spacing">
-                            <div class="col-left">
-                                <div class="footer-col-block type-white footer-wrap-start">
-                                    <p class="footer-heading footer-heading-mobile text-white">OUR STORE</p>
-                                    <div class="tf-collapse-content">
-                                        <p class="cl-text-3 mb-4">
-                                            24/7 Support Center:
-                                        </p>
-                                        <a href="tel:0112348888" class="text-white link h4 fw-medium mb-12">
-                                            (+01) 1234 8888
-                                        </a>
-                                        <a href="https://www.google.com/maps?q=600+N+Michigan+Ave+Chicago,+IL+60611+USA"
-                                            target="_blank" class="cl-text-3 link mb-4">
-                                            600 N Michigan Ave, Chicago, IL 60611, USA
-                                        </a>
-                                        <a href="mailto:hi.amere@gmail.com" class="cl-text-3 link">
-                                            hi.amere@gmail.com
-                                        </a>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="br-line type-vertical"></div>
-                            <div class="col-center">
-                                <div class="footer-link-list">
-                                    <div class="footer-col-block type-white footer-wrap-2">
-                                        <p class="footer-heading footer-heading-mobile text-white">COMPANY</p>
-                                        <div class="tf-collapse-content">
-                                            <ul class="footer-menu-list">
-                                                <li><a href="about.html" class="cl-text-3 link">About Us</a></li>
-                                                <li><a href="our-store.html" class="cl-text-3 link">Our Stories</a></li>
-                                                <li><a href="contact.html" class="cl-text-3 link">Contact us</a></li>
-                                                <li><a href="blog.html" class="cl-text-3 link">Latest New</a></li>
-                                                <li><a href="account-page.html" class="cl-text-3 link">My Account</a></li>
-                                            </ul>
-                                        </div>
-                                    </div>
-                                    <div class="footer-col-block type-white footer-wrap-3">
-                                        <p class="footer-heading footer-heading-mobile text-white">CUSTOMER</p>
-                                        <div class="tf-collapse-content">
-                                            <ul class="footer-menu-list">
-                                                <li><a href="faq.html" class="cl-text-3 link">Shipping</a></li>
-                                                <li><a href="faq.html" class="cl-text-3 link">Return & Refund</a></li>
-                                                <li><a href="faq.html" class="cl-text-3 link">Privacy Policy</a></li>
-                                                <li><a href="faq.html" class="cl-text-3 link">Terms & Conditions</a></li>
-                                                <li><a href="faq.html" class="cl-text-3 link">Orders FAQs</a></li>
-                                            </ul>
-                                        </div>
-                                    </div>
-                                    <div class="footer-col-block type-white footer-wrap-4">
-                                        <p class="footer-heading footer-heading-mobile text-white">MY ACCOUNT</p>
-                                        <div class="tf-collapse-content">
-                                            <ul class="footer-menu-list">
-                                                <li><a href="login.html" class="cl-text-3 link">Login</a>
-                                                </li>
-                                                <li><a href="register.html" class="cl-text-3 link">Sign
-                                                        up</a></li>
-                                                <li><a href="account-page.html" class="cl-text-3 link">My Account</a></li>
-                                                <li><a href="wishlist.html" class="cl-text-3 link">Wish List</a></li>
-                                            </ul>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="br-line type-vertical"></div>
-                            <div class="col-right">
-                                <div class="footer-col-block type-white footer-wrap-end">
-                                    <p class="footer-heading footer-heading-mobile text-white">NEWSLETTER</p>
-                                    <div class="tf-collapse-content">
-                                        <p class="footer-desc cl-text-3 mb-16">
-                                            Subscribe for store updates and discounts.
-                                        </p>
-                                        <form class="form-sub mb-16">
-                                            <fieldset>
-                                                <input type="email" placeholder="Enter your e-mail" required>
-                                            </fieldset>
-                                            <button type="submit" class="btn-action">
-                                                <i class="icon icon-ArrowUpRight"></i>
-                                            </button>
-                                        </form>
-                                        <p class="text-remember cl-text-3">
-                                            By clicking subcribe, you agree to the
-                                            <a href="#" class="text-white link link-underline">
-                                                Terms of Service
-                                            </a>
-                                            and
-                                            <a href="#" class="text-white link link-underline">
-                                                Privacy Policy
-                                            </a>.
-                                        </p>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="footer-bottom">
-                    <div class="container-full">
-                        <div class="inner-bottom">
-                            <div class="tf-list list-currenci">
-                                <div class="tf-currencies">
-                                    <select class="tf-dropdown-select style-default color-text-3 type-currencies">
-                                        <option selected data-thumbnail="assets/images/country/us.png">United States (USD $)
-                                        </option>
-                                        <option data-thumbnail="assets/images/country/vn.png">Viet Nam (VND ₫)</option>
-                                    </select>
-                                </div>
-                                <div class="tf-languages">
-                                    <select class="tf-dropdown-select style-default color-text-3 type-languages">
-                                        <option>English</option>
-                                        <option>العربية</option>
-                                        <option>简体中文</option>
-                                        <option>اردو</option>
-                                    </select>
-                                </div>
-                            </div>
-                            <p class="text-nocopy cl-text-3">
-                                ©2026 Amerce. All Rights Reserved.
-                            </p>
-                            <ul class="tf-list payment-list">
-                                <li><img loading="lazy" width="38" height="24" src="assets/images/payment/visa.svg"
-                                        alt="Image"></li>
-                                <li><img loading="lazy" width="38" height="24" src="assets/images/payment/master-card.svg"
-                                        alt="Image"></li>
-                                <li><img loading="lazy" width="38" height="24" src="assets/images/payment/amex.svg"
-                                        alt="Image"></li>
-                                <li><img loading="lazy" width="38" height="24" src="assets/images/payment/paypal.svg"
-                                        alt="Image"></li>
-                                <li><img loading="lazy" width="38" height="24" src="assets/images/payment/water.svg"
-                                        alt="Image"></li>
-                                <li><img loading="lazy" width="38" height="24" src="assets/images/payment/discover.svg"
-                                        alt="Image"></li>
-                            </ul>
-                        </div>
-                    </div>
-                </div>
-            </footer>
-            <!-- /Footer -->
-        </main>
-        <!-- Mobile Menu -->
-        <div class="offcanvas offcanvas-start canvas-mb" id="mobileMenu">
-            <div class="canvas-header">
-                <span class="icon-close-popup" data-bs-dismiss="offcanvas">
-                    <i class="icon icon-X2"></i>
-                </span>
+                    <div class="row g-4">
 
-                <form action="/search" method="get" class="form-search-nav">
-                    <fieldset>
-                        <input type="text" name="q" placeholder="Поиск по каталогу" required>
-                    </fieldset>
-
-                    <button type="submit" class="btn-action">
-                        <i class="icon icon-MagnifyingGlass"></i>
-                    </button>
-                </form>
-            </div>
-
-            <div class="canvas-body">
-                <div class="mb-content-top">
-                    <ul class="nav-ul-mb" id="wrapper-menu-navigation">
-                        <li><a href="/installers">Монтаж</a></li>
-                        <li><a href="/brands">Бренды</a></li>
-                        <li><a href="/akcii">Акции</a></li>
-                        <li><a href="/blog">Статьи</a></li>
-                        <li><a href="/dostavka">Доставка</a></li>
-                        <li><a href="/contacts">Контакты</a></li>
-                        <li><a href="/partners">Партнёрам</a></li>
-                    </ul>
-                </div>
-
-                <div class="need-help-wrap">
-                    <p class="nd-title h6 fw-medium mb-16">Нужна помощь?</p>
-
-                    <p class="lh-26 cl-text-2 mb-4">
-                        Минск, ул. Селицкого, 39Б, каб. 23
-                    </p>
-
-                    <a href="https://www.google.com/maps?q=Минск,+ул.+Селицкого,+39Б" target="_blank"
-                        class="text-decoration-underline text-primary lh-26 mb-16">
-                        Открыть на карте
-                    </a>
-
-                    <a href="mailto:info@kotlov.by" class="cl-text-2 link mb-8">
-                        info@kotlov.by
-                    </a>
-
-                    <a href="tel:+375293544041" class="cl-text-2 link">
-                        +375 (29) 354-40-41
-                    </a>
-
-                    <p class="lh-26 cl-text-2 mt-8 mb-0">
-                        Пн–Пт: 9:00–18:00
-                    </p>
-                </div>
-            </div>
-        </div>
-        <!-- /Mobile Menu -->
-        <!-- Toolbar -->
-        <div class="tf-toolbar-bottom">
-            <div class="toolbar-item">
-                <a href="shop-default.html">
-                    <span class="toolbar-icon">
-                        <i class="icon icon-storefront"></i>
-                    </span>
-                    <span class="toolbar-label">Shop</span>
-                </a>
-            </div>
-            <div class="toolbar-item">
-                <a href="#search" data-bs-toggle="modal">
-                    <span class="toolbar-icon">
-                        <i class="icon icon-MagnifyingGlass"></i>
-                    </span>
-                    <span class="toolbar-label">Search</span>
-                </a>
-            </div>
-            <div class="toolbar-item">
-                <a href="account-page.html">
-                    <span class="toolbar-icon">
-                        <i class="icon icon-User"></i>
-                    </span>
-                    <span class="toolbar-label">Account</span>
-                </a>
-            </div>
-            <div class="toolbar-item">
-                <a href="wishlist.html">
-                    <span class="toolbar-icon">
-                        <i class="icon icon-HeartStraight"></i>
-                    </span>
-                    <span class="toolbar-label">Wishlist</span>
-                </a>
-            </div>
-            <div class="toolbar-item">
-                <a href="view-cart.html">
-                    <span class="toolbar-icon">
-                        <i class="icon icon-Handbag"></i>
-                        <span class="toolbar-count">12</span>
-                    </span>
-                    <span class="toolbar-label">Cart</span>
-                </a>
-            </div>
-        </div>
-        <!-- /Toolbar -->
-
-        <!-- Forgot Pass -->
-        <div class="modal modalCentered fade modal-log modal-log_forgot" id="modalForgot">
-            <div class="modal-dialog modal-dialog-centered">
-                <div class="modal-content">
-                    <span class="icon-close-popup" data-bs-dismiss="modal">
-                        <i class="icon-X2"></i>
-                    </span>
-                    <div class="modal-heading text-center">
-                        <h3 class="title-pop mb-8">Forgot Password</h3>
-                        <p class="desc-pop cl-text-2">We’ll send instructions to reset your password.</p>
-                    </div>
-                    <div class="modal-main">
-                        <form class="form-log">
-                            <div class="form-content">
-                                <fieldset class="tf-field">
-                                    <label for="forgot-user" class="tf-lable fw-medium">
-                                        Username or email address
-                                        <span class="text-primary">*</span>
-                                    </label>
-                                    <input type="text" id="forgot-user" placeholder="Username or email address*" required>
-                                </fieldset>
-                            </div>
-                            <div class="group-action">
-                                <button type="submit" class="tf-btn animate-btn w-100">
-                                    Get Reset Code
-                                </button>
-                                <p class="orther-log text-center">
-                                    Remember your password?
-                                    <a href="#sign" data-bs-toggle="modal" class="text-primary text-decoration-underline">
-                                        Sign In
-                                    </a>
-                                </p>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <!-- /Forgot Pass -->
-        <!-- Size Guide -->
-        <div class="modal modalCentered fade modal-find_size" id="findSize">
-            <div class="modal-dialog modal-dialog-centered">
-                <div class="modal-content">
-                    <div class="modal-heading d-flex align-items-center justify-content-between">
-                        <h4 class="title-pop">Size Chart</h4>
-                        <span class="cs-pointer d-flex link" data-bs-dismiss="modal">
-                            <i class="icon-X2 fs-24"></i>
-                        </span>
-                    </div>
-                    <div class="modal-main">
-                        <div class="tf-rte">
-                            <div class="tf-table-res-df mb-20">
-                                <p class="h6 fw-medium mb-16 cl-text-main">Size Guide</p>
-                                <div class="overflow-auto">
-                                    <table class="tf-sizeguide-table">
-                                        <thead>
-                                            <tr>
-                                                <th>Size</th>
-                                                <th>US</th>
-                                                <th>Bust</th>
-                                                <th>Waist</th>
-                                                <th>Low Hip</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            <tr>
-                                                <td>XS</td>
-                                                <td>2</td>
-                                                <td>32</td>
-                                                <td>24 - 25</td>
-                                                <td>33 - 34</td>
-                                            </tr>
-                                            <tr>
-                                                <td>S</td>
-                                                <td>4</td>
-                                                <td>34 - 35</td>
-                                                <td>26 - 27</td>
-                                                <td>35 - 26</td>
-                                            </tr>
-                                            <tr>
-                                                <td>M</td>
-                                                <td>6</td>
-                                                <td>36 - 37</td>
-                                                <td>28 - 29</td>
-                                                <td>38 - 40</td>
-                                            </tr>
-                                            <tr>
-                                                <td>L</td>
-                                                <td>8</td>
-                                                <td>38 - 29</td>
-                                                <td>30 - 31</td>
-                                                <td>42 - 44</td>
-                                            </tr>
-                                            <tr>
-                                                <td>XL</td>
-                                                <td>10</td>
-                                                <td>40 - 41</td>
-                                                <td>32 - 33</td>
-                                                <td>45 - 47</td>
-                                            </tr>
-                                            <tr>
-                                                <td>XXL</td>
-                                                <td>12</td>
-                                                <td>42 - 43</td>
-                                                <td>34 - 35</td>
-                                                <td>48 - 50</td>
-                                            </tr>
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </div>
-                            <div class="tf-page-size-chart-content">
-                                <div>
-                                    <p class="h6 fw-medium mb-16 cl-text-main">Measuring Tips</p>
-                                    <div class="title fw-medium">Bust</div>
-                                    <p class="mb-12">Measure around the fullest part of your bust.</p>
-                                    <div class="title fw-medium">Waist</div>
-                                    <p class="mb-12">Measure around the narrowest part of your torso.</p>
-                                    <div class="title fw-medium">Low Hip</div>
-                                    <p class="mb-12">With your feet together measure around the fullest part of your
-                                        hips/rear.
-                                    </p>
-                                </div>
-                                <div>
-                                    <img loading="lazy" width="270" height="270" src="assets/images/section/size-chart.jpg"
-                                        alt="Image">
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <!-- /Size Guide -->
-        <!-- Share -->
-        <div class="modal modalCentered fade modal-share" id="share">
-            <div class="modal-dialog modal-dialog-centered">
-                <div class="modal-content">
-                    <div class="modal-heading d-flex align-items-center justify-content-between">
-                        <h4 class="title-pop">Share</h4>
-                        <span class="cs-pointer d-flex link" data-bs-dismiss="modal">
-                            <i class="icon-X2 fs-24"></i>
-                        </span>
-                    </div>
-                    <div class="modal-main">
-                        <ul class="tf-social-icon-2 hv-dark mb-20">
-                            <li>
-                                <a href="https://www.facebook.com/">
-                                    <i class="icon icon-FacebookLogo"></i>
-                                </a>
-                            </li>
-                            <li>
-                                <a href="https://x.com/">
-                                    <i class="icon icon-XLogo"></i>
-                                </a>
-                            </li>
-                            <li>
-                                <a href="https://www.instagram.com/">
-                                    <i class="icon icon-InstagramLogo"></i>
-                                </a>
-                            </li>
-                            <li>
-                                <a href="https://www.tiktok.com/">
-                                    <i class="icon icon-TiktokLogo"></i>
-                                </a>
-                            </li>
-                        </ul>
-                        <div class="wrap-code btn-coppy-text">
-                            <p class="coppyText cl-text-2" id="coppyText">http://themesflat.com</p>
-                            <div class="btn-action-copy tf-btn">Copy</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <!-- /Share -->
-        <!-- Ask -->
-        <div class="modal modalCentered fade modal-log modal-ask" id="ask">
-            <div class="modal-dialog modal-dialog-centered">
-                <div class="modal-content">
-                    <span class="icon-close-popup" data-bs-dismiss="modal">
-                        <i class="icon-X2"></i>
-                    </span>
-                    <div class="modal-heading text-center">
-                        <h3 class="title-pop mb-8">Ask A Question</h3>
-                        <p class="desc-pop cl-text-2">Have a question? Ask us today!</p>
-                    </div>
-                    <div class="modal-main">
-                        <form class="form-log mb-20">
-                            <div class="form-content">
-                                <fieldset class="tf-field">
-                                    <label for="name-ask" class="tf-lable fw-medium">
-                                        Your Name<span class="text-primary">*</span>
-                                    </label>
-                                    <input type="text" id="name-ask" placeholder="Your Name*" required>
-                                </fieldset>
-                                <fieldset class="tf-field">
-                                    <label for="email-ask" class="tf-lable fw-medium">
-                                        Your Email<span class="text-primary">*</span>
-                                    </label>
-                                    <input type="email" id="email-ask" placeholder="Your Email*" required>
-                                </fieldset>
-                                <fieldset class="tf-field">
-                                    <label for="phone-ask" class="tf-lable fw-medium">
-                                        Your phone
-                                    </label>
-                                    <input type="number" id="phone-ask" placeholder="Your phone" required>
-                                </fieldset>
-                                <fieldset class="tf-field">
-                                    <label for="message-ask" class="tf-lable fw-medium">
-                                        Your Message
-                                        <span class="text-primary">*</span>
-                                    </label>
-                                    <textarea id="message-ask" placeholder="Your Message*" required></textarea>
-                                </fieldset>
-                            </div>
-                            <div class="group-action">
-                                <button type="submit" class="tf-btn animate-btn w-100">
-                                    Subcribe
-                                </button>
-                            </div>
-                        </form>
-                        <ul class="tf-social-icon-2 hv-dark justify-content-center">
-                            <li>
-                                <a href="https://www.facebook.com/">
-                                    <i class="icon icon-FacebookLogo"></i>
-                                </a>
-                            </li>
-                            <li>
-                                <a href="https://x.com/">
-                                    <i class="icon icon-XLogo"></i>
-                                </a>
-                            </li>
-                            <li>
-                                <a href="https://www.instagram.com/">
-                                    <i class="icon icon-InstagramLogo"></i>
-                                </a>
-                            </li>
-                            <li>
-                                <a href="https://www.tiktok.com/">
-                                    <i class="icon icon-TiktokLogo"></i>
-                                </a>
-                            </li>
-                        </ul>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <!-- /Ask -->
-        <!-- Compare -->
-        <div class="offcanvas offcanvas-bottom canvas-compare" id="compare">
-            <div class="canvas-wrapper">
-                <div class="canvas-body">
-                    <div class="container">
-                        <div class="tf-compare-list main-list-clear wrap-empty_text">
-                            <div class="tf-compare-head">
-                                <h4 class="title letter-space-0">Compare products</h4>
-                            </div>
-                            <div class="tf-compare-offcanvas list-empty">
-                                <p class="box-text_empty cl-text-2">Your Compare is curently empty</p>
-                                <div class="tf-compare-item file-delete">
-                                    <a href="product-detail.html">
-                                        <div class="icon remove">
-                                            <i class="icon-X2"></i>
-                                        </div>
-                                        <img class="radius-3 aspect-ratio-1" width="660" height="880"
-                                            src="assets/images/product/construction/product-1.jpg" alt="Image">
-                                    </a>
-                                </div>
-                                <div class="tf-compare-item file-delete">
-                                    <a href="product-detail.html">
-                                        <div class="icon remove">
-                                            <i class="icon-X2"></i>
-                                        </div>
-                                        <img class="radius-3 aspect-ratio-1" width="660" height="880"
-                                            src="assets/images/product/construction/product-2.jpg" alt="Image">
-                                    </a>
-                                </div>
-                                <div class="tf-compare-item file-delete">
-                                    <a href="product-detail.html">
-                                        <div class="icon remove">
-                                            <i class="icon-X2"></i>
-                                        </div>
-                                        <img class="radius-3 aspect-ratio-1" width="660" height="880"
-                                            src="assets/images/product/construction/product-3.jpg" alt="Image">
-                                    </a>
-                                </div>
-                            </div>
-                            <div class="tf-compare-buttons justify-content-center">
-                                <a href="compare.html" class="tf-btn animate-btn">Compare </a>
-                                <div class="tf-btn btn-white btn-stroke clear-list-empty tf-compare-button-clear-all">
-                                    Clear All
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <!-- /Compare -->
-        <!-- Quick Add -->
-        <div class="modal modalCentered fade modal-quickadd" id="quickAdd">
-            <div class="modal-dialog modal-dialog-centered">
-                <div class="modal-content">
-                    <div class="d-flex align-items-center justify-content-between mb-20">
-                        <h5>Quick Add</h5>
-                        <span class="d-flex cs-pointer link" data-bs-dismiss="modal">
-                            <i class="icon icon-X2 fs-24"></i>
-                        </span>
-                    </div>
-                    <div class="tf-product-quick_add tf-quick-prd_variant">
-                        <div class="product-mini-view">
-                            <a href="product-detail.html" class="prd-image">
-                                <img class="img-product aspect-ratio-1" width="120" height="120"
-                                    src="assets/images/product/single/construction/prd-cart-1.jpg" alt="Image Product">
-                            </a>
-                            <div class="prd-content">
-                                <a href="product-detail.html"
-                                    class="prd-name fw-medium link-underline link text-capitalize">
-                                    SKIL 15 Amp 7-1/4 Inch Circular Saw with Single Beam Laser Guide
-                                </a>
-                                <div class="price-wrap">
-                                    <span class="price-new text-primary fw-semibold price-on-sale">$79.99</span>
-                                    <span class="price-old text-caption-01 cl-text-3">$49,99</span>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="product-total-quantity">
-                            <p class="">
-                                Quantity:
-                            </p>
-                            <div class="group-action">
-                                <div class="wg-quantity">
-                                    <button class="btn-quantity btn-decrease">
-                                        <i class="icon icon-minus"></i>
-                                    </button>
-                                    <input class="quantity-product" type="text" name="number" value="1">
-                                    <button class="btn-quantity btn-increase">
-                                        <i class="icon icon-plus"></i>
-                                    </button>
-                                </div>
-                                <a href="#shoppingCart" data-bs-toggle="offcanvas"
-                                    class="btn-action-price tf-btn type-xl animate-btn w-100">
-                                    Add to Cart
-                                    <span class="d-none d-sm-block d-md-none d-lg-block">&nbsp;-&nbsp;</span>
-                                    <span class="price-add d-none d-sm-block d-md-none d-lg-block">$79.99</span>
-                                </a>
-                            </div>
-                            <a href="checkout.html" class="tf-btn type-xl btn-primary animate-btn w-100">
-                                Buy It Now
-                            </a>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <!-- /Quick Add -->
-        <!-- Quick View -->
-        <div class="offcanvas offcanvas-end canvas-quickview" id="quickView">
-            <div class="mini-quick-image">
-                <div class="wrap-quick wrapper-scroll-quickview">
-                    <div class="image item-scroll-quickview" data-scroll-quickview="Green">
-                        <img class="aspect-ratio-1" loading="lazy" width="340" height="444"
-                            src="assets/images/product/single/construction/prd-cart-1.jpg" alt="Image">
-                    </div>
-                    <div class="image item-scroll-quickview" data-scroll-quickview="Green">
-                        <img class="aspect-ratio-1" loading="lazy" width="340" height="444"
-                            src="assets/images/product/single/construction/prd-cart-1_2.jpg" alt="Image">
-                    </div>
-                    <div class="image item-scroll-quickview" data-scroll-quickview="Green">
-                        <img class="aspect-ratio-1" loading="lazy" width="340" height="444"
-                            src="assets/images/product/single/construction/prd-cart-1_3.jpg" alt="Image">
-                    </div>
-                    <div class="image item-scroll-quickview" data-scroll-quickview="Gray">
-                        <img class="aspect-ratio-1" loading="lazy" width="340" height="444"
-                            src="assets/images/product/single/construction/prd-cart-1_4.jpg" alt="Image">
-                    </div>
-                </div>
-            </div>
-            <div class="wrap-canvas">
-                <div class="canvas-header ps-md-0">
-                    <h5 class="title-pop">Quick View</h5>
-                    <span class="icon-close-popup" data-bs-dismiss="offcanvas">
-                        <i class="icon icon-X2"></i>
-                    </span>
-                </div>
-                <div class="canvas-body ps-md-0">
-                    <div class="tf-product-quick_view tf-quick-prd_variant">
-                        <div class="tf-product-info-heading">
-                            <p class="product-infor-cate text-caption-01 mb-4">
-                                Construction
-                            </p>
-                            <h3 class="product-infor-name mb-12 letter-space-0">
-                                SKIL 15 Amp 7-1/4 Inch Circular Saw with Single Beam Laser Guide
-                            </h3>
-                            <div class="product-infor-meta mb-20">
-                                <div class="meta_rate">
-                                    <div class="star-wrap normal d-flex align-items-center">
-                                        <i class="icon icon-Star"></i>
-                                        <i class="icon icon-Star"></i>
-                                        <i class="icon icon-Star"></i>
-                                        <i class="icon icon-Star"></i>
-                                        <i class="icon icon-Star"></i>
-                                    </div>
-                                    <span class="text-caption-01 cl-text-2">
-                                        (134 reviews)
-                                    </span>
-                                </div>
-                                <div class="br-line type-vertical"></div>
-                                <div class="meta_sold">
-                                    <i class="icon icon-Lightning text-primary"></i>
-                                    <span class="text-caption-01 cl-text-2">18 sold in last 32 hours</span>
-                                </div>
-                            </div>
-                            <div class="product-infor-price mb-12">
-                                <h4 class="price-on-sale">$59.99</h4>
-                                <div class="br-line type-vertical"></div>
-                                <p class="cl-text-3 text-decoration-line-through">$98.99</p>
-                                <span class="badge-sale text-white fw-semibold text-caption-02">
-                                    -25%
-                                </span>
-                            </div>
-                            <p class="product-infor-desc cl-text-2 mb-12">
-                                Our signature removable magnetic ear pads are easily replaceable and provide serious sound
-                                isolation.
-                            </p>
-                            <div class="product-infor-reality lh-24">
-                                <div class="ic d-flex">
-                                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none"
-                                        xmlns="http://www.w3.org/2000/svg">
-                                        <rect width="24" height="24" rx="4" fill="#101010" />
-                                        <path
-                                            d="M19.4569 11.7975C19.435 11.7481 18.9056 10.5738 17.7287 9.39687C16.1606 7.82875 14.18 7 12 7C9.81999 7 7.83937 7.82875 6.27124 9.39687C5.09437 10.5738 4.56249 11.75 4.54312 11.7975C4.51469 11.8614 4.5 11.9306 4.5 12.0006C4.5 12.0706 4.51469 12.1398 4.54312 12.2037C4.56499 12.2531 5.09437 13.4269 6.27124 14.6038C7.83937 16.1713 9.81999 17 12 17C14.18 17 16.1606 16.1713 17.7287 14.6038C18.9056 13.4269 19.435 12.2531 19.4569 12.2037C19.4853 12.1398 19.5 12.0706 19.5 12.0006C19.5 11.9306 19.4853 11.8614 19.4569 11.7975ZM12 14.5C11.5055 14.5 11.0222 14.3534 10.6111 14.0787C10.1999 13.804 9.87951 13.4135 9.69029 12.9567C9.50107 12.4999 9.45157 11.9972 9.54803 11.5123C9.64449 11.0273 9.88259 10.5819 10.2322 10.2322C10.5819 9.8826 11.0273 9.6445 11.5123 9.54804C11.9972 9.45157 12.4999 9.50108 12.9567 9.6903C13.4135 9.87952 13.804 10.2 14.0787 10.6111C14.3534 11.0222 14.5 11.5055 14.5 12C14.5 12.663 14.2366 13.2989 13.7678 13.7678C13.2989 14.2366 12.663 14.5 12 14.5Z"
-                                            fill="white" />
+                        <div class="col-12 col-sm-6 wow fadeInUp" data-wow-delay="0s">
+                            <div class="d-flex gap-16 align-items-start">
+                                <div class="flex-shrink-0 d-flex align-items-center justify-content-center"
+                                    style="width:48px;height:48px;min-width:48px;background:#f5f5f5;border-radius:10px;color:#101010;">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                                        <circle cx="12" cy="12" r="9"/>
+                                        <polyline points="12 7 12 12 15 15"/>
                                     </svg>
                                 </div>
-                                28 people are viewing this right now
-                            </div>
-                        </div>
-                        <div class="br-line"></div>
-                        <div class="tf-product-variant">
-                            <div class="tf-product-total-quantity">
-                                <p class="">
-                                    Quantity:
-                                </p>
-                                <div class="group-action">
-                                    <div class="wg-quantity">
-                                        <button class="btn-quantity btn-decrease">
-                                            <i class="icon icon-minus"></i>
-                                        </button>
-                                        <input class="quantity-product" type="text" name="number" value="1">
-                                        <button class="btn-quantity btn-increase">
-                                            <i class="icon icon-plus"></i>
-                                        </button>
-                                    </div>
-                                    <a href="#shoppingCart" data-bs-toggle="offcanvas"
-                                        class="btn-action-price tf-btn type-xl animate-btn w-100">
-                                        Add to Cart
-                                        <span class="d-none d-sm-block d-md-none d-lg-block">&nbsp;-&nbsp;</span>
-                                        <span class="price-add d-none d-sm-block d-md-none d-lg-block">$59.99</span>
-                                    </a>
+                                <div>
+                                    <div class="h6 fw-semibold mb-8">14+ лет на рынке</div>
+                                    <p class="text-body-2 cl-text-2">Работаем с 2011 года. Знаем рынок, бренды и типичные ошибки — не учимся на ваших объектах.</p>
                                 </div>
-                                <a href="checkout.html" class="tf-btn type-xl btn-primary animate-btn w-100">
-                                    Buy It Now
-                                </a>
                             </div>
                         </div>
-                        <div class="box-action">
-                            <a href="product-detail.html" class="tf-btn-line-2 style-primary fw-semibold">
-                                View Full Details
-                            </a>
+
+                        <div class="col-12 col-sm-6 wow fadeInUp" data-wow-delay="0.1s">
+                            <div class="d-flex gap-16 align-items-start">
+                                <div class="flex-shrink-0 d-flex align-items-center justify-content-center"
+                                    style="width:48px;height:48px;min-width:48px;background:#f5f5f5;border-radius:10px;color:#101010;">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                                        <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                                    </svg>
+                                </div>
+                                <div>
+                                    <div class="h6 fw-semibold mb-8">500+ реальных отзывов</div>
+                                    <p class="text-body-2 cl-text-2">Никаких накруток. Только живые клиенты, которые уже греются с нашим оборудованием.</p>
+                                </div>
+                            </div>
                         </div>
+
+                        <div class="col-12 col-sm-6 wow fadeInUp" data-wow-delay="0.2s">
+                            <div class="d-flex gap-16 align-items-start">
+                                <div class="flex-shrink-0 d-flex align-items-center justify-content-center"
+                                    style="width:48px;height:48px;min-width:48px;background:#f5f5f5;border-radius:10px;color:#101010;">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                                        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                                        <circle cx="9" cy="7" r="4"/>
+                                        <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+                                        <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                                    </svg>
+                                </div>
+                                <div>
+                                    <div class="h6 fw-semibold mb-8">200+ монтажников по Беларуси</div>
+                                    <p class="text-body-2 cl-text-2">Сеть сертифицированных партнёров — найдём мастера в вашем городе или районе.</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-12 col-sm-6 wow fadeInUp" data-wow-delay="0.3s">
+                            <div class="d-flex gap-16 align-items-start">
+                                <div class="flex-shrink-0 d-flex align-items-center justify-content-center"
+                                    style="width:48px;height:48px;min-width:48px;background:#f5f5f5;border-radius:10px;color:#101010;">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                                        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                                    </svg>
+                                </div>
+                                <div>
+                                    <div class="h6 fw-semibold mb-8">Официальные поставки</div>
+                                    <p class="text-body-2 cl-text-2">Работаем напрямую с производителями. Оригинальное оборудование с официальной гарантией.</p>
+                                </div>
+                            </div>
+                        </div>
+
                     </div>
+
+                    <div class="mt-24 wow fadeInUp" style="padding-top: 16px;" data-wow-delay="0.4s">
+                        <a href="/contacts" class="tf-btn animate-btn">
+                            Заказать консультацию
+                        </a>
+                    </div>
+
                 </div>
+            </div>
+
+        </div>
+    </div>
+</section>
+    
+            <!-- Lookbook -->
+   
+{{-- Используем готовый класс banner-countdown-v01 style-4 из шаблона --}}
+{{-- Секция "Стань партнёром" -- вместо Lookbook --}}
+{{-- Секция "Стань партнёром" -- вместо Lookbook --}}
+<div class="container flat-spacing">
+    <div class="banner-countdown-v01 style-4">
+        <div class="banner-img">
+            <img class="img-cover" width="1410" height="260" loading="lazy" decoding="async"
+                src="{{ asset('img/banners/banner-partners.jpg') }}"
+                alt="Стать партнёром KOTLOV.BY">
+        </div>
+        <div class="content">
+            <div class="col-left">
+                <p class="text-caption-01 text-white mb-8 fw-semibold cl-text-3">
+                    ДЛЯ МОНТАЖНИКОВ И ПОСТАВЩИКОВ
+                </p>
+                <h2 class="text-white mb-8">Присоединяйтесь к KOTLOV</h2>
+                <p class="text-white text-body-1">
+                    Получайте заявки от клиентов. Размещайте товары. Развивайте бизнес.
+                </p>
+            </div>
+            <div class="col-right">
+                <a href="/partners" class="tf-btn btn-white animate-btn animate-dark">
+                    Стать партнёром
+                </a>
             </div>
         </div>
-        <!-- /Quick View -->
-        <!-- Shopping Cart -->
-        <div class="offcanvas offcanvas-end popup-shopping-cart" id="shoppingCart">
-            <div class="tf-minicart-recommendations file-delete">
-                <div class="title d-flex justify-content-between align-items-center">
-                    <h5>You Might Like</h5>
-                    <i class="icon icon-X2 link remove fs-24 cs-pointer"></i>
-                </div>
-                <div class="wrap-recommendations">
-                    <div class="list-cart">
-                        <div class="list-cart-item">
-                            <a href="#" class="image">
-                                <img class="aspect-ratio-1" loading="lazy" width="212" height="283"
-                                    src="assets/images/product/construction/product-1.jpg" alt="Image">
-                            </a>
-                            <div class="content">
-                                <a class="name fw-medium link text-line-clamp-1" href="product-detail.html">
-                                    Milwaukee M12 FUEL 1/2inch Hammer Drill (Bare Tool)
-                                </a>
-                                <div class="price-wrap">
-                                    <span class="price-new text-primary fw-semibold">$29,99</span>
-                                    <span class="price-old text-caption-01 cl-text-3">$49,99</span>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="list-cart-item">
-                            <a href="#" class="image">
-                                <img class="aspect-ratio-1" loading="lazy" width="212" height="283"
-                                    src="assets/images/product/construction/product-2.jpg" alt="Image">
-                            </a>
-                            <div class="content">
-                                <a class="name fw-medium link text-line-clamp-1" href="product-detail.html">
-                                    Klein Tools Digital Angle Gauge/Level
-                                </a>
-                                <div class="price-wrap">
-                                    <span class="price-new text-primary fw-semibold">$29,99</span>
-                                    <span class="price-old text-caption-01 cl-text-3">$49,99</span>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="list-cart-item">
-                            <a href="#" class="image">
-                                <img class="aspect-ratio-1" loading="lazy" width="212" height="283"
-                                    src="assets/images/product/construction/product-3.jpg" alt="Image">
-                            </a>
-                            <div class="content">
-                                <a class="name fw-medium link text-line-clamp-1" href="product-detail.html">
-                                    ProFlex Impact Driver Bit Set, 40-Piece - 33801 | Klein Tools
-                                </a>
-                                <div class="price-wrap">
-                                    <span class="price-new text-primary fw-semibold">$29,99</span>
-                                    <span class="price-old text-caption-01 cl-text-3">$49,99</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="canvas-wrapper">
-                <div class="popup-header">
-                    <div class="d-flex align-items-center justify-content-between mb-12">
-                        <h5 class="title">Shopping Cart</h5>
-                        <span class="icon-X2 icon-close-popup" data-bs-dismiss="offcanvas"></span>
-                    </div>
-                    <div class="cart-threshold">
-                        <p class="text">
-                            Buy
-                            <span class="text-primary fw-7">$70.00</span>
-                            more to get freeship
-                        </p>
-                        <div class="tf-progress-bar tf-progress-ship">
-                            <div class="value" style="width: 0%" data-progress="25"></div>
-                        </div>
-                    </div>
-                </div>
-                <div class="wrap">
-                    <div class="tf-mini-cart-wrap list-file-delete wrap-empty_text">
-                        <div class="tf-mini-cart-main">
-                            <div class="tf-mini-cart-sroll">
-                                <div class="tf-mini-cart-items list-empty">
-                                    <div class="box-text_empty type-shop_cart">
-                                        <div class="shop-empty_top">
-                                            <span class="icon">
-                                                <i class="icon-Handbag"></i>
-                                            </span>
-                                            <h4 class="text-emp">Your cart is empty</h4>
-                                            <p class="cl-text-2">Your cart is currently empty. Let us assist you in
-                                                finding the right product</p>
-                                        </div>
-                                        <div class="shop-empty_bot">
-                                            <a href="shop-default.html" class="tf-btn animate-btn">Shopping </a>
-                                            <a href="index.html" class="tf-btn btn-stroke">Back to home </a>
-                                        </div>
-                                    </div>
-                                    <div class="tf-mini-cart-item file-delete">
-                                        <div class="tf-mini-cart-image">
-                                            <img loading="lazy" width="100" height="133"
-                                                src="assets/images/product/construction/product-4.jpg" alt="Image Product">
-                                        </div>
-                                        <div class="tf-mini-cart-info">
-                                            <a href="product-detail.html" class="name fw-medium link text-line-clamp-1">
-                                                M18 FUEL™ 7" / 9" Large Angle Grinder (Tool Only)
-                                            </a>
-                                        </div>
-                                        <div class="tf-mini-cart-price">
-                                            <div class="tf-btn-line-3 type-primary remove cs-pointer">
-                                                <span class="text-caption-01 fw-semibold">
-                                                    Remove
-                                                </span>
-                                            </div>
-                                            <div
-                                                class="fw-semibold d-flex align-items-center justify-content-between gap-4">
-                                                <span class="number">1</span>
-                                                <span>x</span>
-                                                <span class="price tf-mini-card-price">$60.00</span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="tf-mini-cart-item file-delete">
-                                        <div class="tf-mini-cart-image">
-                                            <img loading="lazy" width="100" height="133"
-                                                src="assets/images/product/construction/product-5.jpg" alt="Image Product">
-                                        </div>
-                                        <div class="tf-mini-cart-info">
-                                            <a href="product-detail.html" class="name fw-medium link text-line-clamp-1">
-                                                Plumeria Champa White Flower Plant
-                                            </a>
-                                        </div>
-                                        <div class="tf-mini-cart-price">
-                                            <div class="tf-btn-line-3 type-primary remove cs-pointer">
-                                                <span class="text-caption-01 fw-semibold">
-                                                    Remove
-                                                </span>
-                                            </div>
-                                            <div
-                                                class="fw-semibold d-flex align-items-center justify-content-between gap-4">
-                                                <span class="number">1</span>
-                                                <span>x</span>
-                                                <span class="price tf-mini-card-price">$60.00</span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="tf-mini-cart-item file-delete">
-                                        <div class="tf-mini-cart-image">
-                                            <img loading="lazy" width="100" height="133"
-                                                src="assets/images/product/construction/product-6.jpg" alt="Image Product">
-                                        </div>
-                                        <div class="tf-mini-cart-info">
-                                            <a href="product-detail.html" class="name fw-medium link text-line-clamp-1">
-                                                General Purpose Gloves - Milwaukee® Impact
-                                            </a>
-                                        </div>
-                                        <div class="tf-mini-cart-price">
-                                            <div class="tf-btn-line-3 type-primary remove cs-pointer">
-                                                <span class="text-caption-01 fw-semibold">
-                                                    Remove
-                                                </span>
-                                            </div>
-                                            <div
-                                                class="fw-semibold d-flex align-items-center justify-content-between gap-4">
-                                                <span class="number">1</span>
-                                                <span>x</span>
-                                                <span class="price tf-mini-card-price">$60.00</span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="tf-mini-cart-item file-delete">
-                                        <div class="tf-mini-cart-image">
-                                            <img loading="lazy" width="100" height="133"
-                                                src="assets/images/product/construction/product-7.jpg" alt="Image Product">
-                                        </div>
-                                        <div class="tf-mini-cart-info">
-                                            <a href="product-detail.html" class="name fw-medium link text-line-clamp-1">
-                                                Smart Helmet Will Boost Industrial Safety & Efficiency
-                                            </a>
-                                        </div>
-                                        <div class="tf-mini-cart-price">
-                                            <div class="tf-btn-line-3 type-primary remove cs-pointer">
-                                                <span class="text-caption-01 fw-semibold">
-                                                    Remove
-                                                </span>
-                                            </div>
-                                            <div
-                                                class="fw-semibold d-flex align-items-center justify-content-between gap-4">
-                                                <span class="number">1</span>
-                                                <span>x</span>
-                                                <span class="price tf-mini-card-price">$60.00</span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="tf-mini-cart-bottom box-empty_clear">
-                            <div class="tf-mini-cart-tool">
-                                <div class="tf-mini-cart-tool-btn btn-add-note">
-                                    <i class="icon icon-NotePencil"></i>
-                                    <div class="lh-24">Note</div>
-                                </div>
-                                <div class="tf-mini-cart-tool-btn btn-estimate-shipping">
-                                    <i class="icon icon-Truck"></i>
-                                    <div class="lh-24">Shipping</div>
-                                </div>
-                                <div class="tf-mini-cart-tool-btn btn-add-gift">
-                                    <i class="icon icon-SealPercent"></i>
-                                    <div class="lh-24">Coupon</div>
-                                </div>
-                            </div>
-                            <div class="tf-mini-cart-bottom-wrap">
-                                <div class="tf-mini-cart-total">
-                                    <h5 class="text-total d-flex align-content-center justify-content-between">
-                                        <span class="subtotal">Subtotal</span>
-                                        <span class="total-price tf-totals-total-value">$186,99</span>
-                                    </h5>
-                                </div>
-                                <div class="checkbox-wrap">
-                                    <input class="tf-check style-2" type="checkbox" id="agree-term">
-                                    <label for="agree-term">
-                                        I agree with
-                                        <a href="term-and-condition.html" class="text-decoration-underline">
-                                            Terms & Conditions
-                                        </a>
-                                    </label>
-                                </div>
-                                <div class="tf-mini-cart-view-checkout">
-                                    <a href="view-cart.html" class="tf-btn btn-stroke">
-                                        View cart
-                                    </a>
-                                    <a href="checkout.html" class="tf-btn animate-btn">
-                                        Check Out
-                                    </a>
-                                </div>
-                                <a href="shop-default.html"
-                                    class="d-flex justify-content-center fw-semibold text-center link">
-                                    Or Continue Shopping
-                                </a>
-                            </div>
-                        </div>
-                        <div class="tf-mini-cart-tool-openable add-note">
-                            <div class="overlay tf-mini-cart-tool-close"></div>
-                            <form action="#" class="tf-mini-cart-tool-content">
-                                <label for="cart-note" class="tf-mini-cart-tool-text h6 fw-medium">
-                                    <i class="icon icon-NotePencil"></i>
-                                    Note
-                                </label>
-                                <textarea name="note" id="cart-note" placeholder="Note about your order"></textarea>
-                                <div class="tf-cart-tool-btns">
-                                    <button class="subscribe-button tf-btn animate-btn" type="submit">
-                                        Save
-                                    </button>
-                                    <div class="tf-btn btn-stroke  tf-mini-cart-tool-close">
-                                        Cancel
-                                    </div>
-                                </div>
-                            </form>
-                        </div>
-                        <div class="tf-mini-cart-tool-openable estimate-shipping">
-                            <div class="overlay tf-mini-cart-tool-close"></div>
-                            <form id="shipping-form" class="tf-mini-cart-tool-content">
-                                <div class="tf-mini-cart-tool-text h6 fw-medium">
-                                    <i class="icon icon-Truck"></i>
-                                    Shipping
-                                </div>
-                                <div class="form-content gap-10">
-                                    <div class="tf-select">
-                                        <select class="w-100" id="shipping-country-form" name="address[country]"
-                                            data-default="">
-                                            <option value="Australia"
-                                                data-provinces='[["Australian Capital Territory","Australian Capital Territory"],["New South Wales","New South Wales"],["Northern Territory","Northern Territory"],["Queensland","Queensland"],["South Australia","South Australia"],["Tasmania","Tasmania"],["Victoria","Victoria"],["Western Australia","Western Australia"]]'>
-                                                Australia
-                                            </option>
-                                            <option value="Austria" data-provinces="[]">Austria</option>
-                                            <option value="Belgium" data-provinces="[]">Belgium</option>
-                                            <option value="Canada"
-                                                data-provinces='[["Ontario","Ontario"],["Quebec","Quebec"]]'>
-                                                Canada</option>
-                                            <option value="Czech Republic" data-provinces="[]">Czechia</option>
-                                            <option value="Denmark" data-provinces="[]">Denmark</option>
-                                            <option value="Finland" data-provinces="[]">Finland</option>
-                                            <option value="France" data-provinces="[]">France</option>
-                                            <option value="Germany" data-provinces="[]">Germany</option>
-                                            <option selected value="United States"
-                                                data-provinces='[["Alabama","Alabama"],["California","California"],["Florida","Florida"]]'>
-                                                United States
-                                            </option>
-                                            <option value="United Kingdom"
-                                                data-provinces='[["England","England"],["Scotland","Scotland"],["Wales","Wales"],["Northern Ireland","Northern Ireland"]]'>
-                                                United Kingdom
-                                            </option>
-                                            <option value="India" data-provinces="[]">India</option>
-                                            <option value="Japan" data-provinces="[]">Japan</option>
-                                            <option value="Mexico" data-provinces="[]">Mexico</option>
-                                            <option value="South Korea" data-provinces="[]">South Korea</option>
-                                            <option value="Spain" data-provinces="[]">Spain</option>
-                                            <option value="Italy" data-provinces="[]">Italy</option>
-                                            <option value="Vietnam"
-                                                data-provinces='[["Ha Noi","Ha Noi"],["Da Nang","Da Nang"],["Ho Chi Minh","Ho Chi Minh"]]'>
-                                                Vietnam
-                                            </option>
-                                        </select>
-                                    </div>
-                                    <div class="tf-select">
-                                        <select id="shipping-province-form" name="address[province]"
-                                            data-default=""></select>
-                                    </div>
-                                    <input type="text" placeholder="Postal code" data-opend-focus id="zipcode"
-                                        name="address[zip]" value="">
-                                    <div id="zipcode-message" class="error" style="display: none">We found one shipping rate
-                                        available for undefined.
-                                    </div>
-                                    <div id="zipcode-success" class="success" style="display: none">
-                                        <p>We found one shipping rate available for your address:</p>
-                                        <p class="standard">
-                                            Standard at <span>$0.00</span>
-                                            USD
-                                        </p>
-                                    </div>
-                                </div>
-                                <div class="tf-cart-tool-btns">
-                                    <button class="subscribe-button tf-btn animate-btn" type="submit">
-                                        Save
-                                    </button>
-                                    <div class="tf-btn btn-stroke tf-mini-cart-tool-close">
-                                        Cancel
-                                    </div>
-                                </div>
-                            </form>
-                        </div>
-                        <div class="tf-mini-cart-tool-openable add-gift">
-                            <div class="overlay tf-mini-cart-tool-close"></div>
-                            <form action="#" class="tf-mini-cart-tool-content">
-                                <div class="tf-mini-cart-tool-text h6 fw-medium">
-                                    <i class="icon icon-SealPercent"></i>
-                                    Coupon
-                                </div>
-                                <div class="wrap">
-                                    <h5>
-                                        Only <span class="text-primary">$2</span>
-                                        for a gift box
-                                    </h5>
-                                </div>
-                                <div class="tf-cart-tool-btns">
-                                    <button class="subscribe-button tf-btn animate-btn" type="submit">
-                                        Add a gift
-                                    </button>
-                                    <div class="tf-btn btn-stroke line tf-mini-cart-tool-close">
-                                        Cancel
-                                    </div>
-                                </div>
-                            </form>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <!-- /Shopping Cart -->
-        <!-- Search -->
-        <div class="modal modalCentered fade modal-search" id="search">
-            <div class="modal-dialog modal-dialog-centered">
-                <div class="modal-content">
-                    <div class="d-flex align-items-center justify-content-between gap-10">
-                        <h3>
-                            Search
-                        </h3>
-                        <span class="icon-close-popup flex-shrink-0" data-bs-dismiss="modal">
-                            <i class="icon-X2"></i>
-                        </span>
-                    </div>
-                    <form action="search-result.html" class="form-search-nav style-2">
-                        <fieldset>
-                            <input type="text" placeholder="Searching..." required>
-                        </fieldset>
-                        <button type="submit" class="btn-action">
-                            <i class="icon icon-MagnifyingGlass"></i>
-                        </button>
-                    </form>
-                    <div class="recently-view">
-                        <p class="h5 mb-16">Recently Viewed Products</p>
-                        <div dir="ltr" class="swiper tf-swiper mb-24" data-preview="4" data-tablet="3" data-mobile-sm="2"
-                            data-mobile="2" data-space-lg="30" data-space-md="20" data-space="10" data-pagination="2"
-                            data-pagination-sm="2" data-pagination-md="3" data-pagination-lg="4">
-                            <div class="swiper-wrapper">
-                                <!-- slide 1 -->
-                                <div class="swiper-slide">
-                                    <div class="card-product product-style_stroke">
-                                        <div class="card-product_wrapper square">
-                                            <a href="product-detail.html" class="product-img">
-                                                <img class="img-product" loading="lazy" width="330" height="330"
-                                                    src="assets/images/product/construction/product-9.jpg" alt="Product">
-                                                <img class="img-hover" loading="lazy" width="330" height="330"
-                                                    src="assets/images/product/construction/product-9.jpg" alt="Product">
-                                            </a>
-                                            <ul class="product-action_list">
-                                                <li class="wishlist">
-                                                    <a href="#;" class="hover-tooltip tooltip-left box-icon">
-                                                        <span class="icon icon-heart"></span>
-                                                        <span class="tooltip">Add to Wishlist</span>
-                                                    </a>
-                                                </li>
-                                                <li class="compare">
-                                                    <a href="#compare" data-bs-toggle="offcanvas"
-                                                        class="hover-tooltip tooltip-left box-icon">
-                                                        <span class="icon icon-ArrowsLeftRight"></span>
-                                                        <span class="tooltip">Compare</span>
-                                                    </a>
-                                                </li>
-                                                <li>
-                                                    <a href="#quickView" data-bs-toggle="offcanvas"
-                                                        class="hover-tooltip tooltip-left box-icon">
-                                                        <span class="icon icon-Eye"></span>
-                                                        <span class="tooltip">Quick view</span>
-                                                    </a>
-                                                </li>
-                                            </ul>
-                                            <div class="product-action_bot">
-                                                <a href="#shoppingCart" data-bs-toggle="offcanvas"
-                                                    class="tf-btn btn-white small animate-btn animate-dark w-100">
-                                                    Add to Cart
-                                                </a>
-                                            </div>
-                                        </div>
-                                        <div class="card-product_info">
-                                            <a href="product-detail.html"
-                                                class="name-product lh-24 fw-medium link-underline-text">
-                                                Makita A-94786 12-Inch 40 Tooth Ultra Coated Mitersaw Blade.
-                                            </a>
-                                            <div class="star-wrap d-flex align-items-center">
-                                                <i class="icon icon-Star"></i>
-                                                <i class="icon icon-Star"></i>
-                                                <i class="icon icon-Star"></i>
-                                                <i class="icon icon-Star"></i>
-                                                <i class="icon icon-Star"></i>
-                                            </div>
-                                            <div class="price-wrap">
-                                                <span class="price-new text-primary fw-semibold">$29,99</span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                                <!-- slide 2 -->
-                                <div class="swiper-slide">
-                                    <div class="card-product product-style_stroke">
-                                        <div class="card-product_wrapper square">
-                                            <a href="product-detail.html" class="product-img">
-                                                <img class="img-product" loading="lazy" width="330" height="330"
-                                                    src="assets/images/product/construction/product-10.jpg" alt="Product">
-                                                <img class="img-hover" loading="lazy" width="330" height="330"
-                                                    src="assets/images/product/construction/product-10.jpg" alt="Product">
-                                            </a>
-                                            <ul class="product-action_list">
-                                                <li class="wishlist">
-                                                    <a href="#;" class="hover-tooltip tooltip-left box-icon">
-                                                        <span class="icon icon-heart"></span>
-                                                        <span class="tooltip">Add to Wishlist</span>
-                                                    </a>
-                                                </li>
-                                                <li class="compare">
-                                                    <a href="#compare" data-bs-toggle="offcanvas"
-                                                        class="hover-tooltip tooltip-left box-icon">
-                                                        <span class="icon icon-ArrowsLeftRight"></span>
-                                                        <span class="tooltip">Compare</span>
-                                                    </a>
-                                                </li>
-                                                <li>
-                                                    <a href="#quickView" data-bs-toggle="offcanvas"
-                                                        class="hover-tooltip tooltip-left box-icon">
-                                                        <span class="icon icon-Eye"></span>
-                                                        <span class="tooltip">Quick view</span>
-                                                    </a>
-                                                </li>
-                                            </ul>
-                                            <ul class="product-badge_list">
-                                                <li class="product-badge_item text-caption-01 sale">-25%</li>
-                                            </ul>
-                                            <div class="product-action_bot">
-                                                <a href="#shoppingCart" data-bs-toggle="offcanvas"
-                                                    class="tf-btn btn-white small animate-btn animate-dark w-100">
-                                                    Add to Cart
-                                                </a>
-                                            </div>
-                                            <div class="product-marquee_sale">
-                                                <div class="marquee-wrapper">
-                                                    <div class="initial-child-container">
-                                                        <!-- 1 -->
-                                                        <div class="marquee-child-item">
-                                                            HOT SALE 25% OFF
-                                                        </div>
-                                                        <i class="icon icon-Star2"></i>
-                                                        <!-- 2 -->
-                                                        <div class="marquee-child-item">
-                                                            HOT SALE 25% OFF
-                                                        </div>
-                                                        <i class="icon icon-Star2"></i>
-                                                        <!-- 3 -->
-                                                        <div class="marquee-child-item">
-                                                            HOT SALE 25% OFF
-                                                        </div>
-                                                        <i class="icon icon-Star2"></i>
-                                                        <!-- 4 -->
-                                                        <div class="marquee-child-item">
-                                                            HOT SALE 25% OFF
-                                                        </div>
-                                                        <i class="icon icon-Star2"></i>
-                                                        <!-- 5 -->
-                                                        <div class="marquee-child-item">
-                                                            HOT SALE 25% OFF
-                                                        </div>
-                                                        <i class="icon icon-Star2"></i>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div class="card-product_info">
-                                            <a href="product-detail.html"
-                                                class="name-product lh-24 fw-medium link-underline-text">
-                                                Cancelling Hearing Protection Earmuffs For Slotted Hard Hats.
-                                            </a>
-                                            <div class="star-wrap d-flex align-items-center">
-                                                <i class="icon icon-Star"></i>
-                                                <i class="icon icon-Star"></i>
-                                                <i class="icon icon-Star"></i>
-                                                <i class="icon icon-Star"></i>
-                                                <i class="icon icon-Star"></i>
-                                            </div>
-                                            <div class="price-wrap">
-                                                <span class="price-new text-primary fw-semibold">$29,99</span>
-                                                <span class="price-old text-caption-01 cl-text-3">$59,99</span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                                <!-- slide 3 -->
-                                <div class="swiper-slide">
-                                    <div class="card-product product-style_stroke">
-                                        <div class="card-product_wrapper square">
-                                            <a href="product-detail.html" class="product-img">
-                                                <img class="img-product" loading="lazy" width="330" height="330"
-                                                    src="assets/images/product/construction/product-2.jpg" alt="Product">
-                                                <img class="img-hover" loading="lazy" width="330" height="330"
-                                                    src="assets/images/product/construction/product-2.jpg" alt="Product">
-                                            </a>
-                                            <ul class="product-action_list">
-                                                <li class="wishlist">
-                                                    <a href="#;" class="hover-tooltip tooltip-left box-icon">
-                                                        <span class="icon icon-heart"></span>
-                                                        <span class="tooltip">Add to Wishlist</span>
-                                                    </a>
-                                                </li>
-                                                <li class="compare">
-                                                    <a href="#compare" data-bs-toggle="offcanvas"
-                                                        class="hover-tooltip tooltip-left box-icon">
-                                                        <span class="icon icon-ArrowsLeftRight"></span>
-                                                        <span class="tooltip">Compare</span>
-                                                    </a>
-                                                </li>
-                                                <li>
-                                                    <a href="#quickView" data-bs-toggle="offcanvas"
-                                                        class="hover-tooltip tooltip-left box-icon">
-                                                        <span class="icon icon-Eye"></span>
-                                                        <span class="tooltip">Quick view</span>
-                                                    </a>
-                                                </li>
-                                            </ul>
-                                            <ul class="product-badge_list">
-                                                <li class="product-badge_item text-caption-01 new">NEW</li>
-                                            </ul>
-                                            <div class="product-action_bot">
-                                                <a href="#shoppingCart" data-bs-toggle="offcanvas"
-                                                    class="tf-btn btn-white small animate-btn animate-dark w-100">
-                                                    Add to Cart
-                                                </a>
-                                            </div>
-                                        </div>
-                                        <div class="card-product_info">
-                                            <a href="product-detail.html"
-                                                class="name-product lh-24 fw-medium link-underline-text">
-                                                Rubber Hammer, 16oz rubber mallet With fiberglass Handle
-                                            </a>
-                                            <div class="star-wrap d-flex align-items-center">
-                                                <i class="icon icon-Star"></i>
-                                                <i class="icon icon-Star"></i>
-                                                <i class="icon icon-Star"></i>
-                                                <i class="icon icon-Star"></i>
-                                                <i class="icon icon-Star"></i>
-                                            </div>
-                                            <div class="price-wrap">
-                                                <span class="price-new text-primary fw-semibold">$29,99</span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                                <!-- slide 4 -->
-                                <div class="swiper-slide">
-                                    <div class="card-product product-style_stroke">
-                                        <div class="card-product_wrapper square">
-                                            <a href="product-detail.html" class="product-img">
-                                                <img class="img-product" loading="lazy" width="330" height="330"
-                                                    src="assets/images/product/construction/product-11.jpg" alt="Product">
-                                                <img class="img-hover" loading="lazy" width="330" height="330"
-                                                    src="assets/images/product/construction/product-11.jpg" alt="Product">
-                                            </a>
-                                            <ul class="product-action_list">
-                                                <li class="wishlist">
-                                                    <a href="#;" class="hover-tooltip tooltip-left box-icon">
-                                                        <span class="icon icon-heart"></span>
-                                                        <span class="tooltip">Add to Wishlist</span>
-                                                    </a>
-                                                </li>
-                                                <li class="compare">
-                                                    <a href="#compare" data-bs-toggle="offcanvas"
-                                                        class="hover-tooltip tooltip-left box-icon">
-                                                        <span class="icon icon-ArrowsLeftRight"></span>
-                                                        <span class="tooltip">Compare</span>
-                                                    </a>
-                                                </li>
-                                                <li>
-                                                    <a href="#quickView" data-bs-toggle="offcanvas"
-                                                        class="hover-tooltip tooltip-left box-icon">
-                                                        <span class="icon icon-Eye"></span>
-                                                        <span class="tooltip">Quick view</span>
-                                                    </a>
-                                                </li>
-                                            </ul>
-                                            <ul class="product-badge_list">
-                                                <li class="product-badge_item text-caption-01 sale">-25%</li>
-                                            </ul>
-                                            <div class="product-action_bot">
-                                                <a href="#shoppingCart" data-bs-toggle="offcanvas"
-                                                    class="tf-btn btn-white small animate-btn animate-dark w-100">
-                                                    Add to Cart
-                                                </a>
-                                            </div>
-                                        </div>
-                                        <div class="card-product_info">
-                                            <a href="product-detail.html"
-                                                class="name-product lh-24 fw-medium link-underline-text">
-                                                SKIL 15 Amp 7-1/4 Inch Circular Saw with Single Beam Laser Guide
-                                            </a>
-                                            <div class="star-wrap d-flex align-items-center">
-                                                <i class="icon icon-Star"></i>
-                                                <i class="icon icon-Star"></i>
-                                                <i class="icon icon-Star"></i>
-                                                <i class="icon icon-Star"></i>
-                                                <i class="icon icon-Star"></i>
-                                            </div>
-                                            <div class="price-wrap">
-                                                <span class="price-new text-primary fw-semibold">$29,99</span>
-                                                <span class="price-old text-caption-01 cl-text-3">$59,99</span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="sw-dot-default tf-sw-pagination"></div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <!-- /Search -->
-        <!-- Register -->
-        <div class="modal modalCentered fade modal-log" id="register">
-            <div class="modal-dialog modal-dialog-centered">
-                <div class="modal-content">
-                    <span class="icon-close-popup" data-bs-dismiss="modal">
-                        <i class="icon-X2"></i>
-                    </span>
-                    <div class="modal-heading text-center">
-                        <h3 class="title-pop mb-8">Create Account</h3>
-                        <p class="desc-pop cl-text-2">Be part of our growing family of new customers!</p>
-                    </div>
-                    <div class="modal-main">
-                        <form action="account-page.html" class="form-log">
-                            <div class="form-content">
-                                <fieldset class="tf-field">
-                                    <label for="user-name" class="tf-lable fw-medium">Username or email address <span
-                                            class="text-primary">*</span></label>
-                                    <input type="text" id="user-name" placeholder="Username or email address*" required>
-                                </fieldset>
-                                <fieldset class="tf-field password-wrapper">
-                                    <label for="register-password" class="tf-lable fw-medium">
-                                        Password
-                                        <span class="text-primary">*</span>
-                                    </label>
-                                    <div class="password-wrapper w-100">
-                                        <span class="toggle-pass icon-EyeSlash fs-20 cl-text-3"></span>
-                                        <input class="password-field" type="password" id="register-password"
-                                            placeholder="Password" required>
-                                    </div>
-                                </fieldset>
-                                <fieldset class="tf-field password-wrapper">
-                                    <label for="register-password-confirm" class="tf-lable fw-medium">
-                                        Confirm Password
-                                        <span class="text-primary">*</span>
-                                    </label>
-                                    <div class="password-wrapper w-100">
-                                        <span class="toggle-pass icon-EyeSlash fs-20 cl-text-3"></span>
-                                        <input class="password-field" type="password" id="register-password-confirm"
-                                            placeholder="Confirm Password" required>
-                                    </div>
-                                </fieldset>
-                            </div>
-                            <div class="group-action">
-                                <button type="submit" class="action-create-account tf-btn animate-btn w-100">
-                                    Create Account
-                                </button>
-                                <a href="#sign" data-bs-toggle="modal" class="tf-btn btn-stroke">
-                                    Login
-                                </a>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <!-- /Register -->
-        <!-- Sign In -->
-        <div class="modal modalCentered fade modal-log" id="sign">
-            <div class="modal-dialog modal-dialog-centered">
-                <div class="modal-content">
-                    <span class="icon-close-popup" data-bs-dismiss="modal">
-                        <i class="icon-X2"></i>
-                    </span>
-                    <div class="modal-heading text-center">
-                        <h3 class="title-pop mb-8">Sign In</h3>
-                        <p class="desc-pop cl-text-2">Sign in to access your personalized experience.</p>
-                    </div>
-                    <div class="modal-main">
-                        <form action="account-page.html" class="form-log">
-                            <div class="form-content">
-                                <fieldset class="tf-field">
-                                    <label for="user-name-log" class="tf-lable fw-medium">Username or email address <span
-                                            class="text-primary">*</span></label>
-                                    <input type="text" id="user-name-log" placeholder="Username or email address*" required>
-                                </fieldset>
-                                <fieldset class="tf-field password-wrapper">
-                                    <label for="password" class="tf-lable fw-medium">
-                                        Password
-                                        <span class="text-primary">*</span>
-                                    </label>
-                                    <div class="password-wrapper w-100">
-                                        <span class="toggle-pass icon-EyeSlash fs-20 cl-text-3"></span>
-                                        <input class="password-field" type="password" id="password" placeholder="Password"
-                                            required>
-                                    </div>
-                                </fieldset>
-                                <fieldset class="field-bottom">
-                                    <div class="checkbox-wrap">
-                                        <input class="tf-check style-2" type="checkbox" id="remember">
-                                        <label for="remember">
-                                            Remember me
-                                        </label>
-                                    </div>
-                                    <a href="#modalForgot" data-bs-toggle="modal" class="link text-decoration-underline">
-                                        <span class="text-caption-01 fw-semibold">
-                                            Forgot Your Password?
-                                        </span>
-                                    </a>
-                                </fieldset>
-                            </div>
-                            <div class="group-action">
-                                <button type="submit" class="tf-btn animate-btn w-100">
-                                    Login
-                                </button>
-                                <a href="#register" data-bs-toggle="modal" class="tf-btn btn-stroke">
-                                    Create Account
-                                </a>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            </div>
+    </div>
+</div>
+            <!-- /Lookbook -->
+     
+
+{{-- Testimonials -- отзывы клиентов KOTLOV --}}
+{{-- Вместо "Loved By Happy Parents" --}}
+<section class="flat-spacing">
+    <div class="container-full">
+        <div class="sect-heading type-2 text-center wow fadeInUp">
+            <h3 class="s-title">
+                Отзывы наших клиентов
+            </h3>
+            <p class="s-desc text-body-1 cl-text-2">
+                Более 500 реальных отзывов от владельцев домов и объектов по всей Беларуси.
+            </p>
         </div>
 
-    </body>
+        <div dir="ltr" class="swiper tf-swiper" data-preview="4" data-tablet="3" data-mobile-sm="2"
+            data-mobile="1" data-space-lg="20" data-space-md="15" data-space="10" data-pagination="2"
+            data-pagination-sm="1" data-pagination-md="3" data-pagination-lg="4">
+            <div class="swiper-wrapper">
+
+                <div class="swiper-slide">
+                    <div class="testimonial-v01 style-2 type-3 wow fadeInLeft">
+                        <div class="tes-content">
+                            <div class="tes_avatar">
+                                <div class="d-flex align-items-center justify-content-center rounded-circle bg-dark text-white fw-semibold"
+                                    style="width:60px;height:60px;font-size:20px;">А</div>
+                            </div>
+                            <div class="star-wrap d-flex align-items-center">
+                                <i class="icon icon-Star fs-24"></i>
+                                <i class="icon icon-Star fs-24"></i>
+                                <i class="icon icon-Star fs-24"></i>
+                                <i class="icon icon-Star fs-24"></i>
+                                <i class="icon icon-Star fs-24"></i>
+                            </div>
+                            <div class="tes_author">
+                                <div class="h6 author-name">Андрей К.</div>
+                                <div class="author-verified">
+                                    <i class="icon icon-CheckCircle1"></i>
+                                    <span class="text cl-text-2">Подтверждённый покупатель</span>
+                                </div>
+                            </div>
+                            <p class="tes_text text-body-1">
+                                "Заказывал тепловой насос Daikin. Всё чётко: подобрали модель под дом, привезли в срок, монтажник приехал на следующий день."
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="swiper-slide">
+                    <div class="testimonial-v01 style-2 type-3 wow fadeInLeft" data-wow-delay="0.1s">
+                        <div class="tes-content">
+                            <div class="tes_avatar">
+                                <div class="d-flex align-items-center justify-content-center rounded-circle bg-dark text-white fw-semibold"
+                                    style="width:60px;height:60px;font-size:20px;">С</div>
+                            </div>
+                            <div class="star-wrap d-flex align-items-center">
+                                <i class="icon icon-Star fs-24"></i>
+                                <i class="icon icon-Star fs-24"></i>
+                                <i class="icon icon-Star fs-24"></i>
+                                <i class="icon icon-Star fs-24"></i>
+                                <i class="icon icon-Star fs-24"></i>
+                            </div>
+                            <div class="tes_author">
+                                <div class="h6 author-name">Светлана М.</div>
+                                <div class="author-verified">
+                                    <i class="icon icon-CheckCircle1"></i>
+                                    <span class="text cl-text-2">Подтверждённый покупатель</span>
+                                </div>
+                            </div>
+                            <p class="tes_text text-body-1">
+                                "Брали каминную топку Kratki. Менеджер очень помог с выбором, объяснил все нюансы установки. Результатом очень довольны!"
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="swiper-slide">
+                    <div class="testimonial-v01 style-2 type-3 wow fadeInLeft" data-wow-delay="0.2s">
+                        <div class="tes-content">
+                            <div class="tes_avatar">
+                                <div class="d-flex align-items-center justify-content-center rounded-circle bg-dark text-white fw-semibold"
+                                    style="width:60px;height:60px;font-size:20px;">В</div>
+                            </div>
+                            <div class="star-wrap d-flex align-items-center">
+                                <i class="icon icon-Star fs-24"></i>
+                                <i class="icon icon-Star fs-24"></i>
+                                <i class="icon icon-Star fs-24"></i>
+                                <i class="icon icon-Star fs-24"></i>
+                                <i class="icon icon-Star fs-24"></i>
+                            </div>
+                            <div class="tes_author">
+                                <div class="h6 author-name">Виктор Д.</div>
+                                <div class="author-verified">
+                                    <i class="icon icon-CheckCircle1"></i>
+                                    <span class="text cl-text-2">Подтверждённый покупатель</span>
+                                </div>
+                            </div>
+                            <p class="tes_text text-body-1">
+                                "Установили газовый котёл Viessmann. Третий год — ни единой проблемы. Рекомендую KOTLOV всем соседям по посёлку."
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="swiper-slide">
+                    <div class="testimonial-v01 style-2 type-3 wow fadeInLeft" data-wow-delay="0.3s">
+                        <div class="tes-content">
+                            <div class="tes_avatar">
+                                <div class="d-flex align-items-center justify-content-center rounded-circle bg-dark text-white fw-semibold"
+                                    style="width:60px;height:60px;font-size:20px;">Н</div>
+                            </div>
+                            <div class="star-wrap d-flex align-items-center">
+                                <i class="icon icon-Star fs-24"></i>
+                                <i class="icon icon-Star fs-24"></i>
+                                <i class="icon icon-Star fs-24"></i>
+                                <i class="icon icon-Star fs-24"></i>
+                                <i class="icon icon-Star fs-24"></i>
+                            </div>
+                            <div class="tes_author">
+                                <div class="h6 author-name">Наталья Р.</div>
+                                <div class="author-verified">
+                                    <i class="icon icon-CheckCircle1"></i>
+                                    <span class="text cl-text-2">Подтверждённый покупатель</span>
+                                </div>
+                            </div>
+                            <p class="tes_text text-body-1">
+                                "Заказывали дымоходную систему для бани. Приехали, замерили, всё подобрали и смонтировали. Цены честные, без сюрпризов."
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+            <div class="sw-line-default style-2 tf-sw-pagination"></div>
+        </div>
+
+    </div>
+</section>
+            <!-- /Testimonials -->
+         
+       {{-- Blog -- статьи об отоплении KOTLOV --}}
+
+{{-- Blog -- статьи об отоплении KOTLOV --}}
+{{-- Вместо "Insights For Happier Pets" --}}
+<section class="flat-spacing">
+    <div class="container">
+        <div class="sect-heading type-2 text-center wow fadeInUp">
+            <h3 class="s-title">
+                Статьи об отоплении
+            </h3>
+            <p class="s-desc text-body-1 cl-text-2">
+                Полезные материалы о выборе, монтаже и эксплуатации отопительного оборудования.
+            </p>
+        </div>
+
+        <div dir="ltr" class="swiper tf-swiper" data-preview="3" data-tablet="2" data-mobile-sm="2"
+            data-mobile="1" data-space-lg="30" data-space-md="20" data-space="10" data-pagination="1"
+            data-pagination-sm="2" data-pagination-md="2" data-pagination-lg="3">
+            <div class="swiper-wrapper">
+
+                <div class="swiper-slide">
+                    <article class="article-blog hover-img wow fadeInUp">
+                        <a href="/blog/kak-vybrat-teplovoy-nasos" class="blog-image img-style">
+                            <img loading="lazy" width="900" height="675"
+                                src="{{ asset('img/blog/blog-heatpump.jpg') }}" alt="Как выбрать тепловой насос">
+                            <div class="wrap-tags d-flex gap-12">
+                                <span class="tag text-caption-01">ТЕПЛОВЫЕ НАСОСЫ</span>
+                            </div>
+                        </a>
+                        <div class="blog-content">
+                            <p class="entry-date text-caption-01 fw-semibold cl-text-3">15 мая 2025</p>
+                            <h4 class="entry-title">
+                                <a href="/blog/kak-vybrat-teplovoy-nasos" class="link-underline link">
+                                    Как выбрать тепловой насос для частного дома
+                                </a>
+                            </h4>
+                            <p class="entry-desc cl-text-2">
+                                Разбираем типы тепловых насосов, принцип работы и на что обратить внимание при выборе под конкретный объект.
+                            </p>
+                        </div>
+                    </article>
+                </div>
+
+                <div class="swiper-slide">
+                    <article class="article-blog hover-img wow fadeInUp" data-wow-delay="0.1s">
+                        <a href="/blog/pelletnyy-kotel-ili-gazovyy" class="blog-image img-style">
+                            <img loading="lazy" width="900" height="675"
+                                src="{{ asset('img/blog/blog-boiler.jpg') }}" alt="Пеллетный или газовый котёл">
+                            <div class="wrap-tags d-flex gap-12">
+                                <span class="tag text-caption-01">КОТЛЫ</span>
+                            </div>
+                        </a>
+                        <div class="blog-content">
+                            <p class="entry-date text-caption-01 fw-semibold cl-text-3">3 апреля 2025</p>
+                            <h4 class="entry-title">
+                                <a href="/blog/pelletnyy-kotel-ili-gazovyy" class="link-underline link">
+                                    Пеллетный котёл vs газовый: что выгоднее в Беларуси
+                                </a>
+                            </h4>
+                            <p class="entry-desc cl-text-2">
+                                Сравниваем стоимость топлива, монтажа и обслуживания. Считаем реальную экономию за сезон.
+                            </p>
+                        </div>
+                    </article>
+                </div>
+
+                <div class="swiper-slide">
+                    <article class="article-blog hover-img wow fadeInUp" data-wow-delay="0.2s">
+                        <a href="/blog/dymohod-dlya-kamina" class="blog-image img-style">
+                            <img loading="lazy" width="900" height="675"
+                                src="{{ asset('img/blog/blog-chimney.jpg') }}" alt="Дымоход для камина">
+                            <div class="wrap-tags d-flex gap-12">
+                                <span class="tag text-caption-01">ДЫМОХОДЫ</span>
+                            </div>
+                        </a>
+                        <div class="blog-content">
+                            <p class="entry-date text-caption-01 fw-semibold cl-text-3">18 марта 2025</p>
+                            <h4 class="entry-title">
+                                <a href="/blog/dymohod-dlya-kamina" class="link-underline link">
+                                    Как правильно выбрать и смонтировать дымоход для камина
+                                </a>
+                            </h4>
+                            <p class="entry-desc cl-text-2">
+                                Типы дымоходов, требования к монтажу, типичные ошибки и как их избежать при установке.
+                            </p>
+                        </div>
+                    </article>
+                </div>
+
+            </div>
+            <div class="sw-line-default style-2 tf-sw-pagination"></div>
+        </div>
+
+    </div>
+</section>
+          
+
+        </main>
+   
 
 
 @endsection

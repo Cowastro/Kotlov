@@ -159,3 +159,20 @@ a {
 .sub-nav__link:hover {
     color: #c62828 !important;
 }
+
+.col-right .overflow-auto::after {
+    content: '';
+    position: absolute;
+    top: 0; right: 0;
+    width: 40px; height: 100%;
+    background: linear-gradient(to right, transparent, #fff);
+    pointer-events: none;
+}
+@media (min-width: 1024px) {
+    .col-right .overflow-auto::after { display: none; }
+}
+
+body {
+    margin: 0;
+    padding: 0;
+}

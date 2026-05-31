@@ -590,10 +590,10 @@
 
             if ($this.hasClass("addwishlist")) {
                 icon.removeClass("icon-heart").addClass("icon-trash");
-                tooltip.text("Remove Wishlist");
+                tooltip.text("Удалить из избранного");
             } else {
                 icon.removeClass("icon-trash").addClass("icon-heart");
-                tooltip.text("Add to Wishlist");
+                tooltip.text("В избранное");
             }
         });
     };
@@ -627,7 +627,7 @@
                 const $selectedOption = $countrySelect.find("option:selected");
                 const provincesData = $selectedOption.attr("data-provinces");
 
-                const provinces = JSON.parse(provincesData);
+                const provinces = provincesData ? JSON.parse(provincesData) : [];
                 $provinceSelect.empty();
 
                 if (provinces.length === 0) {
@@ -713,10 +713,10 @@
                 navigator.clipboard
                     .writeText(couponCode)
                     .then(function () {
-                        alert("Copied! " + couponCode);
+                        alert("Скопировано: " + couponCode);
                     })
                     .catch(function (err) {
-                        alert("Unable to copy: " + err);
+                        alert("Не удалось скопировать: " + err);
                     });
             } else {
                 const tempInput = $("<input>");
@@ -724,7 +724,7 @@
                 tempInput.val(couponCode).select();
                 document.execCommand("copy");
                 tempInput.remove();
-                alert("Copied! " + couponCode);
+                alert("Скопировано: " + couponCode);
             }
         });
     };
@@ -1338,7 +1338,7 @@
             if ($("#checkOutAgree").is(":checked")) {
                 window.location.href = "checkout.html";
             } else {
-                alert("Please agree to the Terms and Conditions before continuing.");
+                alert("Пожалуйста, примите условия обработки данных перед продолжением.");
             }
         });
     };
