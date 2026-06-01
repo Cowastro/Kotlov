@@ -8,6 +8,8 @@ use Filament\Actions\EditAction;
 use Filament\Actions\ViewAction;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Filters\SelectFilter;
+use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Table;
 
 class FaqsTable
@@ -17,25 +19,47 @@ class FaqsTable
         return $table
             ->columns([
                 TextColumn::make('question')
-                    ->searchable(),
+                    ->label('Вопрос')
+                    ->searchable()
+                    ->weight('bold')
+                    ->limit(60),
+
                 TextColumn::make('category')
-                    ->searchable(),
+                    ->label('Категория')
+                    ->badge()
+                    ->formatStateUsing(fn($state) => match($state) {
+                        'delivery' => 'Доставка',
+                        'payment'  => 'Оплата',
+                        'products' => 'Товары',
+                        'install'  => 'Монтаж',
+                        'warranty' => 'Гарантия',
+                        'other'    => 'Прочее',
+                        default    => $state,
+                    }),
+
                 TextColumn::make('sort_order')
-                    ->numeric()
+                    ->label('Порядок')
                     ->sortable(),
+
                 IconColumn::make('is_active')
+                    ->label('Активен')
                     ->boolean(),
-                TextColumn::make('created_at')
-                    ->dateTime()
-                    ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),
-                TextColumn::make('updated_at')
-                    ->dateTime()
-                    ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),
             ])
+            ->defaultSort('sort_order')
             ->filters([
-                //
+                SelectFilter::make('category')
+                    ->label('Категория')
+                    ->options([
+                        'delivery' => 'Доставка',
+                        'payment'  => 'Оплата',
+                        'products' => 'Товары',
+                        'install'  => 'Монтаж',
+                        'warranty' => 'Гарантия',
+                        'other'    => 'Прочее',
+                    ]),
+
+                TernaryFilter::make('is_active')
+                    ->label('Активность'),
             ])
             ->recordActions([
                 ViewAction::make(),

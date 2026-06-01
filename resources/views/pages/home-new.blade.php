@@ -193,142 +193,31 @@
                         data-mobile="2" data-space-lg="40" data-space-md="20" data-space="10" data-pagination="2"
                         data-pagination-sm="2" data-pagination-md="3" data-pagination-lg="5" data-grid="2">
 
-                        <div class="swiper-wrapper">
+                       <div class="swiper-wrapper">
 
-                            <div class="swiper-slide">
-                                <a href="/kotly" class="category-v04 hover-img wow fadeInUp">
-                                    <div class="cate-image img-style">
-                                        <img loading="lazy" width="240" height="180"
-                                            src="{{ asset('img/popular/boiler_img.jpg') }}" alt="Котлы">
-                                    </div>
-                                    <div class="cate-content text-center">
-                                        <div class="h5 cate_name link-underline-text">Котлы</div>
-                                        <p class="cate_quantity text-caption-01 cl-text-2">Газовые, твердотопливные,
-                                            электрические</p>
-                                    </div>
-                                </a>
-                            </div>
+    @foreach ($popularCategories as $category)
+        <div class="swiper-slide">
+            <a href="/{{ $category->slug }}" class="category-v04 hover-img wow fadeInUp">
+                <div class="cate-image img-style">
+                    <img loading="lazy" width="240" height="180"
+                        src="{{ $category->image ? asset('storage/' . $category->image) : asset('img/popular/catalog.jpg') }}"
+                        alt="{{ $category->name }}">
+                </div>
 
-                            <div class="swiper-slide">
-                                <a href="/teplovye-nasosy" class="category-v04 hover-img wow fadeInUp">
-                                    <div class="cate-image img-style">
-                                        <img loading="lazy" width="240" height="180"
-                                            src="{{ asset('img/popular/heatpump.jpg') }}" alt="Тепловые насосы">
-                                    </div>
-                                    <div class="cate-content text-center">
-                                        <div class="h5 cate_name link-underline-text">Тепловые насосы</div>
-                                        <p class="cate_quantity text-caption-01 cl-text-2">Современное отопление для дома
-                                        </p>
-                                    </div>
-                                </a>
-                            </div>
+                <div class="cate-content text-center">
+                    <div class="h5 cate_name link-underline-text">
+                        {{ $category->name }}
+                    </div>
 
-                            <div class="swiper-slide">
-                                <a href="/pelletnye-gorelki" class="category-v04 hover-img wow fadeInUp">
-                                    <div class="cate-image img-style">
-                                        <img loading="lazy" width="240" height="180"
-                                            src="{{ asset('img/popular/pellet_burner.jpg') }}" alt="Пеллетные горелки">
-                                    </div>
-                                    <div class="cate-content text-center">
-                                        <div class="h5 cate_name link-underline-text">Пеллетные горелки</div>
-                                        <p class="cate_quantity text-caption-01 cl-text-2">Автоматизация отопления</p>
-                                    </div>
-                                </a>
-                            </div>
+                    <p class="cate_quantity text-caption-01 cl-text-2">
+                        {{ $category->products_count }} товаров
+                    </p>
+                </div>
+            </a>
+        </div>
+    @endforeach
 
-                            <div class="swiper-slide">
-                                <a href="/kaminy" class="category-v04 hover-img wow fadeInUp">
-                                    <div class="cate-image img-style">
-                                        <img loading="lazy" width="240" height="180"
-                                            src="{{ asset('img/popular/fireplace.jpg') }}" alt="Камины">
-                                    </div>
-                                    <div class="cate-content text-center">
-                                        <div class="h5 cate_name link-underline-text">Камины</div>
-                                        <p class="cate_quantity text-caption-01 cl-text-2">Топки, облицовки и аксессуары</p>
-                                    </div>
-                                </a>
-                            </div>
-
-                            <div class="swiper-slide">
-                                <a href="/dymohody" class="category-v04 hover-img wow fadeInUp">
-                                    <div class="cate-image img-style">
-                                        <img loading="lazy" width="240" height="180"
-                                            src="{{ asset('img/popular/chimney.jpg') }}" alt="Дымоходы">
-                                    </div>
-                                    <div class="cate-content text-center">
-                                        <div class="h5 cate_name link-underline-text">Дымоходы</div>
-                                        <p class="cate_quantity text-caption-01 cl-text-2">Системы отвода дыма</p>
-                                    </div>
-                                </a>
-                            </div>
-
-                            <div class="swiper-slide">
-                                <a href="/otoplenie" class="category-v04 hover-img wow fadeInUp">
-                                    <div class="cate-image img-style">
-                                        <img loading="lazy" width="240" height="180"
-                                            src="{{ asset('img/popular/heater.jpg') }}" alt="Отопление">
-                                    </div>
-                                    <div class="cate-content text-center">
-                                        <div class="h5 cate_name link-underline-text">Отопление</div>
-                                        <p class="cate_quantity text-caption-01 cl-text-2">Радиаторы, тёплый пол, трубы</p>
-                                    </div>
-                                </a>
-                            </div>
-
-                            <div class="swiper-slide">
-                                <a href="/dlya-bani" class="category-v04 hover-img wow fadeInUp">
-                                    <div class="cate-image img-style">
-                                        <img loading="lazy" width="240" height="180"
-                                            src="{{ asset('img/popular/sauna.jpg') }}" alt="Для бани">
-                                    </div>
-                                    <div class="cate-content text-center">
-                                        <div class="h5 cate_name link-underline-text">Для бани</div>
-                                        <p class="cate_quantity text-caption-01 cl-text-2">Печи, камни и аксессуары</p>
-                                    </div>
-                                </a>
-                            </div>
-
-                            <div class="swiper-slide">
-                                <a href="/vodosnabzhenie" class="category-v04 hover-img wow fadeInUp">
-                                    <div class="cate-image img-style">
-                                        <img loading="lazy" width="240" height="180"
-                                            src="{{ asset('img/popular/droplet.jpg') }}" alt="Водоснабжение">
-                                    </div>
-                                    <div class="cate-content text-center">
-                                        <div class="h5 cate_name link-underline-text">Водоснабжение</div>
-                                        <p class="cate_quantity text-caption-01 cl-text-2">Насосы, трубы и комплектующие</p>
-                                    </div>
-                                </a>
-                            </div>
-
-                            <div class="swiper-slide">
-                                <a href="/klimat" class="category-v04 hover-img wow fadeInUp">
-                                    <div class="cate-image img-style">
-                                        <img loading="lazy" width="240" height="180"
-                                            src="{{ asset('img/popular/air.jpg') }}" alt="Климат">
-                                    </div>
-                                    <div class="cate-content text-center">
-                                        <div class="h5 cate_name link-underline-text">Климат</div>
-                                        <p class="cate_quantity text-caption-01 cl-text-2">Вентиляция и климатические
-                                            решения</p>
-                                    </div>
-                                </a>
-                            </div>
-
-                            <div class="swiper-slide">
-                                <a href="/catalog" class="category-v04 hover-img wow fadeInUp">
-                                    <div class="cate-image img-style">
-                                        <img loading="lazy" width="240" height="180"
-                                            src="{{ asset('img/popular/catalog.jpg') }}" alt="Весь каталог">
-                                    </div>
-                                    <div class="cate-content text-center">
-                                        <div class="h5 cate_name link-underline-text">Весь каталог</div>
-                                        <p class="cate_quantity text-caption-01 cl-text-2">Все товары и разделы KOTLOV</p>
-                                    </div>
-                                </a>
-                            </div>
-
-                        </div>
+</div>
 
                         <div class="sw-dot-default tf-sw-pagination"></div>
                     </div>
@@ -375,1308 +264,164 @@
     </div>
 </div>
                     </div>
-                    <div class="tab-content">
-                        <div class="tab-pane active show" id="kotly" role="tabpanel">
-                            <div class="wrap-prd">
-                                <div class="col-prd-1">
-                                    <div class="banner-image-text type-abs style-18 v2 mb-20">
-                                        <a href="/kotly" class="bn-image img-style">
-                                            <img loading="lazy" width="450" height="608"
-                                                src="{{ asset('img/banners/baner_boiler1.jpg') }}" alt="Отопительные котлы">
-                                        </a>
-
-                                        <div class="bn-content wow fadeInUp">
-                                            <a href="/kotly" class="title text-white h3 fw-medium link mb-8">
-                                                Отопительные<br>котлы
-                                            </a>
-
-                                            <p class="desc text-body-1 text-white mb-28">
-                                                Газовые, твердотопливные,
-                                                электрические и пеллетные
-                                                котлы.
-                                            </p>
-
-                                            <a href="/kotly" class="tf-btn btn-white hv-primary">
-                                                Перейти в каталог
-                                            </a>
-                                        </div>
-                                    </div>
-                                    <div class="tf-grid-layout tf-col-2 gap-20">
-                                        <div class="card-product product-style_stroke">
-                                            <div class="card-product_wrapper square">
-                                                <a href="#" class="product-img">
-                                                    <img class="img-product" loading="lazy" width="330" height="330"
-                                                        src="{{ asset('img/products/product-placeholder.jpg') }}"
-                                                        alt="Товар KOTLOV">
-                                                    <img class="img-hover" loading="lazy" width="330" height="330"
-                                                        src="{{ asset('img/products/product-placeholder.jpg') }}"
-                                                        alt="Товар KOTLOV">
-                                                </a>
-
-                                                <ul class="product-action_list">
-                                                    <li class="wishlist">
-                                                        <a href="#;" class="hover-tooltip tooltip-left box-icon">
-                                                            <span class="icon icon-heart"></span>
-                                                            <span class="tooltip">В избранное</span>
-                                                        </a>
-                                                    </li>
-                                                    <li class="compare">
-                                                        <a href="#compare" data-bs-toggle="offcanvas"
-                                                            class="hover-tooltip tooltip-left box-icon">
-                                                            <span class="icon icon-ArrowsLeftRight"></span>
-                                                            <span class="tooltip">Сравнить</span>
-                                                        </a>
-                                                    </li>
-                                                    <li>
-                                                        <a href="#quickView" data-bs-toggle="offcanvas"
-                                                            class="hover-tooltip tooltip-left box-icon">
-                                                            <span class="icon icon-Eye"></span>
-                                                            <span class="tooltip">Быстрый просмотр</span>
-                                                        </a>
-                                                    </li>
-                                                </ul>
-
-                                                <ul class="product-badge_list">
-                                                    <li class="product-badge_item text-caption-01 sale">Хит продаж</li>
-                                                </ul>
-
-                                                <div class="product-action_bot">
-                                                    <a href="#shoppingCart" data-bs-toggle="offcanvas"
-                                                        class="tf-btn btn-white small w-100">
-                                                        В корзину
-                                                    </a>
-                                                </div>
-                                            </div>
-
-                                            <div class="card-product_info">
-                                                <a href="#" class="name-product lh-24 fw-medium link-underline-text">
-                                                    Название товара №1
-                                                </a>
-
-                                                <div class="star-wrap d-flex align-items-center">
-                                                    <i class="icon icon-Star"></i>
-                                                    <i class="icon icon-Star"></i>
-                                                    <i class="icon icon-Star"></i>
-                                                    <i class="icon icon-Star"></i>
-                                                    <i class="icon icon-Star"></i>
-                                                </div>
-
-                                                <div class="price-wrap">
-                                                    <span class="price-new text-primary fw-semibold">Цена по запросу</span>
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        <div class="card-product product-style_stroke">
-                                            <div class="card-product_wrapper square">
-                                                <a href="#" class="product-img">
-                                                    <img class="img-product" loading="lazy" width="330" height="330"
-                                                        src="{{ asset('img/products/product-placeholder.jpg') }}"
-                                                        alt="Товар KOTLOV">
-                                                    <img class="img-hover" loading="lazy" width="330" height="330"
-                                                        src="{{ asset('img/products/product-placeholder.jpg') }}"
-                                                        alt="Товар KOTLOV">
-                                                </a>
-
-                                                <ul class="product-action_list">
-                                                    <li class="wishlist">
-                                                        <a href="#;" class="hover-tooltip tooltip-left box-icon">
-                                                            <span class="icon icon-heart"></span>
-                                                            <span class="tooltip">В избранное</span>
-                                                        </a>
-                                                    </li>
-                                                    <li class="compare">
-                                                        <a href="#compare" data-bs-toggle="offcanvas"
-                                                            class="hover-tooltip tooltip-left box-icon">
-                                                            <span class="icon icon-ArrowsLeftRight"></span>
-                                                            <span class="tooltip">Сравнить</span>
-                                                        </a>
-                                                    </li>
-                                                    <li>
-                                                        <a href="#quickView" data-bs-toggle="offcanvas"
-                                                            class="hover-tooltip tooltip-left box-icon">
-                                                            <span class="icon icon-Eye"></span>
-                                                            <span class="tooltip">Быстрый просмотр</span>
-                                                        </a>
-                                                    </li>
-                                                </ul>
-
-                                                <ul class="product-badge_list">
-                                                    <li class="product-badge_item text-caption-01 new">Новинка</li>
-                                                </ul>
-
-                                                <div class="product-action_bot">
-                                                    <a href="#shoppingCart" data-bs-toggle="offcanvas"
-                                                        class="tf-btn btn-white small w-100">
-                                                        В корзину
-                                                    </a>
-                                                </div>
-                                            </div>
-
-                                            <div class="card-product_info">
-                                                <a href="#" class="name-product lh-24 fw-medium link-underline-text">
-                                                    Название товара №2
-                                                </a>
-
-                                                <div class="star-wrap d-flex align-items-center">
-                                                    <i class="icon icon-Star"></i>
-                                                    <i class="icon icon-Star"></i>
-                                                    <i class="icon icon-Star"></i>
-                                                    <i class="icon icon-Star"></i>
-                                                    <i class="icon icon-Star"></i>
-                                                </div>
-
-                                                <div class="price-wrap">
-                                                    <span class="price-new text-primary fw-semibold">Цена по запросу</span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="col-prd-2">
-                                    <div class="tf-grid-layout tf-col-2 lg-col-3 gap-20">
-
-                                        <div class="card-product product-style_stroke">
-                                            <div class="card-product_wrapper square">
-                                                <a href="#" class="product-img">
-                                                    <img class="img-product" loading="lazy" width="330" height="330"
-                                                        src="{{ asset('img/products/product-placeholder.jpg') }}"
-                                                        alt="Товар KOTLOV">
-                                                    <img class="img-hover" loading="lazy" width="330" height="330"
-                                                        src="{{ asset('img/products/product-placeholder.jpg') }}"
-                                                        alt="Товар KOTLOV">
-                                                </a>
-
-                                                <ul class="product-action_list">
-                                                    <li class="wishlist">
-                                                        <a href="#;" class="hover-tooltip tooltip-left box-icon">
-                                                            <span class="icon icon-heart"></span>
-                                                            <span class="tooltip">В избранное</span>
-                                                        </a>
-                                                    </li>
-                                                    <li class="compare">
-                                                        <a href="#compare" data-bs-toggle="offcanvas"
-                                                            class="hover-tooltip tooltip-left box-icon">
-                                                            <span class="icon icon-ArrowsLeftRight"></span>
-                                                            <span class="tooltip">Сравнить</span>
-                                                        </a>
-                                                    </li>
-                                                    <li>
-                                                        <a href="#quickView" data-bs-toggle="offcanvas"
-                                                            class="hover-tooltip tooltip-left box-icon">
-                                                            <span class="icon icon-Eye"></span>
-                                                            <span class="tooltip">Быстрый просмотр</span>
-                                                        </a>
-                                                    </li>
-                                                </ul>
-
-                                                <ul class="product-badge_list">
-                                                    <li class="product-badge_item text-caption-01 sale">Хит продаж</li>
-                                                </ul>
-
-                                                <div class="product-action_bot">
-                                                    <a href="#shoppingCart" data-bs-toggle="offcanvas"
-                                                        class="tf-btn btn-white small w-100">
-                                                        В корзину
-                                                    </a>
-                                                </div>
-                                            </div>
-
-                                            <div class="card-product_info">
-                                                <a href="#" class="name-product lh-24 fw-medium link-underline-text">
-                                                    Название товара №1
-                                                </a>
-
-                                                <div class="star-wrap d-flex align-items-center">
-                                                    <i class="icon icon-Star"></i>
-                                                    <i class="icon icon-Star"></i>
-                                                    <i class="icon icon-Star"></i>
-                                                    <i class="icon icon-Star"></i>
-                                                    <i class="icon icon-Star"></i>
-                                                </div>
-
-                                                <div class="price-wrap">
-                                                    <span class="price-new text-primary fw-semibold">Цена по запросу</span>
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        <div class="card-product product-style_stroke">
-                                            <div class="card-product_wrapper square">
-                                                <a href="#" class="product-img">
-                                                    <img class="img-product" loading="lazy" width="330" height="330"
-                                                        src="{{ asset('img/products/product-placeholder.jpg') }}"
-                                                        alt="Товар KOTLOV">
-                                                    <img class="img-hover" loading="lazy" width="330" height="330"
-                                                        src="{{ asset('img/products/product-placeholder.jpg') }}"
-                                                        alt="Товар KOTLOV">
-                                                </a>
-
-                                                <ul class="product-action_list">
-                                                    <li class="wishlist">
-                                                        <a href="#;" class="hover-tooltip tooltip-left box-icon">
-                                                            <span class="icon icon-heart"></span>
-                                                            <span class="tooltip">В избранное</span>
-                                                        </a>
-                                                    </li>
-                                                    <li class="compare">
-                                                        <a href="#compare" data-bs-toggle="offcanvas"
-                                                            class="hover-tooltip tooltip-left box-icon">
-                                                            <span class="icon icon-ArrowsLeftRight"></span>
-                                                            <span class="tooltip">Сравнить</span>
-                                                        </a>
-                                                    </li>
-                                                    <li>
-                                                        <a href="#quickView" data-bs-toggle="offcanvas"
-                                                            class="hover-tooltip tooltip-left box-icon">
-                                                            <span class="icon icon-Eye"></span>
-                                                            <span class="tooltip">Быстрый просмотр</span>
-                                                        </a>
-                                                    </li>
-                                                </ul>
-
-                                                <ul class="product-badge_list">
-                                                    <li class="product-badge_item text-caption-01 new">Новинка</li>
-                                                </ul>
-
-                                                <div class="product-action_bot">
-                                                    <a href="#shoppingCart" data-bs-toggle="offcanvas"
-                                                        class="tf-btn btn-white small w-100">
-                                                        В корзину
-                                                    </a>
-                                                </div>
-                                            </div>
-
-                                            <div class="card-product_info">
-                                                <a href="#" class="name-product lh-24 fw-medium link-underline-text">
-                                                    Название товара №2
-                                                </a>
-
-                                                <div class="star-wrap d-flex align-items-center">
-                                                    <i class="icon icon-Star"></i>
-                                                    <i class="icon icon-Star"></i>
-                                                    <i class="icon icon-Star"></i>
-                                                    <i class="icon icon-Star"></i>
-                                                    <i class="icon icon-Star"></i>
-                                                </div>
-
-                                                <div class="price-wrap">
-                                                    <span class="price-new text-primary fw-semibold">Цена по запросу</span>
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        <div class="card-product product-style_stroke">
-                                            <div class="card-product_wrapper square">
-                                                <a href="#" class="product-img">
-                                                    <img class="img-product" loading="lazy" width="330" height="330"
-                                                        src="{{ asset('img/products/product-placeholder.jpg') }}"
-                                                        alt="Товар KOTLOV">
-                                                    <img class="img-hover" loading="lazy" width="330" height="330"
-                                                        src="{{ asset('img/products/product-placeholder.jpg') }}"
-                                                        alt="Товар KOTLOV">
-                                                </a>
-
-                                                <ul class="product-action_list">
-                                                    <li class="wishlist">
-                                                        <a href="#;" class="hover-tooltip tooltip-left box-icon">
-                                                            <span class="icon icon-heart"></span>
-                                                            <span class="tooltip">В избранное</span>
-                                                        </a>
-                                                    </li>
-                                                    <li class="compare">
-                                                        <a href="#compare" data-bs-toggle="offcanvas"
-                                                            class="hover-tooltip tooltip-left box-icon">
-                                                            <span class="icon icon-ArrowsLeftRight"></span>
-                                                            <span class="tooltip">Сравнить</span>
-                                                        </a>
-                                                    </li>
-                                                    <li>
-                                                        <a href="#quickView" data-bs-toggle="offcanvas"
-                                                            class="hover-tooltip tooltip-left box-icon">
-                                                            <span class="icon icon-Eye"></span>
-                                                            <span class="tooltip">Быстрый просмотр</span>
-                                                        </a>
-                                                    </li>
-                                                </ul>
-
-                                                <div class="product-action_bot">
-                                                    <a href="#shoppingCart" data-bs-toggle="offcanvas"
-                                                        class="tf-btn btn-white small w-100">
-                                                        В корзину
-                                                    </a>
-                                                </div>
-                                            </div>
-
-                                            <div class="card-product_info">
-                                                <a href="#" class="name-product lh-24 fw-medium link-underline-text">
-                                                    Название товара №3
-                                                </a>
-
-                                                <div class="star-wrap d-flex align-items-center">
-                                                    <i class="icon icon-Star"></i>
-                                                    <i class="icon icon-Star"></i>
-                                                    <i class="icon icon-Star"></i>
-                                                    <i class="icon icon-Star"></i>
-                                                    <i class="icon icon-Star"></i>
-                                                </div>
-
-                                                <div class="price-wrap">
-                                                    <span class="price-new text-primary fw-semibold">Цена по запросу</span>
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        <div class="card-product product-style_stroke">
-                                            <div class="card-product_wrapper square">
-                                                <a href="#" class="product-img">
-                                                    <img class="img-product" loading="lazy" width="330" height="330"
-                                                        src="{{ asset('img/products/product-placeholder.jpg') }}"
-                                                        alt="Товар KOTLOV">
-                                                    <img class="img-hover" loading="lazy" width="330" height="330"
-                                                        src="{{ asset('img/products/product-placeholder.jpg') }}"
-                                                        alt="Товар KOTLOV">
-                                                </a>
-
-                                                <ul class="product-action_list">
-                                                    <li class="wishlist">
-                                                        <a href="#;" class="hover-tooltip tooltip-left box-icon">
-                                                            <span class="icon icon-heart"></span>
-                                                            <span class="tooltip">В избранное</span>
-                                                        </a>
-                                                    </li>
-                                                    <li class="compare">
-                                                        <a href="#compare" data-bs-toggle="offcanvas"
-                                                            class="hover-tooltip tooltip-left box-icon">
-                                                            <span class="icon icon-ArrowsLeftRight"></span>
-                                                            <span class="tooltip">Сравнить</span>
-                                                        </a>
-                                                    </li>
-                                                    <li>
-                                                        <a href="#quickView" data-bs-toggle="offcanvas"
-                                                            class="hover-tooltip tooltip-left box-icon">
-                                                            <span class="icon icon-Eye"></span>
-                                                            <span class="tooltip">Быстрый просмотр</span>
-                                                        </a>
-                                                    </li>
-                                                </ul>
-
-                                                <div class="product-action_bot">
-                                                    <a href="#shoppingCart" data-bs-toggle="offcanvas"
-                                                        class="tf-btn btn-white small w-100">
-                                                        В корзину
-                                                    </a>
-                                                </div>
-                                            </div>
-
-                                            <div class="card-product_info">
-                                                <a href="#" class="name-product lh-24 fw-medium link-underline-text">
-                                                    Название товара №4
-                                                </a>
-
-                                                <div class="star-wrap d-flex align-items-center">
-                                                    <i class="icon icon-Star"></i>
-                                                    <i class="icon icon-Star"></i>
-                                                    <i class="icon icon-Star"></i>
-                                                    <i class="icon icon-Star"></i>
-                                                    <i class="icon icon-Star"></i>
-                                                </div>
-
-                                                <div class="price-wrap">
-                                                    <span class="price-new text-primary fw-semibold">Цена по запросу</span>
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        <div class="card-product product-style_stroke">
-                                            <div class="card-product_wrapper square">
-                                                <a href="#" class="product-img">
-                                                    <img class="img-product" loading="lazy" width="330" height="330"
-                                                        src="{{ asset('img/products/product-placeholder.jpg') }}"
-                                                        alt="Товар KOTLOV">
-                                                    <img class="img-hover" loading="lazy" width="330" height="330"
-                                                        src="{{ asset('img/products/product-placeholder.jpg') }}"
-                                                        alt="Товар KOTLOV">
-                                                </a>
-
-                                                <ul class="product-action_list">
-                                                    <li class="wishlist">
-                                                        <a href="#;" class="hover-tooltip tooltip-left box-icon">
-                                                            <span class="icon icon-heart"></span>
-                                                            <span class="tooltip">В избранное</span>
-                                                        </a>
-                                                    </li>
-                                                    <li class="compare">
-                                                        <a href="#compare" data-bs-toggle="offcanvas"
-                                                            class="hover-tooltip tooltip-left box-icon">
-                                                            <span class="icon icon-ArrowsLeftRight"></span>
-                                                            <span class="tooltip">Сравнить</span>
-                                                        </a>
-                                                    </li>
-                                                    <li>
-                                                        <a href="#quickView" data-bs-toggle="offcanvas"
-                                                            class="hover-tooltip tooltip-left box-icon">
-                                                            <span class="icon icon-Eye"></span>
-                                                            <span class="tooltip">Быстрый просмотр</span>
-                                                        </a>
-                                                    </li>
-                                                </ul>
-
-                                                <ul class="product-badge_list">
-                                                    <li class="product-badge_item text-caption-01 sale">Акция</li>
-                                                </ul>
-
-                                                <div class="product-action_bot">
-                                                    <a href="#shoppingCart" data-bs-toggle="offcanvas"
-                                                        class="tf-btn btn-white small w-100">
-                                                        В корзину
-                                                    </a>
-                                                </div>
-                                            </div>
-
-                                            <div class="card-product_info">
-                                                <a href="#" class="name-product lh-24 fw-medium link-underline-text">
-                                                    Название товара №5
-                                                </a>
-
-                                                <div class="star-wrap d-flex align-items-center">
-                                                    <i class="icon icon-Star"></i>
-                                                    <i class="icon icon-Star"></i>
-                                                    <i class="icon icon-Star"></i>
-                                                    <i class="icon icon-Star"></i>
-                                                    <i class="icon icon-Star"></i>
-                                                </div>
-
-                                                <div class="price-wrap">
-                                                    <span class="price-new text-primary fw-semibold">Цена по запросу</span>
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        <div class="card-product product-style_stroke">
-                                            <div class="card-product_wrapper square">
-                                                <a href="#" class="product-img">
-                                                    <img class="img-product" loading="lazy" width="330" height="330"
-                                                        src="{{ asset('img/products/product-placeholder.jpg') }}"
-                                                        alt="Товар KOTLOV">
-                                                    <img class="img-hover" loading="lazy" width="330" height="330"
-                                                        src="{{ asset('img/products/product-placeholder.jpg') }}"
-                                                        alt="Товар KOTLOV">
-                                                </a>
-
-                                                <ul class="product-action_list">
-                                                    <li class="wishlist">
-                                                        <a href="#;" class="hover-tooltip tooltip-left box-icon">
-                                                            <span class="icon icon-heart"></span>
-                                                            <span class="tooltip">В избранное</span>
-                                                        </a>
-                                                    </li>
-                                                    <li class="compare">
-                                                        <a href="#compare" data-bs-toggle="offcanvas"
-                                                            class="hover-tooltip tooltip-left box-icon">
-                                                            <span class="icon icon-ArrowsLeftRight"></span>
-                                                            <span class="tooltip">Сравнить</span>
-                                                        </a>
-                                                    </li>
-                                                    <li>
-                                                        <a href="#quickView" data-bs-toggle="offcanvas"
-                                                            class="hover-tooltip tooltip-left box-icon">
-                                                            <span class="icon icon-Eye"></span>
-                                                            <span class="tooltip">Быстрый просмотр</span>
-                                                        </a>
-                                                    </li>
-                                                </ul>
-
-                                                <div class="product-action_bot">
-                                                    <a href="#shoppingCart" data-bs-toggle="offcanvas"
-                                                        class="tf-btn btn-white small w-100">
-                                                        В корзину
-                                                    </a>
-                                                </div>
-                                            </div>
-
-                                            <div class="card-product_info">
-                                                <a href="#" class="name-product lh-24 fw-medium link-underline-text">
-                                                    Название товара №6
-                                                </a>
-
-                                                <div class="star-wrap d-flex align-items-center">
-                                                    <i class="icon icon-Star"></i>
-                                                    <i class="icon icon-Star"></i>
-                                                    <i class="icon icon-Star"></i>
-                                                    <i class="icon icon-Star"></i>
-                                                    <i class="icon icon-Star"></i>
-                                                </div>
-
-                                                <div class="price-wrap">
-                                                    <span class="price-new text-primary fw-semibold">Цена по запросу</span>
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="tab-pane" id="teplovye-nasosy" role="tabpanel">
-                            <div class="wrap-prd">
-                                <div class="col-prd-1">
-                                    <div class="banner-image-text type-abs style-18 v2 mb-20">
-                                        <a href="/teplovye-nasosy" class="bn-image img-style">
-                                            <img loading="lazy" width="450" height="608"
-                                                src="{{ asset('img/banners/banner_pump.jpg') }}" alt="Тепловые насосы">
-                                        </a>
-
-                                        <div class="bn-content wow fadeInUp">
-                                            <a href="/teplovye-nasosy" class="title text-white h3 fw-medium link mb-8">
-                                                Тепловые<br>насосы
-                                            </a>
-
-                                            <p class="desc text-body-1 text-white mb-28">
-                                                Отопление, охлаждение
-                                                и горячая вода
-                                                круглый год.
-                                            </p>
-
-                                            <a href="/teplovye-nasosy" class="tf-btn btn-white hv-primary">
-                                                Перейти в каталог
-                                            </a>
-                                        </div>
-                                    </div>
-                                    <div class="tf-grid-layout tf-col-2 gap-20">
-
-                                        <div class="card-product product-style_stroke">
-                                            <div class="card-product_wrapper square">
-                                                <a href="#" class="product-img">
-                                                    <img class="img-product" loading="lazy" width="330" height="330"
-                                                        src="{{ asset('img/products/product-placeholder.jpg') }}"
-                                                        alt="Товар KOTLOV">
-                                                    <img class="img-hover" loading="lazy" width="330" height="330"
-                                                        src="{{ asset('img/products/product-placeholder.jpg') }}"
-                                                        alt="Товар KOTLOV">
-                                                </a>
-
-                                                <ul class="product-action_list">
-                                                    <li class="wishlist">
-                                                        <a href="#;" class="hover-tooltip tooltip-left box-icon">
-                                                            <span class="icon icon-heart"></span>
-                                                            <span class="tooltip">В избранное</span>
-                                                        </a>
-                                                    </li>
-                                                    <li class="compare">
-                                                        <a href="#compare" data-bs-toggle="offcanvas"
-                                                            class="hover-tooltip tooltip-left box-icon">
-                                                            <span class="icon icon-ArrowsLeftRight"></span>
-                                                            <span class="tooltip">Сравнить</span>
-                                                        </a>
-                                                    </li>
-                                                    <li>
-                                                        <a href="#quickView" data-bs-toggle="offcanvas"
-                                                            class="hover-tooltip tooltip-left box-icon">
-                                                            <span class="icon icon-Eye"></span>
-                                                            <span class="tooltip">Быстрый просмотр</span>
-                                                        </a>
-                                                    </li>
-                                                </ul>
-
-                                                <ul class="product-badge_list">
-                                                    <li class="product-badge_item text-caption-01 sale">
-                                                        Хит продаж
-                                                    </li>
-                                                </ul>
-
-                                                <div class="product-action_bot">
-                                                    <a href="#shoppingCart" data-bs-toggle="offcanvas"
-                                                        class="tf-btn btn-white small w-100">
-                                                        В корзину
-                                                    </a>
-                                                </div>
-                                            </div>
-
-                                            <div class="card-product_info">
-                                                <a href="#" class="name-product lh-24 fw-medium link-underline-text">
-                                                    Название товара №1
-                                                </a>
-
-                                                <div class="star-wrap d-flex align-items-center">
-                                                    <i class="icon icon-Star"></i>
-                                                    <i class="icon icon-Star"></i>
-                                                    <i class="icon icon-Star"></i>
-                                                    <i class="icon icon-Star"></i>
-                                                    <i class="icon icon-Star"></i>
-                                                </div>
-
-                                                <div class="price-wrap">
-                                                    <span class="price-new text-primary fw-semibold">
-                                                        Цена по запросу
-                                                    </span>
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        <div class="card-product product-style_stroke">
-                                            <div class="card-product_wrapper square">
-                                                <a href="#" class="product-img">
-                                                    <img class="img-product" loading="lazy" width="330" height="330"
-                                                        src="{{ asset('img/products/product-placeholder.jpg') }}"
-                                                        alt="Товар KOTLOV">
-                                                    <img class="img-hover" loading="lazy" width="330" height="330"
-                                                        src="{{ asset('img/products/product-placeholder.jpg') }}"
-                                                        alt="Товар KOTLOV">
-                                                </a>
-
-                                                <ul class="product-action_list">
-                                                    <li class="wishlist">
-                                                        <a href="#;" class="hover-tooltip tooltip-left box-icon">
-                                                            <span class="icon icon-heart"></span>
-                                                            <span class="tooltip">В избранное</span>
-                                                        </a>
-                                                    </li>
-                                                    <li class="compare">
-                                                        <a href="#compare" data-bs-toggle="offcanvas"
-                                                            class="hover-tooltip tooltip-left box-icon">
-                                                            <span class="icon icon-ArrowsLeftRight"></span>
-                                                            <span class="tooltip">Сравнить</span>
-                                                        </a>
-                                                    </li>
-                                                    <li>
-                                                        <a href="#quickView" data-bs-toggle="offcanvas"
-                                                            class="hover-tooltip tooltip-left box-icon">
-                                                            <span class="icon icon-Eye"></span>
-                                                            <span class="tooltip">Быстрый просмотр</span>
-                                                        </a>
-                                                    </li>
-                                                </ul>
-
-                                                <ul class="product-badge_list">
-                                                    <li class="product-badge_item text-caption-01 new">
-                                                        Новинка
-                                                    </li>
-                                                </ul>
-
-                                                <div class="product-action_bot">
-                                                    <a href="#shoppingCart" data-bs-toggle="offcanvas"
-                                                        class="tf-btn btn-white small w-100">
-                                                        В корзину
-                                                    </a>
-                                                </div>
-                                            </div>
-
-                                            <div class="card-product_info">
-                                                <a href="#" class="name-product lh-24 fw-medium link-underline-text">
-                                                    Название товара №2
-                                                </a>
-
-                                                <div class="star-wrap d-flex align-items-center">
-                                                    <i class="icon icon-Star"></i>
-                                                    <i class="icon icon-Star"></i>
-                                                    <i class="icon icon-Star"></i>
-                                                    <i class="icon icon-Star"></i>
-                                                    <i class="icon icon-Star"></i>
-                                                </div>
-
-                                                <div class="price-wrap">
-                                                    <span class="price-new text-primary fw-semibold">
-                                                        Цена по запросу
-                                                    </span>
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                    </div>
-                                </div>
-                                <div class="col-prd-2">
-                                    <div class="tf-grid-layout tf-col-2 lg-col-3 gap-20">
-
-                                        @for ($i = 1; $i <= 6; $i++)
-                                            <div class="card-product product-style_stroke">
-                                                <div class="card-product_wrapper square">
-
-                                                    <a href="#" class="product-img">
-                                                        <img class="img-product" loading="lazy" width="330" height="330"
-                                                            src="{{ asset('img/products/product-placeholder.jpg') }}"
-                                                            alt="Товар KOTLOV">
-
-                                                        <img class="img-hover" loading="lazy" width="330" height="330"
-                                                            src="{{ asset('img/products/product-placeholder.jpg') }}"
-                                                            alt="Товар KOTLOV">
-                                                    </a>
-
-                                                    <ul class="product-action_list">
-                                                        <li class="wishlist">
-                                                            <a href="#;" class="hover-tooltip tooltip-left box-icon">
-                                                                <span class="icon icon-heart"></span>
-                                                                <span class="tooltip">В избранное</span>
-                                                            </a>
-                                                        </li>
-
-                                                        <li class="compare">
-                                                            <a href="#compare" data-bs-toggle="offcanvas"
-                                                                class="hover-tooltip tooltip-left box-icon">
-                                                                <span class="icon icon-ArrowsLeftRight"></span>
-                                                                <span class="tooltip">Сравнить</span>
-                                                            </a>
-                                                        </li>
-
-                                                        <li>
-                                                            <a href="#quickView" data-bs-toggle="offcanvas"
-                                                                class="hover-tooltip tooltip-left box-icon">
-                                                                <span class="icon icon-Eye"></span>
-                                                                <span class="tooltip">Быстрый просмотр</span>
-                                                            </a>
-                                                        </li>
-                                                    </ul>
-
-                                                    <div class="product-action_bot">
-                                                        <a href="#shoppingCart" data-bs-toggle="offcanvas"
-                                                            class="tf-btn btn-white small w-100">
-                                                            В корзину
-                                                        </a>
-                                                    </div>
-
-                                                </div>
-
-                                                <div class="card-product_info">
-
-                                                    <a href="#" class="name-product lh-24 fw-medium link-underline-text">
-                                                        Название товара №{{ $i }}
-                                                    </a>
-
-                                                    <div class="star-wrap d-flex align-items-center">
-                                                        <i class="icon icon-Star"></i>
-                                                        <i class="icon icon-Star"></i>
-                                                        <i class="icon icon-Star"></i>
-                                                        <i class="icon icon-Star"></i>
-                                                        <i class="icon icon-Star"></i>
-                                                    </div>
-
-                                                    <div class="price-wrap">
-                                                        <span class="price-new text-primary fw-semibold">
-                                                            Цена по запросу
-                                                        </span>
-                                                    </div>
-
-                                                </div>
-                                            </div>
-                                        @endfor
-
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="tab-pane" id="kaminy" role="tabpanel">
-                            <div class="wrap-prd">
-                                <div class="col-prd-1">
-                                    <div class="banner-image-text type-abs style-18 v2 mb-20">
-                                        <a href="/kaminy" class="bn-image img-style">
-                                            <img loading="lazy" width="450" height="608"
-                                                src="{{ asset('img/banners/banner-fireplace1.jpg') }}" alt="Камины">
-                                        </a>
-
-                                        <div class="bn-content wow fadeInUp">
-                                            <a href="/kaminy" class="title text-white h3 fw-medium link mb-8">
-                                                Камины<br>и топки
-                                            </a>
-
-                                            <p class="desc text-body-1 text-white mb-28">
-                                                Каминные топки,
-                                                печи-камины и готовые
-                                                решения для дома.
-                                            </p>
-
-                                            <a href="/kaminy" class="tf-btn btn-white hv-primary">
-                                                Перейти в каталог
-                                            </a>
-                                        </div>
-                                    </div>
-                                    <div class="tf-grid-layout tf-col-2 gap-20">
-
-                                        <div class="card-product product-style_stroke">
-                                            <div class="card-product_wrapper square">
-                                                <a href="#" class="product-img">
-                                                    <img class="img-product" loading="lazy" width="330" height="330"
-                                                        src="{{ asset('img/products/product-placeholder.jpg') }}"
-                                                        alt="Товар KOTLOV">
-                                                    <img class="img-hover" loading="lazy" width="330" height="330"
-                                                        src="{{ asset('img/products/product-placeholder.jpg') }}"
-                                                        alt="Товар KOTLOV">
-                                                </a>
-
-                                                <ul class="product-action_list">
-                                                    <li class="wishlist">
-                                                        <a href="#;" class="hover-tooltip tooltip-left box-icon">
-                                                            <span class="icon icon-heart"></span>
-                                                            <span class="tooltip">В избранное</span>
-                                                        </a>
-                                                    </li>
-
-                                                    <li class="compare">
-                                                        <a href="#compare" data-bs-toggle="offcanvas"
-                                                            class="hover-tooltip tooltip-left box-icon">
-                                                            <span class="icon icon-ArrowsLeftRight"></span>
-                                                            <span class="tooltip">Сравнить</span>
-                                                        </a>
-                                                    </li>
-
-                                                    <li>
-                                                        <a href="#quickView" data-bs-toggle="offcanvas"
-                                                            class="hover-tooltip tooltip-left box-icon">
-                                                            <span class="icon icon-Eye"></span>
-                                                            <span class="tooltip">Быстрый просмотр</span>
-                                                        </a>
-                                                    </li>
-                                                </ul>
-
-                                                <ul class="product-badge_list">
-                                                    <li class="product-badge_item text-caption-01 sale">
-                                                        Хит продаж
-                                                    </li>
-                                                </ul>
-
-                                                <div class="product-action_bot">
-                                                    <a href="#shoppingCart" data-bs-toggle="offcanvas"
-                                                        class="tf-btn btn-white small w-100">
-                                                        В корзину
-                                                    </a>
-                                                </div>
-                                            </div>
-
-                                            <div class="card-product_info">
-                                                <a href="#" class="name-product lh-24 fw-medium link-underline-text">
-                                                    Название товара №1
-                                                </a>
-
-                                                <div class="star-wrap d-flex align-items-center">
-                                                    <i class="icon icon-Star"></i>
-                                                    <i class="icon icon-Star"></i>
-                                                    <i class="icon icon-Star"></i>
-                                                    <i class="icon icon-Star"></i>
-                                                    <i class="icon icon-Star"></i>
-                                                </div>
-
-                                                <div class="price-wrap">
-                                                    <span class="price-new text-primary fw-semibold">
-                                                        Цена по запросу
-                                                    </span>
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        <div class="card-product product-style_stroke">
-                                            <div class="card-product_wrapper square">
-                                                <a href="#" class="product-img">
-                                                    <img class="img-product" loading="lazy" width="330" height="330"
-                                                        src="{{ asset('img/products/product-placeholder.jpg') }}"
-                                                        alt="Товар KOTLOV">
-                                                    <img class="img-hover" loading="lazy" width="330" height="330"
-                                                        src="{{ asset('img/products/product-placeholder.jpg') }}"
-                                                        alt="Товар KOTLOV">
-                                                </a>
-
-                                                <ul class="product-action_list">
-                                                    <li class="wishlist">
-                                                        <a href="#;" class="hover-tooltip tooltip-left box-icon">
-                                                            <span class="icon icon-heart"></span>
-                                                            <span class="tooltip">В избранное</span>
-                                                        </a>
-                                                    </li>
-
-                                                    <li class="compare">
-                                                        <a href="#compare" data-bs-toggle="offcanvas"
-                                                            class="hover-tooltip tooltip-left box-icon">
-                                                            <span class="icon icon-ArrowsLeftRight"></span>
-                                                            <span class="tooltip">Сравнить</span>
-                                                        </a>
-                                                    </li>
-
-                                                    <li>
-                                                        <a href="#quickView" data-bs-toggle="offcanvas"
-                                                            class="hover-tooltip tooltip-left box-icon">
-                                                            <span class="icon icon-Eye"></span>
-                                                            <span class="tooltip">Быстрый просмотр</span>
-                                                        </a>
-                                                    </li>
-                                                </ul>
-
-                                                <ul class="product-badge_list">
-                                                    <li class="product-badge_item text-caption-01 new">
-                                                        Новинка
-                                                    </li>
-                                                </ul>
-
-                                                <div class="product-action_bot">
-                                                    <a href="#shoppingCart" data-bs-toggle="offcanvas"
-                                                        class="tf-btn btn-white small w-100">
-                                                        В корзину
-                                                    </a>
-                                                </div>
-                                            </div>
-
-                                            <div class="card-product_info">
-                                                <a href="#" class="name-product lh-24 fw-medium link-underline-text">
-                                                    Название товара №2
-                                                </a>
-
-                                                <div class="star-wrap d-flex align-items-center">
-                                                    <i class="icon icon-Star"></i>
-                                                    <i class="icon icon-Star"></i>
-                                                    <i class="icon icon-Star"></i>
-                                                    <i class="icon icon-Star"></i>
-                                                    <i class="icon icon-Star"></i>
-                                                </div>
-
-                                                <div class="price-wrap">
-                                                    <span class="price-new text-primary fw-semibold">
-                                                        Цена по запросу
-                                                    </span>
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                    </div>
-                                </div>
-                                <div class="col-prd-2">
-                                    <div class="tf-grid-layout tf-col-2 lg-col-3 gap-20">
-
-                                        @for ($i = 1; $i <= 6; $i++)
-                                            <div class="card-product product-style_stroke">
-
-                                                <div class="card-product_wrapper square">
-
-                                                    <a href="#" class="product-img">
-                                                        <img class="img-product" loading="lazy" width="330" height="330"
-                                                            src="{{ asset('img/products/product-placeholder.jpg') }}"
-                                                            alt="Товар KOTLOV">
-
-                                                        <img class="img-hover" loading="lazy" width="330" height="330"
-                                                            src="{{ asset('img/products/product-placeholder.jpg') }}"
-                                                            alt="Товар KOTLOV">
-                                                    </a>
-
-                                                    <ul class="product-action_list">
-                                                        <li class="wishlist">
-                                                            <a href="#;" class="hover-tooltip tooltip-left box-icon">
-                                                                <span class="icon icon-heart"></span>
-                                                                <span class="tooltip">В избранное</span>
-                                                            </a>
-                                                        </li>
-
-                                                        <li class="compare">
-                                                            <a href="#compare" data-bs-toggle="offcanvas"
-                                                                class="hover-tooltip tooltip-left box-icon">
-                                                                <span class="icon icon-ArrowsLeftRight"></span>
-                                                                <span class="tooltip">Сравнить</span>
-                                                            </a>
-                                                        </li>
-
-                                                        <li>
-                                                            <a href="#quickView" data-bs-toggle="offcanvas"
-                                                                class="hover-tooltip tooltip-left box-icon">
-                                                                <span class="icon icon-Eye"></span>
-                                                                <span class="tooltip">Быстрый просмотр</span>
-                                                            </a>
-                                                        </li>
-                                                    </ul>
-
-                                                    <div class="product-action_bot">
-                                                        <a href="#shoppingCart" data-bs-toggle="offcanvas"
-                                                            class="tf-btn btn-white small w-100">
-                                                            В корзину
-                                                        </a>
-                                                    </div>
-
-                                                </div>
-
-                                                <div class="card-product_info">
-
-                                                    <a href="#" class="name-product lh-24 fw-medium link-underline-text">
-                                                        Название товара №{{ $i }}
-                                                    </a>
-
-                                                    <div class="star-wrap d-flex align-items-center">
-                                                        <i class="icon icon-Star"></i>
-                                                        <i class="icon icon-Star"></i>
-                                                        <i class="icon icon-Star"></i>
-                                                        <i class="icon icon-Star"></i>
-                                                        <i class="icon icon-Star"></i>
-                                                    </div>
-
-                                                    <div class="price-wrap">
-                                                        <span class="price-new text-primary fw-semibold">
-                                                            Цена по запросу
-                                                        </span>
-                                                    </div>
-
-                                                </div>
-
-                                            </div>
-                                        @endfor
-
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="tab-pane" id="offers" role="tabpanel">
-                            <div class="wrap-prd">
-                                <div class="col-prd-1">
-                                    <div class="banner-image-text type-abs style-18 v2 mb-20">
-                                        <a href="/akcii" class="bn-image img-style">
-                                            <img loading="lazy" width="450" height="608"
-                                                src="{{ asset('img/banners/banner-sale.jpg') }}"
-                                                alt="Акции и специальные предложения">
-                                        </a>
-
-                                        <div class="bn-content wow fadeInUp">
-                                            <a href="/akcii" class="title text-white h3 fw-medium link mb-8">
-                                                Акции<br>и скидки
-                                            </a>
-
-                                            <p class="desc text-body-1 text-white mb-28">
-                                                Специальные предложения
-                                                и выгодные скидки
-                                            </p>
-
-                                            <a href="/akcii" class="tf-btn btn-white hv-primary">
-                                                Смотреть акции
-                                            </a>
-                                        </div>
-                                    </div>
-                                    <div class="tf-grid-layout tf-col-2 gap-20">
-
-                                        <div class="card-product product-style_stroke">
-                                            <div class="card-product_wrapper square">
-                                                <a href="#" class="product-img">
-                                                    <img class="img-product" loading="lazy" width="330" height="330"
-                                                        src="{{ asset('img/products/product-placeholder.jpg') }}"
-                                                        alt="Акционный товар">
-
-                                                    <img class="img-hover" loading="lazy" width="330" height="330"
-                                                        src="{{ asset('img/products/product-placeholder.jpg') }}"
-                                                        alt="Акционный товар">
-                                                </a>
-
-                                                <ul class="product-action_list">
-                                                    <li class="wishlist">
-                                                        <a href="#;" class="hover-tooltip tooltip-left box-icon">
-                                                            <span class="icon icon-heart"></span>
-                                                            <span class="tooltip">В избранное</span>
-                                                        </a>
-                                                    </li>
-
-                                                    <li class="compare">
-                                                        <a href="#compare" data-bs-toggle="offcanvas"
-                                                            class="hover-tooltip tooltip-left box-icon">
-                                                            <span class="icon icon-ArrowsLeftRight"></span>
-                                                            <span class="tooltip">Сравнить</span>
-                                                        </a>
-                                                    </li>
-
-                                                    <li>
-                                                        <a href="#quickView" data-bs-toggle="offcanvas"
-                                                            class="hover-tooltip tooltip-left box-icon">
-                                                            <span class="icon icon-Eye"></span>
-                                                            <span class="tooltip">Быстрый просмотр</span>
-                                                        </a>
-                                                    </li>
-                                                </ul>
-
-                                                <ul class="product-badge_list">
-                                                    <li class="product-badge_item text-caption-01 sale">
-                                                        -20%
-                                                    </li>
-                                                </ul>
-
-                                                <div class="product-action_bot">
-                                                    <a href="#shoppingCart" data-bs-toggle="offcanvas"
-                                                        class="tf-btn btn-white small w-100">
-                                                        В корзину
-                                                    </a>
-                                                </div>
-                                            </div>
-
-                                            <div class="card-product_info">
-                                                <a href="#" class="name-product lh-24 fw-medium link-underline-text">
-                                                    Акционный товар №1
-                                                </a>
-
-                                                <div class="star-wrap d-flex align-items-center">
-                                                    <i class="icon icon-Star"></i>
-                                                    <i class="icon icon-Star"></i>
-                                                    <i class="icon icon-Star"></i>
-                                                    <i class="icon icon-Star"></i>
-                                                    <i class="icon icon-Star"></i>
-                                                </div>
-
-                                                <div class="price-wrap">
-                                                    <span class="price-new text-primary fw-semibold">
-                                                        Цена по запросу
-                                                    </span>
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        <div class="card-product product-style_stroke">
-                                            <div class="card-product_wrapper square">
-                                                <a href="#" class="product-img">
-                                                    <img class="img-product" loading="lazy" width="330" height="330"
-                                                        src="{{ asset('img/products/product-placeholder.jpg') }}"
-                                                        alt="Акционный товар">
-
-                                                    <img class="img-hover" loading="lazy" width="330" height="330"
-                                                        src="{{ asset('img/products/product-placeholder.jpg') }}"
-                                                        alt="Акционный товар">
-                                                </a>
-
-                                                <ul class="product-action_list">
-                                                    <li class="wishlist">
-                                                        <a href="#;" class="hover-tooltip tooltip-left box-icon">
-                                                            <span class="icon icon-heart"></span>
-                                                            <span class="tooltip">В избранное</span>
-                                                        </a>
-                                                    </li>
-
-                                                    <li class="compare">
-                                                        <a href="#compare" data-bs-toggle="offcanvas"
-                                                            class="hover-tooltip tooltip-left box-icon">
-                                                            <span class="icon icon-ArrowsLeftRight"></span>
-                                                            <span class="tooltip">Сравнить</span>
-                                                        </a>
-                                                    </li>
-
-                                                    <li>
-                                                        <a href="#quickView" data-bs-toggle="offcanvas"
-                                                            class="hover-tooltip tooltip-left box-icon">
-                                                            <span class="icon icon-Eye"></span>
-                                                            <span class="tooltip">Быстрый просмотр</span>
-                                                        </a>
-                                                    </li>
-                                                </ul>
-
-                                                <ul class="product-badge_list">
-                                                    <li class="product-badge_item text-caption-01 sale">
-                                                        -30%
-                                                    </li>
-                                                </ul>
-
-                                                <div class="product-action_bot">
-                                                    <a href="#shoppingCart" data-bs-toggle="offcanvas"
-                                                        class="tf-btn btn-white small w-100">
-                                                        В корзину
-                                                    </a>
-                                                </div>
-                                            </div>
-
-                                            <div class="card-product_info">
-                                                <a href="#" class="name-product lh-24 fw-medium link-underline-text">
-                                                    Акционный товар №2
-                                                </a>
-
-                                                <div class="star-wrap d-flex align-items-center">
-                                                    <i class="icon icon-Star"></i>
-                                                    <i class="icon icon-Star"></i>
-                                                    <i class="icon icon-Star"></i>
-                                                    <i class="icon icon-Star"></i>
-                                                    <i class="icon icon-Star"></i>
-                                                </div>
-
-                                                <div class="price-wrap">
-                                                    <span class="price-new text-primary fw-semibold">
-                                                        Цена по запросу
-                                                    </span>
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                    </div>
-                                </div>
-                                <div class="col-prd-2">
-                                    <div class="tf-grid-layout tf-col-2 lg-col-3 gap-20">
-
-                                        @for ($i = 1; $i <= 6; $i++)
-                                            <div class="card-product product-style_stroke">
-
-                                                <div class="card-product_wrapper square">
-
-                                                    <a href="#" class="product-img">
-                                                        <img class="img-product" loading="lazy" width="330" height="330"
-                                                            src="{{ asset('img/products/product-placeholder.jpg') }}"
-                                                            alt="Акционный товар">
-
-                                                        <img class="img-hover" loading="lazy" width="330" height="330"
-                                                            src="{{ asset('img/products/product-placeholder.jpg') }}"
-                                                            alt="Акционный товар">
-                                                    </a>
-
-                                                    <ul class="product-action_list">
-                                                        <li class="wishlist">
-                                                            <a href="#;" class="hover-tooltip tooltip-left box-icon">
-                                                                <span class="icon icon-heart"></span>
-                                                                <span class="tooltip">В избранное</span>
-                                                            </a>
-                                                        </li>
-
-                                                        <li class="compare">
-                                                            <a href="#compare" data-bs-toggle="offcanvas"
-                                                                class="hover-tooltip tooltip-left box-icon">
-                                                                <span class="icon icon-ArrowsLeftRight"></span>
-                                                                <span class="tooltip">Сравнить</span>
-                                                            </a>
-                                                        </li>
-
-                                                        <li>
-                                                            <a href="#quickView" data-bs-toggle="offcanvas"
-                                                                class="hover-tooltip tooltip-left box-icon">
-                                                                <span class="icon icon-Eye"></span>
-                                                                <span class="tooltip">Быстрый просмотр</span>
-                                                            </a>
-                                                        </li>
-                                                    </ul>
-
-                                                    <ul class="product-badge_list">
-                                                        <li class="product-badge_item text-caption-01 sale">
-                                                            -{{ rand(10, 40) }}%
-                                                        </li>
-                                                    </ul>
-
-                                                    <div class="product-action_bot">
-                                                        <a href="#shoppingCart" data-bs-toggle="offcanvas"
-                                                            class="tf-btn btn-white small w-100">
-                                                            В корзину
-                                                        </a>
-                                                    </div>
-
-                                                </div>
-
-                                                <div class="card-product_info">
-
-                                                    <a href="#" class="name-product lh-24 fw-medium link-underline-text">
-                                                        Акционный товар №{{ $i }}
-                                                    </a>
-
-                                                    <div class="star-wrap d-flex align-items-center">
-                                                        <i class="icon icon-Star"></i>
-                                                        <i class="icon icon-Star"></i>
-                                                        <i class="icon icon-Star"></i>
-                                                        <i class="icon icon-Star"></i>
-                                                        <i class="icon icon-Star"></i>
-                                                    </div>
-
-                                                    <div class="price-wrap">
-                                                        <span class="price-new text-primary fw-semibold">
-                                                            Цена по запросу
-                                                        </span>
-                                                    </div>
-
-                                                </div>
-
-                                            </div>
-                                        @endfor
-
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
+                 <div class="tab-content">
+
+    {{-- ТАБ: КОТЛЫ --}}
+    <div class="tab-pane active show" id="kotly" role="tabpanel">
+        <div class="wrap-prd">
+            <div class="col-prd-1">
+                <div class="banner-image-text type-abs style-18 v2 mb-20">
+                    <a href="/kotly" class="bn-image img-style">
+                        <img loading="lazy" width="450" height="608"
+                            src="{{ asset('img/banners/baner_boiler1.jpg') }}" alt="Отопительные котлы">
+                    </a>
+                    <div class="bn-content wow fadeInUp">
+                        <a href="/kotly" class="title text-white h3 fw-medium link mb-8">
+                            Отопительные<br>котлы
+                        </a>
+                        <p class="desc text-body-1 text-white mb-28">
+                            Газовые, твердотопливные,
+                            электрические и пеллетные котлы.
+                        </p>
+                        <a href="/kotly" class="tf-btn btn-white hv-primary">
+                            Перейти в каталог
+                        </a>
                     </div>
+                </div>
+                <div class="tf-grid-layout tf-col-2 gap-20">
+                    @foreach ($productsKotly->take(2) as $product)
+                        @include('partials.product-card', ['product' => $product])
+                    @endforeach
+                </div>
+            </div>
+            <div class="col-prd-2">
+                <div class="tf-grid-layout tf-col-2 lg-col-3 gap-20">
+                    @foreach ($productsKotly->skip(2)->take(6) as $product)
+                        @include('partials.product-card', ['product' => $product])
+                    @endforeach
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {{-- ТАБ: ТЕПЛОВЫЕ НАСОСЫ --}}
+    <div class="tab-pane" id="teplovye-nasosy" role="tabpanel">
+        <div class="wrap-prd">
+            <div class="col-prd-1">
+                <div class="banner-image-text type-abs style-18 v2 mb-20">
+                    <a href="/teplovye-nasosy" class="bn-image img-style">
+                        <img loading="lazy" width="450" height="608"
+                            src="{{ asset('img/banners/banner_pump.jpg') }}" alt="Тепловые насосы">
+                    </a>
+                    <div class="bn-content wow fadeInUp">
+                        <a href="/teplovye-nasosy" class="title text-white h3 fw-medium link mb-8">
+                            Тепловые<br>насосы
+                        </a>
+                        <p class="desc text-body-1 text-white mb-28">
+                            Отопление, охлаждение
+                            и горячая вода
+                            круглый год.
+                        </p>
+                        <a href="/teplovye-nasosy" class="tf-btn btn-white hv-primary">
+                            Перейти в каталог
+                        </a>
+                    </div>
+                </div>
+                <div class="tf-grid-layout tf-col-2 gap-20">
+                    @foreach ($productsNasosy->take(2) as $product)
+                        @include('partials.product-card', ['product' => $product])
+                    @endforeach
+                </div>
+            </div>
+            <div class="col-prd-2">
+                <div class="tf-grid-layout tf-col-2 lg-col-3 gap-20">
+                    @foreach ($productsNasosy->skip(2)->take(6) as $product)
+                        @include('partials.product-card', ['product' => $product])
+                    @endforeach
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {{-- ТАБ: КАМИНЫ --}}
+    <div class="tab-pane" id="kaminy" role="tabpanel">
+        <div class="wrap-prd">
+            <div class="col-prd-1">
+                <div class="banner-image-text type-abs style-18 v2 mb-20">
+                    <a href="/kaminy" class="bn-image img-style">
+                        <img loading="lazy" width="450" height="608"
+                            src="{{ asset('img/banners/banner-fireplace1.jpg') }}" alt="Камины">
+                    </a>
+                    <div class="bn-content wow fadeInUp">
+                        <a href="/kaminy" class="title text-white h3 fw-medium link mb-8">
+                            Камины<br>и топки
+                        </a>
+                        <p class="desc text-body-1 text-white mb-28">
+                            Каминные топки,
+                            печи-камины и готовые
+                            решения для дома.
+                        </p>
+                        <a href="/kaminy" class="tf-btn btn-white hv-primary">
+                            Перейти в каталог
+                        </a>
+                    </div>
+                </div>
+                <div class="tf-grid-layout tf-col-2 gap-20">
+                    @foreach ($productsKaminy->take(2) as $product)
+                        @include('partials.product-card', ['product' => $product])
+                    @endforeach
+                </div>
+            </div>
+            <div class="col-prd-2">
+                <div class="tf-grid-layout tf-col-2 lg-col-3 gap-20">
+                    @foreach ($productsKaminy->skip(2)->take(6) as $product)
+                        @include('partials.product-card', ['product' => $product])
+                    @endforeach
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {{-- ТАБ: АКЦИИ --}}
+    <div class="tab-pane" id="offers" role="tabpanel">
+        <div class="wrap-prd">
+            <div class="col-prd-1">
+                <div class="banner-image-text type-abs style-18 v2 mb-20">
+                    <a href="/akcii" class="bn-image img-style">
+                        <img loading="lazy" width="450" height="608"
+                            src="{{ asset('img/banners/banner-sale.jpg') }}"
+                            alt="Акции и специальные предложения">
+                    </a>
+                    <div class="bn-content wow fadeInUp">
+                        <a href="/akcii" class="title text-white h3 fw-medium link mb-8">
+                            Акции<br>и скидки
+                        </a>
+                        <p class="desc text-body-1 text-white mb-28">
+                            Специальные предложения
+                            и выгодные скидки
+                        </p>
+                        <a href="/akcii" class="tf-btn btn-white hv-primary">
+                            Смотреть акции
+                        </a>
+                    </div>
+                </div>
+                <div class="tf-grid-layout tf-col-2 gap-20">
+                    @foreach ($productsAkcii->take(2) as $product)
+                        @include('partials.product-card', ['product' => $product])
+                    @endforeach
+                </div>
+            </div>
+            <div class="col-prd-2">
+                <div class="tf-grid-layout tf-col-2 lg-col-3 gap-20">
+                    @foreach ($productsAkcii->skip(2)->take(6) as $product)
+                        @include('partials.product-card', ['product' => $product])
+                    @endforeach
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
                 </div>
             </section>
             <!-- /Top Pick -->

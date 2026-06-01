@@ -6,8 +6,11 @@ use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Actions\ViewAction;
+use Filament\Tables\Actions\Action;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Filters\SelectFilter;
+use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Table;
 
 class ReviewsTable
@@ -16,33 +19,53 @@ class ReviewsTable
     {
         return $table
             ->columns([
-                TextColumn::make('user.name')
-                    ->searchable(),
                 TextColumn::make('author_name')
-                    ->searchable(),
-                TextColumn::make('author_email')
-                    ->searchable(),
+                    ->label('Автор')
+                    ->searchable()
+                    ->weight('bold'),
+
                 TextColumn::make('reviewable_type')
-                    ->searchable(),
-                TextColumn::make('reviewable_id')
-                    ->numeric()
-                    ->sortable(),
+                    ->label('Объект')
+                    ->badge()
+                    ->formatStateUsing(fn($state) => match($state) {
+                        'App\Models\Product'          => 'Товар',
+                        'App\Models\InstallerProfile' => 'Монтажник',
+                        'App\Models\SupplierProfile'  => 'Поставщик',
+                        default => $state,
+                    }),
+
                 TextColumn::make('rating')
-                    ->numeric()
-                    ->sortable(),
+                    ->label('Рейтинг')
+                    ->sortable()
+                    ->formatStateUsing(fn($state) => str_repeat('★', $state)),
+
+                TextColumn::make('text')
+                    ->label('Отзыв')
+                    ->limit(60),
+
                 IconColumn::make('is_approved')
+                    ->label('Одобрен')
                     ->boolean(),
+
                 TextColumn::make('created_at')
-                    ->dateTime()
-                    ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),
-                TextColumn::make('updated_at')
-                    ->dateTime()
-                    ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),
+                    ->label('Дата')
+                    ->dateTime('d.m.Y')
+                    ->sortable(),
             ])
+            ->defaultSort('created_at', 'desc')
             ->filters([
-                //
+                TernaryFilter::make('is_approved')
+                    ->label('Модерация'),
+
+                SelectFilter::make('rating')
+                    ->label('Рейтинг')
+                    ->options([
+                        1 => '★ 1',
+                        2 => '★★ 2',
+                        3 => '★★★ 3',
+                        4 => '★★★★ 4',
+                        5 => '★★★★★ 5',
+                    ]),
             ])
             ->recordActions([
                 ViewAction::make(),

@@ -9,6 +9,8 @@ use Filament\Actions\ViewAction;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\ImageColumn;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Filters\SelectFilter;
+use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Table;
 
 class BlogPostsTable
@@ -17,36 +19,46 @@ class BlogPostsTable
     {
         return $table
             ->columns([
-                TextColumn::make('category.name')
-                    ->searchable(),
-                TextColumn::make('author.name')
-                    ->searchable(),
+                ImageColumn::make('cover_image')
+                    ->label('Обложка'),
+
                 TextColumn::make('title')
-                    ->searchable(),
-                TextColumn::make('slug')
-                    ->searchable(),
-                ImageColumn::make('cover_image'),
+                    ->label('Заголовок')
+                    ->searchable()
+                    ->sortable()
+                    ->weight('bold')
+                    ->limit(50),
+
+                TextColumn::make('category.name')
+                    ->label('Категория')
+                    ->badge()
+                    ->sortable(),
+
+                TextColumn::make('author.name')
+                    ->label('Автор')
+                    ->sortable(),
+
                 IconColumn::make('is_published')
+                    ->label('Опубликовано')
                     ->boolean(),
+
                 TextColumn::make('published_at')
-                    ->dateTime()
+                    ->label('Дата')
+                    ->dateTime('d.m.Y')
                     ->sortable(),
+
                 TextColumn::make('views_count')
-                    ->numeric()
+                    ->label('Просмотры')
                     ->sortable(),
-                TextColumn::make('meta_title')
-                    ->searchable(),
-                TextColumn::make('created_at')
-                    ->dateTime()
-                    ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),
-                TextColumn::make('updated_at')
-                    ->dateTime()
-                    ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),
             ])
+            ->defaultSort('published_at', 'desc')
             ->filters([
-                //
+                TernaryFilter::make('is_published')
+                    ->label('Опубликовано'),
+
+                SelectFilter::make('category_id')
+                    ->label('Категория')
+                    ->relationship('category', 'name'),
             ])
             ->recordActions([
                 ViewAction::make(),

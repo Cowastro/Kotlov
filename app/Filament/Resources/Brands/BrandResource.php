@@ -19,40 +19,25 @@ use Filament\Tables\Table;
 class BrandResource extends Resource
 {
     protected static ?string $model = Brand::class;
-
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
-
+    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedBuildingStorefront;
+    protected static ?string $navigationLabel = 'Бренды';
+    protected static ?string $modelLabel = 'Бренд';
+    protected static ?string $pluralModelLabel = 'Бренды';
     protected static ?string $recordTitleAttribute = 'name';
+    protected static ?int $navigationSort = 2;
 
-    public static function form(Schema $schema): Schema
-    {
-        return BrandForm::configure($schema);
-    }
-
-    public static function infolist(Schema $schema): Schema
-    {
-        return BrandInfolist::configure($schema);
-    }
-
-    public static function table(Table $table): Table
-    {
-        return BrandsTable::configure($table);
-    }
-
-    public static function getRelations(): array
-    {
-        return [
-            //
-        ];
-    }
-
+    public static function getNavigationGroup(): ?string { return 'Каталог'; }
+    public static function form(Schema $schema): Schema { return BrandForm::configure($schema); }
+    public static function infolist(Schema $schema): Schema { return BrandInfolist::configure($schema); }
+    public static function table(Table $table): Table { return BrandsTable::configure($table); }
+    public static function getRelations(): array { return []; }
     public static function getPages(): array
     {
         return [
-            'index' => ListBrands::route('/'),
+            'index'  => ListBrands::route('/'),
             'create' => CreateBrand::route('/create'),
-            'view' => ViewBrand::route('/{record}'),
-            'edit' => EditBrand::route('/{record}/edit'),
+            'view'   => ViewBrand::route('/{record}'),
+            'edit'   => EditBrand::route('/{record}/edit'),
         ];
     }
 }

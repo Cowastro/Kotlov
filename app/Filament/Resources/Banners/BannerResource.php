@@ -19,40 +19,25 @@ use Filament\Tables\Table;
 class BannerResource extends Resource
 {
     protected static ?string $model = Banner::class;
+    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedPhoto;
+    protected static ?string $navigationLabel = 'Баннеры';
+    protected static ?string $modelLabel = 'Баннер';
+    protected static ?string $pluralModelLabel = 'Баннеры';
+    protected static ?string $recordTitleAttribute = 'title';
+    protected static ?int $navigationSort = 4;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
-
-    protected static ?string $recordTitleAttribute = 'name';
-
-    public static function form(Schema $schema): Schema
-    {
-        return BannerForm::configure($schema);
-    }
-
-    public static function infolist(Schema $schema): Schema
-    {
-        return BannerInfolist::configure($schema);
-    }
-
-    public static function table(Table $table): Table
-    {
-        return BannersTable::configure($table);
-    }
-
-    public static function getRelations(): array
-    {
-        return [
-            //
-        ];
-    }
-
+    public static function getNavigationGroup(): ?string { return 'Контент'; }
+    public static function form(Schema $schema): Schema { return BannerForm::configure($schema); }
+    public static function infolist(Schema $schema): Schema { return BannerInfolist::configure($schema); }
+    public static function table(Table $table): Table { return BannersTable::configure($table); }
+    public static function getRelations(): array { return []; }
     public static function getPages(): array
     {
         return [
-            'index' => ListBanners::route('/'),
+            'index'  => ListBanners::route('/'),
             'create' => CreateBanner::route('/create'),
-            'view' => ViewBanner::route('/{record}'),
-            'edit' => EditBanner::route('/{record}/edit'),
+            'view'   => ViewBanner::route('/{record}'),
+            'edit'   => EditBanner::route('/{record}/edit'),
         ];
     }
 }

@@ -9,6 +9,8 @@ use Filament\Actions\ViewAction;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\ImageColumn;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Filters\SelectFilter;
+use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Table;
 
 class BannersTable
@@ -17,33 +19,44 @@ class BannersTable
     {
         return $table
             ->columns([
+                ImageColumn::make('image')
+                    ->label('Изображение'),
+
                 TextColumn::make('title')
-                    ->searchable(),
-                TextColumn::make('subtitle')
-                    ->searchable(),
-                ImageColumn::make('image'),
-                TextColumn::make('link')
-                    ->searchable(),
-                TextColumn::make('button_text')
-                    ->searchable(),
+                    ->label('Заголовок')
+                    ->searchable()
+                    ->weight('bold'),
+
                 TextColumn::make('position')
-                    ->searchable(),
+                    ->label('Позиция')
+                    ->badge()
+                    ->formatStateUsing(fn($state) => match($state) {
+                        'hero'    => 'Главный слайдер',
+                        'sidebar' => 'Сайдбар',
+                        'promo'   => 'Промо блок',
+                        default   => $state,
+                    }),
+
                 TextColumn::make('sort_order')
-                    ->numeric()
+                    ->label('Порядок')
                     ->sortable(),
+
                 IconColumn::make('is_active')
+                    ->label('Активен')
                     ->boolean(),
-                TextColumn::make('created_at')
-                    ->dateTime()
-                    ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),
-                TextColumn::make('updated_at')
-                    ->dateTime()
-                    ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),
             ])
+            ->defaultSort('sort_order')
             ->filters([
-                //
+                SelectFilter::make('position')
+                    ->label('Позиция')
+                    ->options([
+                        'hero'    => 'Главный слайдер',
+                        'sidebar' => 'Сайдбар',
+                        'promo'   => 'Промо блок',
+                    ]),
+
+                TernaryFilter::make('is_active')
+                    ->label('Активность'),
             ])
             ->recordActions([
                 ViewAction::make(),

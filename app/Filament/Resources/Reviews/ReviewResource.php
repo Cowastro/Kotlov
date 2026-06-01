@@ -19,40 +19,24 @@ use Filament\Tables\Table;
 class ReviewResource extends Resource
 {
     protected static ?string $model = Review::class;
+    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedStar;
+    protected static ?string $navigationLabel = 'Отзывы';
+    protected static ?string $modelLabel = 'Отзыв';
+    protected static ?string $pluralModelLabel = 'Отзывы';
+    protected static ?int $navigationSort = 2;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
-
-    protected static ?string $recordTitleAttribute = 'name';
-
-    public static function form(Schema $schema): Schema
-    {
-        return ReviewForm::configure($schema);
-    }
-
-    public static function infolist(Schema $schema): Schema
-    {
-        return ReviewInfolist::configure($schema);
-    }
-
-    public static function table(Table $table): Table
-    {
-        return ReviewsTable::configure($table);
-    }
-
-    public static function getRelations(): array
-    {
-        return [
-            //
-        ];
-    }
-
+    public static function getNavigationGroup(): ?string { return 'Продажи'; }
+    public static function form(Schema $schema): Schema { return ReviewForm::configure($schema); }
+    public static function infolist(Schema $schema): Schema { return ReviewInfolist::configure($schema); }
+    public static function table(Table $table): Table { return ReviewsTable::configure($table); }
+    public static function getRelations(): array { return []; }
     public static function getPages(): array
     {
         return [
-            'index' => ListReviews::route('/'),
+            'index'  => ListReviews::route('/'),
             'create' => CreateReview::route('/create'),
-            'view' => ViewReview::route('/{record}'),
-            'edit' => EditReview::route('/{record}/edit'),
+            'view'   => ViewReview::route('/{record}'),
+            'edit'   => EditReview::route('/{record}/edit'),
         ];
     }
 }

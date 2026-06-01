@@ -8,6 +8,7 @@ use Filament\Actions\EditAction;
 use Filament\Actions\ViewAction;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Table;
 
 class PagesTable
@@ -17,24 +18,26 @@ class PagesTable
         return $table
             ->columns([
                 TextColumn::make('title')
-                    ->searchable(),
+                    ->label('Заголовок')
+                    ->searchable()
+                    ->weight('bold'),
+
                 TextColumn::make('slug')
+                    ->label('URL')
                     ->searchable(),
+
                 IconColumn::make('is_published')
+                    ->label('Опубликована')
                     ->boolean(),
-                TextColumn::make('meta_title')
-                    ->searchable(),
-                TextColumn::make('created_at')
-                    ->dateTime()
-                    ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),
+
                 TextColumn::make('updated_at')
-                    ->dateTime()
-                    ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),
+                    ->label('Обновлена')
+                    ->dateTime('d.m.Y')
+                    ->sortable(),
             ])
             ->filters([
-                //
+                TernaryFilter::make('is_published')
+                    ->label('Публикация'),
             ])
             ->recordActions([
                 ViewAction::make(),

@@ -19,40 +19,25 @@ use Filament\Tables\Table;
 class CouponResource extends Resource
 {
     protected static ?string $model = Coupon::class;
+    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedTicket;
+    protected static ?string $navigationLabel = 'Промокоды';
+    protected static ?string $modelLabel = 'Промокод';
+    protected static ?string $pluralModelLabel = 'Промокоды';
+    protected static ?string $recordTitleAttribute = 'code';
+    protected static ?int $navigationSort = 4;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
-
-    protected static ?string $recordTitleAttribute = 'name';
-
-    public static function form(Schema $schema): Schema
-    {
-        return CouponForm::configure($schema);
-    }
-
-    public static function infolist(Schema $schema): Schema
-    {
-        return CouponInfolist::configure($schema);
-    }
-
-    public static function table(Table $table): Table
-    {
-        return CouponsTable::configure($table);
-    }
-
-    public static function getRelations(): array
-    {
-        return [
-            //
-        ];
-    }
-
+    public static function getNavigationGroup(): ?string { return 'Продажи'; }
+    public static function form(Schema $schema): Schema { return CouponForm::configure($schema); }
+    public static function infolist(Schema $schema): Schema { return CouponInfolist::configure($schema); }
+    public static function table(Table $table): Table { return CouponsTable::configure($table); }
+    public static function getRelations(): array { return []; }
     public static function getPages(): array
     {
         return [
-            'index' => ListCoupons::route('/'),
+            'index'  => ListCoupons::route('/'),
             'create' => CreateCoupon::route('/create'),
-            'view' => ViewCoupon::route('/{record}'),
-            'edit' => EditCoupon::route('/{record}/edit'),
+            'view'   => ViewCoupon::route('/{record}'),
+            'edit'   => EditCoupon::route('/{record}/edit'),
         ];
     }
 }

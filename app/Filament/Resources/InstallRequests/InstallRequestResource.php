@@ -19,40 +19,24 @@ use Filament\Tables\Table;
 class InstallRequestResource extends Resource
 {
     protected static ?string $model = InstallRequest::class;
+    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedWrenchScrewdriver;
+    protected static ?string $navigationLabel = 'Заявки на монтаж';
+    protected static ?string $modelLabel = 'Заявка на монтаж';
+    protected static ?string $pluralModelLabel = 'Заявки на монтаж';
+    protected static ?int $navigationSort = 3;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
-
-    protected static ?string $recordTitleAttribute = 'name';
-
-    public static function form(Schema $schema): Schema
-    {
-        return InstallRequestForm::configure($schema);
-    }
-
-    public static function infolist(Schema $schema): Schema
-    {
-        return InstallRequestInfolist::configure($schema);
-    }
-
-    public static function table(Table $table): Table
-    {
-        return InstallRequestsTable::configure($table);
-    }
-
-    public static function getRelations(): array
-    {
-        return [
-            //
-        ];
-    }
-
+    public static function getNavigationGroup(): ?string { return 'Продажи'; }
+    public static function form(Schema $schema): Schema { return InstallRequestForm::configure($schema); }
+    public static function infolist(Schema $schema): Schema { return InstallRequestInfolist::configure($schema); }
+    public static function table(Table $table): Table { return InstallRequestsTable::configure($table); }
+    public static function getRelations(): array { return []; }
     public static function getPages(): array
     {
         return [
-            'index' => ListInstallRequests::route('/'),
+            'index'  => ListInstallRequests::route('/'),
             'create' => CreateInstallRequest::route('/create'),
-            'view' => ViewInstallRequest::route('/{record}'),
-            'edit' => EditInstallRequest::route('/{record}/edit'),
+            'view'   => ViewInstallRequest::route('/{record}'),
+            'edit'   => EditInstallRequest::route('/{record}/edit'),
         ];
     }
 }

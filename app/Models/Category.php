@@ -19,31 +19,31 @@ class Category extends Model
         'is_active' => 'boolean',
     ];
 
-    // Дочерние категории
     public function children(): HasMany
     {
         return $this->hasMany(Category::class, 'parent_id');
     }
 
-    // Родительская категория
     public function parent(): BelongsTo
     {
         return $this->belongsTo(Category::class, 'parent_id');
     }
 
-    // Товары категории
     public function products(): HasMany
     {
         return $this->hasMany(Product::class);
     }
 
-    // Только корневые категории
+    public function attributes(): HasMany
+    {
+        return $this->hasMany(Attribute::class)->orderBy('sort_order');
+    }
+
     public function scopeRoot($query)
     {
         return $query->where('parent_id', 0);
     }
 
-    // Только активные
     public function scopeActive($query)
     {
         return $query->where('is_active', true);

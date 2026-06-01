@@ -8,6 +8,7 @@ use Filament\Actions\EditAction;
 use Filament\Actions\ViewAction;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Table;
 
 class CouponsTable
@@ -17,37 +18,51 @@ class CouponsTable
         return $table
             ->columns([
                 TextColumn::make('code')
-                    ->searchable(),
+                    ->label('Код')
+                    ->searchable()
+                    ->weight('bold')
+                    ->copyable(),
+
                 TextColumn::make('type')
-                    ->badge(),
+                    ->label('Тип')
+                    ->badge()
+                    ->formatStateUsing(fn($state) => match($state) {
+                        'percent' => '% Процент',
+                        'fixed'   => 'BYN Фиксированная',
+                        default   => $state,
+                    }),
+
                 TextColumn::make('value')
-                    ->numeric()
-                    ->sortable(),
+                    ->label('Скидка')
+                    ->formatStateUsing(fn($state, $record) =>
+                        $record->type === 'percent'
+                            ? $state . '%'
+                            : $state . ' BYN'
+                    ),
+
                 TextColumn::make('min_order_amount')
-                    ->numeric()
-                    ->sortable(),
-                TextColumn::make('uses_limit')
-                    ->numeric()
-                    ->sortable(),
+                    ->label('От суммы')
+                    ->formatStateUsing(fn($state) => $state > 0 ? $state . ' BYN' : '—'),
+
                 TextColumn::make('uses_count')
-                    ->numeric()
-                    ->sortable(),
+                    ->label('Использований')
+                    ->formatStateUsing(fn($state, $record) =>
+                        $state . ($record->uses_limit ? ' / ' . $record->uses_limit : '')
+                    ),
+
                 IconColumn::make('is_active')
+                    ->label('Активен')
                     ->boolean(),
+
                 TextColumn::make('expires_at')
-                    ->dateTime()
-                    ->sortable(),
-                TextColumn::make('created_at')
-                    ->dateTime()
+                    ->label('Истекает')
+                    ->dateTime('d.m.Y')
                     ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),
-                TextColumn::make('updated_at')
-                    ->dateTime()
-                    ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),
+                    ->placeholder('Бессрочно'),
             ])
             ->filters([
-                //
+                TernaryFilter::make('is_active')
+                    ->label('Активность'),
             ])
             ->recordActions([
                 ViewAction::make(),

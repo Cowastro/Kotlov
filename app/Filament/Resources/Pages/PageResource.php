@@ -19,40 +19,25 @@ use Filament\Tables\Table;
 class PageResource extends Resource
 {
     protected static ?string $model = Page::class;
+    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedDocument;
+    protected static ?string $navigationLabel = 'Страницы';
+    protected static ?string $modelLabel = 'Страница';
+    protected static ?string $pluralModelLabel = 'Страницы';
+    protected static ?string $recordTitleAttribute = 'title';
+    protected static ?int $navigationSort = 3;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
-
-    protected static ?string $recordTitleAttribute = 'name';
-
-    public static function form(Schema $schema): Schema
-    {
-        return PageForm::configure($schema);
-    }
-
-    public static function infolist(Schema $schema): Schema
-    {
-        return PageInfolist::configure($schema);
-    }
-
-    public static function table(Table $table): Table
-    {
-        return PagesTable::configure($table);
-    }
-
-    public static function getRelations(): array
-    {
-        return [
-            //
-        ];
-    }
-
+    public static function getNavigationGroup(): ?string { return 'Контент'; }
+    public static function form(Schema $schema): Schema { return PageForm::configure($schema); }
+    public static function infolist(Schema $schema): Schema { return PageInfolist::configure($schema); }
+    public static function table(Table $table): Table { return PagesTable::configure($table); }
+    public static function getRelations(): array { return []; }
     public static function getPages(): array
     {
         return [
-            'index' => ListPages::route('/'),
+            'index'  => ListPages::route('/'),
             'create' => CreatePage::route('/create'),
-            'view' => ViewPage::route('/{record}'),
-            'edit' => EditPage::route('/{record}/edit'),
+            'view'   => ViewPage::route('/{record}'),
+            'edit'   => EditPage::route('/{record}/edit'),
         ];
     }
 }

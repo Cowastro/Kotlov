@@ -19,40 +19,25 @@ use Filament\Tables\Table;
 class OrderResource extends Resource
 {
     protected static ?string $model = Order::class;
+    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedShoppingCart;
+    protected static ?string $navigationLabel = 'Заказы';
+    protected static ?string $modelLabel = 'Заказ';
+    protected static ?string $pluralModelLabel = 'Заказы';
+    protected static ?string $recordTitleAttribute = 'number';
+    protected static ?int $navigationSort = 1;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
-
-    protected static ?string $recordTitleAttribute = 'name';
-
-    public static function form(Schema $schema): Schema
-    {
-        return OrderForm::configure($schema);
-    }
-
-    public static function infolist(Schema $schema): Schema
-    {
-        return OrderInfolist::configure($schema);
-    }
-
-    public static function table(Table $table): Table
-    {
-        return OrdersTable::configure($table);
-    }
-
-    public static function getRelations(): array
-    {
-        return [
-            //
-        ];
-    }
-
+    public static function getNavigationGroup(): ?string { return 'Продажи'; }
+    public static function form(Schema $schema): Schema { return OrderForm::configure($schema); }
+    public static function infolist(Schema $schema): Schema { return OrderInfolist::configure($schema); }
+    public static function table(Table $table): Table { return OrdersTable::configure($table); }
+    public static function getRelations(): array { return []; }
     public static function getPages(): array
     {
         return [
-            'index' => ListOrders::route('/'),
+            'index'  => ListOrders::route('/'),
             'create' => CreateOrder::route('/create'),
-            'view' => ViewOrder::route('/{record}'),
-            'edit' => EditOrder::route('/{record}/edit'),
+            'view'   => ViewOrder::route('/{record}'),
+            'edit'   => EditOrder::route('/{record}/edit'),
         ];
     }
 }

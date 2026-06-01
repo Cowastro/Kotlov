@@ -19,40 +19,25 @@ use Filament\Tables\Table;
 class EmailSubscriberResource extends Resource
 {
     protected static ?string $model = EmailSubscriber::class;
+    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedEnvelope;
+    protected static ?string $navigationLabel = 'Подписчики';
+    protected static ?string $modelLabel = 'Подписчик';
+    protected static ?string $pluralModelLabel = 'Подписчики';
+    protected static ?string $recordTitleAttribute = 'email';
+    protected static ?int $navigationSort = 2;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
-
-    protected static ?string $recordTitleAttribute = 'name';
-
-    public static function form(Schema $schema): Schema
-    {
-        return EmailSubscriberForm::configure($schema);
-    }
-
-    public static function infolist(Schema $schema): Schema
-    {
-        return EmailSubscriberInfolist::configure($schema);
-    }
-
-    public static function table(Table $table): Table
-    {
-        return EmailSubscribersTable::configure($table);
-    }
-
-    public static function getRelations(): array
-    {
-        return [
-            //
-        ];
-    }
-
+    public static function getNavigationGroup(): ?string { return 'Управление'; }
+    public static function form(Schema $schema): Schema { return EmailSubscriberForm::configure($schema); }
+    public static function infolist(Schema $schema): Schema { return EmailSubscriberInfolist::configure($schema); }
+    public static function table(Table $table): Table { return EmailSubscribersTable::configure($table); }
+    public static function getRelations(): array { return []; }
     public static function getPages(): array
     {
         return [
-            'index' => ListEmailSubscribers::route('/'),
+            'index'  => ListEmailSubscribers::route('/'),
             'create' => CreateEmailSubscriber::route('/create'),
-            'view' => ViewEmailSubscriber::route('/{record}'),
-            'edit' => EditEmailSubscriber::route('/{record}/edit'),
+            'view'   => ViewEmailSubscriber::route('/{record}'),
+            'edit'   => EditEmailSubscriber::route('/{record}/edit'),
         ];
     }
 }

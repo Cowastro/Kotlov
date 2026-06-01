@@ -9,6 +9,7 @@ use App\Filament\Resources\Categories\Pages\ViewCategory;
 use App\Filament\Resources\Categories\Schemas\CategoryForm;
 use App\Filament\Resources\Categories\Schemas\CategoryInfolist;
 use App\Filament\Resources\Categories\Tables\CategoriesTable;
+use App\Filament\Resources\Categories\RelationManagers\AttributesRelationManager;
 use App\Models\Category;
 use BackedEnum;
 use Filament\Resources\Resource;
@@ -19,8 +20,16 @@ use Filament\Tables\Table;
 class CategoryResource extends Resource
 {
     protected static ?string $model = Category::class;
+    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedTag;
+    protected static ?string $navigationLabel = 'Категории';
+    protected static ?string $modelLabel = 'Категория';
+    protected static ?string $pluralModelLabel = 'Категории';
+    protected static ?int $navigationSort = 1;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
+    public static function getNavigationGroup(): ?string
+    {
+        return 'Каталог';
+    }
 
     public static function form(Schema $schema): Schema
     {
@@ -40,17 +49,17 @@ class CategoryResource extends Resource
     public static function getRelations(): array
     {
         return [
-            //
+            AttributesRelationManager::class,
         ];
     }
 
     public static function getPages(): array
     {
         return [
-            'index' => ListCategories::route('/'),
+            'index'  => ListCategories::route('/'),
             'create' => CreateCategory::route('/create'),
-            'view' => ViewCategory::route('/{record}'),
-            'edit' => EditCategory::route('/{record}/edit'),
+            'view'   => ViewCategory::route('/{record}'),
+            'edit'   => EditCategory::route('/{record}/edit'),
         ];
     }
 }

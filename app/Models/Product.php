@@ -64,13 +64,29 @@ class Product extends Model
         return $this->hasMany(ProductView::class);
     }
 
+    public function attributeValues(): HasMany
+    {
+        return $this->hasMany(ProductAttributeValue::class)
+            ->with(['attribute', 'option'])
+            ->whereHas('attribute', fn($q) => $q->where('in_product', true))
+            ->orderBy('attribute_id');
+    }
+
+    public function briefAttributes(): HasMany
+    {
+        return $this->hasMany(ProductAttributeValue::class)
+            ->with(['attribute', 'option'])
+            ->whereHas('attribute', fn($q) => $q->where('in_brief', true))
+            ->orderBy('attribute_id');
+    }
+
     // Первое фото
     public function getMainImageAttribute(): ?string
     {
         return $this->images[0] ?? null;
     }
 
-    // Есть скидка
+    // Процент скидки
     public function getDiscountPercentAttribute(): ?int
     {
         if ($this->price_old && $this->price_old > $this->price) {

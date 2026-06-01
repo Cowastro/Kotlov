@@ -19,40 +19,25 @@ use Filament\Tables\Table;
 class BlogCategoryResource extends Resource
 {
     protected static ?string $model = BlogCategory::class;
-
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
-
+    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedFolderOpen;
+    protected static ?string $navigationLabel = 'Категории блога';
+    protected static ?string $modelLabel = 'Категория блога';
+    protected static ?string $pluralModelLabel = 'Категории блога';
     protected static ?string $recordTitleAttribute = 'name';
+    protected static ?int $navigationSort = 2;
 
-    public static function form(Schema $schema): Schema
-    {
-        return BlogCategoryForm::configure($schema);
-    }
-
-    public static function infolist(Schema $schema): Schema
-    {
-        return BlogCategoryInfolist::configure($schema);
-    }
-
-    public static function table(Table $table): Table
-    {
-        return BlogCategoriesTable::configure($table);
-    }
-
-    public static function getRelations(): array
-    {
-        return [
-            //
-        ];
-    }
-
+    public static function getNavigationGroup(): ?string { return 'Контент'; }
+    public static function form(Schema $schema): Schema { return BlogCategoryForm::configure($schema); }
+    public static function infolist(Schema $schema): Schema { return BlogCategoryInfolist::configure($schema); }
+    public static function table(Table $table): Table { return BlogCategoriesTable::configure($table); }
+    public static function getRelations(): array { return []; }
     public static function getPages(): array
     {
         return [
-            'index' => ListBlogCategories::route('/'),
+            'index'  => ListBlogCategories::route('/'),
             'create' => CreateBlogCategory::route('/create'),
-            'view' => ViewBlogCategory::route('/{record}'),
-            'edit' => EditBlogCategory::route('/{record}/edit'),
+            'view'   => ViewBlogCategory::route('/{record}'),
+            'edit'   => EditBlogCategory::route('/{record}/edit'),
         ];
     }
 }

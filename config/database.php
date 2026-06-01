@@ -114,6 +114,19 @@ return [
             // 'trust_server_certificate' => env('DB_TRUST_SERVER_CERTIFICATE', 'false'),
         ],
 
+        'old' => [
+    'driver'    => 'mysql',
+    'host'      => env('DB_OLD_HOST', '127.0.0.1'),
+    'port'      => env('DB_OLD_PORT', '3306'),
+    'database'  => env('DB_OLD_DATABASE', 'kotlov_old'),
+    'username'  => env('DB_OLD_USERNAME', 'root'),
+    'password'  => env('DB_OLD_PASSWORD', ''),
+    'charset'   => 'utf8mb4',
+    'collation' => 'utf8mb4_unicode_ci',
+    'prefix'    => '',
+    'strict'    => false,
+],
+
     ],
 
     /*
