@@ -1,4 +1,4 @@
-<!-- Topbar -->
+﻿<!-- Topbar -->
 <div class="tf-topbar bg-dark">
     <div class="container">
         <div class="d-flex justify-content-between align-items-center text-white">
@@ -62,7 +62,6 @@
         <nav class="box-navigation">
             <ul class="box-nav-menu">
 
-               {{-- MOBILE CATALOG - динамический из БД --}}
                 <li class="menu-item d-xl-none">
                     <a href="#" class="item-link">
                         <span class="text cus-text">Каталог товаров</span>
@@ -81,7 +80,7 @@
                                     @endforeach
                                     <li>
                                         <a href="/{{ $rootCat->slug }}" class="sub-menu_link cl-text-2">
-                                            Все →
+                                            Đ’ŃĐµ
                                         </a>
                                     </li>
                                 </ul>
@@ -90,7 +89,7 @@
                     </div>
                 </li>
 
-                <!-- MAIN MENU -->                <!-- MAIN MENU -->
+                <!-- MAIN MENU -->
                 <li class="menu-item">
                     <a href="/installers" class="item-link">
                         <span class="text cus-text">Монтаж</span>
@@ -176,7 +175,7 @@
                 <div class="nav-category-wrap main-action-active">
                     <div class="btn-nav-drop btn-active text-nowrap radius-8">
                         <i class="icon icon-List fs-24"></i>
-                        <span class="name-category fw-medium">Каталог товаров</span>
+                        <span class="name-category fw-medium">Каталог товаров</span>
                     </div>
 
                     <ul class="box-nav-category active-item radius-12">
@@ -195,8 +194,8 @@
                                     <span class="d-flex align-items-center gap-2">
                                         @if ($icon)
                                             <img src="{{ asset('icons/' . $icon) }}"
-                                                 alt="{{ $rootCat->name }}"
-                                                 class="cat-icon">
+                                                alt="{{ $rootCat->name }}"
+                                                class="cat-icon">
                                         @endif
                                         <span>{{ $rootCat->name }}</span>
                                     </span>
@@ -208,8 +207,6 @@
                                 @if ($hasChildren)
                                     <div class="sub-nav-category">
                                         <div class="tf-grid-layout xl-col-3">
-
-                                            {{-- Колонка 1: подкатегории из БД --}}
                                             @if ($children->count() > 0)
                                                 <div class="sub-nav-category_list">
                                                     <div class="sub-nav__title fw-semibold">{{ $rootCat->name }}</div>
@@ -220,13 +217,12 @@
                                                     @endforeach
                                                     @if ($children->count() > 8)
                                                         <a href="/{{ $rootCat->slug }}" class="sub-nav__link tf-btn-line cl-text-2">
-                                                            Все разделы →
+                                                            Все разделы
                                                         </a>
                                                     @endif
                                                 </div>
                                             @endif
 
-                                            {{-- Колонки 2-3: редакционные блоки из конфига --}}
                                             @foreach ($editorial as $block)
                                                 <div class="sub-nav-category_list">
                                                     <div class="sub-nav__title fw-semibold">{{ $block['title'] }}</div>
@@ -237,7 +233,6 @@
                                                     @endforeach
                                                 </div>
                                             @endforeach
-
                                         </div>
                                     </div>
                                 @endif
@@ -249,28 +244,28 @@
                                 Весь каталог
                             </a>
                         </li>
-
                     </ul>
                 </div>
             </div>
 
             <div class="col-center">
-                <form action="/search" method="get" class="form_search-product style-2 radius-8">
+                <form action="/search" method="get" class="form_search-product style-2 radius-8" autocomplete="off">
                     <div class="select-category">
                         <select name="category" id="product_cate" class="dropdown_product_cate">
-                            <option value="" selected>Все категории</option>
+                            <option value="" selected="selected">Все категории</option>
                             @foreach ($navCategories as $cat)
                                 <option value="{{ $cat->slug }}">{{ $cat->name }}</option>
                             @endforeach
                         </select>
                     </div>
                     <span class="br-line type-vertical"></span>
-                    <fieldset class="fieldset-search">
-                        <input class="ipt" type="text" name="q"
-                            placeholder="Поиск по каталогу" required>
+                    <fieldset class="fieldset-search" style="position:relative;flex:1;">
+                        <input class="ipt" type="text" name="q" id="header-search-input"
+                            placeholder="Поиск по каталогу" autocomplete="off">
                         <button type="submit" class="btn-action">
                             <i class="icon icon-MagnifyingGlass"></i>
                         </button>
+                        <div id="search-suggest" class="search-suggest-dropdown"></div>
                     </fieldset>
                 </form>
             </div>
@@ -279,6 +274,7 @@
                 <ul class="nav-icon-list">
                     <li class="position-relative">
                         @auth
+                            {{-- Залогинен: дропдаун с кабинетом и выходом --}}
                             <div class="dropdown">
                                 <a href="#" class="nav-icon-item link has-text dropdown-toggle"
                                     data-bs-toggle="dropdown" aria-expanded="false"
@@ -311,17 +307,20 @@
                                 </ul>
                             </div>
                         @else
+                            {{-- Не залогинен: открываем модалку входа --}}
                             <a href="#sign" data-bs-toggle="modal" class="nav-icon-item link has-text">
                                 <i class="icon icon-User"></i>
                                 <span class="d-none d-md-block">Войти</span>
                             </a>
                         @endauth
                     </li>
+
                     <li class="d-none d-sm-block">
                         <a href="/wishlist" class="nav-icon-item link">
                             <i class="icon icon-HeartStraight"></i>
                         </a>
                     </li>
+
                     <li>
                         <a href="#shoppingCart" data-bs-toggle="offcanvas" class="nav-icon-item link shop-cart">
                             <i class="icon icon-Handbag"></i>

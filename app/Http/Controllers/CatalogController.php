@@ -6,7 +6,9 @@ use App\Models\Attribute;
 use App\Models\Brand;
 use App\Models\Category;
 use App\Models\Product;
+use App\Models\ProductAttributeValue;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 
 class CatalogController extends Controller
 {
@@ -18,25 +20,31 @@ class CatalogController extends Controller
             ->firstOrFail();
 
         // Все ID подкатегорий включая саму категорию
-        $subcategoryIds = Category::where('parent_id', $category->id)
-            ->where('is_active', true)
-            ->pluck('id');
-
-        $allCategoryIds = $subcategoryIds->prepend($category->id);
+        $allCategoryIds = $this->collectCategoryAndDescendantIds($category->id);
 
         // Подкатегории для фильтра
         $subcategories = Category::where('parent_id', $category->id)
             ->where('is_active', true)
-            ->withCount(['products' => fn($q) => $q->where('is_active', true)])
             ->orderBy('sort_order')
-            ->get();
+            ->get()
+            ->each(function ($subcategory) {
+                $ids = $this->collectCategoryAndDescendantIds($subcategory->id);
+                $subcategory->products_count = Product::where('is_active', true)
+                    ->whereIn('category_id', $ids)
+                    ->count();
+            })
+            ->filter(fn($subcategory) => $subcategory->products_count > 0)
+            ->values();
 
         // Если выбрана подкатегория
         $activeCategoryIds = $allCategoryIds;
         if (request('subcategory')) {
-            $sub = Category::where('slug', request('subcategory'))->first();
-            if ($sub) {
-                $activeCategoryIds = collect([$sub->id]);
+            $sub = Category::where('slug', request('subcategory'))
+                ->where('is_active', true)
+                ->first();
+
+            if ($sub && $allCategoryIds->contains($sub->id)) {
+                $activeCategoryIds = $this->collectCategoryAndDescendantIds($sub->id);
             }
         }
 
@@ -55,39 +63,75 @@ class CatalogController extends Controller
         // поэтому группируем по name и объединяем опции
         $rawAttributes = Attribute::where('in_filter', true)
             ->where('type', 'select')
-            ->whereIn('category_id', $allCategoryIds)
+            ->whereIn('category_id', $activeCategoryIds)
             ->with(['options' => fn($q) => $q->orderBy('sort_order')])
             ->orderBy('sort_order')
             ->get();
 
-        // Группируем по имени, оставляем первый атрибут, мержим опции из дублей
         $filterAttributes = $rawAttributes
-            ->groupBy('name')
-            ->map(function ($group) {
+            ->groupBy(fn($attr) => $this->normalizeFilterName($attr->name))
+            ->map(function ($group) use ($activeCategoryIds) {
                 /** @var Attribute $primary */
                 $primary = $group->first();
+                $allAttrIds = $group->pluck('id')->all();
 
-                // Собираем все опции со всех дублей, дедуплицируем по name
                 $mergedOptions = $group
                     ->flatMap(fn($attr) => $attr->options)
-                    ->unique('name')
+                    ->groupBy(fn($option) => $this->normalizeFilterName($option->name))
+                    ->map(function ($options) use ($allAttrIds, $activeCategoryIds) {
+                        $primaryOption = $options->sortBy('sort_order')->first();
+                        $optionIds = $options->pluck('id')->all();
+                        $productsCount = ProductAttributeValue::whereIn('attribute_id', $allAttrIds)
+                            ->whereIn('option_id', $optionIds)
+                            ->whereHas('product', fn($q) => $q
+                                ->where('is_active', true)
+                                ->whereIn('category_id', $activeCategoryIds)
+                            )
+                            ->count();
+
+                        if ($productsCount === 0) {
+                            return null;
+                        }
+
+                        $dto = new \stdClass();
+                        $dto->id = $primaryOption->id;
+                        $dto->name = trim($primaryOption->name);
+                        $dto->sort_order = $primaryOption->sort_order;
+                        $dto->all_ids = $optionIds;
+                        $dto->products_count = $productsCount;
+
+                        return $dto;
+                    })
+                    ->filter()
                     ->sortBy('sort_order')
                     ->values();
 
-                // Создаём простой объект чтобы не трогать Eloquent relations
+                if ($mergedOptions->isEmpty()) {
+                    return null;
+                }
+
                 $dto = new \stdClass();
-                $dto->id      = $primary->id;
-                $dto->name    = $primary->name;
-                $dto->suffix  = $primary->suffix;
-                $dto->type    = $primary->type;
+                $dto->id = $primary->id;
+                $dto->name = trim($primary->name);
+                $dto->suffix = $primary->suffix;
+                $dto->type = $primary->type;
                 $dto->options = $mergedOptions;
-                $dto->all_ids = $group->pluck('id')->all();
+                $dto->all_ids = $allAttrIds;
+                $dto->option_id_map = $mergedOptions->mapWithKeys(fn($option) => [
+                    $option->id => $option->all_ids,
+                ])->all();
 
                 return $dto;
             })
+            ->filter()
             ->values();
 
-        // Диапазон цен
+        if ($brands->isNotEmpty()) {
+            $filterAttributes = $filterAttributes
+                ->reject(fn($attr) => in_array($this->normalizeFilterName($attr->name), ['производитель', 'бренд'], true))
+                ->values();
+        }
+
         $priceRange = Product::where('is_active', true)
             ->whereIn('category_id', $activeCategoryIds)
             ->where('price', '>', 0)
@@ -124,16 +168,23 @@ class CatalogController extends Controller
         // request('attr') содержит id первичного атрибута → ищем по всем его дублям
         if (request('attr')) {
             // Строим карту: первичный id → все id дублей (включая сам)
-            $attrIdMap = $filterAttributes->mapWithKeys(fn($attr) => [
-                $attr->id => $attr->all_ids ?? [$attr->id],
+            $attrMap = $filterAttributes->mapWithKeys(fn($attr) => [
+                $attr->id => $attr,
             ]);
 
             foreach (request('attr') as $attrId => $optionIds) {
                 if (!empty($optionIds)) {
-                    $allAttrIds = $attrIdMap->get((int) $attrId, [(int) $attrId]);
-                    $query->whereHas('attributeValues', function ($q) use ($allAttrIds, $optionIds) {
+                    $attr = $attrMap->get((int) $attrId);
+                    $allAttrIds = $attr?->all_ids ?? [(int) $attrId];
+                    $allOptionIds = collect((array) $optionIds)
+                        ->flatMap(fn($optionId) => $attr?->option_id_map[(int) $optionId] ?? [(int) $optionId])
+                        ->unique()
+                        ->values()
+                        ->all();
+
+                    $query->whereHas('attributeValues', function ($q) use ($allAttrIds, $allOptionIds) {
                         $q->whereIn('attribute_id', $allAttrIds)
-                          ->whereIn('option_id', (array) $optionIds);
+                          ->whereIn('option_id', $allOptionIds);
                     });
                 }
             }
@@ -173,5 +224,31 @@ class CatalogController extends Controller
             'priceMax',
             'totalCount'
         ));
+    }
+
+    private function collectCategoryAndDescendantIds(int $categoryId): Collection
+    {
+        $categories = Category::where('is_active', true)
+            ->get(['id', 'parent_id'])
+            ->groupBy('parent_id');
+
+        $ids = collect([$categoryId]);
+        $queue = [$categoryId];
+
+        while ($queue) {
+            $parentId = array_shift($queue);
+
+            foreach ($categories->get($parentId, collect()) as $child) {
+                $ids->push($child->id);
+                $queue[] = $child->id;
+            }
+        }
+
+        return $ids->unique()->values();
+    }
+
+    private function normalizeFilterName(?string $value): string
+    {
+        return mb_strtolower(trim((string) $value));
     }
 }
