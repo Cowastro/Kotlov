@@ -108,13 +108,16 @@
                 </a>
             </li>
             <li class="wishlist">
-                <a href="#" class="hover-tooltip box-icon">
+                <a href="#" class="hover-tooltip box-icon"
+                    data-product-id="{{ $product->id }}">
                     <span class="icon icon-heart"></span>
                     <span class="tooltip">В избранное</span>
                 </a>
             </li>
             <li class="compare">
-                <a href="#compare" data-bs-toggle="offcanvas" class="hover-tooltip box-icon">
+                <a href="#compare" data-bs-toggle="offcanvas"
+                    data-product-id="{{ $product->id }}"
+                    class="hover-tooltip box-icon">
                     <span class="icon icon-ArrowsLeftRight"></span>
                     <span class="tooltip">Сравнить</span>
                 </a>

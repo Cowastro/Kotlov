@@ -62,98 +62,35 @@
         <nav class="box-navigation">
             <ul class="box-nav-menu">
 
-               <!-- MOBILE CATALOG -->
-<li class="menu-item d-xl-none">
-    <a href="#" class="item-link">
-        <span class="text cus-text">Каталог товаров</span>
-    </a>
+               {{-- MOBILE CATALOG - динамический из БД --}}
+                <li class="menu-item d-xl-none">
+                    <a href="#" class="item-link">
+                        <span class="text cus-text">Каталог товаров</span>
+                    </a>
+                    <div class="sub-menu">
+                        @foreach ($navCategories as $rootCat)
+                            <div class="mega-menu-item menu-lv-2">
+                                <div class="menu-heading">{{ $rootCat->name }}</div>
+                                <ul class="sub-menu_list">
+                                    @foreach ($rootCat->children->where('is_active', true)->take(6) as $child)
+                                        <li>
+                                            <a href="/{{ $child->slug }}" class="sub-menu_link">
+                                                {{ $child->name }}
+                                            </a>
+                                        </li>
+                                    @endforeach
+                                    <li>
+                                        <a href="/{{ $rootCat->slug }}" class="sub-menu_link cl-text-2">
+                                            Все →
+                                        </a>
+                                    </li>
+                                </ul>
+                            </div>
+                        @endforeach
+                    </div>
+                </li>
 
-    <div class="sub-menu">
-
-        <div class="mega-menu-item menu-lv-2">
-            <div class="menu-heading">Котлы</div>
-            <ul class="sub-menu_list">
-                <li><a href="/kotly/gazovye" class="sub-menu_link">Газовые</a></li>
-                <li><a href="/kotly/tverdotoplivnye" class="sub-menu_link">Твердотопливные</a></li>
-                <li><a href="/kotly/elektricheskie" class="sub-menu_link">Электрические</a></li>
-                <li><a href="/kotly/pelletnye" class="sub-menu_link">Пеллетные</a></li>
-                <li><a href="/kotly/kombinirovannye" class="sub-menu_link">Комбинированные</a></li>
-            </ul>
-        </div>
-
-        <div class="mega-menu-item menu-lv-2">
-            <div class="menu-heading">Тепловые насосы</div>
-            <ul class="sub-menu_list">
-                <li><a href="/teplovye-nasosy/vozduh-voda" class="sub-menu_link">Воздух-вода</a></li>
-                <li><a href="/teplovye-nasosy/monoblok" class="sub-menu_link">Моноблок</a></li>
-                <li><a href="/teplovye-nasosy/split" class="sub-menu_link">Сплит-системы</a></li>
-                <li><a href="/teplovye-nasosy/invertornye" class="sub-menu_link">Инверторные</a></li>
-            </ul>
-        </div>
-
-        <div class="mega-menu-item menu-lv-2">
-            <div class="menu-heading">Пеллетные горелки</div>
-            <ul class="sub-menu_list">
-                <li><a href="/pelletnye-gorelki/25-kvt" class="sub-menu_link">До 25 кВт</a></li>
-                <li><a href="/pelletnye-gorelki/50-kvt" class="sub-menu_link">До 50 кВт</a></li>
-                <li><a href="/pelletnye-gorelki/100-kvt" class="sub-menu_link">До 100 кВт</a></li>
-                <li><a href="/pelletnye-gorelki/promyshlennye" class="sub-menu_link">Промышленные</a></li>
-            </ul>
-        </div>
-
-        <div class="mega-menu-item menu-lv-2">
-            <div class="menu-heading">Водонагреватели</div>
-            <ul class="sub-menu_list">
-                <li><a href="/vodonagrevateli/gazovye" class="sub-menu_link">Газовые</a></li>
-                <li><a href="/vodonagrevateli/elektricheskie" class="sub-menu_link">Электрические</a></li>
-                <li><a href="/vodonagrevateli/kosvennye" class="sub-menu_link">Косвенные</a></li>
-                <li><a href="/vodonagrevateli/protochnye" class="sub-menu_link">Проточные</a></li>
-            </ul>
-        </div>
-
-        <div class="mega-menu-item menu-lv-2">
-            <div class="menu-heading">Отопление</div>
-            <ul class="sub-menu_list">
-                <li><a href="/radiatory" class="sub-menu_link">Радиаторы</a></li>
-                <li><a href="/teplyj-pol" class="sub-menu_link">Тёплый пол</a></li>
-                <li><a href="/nasosy/cirkulyacionnye" class="sub-menu_link">Циркуляционные насосы</a></li>
-                <li><a href="/truby-i-fitingi" class="sub-menu_link">Трубы и фитинги</a></li>
-            </ul>
-        </div>
-
-        <div class="mega-menu-item menu-lv-2">
-            <div class="menu-heading">Печи и камины</div>
-            <ul class="sub-menu_list">
-                <li><a href="/pechki" class="sub-menu_link">Печи</a></li>
-                <li><a href="/kaminy/topki" class="sub-menu_link">Каминные топки</a></li>
-                <li><a href="/kaminy/pechi-kaminy" class="sub-menu_link">Печи-камины</a></li>
-                <li><a href="/dymohody" class="sub-menu_link">Дымоходы</a></li>
-            </ul>
-        </div>
-
-        <div class="mega-menu-item menu-lv-2">
-            <div class="menu-heading">Для бани</div>
-            <ul class="sub-menu_list">
-                <li><a href="/dlya-bani/pechi" class="sub-menu_link">Печи для бани</a></li>
-                <li><a href="/dlya-bani/elektrokamenki" class="sub-menu_link">Электрокаменки</a></li>
-                <li><a href="/dlya-bani/kamni" class="sub-menu_link">Камни для бани</a></li>
-                <li><a href="/dlya-bani/aksessuary" class="sub-menu_link">Аксессуары</a></li>
-            </ul>
-        </div>
-
-        <div class="mega-menu-item menu-lv-2">
-            <div class="menu-heading">Водоснабжение и климат</div>
-            <ul class="sub-menu_list">
-                <li><a href="/vodosnabzhenie" class="sub-menu_link">Водоснабжение</a></li>
-                <li><a href="/klimat" class="sub-menu_link">Климат</a></li>
-                <li><a href="/catalog" class="sub-menu_link">Весь каталог</a></li>
-            </ul>
-        </div>
-
-    </div>
-</li>
-
-                <!-- MAIN MENU -->
+                <!-- MAIN MENU -->                <!-- MAIN MENU -->
                 <li class="menu-item">
                     <a href="/installers" class="item-link">
                         <span class="text cus-text">Монтаж</span>
@@ -244,403 +181,68 @@
 
                     <ul class="box-nav-category active-item radius-12">
 
-                        <li class="has-sub-nav-category">
-     <a href="/kotly" class="nav-category_link">
-      <span class="d-flex align-items-center gap-2">
+                        @foreach ($navCategories as $rootCat)
+                            @php
+                                $icons = config('navigation.icons', []);
+                                $editorial = config('navigation.editorial.' . $rootCat->slug, []);
+                                $icon = $icons[$rootCat->slug] ?? null;
+                                $children = $rootCat->children->where('is_active', true);
+                                $hasChildren = $children->count() > 0 || count($editorial) > 0;
+                            @endphp
 
-        <img
-            src="{{ asset('icons/heater--b.svg') }}"
-            alt="Котлы"
-            class="cat-icon"
-        >
-
-        <span>Котлы</span>
-    </span>
-
-    <i class="icon icon-CaretRightThin"></i>
-</a>
-
-                            <div class="sub-nav-category">
-                                <div class="tf-grid-layout xl-col-3">
-                                    <div class="sub-nav-category_list">
-                                        <div class="sub-nav__title fw-semibold">Тип котлов</div>
-                                        <a href="/kotly/gazovye" class="sub-nav__link tf-btn-line">Газовые</a>
-                                        <a href="/kotly/tverdotoplivnye" class="sub-nav__link tf-btn-line">Твердотопливные</a>
-                                        <a href="/kotly/elektricheskie" class="sub-nav__link tf-btn-line">Электрические</a>
-                                        <a href="/kotly/pelletnye" class="sub-nav__link tf-btn-line">Пеллетные</a>
-                                        <a href="/kotly/kombinirovannye" class="sub-nav__link tf-btn-line">Комбинированные</a>
-                                    </div>
-
-                                    <div class="sub-nav-category_list">
-                                        <div class="sub-nav__title fw-semibold">Популярное</div>
-                                        <a href="/kotly/dlya-doma" class="sub-nav__link tf-btn-line">Для дома</a>
-                                        <a href="/kotly/dlya-dachi" class="sub-nav__link tf-btn-line">Для дачи</a>
-                                        <a href="/kotly/24-kvt" class="sub-nav__link tf-btn-line">Котлы 24 кВт</a>
-                                        <a href="/kotly/dlitelnogo-goreniya" class="sub-nav__link tf-btn-line">Длительного горения</a>
-                                    </div>
-
-                                    <div class="sub-nav-category_list">
-                                        <div class="sub-nav__title fw-semibold">Связанные разделы</div>
-                                        <a href="/vodonagrevateli" class="sub-nav__link tf-btn-line">Водонагреватели</a>
-                                        <a href="/teplovye-nasosy" class="sub-nav__link tf-btn-line">Тепловые насосы</a>
-                                        <a href="/montazh-kotlov" class="sub-nav__link tf-btn-line">Монтаж котлов</a>
-                                        <a href="/akcii/kotly" class="sub-nav__link tf-btn-line">Акции на котлы</a>
-                                    </div>
-                                </div>
-                            </div>
-                        </li>
-
-                        <li class="has-sub-nav-category">
-    <a href="/teplovye-nasosy" class="nav-category_link">
-    <span class="d-flex align-items-center gap-2">
-
-        <img
-            src="{{ asset('icons/hvac.svg') }}"
-            alt="Тепловые насосы"
-            class="cat-icon"
-        >
-
-        <span>Тепловые насосы</span>
-    </span>
-
-    <i class="icon icon-CaretRightThin"></i>
-</a>
-
-    <div class="sub-nav-category">
-        <div class="tf-grid-layout xl-col-3">
-            <div class="sub-nav-category_list">
-                <div class="sub-nav__title fw-semibold">Типы</div>
-                <a href="/teplovye-nasosy/vozduh-voda" class="sub-nav__link tf-btn-line">Воздух-вода</a>
-                <a href="/teplovye-nasosy/monoblok" class="sub-nav__link tf-btn-line">Моноблок</a>
-                <a href="/teplovye-nasosy/split" class="sub-nav__link tf-btn-line">Сплит-системы</a>
-                <a href="/teplovye-nasosy/invertornye" class="sub-nav__link tf-btn-line">Инверторные</a>
-            </div>
-
-            <div class="sub-nav-category_list">
-                <div class="sub-nav__title fw-semibold">Назначение</div>
-                <a href="/teplovye-nasosy/dlya-doma" class="sub-nav__link tf-btn-line">Для дома</a>
-                <a href="/teplovye-nasosy/dlya-otopleniya" class="sub-nav__link tf-btn-line">Для отопления</a>
-                <a href="/teplovye-nasosy/dlya-gvs" class="sub-nav__link tf-btn-line">Для ГВС</a>
-                <a href="/montazh-teplovyh-nasosov" class="sub-nav__link tf-btn-line">Монтаж</a>
-            </div>
-
-            <div class="sub-nav-category_list">
-                <div class="sub-nav__title fw-semibold">Популярное</div>
-                <a href="/teplovye-nasosy/hotta" class="sub-nav__link tf-btn-line">Hotta</a>
-                <a href="/teplovye-nasosy/akcii" class="sub-nav__link tf-btn-line">Акции</a>
-                <a href="/teplovye-nasosy/podbor" class="sub-nav__link tf-btn-line">Подбор насоса</a>
-            </div>
-        </div>
-    </div>
-</li>
-
-<li class="has-sub-nav-category">
-    <a href="/pelletnye-gorelki" class="nav-category_link">
-         <span class="d-flex align-items-center gap-2">
-
-        <img
-            src="{{ asset('icons/fire_p.svg') }}"
-            alt="Пеллетные горелки"
-            class="cat-icon"
-        >
-
-        <span>Пеллетные горелки</span>
-    </span>
-        <i class="icon icon-CaretRightThin"></i>
-    </a>
-
-    <div class="sub-nav-category">
-        <div class="tf-grid-layout xl-col-3">
-            <div class="sub-nav-category_list">
-                <div class="sub-nav__title fw-semibold">Мощность</div>
-                <a href="/pelletnye-gorelki/25-kvt" class="sub-nav__link tf-btn-line">До 25 кВт</a>
-                <a href="/pelletnye-gorelki/50-kvt" class="sub-nav__link tf-btn-line">До 50 кВт</a>
-                <a href="/pelletnye-gorelki/100-kvt" class="sub-nav__link tf-btn-line">До 100 кВт</a>
-                <a href="/pelletnye-gorelki/promyshlennye" class="sub-nav__link tf-btn-line">Промышленные</a>
-            </div>
-
-            <div class="sub-nav-category_list">
-                <div class="sub-nav__title fw-semibold">Серия</div>
-                <a href="/pelletnye-gorelki/kotlov-xo" class="sub-nav__link tf-btn-line">KOTLOV XO</a>
-                <a href="/pelletnye-gorelki/ceramic-pro" class="sub-nav__link tf-btn-line">Ceramic PRO</a>
-                <a href="/pelletnye-gorelki/avtomaticheskie" class="sub-nav__link tf-btn-line">Автоматические</a>
-                <a href="/pelletnye-gorelki/dlya-kotlov" class="sub-nav__link tf-btn-line">Для котлов</a>
-            </div>
-
-            <div class="sub-nav-category_list">
-                <div class="sub-nav__title fw-semibold">Комплектующие</div>
-                <a href="/pelletnye-gorelki/kontrollery" class="sub-nav__link tf-btn-line">Контроллеры</a>
-                <a href="/pelletnye-gorelki/shneki" class="sub-nav__link tf-btn-line">Шнеки</a>
-                <a href="/pelletnye-gorelki/bunkery" class="sub-nav__link tf-btn-line">Бункеры</a>
-                <a href="/pelletnye-gorelki/avtomatika" class="sub-nav__link tf-btn-line">Автоматика</a>
-            </div>
-        </div>
-    </div>
-</li>
-
-                        <li class="has-sub-nav-category">
-                            <a href="/vodonagrevateli" class="nav-category_link">
-   <span class="d-flex align-items-center gap-2">
-
-        <img
-            src="{{ asset('icons/temperature--water.svg') }}"
-            alt="Водонагреватели"
-            class="cat-icon"
-        >
-
-        <span>Водонагреватели</span>
-    </span>
-                               
-                                <i class="icon icon-CaretRightThin"></i>
-                            </a>
-
-                            <div class="sub-nav-category">
-                                <div class="tf-grid-layout xl-col-3">
-                                    <div class="sub-nav-category_list">
-                                        <div class="sub-nav__title fw-semibold">Тип</div>
-                                        <a href="/vodonagrevateli/gazovye" class="sub-nav__link tf-btn-line">Газовые</a>
-                                        <a href="/vodonagrevateli/elektricheskie" class="sub-nav__link tf-btn-line">Электрические</a>
-                                        <a href="/vodonagrevateli/kosvennye" class="sub-nav__link tf-btn-line">Косвенные</a>
-                                        <a href="/vodonagrevateli/kombinirovannye" class="sub-nav__link tf-btn-line">Комбинированные</a>
-                                    </div>
-
-                                    <div class="sub-nav-category_list">
-                                        <div class="sub-nav__title fw-semibold">Назначение</div>
-                                        <a href="/vodonagrevateli/dlya-doma" class="sub-nav__link tf-btn-line">Для дома</a>
-                                        <a href="/vodonagrevateli/dlya-kvartiry" class="sub-nav__link tf-btn-line">Для квартиры</a>
-                                        <a href="/vodonagrevateli/protochnye" class="sub-nav__link tf-btn-line">Проточные</a>
-                                        <a href="/vodonagrevateli/nakopitelnye" class="sub-nav__link tf-btn-line">Накопительные</a>
-                                    </div>
-
-                                    <div class="sub-nav-category_list">
-                                        <div class="sub-nav__title fw-semibold">Дополнительно</div>
-                                        <a href="/bojlery" class="sub-nav__link tf-btn-line">Бойлеры</a>
-                                        <a href="/montazh-vodonagrevatelej" class="sub-nav__link tf-btn-line">Монтаж</a>
-                                        <a href="/akcii/vodonagrevateli" class="sub-nav__link tf-btn-line">Акции</a>
-                                    </div>
-                                </div>
-                            </div>
-                            </li>
-                            
-                            <li class="has-sub-nav-category">
-                                <a href="/otoplenie" class="nav-category_link">
+                            <li class="{{ $hasChildren ? 'has-sub-nav-category' : '' }}">
+                                <a href="/{{ $rootCat->slug }}" class="nav-category_link">
                                     <span class="d-flex align-items-center gap-2">
-                                        <img src="{{ asset('icons/heater.svg') }}" alt="Отопление" class="cat-icon">
-                                        <span>Отопление</span>
+                                        @if ($icon)
+                                            <img src="{{ asset('icons/' . $icon) }}"
+                                                 alt="{{ $rootCat->name }}"
+                                                 class="cat-icon">
+                                        @endif
+                                        <span>{{ $rootCat->name }}</span>
                                     </span>
-                                    <i class="icon icon-CaretRightThin"></i>
+                                    @if ($hasChildren)
+                                        <i class="icon icon-CaretRightThin"></i>
+                                    @endif
                                 </a>
-                            
-                                <div class="sub-nav-category">
-                                    <div class="tf-grid-layout xl-col-3">
-                                    <div class="sub-nav-category_list">
-                                        <div class="sub-nav__title fw-semibold">Оборудование</div>
-                                        <a href="/radiatory" class="sub-nav__link tf-btn-line">Радиаторы</a>
-                                        <a href="/teplyj-pol" class="sub-nav__link tf-btn-line">Тёплый пол</a>
-                                        <a href="/nasosy/cirkulyacionnye" class="sub-nav__link tf-btn-line">Циркуляционные насосы</a>
-                                        <a href="/konvektory" class="sub-nav__link tf-btn-line">Конвекторы</a>
-                                    </div>
 
-                                    <div class="sub-nav-category_list">
-                                        <div class="sub-nav__title fw-semibold">Комплектующие</div>
-                                        <a href="/truby-i-fitingi" class="sub-nav__link tf-btn-line">Трубы и фитинги</a>
-                                        <a href="/kollektory" class="sub-nav__link tf-btn-line">Коллекторы и гребёнки</a>
-                                        <a href="/rasshiritelnye-baki" class="sub-nav__link tf-btn-line">Расширительные баки</a>
-                                        <a href="/bufernye-emkosti" class="sub-nav__link tf-btn-line">Буферные ёмкости</a>
-                                    </div>
+                                @if ($hasChildren)
+                                    <div class="sub-nav-category">
+                                        <div class="tf-grid-layout xl-col-3">
 
-                                    <div class="sub-nav-category_list">
-                                        <div class="sub-nav__title fw-semibold">Управление</div>
-                                        <a href="/avtomatika" class="sub-nav__link tf-btn-line">Автоматика</a>
-                                        <a href="/termoregulyatory" class="sub-nav__link tf-btn-line">Терморегуляторы</a>
-                                        <a href="/gruppy-bezopasnosti" class="sub-nav__link tf-btn-line">Группы безопасности</a>
-                                        <a href="/teplonositel" class="sub-nav__link tf-btn-line">Теплоноситель</a>
+                                            {{-- Колонка 1: подкатегории из БД --}}
+                                            @if ($children->count() > 0)
+                                                <div class="sub-nav-category_list">
+                                                    <div class="sub-nav__title fw-semibold">{{ $rootCat->name }}</div>
+                                                    @foreach ($children->take(8) as $child)
+                                                        <a href="/{{ $child->slug }}" class="sub-nav__link tf-btn-line">
+                                                            {{ $child->name }}
+                                                        </a>
+                                                    @endforeach
+                                                    @if ($children->count() > 8)
+                                                        <a href="/{{ $rootCat->slug }}" class="sub-nav__link tf-btn-line cl-text-2">
+                                                            Все разделы →
+                                                        </a>
+                                                    @endif
+                                                </div>
+                                            @endif
+
+                                            {{-- Колонки 2-3: редакционные блоки из конфига --}}
+                                            @foreach ($editorial as $block)
+                                                <div class="sub-nav-category_list">
+                                                    <div class="sub-nav__title fw-semibold">{{ $block['title'] }}</div>
+                                                    @foreach ($block['links'] as $link)
+                                                        <a href="{{ $link['url'] }}" class="sub-nav__link tf-btn-line">
+                                                            {{ $link['name'] }}
+                                                        </a>
+                                                    @endforeach
+                                                </div>
+                                            @endforeach
+
+                                        </div>
                                     </div>
-                                </div>
-                            </div>
+                                @endif
                             </li>
-                            
-                            <li class="has-sub-nav-category">
-                                <a href="/pechki" class="nav-category_link">
-                                    <span class="d-flex align-items-center gap-2">
-                            
-                                        <img src="{{ asset('icons/campfire.svg') }}" alt="Печи" class="cat-icon">
-                            
-                                        <span>Печи</span>
-                                    </span>
-                                    <i class="icon icon-CaretRightThin"></i>
-                                </a>
-                            
-                                <div class="sub-nav-category">
-                                <div class="tf-grid-layout xl-col-3">
-                                    <div class="sub-nav-category_list">
-                                        <div class="sub-nav__title fw-semibold">Печи</div>
-                                        <a href="/pechki/burzhujki" class="sub-nav__link tf-btn-line">Буржуйки</a>
-                                        <a href="/pechki/dlya-dachi" class="sub-nav__link tf-btn-line">Для дачи</a>
-                                        <a href="/pechki/drovyanie" class="sub-nav__link tf-btn-line">Дровяные</a>
-                                        <a href="/pechki/s-plitoj" class="sub-nav__link tf-btn-line">С плитой</a>
-                                    </div>
-
-                                    <div class="sub-nav-category_list">
-                                        <div class="sub-nav__title fw-semibold">По конструкции</div>
-                                        <a href="/pechki/chugunnye" class="sub-nav__link tf-btn-line">Чугунные</a>
-                                        <a href="/pechki/stalnye" class="sub-nav__link tf-btn-line">Стальные</a>
-                                        <a href="/pechki/uglovye" class="sub-nav__link tf-btn-line">Угловые</a>
-                                        <a href="/pechki/s-vodyanym-konturom" class="sub-nav__link tf-btn-line">С водяным контуром</a>
-                                    </div>
-
-                                    <div class="sub-nav-category_list">
-                                        <div class="sub-nav__title fw-semibold">Связанные разделы</div>
-                                        <a href="/kaminy" class="sub-nav__link tf-btn-line">Камины</a>
-                                        <a href="/dymohody" class="sub-nav__link tf-btn-line">Дымоходы</a>
-                                        <a href="/aksessuary-dlya-pechej" class="sub-nav__link tf-btn-line">Аксессуары</a>
-                                    </div>
-                                </div>
-                            </div>
-                        </li>
-
-                        <li class="has-sub-nav-category">
-                            <a href="/dlya-bani" class="nav-category_link">
-                                 <span class="d-flex align-items-center gap-2">
-                            
-                                        <img src="{{ asset('icons/sauna.svg') }}" alt="Для бани" class="cat-icon">
-                            
-                                        <span>Для бани</span>
-                                    </span>
-                                <i class="icon icon-CaretRightThin"></i>
-                            </a>
-
-                            <div class="sub-nav-category">
-                                <div class="tf-grid-layout xl-col-3">
-                                    <div class="sub-nav-category_list">
-                                        <div class="sub-nav__title fw-semibold">Печи для бани</div>
-                                        <a href="/dlya-bani/pechi" class="sub-nav__link tf-btn-line">Печи для бани</a>
-                                        <a href="/dlya-bani/elektrokamenki" class="sub-nav__link tf-btn-line">Электрокаменки</a>
-                                        <a href="/dlya-bani/s-bakom" class="sub-nav__link tf-btn-line">Печи с баком</a>
-                                        <a href="/dlya-bani/s-vynosnoj-topkoj" class="sub-nav__link tf-btn-line">С выносной топкой</a>
-                                    </div>
-
-                                    <div class="sub-nav-category_list">
-                                        <div class="sub-nav__title fw-semibold">Товары для бани</div>
-                                        <a href="/dlya-bani/kamni" class="sub-nav__link tf-btn-line">Камни для бани</a>
-                                        <a href="/dlya-bani/dveri" class="sub-nav__link tf-btn-line">Двери</a>
-                                        <a href="/dlya-bani/baki" class="sub-nav__link tf-btn-line">Баки</a>
-                                        <a href="/dlya-bani/kupeli" class="sub-nav__link tf-btn-line">Купели</a>
-                                    </div>
-
-                                    <div class="sub-nav-category_list">
-                                        <div class="sub-nav__title fw-semibold">Комплектующие</div>
-                                        <a href="/dlya-bani/dymohody" class="sub-nav__link tf-btn-line">Дымоходы для бани</a>
-                                        <a href="/dlya-bani/zaparniki" class="sub-nav__link tf-btn-line">Запарники</a>
-                                        <a href="/dlya-bani/aksessuary" class="sub-nav__link tf-btn-line">Аксессуары</a>
-                                        <a href="/dlya-bani/otdelka" class="sub-nav__link tf-btn-line">Отделка</a>
-                                    </div>
-                                </div>
-                            </div>
-                        </li>
-
-                        <li class="has-sub-nav-category">
-                            <a href="/kaminy" class="nav-category_link">
-                                <span class="d-flex align-items-center gap-2">
-                            
-                                        <img src="{{ asset('icons/fireplace.svg') }}" alt="Камины" class="cat-icon">
-                            
-                                        <span>Камины</span>
-                                    </span>
-                                <i class="icon icon-CaretRightThin"></i>
-                            </a>
-
-                            <div class="sub-nav-category">
-                                <div class="tf-grid-layout xl-col-3">
-                                    <div class="sub-nav-category_list">
-                                        <div class="sub-nav__title fw-semibold">Камины</div>
-                                        <a href="/kaminy/topki" class="sub-nav__link tf-btn-line">Топки</a>
-                                        <a href="/kaminy/pechi-kaminy" class="sub-nav__link tf-btn-line">Печи-камины</a>
-                                        <a href="/kaminy/portaly" class="sub-nav__link tf-btn-line">Порталы</a>
-                                        <a href="/kaminy/elektrokaminy" class="sub-nav__link tf-btn-line">Электрокамины</a>
-                                    </div>
-
-                                    <div class="sub-nav-category_list">
-                                        <div class="sub-nav__title fw-semibold">По форме</div>
-                                        <a href="/kaminy/pryamoe-steklo" class="sub-nav__link tf-btn-line">Прямое стекло</a>
-                                        <a href="/kaminy/bokovoe-osteklenie" class="sub-nav__link tf-btn-line">Боковое остекление</a>
-                                        <a href="/kaminy/trehstoronnie" class="sub-nav__link tf-btn-line">Трёхсторонние</a>
-                                        <a href="/kaminy/uglovye" class="sub-nav__link tf-btn-line">Угловые</a>
-                                    </div>
-
-                                    <div class="sub-nav-category_list">
-                                        <div class="sub-nav__title fw-semibold">Дополнительно</div>
-                                        <a href="/kaminy/aksessuary" class="sub-nav__link tf-btn-line">Аксессуары</a>
-                                        <a href="/kaminy/reshetki" class="sub-nav__link tf-btn-line">Решётки</a>
-                                        <a href="/kaminy/materialy-dlya-montazha" class="sub-nav__link tf-btn-line">Материалы для монтажа</a>
-                                    </div>
-                                </div>
-                            </div>
-                        </li>
-
-                        <li class="has-sub-nav-category">
-                            <a href="/dymohody" class="nav-category_link">
-                                 <span class="d-flex align-items-center gap-2">
-                            
-                                        <img src="{{ asset('icons/chimney.svg') }}" alt="Дымоходы" class="cat-icon">
-                            
-                                        <span>Дымоходы</span>
-                                    </span>
-                                <i class="icon icon-CaretRightThin"></i>
-                            </a>
-
-                            <div class="sub-nav-category">
-                                <div class="tf-grid-layout xl-col-3">
-                                    <div class="sub-nav-category_list">
-                                        <div class="sub-nav__title fw-semibold">Тип дымохода</div>
-                                        <a href="/dymohody/nerzhaveyushchie" class="sub-nav__link tf-btn-line">Нержавеющие</a>
-                                        <a href="/dymohody/keramicheskie" class="sub-nav__link tf-btn-line">Керамические</a>
-                                        <a href="/dymohody/koaksialnye" class="sub-nav__link tf-btn-line">Коаксиальные</a>
-                                        <a href="/dymohody/ovalnye" class="sub-nav__link tf-btn-line">Овальные</a>
-                                    </div>
-
-                                    <div class="sub-nav-category_list">
-                                        <div class="sub-nav__title fw-semibold">Комплектующие</div>
-                                        <a href="/dymohody/truby" class="sub-nav__link tf-btn-line">Трубы</a>
-                                        <a href="/dymohody/kolena" class="sub-nav__link tf-btn-line">Колена</a>
-                                        <a href="/dymohody/troyniki" class="sub-nav__link tf-btn-line">Тройники</a>
-                                        <a href="/dymohody/krepleniya" class="sub-nav__link tf-btn-line">Крепления</a>
-                                    </div>
-
-                                    <div class="sub-nav-category_list">
-                                        <div class="sub-nav__title fw-semibold">Применение</div>
-                                        <a href="/dymohody/dlya-kotlov" class="sub-nav__link tf-btn-line">Для котлов</a>
-                                        <a href="/dymohody/dlya-kaminov" class="sub-nav__link tf-btn-line">Для каминов</a>
-                                        <a href="/dymohody/dlya-bani" class="sub-nav__link tf-btn-line">Для бани</a>
-                                        <a href="/montazh-dymohodov" class="sub-nav__link tf-btn-line">Монтаж дымоходов</a>
-                                    </div>
-                                </div>
-                            </div>
-                        </li>
-
-                        <li>
-                            <a href="/vodosnabzhenie" class="nav-category_link">
-                                 <span class="d-flex align-items-center gap-2">
-                            
-                                        <img src="{{ asset('icons/droplet.svg') }}" alt="Водоснабжение" class="cat-icon">
-                            
-                                        <span>Водоснабжение</span>
-                                    </span>
-                                <i class="icon icon-CaretRightThin"></i>
-                            </a>
-                        </li>
-
-                        <li>
-                            <a href="/klimat" class="nav-category_link">
-                                  <span class="d-flex align-items-center gap-2">
-                            
-                                        <img src="{{ asset('icons/air.svg') }}" alt="Климат" class="cat-icon">
-                            
-                                        <span>Климат</span>
-                                    </span>
-                                <i class="icon icon-CaretRightThin"></i>
-                            </a>
-                        </li>
+                        @endforeach
 
                         <li>
                             <a href="/catalog" class="nav-category_link">
@@ -656,32 +258,16 @@
                 <form action="/search" method="get" class="form_search-product style-2 radius-8">
                     <div class="select-category">
                         <select name="category" id="product_cate" class="dropdown_product_cate">
-                            <option value="" selected="selected">Все категории</option>
-                            <option class="level-0" value="kotly">Котлы</option>
-                            <option class="level-0" value="teplovye-nasosy">Тепловые насосы</option>
-                            <option class="level-0" value="pelletnye-gorelki">Пеллетные горелки</option>
-                            <option class="level-0" value="vodonagrevateli">Водонагреватели</option>
-                            <option class="level-0" value="otoplenie">Отопление</option>
-                            <option class="level-0" value="pechki">Печи</option>
-                            <option class="level-0" value="dlya-bani">Для бани</option>
-                            <option class="level-0" value="kaminy">Камины</option>
-                            <option class="level-0" value="dymohody">Дымоходы</option>
-                            <option class="level-0" value="vodosnabzhenie">Водоснабжение</option>
-                            <option class="level-0" value="klimat">Климат</option>
+                            <option value="" selected>Все категории</option>
+                            @foreach ($navCategories as $cat)
+                                <option value="{{ $cat->slug }}">{{ $cat->name }}</option>
+                            @endforeach
                         </select>
                     </div>
-
                     <span class="br-line type-vertical"></span>
-
                     <fieldset class="fieldset-search">
-                        <input
-                            class="ipt"
-                            type="text"
-                            name="q"
-                            placeholder="Поиск по каталогу"
-                            required
-                        >
-
+                        <input class="ipt" type="text" name="q"
+                            placeholder="Поиск по каталогу" required>
                         <button type="submit" class="btn-action">
                             <i class="icon icon-MagnifyingGlass"></i>
                         </button>
@@ -691,19 +277,51 @@
 
             <div class="col-right">
                 <ul class="nav-icon-list">
-                    <li>
-                        <a href="#sign" data-bs-toggle="modal" class="nav-icon-item link has-text">
-                            <i class="icon icon-User"></i>
-                            <span class="d-none d-md-block">Войти</span>
-                        </a>
+                    <li class="position-relative">
+                        @auth
+                            <div class="dropdown">
+                                <a href="#" class="nav-icon-item link has-text dropdown-toggle"
+                                    data-bs-toggle="dropdown" aria-expanded="false"
+                                    style="text-decoration:none;">
+                                    <i class="icon icon-User"></i>
+                                    <span class="d-none d-md-block" style="max-width:100px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
+                                        {{ Str::limit(Auth::user()->name, 12) }}
+                                    </span>
+                                </a>
+                                <ul class="dropdown-menu dropdown-menu-end" style="min-width:180px;">
+                                    <li>
+                                        <a class="dropdown-item" href="/account">
+                                            <i class="icon icon-User me-2"></i> Личный кабинет
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a class="dropdown-item" href="/wishlist">
+                                            <i class="icon icon-HeartStraight me-2"></i> Избранное
+                                        </a>
+                                    </li>
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li>
+                                        <form action="/logout" method="POST">
+                                            @csrf
+                                            <button type="submit" class="dropdown-item text-danger">
+                                                <i class="icon icon-SignOut me-2"></i> Выйти
+                                            </button>
+                                        </form>
+                                    </li>
+                                </ul>
+                            </div>
+                        @else
+                            <a href="#sign" data-bs-toggle="modal" class="nav-icon-item link has-text">
+                                <i class="icon icon-User"></i>
+                                <span class="d-none d-md-block">Войти</span>
+                            </a>
+                        @endauth
                     </li>
-
                     <li class="d-none d-sm-block">
                         <a href="/wishlist" class="nav-icon-item link">
                             <i class="icon icon-HeartStraight"></i>
                         </a>
                     </li>
-
                     <li>
                         <a href="#shoppingCart" data-bs-toggle="offcanvas" class="nav-icon-item link shop-cart">
                             <i class="icon icon-Handbag"></i>

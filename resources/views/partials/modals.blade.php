@@ -197,7 +197,7 @@
 </div>
 <!-- /Ask -->
 
-<!-- Compare -->
+<!-- Compare Offcanvas -->
 <div class="offcanvas offcanvas-bottom canvas-compare" id="compare">
     <div class="canvas-wrapper">
         <div class="canvas-body">
@@ -206,19 +206,21 @@
                     <div class="tf-compare-head">
                         <h4 class="title letter-space-0">Сравнение товаров</h4>
                     </div>
-                    <div class="tf-compare-offcanvas list-empty">
+                    <div class="tf-compare-offcanvas list-empty" id="compare-offcanvas-items">
                         <p class="box-text_empty cl-text-2">Список сравнения пуст</p>
                     </div>
                     <div class="tf-compare-buttons justify-content-center">
                         <a href="/compare" class="tf-btn animate-btn">Сравнить</a>
-                        <div class="tf-btn btn-white btn-stroke clear-list-empty tf-compare-button-clear-all">Очистить</div>
+                        <button onclick="clearCompare()" class="tf-btn btn-white btn-stroke clear-list-empty tf-compare-button-clear-all">
+                            Очистить
+                        </button>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 </div>
-<!-- /Compare -->
+<!-- /Compare Offcanvas -->
 
 <!-- Quick Add -->
 <div class="modal modalCentered fade modal-quickadd" id="quickAdd">
@@ -237,7 +239,7 @@
                     <div class="prd-content">
                         <a href="#" class="prd-name fw-medium link-underline link" id="quickAdd-name">Название товара</a>
                         <div class="price-wrap">
-                            <span class="price-new text-primary fw-semibold" id="quickAdd-price">0.00 руб.</span>
+                            <span class="price-new text-primary fw-semibold" id="quickAdd-price">0.00 BYN</span>
                         </div>
                     </div>
                 </div>
@@ -290,7 +292,7 @@
                         </div>
                     </div>
                     <div class="product-infor-price mb-12">
-                        <h4 class="price-on-sale" id="quickView-price">0.00 руб.</h4>
+                        <h4 class="price-on-sale" id="quickView-price">0.00 BYN</h4>
                     </div>
                     <p class="product-infor-desc cl-text-2 mb-12" id="quickView-desc">Описание товара</p>
                 </div>
@@ -336,7 +338,7 @@
                 <span class="icon-X2 icon-close-popup" data-bs-dismiss="offcanvas"></span>
             </div>
             <div class="cart-threshold">
-                <p class="text">Добавьте ещё на <span class="text-primary fw-7">200 руб.</span> для бесплатной доставки</p>
+                <p class="text">Добавьте ещё на <span class="text-primary fw-7">200 BYN</span> для бесплатной доставки</p>
                 <div class="tf-progress-bar tf-progress-ship">
                     <div class="value" style="width: 0%" data-progress="0"></div>
                 </div>
@@ -380,7 +382,7 @@
                         <div class="tf-mini-cart-total">
                             <h5 class="text-total d-flex align-content-center justify-content-between">
                                 <span class="subtotal">Итого</span>
-                                <span class="total-price tf-totals-total-value">0.00 руб.</span>
+                                <span class="total-price tf-totals-total-value">0.00 BYN</span>
                             </h5>
                         </div>
                         <div class="checkbox-wrap">

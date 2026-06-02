@@ -7,6 +7,7 @@
     <meta name="keywords" content="{{ $keywords ?? 'котлы, печи, камины, дымоходы, отопление, монтаж, маркетплейс отопления' }}">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="format-detection" content="telephone=no">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
 
     <link rel="stylesheet" href="{{ asset('assets/fonts/fonts.css') }}">
     <link rel="stylesheet" href="{{ asset('assets/icon/icomoon/style.css') }}">
@@ -33,9 +34,8 @@
 
     @yield('content')
 
-   
-   @include('partials.footer')   {{-- сначала футер --}}
-@include('partials.modals')   {{-- потом модалы --}}
+    @include('partials.footer')
+    @include('partials.modals')
 
     <script src="{{ asset('assets/js/plugin/jquery.min.js') }}"></script>
     <script src="{{ asset('assets/js/plugin/bootstrap.min.js') }}"></script>
@@ -51,7 +51,102 @@
     <script src="{{ asset('assets/js/plugin/photoswipe-lightbox.umd.min.js') }}"></script>
     <script src="{{ asset('assets/js/plugin/photoswipe.umd.min.js') }}"></script>
 
+    {{-- Глобальный JS для сравнения и избранного --}}
+    <script>
+    function addToCompare(productId, el) {
+        var csrfToken = document.querySelector('meta[name="csrf-token"]').content;
+        fetch('/compare/add', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken },
+            body: JSON.stringify({ product_id: productId })
+        })
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            if (data.message === 'added') {
+                el.classList.add('active');
+                var tip = el.querySelector('.tooltip');
+                if (tip) tip.textContent = 'В сравнении';
+            } else if (data.message === 'already_added') {
+                window.location.href = '/compare';
+            } else if (data.message === 'limit_reached') {
+                alert('Максимум 4 товара для сравнения.');
+            }
+        });
+    }
+    </script>
+
     @stack('scripts')
+
+    <script>
+    // Wishlist + Compare AJAX — подключается после main.js
+    $(document).ready(function () {
+
+        // WISHLIST: перехватываем после того как main.js уже отработал
+        $(document).on('click', '.card-product .wishlist a', function () {
+            var productId = $(this).data('product-id');
+            if (!productId) return;
+            $.post('/wishlist/toggle',
+                { _token: $('meta[name="csrf-token"]').attr('content'), product_id: productId }
+            );
+        });
+
+        // COMPARE: запоминаем product_id перед открытием offcanvas
+        var pendingCompareId = null;
+
+        $(document).on('click', '.compare a[data-product-id]', function () {
+            pendingCompareId = parseInt($(this).data('product-id'));
+        });
+
+        $('#compare').on('show.bs.offcanvas', function () {
+            if (pendingCompareId) {
+                var pid = pendingCompareId;
+                pendingCompareId = null;
+                $.post('/compare/add',
+                    { _token: $('meta[name="csrf-token"]').attr('content'), product_id: pid },
+                    function () { loadCompareItems(); }
+                );
+            } else {
+                loadCompareItems();
+            }
+        });
+    });
+
+    function loadCompareItems() {
+        $.get('/compare/items', function (data) {
+            var c = $('#compare-offcanvas-items');
+            if (!data.length) {
+                c.html('<p class="box-text_empty cl-text-2">Список сравнения пуст</p>');
+                return;
+            }
+            c.html(data.map(function (p) {
+                return '<div class="tf-compare-item file-delete">' +
+                    '<a href="' + p.url + '">' +
+                    '<div class="remove" onclick="removeCompareItem(' + p.id + ',event)" style="cursor:pointer;position:absolute;top:4px;right:4px;">' +
+                    '<i class="icon icon-X2"></i></div>' +
+                    '<img class="radius-3" width="100" height="133" src="' + p.image + '" alt="' + p.name + '">' +
+                    '</a>' +
+                    '<p class="text-caption-01 text-center mt-4">' + p.name.substring(0, 40) + '</p>' +
+                    '</div>';
+            }).join(''));
+        });
+    }
+
+    function removeCompareItem(productId, event) {
+        event.preventDefault();
+        event.stopPropagation();
+        $.post('/compare/remove',
+            { _token: $('meta[name="csrf-token"]').attr('content'), product_id: productId },
+            function () { loadCompareItems(); }
+        );
+    }
+
+    function clearCompare() {
+        $.post('/compare/clear-ajax',
+            { _token: $('meta[name="csrf-token"]').attr('content') },
+            function () { loadCompareItems(); }
+        );
+    }
+    </script>
 
 </body>
 </html>

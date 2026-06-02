@@ -176,3 +176,84 @@ body {
     margin: 0;
     padding: 0;
 }
+/* ==============================================
+   Дополнения к kotlov.css
+   Добавить в конец файла assets/css/kotlov.css
+   ============================================== */
+
+/* Подкатегории под карточкой категории */
+.cate-subcategories {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 6px;
+    margin-top: 8px;
+}
+
+.cate-sub-link {
+    font-size: 12px;
+    color: #666;
+    text-decoration: none;
+    padding: 3px 10px;
+    border: 1px solid #e8e8e8;
+    border-radius: 20px;
+    transition: border-color .2s, color .2s;
+    white-space: nowrap;
+}
+
+.cate-sub-link:hover {
+    border-color: #111;
+    color: #111;
+}
+
+.cate-sub-more {
+    color: #999;
+    border-style: dashed;
+}
+
+.cate-count {
+    font-size: 14px;
+    font-weight: 400;
+    color: #999;
+}
+
+/* Карточки брендов на странице каталога */
+.brand-card-catalog {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 20px 12px;
+    border: 1px solid #e8e8e8;
+    border-radius: 10px;
+    text-decoration: none;
+    transition: border-color .2s, box-shadow .2s;
+    min-height: 80px;
+}
+
+.brand-card-catalog:hover {
+    border-color: #111;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, .06);
+}
+
+.brand-name-text {
+    font-size: 15px;
+    font-weight: 600;
+    color: #111;
+}
+
+/* Анимация кнопок алфавитного фильтра на странице брендов */
+.tf-btn.btn-outline,
+.tf-btn.btn-primary {
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.tf-btn.btn-outline:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.tf-btn.btn-primary {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}

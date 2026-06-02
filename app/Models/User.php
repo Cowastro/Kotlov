@@ -2,32 +2,50 @@
 
 namespace App\Models;
 
+use App\Enums\ClientType;
+use Filament\Models\Contracts\FilamentUser;
+use Filament\Panel;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
-use Filament\Models\Contracts\FilamentUser;
-use Filament\Panel;
 
 class User extends Authenticatable implements FilamentUser
 {
     use HasFactory, Notifiable;
 
     protected $fillable = [
-        'name', 'email', 'password',
-        'role', 'phone', 'avatar', 'is_active',
+        'name',
+        'email',
+        'password',
+
+        'role',
+        'client_type',
+
+        'phone',
+        'avatar',
+        'is_active',
+
+        'b2b_approved',
+        'company_name',
+        'company_inn',
+        'b2b_comment',
     ];
 
-    protected $hidden = ['password', 'remember_token'];
+    protected $hidden = [
+        'password',
+        'remember_token',
+    ];
 
     protected $casts = [
         'email_verified_at' => 'datetime',
         'password'          => 'hashed',
         'is_active'         => 'boolean',
+        'b2b_approved'      => 'boolean',
+        'client_type'       => ClientType::class,
     ];
 
-    // Роли
     public const ROLES = [
         'admin'     => 'Администратор',
         'supplier'  => 'Поставщик',
@@ -35,19 +53,61 @@ class User extends Authenticatable implements FilamentUser
         'client'    => 'Клиент',
     ];
 
-    // Проверки ролей
-    public function isAdmin(): bool    { return $this->role === 'admin'; }
-    public function isSupplier(): bool { return $this->role === 'supplier'; }
-    public function isInstaller(): bool{ return $this->role === 'installer'; }
-    public function isClient(): bool   { return $this->role === 'client'; }
+    public function isAdmin(): bool
+    {
+        return $this->role === 'admin';
+    }
 
-    // Доступ в Filament панель
+    public function isSupplier(): bool
+    {
+        return $this->role === 'supplier';
+    }
+
+    public function isInstaller(): bool
+    {
+        return $this->role === 'installer';
+    }
+
+    public function isClient(): bool
+    {
+        return $this->role === 'client';
+    }
+
+    public function isB2B(): bool
+    {
+        return $this->client_type !== ClientType::Retail
+            && $this->b2b_approved;
+    }
+
+    public function isRetailClient(): bool
+    {
+        return $this->client_type === ClientType::Retail;
+    }
+
+    public function isWholesaleClient(): bool
+    {
+        return $this->client_type === ClientType::Wholesale;
+    }
+
+  
+
+    public function isInstallerClient(): bool
+    {
+        return $this->client_type === ClientType::Installer;
+    }
+
+   
+
+    public function getClientTypeLabelAttribute(): string
+    {
+        return $this->client_type?->label() ?? ClientType::Retail->label();
+    }
+
     public function canAccessPanel(Panel $panel): bool
     {
         return $this->isAdmin() && $this->is_active;
     }
 
-    // Отношения
     public function orders(): HasMany
     {
         return $this->hasMany(Order::class);
