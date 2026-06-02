@@ -80,28 +80,27 @@
     <script>
 
     // ===== ПОИСК: автодополнение =====
-    var searchTimer = null;
-    var searchInput = document.getElementById('header-search-input');
-    var searchSuggest = document.getElementById('search-suggest');
+    function initSearchSuggest(inputId, suggestId) {
+        var input = document.getElementById(inputId);
+        var suggest = document.getElementById(suggestId);
+        if (!input || !suggest) return;
 
-    if (searchInput && searchSuggest) {
-        searchInput.addEventListener('input', function () {
-            clearTimeout(searchTimer);
+        var timer = null;
+
+        input.addEventListener('input', function () {
+            clearTimeout(timer);
             var q = this.value.trim();
-
             if (q.length < 2) {
-                searchSuggest.style.display = 'none';
-                searchSuggest.innerHTML = '';
+                suggest.style.display = 'none';
+                suggest.innerHTML = '';
                 return;
             }
-
-            searchTimer = setTimeout(function () {
+            timer = setTimeout(function () {
                 $.get('/search/suggest', { q: q }, function (data) {
                     if (!data.length) {
-                        searchSuggest.style.display = 'none';
+                        suggest.style.display = 'none';
                         return;
                     }
-
                     var html = data.map(function (item) {
                         if (item.type === 'category') {
                             return '<a href="' + item.url + '" class="suggest-item suggest-category">' +
@@ -114,25 +113,26 @@
                             '<span class="suggest-price cl-text-2">' + item.price + '</span>' +
                             '</a>';
                     }).join('');
-
-                    searchSuggest.innerHTML = html;
-                    searchSuggest.style.display = 'block';
+                    suggest.innerHTML = html;
+                    suggest.style.display = 'block';
                 });
             }, 250);
         });
 
-        // Скрываем при клике вне
         document.addEventListener('click', function (e) {
-            if (!searchInput.contains(e.target) && !searchSuggest.contains(e.target)) {
-                searchSuggest.style.display = 'none';
+            if (!input.contains(e.target) && !suggest.contains(e.target)) {
+                suggest.style.display = 'none';
             }
         });
 
-        // Скрываем при отправке формы
-        searchInput.closest('form').addEventListener('submit', function () {
-            searchSuggest.style.display = 'none';
+        input.closest('form').addEventListener('submit', function () {
+            suggest.style.display = 'none';
         });
     }
+
+    initSearchSuggest('header-search-input',    'search-suggest');
+    initSearchSuggest('modal-search-input',     'modal-search-suggest');
+    initSearchSuggest('mobilemenu-search-input','mobilemenu-search-suggest');
 
     // Wishlist + Compare AJAX — подключается после main.js
     $(document).ready(function () {

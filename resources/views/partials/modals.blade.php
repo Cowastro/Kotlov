@@ -1,4 +1,4 @@
-<!-- Mobile Menu -->
+﻿<!-- Mobile Menu -->
 <div class="offcanvas offcanvas-start canvas-mb" id="mobileMenu">
     <div class="canvas-header">
         <span class="icon-close-popup" data-bs-dismiss="offcanvas">
@@ -466,9 +466,11 @@
                 <h3>Поиск</h3>
                 <span class="icon-close-popup flex-shrink-0" data-bs-dismiss="modal"><i class="icon-X2"></i></span>
             </div>
-            <form action="/search" method="GET" class="form-search-nav style-2">
-                <fieldset>
-                    <input type="text" name="q" placeholder="Поиск по каталогу..." required>
+            <form action="/search" method="GET" class="form-search-nav style-2" autocomplete="off">
+                <fieldset style="position:relative;flex:1;">
+                    <input type="text" name="q" id="modal-search-input"
+                        placeholder="Поиск по каталогу..." required autocomplete="off">
+                    <div id="modal-search-suggest" class="search-suggest-dropdown"></div>
                 </fieldset>
                 <button type="submit" class="btn-action"><i class="icon icon-MagnifyingGlass"></i></button>
             </form>
