@@ -1,4 +1,4 @@
-@extends('layouts.amerce')
+﻿@extends('layouts.amerce')
 
 @section('content')
 <main id="wrapper">
@@ -94,17 +94,27 @@
                                             <div class="price-box tf-grid-layout tf-col-2">
                                                 <div class="box-wrap">
                                                     <div class="price-val_wrap">
-                                                        <span class="cl-text-2 text-body-1">BYN</span>
-                                                        <div class="price-val" id="price-min-value"></div>
+                                                        <input class="price-val" id="price-min-value" type="number"
+                                                            inputmode="numeric" min="{{ $priceMin }}" max="{{ $priceMax }}"
+                                                            value="{{ request('price_min') }}"
+                                                            placeholder="От"
+                                                            style="width:100%;border:0;background:transparent;outline:none;">
                                                     </div>
                                                 </div>
                                                 <div class="box-wrap">
                                                     <div class="price-val_wrap">
-                                                        <span class="cl-text-2 text-body-1">BYN</span>
-                                                        <div class="price-val" id="price-max-value"></div>
+                                                        <input class="price-val" id="price-max-value" type="number"
+                                                            inputmode="numeric" min="{{ $priceMin }}" max="{{ $priceMax }}"
+                                                            value="{{ request('price_max') }}"
+                                                            placeholder="До"
+                                                            style="width:100%;border:0;background:transparent;outline:none;">
                                                     </div>
                                                 </div>
                                             </div>
+                                            <button type="button" class="tf-btn btn-white btn-stroke w-100 mt-12"
+                                                onclick="applyPriceFilter()">
+                                                Применить
+                                            </button>
                                         </div>
                                     </div>
                                 </div>
@@ -237,6 +247,7 @@
                                                             onchange="applyAttrFilter({{ $attr->id }}, {{ $option->id }}, this.checked)">
                                                         <label for="opt-{{ $option->id }}" class="label">
                                                             <span>{{ $option->name }}</span>
+                                                            <span class="count">({{ $option->products_count }})</span>
                                                         </label>
                                                     </li>
                                                 @endforeach
@@ -470,6 +481,33 @@ function applyFilter(key, value) {
     } else {
         url.searchParams.set(key, value);
     }
+    url.searchParams.delete('page');
+    window.location.href = url.toString();
+}
+
+function applyPriceFilter() {
+    const url = new URL(window.location.href);
+    const minInput = document.getElementById('price-min-value');
+    const maxInput = document.getElementById('price-max-value');
+    const range = document.getElementById('price-value-range');
+
+    const defaultMin = range ? parseInt(range.dataset.min, 10) : 0;
+    const defaultMax = range ? parseInt(range.dataset.max, 10) : 0;
+    const minValue = minInput ? parseInt(minInput.value, 10) : defaultMin;
+    const maxValue = maxInput ? parseInt(maxInput.value, 10) : defaultMax;
+
+    if (!Number.isNaN(minValue) && minValue > defaultMin) {
+        url.searchParams.set('price_min', minValue);
+    } else {
+        url.searchParams.delete('price_min');
+    }
+
+    if (!Number.isNaN(maxValue) && maxValue < defaultMax) {
+        url.searchParams.set('price_max', maxValue);
+    } else {
+        url.searchParams.delete('price_max');
+    }
+
     url.searchParams.delete('page');
     window.location.href = url.toString();
 }

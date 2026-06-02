@@ -115,7 +115,7 @@
                 </a>
             </li>
             <li class="compare">
-                <a href="#compare" data-bs-toggle="offcanvas"
+                <a href="#compare"
                     data-product-id="{{ $product->id }}"
                     class="hover-tooltip box-icon">
                     <span class="icon icon-ArrowsLeftRight"></span>

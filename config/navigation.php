@@ -39,8 +39,8 @@ return [
                 'links' => [
                     ['name' => 'Для дома',              'url' => '/kotly?filter=dom'],
                     ['name' => 'Для дачи',              'url' => '/kotly?filter=dacha'],
-                    ['name' => 'Длительного горения',   'url' => '/kotly/tverdotoplivnye?filter=dlitelnoe'],
-                    ['name' => 'Конденсационные',       'url' => '/kotly/gazovye?filter=kondensacionnye'],
+                    ['name' => 'Длительного горения',   'url' => '/tverdotoplivnye?filter=dlitelnoe'],
+                    ['name' => 'Конденсационные',       'url' => '/gazovye?filter=kondensacionnye'],
                 ],
             ],
             [
@@ -147,7 +147,7 @@ return [
             [
                 'title' => 'Дополнительно',
                 'links' => [
-                    ['name' => 'Аксессуары',           'url' => '/kaminy/aksessuary-kaminy'],
+                    ['name' => 'Аксессуары',           'url' => '/aksessuary-kaminy'],
                     ['name' => 'Материалы для монтажа', 'url' => '/otoplenie'],
                     ['name' => 'Дымоходы',             'url' => '/dymohody'],
                 ],

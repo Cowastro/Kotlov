@@ -258,7 +258,7 @@
 
                             {{-- Доп. ссылки --}}
                             <div class="tf-product-extra-link">
-                                <a href="#compare" data-bs-toggle="offcanvas" class="product-extra-icon link">
+                                <a href="#compare" data-product-id="{{ $product->id }}" class="product-extra-icon link">
                                     <i class="icon icon-ArrowsLeftRight"></i>
                                     Сравнить
                                 </a>

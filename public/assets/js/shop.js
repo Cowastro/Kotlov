@@ -10,9 +10,16 @@
 
             var min = parseInt(skipSlider.getAttribute("data-min"), 10) || 0;
             var max = parseInt(skipSlider.getAttribute("data-max"), 10) || 500;
+            var currentMin = parseInt(skipSlider.getAttribute("data-current-min"), 10);
+            var currentMax = parseInt(skipSlider.getAttribute("data-current-max"), 10);
+            var hasCurrentMin = new URLSearchParams(window.location.search).has("price_min");
+            var hasCurrentMax = new URLSearchParams(window.location.search).has("price_max");
+
+            currentMin = Number.isFinite(currentMin) ? currentMin : min;
+            currentMax = Number.isFinite(currentMax) ? currentMax : max;
 
             noUiSlider.create(skipSlider, {
-                start: [min, max],
+                start: [currentMin, currentMax],
                 connect: true,
                 step: 1,
                 range: {
@@ -30,7 +37,23 @@
             });
 
             skipSlider.noUiSlider.on("update", function (val, e) {
-                skipValues[e].innerText = val[e];
+                if (skipValues[e]) {
+                    if ((e === 0 && !hasCurrentMin && document.activeElement !== skipValues[e]) ||
+                        (e === 1 && !hasCurrentMax && document.activeElement !== skipValues[e])) {
+                        return;
+                    }
+                    skipValues[e].value = val[e];
+                }
+            });
+
+            skipValues.forEach(function (input, index) {
+                if (!input) return;
+
+                input.addEventListener("change", function () {
+                    var values = skipSlider.noUiSlider.get();
+                    values[index] = parseInt(input.value, 10) || (index === 0 ? min : max);
+                    skipSlider.noUiSlider.set(values);
+                });
             });
         }
     };
@@ -39,9 +62,13 @@
   -------------------------------------------------------------------------------------*/
     var filterProducts = function () {
         const priceSlider = document.getElementById("price-value-range");
+        if (!priceSlider || !priceSlider.noUiSlider) return;
 
         const minPrice = parseInt(priceSlider.dataset.min, 10) || 0;
         const maxPrice = parseInt(priceSlider.dataset.max, 10) || 500;
+        const urlParams = new URLSearchParams(window.location.search);
+        const hasCurrentMin = urlParams.has("price_min");
+        const hasCurrentMax = urlParams.has("price_max");
 
         const filters = {
             minPrice: minPrice,
@@ -57,8 +84,8 @@
             filters.minPrice = parseInt(values[0], 10);
             filters.maxPrice = parseInt(values[1], 10);
 
-            $("#price-min-value").text(filters.minPrice);
-            $("#price-max-value").text(filters.maxPrice);
+            if (hasCurrentMin) $("#price-min-value").val(filters.minPrice);
+            if (hasCurrentMax) $("#price-max-value").val(filters.maxPrice);
 
             applyFilters();
             updateMetaFilter();
