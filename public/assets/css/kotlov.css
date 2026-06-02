@@ -373,3 +373,14 @@ body {
     max-height: 400px;
     overflow-y: auto;
 }
+
+/* Модалка поиска — разрешаем overflow чтобы дропдаун не обрезался */
+.modal-search .modal-content,
+.modal-search .modal-dialog {
+    overflow: visible;
+}
+
+/* Мобильное меню — fieldset растягиваем на всю ширину формы */
+.canvas-header .form-search-nav fieldset {
+    flex: 1;
+}
