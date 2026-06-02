@@ -4,9 +4,11 @@
         <span class="icon-close-popup" data-bs-dismiss="offcanvas">
             <i class="icon icon-X2"></i>
         </span>
-        <form action="/search" method="get" class="form-search-nav">
-            <fieldset>
-                <input type="text" name="q" placeholder="Поиск по каталогу" required>
+        <form action="/search" method="get" class="form-search-nav" autocomplete="off">
+            <fieldset style="position:relative;flex:1;">
+                <input type="text" name="q" id="mobilemenu-search-input"
+                    placeholder="Поиск по каталогу" required autocomplete="off">
+                <div id="mobilemenu-search-suggest" class="search-suggest-dropdown"></div>
             </fieldset>
             <button type="submit" class="btn-action">
                 <i class="icon icon-MagnifyingGlass"></i>
