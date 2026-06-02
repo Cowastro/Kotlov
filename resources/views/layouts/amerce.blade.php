@@ -130,9 +130,10 @@
         });
     }
 
-    initSearchSuggest('header-search-input',    'search-suggest');
-    initSearchSuggest('modal-search-input',     'modal-search-suggest');
-    initSearchSuggest('mobilemenu-search-input','mobilemenu-search-suggest');
+    initSearchSuggest('header-search-input',      'search-suggest');
+    initSearchSuggest('modal-search-input',       'modal-search-suggest');
+    initSearchSuggest('mobilemenu-search-input',  'mobilemenu-search-suggest');
+    initSearchSuggest('searchpage-search-input',  'searchpage-search-suggest');
 
     // Wishlist + Compare AJAX — подключается после main.js
     $(document).ready(function () {

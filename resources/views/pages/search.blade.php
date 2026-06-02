@@ -28,12 +28,13 @@
         <div class="container">
             <div class="row">
                 <div class="col-xl-6 mx-auto">
-                    <form action="/search" method="GET" class="form-search-nav style-2 mb-10">
-                        <fieldset>
-                            <input type="text" name="q"
+                    <form action="/search" method="GET" class="form-search-nav style-2 mb-10" autocomplete="off">
+                        <fieldset style="position:relative;flex:1;">
+                            <input type="text" name="q" id="searchpage-search-input"
                                 value="{{ $q }}"
                                 placeholder="Котёл, печь, камин, дымоход..."
-                                autofocus required>
+                                autofocus required autocomplete="off">
+                            <div id="searchpage-search-suggest" class="search-suggest-dropdown"></div>
                         </fieldset>
                         <button type="submit" class="btn-action">
                             <i class="icon icon-MagnifyingGlass"></i>
