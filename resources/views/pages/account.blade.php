@@ -78,13 +78,13 @@
                             </a>
                             <a href="#" class="link-account"
                                 data-tab="security" onclick="showAccountTab('security'); return false;">
-                                <i class="icon icon-Lock"></i>
+                                <i class="icon icon-ShieldCheck"></i>
                                 <span class="text h6 fw-medium">Безопасность</span>
                             </a>
                             @if ($user->isRetailClient())
                                 <a href="#" class="link-account"
                                     data-tab="b2b" onclick="showAccountTab('b2b'); return false;">
-                                    <i class="icon icon-Buildings"></i>
+                                    <i class="icon icon-GearSix"></i>
                                     <span class="text h6 fw-medium">Спецусловия</span>
                                 </a>
                             @endif
@@ -396,13 +396,13 @@
                 </a>
                 <a href="#" class="link-account" data-tab="security"
                     onclick="showAccountTab('security'); bootstrap.Offcanvas.getInstance(document.getElementById('mbSidebar')).hide(); return false;">
-                    <i class="icon icon-Lock"></i>
+                    <i class="icon icon-ShieldCheck"></i>
                     <span class="text h6 fw-medium">Безопасность</span>
                 </a>
                 @if ($user->isRetailClient())
                     <a href="#" class="link-account" data-tab="b2b"
                         onclick="showAccountTab('b2b'); bootstrap.Offcanvas.getInstance(document.getElementById('mbSidebar')).hide(); return false;">
-                        <i class="icon icon-Buildings"></i>
+                        <i class="icon icon-GearSix"></i>
                         <span class="text h6 fw-medium">Спецусловия</span>
                     </a>
                 @endif
