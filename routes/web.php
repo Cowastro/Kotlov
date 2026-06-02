@@ -2,19 +2,40 @@
 
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\BlogController;
-use App\Http\Controllers\CompareController;
-use App\Http\Controllers\WishlistController;
 use App\Http\Controllers\BrandController;
 use App\Http\Controllers\CatalogController;
 use App\Http\Controllers\CatalogIndexController;
+use App\Http\Controllers\CompareController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\AccountController;
+use App\Http\Controllers\SearchController;
+use App\Http\Controllers\WishlistController;
 use App\Models\Category;
 use App\Models\Product;
 use Illuminate\Support\Facades\Route;
 
 // ===== Главная =====
 Route::get('/', function () {
+    $categoryBranchIds = function ($categoryId) {
+        $categories = Category::where('is_active', true)
+            ->get(['id', 'parent_id'])
+            ->groupBy('parent_id');
+
+        $ids = collect([$categoryId]);
+        $queue = [$categoryId];
+
+        while ($queue) {
+            $parentId = array_shift($queue);
+
+            foreach ($categories->get($parentId, collect()) as $child) {
+                $ids->push($child->id);
+                $queue[] = $child->id;
+            }
+        }
+
+        return $ids->unique()->values();
+    };
+
     $popularCategories = Category::query()
         ->where('is_active', true)
         ->whereIn('slug', [
@@ -22,25 +43,23 @@ Route::get('/', function () {
             'dymohody', 'dlya-bani', 'vodonagrevateli',
             'otoplenie', 'nasosy', 'klimat',
         ])
-        ->withCount('products')
         ->orderBy('sort_order')
         ->limit(10)
-        ->get();
+        ->get()
+        ->each(function ($category) use ($categoryBranchIds) {
+            $category->products_count = Product::where('is_active', true)
+                ->whereIn('category_id', $categoryBranchIds($category->id))
+                ->count();
+        });
 
     $kotlyCatId = Category::where('slug', 'kotly')->value('id');
-    $kotlyIds = $kotlyCatId
-        ? Category::where('id', $kotlyCatId)->orWhere('parent_id', $kotlyCatId)->pluck('id')
-        : collect();
+    $kotlyIds = $kotlyCatId ? $categoryBranchIds($kotlyCatId) : collect();
 
     $nasosCatId = Category::where('slug', 'teplovye-nasosy')->value('id');
-    $nasosIds = $nasosCatId
-        ? Category::where('id', $nasosCatId)->orWhere('parent_id', $nasosCatId)->pluck('id')
-        : collect();
+    $nasosIds = $nasosCatId ? $categoryBranchIds($nasosCatId) : collect();
 
     $kaminCatId = Category::where('slug', 'kaminy')->value('id');
-    $kaminIds = $kaminCatId
-        ? Category::where('id', $kaminCatId)->orWhere('parent_id', $kaminCatId)->pluck('id')
-        : collect();
+    $kaminIds = $kaminCatId ? $categoryBranchIds($kaminCatId) : collect();
 
     $productsKotly = Product::where('is_active', true)
         ->whereIn('category_id', $kotlyIds)
@@ -76,38 +95,50 @@ Route::get('/', function () {
 // ===== Статичные страницы — ДО динамических! =====
 Route::view('/about',      'pages.about');
 Route::view('/akcii',      'pages.akcii');
-Route::get('/blog',         [BlogController::class, 'index'])->name('blog');
-Route::get('/blog/{slug}',   [BlogController::class, 'show'])->name('blog.show');
 Route::view('/dostavka',   'pages.dostavka');
-Route::get('/contacts',    fn() => view('pages.contacts'))->name('contacts');
 Route::view('/partners',   'pages.partners');
 Route::view('/installers', 'pages.installers');
 Route::view('/reviews',    'pages.reviews');
 Route::view('/faq',        'pages.faq');
 Route::view('/privacy',    'pages.privacy');
-Route::get('/compare',         [CompareController::class, 'index'])->name('compare');
-Route::post('/compare/add',    [CompareController::class, 'add'])->name('compare.add');
-Route::post('/compare/remove', [CompareController::class, 'remove'])->name('compare.remove');
-Route::post('/compare/clear',      [CompareController::class, 'clear'])->name('compare.clear');
-Route::post('/compare/clear-ajax', [CompareController::class, 'clearAjax'])->name('compare.clear-ajax');
-Route::get('/compare/items',       [CompareController::class, 'items'])->name('compare.items');
 Route::view('/cart',       'pages.cart');
 Route::view('/checkout',   'pages.checkout');
-Route::get('/wishlist',          [WishlistController::class, 'index'])->name('wishlist');
-Route::post('/wishlist/add',    [WishlistController::class, 'add'])->name('wishlist.add');
-Route::post('/wishlist/remove', [WishlistController::class, 'remove'])->name('wishlist.remove');
-Route::post('/wishlist/toggle', [WishlistController::class, 'toggle'])->name('wishlist.toggle');
 
-Route::get('/search',  fn() => view('pages.catalog'))->name('search');
+// ===== Блог =====
+Route::get('/blog',       [BlogController::class, 'index'])->name('blog');
+Route::get('/blog/{slug}',[BlogController::class, 'show'])->name('blog.show');
+
+// ===== Контакты =====
+Route::get('/contacts',   fn() => view('pages.contacts'))->name('contacts');
+Route::post('/contacts',  fn() => back()->with('success', 'Сообщение отправлено!'))->name('contact.store');
+
+// ===== Сравнение =====
+Route::get('/compare',          [CompareController::class, 'index'])->name('compare');
+Route::post('/compare/add',     [CompareController::class, 'add'])->name('compare.add');
+Route::post('/compare/remove',  [CompareController::class, 'remove'])->name('compare.remove');
+Route::post('/compare/clear',   [CompareController::class, 'clear'])->name('compare.clear');
+Route::post('/compare/clear-ajax', [CompareController::class, 'clearAjax'])->name('compare.clear-ajax');
+Route::get('/compare/items',    [CompareController::class, 'items'])->name('compare.items');
+
+// ===== Избранное =====
+Route::get('/wishlist',          [WishlistController::class, 'index'])->name('wishlist');
+Route::post('/wishlist/add',     [WishlistController::class, 'add'])->name('wishlist.add');
+Route::post('/wishlist/remove',  [WishlistController::class, 'remove'])->name('wishlist.remove');
+Route::post('/wishlist/toggle',  [WishlistController::class, 'toggle'])->name('wishlist.toggle');
+
+// ===== Поиск =====
+Route::get('/search',         [SearchController::class, 'index'])->name('search');
+Route::get('/search/suggest', [SearchController::class, 'suggest'])->name('search.suggest');
+
+// ===== Каталог =====
 Route::get('/catalog', [CatalogIndexController::class, 'index'])->name('catalog');
 
 // ===== Бренды =====
-Route::get('/brands',         [BrandController::class, 'index'])->name('brands');
-Route::get('/brands/{slug}',  [BrandController::class, 'show'])->name('brand.show');
+Route::get('/brands',        [BrandController::class, 'index'])->name('brands');
+Route::get('/brands/{slug}', [BrandController::class, 'show'])->name('brand.show');
 
-// ===== Формы =====
-Route::post('/ask',      fn() => back()->with('success', 'Вопрос отправлен!'))->name('ask.store');
-Route::post('/contacts', fn() => back()->with('success', 'Сообщение отправлено!'))->name('contact.store');
+// ===== Прочие формы =====
+Route::post('/ask', fn() => back()->with('success', 'Вопрос отправлен!'))->name('ask.store');
 
 // ===== Auth страницы (GET) =====
 Route::get('/login', function () {
@@ -128,7 +159,7 @@ Route::post('/forgot-password', [AuthController::class, 'forgotPassword'])->name
 Route::get('/reset-password/{token}', [AuthController::class, 'showResetForm'])->name('password.reset');
 Route::post('/reset-password',        [AuthController::class, 'resetPassword'])->name('password.update');
 
-// ===== Личный кабинет — только авторизованным =====
+// ===== Личный кабинет =====
 Route::middleware('auth')->group(function () {
     Route::get('/account',              [AccountController::class, 'index'])->name('account');
     Route::put('/account/profile',      [AccountController::class, 'updateProfile'])->name('account.profile');
