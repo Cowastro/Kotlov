@@ -3,8 +3,10 @@
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\BlogController;
 use App\Http\Controllers\BrandController;
+use App\Http\Controllers\CartController;
 use App\Http\Controllers\CatalogController;
 use App\Http\Controllers\CatalogIndexController;
+use App\Http\Controllers\CheckoutController;
 use App\Http\Controllers\CompareController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\AccountController;
@@ -101,8 +103,18 @@ Route::view('/installers', 'pages.installers');
 Route::view('/reviews',    'pages.reviews');
 Route::view('/faq',        'pages.faq');
 Route::view('/privacy',    'pages.privacy');
-Route::view('/cart',       'pages.cart');
-Route::view('/checkout',   'pages.checkout');
+// ===== Корзина =====
+Route::get('/cart',          [CartController::class, 'index'])->name('cart');
+Route::post('/cart/add',     [CartController::class, 'add'])->name('cart.add');
+Route::post('/cart/update',  [CartController::class, 'update'])->name('cart.update');
+Route::post('/cart/remove',  [CartController::class, 'remove'])->name('cart.remove');
+Route::post('/cart/clear',   [CartController::class, 'clear'])->name('cart.clear');
+Route::get('/cart/data',     [CartController::class, 'data'])->name('cart.data');
+
+// ===== Checkout =====
+Route::get('/checkout',                      [CheckoutController::class, 'index'])->name('checkout');
+Route::post('/checkout',                     [CheckoutController::class, 'store'])->name('checkout.store');
+Route::get('/checkout/success/{number}',     [CheckoutController::class, 'success'])->name('checkout.success');
 
 // ===== Блог =====
 Route::get('/blog',       [BlogController::class, 'index'])->name('blog');
