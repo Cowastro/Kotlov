@@ -51,8 +51,60 @@
     <script src="{{ asset('assets/js/plugin/photoswipe-lightbox.umd.min.js') }}"></script>
     <script src="{{ asset('assets/js/plugin/photoswipe.umd.min.js') }}"></script>
 
-    {{-- Глобальный JS для сравнения и избранного --}}
+    {{-- Глобальный JS: корзина, сравнение, избранное --}}
     <script>
+    // ===== Корзина: кнопка «В корзину» =====
+    (function () {
+        var csrf = document.querySelector('meta[name="csrf-token"]').content;
+
+        function updateCartCount(count) {
+            document.querySelectorAll('.shop-cart .count, .toolbar-count').forEach(function (el) {
+                el.textContent = count;
+            });
+        }
+
+        document.addEventListener('click', function (e) {
+            var btn = e.target.closest('.btn-add-to-cart');
+            if (!btn) return;
+
+            var productId = btn.dataset.productId;
+            if (!productId) return;
+
+            btn.disabled = true;
+            var original = btn.textContent.trim();
+            btn.textContent = '...';
+
+            fetch('/cart/add', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': csrf,
+                    'Accept': 'application/json',
+                },
+                body: JSON.stringify({ product_id: productId, quantity: 1 }),
+            })
+            .then(function (r) { return r.json(); })
+            .then(function (data) {
+                btn.textContent = '✓ Добавлено';
+                updateCartCount(data.count);
+                setTimeout(function () {
+                    btn.textContent = original;
+                    btn.disabled = false;
+                }, 1500);
+            })
+            .catch(function () {
+                btn.textContent = original;
+                btn.disabled = false;
+            });
+        });
+
+        // Инициализация счётчика при загрузке
+        fetch('/cart/data', { headers: { 'Accept': 'application/json' } })
+            .then(function (r) { return r.json(); })
+            .then(function (data) { updateCartCount(data.count); });
+    })();
+
+    // ===== Сравнение =====
     function addToCompare(productId, el) {
         var csrfToken = document.querySelector('meta[name="csrf-token"]').content;
         fetch('/compare/add', {

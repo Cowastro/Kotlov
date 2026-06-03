@@ -102,10 +102,12 @@
         {{-- Действия --}}
         <ul class="product-action_list">
             <li>
-                <a href="#shoppingCart" data-bs-toggle="offcanvas" class="hover-tooltip box-icon">
+                <button type="button"
+                    class="hover-tooltip box-icon border-0 bg-transparent btn-add-to-cart"
+                    data-product-id="{{ $product->id }}">
                     <span class="icon icon-Handbag"></span>
                     <span class="tooltip">В корзину</span>
-                </a>
+                </button>
             </li>
             <li class="wishlist">
                 <a href="#" class="hover-tooltip box-icon"

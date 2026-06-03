@@ -78,10 +78,11 @@
         @endif
 
         <div class="product-action_bot">
-            <a href="#shoppingCart" data-bs-toggle="offcanvas"
-                class="tf-btn btn-white small w-100">
+            <button type="button"
+                class="tf-btn btn-white small w-100 btn-add-to-cart"
+                data-product-id="{{ $product->id }}">
                 В корзину
-            </a>
+            </button>
         </div>
     </div>
 
