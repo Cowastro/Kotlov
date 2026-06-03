@@ -28,7 +28,7 @@
                     </div>
                     <div class="swiper-slide">
                         <div class="box-icon_V01 style-3 wow fadeInLeft">
-                            <span class="icon text-white"><i class="icon-ArrowUDownLeft"></i></span>
+                            <span class="icon text-white"><i class="icon-GearSix"></i></span>
                             <div class="content">
                                 <div class="h6 title text-white">Монтаж под ключ</div>
                                 <p class="text cl-text-3">Сеть партнёров-монтажников по всей стране.</p>
@@ -110,7 +110,7 @@
                                 <ul class="footer-menu-list">
                                     <li><a href="/partners" class="cl-text-3 link">Стать партнёром</a></li>
                                     <li><a href="/installers" class="cl-text-3 link">Монтажникам</a></li>
-                                    <li><a href="/partners" class="cl-text-3 link">Поставщикам</a></li>
+                                    <li><a href="/suppliers" class="cl-text-3 link">Для поставщиков</a></li>
                                     <li><a href="/account" class="cl-text-3 link">Личный кабинет</a></li>
                                 </ul>
                             </div>
@@ -163,7 +163,7 @@
                         </a>
                     </li>
                     <li>
-                        <a href="https://www.facebook.com/" target="_blank">
+                        <a href="https://www.facebook.com/kotlov.by/" target="_blank">
                             <i class="icon icon-FacebookLogo fs-24 cl-text-3"></i>
                         </a>
                     </li>

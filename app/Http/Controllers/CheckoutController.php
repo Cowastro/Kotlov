@@ -23,10 +23,11 @@ class CheckoutController extends Controller
             return redirect()->route('cart')->with('info', 'Корзина пуста.');
         }
 
-        $subtotal = $this->calcSubtotal($cart);
-        $user     = Auth::user();
+        $subtotal  = $this->calcSubtotal($cart);
+        $user      = Auth::user();
+        $threshold = (float) config('shop.free_delivery_threshold', 400);
 
-        return view('pages.checkout', compact('cart', 'subtotal', 'user'));
+        return view('pages.checkout', compact('cart', 'subtotal', 'user', 'threshold'));
     }
 
     // ─────────────────────────────────────────
@@ -44,22 +45,30 @@ class CheckoutController extends Controller
             'customer_name'    => ['required', 'string', 'max:255'],
             'customer_phone'   => ['required', 'string', 'max:30'],
             'customer_email'   => ['nullable', 'email', 'max:255'],
-            'delivery_type'    => ['required', 'in:pickup,courier,transport'],
+            'delivery_type'    => ['required', 'in:' . implode(',', array_keys(config('shop.delivery_methods', [])))],
             'delivery_region'  => ['nullable', 'string', 'max:255'],
             'delivery_city'    => ['nullable', 'string', 'max:255'],
             'delivery_address' => ['nullable', 'string', 'max:500'],
-            'payment_type'     => ['required', 'in:cash,card,invoice'],
+            'payment_type'     => ['required', 'in:' . implode(',', array_keys(config('shop.payment_methods', [])))],
             'comment'          => ['nullable', 'string', 'max:1000'],
+            // Реквизиты для счёта
+            'company_name'     => ['required_if:payment_type,invoice', 'nullable', 'string', 'max:255'],
+            'company_unp'      => ['nullable', 'string', 'max:50'],
+            'company_address'  => ['nullable', 'string', 'max:500'],
+            'company_email'    => ['nullable', 'email', 'max:255'],
         ], [
-            'customer_name.required'  => 'Введите имя.',
-            'customer_phone.required' => 'Введите телефон.',
-            'delivery_type.required'  => 'Выберите способ доставки.',
-            'payment_type.required'   => 'Выберите способ оплаты.',
+            'customer_name.required'         => 'Введите имя.',
+            'customer_phone.required'        => 'Введите телефон.',
+            'delivery_type.required'         => 'Выберите способ доставки.',
+            'payment_type.required'          => 'Выберите способ оплаты.',
+            'company_name.required_if'       => 'Введите название организации для оплаты по счёту.',
         ]);
 
-        $subtotal = $this->calcSubtotal($cart);
+        $subtotal      = $this->calcSubtotal($cart);
+        $deliveryPrice = self::calcDelivery($request->delivery_type, $subtotal) ?? 0;
+        $total         = $subtotal + $deliveryPrice;
 
-        $order = DB::transaction(function () use ($request, $cart, $subtotal) {
+        $order = DB::transaction(function () use ($request, $cart, $subtotal, $deliveryPrice, $total) {
 
             $order = Order::create([
                 'user_id'          => Auth::id(),
@@ -74,16 +83,23 @@ class CheckoutController extends Controller
                 'delivery_region'  => $request->delivery_region,
                 'delivery_city'    => $request->delivery_city,
                 'delivery_address' => $request->delivery_address,
-                'delivery_price'   => 0,
+                'delivery_price'   => $deliveryPrice,
 
                 'payment_type'     => $request->payment_type,
                 'payment_status'   => 'pending',
 
+                // Реквизиты для счёта (только если выбран invoice)
+                'company_name'     => $request->payment_type === 'invoice' ? $request->company_name    : null,
+                'company_unp'      => $request->payment_type === 'invoice' ? $request->company_unp     : null,
+                'company_address'  => $request->payment_type === 'invoice' ? $request->company_address : null,
+                'company_email'    => $request->payment_type === 'invoice' ? $request->company_email   : null,
+
                 'subtotal'         => $subtotal,
                 'discount'         => 0,
-                'total'            => $subtotal,
+                'total'            => $total,
 
-                'comment'          => $request->comment,
+                // comment: что пользователь написал в форме; если поле пустое — null
+                'comment'          => $request->filled('comment') ? $request->comment : null,
             ]);
 
             foreach ($cart as $item) {
@@ -101,8 +117,14 @@ class CheckoutController extends Controller
             return $order;
         });
 
-        // Очищаем корзину
-        session()->forget(self::CART_KEY);
+        // Очищаем корзину и вспомогательные данные
+        session()->forget([
+            self::CART_KEY,
+            'cart_note',
+            'cart_coupon',
+            'cart_delivery_region',
+            'cart_delivery_city',
+        ]);
 
         return redirect()
             ->route('checkout.success', $order->number)
@@ -127,8 +149,43 @@ class CheckoutController extends Controller
     }
 
     // ─────────────────────────────────────────
-    // Хелпер
+    // Хелперы
     // ─────────────────────────────────────────
+
+    /**
+     * Рассчитать стоимость доставки.
+     * Возвращает float (0 = бесплатно) или null (уточняется / по тарифам).
+     */
+    public static function calcDelivery(string $deliveryType, float $subtotal): ?float
+    {
+        $methods = config('shop.delivery_methods', []);
+        $method  = $methods[$deliveryType] ?? null;
+
+        if (!$method) {
+            return null; // неизвестный тип — уточняется
+        }
+
+        $price    = $method['price'];    // float|null
+        $freeFrom = $method['free_from']; // float|null
+
+        // null price = рассчитывается отдельно (КИТ и т.п.)
+        if ($price === null) {
+            return null;
+        }
+
+        // Самовывоз всегда бесплатно
+        if ($price === 0) {
+            return 0.0;
+        }
+
+        // Проверяем порог бесплатной доставки
+        if ($freeFrom !== null && $subtotal >= (float) $freeFrom) {
+            return 0.0;
+        }
+
+        return (float) $price;
+    }
+
     private function calcSubtotal(array $items): float
     {
         return round(array_sum(array_map(

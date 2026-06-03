@@ -53,26 +53,170 @@
 
     {{-- Глобальный JS: корзина, сравнение, избранное --}}
     <script>
-    // ===== Корзина: кнопка «В корзину» =====
+    // ===== Корзина =====
     (function () {
         var csrf = document.querySelector('meta[name="csrf-token"]').content;
 
+        // Обновить счётчик в хедере и тулбаре
         function updateCartCount(count) {
             document.querySelectorAll('.shop-cart .count, .toolbar-count').forEach(function (el) {
                 el.textContent = count;
             });
         }
 
+        // Обновить прогресс-бар бесплатной доставки
+        function updateThreshold(data) {
+            var textEl     = document.getElementById('cart-threshold-text');
+            var remainEl   = document.getElementById('cart-threshold-remaining');
+            var barEl      = document.getElementById('cart-threshold-bar');
+            if (!textEl || !remainEl || !barEl) return;
+
+            if (data.remaining <= 0) {
+                textEl.innerHTML = '🎉 У вас <strong>бесплатная доставка</strong>!';
+            } else {
+                var rem = parseFloat(data.remaining).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+                textEl.innerHTML =
+                    'Добавьте ещё на <span class="text-primary fw-7" id="cart-threshold-remaining">' +
+                    rem + ' BYN</span> для бесплатной доставки';
+            }
+            var pct = data.progress || 0;
+            barEl.style.width = pct + '%';
+            barEl.dataset.progress = pct;
+        }
+
+        // Рендер товаров в mini-cart (Amerce-структура)
+        // Amerce main.js ищет: .wrap-empty_text → .list-empty → children not .box-text_empty
+        // Поэтому НЕ убираем класс list-empty с контейнера — Amerce должен сам находить items
+        function renderMiniCart(data) {
+            var container = document.getElementById('cart-items');
+            var footer    = document.querySelector('.tf-mini-cart-bottom');
+            if (!container) return;
+
+            // Удаляем старые динамические items
+            container.querySelectorAll('.tf-mini-cart-item').forEach(function (el) { el.remove(); });
+
+            if (!data.items || data.items.length === 0) {
+                // Пустая корзина: показываем empty-state, прячем footer
+                var emptyBlock = container.querySelector('.box-text_empty');
+                if (emptyBlock) emptyBlock.style.display = '';
+                if (footer) footer.style.display = 'none';
+                return;
+            }
+
+            // Есть товары: прячем empty-state, показываем footer
+            var emptyBlock = container.querySelector('.box-text_empty');
+            if (emptyBlock) emptyBlock.style.display = 'none';
+            // Показываем footer — убираем и класс и инлайн-стиль (jQuery .hide() ставит style)
+            if (footer) {
+                footer.classList.remove('box-empty_clear');
+                footer.style.display = '';
+            }
+
+            // Добавляем items в оригинальной Amerce-структуре
+            var placeholder = '/img/products/product-placeholder.jpg';
+            data.items.forEach(function (item) {
+                var img  = item.image || placeholder;
+                var url  = '/' + item.category_slug + '/' + item.slug;
+                var total = (parseFloat(item.price) * parseInt(item.quantity)).toFixed(2);
+                var html =
+                    '<div class="tf-mini-cart-item file-delete" data-product-id="' + item.id + '">' +
+                        '<div class="tf-mini-cart-image">' +
+                            '<a href="' + url + '">' +
+                            '<img loading="lazy" width="100" height="100" src="' + img + '" ' +
+                                'onerror="this.src=\'' + placeholder + '\'" alt="' + item.name + '">' +
+                            '</a>' +
+                        '</div>' +
+                        '<div class="tf-mini-cart-info">' +
+                            '<a href="' + url + '" class="name fw-medium link text-line-clamp-1">' +
+                                item.name +
+                            '</a>' +
+                            (item.sku ? '<p class="text-caption-01 cl-text-3 mb-4">Арт: ' + item.sku + '</p>' : '') +
+                        '</div>' +
+                        '<div class="tf-mini-cart-price">' +
+                            '<button class="tf-btn-line-3 type-primary remove cs-pointer border-0 bg-transparent p-0 mini-cart-remove" ' +
+                                'data-product-id="' + item.id + '">' +
+                                '<span class="text-caption-01 fw-semibold">Удалить</span>' +
+                            '</button>' +
+                            '<div class="fw-semibold d-flex align-items-center justify-content-between gap-4">' +
+                                '<span class="number">' + item.quantity + '</span>' +
+                                '<span>x</span>' +
+                                '<span class="price tf-mini-card-price">' + parseFloat(item.price).toFixed(2) + ' BYN</span>' +
+                            '</div>' +
+                        '</div>' +
+                    '</div>';
+                container.insertAdjacentHTML('beforeend', html);
+            });
+
+            // Обновляем итог в футере
+            var totalEl = document.querySelector('.tf-totals-total-value');
+            if (totalEl) totalEl.textContent = parseFloat(data.subtotal).toFixed(2) + ' BYN';
+        }
+
+        // Загрузить данные корзины и отрисовать
+        function loadMiniCart() {
+            fetch('/cart/data', { headers: { 'Accept': 'application/json' } })
+                .then(function (r) { return r.json(); })
+                .then(function (data) {
+                    updateCartCount(data.count);
+                    renderMiniCart(data);
+                    updateThreshold(data);
+                });
+        }
+
+        // AJAX-отправка форм мини-корзины (Заметка / Доставка / Промокод)
+        document.addEventListener('submit', function (e) {
+            var form = e.target.closest('.mini-cart-ajax-form');
+            if (!form) return;
+            e.preventDefault();
+
+            var url  = form.dataset.url;
+            var body = new URLSearchParams(new FormData(form));
+            var msg  = form.querySelector('.mini-cart-form-msg');
+
+            fetch(url, {
+                method: 'POST',
+                headers: { 'Accept': 'application/json' },
+                body: body,
+            })
+            .then(function (r) { return r.json(); })
+            .then(function () {
+                // Показываем подтверждение и закрываем панель через секунду
+                if (msg) {
+                    msg.style.display = '';
+                    msg.textContent   = '✓ Сохранено';
+                    setTimeout(function () {
+                        msg.style.display = 'none';
+                        // Закрываем тул-панель
+                        var closeBtn = form.closest('.tf-mini-cart-tool-openable');
+                        if (closeBtn) closeBtn.classList.remove('open');
+                    }, 900);
+                }
+            })
+            .catch(function () {
+                if (msg) {
+                    msg.style.display = '';
+                    msg.textContent   = 'Ошибка. Попробуйте снова.';
+                }
+            });
+        });
+
+        // Клик «В корзину» — перехватываем, добавляем через AJAX, потом открываем корзину
         document.addEventListener('click', function (e) {
             var btn = e.target.closest('.btn-add-to-cart');
             if (!btn) return;
 
+            e.preventDefault();
+
             var productId = btn.dataset.productId;
             if (!productId) return;
 
-            btn.disabled = true;
-            var original = btn.textContent.trim();
-            btn.textContent = '...';
+            // Читаем количество: из data-qty-input (селектор) или фиксировано 1
+            var qty = 1;
+            var qtySelector = btn.dataset.qtyInput;
+            if (qtySelector) {
+                var qtyEl = document.querySelector(qtySelector);
+                if (qtyEl) qty = Math.max(1, parseInt(qtyEl.value, 10) || 1);
+            }
 
             fetch('/cart/add', {
                 method: 'POST',
@@ -81,27 +225,86 @@
                     'X-CSRF-TOKEN': csrf,
                     'Accept': 'application/json',
                 },
-                body: JSON.stringify({ product_id: productId, quantity: 1 }),
+                body: JSON.stringify({ product_id: productId, quantity: qty }),
             })
             .then(function (r) { return r.json(); })
             .then(function (data) {
-                btn.textContent = '✓ Добавлено';
                 updateCartCount(data.count);
-                setTimeout(function () {
-                    btn.textContent = original;
-                    btn.disabled = false;
-                }, 1500);
-            })
-            .catch(function () {
-                btn.textContent = original;
-                btn.disabled = false;
+                loadMiniCart();
+                var cartCanvas = document.getElementById('shoppingCart');
+                if (cartCanvas && window.bootstrap) {
+                    bootstrap.Offcanvas.getOrCreateInstance(cartCanvas).show();
+                }
             });
         });
 
-        // Инициализация счётчика при загрузке
-        fetch('/cart/data', { headers: { 'Accept': 'application/json' } })
+        // Удалить из мини-корзины
+        document.addEventListener('click', function (e) {
+            var btn = e.target.closest('.mini-cart-remove');
+            if (!btn) return;
+            e.preventDefault();
+            var productId = btn.dataset.productId;
+            if (!productId) return;
+
+            fetch('/cart/remove', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': csrf,
+                    'Accept': 'application/json',
+                },
+                body: JSON.stringify({ product_id: productId }),
+            })
             .then(function (r) { return r.json(); })
-            .then(function (data) { updateCartCount(data.count); });
+            .then(function (data) {
+                updateCartCount(data.count);
+                loadMiniCart();
+            });
+        });
+
+        // Загружаем корзину при открытии offcanvas
+        document.addEventListener('show.bs.offcanvas', function (e) {
+            if (e.target && e.target.id === 'shoppingCart') {
+                loadMiniCart();
+            }
+        });
+
+        // ── Чекбокс согласия в mini-cart ──────────────────
+        document.addEventListener('DOMContentLoaded', function () {
+            var agreeBox    = document.getElementById('agree-term');
+            var agreeError  = document.getElementById('agree-term-error');
+            var checkoutBtn = document.getElementById('mini-cart-checkout-btn');
+
+            if (!checkoutBtn) return;
+
+            function syncBtn() {
+                var checked = agreeBox && agreeBox.checked;
+                checkoutBtn.style.opacity       = checked ? '1'           : '0.45';
+                checkoutBtn.style.cursor        = checked ? 'pointer'     : 'not-allowed';
+                checkoutBtn.style.pointerEvents = checked ? ''            : 'none';
+                if (checked && agreeError) agreeError.style.display = 'none';
+            }
+
+            // Клик: pointerEvents:none не пустит, но на случай прямого вызова
+            checkoutBtn.addEventListener('click', function (e) {
+                e.preventDefault();
+                if (!agreeBox || !agreeBox.checked) {
+                    if (agreeError) agreeError.style.display = '';
+                    return;
+                }
+                // Всё ок — идём на checkout
+                agreeError && (agreeError.style.display = 'none');
+                window.location.href = '/checkout';
+            });
+
+            if (agreeBox) {
+                agreeBox.addEventListener('change', syncBtn);
+            }
+            syncBtn(); // начальное состояние при загрузке
+        });
+
+        // Инициализация счётчика при загрузке страницы
+        loadMiniCart();
     })();
 
     // ===== Сравнение =====

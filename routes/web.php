@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\InstallerController;
 use App\Http\Controllers\BlogController;
 use App\Http\Controllers\BrandController;
 use App\Http\Controllers\CartController;
@@ -99,7 +100,8 @@ Route::view('/about',      'pages.about');
 Route::view('/akcii',      'pages.akcii');
 Route::view('/dostavka',   'pages.dostavka');
 Route::view('/partners',   'pages.partners');
-Route::view('/installers', 'pages.installers');
+Route::view('/suppliers',  'pages.suppliers')->name('suppliers');
+Route::get('/installers', [InstallerController::class, 'index'])->name('installers.index');
 Route::view('/reviews',    'pages.reviews');
 Route::view('/faq',        'pages.faq');
 Route::view('/privacy',    'pages.privacy');
@@ -110,6 +112,9 @@ Route::post('/cart/update',  [CartController::class, 'update'])->name('cart.upda
 Route::post('/cart/remove',  [CartController::class, 'remove'])->name('cart.remove');
 Route::post('/cart/clear',   [CartController::class, 'clear'])->name('cart.clear');
 Route::get('/cart/data',     [CartController::class, 'data'])->name('cart.data');
+Route::post('/cart/note',     [CartController::class, 'saveNote'])->name('cart.note');
+Route::post('/cart/delivery', [CartController::class, 'saveDelivery'])->name('cart.delivery');
+Route::post('/cart/coupon',   [CartController::class, 'saveCoupon'])->name('cart.coupon');
 
 // ===== Checkout =====
 Route::get('/checkout',                      [CheckoutController::class, 'index'])->name('checkout');

@@ -324,7 +324,7 @@
 
 <!-- Shopping Cart -->
 <div class="offcanvas offcanvas-end popup-shopping-cart" id="shoppingCart">
-    <div class="tf-minicart-recommendations file-delete">
+    <div class="tf-minicart-recommendations">
         <div class="title d-flex justify-content-between align-items-center">
             <h5>Вам может понравиться</h5>
             <i class="icon icon-X2 link remove fs-24 cs-pointer"></i>
@@ -340,9 +340,15 @@
                 <span class="icon-X2 icon-close-popup" data-bs-dismiss="offcanvas"></span>
             </div>
             <div class="cart-threshold">
-                <p class="text">Добавьте ещё на <span class="text-primary fw-7">200 BYN</span> для бесплатной доставки</p>
+                <p class="text" id="cart-threshold-text">
+                    Добавьте ещё на
+                    <span class="text-primary fw-7" id="cart-threshold-remaining">
+                        {{ number_format(config('shop.free_delivery_threshold', 400), 2, '.', ' ') }} BYN
+                    </span>
+                    для бесплатной доставки
+                </p>
                 <div class="tf-progress-bar tf-progress-ship">
-                    <div class="value" style="width: 0%" data-progress="0"></div>
+                    <div class="value" id="cart-threshold-bar" style="width: 0%" data-progress="0"></div>
                 </div>
             </div>
         </div>
@@ -389,69 +395,105 @@
                         </div>
                         <div class="checkbox-wrap">
                             <input class="tf-check style-2" type="checkbox" id="agree-term">
-                            <label for="agree-term">Я согласен с <a href="/privacy" class="text-decoration-underline">условиями обработки данных</a></label>
+                            <label for="agree-term">Я согласен с
+                                <a href="/privacy" class="text-decoration-underline" target="_blank">
+                                    условиями обработки данных
+                                </a>
+                            </label>
                         </div>
+                        <p id="agree-term-error"
+                            style="display:none;color:#dc2626;font-size:12px;margin:4px 0 8px;">
+                            Необходимо принять условия обработки данных
+                        </p>
                         <div class="tf-mini-cart-view-checkout">
                             <a href="/cart" class="tf-btn btn-stroke">Корзина</a>
-                            <a href="/checkout" class="tf-btn animate-btn">Оформить заказ</a>
+                            <a href="#" id="mini-cart-checkout-btn" class="tf-btn animate-btn">
+                                Оформить заказ
+                            </a>
                         </div>
                         <a href="/catalog" class="d-flex justify-content-center fw-semibold text-center link">Продолжить покупки</a>
                     </div>
                 </div>
+                {{-- Заметка --}}
                 <div class="tf-mini-cart-tool-openable add-note">
                     <div class="overlay tf-mini-cart-tool-close"></div>
-                    <form action="#" class="tf-mini-cart-tool-content">
+                    <form class="tf-mini-cart-tool-content mini-cart-ajax-form"
+                          data-url="{{ route('cart.note') }}">
+                        @csrf
                         <label for="cart-note" class="tf-mini-cart-tool-text h6 fw-medium">
                             <i class="icon icon-NotePencil"></i> Заметка к заказу
                         </label>
-                        <textarea name="note" id="cart-note" placeholder="Комментарий к заказу..."></textarea>
+                        <textarea name="note" id="cart-note"
+                            placeholder="Комментарий к заказу...">{{ session('cart_note') }}</textarea>
                         <div class="tf-cart-tool-btns">
-                            <button class="subscribe-button tf-btn animate-btn" type="submit">Сохранить</button>
+                            <button class="subscribe-button tf-btn animate-btn" type="submit">
+                                Сохранить
+                            </button>
                             <div class="tf-btn btn-stroke tf-mini-cart-tool-close">Отмена</div>
                         </div>
+                        <p class="mini-cart-form-msg text-caption-01 cl-text-2 mt-8" style="display:none;"></p>
                     </form>
                 </div>
+
+                {{-- Доставка --}}
                 <div class="tf-mini-cart-tool-openable estimate-shipping">
                     <div class="overlay tf-mini-cart-tool-close"></div>
-                    <form id="shipping-form" class="tf-mini-cart-tool-content">
+                    <form class="tf-mini-cart-tool-content mini-cart-ajax-form"
+                          data-url="{{ route('cart.delivery') }}">
+                        @csrf
                         <div class="tf-mini-cart-tool-text h6 fw-medium">
                             <i class="icon icon-Truck"></i> Расчёт доставки
                         </div>
                         <div class="form-content gap-10">
                             <div class="tf-select">
-                                <select class="w-100" name="address[region]">
-                                    <option selected value="minsk">Минск</option>
-                                    <option value="minsk_region">Минская область</option>
-                                    <option value="brest">Брест и область</option>
-                                    <option value="grodno">Гродно и область</option>
-                                    <option value="vitebsk">Витебск и область</option>
-                                    <option value="mogilev">Могилёв и область</option>
-                                    <option value="gomel">Гомель и область</option>
+                                <select class="w-100" name="delivery_region">
+                                    <option value="">— выберите область —</option>
+                                    <option value="Минск" {{ session('cart_delivery_region') === 'Минск' ? 'selected' : '' }}>Минск</option>
+                                    <option value="Минская область" {{ session('cart_delivery_region') === 'Минская область' ? 'selected' : '' }}>Минская область</option>
+                                    <option value="Брестская область" {{ session('cart_delivery_region') === 'Брестская область' ? 'selected' : '' }}>Брестская область</option>
+                                    <option value="Гродненская область" {{ session('cart_delivery_region') === 'Гродненская область' ? 'selected' : '' }}>Гродненская область</option>
+                                    <option value="Витебская область" {{ session('cart_delivery_region') === 'Витебская область' ? 'selected' : '' }}>Витебская область</option>
+                                    <option value="Могилёвская область" {{ session('cart_delivery_region') === 'Могилёвская область' ? 'selected' : '' }}>Могилёвская область</option>
+                                    <option value="Гомельская область" {{ session('cart_delivery_region') === 'Гомельская область' ? 'selected' : '' }}>Гомельская область</option>
                                 </select>
                             </div>
-                            <input type="text" placeholder="Ваш город" name="address[city]">
+                            <input type="text" name="delivery_city"
+                                value="{{ session('cart_delivery_city') }}"
+                                placeholder="Ваш город">
                         </div>
                         <div class="tf-cart-tool-btns">
-                            <button class="subscribe-button tf-btn animate-btn" type="submit">Рассчитать</button>
+                            <button class="subscribe-button tf-btn animate-btn" type="submit">
+                                Сохранить
+                            </button>
                             <div class="tf-btn btn-stroke tf-mini-cart-tool-close">Отмена</div>
                         </div>
+                        <p class="mini-cart-form-msg text-caption-01 cl-text-2 mt-8" style="display:none;"></p>
                     </form>
                 </div>
+
+                {{-- Промокод --}}
                 <div class="tf-mini-cart-tool-openable add-gift">
                     <div class="overlay tf-mini-cart-tool-close"></div>
-                    <form action="#" class="tf-mini-cart-tool-content">
+                    <form class="tf-mini-cart-tool-content mini-cart-ajax-form"
+                          data-url="{{ route('cart.coupon') }}">
+                        @csrf
                         <div class="tf-mini-cart-tool-text h6 fw-medium">
                             <i class="icon icon-SealPercent"></i> Промокод
                         </div>
                         <div class="wrap">
                             <fieldset class="tf-field">
-                                <input type="text" name="coupon" placeholder="Введите промокод">
+                                <input type="text" name="coupon"
+                                    value="{{ session('cart_coupon') }}"
+                                    placeholder="Введите промокод">
                             </fieldset>
                         </div>
                         <div class="tf-cart-tool-btns">
-                            <button class="subscribe-button tf-btn animate-btn" type="submit">Применить</button>
+                            <button class="subscribe-button tf-btn animate-btn" type="submit">
+                                Применить
+                            </button>
                             <div class="tf-btn btn-stroke line tf-mini-cart-tool-close">Отмена</div>
                         </div>
+                        <p class="mini-cart-form-msg text-caption-01 cl-text-2 mt-8" style="display:none;"></p>
                     </form>
                 </div>
             </div>

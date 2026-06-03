@@ -175,7 +175,7 @@
                 <div class="nav-category-wrap main-action-active">
                     <div class="btn-nav-drop btn-active text-nowrap radius-8">
                         <i class="icon icon-List fs-24"></i>
-                        <span class="name-category fw-medium">Каталог товаров</span>
+                        <span class="name-category fw-medium">Каталог товаров</span>
                     </div>
 
                     <ul class="box-nav-category active-item radius-12">
@@ -205,34 +205,105 @@
                                 </a>
 
                                 @if ($hasChildren)
+                                    @php $promo = config('navigation.promo.' . $rootCat->slug, null); @endphp
                                     <div class="sub-nav-category">
-                                        <div class="tf-grid-layout xl-col-3">
-                                            @if ($children->count() > 0)
-                                                <div class="sub-nav-category_list">
-                                                    <div class="sub-nav__title fw-semibold">{{ $rootCat->name }}</div>
-                                                    @foreach ($children->take(8) as $child)
-                                                        <a href="/{{ $child->slug }}" class="sub-nav__link tf-btn-line">
-                                                            {{ $child->name }}
-                                                        </a>
+                                        <div class="mega-inner">
+
+                                            {{-- Левая/центральная зона: подкатегории + editorial --}}
+                                            <div class="mega-links">
+                                                <div class="tf-grid-layout xl-col-2">
+                                                    @if ($children->count() > 0)
+                                                        <div class="sub-nav-category_list">
+                                                            <div class="sub-nav__title fw-semibold">{{ $rootCat->name }}</div>
+                                                            @foreach ($children->take(10) as $child)
+                                                                <a href="/{{ $child->slug }}" class="sub-nav__link tf-btn-line">
+                                                                    {{ $child->name }}
+                                                                </a>
+                                                            @endforeach
+                                                            @if ($children->count() > 10)
+                                                                <a href="/{{ $rootCat->slug }}" class="sub-nav__link tf-btn-line cl-text-2">
+                                                                    Все разделы →
+                                                                </a>
+                                                            @endif
+                                                        </div>
+                                                    @endif
+
+                                                    @foreach ($editorial as $block)
+                                                        <div class="sub-nav-category_list">
+                                                            <div class="sub-nav__title fw-semibold">{{ $block['title'] }}</div>
+                                                            @foreach ($block['links'] as $link)
+                                                                <a href="{{ $link['url'] }}" class="sub-nav__link tf-btn-line">
+                                                                    {{ $link['name'] }}
+                                                                </a>
+                                                            @endforeach
+                                                        </div>
                                                     @endforeach
-                                                    @if ($children->count() > 8)
-                                                        <a href="/{{ $rootCat->slug }}" class="sub-nav__link tf-btn-line cl-text-2">
-                                                            Все разделы
+                                                </div>
+                                            </div>
+
+                                            {{-- Правая promo-колонка --}}
+                                            <div class="mega-promo">
+                                                @if ($promo)
+                                                    @if (!empty($promo['brands']))
+                                                        @php
+                                                            $validBrands = collect($promo['brands'])
+                                                                ->map(fn($name) => $navBrands[Str::slug($name)] ?? null)
+                                                                ->filter();
+                                                        @endphp
+                                                        @if($validBrands->isNotEmpty())
+                                                            <div class="mega-promo__section">
+                                                                <div class="mega-promo__label">Популярные бренды</div>
+                                                                <div class="mega-promo__brands">
+                                                                    @foreach ($validBrands as $brand)
+                                                                        <a href="/brands/{{ $brand->slug }}" class="mega-brand-chip">{{ $brand->name }}</a>
+                                                                    @endforeach
+                                                                </div>
+                                                            </div>
+                                                        @endif
+                                                    @endif
+
+                                                    @if (!empty($promo['banner']))
+                                                        <a href="{{ $promo['banner']['url'] }}" class="mega-promo__banner">
+                                                            <img src="{{ asset('img/' . $promo['banner']['img']) }}"
+                                                                 alt="{{ $promo['banner']['title'] }}"
+                                                                 loading="lazy">
+                                                            <span class="mega-promo__banner-label">{{ $promo['banner']['title'] }}</span>
                                                         </a>
                                                     @endif
-                                                </div>
-                                            @endif
 
-                                            @foreach ($editorial as $block)
-                                                <div class="sub-nav-category_list">
-                                                    <div class="sub-nav__title fw-semibold">{{ $block['title'] }}</div>
-                                                    @foreach ($block['links'] as $link)
-                                                        <a href="{{ $link['url'] }}" class="sub-nav__link tf-btn-line">
-                                                            {{ $link['name'] }}
-                                                        </a>
-                                                    @endforeach
-                                                </div>
-                                            @endforeach
+                                                    @if (!empty($promo['cta']))
+                                                        <div class="mega-promo__cta">
+                                                            @foreach ($promo['cta'] as $link)
+                                                                <a href="{{ $link['url'] }}" class="mega-promo__cta-link">
+                                                                    {{ $link['name'] }} →
+                                                                </a>
+                                                            @endforeach
+                                                        </div>
+                                                    @endif
+                                                @else
+                                                    {{-- Дефолтная promo-панель --}}
+                                                    <div class="mega-promo__section">
+                                                        <div class="mega-promo__label">Быстрые ссылки</div>
+                                                        <div class="mega-promo__cta">
+                                                            <a href="/akcii" class="mega-promo__cta-link">Акции и скидки →</a>
+                                                            <a href="/installers" class="mega-promo__cta-link">Монтаж →</a>
+                                                            <a href="/brands" class="mega-promo__cta-link">Все бренды →</a>
+                                                        </div>
+                                                    </div>
+                                                    <a href="/akcii" class="mega-promo__banner">
+                                                        <img src="{{ asset('img/banners/banner-sale.jpg') }}"
+                                                             alt="Акции" loading="lazy">
+                                                        <span class="mega-promo__banner-label">Акции и спецпредложения</span>
+                                                    </a>
+                                                @endif
+
+                                                {{-- Общая ссылка «Монтаж» всегда внизу --}}
+                                                <a href="/installers" class="mega-promo__install-cta">
+                                                    <span>Монтаж и установка</span>
+                                                    <span class="mega-promo__install-sub">Профессиональный монтаж по Беларуси</span>
+                                                </a>
+                                            </div>
+
                                         </div>
                                     </div>
                                 @endif

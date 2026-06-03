@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use App\Models\Brand;
 use App\Models\Category;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\View;
@@ -13,9 +14,18 @@ class AppServiceProvider extends ServiceProvider
     {
         // View::share — доступно во ВСЕХ вьюхах включая @include партиалы
         View::share('navCategories', $this->getNavCategories());
+        View::share('navBrands', $this->getNavBrands());
     }
 
  // Временно — убираем кеш чтобы исключить его как причину
+private function getNavBrands(): \Illuminate\Support\Collection
+{
+    return Brand::active()
+        ->orderBy('sort_order')
+        ->get(['name', 'slug'])
+        ->keyBy('slug');
+}
+
 private function getNavCategories()
 {
     return Category::query()

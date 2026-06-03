@@ -14,6 +14,14 @@ class OrdersTable
 {
     public static function configure(Table $table): Table
     {
+        $paymentNames = collect(config('shop.payment_methods', []))
+            ->mapWithKeys(fn($m, $k) => [$k => $m['name']])
+            ->toArray();
+
+        $deliveryNames = collect(config('shop.delivery_methods', []))
+            ->mapWithKeys(fn($m, $k) => [$k => $m['name']])
+            ->toArray();
+
         return $table
             ->columns([
                 TextColumn::make('number')
@@ -34,15 +42,7 @@ class OrdersTable
                         'cancelled'  => 'danger',
                         default      => 'gray',
                     })
-                    ->formatStateUsing(fn(string $state) => match($state) {
-                        'new'        => 'Новый',
-                        'confirmed'  => 'Подтверждён',
-                        'processing' => 'В обработке',
-                        'shipped'    => 'Отправлен',
-                        'delivered'  => 'Доставлен',
-                        'cancelled'  => 'Отменён',
-                        default      => $state,
-                    }),
+                    ->formatStateUsing(fn(string $state) => \App\Models\Order::STATUSES[$state] ?? $state),
 
                 TextColumn::make('customer_name')
                     ->label('Клиент')
@@ -56,12 +56,7 @@ class OrdersTable
                     ->label('Оплата')
                     ->badge()
                     ->color('gray')
-                    ->formatStateUsing(fn(string $state) => match($state) {
-                        'cash'    => 'Наличными',
-                        'card'    => 'Картой',
-                        'invoice' => 'По счёту',
-                        default   => $state,
-                    }),
+                    ->formatStateUsing(fn(string $state) => $paymentNames[$state] ?? $state),
 
                 TextColumn::make('payment_status')
                     ->label('Статус оплаты')
@@ -96,17 +91,14 @@ class OrdersTable
             ->filters([
                 SelectFilter::make('status')
                     ->label('Статус')
-                    ->options([
-                        'new'        => 'Новый',
-                        'confirmed'  => 'Подтверждён',
-                        'processing' => 'В обработке',
-                        'shipped'    => 'Отправлен',
-                        'delivered'  => 'Доставлен',
-                        'cancelled'  => 'Отменён',
-                    ]),
+                    ->options(\App\Models\Order::STATUSES),
+
+                SelectFilter::make('payment_type')
+                    ->label('Способ оплаты')
+                    ->options($paymentNames),
 
                 SelectFilter::make('payment_status')
-                    ->label('Оплата')
+                    ->label('Статус оплаты')
                     ->options([
                         'pending' => 'Ожидает',
                         'paid'    => 'Оплачен',
@@ -114,11 +106,7 @@ class OrdersTable
 
                 SelectFilter::make('delivery_type')
                     ->label('Доставка')
-                    ->options([
-                        'pickup'    => 'Самовывоз',
-                        'courier'   => 'Курьером',
-                        'transport' => 'Транспортной компанией',
-                    ]),
+                    ->options($deliveryNames),
             ])
             ->recordActions([
                 ViewAction::make(),

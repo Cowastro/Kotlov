@@ -11,6 +11,7 @@ class Order extends Model
     protected $fillable = [
         'user_id', 'number', 'status',
         'customer_name', 'customer_phone', 'customer_email',
+        'company_name', 'company_unp', 'company_address', 'company_email',
         'delivery_type', 'delivery_region', 'delivery_city',
         'delivery_address', 'delivery_price',
         'payment_type', 'payment_status',
@@ -37,15 +38,26 @@ class Order extends Model
     ];
 
     public const PAYMENT_TYPES = [
-        'cash'    => 'Наличными',
-        'card'    => 'Картой',
-        'invoice' => 'По счёту',
+        'cash'               => 'Наличными',
+        'card'               => 'Банковской платежной карточкой',
+        'bank_transfer'      => 'Безналичный расчёт',
+        'currency_transfer'  => 'Оплата для РФ и Казахстана',
+        'installment_6'      => 'Онлайн-рассрочка на 6 месяцев',
+        'credit_3_years'     => 'Кредит до 3 лет',
+        'online_card'        => 'Онлайн-оплата картой',
+        'halva'              => 'Карта «Халва»',
+        'belgazprombank'     => 'Белгазпромбанк',
+        'belarusbank_magnit' => 'Беларусбанк «Магнит Green»',
+        'cherepaha'          => 'Карта «Черепаха» от ВТБ',
+        'webpay'             => 'WEBPAY',
+        'invoice'            => 'По счёту (для организаций)',
     ];
 
     public const DELIVERY_TYPES = [
         'pickup'    => 'Самовывоз',
-        'courier'   => 'Курьером',
-        'transport' => 'Транспортной компанией',
+        'courier'   => 'Доставка курьером по г. Минску',
+        'transport' => 'Транспортная компания по Беларуси',
+        'kit'       => 'ТК КИТ — Россия, Казахстан, Армения, Киргизия',
     ];
 
     public function user(): BelongsTo

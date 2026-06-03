@@ -384,3 +384,201 @@ body {
 .canvas-header .form-search-nav fieldset {
     flex: 1;
 }
+/* =========================================
+   Mega-menu marketplace — исправления и promo-колонка
+========================================= */
+
+/*
+ * Amerce по умолчанию ставит white-space: nowrap на .sub-nav-category.
+ * Это ломает flex-wrap брендов и растягивает панель за экран.
+ * Переопределяем размер и сброс white-space.
+ */
+.has-sub-nav-category .sub-nav-category {
+    white-space: normal !important;
+    width: 700px !important;
+    max-width: min(700px, calc(100vw - 260px)) !important;
+    box-sizing: border-box !important;
+}
+
+/* Flex-обёртка: ссылки слева, promo справа */
+.sub-nav-category .mega-inner {
+    display: flex;
+    gap: 0;
+    align-items: flex-start;
+    width: 100%;
+    overflow: hidden;
+}
+
+/* Левая зона — подкатегории */
+.mega-links {
+    flex: 1;
+    min-width: 0;
+    padding-right: 24px;
+    overflow: hidden;
+}
+
+/* Явно сбрасываем white-space для текста ссылок внутри mega-links */
+.mega-links a,
+.mega-links .sub-nav__title {
+    white-space: normal;
+}
+
+/* Правая promo-колонка */
+.mega-promo {
+    width: 200px;
+    min-width: 180px;
+    flex-shrink: 0;
+    border-left: 1px solid #f0f0f0;
+    padding-left: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    overflow: hidden;
+}
+
+/* Секция внутри promo */
+.mega-promo__section {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+/* Заголовок секции */
+.mega-promo__label {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    color: #aaa;
+    white-space: normal;
+}
+
+/* Бренды — чипы с переносом */
+.mega-promo__brands {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+    width: 100%;
+    overflow: hidden;
+}
+
+.mega-brand-chip {
+    font-size: 12px;
+    font-weight: 600;
+    color: #333;
+    background: #f5f5f5;
+    border: 1px solid #e8e8e8;
+    border-radius: 20px;
+    padding: 3px 10px;
+    text-decoration: none;
+    white-space: nowrap;
+    flex-shrink: 0;
+    transition: background .15s, color .15s, border-color .15s;
+}
+
+.mega-brand-chip:hover {
+    background: #111;
+    color: #fff;
+    border-color: #111;
+}
+
+/* Баннер-картинка — ограниченная высота */
+.mega-promo__banner {
+    display: block;
+    border-radius: 8px;
+    overflow: hidden;
+    position: relative;
+    text-decoration: none;
+    flex-shrink: 0;
+}
+
+.mega-promo__banner img {
+    width: 100%;
+    height: 90px;
+    max-height: 100px;
+    object-fit: cover;
+    display: block;
+    transition: transform .35s ease;
+}
+
+.mega-promo__banner:hover img {
+    transform: scale(1.05);
+}
+
+.mega-promo__banner-label {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    padding: 6px 10px;
+    background: linear-gradient(transparent, rgba(0,0,0,.6));
+    color: #fff;
+    font-size: 11px;
+    font-weight: 600;
+    line-height: 1.3;
+    white-space: normal;
+}
+
+/* CTA-ссылки — каждая на отдельной строке */
+.mega-promo__cta {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.mega-promo__cta-link {
+    display: block;
+    font-size: 13px;
+    color: #444;
+    text-decoration: none;
+    padding: 4px 8px;
+    border-radius: 6px;
+    white-space: normal;
+    line-height: 1.4;
+    transition: background .15s, color .15s;
+}
+
+.mega-promo__cta-link:hover {
+    background: #f5f5f5;
+    color: #c62828;
+}
+
+/* Карточка «Монтаж» — внизу promo-колонки */
+.mega-promo__install-cta {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 10px 12px;
+    border: 1px solid #e8e8e8;
+    border-radius: 8px;
+    text-decoration: none;
+    background: #fafafa;
+    transition: border-color .2s, background .2s;
+    margin-top: auto;
+    flex-shrink: 0;
+    white-space: normal;
+}
+
+.mega-promo__install-cta span:first-child {
+    font-size: 12px;
+    font-weight: 600;
+    color: #c62828;
+    white-space: normal;
+}
+
+.mega-promo__install-sub {
+    font-size: 11px;
+    color: #999;
+    white-space: normal;
+    line-height: 1.3;
+}
+
+.mega-promo__install-cta:hover {
+    border-color: #c62828;
+    background: #fff;
+}
+
+/* Уменьшаем gap сетки внутри mega-links (Amerce ставит 30px 50px) */
+.mega-links .tf-grid-layout {
+    gap: 16px 24px !important;
+}

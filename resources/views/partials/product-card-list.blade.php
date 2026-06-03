@@ -2,8 +2,8 @@
 {{-- List view — детальная карточка товара --}}
 
 @php
-    $image = $product->images[0] ?? null;
-    $image2 = $product->images[1] ?? null;
+    $image = is_array($product->images) ? ($product->images[0] ?? null) : null;
+    $image2 = is_array($product->images) ? ($product->images[1] ?? null) : null;
     $placeholder = asset('img/products/product-placeholder.jpg');
     $imageUrl = $image ? 'https://kotlov.by/images/product/' . $image : $placeholder;
     $imageUrl2 = $image2 ? 'https://kotlov.by/images/product/' . $image2 : $imageUrl;
@@ -102,12 +102,12 @@
         {{-- Действия --}}
         <ul class="product-action_list">
             <li>
-                <button type="button"
-                    class="hover-tooltip box-icon border-0 bg-transparent btn-add-to-cart"
+                <a href="#shoppingCart"
+                    class="hover-tooltip box-icon btn-add-to-cart"
                     data-product-id="{{ $product->id }}">
                     <span class="icon icon-Handbag"></span>
                     <span class="tooltip">В корзину</span>
-                </button>
+                </a>
             </li>
             <li class="wishlist">
                 <a href="#" class="hover-tooltip box-icon"

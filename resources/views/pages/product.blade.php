@@ -208,13 +208,15 @@
                                                 <button class="btn-quantity btn-decrease">
                                                     <i class="icon icon-minus"></i>
                                                 </button>
-                                                <input class="quantity-product" type="text" name="number" value="1">
+                                                <input class="quantity-product product-main-qty" type="text" name="number" value="1">
                                                 <button class="btn-quantity btn-increase">
                                                     <i class="icon icon-plus"></i>
                                                 </button>
                                             </div>
-                                            <a href="#shoppingCart" data-bs-toggle="offcanvas"
-                                                class="tf-btn type-xl animate-btn w-100">
+                                            <a href="#shoppingCart"
+                                                class="tf-btn type-xl animate-btn w-100 btn-add-to-cart"
+                                                data-product-id="{{ $product->id }}"
+                                                data-qty-input=".product-main-qty">
                                                 В корзину
                                                 @if ($product->price > 0)
                                                     <span class="d-none d-sm-block d-md-none d-lg-block">&nbsp;—&nbsp;</span>
@@ -363,8 +365,9 @@
                             </button>
                         </div>
                     </div>
-                    <a href="#shoppingCart" data-bs-toggle="offcanvas"
-                        class="tf-btn animate-btn btn-add-to-cart">
+                    <a href="#shoppingCart"
+                        class="tf-btn animate-btn btn-add-to-cart"
+                        data-product-id="{{ $product->id }}">
                         В корзину
                         @if ($product->price > 0)
                             — {{ number_format($product->price, 2, '.', ' ') }} BYN

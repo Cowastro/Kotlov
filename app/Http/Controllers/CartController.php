@@ -36,19 +36,29 @@ class CartController extends Controller
 
         $cart = session(self::KEY, []);
 
+        // Если корзина была пустой — сбрасываем старые данные прошлой сессии
+        if (empty($cart)) {
+            $this->clearCartMeta();
+        }
+
         $id = $product->id;
 
         if (isset($cart[$id])) {
             $cart[$id]['quantity'] = min($cart[$id]['quantity'] + $qty, 999);
         } else {
-            $images = $product->images ?? [];
+            $images   = $product->images ?? [];
+            $imgFile  = $images[0] ?? null;
+            $imgUrl   = $imgFile
+                ? 'https://kotlov.by/images/product/' . $imgFile
+                : null;
+
             $cart[$id] = [
                 'id'             => $id,
                 'name'           => $product->name,
                 'slug'           => $product->slug,
                 'sku'            => $product->sku,
                 'price'          => (float) $product->price,
-                'image'          => $images[0] ?? null,
+                'image'          => $imgUrl,
                 'category_slug'  => $product->category->slug ?? 'catalog',
                 'quantity'       => $qty,
             ];
@@ -110,6 +120,11 @@ class CartController extends Controller
         unset($cart[(int) $request->product_id]);
         session([self::KEY => $cart]);
 
+        // Если корзина опустела — очищаем все связанные данные
+        if (empty($cart)) {
+            $this->clearCartMeta();
+        }
+
         if ($request->expectsJson()) {
             return response()->json([
                 'message'  => 'removed',
@@ -127,6 +142,7 @@ class CartController extends Controller
     public function clear(Request $request)
     {
         session()->forget(self::KEY);
+        $this->clearCartMeta();
 
         if ($request->expectsJson()) {
             return response()->json(['message' => 'cleared', 'count' => 0]);
@@ -140,17 +156,90 @@ class CartController extends Controller
     // ─────────────────────────────────────────
     public function data()
     {
-        $items = $this->getItems();
+        $items     = $this->getItems();
+        $subtotal  = $this->calcSubtotal($items);
+        $threshold = (float) config('shop.free_delivery_threshold', 400);
+        $remaining = max(0, $threshold - $subtotal);
+        $progress  = $threshold > 0 ? min(100, round($subtotal / $threshold * 100)) : 100;
+
         return response()->json([
-            'items'    => array_values($items),
-            'count'    => $this->totalQty($items),
-            'subtotal' => $this->calcSubtotal($items),
+            'items'     => array_values($items),
+            'count'     => $this->totalQty($items),
+            'subtotal'  => $subtotal,
+            'threshold' => $threshold,
+            'remaining' => $remaining,
+            'progress'  => $progress,
+            'note'      => session('cart_note', ''),
+            'coupon'    => session('cart_coupon', ''),
         ]);
+    }
+
+    // ─────────────────────────────────────────
+    // Заметка к заказу  POST /cart/note
+    // ─────────────────────────────────────────
+    public function saveNote(Request $request)
+    {
+        $request->validate(['note' => ['nullable', 'string', 'max:1000']]);
+        session(['cart_note' => $request->input('note', '')]);
+
+        if ($request->expectsJson()) {
+            return response()->json(['message' => 'saved']);
+        }
+        return back();
+    }
+
+    // ─────────────────────────────────────────
+    // Способ доставки  POST /cart/delivery
+    // ─────────────────────────────────────────
+    public function saveDelivery(Request $request)
+    {
+        $request->validate([
+            'delivery_region' => ['nullable', 'string', 'max:100'],
+            'delivery_city'   => ['nullable', 'string', 'max:100'],
+        ]);
+        session([
+            'cart_delivery_region' => $request->input('delivery_region', ''),
+            'cart_delivery_city'   => $request->input('delivery_city', ''),
+        ]);
+
+        if ($request->expectsJson()) {
+            return response()->json(['message' => 'saved']);
+        }
+        return back();
+    }
+
+    // ─────────────────────────────────────────
+    // Промокод  POST /cart/coupon
+    // ─────────────────────────────────────────
+    public function saveCoupon(Request $request)
+    {
+        $request->validate(['coupon' => ['nullable', 'string', 'max:50']]);
+        $code = strtoupper(trim($request->input('coupon', '')));
+        session(['cart_coupon' => $code]);
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'message' => 'saved',
+                'coupon'  => $code,
+            ]);
+        }
+        return back();
     }
 
     // ─────────────────────────────────────────
     // Хелперы
     // ─────────────────────────────────────────
+
+    /** Очистить вспомогательные данные корзины (заметка, купон, доставка) */
+    private function clearCartMeta(): void
+    {
+        session()->forget([
+            'cart_note',
+            'cart_coupon',
+            'cart_delivery_region',
+            'cart_delivery_city',
+        ]);
+    }
     private function getItems(): array
     {
         return session(self::KEY, []);

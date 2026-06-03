@@ -12,6 +12,14 @@ class OrderForm
 {
     public static function configure(Schema $schema): Schema
     {
+        $deliveryOptions = collect(config('shop.delivery_methods', []))
+            ->mapWithKeys(fn($m, $k) => [$k => $m['name']])
+            ->toArray();
+
+        $paymentOptions = collect(config('shop.payment_methods', []))
+            ->mapWithKeys(fn($m, $k) => [$k => $m['name']])
+            ->toArray();
+
         return $schema
             ->components([
                 Section::make('Клиент')
@@ -47,14 +55,7 @@ class OrderForm
                     ->schema([
                         Select::make('status')
                             ->label('Статус заказа')
-                            ->options([
-                                'new'        => 'Новый',
-                                'confirmed'  => 'Подтверждён',
-                                'processing' => 'В обработке',
-                                'shipped'    => 'Отправлен',
-                                'delivered'  => 'Доставлен',
-                                'cancelled'  => 'Отменён',
-                            ])
+                            ->options(\App\Models\Order::STATUSES)
                             ->default('new')
                             ->required(),
 
@@ -73,11 +74,7 @@ class OrderForm
                     ->schema([
                         Select::make('delivery_type')
                             ->label('Тип доставки')
-                            ->options([
-                                'pickup'    => 'Самовывоз',
-                                'courier'   => 'Курьером',
-                                'transport' => 'Транспортной компанией',
-                            ])
+                            ->options($deliveryOptions)
                             ->default('courier')
                             ->required(),
 
@@ -103,11 +100,7 @@ class OrderForm
                     ->schema([
                         Select::make('payment_type')
                             ->label('Способ оплаты')
-                            ->options([
-                                'cash'    => 'Наличными',
-                                'card'    => 'Картой',
-                                'invoice' => 'По счёту',
-                            ])
+                            ->options($paymentOptions)
                             ->default('cash')
                             ->required(),
 

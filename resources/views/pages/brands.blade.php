@@ -12,7 +12,7 @@
                     <i class="icon icon-CaretRightThin cl-text-3"></i>
                     <p class="text-caption-01">Бренды</p>
                 </div>
-                <h3>Бренды отопительного оборудования</h3>
+                <h1 class="h3">Бренды отопительного оборудования</h1>
                 <p class="text-body-1 cl-text-2">
                     Официальные поставщики ведущих производителей котлов,<br class="d-none d-lg-block">
                     печей, каминов и оборудования для отопления.

@@ -8,15 +8,32 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class InstallRequest extends Model
 {
     protected $fillable = [
-        'client_id', 'installer_id', 'product_id',
-        'customer_name', 'customer_phone', 'description',
-        'region', 'city', 'preferred_date',
-        'status', 'price_agreed',
+        // Существующие поля
+        'client_id',
+        'installer_id',
+        'product_id',
+        'customer_name',
+        'customer_phone',
+        'description',
+        'region',
+        'city',
+        'preferred_date',
+        'status',
+        'price_agreed',
+
+        // Новые поля (Этап 8)
+        'specialization',
+        'address',
+        'budget',
+        'source',
+        'notes',
+        'installer_profile_id',
     ];
 
     protected $casts = [
         'preferred_date' => 'date',
         'price_agreed'   => 'decimal:2',
+        'budget'         => 'decimal:2',
     ];
 
     public const STATUSES = [
@@ -40,5 +57,10 @@ class InstallRequest extends Model
     public function product(): BelongsTo
     {
         return $this->belongsTo(Product::class);
+    }
+
+    public function installerProfile(): BelongsTo
+    {
+        return $this->belongsTo(InstallerProfile::class);
     }
 }

@@ -3,7 +3,6 @@
 @section('content')
 <main id="wrapper">
 
-    {{-- Заголовок --}}
     <section class="section-page-title text-center flat-spacing-2 pb-0">
         <div class="container">
             <div class="main-page-title">
@@ -17,7 +16,11 @@
         </div>
     </section>
 
-    <section class="section-shoping-cart each-list-prd flat-spacing-2">
+    {{--
+        ВАЖНО: убраны классы each-list-prd и each-prd — они триггерят Amerce main.js,
+        который пересчитывает суммы в USD. Используем собственный JS.
+    --}}
+    <section class="section-shoping-cart flat-spacing-2">
         <div class="container">
 
             @if (session('success'))
@@ -27,7 +30,7 @@
             @if (count($items) > 0)
                 <div class="row">
 
-                    {{-- ===== Таблица товаров ===== --}}
+                    {{-- Таблица товаров --}}
                     <div class="col-lg-8">
                         <div class="overflow-auto">
                             <table class="tf-table-page-cart">
@@ -45,14 +48,16 @@
                                             $productUrl = '/' . $item['category_slug'] . '/' . $item['slug'];
                                             $itemTotal  = round($item['price'] * $item['quantity'], 2);
                                         @endphp
-                                        <tr class="tf-cart_item each-prd file-delete"
+                                        {{-- НЕТ each-prd — иначе Amerce перезапишет цену в USD --}}
+                                        <tr class="tf-cart_item kotlov-cart-row"
                                             data-product-id="{{ $item['id'] }}">
 
                                             <td class="cart_product">
                                                 <a href="{{ $productUrl }}" class="img-prd">
                                                     <img loading="lazy" width="100" height="100"
-                                                        src="{{ $item['image'] ? asset($item['image']) : asset('img/products/product-placeholder.jpg') }}"
-                                                        alt="{{ $item['name'] }}">
+                                                        src="{{ $item['image'] ?? asset('img/products/product-placeholder.jpg') }}"
+                                                        alt="{{ $item['name'] }}"
+                                                        onerror="this.src='{{ asset('img/products/product-placeholder.jpg') }}'">
                                                 </a>
                                                 <div class="infor-prd">
                                                     <a href="{{ $productUrl }}"
@@ -70,20 +75,19 @@
                                                         <input type="hidden" name="product_id"
                                                             value="{{ $item['id'] }}">
                                                         <button type="submit"
-                                                            class="cart_remove tf-btn-line-3 type-primary remove border-0 bg-transparent p-0 cursor-pointer">
+                                                            class="tf-btn-line-3 type-primary border-0 bg-transparent p-0 cursor-pointer">
                                                             <span class="text-caption-01 fw-semibold">Удалить</span>
                                                         </button>
                                                     </form>
                                                 </div>
                                             </td>
 
-                                            <td class="cart_price each-price fw-semibold text-primary"
-                                                data-cart-title="Цена"
+                                            <td class="cart_price fw-semibold text-primary"
                                                 data-price="{{ $item['price'] }}">
                                                 {{ number_format($item['price'], 2, '.', ' ') }} BYN
                                             </td>
 
-                                            <td class="cart_quantity" data-cart-title="Количество">
+                                            <td class="cart_quantity">
                                                 <div class="wg-quantity">
                                                     <button type="button" class="btn-quantity minus-quantity">
                                                         <i class="icon icon-minus"></i>
@@ -100,7 +104,7 @@
                                             </td>
 
                                             <td class="text-end">
-                                                <div class="cart_total fw-semibold text-primary each-subtotal-price">
+                                                <div class="cart_total fw-semibold text-primary kotlov-row-total">
                                                     {{ number_format($itemTotal, 2, '.', ' ') }} BYN
                                                 </div>
                                             </td>
@@ -117,14 +121,15 @@
                             </a>
                             <form action="{{ route('cart.clear') }}" method="POST">
                                 @csrf
-                                <button type="submit" class="cart_remove tf-btn-line-3 type-primary border-0 bg-transparent p-0">
+                                <button type="submit"
+                                    class="tf-btn-line-3 type-primary border-0 bg-transparent p-0">
                                     <span class="text-caption-01 fw-semibold">Очистить корзину</span>
                                 </button>
                             </form>
                         </div>
                     </div>
 
-                    {{-- ===== Итого ===== --}}
+                    {{-- Итого + согласие + кнопка --}}
                     <div class="col-lg-4">
                         <div class="fl-sidebar-cart mt-lg-0 sticky-top">
                             <div class="box-order-summary">
@@ -144,15 +149,39 @@
                                     </span>
                                 </div>
 
-                                <div class="br-line mb-20"></div>
+                                <div class="br-line mb-16"></div>
 
-                                <p class="text-caption-01 cl-text-3 mb-20">
-                                    Доставка рассчитывается при оформлении.
-                                </p>
+                                @php
+                                    $threshold = (float) config('shop.free_delivery_threshold', 400);
+                                @endphp
+                                <div class="d-flex justify-content-between align-items-center mb-20">
+                                    <p class="fw-medium lh-24 mb-0">Доставка:</p>
+                                    @if ($subtotal >= $threshold)
+                                        <span class="fw-semibold text-primary">Бесплатно</span>
+                                    @else
+                                        <span class="text-caption-01 cl-text-3">уточняется при оформлении</span>
+                                    @endif
+                                </div>
 
-                                <a href="{{ route('checkout') }}" class="tf-btn animate-btn w-100 mb-12">
+                                {{-- Согласие с условиями --}}
+                                <div class="checkbox-wrap mb-16">
+                                    <input class="tf-check style-2" type="checkbox" id="cart-agree">
+                                    <label for="cart-agree">
+                                        Я согласен с
+                                        <a href="/privacy" class="text-decoration-underline" target="_blank">
+                                            условиями обработки данных
+                                        </a>
+                                    </label>
+                                </div>
+
+                                {{-- Кнопка: изначально disabled, активируется после чекбокса --}}
+                                <button type="button" id="checkout-btn"
+                                    class="tf-btn animate-btn w-100 mb-12"
+                                    disabled
+                                    style="opacity:0.45;cursor:not-allowed;">
                                     Оформить заказ
-                                </a>
+                                </button>
+
                             </div>
                         </div>
                     </div>
@@ -161,7 +190,8 @@
 
             @else
                 <div class="text-center py-80">
-                    <i class="icon icon-Handbag fs-60 cl-text-3 mb-20" style="font-size:60px;display:block;"></i>
+                    <i class="icon icon-Handbag fs-60 cl-text-3 mb-20"
+                        style="font-size:60px;display:block;"></i>
                     <h4 class="mb-12">Корзина пуста</h4>
                     <p class="text-body-1 cl-text-2 mb-32">
                         Добавьте товары из каталога отопительного оборудования
@@ -181,62 +211,97 @@
 (function () {
     var csrf = document.querySelector('meta[name="csrf-token"]').content;
 
-    function formatMoney(num) {
-        return parseFloat(num).toFixed(2).replace(/(\d)(?=(\d{3})+\.)/g, '$1 ');
+    function formatBYN(num) {
+        return parseFloat(num).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ' ') + ' BYN';
     }
 
     function updateHeaderCount(count) {
-        document.querySelectorAll('.shop-cart .count').forEach(function (el) {
+        document.querySelectorAll('.shop-cart .count, .toolbar-count').forEach(function (el) {
             el.textContent = count;
         });
     }
 
-    document.querySelectorAll('.cart-qty-input').forEach(function (input) {
-        var timer = null;
+    // ── Обновление количества ──────────────────────────────
+    function recalcRow(input) {
+        var qty   = parseInt(input.value, 10) || 1;
+        var row   = input.closest('tr.kotlov-cart-row');
+        var price = parseFloat(row.querySelector('[data-price]').dataset.price);
 
-        function sendUpdate() {
-            var qty = parseInt(input.value, 10) || 1;
-            if (qty < 1) { qty = 1; input.value = 1; }
+        // Немедленно обновляем строку (без ожидания AJAX)
+        row.querySelector('.kotlov-row-total').textContent = formatBYN(price * qty);
 
-            fetch('{{ route("cart.update") }}', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': csrf,
-                    'Accept': 'application/json',
-                },
-                body: JSON.stringify({
-                    product_id: input.dataset.productId,
-                    quantity: qty,
-                }),
-            })
-            .then(r => r.json())
-            .then(function (data) {
-                var row   = input.closest('tr[data-product-id]');
-                var price = parseFloat(row.querySelector('[data-price]').dataset.price);
-                row.querySelector('.each-subtotal-price').textContent =
-                    formatMoney(price * qty) + ' BYN';
+        return { qty: qty, productId: input.dataset.productId };
+    }
 
-                document.getElementById('cart-subtotal').textContent =
-                    formatMoney(data.subtotal) + ' BYN';
-                document.getElementById('cart-items-count').textContent =
-                    data.count + ' шт.';
+    function sendUpdate(input) {
+        var d   = recalcRow(input);
+        var qty = d.qty;
 
-                updateHeaderCount(data.count);
-            });
-        }
-
-        input.addEventListener('change', function () {
-            clearTimeout(timer);
-            timer = setTimeout(sendUpdate, 300);
+        fetch('{{ route("cart.update") }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': csrf,
+                'Accept': 'application/json',
+            },
+            body: JSON.stringify({ product_id: d.productId, quantity: qty }),
+        })
+        .then(function (r) { return r.json(); })
+        .then(function (data) {
+            document.getElementById('cart-subtotal').textContent  = formatBYN(data.subtotal);
+            document.getElementById('cart-items-count').textContent = data.count + ' шт.';
+            updateHeaderCount(data.count);
         });
+    }
 
-        // Amerce main.js меняет value через input-событие при нажатии +/-
-        input.addEventListener('input', function () {
-            clearTimeout(timer);
-            timer = setTimeout(sendUpdate, 500);
+    // Кнопки +/- (Amerce меняет value, потом триггерит input или change)
+    document.querySelectorAll('.btn-quantity').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            var input = this.closest('.wg-quantity').querySelector('.cart-qty-input');
+            if (!input) return;
+            // Даём Amerce обновить value, потом берём актуальное
+            setTimeout(function () { sendUpdate(input); }, 50);
         });
     });
+
+    // Прямой ввод числа
+    document.querySelectorAll('.cart-qty-input').forEach(function (input) {
+        var timer = null;
+        input.addEventListener('change', function () {
+            clearTimeout(timer);
+            timer = setTimeout(function () { sendUpdate(input); }, 300);
+        });
+    });
+
+    // ── Чекбокс согласия → активация кнопки ──────────────
+    var checkoutBtn = document.getElementById('checkout-btn');
+    var agreeBox    = document.getElementById('cart-agree');
+
+    function syncCheckoutBtn() {
+        if (!checkoutBtn || !agreeBox) return;
+        if (agreeBox.checked) {
+            checkoutBtn.disabled = false;
+            checkoutBtn.style.opacity = '1';
+            checkoutBtn.style.cursor  = 'pointer';
+        } else {
+            checkoutBtn.disabled = true;
+            checkoutBtn.style.opacity = '0.45';
+            checkoutBtn.style.cursor  = 'not-allowed';
+        }
+    }
+
+    if (agreeBox) {
+        agreeBox.addEventListener('change', syncCheckoutBtn);
+        syncCheckoutBtn(); // начальное состояние
+    }
+
+    if (checkoutBtn) {
+        checkoutBtn.addEventListener('click', function () {
+            if (!this.disabled) {
+                window.location.href = '{{ route("checkout") }}';
+            }
+        });
+    }
 })();
 </script>
 @endpush

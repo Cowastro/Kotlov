@@ -104,7 +104,9 @@
         </div>
     </noscript>
 
-    @include('partials.mobile-nav')
+    {{-- УСТАРЕВШИЙ PARTIAL: mobile-nav.blade.php относится к старому layout (app.blade.php).
+         Актуальная мобильная навигация находится в partials/modals.blade.php (layouts/amerce.blade.php).
+         @include('partials.mobile-nav') --}}
     @include('partials.header')
 
     @yield('content')

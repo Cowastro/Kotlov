@@ -18,7 +18,7 @@
                         <p class="text-caption-01">Статьи</p>
                     @endif
                 </div>
-                <h3>{{ $activeCategory ? $activeCategory->name : 'Статьи и советы' }}</h3>
+                <h1 class="h3">{{ $activeCategory ? $activeCategory->name : 'Статьи об отоплении' }}</h1>
                 <p class="text-body-1 cl-text-2">
                     Экспертные советы по выбору отопительного оборудования,<br class="d-none d-lg-block">
                     обзоры техники и руководства по монтажу.
@@ -29,7 +29,6 @@
 
     {{-- Блог --}}
     <section class="section-blog flat-spacing">
-        <h3 class="d-none">Статьи об отоплении</h3>
         <div class="container">
             <div class="row">
 

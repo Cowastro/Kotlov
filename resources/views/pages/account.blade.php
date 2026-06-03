@@ -111,6 +111,23 @@
                         <div id="account-tab-orders" class="account-tab">
                             <h4 class="account-title">Мои заказы</h4>
 
+                            @php
+                                // Правильные статусы из Order::STATUSES
+                                $orderStatusMap = [
+                                    'new'        => ['label' => 'Новый',        'class' => 'stt-pending'],
+                                    'confirmed'  => ['label' => 'Подтверждён',  'class' => 'stt-processing'],
+                                    'processing' => ['label' => 'В обработке',  'class' => 'stt-processing'],
+                                    'shipped'    => ['label' => 'Отправлен',    'class' => 'stt-processing'],
+                                    'delivered'  => ['label' => 'Доставлен',    'class' => 'stt-completed'],
+                                    'cancelled'  => ['label' => 'Отменён',      'class' => 'stt-cancelled'],
+                                ];
+                                $paymentLabels = [
+                                    'cash'    => 'Наличными',
+                                    'card'    => 'Картой',
+                                    'invoice' => 'По счёту',
+                                ];
+                            @endphp
+
                             @if ($orders->count() > 0)
                                 <div class="overflow-auto">
                                     <table class="table-my_recent">
@@ -124,15 +141,24 @@
                                         </thead>
                                         <tbody>
                                             @foreach ($orders as $order)
+                                                @php $st = $orderStatusMap[$order->status] ?? ['label' => $order->status, 'class' => '']; @endphp
                                                 <tr class="tb-order-item">
-                                                    <td class="tb-order_code fw-medium">#{{ $order->id }}</td>
+                                                    <td class="tb-order_code fw-medium">
+                                                        <p class="mb-0">{{ $order->number }}</p>
+                                                        <p class="text-caption-01 cl-text-3 mb-0">
+                                                            {{ $order->created_at?->format('d.m.Y') }}
+                                                        </p>
+                                                        <p class="text-caption-01 cl-text-3 mb-0">
+                                                            {{ $paymentLabels[$order->payment_type] ?? $order->payment_type }}
+                                                        </p>
+                                                    </td>
                                                     <td>
                                                         @if ($order->items && $order->items->count())
                                                             @foreach ($order->items->take(2) as $item)
                                                                 <div class="tb-order_product">
                                                                     <div class="infor-prd">
                                                                         <p class="prd_name fw-medium lh-24 mb-0">
-                                                                            {{ Str::limit($item->product->name ?? 'Товар удалён', 40) }}
+                                                                            {{ Str::limit($item->product_name ?? 'Товар удалён', 40) }}
                                                                         </p>
                                                                         <p class="prd_type cl-text-2 text-caption-01 mb-0">
                                                                             {{ $item->quantity }} шт. × {{ number_format($item->price, 2, '.', ' ') }} BYN
@@ -150,21 +176,9 @@
                                                         @endif
                                                     </td>
                                                     <td class="tb-order_price fw-medium">
-                                                        {{ number_format($order->total_price ?? 0, 2, '.', ' ') }} BYN
+                                                        {{ number_format($order->total ?? 0, 2, '.', ' ') }} BYN
                                                     </td>
                                                     <td>
-                                                        @php
-                                                            $statusMap = [
-                                                                'pending'    => ['label' => 'Ожидает',    'class' => 'stt-pending'],
-                                                                'processing' => ['label' => 'В обработке','class' => 'stt-processing'],
-                                                                'paid'       => ['label' => 'Оплачен',    'class' => 'stt-completed'],
-                                                                'shipped'    => ['label' => 'Отправлен',  'class' => 'stt-processing'],
-                                                                'delivered'  => ['label' => 'Доставлен',  'class' => 'stt-completed'],
-                                                                'completed'  => ['label' => 'Выполнен',   'class' => 'stt-completed'],
-                                                                'cancelled'  => ['label' => 'Отменён',    'class' => 'stt-cancelled'],
-                                                            ];
-                                                            $st = $statusMap[$order->status] ?? ['label' => $order->status, 'class' => ''];
-                                                        @endphp
                                                         <div class="tb-order_status text-label {{ $st['class'] }}">
                                                             {{ $st['label'] }}
                                                         </div>

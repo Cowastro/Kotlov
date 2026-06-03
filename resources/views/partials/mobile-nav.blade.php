@@ -1,3 +1,13 @@
+{{--
+    УСТАРЕВШИЙ PARTIAL — не используется в актуальном проекте.
+
+    Этот файл подключался только в layouts/app.blade.php (старый layout).
+    Актуальный layout: layouts/amerce.blade.php
+    Актуальная мобильная навигация: partials/modals.blade.php → #mobileMenu + .tf-toolbar-bottom
+
+    Файл оставлен для истории. Include закомментирован в layouts/app.blade.php.
+--}}
+
 <div class="mob_nav">
     <ul class="mob_nav_menu flex">
         <li><a href="/catalog">Каталог</a></li>
