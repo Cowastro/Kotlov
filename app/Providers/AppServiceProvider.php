@@ -12,12 +12,12 @@ class AppServiceProvider extends ServiceProvider
 {
     public function boot(): void
     {
-        // View::share — доступно во ВСЕХ вьюхах включая @include партиалы
+  
         View::share('navCategories', $this->getNavCategories());
         View::share('navBrands', $this->getNavBrands());
     }
 
- // Временно — убираем кеш чтобы исключить его как причину
+
 private function getNavBrands(): \Illuminate\Support\Collection
 {
     return Brand::active()
