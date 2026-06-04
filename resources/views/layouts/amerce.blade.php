@@ -16,7 +16,7 @@
     <link rel="stylesheet" href="{{ asset('assets/css/photoswipe.css') }}">
     <link rel="stylesheet" href="{{ asset('assets/css/animate.css') }}">
     <link rel="stylesheet" href="{{ asset('assets/css/styles.css') }}">
-    <link rel="stylesheet" href="{{ asset('assets/css/kotlov.css') }}">
+    <link rel="stylesheet" href="{{ asset('assets/css/kotlov.css') }}?v={{ filemtime(public_path('assets/css/kotlov.css')) }}">
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -48,7 +48,7 @@
     <script src="{{ asset('assets/js/carousel.js') }}"></script>
     <script src="{{ asset('assets/js/plugin/drift.min.js') }}"></script>
     <script src="{{ asset('assets/js/main.js') }}"></script>
-    <script src="{{ asset('assets/js/shop.js') }}"></script>
+    <script src="{{ asset('assets/js/shop.js') }}?v={{ filemtime(public_path('assets/js/shop.js')) }}"></script>
     <script src="{{ asset('assets/js/plugin/photoswipe-lightbox.umd.min.js') }}"></script>
     <script src="{{ asset('assets/js/plugin/photoswipe.umd.min.js') }}"></script>
 

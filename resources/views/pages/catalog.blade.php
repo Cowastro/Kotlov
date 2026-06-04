@@ -399,7 +399,7 @@
                         </div>
 
                         {{-- Сетка товаров --}}
-                        <div class="wrapper-shop tf-grid-layout tf-col-3" id="gridLayout">
+                        <div class="wrapper-shop tf-grid-layout tf-col-2 md-col-3" id="gridLayout">
                             @forelse ($products as $product)
                                 @include('partials.product-card', ['product' => $product])
                             @empty

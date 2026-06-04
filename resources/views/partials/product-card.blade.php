@@ -77,11 +77,11 @@
         @if ($product->is_sale || $product->is_new || $product->is_featured)
             <ul class="product-badge_list">
                 @if ($product->is_sale)
-                    <li class="product-badge_item text-caption-01 sale">Акция</li>
+                    <li class="product-badge_item text-caption-01 sale"><span class="badge-label-full">Акция</span><span class="badge-label-mobile">%</span></li>
                 @elseif ($product->is_new)
-                    <li class="product-badge_item text-caption-01 new">Новинка</li>
+                    <li class="product-badge_item text-caption-01 new"><span class="badge-label-full">Новинка</span><span class="badge-label-mobile">NEW</span></li>
                 @elseif ($product->is_featured)
-                    <li class="product-badge_item text-caption-01 sale">Хит продаж</li>
+                    <li class="product-badge_item text-caption-01 sale"><span class="badge-label-full">Хит продаж</span><span class="badge-label-mobile">Хит</span></li>
                 @endif
             </ul>
         @endif
@@ -89,8 +89,10 @@
         <div class="product-action_bot">
             <a href="#shoppingCart"
                 class="tf-btn btn-white small w-100 btn-add-to-cart"
-                data-product-id="{{ $product->id }}">
-                В корзину
+                data-product-id="{{ $product->id }}"
+                aria-label="Добавить {{ $product->name }} в корзину">
+                <i class="icon icon-Handbag"></i>
+                <span class="add-to-cart-label">В корзину</span>
             </a>
         </div>
     </div>
