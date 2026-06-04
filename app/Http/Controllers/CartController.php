@@ -46,11 +46,7 @@ class CartController extends Controller
         if (isset($cart[$id])) {
             $cart[$id]['quantity'] = min($cart[$id]['quantity'] + $qty, 999);
         } else {
-            $images   = $product->images ?? [];
-            $imgFile  = $images[0] ?? null;
-            $imgUrl   = $imgFile
-                ? 'https://kotlov.by/images/product/' . $imgFile
-                : null;
+            $imgUrl = $product->image_url;
 
             $cart[$id] = [
                 'id'             => $id,

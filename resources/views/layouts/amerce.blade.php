@@ -154,10 +154,14 @@
         }
 
         // Загрузить данные корзины и отрисовать
+        // Счётчик запросов: рендерим только если это последний запрос
+        var _cartLoadSeq = 0;
         function loadMiniCart() {
+            var seq = ++_cartLoadSeq;
             fetch('/cart/data', { headers: { 'Accept': 'application/json' } })
                 .then(function (r) { return r.json(); })
                 .then(function (data) {
+                    if (seq !== _cartLoadSeq) return; // пришёл устаревший ответ — игнорируем
                     updateCartCount(data.count);
                     renderMiniCart(data);
                     updateThreshold(data);

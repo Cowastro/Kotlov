@@ -163,9 +163,10 @@
                                 <td class="compare-col compare-title">Корзина</td>
                                 @foreach ($products as $product)
                                     <td class="compare-col compare-value">
-                                        <a href="#shoppingCart" class="tf-btn s-small animate-btn"
-                                            data-bs-toggle="offcanvas">
-                                            <span class="text-caption-01">В корзину</span>
+                                        <a href="#shoppingCart"
+                                            class="tf-btn s-small animate-btn btn-add-to-cart"
+                                            data-product-id="{{ $product->id }}">
+                                            В корзину
                                         </a>
                                     </td>
                                 @endforeach
