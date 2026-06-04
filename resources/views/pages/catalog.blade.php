@@ -4,7 +4,7 @@
 <main id="wrapper">
 
     {{-- Заголовок страницы --}}
-    <section class="section-page-title text-center flat-spacing-2 pb-0 wow fadeIn">
+    <section class="section-page-title text-center flat-spacing-2 pb-0">
         <div class="container">
             <div class="main-page-title">
                 <div class="breadcrumbs">
