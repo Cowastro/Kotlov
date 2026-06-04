@@ -25,3 +25,10 @@ _ide_helper.php
 Homestead.json
 Homestead.yaml
 Thumbs.db
+
+# Chrome CDP temp files
+.chrome-cdp/
+.chrome-cdp-local/
+.chrome-diagnostic/
+.tmp-prod-*.html
+catalog-diagnostic.png
