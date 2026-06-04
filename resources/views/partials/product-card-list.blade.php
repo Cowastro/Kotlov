@@ -14,6 +14,17 @@
         : null;
 
     $productUrl = '/' . ($product->category->slug ?? 'catalog') . '/' . $product->slug;
+
+    $quickViewImages = collect($product->images ?: [$product->main_image])
+        ->filter()
+        ->keys()
+        ->map(fn ($index) => $product->imageUrl($index))
+        ->values()
+        ->all();
+
+    if (empty($quickViewImages)) {
+        $quickViewImages = [$product->image_url];
+    }
 @endphp
 
 <div class="card-product product-style_list">
@@ -123,7 +134,16 @@
                 </a>
             </li>
             <li>
-                <a href="#quickView" data-bs-toggle="offcanvas" class="hover-tooltip box-icon">
+                <a href="#quickView" data-bs-toggle="offcanvas"
+                    data-product-id="{{ $product->id }}"
+                    data-name="{{ $product->name }}"
+                    data-price="{{ $price }}"
+                    data-category="{{ $product->category->name ?? '' }}"
+                    data-description="{{ Str::limit(strip_tags($product->short_description ?: $product->content ?: 'Описание товара отсутствует.'), 240) }}"
+                    data-image="{{ $product->image_url }}"
+                    data-images='@json($quickViewImages)'
+                    data-url="{{ $productUrl }}"
+                    class="hover-tooltip box-icon">
                     <span class="icon icon-Eye"></span>
                     <span class="tooltip">Быстрый просмотр</span>
                 </a>

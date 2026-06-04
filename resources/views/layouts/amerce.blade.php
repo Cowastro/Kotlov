@@ -48,6 +48,7 @@
     <script src="{{ asset('assets/js/carousel.js') }}"></script>
     <script src="{{ asset('assets/js/plugin/drift.min.js') }}"></script>
     <script src="{{ asset('assets/js/main.js') }}"></script>
+    <script src="{{ asset('assets/js/shop.js') }}"></script>
     <script src="{{ asset('assets/js/plugin/photoswipe-lightbox.umd.min.js') }}"></script>
     <script src="{{ asset('assets/js/plugin/photoswipe.umd.min.js') }}"></script>
 

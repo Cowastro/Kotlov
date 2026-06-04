@@ -1,6 +1,64 @@
 (function ($) {
     "use strict";
 
+    /* Quick View
+    -------------------------------------------------------------------------------------*/
+    var quickView = function () {
+        $(document).on("click", 'a[href="#quickView"][data-product-id]', function () {
+            var button = this;
+            var productId = button.dataset.productId || "";
+            var name = button.dataset.name || "";
+            var price = button.dataset.price || "";
+            var category = button.dataset.category || "";
+            var description = button.dataset.description || "";
+            var image = button.dataset.image || "/img/products/product-placeholder.jpg";
+            var url = button.dataset.url || "#";
+            var images = [];
+
+            try {
+                images = JSON.parse(button.dataset.images || "[]");
+            } catch (error) {
+                images = [];
+            }
+
+            if (!Array.isArray(images) || images.length === 0) {
+                images = [image];
+            }
+
+            $("#quickView-name").text(name);
+            $("#quickView-price").text(price);
+            $("#quickView-category").text(category);
+            $("#quickView-desc").text(description);
+            $("#quickView-detail-link").attr("href", url);
+
+            var imagesContainer = $("#quickView-images").empty();
+
+            images.forEach(function (imageUrl, index) {
+                var imageElement = $("<img>", {
+                    class: "aspect-ratio-1",
+                    loading: "lazy",
+                    width: 340,
+                    height: 444,
+                    src: imageUrl,
+                    alt: name,
+                }).on("error", function () {
+                    this.src = "/img/products/product-placeholder.jpg";
+                });
+
+                if (index === 0) {
+                    imageElement.attr("id", "quickView-img-main");
+                }
+
+                $("<div>", {
+                    class: "image item-scroll-quickview",
+                }).append(imageElement).appendTo(imagesContainer);
+            });
+
+            var addToCart = $("#quickView .btn-action-price");
+            addToCart.addClass("btn-add-to-cart").attr("data-product-id", productId);
+        });
+    };
+
     /* Range Two Price
   -------------------------------------------------------------------------------------*/
     var rangeTwoPrice = function () {
@@ -809,12 +867,6 @@
 
 
     $(function () {
-        rangeTwoPrice();
-        filterProducts();
-        filterSort();
-        loadProduct();
-        handleDropdownFilter();
-        swLayoutShop();
-        limitLayout();
+        quickView();
     });
 })(jQuery);
