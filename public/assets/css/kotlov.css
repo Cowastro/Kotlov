@@ -779,39 +779,3 @@ body {
         line-height: 1.3;
     }
 }
-
-/* ── Mini-cart mobile fix ───────────────────────────────── */
-@media (max-width: 767px) {
-    #shoppingCart.popup-shopping-cart {
-        width: min(380px, calc(100vw - 16px)) !important;
-        max-width: 100vw !important;
-    }
-
-    /* Скрываем блок рекомендаций — он добавляет лишнюю ширину */
-    #shoppingCart .tf-minicart-recommendations {
-        display: none !important;
-    }
-
-    /* Основной блок корзины занимает всю ширину */
-    #shoppingCart .canvas-wrapper {
-        width: 100%;
-        min-width: 0;
-    }
-
-    /* Убираем горизонтальный padding чтобы контент не вылезал */
-    #shoppingCart .popup-header {
-        padding: 16px 16px 12px;
-    }
-
-    #shoppingCart .tf-mini-cart-bottom-wrap {
-        padding: 0 16px 16px;
-    }
-
-    #shoppingCart .tf-mini-cart-tool {
-        padding: 12px 16px;
-    }
-
-    #shoppingCart .tf-mini-cart-items {
-        padding: 0 16px;
-    }
-}
