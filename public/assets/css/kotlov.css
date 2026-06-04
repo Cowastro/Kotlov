@@ -780,5 +780,40 @@ body {
     }
 }
 
-/* mini-cart image fix */
-.tf-mini-cart-image img { height: 100px; width: 100px; object-fit: cover; }
+/* ── Mini-cart mobile: карточка товара ──────────────────── */
+@media (max-width: 767px) {
+    /* 1. Карточка: flex-wrap — price уходит на вторую строку */
+    .popup-shopping-cart .tf-mini-cart-item {
+        flex-wrap: wrap;
+        align-items: flex-start;
+        gap: 10px;
+    }
+
+    /* 2. Фото: фиксированный квадрат, не растягивается */
+    .popup-shopping-cart .tf-mini-cart-image {
+        width: 72px;
+        max-width: 72px;
+        flex-shrink: 0;
+    }
+    .popup-shopping-cart .tf-mini-cart-image img {
+        width: 72px !important;
+        height: 72px !important;
+        aspect-ratio: 1 !important;
+        object-fit: cover;
+    }
+
+    /* 3. Info: занимает остаток строки, текст не выходит за край */
+    .popup-shopping-cart .tf-mini-cart-info {
+        flex: 1;
+        min-width: 0;
+    }
+
+    /* 4. Price: вся ширина под фото+info, отступ = фото+gap */
+    .popup-shopping-cart .tf-mini-cart-price {
+        width: 100%;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding-left: 82px;
+    }
+}
