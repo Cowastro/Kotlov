@@ -808,12 +808,48 @@ body {
         min-width: 0;
     }
 
-    /* 4. Price: вся ширина под фото+info, отступ = фото+gap */
+    /* 4. Price: убираем жёсткий padding-left, не выходит за край */
     .popup-shopping-cart .tf-mini-cart-price {
         width: 100%;
         display: flex;
-        justify-content: space-between;
+        flex-wrap: wrap;
         align-items: center;
-        padding-left: 82px;
+        gap: 4px 8px;
+        padding-left: 0;
+    }
+    .popup-shopping-cart .tf-mini-cart-price .mini-cart-remove {
+        order: 2;
+        margin-left: auto;
+    }
+
+    /* 5. Пустой блок: убираем абсолютную прокрутку на мобильном */
+    .popup-shopping-cart .tf-mini-cart-main {
+        flex: 0 0 auto;
+    }
+    .popup-shopping-cart .tf-mini-cart-sroll {
+        position: relative;
+        top: auto;
+        left: auto;
+        bottom: auto;
+        right: auto;
+        overflow: visible;
+    }
+    .popup-shopping-cart .tf-mini-cart-items {
+        height: auto;
+    }
+
+    /* 6. Купон/Заметка/Доставка: меньше padding и иконка */
+    .popup-shopping-cart .tf-mini-cart-tool-btn {
+        padding: 8px 6px;
+        font-size: 12px;
+    }
+    .popup-shopping-cart .tf-mini-cart-tool-btn .icon {
+        font-size: 16px;
+    }
+
+    /* 7. Корзина / Оформить заказ: вертикально, не обрезается */
+    .popup-shopping-cart .tf-mini-cart-view-checkout {
+        flex-direction: column;
+        gap: 8px;
     }
 }
