@@ -123,12 +123,21 @@ class Product extends Model
             return '/proxy-image/product/' . $path;
         }
 
-        // Просто имя файла — строим путь по ID товара
-        // Структура: product/{floor(id/1000) pad 3}/{id pad 6}/filename
-        $dir1 = str_pad((string) (int) floor($this->id / 1000), 3, '0', STR_PAD_LEFT);
-        $dir2 = str_pad((string) $this->id, 6, '0', STR_PAD_LEFT);
+        // Просто имя файла — строим путь по SKU (логика DirectoryManager)
+        // SKU вида PS-010.397 → product/0010/010397
+        $sku = $this->sku ?? '';
+        $skuParts = explode('.', $sku);
+        $firstRaw = explode('-', $skuParts[0] ?? '')[1] ?? null;
+        $secondRaw = $skuParts[1] ?? null;
 
-        return '/proxy-image/product/' . $dir1 . '/' . $dir2 . '/' . $path;
+        if ($firstRaw !== null && $secondRaw !== null) {
+            $n1 = (int) $firstRaw;
+            $dir1 = sprintf('00%d', $n1);                                    // "00" + число: 10 → "0010", 0 → "000"
+            $dir2 = sprintf('%s%03d', str_pad($n1, 3, '0', STR_PAD_LEFT), (int) $secondRaw); // "010" + "397" → "010397"
+            return '/proxy-image/product/' . $dir1 . '/' . $dir2 . '/' . $path;
+        }
+
+        return $placeholder;
     }
 
     // Процент скидки
