@@ -447,7 +447,7 @@
                                         Открыть профиль
                                     </button>
                                     @endif
-                                    <a href="/contacts?installer={{ $installer->id }}"
+                                    <a href="{{ route('install-requests.create', ['installer' => $installer->id]) }}"
                                        class="tf-btn animate-btn flex-grow-1 text-center"
                                        style="font-size:13px;padding:8px 10px;">Оставить заявку</a>
                                 </div>

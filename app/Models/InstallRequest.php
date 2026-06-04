@@ -14,6 +14,7 @@ class InstallRequest extends Model
         'product_id',
         'customer_name',
         'customer_phone',
+        'customer_email',
         'description',
         'region',
         'city',

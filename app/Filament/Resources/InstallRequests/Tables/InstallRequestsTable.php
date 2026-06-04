@@ -24,6 +24,11 @@ class InstallRequestsTable
                 TextColumn::make('customer_phone')
                     ->label('Телефон')
                     ->searchable(),
+                TextColumn::make('customer_email')
+                    ->label('Email')
+                    ->searchable()
+                    ->placeholder('-')
+                    ->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('specialization')
                     ->label('Тип работ')
                     ->badge()

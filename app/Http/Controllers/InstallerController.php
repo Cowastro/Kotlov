@@ -93,4 +93,32 @@ class InstallerController extends Controller
             'reviewsCount'
         ));
     }
+
+    public function show(string $slug)
+    {
+        $installer = InstallerProfile::query()
+            ->where('slug', $slug)
+            ->where('is_published', true)
+            ->where('status', 'active')
+            ->with([
+                'works' => fn ($q) => $q->where('is_published', true)
+                                        ->orderByDesc('completed_at'),
+                'reviews' => fn ($q) => $q->where('is_approved', true)
+                                          ->latest(),
+                'user',
+            ])
+            ->firstOrFail();
+
+        $specLabels = [
+            'heating'       => 'Монтаж котлов',
+            'heatpump'      => 'Монтаж тепловых насосов',
+            'fireplace'     => 'Монтаж каминов и печей',
+            'chimney'       => 'Монтаж дымоходов',
+            'sauna'         => 'Монтаж банных печей',
+            'service'       => 'Сервис котлов',
+            'commissioning' => 'Пусконаладка',
+        ];
+
+        return view('pages.installer-profile', compact('installer', 'specLabels'));
+    }
 }

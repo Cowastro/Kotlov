@@ -26,6 +26,12 @@ class InstallRequestResource extends Resource
     protected static ?int $navigationSort = 3;
 
     public static function getNavigationGroup(): ?string { return 'Продажи'; }
+
+    public static function getNavigationBadge(): ?string
+    {
+        $count = static::getModel()::where('status', 'new')->count();
+        return $count > 0 ? (string) $count : null;
+    }
     public static function form(Schema $schema): Schema { return InstallRequestForm::configure($schema); }
     public static function infolist(Schema $schema): Schema { return InstallRequestInfolist::configure($schema); }
     public static function table(Table $table): Table { return InstallRequestsTable::configure($table); }

@@ -36,6 +36,10 @@ class InstallRequestForm
                             ->tel()
                             ->required()
                             ->maxLength(255),
+                        TextInput::make('customer_email')
+                            ->label('Email клиента')
+                            ->email()
+                            ->maxLength(255),
                     ]),
 
                 // ── 2. Заявка ─────────────────────────────────────────────

@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\InstallerController;
+use App\Http\Controllers\InstallRequestController;
 use App\Http\Controllers\BlogController;
 use App\Http\Controllers\BrandController;
 use App\Http\Controllers\CartController;
@@ -102,6 +103,9 @@ Route::view('/dostavka',   'pages.dostavka');
 Route::view('/partners',   'pages.partners');
 Route::view('/suppliers',  'pages.suppliers')->name('suppliers');
 Route::get('/installers', [InstallerController::class, 'index'])->name('installers.index');
+Route::get('/installers/{slug}', [InstallerController::class, 'show'])->name('installers.show');
+Route::get('/install-request', [InstallRequestController::class, 'create'])->name('install-requests.create');
+Route::post('/install-request', [InstallRequestController::class, 'store'])->name('install-requests.store');
 Route::view('/reviews',    'pages.reviews');
 Route::view('/faq',        'pages.faq');
 Route::view('/privacy',    'pages.privacy');

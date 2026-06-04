@@ -23,6 +23,9 @@ class InstallRequestInfolist
                             ->label('Имя клиента'),
                         TextEntry::make('customer_phone')
                             ->label('Телефон'),
+                        TextEntry::make('customer_email')
+                            ->label('Email клиента')
+                            ->placeholder('-'),
                     ]),
 
                 Section::make('Заявка')
