@@ -80,7 +80,7 @@
                                     @endforeach
                                     <li>
                                         <a href="/{{ $rootCat->slug }}" class="sub-menu_link cl-text-2">
-                                            Đ’ŃĐµ
+                                            Все
                                         </a>
                                     </li>
                                 </ul>
