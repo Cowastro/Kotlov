@@ -679,8 +679,10 @@ body {
     }
 
     #gridLayout .product-action_list {
-        top: 6px;
-        right: 6px;
+        top: auto;
+        right: 46px;
+        bottom: 6px;
+        flex-direction: row;
         gap: 4px;
     }
 
@@ -690,11 +692,16 @@ body {
 
     #gridLayout .product-action_list .compare {
         display: block !important;
+        order: 2;
+    }
+
+    #gridLayout .product-action_list > li:last-child {
+        order: 1;
     }
 
     #gridLayout .product-action_list .box-icon {
-        width: 34px;
-        height: 34px;
+        width: 36px;
+        height: 36px;
         font-size: 16px;
     }
 
