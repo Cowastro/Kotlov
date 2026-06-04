@@ -45,11 +45,7 @@
 
                                 @foreach ($products as $product)
                                     @php
-                                        $images = is_array($product->images) ? $product->images : [];
-                                        $img = $images[0] ?? null;
-                                        $imgUrl = $img
-                                            ? 'https://kotlov.by/images/product/' . $img
-                                            : asset('img/products/product-placeholder.jpg');
+                                        $imgUrl = $product->image_url;
                                         $productUrl = '/' . ($product->category->slug ?? 'catalog') . '/' . $product->slug;
                                     @endphp
                                     <th class="compare-col compare-head">

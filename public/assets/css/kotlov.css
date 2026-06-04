@@ -684,9 +684,12 @@ body {
         gap: 4px;
     }
 
-    #gridLayout .product-action_list .wishlist,
-    #gridLayout .product-action_list .compare {
+    #gridLayout .product-action_list .wishlist {
         display: none;
+    }
+
+    #gridLayout .product-action_list .compare {
+        display: block !important;
     }
 
     #gridLayout .product-action_list .box-icon {

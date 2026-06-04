@@ -32,16 +32,30 @@
             $("#quickView-detail-link").attr("href", url);
 
             var imagesContainer = $("#quickView-images").empty();
+            imagesContainer.scrollTop(0).scrollLeft(0);
+            var card = button.closest(".card-product");
+            var cardImage = card ? card.querySelector(".img-product") : null;
 
             images.forEach(function (imageUrl, index) {
-                var imageElement = $("<img>", {
-                    class: "aspect-ratio-1",
-                    loading: "lazy",
-                    width: 340,
-                    height: 444,
-                    src: imageUrl,
-                    alt: name,
-                }).on("error", function () {
+                var imageElement;
+
+                if (index === 0 && cardImage && cardImage.complete && cardImage.naturalWidth > 0) {
+                    imageElement = $(cardImage.cloneNode());
+                    imageElement.removeClass("img-product").addClass("aspect-ratio-1");
+                    imageElement.attr({ loading: "eager", width: 340, height: 444, alt: name });
+                } else {
+                    imageElement = $("<img>", {
+                        class: "aspect-ratio-1",
+                        loading: index === 0 ? "eager" : "lazy",
+                        width: 340,
+                        height: 444,
+                        src: imageUrl,
+                        alt: name,
+                    });
+                }
+
+                imageElement.on("error", function () {
+                    this.onerror = null;
                     this.src = "/img/products/product-placeholder.jpg";
                 });
 

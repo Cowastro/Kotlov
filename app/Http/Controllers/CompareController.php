@@ -102,15 +102,11 @@ class CompareController extends Controller
             $items->filter(fn($i) => $i->product)
                   ->map(function ($i) {
                       $p = $i->product;
-                      $images = is_array($p->images) ? $p->images : [];
-                      $img = $images[0] ?? null;
                       return [
                           'id'    => $p->id,
                           'name'  => $p->name,
                           'url'   => '/' . ($p->category->slug ?? 'catalog') . '/' . $p->slug,
-                          'image' => $img
-                              ? 'https://kotlov.by/images/product/' . $img
-                              : asset('img/products/product-placeholder.jpg'),
+                          'image' => $p->image_url,
                       ];
                   })->values()
         );
