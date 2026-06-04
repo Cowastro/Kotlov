@@ -582,3 +582,7 @@ body {
 .mega-links .tf-grid-layout {
     gap: 16px 24px !important;
 }
+
+.tf-footer .tf-swiper .swiper-wrapper {
+    height: auto;
+}

@@ -208,11 +208,11 @@ Route::get('/proxy-image/{path}', function ($path) {
                 ->header('Cache-Control', 'public, max-age=604800');
         }
 
-        return response()->file(public_path('images/default-image.jpg'), [
+        return response()->file(public_path('img/products/product-placeholder.jpg'), [
             'Content-Type' => 'image/jpeg',
         ]);
     } catch (\Exception $e) {
-        return response()->file(public_path('images/default-image.jpg'), [
+        return response()->file(public_path('img/products/product-placeholder.jpg'), [
             'Content-Type' => 'image/jpeg',
         ]);
     }
