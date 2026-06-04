@@ -779,3 +779,6 @@ body {
         line-height: 1.3;
     }
 }
+
+/* mini-cart image fix */
+.tf-mini-cart-image img { height: 100px; width: 100px; object-fit: cover; }
