@@ -9,7 +9,7 @@
                 data-pagination-sm="2" data-pagination-md="3" data-pagination-lg="4">
                 <div class="swiper-wrapper">
                     <div class="swiper-slide">
-                        <div class="box-icon_V01 style-3 wow fadeInLeft">
+                        <div class="box-icon_V01 style-3">
                             <span class="icon text-white"><i class="icon-Truck"></i></span>
                             <div class="content">
                                 <div class="h6 title text-white">Доставка по Беларуси</div>
@@ -18,7 +18,7 @@
                         </div>
                     </div>
                     <div class="swiper-slide">
-                        <div class="box-icon_V01 style-3 wow fadeInLeft">
+                        <div class="box-icon_V01 style-3">
                             <span class="icon text-white"><i class="icon-Headset"></i></span>
                             <div class="content">
                                 <div class="h6 title text-white">Консультация специалиста</div>
@@ -27,7 +27,7 @@
                         </div>
                     </div>
                     <div class="swiper-slide">
-                        <div class="box-icon_V01 style-3 wow fadeInLeft">
+                        <div class="box-icon_V01 style-3">
                             <span class="icon text-white"><i class="icon-GearSix"></i></span>
                             <div class="content">
                                 <div class="h6 title text-white">Монтаж под ключ</div>
@@ -36,7 +36,7 @@
                         </div>
                     </div>
                     <div class="swiper-slide">
-                        <div class="box-icon_V01 style-3 wow fadeInLeft">
+                        <div class="box-icon_V01 style-3">
                             <span class="icon text-white"><i class="icon-SealPercent"></i></span>
                             <div class="content">
                                 <div class="h6 title text-white">Официальная гарантия</div>
