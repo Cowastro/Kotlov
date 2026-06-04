@@ -1,18 +1,8 @@
 {{-- resources/views/partials/product-card.blade.php --}}
 
 @php
-    $image = is_array($product->images) ? ($product->images[0] ?? null) : null;
-
-    if ($image) {
-        // Фото берём с живого сайта kotlov.by
-        $imageUrl = 'https://kotlov.by/images/product/' . $image;
-        $imageHover = isset($product->images[1])
-            ? 'https://kotlov.by/images/product/' . $product->images[1]
-            : $imageUrl;
-    } else {
-        $imageUrl = asset('img/products/product-placeholder.jpg');
-        $imageHover = $imageUrl;
-    }
+    $imageUrl   = $product->image_url;
+    $imageHover = $product->imageUrl(1);
 
     $price = $product->price > 0
         ? number_format($product->price, 2, '.', ' ') . ' BYN'

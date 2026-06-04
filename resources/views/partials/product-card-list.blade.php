@@ -2,11 +2,9 @@
 {{-- List view — детальная карточка товара --}}
 
 @php
-    $image = is_array($product->images) ? ($product->images[0] ?? null) : null;
-    $image2 = is_array($product->images) ? ($product->images[1] ?? null) : null;
     $placeholder = asset('img/products/product-placeholder.jpg');
-    $imageUrl = $image ? 'https://kotlov.by/images/product/' . $image : $placeholder;
-    $imageUrl2 = $image2 ? 'https://kotlov.by/images/product/' . $image2 : $imageUrl;
+    $imageUrl  = $product->image_url;
+    $imageUrl2 = $product->imageUrl(1);
 
     $price = $product->price > 0
         ? number_format($product->price, 2, '.', ' ') . ' BYN'

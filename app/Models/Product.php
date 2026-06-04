@@ -80,10 +80,51 @@ class Product extends Model
             ->orderBy('attribute_id');
     }
 
-    // Первое фото
+    // Первое фото (сырое имя/путь из БД)
     public function getMainImageAttribute(): ?string
     {
         return $this->images[0] ?? null;
+    }
+
+    // URL первого фото через proxy (или placeholder)
+    public function getImageUrlAttribute(): string
+    {
+        return $this->imageUrl(0);
+    }
+
+    // URL фото по индексу через proxy (или placeholder)
+    public function imageUrl(int $index = 0): string
+    {
+        $placeholder = asset('img/products/product-placeholder.jpg');
+
+        $images = $this->images;
+
+        if (is_string($images)) {
+            $images = json_decode($images, true);
+        }
+
+        if (!is_array($images) || empty($images)) {
+            return $placeholder;
+        }
+
+        $path = $images[$index] ?? $images[0] ?? null;
+
+        if (!$path) {
+            return $placeholder;
+        }
+
+        // product/0012/012278/file.jpg — уже полный путь
+        if (str_starts_with($path, 'product/')) {
+            return '/proxy-image/' . $path;
+        }
+
+        // 0012/012278/file.jpg — путь относительно product/
+        if (substr_count($path, '/') >= 2) {
+            return '/proxy-image/product/' . $path;
+        }
+
+        // Просто имя файла без папки — не можем построить путь
+        return $placeholder;
     }
 
     // Процент скидки
