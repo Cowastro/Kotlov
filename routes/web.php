@@ -188,6 +188,34 @@ Route::middleware('auth')->group(function () {
     Route::post('/account/b2b-request', [AccountController::class, 'b2bRequest'])->name('account.b2b-request');
 });
 
+// ===== Прокси изображений со старого сайта =====
+Route::get('/proxy-image/{path}', function ($path) {
+    if (str_contains($path, '..')) {
+        abort(403);
+    }
+
+    $baseUrl = rtrim(env('LEGACY_SITE_URL', 'https://kotlov.by'), '/');
+    $url = "{$baseUrl}/images/{$path}";
+
+    try {
+        $response = \Illuminate\Support\Facades\Http::timeout(10)->get($url);
+
+        if ($response->successful()) {
+            return response($response->body(), 200)
+                ->header('Content-Type', $response->header('Content-Type') ?? 'image/jpeg')
+                ->header('Cache-Control', 'public, max-age=604800');
+        }
+
+        return response()->file(public_path('images/default-image.jpg'), [
+            'Content-Type' => 'image/jpeg',
+        ]);
+    } catch (\Exception $e) {
+        return response()->file(public_path('images/default-image.jpg'), [
+            'Content-Type' => 'image/jpeg',
+        ]);
+    }
+})->where('path', '.*');
+
 // ===== Динамические роуты — ПОСЛЕДНИМИ =====
 
 // 1 сегмент — категория

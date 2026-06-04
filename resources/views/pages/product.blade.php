@@ -46,8 +46,8 @@
                                             $images = $product->images ?? [];
                                             $placeholder = asset('img/products/product-placeholder.jpg');
                                         @endphp
-                                        @forelse ($images as $img)
-                                            @php $imgUrl = 'https://kotlov.by/images/product/' . $img; @endphp
+                                        @forelse ($images as $index => $img)
+                                            @php $imgUrl = $product->imageUrl($index); @endphp
                                             <div class="swiper-slide">
                                                 <a href="{{ $imgUrl }}" target="_blank"
                                                     class="item" data-pswp-width="576px" data-pswp-height="768px">
@@ -78,8 +78,8 @@
                                 <div dir="ltr" class="swiper tf-product-media-thumbs other-image-zoom"
                                     data-direction="vertical" data-preview="7">
                                     <div class="swiper-wrapper stagger-wrap">
-                                        @foreach ($images as $img)
-                                            @php $imgUrl = 'https://kotlov.by/images/product/' . $img; @endphp
+                                        @foreach ($images as $index => $img)
+                                            @php $imgUrl = $product->imageUrl($index); @endphp
                                             <div class="swiper-slide stagger-item">
                                                 <div class="item">
                                                     <img loading="lazy" width="82" height="110"
@@ -333,9 +333,8 @@
                 <div class="tf-sticky-atc-product d-flex align-items-center">
                     <div class="atc-product-side">
                         <div class="prd_img">
-                            @php $firstImg = $images[0] ?? null; @endphp
                             <img loading="lazy" width="60" height="80"
-                                src="{{ $firstImg ? 'https://kotlov.by/images/product/' . $firstImg : $placeholder }}"
+                                src="{{ $product->image_url }}"
                                 alt="{{ $product->name }}"
                                 onerror="this.src='{{ $placeholder }}'">
                         </div>
