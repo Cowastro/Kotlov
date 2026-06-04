@@ -113,18 +113,22 @@ class Product extends Model
             return $placeholder;
         }
 
-        // product/0012/012278/file.jpg — уже полный путь
+        // product/000/000065/file.jpg — уже полный путь
         if (str_starts_with($path, 'product/')) {
             return '/proxy-image/' . $path;
         }
 
-        // 0012/012278/file.jpg — путь относительно product/
+        // 000/000065/file.jpg — путь с двумя слешами
         if (substr_count($path, '/') >= 2) {
             return '/proxy-image/product/' . $path;
         }
 
-        // Просто имя файла без папки — не можем построить путь
-        return $placeholder;
+        // Просто имя файла — строим путь по ID товара
+        // Структура: product/{floor(id/1000) pad 3}/{id pad 6}/filename
+        $dir1 = str_pad((string) (int) floor($this->id / 1000), 3, '0', STR_PAD_LEFT);
+        $dir2 = str_pad((string) $this->id, 6, '0', STR_PAD_LEFT);
+
+        return '/proxy-image/product/' . $dir1 . '/' . $dir2 . '/' . $path;
     }
 
     // Процент скидки
