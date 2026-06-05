@@ -21,20 +21,49 @@ class HandleRedirects
         }
 
         // ── Паттерн-редиректы для старого сайта kotlov.by ────────────────────
-        // Старый сайт использовал 3 сегмента: /kotly/{cat}/{slug}
-        // Новый сайт: /{cat}/{slug}
+        //
+        // Логика старого сайта (RoutMap.php):
+        //   2 сегмента: /{section}/{product-slug}   → routeTwo  (товар напрямую в разделе)
+        //   3 сегмента: /{section}/{subcat}/{slug}   → routeTree (товар в подразделе)
+        //
+        // Логика нового сайта:
+        //   Разделы-агрегаторы (/otoplenie, /kaminy, /vodonagrevateli) не содержат товаров.
+        //   Товары и подкатегории живут на уровень выше: /{subcat}/{slug}
+        //
+        // Порядок важен: более специфичные паттерны — выше.
         $legacyPatterns = [
+            // ── /kotly ────────────────────────────────────────────────────────
             // /kotly/{cat}/{slug} → /{cat}/{slug}
-            '~^/kotly/(gazovye|tverdotoplivnye|elektricheskie)/(.+)$~' => '/$1/$2',
-            '~^/kotly/(gazovye|tverdotoplivnye|elektricheskie)$~'       => '/$1',
+            '~^/kotly/(gazovye|tverdotoplivnye|elektricheskie)/(.+)$~'  => '/$1/$2',
+            '~^/kotly/(gazovye|tverdotoplivnye|elektricheskie)$~'        => '/$1',
+
+            // ── /otoplenie ────────────────────────────────────────────────────
+            // /otoplenie/{subcat}/{slug} → /{subcat}/{slug}  (3 сегмента — товар в подразделе)
+            '~^/otoplenie/([a-z0-9][a-z0-9\-_]+)/(.+)$~'               => '/$1/$2',
+            // /otoplenie/{subcat} → /{subcat}  (2 сегмента — страница подраздела)
+            '~^/otoplenie/([a-z0-9][a-z0-9\-_]+)$~'                    => '/$1',
+
+            // ── /kaminy ───────────────────────────────────────────────────────
+            // /kaminy/{subcat}/{slug} → /{subcat}/{slug}  (topki/elektrokamini/oblicovki)
+            '~^/kaminy/(topki|elektrokamini|oblicovki|bio-kaminy)/(.+)$~' => '/$1/$2',
+            // /kaminy/{subcat} → /{subcat}  (страница подраздела)
+            '~^/kaminy/(topki|elektrokamini|oblicovki|bio-kaminy)$~'    => '/$1',
+            // /kaminy/{product-slug} → /topki/{slug}  (товар напрямую в /kaminy)
+            '~^/kaminy/([a-z0-9][a-z0-9\-_\.]+)$~'                    => '/topki/$1',
+
+            // ── /vodonagrevateli ──────────────────────────────────────────────
+            // /vodonagrevateli/{subcat}/{slug} → /{subcat}/{slug}
+            '~^/vodonagrevateli/([a-z0-9][a-z0-9\-_]+)/(.+)$~'        => '/$1/$2',
+            // /vodonagrevateli/{subcat} → /{subcat}
+            '~^/vodonagrevateli/([a-z0-9][a-z0-9\-_]+)$~'             => '/$1',
+
+            // ── /dlya-bani ────────────────────────────────────────────────────
             // /dlya-bani/{slug} → /pechi-dlya-bani/{slug}
             '~^/dlya-bani/(.+)$~'                                       => '/pechi-dlya-bani/$1',
-            // /otoplenie-parts/{slug} → /pechi-kaminy/{slug}
-            '~^/otoplenie-parts/(.+)$~'                                 => '/pechi-kaminy/$1',
-            // /pechi-kaminy-parts/{slug} → /pechi-kaminy/{slug}
-            '~^/pechi-kaminy-parts/(.+)$~'                              => '/pechi-kaminy/$1',
-            // /kaminy/{slug} (старый сайт: топки были напрямую в /kaminy) → /topki/{slug}
-            '~^/kaminy/([a-z0-9][a-z0-9\-_\.]+)$~'                    => '/topki/$1',
+
+            // ── /pechi-kaminy-parts, /otoplenie-parts ─────────────────────────
+            '~^/otoplenie-parts/(.+)$~'                                  => '/pechi-kaminy/$1',
+            '~^/pechi-kaminy-parts/(.+)$~'                               => '/pechi-kaminy/$1',
         ];
 
         foreach ($legacyPatterns as $pattern => $replacement) {
