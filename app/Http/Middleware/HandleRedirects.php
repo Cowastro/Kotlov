@@ -20,6 +20,31 @@ class HandleRedirects
             return $next($request);
         }
 
+        // ── Паттерн-редиректы для старого сайта kotlov.by ────────────────────
+        // Старый сайт использовал 3 сегмента: /kotly/{cat}/{slug}
+        // Новый сайт: /{cat}/{slug}
+        $legacyPatterns = [
+            // /kotly/{cat}/{slug} → /{cat}/{slug}
+            '~^/kotly/(gazovye|tverdotoplivnye|elektricheskie)/(.+)$~' => '/$1/$2',
+            '~^/kotly/(gazovye|tverdotoplivnye|elektricheskie)$~'       => '/$1',
+            // /dlya-bani/{slug} → /pechi-dlya-bani/{slug}
+            '~^/dlya-bani/(.+)$~'                                       => '/pechi-dlya-bani/$1',
+            // /otoplenie-parts/{slug} → /pechi-kaminy/{slug}
+            '~^/otoplenie-parts/(.+)$~'                                 => '/pechi-kaminy/$1',
+            // /pechi-kaminy-parts/{slug} → /pechi-kaminy/{slug}
+            '~^/pechi-kaminy-parts/(.+)$~'                              => '/pechi-kaminy/$1',
+        ];
+
+        foreach ($legacyPatterns as $pattern => $replacement) {
+            if (preg_match($pattern, $path)) {
+                $newPath = preg_replace($pattern, $replacement, $path);
+                $query   = $request->getQueryString();
+                $target  = $newPath . ($query ? '?' . $query : '');
+                return redirect($target, 301);
+            }
+        }
+        // ─────────────────────────────────────────────────────────────────────
+
         $redirect = DB::table('redirects')
             ->where('from_url', $path)
             ->where('is_active', 1)
