@@ -182,7 +182,7 @@ class CatalogController extends Controller
                         ->values()
                         ->all();
 
-                    $query->whereHas('attributeValues', function ($q) use ($allAttrIds, $allOptionIds) {
+                    $query->whereHas('allAttributeValues', function ($q) use ($allAttrIds, $allOptionIds) {
                         $q->whereIn('attribute_id', $allAttrIds)
                           ->whereIn('option_id', $allOptionIds);
                     });

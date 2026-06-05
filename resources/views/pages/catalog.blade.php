@@ -573,7 +573,7 @@ document.addEventListener('DOMContentLoaded', function () {
             if (countList) countList.style.display = 'none';
 
             // Сбрасываем и применяем нужный класс колонок
-            gridLayout.classList.remove('tf-col-2', 'tf-col-3', 'tf-col-4');
+            gridLayout.classList.remove('tf-col-2', 'tf-col-3', 'tf-col-4', 'md-col-3');
             gridLayout.classList.add(layout);
         }
     }

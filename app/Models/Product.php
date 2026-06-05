@@ -64,6 +64,11 @@ class Product extends Model
         return $this->hasMany(ProductView::class);
     }
 
+    public function allAttributeValues(): HasMany
+    {
+        return $this->hasMany(ProductAttributeValue::class);
+    }
+
     public function attributeValues(): HasMany
     {
         return $this->hasMany(ProductAttributeValue::class)
