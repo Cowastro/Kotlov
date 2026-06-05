@@ -33,6 +33,8 @@ class HandleRedirects
             '~^/otoplenie-parts/(.+)$~'                                 => '/pechi-kaminy/$1',
             // /pechi-kaminy-parts/{slug} → /pechi-kaminy/{slug}
             '~^/pechi-kaminy-parts/(.+)$~'                              => '/pechi-kaminy/$1',
+            // /kaminy/{slug} (старый сайт: топки были напрямую в /kaminy) → /topki/{slug}
+            '~^/kaminy/([a-z0-9][a-z0-9\-_\.]+)$~'                    => '/topki/$1',
         ];
 
         foreach ($legacyPatterns as $pattern => $replacement) {
