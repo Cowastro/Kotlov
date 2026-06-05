@@ -26,6 +26,13 @@ Homestead.json
 Homestead.yaml
 Thumbs.db
 
+# Supplier pricelists — Excel files, CSV reports and mapping drafts are never committed
+/storage/app/pricelists/*.xlsx
+/storage/app/pricelists/*.xls
+/storage/app/pricelists/reports/
+/storage/app/pricelists/mappings/
+!/storage/app/pricelists/.gitkeep
+
 # Chrome CDP temp files
 .chrome-cdp/
 .chrome-cdp-local/

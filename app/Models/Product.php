@@ -168,4 +168,9 @@ class Product extends Model
     {
         return $query->where('in_stock', true);
     }
+
+    public function supplierMappings(): HasMany
+    {
+        return $this->hasMany(SupplierProductMapping::class);
+    }
 }
