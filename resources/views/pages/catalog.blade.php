@@ -271,6 +271,24 @@
 
                 {{-- Список товаров --}}
                 <div class="col-xl-9">
+
+                    {{-- Карточки подкатегорий — показываем когда нет активного подкатегорийного фильтра --}}
+                    @if ($subcategories->count() > 0 && !request('subcategory'))
+                        <div class="subcategory-cards mb-32">
+                            <div class="row g-12">
+                                @foreach ($subcategories as $sub)
+                                    <div class="col-6 col-md-4 col-xl-3">
+                                        <a href="/{{ $sub->slug }}"
+                                           class="subcategory-card d-flex flex-column justify-content-between p-16 h-100 text-decoration-none rounded-4 border">
+                                            <span class="subcategory-card__name fw-medium text-body-2 mb-8">{{ $sub->name }}</span>
+                                            <span class="subcategory-card__count text-caption-01 cl-text-3">{{ $sub->products_count }} товаров</span>
+                                        </a>
+                                    </div>
+                                @endforeach
+                            </div>
+                        </div>
+                    @endif
+
                     <div class="tf-shop-control">
                         {{-- Кнопка открытия фильтров на мобильных --}}
                         <button type="button" id="filterShop" class="tf-btn-filter d-xl-none">
