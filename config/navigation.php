@@ -14,20 +14,28 @@
 
 return [
 
+    // Количество колонок в левой зоне мегаменю (xl-col-N). По умолчанию 2.
+    'columns' => [
+        'kotly'            => 3,
+        'dymohody'         => 3,
+        'otoplenie'        => 3,
+        'bani-i-sauny'     => 3,
+        'vodosnabzhenie'   => 3,
+    ],
+
     // Маппинг slug категории → иконка
     'icons' => [
         'kotly'            => 'heater--b.svg',
-        'teplovye-nasosy'  => 'hvac.svg',
-        'pelletnye-gorelki'=> 'fire_p.svg',
-        'vodonagrevateli'  => 'temperature--water.svg',
-        'otoplenie'        => 'heater.svg',
-        'pechki'           => 'campfire.svg',
-        'dlya-bani'        => 'sauna.svg',
-        'kaminy'           => 'fireplace.svg',
-        'dymohody'         => 'chimney.svg',
-        'vodosnabzhenie'   => 'droplet.svg',
-        'klimat'           => 'air.svg',
-        'nasosy'           => 'hvac.svg',
+        'teplovyie-nasosyi' => 'hvac.svg',
+        'pelletnyie-gorelki' => 'fire_p.svg',
+        'vodonagrevateli'   => 'temperature--water.svg',
+        'otoplenie'         => 'heater.svg',
+        'pechki'            => 'campfire.svg',
+        'bani-i-sauny'      => 'sauna.svg',
+        'kaminy'            => 'fireplace.svg',
+        'dymohody'          => 'chimney.svg',
+        'vodosnabzhenie'    => 'droplet.svg',
+        'klimat'            => 'air.svg',
     ],
 
     // Редакционные блоки мегаменю по slug корневой категории
@@ -48,69 +56,72 @@ return [
                 'title' => 'Связанные разделы',
                 'links' => [
                     ['name' => 'Водонагреватели',  'url' => '/vodonagrevateli'],
-                    ['name' => 'Тепловые насосы',  'url' => '/teplovye-nasosy'],
+                    ['name' => 'Тепловые насосы',  'url' => '/teplovyie-nasosyi'],
                     ['name' => 'Монтаж котлов',    'url' => '/installers'],
                     ['name' => 'Дымоходы',         'url' => '/dymohody'],
                 ],
             ],
         ],
 
-        'teplovye-nasosy' => [
+        'teplovyie-nasosyi' => [
             [
-                'title' => 'Назначение',
+                'title' => 'По типу',
                 'links' => [
-                    ['name' => 'Для дома',       'url' => '/teplovye-nasosy?filter=dom'],
-                    ['name' => 'Для отопления',  'url' => '/teplovye-nasosy?filter=otoplenie'],
-                    ['name' => 'Для ГВС',        'url' => '/teplovye-nasosy?filter=gvs'],
-                    ['name' => 'Монтаж',         'url' => '/installers'],
+                    ['name' => 'Воздух-вода',       'url' => '/teplovyie-nasosyi?filter=air-water'],
+                    ['name' => 'Для отопления',      'url' => '/teplovyie-nasosyi?filter=otoplenie'],
+                    ['name' => 'Для ГВС',            'url' => '/teplovyie-nasosyi?filter=gvs'],
+                    ['name' => 'Для дома',           'url' => '/teplovyie-nasosyi?filter=dom'],
                 ],
             ],
             [
-                'title' => 'Популярное',
+                'title' => 'Монтаж и сервис',
                 'links' => [
-                    ['name' => 'Hotta',         'url' => '/teplovye-nasosy?brand=hotta'],
-                    ['name' => 'Акции',         'url' => '/akcii'],
-                    ['name' => 'Подбор насоса', 'url' => '/installers'],
+                    ['name' => 'Монтаж насосов',     'url' => '/installers'],
+                    ['name' => 'Подбор оборудования','url' => '/installers'],
+                    ['name' => 'Пеллетные горелки',  'url' => '/pelletnyie-gorelki'],
                 ],
             ],
         ],
 
-        'pelletnye-gorelki' => [
+        'pelletnyie-gorelki' => [
             [
                 'title' => 'По мощности',
                 'links' => [
-                    ['name' => 'До 25 кВт',      'url' => '/pelletnye-gorelki?filter=25kvt'],
-                    ['name' => 'До 50 кВт',      'url' => '/pelletnye-gorelki?filter=50kvt'],
-                    ['name' => 'До 100 кВт',     'url' => '/pelletnye-gorelki?filter=100kvt'],
-                    ['name' => 'Промышленные',   'url' => '/pelletnye-gorelki?filter=prom'],
+                    ['name' => 'До 25 кВт',      'url' => '/pelletnyie-gorelki?filter=25kvt'],
+                    ['name' => 'До 50 кВт',       'url' => '/pelletnyie-gorelki?filter=50kvt'],
+                    ['name' => 'До 100 кВт',      'url' => '/pelletnyie-gorelki?filter=100kvt'],
+                    ['name' => 'Промышленные',    'url' => '/pelletnyie-gorelki?filter=prom'],
                 ],
             ],
             [
-                'title' => 'Комплектующие',
+                'title' => 'Монтаж и сервис',
                 'links' => [
-                    ['name' => 'Контроллеры',  'url' => '/pelletnye-gorelki?filter=controller'],
-                    ['name' => 'Шнеки',        'url' => '/pelletnye-gorelki?filter=shnek'],
-                    ['name' => 'Бункеры',      'url' => '/pelletnye-gorelki?filter=bunker'],
-                    ['name' => 'Автоматика',   'url' => '/pelletnye-gorelki?filter=auto'],
+                    ['name' => 'Монтаж горелок',      'url' => '/installers'],
+                    ['name' => 'Сервис и ТО',         'url' => '/installers'],
+                    ['name' => 'Подбор горелки',      'url' => '/installers'],
+                    ['name' => 'Автоматика',          'url' => '/pelletnyie-gorelki?filter=auto'],
+                    ['name' => 'Комплектующие',       'url' => '/pelletnyie-gorelki?filter=controller'],
                 ],
             ],
         ],
 
         'vodonagrevateli' => [
             [
-                'title' => 'Назначение',
+                'title' => 'По типу нагрева',
                 'links' => [
-                    ['name' => 'Для дома',     'url' => '/vodonagrevateli?filter=dom'],
-                    ['name' => 'Для квартиры', 'url' => '/vodonagrevateli?filter=kvartira'],
-                    ['name' => 'Проточные',    'url' => '/vodonagrevateli?filter=protochnye'],
-                    ['name' => 'Накопительные','url' => '/vodonagrevateli?filter=nakopitelnye'],
+                    ['name' => 'Газовые',          'url' => '/gas'],
+                    ['name' => 'Электрические',    'url' => '/electric'],
+                    ['name' => 'Косвенного нагрева','url' => '/kosvennye'],
+                    ['name' => 'Комбинированные',  'url' => '/kombinirovannye'],
+                    ['name' => 'Газовые колонки',  'url' => '/vodogreynaya-kolonka'],
                 ],
             ],
             [
-                'title' => 'Дополнительно',
+                'title' => 'Связанные разделы',
                 'links' => [
-                    ['name' => 'Монтаж',  'url' => '/installers'],
-                    ['name' => 'Акции',   'url' => '/akcii'],
+                    ['name' => 'Котлы',            'url' => '/kotly'],
+                    ['name' => 'Тепловые насосы',  'url' => '/teplovyie-nasosyi'],
+                    ['name' => 'Монтаж',           'url' => '/installers'],
                 ],
             ],
         ],
@@ -174,6 +185,25 @@ return [
                 ],
             ],
         ],
+
+        'vodosnabzhenie' => [
+            [
+                'title' => 'По назначению',
+                'links' => [
+                    ['name' => 'Для дома и дачи',   'url' => '/poverhnostnyie'],
+                    ['name' => 'Скважинные',         'url' => '/nasosy-pogruzhnye-skvazhinnye'],
+                    ['name' => 'Для отопления',      'url' => '/tsirkulyatsionnyie'],
+                    ['name' => 'Насосные станции',   'url' => '/nasosnyie-stantsii'],
+                ],
+            ],
+            [
+                'title' => 'Монтаж и сервис',
+                'links' => [
+                    ['name' => 'Монтаж насосов',     'url' => '/installers'],
+                    ['name' => 'Подбор насоса',      'url' => '/installers'],
+                ],
+            ],
+        ],
     ],
 
     // -------------------------------------------------------
@@ -194,33 +224,32 @@ return [
             ],
         ],
 
-        'teplovye-nasosy' => [
+        'teplovyie-nasosyi' => [
             'brands' => ['Hotta', 'Daikin', 'Mitsubishi', 'LG', 'Haier'],
-            'banner' => ['img' => 'banners/banner_pump.jpg', 'url' => '/teplovye-nasosy', 'title' => 'Тепловые насосы'],
+            'banner' => ['img' => 'banners/banner_pump.jpg', 'url' => '/teplovyie-nasosyi', 'title' => 'Тепловые насосы'],
             'cta' => [
-                ['name' => 'Подбор насоса',   'url' => '/installers'],
-                ['name' => 'Акции',           'url' => '/akcii'],
-                ['name' => 'Все насосы',      'url' => '/teplovye-nasosy'],
+                ['name' => 'Подбор насоса →',  'url' => '/installers'],
+                ['name' => 'Акции →',          'url' => '/akcii'],
+                ['name' => 'Все насосы →',     'url' => '/teplovyie-nasosyi'],
             ],
         ],
 
-        'pelletnye-gorelki' => [
+        'pelletnyie-gorelki' => [
             'brands' => ['Hargassner', 'BioTec', 'Eko-Vimar', 'Пеллетрон'],
             'banner' => ['img' => 'banners/banner-sale.jpg', 'url' => '/akcii', 'title' => 'Акции и спецпредложения'],
             'cta' => [
-                ['name' => 'Монтаж горелок',  'url' => '/installers'],
-                ['name' => 'Комплектующие',   'url' => '/pelletnye-gorelki?filter=auto'],
-                ['name' => 'Все горелки',     'url' => '/pelletnye-gorelki'],
+                ['name' => 'Монтаж горелок →', 'url' => '/installers'],
+                ['name' => 'Все горелки →',    'url' => '/pelletnyie-gorelki'],
             ],
         ],
 
         'vodonagrevateli' => [
-            'brands' => ['Ariston', 'Bosch', 'Gorenje', 'Thermex', 'Electrolux'],
-            'banner' => ['img' => 'banners/baner_boiler1.jpg', 'url' => '/vodonagrevateli', 'title' => 'Водонагреватели'],
+            'brands' => ['Ariston', 'Bosch', 'Thermex', 'Electrolux', 'Gorenje', 'Baxi'],
+            'banner' => ['img' => 'banners/baner_boiler1.jpg', 'url' => '/vodonagrevateli', 'title' => 'Водонагреватели и бойлеры'],
             'cta' => [
-                ['name' => 'Монтаж',          'url' => '/installers'],
-                ['name' => 'Акции',           'url' => '/akcii'],
-                ['name' => 'Все водонагреватели', 'url' => '/vodonagrevateli'],
+                ['name' => 'Электрические →',        'url' => '/electric'],
+                ['name' => 'Косвенного нагрева →',   'url' => '/kosvennye'],
+                ['name' => 'Все водонагреватели →',  'url' => '/vodonagrevateli'],
             ],
         ],
 
@@ -258,9 +287,18 @@ return [
             'brands' => ['TMF', 'Термофор', 'Везувий', 'Русич'],
             'banner' => ['img' => 'banners/banner-sale.jpg', 'url' => '/akcii', 'title' => 'Акции на банные товары'],
             'cta' => [
-                ['name' => 'Печи для бани',   'url' => '/pechki?filter=banya'],
-                ['name' => 'Дымоходы',        'url' => '/dymohody?filter=banya'],
-                ['name' => 'Монтаж',          'url' => '/installers'],
+                ['name' => 'Дымоходы для бани →', 'url' => '/dymohody'],
+                ['name' => 'Монтаж →',            'url' => '/installers'],
+            ],
+        ],
+
+        'bani-i-sauny' => [
+            'brands' => ['TMF', 'Термофор', 'Везувий', 'Русич'],
+            'banner' => ['img' => 'banners/banner-sale.jpg', 'url' => '/akcii', 'title' => 'Акции на банные товары'],
+            'cta' => [
+                ['name' => 'Дымоходы для бани →', 'url' => '/dymohody'],
+                ['name' => 'Монтаж →',            'url' => '/installers'],
+                ['name' => 'Все товары →',        'url' => '/bani-i-sauny'],
             ],
         ],
 
@@ -285,12 +323,12 @@ return [
         ],
 
         'vodosnabzhenie' => [
-            'brands' => ['Grundfos', 'DAB', 'Wilo', 'Unipump'],
-            'banner' => ['img' => 'banners/banner-sale.jpg', 'url' => '/akcii', 'title' => 'Водоснабжение и насосы'],
+            'brands' => ['Grundfos', 'DAB', 'Wilo', 'Unipump', 'Pedrollo'],
+            'banner' => ['img' => 'banners/banner-sale.jpg', 'url' => '/akcii', 'title' => 'Насосы и водоснабжение'],
             'cta' => [
-                ['name' => 'Монтаж',          'url' => '/installers'],
-                ['name' => 'Акции',           'url' => '/akcii'],
-                ['name' => 'Все насосы',      'url' => '/vodosnabzhenie'],
+                ['name' => 'Монтаж →',        'url' => '/installers'],
+                ['name' => 'Акции →',         'url' => '/akcii'],
+                ['name' => 'Все насосы →',    'url' => '/vodosnabzhenie'],
             ],
         ],
 

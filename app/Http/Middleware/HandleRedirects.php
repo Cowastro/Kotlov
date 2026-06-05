@@ -32,7 +32,15 @@ class HandleRedirects
         //
         // Порядок важен: более специфичные паттерны — выше.
         $legacyPatterns = [
+            // ── Тепловые насосы ───────────────────────────────────────────────
+            // /teplovye-nasosy → /teplovyie-nasosyi (старое написание без iye)
+            '~^/teplovye-nasosy/(.+)$~'                                  => '/teplovyie-nasosyi/$1',
+            '~^/teplovye-nasosy$~'                                       => '/teplovyie-nasosyi',
+
             // ── /kotly ────────────────────────────────────────────────────────
+            // /kotly/teplovyie-nasosyi → /teplovyie-nasosyi (старый URL тепловых насосов)
+            '~^/kotly/teplovyie-nasosyi/(.+)$~'                          => '/teplovyie-nasosyi/$1',
+            '~^/kotly/teplovyie-nasosyi$~'                               => '/teplovyie-nasosyi',
             // /kotly/{cat}/{slug} → /{cat}/{slug}
             '~^/kotly/(gazovye|tverdotoplivnye|elektricheskie)/(.+)$~'  => '/$1/$2',
             '~^/kotly/(gazovye|tverdotoplivnye|elektricheskie)$~'        => '/$1',

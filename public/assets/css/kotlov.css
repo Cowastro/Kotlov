@@ -909,3 +909,8 @@ a.category-v05.subcat-tile:hover .cate-icon {
     }
     .subcat-tile .cate-icon { font-size: 18px; }
 }
+
+/* Прижимаем пункты колонки мегаменю к верху — иначе grid растягивает пробел между ссылками */
+.sub-nav-category_list {
+    align-content: start;
+}

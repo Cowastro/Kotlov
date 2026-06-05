@@ -58,6 +58,12 @@ class CatalogController extends Controller
             ->orderBy('name')
             ->get();
 
+        // На родительской категории без выбранной подкатегории range-фильтры
+        // (мощность, площадь) не показываем — каждая подкатегория имеет свои диапазоны,
+        // их объединение в один список бессмысленно для пользователя.
+        $isParentView = $subcategories->isNotEmpty() && !request('subcategory');
+        $rangeFilterNames = ['мощность', 'обогреваемая площадь', 'площадь обогрева'];
+
         // Атрибуты для фильтрации — дедупликация по имени
         // Одинаковые атрибуты (напр. "Мощность") могут быть привязаны к разным подкатегориям,
         // поэтому группируем по name и объединяем опции
@@ -129,6 +135,17 @@ class CatalogController extends Controller
         if ($brands->isNotEmpty()) {
             $filterAttributes = $filterAttributes
                 ->reject(fn($attr) => in_array($this->normalizeFilterName($attr->name), ['производитель', 'бренд'], true))
+                ->values();
+        }
+
+        // Скрываем range-фильтры на родительской странице (без выбранной подкатегории)
+        if ($isParentView) {
+            $filterAttributes = $filterAttributes
+                ->reject(fn($attr) => in_array(
+                    mb_strtolower(trim(preg_replace('/\s*\(.*\)/', '', $attr->name))),
+                    $rangeFilterNames,
+                    true
+                ))
                 ->values();
         }
 

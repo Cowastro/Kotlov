@@ -187,6 +187,7 @@
                                 $icon = $icons[$rootCat->slug] ?? null;
                                 $children = $rootCat->children->where('is_active', true);
                                 $hasChildren = $children->count() > 0 || count($editorial) > 0;
+                                $cols = config('navigation.columns.' . $rootCat->slug, 2);
                             @endphp
 
                             <li class="{{ $hasChildren ? 'has-sub-nav-category' : '' }}">
@@ -211,7 +212,7 @@
 
                                             {{-- Левая/центральная зона: подкатегории + editorial --}}
                                             <div class="mega-links">
-                                                <div class="tf-grid-layout xl-col-2">
+                                                <div class="tf-grid-layout xl-col-{{ $cols }}">
                                                     @if ($children->count() > 0)
                                                         <div class="sub-nav-category_list">
                                                             <div class="sub-nav__title fw-semibold">{{ $rootCat->name }}</div>
