@@ -276,89 +276,80 @@
                     @if ($subcategories->count() > 0 && !request('subcategory'))
                         @php
                         $subIconMap = [
-                            // Котлы
-                            'gazovye'                              => ['icon'=>'icon-Lightning',      'bg'=>'bg-v1'],
-                            'tverdotoplivnye'                      => ['icon'=>'icon-Leaf',            'bg'=>'bg-v5'],
-                            'elektricheskie'                       => ['icon'=>'icon-Lightning-1',    'bg'=>'bg-v2'],
-                            'vodonagrevateli'                      => ['icon'=>'icon-Wind',            'bg'=>'bg-v4'],
-                            // Камины
-                            'topki'                                => ['icon'=>'icon-Armchair',        'bg'=>'bg-v3'],
-                            'elektrokamini'                        => ['icon'=>'icon-Lightning',       'bg'=>'bg-v2'],
-                            'oblicovki'                            => ['icon'=>'icon-Layout',          'bg'=>'bg-v6'],
-                            // Печи
-                            'pechi-kaminy'                         => ['icon'=>'icon-Armchair',        'bg'=>'bg-v3'],
-                            'pechi'                                => ['icon'=>'icon-HouseLine',       'bg'=>'bg-v5'],
-                            'burzhuiki-pechi'                      => ['icon'=>'icon-Wind',            'bg'=>'bg-v7'],
-                            'dlya-dachi'                           => ['icon'=>'icon-Leaf',            'bg'=>'bg-v4'],
-                            'pechnoe-i-kaminnoe-lite'              => ['icon'=>'icon-GearSix',         'bg'=>'bg-v6'],
-                            // Дымоходы
-                            'dymohody-mono'                        => ['icon'=>'icon-Wind',            'bg'=>'bg-v1'],
-                            'dymohody-sendvich'                    => ['icon'=>'icon-Wind',            'bg'=>'bg-v2'],
-                            'shibery-dymohod'                      => ['icon'=>'icon-GearSix',         'bg'=>'bg-v6'],
-                            'kondensatootvody'                     => ['icon'=>'icon-Wind',            'bg'=>'bg-v4'],
-                            'krepleniya-dymohod'                   => ['icon'=>'icon-PuzzlePiece',     'bg'=>'bg-v5'],
-                            'zonty-deflektory'                     => ['icon'=>'icon-Wind',            'bg'=>'bg-v3'],
-                            'teplosyomniki'                        => ['icon'=>'icon-Lightning',       'bg'=>'bg-v1'],
-                            'perehody-adaptery-dymohod'            => ['icon'=>'icon-ArrowsLeftRight', 'bg'=>'bg-v7'],
-                            'zaglushki-dymohod'                    => ['icon'=>'icon-GearSix',         'bg'=>'bg-v6'],
-                            'koaxial-dymoxod'                      => ['icon'=>'icon-Wind',            'bg'=>'bg-v2'],
-                            'truby-mono'                           => ['icon'=>'icon-ListDashes',      'bg'=>'bg-v1'],
-                            'troyniki-mono'                        => ['icon'=>'icon-GearSix',         'bg'=>'bg-v3'],
-                            'kolena-mono'                          => ['icon'=>'icon-ArrowsLeftRight', 'bg'=>'bg-v5'],
-                            'truby-sendvich'                       => ['icon'=>'icon-ListDashes',      'bg'=>'bg-v2'],
-                            'troyniki-sendvich'                    => ['icon'=>'icon-GearSix',         'bg'=>'bg-v4'],
-                            'kolena-sendvich'                      => ['icon'=>'icon-ArrowsLeftRight', 'bg'=>'bg-v6'],
-                            // Отопление
-                            'regulyatory'                          => ['icon'=>'icon-GearSix',         'bg'=>'bg-v1'],
-                            'stabilizatory-napryazheniya'          => ['icon'=>'icon-Lightning',       'bg'=>'bg-v2'],
-                            'nasosyi'                              => ['icon'=>'icon-Wind',            'bg'=>'bg-v4'],
-                            'datchiki'                             => ['icon'=>'icon-Devices',         'bg'=>'bg-v3'],
-                            'radiatory'                            => ['icon'=>'icon-Layout',          'bg'=>'bg-v5'],
-                            'membrannye-baki'                      => ['icon'=>'icon-Package',         'bg'=>'bg-v6'],
-                            'bufernye-emkosti'                     => ['icon'=>'icon-Package',         'bg'=>'bg-v7'],
-                            'grebenki'                             => ['icon'=>'icon-GearSix',         'bg'=>'bg-v1'],
-                            'solnechnye-kollektory'                => ['icon'=>'icon-Sparkle',         'bg'=>'bg-v5'],
-                            'schetchiki-gaza'                      => ['icon'=>'icon-GearSix',         'bg'=>'bg-v2'],
-                            'akkumuliruyushhie-baki'               => ['icon'=>'icon-Package',         'bg'=>'bg-v4'],
-                            'signalizatory-zagazovannosti'         => ['icon'=>'icon-ShieldCheck',     'bg'=>'bg-v3'],
-                            'teplyj-pol'                           => ['icon'=>'icon-Wind',            'bg'=>'bg-v6'],
-                            'truby-i-fitingi'                      => ['icon'=>'icon-ListDashes',      'bg'=>'bg-v1'],
-                            'komplektuyushhie-dlya-otopleniya'     => ['icon'=>'icon-PuzzlePiece',     'bg'=>'bg-v7'],
-                            'gruppy-bystrogo-montazha-kotelnyx'    => ['icon'=>'icon-GearSix',         'bg'=>'bg-v5'],
-                            'istochniki-besperebojnogo-pitaniya'   => ['icon'=>'icon-Lightning-1',    'bg'=>'bg-v2'],
-                            'filtry'                               => ['icon'=>'icon-ShieldCheck',     'bg'=>'bg-v4'],
-                            'regulyatoryi-davleniya-gaza'          => ['icon'=>'icon-GearSix',         'bg'=>'bg-v3'],
-                            'elektricheskie-konvektoryi'           => ['icon'=>'icon-Lightning',       'bg'=>'bg-v1'],
-                            'teplonositeli'                        => ['icon'=>'icon-Wind',            'bg'=>'bg-v6'],
-                            'pelletnyie-gorelki'                   => ['icon'=>'icon-Leaf',            'bg'=>'bg-v5'],
-                            'elektricheskie-teny-dlya-otopleniya'  => ['icon'=>'icon-Lightning-1',    'bg'=>'bg-v2'],
-                            'gidravlicheskie-razdeliteli-i-kollektory' => ['icon'=>'icon-GearSix',    'bg'=>'bg-v3'],
-                            // Бани
-                            'pechi-dlya-bani'                      => ['icon'=>'icon-Sparkle',         'bg'=>'bg-v3'],
-                            'drovyanye-pechi-dlya-bani'            => ['icon'=>'icon-Leaf',            'bg'=>'bg-v5'],
-                            'elektrokamenki'                       => ['icon'=>'icon-Lightning',       'bg'=>'bg-v2'],
-                            'aksessuary-dlya-bani'                 => ['icon'=>'icon-Tag',             'bg'=>'bg-v4'],
-                            // Водоснабжение
-                            'nasosy'                               => ['icon'=>'icon-Wind',            'bg'=>'bg-v4'],
-                            'nasosy-pogruzhnye-skvazhinnye'        => ['icon'=>'icon-Wind',            'bg'=>'bg-v6'],
+                            'gazovye'                              => 'icon-Lightning',
+                            'tverdotoplivnye'                      => 'icon-Leaf',
+                            'elektricheskie'                       => 'icon-Lightning-1',
+                            'vodonagrevateli'                      => 'icon-Wind',
+                            'topki'                                => 'icon-Armchair',
+                            'elektrokamini'                        => 'icon-Lightning',
+                            'oblicovki'                            => 'icon-Layout',
+                            'pechi-kaminy'                         => 'icon-Armchair',
+                            'pechi'                                => 'icon-HouseLine',
+                            'burzhuiki-pechi'                      => 'icon-Wind',
+                            'dlya-dachi'                           => 'icon-Leaf',
+                            'pechnoe-i-kaminnoe-lite'              => 'icon-GearSix',
+                            'dymohody-mono'                        => 'icon-Wind',
+                            'dymohody-sendvich'                    => 'icon-Wind',
+                            'shibery-dymohod'                      => 'icon-GearSix',
+                            'kondensatootvody'                     => 'icon-Wind',
+                            'krepleniya-dymohod'                   => 'icon-PuzzlePiece',
+                            'zonty-deflektory'                     => 'icon-Wind',
+                            'teplosyomniki'                        => 'icon-Lightning',
+                            'perehody-adaptery-dymohod'            => 'icon-ArrowsLeftRight',
+                            'zaglushki-dymohod'                    => 'icon-GearSix',
+                            'koaxial-dymoxod'                      => 'icon-Wind',
+                            'truby-mono'                           => 'icon-ListDashes',
+                            'troyniki-mono'                        => 'icon-GearSix',
+                            'kolena-mono'                          => 'icon-ArrowsLeftRight',
+                            'truby-sendvich'                       => 'icon-ListDashes',
+                            'troyniki-sendvich'                    => 'icon-GearSix',
+                            'kolena-sendvich'                      => 'icon-ArrowsLeftRight',
+                            'regulyatory'                          => 'icon-GearSix',
+                            'stabilizatory-napryazheniya'          => 'icon-Lightning',
+                            'nasosyi'                              => 'icon-Wind',
+                            'datchiki'                             => 'icon-Devices',
+                            'radiatory'                            => 'icon-Layout',
+                            'membrannye-baki'                      => 'icon-Package',
+                            'bufernye-emkosti'                     => 'icon-Package',
+                            'grebenki'                             => 'icon-GearSix',
+                            'solnechnye-kollektory'                => 'icon-Sparkle',
+                            'schetchiki-gaza'                      => 'icon-GearSix',
+                            'akkumuliruyushhie-baki'               => 'icon-Package',
+                            'signalizatory-zagazovannosti'         => 'icon-ShieldCheck',
+                            'teplyj-pol'                           => 'icon-Wind',
+                            'truby-i-fitingi'                      => 'icon-ListDashes',
+                            'komplektuyushhie-dlya-otopleniya'     => 'icon-PuzzlePiece',
+                            'gruppy-bystrogo-montazha-kotelnyx'    => 'icon-GearSix',
+                            'istochniki-besperebojnogo-pitaniya'   => 'icon-Lightning-1',
+                            'filtry'                               => 'icon-ShieldCheck',
+                            'regulyatoryi-davleniya-gaza'          => 'icon-GearSix',
+                            'elektricheskie-konvektoryi'           => 'icon-Lightning',
+                            'teplonositeli'                        => 'icon-Wind',
+                            'pelletnyie-gorelki'                   => 'icon-Leaf',
+                            'elektricheskie-teny-dlya-otopleniya'  => 'icon-Lightning-1',
+                            'gidravlicheskie-razdeliteli-i-kollektory' => 'icon-GearSix',
+                            'pechi-dlya-bani'                      => 'icon-Sparkle',
+                            'drovyanye-pechi-dlya-bani'            => 'icon-Leaf',
+                            'elektrokamenki'                       => 'icon-Lightning',
+                            'aksessuary-dlya-bani'                 => 'icon-Tag',
+                            'nasosy'                               => 'icon-Wind',
+                            'nasosy-pogruzhnye-skvazhinnye'        => 'icon-Wind',
                         ];
-                        $bgFallback = ['bg-v1','bg-v2','bg-v3','bg-v4','bg-v5','bg-v6','bg-v7'];
                         @endphp
                         <div class="row g-12 mb-32">
                             @foreach ($subcategories as $i => $sub)
                                 @php
-                                    $cfg = $subIconMap[$sub->slug]
-                                        ?? ['icon'=>'icon-Package', 'bg'=>$bgFallback[$i % 7]];
+                                    $icon = $subIconMap[$sub->slug] ?? 'icon-Package';
                                 @endphp
                                 <div class="col-6 col-md-4 col-xl-3">
                                     <a href="/{{ $sub->slug }}"
-                                       class="category-v05 {{ $cfg['bg'] }} h-100 text-decoration-none">
+                                       class="category-v05 subcat-tile h-100 text-decoration-none">
                                         <span class="cate-icon">
-                                            <i class="icon {{ $cfg['icon'] }}"></i>
+                                            <i class="icon {{ $icon }}"></i>
                                         </span>
-                                        <span>
+                                        <span class="subcat-tile__text">
                                             <span class="cate_name h6 fw-medium d-block">{{ $sub->name }}</span>
-                                            <span class="cate_quantity text-caption-01 cl-text-2">{{ $sub->products_count }} товаров</span>
+                                            <span class="cate_quantity text-caption-01">{{ $sub->products_count }} товаров</span>
                                         </span>
                                     </a>
                                 </div>
