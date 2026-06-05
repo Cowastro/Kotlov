@@ -16,6 +16,50 @@
         </form>
     </div>
     <div class="canvas-body">
+
+        {{-- Каталог категорий --}}
+        <div class="mb-categories">
+            <div class="mb-cat-header">
+                <i class="icon icon-List"></i>
+                <span>Каталог товаров</span>
+            </div>
+            <ul class="mb-cat-list">
+                @foreach ($navCategories as $rootCat)
+                    @php $children = $rootCat->children->where('is_active', true); @endphp
+                    @if ($children->count() > 0)
+                        <li class="mb-cat-item has-children">
+                            <div class="mb-cat-row">
+                                <a href="/{{ $rootCat->slug }}" class="mb-cat-link">{{ $rootCat->name }}</a>
+                                <button class="mb-cat-toggle" type="button">
+                                    <i class="icon icon-CaretDown"></i>
+                                </button>
+                            </div>
+                            <ul class="mb-cat-sub">
+                                @foreach ($children->take(8) as $child)
+                                    <li><a href="/{{ $child->slug }}">{{ $child->name }}</a></li>
+                                @endforeach
+                                @if ($children->count() > 8)
+                                    <li><a href="/{{ $rootCat->slug }}" class="cl-text-2">Все разделы →</a></li>
+                                @endif
+                            </ul>
+                        </li>
+                    @else
+                        <li class="mb-cat-item">
+                            <div class="mb-cat-row">
+                                <a href="/{{ $rootCat->slug }}" class="mb-cat-link">{{ $rootCat->name }}</a>
+                            </div>
+                        </li>
+                    @endif
+                @endforeach
+                <li class="mb-cat-item">
+                    <div class="mb-cat-row">
+                        <a href="/catalog" class="mb-cat-link cl-text-2">Весь каталог →</a>
+                    </div>
+                </li>
+            </ul>
+        </div>
+
+        {{-- Общие ссылки --}}
         <div class="mb-content-top">
             <ul class="nav-ul-mb" id="wrapper-menu-navigation">
                 <li><a href="/installers">Монтаж</a></li>
@@ -622,3 +666,11 @@
     </div>
 </div>
 <!-- /Sign In -->
+<script>
+document.querySelectorAll('.mb-cat-toggle').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+        var item = this.closest('.mb-cat-item');
+        item.classList.toggle('open');
+    });
+});
+</script>
