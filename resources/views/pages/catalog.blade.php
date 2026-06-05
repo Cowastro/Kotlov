@@ -58,7 +58,7 @@
                                                     <a href="?{{ http_build_query(array_merge(request()->except('subcategory'), [])) }}"
                                                         class="label link {{ !request('subcategory') ? 'fw-semibold' : '' }}">
                                                         <span class="cate-text">Все</span>
-                                                        <span class="count">({{ $totalCount }})</span>
+                                                        <span class="count">({{ $allProductsCount }})</span>
                                                     </a>
                                                 </li>
                                                 @foreach ($subcategories as $sub)

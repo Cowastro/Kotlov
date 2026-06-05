@@ -141,6 +141,10 @@ class CatalogController extends Controller
         $priceMin = (int) floor($priceRange->min_price ?? 0);
         $priceMax = (int) ceil($priceRange->max_price ?? 10000);
 
+        $allProductsCount = Product::where('is_active', true)
+            ->whereIn('category_id', $allCategoryIds)
+            ->count();
+
         // Запрос товаров
         $query = Product::where('is_active', true)
             ->whereIn('category_id', $activeCategoryIds)
@@ -222,7 +226,8 @@ class CatalogController extends Controller
             'products',
             'priceMin',
             'priceMax',
-            'totalCount'
+            'totalCount',
+            'allProductsCount'
         ));
     }
 
