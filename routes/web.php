@@ -289,17 +289,19 @@ Route::get('/proxy-image/{path}', function ($path) {
 
     $placeholder = public_path('img/products/product-placeholder.jpg');
 
-    // Сначала ищем локальный файл (скопированный rsync)
-    $localFile = public_path('images/' . $path);
-    if (file_exists($localFile)) {
-        $mime = mime_content_type($localFile) ?: 'image/jpeg';
-        return response()->file($localFile, [
-            'Content-Type'  => $mime,
-            'Cache-Control' => 'public, max-age=604800',
-        ]);
+    // На продакшене сначала ищем локальный файл (скопированный rsync)
+    if (app()->environment('production')) {
+        $localFile = public_path('images/' . $path);
+        if (file_exists($localFile)) {
+            $mime = mime_content_type($localFile) ?: 'image/jpeg';
+            return response()->file($localFile, [
+                'Content-Type'  => $mime,
+                'Cache-Control' => 'public, max-age=604800',
+            ]);
+        }
     }
 
-    // Fallback: берём со старого сервера (пока не все скопированы / новые фото)
+    // На локалке и fallback на проде: берём со старого сервера
     $baseUrl = rtrim(env('LEGACY_SITE_URL', 'https://kotlov.by'), '/');
     $url = "{$baseUrl}/images/{$path}";
 
