@@ -19,8 +19,17 @@ class CatalogController extends Controller
             ->with('parent')
             ->firstOrFail();
 
-        // Все ID подкатегорий включая саму категорию
-        $allCategoryIds = $this->collectCategoryAndDescendantIds($category->id);
+        // Для "Для дачи" показываем все товары из ветки "Печи"
+        if ($category->slug === 'dlya-dachi') {
+            $pechki = Category::where('slug', 'pechki')->first();
+            if ($pechki) {
+                $allCategoryIds = $this->collectCategoryAndDescendantIds($pechki->id);
+            } else {
+                $allCategoryIds = $this->collectCategoryAndDescendantIds($category->id);
+            }
+        } else {
+            $allCategoryIds = $this->collectCategoryAndDescendantIds($category->id);
+        }
 
         // Подкатегории для фильтра
         $subcategories = Category::where('parent_id', $category->id)
