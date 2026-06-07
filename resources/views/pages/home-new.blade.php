@@ -146,12 +146,31 @@
 
                        <div class="swiper-wrapper">
 
+    @php
+        $popularImages = [
+            'kotly'           => 'boiler_img.jpg',
+            'teplovye-nasosy' => 'heatpump.jpg',
+            'kaminy'          => 'fireplace.jpg',
+            'pechki'          => 'pellet_burner.jpg',
+            'dymohody'        => 'chimney.jpg',
+            'dlya-bani'       => 'sauna.jpg',
+            'vodonagrevateli' => 'droplet.jpg',
+            'otoplenie'       => 'heater.jpg',
+            'nasosy'          => 'heatpump.jpg',
+            'klimat'          => 'air.jpg',
+        ];
+    @endphp
     @foreach ($popularCategories as $category)
         <div class="swiper-slide">
             <a href="/{{ $category->slug }}" class="category-v04 hover-img wow fadeInUp">
                 <div class="cate-image img-style">
+                    @php
+                        $img = $category->image
+                            ? asset('storage/' . $category->image)
+                            : asset('img/popular/' . ($popularImages[$category->slug] ?? 'catalog.jpg'));
+                    @endphp
                     <img loading="lazy" width="240" height="180"
-                        src="{{ $category->image ? asset('storage/' . $category->image) : asset('img/popular/catalog.jpg') }}"
+                        src="{{ $img }}"
                         alt="{{ $category->name }}">
                 </div>
 
