@@ -10,7 +10,48 @@
     <meta name="keywords" content="{{ $keywords ?? 'котлы, печи, камины, дымоходы, отопление, монтаж, маркетплейс отопления' }}">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="format-detection" content="telephone=no">
+    <meta name="yandex-verification" content="7a9017a97d9459a9">
     <meta name="csrf-token" content="{{ csrf_token() }}">
+
+    {{-- Google Tag Manager --}}
+    <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+    new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+    j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+    'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+    })(window,document,'script','dataLayer','GTM-5G2F3ZT');</script>
+    <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+    new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+    j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+    'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+    })(window,document,'script','dataLayer','GTM-5R24LNK');</script>
+
+    {{-- Google Analytics 4 + Google Ads --}}
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-7QPT1BYQQF"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'G-7QPT1BYQQF');
+        gtag('config', 'AW-17488938820');
+    </script>
+
+    {{-- Yandex.Metrika --}}
+    <script type="text/javascript">
+        (function(m,e,t,r,i,k,a){
+            m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};
+            m[i].l=1*new Date();
+            for (var j = 0; j < document.scripts.length; j++) {
+                if (document.scripts[j].src === r) { return; }
+            }
+            k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)
+        })(window, document, "script", "https://mc.yandex.ru/metrika/tag.js", "ym");
+        ym(102254764, "init", {
+            clickmap:true,
+            trackLinks:true,
+            accurateTrackBounce:true,
+            webvisor:true
+        });
+    </script>
 
     <link rel="stylesheet" href="{{ asset('assets/fonts/fonts.css') }}">
     <link rel="stylesheet" href="{{ asset('assets/icon/icomoon/style.css') }}">
@@ -32,6 +73,11 @@
 </head>
 
 <body>
+
+    {{-- GTM noscript --}}
+    <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-5G2F3ZT" height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+    <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-5R24LNK" height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+    <noscript><div><img src="https://mc.yandex.ru/watch/102254764" style="position:absolute;left:-9999px;" alt=""></div></noscript>
 
     @include('partials.amerce-header')
 
@@ -495,6 +541,17 @@
             function () { loadCompareItems(); }
         );
     }
+    </script>
+
+    {{-- Umnico widget --}}
+    <script type="text/javascript">
+        document.umnicoWidgetHash = 'd23f029234c8a1ab66264142802cc4e7';
+        var x = document.createElement('script');
+        x.src = 'https://umnico.com/assets/widget-loader.js';
+        x.type = 'text/javascript';
+        x.charset = 'UTF-8';
+        x.async = true;
+        document.body.appendChild(x);
     </script>
 
 </body>
