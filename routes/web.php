@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\Banner;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\InstallerController;
 use App\Http\Controllers\InstallRequestController;
@@ -94,10 +95,21 @@ Route::get('/', function () {
         ->orderByDesc('rating')
         ->limit(8)->get();
 
+    $bannersHero      = Banner::active()->byPosition('hero')->get();
+    $bannerPromoKotly   = Banner::active()->byPosition('promo_kotly')->first();
+    $bannerPromoNasosy  = Banner::active()->byPosition('promo_nasosy')->first();
+    $bannerPromoKaminy  = Banner::active()->byPosition('promo_kaminy')->first();
+    $bannerPromoAkcii   = Banner::active()->byPosition('promo_akcii')->first();
+    $bannerPartners     = Banner::active()->byPosition('partners')->first();
+
     return view('pages.home-new', compact(
         'popularCategories',
         'productsKotly', 'productsNasosy',
-        'productsKaminy', 'productsAkcii'
+        'productsKaminy', 'productsAkcii',
+        'bannersHero',
+        'bannerPromoKotly', 'bannerPromoNasosy',
+        'bannerPromoKaminy', 'bannerPromoAkcii',
+        'bannerPartners'
     ));
 });
 

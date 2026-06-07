@@ -65,111 +65,52 @@
                         data-tablet="1" data-mobile="1" data-auto="true" data-delay="3000" data-loop="true"
                         data-space-lg="30" data-space-md="20" data-space="15">
                         <div class="swiper-wrapper">
-                            <!-- item 1 -->
+                            @forelse($bannersHero as $banner)
                             <div class="swiper-slide">
                                 <div class="slider-wrap slideshow-wrap rounded-20 overflow-hidden">
                                     <div class="sld_image">
                                         <img width="1770" height="680" loading="eager" decoding="async"
-                                            src="{{ asset('img/hero/heatpump-hero.jpg') }}" alt="Тепловые насосы"
+                                            src="{{ asset('storage/' . $banner->image) }}" alt="{{ $banner->title }}"
                                             class="lazyload scale-item scale-item-1">
                                     </div>
-
+                                    @if($banner->title || $banner->subtitle || $banner->link)
                                     <div class="sld_content type-4">
                                         <div class="content-sld_wrap">
+                                            @if($banner->subtitle)
                                             <h6 class="mb-12 text-white fade-item fade-item-1">
-                                                ТЕПЛОВЫЕ НАСОСЫ
+                                                {{ $banner->subtitle }}
                                             </h6>
-
+                                            @endif
+                                            @if($banner->title)
                                             <div class="h1 mb-12 text-white fade-item fade-item-2">
-                                                Тепловые насосы для дома и бизнеса
+                                                {!! nl2br(e($banner->title)) !!}
                                             </div>
-
-                                            <p class="text-body-1 text-white fade-item fade-item-3 mb-32">
-                                                Подбор, поставка и монтаж современных систем отопления под ваш объект.
-                                            </p>
-
+                                            @endif
+                                            @if($banner->link)
                                             <div class="fade-item fade-item-4">
-                                                <a href="/teplovye-nasosy"
+                                                <a href="{{ $banner->link }}"
                                                     class="tf-btn btn-white animate-btn animate-dark">
-                                                    Перейти в каталог
+                                                    {{ $banner->button_text ?: 'Перейти в каталог' }}
                                                 </a>
                                             </div>
+                                            @endif
                                         </div>
                                     </div>
+                                    @endif
                                 </div>
                             </div>
-                            <!-- item 2 -->
-                            <div class="swiper-slide">
-                                <div class="slider-wrap slideshow-wrap rounded-20 overflow-hidden">
-
-                                    <div class="sld_image">
-                                        <img width="1770" height="680" loading="eager" decoding="async"
-                                            src="{{ asset('img/hero/home.jpg') }}" alt="Котлы и отопление"
-                                            class="lazyload scale-item scale-item-1">
-                                    </div>
-
-                                    <div class="sld_content type-4">
-                                        <div class="content-sld_wrap">
-
-                                            <h6 class="mb-12 text-white fade-item fade-item-1">
-                                                КОТЛЫ И ОТОПЛЕНИЕ
-                                            </h6>
-
-                                            <div class="h1 mb-12 text-white fade-item fade-item-2">
-                                                Надёжные решения для отопления дома
-                                            </div>
-
-                                            <p class="text-body-1 text-white fade-item fade-item-3 mb-32">
-                                                Котлы, бойлеры, радиаторы и инженерные решения
-                                                для современных частных домов.
-                                            </p>
-
-                                            <div class="fade-item fade-item-4">
-                                                <a href="/kotly" class="tf-btn btn-white animate-btn animate-dark">
-                                                    Перейти в каталог
-                                                </a>
-                                            </div>
-
-                                        </div>
-                                    </div>
-
-                                </div>
-                            </div>
-
-                            <!-- item 3 -->
+                            @empty
+                            {{-- Заглушка если баннеры не добавлены --}}
                             <div class="swiper-slide">
                                 <div class="slider-wrap slideshow-wrap rounded-20 overflow-hidden">
                                     <div class="sld_image">
                                         <img width="1770" height="680" loading="eager" decoding="async"
-                                            src="{{ asset('img/hero/fireplace_home.jpg') }}" alt="Камины и каминные топки"
+                                            src="{{ asset('img/hero/heatpump-hero.jpg') }}" alt="KOTLOV.BY"
                                             class="lazyload scale-item scale-item-1">
-                                    </div>
-
-                                    <div class="sld_content type-4">
-                                        <div class="content-sld_wrap">
-                                            <h6 class="mb-12 text-white fade-item fade-item-1">
-                                                КАМИНЫ И ТОПКИ
-                                            </h6>
-
-                                            <div class="h1 mb-20 text-white fade-item fade-item-2">
-                                                Тепло и уют<br>
-                                                в современном интерьере
-                                            </div>
-
-                                            <p class="text-body-1 text-white fade-item fade-item-3 mb-32">
-                                                Каминные топки, облицовки и готовые решения
-                                                для частных домов, квартир и загородных резиденций.
-                                            </p>
-
-                                            <div class="fade-item fade-item-4">
-                                                <a href="/kaminy" class="tf-btn btn-white animate-btn animate-dark">
-                                                    Перейти в каталог
-                                                </a>
-                                            </div>
-                                        </div>
                                     </div>
                                 </div>
                             </div>
+                            @endforelse
                         </div>
                         <div class="sw-line-default tf-sw-pagination"></div>
                     </div>
@@ -270,24 +211,14 @@
     <div class="tab-pane active show" id="kotly" role="tabpanel">
         <div class="wrap-prd">
             <div class="col-prd-1">
-                <div class="banner-image-text type-abs style-18 v2 mb-20">
-                    <a href="/kotly" class="bn-image img-style">
-                        <img loading="lazy" width="450" height="608"
-                            src="{{ asset('img/banners/baner_boiler1.jpg') }}" alt="Отопительные котлы">
-                    </a>
-                    <div class="bn-content wow fadeInUp">
-                        <a href="/kotly" class="title text-white h3 fw-medium link mb-8">
-                            Отопительные<br>котлы
-                        </a>
-                        <p class="desc text-body-1 text-white mb-28">
-                            Газовые, твердотопливные,
-                            электрические и пеллетные котлы.
-                        </p>
-                        <a href="/kotly" class="tf-btn btn-white hv-primary">
-                            Перейти в каталог
-                        </a>
-                    </div>
-                </div>
+                @include('partials.promo-banner', [
+                    'banner'        => $bannerPromoKotly,
+                    'fallbackImage' => 'img/banners/baner_boiler1.jpg',
+                    'fallbackLink'  => '/kotly',
+                    'fallbackTitle' => 'Отопительные<br>котлы',
+                    'fallbackDesc'  => 'Газовые, твердотопливные, электрические и пеллетные котлы.',
+                    'fallbackBtn'   => 'Перейти в каталог',
+                ])
                 <div class="tf-grid-layout tf-col-2 gap-20">
                     @foreach ($productsKotly->take(2) as $product)
                         @include('partials.product-card', ['product' => $product])
@@ -308,25 +239,14 @@
     <div class="tab-pane" id="teplovye-nasosy" role="tabpanel">
         <div class="wrap-prd">
             <div class="col-prd-1">
-                <div class="banner-image-text type-abs style-18 v2 mb-20">
-                    <a href="/teplovye-nasosy" class="bn-image img-style">
-                        <img loading="lazy" width="450" height="608"
-                            src="{{ asset('img/banners/banner_pump.jpg') }}" alt="Тепловые насосы">
-                    </a>
-                    <div class="bn-content wow fadeInUp">
-                        <a href="/teplovye-nasosy" class="title text-white h3 fw-medium link mb-8">
-                            Тепловые<br>насосы
-                        </a>
-                        <p class="desc text-body-1 text-white mb-28">
-                            Отопление, охлаждение
-                            и горячая вода
-                            круглый год.
-                        </p>
-                        <a href="/teplovye-nasosy" class="tf-btn btn-white hv-primary">
-                            Перейти в каталог
-                        </a>
-                    </div>
-                </div>
+                @include('partials.promo-banner', [
+                    'banner'        => $bannerPromoNasosy,
+                    'fallbackImage' => 'img/banners/banner_pump.jpg',
+                    'fallbackLink'  => '/teplovye-nasosy',
+                    'fallbackTitle' => 'Тепловые<br>насосы',
+                    'fallbackDesc'  => 'Отопление, охлаждение и горячая вода круглый год.',
+                    'fallbackBtn'   => 'Перейти в каталог',
+                ])
                 <div class="tf-grid-layout tf-col-2 gap-20">
                     @foreach ($productsNasosy->take(2) as $product)
                         @include('partials.product-card', ['product' => $product])
@@ -347,25 +267,14 @@
     <div class="tab-pane" id="kaminy" role="tabpanel">
         <div class="wrap-prd">
             <div class="col-prd-1">
-                <div class="banner-image-text type-abs style-18 v2 mb-20">
-                    <a href="/kaminy" class="bn-image img-style">
-                        <img loading="lazy" width="450" height="608"
-                            src="{{ asset('img/banners/banner-fireplace1.jpg') }}" alt="Камины">
-                    </a>
-                    <div class="bn-content wow fadeInUp">
-                        <a href="/kaminy" class="title text-white h3 fw-medium link mb-8">
-                            Камины<br>и топки
-                        </a>
-                        <p class="desc text-body-1 text-white mb-28">
-                            Каминные топки,
-                            печи-камины и готовые
-                            решения для дома.
-                        </p>
-                        <a href="/kaminy" class="tf-btn btn-white hv-primary">
-                            Перейти в каталог
-                        </a>
-                    </div>
-                </div>
+                @include('partials.promo-banner', [
+                    'banner'        => $bannerPromoKaminy,
+                    'fallbackImage' => 'img/banners/banner-fireplace1.jpg',
+                    'fallbackLink'  => '/kaminy',
+                    'fallbackTitle' => 'Камины<br>и топки',
+                    'fallbackDesc'  => 'Каминные топки, печи-камины и готовые решения для дома.',
+                    'fallbackBtn'   => 'Перейти в каталог',
+                ])
                 <div class="tf-grid-layout tf-col-2 gap-20">
                     @foreach ($productsKaminy->take(2) as $product)
                         @include('partials.product-card', ['product' => $product])
@@ -386,25 +295,14 @@
     <div class="tab-pane" id="offers" role="tabpanel">
         <div class="wrap-prd">
             <div class="col-prd-1">
-                <div class="banner-image-text type-abs style-18 v2 mb-20">
-                    <a href="/akcii" class="bn-image img-style">
-                        <img loading="lazy" width="450" height="608"
-                            src="{{ asset('img/banners/banner-sale.jpg') }}"
-                            alt="Акции и специальные предложения">
-                    </a>
-                    <div class="bn-content wow fadeInUp">
-                        <a href="/akcii" class="title text-white h3 fw-medium link mb-8">
-                            Акции<br>и скидки
-                        </a>
-                        <p class="desc text-body-1 text-white mb-28">
-                            Специальные предложения
-                            и выгодные скидки
-                        </p>
-                        <a href="/akcii" class="tf-btn btn-white hv-primary">
-                            Смотреть акции
-                        </a>
-                    </div>
-                </div>
+                @include('partials.promo-banner', [
+                    'banner'        => $bannerPromoAkcii,
+                    'fallbackImage' => 'img/banners/banner-sale.jpg',
+                    'fallbackLink'  => '/akcii',
+                    'fallbackTitle' => 'Акции<br>и скидки',
+                    'fallbackDesc'  => 'Специальные предложения и выгодные скидки.',
+                    'fallbackBtn'   => 'Смотреть акции',
+                ])
                 <div class="tf-grid-layout tf-col-2 gap-20">
                     @foreach ($productsAkcii->take(2) as $product)
                         @include('partials.product-card', ['product' => $product])
@@ -546,8 +444,8 @@
     <div class="banner-countdown-v01 style-4">
         <div class="banner-img">
             <img class="img-cover" width="1410" height="260" loading="lazy" decoding="async"
-                src="{{ asset('img/banners/banner-partners.jpg') }}"
-                alt="Стать партнёром KOTLOV.BY">
+                src="{{ $bannerPartners ? asset('storage/' . $bannerPartners->image) : asset('img/banners/banner-partners.jpg') }}"
+                alt="{{ $bannerPartners?->title ?: 'Стать партнёром KOTLOV.BY' }}">
         </div>
         <div class="content">
             <div class="col-left">

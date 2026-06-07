@@ -30,11 +30,23 @@ class BannersTable
                 TextColumn::make('position')
                     ->label('Позиция')
                     ->badge()
+                    ->color(fn($state) => match($state) {
+                        'hero'          => 'primary',
+                        'promo_kotly'   => 'warning',
+                        'promo_nasosy'  => 'info',
+                        'promo_kaminy'  => 'danger',
+                        'promo_akcii'   => 'success',
+                        'partners'      => 'gray',
+                        default         => 'gray',
+                    })
                     ->formatStateUsing(fn($state) => match($state) {
-                        'hero'    => 'Главный слайдер',
-                        'sidebar' => 'Сайдбар',
-                        'promo'   => 'Промо блок',
-                        default   => $state,
+                        'hero'          => 'Hero слайдер',
+                        'promo_kotly'   => 'Промо: Котлы',
+                        'promo_nasosy'  => 'Промо: Насосы',
+                        'promo_kaminy'  => 'Промо: Камины',
+                        'promo_akcii'   => 'Промо: Акции',
+                        'partners'      => 'Партнёры',
+                        default         => $state,
                     }),
 
                 TextColumn::make('sort_order')
@@ -50,9 +62,12 @@ class BannersTable
                 SelectFilter::make('position')
                     ->label('Позиция')
                     ->options([
-                        'hero'    => 'Главный слайдер',
-                        'sidebar' => 'Сайдбар',
-                        'promo'   => 'Промо блок',
+                        'hero'         => 'Hero слайдер',
+                        'promo_kotly'  => 'Промо: Котлы',
+                        'promo_nasosy' => 'Промо: Насосы',
+                        'promo_kaminy' => 'Промо: Камины',
+                        'promo_akcii'  => 'Промо: Акции',
+                        'partners'     => 'Партнёры',
                     ]),
 
                 TernaryFilter::make('is_active')
