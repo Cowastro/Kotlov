@@ -106,19 +106,26 @@ class BannerForm
                 Section::make('Контент')
                     ->columns(2)
                     ->schema([
-                        TextInput::make('title')
-                            ->label('Заголовок')
-                            ->helperText('Например: "Тепловые насосы для дома"'),
-
                         TextInput::make('subtitle')
-                            ->label('Подзаголовок')
-                            ->helperText('Короткое описание под заголовком'),
+                            ->label('Надпись над заголовком')
+                            ->helperText('Маленький текст сверху. Например: "ТЕПЛОВЫЕ НАСОСЫ"')
+                            ->columnSpanFull(),
+
+                        TextInput::make('title')
+                            ->label('Заголовок (крупный)')
+                            ->helperText('Например: "Тепловые насосы для дома и бизнеса"')
+                            ->columnSpanFull(),
+
+                        \Filament\Forms\Components\Textarea::make('description')
+                            ->label('Описание (под заголовком)')
+                            ->helperText('Например: "Подбор, поставка и монтаж современных систем отопления под ваш объект."')
+                            ->rows(2)
+                            ->columnSpanFull(),
 
                         TextInput::make('link')
                             ->label('Ссылка (куда ведёт баннер)')
-                            ->url()
                             ->placeholder('/teplovye-nasosy')
-                            ->helperText('Относительная или полная ссылка'),
+                            ->helperText('Относительная ссылка, например /teplovye-nasosy'),
 
                         TextInput::make('button_text')
                             ->label('Текст кнопки')

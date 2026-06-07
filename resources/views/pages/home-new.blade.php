@@ -91,6 +91,11 @@
                                                 {!! nl2br(e($banner->title)) !!}
                                             </div>
                                             @endif
+                                            @if($banner->description)
+                                            <p class="text-body-1 text-white fade-item fade-item-3 mb-32">
+                                                {{ $banner->description }}
+                                            </p>
+                                            @endif
                                             @if($banner->link)
                                             <div class="fade-item fade-item-4">
                                                 <a href="{{ $banner->link }}"
