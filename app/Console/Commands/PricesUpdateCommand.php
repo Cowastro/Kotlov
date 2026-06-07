@@ -103,17 +103,24 @@ class PricesUpdateCommand extends Command
                     continue;
                 }
 
+                // price_old: РРЦ * 1.15 (маркетинговая "старая цена"), иначе null
+                $priceOld = null;
+                if ($item->price_old > 0) {
+                    $priceOld = round($item->price_old * 1.15, 2);
+                }
+
                 if ($dryRun) {
                     $this->line(sprintf(
-                        "\n  %s: %.2f → %.2f %s",
+                        "\n  %s: %.2f → %.2f%s %s",
                         $product->name,
                         $product->price,
                         $newPrice,
+                        $priceOld ? " (РРЦ: {$priceOld})" : '',
                         $product->currency
                     ));
                 } else {
                     DB::table('products')->where('id', $product->id)->update([
-                        'price_old'  => $product->price > 0 ? $product->price : null,
+                        'price_old'  => $priceOld,
                         'price'      => $newPrice,
                         'in_stock'   => $item->in_stock,
                         'stock_qty'  => $item->stock_qty,

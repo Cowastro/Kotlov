@@ -106,6 +106,7 @@ class SupplierAdapter
 
         $str = trim((string) $raw);
         $str = str_replace(["\xc2\xa0", "\u{00A0}", ' '], '', $str);
+        $str = preg_replace('/[^\d.,]/u', '', $str); // убрать р., $, BYN и др.
 
         $hasComma = str_contains($str, ',');
         $hasDot   = str_contains($str, '.');
