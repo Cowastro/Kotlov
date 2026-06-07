@@ -61,13 +61,26 @@
     <script defer src="/js/wow.min.js"></script>
     <script defer src="/js/general.js"></script>
 
-    {{-- Google Analytics 4 --}}
+    {{-- Google Tag Manager --}}
+    <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+    new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+    j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+    'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+    })(window,document,'script','dataLayer','GTM-5G2F3ZT');</script>
+    <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+    new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+    j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+    'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+    })(window,document,'script','dataLayer','GTM-5R24LNK');</script>
+
+    {{-- Google Analytics 4 + Google Ads --}}
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-7QPT1BYQQF"></script>
     <script>
         window.dataLayer = window.dataLayer || [];
         function gtag(){dataLayer.push(arguments);}
         gtag('js', new Date());
         gtag('config', 'G-7QPT1BYQQF');
+        gtag('config', 'AW-17488938820');
     </script>
 
     {{-- Yandex.Metrika --}}
@@ -95,6 +108,10 @@
 </head>
 
 <body class="preload">
+
+    {{-- Google Tag Manager (noscript) --}}
+    <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-5G2F3ZT" height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+    <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-5R24LNK" height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 
     <noscript>
         <div>
