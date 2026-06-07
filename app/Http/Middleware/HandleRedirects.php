@@ -69,6 +69,14 @@ class HandleRedirects
             // /dlya-bani/{slug} → /pechi-dlya-bani/{slug}
             '~^/dlya-bani/(.+)$~'                                       => '/pechi-dlya-bani/$1',
 
+            // ── Пеллетные горелки ─────────────────────────────────────────────
+            // /otoplenie-parts/pelletnyie-gorelki/{slug} → /pelletnye-gorelki/{slug}
+            '~^/otoplenie-parts/pelletnyie-gorelki/(.+)$~'              => '/pelletnye-gorelki/$1',
+            '~^/otoplenie-parts/pelletnyie-gorelki$~'                   => '/pelletnye-gorelki',
+            // /pelletnyie-gorelki → /pelletnye-gorelki (старый slug с опечаткой)
+            '~^/pelletnyie-gorelki/(.+)$~'                              => '/pelletnye-gorelki/$1',
+            '~^/pelletnyie-gorelki$~'                                   => '/pelletnye-gorelki',
+
             // ── /pechi-kaminy-parts, /otoplenie-parts ─────────────────────────
             '~^/otoplenie-parts/(.+)$~'                                  => '/pechi-kaminy/$1',
             '~^/pechi-kaminy-parts/(.+)$~'                               => '/pechi-kaminy/$1',
