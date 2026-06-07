@@ -115,7 +115,7 @@
 
                                 {{-- Название --}}
                                 <h1 class="product-infor-name mb-12 h3">
-                                    {{ $product->h1 ?? $product->name }}
+                                    {{ $product->h1 ?: $product->name }}
                                 </h1>
 
                                 {{-- Мета --}}

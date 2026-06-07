@@ -70,7 +70,9 @@ class ProductController extends Controller
         $canonical = 'https://kotlov.by/' . $product->category->slug . '/' . $product->slug;
 
         $firstImage = $product->imageUrl(0);
-        $ogImage = $firstImage ?: asset('img/og-default.jpg');
+        $ogImageRaw = $firstImage ?: asset('img/og-default.jpg');
+        // og:image и Schema.org требуют абсолютный URL
+        $ogImage = str_starts_with($ogImageRaw, '/') ? 'https://kotlov.by' . $ogImageRaw : $ogImageRaw;
 
         // Schema.org Product
         $schema = [
@@ -100,7 +102,21 @@ class ProductController extends Controller
                 'url'           => $canonical,
             ];
         }
+
+        // BreadcrumbList
+        $breadcrumbs = [
+            ['@type' => 'ListItem', 'position' => 1, 'name' => 'Главная',      'item' => 'https://kotlov.by/'],
+            ['@type' => 'ListItem', 'position' => 2, 'name' => $product->category->name, 'item' => 'https://kotlov.by/' . $product->category->slug],
+            ['@type' => 'ListItem', 'position' => 3, 'name' => $nameFull,      'item' => $canonical],
+        ];
+        $breadcrumbSchema = [
+            '@context'        => 'https://schema.org',
+            '@type'           => 'BreadcrumbList',
+            'itemListElement' => $breadcrumbs,
+        ];
+
         $schemaJson = json_encode($schema, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        $breadcrumbJson = json_encode($breadcrumbSchema, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
 
         return view('pages.product', compact(
             'product',
@@ -112,7 +128,8 @@ class ProductController extends Controller
             'keywords',
             'canonical',
             'ogImage',
-            'schemaJson'
+            'schemaJson',
+            'breadcrumbJson'
         ));
     }
 }
