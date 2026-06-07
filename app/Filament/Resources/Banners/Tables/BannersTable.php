@@ -20,7 +20,8 @@ class BannersTable
         return $table
             ->columns([
                 ImageColumn::make('image')
-                    ->label('Изображение'),
+                    ->label('Изображение')
+                    ->disk('public'),
 
                 TextColumn::make('title')
                     ->label('Заголовок')
