@@ -674,3 +674,41 @@ document.querySelectorAll('.mb-cat-toggle').forEach(function(btn) {
     });
 });
 </script>
+
+<!-- City Selector Offcanvas -->
+<div class="offcanvas offcanvas-start" id="citySelector" tabindex="-1">
+    <div class="canvas-header">
+        <h5 class="fw-semibold mb-0">Выберите город</h5>
+        <span class="icon-close-popup" data-bs-dismiss="offcanvas">
+            <i class="icon icon-X2"></i>
+        </span>
+    </div>
+    <div class="canvas-body p-3">
+
+        <ul class="nav nav-tabs mb-3" id="cityTabs">
+            <li class="nav-item"><a class="nav-link active" data-bs-toggle="tab" href="#city-tab-1">Минская</a></li>
+            <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#city-tab-2">Гомельская</a></li>
+            <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#city-tab-3">Брестская</a></li>
+            <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#city-tab-4">Гродненская</a></li>
+            <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#city-tab-5">Могилёвская</a></li>
+            <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#city-tab-6">Витебская</a></li>
+        </ul>
+
+        <div class="tab-content">
+            @foreach([1 => $obl1??[], 2 => $obl2??[], 3 => $obl3??[], 4 => $obl4??[], 5 => $obl5??[], 6 => $obl6??[]] as $i => $cities)
+            <div class="tab-pane fade {{ $i === 1 ? 'show active' : '' }}" id="city-tab-{{ $i }}">
+                <ul class="list-unstyled d-flex flex-wrap gap-2 mt-2">
+                    @foreach($cities as $city)
+                    <li>
+                        <a href="{{ $city['link'] }}" class="btn btn-sm btn-outline-secondary {{ $city['active'] }}">
+                            {{ $city['name'] }}
+                        </a>
+                    </li>
+                    @endforeach
+                </ul>
+            </div>
+            @endforeach
+        </div>
+
+    </div>
+</div>
