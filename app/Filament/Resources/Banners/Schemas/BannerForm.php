@@ -74,6 +74,7 @@ class BannerForm
                             ->label('🖥 Десктоп')
                             ->image()
                             ->required()
+                            ->disk('public')
                             ->directory('banners')
                             ->imagePreviewHeight('180')
                             ->helperText(fn($get) => match($get('position')) {
@@ -90,6 +91,7 @@ class BannerForm
                             ->label('📱 Мобильная версия')
                             ->image()
                             ->nullable()
+                            ->disk('public')
                             ->directory('banners')
                             ->imagePreviewHeight('180')
                             ->helperText(fn($get) => match($get('position')) {
