@@ -42,6 +42,22 @@ class BrandController extends Controller
             ->orderByDesc('rating')
             ->paginate(24);
 
-        return view('pages.brand', compact('brand', 'products'));
+        $brandName = $brand->name;
+        $h1        = $brand->h1 ?: "Каталог {$brandName}";
+        $title     = $brand->meta_title    ?: "{$brandName} — купить в Беларуси | KOTLOV";
+        $description = $brand->meta_description ?: "Каталог товаров бренда {$brandName}. Купить {$brandName} в Беларуси с доставкой. Гарантия, монтаж.";
+        $canonical = 'https://kotlov.by/brands/' . $brand->slug;
+
+        $schemaJson = json_encode([
+            '@context'        => 'https://schema.org',
+            '@type'           => 'BreadcrumbList',
+            'itemListElement' => [
+                ['@type' => 'ListItem', 'position' => 1, 'name' => 'Главная', 'item' => 'https://kotlov.by/'],
+                ['@type' => 'ListItem', 'position' => 2, 'name' => 'Бренды',  'item' => 'https://kotlov.by/brands'],
+                ['@type' => 'ListItem', 'position' => 3, 'name' => $brandName, 'item' => $canonical],
+            ],
+        ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+
+        return view('pages.brand', compact('brand', 'products', 'h1', 'title', 'description', 'canonical', 'schemaJson'));
     }
 }

@@ -56,8 +56,11 @@ class ProductController extends Controller
         $brandName = $product->brand?->name ?? '';
         $nameFull  = trim($brandName . ' ' . $product->name);
 
-        $title = $replaceCityIn($product->meta_title)
-            ?: ($nameFull . ' — купить ' . $cityIn . ' | KOTLOV');
+        $autoTitle = $nameFull . ' — купить ' . $cityIn . ' | KOTLOV';
+        if (mb_strlen($autoTitle) > 70) {
+            $autoTitle = mb_substr($product->name, 0, 40) . ' — купить | KOTLOV';
+        }
+        $title = $replaceCityIn($product->meta_title) ?: $autoTitle;
 
         $description = $replaceCityIn($product->meta_description)
             ?: ('Купить ' . $nameFull . ' ' . $cityIn

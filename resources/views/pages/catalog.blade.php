@@ -18,7 +18,7 @@
                     @endif
                     <p class="text-caption-01">{{ $category->name }}</p>
                 </div>
-                <h1>{{ $category->h1 ?? $category->name }}</h1>
+                <h1>{{ $category->h1 ?: $category->name }}</h1>
                 @if ($category->content)
                     <p class="text-body-1 cl-text-2">
                         {!! Str::limit(strip_tags($category->content), 200) !!}
