@@ -246,6 +246,23 @@ class CatalogController extends Controller
         $totalCount = $query->count();
         $products = $query->paginate(24)->withQueryString();
 
+        $cityIn   = request()->route('city') ?? null;
+        $citySuffix = $cityIn ? " $cityIn" : ' в Беларуси';
+
+        $title = $category->meta_title
+            ?: ($category->name . ' — купить' . $citySuffix . ' | KOTLOV');
+
+        $description = $category->meta_description
+            ?: ('Купить ' . mb_strtolower($category->name) . $citySuffix
+                . '. Каталог ' . $allProductsCount . ' товаров с ценами.'
+                . ' Быстрая доставка, гарантия, монтаж.');
+
+        $keywords = $category->meta_keywords
+            ?: (mb_strtolower($category->name) . ', купить ' . mb_strtolower($category->name)
+                . $citySuffix . ', цена, каталог');
+
+        $canonical = 'https://kotlov.by/' . $category->slug;
+
         return view('pages.catalog', compact(
             'category',
             'subcategories',
@@ -255,7 +272,11 @@ class CatalogController extends Controller
             'priceMin',
             'priceMax',
             'totalCount',
-            'allProductsCount'
+            'allProductsCount',
+            'title',
+            'description',
+            'keywords',
+            'canonical'
         ));
     }
 

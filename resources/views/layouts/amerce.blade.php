@@ -4,10 +4,25 @@
     <meta charset="UTF-8">
     <title>{{ $title ?? ('KOTLOV — маркетплейс отопления' . (isset($cityIn) && $cityIn ? ' ' . $cityIn : '')) }}</title>
     <meta name="description" content="{{ $description ?? ('KOTLOV — маркетплейс отопления, котлов, печей, каминов, дымоходов и монтажных услуг' . (isset($cityIn) && $cityIn ? ' ' . $cityIn : ' в Беларуси') . '.') }}">
-    @if(isset($currentCity) && $currentCity)
+    @if(isset($canonical) && $canonical)
+    <link rel="canonical" href="{{ $canonical }}">
+    @elseif(!isset($currentCity) || !$currentCity)
     <link rel="canonical" href="https://kotlov.by{{ request()->getPathInfo() }}">
     @endif
     <meta name="keywords" content="{{ $keywords ?? 'котлы, печи, камины, дымоходы, отопление, монтаж, маркетплейс отопления' }}">
+
+    <meta property="og:title" content="{{ $ogTitle ?? $title ?? 'KOTLOV — маркетплейс отопления' }}">
+    <meta property="og:description" content="{{ $ogDescription ?? $description ?? 'KOTLOV — маркетплейс отопления в Беларуси.' }}">
+    <meta property="og:type" content="{{ $ogType ?? 'website' }}">
+    <meta property="og:url" content="{{ $ogUrl ?? url()->current() }}">
+    <meta property="og:image" content="{{ $ogImage ?? asset('img/og-default.jpg') }}">
+    <meta property="og:site_name" content="kotlov.by">
+    <meta property="og:locale" content="ru_RU">
+
+    @isset($schemaJson)
+    <script type="application/ld+json">{!! $schemaJson !!}</script>
+    @endisset
+
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="format-detection" content="telephone=no">
     <meta name="yandex-verification" content="7a9017a97d9459a9">
