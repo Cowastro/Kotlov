@@ -140,55 +140,63 @@
                         </p>
                     </div>
 
-                    <div dir="ltr" class="swiper tf-swiper swiper-cate" data-preview="5" data-tablet="4" data-mobile-sm="3"
-                        data-mobile="2" data-space-lg="40" data-space-md="20" data-space="10" data-pagination="2"
-                        data-pagination-sm="2" data-pagination-md="3" data-pagination-lg="5" data-grid="2">
-
-                       <div class="swiper-wrapper">
-
-    @php
-        $popularImages = [
-            'kotly'           => 'boiler_img.jpg',
-            'teplovye-nasosy' => 'heatpump.jpg',
-            'kaminy'          => 'fireplace.jpg',
-            'pechki'          => 'pellet_burner.jpg',
-            'dymohody'        => 'chimney.jpg',
-            'dlya-bani'       => 'sauna.jpg',
-            'vodonagrevateli' => 'droplet.jpg',
-            'otoplenie'       => 'heater.jpg',
-            'nasosy'          => 'heatpump.jpg',
-            'klimat'          => 'air.jpg',
-        ];
-    @endphp
-    @foreach ($popularCategories as $category)
-        <div class="swiper-slide">
-            <a href="/{{ $category->slug }}" class="category-v04 hover-img wow fadeInUp">
-                <div class="cate-image img-style">
                     @php
-                        $img = $category->image
-                            ? asset('storage/' . $category->image)
-                            : asset('img/popular/' . ($popularImages[$category->slug] ?? 'catalog.jpg'));
+                        $popularImages = [
+                            'kotly'              => 'boiler_img.jpg',
+                            'teplovyie-nasosyi'  => 'heatpump.jpg',
+                            'kaminy'             => 'fireplace.jpg',
+                            'pechki'             => 'sauna.jpg',
+                            'dymohody'           => 'chimney.jpg',
+                            'bani-i-sauny'       => 'sauna.jpg',
+                            'vodonagrevateli'    => 'droplet.jpg',
+                            'pelletnye-gorelki'  => 'pellet_burner.jpg',
+                            'otoplenie'          => 'heater.jpg',
+                            'nasosy'             => 'heatpump.jpg',
+                        ];
                     @endphp
-                    <img loading="lazy" width="240" height="180"
-                        src="{{ $img }}"
-                        alt="{{ $category->name }}">
-                </div>
+                    <div dir="ltr" class="swiper tf-swiper swiper-cate"
+                        data-preview="5" data-tablet="4" data-mobile-sm="3" data-mobile="2"
+                        data-space-lg="40" data-space-md="20" data-space="10"
+                        data-grid="2" data-pagination="2" data-pagination-sm="2"
+                        data-pagination-md="3" data-pagination-lg="5">
+                        <div class="swiper-wrapper">
 
-                <div class="cate-content text-center">
-                    <div class="h5 cate_name link-underline-text">
-                        {{ $category->name }}
-                    </div>
+                        @foreach ($popularCategories as $category)
+                        <div class="swiper-slide">
+                            <a href="/{{ $category->slug }}" class="category-v04 hover-img wow fadeInUp">
+                                <div class="cate-image img-style">
+                                    @php
+                                        $img = $category->image
+                                            ? asset('storage/' . $category->image)
+                                            : asset('img/popular/' . ($popularImages[$category->slug] ?? 'catalog.jpg'));
+                                    @endphp
+                                    <img loading="lazy" width="240" height="180"
+                                        src="{{ $img }}"
+                                        alt="{{ $category->name }}">
+                                </div>
+                                <div class="cate-content text-center">
+                                    <div class="h5 cate_name link-underline-text">{{ $category->name }}</div>
+                                    <p class="cate_quantity text-caption-01 cl-text-2">{{ $category->products_count }} товаров</p>
+                                </div>
+                            </a>
+                        </div>
+                        @endforeach
 
-                    <p class="cate_quantity text-caption-01 cl-text-2">
-                        {{ $category->products_count }} товаров
-                    </p>
-                </div>
-            </a>
-        </div>
-    @endforeach
+                        {{-- Карточка: Стать партнёром --}}
+                        <div class="swiper-slide">
+                            <a href="/partners" class="category-v04 hover-img wow fadeInUp">
+                                <div class="cate-image img-style d-flex align-items-center justify-content-center"
+                                    style="background:#f5f5f5; border-radius:50%; aspect-ratio:1;">
+                                    <i class="icon icon-HandshakeFill fs-48 cl-text-2"></i>
+                                </div>
+                                <div class="cate-content text-center">
+                                    <div class="h5 cate_name link-underline-text">Стать партнёром</div>
+                                    <p class="cate_quantity text-caption-01 cl-text-2">Монтажникам</p>
+                                </div>
+                            </a>
+                        </div>
 
-</div>
-
+                        </div>
                         <div class="sw-dot-default tf-sw-pagination"></div>
                     </div>
                 </div>
