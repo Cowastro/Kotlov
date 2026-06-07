@@ -66,10 +66,21 @@ class CatalogController extends Controller
 
         // Атрибуты для фильтрации — дедупликация по имени
         // Одинаковые атрибуты (напр. "Мощность") могут быть привязаны к разным подкатегориям,
-        // поэтому группируем по name и объединяем опции
+        // поэтому группируем по name и объединяем опции.
+        // Также включаем атрибуты родительских категорий — они наследуются подкатегориями.
+        // (Например, Толщина металла привязана к /dymohody, но нужна и на /shibery-dymohod)
+        // Атрибуты с 0 товаров автоматически отфильтруются ниже.
+        $ancestorCategoryIds = collect();
+        $curr = $category;
+        while ($curr->parent_id) {
+            $ancestorCategoryIds->push($curr->parent_id);
+            $curr = Category::find($curr->parent_id);
+        }
+        $attrCategoryIds = $activeCategoryIds->merge($ancestorCategoryIds)->unique();
+
         $rawAttributes = Attribute::where('in_filter', true)
             ->where('type', 'select')
-            ->whereIn('category_id', $activeCategoryIds)
+            ->whereIn('category_id', $attrCategoryIds)
             ->with(['options' => fn($q) => $q->orderBy('sort_order')])
             ->orderBy('sort_order')
             ->get();
