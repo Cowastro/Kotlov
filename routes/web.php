@@ -287,11 +287,24 @@ Route::get('/proxy-image/{path}', function ($path) {
         abort(403);
     }
 
+    $placeholder = public_path('img/products/product-placeholder.jpg');
+
+    // Сначала ищем локальный файл (скопированный rsync)
+    $localFile = public_path('images/' . $path);
+    if (file_exists($localFile)) {
+        $mime = mime_content_type($localFile) ?: 'image/jpeg';
+        return response()->file($localFile, [
+            'Content-Type'  => $mime,
+            'Cache-Control' => 'public, max-age=604800',
+        ]);
+    }
+
+    // Fallback: берём со старого сервера (пока не все скопированы / новые фото)
     $baseUrl = rtrim(env('LEGACY_SITE_URL', 'https://kotlov.by'), '/');
     $url = "{$baseUrl}/images/{$path}";
 
     try {
-        $response = Http::timeout(10)->get($url);
+        $response = \Illuminate\Support\Facades\Http::timeout(10)->get($url);
 
         if ($response->successful()) {
             return response($response->body(), 200)
@@ -299,13 +312,9 @@ Route::get('/proxy-image/{path}', function ($path) {
                 ->header('Cache-Control', 'public, max-age=604800');
         }
 
-        return response()->file(public_path('img/products/product-placeholder.jpg'), [
-            'Content-Type' => 'image/jpeg',
-        ]);
+        return response()->file($placeholder, ['Content-Type' => 'image/jpeg']);
     } catch (\Exception $e) {
-        return response()->file(public_path('img/products/product-placeholder.jpg'), [
-            'Content-Type' => 'image/jpeg',
-        ]);
+        return response()->file($placeholder, ['Content-Type' => 'image/jpeg']);
     }
 })->where('path', '.*');
 
