@@ -50,9 +50,9 @@ Route::get('/', function () {
     $popularCategories = Category::query()
         ->where('is_active', true)
         ->whereIn('slug', [
-            'kotly', 'teplovye-nasosy', 'kaminy', 'pechki',
-            'dymohody', 'dlya-bani', 'vodonagrevateli',
-            'otoplenie', 'nasosy', 'klimat',
+            'kotly', 'teplovyie-nasosyi', 'kaminy', 'pechki',
+            'dymohody', 'bani-i-sauny', 'vodonagrevateli',
+            'pelletnye-gorelki', 'otoplenie', 'nasosy',
         ])
         ->orderBy('sort_order')
         ->limit(10)
