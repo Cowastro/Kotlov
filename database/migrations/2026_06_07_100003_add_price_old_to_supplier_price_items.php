@@ -11,9 +11,11 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('supplier_price_items', function (Blueprint $table) {
-            $table->decimal('price_old', 12, 2)->nullable()->after('price_byn');
-        });
+        if (!Schema::hasColumn('supplier_price_items', 'price_old')) {
+            Schema::table('supplier_price_items', function (Blueprint $table) {
+                $table->decimal('price_old', 12, 2)->nullable()->after('price_byn');
+            });
+        }
     }
 
     public function down(): void
