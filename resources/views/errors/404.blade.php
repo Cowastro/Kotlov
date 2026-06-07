@@ -1,4 +1,4 @@
-@extends('layouts.app')
+@extends('layouts.amerce')
 
 @section('title', '404 — Страница не найдена')
 
