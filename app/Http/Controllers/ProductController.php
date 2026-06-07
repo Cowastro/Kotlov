@@ -12,6 +12,16 @@ class ProductController extends Controller
     {
         $productSlug = $product ?? $productOrSubcategory;
 
+        // Если второй сегмент — это слаг категории, а не товара — редиректим на неё
+        if (!$product) {
+            $maybeCategory = \App\Models\Category::where('slug', $productOrSubcategory)
+                ->where('is_active', true)
+                ->first();
+            if ($maybeCategory) {
+                return redirect('/' . $productOrSubcategory, 301);
+            }
+        }
+
         $product = Product::where('slug', $productSlug)
             ->where('is_active', true)
             ->with([
