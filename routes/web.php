@@ -14,8 +14,12 @@ use App\Http\Controllers\ProductController;
 use App\Http\Controllers\AccountController;
 use App\Http\Controllers\SearchController;
 use App\Http\Controllers\WishlistController;
+use App\Models\BlogPost;
+use App\Models\Brand;
 use App\Models\Category;
+use App\Models\InstallerProfile;
 use App\Models\Product;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Http;
 
@@ -158,6 +162,93 @@ Route::get('/catalog', [CatalogIndexController::class, 'index'])->name('catalog'
 // ===== Бренды =====
 Route::get('/brands',        [BrandController::class, 'index'])->name('brands');
 Route::get('/brands/{slug}', [BrandController::class, 'show'])->name('brand.show');
+
+Route::get('/sitemap.xml', function (Request $request) {
+    $baseUrl = rtrim($request->getSchemeAndHttpHost(), '/');
+    $urls = collect();
+
+    $addUrl = function (string $path) use (&$urls, $baseUrl) {
+        $path = '/' . ltrim($path, '/');
+        $urls->push($baseUrl . ($path === '/' ? '' : $path));
+    };
+
+    foreach ([
+        '/',
+        '/about',
+        '/dostavka',
+        '/reviews',
+        '/catalog',
+        '/brands',
+        '/akcii',
+        '/contacts',
+        '/installers',
+        '/partners',
+        '/suppliers',
+        '/faq',
+        '/privacy',
+        '/blog',
+    ] as $path) {
+        $addUrl($path);
+    }
+
+    Category::active()
+        ->whereNotNull('slug')
+        ->orderBy('sort_order')
+        ->orderBy('id')
+        ->get(['slug'])
+        ->each(fn ($category) => $addUrl($category->slug));
+
+    Product::active()
+        ->with('category:id,slug,is_active')
+        ->whereHas('category', fn ($query) => $query->where('is_active', true))
+        ->orderBy('id')
+        ->chunk(500, function ($products) use ($addUrl) {
+            foreach ($products as $product) {
+                if ($product->category && $product->category->slug && $product->slug) {
+                    $addUrl($product->category->slug . '/' . $product->slug);
+                }
+            }
+        });
+
+    Brand::active()
+        ->whereNotNull('slug')
+        ->orderBy('sort_order')
+        ->orderBy('id')
+        ->get(['slug'])
+        ->each(fn ($brand) => $addUrl('brands/' . $brand->slug));
+
+    BlogPost::published()
+        ->whereNotNull('slug')
+        ->orderByDesc('published_at')
+        ->get(['slug'])
+        ->each(fn ($post) => $addUrl('blog/' . $post->slug));
+
+    InstallerProfile::query()
+        ->where('is_published', true)
+        ->whereNotNull('slug')
+        ->orderBy('id')
+        ->get(['slug'])
+        ->each(fn ($installer) => $addUrl('installers/' . $installer->slug));
+
+    $document = new DOMDocument('1.0', 'UTF-8');
+    $urlset = $document->createElement('urlset');
+    $urlset->setAttribute('xmlns', 'http://www.sitemaps.org/schemas/sitemap/0.9');
+    $urlset->setAttribute('xmlns:xsi', 'http://www.w3.org/2001/XMLSchema-instance');
+    $urlset->setAttribute('xsi:schemaLocation', 'http://www.sitemaps.org/schemas/sitemap/0.9 http://www.sitemaps.org/schemas/sitemap/0.9/sitemap.xsd');
+    $document->appendChild($urlset);
+
+    foreach ($urls->unique()->values() as $url) {
+        $urlNode = $document->createElement('url');
+        $locNode = $document->createElement('loc');
+        $locNode->appendChild($document->createTextNode($url));
+        $urlNode->appendChild($locNode);
+        $urlset->appendChild($urlNode);
+    }
+
+    return response($document->saveXML(), 200)
+        ->header('Content-Type', 'application/xml; charset=UTF-8')
+        ->header('Cache-Control', 'public, max-age=3600');
+})->name('sitemap');
 
 // ===== Прочие формы =====
 Route::post('/ask', fn() => back()->with('success', 'Вопрос отправлен!'))->name('ask.store');
