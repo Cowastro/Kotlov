@@ -246,20 +246,29 @@ class CatalogController extends Controller
         $totalCount = $query->count();
         $products = $query->paginate(24)->withQueryString();
 
-        $cityIn   = request()->route('city') ?? null;
-        $citySuffix = $cityIn ? " $cityIn" : ' в Беларуси';
+        // Город с поддомена (через middleware CitySubdomain)
+        $sharedCityIn = view()->shared('cityIn');
+        $cityIn       = $sharedCityIn ?: 'в Беларуси';
+        $citySuffix   = ' ' . $cityIn;
 
-        $title = $category->meta_title
-            ?: ($category->name . ' — купить' . $citySuffix . ' | KOTLOV');
+        // Подставляем город в мета-теги из БД или генерируем автоматически
+        $replaceCityIn = fn(?string $text) => $text
+            ? str_replace('%city%', $cityIn, $text)
+            : null;
 
-        $description = $category->meta_description
-            ?: ('Купить ' . mb_strtolower($category->name) . $citySuffix
+        $name      = $category->name;
+        $nameLower = mb_strtolower($name);
+
+        $title = $replaceCityIn($category->meta_title)
+            ?: ($name . ' — купить' . $citySuffix . ' | KOTLOV');
+
+        $description = $replaceCityIn($category->meta_description)
+            ?: ('Купить ' . $nameLower . $citySuffix
                 . '. Каталог ' . $allProductsCount . ' товаров с ценами.'
                 . ' Быстрая доставка, гарантия, монтаж.');
 
-        $keywords = $category->meta_keywords
-            ?: (mb_strtolower($category->name) . ', купить ' . mb_strtolower($category->name)
-                . $citySuffix . ', цена, каталог');
+        $keywords = $replaceCityIn($category->meta_keywords)
+            ?: ($name . ', купить ' . $nameLower . $citySuffix . ', цена, каталог');
 
         $canonical = 'https://kotlov.by/' . $category->slug;
 
