@@ -265,18 +265,50 @@ class CatalogController extends Controller
         $name      = $category->name;
         $nameLower = mb_strtolower($name);
 
-        $title = $replaceCityIn($category->meta_title)
-            ?: ($name . ' — купить' . $citySuffix . ' | KOTLOV');
+        // Title: если старый > 70 символов — заменяем на короткий автошаблон
+        $rawTitle = $replaceCityIn($category->meta_title);
+        $title = ($rawTitle && mb_strlen($rawTitle) <= 70)
+            ? $rawTitle
+            : ($name . ' — купить ' . $cityIn . ' | KOTLOV');
 
-        $description = $replaceCityIn($category->meta_description)
-            ?: ('Купить ' . $nameLower . $citySuffix
-                . '. Каталог ' . $allProductsCount . ' товаров с ценами.'
-                . ' Быстрая доставка, гарантия, монтаж.');
+        // Description: если > 180 символов — заменяем на короткий автошаблон
+        $rawDesc = $replaceCityIn($category->meta_description);
+        $description = ($rawDesc && mb_strlen($rawDesc) <= 180)
+            ? $rawDesc
+            : ('Купить ' . $nameLower . ' ' . $cityIn
+                . '. Каталог ' . $allProductsCount . ' товаров.'
+                . ' Доставка по Беларуси, гарантия, монтаж.');
 
         $keywords = $replaceCityIn($category->meta_keywords)
-            ?: ($name . ', купить ' . $nameLower . $citySuffix . ', цена, каталог');
+            ?: ($name . ', купить ' . $nameLower . ' ' . $cityIn . ', цена, каталог');
 
         $canonical = 'https://kotlov.by/' . $category->slug;
+
+        // Schema.org BreadcrumbList
+        $breadcrumbs = [
+            ['@type' => 'ListItem', 'position' => 1, 'name' => 'Главная', 'item' => 'https://kotlov.by/'],
+        ];
+        $pos = 2;
+        if ($category->parent_id && $category->parent) {
+            $breadcrumbs[] = [
+                '@type'    => 'ListItem',
+                'position' => $pos++,
+                'name'     => $category->parent->name,
+                'item'     => 'https://kotlov.by/' . $category->parent->slug,
+            ];
+        }
+        $breadcrumbs[] = [
+            '@type'    => 'ListItem',
+            'position' => $pos,
+            'name'     => $category->h1 ?? $category->name,
+            'item'     => $canonical,
+        ];
+
+        $schemaJson = json_encode([
+            '@context'        => 'https://schema.org',
+            '@type'           => 'BreadcrumbList',
+            'itemListElement' => $breadcrumbs,
+        ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
 
         return view('pages.catalog', compact(
             'category',
@@ -291,7 +323,8 @@ class CatalogController extends Controller
             'title',
             'description',
             'keywords',
-            'canonical'
+            'canonical',
+            'schemaJson'
         ));
     }
 
