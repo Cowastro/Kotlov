@@ -1,2 +1,13 @@
 RewriteEngine On
+
+# Убираем trailing slash до редиректа в public/
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteCond %{REQUEST_URI} ^/(.+)/$
+RewriteRule ^ /%1 [L,R=301]
+
+# Редирект www → без www
+RewriteCond %{HTTP_HOST} ^www\.kotlov\.by$ [NC]
+RewriteRule ^ https://kotlov.by%{REQUEST_URI} [L,R=301]
+
+# Всё остальное → public/
 RewriteRule ^(.*)$ public/$1 [L]

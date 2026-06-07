@@ -45,9 +45,13 @@ class ProductController extends Controller
         $sharedCityIn = view()->shared('cityIn');
         $cityIn       = $sharedCityIn ?: 'в Беларуси';
 
-        $replaceCityIn = fn(?string $text) => $text
-            ? str_replace('%city%', $cityIn, $text)
-            : null;
+        $cityName = preg_replace('/^в\s+/u', '', $cityIn);
+        $replaceCityIn = function (?string $text) use ($cityIn, $cityName): ?string {
+            if (!$text) return null;
+            $text = str_replace('в %city%', $cityIn, $text);
+            $text = str_replace('%city%', $cityName, $text);
+            return $text;
+        };
 
         $brandName = $product->brand?->name ?? '';
         $nameFull  = trim($brandName . ' ' . $product->name);

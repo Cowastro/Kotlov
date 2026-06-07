@@ -252,9 +252,15 @@ class CatalogController extends Controller
         $citySuffix   = ' ' . $cityIn;
 
         // Подставляем город в мета-теги из БД или генерируем автоматически
-        $replaceCityIn = fn(?string $text) => $text
-            ? str_replace('%city%', $cityIn, $text)
-            : null;
+        // name_in уже содержит предлог «в» (напр. «в Борисове»)
+        // Поэтому «в %city%» → cityIn, а одиночный %city% → только название (без «в»)
+        $cityName = preg_replace('/^в\s+/u', '', $cityIn); // «Борисове» или «Беларуси»
+        $replaceCityIn = function (?string $text) use ($cityIn, $cityName): ?string {
+            if (!$text) return null;
+            $text = str_replace('в %city%', $cityIn, $text);   // «в %city%» → «в Борисове»
+            $text = str_replace('%city%', $cityName, $text);    // остаток «%city%» → «Борисове»
+            return $text;
+        };
 
         $name      = $category->name;
         $nameLower = mb_strtolower($name);
