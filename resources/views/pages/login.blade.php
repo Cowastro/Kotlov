@@ -149,6 +149,15 @@
                                     </fieldset>
                                 </div>
 
+                                <div class="checkbox-wrap">
+                                    <input class="tf-check flex-shrink-0" type="checkbox"
+                                        id="reg-subscribe" name="subscribe" value="1"
+                                        {{ old('subscribe') ? 'checked' : 'checked' }}>
+                                    <label for="reg-subscribe">
+                                        Подписаться на новости и акции KOTLOV.BY
+                                    </label>
+                                </div>
+
                                 <div class="group-action">
                                     <button type="submit" class="tf-btn animate-btn w-100">
                                         Создать аккаунт

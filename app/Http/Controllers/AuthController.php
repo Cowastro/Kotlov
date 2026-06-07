@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\EmailSubscriber;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -35,6 +36,13 @@ class AuthController extends Controller
         ]);
 
         Auth::login($user);
+
+        if ($request->boolean('subscribe')) {
+            EmailSubscriber::firstOrCreate(
+                ['email' => $user->email],
+                ['name' => $user->name, 'is_active' => true, 'confirmed_at' => now()]
+            );
+        }
 
         return redirect()->intended('/account')
             ->with('success', 'Добро пожаловать, ' . $user->name . '!');

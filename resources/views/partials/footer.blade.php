@@ -127,14 +127,20 @@
                             <p class="footer-desc cl-text-3 mb-16">
                                 Подпишитесь на новости и акции KOTLOV.BY
                             </p>
-                            <form class="form-sub mb-16">
+                            <form class="form-sub mb-16" action="/subscribe" method="POST">
+                                @csrf
                                 <fieldset>
-                                    <input type="email" placeholder="Ваш e-mail" required>
+                                    <input type="email" name="email" placeholder="Ваш e-mail" required>
                                 </fieldset>
                                 <button type="submit" class="btn-action">
                                     <i class="icon icon-ArrowUpRight"></i>
                                 </button>
                             </form>
+                            @if(session('subscribe_success'))
+                            <p class="cl-text-3 mb-8" style="color:#6ee7b7!important;">
+                                <i class="icon icon-CheckCircle"></i> {{ session('subscribe_success') }}
+                            </p>
+                            @endif
                             <p class="text-remember cl-text-3">
                                 Подписываясь, вы соглашаетесь с
                                 <a href="/privacy" class="text-white link link-underline">

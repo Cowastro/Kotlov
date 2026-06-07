@@ -277,6 +277,16 @@ Route::get('/sitemap.xml', function (Request $request) {
 // ===== Прочие формы =====
 Route::post('/ask', fn() => back()->with('success', 'Вопрос отправлен!'))->name('ask.store');
 
+// ===== Подписка на рассылку =====
+Route::post('/subscribe', function (\Illuminate\Http\Request $request) {
+    $request->validate(['email' => 'required|email|max:255']);
+    \App\Models\EmailSubscriber::firstOrCreate(
+        ['email' => $request->email],
+        ['is_active' => true, 'confirmed_at' => now()]
+    );
+    return back()->with('subscribe_success', 'Вы подписались на рассылку KOTLOV.BY!');
+})->name('subscribe');
+
 // ===== Auth страницы (GET) =====
 Route::get('/login', function () {
     if (auth()->check()) return redirect('/account');
