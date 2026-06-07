@@ -184,6 +184,7 @@ Route::get('/search/suggest', [SearchController::class, 'suggest'])->name('searc
 Route::get('/pechi-dlya-bani/pechi-drovyanye', fn() => redirect('/drovyanye-pechi-dlya-bani', 301));
 Route::get('/pechi-dlya-bani/{any}',           fn() => redirect('/bani-i-sauny', 301))->where('any', '.*');
 Route::get('/brands/{brand}/{category}',        fn() => redirect('/brands', 301))->where('brand', '[a-z0-9\-]+')->where('category', '[a-z0-9\-]+');
+Route::get('/dlya-dachi',                       fn() => redirect('/pechki', 301));
 
 // ===== Каталог =====
 Route::get('/catalog', [CatalogIndexController::class, 'index'])->name('catalog');
