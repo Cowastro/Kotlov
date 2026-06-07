@@ -145,7 +145,7 @@
                             'kotly'              => 'boiler_img.jpg',
                             'teplovyie-nasosyi'  => 'heatpump.jpg',
                             'kaminy'             => 'fireplace.jpg',
-                            'pechki'             => 'sauna.jpg',
+                            'pechki'             => 'pech.jpg',
                             'dymohody'           => 'chimney.jpg',
                             'bani-i-sauny'       => 'sauna.jpg',
                             'vodonagrevateli'    => 'droplet.jpg',
@@ -185,9 +185,10 @@
                         {{-- Карточка: Стать партнёром --}}
                         <div class="swiper-slide">
                             <a href="/partners" class="category-v04 hover-img wow fadeInUp">
-                                <div class="cate-image img-style d-flex align-items-center justify-content-center"
-                                    style="background:#f5f5f5; border-radius:50%; aspect-ratio:1;">
-                                    <i class="icon icon-HandshakeFill fs-48 cl-text-2"></i>
+                                <div class="cate-image img-style">
+                                    <img loading="lazy" width="240" height="180"
+                                        src="{{ asset('img/popular/cooperation.jpg') }}"
+                                        alt="Стать партнёром">
                                 </div>
                                 <div class="cate-content text-center">
                                     <div class="h5 cate_name link-underline-text">Стать партнёром</div>
