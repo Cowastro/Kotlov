@@ -8,7 +8,7 @@
                 <a href="#citySelector" data-bs-toggle="offcanvas" class="text-white d-flex align-items-center gap-1">
 
 
-                    <span>{{ $geo ?? 'Минск' }}</span>
+                    <span>{{ $cityName ?? $geo ?? 'Минск' }}</span>
 
                     <i class="icon icon-CaretDown"></i>
 
