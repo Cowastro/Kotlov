@@ -23,15 +23,13 @@
 </main>
 @endsection
 
-{{--
-{{-- РАСКОММЕНТИРОВАТЬ КОГДА БУДЕТ ГОТОВ КАТАЛОГ МОНТАЖНИКОВ --}}
+<?php /*
+РАСКОММЕНТИРОВАТЬ: убрать эту строку и закрывающий */ ?> внизу
 
-{{-- @extends('layouts.amerce')
-
+@extends('layouts.amerce')
 @section('content')
 <main id="wrapper">
 
-    {{-- 1. PAGE TITLE --}}
     <section class="section-page-title text-center flat-spacing-2 pb-0">
         <div class="container">
             <div class="main-page-title">
@@ -42,32 +40,24 @@
                 </div>
                 <h1 class="h3">Монтажники KOTLOV</h1>
                 <p class="text-body-1 cl-text-2">
-                    Проверенные специалисты по монтажу отопительного оборудования,<br class="d-none d-lg-block">
+                    Проверенные специалисты по монтажу отопительного оборудования,
                     дымоходов, каминов, тепловых насосов и банных печей по Беларуси.
                 </p>
             </div>
         </div>
     </section>
 
-    {{-- 2. HERO + СЧЁТЧИКИ --}}
     <section class="section-main-about flat-spacing pt-0">
         <div class="container">
             <div class="flat-spacing-2">
                 <div class="hero-image">
-                    <img loading="lazy" width="1410" height="520"
-                        src="{{ asset('img/hero/montazh.jpg') }}"
-                        alt="Монтаж отопительного оборудования — KOTLOV">
+                    <img loading="lazy" width="1410" height="520" src="{{ asset('img/hero/montazh.jpg') }}" alt="Монтаж отопительного оборудования — KOTLOV">
                 </div>
             </div>
             <div class="row align-items-center gy-4">
+                <div class="col-md-6"><h2>Подберём монтажника под вашу задачу</h2></div>
                 <div class="col-md-6">
-                    <h2>Подберём монтажника под вашу задачу</h2>
-                </div>
-                <div class="col-md-6">
-                    <p class="text-body-1">
-                        Выберите регион, тип работ и оставьте заявку —
-                        KOTLOV поможет связать вас с подходящим специалистом.
-                    </p>
+                    <p class="text-body-1">Выберите регион, тип работ и оставьте заявку — KOTLOV поможет связать вас с подходящим специалистом.</p>
                     <div class="d-flex flex-wrap gap-12 mt-20">
                         <a href="#catalog" class="tf-btn animate-btn">Найти монтажника</a>
                         <a href="/contacts" class="tf-btn btn-outline">Оставить заявку</a>
@@ -77,51 +67,12 @@
             <div class="flat-spacing pb-0">
                 <div class="position-relative flat-spacing pb-0">
                     <div class="br-line fake-class top-0"></div>
-                    <div dir="ltr" class="swiper tf-swiper"
-                        data-preview="4" data-tablet="3" data-mobile-sm="2" data-mobile="2"
-                        data-space-lg="40" data-space-md="20" data-space="10"
-                        data-pagination="1" data-pagination-sm="2" data-pagination-md="3" data-pagination-lg="4">
+                    <div dir="ltr" class="swiper tf-swiper" data-preview="4" data-tablet="3" data-mobile-sm="2" data-mobile="2" data-space-lg="40" data-space-md="20" data-space="10" data-pagination="1" data-pagination-sm="2" data-pagination-md="3" data-pagination-lg="4">
                         <div class="swiper-wrapper">
-                            <div class="swiper-slide">
-                                <div class="box-why">
-                                    <p class="h1 fw-medium">7</p>
-                                    <p class="title h5 fw-medium">Регионов</p>
-                                    <p class="sub cl-text-2">Монтажники работают по всей Беларуси</p>
-                                </div>
-                            </div>
-                            <div class="swiper-slide">
-                                <div class="box-why">
-                                    @if($installersCount > 0)
-                                    <p class="h1 fw-medium">{{ $installersCount }}+</p>
-                                    @else
-                                    <p class="h1 fw-medium">—</p>
-                                    @endif
-                                    <p class="title h5 fw-medium">Монтажников</p>
-                                    <p class="sub cl-text-2">Верифицированные специалисты</p>
-                                </div>
-                            </div>
-                            <div class="swiper-slide">
-                                <div class="box-why">
-                                    @if($worksCount > 0)
-                                    <p class="h1 fw-medium">{{ $worksCount }}+</p>
-                                    @else
-                                    <p class="h1 fw-medium">—</p>
-                                    @endif
-                                    <p class="title h5 fw-medium">Работ в портфолио</p>
-                                    <p class="sub cl-text-2">Реальные объекты с фотографиями</p>
-                                </div>
-                            </div>
-                            <div class="swiper-slide">
-                                <div class="box-why">
-                                    @if($reviewsCount > 0)
-                                    <p class="h1 fw-medium">{{ $reviewsCount }}+</p>
-                                    @else
-                                    <p class="h1 fw-medium">—</p>
-                                    @endif
-                                    <p class="title h5 fw-medium">Отзывов</p>
-                                    <p class="sub cl-text-2">Реальные оценки от клиентов</p>
-                                </div>
-                            </div>
+                            <div class="swiper-slide"><div class="box-why"><p class="h1 fw-medium">7</p><p class="title h5 fw-medium">Регионов</p><p class="sub cl-text-2">Монтажники работают по всей Беларуси</p></div></div>
+                            <div class="swiper-slide"><div class="box-why"><p class="h1 fw-medium">{{ $installersCount > 0 ? $installersCount.'+' : '—' }}</p><p class="title h5 fw-medium">Монтажников</p><p class="sub cl-text-2">Верифицированные специалисты</p></div></div>
+                            <div class="swiper-slide"><div class="box-why"><p class="h1 fw-medium">{{ $worksCount > 0 ? $worksCount.'+' : '—' }}</p><p class="title h5 fw-medium">Работ в портфолио</p><p class="sub cl-text-2">Реальные объекты с фотографиями</p></div></div>
+                            <div class="swiper-slide"><div class="box-why"><p class="h1 fw-medium">{{ $reviewsCount > 0 ? $reviewsCount.'+' : '—' }}</p><p class="title h5 fw-medium">Отзывов</p><p class="sub cl-text-2">Реальные оценки от клиентов</p></div></div>
                         </div>
                         <div class="sw-dot-default tf-sw-pagination"></div>
                     </div>
@@ -130,7 +81,6 @@
         </div>
     </section>
 
-    {{-- 3. НАПРАВЛЕНИЯ --}}
     <section class="flat-spacing">
         <div class="container">
             <div class="sect-heading type-2 text-center mb-40">
@@ -139,10 +89,7 @@
             </div>
             <div class="position-relative flat-spacing pb-0">
                 <div class="br-line fake-class top-0"></div>
-                <div dir="ltr" class="swiper tf-swiper"
-                    data-preview="4" data-tablet="3" data-mobile-sm="2" data-mobile="2"
-                    data-space-lg="30" data-space-md="20" data-space="10"
-                    data-pagination="1" data-pagination-sm="2" data-pagination-md="3" data-pagination-lg="4">
+                <div dir="ltr" class="swiper tf-swiper" data-preview="4" data-tablet="3" data-mobile-sm="2" data-mobile="2" data-space-lg="30" data-space-md="20" data-space="10" data-pagination="1" data-pagination-sm="2" data-pagination-md="3" data-pagination-lg="4">
                     <div class="swiper-wrapper">
                         @foreach ([
                             ['icon' => 'icon-Lightning',  'title' => 'Монтаж котлов',    'desc' => 'Котлы, радиаторы, тёплые полы, обвязка, запуск системы.'],
@@ -152,13 +99,7 @@
                             ['icon' => 'icon-Leaf',       'title' => 'Бани и сауны',     'desc' => 'Банные печи, дымоходы, вентиляция, комплексный монтаж.'],
                             ['icon' => 'icon-GearSix',    'title' => 'Сервис и наладка', 'desc' => 'ТО, ремонт, пуско-наладка котлов и оборудования.'],
                         ] as $dir)
-                        <div class="swiper-slide">
-                            <div class="box-why">
-                                <i class="icon {{ $dir['icon'] }} fs-32 mb-12"></i>
-                                <p class="title h5 fw-medium mb-8">{{ $dir['title'] }}</p>
-                                <p class="sub cl-text-2">{{ $dir['desc'] }}</p>
-                            </div>
-                        </div>
+                        <div class="swiper-slide"><div class="box-why"><i class="icon {{ $dir['icon'] }} fs-32 mb-12"></i><p class="title h5 fw-medium mb-8">{{ $dir['title'] }}</p><p class="sub cl-text-2">{{ $dir['desc'] }}</p></div></div>
                         @endforeach
                     </div>
                     <div class="sw-dot-default tf-sw-pagination"></div>
@@ -167,61 +108,23 @@
         </div>
     </section>
 
-    {{-- 4. КАК ЭТО РАБОТАЕТ --}}
     <section class="themesFlat">
         <div class="container">
             <div class="banner-why-choose">
-                <div class="bn-image">
-                    <img loading="lazy" width="640" height="480"
-                        src="{{ asset('img/hero/heatpump-hero.jpg') }}"
-                        alt="Монтаж под ключ — KOTLOV">
-                </div>
+                <div class="bn-image"><img loading="lazy" width="640" height="480" src="{{ asset('img/hero/heatpump-hero.jpg') }}" alt="Монтаж под ключ — KOTLOV"></div>
                 <div class="bn-content">
                     <h3 class="mb-12">Как это работает</h3>
                     <div id="accordion-installers-how">
-                        <div class="accordion-item_v2">
-                            <div class="accordion-action lh-24 fw-medium" data-bs-target="#inst-how-1" data-bs-toggle="collapse" aria-expanded="true" role="button">
-                                <span>1. Выбираете оборудование или услугу</span>
-                                <span class="icon ic-accordion-custom cl-2"></span>
-                            </div>
-                            <div id="inst-how-1" class="collapse show" data-bs-parent="#accordion-installers-how">
-                                <p class="faq-content cl-text-2">Найдите товар в каталоге или укажите нужный тип монтажных работ.</p>
-                            </div>
-                        </div>
-                        <div class="accordion-item_v2">
-                            <div class="accordion-action collapsed lh-24 fw-medium" data-bs-target="#inst-how-2" data-bs-toggle="collapse" aria-expanded="false" role="button">
-                                <span>2. Оставляете заявку</span>
-                                <span class="icon ic-accordion-custom cl-2"></span>
-                            </div>
-                            <div id="inst-how-2" class="collapse" data-bs-parent="#accordion-installers-how">
-                                <p class="faq-content cl-text-2">Укажите город и тип работ. Нужен только контакт и описание задачи.</p>
-                            </div>
-                        </div>
-                        <div class="accordion-item_v2">
-                            <div class="accordion-action collapsed lh-24 fw-medium" data-bs-target="#inst-how-3" data-bs-toggle="collapse" aria-expanded="false" role="button">
-                                <span>3. KOTLOV подбирает монтажника</span>
-                                <span class="icon ic-accordion-custom cl-2"></span>
-                            </div>
-                            <div id="inst-how-3" class="collapse" data-bs-parent="#accordion-installers-how">
-                                <p class="faq-content cl-text-2">Передаём заявку подходящему специалисту в вашем регионе.</p>
-                            </div>
-                        </div>
-                        <div class="accordion-item_v2">
-                            <div class="accordion-action collapsed lh-24 fw-medium" data-bs-target="#inst-how-4" data-bs-toggle="collapse" aria-expanded="false" role="button">
-                                <span>4. Монтажник связывается с вами</span>
-                                <span class="icon ic-accordion-custom cl-2"></span>
-                            </div>
-                            <div id="inst-how-4" class="collapse" data-bs-parent="#accordion-installers-how">
-                                <p class="faq-content cl-text-2">Специалист звонит, уточняет детали и согласовывает сроки.</p>
-                            </div>
-                        </div>
+                        <div class="accordion-item_v2"><div class="accordion-action lh-24 fw-medium" data-bs-target="#inst-how-1" data-bs-toggle="collapse" aria-expanded="true" role="button"><span>1. Выбираете оборудование или услугу</span><span class="icon ic-accordion-custom cl-2"></span></div><div id="inst-how-1" class="collapse show" data-bs-parent="#accordion-installers-how"><p class="faq-content cl-text-2">Найдите товар в каталоге или укажите нужный тип монтажных работ.</p></div></div>
+                        <div class="accordion-item_v2"><div class="accordion-action collapsed lh-24 fw-medium" data-bs-target="#inst-how-2" data-bs-toggle="collapse" aria-expanded="false" role="button"><span>2. Оставляете заявку</span><span class="icon ic-accordion-custom cl-2"></span></div><div id="inst-how-2" class="collapse" data-bs-parent="#accordion-installers-how"><p class="faq-content cl-text-2">Укажите город и тип работ. Нужен только контакт и описание задачи.</p></div></div>
+                        <div class="accordion-item_v2"><div class="accordion-action collapsed lh-24 fw-medium" data-bs-target="#inst-how-3" data-bs-toggle="collapse" aria-expanded="false" role="button"><span>3. KOTLOV подбирает монтажника</span><span class="icon ic-accordion-custom cl-2"></span></div><div id="inst-how-3" class="collapse" data-bs-parent="#accordion-installers-how"><p class="faq-content cl-text-2">Передаём заявку подходящему специалисту в вашем регионе.</p></div></div>
+                        <div class="accordion-item_v2"><div class="accordion-action collapsed lh-24 fw-medium" data-bs-target="#inst-how-4" data-bs-toggle="collapse" aria-expanded="false" role="button"><span>4. Монтажник связывается с вами</span><span class="icon ic-accordion-custom cl-2"></span></div><div id="inst-how-4" class="collapse" data-bs-parent="#accordion-installers-how"><p class="faq-content cl-text-2">Специалист звонит, уточняет детали и согласовывает сроки.</p></div></div>
                     </div>
                 </div>
             </div>
         </div>
     </section>
 
-    {{-- 5. КАТАЛОГ МОНТАЖНИКОВ --}}
     <section class="flat-spacing" id="catalog">
         <div class="container">
             <div class="sect-heading type-2 text-center mb-40">
@@ -255,9 +158,7 @@
                     </form>
                 </div>
                 <div class="col-lg-9">
-                    <div class="d-flex align-items-center justify-content-between mb-20">
-                        <p class="text-body-1 cl-text-2">Найдено: <strong>{{ $installers->total() }}</strong></p>
-                    </div>
+                    <p class="text-body-1 cl-text-2 mb-20">Найдено: <strong>{{ $installers->total() }}</strong></p>
                     @if($installers->isEmpty())
                     <div class="text-center py-60">
                         <p class="h5 fw-medium mb-8">Монтажники не найдены</p>
@@ -267,75 +168,47 @@
                     @php $specLabels = ['heating'=>'Котлы','heatpump'=>'Тепл. насосы','fireplace'=>'Камины','chimney'=>'Дымоходы','sauna'=>'Бани','service'=>'Сервис','commissioning'=>'Пусконаладка']; @endphp
                     <div class="row gy-4">
                         @foreach($installers as $installer)
-                        @php
-                            $profileUrl  = $installer->slug ? '/installers/' . $installer->slug : null;
-                            $displayName = $installer->company_name ?: ($installer->contact_name ?: 'Монтажник');
-                        @endphp
+                        @php $profileUrl = $installer->slug ? '/installers/'.$installer->slug : null; $displayName = $installer->company_name ?: ($installer->contact_name ?: 'Монтажник'); @endphp
                         <div class="col-md-6 col-xl-4">
                             <div class="box-why h-100 d-flex flex-column" style="padding:20px;">
                                 <div class="d-flex align-items-center gap-12 mb-16">
                                     @if($installer->photo || $installer->logo)
-                                        <img src="{{ asset('storage/' . ($installer->photo ?? $installer->logo)) }}" alt="{{ $displayName }}" width="52" height="52" style="border-radius:50%;object-fit:cover;flex-shrink:0;">
+                                        <img src="{{ asset('storage/'.($installer->photo ?? $installer->logo)) }}" alt="{{ $displayName }}" width="52" height="52" style="border-radius:50%;object-fit:cover;flex-shrink:0;">
                                     @else
-                                        <div style="width:52px;height:52px;border-radius:50%;background:var(--line);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
-                                            <i class="icon icon-UserCircle fs-24 cl-text-3"></i>
-                                        </div>
+                                        <div style="width:52px;height:52px;border-radius:50%;background:var(--line);display:flex;align-items:center;justify-content:center;flex-shrink:0;"><i class="icon icon-UserCircle fs-24 cl-text-3"></i></div>
                                     @endif
                                     <div>
                                         <p class="fw-medium lh-22">{{ $displayName }}</p>
-                                        @if($installer->is_verified)
-                                        <span class="text-caption-01" style="color:var(--green,#2e7d32);"><i class="icon icon-CheckCircle"></i> Верифицирован</span>
-                                        @endif
+                                        @if($installer->is_verified)<span class="text-caption-01" style="color:#2e7d32;"><i class="icon icon-CheckCircle"></i> Верифицирован</span>@endif
                                     </div>
                                 </div>
-                                @if($installer->city || $installer->region)
-                                <p class="text-caption-01 cl-text-3 mb-8">
-                                    <i class="icon icon-MapPin"></i>
-                                    {{ implode(', ', array_filter([$installer->city, $installer->region])) }}
-                                    @if($installer->nationwide) · вся Беларусь @elseif($installer->work_radius_km) · +{{ $installer->work_radius_km }} км @endif
-                                </p>
-                                @endif
-                                @if($installer->short_description)
-                                <p class="sub cl-text-2 mb-12">{{ Str::limit($installer->short_description, 90) }}</p>
-                                @endif
-                                @if($installer->specializations && count($installer->specializations))
-                                <div class="d-flex flex-wrap gap-4 mb-12">
-                                    @foreach(array_slice($installer->specializations, 0, 3) as $spec)
-                                    <span class="text-caption-01" style="padding:2px 8px;background:var(--line);border-radius:4px;">{{ $specLabels[$spec] ?? $spec }}</span>
-                                    @endforeach
-                                </div>
-                                @endif
+                                @if($installer->city || $installer->region)<p class="text-caption-01 cl-text-3 mb-8"><i class="icon icon-MapPin"></i> {{ implode(', ', array_filter([$installer->city, $installer->region])) }}@if($installer->nationwide) · вся Беларусь @elseif($installer->work_radius_km) · +{{ $installer->work_radius_km }} км @endif</p>@endif
+                                @if($installer->short_description)<p class="sub cl-text-2 mb-12">{{ Str::limit($installer->short_description, 90) }}</p>@endif
+                                @if($installer->specializations && count($installer->specializations))<div class="d-flex flex-wrap gap-4 mb-12">@foreach(array_slice($installer->specializations,0,3) as $spec)<span class="text-caption-01" style="padding:2px 8px;background:var(--line);border-radius:4px;">{{ $specLabels[$spec] ?? $spec }}</span>@endforeach</div>@endif
                                 <div class="d-flex align-items-center gap-16 mb-12 mt-auto">
                                     @if($installer->experience_years)<span class="text-caption-01 cl-text-2"><i class="icon icon-Timer"></i> {{ $installer->experience_years }} л.</span>@endif
-                                    @if($installer->rating > 0)<span class="text-caption-01 cl-text-2">★ {{ number_format($installer->rating, 1) }}</span>@endif
-                                    @if($installer->price_from)<span class="text-caption-01 fw-medium ms-auto">от {{ number_format($installer->price_from, 0, '.', ' ') }} BYN</span>@endif
+                                    @if($installer->rating > 0)<span class="text-caption-01 cl-text-2">★ {{ number_format($installer->rating,1) }}</span>@endif
+                                    @if($installer->price_from)<span class="text-caption-01 fw-medium ms-auto">от {{ number_format($installer->price_from,0,'.',' ') }} BYN</span>@endif
                                 </div>
                                 <div class="d-flex gap-8">
-                                    @if($profileUrl)
-                                    <a href="{{ $profileUrl }}" class="tf-btn btn-outline flex-grow-1 text-center" style="font-size:13px;padding:8px 10px;">Открыть профиль</a>
-                                    @endif
+                                    @if($profileUrl)<a href="{{ $profileUrl }}" class="tf-btn btn-outline flex-grow-1 text-center" style="font-size:13px;padding:8px 10px;">Открыть профиль</a>@endif
                                     <a href="{{ route('install-requests.create', ['installer' => $installer->id]) }}" class="tf-btn animate-btn flex-grow-1 text-center" style="font-size:13px;padding:8px 10px;">Оставить заявку</a>
                                 </div>
                             </div>
                         </div>
                         @endforeach
                     </div>
-                    @if($installers->hasPages())
-                    <div class="d-flex justify-content-center mt-40">{{ $installers->links() }}</div>
-                    @endif
+                    @if($installers->hasPages())<div class="d-flex justify-content-center mt-40">{{ $installers->links() }}</div>@endif
                     @endif
                 </div>
             </div>
         </div>
     </section>
 
-    {{-- 6. ВЫ МОНТАЖНИК? --}}
     <section class="flat-spacing pt-0">
         <div class="container">
             <div class="banner-why-choose">
-                <div class="bn-image">
-                    <img loading="lazy" width="640" height="480" src="{{ asset('img/hero/s-contact-2.jpg') }}" alt="Стать монтажником на KOTLOV">
-                </div>
+                <div class="bn-image"><img loading="lazy" width="640" height="480" src="{{ asset('img/hero/s-contact-2.jpg') }}" alt="Стать монтажником на KOTLOV"></div>
                 <div class="bn-content">
                     <h3 class="mb-12">Вы монтажник или монтажная организация?</h3>
                     <p class="text-body-1 cl-text-2 mb-24">Разместите профиль на KOTLOV и получайте заявки по своему региону.</p>
@@ -348,42 +221,19 @@
         </div>
     </section>
 
-    {{-- 7. FAQ --}}
     <section class="flat-spacing pt-0">
         <div class="container">
             <div class="sect-heading type-2 text-center mb-40"><h2 class="s-title">Частые вопросы</h2></div>
-            <div class="row justify-content-center">
-                <div class="col-lg-9">
-                    <div id="accordion-installers-faq">
-                        <div class="accordion-item_v2">
-                            <div class="accordion-action lh-24 fw-medium" data-bs-target="#inst-faq-1" data-bs-toggle="collapse" aria-expanded="true" role="button">
-                                <span>Как KOTLOV подбирает монтажника?</span><span class="icon ic-accordion-custom cl-2"></span>
-                            </div>
-                            <div id="inst-faq-1" class="collapse show" data-bs-parent="#accordion-installers-faq">
-                                <p class="faq-content cl-text-2">После заявки анализируем регион, тип оборудования и передаём верифицированному монтажнику.</p>
-                            </div>
-                        </div>
-                        <div class="accordion-item_v2">
-                            <div class="accordion-action collapsed lh-24 fw-medium" data-bs-target="#inst-faq-2" data-bs-toggle="collapse" aria-expanded="false" role="button">
-                                <span>Можно ли выбрать монтажника самостоятельно?</span><span class="icon ic-accordion-custom cl-2"></span>
-                            </div>
-                            <div id="inst-faq-2" class="collapse" data-bs-parent="#accordion-installers-faq">
-                                <p class="faq-content cl-text-2">Да, в каталоге можно выбрать специалиста по региону и специализации.</p>
-                            </div>
-                        </div>
-                        <div class="accordion-item_v2">
-                            <div class="accordion-action collapsed lh-24 fw-medium" data-bs-target="#inst-faq-3" data-bs-toggle="collapse" aria-expanded="false" role="button">
-                                <span>Работаете ли вы по всей Беларуси?</span><span class="icon ic-accordion-custom cl-2"></span>
-                            </div>
-                            <div id="inst-faq-3" class="collapse" data-bs-parent="#accordion-installers-faq">
-                                <p class="faq-content cl-text-2">Да, монтажники представлены во всех регионах Беларуси.</p>
-                            </div>
-                        </div>
-                    </div>
+            <div class="row justify-content-center"><div class="col-lg-9">
+                <div id="accordion-installers-faq">
+                    <div class="accordion-item_v2"><div class="accordion-action lh-24 fw-medium" data-bs-target="#inst-faq-1" data-bs-toggle="collapse" aria-expanded="true" role="button"><span>Как KOTLOV подбирает монтажника?</span><span class="icon ic-accordion-custom cl-2"></span></div><div id="inst-faq-1" class="collapse show" data-bs-parent="#accordion-installers-faq"><p class="faq-content cl-text-2">После заявки анализируем регион, тип оборудования и передаём верифицированному монтажнику.</p></div></div>
+                    <div class="accordion-item_v2"><div class="accordion-action collapsed lh-24 fw-medium" data-bs-target="#inst-faq-2" data-bs-toggle="collapse" aria-expanded="false" role="button"><span>Можно ли выбрать монтажника самостоятельно?</span><span class="icon ic-accordion-custom cl-2"></span></div><div id="inst-faq-2" class="collapse" data-bs-parent="#accordion-installers-faq"><p class="faq-content cl-text-2">Да, в каталоге можно выбрать специалиста по региону и специализации.</p></div></div>
+                    <div class="accordion-item_v2"><div class="accordion-action collapsed lh-24 fw-medium" data-bs-target="#inst-faq-3" data-bs-toggle="collapse" aria-expanded="false" role="button"><span>Работаете ли вы по всей Беларуси?</span><span class="icon ic-accordion-custom cl-2"></span></div><div id="inst-faq-3" class="collapse" data-bs-parent="#accordion-installers-faq"><p class="faq-content cl-text-2">Да, монтажники представлены во всех регионах Беларуси.</p></div></div>
                 </div>
-            </div>
+            </div></div>
         </div>
     </section>
 
 </main>
-@endsection --}}
+@endsection
+*/ ?>
