@@ -27,6 +27,12 @@ class EmailSubscriberResource extends Resource
     protected static ?int $navigationSort = 2;
 
     public static function getNavigationGroup(): ?string { return 'Управление'; }
+
+    public static function getNavigationBadge(): ?string
+    {
+        $count = static::getModel()::where('is_new', true)->count();
+        return $count > 0 ? (string) $count : null;
+    }
     public static function form(Schema $schema): Schema { return EmailSubscriberForm::configure($schema); }
     public static function infolist(Schema $schema): Schema { return EmailSubscriberInfolist::configure($schema); }
     public static function table(Table $table): Table { return EmailSubscribersTable::configure($table); }

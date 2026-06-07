@@ -8,11 +8,12 @@ use Illuminate\Support\Str;
 class EmailSubscriber extends Model
 {
     protected $fillable = [
-        'email', 'name', 'is_active', 'token', 'confirmed_at',
+        'email', 'name', 'is_active', 'is_new', 'token', 'confirmed_at',
     ];
 
     protected $casts = [
         'is_active'    => 'boolean',
+        'is_new'       => 'boolean',
         'confirmed_at' => 'datetime',
     ];
 

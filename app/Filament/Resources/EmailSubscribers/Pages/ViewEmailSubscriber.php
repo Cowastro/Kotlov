@@ -16,4 +16,11 @@ class ViewEmailSubscriber extends ViewRecord
             EditAction::make(),
         ];
     }
+
+    protected function afterFill(): void
+    {
+        if ($this->record->is_new) {
+            $this->record->update(['is_new' => false]);
+        }
+    }
 }
