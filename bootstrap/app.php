@@ -13,6 +13,7 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware) {
         // 301 редиректы со старого сайта — обрабатывает 404 и ищет в таблице redirects
         $middleware->append(\App\Http\Middleware\HandleRedirects::class);
+        $middleware->append(\App\Http\Middleware\CitySubdomain::class);
     })
     ->withExceptions(function (Exceptions $exceptions) {
         //

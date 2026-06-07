@@ -2,8 +2,11 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>{{ $title ?? 'KOTLOV — маркетплейс отопления' }}</title>
-    <meta name="description" content="{{ $description ?? 'KOTLOV — маркетплейс отопления, котлов, печей, каминов, дымоходов и монтажных услуг в Беларуси.' }}">
+    <title>{{ $title ?? ('KOTLOV — маркетплейс отопления' . (isset($cityIn) && $cityIn ? ' ' . $cityIn : '')) }}</title>
+    <meta name="description" content="{{ $description ?? ('KOTLOV — маркетплейс отопления, котлов, печей, каминов, дымоходов и монтажных услуг' . (isset($cityIn) && $cityIn ? ' ' . $cityIn : ' в Беларуси') . '.') }}">
+    @if(isset($currentCity) && $currentCity)
+    <link rel="canonical" href="https://kotlov.by{{ request()->getPathInfo() }}">
+    @endif
     <meta name="keywords" content="{{ $keywords ?? 'котлы, печи, камины, дымоходы, отопление, монтаж, маркетплейс отопления' }}">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="format-detection" content="telephone=no">
