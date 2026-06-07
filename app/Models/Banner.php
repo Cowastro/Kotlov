@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 class Banner extends Model
 {
     protected $fillable = [
-        'title', 'subtitle', 'image', 'link',
+        'title', 'subtitle', 'image', 'image_mobile', 'link',
         'button_text', 'position', 'sort_order', 'is_active',
     ];
 

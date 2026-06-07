@@ -67,15 +67,40 @@ class BannerForm
                             ),
                     ]),
 
-                Section::make('Изображение')
+                Section::make('Изображения')
+                    ->columns(2)
                     ->schema([
                         FileUpload::make('image')
-                            ->label('Изображение баннера')
+                            ->label('🖥 Десктоп')
                             ->image()
                             ->required()
                             ->directory('banners')
-                            ->imagePreviewHeight('200')
-                            ->helperText('Загрузите файл в формате JPG или PNG. Смотрите рекомендуемый размер в разделе "Позиция" выше.'),
+                            ->imagePreviewHeight('180')
+                            ->helperText(fn($get) => match($get('position')) {
+                                'hero'         => 'Размер: 1770 × 680 px. Горизонтальное фото.',
+                                'promo_kotly',
+                                'promo_nasosy',
+                                'promo_kaminy',
+                                'promo_akcii'  => 'Размер: 450 × 608 px. Вертикальное фото.',
+                                'partners'     => 'Размер: 1410 × 260 px. Широкий горизонтальный баннер.',
+                                default        => 'Загрузите изображение в формате JPG или PNG.',
+                            }),
+
+                        FileUpload::make('image_mobile')
+                            ->label('📱 Мобильная версия')
+                            ->image()
+                            ->nullable()
+                            ->directory('banners')
+                            ->imagePreviewHeight('180')
+                            ->helperText(fn($get) => match($get('position')) {
+                                'hero'         => 'Размер: 600 × 800 px. Вертикальное фото — телефон держат вертикально. Если не загрузить — будет использоваться десктоп-версия.',
+                                'promo_kotly',
+                                'promo_nasosy',
+                                'promo_kaminy',
+                                'promo_akcii'  => 'Промо-баннеры на мобильном скрываются, отдельная версия не нужна.',
+                                'partners'     => 'Размер: 600 × 300 px. Если не загрузить — будет десктоп-версия.',
+                                default        => 'Необязательно. Если не загрузить — будет использоваться основное изображение.',
+                            }),
                     ]),
 
                 Section::make('Контент')

@@ -69,9 +69,14 @@
                             <div class="swiper-slide">
                                 <div class="slider-wrap slideshow-wrap rounded-20 overflow-hidden">
                                     <div class="sld_image">
-                                        <img width="1770" height="680" loading="eager" decoding="async"
-                                            src="{{ asset('storage/' . $banner->image) }}" alt="{{ $banner->title }}"
-                                            class="lazyload scale-item scale-item-1">
+                                        <picture>
+                                            @if($banner->image_mobile)
+                                            <source media="(max-width: 767px)" srcset="{{ asset('storage/' . $banner->image_mobile) }}">
+                                            @endif
+                                            <img width="1770" height="680" loading="eager" decoding="async"
+                                                src="{{ asset('storage/' . $banner->image) }}" alt="{{ $banner->title }}"
+                                                class="lazyload scale-item scale-item-1">
+                                        </picture>
                                     </div>
                                     @if($banner->title || $banner->subtitle || $banner->link)
                                     <div class="sld_content type-4">
