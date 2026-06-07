@@ -1,2 +1,18 @@
 User-agent: *
-Disallow:
+Disallow: /admin/
+Disallow: /cart/
+Disallow: /compare
+Disallow: /*pcnt=20
+Disallow: /*pcnt=40
+Disallow: /*pcnt=60
+Disallow: /*pcnt=80
+Disallow: /*pcnt=100
+Disallow: /*?
+
+Allow: /css/styles.css
+Allow: /js/general.js
+
+Sitemap: https://kotlov.by/sitemap.xml
+
+User-agent: Yandex
+Host: kotlov.by
