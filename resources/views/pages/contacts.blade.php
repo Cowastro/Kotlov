@@ -39,9 +39,7 @@
         <div class="container">
 
             @if (session('success'))
-                <div class="alert alert-success mb-24 p-16 radius-8" style="background:#f0fdf4;border:1px solid #86efac;color:#166534;">
-                    <i class="icon icon-CheckCircle"></i> {{ session('success') }}
-                </div>
+                <div class="alert alert-success mb-20">{{ session('success') }}</div>
             @endif
 
             <div class="row gy-5 flex-wrap-reverse">

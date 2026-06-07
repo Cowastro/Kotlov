@@ -216,22 +216,102 @@
     </section>
     {{-- /Banner Why Choose --}}
 
-    {{-- CTA --}}
-    <section class="flat-spacing">
+    {{-- Форма заявки поставщика --}}
+    <section class="flat-spacing" id="apply-supplier">
         <div class="container">
-            <div class="sect-heading type-2 text-center">
-                <h3 class="s-title">Станьте поставщиком KOTLOV</h3>
-                <p class="s-desc text-body-1 cl-text-2">
-                    Свяжитесь с нами удобным способом — ответим в течение рабочего дня.
-                </p>
-            </div>
-            <div class="d-flex flex-wrap gap-12 justify-content-center mt-24">
-                <a href="mailto:info@kotlov.by" class="tf-btn animate-btn">info@kotlov.by</a>
-                <a href="tel:+375293544041" class="tf-btn btn-outline">+375 (29) 354-40-41</a>
+            <div class="row justify-content-center">
+                <div class="col-lg-7">
+
+                    <div class="sect-heading type-2 text-center mb-40">
+                        <h3 class="s-title">Стать поставщиком KOTLOV</h3>
+                        <p class="s-desc text-body-1 cl-text-2">
+                            Заполните форму — менеджер свяжется в течение рабочего дня.
+                        </p>
+                    </div>
+
+                    @if(session('supplier_success'))
+                        <div class="alert alert-success mb-24 p-16 rounded-12"
+                             style="background:#d1fae5;border:1px solid #6ee7b7;color:#065f46;">
+                            {{ session('supplier_success') }}
+                        </div>
+                    @endif
+
+                    <form action="{{ route('suppliers.apply') }}" method="POST" class="tf-form-contact">
+                        @csrf
+
+                        <div class="row g-16">
+                            <div class="col-12 col-sm-6">
+                                <label class="form-label fw-medium mb-8">Название компании <span class="cl-primary">*</span></label>
+                                <input type="text" name="company_name" class="form-control @error('company_name') is-invalid @enderror"
+                                    placeholder="ООО Отопление Плюс" value="{{ old('company_name') }}" required>
+                                @error('company_name')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                            </div>
+                            <div class="col-12 col-sm-6">
+                                <label class="form-label fw-medium mb-8">Контактное лицо <span class="cl-primary">*</span></label>
+                                <input type="text" name="contact_name" class="form-control @error('contact_name') is-invalid @enderror"
+                                    placeholder="Иван Петров" value="{{ old('contact_name') }}" required>
+                                @error('contact_name')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                            </div>
+                            <div class="col-12 col-sm-6">
+                                <label class="form-label fw-medium mb-8">Телефон <span class="cl-primary">*</span></label>
+                                <input type="tel" name="phone" class="form-control @error('phone') is-invalid @enderror"
+                                    placeholder="+375 29 000-00-00" value="{{ old('phone') }}" required>
+                                @error('phone')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                            </div>
+                            <div class="col-12 col-sm-6">
+                                <label class="form-label fw-medium mb-8">Email</label>
+                                <input type="email" name="email" class="form-control @error('email') is-invalid @enderror"
+                                    placeholder="manager@company.by" value="{{ old('email') }}">
+                                @error('email')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label fw-medium mb-8">Сайт компании</label>
+                                <input type="url" name="website" class="form-control @error('website') is-invalid @enderror"
+                                    placeholder="https://company.by" value="{{ old('website') }}">
+                                @error('website')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label fw-medium mb-8">Категории товаров</label>
+                                <div class="d-flex flex-wrap gap-8">
+                                    @foreach([
+                                        'kotly'           => 'Котлы',
+                                        'teplovye_nasosy' => 'Тепловые насосы',
+                                        'kaminy'          => 'Камины',
+                                        'pechki'          => 'Печи',
+                                        'dymohody'        => 'Дымоходы',
+                                        'vodonagrevateli' => 'Водонагреватели',
+                                        'otoplenie'       => 'Комплектующие отопления',
+                                        'bani'            => 'Товары для бани',
+                                        'other'           => 'Другое',
+                                    ] as $key => $label)
+                                    <label class="d-flex align-items-center gap-8 cursor-pointer"
+                                        style="background:#f5f5f5;border-radius:8px;padding:8px 12px;font-size:14px;">
+                                        <input type="checkbox" name="product_categories[]" value="{{ $key }}"
+                                            {{ in_array($key, old('product_categories', [])) ? 'checked' : '' }}>
+                                        {{ $label }}
+                                    </label>
+                                    @endforeach
+                                </div>
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label fw-medium mb-8">Расскажите об ассортименте</label>
+                                <textarea name="message" class="form-control" rows="3"
+                                    placeholder="Какие товары хотите разместить, объёмы, регионы поставки...">{{ old('message') }}</textarea>
+                            </div>
+                            <div class="col-12">
+                                <button type="submit" class="tf-btn animate-btn w-100">
+                                    Отправить заявку
+                                </button>
+                            </div>
+                        </div>
+
+                    </form>
+
+                </div>
             </div>
         </div>
     </section>
-    {{-- /CTA --}}
+    {{-- /Форма заявки поставщика --}}
 
 </main>
 @endsection

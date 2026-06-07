@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Orders\Tables;
 
+use Filament\Actions\Action;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
@@ -110,6 +111,30 @@ class OrdersTable
             ])
             ->recordActions([
                 ViewAction::make(),
+                Action::make('confirmed')
+                    ->label('Подтвердить')
+                    ->icon('heroicon-o-check')
+                    ->color('warning')
+                    ->visible(fn ($record) => $record->status === 'new')
+                    ->action(fn ($record) => $record->update(['status' => 'confirmed'])),
+                Action::make('processing')
+                    ->label('В обработке')
+                    ->icon('heroicon-o-arrow-path')
+                    ->color('primary')
+                    ->visible(fn ($record) => in_array($record->status, ['new', 'confirmed']))
+                    ->action(fn ($record) => $record->update(['status' => 'processing'])),
+                Action::make('shipped')
+                    ->label('Отправлен')
+                    ->icon('heroicon-o-truck')
+                    ->color('primary')
+                    ->visible(fn ($record) => in_array($record->status, ['new', 'confirmed', 'processing']))
+                    ->action(fn ($record) => $record->update(['status' => 'shipped'])),
+                Action::make('delivered')
+                    ->label('Доставлен')
+                    ->icon('heroicon-o-check-circle')
+                    ->color('success')
+                    ->visible(fn ($record) => in_array($record->status, ['new', 'confirmed', 'processing', 'shipped']))
+                    ->action(fn ($record) => $record->update(['status' => 'delivered'])),
                 EditAction::make(),
             ])
             ->toolbarActions([

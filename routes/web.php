@@ -14,6 +14,7 @@ use App\Http\Controllers\CompareController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\AccountController;
 use App\Http\Controllers\SearchController;
+use App\Http\Controllers\PartnerApplicationController;
 use App\Http\Controllers\WishlistController;
 use App\Models\BlogPost;
 use App\Models\Brand;
@@ -117,8 +118,10 @@ Route::get('/', function () {
 Route::view('/about',      'pages.about');
 Route::view('/akcii',      'pages.akcii');
 Route::view('/dostavka',   'pages.dostavka');
-Route::view('/partners',   'pages.partners');
-Route::view('/suppliers',  'pages.suppliers')->name('suppliers');
+Route::get('/partners',  fn() => view('pages.partners'))->name('partners');
+Route::post('/partners/apply-installer', [PartnerApplicationController::class, 'storeInstaller'])->name('partners.apply-installer');
+Route::get('/suppliers', fn() => view('pages.suppliers'))->name('suppliers');
+Route::post('/suppliers/apply', [PartnerApplicationController::class, 'storeSupplier'])->name('suppliers.apply');
 Route::get('/installers', [InstallerController::class, 'index'])->name('installers.index');
 Route::get('/installers/{slug}', [InstallerController::class, 'show'])->name('installers.show');
 Route::get('/install-request', [InstallRequestController::class, 'create'])->name('install-requests.create');
@@ -148,7 +151,16 @@ Route::get('/blog/{slug}',[BlogController::class, 'show'])->name('blog.show');
 
 // ===== Контакты =====
 Route::get('/contacts',   fn() => view('pages.contacts'))->name('contacts');
-Route::post('/contacts',  fn() => back()->with('success', 'Сообщение отправлено!'))->name('contact.store');
+Route::post('/contacts', function (\Illuminate\Http\Request $request) {
+    $data = $request->validate([
+        'name'    => 'required|string|max:255',
+        'phone'   => 'required|string|max:50',
+        'email'   => 'nullable|email|max:255',
+        'message' => 'required|string|max:3000',
+    ]);
+    \App\Models\ContactRequest::create($data);
+    return back()->with('success', 'Сообщение отправлено! Мы свяжемся с вами в течение рабочего дня.');
+})->name('contact.store');
 
 // ===== Сравнение =====
 Route::get('/compare',          [CompareController::class, 'index'])->name('compare');

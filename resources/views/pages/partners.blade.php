@@ -282,22 +282,228 @@
     </section>
     {{-- /FAQ --}}
 
-    {{-- CTA --}}
-    <section class="flat-spacing pt-0">
+    {{-- Формы заявок: монтажник / поставщик --}}
+    <section class="flat-spacing pt-0" id="apply">
         <div class="container">
-            <div class="sect-heading type-2 text-center">
-                <h3 class="s-title">Начните сотрудничество с KOTLOV</h3>
+
+            {{-- Заголовок + переключатель --}}
+            <div class="sect-heading type-2 text-center mb-40">
+                <h3 class="s-title">Подать заявку на сотрудничество</h3>
                 <p class="s-desc text-body-1 cl-text-2">
-                    Свяжитесь с нами — обсудим формат и ответим на все вопросы.
+                    Выберите, кто вы — и заполните форму. Менеджер свяжется в течение рабочего дня.
                 </p>
             </div>
-            <div class="d-flex flex-wrap gap-12 justify-content-center mt-24">
-                <a href="/contacts" class="tf-btn animate-btn">Связаться с нами</a>
-                <a href="/suppliers" class="tf-btn btn-outline">Для поставщиков</a>
+
+            {{-- Переключатель тип партнёра --}}
+            <div class="d-flex justify-content-center mb-40">
+                <ul class="tab-btn-wrap-v2" role="tablist">
+                    <li class="nav-tab-item" role="presentation">
+                        <a href="#tab-installer" data-bs-toggle="tab" class="tf-btn-tab active" role="tab">
+                            <span class="fw-semibold">Я монтажник</span>
+                        </a>
+                    </li>
+                    <li class="nav-tab-item" role="presentation">
+                        <a href="#tab-supplier" data-bs-toggle="tab" class="tf-btn-tab" role="tab">
+                            <span class="fw-semibold">Я поставщик</span>
+                        </a>
+                    </li>
+                </ul>
+            </div>
+
+            <div class="row justify-content-center">
+                <div class="col-lg-7">
+
+                    @if(session('installer_success'))
+                        <div class="mb-24 p-16 rounded-12"
+                             style="background:#d1fae5;border:1px solid #6ee7b7;color:#065f46;">
+                            {{ session('installer_success') }}
+                        </div>
+                    @endif
+                    @if(session('supplier_success'))
+                        <div class="mb-24 p-16 rounded-12"
+                             style="background:#d1fae5;border:1px solid #6ee7b7;color:#065f46;">
+                            {{ session('supplier_success') }}
+                        </div>
+                    @endif
+
+                    {{-- Подпись под табом --}}
+                    <p class="text-body-1 cl-text-2 text-center mb-32" id="tab-hint-installer">
+                        Получайте заявки на монтаж котлов, тепловых насосов, каминов и дымоходов по всей Беларуси.
+                    </p>
+                    <p class="text-body-1 cl-text-2 text-center mb-32" id="tab-hint-supplier" style="display:none;">
+                        Размещайте товары в каталоге KOTLOV Marketplace и получайте прямые заказы от покупателей.
+                    </p>
+
+                    <div class="tab-content">
+
+                    {{-- ФОРМА МОНТАЖНИКА --}}
+                    <div class="tab-pane active show" id="tab-installer" role="tabpanel">
+                        <form action="{{ route('partners.apply-installer') }}" method="POST" class="tf-form-contact">
+                            @csrf
+                            <div class="row g-16">
+                                <div class="col-12 col-sm-6">
+                                    <label class="form-label fw-medium mb-8">Ваше имя <span class="cl-primary">*</span></label>
+                                    <input type="text" name="contact_name" class="form-control @error('contact_name') is-invalid @enderror"
+                                        placeholder="Иван Петров" value="{{ old('contact_name') }}" required>
+                                    @error('contact_name')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                                </div>
+                                <div class="col-12 col-sm-6">
+                                    <label class="form-label fw-medium mb-8">Телефон <span class="cl-primary">*</span></label>
+                                    <input type="tel" name="phone" class="form-control @error('phone') is-invalid @enderror"
+                                        placeholder="+375 29 000-00-00" value="{{ old('phone') }}" required>
+                                    @error('phone')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                                </div>
+                                <div class="col-12 col-sm-6">
+                                    <label class="form-label fw-medium mb-8">Email</label>
+                                    <input type="email" name="email" class="form-control"
+                                        placeholder="mail@example.com" value="{{ old('email') }}">
+                                </div>
+                                <div class="col-12 col-sm-6">
+                                    <label class="form-label fw-medium mb-8">Город</label>
+                                    <input type="text" name="city" class="form-control"
+                                        placeholder="Минск" value="{{ old('city') }}">
+                                </div>
+                                <div class="col-12 col-sm-6">
+                                    <label class="form-label fw-medium mb-8">Компания (если есть)</label>
+                                    <input type="text" name="company_name" class="form-control"
+                                        placeholder="ООО Монтаж" value="{{ old('company_name') }}">
+                                </div>
+                                <div class="col-12 col-sm-6">
+                                    <label class="form-label fw-medium mb-8">Опыт работы, лет</label>
+                                    <input type="number" name="experience_years" class="form-control"
+                                        placeholder="5" min="0" max="60" value="{{ old('experience_years') }}">
+                                </div>
+                                <div class="col-12">
+                                    <label class="form-label fw-medium mb-8">Специализация</label>
+                                    <div class="d-flex flex-wrap gap-8">
+                                        @foreach([
+                                            'kotly'           => 'Котлы',
+                                            'teplovye_nasosy' => 'Тепловые насосы',
+                                            'kaminy'          => 'Камины и печи',
+                                            'dymohody'        => 'Дымоходы',
+                                            'otoplenie'       => 'Системы отопления',
+                                            'bani'            => 'Банные печи',
+                                        ] as $key => $label)
+                                        <label class="d-flex align-items-center gap-8 cursor-pointer"
+                                            style="background:#f5f5f5;border-radius:8px;padding:8px 12px;font-size:14px;">
+                                            <input type="checkbox" name="specializations[]" value="{{ $key }}"
+                                                {{ in_array($key, old('specializations', [])) ? 'checked' : '' }}>
+                                            {{ $label }}
+                                        </label>
+                                        @endforeach
+                                    </div>
+                                </div>
+                                <div class="col-12">
+                                    <label class="form-label fw-medium mb-8">Расскажите о себе</label>
+                                    <textarea name="message" class="form-control" rows="3"
+                                        placeholder="Опыт, география работы, портфолио...">{{ old('message') }}</textarea>
+                                </div>
+                                <div class="col-12">
+                                    <button type="submit" class="tf-btn animate-btn w-100">
+                                        Отправить заявку монтажника
+                                    </button>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                    {{-- /ФОРМА МОНТАЖНИКА --}}
+
+                    {{-- ФОРМА ПОСТАВЩИКА --}}
+                    <div class="tab-pane" id="tab-supplier" role="tabpanel">
+                        <form action="{{ route('suppliers.apply') }}" method="POST" class="tf-form-contact">
+                            @csrf
+                            <div class="row g-16">
+                                <div class="col-12 col-sm-6">
+                                    <label class="form-label fw-medium mb-8">Название компании <span class="cl-primary">*</span></label>
+                                    <input type="text" name="company_name" class="form-control @error('company_name') is-invalid @enderror"
+                                        placeholder="ООО Отопление Плюс" value="{{ old('company_name') }}" required>
+                                    @error('company_name')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                                </div>
+                                <div class="col-12 col-sm-6">
+                                    <label class="form-label fw-medium mb-8">Контактное лицо <span class="cl-primary">*</span></label>
+                                    <input type="text" name="contact_name" class="form-control @error('contact_name') is-invalid @enderror"
+                                        placeholder="Иван Петров" value="{{ old('contact_name') }}" required>
+                                    @error('contact_name')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                                </div>
+                                <div class="col-12 col-sm-6">
+                                    <label class="form-label fw-medium mb-8">Телефон <span class="cl-primary">*</span></label>
+                                    <input type="tel" name="phone" class="form-control @error('phone') is-invalid @enderror"
+                                        placeholder="+375 29 000-00-00" value="{{ old('phone') }}" required>
+                                    @error('phone')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                                </div>
+                                <div class="col-12 col-sm-6">
+                                    <label class="form-label fw-medium mb-8">Email</label>
+                                    <input type="email" name="email" class="form-control"
+                                        placeholder="manager@company.by" value="{{ old('email') }}">
+                                </div>
+                                <div class="col-12">
+                                    <label class="form-label fw-medium mb-8">Сайт компании</label>
+                                    <input type="url" name="website" class="form-control"
+                                        placeholder="https://company.by" value="{{ old('website') }}">
+                                </div>
+                                <div class="col-12">
+                                    <label class="form-label fw-medium mb-8">Категории товаров</label>
+                                    <div class="d-flex flex-wrap gap-8">
+                                        @foreach([
+                                            'kotly'           => 'Котлы',
+                                            'teplovye_nasosy' => 'Тепловые насосы',
+                                            'kaminy'          => 'Камины',
+                                            'pechki'          => 'Печи',
+                                            'dymohody'        => 'Дымоходы',
+                                            'vodonagrevateli' => 'Водонагреватели',
+                                            'otoplenie'       => 'Комплектующие',
+                                            'bani'            => 'Товары для бани',
+                                            'other'           => 'Другое',
+                                        ] as $key => $label)
+                                        <label class="d-flex align-items-center gap-8 cursor-pointer"
+                                            style="background:#f5f5f5;border-radius:8px;padding:8px 12px;font-size:14px;">
+                                            <input type="checkbox" name="product_categories[]" value="{{ $key }}"
+                                                {{ in_array($key, old('product_categories', [])) ? 'checked' : '' }}>
+                                            {{ $label }}
+                                        </label>
+                                        @endforeach
+                                    </div>
+                                </div>
+                                <div class="col-12">
+                                    <label class="form-label fw-medium mb-8">Расскажите об ассортименте</label>
+                                    <textarea name="message" class="form-control" rows="3"
+                                        placeholder="Какие товары хотите разместить, объёмы, регионы поставки...">{{ old('message') }}</textarea>
+                                </div>
+                                <div class="col-12">
+                                    <button type="submit" class="tf-btn animate-btn w-100">
+                                        Отправить заявку поставщика
+                                    </button>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                    {{-- /ФОРМА ПОСТАВЩИКА --}}
+
+                    </div>{{-- /tab-content --}}
+
+                </div>
             </div>
         </div>
     </section>
-    {{-- /CTA --}}
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        document.querySelectorAll('[data-bs-toggle="tab"]').forEach(function(tab) {
+            tab.addEventListener('shown.bs.tab', function(e) {
+                var isSupplier = e.target.getAttribute('href') === '#tab-supplier';
+                document.getElementById('tab-hint-installer').style.display = isSupplier ? 'none' : '';
+                document.getElementById('tab-hint-supplier').style.display = isSupplier ? '' : 'none';
+            });
+        });
+    });
+    </script>
+    @if(session('supplier_success') || $errors->has('company_name'))
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        document.querySelector('[href="#tab-supplier"]').click();
+    });
+    </script>
+    @endif
+    {{-- /Формы заявок --}}
 
 </main>
 @endsection

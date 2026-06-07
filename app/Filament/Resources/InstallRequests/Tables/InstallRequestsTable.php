@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\InstallRequests\Tables;
 
 use App\Models\InstallerProfile;
+use Filament\Actions\Action;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
@@ -175,6 +176,24 @@ class InstallRequestsTable
             ])
             ->recordActions([
                 ViewAction::make(),
+                Action::make('accepted')
+                    ->label('Принята')
+                    ->icon('heroicon-o-phone')
+                    ->color('warning')
+                    ->visible(fn ($record) => $record->status === 'new')
+                    ->action(fn ($record) => $record->update(['status' => 'accepted'])),
+                Action::make('in_progress')
+                    ->label('В работе')
+                    ->icon('heroicon-o-wrench-screwdriver')
+                    ->color('primary')
+                    ->visible(fn ($record) => in_array($record->status, ['new', 'accepted']))
+                    ->action(fn ($record) => $record->update(['status' => 'in_progress'])),
+                Action::make('done')
+                    ->label('Выполнена')
+                    ->icon('heroicon-o-check-circle')
+                    ->color('success')
+                    ->visible(fn ($record) => in_array($record->status, ['new', 'accepted', 'in_progress']))
+                    ->action(fn ($record) => $record->update(['status' => 'done'])),
                 EditAction::make(),
             ])
             ->toolbarActions([
