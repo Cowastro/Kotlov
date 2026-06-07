@@ -28,18 +28,20 @@ class BannerInfolist
         return $schema
             ->components([
                 Section::make('Изображения')
-                    ->columns(2)
+                    ->columns(1)
                     ->schema([
                         ImageEntry::make('image')
                             ->label('Десктоп')
                             ->disk('public')
-                            ->height(200),
+                            ->height(220)
+                            ->columnSpanFull(),
 
                         ImageEntry::make('image_mobile')
                             ->label('Мобильная версия')
                             ->disk('public')
-                            ->height(200)
-                            ->placeholder('Не загружено'),
+                            ->height(220)
+                            ->placeholder('Не загружено')
+                            ->columnSpanFull(),
                     ]),
 
                 Section::make('Контент')
