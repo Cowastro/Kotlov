@@ -23,9 +23,7 @@ class ProductsTable
             ->columns([
                 ImageColumn::make('images')
                     ->label('Фото')
-                    ->getStateUsing(fn($record) => ($record->images[0] ?? null)
-                        ? url('/proxy-image/' . ($record->images[0]))
-                        : null)
+                    ->getStateUsing(fn($record) => $record->imageUrl(0))
                     ->circular(),
 
                 TextColumn::make('name')
