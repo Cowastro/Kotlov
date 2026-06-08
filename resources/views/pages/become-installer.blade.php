@@ -29,23 +29,23 @@
                     <div class="d-flex flex-column gap-10 mb-32">
                         <div class="d-flex align-items-start gap-10">
                             <i class="icon icon-CheckCircle cl-primary mt-1" style="font-size:18px;flex-shrink:0;"></i>
-                            <p class="cl-text-2"><strong class="cl-main">Заявки от реальных клиентов</strong> — без агрегаторов и комиссий</p>
+                            <p style="color:#555;margin:0;"><strong style="color:#111;">Заявки от реальных клиентов</strong> — без агрегаторов и комиссий</p>
                         </div>
                         <div class="d-flex align-items-start gap-10">
                             <i class="icon icon-CheckCircle cl-primary mt-1" style="font-size:18px;flex-shrink:0;"></i>
-                            <p class="cl-text-2"><strong class="cl-main">Собственная страница специалиста</strong> — ваше цифровое портфолио</p>
+                            <p style="color:#555;margin:0;"><strong style="color:#111;">Собственная страница специалиста</strong> — ваше цифровое портфолио</p>
                         </div>
                         <div class="d-flex align-items-start gap-10">
                             <i class="icon icon-CheckCircle cl-primary mt-1" style="font-size:18px;flex-shrink:0;"></i>
-                            <p class="cl-text-2"><strong class="cl-main">Партнёрские B2B-цены</strong> на оборудование для объектов</p>
+                            <p style="color:#555;margin:0;"><strong style="color:#111;">Партнёрские B2B-цены</strong> на оборудование для объектов</p>
                         </div>
                     </div>
-                    <div class="d-flex flex-wrap gap-12">
-                        <a href="#apply" class="tf-btn animate-btn">Подать заявку бесплатно</a>
-                        <a href="{{ route('demo-installer-profile') }}" target="_blank" class="tf-btn btn-outline">Как выглядит профиль</a>
+                    <div class="d-flex flex-column flex-sm-row gap-12 mb-8">
+                        <a href="#apply" class="tf-btn animate-btn w-100 w-sm-auto text-center">Подать заявку бесплатно</a>
+                        <a href="{{ route('demo-installer-profile') }}" target="_blank" class="tf-btn btn-outline w-100 w-sm-auto text-center">Как выглядит профиль</a>
                     </div>
                 </div>
-                <div class="col-lg-6">
+                <div class="col-lg-6 mt-4 mt-lg-0">
                     <div class="hero-image">
                         <img loading="lazy" width="700" height="480"
                             src="{{ asset('assets/images/section/s-contact-2.jpg') }}"
@@ -196,45 +196,25 @@
                         Это ваш цифровой паспорт специалиста — без вложений в разработку и хостинг.
                     </p>
                     <div class="d-flex flex-column gap-16 mb-32">
+                        @foreach([
+                            ['Уникальный URL страницы', 'Ссылку можно разместить в мессенджерах, социальных сетях и на визитке'],
+                            ['Фото, описание, специализация', 'Расскажите о себе так, как хотите — без ограничений шаблона'],
+                            ['Портфолио с фотографиями работ', 'Покажите объекты, которые уже смонтированы и работают'],
+                            ['Отзывы клиентов и рейтинг', 'Собирайте реальные отзывы — они повышают доверие новых клиентов'],
+                            ['Контакты и регион работы', 'Телефон, мессенджер, карта покрытия — всё в одном месте'],
+                        ] as [$title, $desc])
                         <div class="d-flex gap-12 align-items-start">
                             <i class="icon icon-CheckCircle cl-primary mt-2" style="font-size:20px;flex-shrink:0;"></i>
                             <div>
-                                <p class="fw-semibold mb-2">Уникальный URL страницы</p>
-                                <p class="cl-text-2" style="font-size:14px;">Ссылку можно разместить в мессенджерах, социальных сетях и на визитке</p>
+                                <p class="fw-semibold mb-2" style="color:#111;">{{ $title }}</p>
+                                <p style="font-size:14px;color:#555;margin:0;">{{ $desc }}</p>
                             </div>
                         </div>
-                        <div class="d-flex gap-12 align-items-start">
-                            <i class="icon icon-CheckCircle cl-primary mt-2" style="font-size:20px;flex-shrink:0;"></i>
-                            <div>
-                                <p class="fw-semibold mb-2">Фото, описание, специализация</p>
-                                <p class="cl-text-2" style="font-size:14px;">Расскажите о себе так, как хотите — без ограничений шаблона</p>
-                            </div>
-                        </div>
-                        <div class="d-flex gap-12 align-items-start">
-                            <i class="icon icon-CheckCircle cl-primary mt-2" style="font-size:20px;flex-shrink:0;"></i>
-                            <div>
-                                <p class="fw-semibold mb-2">Портфолио с фотографиями работ</p>
-                                <p class="cl-text-2" style="font-size:14px;">Покажите объекты, которые уже смонтированы и работают</p>
-                            </div>
-                        </div>
-                        <div class="d-flex gap-12 align-items-start">
-                            <i class="icon icon-CheckCircle cl-primary mt-2" style="font-size:20px;flex-shrink:0;"></i>
-                            <div>
-                                <p class="fw-semibold mb-2">Отзывы клиентов и рейтинг</p>
-                                <p class="cl-text-2" style="font-size:14px;">Собирайте реальные отзывы — они повышают доверие новых клиентов</p>
-                            </div>
-                        </div>
-                        <div class="d-flex gap-12 align-items-start">
-                            <i class="icon icon-CheckCircle cl-primary mt-2" style="font-size:20px;flex-shrink:0;"></i>
-                            <div>
-                                <p class="fw-semibold mb-2">Контакты и регион работы</p>
-                                <p class="cl-text-2" style="font-size:14px;">Телефон, мессенджер, карта покрытия — всё в одном месте</p>
-                            </div>
-                        </div>
+                        @endforeach
                     </div>
-                    <a href="#apply" class="tf-btn animate-btn">Создать страницу специалиста</a>
+                    <a href="#apply" class="tf-btn animate-btn w-100 text-center">Создать страницу специалиста</a>
                 </div>
-                <div class="col-lg-6 order-lg-1">
+                <div class="col-lg-6 order-lg-1 d-none d-lg-block">
                     <div class="hero-image">
                         <img loading="lazy" width="640" height="460"
                             src="{{ asset('assets/images/section/s-contact-1.jpg') }}"
@@ -385,7 +365,7 @@
 
                     </div>
 
-                    <div class="text-center mt-16">
+                    <div class="text-center" style="margin-top:16px;">
                         <a href="{{ route('demo-installer-profile') }}" target="_blank" class="tf-btn btn-outline">
                             Открыть демо-профиль полностью →
                         </a>
@@ -421,11 +401,11 @@
                         @foreach(['Отображается на карточке и в каталоге монтажников','Повышает позицию профиля в выдаче','Увеличивает конверсию в заявки','Сигнал доверия для клиентов при выборе специалиста'] as $item)
                         <div class="d-flex align-items-start gap-10">
                             <i class="icon icon-CheckCircle cl-primary mt-1" style="font-size:18px;flex-shrink:0;"></i>
-                            <p class="cl-text-2">{{ $item }}</p>
+                            <p style="color:#555;margin:0;">{{ $item }}</p>
                         </div>
                         @endforeach
                     </div>
-                    <a href="#apply" class="tf-btn animate-btn">Пройти проверку</a>
+                    <a href="#apply" class="tf-btn animate-btn w-100 text-center">Пройти проверку</a>
                 </div>
                 <div class="col-lg-7">
                     <div class="row gy-20">
@@ -779,25 +759,25 @@
     {{-- CTA перед формой --}}
     <section class="flat-spacing pt-0">
         <div class="container">
-            <div class="flat-cta rounded-16" style="background:var(--line);padding:48px 40px;">
-                <div class="row align-items-center gy-32">
+            <div class="flat-cta rounded-16" style="background:var(--line);padding:40px 32px;">
+                <div class="row align-items-center gy-24">
                     <div class="col-lg-8">
                         <h2 class="mb-12">Присоединяйтесь — пока это бесплатно</h2>
-                        <p class="cl-text-2 mb-20" style="font-size:16px;line-height:1.6;">
+                        <p class="mb-20" style="font-size:16px;line-height:1.6;color:#555;">
                             Сейчас на платформе KOTLOV нет конкуренции — занимайте топовые позиции в своём регионе первым.
                             Участие на этапе запуска полностью бесплатно.
                         </p>
-                        <div class="d-flex flex-wrap gap-16">
+                        <div class="d-flex flex-wrap gap-12">
                             @foreach(['Страница специалиста бесплатно','Заявки без комиссий агрегаторов','Партнёрские цены на оборудование'] as $point)
                             <div class="d-flex align-items-center gap-8">
-                                <i class="icon icon-CheckCircle cl-primary" style="font-size:18px;"></i>
-                                <span class="cl-text-2" style="font-size:14px;">{{ $point }}</span>
+                                <i class="icon icon-CheckCircle cl-primary" style="font-size:18px;flex-shrink:0;"></i>
+                                <span style="font-size:14px;color:#555;">{{ $point }}</span>
                             </div>
                             @endforeach
                         </div>
                     </div>
-                    <div class="col-lg-4 d-flex align-items-center justify-content-lg-end justify-content-start">
-                        <a href="#apply" class="tf-btn animate-btn">Подать заявку сейчас</a>
+                    <div class="col-lg-4 d-flex align-items-center justify-content-lg-end justify-content-start" style="margin-top:16px;">
+                        <a href="#apply" class="tf-btn animate-btn w-100 text-center">Подать заявку сейчас</a>
                     </div>
                 </div>
             </div>
@@ -905,7 +885,7 @@
                                 <textarea name="message" class="form-control" rows="4"
                                     placeholder="Опыт, география работы, портфолио, выполненные объекты...">{{ old('message') }}</textarea>
                             </div>
-                            <div class="col-12">
+                            <div class="col-12" style="margin-top:16px;">
                                 <button type="submit" class="tf-btn animate-btn w-100">
                                     Стать монтажником KOTLOV — бесплатно
                                 </button>
@@ -1047,7 +1027,7 @@
                 <p class="cl-text-3 mb-32" style="font-size:14px;">
                     Страница специалиста · Портфолио · Отзывы · Партнёрские цены — всё бесплатно
                 </p>
-                <a href="#apply" class="tf-btn animate-btn">Подать заявку на участие</a>
+                <a href="#apply" class="tf-btn animate-btn w-100 text-center" style="max-width:360px;margin-bottom:16px;">Подать заявку на участие</a>
             </div>
         </div>
     </section>

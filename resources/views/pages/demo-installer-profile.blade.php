@@ -329,7 +329,7 @@
         </div>
     </section>
 
-    <section id="installer-cabinet-preview" class="flat-spacing pt-0">
+    <section id="installer-cabinet-preview" class="flat-spacing pt-0" style="padding-bottom:60px;">
         <div class="container">
             <div class="sect-heading type-2 text-center mb-40">
                 <h2 class="s-title">Будущий кабинет партнера</h2>
@@ -354,7 +354,7 @@
                 @endforeach
             </div>
 
-            <div class="text-center mt-40">
+            <div class="text-center" style="margin-top:40px;margin-bottom:40px;">
                 <a href="{{ route('become-installer') }}#apply" class="tf-btn animate-btn">Стать монтажником KOTLOV</a>
             </div>
         </div>
