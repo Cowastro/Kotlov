@@ -30,13 +30,10 @@ class EditProduct extends EditRecord
      */
     protected function mutateFormDataBeforeFill(array $data): array
     {
-        $rawImages = $data['images'] ?? [];
-        if (is_string($rawImages)) {
-            $rawImages = json_decode($rawImages, true) ?? [];
-        }
+        $rawImages = $this->normalizeImages($data['images'] ?? []);
 
         $data['existing_images'] = array_values(
-            array_map(fn($path) => ['path' => (string) $path], (array) $rawImages)
+            array_map(fn($path) => ['path' => $path], $rawImages)
         );
 
         // FileUpload — только для новых загрузок
@@ -50,13 +47,38 @@ class EditProduct extends EditRecord
      */
     protected function mutateFormDataBeforeSave(array $data): array
     {
-        $existing   = array_column($data['existing_images'] ?? [], 'path');
-        $newUploads = array_values(array_filter((array) ($data['images'] ?? [])));
+        $existingImagesWereSubmitted = array_key_exists('existing_images', $data);
+
+        $existing = $existingImagesWereSubmitted
+            ? array_column($data['existing_images'] ?? [], 'path')
+            : $this->normalizeImages($this->record->images ?? []);
+
+        $newUploads = $this->normalizeImages($data['images'] ?? []);
 
         unset($data['existing_images']);
 
-        $data['images'] = array_merge($existing, $newUploads);
+        $data['images'] = array_values(array_unique(array_merge(
+            $this->normalizeImages($existing),
+            $newUploads
+        )));
 
         return $data;
+    }
+
+    private function normalizeImages(mixed $images): array
+    {
+        if (is_string($images)) {
+            $decoded = json_decode($images, true);
+            $images = json_last_error() === JSON_ERROR_NONE ? $decoded : [$images];
+        }
+
+        if (!is_array($images)) {
+            return [];
+        }
+
+        return array_values(array_filter(array_map(
+            fn($path) => is_string($path) ? trim($path) : null,
+            $images
+        )));
     }
 }

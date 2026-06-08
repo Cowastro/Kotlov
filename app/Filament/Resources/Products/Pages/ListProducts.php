@@ -4,6 +4,7 @@ namespace App\Filament\Resources\Products\Pages;
 
 use App\Filament\Resources\Products\ProductResource;
 use App\Models\Product;
+use App\Models\User;
 use Filament\Actions\Action;
 use Filament\Actions\CreateAction;
 use Filament\Forms\Components\FileUpload;
@@ -12,10 +13,16 @@ use Filament\Forms\Components\Toggle;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\ListRecords;
 use Illuminate\Support\Facades\Storage;
+use PhpOffice\PhpSpreadsheet\IOFactory;
 
 class ListProducts extends ListRecords
 {
     protected static string $resource = ProductResource::class;
+
+    public function getMaxContentWidth(): ?string
+    {
+        return 'full';
+    }
 
     protected function getHeaderActions(): array
     {
@@ -28,10 +35,15 @@ class ListProducts extends ListRecords
                 ->color('gray')
                 ->form([
                     FileUpload::make('csv_file')
-                        ->label('CSV-файл с ценами')
-                        ->helperText('Колонки: sku;price;price_old;in_stock;stock_qty — только указанные поля будут обновлены')
+                        ->label('CSV/XLSX-файл с ценами')
+                        ->helperText('Колонки: sku;price;price_old;in_stock;stock_qty;supplier_id — только эти поля будут обновлены')
                         ->required()
-                        ->acceptedFileTypes(['text/csv', 'text/plain', 'application/vnd.ms-excel'])
+                        ->acceptedFileTypes([
+                            'text/csv',
+                            'text/plain',
+                            'application/vnd.ms-excel',
+                            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                        ])
                         ->disk('local')
                         ->directory('price-imports'),
 
@@ -47,7 +59,11 @@ class ListProducts extends ListRecords
                         ->helperText('Включите, чтобы сначала проверить результат'),
                 ])
                 ->action(function (array $data): void {
-                    $path      = Storage::disk('local')->path($data['csv_file']);
+                    $storedFile = is_array($data['csv_file'])
+                        ? reset($data['csv_file'])
+                        : $data['csv_file'];
+
+                    $path      = Storage::disk('local')->path($storedFile);
                     $delimiter = $data['delimiter'];
                     $isDryRun  = $data['dry_run'] ?? true;
 
@@ -56,22 +72,18 @@ class ListProducts extends ListRecords
                         return;
                     }
 
-                    $handle = fopen($path, 'r');
-                    if (!$handle) {
-                        Notification::make()->danger()->title('Не удалось открыть файл')->send();
-                        return;
-                    }
-
-                    // Читаем заголовок
-                    $header = fgetcsv($handle, 0, $delimiter);
-                    if (!$header) {
+                    $rows = $this->readPriceRows($path, $delimiter);
+                    $header = array_shift($rows);
+                    if (!$header || empty($rows)) {
                         Notification::make()->danger()->title('Файл пустой или неверный формат')->send();
-                        fclose($handle);
                         return;
                     }
 
                     // Нормализуем заголовки (убираем BOM, пробелы, приводим к нижнему регистру)
-                    $header = array_map(fn($h) => mb_strtolower(trim(ltrim($h, "\xEF\xBB\xBF"))), $header);
+                    $header = array_map(
+                        fn($h) => $this->normalizeHeader((string) $h),
+                        $header
+                    );
 
                     if (!in_array('sku', $header)) {
                         Notification::make()
@@ -79,16 +91,16 @@ class ListProducts extends ListRecords
                             ->title('Колонка "sku" обязательна')
                             ->body('Найденные колонки: ' . implode(', ', $header))
                             ->send();
-                        fclose($handle);
                         return;
                     }
 
                     $updated   = 0;
                     $notFound  = 0;
                     $skipped   = 0;
+                    $found     = 0;
                     $notFoundSkus = [];
 
-                    while (($row = fgetcsv($handle, 0, $delimiter)) !== false) {
+                    foreach ($rows as $row) {
                         $rowData = array_combine($header, array_pad($row, count($header), null));
                         $sku = trim($rowData['sku'] ?? '');
 
@@ -107,6 +119,7 @@ class ListProducts extends ListRecords
                             continue;
                         }
 
+                        $found++;
                         $fields = [];
 
                         if (isset($rowData['price']) && $rowData['price'] !== '') {
@@ -124,23 +137,29 @@ class ListProducts extends ListRecords
                         if (isset($rowData['stock_qty']) && $rowData['stock_qty'] !== '') {
                             $fields['stock_qty'] = (int) $rowData['stock_qty'];
                         }
+                        if (isset($rowData['supplier_id']) && $rowData['supplier_id'] !== '') {
+                            $supplierId = (int) $rowData['supplier_id'];
+                            if ($supplierId && User::whereKey($supplierId)->exists()) {
+                                $fields['supplier_id'] = $supplierId;
+                            }
+                        }
 
                         if (!empty($fields)) {
                             if (!$isDryRun) {
                                 $product->update($fields);
                             }
                             $updated++;
+                        } else {
+                            $skipped++;
                         }
                     }
 
-                    fclose($handle);
-
                     // Удаляем временный файл
                     if (!$isDryRun) {
-                        Storage::disk('local')->delete($data['csv_file']);
+                        Storage::disk('local')->delete($storedFile);
                     }
 
-                    $body = "Обновлено: {$updated} | Не найдено: {$notFound} | Пропущено: {$skipped}";
+                    $body = "Найдено: {$found} | Обновлено: {$updated} | Не найдено: {$notFound} | Пропущено: {$skipped}";
                     if ($notFoundSkus) {
                         $body .= "\nНеизвестные SKU: " . implode(', ', $notFoundSkus)
                             . ($notFound > 10 ? " и ещё " . ($notFound - 10) : '');
@@ -157,5 +176,42 @@ class ListProducts extends ListRecords
                         ->send();
                 }),
         ];
+    }
+
+    private function readPriceRows(string $path, string $delimiter): array
+    {
+        $extension = mb_strtolower(pathinfo($path, PATHINFO_EXTENSION));
+
+        if (in_array($extension, ['xlsx', 'xls'], true)) {
+            $spreadsheet = IOFactory::load($path);
+            return $spreadsheet->getActiveSheet()->toArray(null, true, true, false);
+        }
+
+        $handle = fopen($path, 'r');
+        if (!$handle) {
+            return [];
+        }
+
+        $rows = [];
+        while (($row = fgetcsv($handle, 0, $delimiter)) !== false) {
+            $rows[] = $row;
+        }
+        fclose($handle);
+
+        return $rows;
+    }
+
+    private function normalizeHeader(string $header): string
+    {
+        $header = mb_strtolower(trim(ltrim($header, "\xEF\xBB\xBF")));
+
+        return match ($header) {
+            'артикул', 'article', 'artikul', 'vendor_code', 'code' => 'sku',
+            'old_price', 'старая цена', 'старая_цена' => 'price_old',
+            'наличие', 'available' => 'in_stock',
+            'количество', 'qty', 'quantity', 'остаток' => 'stock_qty',
+            'поставщик', 'supplier' => 'supplier_id',
+            default => $header,
+        };
     }
 }

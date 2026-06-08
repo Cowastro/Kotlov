@@ -64,7 +64,7 @@ class ProductForm
 
                         Select::make('supplier_id')
                             ->label('Поставщик')
-                            ->relationship('supplier', 'name')
+                            ->relationship('supplier', 'name', fn($query) => $query->where('role', 'supplier'))
                             ->searchable()
                             ->columnSpanFull(),
                     ]),
@@ -157,12 +157,12 @@ class ProductForm
                             ->schema([
                                 Placeholder::make('img_preview')
                                     ->label('')
-                                    ->content(function ($get): HtmlString {
+                                    ->content(function ($get, $record): HtmlString {
                                         $path = (string) ($get('path') ?? '');
                                         if (!$path) {
                                             return new HtmlString('<span class="text-gray-400 text-xs">нет пути</span>');
                                         }
-                                        $url = self::resolveProxyUrl($path);
+                                        $url = self::resolveImageUrl($path, $record);
                                         return new HtmlString(
                                             '<img src="' . e($url) . '" style="max-height:72px;border-radius:4px;object-fit:cover;" '
                                             . 'onerror="this.style.opacity=0.3">'
@@ -171,7 +171,8 @@ class ProductForm
 
                                 TextInput::make('path')
                                     ->label('Путь')
-                                    ->disabled()
+                                    ->readOnly()
+                                    ->dehydrated()
                                     ->columnSpan(3),
                             ])
                             ->columns(4)
@@ -254,7 +255,7 @@ class ProductForm
      * Строит URL для предпросмотра изображения в форме.
      * Поддерживает пути из kotlov.by и локально загруженные файлы.
      */
-    private static function resolveProxyUrl(string $path): string
+    private static function resolveImageUrl(string $path, ?object $record = null): string
     {
         // Загружено через FileUpload → путь в storage
         if (str_starts_with($path, 'products/')) {
@@ -271,7 +272,18 @@ class ProductForm
             return '/proxy-image/product/' . $path;
         }
 
-        // Просто имя файла — предполагаем legacy путь
-        return '/proxy-image/product/' . $path;
+        // Просто имя файла — используем Product::imageUrl(), потому что legacy путь
+        // зависит от SKU/ID и не должен собираться здесь наугад.
+        if ($record && method_exists($record, 'imageUrl')) {
+            $images = $record->images;
+            if (is_string($images)) {
+                $images = json_decode($images, true) ?: [];
+            }
+
+            $index = array_search($path, (array) $images, true);
+            return $record->imageUrl($index === false ? 0 : $index);
+        }
+
+        return asset('img/products/product-placeholder.jpg');
     }
 }

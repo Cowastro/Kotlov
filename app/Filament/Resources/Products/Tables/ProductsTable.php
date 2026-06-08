@@ -2,11 +2,13 @@
 
 namespace App\Filament\Resources\Products\Tables;
 
+use App\Models\User;
 use Filament\Actions\BulkAction;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Actions\ViewAction;
+use Filament\Forms\Components\Select as FormSelect;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\ImageColumn;
 use Filament\Tables\Columns\TextColumn;
@@ -26,14 +28,28 @@ class ProductsTable
                 ImageColumn::make('images')
                     ->label('Фото')
                     ->getStateUsing(fn($record) => url($record->imageUrl(0)))
-                    ->circular(),
+                    ->square()
+                    ->height(48)
+                    ->width(48),
 
                 TextColumn::make('name')
-                    ->label('Название')
+                    ->label('Товар')
                     ->searchable()
                     ->sortable()
                     ->weight('bold')
-                    ->limit(45),
+                    ->limit(58)
+                    ->description(fn($record) => collect([
+                        $record->sku ? 'SKU: ' . $record->sku : null,
+                        $record->slug ? '/' . $record->slug : null,
+                    ])->filter()->implode(' · ')),
+
+                TextColumn::make('frontend_url')
+                    ->label('Сайт')
+                    ->state('Открыть')
+                    ->url(fn($record) => self::productUrl($record))
+                    ->openUrlInNewTab()
+                    ->icon('heroicon-o-arrow-top-right-on-square')
+                    ->toggleable(),
 
                 TextColumn::make('sku')
                     ->label('Артикул')
@@ -62,7 +78,7 @@ class ProductsTable
                 TextColumn::make('price')
                     ->label('Цена')
                     ->sortable()
-                    ->formatStateUsing(fn($state) => number_format($state, 2) . ' BYN'),
+                    ->formatStateUsing(fn($state, $record) => number_format((float) $state, 2) . ' ' . ($record->currency ?: 'BYN')),
 
                 TextColumn::make('price_old')
                     ->label('Старая цена')
@@ -82,20 +98,39 @@ class ProductsTable
                     ->label('Активен')
                     ->boolean(),
 
+                TextColumn::make('status_badges')
+                    ->label('Статусы')
+                    ->getStateUsing(function ($record): string {
+                        $badges = [];
+
+                        if ($record->is_featured) {
+                            $badges[] = '<span class="fi-badge fi-color-warning">Хит</span>';
+                        }
+                        if ($record->is_new) {
+                            $badges[] = '<span class="fi-badge fi-color-info">Новинка</span>';
+                        }
+                        if ($record->is_sale) {
+                            $badges[] = '<span class="fi-badge fi-color-danger">Акция</span>';
+                        }
+
+                        return $badges ? implode(' ', $badges) : '<span class="text-gray-500">—</span>';
+                    })
+                    ->html(),
+
                 IconColumn::make('is_featured')
                     ->label('Хит')
                     ->boolean()
-                    ->toggleable(),
+                    ->toggleable(isToggledHiddenByDefault: true),
 
                 IconColumn::make('is_new')
                     ->label('Новинка')
                     ->boolean()
-                    ->toggleable(),
+                    ->toggleable(isToggledHiddenByDefault: true),
 
                 IconColumn::make('is_sale')
                     ->label('Акция')
                     ->boolean()
-                    ->toggleable(),
+                    ->toggleable(isToggledHiddenByDefault: true),
 
                 TextColumn::make('sort_order')
                     ->label('Порядок')
@@ -109,6 +144,7 @@ class ProductsTable
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->defaultSort('sort_order')
+            ->paginated([25, 50, 100])
             ->filters([
                 TernaryFilter::make('is_active')
                     ->label('Активность'),
@@ -139,7 +175,7 @@ class ProductsTable
 
                 SelectFilter::make('supplier_id')
                     ->label('Поставщик')
-                    ->relationship('supplier', 'name')
+                    ->relationship('supplier', 'name', fn($query) => $query->where('role', 'supplier'))
                     ->searchable(),
 
                 Filter::make('without_photo')
@@ -233,6 +269,26 @@ class ProductsTable
                         ->action(fn(Collection $records) => $records->each->update(['is_sale' => false]))
                         ->deselectRecordsAfterCompletion(),
 
+                    BulkAction::make('update_supplier')
+                        ->label('Обновить поставщика')
+                        ->icon('heroicon-o-building-storefront')
+                        ->color('gray')
+                        ->form([
+                            FormSelect::make('supplier_id')
+                                ->label('Поставщик')
+                                ->options(fn() => User::query()
+                                    ->where('role', 'supplier')
+                                    ->orderBy('name')
+                                    ->pluck('name', 'id'))
+                                ->searchable()
+                                ->preload()
+                                ->nullable(),
+                        ])
+                        ->action(fn(Collection $records, array $data) => $records->each->update([
+                            'supplier_id' => $data['supplier_id'] ?? null,
+                        ]))
+                        ->deselectRecordsAfterCompletion(),
+
                     BulkAction::make('export_csv')
                         ->label('Экспорт в CSV')
                         ->icon('heroicon-o-arrow-down-tray')
@@ -283,5 +339,16 @@ class ProductsTable
                     DeleteBulkAction::make(),
                 ]),
             ]);
+    }
+
+    private static function productUrl(object $record): ?string
+    {
+        $categorySlug = $record->category?->slug;
+
+        if (!$categorySlug || !$record->slug) {
+            return null;
+        }
+
+        return url('/' . $categorySlug . '/' . $record->slug);
     }
 }
