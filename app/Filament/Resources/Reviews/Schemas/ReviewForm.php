@@ -2,7 +2,11 @@
 
 namespace App\Filament\Resources\Reviews\Schemas;
 
+use App\Models\Product;
+use Filament\Actions\Action;
+use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\FileUpload;
+use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Textarea;
@@ -29,6 +33,9 @@ class ReviewForm
                             ->label('Имя автора')
                             ->required(),
 
+                        TextInput::make('author_phone')
+                            ->label('Телефон автора'),
+
                         TextInput::make('author_email')
                             ->label('Email автора')
                             ->email(),
@@ -49,7 +56,33 @@ class ReviewForm
                         TextInput::make('reviewable_id')
                             ->label('ID объекта')
                             ->numeric()
-                            ->required(),
+                            ->required()
+                            ->suffixAction(
+                                Action::make('open_on_site')
+                                    ->icon('heroicon-o-arrow-top-right-on-square')
+                                    ->label('На сайте')
+                                    ->url(function ($get) {
+                                        $type = $get('reviewable_type');
+                                        $id   = $get('reviewable_id');
+                                        if ($type !== 'App\Models\Product' || !$id) return null;
+                                        $product = Product::with('category')->find($id);
+                                        if (!$product?->category) return null;
+                                        return url('/' . $product->category->slug . '/' . $product->slug . '');
+                                    })
+                                    ->openUrlInNewTab()
+                            ),
+
+                        Placeholder::make('product_title')
+                            ->label('Название товара')
+                            ->content(function ($get) {
+                                $type = $get('reviewable_type');
+                                $id   = $get('reviewable_id');
+                                if ($type !== 'App\Models\Product' || !$id) return '—';
+                                $product = Product::find($id);
+                                if (!$product) return '— товар не найден (ID: ' . $id . ') —';
+                                return $product->name . ' [' . $product->sku . ']';
+                            })
+                            ->columnSpanFull(),
 
                         Select::make('rating')
                             ->label('Рейтинг')
@@ -79,6 +112,23 @@ class ReviewForm
                             ->directory('reviews')
                             ->columnSpanFull(),
                     ]),
+
+                Section::make('Ответ от магазина')
+                    ->schema([
+                        Textarea::make('reply')
+                            ->label('Текст ответа')
+                            ->placeholder('Напишите ответ покупателю...')
+                            ->rows(4)
+                            ->columnSpanFull()
+                            ->helperText('После сохранения ответ появится на сайте под отзывом покупателя.'),
+
+                        DateTimePicker::make('replied_at')
+                            ->label('Дата ответа')
+                            ->helperText('Заполнится автоматически при добавлении ответа')
+                            ->displayFormat('d.m.Y H:i')
+                            ->columnSpanFull(),
+                    ])
+                    ->collapsed(fn($record) => !$record?->reply),
             ]);
     }
 }

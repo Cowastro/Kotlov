@@ -541,6 +541,26 @@
                                                     </div>
                                                 </div>
                                                 <p class="comment_text text-body-1">{{ $review->text }}</p>
+
+                                                @if ($review->reply)
+                                                    <div class="comment_reply">
+                                                        <div class="comment_info">
+                                                            <div class="info_image">
+                                                                <div class="d-flex align-items-center justify-content-center rounded-circle fw-semibold"
+                                                                    style="width:60px;height:60px;font-size:18px;flex-shrink:0;background:#f97316;color:#fff;">
+                                                                    К
+                                                                </div>
+                                                            </div>
+                                                            <div class="info_author">
+                                                                <p class="h6 author__name">Ответ от KOTLOV</p>
+                                                                <p class="author_date text-caption-01 cl-text-3">
+                                                                    {{ $review->replied_at?->diffForHumans() }}
+                                                                </p>
+                                                            </div>
+                                                        </div>
+                                                        <p class="comment_text text-body-1">{{ $review->reply }}</p>
+                                                    </div>
+                                                @endif
                                             </div>
                                         @endforeach
                                     </div>
@@ -580,6 +600,12 @@
                                                 <input type="text" id="review-name" name="author_name"
                                                     placeholder="Имя (будет опубликовано)"
                                                     value="{{ old('author_name') }}" required>
+                                            </fieldset>
+                                            <fieldset class="tf-field">
+                                                <label for="review-phone" class="tf-lable fw-medium">Телефон</label>
+                                                <input type="tel" id="review-phone" name="author_phone"
+                                                    placeholder="+375 (XX) XXX-XX-XX (не публикуется)"
+                                                    value="{{ old('author_phone') }}">
                                             </fieldset>
                                             <fieldset class="tf-field">
                                                 <label for="review-email" class="tf-lable fw-medium">Email</label>
@@ -695,7 +721,6 @@ document.addEventListener('DOMContentLoaded', function () {
     document.querySelectorAll('a[href="#write-review"]').forEach(btn => {
         btn.addEventListener('click', function (e) {
             e.preventDefault();
-            // Активируем вкладку отзывов
             const tab = document.querySelector('a[href="#customer-reviews"]');
             if (tab) tab.click();
             setTimeout(() => {
@@ -704,6 +729,20 @@ document.addEventListener('DOMContentLoaded', function () {
             }, 150);
         });
     });
+
+    // После успешной отправки — открыть вкладку отзывов и показать сообщение
+    @if(session('review_sent'))
+    (function() {
+        const tab = document.querySelector('a[href="#customer-reviews"]');
+        if (tab) {
+            tab.click();
+            setTimeout(() => {
+                const msg = document.querySelector('.alert-success');
+                if (msg) msg.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }, 200);
+        }
+    })();
+    @endif
 });
 </script>
 @endpush

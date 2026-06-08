@@ -15,6 +15,7 @@ use App\Http\Controllers\ProductController;
 use App\Http\Controllers\AccountController;
 use App\Http\Controllers\SearchController;
 use App\Http\Controllers\PartnerApplicationController;
+use App\Http\Controllers\ReviewController;
 use App\Http\Controllers\WishlistController;
 use App\Models\BlogPost;
 use App\Models\Brand;
@@ -127,6 +128,7 @@ Route::get('/installers/{slug}', [InstallerController::class, 'show'])->name('in
 Route::get('/install-request', [InstallRequestController::class, 'create'])->name('install-requests.create');
 Route::post('/install-request', [InstallRequestController::class, 'store'])->name('install-requests.store');
 Route::view('/reviews',    'pages.reviews');
+Route::post('/products/{product}/reviews', [ReviewController::class, 'store'])->name('reviews.store');
 Route::view('/faq',        'pages.faq');
 Route::view('/privacy',    'pages.privacy');
 // ===== Корзина =====

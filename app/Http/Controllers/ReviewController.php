@@ -11,6 +11,7 @@ class ReviewController extends Controller
     {
         $validated = $request->validate([
             'author_name'  => ['required', 'string', 'max:100'],
+            'author_phone' => ['nullable', 'string', 'max:50'],
             'author_email' => ['nullable', 'email', 'max:100'],
             'rating'       => ['required', 'integer', 'min:1', 'max:5'],
             'text'         => ['required', 'string', 'min:10', 'max:2000'],
@@ -28,14 +29,13 @@ class ReviewController extends Controller
 
         $product->reviews()->create([
             'author_name'  => $validated['author_name'],
+            'author_phone' => $validated['author_phone'] ?? null,
             'author_email' => $validated['author_email'] ?? null,
             'rating'       => $validated['rating'],
             'text'         => $validated['text'],
             'is_approved'  => false,
         ]);
 
-        return back()
-            ->with('review_sent', true)
-            ->withFragment('customer-reviews');
+        return back()->with('review_sent', true);
     }
 }

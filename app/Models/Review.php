@@ -9,18 +9,27 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
 class Review extends Model
 {
     protected $fillable = [
-        'user_id', 'author_name', 'author_email',
+        'user_id', 'author_name', 'author_email', 'author_phone',
         'reviewable_type', 'reviewable_id',
         'rating', 'text', 'photos', 'is_approved',
+        'reply', 'replied_at',
     ];
 
     protected $casts = [
         'photos'      => 'array',
         'is_approved' => 'boolean',
+        'replied_at'  => 'datetime',
     ];
 
     protected static function booted(): void
     {
+        static::saving(function (self $review) {
+            // Авто-дата ответа
+            if ($review->isDirty('reply')) {
+                $review->replied_at = $review->reply ? now() : null;
+            }
+        });
+
         static::saved(fn(self $review) => $review->recalculateTarget());
         static::deleted(fn(self $review) => $review->recalculateTarget());
     }
