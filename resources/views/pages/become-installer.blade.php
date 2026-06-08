@@ -27,9 +27,14 @@
                         Создайте собственную страницу специалиста, публикуйте свои работы,
                         собирайте отзывы клиентов и получайте новые заявки из своего региона.
                     </p>
+                    <ul class="tf-list vertical gap-8 cl-text-2 mb-32">
+                        <li>Личный кабинет монтажника с логином и паролем</li>
+                        <li>Заявки на монтаж и возможность обновлять профиль</li>
+                        <li>Партнёрские B2B-цены и заказы оборудования для объектов</li>
+                    </ul>
                     <div class="d-flex flex-wrap gap-12">
                         <a href="#apply" class="tf-btn animate-btn">Подать заявку</a>
-                        <a href="/installers" class="tf-btn btn-outline">Каталог монтажников</a>
+                        <a href="#installer-cabinet" class="tf-btn btn-outline">Личный кабинет</a>
                     </div>
                 </div>
                 <div class="col-lg-6">
@@ -48,16 +53,16 @@
     <section class="flat-spacing">
         <div class="container">
             <div class="sect-heading type-2 text-center mb-40">
-                <h2 class="s-title">Что вы получите</h2>
+                <h2 class="s-title">Что получает монтажник</h2>
                 <p class="s-desc text-body-1 cl-text-2">
-                    Размещение в KOTLOV — это не просто строчка в справочнике. Это полноценный инструмент для получения заказов.
+                    KOTLOV Marketplace дает монтажнику не только страницу в каталоге, но и рабочий инструмент для заявок, профиля и закупок.
                 </p>
             </div>
 
             <div class="row gy-24">
                 <div class="col-lg-3 col-sm-6">
                     <div class="box-icon-custom text-center p-24 h-100" style="border:1px solid #f0f0f0;border-radius:16px;">
-                        <div class="mb-16"><i class="icon icon-UserCircle fs-40 cl-primary"></i></div>
+                        <div class="mb-16"><i class="icon icon-User fs-40 cl-primary"></i></div>
                         <p class="h6 fw-semibold mb-8">Страница специалиста</p>
                         <p class="cl-text-2 text-body-2">
                             Фото профиля, описание, специализация, регионы, контакты, отзывы и рейтинг.
@@ -67,7 +72,7 @@
                 </div>
                 <div class="col-lg-3 col-sm-6">
                     <div class="box-icon-custom text-center p-24 h-100" style="border:1px solid #f0f0f0;border-radius:16px;">
-                        <div class="mb-16"><i class="icon icon-BellRinging fs-40 cl-primary"></i></div>
+                        <div class="mb-16"><i class="icon icon-GearSix fs-40 cl-primary"></i></div>
                         <p class="h6 fw-semibold mb-8">Заявки на монтаж</p>
                         <p class="cl-text-2 text-body-2">
                             Клиенты находят вас через каталог монтажников, карточки товаров,
@@ -78,16 +83,16 @@
                 <div class="col-lg-3 col-sm-6">
                     <div class="box-icon-custom text-center p-24 h-100" style="border:1px solid #f0f0f0;border-radius:16px;">
                         <div class="mb-16"><i class="icon icon-MagnifyingGlass fs-40 cl-primary"></i></div>
-                        <p class="h6 fw-semibold mb-8">Продвижение в Google</p>
+                        <p class="h6 fw-semibold mb-8">Личный кабинет</p>
                         <p class="cl-text-2 text-body-2">
-                            Размещение в каталоге KOTLOV помогает получать дополнительный трафик
-                            из Google и поисковых систем.
+                            В будущем у монтажника будет доступ по логину и паролю для управления
+                            профилем и рабочими данными.
                         </p>
                     </div>
                 </div>
                 <div class="col-lg-3 col-sm-6">
                     <div class="box-icon-custom text-center p-24 h-100" style="border:1px solid #f0f0f0;border-radius:16px;">
-                        <div class="mb-16"><i class="icon icon-Images fs-40 cl-primary"></i></div>
+                        <div class="mb-16"><i class="icon icon-Package fs-40 cl-primary"></i></div>
                         <p class="h6 fw-semibold mb-8">Портфолио работ</p>
                         <p class="cl-text-2 text-body-2">
                             Публикуйте фотографии объектов, описания проектов и результаты
@@ -98,16 +103,16 @@
                 <div class="col-lg-3 col-sm-6">
                     <div class="box-icon-custom text-center p-24 h-100" style="border:1px solid #f0f0f0;border-radius:16px;">
                         <div class="mb-16"><i class="icon icon-Star fs-40 cl-primary"></i></div>
-                        <p class="h6 fw-semibold mb-8">Отзывы клиентов</p>
+                        <p class="h6 fw-semibold mb-8">Редактирование профиля</p>
                         <p class="cl-text-2 text-body-2">
-                            После выполнения работ клиенты оставляют отзывы.
-                            Отзывы формируют доверие и помогают получать больше заказов.
+                            Обновляйте описание, специализацию, регионы, контакты и информацию
+                            о своей компании или бригаде.
                         </p>
                     </div>
                 </div>
                 <div class="col-lg-3 col-sm-6">
                     <div class="box-icon-custom text-center p-24 h-100" style="border:1px solid #f0f0f0;border-radius:16px;">
-                        <div class="mb-16"><i class="icon icon-SealCheck fs-40 cl-primary"></i></div>
+                        <div class="mb-16"><i class="icon icon-ShieldCheck fs-40 cl-primary"></i></div>
                         <p class="h6 fw-semibold mb-8">Статус «Проверенный»</p>
                         <p class="cl-text-2 text-body-2">
                             После проверки информации специалист получает бейдж
@@ -117,21 +122,21 @@
                 </div>
                 <div class="col-lg-3 col-sm-6">
                     <div class="box-icon-custom text-center p-24 h-100" style="border:1px solid #f0f0f0;border-radius:16px;">
-                        <div class="mb-16"><i class="icon icon-MapPin fs-40 cl-primary"></i></div>
-                        <p class="h6 fw-semibold mb-8">Работа в своём регионе</p>
+                        <div class="mb-16"><i class="icon icon-SealPercent fs-40 cl-primary"></i></div>
+                        <p class="h6 fw-semibold mb-8">Свои B2B-цены</p>
                         <p class="cl-text-2 text-body-2">
-                            Самостоятельно выбираете города и области, в которых принимаете
-                            заявки на монтаж.
+                            Видите партнёрские цены на оборудование и комплектующие,
+                            доступные именно для монтажников KOTLOV.
                         </p>
                     </div>
                 </div>
                 <div class="col-lg-3 col-sm-6">
                     <div class="box-icon-custom text-center p-24 h-100" style="border:1px solid #f0f0f0;border-radius:16px;">
-                        <div class="mb-16"><i class="icon icon-CurrencyCircleDollar fs-40 cl-primary"></i></div>
-                        <p class="h6 fw-semibold mb-8">Бесплатное размещение</p>
+                        <div class="mb-16"><i class="icon icon-shopping-cart-simple fs-40 cl-primary"></i></div>
+                        <p class="h6 fw-semibold mb-8">Заказы как партнёр</p>
                         <p class="cl-text-2 text-body-2">
-                            На этапе запуска участие бесплатное.
-                            Присоединяйтесь сейчас, пока мест немного.
+                            Покупайте товары по специальным B2B-условиям и оформляйте
+                            заказы на объекты как партнёр KOTLOV.
                         </p>
                     </div>
                 </div>
@@ -153,8 +158,8 @@
                         ['num'=>'01','title'=>'Подайте заявку','desc'=>'Заполните форму ниже — имя, телефон, специализация и регион работы.'],
                         ['num'=>'02','title'=>'Мы проверяем информацию','desc'=>'Менеджер свяжется с вами в течение рабочего дня для уточнения деталей.'],
                         ['num'=>'03','title'=>'Создаём профиль специалиста','desc'=>'Оформляем вашу страницу: фото, описание, специализация, регион, контакты.'],
-                        ['num'=>'04','title'=>'Размещаем в каталоге','desc'=>'Ваш профиль появляется в каталоге монтажников KOTLOV и на страницах товаров.'],
-                        ['num'=>'05','title'=>'Получаете заявки','desc'=>'Клиенты находят вас и оставляют заявки напрямую — без комиссий агрегаторов.'],
+                        ['num'=>'04','title'=>'Даём доступ партнёра','desc'=>'В будущем вы получите личный кабинет с профилем, заявками и партнёрскими ценами.'],
+                        ['num'=>'05','title'=>'Получаете заявки и заказы','desc'=>'Клиенты оставляют заявки, а вы покупаете оборудование на специальных B2B-условиях.'],
                     ];
                 @endphp
                 @foreach($steps as $step)
@@ -317,14 +322,14 @@
                                 </div>
                                 <div class="swiper-slide">
                                     <div class="box-why">
-                                        <i class="icon icon-Wrench fs-32 mb-12"></i>
+                                        <i class="icon icon-GearSix fs-32 mb-12"></i>
                                         <p class="title h5 fw-medium">Услуги</p>
                                         <p class="sub cl-text-2">Монтаж, проектирование, сервис — полный цикл обслуживания клиента.</p>
                                     </div>
                                 </div>
                                 <div class="swiper-slide">
                                     <div class="box-why">
-                                        <i class="icon icon-Buildings fs-32 mb-12"></i>
+                                        <i class="icon icon-HouseLine fs-32 mb-12"></i>
                                         <p class="title h5 fw-medium">Сервисные компании</p>
                                         <p class="sub cl-text-2">Организации по гарантийному и постгарантийному обслуживанию.</p>
                                     </div>
@@ -338,6 +343,76 @@
         </div>
     </section>
     {{-- /Почему KOTLOV --}}
+
+    {{-- Будущий личный кабинет --}}
+    <section class="flat-spacing pt-0" id="installer-cabinet">
+        <div class="container">
+            <div class="sect-heading type-2 text-center mb-40">
+                <h2 class="s-title">Будущий личный кабинет монтажника</h2>
+                <p class="s-desc text-body-1 cl-text-2">
+                    Мы развиваем партнёрскую зону KOTLOV, чтобы монтажник мог управлять заявками, профилем и закупками в одном месте.
+                </p>
+            </div>
+
+            <div class="row gy-24">
+                <div class="col-lg-4 col-sm-6">
+                    <div class="box-why h-100">
+                        <i class="icon icon-User fs-32 mb-12"></i>
+                        <p class="title h5 fw-medium">Логин и пароль</p>
+                        <p class="sub cl-text-2">
+                            После подключения монтажник получит персональный доступ к партнёрскому кабинету KOTLOV.
+                        </p>
+                    </div>
+                </div>
+                <div class="col-lg-4 col-sm-6">
+                    <div class="box-why h-100">
+                        <i class="icon icon-NotePencil fs-32 mb-12"></i>
+                        <p class="title h5 fw-medium">Редактирование профиля</p>
+                        <p class="sub cl-text-2">
+                            Можно будет менять описание, контакты, специализацию, города работы и зоны выезда.
+                        </p>
+                    </div>
+                </div>
+                <div class="col-lg-4 col-sm-6">
+                    <div class="box-why h-100">
+                        <i class="icon icon-Package fs-32 mb-12"></i>
+                        <p class="title h5 fw-medium">Загрузка работ</p>
+                        <p class="sub cl-text-2">
+                            Добавляйте фото объектов, портфолио и примеры монтажей, чтобы клиент быстрее доверял вам заявку.
+                        </p>
+                    </div>
+                </div>
+                <div class="col-lg-4 col-sm-6">
+                    <div class="box-why h-100">
+                        <i class="icon icon-GearSix fs-32 mb-12"></i>
+                        <p class="title h5 fw-medium">Заявки на монтаж</p>
+                        <p class="sub cl-text-2">
+                            В кабинете будет видно входящие запросы клиентов по монтажу котлов, дымоходов, каминов и тепловых насосов.
+                        </p>
+                    </div>
+                </div>
+                <div class="col-lg-4 col-sm-6">
+                    <div class="box-why h-100">
+                        <i class="icon icon-SealPercent fs-32 mb-12"></i>
+                        <p class="title h5 fw-medium">Партнёрские цены</p>
+                        <p class="sub cl-text-2">
+                            Монтажник сможет видеть свои специальные B2B-цены на оборудование и комплектующие.
+                        </p>
+                    </div>
+                </div>
+                <div class="col-lg-4 col-sm-6">
+                    <div class="box-why h-100">
+                        <i class="icon icon-Package fs-32 mb-12"></i>
+                        <p class="title h5 fw-medium">Заказы оборудования</p>
+                        <p class="sub cl-text-2">
+                            Оформляйте закупки для объектов по партнёрским условиям KOTLOV прямо как B2B-клиент.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+    {{-- /Будущий личный кабинет --}}
 
     {{-- Какие заявки можно получать --}}
     <section class="flat-spacing pt-0">
