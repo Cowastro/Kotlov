@@ -9,6 +9,12 @@ return Application::configure(basePath: dirname(__DIR__))
         web: __DIR__.'/../routes/web.php',
         commands: __DIR__.'/../routes/console.php',
         health: '/up',
+        then: function () {
+            // Sitemap без session/cookie middleware
+            \Illuminate\Support\Facades\Route::middleware([])->group(
+                base_path('routes/sitemap.php')
+            );
+        },
     )
     ->withMiddleware(function (Middleware $middleware) {
         // 301 редиректы со старого сайта — обрабатывает 404 и ищет в таблице redirects
