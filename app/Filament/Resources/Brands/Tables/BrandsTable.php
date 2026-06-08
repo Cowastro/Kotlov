@@ -24,7 +24,7 @@ class BrandsTable
                     ->label('Лого')
                     ->getStateUsing(fn($record) => $record->logo
                         ? url('/proxy-image/' . $record->logo)
-                        : null)
+                        : url('/img/products/product-placeholder.jpg'))
                     ->circular(),
 
                 TextColumn::make('name')
