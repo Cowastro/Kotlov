@@ -19,6 +19,33 @@ class Review extends Model
         'is_approved' => 'boolean',
     ];
 
+    protected static function booted(): void
+    {
+        static::saved(fn(self $review) => $review->recalculateTarget());
+        static::deleted(fn(self $review) => $review->recalculateTarget());
+    }
+
+    public function recalculateTarget(): void
+    {
+        if ($this->reviewable_type !== 'App\\Models\\Product') {
+            return;
+        }
+
+        $product = Product::find($this->reviewable_id);
+        if (!$product) return;
+
+        $stats = self::where('reviewable_type', 'App\\Models\\Product')
+            ->where('reviewable_id', $product->id)
+            ->where('is_approved', true)
+            ->selectRaw('COUNT(*) as cnt, COALESCE(AVG(rating), 0) as avg')
+            ->first();
+
+        $product->updateQuietly([
+            'reviews_count' => (int) $stats->cnt,
+            'rating'        => round((float) $stats->avg, 1),
+        ]);
+    }
+
     public function reviewable(): MorphTo
     {
         return $this->morphTo();

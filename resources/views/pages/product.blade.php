@@ -472,48 +472,134 @@
 
                 {{-- Отзывы --}}
                 <div class="tab-pane" id="customer-reviews" role="tabpanel">
-                    <div class="product-desc_review write-cancel-review-wrap">
+                    <div class="product-desc_review">
+
+                        @if (session('review_sent'))
+                            <div class="alert alert-success mb-24" role="alert">
+                                ✅ Спасибо! Ваш отзыв отправлен на модерацию и будет опубликован в ближайшее время.
+                            </div>
+                        @endif
+
+                        {{-- Рейтинг + progress bars --}}
+                        <div class="box-rating">
+                            <div class="rating-ratio">
+                                <p class="text-display fw-medium">{{ $reviews->count() > 0 ? number_format($product->rating, 1) : '—' }}</p>
+                                <div class="star-wrap normal d-flex align-items-center">
+                                    @for ($s = 1; $s <= 5; $s++)
+                                        <i class="icon icon-Star{{ $s <= round($product->rating) ? '' : 'EmptyOutlined' }} fs-24"></i>
+                                    @endfor
+                                </div>
+                                <p class="rate-number">({{ $product->reviews_count }} {{ trans_choice('отзыв|отзыва|отзывов', $product->reviews_count) }})</p>
+                            </div>
+                            @if ($reviews->count() > 0)
+                                @php
+                                    $ratingCounts = $reviews->groupBy('rating')->map->count();
+                                    $total = $reviews->count();
+                                @endphp
+                                <div class="rating-progress-list">
+                                    @foreach ([5, 4, 3, 2, 1] as $star)
+                                        @php $cnt = $ratingCounts[$star] ?? 0; $pct = $total > 0 ? round($cnt / $total * 100) : 0; @endphp
+                                        <div class="rate-progress-star fw-medium">
+                                            <span class="number-star">{{ $star }}</span>
+                                            <i class="icon icon-Star fs-20 cl-text-yellow"></i>
+                                            <div class="progress" role="progressbar" aria-valuenow="{{ $pct }}" aria-valuemin="0" aria-valuemax="100">
+                                                <div class="progress-bar" style="width: {{ $pct }}%;"></div>
+                                            </div>
+                                            <span class="number-percent">{{ $pct }}%</span>
+                                        </div>
+                                    @endforeach
+                                </div>
+                            @endif
+                            <a href="#write-review" class="action tf-btn animate-btn">Написать отзыв</a>
+                        </div>
+
+                        {{-- Список отзывов --}}
                         @if ($reviews->count() > 0)
-                            <div class="box-rating mb-0">
-                                <div class="rating-ratio">
-                                    <p class="text-display fw-medium">{{ number_format($product->rating, 1) }}</p>
-                                    <div class="star-wrap normal d-flex align-items-center">
-                                        @for ($s = 1; $s <= 5; $s++)
-                                            <i class="icon icon-Star{{ $s <= round($product->rating) ? '' : 'EmptyOutlined' }} fs-24"></i>
-                                        @endfor
+                            <div class="box-comment">
+                                <div class="head">
+                                    <h4>{{ $product->reviews_count }} {{ trans_choice('отзыв|отзыва|отзывов', $product->reviews_count) }}</h4>
+                                </div>
+                                <div class="wg-comment">
+                                    <div class="comment-list">
+                                        @foreach ($reviews as $review)
+                                            <div class="box-comment">
+                                                <div class="comment_info">
+                                                    <div class="info_image">
+                                                        <div class="d-flex align-items-center justify-content-center rounded-circle bg-dark text-white fw-semibold"
+                                                            style="width:60px;height:60px;font-size:20px;flex-shrink:0">
+                                                            {{ mb_strtoupper(mb_substr($review->author_name, 0, 1)) }}
+                                                        </div>
+                                                    </div>
+                                                    <div class="info_author">
+                                                        <p class="h6 author__name">{{ $review->author_name }}</p>
+                                                        <div class="star-wrap normal d-flex align-items-center">
+                                                            @for ($s = 1; $s <= 5; $s++)
+                                                                <i class="icon icon-Star{{ $s <= $review->rating ? '' : 'EmptyOutlined' }}"></i>
+                                                            @endfor
+                                                        </div>
+                                                        <p class="author_date text-caption-01 cl-text-3">{{ $review->created_at->diffForHumans() }}</p>
+                                                    </div>
+                                                </div>
+                                                <p class="comment_text text-body-1">{{ $review->text }}</p>
+                                            </div>
+                                        @endforeach
                                     </div>
-                                    <p class="rate-number">({{ $product->reviews_count }} отзывов)</p>
                                 </div>
                             </div>
-                            <div class="wg-comment mt-32">
-                                @foreach ($reviews as $review)
-                                    <div class="box-comment mb-24">
-                                        <div class="comment_info mb-12">
-                                            <div class="info_image">
-                                                <div class="d-flex align-items-center justify-content-center rounded-circle bg-dark text-white fw-semibold"
-                                                    style="width:60px;height:60px;font-size:20px;flex-shrink:0">
-                                                    {{ mb_strtoupper(mb_substr($review->author_name, 0, 1)) }}
-                                                </div>
-                                            </div>
-                                            <div class="info_author">
-                                                <p class="h6 author__name">{{ $review->author_name }}</p>
-                                                <div class="star-wrap normal d-flex align-items-center">
-                                                    @for ($s = 1; $s <= 5; $s++)
-                                                        <i class="icon icon-Star{{ $s <= $review->rating ? '' : 'EmptyOutlined' }}"></i>
-                                                    @endfor
-                                                </div>
-                                                <p class="author_date text-caption-01 cl-text-3">
-                                                    {{ $review->created_at->diffForHumans() }}
-                                                </p>
-                                            </div>
-                                        </div>
-                                        <p class="comment_text text-body-1">{{ $review->text }}</p>
-                                    </div>
-                                @endforeach
-                            </div>
                         @else
-                            <p class="cl-text-2">Отзывов пока нет. Будьте первым!</p>
+                            <p class="cl-text-2 mb-32">Отзывов пока нет. Будьте первым!</p>
                         @endif
+
+                        {{-- Форма написать отзыв --}}
+                        <div class="box-write-comment" id="write-review">
+                            <div class="head">
+                                <h5>Написать отзыв:</h5>
+                                <div class="star-wrap rate-click d-flex align-items-center" id="star-rating">
+                                    @for ($s = 1; $s <= 5; $s++)
+                                        <i class="icon icon-Star" data-value="{{ $s }}" style="cursor:pointer;font-size:24px;"></i>
+                                    @endfor
+                                </div>
+                            </div>
+                            @if ($errors->any())
+                                <div class="alert alert-danger mb-16">
+                                    <ul class="mb-0">
+                                        @foreach ($errors->all() as $error)
+                                            <li>{{ $error }}</li>
+                                        @endforeach
+                                    </ul>
+                                </div>
+                            @endif
+                            <form class="form-rating" method="POST" action="{{ route('reviews.store', $product) }}">
+                                @csrf
+                                <input type="hidden" name="rating" id="rating-value" value="{{ old('rating', 5) }}">
+                                <div class="form-content mb-24">
+                                    <div class="tf-grid-layout md-col-2">
+                                        <div class="tf-grid-layout">
+                                            <fieldset class="tf-field">
+                                                <label for="review-name" class="tf-lable fw-medium">Ваше имя <span class="text-primary">*</span></label>
+                                                <input type="text" id="review-name" name="author_name"
+                                                    placeholder="Имя (будет опубликовано)"
+                                                    value="{{ old('author_name') }}" required>
+                                            </fieldset>
+                                            <fieldset class="tf-field">
+                                                <label for="review-email" class="tf-lable fw-medium">Email</label>
+                                                <input type="email" id="review-email" name="author_email"
+                                                    placeholder="Email (не публикуется)"
+                                                    value="{{ old('author_email') }}">
+                                            </fieldset>
+                                        </div>
+                                        <fieldset class="tf-field d-flex flex-column">
+                                            <label for="review-text" class="tf-lable fw-medium">Отзыв <span class="text-primary">*</span></label>
+                                            <textarea id="review-text" name="text"
+                                                placeholder="Поделитесь вашим мнением о товаре..."
+                                                class="h-md-100" required>{{ old('text') }}</textarea>
+                                        </fieldset>
+                                    </div>
+                                </div>
+                                <button type="submit" class="tf-btn animate-btn">Отправить отзыв</button>
+                            </form>
+                        </div>
+
                     </div>
                 </div>
 
@@ -573,4 +659,53 @@
     @endif
 
 </main>
+
+@push('scripts')
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const stars = document.querySelectorAll('#star-rating .icon');
+    const ratingInput = document.getElementById('rating-value');
+    if (!stars.length || !ratingInput) return;
+
+    function setStars(value) {
+        stars.forEach(s => {
+            const v = parseInt(s.dataset.value);
+            s.classList.toggle('icon-Star', v <= value);
+            s.classList.toggle('icon-StarEmptyOutlined', v > value);
+        });
+        ratingInput.value = value;
+    }
+
+    // Инициализация по old('rating')
+    setStars(parseInt(ratingInput.value) || 5);
+
+    stars.forEach(star => {
+        star.addEventListener('mouseover', () => {
+            stars.forEach(s => {
+                const v = parseInt(s.dataset.value);
+                s.classList.toggle('icon-Star', v <= parseInt(star.dataset.value));
+                s.classList.toggle('icon-StarEmptyOutlined', v > parseInt(star.dataset.value));
+            });
+        });
+        star.addEventListener('mouseleave', () => setStars(parseInt(ratingInput.value) || 5));
+        star.addEventListener('click', () => setStars(parseInt(star.dataset.value)));
+    });
+
+    // Прокрутка к форме по клику "Написать отзыв"
+    document.querySelectorAll('a[href="#write-review"]').forEach(btn => {
+        btn.addEventListener('click', function (e) {
+            e.preventDefault();
+            // Активируем вкладку отзывов
+            const tab = document.querySelector('a[href="#customer-reviews"]');
+            if (tab) tab.click();
+            setTimeout(() => {
+                const form = document.getElementById('write-review');
+                if (form) form.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }, 150);
+        });
+    });
+});
+</script>
+@endpush
+
 @endsection

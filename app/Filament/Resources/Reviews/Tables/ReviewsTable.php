@@ -7,6 +7,8 @@ use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Actions\ViewAction;
 use Filament\Tables\Actions\Action;
+use Filament\Tables\Actions\BulkAction;
+use Illuminate\Database\Eloquent\Collection;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
@@ -73,6 +75,24 @@ class ReviewsTable
             ])
             ->toolbarActions([
                 BulkActionGroup::make([
+                    BulkAction::make('approve')
+                        ->label('Одобрить')
+                        ->icon('heroicon-o-check-circle')
+                        ->color('success')
+                        ->action(function (Collection $records) {
+                            $records->each(fn($r) => $r->update(['is_approved' => true]));
+                        })
+                        ->deselectRecordsAfterCompletion(),
+
+                    BulkAction::make('reject')
+                        ->label('Отклонить')
+                        ->icon('heroicon-o-x-circle')
+                        ->color('warning')
+                        ->action(function (Collection $records) {
+                            $records->each(fn($r) => $r->update(['is_approved' => false]));
+                        })
+                        ->deselectRecordsAfterCompletion(),
+
                     DeleteBulkAction::make(),
                 ]),
             ]);
