@@ -6,12 +6,14 @@ use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Actions\ViewAction;
+use Filament\Tables\Actions\BulkAction;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\ImageColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Collection;
 
 class ProductsTable
 {
@@ -127,6 +129,76 @@ class ProductsTable
             ])
             ->toolbarActions([
                 BulkActionGroup::make([
+                    BulkAction::make('activate')
+                        ->label('Активировать')
+                        ->icon('heroicon-o-check-circle')
+                        ->color('success')
+                        ->action(fn(Collection $records) => $records->each->update(['is_active' => true]))
+                        ->deselectRecordsAfterCompletion(),
+
+                    BulkAction::make('deactivate')
+                        ->label('Деактивировать')
+                        ->icon('heroicon-o-x-circle')
+                        ->color('warning')
+                        ->action(fn(Collection $records) => $records->each->update(['is_active' => false]))
+                        ->deselectRecordsAfterCompletion(),
+
+                    BulkAction::make('set_in_stock')
+                        ->label('В наличии')
+                        ->icon('heroicon-o-archive-box')
+                        ->color('success')
+                        ->action(fn(Collection $records) => $records->each->update(['in_stock' => true]))
+                        ->deselectRecordsAfterCompletion(),
+
+                    BulkAction::make('set_out_of_stock')
+                        ->label('Нет в наличии')
+                        ->icon('heroicon-o-archive-box-x-mark')
+                        ->color('danger')
+                        ->action(fn(Collection $records) => $records->each->update(['in_stock' => false]))
+                        ->deselectRecordsAfterCompletion(),
+
+                    BulkAction::make('mark_featured')
+                        ->label('Отметить хитом')
+                        ->icon('heroicon-o-fire')
+                        ->color('warning')
+                        ->action(fn(Collection $records) => $records->each->update(['is_featured' => true]))
+                        ->deselectRecordsAfterCompletion(),
+
+                    BulkAction::make('unmark_featured')
+                        ->label('Снять хит')
+                        ->icon('heroicon-o-fire')
+                        ->color('gray')
+                        ->action(fn(Collection $records) => $records->each->update(['is_featured' => false]))
+                        ->deselectRecordsAfterCompletion(),
+
+                    BulkAction::make('mark_new')
+                        ->label('Отметить новинкой')
+                        ->icon('heroicon-o-sparkles')
+                        ->color('info')
+                        ->action(fn(Collection $records) => $records->each->update(['is_new' => true]))
+                        ->deselectRecordsAfterCompletion(),
+
+                    BulkAction::make('unmark_new')
+                        ->label('Снять новинку')
+                        ->icon('heroicon-o-sparkles')
+                        ->color('gray')
+                        ->action(fn(Collection $records) => $records->each->update(['is_new' => false]))
+                        ->deselectRecordsAfterCompletion(),
+
+                    BulkAction::make('mark_sale')
+                        ->label('Отметить акцией')
+                        ->icon('heroicon-o-tag')
+                        ->color('danger')
+                        ->action(fn(Collection $records) => $records->each->update(['is_sale' => true]))
+                        ->deselectRecordsAfterCompletion(),
+
+                    BulkAction::make('unmark_sale')
+                        ->label('Снять акцию')
+                        ->icon('heroicon-o-tag')
+                        ->color('gray')
+                        ->action(fn(Collection $records) => $records->each->update(['is_sale' => false]))
+                        ->deselectRecordsAfterCompletion(),
+
                     DeleteBulkAction::make(),
                 ]),
             ]);
