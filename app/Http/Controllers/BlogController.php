@@ -66,9 +66,18 @@ class BlogController extends Controller
             ->sort()
             ->values();
 
+        $title       = $activeCategory
+            ? $activeCategory->name . ' — статьи | KOTLOV'
+            : 'Статьи об отоплении — советы и обзоры | KOTLOV';
+        $description = $activeCategory
+            ? 'Статьи о ' . mb_strtolower($activeCategory->name) . '. Советы по выбору и эксплуатации отопительного оборудования.'
+            : 'Полезные статьи об отоплении: выбор котла, печи, камина. Советы по монтажу и эксплуатации.';
+        $canonical   = 'https://kotlov.by/blog' . ($activeCategory ? '?category=' . $activeCategory->slug : '');
+
         return view('pages.blog', compact(
             'posts', 'categories', 'recentPosts',
-            'tags', 'activeCategory', 'totalCount'
+            'tags', 'activeCategory', 'totalCount',
+            'title', 'description', 'canonical'
         ));
     }
 
@@ -90,6 +99,11 @@ class BlogController extends Controller
             ->limit(3)
             ->get();
 
-        return view('pages.blog-single', compact('post', 'related'));
+        $title       = $post->meta_title ?: ($post->title . ' | KOTLOV');
+        $description = $post->meta_description ?: ($post->excerpt ?: mb_substr(strip_tags($post->content ?? ''), 0, 160));
+        $canonical   = 'https://kotlov.by/blog/' . $post->slug;
+        $ogImage     = $post->image ? asset('storage/' . $post->image) : asset('img/og-default.jpg');
+
+        return view('pages.blog-single', compact('post', 'related', 'title', 'description', 'canonical', 'ogImage'));
     }
 }
