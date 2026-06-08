@@ -2,7 +2,6 @@
 
 namespace App\Filament\Resources\Reviews\Tables;
 
-use App\Models\Product;
 use Filament\Actions\BulkAction;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
@@ -15,6 +14,7 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 
 class ReviewsTable
@@ -22,34 +22,41 @@ class ReviewsTable
     public static function configure(Table $table): Table
     {
         return $table
+            ->modifyQueryUsing(fn(Builder $query) => $query->with('reviewable'))
             ->columns([
                 // Фото товара
                 ImageColumn::make('product_image')
                     ->label('Фото')
                     ->getStateUsing(function ($record) {
                         if ($record->reviewable_type !== 'App\Models\Product') return null;
-                        $product = Product::find($record->reviewable_id);
-                        return $product ? url($product->imageUrl(0)) : null;
+                        $product = $record->reviewable;
+                        if (!$product) return null;
+                        return url($product->imageUrl(0));
                     })
                     ->circular()
                     ->defaultImageUrl(url('/img/products/product-placeholder.jpg')),
 
-                // Название товара со ссылкой на сайт
+                // Название товара
                 TextColumn::make('product_name')
                     ->label('Товар')
                     ->getStateUsing(function ($record) {
-                        if ($record->reviewable_type !== 'App\Models\Product') return '—';
-                        $product = Product::find($record->reviewable_id);
+                        if ($record->reviewable_type !== 'App\Models\Product') {
+                            return match($record->reviewable_type) {
+                                'App\Models\InstallerProfile' => 'Монтажник',
+                                default => '—',
+                            };
+                        }
+                        $product = $record->reviewable;
                         return $product?->name ?? 'ID: ' . $record->reviewable_id;
                     })
                     ->limit(40)
                     ->searchable(false)
                     ->description(function ($record) {
                         if ($record->reviewable_type !== 'App\Models\Product') return null;
-                        $product = Product::find($record->reviewable_id);
-                        return $product ? $product->sku : null;
+                        return $record->reviewable?->sku;
                     }),
 
+                // Автор + контакт
                 TextColumn::make('author_name')
                     ->label('Автор')
                     ->searchable()
@@ -69,7 +76,7 @@ class ReviewsTable
                     ->label('Одобрен')
                     ->boolean(),
 
-                IconColumn::make('reply')
+                IconColumn::make('has_reply')
                     ->label('Ответ')
                     ->boolean()
                     ->getStateUsing(fn($record) => !empty($record->reply)),
@@ -83,14 +90,6 @@ class ReviewsTable
             ->filters([
                 TernaryFilter::make('is_approved')
                     ->label('Модерация'),
-
-                TernaryFilter::make('reviewable_type')
-                    ->label('Только товары')
-                    ->queries(
-                        true: fn($q) => $q->where('reviewable_type', 'App\Models\Product'),
-                        false: fn($q) => $q->where('reviewable_type', '!=', 'App\Models\Product'),
-                        blank: fn($q) => $q,
-                    ),
 
                 SelectFilter::make('rating')
                     ->label('Рейтинг')
@@ -109,9 +108,11 @@ class ReviewsTable
                     ->color('gray')
                     ->url(function ($record) {
                         if ($record->reviewable_type !== 'App\Models\Product') return null;
-                        $product = Product::find($record->reviewable_id);
-                        if (!$product?->category) return null;
-                        return url('/' . $product->category->slug . '/' . $product->slug . '');
+                        $product = $record->reviewable;
+                        if (!$product) return null;
+                        $product->load('category');
+                        if (!$product->category) return null;
+                        return url('/' . $product->category->slug . '/' . $product->slug);
                     })
                     ->openUrlInNewTab()
                     ->visible(fn($record) => $record->reviewable_type === 'App\Models\Product'),
