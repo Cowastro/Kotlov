@@ -40,7 +40,7 @@ Route::get('/sitemap.xml', function () {
             });
 
         Brand::active()->whereNotNull('slug')->orderBy('name')
-            ->get(['slug'])->each(fn ($b) => $addUrl('brands/' . $b->slug));
+            ->get(['slug'])->each(fn ($b) => $addUrl('brands/' . strtolower($b->slug)));
 
         BlogPost::published()->whereNotNull('slug')->orderByDesc('published_at')
             ->get(['slug'])->each(fn ($p) => $addUrl('blog/' . $p->slug));

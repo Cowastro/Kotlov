@@ -33,7 +33,7 @@
                 <div class="row justify-content-center">
                     <div class="col-lg-8 text-center">
                         <div class="text-body-1 cl-text-2">
-                            {!! $brand->content !!}
+                            {!! preg_replace(['/<h1([^>]*)>/i', '/<\/h1>/i'], ['<h2$1>', '</h2>'], $brand->content) !!}
                         </div>
                     </div>
                 </div>

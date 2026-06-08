@@ -33,7 +33,12 @@ class BrandController extends Controller
 
     public function show(string $slug)
     {
-        $brand = Brand::where('slug', $slug)->firstOrFail();
+        // Редирект uppercase → lowercase
+        if ($slug !== strtolower($slug)) {
+            return redirect('/brands/' . strtolower($slug), 301);
+        }
+
+        $brand = Brand::whereRaw('LOWER(slug) = ?', [strtolower($slug)])->firstOrFail();
 
         $products = $brand->products()
             ->where('is_active', true)
@@ -46,7 +51,7 @@ class BrandController extends Controller
         $h1        = $brand->h1 ?: "Каталог {$brandName}";
         $title     = $brand->meta_title    ?: "{$brandName} — купить в Беларуси | KOTLOV";
         $description = $brand->meta_description ?: "Каталог товаров бренда {$brandName}. Купить {$brandName} в Беларуси с доставкой. Гарантия, монтаж.";
-        $canonical = 'https://kotlov.by/brands/' . $brand->slug;
+        $canonical = 'https://kotlov.by/brands/' . strtolower($brand->slug);
 
         $schemaJson = json_encode([
             '@context'        => 'https://schema.org',
