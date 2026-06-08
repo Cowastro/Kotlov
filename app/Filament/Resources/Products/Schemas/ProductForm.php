@@ -3,14 +3,17 @@
 namespace App\Filament\Resources\Products\Schemas;
 
 use Filament\Forms\Components\FileUpload;
+use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\RichEditor;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\Toggle;
+use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
+use Illuminate\Support\HtmlString;
 use Illuminate\Support\Str;
 
 class ProductForm
@@ -18,8 +21,12 @@ class ProductForm
     public static function configure(Schema $schema): Schema
     {
         return $schema
+            ->columns(3)
             ->components([
+
+                // ── Левая часть: основные поля (2/3 ширины) ────────────────
                 Section::make('Основное')
+                    ->columnSpan(2)
                     ->columns(2)
                     ->schema([
                         TextInput::make('name')
@@ -58,43 +65,75 @@ class ProductForm
                         Select::make('supplier_id')
                             ->label('Поставщик')
                             ->relationship('supplier', 'name')
-                            ->searchable(),
+                            ->searchable()
+                            ->columnSpanFull(),
                     ]),
 
-                Section::make('Цены и наличие')
-                    ->columns(3)
+                // ── Правая часть: статусы + цены (1/3 ширины) ──────────────
+                Grid::make(1)
+                    ->columnSpan(1)
                     ->schema([
-                        TextInput::make('price')
-                            ->label('Цена')
-                            ->required()
-                            ->numeric()
-                            ->prefix('BYN')
-                            ->default(0),
+                        Section::make('Статусы')
+                            ->schema([
+                                Toggle::make('is_active')
+                                    ->label('Активен')
+                                    ->default(true),
 
-                        TextInput::make('price_old')
-                            ->label('Старая цена')
-                            ->numeric()
-                            ->prefix('BYN'),
+                                Toggle::make('in_stock')
+                                    ->label('В наличии')
+                                    ->default(true),
 
-                        TextInput::make('currency')
-                            ->label('Валюта')
-                            ->default('BYN')
-                            ->required(),
+                                Toggle::make('is_featured')
+                                    ->label('Хит продаж'),
 
-                        Toggle::make('in_stock')
-                            ->label('В наличии')
-                            ->default(true),
+                                Toggle::make('is_new')
+                                    ->label('Новинка'),
 
-                        TextInput::make('stock_qty')
-                            ->label('Количество на складе')
-                            ->numeric(),
+                                Toggle::make('is_sale')
+                                    ->label('Акция'),
 
-                        TextInput::make('unit')
-                            ->label('Единица измерения')
-                            ->default('шт'),
+                                TextInput::make('sort_order')
+                                    ->label('Сортировка')
+                                    ->numeric()
+                                    ->default(0),
+                            ]),
+
+                        Section::make('Цены')
+                            ->schema([
+                                TextInput::make('price')
+                                    ->label('Цена')
+                                    ->required()
+                                    ->numeric()
+                                    ->prefix('BYN')
+                                    ->default(0),
+
+                                TextInput::make('price_old')
+                                    ->label('Старая цена')
+                                    ->numeric()
+                                    ->prefix('BYN'),
+
+                                Select::make('currency')
+                                    ->label('Валюта')
+                                    ->options(['BYN' => 'BYN', 'USD' => 'USD', 'EUR' => 'EUR', 'RUB' => 'RUB'])
+                                    ->default('BYN')
+                                    ->required(),
+
+                                TextInput::make('stock_qty')
+                                    ->label('Кол-во на складе')
+                                    ->numeric(),
+
+                                TextInput::make('unit')
+                                    ->label('Ед. измерения')
+                                    ->default('шт'),
+
+                                TextInput::make('warranty')
+                                    ->label('Гарантия'),
+                            ]),
                     ]),
 
+                // ── Описание ─────────────────────────────────────────────────
                 Section::make('Описание')
+                    ->columnSpanFull()
                     ->schema([
                         Textarea::make('short_description')
                             ->label('Краткое описание')
@@ -109,18 +148,51 @@ class ProductForm
                             ]),
                     ]),
 
+                // ── Фотографии ────────────────────────────────────────────────
                 Section::make('Фотографии')
+                    ->columnSpanFull()
                     ->schema([
+                        Repeater::make('existing_images')
+                            ->label('Текущие фото (удалите строку — фото удалится)')
+                            ->schema([
+                                Placeholder::make('img_preview')
+                                    ->label('')
+                                    ->content(function ($get): HtmlString {
+                                        $path = (string) ($get('path') ?? '');
+                                        if (!$path) {
+                                            return new HtmlString('<span class="text-gray-400 text-xs">нет пути</span>');
+                                        }
+                                        $url = self::resolveProxyUrl($path);
+                                        return new HtmlString(
+                                            '<img src="' . e($url) . '" style="max-height:72px;border-radius:4px;object-fit:cover;" '
+                                            . 'onerror="this.style.opacity=0.3">'
+                                        );
+                                    }),
+
+                                TextInput::make('path')
+                                    ->label('Путь')
+                                    ->disabled()
+                                    ->columnSpan(3),
+                            ])
+                            ->columns(4)
+                            ->addable(false)
+                            ->reorderable(true)
+                            ->collapsible()
+                            ->defaultItems(0),
+
                         FileUpload::make('images')
-                            ->label('Фотографии товара')
+                            ->label('Загрузить новые фото')
+                            ->helperText('Новые файлы добавятся к существующим')
                             ->image()
                             ->multiple()
                             ->reorderable()
                             ->directory('products')
-                            ->maxFiles(10),
+                            ->maxFiles(20),
                     ]),
 
+                // ── Характеристики ────────────────────────────────────────────
                 Section::make('Характеристики')
+                    ->columnSpanFull()
                     ->schema([
                         Repeater::make('specs')
                             ->label('Технические характеристики')
@@ -132,65 +204,74 @@ class ProductForm
                                     ->label('Значение')
                                     ->required(),
                                 TextInput::make('unit')
-                                    ->label('Единица (кВт, м², шт)'),
+                                    ->label('Единица (кВт, м²)'),
                             ])
                             ->columns(3)
                             ->addActionLabel('Добавить характеристику')
-                            ->collapsible(),
+                            ->collapsible()
+                            ->defaultItems(0),
                     ]),
 
+                // ── Дополнительно ─────────────────────────────────────────────
                 Section::make('Дополнительно')
+                    ->columnSpanFull()
                     ->columns(3)
+                    ->collapsed()
                     ->schema([
                         TextInput::make('weight')
                             ->label('Вес (кг)')
                             ->numeric(),
-
-                        TextInput::make('warranty')
-                            ->label('Гарантия'),
 
                         TextInput::make('video_url')
                             ->label('Ссылка на видео')
                             ->url(),
                     ]),
 
-                Section::make('Статусы и сортировка')
-                    ->columns(3)
-                    ->schema([
-                        Toggle::make('is_active')
-                            ->label('Активен')
-                            ->default(true),
-
-                        Toggle::make('is_featured')
-                            ->label('Хит продаж'),
-
-                        Toggle::make('is_new')
-                            ->label('Новинка'),
-
-                        Toggle::make('is_sale')
-                            ->label('Акция'),
-
-                        TextInput::make('sort_order')
-                            ->label('Сортировка')
-                            ->numeric()
-                            ->default(0),
-                    ]),
-
+                // ── SEO ───────────────────────────────────────────────────────
                 Section::make('SEO')
-                    ->columns(1)
+                    ->columnSpanFull()
                     ->collapsed()
                     ->schema([
                         TextInput::make('meta_title')
-                            ->label('Meta Title'),
+                            ->label('Meta Title')
+                            ->columnSpanFull(),
 
                         Textarea::make('meta_keywords')
                             ->label('Meta Keywords')
-                            ->rows(2),
+                            ->rows(2)
+                            ->columnSpanFull(),
 
                         Textarea::make('meta_description')
                             ->label('Meta Description')
-                            ->rows(3),
+                            ->rows(3)
+                            ->columnSpanFull(),
                     ]),
+
             ]);
+    }
+
+    /**
+     * Строит URL для предпросмотра изображения в форме.
+     * Поддерживает пути из kotlov.by и локально загруженные файлы.
+     */
+    private static function resolveProxyUrl(string $path): string
+    {
+        // Загружено через FileUpload → путь в storage
+        if (str_starts_with($path, 'products/')) {
+            return \Storage::url($path);
+        }
+
+        // product/000/000065/file.jpg
+        if (str_starts_with($path, 'product/')) {
+            return '/proxy-image/' . $path;
+        }
+
+        // 000/000065/file.jpg (два слеша)
+        if (substr_count($path, '/') >= 2) {
+            return '/proxy-image/product/' . $path;
+        }
+
+        // Просто имя файла — предполагаем legacy путь
+        return '/proxy-image/product/' . $path;
     }
 }

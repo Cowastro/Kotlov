@@ -10,9 +10,11 @@ use Filament\Actions\ViewAction;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\ImageColumn;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Filters\Filter;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 
 class ProductsTable
@@ -31,21 +33,31 @@ class ProductsTable
                     ->searchable()
                     ->sortable()
                     ->weight('bold')
-                    ->limit(40),
+                    ->limit(45),
 
                 TextColumn::make('sku')
                     ->label('Артикул')
                     ->searchable()
+                    ->copyable()
                     ->toggleable(isToggledHiddenByDefault: true),
 
                 TextColumn::make('category.name')
                     ->label('Категория')
                     ->sortable()
-                    ->badge(),
+                    ->badge()
+                    ->toggleable(),
 
                 TextColumn::make('brand.name')
                     ->label('Бренд')
-                    ->sortable(),
+                    ->sortable()
+                    ->placeholder('—')
+                    ->toggleable(),
+
+                TextColumn::make('supplier.name')
+                    ->label('Поставщик')
+                    ->sortable()
+                    ->placeholder('—')
+                    ->toggleable(isToggledHiddenByDefault: true),
 
                 TextColumn::make('price')
                     ->label('Цена')
@@ -58,6 +70,10 @@ class ProductsTable
                     ->formatStateUsing(fn($state) => $state ? number_format($state, 2) . ' BYN' : '—')
                     ->toggleable(isToggledHiddenByDefault: true),
 
+                TextColumn::make('currency')
+                    ->label('Валюта')
+                    ->toggleable(isToggledHiddenByDefault: true),
+
                 IconColumn::make('in_stock')
                     ->label('Наличие')
                     ->boolean(),
@@ -68,23 +84,21 @@ class ProductsTable
 
                 IconColumn::make('is_featured')
                     ->label('Хит')
-                    ->boolean(),
+                    ->boolean()
+                    ->toggleable(),
 
                 IconColumn::make('is_new')
                     ->label('Новинка')
-                    ->boolean(),
+                    ->boolean()
+                    ->toggleable(),
 
                 IconColumn::make('is_sale')
                     ->label('Акция')
-                    ->boolean(),
+                    ->boolean()
+                    ->toggleable(),
 
-                TextColumn::make('rating')
-                    ->label('Рейтинг')
-                    ->sortable()
-                    ->formatStateUsing(fn($state) => $state > 0 ? '★ ' . $state : '—'),
-
-                TextColumn::make('views_count')
-                    ->label('Просмотры')
+                TextColumn::make('sort_order')
+                    ->label('Порядок')
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
 
@@ -122,6 +136,26 @@ class ProductsTable
                     ->relationship('brand', 'name')
                     ->searchable()
                     ->preload(),
+
+                SelectFilter::make('supplier_id')
+                    ->label('Поставщик')
+                    ->relationship('supplier', 'name')
+                    ->searchable(),
+
+                Filter::make('without_photo')
+                    ->label('Без фото')
+                    ->query(fn(Builder $query) => $query->where(function ($q) {
+                        $q->whereNull('images')
+                          ->orWhere('images', '[]')
+                          ->orWhere('images', '""')
+                          ->orWhereRaw("JSON_LENGTH(images) = 0");
+                    }))
+                    ->toggle(),
+
+                Filter::make('without_price')
+                    ->label('Без цены')
+                    ->query(fn(Builder $query) => $query->where('price', 0)->orWhereNull('price'))
+                    ->toggle(),
             ])
             ->recordActions([
                 ViewAction::make(),
@@ -198,6 +232,53 @@ class ProductsTable
                         ->color('gray')
                         ->action(fn(Collection $records) => $records->each->update(['is_sale' => false]))
                         ->deselectRecordsAfterCompletion(),
+
+                    BulkAction::make('export_csv')
+                        ->label('Экспорт в CSV')
+                        ->icon('heroicon-o-arrow-down-tray')
+                        ->color('gray')
+                        ->action(function (Collection $records) {
+                            $filename = 'products_' . now()->format('Ymd_His') . '.csv';
+                            $headers = [
+                                'Content-Type'        => 'text/csv; charset=UTF-8',
+                                'Content-Disposition' => "attachment; filename=\"{$filename}\"",
+                            ];
+
+                            $callback = function () use ($records) {
+                                $out = fopen('php://output', 'w');
+                                fputs($out, "\xEF\xBB\xBF"); // BOM для Excel
+
+                                fputcsv($out, [
+                                    'id', 'sku', 'name', 'category', 'brand', 'supplier',
+                                    'price', 'price_old', 'currency',
+                                    'in_stock', 'stock_qty', 'is_active',
+                                    'is_featured', 'is_new', 'is_sale',
+                                ], ';');
+
+                                foreach ($records as $r) {
+                                    fputcsv($out, [
+                                        $r->id,
+                                        $r->sku,
+                                        $r->name,
+                                        $r->category?->name,
+                                        $r->brand?->name,
+                                        $r->supplier?->name,
+                                        $r->price,
+                                        $r->price_old,
+                                        $r->currency,
+                                        $r->in_stock ? '1' : '0',
+                                        $r->stock_qty,
+                                        $r->is_active ? '1' : '0',
+                                        $r->is_featured ? '1' : '0',
+                                        $r->is_new ? '1' : '0',
+                                        $r->is_sale ? '1' : '0',
+                                    ], ';');
+                                }
+                                fclose($out);
+                            };
+
+                            return response()->stream($callback, 200, $headers);
+                        }),
 
                     DeleteBulkAction::make(),
                 ]),
