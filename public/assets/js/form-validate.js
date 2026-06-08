@@ -58,13 +58,6 @@
             }
         }
 
-        // URL
-        if (val && type === 'url') {
-            if (!/^https?:\/\/.+\..+/.test(val)) {
-                return setError($field, 'Введите корректный URL (начиная с https://)');
-            }
-        }
-
         if (val) return setValid($field);
         clearError($field);
         return true;

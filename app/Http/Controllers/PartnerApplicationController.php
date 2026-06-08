@@ -11,7 +11,7 @@ class PartnerApplicationController extends Controller
 {
     public function storeInstaller(Request $request)
     {
-        $data = $request->validate([
+        $data = $this->validateWithBag('installer', $request, [
             'contact_name'     => ['required', 'string', 'max:100', new NoHtmlOrLinks()],
             'phone'            => 'required|string|max:30',
             'email'            => 'nullable|email|max:150',
@@ -30,12 +30,12 @@ class PartnerApplicationController extends Controller
 
     public function storeSupplier(Request $request)
     {
-        $data = $request->validate([
+        $data = $this->validateWithBag('supplier', $request, [
             'company_name'         => ['required', 'string', 'max:255', new NoHtmlOrLinks()],
             'contact_name'         => ['required', 'string', 'max:100', new NoHtmlOrLinks()],
             'phone'                => 'required|string|max:30',
             'email'                => 'nullable|email|max:150',
-            'website'              => 'nullable|url|max:255',
+            'website'              => 'nullable|string|max:255',
             'product_categories'   => 'nullable|array',
             'product_categories.*' => 'string',
             'message'              => ['nullable', 'string', 'max:1000', new NoHtmlOrLinks()],

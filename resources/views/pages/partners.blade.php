@@ -337,10 +337,10 @@
                             @csrf
                             <x-form-protection />
 
-                            @if($errors->any())
+                            @if($errors->installer->any())
                             <div class="kv-summary kv-summary--visible mb-8" role="alert">
                                 ⚠ Пожалуйста, исправьте ошибки:<br>
-                                @foreach($errors->all() as $e) — {{ $e }}<br> @endforeach
+                                @foreach($errors->installer->all() as $e) — {{ $e }}<br> @endforeach
                             </div>
                             @else
                             <div class="kv-summary mb-8" role="alert">
@@ -352,18 +352,18 @@
                                 <div class="col-12 col-sm-6">
                                     <label class="form-label fw-medium mb-8">Ваше имя <span class="cl-primary">*</span></label>
                                     <input type="text" name="contact_name"
-                                        class="form-control @error('contact_name') kv-invalid @enderror"
+                                        class="form-control {{ $errors->installer->has('contact_name') ? 'kv-invalid' : '' }}"
                                         placeholder="Иван Петров" value="{{ old('contact_name') }}"
                                         data-required="1" data-label="Имя">
-                                    @error('contact_name')<span class="kv-field-error kv-field-error--visible">{{ $message }}</span>@enderror
+                                    @if($errors->installer->has('contact_name'))<span class="kv-field-error kv-field-error--visible">{{ $errors->installer->first('contact_name') }}</span>@endif
                                 </div>
                                 <div class="col-12 col-sm-6">
                                     <label class="form-label fw-medium mb-8">Телефон <span class="cl-primary">*</span></label>
                                     <input type="tel" name="phone"
-                                        class="form-control @error('phone') kv-invalid @enderror"
+                                        class="form-control {{ $errors->installer->has('phone') ? 'kv-invalid' : '' }}"
                                         placeholder="+375 29 000-00-00" value="{{ old('phone') }}"
                                         data-required="1" data-label="Телефон">
-                                    @error('phone')<span class="kv-field-error kv-field-error--visible">{{ $message }}</span>@enderror
+                                    @if($errors->installer->has('phone'))<span class="kv-field-error kv-field-error--visible">{{ $errors->installer->first('phone') }}</span>@endif
                                 </div>
                                 <div class="col-12 col-sm-6">
                                     <label class="form-label fw-medium mb-8">Email</label>
@@ -427,10 +427,10 @@
                             @csrf
                             <x-form-protection />
 
-                            @if($errors->any())
+                            @if($errors->supplier->any())
                             <div class="kv-summary kv-summary--visible mb-8" role="alert">
                                 ⚠ Пожалуйста, исправьте ошибки:<br>
-                                @foreach($errors->all() as $e) — {{ $e }}<br> @endforeach
+                                @foreach($errors->supplier->all() as $e) — {{ $e }}<br> @endforeach
                             </div>
                             @else
                             <div class="kv-summary mb-8" role="alert">
@@ -442,26 +442,26 @@
                                 <div class="col-12 col-sm-6">
                                     <label class="form-label fw-medium mb-8">Название компании <span class="cl-primary">*</span></label>
                                     <input type="text" name="company_name"
-                                        class="form-control @error('company_name') kv-invalid @enderror"
+                                        class="form-control {{ $errors->supplier->has('company_name') ? 'kv-invalid' : '' }}"
                                         placeholder="ООО Отопление Плюс" value="{{ old('company_name') }}"
                                         data-required="1" data-label="Название компании">
-                                    @error('company_name')<span class="kv-field-error kv-field-error--visible">{{ $message }}</span>@enderror
+                                    @if($errors->supplier->has('company_name'))<span class="kv-field-error kv-field-error--visible">{{ $errors->supplier->first('company_name') }}</span>@endif
                                 </div>
                                 <div class="col-12 col-sm-6">
                                     <label class="form-label fw-medium mb-8">Контактное лицо <span class="cl-primary">*</span></label>
                                     <input type="text" name="contact_name"
-                                        class="form-control @error('contact_name') kv-invalid @enderror"
+                                        class="form-control {{ $errors->supplier->has('contact_name') ? 'kv-invalid' : '' }}"
                                         placeholder="Иван Петров" value="{{ old('contact_name') }}"
                                         data-required="1" data-label="Контактное лицо">
-                                    @error('contact_name')<span class="kv-field-error kv-field-error--visible">{{ $message }}</span>@enderror
+                                    @if($errors->supplier->has('contact_name'))<span class="kv-field-error kv-field-error--visible">{{ $errors->supplier->first('contact_name') }}</span>@endif
                                 </div>
                                 <div class="col-12 col-sm-6">
                                     <label class="form-label fw-medium mb-8">Телефон <span class="cl-primary">*</span></label>
                                     <input type="tel" name="phone"
-                                        class="form-control @error('phone') kv-invalid @enderror"
+                                        class="form-control {{ $errors->supplier->has('phone') ? 'kv-invalid' : '' }}"
                                         placeholder="+375 29 000-00-00" value="{{ old('phone') }}"
                                         data-required="1" data-label="Телефон">
-                                    @error('phone')<span class="kv-field-error kv-field-error--visible">{{ $message }}</span>@enderror
+                                    @if($errors->supplier->has('phone'))<span class="kv-field-error kv-field-error--visible">{{ $errors->supplier->first('phone') }}</span>@endif
                                 </div>
                                 <div class="col-12 col-sm-6">
                                     <label class="form-label fw-medium mb-8">Email</label>
@@ -471,7 +471,7 @@
                                 </div>
                                 <div class="col-12">
                                     <label class="form-label fw-medium mb-8">Сайт компании</label>
-                                    <input type="url" name="website" class="form-control"
+                                    <input type="text" name="website" class="form-control"
                                         placeholder="https://company.by" value="{{ old('website') }}">
                                 </div>
                                 <div class="col-12">
@@ -529,7 +529,7 @@
         });
     });
     </script>
-    @if(session('supplier_success') || $errors->has('company_name'))
+    @if(session('supplier_success') || $errors->supplier->any())
     <script>
     document.addEventListener('DOMContentLoaded', function() {
         document.querySelector('[href="#tab-supplier"]').click();
