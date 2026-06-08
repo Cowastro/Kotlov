@@ -23,7 +23,7 @@ class ProductsTable
             ->columns([
                 ImageColumn::make('images')
                     ->label('Фото')
-                    ->getStateUsing(fn($record) => $record->imageUrl(0))
+                    ->getStateUsing(fn($record) => url($record->imageUrl(0)))
                     ->circular(),
 
                 TextColumn::make('name')
