@@ -236,40 +236,61 @@
                         </div>
                     @endif
 
-                    <form action="{{ route('suppliers.apply') }}" method="POST" class="tf-form-contact">
+                    <form action="{{ route('suppliers.apply') }}" method="POST" class="tf-form-contact kv-form" novalidate>
                         @csrf
                         <x-form-protection />
+
+                        @if($errors->any())
+                        <div class="kv-summary kv-summary--visible mb-16" role="alert">
+                            ⚠ Пожалуйста, исправьте ошибки:<br>
+                            @foreach($errors->all() as $e) — {{ $e }}<br> @endforeach
+                        </div>
+                        @else
+                        <div class="kv-summary mb-16" role="alert">
+                            ⚠ Пожалуйста, заполните все обязательные поля корректно.
+                        </div>
+                        @endif
 
                         <div class="row g-16">
                             <div class="col-12 col-sm-6">
                                 <label class="form-label fw-medium mb-8">Название компании <span class="cl-primary">*</span></label>
-                                <input type="text" name="company_name" class="form-control @error('company_name') is-invalid @enderror"
-                                    placeholder="ООО Отопление Плюс" value="{{ old('company_name') }}" required>
-                                @error('company_name')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                                <input type="text" name="company_name"
+                                    class="form-control @error('company_name') kv-invalid @enderror"
+                                    placeholder="ООО Отопление Плюс" value="{{ old('company_name') }}"
+                                    data-required="1" data-label="Название компании">
+                                @error('company_name')<span class="kv-field-error kv-field-error--visible">{{ $message }}</span>@enderror
                             </div>
                             <div class="col-12 col-sm-6">
                                 <label class="form-label fw-medium mb-8">Контактное лицо <span class="cl-primary">*</span></label>
-                                <input type="text" name="contact_name" class="form-control @error('contact_name') is-invalid @enderror"
-                                    placeholder="Иван Петров" value="{{ old('contact_name') }}" required>
-                                @error('contact_name')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                                <input type="text" name="contact_name"
+                                    class="form-control @error('contact_name') kv-invalid @enderror"
+                                    placeholder="Иван Петров" value="{{ old('contact_name') }}"
+                                    data-required="1" data-label="Контактное лицо">
+                                @error('contact_name')<span class="kv-field-error kv-field-error--visible">{{ $message }}</span>@enderror
                             </div>
                             <div class="col-12 col-sm-6">
                                 <label class="form-label fw-medium mb-8">Телефон <span class="cl-primary">*</span></label>
-                                <input type="tel" name="phone" class="form-control @error('phone') is-invalid @enderror"
-                                    placeholder="+375 29 000-00-00" value="{{ old('phone') }}" required>
-                                @error('phone')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                                <input type="tel" name="phone"
+                                    class="form-control @error('phone') kv-invalid @enderror"
+                                    placeholder="+375 29 000-00-00" value="{{ old('phone') }}"
+                                    data-required="1" data-label="Телефон">
+                                @error('phone')<span class="kv-field-error kv-field-error--visible">{{ $message }}</span>@enderror
                             </div>
                             <div class="col-12 col-sm-6">
                                 <label class="form-label fw-medium mb-8">Email</label>
-                                <input type="email" name="email" class="form-control @error('email') is-invalid @enderror"
-                                    placeholder="manager@company.by" value="{{ old('email') }}">
-                                @error('email')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                                <input type="email" name="email"
+                                    class="form-control @error('email') kv-invalid @enderror"
+                                    placeholder="manager@company.by" value="{{ old('email') }}"
+                                    data-label="Email">
+                                @error('email')<span class="kv-field-error kv-field-error--visible">{{ $message }}</span>@enderror
                             </div>
                             <div class="col-12">
                                 <label class="form-label fw-medium mb-8">Сайт компании</label>
-                                <input type="url" name="website" class="form-control @error('website') is-invalid @enderror"
-                                    placeholder="https://company.by" value="{{ old('website') }}">
-                                @error('website')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                                <input type="url" name="website"
+                                    class="form-control @error('website') kv-invalid @enderror"
+                                    placeholder="https://company.by" value="{{ old('website') }}"
+                                    data-label="Сайт компании">
+                                @error('website')<span class="kv-field-error kv-field-error--visible">{{ $message }}</span>@enderror
                             </div>
                             <div class="col-12">
                                 <label class="form-label fw-medium mb-8">Категории товаров</label>

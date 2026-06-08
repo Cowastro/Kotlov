@@ -42,9 +42,21 @@
                     <div class="my-account-content">
                         <h4 class="account-title">Данные для заявки</h4>
 
-                        <form method="POST" action="{{ route('install-requests.store') }}" class="account-my_address">
+                        <form method="POST" action="{{ route('install-requests.store') }}" class="account-my_address kv-form" novalidate>
                             @csrf
                             <x-form-protection />
+
+                            {{-- Блок серверных ошибок --}}
+                            @if($errors->any())
+                            <div class="kv-summary kv-summary--visible mb-24" role="alert">
+                                ⚠ Пожалуйста, исправьте ошибки:<br>
+                                @foreach($errors->all() as $e) — {{ $e }}<br> @endforeach
+                            </div>
+                            @else
+                            <div class="kv-summary mb-24" role="alert">
+                                ⚠ Пожалуйста, заполните все обязательные поля корректно.
+                            </div>
+                            @endif
 
                             {{-- Скрытый installer_profile_id --}}
                             @if($installer)
@@ -60,10 +72,11 @@
                                     <input type="text" id="customer_name" name="customer_name"
                                            placeholder="Ваше имя"
                                            value="{{ old('customer_name') }}"
-                                           class="{{ $errors->has('customer_name') ? 'is-invalid' : '' }}"
-                                           required>
+                                           data-required="1" data-label="Имя"
+                                           class="{{ $errors->has('customer_name') ? 'kv-invalid' : '' }}"
+                                           >
                                     @error('customer_name')
-                                    <p class="text-caption-01 mt-4" style="color:var(--red,#d32f2f);">{{ $message }}</p>
+                                    <span class="kv-field-error kv-field-error--visible">{{ $message }}</span>
                                     @enderror
                                 </fieldset>
 
@@ -74,10 +87,11 @@
                                     <input type="tel" id="customer_phone" name="customer_phone"
                                            placeholder="+375 (XX) XXX-XX-XX"
                                            value="{{ old('customer_phone') }}"
-                                           class="{{ $errors->has('customer_phone') ? 'is-invalid' : '' }}"
-                                           required>
+                                           data-required="1" data-label="Телефон"
+                                           class="{{ $errors->has('customer_phone') ? 'kv-invalid' : '' }}"
+                                           >
                                     @error('customer_phone')
-                                    <p class="text-caption-01 mt-4" style="color:var(--red,#d32f2f);">{{ $message }}</p>
+                                    <span class="kv-field-error kv-field-error--visible">{{ $message }}</span>
                                     @enderror
                                 </fieldset>
                             </div>
@@ -89,9 +103,10 @@
                                     <input type="email" id="customer_email" name="customer_email"
                                            placeholder="your@email.com"
                                            value="{{ old('customer_email') }}"
-                                           class="{{ $errors->has('customer_email') ? 'is-invalid' : '' }}">
+                                           data-label="Email"
+                                           class="{{ $errors->has('customer_email') ? 'kv-invalid' : '' }}">
                                     @error('customer_email')
-                                    <p class="text-caption-01 mt-4" style="color:var(--red,#d32f2f);">{{ $message }}</p>
+                                    <span class="kv-field-error kv-field-error--visible">{{ $message }}</span>
                                     @enderror
                                 </fieldset>
                             </div>

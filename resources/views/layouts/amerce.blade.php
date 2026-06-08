@@ -88,6 +88,40 @@
     <link rel="shortcut icon" href="{{ asset('img/favicon.ico') }}">
 
     @stack('styles')
+
+    <style>
+        /* ── Валидация публичных форм ── */
+        .kv-field-error {
+            display: none;
+            font-size: 12px;
+            color: #d32f2f;
+            margin-top: 5px;
+            line-height: 1.4;
+        }
+        .kv-field-error--visible { display: block; }
+
+        .kv-invalid,
+        .kv-invalid:focus {
+            border-color: #d32f2f !important;
+            box-shadow: 0 0 0 2px rgba(211,47,47,.15) !important;
+        }
+        .kv-valid {
+            border-color: #2e7d32 !important;
+        }
+
+        .kv-summary {
+            display: none;
+            background: #fff3f3;
+            border: 1px solid #d32f2f;
+            border-radius: 8px;
+            padding: 12px 16px;
+            margin-bottom: 20px;
+            color: #b71c1c;
+            font-size: 14px;
+            font-weight: 500;
+        }
+        .kv-summary--visible { display: block; }
+    </style>
 </head>
 
 <body>
@@ -402,6 +436,7 @@
     }
     </script>
 
+    <script src="{{ asset('assets/js/form-validate.js') }}"></script>
     @stack('scripts')
 
     <script>

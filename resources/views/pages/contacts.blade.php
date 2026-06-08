@@ -142,9 +142,22 @@
                     <p class="mb-24 cl-text-2">
                         Оставьте заявку — перезвоним в течение рабочего дня
                     </p>
-                    <form class="form-get" action="/contacts" method="POST">
+                    <form class="form-get kv-form" action="/contacts" method="POST" novalidate>
                         @csrf
                         <x-form-protection />
+
+                        {{-- Блок серверных ошибок --}}
+                        @if($errors->any())
+                        <div class="kv-summary kv-summary--visible" role="alert">
+                            ⚠ Пожалуйста, исправьте ошибки:<br>
+                            @foreach($errors->all() as $e) — {{ $e }}<br> @endforeach
+                        </div>
+                        @else
+                        <div class="kv-summary" role="alert">
+                            ⚠ Пожалуйста, заполните все обязательные поля корректно.
+                        </div>
+                        @endif
+
                         <div class="form-content">
                             <div class="tf-grid-layout sm-col-2">
                                 <fieldset class="tf-field">
@@ -153,7 +166,10 @@
                                     </label>
                                     <input type="text" id="contact-name" name="name"
                                         value="{{ old('name') }}"
-                                        placeholder="Ваше имя*" required>
+                                        placeholder="Ваше имя"
+                                        data-required="1" data-label="Имя"
+                                        class="{{ $errors->has('name') ? 'kv-invalid' : '' }}">
+                                    @error('name')<span class="kv-field-error kv-field-error--visible">{{ $message }}</span>@enderror
                                 </fieldset>
                                 <fieldset class="tf-field">
                                     <label for="contact-phone" class="tf-lable fw-medium">
@@ -161,7 +177,10 @@
                                     </label>
                                     <input type="tel" id="contact-phone" name="phone"
                                         value="{{ old('phone') }}"
-                                        placeholder="+375 (29) 000-00-00" required>
+                                        placeholder="+375 (29) 000-00-00"
+                                        data-required="1" data-label="Телефон"
+                                        class="{{ $errors->has('phone') ? 'kv-invalid' : '' }}">
+                                    @error('phone')<span class="kv-field-error kv-field-error--visible">{{ $message }}</span>@enderror
                                 </fieldset>
                             </div>
                             <fieldset class="tf-field">
@@ -170,15 +189,20 @@
                                 </label>
                                 <input type="email" id="contact-email" name="email"
                                     value="{{ old('email') }}"
-                                    placeholder="Ваш email">
+                                    placeholder="Ваш email"
+                                    data-label="Email"
+                                    class="{{ $errors->has('email') ? 'kv-invalid' : '' }}">
+                                @error('email')<span class="kv-field-error kv-field-error--visible">{{ $message }}</span>@enderror
                             </fieldset>
                             <fieldset class="tf-field">
                                 <label for="contact-message" class="tf-lable fw-medium">
                                     Сообщение <span class="text-primary">*</span>
                                 </label>
                                 <textarea id="contact-message" name="message"
-                                    placeholder="Ваш вопрос или комментарий*"
-                                    required>{{ old('message') }}</textarea>
+                                    placeholder="Ваш вопрос или комментарий"
+                                    data-required="1" data-label="Сообщение"
+                                    class="{{ $errors->has('message') ? 'kv-invalid' : '' }}">{{ old('message') }}</textarea>
+                                @error('message')<span class="kv-field-error kv-field-error--visible">{{ $message }}</span>@enderror
                             </fieldset>
                             <div class="checkbox-wrap">
                                 <input class="tf-check flex-shrink-0" type="checkbox"
