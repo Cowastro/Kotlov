@@ -5,10 +5,10 @@
     <x-form-protection />
 --}}
 
-{{-- Honeypot: поле остаётся пустым у живых пользователей --}}
-<input type="text" name="fax_number"
-    style="position:absolute;left:-9999px;opacity:0;height:0;width:0"
-    tabindex="-1" autocomplete="off" aria-hidden="true">
+{{-- Honeypot: обёрнут в div, сбрасывается JS перед отправкой (боты JS не выполняют) --}}
+<div style="position:absolute;left:-9999px;top:-9999px;height:0;overflow:hidden" aria-hidden="true">
+    <input type="text" name="_hpf" tabindex="-1" autocomplete="new-password">
+</div>
 
 {{-- Время начала заполнения формы --}}
 <input type="hidden" name="form_started_at" value="{{ time() }}">
@@ -20,3 +20,13 @@
         <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
     @endonce
 @endif
+
+{{-- JS сбрасывает honeypot перед отправкой — браузерный автофил нейтрализован --}}
+@once
+<script>
+document.addEventListener('submit', function (e) {
+    var hp = e.target.querySelector('input[name="_hpf"]');
+    if (hp) hp.value = '';
+}, true);
+</script>
+@endonce

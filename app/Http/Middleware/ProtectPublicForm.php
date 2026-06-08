@@ -13,8 +13,8 @@ class ProtectPublicForm
 {
     public function handle(Request $request, Closure $next, string $formKey = 'form'): Response
     {
-        // 1. Honeypot — поле должно оставаться пустым
-        if ($request->filled('fax_number')) {
+        // 1. Honeypot — поле должно оставаться пустым (JS сбрасывает его у реальных пользователей)
+        if ($request->filled('_hpf')) {
             $this->logBlocked($request, $formKey, 'honeypot');
             return $this->fakeSuccess($request);
         }
