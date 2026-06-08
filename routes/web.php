@@ -124,6 +124,7 @@ Route::post('/partners/apply-installer', [PartnerApplicationController::class, '
 Route::get('/suppliers', fn() => view('pages.suppliers'))->name('suppliers');
 Route::post('/suppliers/apply', [PartnerApplicationController::class, 'storeSupplier'])->middleware('public.form.protect:supplier')->name('suppliers.apply');
 Route::get('/become-installer', fn() => view('pages.become-installer'))->name('become-installer');
+Route::view('/demo-installer-profile', 'pages.demo-installer-profile')->name('demo-installer-profile');
 Route::get('/installers', [InstallerController::class, 'index'])->name('installers.index');
 Route::get('/installers/{slug}', [InstallerController::class, 'show'])->name('installers.show');
 Route::get('/install-request', [InstallRequestController::class, 'create'])->name('install-requests.create');
