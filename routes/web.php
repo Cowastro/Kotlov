@@ -190,7 +190,13 @@ Route::get('/catalog', [CatalogIndexController::class, 'index'])->name('catalog'
 
 // ===== Бренды =====
 Route::get('/brands',        [BrandController::class, 'index'])->name('brands');
-Route::get('/brands/{slug}', [BrandController::class, 'show'])->name('brand.show');
+// Редирект uppercase slug без сессии
+Route::get('/brands/{slug}', function (string $slug) {
+    if ($slug !== strtolower($slug)) {
+        return redirect('/brands/' . strtolower($slug), 301);
+    }
+    return app(\App\Http\Controllers\BrandController::class)->show($slug);
+})->withoutMiddleware([\Illuminate\Session\Middleware\StartSession::class])->name('brand.show');
 
 // sitemap.xml — вынесен в routes/sitemap.php без session middleware
 
