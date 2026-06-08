@@ -6,12 +6,13 @@ use App\Models\InstallerApplication;
 use App\Models\SupplierApplication;
 use App\Rules\NoHtmlOrLinks;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Validator;
 
 class PartnerApplicationController extends Controller
 {
     public function storeInstaller(Request $request)
     {
-        $data = $this->validateWithBag('installer', $request, [
+        $data = Validator::make($request->all(), [
             'contact_name'     => ['required', 'string', 'max:100', new NoHtmlOrLinks()],
             'phone'            => 'required|string|max:30',
             'email'            => 'nullable|email|max:150',
@@ -21,7 +22,7 @@ class PartnerApplicationController extends Controller
             'specializations'  => 'nullable|array',
             'specializations.*'=> 'string',
             'message'          => ['nullable', 'string', 'max:1000', new NoHtmlOrLinks()],
-        ]);
+        ])->validateWithBag('installer');
 
         InstallerApplication::create($data);
 
@@ -30,7 +31,7 @@ class PartnerApplicationController extends Controller
 
     public function storeSupplier(Request $request)
     {
-        $data = $this->validateWithBag('supplier', $request, [
+        $data = Validator::make($request->all(), [
             'company_name'         => ['required', 'string', 'max:255', new NoHtmlOrLinks()],
             'contact_name'         => ['required', 'string', 'max:100', new NoHtmlOrLinks()],
             'phone'                => 'required|string|max:30',
@@ -39,7 +40,7 @@ class PartnerApplicationController extends Controller
             'product_categories'   => 'nullable|array',
             'product_categories.*' => 'string',
             'message'              => ['nullable', 'string', 'max:1000', new NoHtmlOrLinks()],
-        ]);
+        ])->validateWithBag('supplier');
 
         SupplierApplication::create($data);
 
