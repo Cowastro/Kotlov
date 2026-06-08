@@ -230,8 +230,9 @@
                     </div>
 
                     @if(session('supplier_success'))
-                        <div class="alert alert-success mb-24 p-16 rounded-12"
-                             style="background:#d1fae5;border:1px solid #6ee7b7;color:#065f46;">
+                        <div class="mb-24 p-20 rounded-12 text-center"
+                             style="background:#f0fdf4;border:1px solid #86efac;color:#166534;font-size:15px;font-weight:500;line-height:1.5;">
+                            <div style="font-size:28px;margin-bottom:8px;">✓</div>
                             {{ session('supplier_success') }}
                         </div>
                     @endif

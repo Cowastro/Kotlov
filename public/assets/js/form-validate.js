@@ -51,9 +51,9 @@
             }
         }
 
-        // Формат телефона — минимум 7 цифр
+        // Формат телефона — минимум 9 цифр (стандарт BY: 029XXXXXXX)
         if (val && type === 'tel') {
-            if (val.replace(/\D/g, '').length < 7) {
+            if (val.replace(/\D/g, '').length < 9) {
                 return setError($field, 'Введите корректный номер телефона');
             }
         }
