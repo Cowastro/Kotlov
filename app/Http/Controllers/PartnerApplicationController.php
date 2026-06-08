@@ -26,7 +26,11 @@ class PartnerApplicationController extends Controller
 
         InstallerApplication::create($data);
 
-        return redirect(route('partners') . '#apply')->with('installer_success', 'Ваша заявка отправлена! Мы свяжемся с вами в течение рабочего дня.');
+        $anchor = $request->input('_source') === 'become-installer'
+            ? route('become-installer') . '#apply'
+            : route('partners') . '#apply';
+
+        return redirect($anchor)->with('installer_success', 'Ваша заявка отправлена! Мы свяжемся с вами в течение рабочего дня.');
     }
 
     public function storeSupplier(Request $request)

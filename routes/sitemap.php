@@ -18,7 +18,7 @@ Route::get('/sitemap.xml', function () {
 
         foreach ([
             '/', '/about', '/dostavka', '/reviews', '/catalog',
-            '/brands', '/akcii', '/contacts', '/installers',
+            '/brands', '/akcii', '/contacts', '/installers', '/become-installer',
             '/partners', '/suppliers', '/faq', '/privacy', '/blog',
         ] as $path) {
             $addUrl($path);

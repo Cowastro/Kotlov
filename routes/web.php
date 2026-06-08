@@ -123,6 +123,7 @@ Route::get('/partners',  fn() => view('pages.partners'))->name('partners');
 Route::post('/partners/apply-installer', [PartnerApplicationController::class, 'storeInstaller'])->middleware('public.form.protect:installer')->name('partners.apply-installer');
 Route::get('/suppliers', fn() => view('pages.suppliers'))->name('suppliers');
 Route::post('/suppliers/apply', [PartnerApplicationController::class, 'storeSupplier'])->middleware('public.form.protect:supplier')->name('suppliers.apply');
+Route::get('/become-installer', fn() => view('pages.become-installer'))->name('become-installer');
 Route::get('/installers', [InstallerController::class, 'index'])->name('installers.index');
 Route::get('/installers/{slug}', [InstallerController::class, 'show'])->name('installers.show');
 Route::get('/install-request', [InstallRequestController::class, 'create'])->name('install-requests.create');

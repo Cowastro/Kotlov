@@ -14,7 +14,7 @@
                 </p>
                 <div class="d-flex flex-wrap gap-12 justify-content-center">
                     <a href="/install-request" class="tf-btn animate-btn">Оставить заявку на монтаж</a>
-                    <a href="/contacts" class="tf-btn btn-outline">Связаться с нами</a>
+                    <a href="/become-installer" class="tf-btn btn-outline">Стать монтажником</a>
                 </div>
             </div>
         </div>
