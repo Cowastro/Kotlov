@@ -88,6 +88,13 @@ class ReviewsTable
             ])
             ->defaultSort('created_at', 'desc')
             ->filters([
+                SelectFilter::make('reviewable_type')
+                    ->label('Тип')
+                    ->options([
+                        'App\Models\Product'           => 'Товары',
+                        'App\Models\InstallerProfile'  => 'Монтажники',
+                    ]),
+
                 TernaryFilter::make('is_approved')
                     ->label('Модерация'),
 
