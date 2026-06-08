@@ -1,7 +1,8 @@
 @extends('layouts.amerce')
 
-@section('title', 'Демо-профиль монтажника KOTLOV Marketplace')
+@section('title', 'Пример профиля монтажника KOTLOV — страница специалиста')
 @section('description', 'Демонстрационный профиль монтажника KOTLOV: портфолио, отзывы, услуги, города работы и будущий кабинет партнера.')
+@section('robots', 'noindex, follow')
 
 @section('content')
 <main id="wrapper" class="installer-demo-page">

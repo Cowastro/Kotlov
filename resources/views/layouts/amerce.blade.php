@@ -2,8 +2,16 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>{{ $title ?? ('KOTLOV — маркетплейс отопления' . (isset($cityIn) && $cityIn ? ' ' . $cityIn : '')) }}</title>
-    <meta name="description" content="{{ $description ?? ('KOTLOV — маркетплейс отопления, котлов, печей, каминов, дымоходов и монтажных услуг' . (isset($cityIn) && $cityIn ? ' ' . $cityIn : ' в Беларуси') . '.') }}">
+    @php
+        $metaTitle = trim($__env->yieldContent('title')) ?: ($title ?? ('KOTLOV — маркетплейс отопления' . (isset($cityIn) && $cityIn ? ' ' . $cityIn : '')));
+        $metaDescription = trim($__env->yieldContent('description')) ?: ($description ?? ('KOTLOV — маркетплейс отопления, котлов, печей, каминов, дымоходов и монтажных услуг' . (isset($cityIn) && $cityIn ? ' ' . $cityIn : ' в Беларуси') . '.'));
+        $metaRobots = trim($__env->yieldContent('robots')) ?: ($robots ?? null);
+    @endphp
+    <title>{{ $metaTitle }}</title>
+    <meta name="description" content="{{ $metaDescription }}">
+    @if($metaRobots)
+    <meta name="robots" content="{{ $metaRobots }}">
+    @endif
     @if(isset($canonical) && $canonical)
     <link rel="canonical" href="{{ $canonical }}">
     @elseif(!isset($currentCity) || !$currentCity)
@@ -11,13 +19,17 @@
     @endif
     <meta name="keywords" content="{{ $keywords ?? 'котлы, печи, камины, дымоходы, отопление, монтаж, маркетплейс отопления' }}">
 
-    <meta property="og:title" content="{{ $ogTitle ?? $title ?? 'KOTLOV — маркетплейс отопления' }}">
-    <meta property="og:description" content="{{ $ogDescription ?? $description ?? 'KOTLOV — маркетплейс отопления в Беларуси.' }}">
+    <meta property="og:title" content="{{ $ogTitle ?? $metaTitle }}">
+    <meta property="og:description" content="{{ $ogDescription ?? $metaDescription }}">
     <meta property="og:type" content="{{ $ogType ?? 'website' }}">
     <meta property="og:url" content="{{ $ogUrl ?? url()->current() }}">
     <meta property="og:image" content="{{ $ogImage ?? asset('img/og-default.jpg') }}">
     <meta property="og:site_name" content="kotlov.by">
     <meta property="og:locale" content="ru_RU">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="{{ $twitterTitle ?? $ogTitle ?? $metaTitle }}">
+    <meta name="twitter:description" content="{{ $twitterDescription ?? $ogDescription ?? $metaDescription }}">
+    <meta name="twitter:image" content="{{ $twitterImage ?? $ogImage ?? asset('img/og-default.jpg') }}">
 
     @isset($schemaJson)
     <script type="application/ld+json">{!! $schemaJson !!}</script>

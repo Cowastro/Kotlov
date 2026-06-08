@@ -1,7 +1,7 @@
 @extends('layouts.amerce')
 
-@section('title', 'Стать монтажником KOTLOV — получайте заявки на монтаж по Беларуси')
-@section('description', 'Создайте страницу специалиста, публикуйте портфолио, собирайте отзывы и получайте заявки на монтаж котлов, тепловых насосов, дымоходов и каминов.')
+@section('title', 'Стать монтажником KOTLOV — заявки на монтаж отопления в Беларуси')
+@section('description', 'Станьте монтажником KOTLOV: получайте заявки на монтаж котлов, дымоходов, каминов, тепловых насосов и систем отопления в Беларуси.')
 
 @section('content')
 <main id="wrapper">
@@ -202,12 +202,12 @@
                             ['Портфолио с фотографиями работ', 'Покажите объекты, которые уже смонтированы и работают'],
                             ['Отзывы клиентов и рейтинг', 'Собирайте реальные отзывы — они повышают доверие новых клиентов'],
                             ['Контакты и регион работы', 'Телефон, мессенджер, карта покрытия — всё в одном месте'],
-                        ] as [$title, $desc])
+                        ] as [$featureTitle, $featureDesc])
                         <div class="d-flex gap-12 align-items-start">
                             <i class="icon icon-CheckCircle cl-primary mt-2" style="font-size:20px;flex-shrink:0;"></i>
                             <div>
-                                <p class="fw-semibold mb-2" style="color:#111;">{{ $title }}</p>
-                                <p style="font-size:14px;color:#555;margin:0;">{{ $desc }}</p>
+                                <p class="fw-semibold mb-2" style="color:#111;">{{ $featureTitle }}</p>
+                                <p style="font-size:14px;color:#555;margin:0;">{{ $featureDesc }}</p>
                             </div>
                         </div>
                         @endforeach
