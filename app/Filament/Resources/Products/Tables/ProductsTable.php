@@ -290,7 +290,7 @@ class ProductsTable
                         ->deselectRecordsAfterCompletion(),
 
                     BulkAction::make('export_csv')
-                        ->label('Экспорт в CSV')
+                        ->label('Экспорт цен CSV')
                         ->icon('heroicon-o-arrow-down-tray')
                         ->color('gray')
                         ->action(function (Collection $records) {
@@ -305,10 +305,20 @@ class ProductsTable
                                 fputs($out, "\xEF\xBB\xBF"); // BOM для Excel
 
                                 fputcsv($out, [
-                                    'id', 'sku', 'name', 'category', 'brand', 'supplier',
-                                    'price', 'price_old', 'currency',
-                                    'in_stock', 'stock_qty', 'is_active',
-                                    'is_featured', 'is_new', 'is_sale',
+                                    'id',
+                                    'sku',
+                                    'name',
+                                    'price',
+                                    'price_old',
+                                    'currency',
+                                    'in_stock',
+                                    'stock_qty',
+                                    'supplier_id',
+                                    'supplier_name',
+                                    'category_id',
+                                    'category_name',
+                                    'brand_id',
+                                    'brand_name',
                                 ], ';');
 
                                 foreach ($records as $r) {
@@ -316,18 +326,17 @@ class ProductsTable
                                         $r->id,
                                         $r->sku,
                                         $r->name,
-                                        $r->category?->name,
-                                        $r->brand?->name,
-                                        $r->supplier?->name,
                                         $r->price,
                                         $r->price_old,
                                         $r->currency,
                                         $r->in_stock ? '1' : '0',
                                         $r->stock_qty,
-                                        $r->is_active ? '1' : '0',
-                                        $r->is_featured ? '1' : '0',
-                                        $r->is_new ? '1' : '0',
-                                        $r->is_sale ? '1' : '0',
+                                        $r->supplier_id,
+                                        $r->supplier?->name,
+                                        $r->category_id,
+                                        $r->category?->name,
+                                        $r->brand_id,
+                                        $r->brand?->name,
                                     ], ';');
                                 }
                                 fclose($out);

@@ -30,13 +30,13 @@ class ListProducts extends ListRecords
             CreateAction::make(),
 
             Action::make('import_prices')
-                ->label('Импорт цен CSV')
+                ->label('Импорт цен')
                 ->icon('heroicon-o-arrow-up-tray')
                 ->color('gray')
                 ->form([
                     FileUpload::make('csv_file')
                         ->label('CSV/XLSX-файл с ценами')
-                        ->helperText('Колонки: sku;price;price_old;in_stock;stock_qty;supplier_id — только эти поля будут обновлены')
+                        ->helperText('Артикул: sku или articul. Обновляются только price, price_old, in_stock, stock_qty, supplier_id/currency. Фото, описание, SEO и slug не трогаются.')
                         ->required()
                         ->acceptedFileTypes([
                             'text/csv',
@@ -85,11 +85,11 @@ class ListProducts extends ListRecords
                         $header
                     );
 
-                    if (!in_array('sku', $header)) {
+                    if (!in_array('sku', $header, true)) {
                         Notification::make()
                             ->danger()
-                            ->title('Колонка "sku" обязательна')
-                            ->body('Найденные колонки: ' . implode(', ', $header))
+                            ->title('Колонка артикула обязательна')
+                            ->body('Нужна колонка sku/articul/артикул. Найденные колонки: ' . implode(', ', $header))
                             ->send();
                         return;
                     }
@@ -101,7 +101,10 @@ class ListProducts extends ListRecords
                     $notFoundSkus = [];
 
                     foreach ($rows as $row) {
-                        $rowData = array_combine($header, array_pad($row, count($header), null));
+                        $rowData = array_combine(
+                            $header,
+                            array_slice(array_pad($row, count($header), null), 0, count($header))
+                        );
                         $sku = trim($rowData['sku'] ?? '');
 
                         if (!$sku) {
@@ -123,10 +126,10 @@ class ListProducts extends ListRecords
                         $fields = [];
 
                         if (isset($rowData['price']) && $rowData['price'] !== '') {
-                            $fields['price'] = (float) str_replace(',', '.', $rowData['price']);
+                            $fields['price'] = $this->parseDecimal($rowData['price']);
                         }
                         if (isset($rowData['price_old']) && $rowData['price_old'] !== '') {
-                            $fields['price_old'] = (float) str_replace(',', '.', $rowData['price_old']) ?: null;
+                            $fields['price_old'] = $this->parseDecimal($rowData['price_old']) ?: null;
                         }
                         if (isset($rowData['in_stock']) && $rowData['in_stock'] !== '') {
                             $fields['in_stock'] = in_array(
@@ -136,6 +139,9 @@ class ListProducts extends ListRecords
                         }
                         if (isset($rowData['stock_qty']) && $rowData['stock_qty'] !== '') {
                             $fields['stock_qty'] = (int) $rowData['stock_qty'];
+                        }
+                        if (isset($rowData['currency']) && $rowData['currency'] !== '') {
+                            $fields['currency'] = trim((string) $rowData['currency']);
                         }
                         if (isset($rowData['supplier_id']) && $rowData['supplier_id'] !== '') {
                             $supplierId = (int) $rowData['supplier_id'];
@@ -204,14 +210,24 @@ class ListProducts extends ListRecords
     private function normalizeHeader(string $header): string
     {
         $header = mb_strtolower(trim(ltrim($header, "\xEF\xBB\xBF")));
+        $header = str_replace([' ', '-'], '_', $header);
 
         return match ($header) {
-            'артикул', 'article', 'artikul', 'vendor_code', 'code' => 'sku',
-            'old_price', 'старая цена', 'старая_цена' => 'price_old',
-            'наличие', 'available' => 'in_stock',
-            'количество', 'qty', 'quantity', 'остаток' => 'stock_qty',
-            'поставщик', 'supplier' => 'supplier_id',
+            'артикул', 'article', 'artikul', 'articul', 'vendor_code', 'code' => 'sku',
+            'old_price', 'старая_цена', 'price_old_byn' => 'price_old',
+            'наличие', 'available', 'stock', 'availability' => 'in_stock',
+            'количество', 'qty', 'quantity', 'остаток', 'stock_quantity' => 'stock_qty',
+            'поставщик', 'supplier', 'supplier_name' => 'supplier_id',
+            'валюта', 'currency_code' => 'currency',
             default => $header,
         };
+    }
+
+    private function parseDecimal(mixed $value): float
+    {
+        $value = str_replace(["\xc2\xa0", ' '], '', (string) $value);
+        $value = str_replace(',', '.', $value);
+
+        return (float) preg_replace('/[^0-9.\-]/', '', $value);
     }
 }
