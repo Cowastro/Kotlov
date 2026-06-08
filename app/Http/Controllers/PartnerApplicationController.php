@@ -44,6 +44,10 @@ class PartnerApplicationController extends Controller
 
         SupplierApplication::create($data);
 
-        return redirect(route('partners') . '#apply')->with('supplier_success', 'Ваша заявка принята! Менеджер свяжется с вами в течение рабочего дня.');
+        $anchor = $request->input('_source') === 'suppliers'
+            ? route('suppliers') . '#apply-supplier'
+            : route('partners') . '#apply';
+
+        return redirect($anchor)->with('supplier_success', 'Ваша заявка принята! Менеджер свяжется с вами в течение рабочего дня.');
     }
 }
