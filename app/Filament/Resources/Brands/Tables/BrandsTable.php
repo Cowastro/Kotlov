@@ -6,11 +6,13 @@ use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Actions\ViewAction;
+use Filament\Tables\Actions\BulkAction;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\ImageColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Collection;
 
 class BrandsTable
 {
@@ -74,6 +76,34 @@ class BrandsTable
             ])
             ->toolbarActions([
                 BulkActionGroup::make([
+                    BulkAction::make('activate')
+                        ->label('Активировать')
+                        ->icon('heroicon-o-check-circle')
+                        ->color('success')
+                        ->action(fn(Collection $records) => $records->each->update(['is_active' => true]))
+                        ->deselectRecordsAfterCompletion(),
+
+                    BulkAction::make('deactivate')
+                        ->label('Деактивировать')
+                        ->icon('heroicon-o-x-circle')
+                        ->color('warning')
+                        ->action(fn(Collection $records) => $records->each->update(['is_active' => false]))
+                        ->deselectRecordsAfterCompletion(),
+
+                    BulkAction::make('feature')
+                        ->label('На главную')
+                        ->icon('heroicon-o-star')
+                        ->color('info')
+                        ->action(fn(Collection $records) => $records->each->update(['is_featured' => true]))
+                        ->deselectRecordsAfterCompletion(),
+
+                    BulkAction::make('unfeature')
+                        ->label('Убрать с главной')
+                        ->icon('heroicon-o-star')
+                        ->color('gray')
+                        ->action(fn(Collection $records) => $records->each->update(['is_featured' => false]))
+                        ->deselectRecordsAfterCompletion(),
+
                     DeleteBulkAction::make(),
                 ]),
             ]);
