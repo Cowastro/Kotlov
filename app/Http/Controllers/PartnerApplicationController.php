@@ -26,7 +26,7 @@ class PartnerApplicationController extends Controller
 
         InstallerApplication::create($data);
 
-        return back()->with('installer_success', 'Ваша заявка отправлена! Мы свяжемся с вами в течение рабочего дня.');
+        return redirect(route('partners') . '#apply')->with('installer_success', 'Ваша заявка отправлена! Мы свяжемся с вами в течение рабочего дня.');
     }
 
     public function storeSupplier(Request $request)
@@ -44,6 +44,6 @@ class PartnerApplicationController extends Controller
 
         SupplierApplication::create($data);
 
-        return back()->with('supplier_success', 'Ваша заявка принята! Менеджер свяжется с вами в течение рабочего дня.');
+        return redirect(route('partners') . '#apply')->with('supplier_success', 'Ваша заявка принята! Менеджер свяжется с вами в течение рабочего дня.');
     }
 }
