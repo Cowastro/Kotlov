@@ -81,7 +81,7 @@ class CatalogController extends Controller
         // Атрибуты с 0 товаров автоматически отфильтруются ниже.
         $ancestorCategoryIds = collect();
         $curr = $category;
-        while ($curr->parent_id) {
+        while ($curr && $curr->parent_id) {
             $ancestorCategoryIds->push($curr->parent_id);
             $curr = Category::find($curr->parent_id);
         }

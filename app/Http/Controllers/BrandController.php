@@ -33,6 +33,11 @@ class BrandController extends Controller
 
     public function show(string $slug)
     {
+        // Редирект uppercase → lowercase
+        if ($slug !== strtolower($slug)) {
+            return redirect('/brands/' . strtolower($slug), 301);
+        }
+
         $brand = Brand::whereRaw('LOWER(slug) = ?', [strtolower($slug)])->firstOrFail();
 
         $products = $brand->products()
