@@ -217,7 +217,7 @@
                 <div class="col-lg-6 order-lg-1 d-none d-lg-block">
                     <div class="hero-image">
                         <img loading="lazy" width="640" height="460"
-                            src="{{ asset('assets/images/section/s-contact-1.jpg') }}"
+                            src="{{ asset('assets/images/section/s-contact-3.jpg') }}"
                             alt="Мини-сайт монтажника KOTLOV">
                     </div>
                 </div>
