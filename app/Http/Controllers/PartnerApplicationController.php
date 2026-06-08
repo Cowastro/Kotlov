@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\InstallerApplication;
 use App\Models\SupplierApplication;
+use App\Rules\NoHtmlOrLinks;
 use Illuminate\Http\Request;
 
 class PartnerApplicationController extends Controller
@@ -11,15 +12,15 @@ class PartnerApplicationController extends Controller
     public function storeInstaller(Request $request)
     {
         $data = $request->validate([
-            'contact_name'     => 'required|string|max:255',
-            'phone'            => 'required|string|max:50',
-            'email'            => 'nullable|email|max:255',
-            'city'             => 'nullable|string|max:100',
-            'company_name'     => 'nullable|string|max:255',
+            'contact_name'     => ['required', 'string', 'max:100', new NoHtmlOrLinks()],
+            'phone'            => 'required|string|max:30',
+            'email'            => 'nullable|email|max:150',
+            'city'             => ['nullable', 'string', 'max:100', new NoHtmlOrLinks()],
+            'company_name'     => ['nullable', 'string', 'max:255', new NoHtmlOrLinks()],
             'experience_years' => 'nullable|integer|min:0|max:60',
             'specializations'  => 'nullable|array',
             'specializations.*'=> 'string',
-            'message'          => 'nullable|string|max:2000',
+            'message'          => ['nullable', 'string', 'max:1000', new NoHtmlOrLinks()],
         ]);
 
         InstallerApplication::create($data);
@@ -30,14 +31,14 @@ class PartnerApplicationController extends Controller
     public function storeSupplier(Request $request)
     {
         $data = $request->validate([
-            'company_name'       => 'required|string|max:255',
-            'contact_name'       => 'required|string|max:255',
-            'phone'              => 'required|string|max:50',
-            'email'              => 'nullable|email|max:255',
-            'website'            => 'nullable|url|max:255',
-            'product_categories' => 'nullable|array',
+            'company_name'         => ['required', 'string', 'max:255', new NoHtmlOrLinks()],
+            'contact_name'         => ['required', 'string', 'max:100', new NoHtmlOrLinks()],
+            'phone'                => 'required|string|max:30',
+            'email'                => 'nullable|email|max:150',
+            'website'              => 'nullable|url|max:255',
+            'product_categories'   => 'nullable|array',
             'product_categories.*' => 'string',
-            'message'            => 'nullable|string|max:2000',
+            'message'              => ['nullable', 'string', 'max:1000', new NoHtmlOrLinks()],
         ]);
 
         SupplierApplication::create($data);

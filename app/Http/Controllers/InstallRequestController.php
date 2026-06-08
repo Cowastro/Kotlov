@@ -6,6 +6,7 @@ use App\Models\InstallRequest;
 use App\Models\InstallerProfile;
 use App\Models\User;
 use App\Notifications\NewInstallRequestNotification;
+use App\Rules\NoHtmlOrLinks;
 use Illuminate\Http\Request;
 
 class InstallRequestController extends Controller
@@ -49,16 +50,16 @@ class InstallRequestController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'customer_name'       => 'required|string|max:255',
-            'customer_phone'      => 'required|string|max:50',
-            'customer_email'      => 'nullable|email|max:255',
-            'city'                => 'nullable|string|max:255',
-            'region'              => 'nullable|string|max:255',
-            'address'             => 'nullable|string|max:255',
-            'specialization'      => 'nullable|string|max:255',
-            'description'         => 'nullable|string',
-            'preferred_date'      => 'nullable|date',
-            'budget'              => 'nullable|numeric|min:0',
+            'customer_name'        => ['required', 'string', 'max:100', new NoHtmlOrLinks()],
+            'customer_phone'       => 'required|string|max:30',
+            'customer_email'       => 'nullable|email|max:150',
+            'city'                 => ['nullable', 'string', 'max:100', new NoHtmlOrLinks()],
+            'region'               => 'nullable|string|max:100',
+            'address'              => ['nullable', 'string', 'max:255', new NoHtmlOrLinks()],
+            'specialization'       => 'nullable|string|max:100',
+            'description'          => ['nullable', 'string', 'max:1000', new NoHtmlOrLinks()],
+            'preferred_date'       => 'nullable|date',
+            'budget'               => 'nullable|numeric|min:0',
             'installer_profile_id' => 'nullable|integer',
         ], [
             'customer_name.required'  => 'Укажите ваше имя.',

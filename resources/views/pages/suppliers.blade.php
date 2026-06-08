@@ -238,6 +238,7 @@
 
                     <form action="{{ route('suppliers.apply') }}" method="POST" class="tf-form-contact">
                         @csrf
+                        <x-form-protection />
 
                         <div class="row g-16">
                             <div class="col-12 col-sm-6">

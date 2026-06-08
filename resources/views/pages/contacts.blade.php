@@ -144,6 +144,7 @@
                     </p>
                     <form class="form-get" action="/contacts" method="POST">
                         @csrf
+                        <x-form-protection />
                         <div class="form-content">
                             <div class="tf-grid-layout sm-col-2">
                                 <fieldset class="tf-field">

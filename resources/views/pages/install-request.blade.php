@@ -44,6 +44,7 @@
 
                         <form method="POST" action="{{ route('install-requests.store') }}" class="account-my_address">
                             @csrf
+                            <x-form-protection />
 
                             {{-- Скрытый installer_profile_id --}}
                             @if($installer)

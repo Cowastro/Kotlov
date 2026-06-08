@@ -340,6 +340,7 @@
                     <div class="tab-pane active show" id="tab-installer" role="tabpanel">
                         <form action="{{ route('partners.apply-installer') }}" method="POST" class="tf-form-contact">
                             @csrf
+                            <x-form-protection />
                             <div class="row g-16">
                                 <div class="col-12 col-sm-6">
                                     <label class="form-label fw-medium mb-8">Ваше имя <span class="cl-primary">*</span></label>
@@ -412,6 +413,7 @@
                     <div class="tab-pane" id="tab-supplier" role="tabpanel">
                         <form action="{{ route('suppliers.apply') }}" method="POST" class="tf-form-contact">
                             @csrf
+                            <x-form-protection />
                             <div class="row g-16">
                                 <div class="col-12 col-sm-6">
                                     <label class="form-label fw-medium mb-8">Название компании <span class="cl-primary">*</span></label>

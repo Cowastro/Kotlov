@@ -120,13 +120,13 @@ Route::view('/about',      'pages.about');
 Route::view('/akcii',      'pages.akcii');
 Route::view('/dostavka',   'pages.dostavka');
 Route::get('/partners',  fn() => view('pages.partners'))->name('partners');
-Route::post('/partners/apply-installer', [PartnerApplicationController::class, 'storeInstaller'])->name('partners.apply-installer');
+Route::post('/partners/apply-installer', [PartnerApplicationController::class, 'storeInstaller'])->middleware('public.form.protect:installer')->name('partners.apply-installer');
 Route::get('/suppliers', fn() => view('pages.suppliers'))->name('suppliers');
-Route::post('/suppliers/apply', [PartnerApplicationController::class, 'storeSupplier'])->name('suppliers.apply');
+Route::post('/suppliers/apply', [PartnerApplicationController::class, 'storeSupplier'])->middleware('public.form.protect:supplier')->name('suppliers.apply');
 Route::get('/installers', [InstallerController::class, 'index'])->name('installers.index');
 Route::get('/installers/{slug}', [InstallerController::class, 'show'])->name('installers.show');
 Route::get('/install-request', [InstallRequestController::class, 'create'])->name('install-requests.create');
-Route::post('/install-request', [InstallRequestController::class, 'store'])->name('install-requests.store');
+Route::post('/install-request', [InstallRequestController::class, 'store'])->middleware('public.form.protect:install-request')->name('install-requests.store');
 Route::view('/reviews',    'pages.reviews');
 Route::post('/products/{product}/reviews', [ReviewController::class, 'store'])->name('reviews.store');
 Route::view('/faq',        'pages.faq');
@@ -155,14 +155,14 @@ Route::get('/blog/{slug}',[BlogController::class, 'show'])->name('blog.show');
 Route::get('/contacts',   fn() => view('pages.contacts'))->name('contacts');
 Route::post('/contacts', function (\Illuminate\Http\Request $request) {
     $data = $request->validate([
-        'name'    => 'required|string|max:255',
-        'phone'   => 'required|string|max:50',
-        'email'   => 'nullable|email|max:255',
-        'message' => 'required|string|max:3000',
+        'name'    => ['required', 'string', 'max:100', new \App\Rules\NoHtmlOrLinks()],
+        'phone'   => 'required|string|max:30',
+        'email'   => 'nullable|email|max:150',
+        'message' => ['required', 'string', 'max:1000', new \App\Rules\NoHtmlOrLinks()],
     ]);
     \App\Models\ContactRequest::create($data);
     return back()->with('success', 'Сообщение отправлено! Мы свяжемся с вами в течение рабочего дня.');
-})->name('contact.store');
+})->middleware('public.form.protect:contacts')->name('contact.store');
 
 // ===== Сравнение =====
 Route::get('/compare',          [CompareController::class, 'index'])->name('compare');
@@ -201,7 +201,7 @@ Route::post('/ask', fn() => back()->with('success', 'Вопрос отправл
 
 // ===== Подписка на рассылку =====
 Route::post('/subscribe', function (\Illuminate\Http\Request $request) {
-    $request->validate(['email' => 'required|email|max:255']);
+    $request->validate(['email' => 'required|email|max:150']);
     \App\Models\EmailSubscriber::firstOrCreate(
         ['email' => $request->email],
         ['is_active' => true, 'confirmed_at' => now()]
