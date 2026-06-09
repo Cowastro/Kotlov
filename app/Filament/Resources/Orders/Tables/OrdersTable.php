@@ -2,48 +2,84 @@
 
 namespace App\Filament\Resources\Orders\Tables;
 
+use App\Models\Order;
 use Filament\Actions\Action;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Actions\ViewAction;
+use Filament\Forms\Components\DatePicker;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Filters\Filter;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 
 class OrdersTable
 {
     public static function configure(Table $table): Table
     {
-        $paymentNames = collect(config('shop.payment_methods', []))
-            ->mapWithKeys(fn($m, $k) => [$k => $m['name']])
+        $paymentNames = [
+            'cash'          => 'Наличными',
+            'card'          => 'Картой',
+            'bank_transfer' => 'Безналичный расчет',
+            'installment'   => 'Рассрочка',
+            'installment_6' => 'Рассрочка',
+            'credit'        => 'Кредит',
+            'credit_3_years' => 'Кредит',
+        ] + collect(config('shop.payment_methods', []))
+            ->mapWithKeys(fn($m, $k) => [$k => $m['name'] ?? $k])
             ->toArray();
 
-        $deliveryNames = collect(config('shop.delivery_methods', []))
-            ->mapWithKeys(fn($m, $k) => [$k => $m['name']])
+        $deliveryNames = [
+            'pickup'            => 'Самовывоз',
+            'courier'           => 'Курьер по Минску',
+            'courier_minsk'     => 'Курьер по Минску',
+            'transport'         => 'ТК по Беларуси',
+            'transport_company' => 'ТК по Беларуси',
+            'kit'               => 'ТК КИТ / международная доставка',
+        ] + collect(config('shop.delivery_methods', []))
+            ->mapWithKeys(fn($m, $k) => [$k => $m['name'] ?? $k])
+            ->toArray();
+
+        $paymentStatuses = [
+            'pending'  => 'Ожидает оплаты',
+            'paid'     => 'Оплачен',
+            'failed'   => 'Ошибка оплаты',
+            'refunded' => 'Возврат',
+        ];
+
+        $statusLabelOverrides = [
+            'new'             => 'Новый',
+            'confirmed'       => 'Подтвержден',
+            'processing'      => 'В обработке',
+            'waiting_payment' => 'Ожидает оплаты',
+            'paid'            => 'Оплачен',
+            'shipped'         => 'Отправлен',
+            'delivered'       => 'Доставлен',
+            'completed'       => 'Выполнен',
+            'cancelled'       => 'Отменен',
+        ];
+
+        $statusNames = collect(Order::STATUSES)
+            ->mapWithKeys(fn($label, $status) => [$status => $statusLabelOverrides[$status] ?? $label])
             ->toArray();
 
         return $table
+            ->modifyQueryUsing(fn(Builder $query) => $query
+                ->withSum('items', 'quantity')
+                ->with('items:id,order_id,product_name'))
             ->columns([
                 TextColumn::make('number')
-                    ->label('Номер')
+                    ->label('№ заказа')
                     ->searchable()
                     ->sortable()
                     ->weight('bold'),
 
-                TextColumn::make('status')
-                    ->label('Статус')
-                    ->badge()
-                    ->color(fn(string $state) => match($state) {
-                        'new'        => 'info',
-                        'confirmed'  => 'warning',
-                        'processing' => 'warning',
-                        'shipped'    => 'primary',
-                        'delivered'  => 'success',
-                        'cancelled'  => 'danger',
-                        default      => 'gray',
-                    })
-                    ->formatStateUsing(fn(string $state) => \App\Models\Order::STATUSES[$state] ?? $state),
+                TextColumn::make('created_at')
+                    ->label('Дата')
+                    ->dateTime('d.m.Y H:i')
+                    ->sortable(),
 
                 TextColumn::make('customer_name')
                     ->label('Клиент')
@@ -53,46 +89,99 @@ class OrdersTable
                     ->label('Телефон')
                     ->searchable(),
 
-                TextColumn::make('payment_type')
-                    ->label('Оплата')
-                    ->badge()
-                    ->color('gray')
-                    ->formatStateUsing(fn(string $state) => $paymentNames[$state] ?? $state),
-
-                TextColumn::make('payment_status')
-                    ->label('Статус оплаты')
-                    ->badge()
-                    ->color(fn(string $state) => match($state) {
-                        'paid'    => 'success',
-                        'pending' => 'warning',
-                        default   => 'gray',
-                    })
-                    ->formatStateUsing(fn(string $state) => match($state) {
-                        'paid'    => 'Оплачен',
-                        'pending' => 'Ожидает',
-                        default   => $state,
-                    }),
+                TextColumn::make('customer_email')
+                    ->label('Email')
+                    ->searchable()
+                    ->copyable()
+                    ->placeholder('—')
+                    ->toggleable(isToggledHiddenByDefault: true),
 
                 TextColumn::make('delivery_city')
                     ->label('Город')
                     ->searchable()
+                    ->placeholder('—'),
+
+                TextColumn::make('delivery_address')
+                    ->label('Адрес')
+                    ->searchable()
+                    ->limit(32)
+                    ->placeholder('—')
                     ->toggleable(isToggledHiddenByDefault: true),
 
-                TextColumn::make('total')
-                    ->label('Итого')
-                    ->sortable()
-                    ->formatStateUsing(fn($state) => number_format($state, 2) . ' BYN'),
+                TextColumn::make('delivery_type')
+                    ->label('Доставка')
+                    ->badge()
+                    ->color('gray')
+                    ->formatStateUsing(fn(?string $state) => $state ? ($deliveryNames[$state] ?? $state) : '—'),
 
-                TextColumn::make('created_at')
-                    ->label('Дата')
-                    ->dateTime('d.m.Y H:i')
+                TextColumn::make('payment_type')
+                    ->label('Оплата')
+                    ->badge()
+                    ->color('gray')
+                    ->formatStateUsing(fn(?string $state) => $state ? ($paymentNames[$state] ?? $state) : '—'),
+
+                TextColumn::make('payment_status')
+                    ->label('Статус оплаты')
+                    ->badge()
+                    ->color(fn(?string $state) => match($state) {
+                        'paid'     => 'success',
+                        'pending'  => 'warning',
+                        'failed'   => 'danger',
+                        'refunded' => 'info',
+                        default    => 'gray',
+                    })
+                    ->formatStateUsing(fn(?string $state) => $state ? ($paymentStatuses[$state] ?? $state) : '—'),
+
+                TextColumn::make('total')
+                    ->label('Сумма')
+                    ->sortable()
+                    ->formatStateUsing(fn($state) => number_format((float) $state, 0, '.', ' ') . ' BYN'),
+
+                TextColumn::make('items_sum_quantity')
+                    ->label('Товаров')
+                    ->state(fn($record) => (int) ($record->items_sum_quantity ?? 0))
                     ->sortable(),
+
+                TextColumn::make('status')
+                    ->label('Статус')
+                    ->badge()
+                    ->color(fn(?string $state) => match($state) {
+                        'new'             => 'info',
+                        'confirmed'       => 'warning',
+                        'processing'      => 'warning',
+                        'waiting_payment' => 'warning',
+                        'paid'            => 'success',
+                        'shipped'         => 'primary',
+                        'delivered'       => 'success',
+                        'completed'       => 'success',
+                        'cancelled'       => 'danger',
+                        default           => 'gray',
+                    })
+                    ->formatStateUsing(fn(?string $state) => $state ? ($statusNames[$state] ?? $statusLabelOverrides[$state] ?? $state) : '—'),
+
+                TextColumn::make('updated_at')
+                    ->label('Обновлен')
+                    ->dateTime('d.m.Y H:i')
+                    ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: true),
+
+                TextColumn::make('items_search')
+                    ->label('Товары')
+                    ->state(fn($record) => $record->items->pluck('product_name')->filter()->join(', '))
+                    ->searchable(query: function (Builder $query, string $search): Builder {
+                        return $query->orWhereHas('items', function (Builder $itemsQuery) use ($search): void {
+                            $itemsQuery
+                                ->where('product_sku', 'like', "%{$search}%")
+                                ->orWhere('product_name', 'like', "%{$search}%");
+                        });
+                    })
+                    ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->defaultSort('created_at', 'desc')
             ->filters([
                 SelectFilter::make('status')
-                    ->label('Статус')
-                    ->options(\App\Models\Order::STATUSES),
+                    ->label('Статус заказа')
+                    ->options($statusNames),
 
                 SelectFilter::make('payment_type')
                     ->label('Способ оплаты')
@@ -100,14 +189,23 @@ class OrdersTable
 
                 SelectFilter::make('payment_status')
                     ->label('Статус оплаты')
-                    ->options([
-                        'pending' => 'Ожидает',
-                        'paid'    => 'Оплачен',
-                    ]),
+                    ->options($paymentStatuses),
 
                 SelectFilter::make('delivery_type')
                     ->label('Доставка')
                     ->options($deliveryNames),
+
+                Filter::make('created_at')
+                    ->label('Дата создания')
+                    ->schema([
+                        DatePicker::make('created_from')
+                            ->label('С даты'),
+                        DatePicker::make('created_until')
+                            ->label('По дату'),
+                    ])
+                    ->query(fn(Builder $query, array $data): Builder => $query
+                        ->when($data['created_from'] ?? null, fn(Builder $query, $date) => $query->whereDate('created_at', '>=', $date))
+                        ->when($data['created_until'] ?? null, fn(Builder $query, $date) => $query->whereDate('created_at', '<=', $date))),
             ])
             ->recordActions([
                 ViewAction::make(),
