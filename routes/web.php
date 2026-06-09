@@ -198,8 +198,7 @@ Route::get('/brands',        [BrandController::class, 'index'])->name('brands');
 Route::get('/brands/{slug}', [BrandController::class, 'show'])->name('brand.show');
 
 // ===== Telegram Webhook =====
-Route::post('/telegram/webhook', [TelegramWebhookController::class, 'handle'])
-    ->withoutMiddleware([\Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class]);
+Route::post('/telegram/webhook', [TelegramWebhookController::class, 'handle']);
 
 // sitemap.xml — вынесен в routes/sitemap.php без session middleware
 

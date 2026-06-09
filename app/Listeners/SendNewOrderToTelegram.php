@@ -65,6 +65,7 @@ class SendNewOrderToTelegram
             $items,
             "",
             "💰 *Итого: " . number_format($order->total, 2, '.', ' ') . " BYN*",
+            $order->comment ? "\n💬 *Комментарий:* {$order->comment}" : null,
             "",
             "🔗 [Открыть в админке]({$viewUrl})",
         ];

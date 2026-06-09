@@ -17,6 +17,11 @@ return Application::configure(basePath: dirname(__DIR__))
         },
     )
     ->withMiddleware(function (Middleware $middleware) {
+        // Исключаем Telegram webhook из CSRF-проверки
+        $middleware->validateCsrfTokens(except: [
+            'telegram/webhook',
+        ]);
+
         // SSL на балансировщике — доверяем X-Forwarded-For для получения реального IP
         $middleware->trustProxies(at: '*');
 
