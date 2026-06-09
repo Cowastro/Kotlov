@@ -41,4 +41,9 @@ return [
         'secret'   => env('TURNSTILE_SECRET_KEY', ''),
     ],
 
+    'telegram' => [
+        'bot_token'      => env('TELEGRAM_BOT_TOKEN'),
+        'orders_chat_id' => env('TELEGRAM_ORDERS_CHAT_ID'),
+    ],
+
 ];
