@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Facades\Auth;
 
 class Order extends Model
 {
@@ -59,6 +60,20 @@ class Order extends Model
         'transport' => 'Транспортная компания по Беларуси',
         'kit'       => 'ТК КИТ — Россия, Казахстан, Армения, Киргизия',
     ];
+
+    protected static function booted(): void
+    {
+        static::updating(function (Order $order) {
+            if ($order->isDirty('status')) {
+                OrderStatusHistory::create([
+                    'order_id'    => $order->id,
+                    'user_id'     => Auth::id(),
+                    'status_from' => $order->getOriginal('status'),
+                    'status_to'   => $order->status,
+                ]);
+            }
+        });
+    }
 
     public function user(): BelongsTo
     {

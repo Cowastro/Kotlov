@@ -12,6 +12,7 @@ use App\Filament\Resources\Orders\Tables\OrdersTable;
 use App\Models\Order;
 use BackedEnum;
 use Filament\Resources\Resource;
+use Filament\Support\Colors\Color;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
@@ -27,6 +28,17 @@ class OrderResource extends Resource
     protected static ?int $navigationSort = 1;
 
     public static function getNavigationGroup(): ?string { return 'Продажи'; }
+
+    public static function getNavigationBadge(): ?string
+    {
+        $count = Order::where('status', 'new')->count();
+        return $count > 0 ? (string) $count : null;
+    }
+
+    public static function getNavigationBadgeColor(): string|array|null
+    {
+        return 'warning';
+    }
     public static function form(Schema $schema): Schema { return OrderForm::configure($schema); }
     public static function infolist(Schema $schema): Schema { return OrderInfolist::configure($schema); }
     public static function table(Table $table): Table { return OrdersTable::configure($table); }

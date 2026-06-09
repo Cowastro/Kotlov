@@ -1,66 +1,78 @@
 <x-filament-panels::page>
 @php
-    $order        = $this->getRecord();
-    $order->loadMissing('items', 'user');
+    $order = $this->getRecord();
+    $order->loadMissing('items.product', 'user', 'statusHistory.user');
 
     $paymentNames  = collect(config('shop.payment_methods',  []))->mapWithKeys(fn($m,$k) => [$k => $m['name']])->toArray();
     $deliveryNames = collect(config('shop.delivery_methods', []))->mapWithKeys(fn($m,$k) => [$k => $m['name']])->toArray();
 
     $statusColors = [
-        'new'        => 'fi-color-info',
-        'confirmed'  => 'fi-color-warning',
-        'processing' => 'fi-color-warning',
-        'shipped'    => 'fi-color-primary',
-        'delivered'  => 'fi-color-success',
-        'cancelled'  => 'fi-color-danger',
+        'new'             => 'info',
+        'confirmed'       => 'warning',
+        'processing'      => 'warning',
+        'waiting_payment' => 'warning',
+        'paid'            => 'success',
+        'shipped'         => 'primary',
+        'delivered'       => 'success',
+        'completed'       => 'success',
+        'cancelled'       => 'danger',
     ];
-    $statusColor = $statusColors[$order->status] ?? 'fi-color-gray';
+    $statusColor = $statusColors[$order->status] ?? 'gray';
 
     $paymentStatusLabel = match($order->payment_status) {
-        'paid'    => ['label' => 'Оплачен',        'color' => 'fi-color-success'],
-        'pending' => ['label' => 'Ожидает оплаты', 'color' => 'fi-color-warning'],
-        default   => ['label' => $order->payment_status, 'color' => 'fi-color-gray'],
+        'paid'    => ['label' => 'Оплачен',        'color' => 'success'],
+        'pending' => ['label' => 'Ожидает оплаты', 'color' => 'warning'],
+        default   => ['label' => $order->payment_status, 'color' => 'gray'],
     };
 
     $byn = fn($v) => number_format((float)$v, 2, '.', ' ') . ' BYN';
-    $deliveryFree = (float)$order->delivery_price === 0.0;
+
+    $deliveryPrice = (float)$order->delivery_price;
+    $isKitDelivery = $order->delivery_type === 'kit';
+    $deliveryFree  = $deliveryPrice === 0.0 && !$isKitDelivery;
+    $deliveryClarify = $isKitDelivery && $deliveryPrice === 0.0;
+
+    $hasCompany = $order->company_name || $order->company_unp || $order->company_address || $order->company_email;
 @endphp
 
-<div class="space-y-4">
+<div class="space-y-4 max-w-none">
 
-    {{-- ── 1. Шапка заказа ──────────────────────────────────────────────── --}}
+    {{-- ── 1. Основная информация ───────────────────────────────────────────── --}}
     <div class="fi-section rounded-xl bg-white shadow-sm ring-1 ring-gray-950/5 dark:bg-gray-900 dark:ring-white/10 px-6 py-4">
         <div class="flex flex-wrap items-center gap-x-6 gap-y-3">
 
-            <div class="flex items-center gap-2 min-w-0">
+            <div class="flex items-center gap-2">
                 <x-heroicon-o-document-text class="h-5 w-5 text-gray-400 shrink-0"/>
                 <span class="text-xs text-gray-500 dark:text-gray-400">Заказ</span>
-                <span class="font-bold text-base text-gray-950 dark:text-white">{{ $order->number }}</span>
+                <span class="font-bold text-lg text-gray-950 dark:text-white">{{ $order->number }}</span>
             </div>
 
-            <x-filament::badge :color="str_replace('fi-color-','',$statusColor)">
+            <x-filament::badge :color="$statusColor">
                 {{ \App\Models\Order::STATUSES[$order->status] ?? $order->status }}
             </x-filament::badge>
 
             <div class="flex items-center gap-1.5 text-sm text-gray-500 dark:text-gray-400">
                 <x-heroicon-o-calendar class="h-4 w-4 shrink-0"/>
-                {{ $order->created_at->format('d.m.Y H:i') }}
+                <span>Создан: {{ $order->created_at->format('d.m.Y H:i') }}</span>
             </div>
 
-            <div class="flex items-center gap-1.5 text-sm text-gray-600 dark:text-gray-300">
-                <x-heroicon-o-user class="h-4 w-4 shrink-0 text-gray-400"/>
-                @if($order->user)
-                    {{ $order->user->name }}
-                @else
-                    <span class="text-gray-400">Гость</span>
-                @endif
+            @if($order->updated_at != $order->created_at)
+            <div class="flex items-center gap-1.5 text-sm text-gray-400 dark:text-gray-500">
+                <x-heroicon-o-pencil-square class="h-4 w-4 shrink-0"/>
+                <span>Обновлён: {{ $order->updated_at->format('d.m.Y H:i') }}</span>
+            </div>
+            @endif
+
+            <div class="flex items-center gap-1.5 text-sm text-gray-500 dark:text-gray-400">
+                <x-heroicon-o-shopping-bag class="h-4 w-4 shrink-0"/>
+                <span>{{ $order->items->sum('quantity') }} шт.</span>
             </div>
 
-            <div class="ml-auto flex items-center gap-2">
-                <x-filament::badge :color="str_replace('fi-color-','',$paymentStatusLabel['color'])">
+            <div class="ml-auto flex items-center gap-3">
+                <x-filament::badge :color="$paymentStatusLabel['color']">
                     {{ $paymentStatusLabel['label'] }}
                 </x-filament::badge>
-                <span class="text-xl font-bold text-primary-600 dark:text-primary-400">
+                <span class="text-2xl font-bold text-primary-600 dark:text-primary-400">
                     {{ $byn($order->total) }}
                 </span>
             </div>
@@ -68,7 +80,7 @@
         </div>
     </div>
 
-    {{-- ── 2. Клиент / Доставка / Оплата ────────────────────────────────── --}}
+    {{-- ── 2. Клиент / Доставка / Оплата ────────────────────────────────────── --}}
     <div class="grid grid-cols-1 gap-4 md:grid-cols-3">
 
         {{-- Клиент --}}
@@ -92,7 +104,45 @@
                     <dd class="text-gray-700 dark:text-gray-300 break-all">{{ $order->customer_email }}</dd>
                 </div>
                 @endif
+                @if($order->user)
+                <div>
+                    <dt class="text-xs text-gray-400 mb-0.5">Аккаунт</dt>
+                    <dd class="text-gray-600 dark:text-gray-400 text-xs">{{ $order->user->email }}</dd>
+                </div>
+                @endif
             </dl>
+
+            @if($hasCompany)
+            <div class="mt-4 pt-4 border-t border-gray-100 dark:border-white/10">
+                <p class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-3">Юридическое лицо</p>
+                <dl class="space-y-2.5 text-sm">
+                    @if($order->company_name)
+                    <div>
+                        <dt class="text-xs text-gray-400 mb-0.5">Организация</dt>
+                        <dd class="font-medium text-gray-900 dark:text-white">{{ $order->company_name }}</dd>
+                    </div>
+                    @endif
+                    @if($order->company_unp)
+                    <div>
+                        <dt class="text-xs text-gray-400 mb-0.5">УНП / ИНН</dt>
+                        <dd class="text-gray-700 dark:text-gray-300">{{ $order->company_unp }}</dd>
+                    </div>
+                    @endif
+                    @if($order->company_address)
+                    <div>
+                        <dt class="text-xs text-gray-400 mb-0.5">Адрес компании</dt>
+                        <dd class="text-gray-700 dark:text-gray-300">{{ $order->company_address }}</dd>
+                    </div>
+                    @endif
+                    @if($order->company_email)
+                    <div>
+                        <dt class="text-xs text-gray-400 mb-0.5">Email компании</dt>
+                        <dd class="text-gray-700 dark:text-gray-300 break-all">{{ $order->company_email }}</dd>
+                    </div>
+                    @endif
+                </dl>
+            </div>
+            @endif
         </div>
 
         {{-- Доставка --}}
@@ -103,24 +153,42 @@
             </div>
             <dl class="space-y-2.5 text-sm">
                 <div>
-                    <dt class="text-xs text-gray-400 mb-0.5">Способ</dt>
+                    <dt class="text-xs text-gray-400 mb-0.5">Тип</dt>
                     <dd class="font-medium text-gray-900 dark:text-white">
-                        {{ $deliveryNames[$order->delivery_type] ?? $order->delivery_type }}
+                        {{ \App\Models\Order::DELIVERY_TYPES[$order->delivery_type] ?? ($deliveryNames[$order->delivery_type] ?? $order->delivery_type) }}
                     </dd>
                 </div>
-                @php
-                    $addressParts = array_filter([$order->delivery_region, $order->delivery_city, $order->delivery_address]);
-                @endphp
-                @if(count($addressParts))
+                @if($order->delivery_region)
+                <div>
+                    <dt class="text-xs text-gray-400 mb-0.5">Область / регион</dt>
+                    <dd class="text-gray-700 dark:text-gray-300">{{ $order->delivery_region }}</dd>
+                </div>
+                @endif
+                @if($order->delivery_city)
+                <div>
+                    <dt class="text-xs text-gray-400 mb-0.5">Город</dt>
+                    <dd class="text-gray-700 dark:text-gray-300">{{ $order->delivery_city }}</dd>
+                </div>
+                @endif
+                @if($order->delivery_address)
                 <div>
                     <dt class="text-xs text-gray-400 mb-0.5">Адрес</dt>
-                    <dd class="text-gray-700 dark:text-gray-300">{{ implode(', ', $addressParts) }}</dd>
+                    <dd class="text-gray-700 dark:text-gray-300">{{ $order->delivery_address }}</dd>
                 </div>
                 @endif
                 <div>
                     <dt class="text-xs text-gray-400 mb-0.5">Стоимость</dt>
-                    <dd class="{{ $deliveryFree ? 'text-green-600 dark:text-green-400 font-medium' : 'font-medium text-gray-900 dark:text-white' }}">
-                        {{ $deliveryFree ? 'Бесплатно' : $byn($order->delivery_price) }}
+                    <dd class="font-medium
+                        @if($deliveryClarify) text-amber-600 dark:text-amber-400
+                        @elseif($deliveryFree) text-green-600 dark:text-green-400
+                        @else text-gray-900 dark:text-white @endif">
+                        @if($deliveryClarify)
+                            Стоимость уточняется
+                        @elseif($deliveryFree)
+                            Бесплатно
+                        @else
+                            {{ $byn($order->delivery_price) }}
+                        @endif
                     </dd>
                 </div>
             </dl>
@@ -134,15 +202,15 @@
             </div>
             <dl class="space-y-2.5 text-sm">
                 <div>
-                    <dt class="text-xs text-gray-400 mb-0.5">Способ оплаты</dt>
+                    <dt class="text-xs text-gray-400 mb-0.5">Способ</dt>
                     <dd class="font-medium text-gray-900 dark:text-white">
-                        {{ $paymentNames[$order->payment_type] ?? $order->payment_type }}
+                        {{ \App\Models\Order::PAYMENT_TYPES[$order->payment_type] ?? ($paymentNames[$order->payment_type] ?? $order->payment_type) }}
                     </dd>
                 </div>
                 <div>
-                    <dt class="text-xs text-gray-400 mb-0.5">Статус оплаты</dt>
+                    <dt class="text-xs text-gray-400 mb-0.5">Статус</dt>
                     <dd>
-                        <x-filament::badge :color="str_replace('fi-color-','',$paymentStatusLabel['color'])">
+                        <x-filament::badge :color="$paymentStatusLabel['color']">
                             {{ $paymentStatusLabel['label'] }}
                         </x-filament::badge>
                     </dd>
@@ -159,26 +227,12 @@
                     <dd class="font-medium text-red-600 dark:text-red-400">−{{ $byn($order->discount) }}</dd>
                 </div>
                 @endif
-                {{-- Реквизиты для invoice --}}
-                @if($order->payment_type === 'invoice' && $order->company_name)
-                    <hr class="border-gray-100 dark:border-white/10"/>
-                    <div>
-                        <dt class="text-xs text-gray-400 mb-0.5">Организация</dt>
-                        <dd class="font-medium text-gray-900 dark:text-white">{{ $order->company_name }}</dd>
-                    </div>
-                    @if($order->company_unp)
-                    <div>
-                        <dt class="text-xs text-gray-400 mb-0.5">УНП / ИНН</dt>
-                        <dd class="text-gray-700 dark:text-gray-300">{{ $order->company_unp }}</dd>
-                    </div>
-                    @endif
-                @endif
             </dl>
         </div>
 
     </div>
 
-    {{-- ── 3. Товары заказа ──────────────────────────────────────────────── --}}
+    {{-- ── 3. Товары заказа ─────────────────────────────────────────────────── --}}
     <div class="fi-section rounded-xl bg-white shadow-sm ring-1 ring-gray-950/5 dark:bg-gray-900 dark:ring-white/10">
         <div class="flex items-center gap-2 px-5 py-4 border-b border-gray-100 dark:border-white/10">
             <x-heroicon-o-shopping-bag class="h-4 w-4 text-primary-500 shrink-0"/>
@@ -189,8 +243,9 @@
             <table class="w-full text-sm">
                 <thead>
                     <tr class="border-b border-gray-100 dark:border-white/10 text-xs text-gray-500 dark:text-gray-400">
-                        <th class="px-5 py-2.5 text-left font-medium">Товар</th>
-                        <th class="px-4 py-2.5 text-left font-medium w-32">Артикул</th>
+                        <th class="px-4 py-2.5 text-left font-medium w-16">Фото</th>
+                        <th class="px-4 py-2.5 text-left font-medium">Товар</th>
+                        <th class="px-4 py-2.5 text-left font-medium w-36">Артикул</th>
                         <th class="px-4 py-2.5 text-center font-medium w-20">Кол-во</th>
                         <th class="px-4 py-2.5 text-right font-medium w-32">Цена</th>
                         <th class="px-5 py-2.5 text-right font-medium w-36">Сумма</th>
@@ -199,7 +254,28 @@
                 <tbody class="divide-y divide-gray-50 dark:divide-white/5">
                     @foreach($order->items as $item)
                     <tr class="hover:bg-gray-50/50 dark:hover:bg-white/[0.02] transition">
-                        <td class="px-5 py-3 font-medium text-gray-900 dark:text-white">{{ $item->product_name }}</td>
+                        <td class="px-4 py-3">
+                            @if($item->product)
+                                @php try { $imgUrl = $item->product->imageUrl(0); } catch (\Throwable $e) { $imgUrl = null; } @endphp
+                                @if($imgUrl)
+                                    <img src="{{ $imgUrl }}" alt="" class="h-12 w-12 object-contain rounded border border-gray-100 dark:border-white/10 bg-gray-50 dark:bg-white/5">
+                                @else
+                                    <div class="h-12 w-12 rounded border border-gray-100 dark:border-white/10 bg-gray-50 dark:bg-white/5 flex items-center justify-center">
+                                        <x-heroicon-o-photo class="h-5 w-5 text-gray-300"/>
+                                    </div>
+                                @endif
+                            @else
+                                <div class="h-12 w-12 rounded border border-gray-100 dark:border-white/10 bg-gray-50 dark:bg-white/5 flex items-center justify-center">
+                                    <x-heroicon-o-photo class="h-5 w-5 text-gray-300"/>
+                                </div>
+                            @endif
+                        </td>
+                        <td class="px-4 py-3 font-medium text-gray-900 dark:text-white">
+                            {{ $item->product_name }}
+                            @if($item->product?->brand)
+                                <div class="text-xs text-gray-400 font-normal mt-0.5">{{ $item->product->brand->name ?? '' }}</div>
+                            @endif
+                        </td>
                         <td class="px-4 py-3 text-gray-500 dark:text-gray-400 font-mono text-xs">
                             {{ $item->product_sku ?: '—' }}
                         </td>
@@ -209,67 +285,129 @@
                     </tr>
                     @endforeach
                 </tbody>
+                <tfoot>
+                    <tr class="border-t-2 border-gray-200 dark:border-white/10 bg-gray-50/50 dark:bg-white/[0.02]">
+                        <td colspan="4" class="px-5 py-3 text-right text-sm text-gray-500 dark:text-gray-400">
+                            Товары ({{ $order->items->sum('quantity') }} шт.)
+                        </td>
+                        <td class="px-4 py-3 text-right text-sm font-medium text-gray-700 dark:text-gray-300">{{ $byn($order->subtotal) }}</td>
+                        <td class="px-5 py-3"></td>
+                    </tr>
+                    <tr class="border-t border-gray-100 dark:border-white/5 bg-gray-50/50 dark:bg-white/[0.02]">
+                        <td colspan="4" class="px-5 py-3 text-right text-sm text-gray-500 dark:text-gray-400">Доставка</td>
+                        <td class="px-4 py-3 text-right text-sm font-medium
+                            @if($deliveryClarify) text-amber-600 dark:text-amber-400
+                            @elseif($deliveryFree) text-green-600 dark:text-green-400
+                            @else text-gray-700 dark:text-gray-300 @endif">
+                            @if($deliveryClarify) Уточняется
+                            @elseif($deliveryFree) Бесплатно
+                            @else {{ $byn($order->delivery_price) }}
+                            @endif
+                        </td>
+                        <td class="px-5 py-3"></td>
+                    </tr>
+                    @if((float)$order->discount > 0)
+                    <tr class="border-t border-gray-100 dark:border-white/5 bg-gray-50/50 dark:bg-white/[0.02]">
+                        <td colspan="4" class="px-5 py-3 text-right text-sm text-gray-500 dark:text-gray-400">Скидка</td>
+                        <td class="px-4 py-3 text-right text-sm font-medium text-red-600 dark:text-red-400">−{{ $byn($order->discount) }}</td>
+                        <td class="px-5 py-3"></td>
+                    </tr>
+                    @endif
+                    <tr class="border-t-2 border-gray-200 dark:border-white/10 bg-gray-50/50 dark:bg-white/[0.02]">
+                        <td colspan="4" class="px-5 py-4 text-right text-base font-semibold text-gray-700 dark:text-gray-200">Итого</td>
+                        <td class="px-4 py-4 text-right text-xl font-bold text-primary-600 dark:text-primary-400">{{ $byn($order->total) }}</td>
+                        <td class="px-5 py-4"></td>
+                    </tr>
+                </tfoot>
             </table>
         </div>
     </div>
 
-    {{-- ── 4. Суммы + Комментарии ────────────────────────────────────────── --}}
+    {{-- ── 4. Комментарии ───────────────────────────────────────────────────── --}}
     <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
 
-        {{-- Комментарии --}}
         <div class="fi-section rounded-xl bg-white shadow-sm ring-1 ring-gray-950/5 dark:bg-gray-900 dark:ring-white/10 p-5">
             <div class="flex items-center gap-2 mb-4 border-b border-gray-100 dark:border-white/10 pb-3">
-                <x-heroicon-o-chat-bubble-left-right class="h-4 w-4 text-primary-500 shrink-0"/>
-                <span class="text-sm font-semibold text-gray-700 dark:text-gray-200">Комментарии</span>
+                <x-heroicon-o-chat-bubble-left class="h-4 w-4 text-primary-500 shrink-0"/>
+                <span class="text-sm font-semibold text-gray-700 dark:text-gray-200">Комментарий клиента</span>
             </div>
-            <div class="space-y-4 text-sm">
-                <div>
-                    <p class="text-xs text-gray-400 mb-1">Комментарий клиента</p>
-                    <p class="text-gray-700 dark:text-gray-300 leading-relaxed">
-                        {{ $order->comment ?: '—' }}
-                    </p>
-                </div>
-                <div class="pt-3 border-t border-gray-100 dark:border-white/10">
-                    <p class="text-xs text-gray-400 mb-1">Комментарий менеджера</p>
-                    <p class="text-gray-700 dark:text-gray-300 leading-relaxed">
-                        {{ $order->admin_comment ?: '—' }}
-                    </p>
-                </div>
-            </div>
+            @if($order->comment)
+                <p class="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">{{ $order->comment }}</p>
+            @else
+                <p class="text-sm text-gray-400 dark:text-gray-500 italic">Комментарий отсутствует</p>
+            @endif
         </div>
 
-        {{-- Суммы --}}
         <div class="fi-section rounded-xl bg-white shadow-sm ring-1 ring-gray-950/5 dark:bg-gray-900 dark:ring-white/10 p-5">
             <div class="flex items-center gap-2 mb-4 border-b border-gray-100 dark:border-white/10 pb-3">
-                <x-heroicon-o-calculator class="h-4 w-4 text-primary-500 shrink-0"/>
-                <span class="text-sm font-semibold text-gray-700 dark:text-gray-200">Итоговые суммы</span>
+                <x-heroicon-o-chat-bubble-left-ellipsis class="h-4 w-4 text-primary-500 shrink-0"/>
+                <span class="text-sm font-semibold text-gray-700 dark:text-gray-200">Комментарий менеджера</span>
             </div>
-            <dl class="space-y-2 text-sm">
-                <div class="flex justify-between">
-                    <dt class="text-gray-500 dark:text-gray-400">
-                        Товары ({{ $order->items->sum('quantity') }} шт.)
-                    </dt>
-                    <dd class="font-medium text-gray-900 dark:text-white">{{ $byn($order->subtotal) }}</dd>
-                </div>
-                <div class="flex justify-between">
-                    <dt class="text-gray-500 dark:text-gray-400">Доставка</dt>
-                    <dd class="{{ $deliveryFree ? 'text-green-600 dark:text-green-400 font-medium' : 'font-medium text-gray-900 dark:text-white' }}">
-                        {{ $deliveryFree ? 'Бесплатно' : $byn($order->delivery_price) }}
-                    </dd>
-                </div>
-                @if((float)$order->discount > 0)
-                <div class="flex justify-between">
-                    <dt class="text-gray-500 dark:text-gray-400">Скидка</dt>
-                    <dd class="font-medium text-red-600 dark:text-red-400">−{{ $byn($order->discount) }}</dd>
-                </div>
-                @endif
-                <div class="flex justify-between items-center pt-3 border-t border-gray-200 dark:border-white/10 mt-2">
-                    <dt class="font-semibold text-gray-700 dark:text-gray-200 text-base">Итого</dt>
-                    <dd class="text-2xl font-bold text-primary-600 dark:text-primary-400">{{ $byn($order->total) }}</dd>
-                </div>
-            </dl>
+            @if($order->admin_comment)
+                <p class="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">{{ $order->admin_comment }}</p>
+            @else
+                <p class="text-sm text-gray-400 dark:text-gray-500 italic">Комментарий отсутствует</p>
+            @endif
         </div>
 
+    </div>
+
+    {{-- ── 5. История статусов ──────────────────────────────────────────────── --}}
+    <div class="fi-section rounded-xl bg-white shadow-sm ring-1 ring-gray-950/5 dark:bg-gray-900 dark:ring-white/10 p-5">
+        <div class="flex items-center gap-2 mb-4 border-b border-gray-100 dark:border-white/10 pb-3">
+            <x-heroicon-o-clock class="h-4 w-4 text-primary-500 shrink-0"/>
+            <span class="text-sm font-semibold text-gray-700 dark:text-gray-200">История изменений статуса</span>
+            @if($order->statusHistory->count())
+                <x-filament::badge color="gray" class="ml-1">{{ $order->statusHistory->count() }}</x-filament::badge>
+            @endif
+        </div>
+
+        @if($order->statusHistory->count())
+        <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+                <thead>
+                    <tr class="border-b border-gray-100 dark:border-white/10 text-xs text-gray-500 dark:text-gray-400">
+                        <th class="py-2 pr-4 text-left font-medium w-40">Дата</th>
+                        <th class="py-2 pr-4 text-left font-medium w-36">Кто изменил</th>
+                        <th class="py-2 pr-4 text-left font-medium w-36">Было</th>
+                        <th class="py-2 pr-4 text-left font-medium w-36">Стало</th>
+                        <th class="py-2 text-left font-medium">Комментарий</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-50 dark:divide-white/5">
+                    @foreach($order->statusHistory->sortByDesc('created_at') as $history)
+                    <tr class="hover:bg-gray-50/50 dark:hover:bg-white/[0.02] transition">
+                        <td class="py-2.5 pr-4 text-gray-500 dark:text-gray-400 text-xs">
+                            {{ $history->created_at->format('d.m.Y H:i') }}
+                        </td>
+                        <td class="py-2.5 pr-4 text-gray-700 dark:text-gray-300 text-xs">
+                            {{ $history->user?->name ?? 'Система' }}
+                        </td>
+                        <td class="py-2.5 pr-4">
+                            @if($history->status_from)
+                                <x-filament::badge :color="$statusColors[$history->status_from] ?? 'gray'" size="sm">
+                                    {{ \App\Models\Order::STATUSES[$history->status_from] ?? $history->status_from }}
+                                </x-filament::badge>
+                            @else
+                                <span class="text-gray-400">—</span>
+                            @endif
+                        </td>
+                        <td class="py-2.5 pr-4">
+                            <x-filament::badge :color="$statusColors[$history->status_to] ?? 'gray'" size="sm">
+                                {{ \App\Models\Order::STATUSES[$history->status_to] ?? $history->status_to }}
+                            </x-filament::badge>
+                        </td>
+                        <td class="py-2.5 text-gray-600 dark:text-gray-400 text-xs">
+                            {{ $history->comment ?: '—' }}
+                        </td>
+                    </tr>
+                    @endforeach
+                </tbody>
+            </table>
+        </div>
+        @else
+            <p class="text-sm text-gray-400 dark:text-gray-500 italic">История изменений пока отсутствует</p>
+        @endif
     </div>
 
 </div>
