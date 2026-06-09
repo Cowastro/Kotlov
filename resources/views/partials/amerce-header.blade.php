@@ -62,33 +62,6 @@
         <nav class="box-navigation">
             <ul class="box-nav-menu">
 
-                <li class="menu-item d-xl-none">
-                    <a href="#" class="item-link">
-                        <span class="text cus-text">Каталог товаров</span>
-                    </a>
-                    <div class="sub-menu">
-                        @foreach ($navCategories as $rootCat)
-                            <div class="mega-menu-item menu-lv-2">
-                                <div class="menu-heading">{{ $rootCat->name }}</div>
-                                <ul class="sub-menu_list">
-                                    @foreach ($rootCat->children->where('is_active', true)->take(6) as $child)
-                                        <li>
-                                            <a href="/{{ $child->slug }}" class="sub-menu_link">
-                                                {{ $child->name }}
-                                            </a>
-                                        </li>
-                                    @endforeach
-                                    <li>
-                                        <a href="/{{ $rootCat->slug }}" class="sub-menu_link cl-text-2">
-                                            Все
-                                        </a>
-                                    </li>
-                                </ul>
-                            </div>
-                        @endforeach
-                    </div>
-                </li>
-
                 <!-- MAIN MENU -->
                 <li class="menu-item">
                     <a href="/installers" class="item-link">
