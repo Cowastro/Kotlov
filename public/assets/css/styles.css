@@ -15303,6 +15303,7 @@ html:not([dir=rtl]) .noUi-horizontal .noUi-handle {
 .category-v03 .cate-image {
   border-radius: 16px;
   overflow: hidden;
+  aspect-ratio: 3 / 4;
 }
 .category-v03 .cate-image img {
   width: 100%;

@@ -12,7 +12,7 @@
                     <i class="icon icon-CaretRightThin cl-text-3"></i>
                     <p class="text-caption-01">Каталог</p>
                 </div>
-                <h3>Каталог товаров</h3>
+                <h1>Каталог товаров</h1>
                 <p class="text-body-1 cl-text-2">
                     Котлы, печи, камины, дымоходы, насосы и всё для отопления —<br class="d-none d-lg-block">
                     более 7 000 товаров от ведущих производителей.
@@ -27,20 +27,42 @@
             @if ($rootCategories->count() > 0)
                 <div class="tf-grid-layout ssm-col-2 xl-col-4 gap-lg-30">
 
+                    @php
+                        $popularImages = [
+                            'kotly'              => 'boiler_img.jpg',
+                            'teplovyie-nasosyi'  => 'heatpump.jpg',
+                            'kaminy'             => 'fireplace.jpg',
+                            'pechki'             => 'pech.jpg',
+                            'pechi-dlya-bani'    => 'pech.jpg',
+                            'dymohody'           => 'chimney.jpg',
+                            'bani-i-sauny'       => 'sauna.jpg',
+                            'vodonagrevateli'    => 'droplet.jpg',
+                            'pelletnye-gorelki'  => 'pellet_burner.jpg',
+                            'pelletnyie-gorelki' => 'pellet_burner.jpg',
+                            'otoplenie'          => 'heater.jpg',
+                            'vodosnabzhenie'     => 'nasosy.jpg',
+                            'klimat'             => 'air.jpg',
+                        ];
+                    @endphp
+
                     @foreach ($rootCategories as $category)
+                        @php
+                            $catImg = $category->image
+                                ? asset('storage/' . $category->image)
+                                : (isset($popularImages[$category->slug])
+                                    ? asset('img/popular/' . $popularImages[$category->slug])
+                                    : asset('img/categories/placeholder.jpg'));
+                        @endphp
                         <div class="category-v03 style-2 hover-img4">
                             <a href="/{{ $category->slug }}" class="cate-image img-style4">
                                 <img loading="lazy" width="330" height="440"
-                                    src="{{ $category->image ? asset('storage/' . $category->image) : asset('img/categories/placeholder.jpg') }}"
+                                    src="{{ $catImg }}"
                                     alt="{{ $category->name }}"
                                     onerror="this.src='{{ asset('img/categories/placeholder.jpg') }}'">
                             </a>
                             <div class="cate-content text-center">
                                 <a href="/{{ $category->slug }}" class="cate_name h5 fw-medium">
                                     {{ $category->name }}
-                                    @if ($category->products_count > 0)
-                                        <span class="text-body-1 cl-text-2">({{ $category->products_count }})</span>
-                                    @endif
                                     <i class="icon icon-ArrowUpRight1"></i>
                                 </a>
                             </div>

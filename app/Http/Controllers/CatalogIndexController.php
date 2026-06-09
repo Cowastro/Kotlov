@@ -15,6 +15,11 @@ class CatalogIndexController extends Controller
             ->orderBy('sort_order')
             ->get();
 
-        return view('pages.catalog-index', compact('rootCategories'));
+        $title       = 'Каталог товаров — котлы, печи, камины, дымоходы и отопление в Беларуси';
+        $description = 'Более 7 000 товаров для отопления: котлы, печи, камины, дымоходы, тепловые насосы, водонагреватели. Доставка по Беларуси. Маркетплейс KOTLOV.';
+        $keywords    = 'каталог котлов, купить печь, камины беларусь, дымоходы, отопление, тепловые насосы, водонагреватели';
+        $ogImage     = asset('img/popular/boiler_img.jpg');
+
+        return view('pages.catalog-index', compact('rootCategories', 'title', 'description', 'keywords', 'ogImage'));
     }
 }
