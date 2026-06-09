@@ -178,6 +178,9 @@
             });
         }
 
+        // Инициализируем счётчик из сессии — без лишнего запроса к серверу
+        updateCartCount({{ array_sum(array_column(session('cart', []), 'quantity')) }});
+
         // Обновить прогресс-бар бесплатной доставки
         function updateThreshold(data) {
             var textEl     = document.getElementById('cart-threshold-text');
@@ -328,6 +331,12 @@
             var productId = btn.dataset.productId;
             if (!productId) return;
 
+            // Блокируем кнопку чтобы не было двойного клика
+            if (btn.dataset.loading) return;
+            btn.dataset.loading = '1';
+            var origText = btn.innerHTML;
+            btn.style.opacity = '0.6';
+
             // Читаем количество: из data-qty-input (селектор) или фиксировано 1
             var qty = 1;
             var qtySelector = btn.dataset.qtyInput;
@@ -348,11 +357,20 @@
             .then(function (r) { return r.json(); })
             .then(function (data) {
                 updateCartCount(data.count);
-                loadMiniCart();
                 var cartCanvas = document.getElementById('shoppingCart');
                 if (cartCanvas && window.bootstrap) {
+                    // Открываем корзину — loadMiniCart вызовется через show.bs.offcanvas
                     bootstrap.Offcanvas.getOrCreateInstance(cartCanvas).show();
+                } else {
+                    loadMiniCart();
                 }
+            })
+            .catch(function () {
+                loadMiniCart();
+            })
+            .finally(function () {
+                btn.style.opacity = '';
+                delete btn.dataset.loading;
             });
         });
 
@@ -421,8 +439,6 @@
             syncBtn(); // начальное состояние при загрузке
         });
 
-        // Инициализация счётчика при загрузке страницы
-        loadMiniCart();
     })();
 
     // ===== Сравнение =====
