@@ -38,7 +38,7 @@ class CatalogController extends Controller
             ->get()
             ->each(function ($subcategory) {
                 $ids = $this->collectCategoryAndDescendantIds($subcategory->id);
-                $subcategory->products_count = Product::where('is_active', true)
+                $subcategory->products_count = Product::where('is_active', true)->where('is_archived', false)
                     ->whereIn('category_id', $ids)
                     ->count();
             })
@@ -59,10 +59,10 @@ class CatalogController extends Controller
 
         // Бренды с количеством товаров в категории
         $brands = Brand::whereHas('products', fn($q) =>
-                $q->where('is_active', true)->whereIn('category_id', $activeCategoryIds)
+                $q->where('is_active', true)->where('is_archived', false)->whereIn('category_id', $activeCategoryIds)
             )
             ->withCount(['products' => fn($q) =>
-                $q->where('is_active', true)->whereIn('category_id', $activeCategoryIds)
+                $q->where('is_active', true)->where('is_archived', false)->whereIn('category_id', $activeCategoryIds)
             ])
             ->orderBy('name')
             ->get();
@@ -110,7 +110,7 @@ class CatalogController extends Controller
                         $productsCount = ProductAttributeValue::whereIn('attribute_id', $allAttrIds)
                             ->whereIn('option_id', $optionIds)
                             ->whereHas('product', fn($q) => $q
-                                ->where('is_active', true)
+                                ->where('is_active', true)->where('is_archived', false)
                                 ->whereIn('category_id', $activeCategoryIds)
                             )
                             ->count();
@@ -169,7 +169,7 @@ class CatalogController extends Controller
                 ->values();
         }
 
-        $priceRange = Product::where('is_active', true)
+        $priceRange = Product::where('is_active', true)->where('is_archived', false)
             ->whereIn('category_id', $activeCategoryIds)
             ->where('price', '>', 0)
             ->selectRaw('MIN(price) as min_price, MAX(price) as max_price')
@@ -178,12 +178,12 @@ class CatalogController extends Controller
         $priceMin = (int) floor($priceRange->min_price ?? 0);
         $priceMax = (int) ceil($priceRange->max_price ?? 10000);
 
-        $allProductsCount = Product::where('is_active', true)
+        $allProductsCount = Product::where('is_active', true)->where('is_archived', false)
             ->whereIn('category_id', $allCategoryIds)
             ->count();
 
         // Запрос товаров
-        $query = Product::where('is_active', true)
+        $query = Product::where('is_active', true)->where('is_archived', false)
             ->whereIn('category_id', $activeCategoryIds)
             ->with(['category', 'brand']);
 

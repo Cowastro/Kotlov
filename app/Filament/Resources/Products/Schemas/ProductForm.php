@@ -92,6 +92,11 @@ class ProductForm
                                 Toggle::make('is_sale')
                                     ->label('Акция'),
 
+                                Toggle::make('is_archived')
+                                    ->label('Архивный (снят с продажи)')
+                                    ->helperText('Скрыт из каталога, noindex в поиске')
+                                    ->default(false),
+
                                 TextInput::make('sort_order')
                                     ->label('Сортировка')
                                     ->numeric()

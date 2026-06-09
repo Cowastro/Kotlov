@@ -27,7 +27,7 @@ Route::get('/sitemap.xml', function () {
         Category::active()->whereNotNull('slug')->orderBy('sort_order')->orderBy('id')
             ->get(['slug'])->each(fn ($c) => $addUrl($c->slug));
 
-        Product::active()
+        Product::active()->notArchived()
             ->with('category:id,slug,is_active')
             ->whereHas('category', fn ($q) => $q->where('is_active', true))
             ->orderBy('id')

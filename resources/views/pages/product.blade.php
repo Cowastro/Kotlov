@@ -1,7 +1,19 @@
 @extends('layouts.amerce')
 
+@if($product->is_archived)
+@section('robots', 'noindex, follow')
+@endif
+
 @section('content')
 <main id="wrapper">
+
+    @if($product->is_archived)
+    <div class="container mt-16">
+        <div class="alert" style="background:#fff3cd;border:1px solid #ffc107;border-radius:8px;padding:12px 20px;color:#856404;">
+            <strong>Товар снят с продажи.</strong> Он больше не доступен для заказа. Посмотрите похожие товары в разделе ниже.
+        </div>
+    </div>
+    @endif
 
     {{-- Хлебные крошки --}}
     <div class="section-page-title-single flat-spacing-3">

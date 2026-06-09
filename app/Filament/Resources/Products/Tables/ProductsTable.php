@@ -98,6 +98,14 @@ class ProductsTable
                     ->label('Активен')
                     ->boolean(),
 
+                IconColumn::make('is_archived')
+                    ->label('Архив')
+                    ->boolean()
+                    ->trueIcon('heroicon-o-archive-box')
+                    ->falseIcon('heroicon-o-minus')
+                    ->trueColor('warning')
+                    ->falseColor('gray'),
+
                 TextColumn::make('status_badges')
                     ->label('Статусы')
                     ->getStateUsing(function ($record): string {
@@ -148,6 +156,9 @@ class ProductsTable
             ->filters([
                 TernaryFilter::make('is_active')
                     ->label('Активность'),
+
+                TernaryFilter::make('is_archived')
+                    ->label('Архивные'),
 
                 TernaryFilter::make('in_stock')
                     ->label('Наличие'),
@@ -267,6 +278,20 @@ class ProductsTable
                         ->icon('heroicon-o-tag')
                         ->color('gray')
                         ->action(fn(Collection $records) => $records->each->update(['is_sale' => false]))
+                        ->deselectRecordsAfterCompletion(),
+
+                    BulkAction::make('archive')
+                        ->label('Архивировать')
+                        ->icon('heroicon-o-archive-box')
+                        ->color('warning')
+                        ->action(fn(Collection $records) => $records->each->update(['is_archived' => true]))
+                        ->deselectRecordsAfterCompletion(),
+
+                    BulkAction::make('unarchive')
+                        ->label('Разархивировать')
+                        ->icon('heroicon-o-archive-box-x-mark')
+                        ->color('success')
+                        ->action(fn(Collection $records) => $records->each->update(['is_archived' => false]))
                         ->deselectRecordsAfterCompletion(),
 
                     BulkAction::make('update_supplier')

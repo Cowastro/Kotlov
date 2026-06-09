@@ -16,7 +16,7 @@ class Product extends Model
         'content', 'short_description',
         'images', 'specs', 'video_url',
         'weight', 'unit', 'warranty',
-        'is_active', 'in_stock', 'stock_qty',
+        'is_active', 'is_archived', 'in_stock', 'stock_qty',
         'is_featured', 'is_new', 'is_sale', 'sort_order',
         'meta_title', 'meta_keywords', 'meta_description',
         'rating', 'reviews_count', 'views_count',
@@ -26,6 +26,7 @@ class Product extends Model
         'images'      => 'array',
         'specs'       => 'array',
         'is_active'   => 'boolean',
+        'is_archived' => 'boolean',
         'in_stock'    => 'boolean',
         'is_featured' => 'boolean',
         'is_new'      => 'boolean',
@@ -165,6 +166,11 @@ class Product extends Model
     public function scopeActive($query)
     {
         return $query->where('is_active', true);
+    }
+
+    public function scopeNotArchived($query)
+    {
+        return $query->where('is_archived', false);
     }
 
     public function scopeFeatured($query)

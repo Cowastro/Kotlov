@@ -24,7 +24,7 @@ class ProductController extends Controller
         }
 
         $product = Product::where('slug', $productSlug)
-            ->where('is_active', true)
+            ->where(fn($q) => $q->where('is_active', true)->orWhere('is_archived', true))
             ->with([
                 'category.parent',
                 'brand',
@@ -132,6 +132,8 @@ class ProductController extends Controller
         $schemaJson = json_encode($schema, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
         $breadcrumbJson = json_encode($breadcrumbSchema, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
 
+        $robots = $product->is_archived ? 'noindex, follow' : null;
+
         return view('pages.product', compact(
             'product',
             'attributeValues',
@@ -143,7 +145,8 @@ class ProductController extends Controller
             'canonical',
             'ogImage',
             'schemaJson',
-            'breadcrumbJson'
+            'breadcrumbJson',
+            'robots'
         ));
     }
 }
