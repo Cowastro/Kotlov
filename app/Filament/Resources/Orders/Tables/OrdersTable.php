@@ -196,17 +196,21 @@ class OrdersTable
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
 
-                TextColumn::make('items_search')
+                TextColumn::make('items_list')
                     ->label('Товары')
-                    ->state(fn($record) => $record->items->pluck('product_name')->filter()->join(', '))
+                    ->state(fn($record) => $record->items->map(fn($item) =>
+                        $item->product_name .
+                        ($item->product_sku ? ' [' . $item->product_sku . ']' : '')
+                    )->filter()->join("\n"))
+                    ->wrap()
+                    ->lineClamp(3)
                     ->searchable(query: function (Builder $query, string $search): Builder {
                         return $query->orWhereHas('items', function (Builder $itemsQuery) use ($search): void {
                             $itemsQuery
                                 ->where('product_sku', 'like', "%{$search}%")
                                 ->orWhere('product_name', 'like', "%{$search}%");
                         });
-                    })
-                    ->toggleable(isToggledHiddenByDefault: true),
+                    }),
             ])
             ->defaultSort('created_at', 'desc')
             ->filters([

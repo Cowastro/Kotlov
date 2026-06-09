@@ -7,12 +7,17 @@ use App\Models\Order;
 use Filament\Actions\CreateAction;
 use Filament\Schemas\Components\Tabs\Tab;
 use Filament\Resources\Pages\ListRecords;
+use Filament\Support\Enums\MaxWidth;
 use Illuminate\Database\Eloquent\Builder;
 
 class ListOrders extends ListRecords
 {
     protected static string $resource = OrderResource::class;
 
+    public function getMaxContentWidth(): MaxWidth
+    {
+        return MaxWidth::Full;
+    }
 
     protected function getHeaderActions(): array
     {
