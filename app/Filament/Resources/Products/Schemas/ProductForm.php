@@ -135,9 +135,14 @@ class ProductForm
                 Section::make('Описание')
                     ->columnSpanFull()
                     ->schema([
-                        Textarea::make('short_description')
+                        RichEditor::make('short_description')
                             ->label('Краткое описание')
-                            ->rows(3),
+                            ->toolbarButtons([
+                                'bold', 'italic', 'underline',
+                                'bulletList', 'orderedList',
+                                'link',
+                                'undo', 'redo',
+                            ]),
 
                         RichEditor::make('content')
                             ->label('Полное описание')

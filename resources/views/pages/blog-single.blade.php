@@ -76,7 +76,7 @@
                             @endif
 
                             @if ($post->excerpt)
-                                <p class="text text-body-1 s1 fw-medium">{{ $post->excerpt }}</p>
+                                <div class="text text-body-1 s1 fw-medium">{!! $post->excerpt !!}</div>
                             @endif
 
                             <div class="d-grid gap-12 blog-body">

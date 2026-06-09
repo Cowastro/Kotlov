@@ -178,7 +178,7 @@
                                 {{-- Краткое описание --}}
                                 @if ($product->short_description)
                                     <p class="product-infor-desc cl-text-2 mb-12">
-                                        {{ $product->short_description }}
+                                        {!! $product->short_description !!}
                                     </p>
                                 @endif
 

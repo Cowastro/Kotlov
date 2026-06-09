@@ -15,12 +15,13 @@
                     <p class="text-caption-01">{{ $brand->name }}</p>
                 </div>
                 <h1 class="h3">{{ $h1 }}</h1>
-                @if ($brand->country || $brand->producer)
-                    <p class="text-body-1 cl-text-2">
-                        @if ($brand->country)Страна: {{ $brand->country }}@endif
-                        @if ($brand->country && $brand->producer) &nbsp;·&nbsp; @endif
-                        @if ($brand->producer)Производитель: {{ $brand->producer }}@endif
-                    </p>
+                @if ($brand->country)
+                    <p class="text-body-1 cl-text-2">Страна: {{ $brand->country }}</p>
+                @endif
+                @if ($brand->producer)
+                    <div class="text-body-1 cl-text-2 mt-8">
+                        {!! $brand->producer !!}
+                    </div>
                 @endif
             </div>
         </div>

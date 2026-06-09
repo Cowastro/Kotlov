@@ -6,6 +6,7 @@ use App\Models\Category;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\RichEditor;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\Toggle;
 use Filament\Schemas\Components\Section;
@@ -50,9 +51,14 @@ class CategoryForm
                             ->label('Заголовок H1')
                             ->columnSpanFull(),
 
-                        Textarea::make('content')
+                        RichEditor::make('content')
                             ->label('SEO текст')
-                            ->rows(4)
+                            ->toolbarButtons([
+                                'bold', 'italic', 'underline',
+                                'h2', 'h3', 'bulletList', 'orderedList',
+                                'link', 'blockquote',
+                                'undo', 'redo',
+                            ])
                             ->columnSpanFull(),
                     ]),
 

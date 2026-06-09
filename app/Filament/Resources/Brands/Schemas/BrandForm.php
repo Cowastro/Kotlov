@@ -4,6 +4,7 @@ namespace App\Filament\Resources\Brands\Schemas;
 
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\RichEditor;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\Toggle;
 use Filament\Schemas\Components\Section;
@@ -44,14 +45,24 @@ class BrandForm
                             ->directory('brands')
                             ->columnSpanFull(),
 
-                        Textarea::make('producer')
+                        RichEditor::make('producer')
                             ->label('О производителе')
-                            ->rows(3)
+                            ->toolbarButtons([
+                                'bold', 'italic', 'underline',
+                                'bulletList', 'orderedList',
+                                'link', 'blockquote',
+                                'undo', 'redo',
+                            ])
                             ->columnSpanFull(),
 
-                        Textarea::make('content')
+                        RichEditor::make('content')
                             ->label('SEO текст')
-                            ->rows(4)
+                            ->toolbarButtons([
+                                'bold', 'italic', 'underline',
+                                'h2', 'h3', 'bulletList', 'orderedList',
+                                'link', 'blockquote',
+                                'undo', 'redo',
+                            ])
                             ->columnSpanFull(),
                     ]),
 

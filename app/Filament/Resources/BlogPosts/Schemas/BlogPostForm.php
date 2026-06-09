@@ -49,9 +49,13 @@ class BlogPostForm
                             ->searchable()
                             ->preload(),
 
-                        Textarea::make('excerpt')
+                        RichEditor::make('excerpt')
                             ->label('Анонс')
-                            ->rows(3)
+                            ->toolbarButtons([
+                                'bold', 'italic', 'underline',
+                                'link',
+                                'undo', 'redo',
+                            ])
                             ->columnSpanFull(),
                     ]),
 
