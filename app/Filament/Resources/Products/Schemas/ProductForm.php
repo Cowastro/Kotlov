@@ -149,8 +149,14 @@ class ProductForm
                             ->toolbarButtons([
                                 'bold', 'italic', 'underline',
                                 'bulletList', 'orderedList',
-                                'h2', 'h3', 'link', 'blockquote',
-                            ]),
+                                'h2', 'h3', 'h4',
+                                'link', 'blockquote',
+                                'attachFiles',
+                                'undo', 'redo',
+                            ])
+                            ->fileAttachmentsDirectory('editor-uploads')
+                            ->fileAttachmentsDisk('public')
+                            ->fileAttachmentsVisibility('public'),
                     ]),
 
                 // ── Фотографии ────────────────────────────────────────────────

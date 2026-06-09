@@ -61,8 +61,12 @@ class BrandForm
                                 'bold', 'italic', 'underline',
                                 'h2', 'h3', 'bulletList', 'orderedList',
                                 'link', 'blockquote',
+                                'attachFiles',
                                 'undo', 'redo',
                             ])
+                            ->fileAttachmentsDirectory('editor-uploads')
+                            ->fileAttachmentsDisk('public')
+                            ->fileAttachmentsVisibility('public')
                             ->columnSpanFull(),
                     ]),
 

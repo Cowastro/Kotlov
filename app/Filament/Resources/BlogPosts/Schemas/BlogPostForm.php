@@ -67,9 +67,14 @@ class BlogPostForm
                             ->toolbarButtons([
                                 'bold', 'italic', 'underline',
                                 'bulletList', 'orderedList',
-                                'h2', 'h3', 'link',
-                                'blockquote', 'codeBlock',
-                            ]),
+                                'h2', 'h3', 'h4',
+                                'link', 'blockquote', 'codeBlock',
+                                'attachFiles',
+                                'undo', 'redo',
+                            ])
+                            ->fileAttachmentsDirectory('editor-uploads')
+                            ->fileAttachmentsDisk('public')
+                            ->fileAttachmentsVisibility('public'),
                     ]),
 
                 Section::make('Медиа')
