@@ -4,10 +4,7 @@ namespace App\Providers;
 
 use App\Models\Brand;
 use App\Models\Category;
-use App\Events\NewOrderCreated;
-use App\Listeners\HandleNewOrderCreated;
 use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
 
@@ -15,8 +12,6 @@ class AppServiceProvider extends ServiceProvider
 {
     public function boot(): void
     {
-        Event::listen(NewOrderCreated::class, HandleNewOrderCreated::class);
-
         View::share('navCategories', $this->getNavCategories());
         View::share('navBrands', $this->getNavBrands());
 
