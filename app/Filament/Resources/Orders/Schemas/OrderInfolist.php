@@ -51,7 +51,7 @@ class OrderInfolist
                 // ── Шапка: полная ширина ──────────────────────────────────────
                 Section::make()
                     ->columnSpanFull()
-                    ->columns(7)
+                    ->columns(8)
                     ->compact()
                     ->schema([
                         TextEntry::make('number')
@@ -88,6 +88,13 @@ class OrderInfolist
                             ->badge()
                             ->color($paymentStatusColor)
                             ->formatStateUsing($paymentStatusLabel),
+
+                        TextEntry::make('assigned_to')
+                            ->label('Ответственный')
+                            ->placeholder('Не назначен')
+                            ->icon('heroicon-o-user-circle')
+                            ->iconColor(fn($state) => $state ? 'success' : 'gray')
+                            ->color(fn($state) => $state ? 'success' : 'gray'),
                     ]),
 
                 // ── Клиент (1 из 3) ──────────────────────────────────────────

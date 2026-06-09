@@ -184,6 +184,12 @@ class OrdersTable
                     })
                     ->formatStateUsing(fn(?string $state) => $state ? ($statusNames[$state] ?? $statusLabelOverrides[$state] ?? $state) : '—'),
 
+                TextColumn::make('assigned_to')
+                    ->label('Ответственный')
+                    ->placeholder('—')
+                    ->icon('heroicon-o-user-circle')
+                    ->searchable(),
+
                 TextColumn::make('updated_at')
                     ->label('Обновлен')
                     ->dateTime('d.m.Y H:i')
