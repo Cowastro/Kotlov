@@ -12,7 +12,6 @@ class TelegramWebhookController extends Controller
 {
     public function handle(Request $request): \Illuminate\Http\JsonResponse
     {
-        Log::info('Telegram webhook received', $request->all());
 
         $token  = config('services.telegram.bot_token');
         $chatId = config('services.telegram.orders_chat_id');
@@ -21,7 +20,6 @@ class TelegramWebhookController extends Controller
 
         // Обрабатываем только callback_query
         if (!isset($update['callback_query'])) {
-            Log::info('Telegram webhook: not a callback_query, skipping');
             return response()->json(['ok' => true]);
         }
 
@@ -42,13 +40,6 @@ class TelegramWebhookController extends Controller
 
         $orderId = (int) str_replace('take_order:', '', $data);
         $order   = Order::find($orderId);
-
-        Log::info('Telegram take_order', [
-            'raw_data'   => $data,
-            'order_id'   => $orderId,
-            'order_found' => $order !== null,
-            'total_orders' => Order::count(),
-        ]);
 
         if (!$order) {
             Http::post("https://api.telegram.org/bot{$token}/answerCallbackQuery", [
