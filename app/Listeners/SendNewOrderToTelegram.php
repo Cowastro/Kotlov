@@ -53,22 +53,25 @@ class SendNewOrderToTelegram
         $lines = [
             "🛒 *Новый заказ {$order->number}*",
             "",
-            "👤 *Клиент:* {$order->customer_name}",
+            "👤 *Клиент:* " . $escape($order->customer_name),
             "📞 *Телефон:* {$order->customer_phone}",
             $order->customer_email ? "📧 *Email:* {$order->customer_email}" : null,
             "",
-            "📦 *Доставка:* {$delivery}",
-            $address ? "📍 *Адрес:* {$address}" : null,
-            "💳 *Оплата:* {$payment}",
+            "📦 *Доставка:* " . $escape($delivery),
+            $address ? "📍 *Адрес:* " . $escape($address) : null,
+            "💳 *Оплата:* " . $escape($payment),
             "",
             "🧾 *Товары:*",
             $items,
             "",
             "💰 *Итого: " . number_format($order->total, 2, '.', ' ') . " BYN*",
-            $order->comment ? "\n💬 *Комментарий:* {$order->comment}" : null,
+            $order->comment ? "💬 *Комментарий клиента:* " . $escape($order->comment) : null,
             "",
             "🔗 [Открыть в админке]({$viewUrl})",
         ];
+
+        // Экранируем спецсимволы Markdown v1 в пользовательских полях
+        $escape = fn(?string $s) => $s ? str_replace(['_', '*', '`', '['], ['\_', '\*', '\`', '\['], $s) : $s;
 
         $text = implode("\n", array_filter($lines, fn($l) => $l !== null));
 
