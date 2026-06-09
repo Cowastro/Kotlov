@@ -99,9 +99,16 @@ class Order extends Model
     // Генерация номера заказа
     public static function generateNumber(): string
     {
-        $year = date('Y');
-        $last = self::whereYear('created_at', $year)->count() + 1;
-        return 'ORD-' . $year . '-' . str_pad($last, 4, '0', STR_PAD_LEFT);
+        $year   = date('Y');
+        $prefix = 'ORD-' . $year . '-';
+
+        $last = self::where('number', 'like', $prefix . '%')
+            ->lockForUpdate()
+            ->max(\Illuminate\Support\Facades\DB::raw('CAST(SUBSTRING(number, ' . (strlen($prefix) + 1) . ') AS UNSIGNED)'));
+
+        $next = (int) $last + 1;
+
+        return $prefix . str_pad($next, 4, '0', STR_PAD_LEFT);
     }
 
     public function scopeByStatus($query, string $status)
