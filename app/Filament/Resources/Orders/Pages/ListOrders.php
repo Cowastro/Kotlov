@@ -39,10 +39,17 @@ class ListOrders extends ListRecords
         ];
 
         $unassigned = Order::whereNull('assigned_to')->count();
+        $myCount    = Order::where('manager_id', auth()->id())->count();
 
         $tabs = [
             'all' => Tab::make('Все')
                 ->badge(Order::count()),
+
+            'my' => Tab::make('Мои заказы')
+                ->icon('heroicon-o-user')
+                ->modifyQueryUsing(fn(Builder $query) => $query->where('manager_id', auth()->id()))
+                ->badge($myCount ?: null)
+                ->badgeColor('info'),
 
             'unassigned' => Tab::make('Без ответственного')
                 ->icon('heroicon-o-user-minus')

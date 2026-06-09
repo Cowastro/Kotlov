@@ -17,6 +17,7 @@ class ViewOrder extends ViewRecord
             'items.product.category',
             'statusHistory.user',
             'user',
+            'manager',
         ])->findOrFail($key);
     }
 

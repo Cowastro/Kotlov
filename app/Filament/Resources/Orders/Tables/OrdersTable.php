@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\Orders\Tables;
 
 use App\Models\Order;
+use App\Models\User;
 use App\Filament\Exports\OrderExporter;
 use Filament\Actions\Action;
 use Filament\Actions\ActionGroup;
@@ -72,7 +73,7 @@ class OrdersTable
         return $table
             ->modifyQueryUsing(fn(Builder $query) => $query
                 ->withSum('items', 'quantity')
-                ->with('items:id,order_id,product_name'))
+                ->with(['items:id,order_id,product_name,product_sku', 'manager:id,name']))
             ->columns([
                 TextColumn::make('number')
                     ->label('№ заказа')
@@ -185,11 +186,17 @@ class OrdersTable
                     })
                     ->formatStateUsing(fn(?string $state) => $state ? ($statusNames[$state] ?? $statusLabelOverrides[$state] ?? $state) : '—'),
 
-                TextColumn::make('assigned_to')
+                TextColumn::make('responsible')
                     ->label('Ответственный')
-                    ->placeholder('—')
                     ->icon('heroicon-o-user-circle')
-                    ->searchable(),
+                    ->placeholder('—')
+                    ->getStateUsing(fn($record) => $record->manager?->name ?? $record->assigned_to)
+                    ->description(fn($record) => $record->manager && $record->assigned_to
+                        ? $record->assigned_to  // Telegram username под именем CRM-пользователя
+                        : null)
+                    ->searchable(query: fn(Builder $query, string $search) => $query
+                        ->where('assigned_to', 'like', "%{$search}%")
+                        ->orWhereHas('manager', fn($q) => $q->where('name', 'like', "%{$search}%"))),
 
                 TextColumn::make('updated_at')
                     ->label('Обновлен')
@@ -241,6 +248,18 @@ class OrdersTable
                         false: fn(Builder $query) => $query->whereNull('assigned_to'),
                         blank: fn(Builder $query) => $query,
                     ),
+
+                SelectFilter::make('manager_id')
+                    ->label('Менеджер')
+                    ->options(fn() => User::whereIn('role', ['admin', 'manager', 'sales_manager'])
+                        ->pluck('name', 'id')
+                        ->toArray())
+                    ->placeholder('Все менеджеры'),
+
+                Filter::make('my_orders')
+                    ->label('Мои заказы')
+                    ->query(fn(Builder $query) => $query->where('manager_id', auth()->id()))
+                    ->toggle(),
 
                 Filter::make('created_at')
                     ->label('Дата создания')

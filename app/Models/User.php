@@ -24,6 +24,7 @@ class User extends Authenticatable implements FilamentUser
         'client_type',
 
         'phone',
+        'telegram_username',
         'avatar',
         'is_active',
 
@@ -108,9 +109,19 @@ class User extends Authenticatable implements FilamentUser
         return $this->isAdmin() && $this->is_active;
     }
 
+    public function isManager(): bool
+    {
+        return in_array($this->role, ['admin', 'manager', 'sales_manager']);
+    }
+
     public function orders(): HasMany
     {
         return $this->hasMany(Order::class);
+    }
+
+    public function managedOrders(): HasMany
+    {
+        return $this->hasMany(Order::class, 'manager_id');
     }
 
     public function reviews(): HasMany

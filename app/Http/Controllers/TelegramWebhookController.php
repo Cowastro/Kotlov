@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Order;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -61,9 +62,16 @@ class TelegramWebhookController extends Controller
             return response()->json(['ok' => true]);
         }
 
+        // Ищем CRM-пользователя по Telegram username (без @)
+        $telegramLogin = $from['username'] ?? null;
+        $crmUser = $telegramLogin
+            ? User::where('telegram_username', $telegramLogin)->first()
+            : null;
+
         // Назначаем ответственного, меняем статус на "В обработке" если был "Новый"
         $order->updateQuietly([
             'assigned_to' => $username,
+            'manager_id'  => $crmUser?->id,  // null если маппинг не найден — не ломаем процесс
             'status'      => $order->status === 'new' ? 'processing' : $order->status,
         ]);
 

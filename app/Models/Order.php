@@ -19,7 +19,7 @@ class Order extends Model
         'coupon_code', 'discount',
         'subtotal', 'total',
         'comment', 'admin_comment',
-        'assigned_to', 'telegram_message_id',
+        'assigned_to', 'telegram_message_id', 'manager_id',
     ];
 
     protected $casts = [
@@ -79,6 +79,15 @@ class Order extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    /**
+     * Ответственный CRM-пользователь (admin / будущий manager).
+     * assigned_to хранит Telegram @username как лог — не удалять.
+     */
+    public function manager(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'manager_id');
     }
 
     public function items(): HasMany

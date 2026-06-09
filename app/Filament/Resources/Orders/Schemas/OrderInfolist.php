@@ -89,12 +89,16 @@ class OrderInfolist
                             ->color($paymentStatusColor)
                             ->formatStateUsing($paymentStatusLabel),
 
-                        TextEntry::make('assigned_to')
+                        TextEntry::make('manager.name')
                             ->label('Ответственный')
                             ->placeholder('Не назначен')
                             ->icon('heroicon-o-user-circle')
                             ->iconColor(fn($state) => $state ? 'success' : 'gray')
-                            ->color(fn($state) => $state ? 'success' : 'gray'),
+                            ->color(fn($state) => $state ? 'success' : 'gray')
+                            ->getStateUsing(fn($record) => $record->manager?->name ?? $record->assigned_to)
+                            ->description(fn($record) => $record->manager && $record->assigned_to
+                                ? 'Telegram: ' . $record->assigned_to
+                                : null),
                     ]),
 
                 // ── Клиент (1 из 3) ──────────────────────────────────────────

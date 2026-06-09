@@ -32,6 +32,13 @@ class UserForm
                             ->label('Телефон')
                             ->tel(),
 
+                        TextInput::make('telegram_username')
+                            ->label('Telegram username')
+                            ->placeholder('username (без @)')
+                            ->prefix('@')
+                            ->helperText('Заполните для привязки кнопки "Взять заказ" в Telegram к этому аккаунту')
+                            ->unique(ignoreRecord: true),
+
                         Select::make('role')
                             ->label('Роль')
                             ->options([
