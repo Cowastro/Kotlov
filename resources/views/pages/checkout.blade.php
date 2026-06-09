@@ -65,6 +65,7 @@
                         <form action="{{ route('checkout.store') }}" method="POST"
                             class="tf-checkout-cart-main">
                             @csrf
+                            <input type="hidden" name="order_token" value="{{ \Illuminate\Support\Str::uuid() }}">
                             <x-form-protection />
 
                             {{-- 1. Контактная информация --}}

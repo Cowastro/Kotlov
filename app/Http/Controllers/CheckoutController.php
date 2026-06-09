@@ -42,6 +42,13 @@ class CheckoutController extends Controller
             return redirect()->route('cart')->with('info', 'Корзина пуста.');
         }
 
+        // Защита от двойного сабмита — один токен = один заказ
+        $token = $request->input('order_token');
+        if (!$token || session('order_token_used_' . $token)) {
+            return redirect()->route('checkout')->with('info', 'Заказ уже был отправлен. Проверьте список заказов.');
+        }
+        session(['order_token_used_' . $token => true]);
+
         $request->validate([
             'customer_name'    => ['required', 'string', 'max:255'],
             'customer_phone'   => ['required', 'string', 'max:30', 'regex:/^[\d\s\+\(\)\-]{7,}$/'],

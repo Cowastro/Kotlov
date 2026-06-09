@@ -50,6 +50,9 @@ class SendNewOrderToTelegram
 
         $viewUrl = url('/admin/orders/' . $order->id);
 
+        // Экранируем спецсимволы Markdown v1 в пользовательских полях
+        $escape = fn(?string $s) => $s ? str_replace(['_', '*', '`', '['], ['\_', '\*', '\`', '\['], $s) : '';
+
         $lines = [
             "🛒 *Новый заказ {$order->number}*",
             "",
@@ -69,9 +72,6 @@ class SendNewOrderToTelegram
             "",
             "🔗 [Открыть в админке]({$viewUrl})",
         ];
-
-        // Экранируем спецсимволы Markdown v1 в пользовательских полях
-        $escape = fn(?string $s) => $s ? str_replace(['_', '*', '`', '['], ['\_', '\*', '\`', '\['], $s) : $s;
 
         $text = implode("\n", array_filter($lines, fn($l) => $l !== null));
 
@@ -95,7 +95,7 @@ class SendNewOrderToTelegram
             if ($messageId) {
                 $order->updateQuietly(['telegram_message_id' => $messageId]);
             }
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             Log::error('Telegram notification failed: ' . $e->getMessage());
         }
     }
