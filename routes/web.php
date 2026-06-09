@@ -130,7 +130,7 @@ Route::get('/installers/{slug}', [InstallerController::class, 'show'])->name('in
 Route::get('/install-request', [InstallRequestController::class, 'create'])->name('install-requests.create');
 Route::post('/install-request', [InstallRequestController::class, 'store'])->middleware('public.form.protect:install-request')->name('install-requests.store');
 Route::view('/reviews',    'pages.reviews');
-Route::post('/products/{product}/reviews', [ReviewController::class, 'store'])->name('reviews.store');
+Route::post('/products/{product}/reviews', [ReviewController::class, 'store'])->middleware('public.form.protect:reviews')->name('reviews.store');
 Route::view('/faq',        'pages.faq');
 Route::view('/privacy',    'pages.privacy');
 // ===== Корзина =====

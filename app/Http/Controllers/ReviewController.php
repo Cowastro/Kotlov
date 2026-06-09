@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Product;
+use App\Rules\NoHtmlOrLinks;
 use Illuminate\Http\Request;
 
 class ReviewController extends Controller
@@ -10,11 +11,11 @@ class ReviewController extends Controller
     public function store(Request $request, Product $product)
     {
         $validated = $request->validate([
-            'author_name'  => ['required', 'string', 'max:100'],
-            'author_phone' => ['nullable', 'string', 'max:50'],
+            'author_name'  => ['required', 'string', 'max:100', new NoHtmlOrLinks()],
+            'author_phone' => ['nullable', 'string', 'max:50', new NoHtmlOrLinks()],
             'author_email' => ['nullable', 'email', 'max:100'],
             'rating'       => ['required', 'integer', 'min:1', 'max:5'],
-            'text'         => ['required', 'string', 'min:10', 'max:2000'],
+            'text'         => ['required', 'string', 'min:10', 'max:2000', new NoHtmlOrLinks()],
         ], [
             'author_name.required' => 'Укажите ваше имя',
             'author_name.max'      => 'Имя слишком длинное',

@@ -591,6 +591,7 @@
                             @endif
                             <form class="form-rating" method="POST" action="{{ route('reviews.store', $product) }}">
                                 @csrf
+                                <x-form-protection />
                                 <input type="hidden" name="rating" id="rating-value" value="{{ old('rating', 5) }}">
                                 <div class="form-content mb-24">
                                     <div class="tf-grid-layout md-col-2">
