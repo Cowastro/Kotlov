@@ -223,7 +223,7 @@ Route::get('/forgot-password', function () {
 })->name('password.request');
 
 // ===== Auth действия (POST) =====
-Route::post('/register',        [AuthController::class, 'register'])->name('register');
+Route::post('/register',        [AuthController::class, 'register'])->name('register')->middleware('throttle:5,10');
 Route::post('/login',           [AuthController::class, 'login'])->name('login.submit');
 Route::post('/logout',          [AuthController::class, 'logout'])->name('logout');
 Route::post('/forgot-password', [AuthController::class, 'forgotPassword'])->name('password.email');

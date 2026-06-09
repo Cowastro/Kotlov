@@ -104,6 +104,7 @@
                             <form action="/register" method="POST" class="form-log">
                                 @csrf
                                 <input type="hidden" name="_form" value="register">
+                                <input type="text" name="website" value="" style="display:none" tabindex="-1" autocomplete="off">
 
                                 <div class="form-content">
                                     <fieldset class="tf-field">

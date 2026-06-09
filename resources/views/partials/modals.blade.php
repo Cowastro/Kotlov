@@ -587,6 +587,7 @@
             <div class="modal-main">
                 <form action="/register" method="POST" class="form-log">
                     @csrf
+                    <input type="text" name="website" value="" style="display:none" tabindex="-1" autocomplete="off">
                     <div class="form-content">
                         <fieldset class="tf-field">
                             <label for="reg-name" class="tf-lable fw-medium">Ваше имя <span class="text-primary">*</span></label>
