@@ -19,6 +19,7 @@ class Order extends Model
         'coupon_code', 'discount',
         'subtotal', 'total',
         'comment', 'admin_comment',
+        'assigned_to', 'telegram_message_id',
     ];
 
     protected $casts = [

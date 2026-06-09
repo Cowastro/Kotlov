@@ -10,6 +10,7 @@ use App\Http\Controllers\CartController;
 use App\Http\Controllers\CatalogController;
 use App\Http\Controllers\CatalogIndexController;
 use App\Http\Controllers\CheckoutController;
+use App\Http\Controllers\TelegramWebhookController;
 use App\Http\Controllers\CompareController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\AccountController;
@@ -195,6 +196,10 @@ Route::get('/catalog', [CatalogIndexController::class, 'index'])->name('catalog'
 // ===== Бренды =====
 Route::get('/brands',        [BrandController::class, 'index'])->name('brands');
 Route::get('/brands/{slug}', [BrandController::class, 'show'])->name('brand.show');
+
+// ===== Telegram Webhook =====
+Route::post('/telegram/webhook', [TelegramWebhookController::class, 'handle'])
+    ->withoutMiddleware([\Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class]);
 
 // sitemap.xml — вынесен в routes/sitemap.php без session middleware
 

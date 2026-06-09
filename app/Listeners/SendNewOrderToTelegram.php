@@ -50,7 +50,7 @@ class SendNewOrderToTelegram
 
         $viewUrl = url('/admin/orders/' . $order->id);
 
-        $text = implode("\n", [
+        $lines = [
             "🛒 *Новый заказ {$order->number}*",
             "",
             "👤 *Клиент:* {$order->customer_name}",
@@ -67,17 +67,30 @@ class SendNewOrderToTelegram
             "💰 *Итого: " . number_format($order->total, 2, '.', ' ') . " BYN*",
             "",
             "🔗 [Открыть в админке]({$viewUrl})",
-        ]);
+        ];
 
-        // убираем null-строки
-        $text = implode("\n", array_filter(explode("\n", $text), fn($l) => $l !== null));
+        $text = implode("\n", array_filter($lines, fn($l) => $l !== null));
 
         try {
-            Http::post("https://api.telegram.org/bot{$token}/sendMessage", [
-                'chat_id'    => $chatId,
-                'text'       => $text,
-                'parse_mode' => 'Markdown',
+            $response = Http::post("https://api.telegram.org/bot{$token}/sendMessage", [
+                'chat_id'      => $chatId,
+                'text'         => $text,
+                'parse_mode'   => 'Markdown',
+                'reply_markup' => json_encode([
+                    'inline_keyboard' => [[
+                        [
+                            'text'          => '✋ Взять заказ',
+                            'callback_data' => 'take_order:' . $order->id,
+                        ],
+                    ]],
+                ]),
             ]);
+
+            $messageId = $response->json('result.message_id');
+
+            if ($messageId) {
+                $order->updateQuietly(['telegram_message_id' => $messageId]);
+            }
         } catch (\Exception $e) {
             Log::error('Telegram notification failed: ' . $e->getMessage());
         }
