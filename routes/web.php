@@ -146,7 +146,7 @@ Route::post('/cart/coupon',   [CartController::class, 'saveCoupon'])->name('cart
 
 // ===== Checkout =====
 Route::get('/checkout',                      [CheckoutController::class, 'index'])->name('checkout');
-Route::post('/checkout',                     [CheckoutController::class, 'store'])->name('checkout.store');
+Route::post('/checkout',                     [CheckoutController::class, 'store'])->name('checkout.store')->middleware('public.form.protect:checkout');
 Route::get('/checkout/success/{number}',     [CheckoutController::class, 'success'])->name('checkout.success');
 
 // ===== Блог =====

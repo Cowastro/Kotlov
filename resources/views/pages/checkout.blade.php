@@ -65,6 +65,7 @@
                         <form action="{{ route('checkout.store') }}" method="POST"
                             class="tf-checkout-cart-main">
                             @csrf
+                            <x-form-protection />
 
                             {{-- 1. Контактная информация --}}
                             <div class="box-ip-checkout estimate-shipping">

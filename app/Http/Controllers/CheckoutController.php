@@ -43,7 +43,7 @@ class CheckoutController extends Controller
 
         $request->validate([
             'customer_name'    => ['required', 'string', 'max:255'],
-            'customer_phone'   => ['required', 'string', 'max:30'],
+            'customer_phone'   => ['required', 'string', 'max:30', 'regex:/^[\d\s\+\(\)\-]{7,}$/'],
             'customer_email'   => ['nullable', 'email', 'max:255'],
             'delivery_type'    => ['required', 'in:' . implode(',', array_keys(config('shop.delivery_methods', [])))],
             'delivery_region'  => ['nullable', 'string', 'max:255'],
@@ -59,6 +59,7 @@ class CheckoutController extends Controller
         ], [
             'customer_name.required'         => 'Введите имя.',
             'customer_phone.required'        => 'Введите телефон.',
+            'customer_phone.regex'           => 'Введите корректный номер телефона.',
             'delivery_type.required'         => 'Выберите способ доставки.',
             'payment_type.required'          => 'Выберите способ оплаты.',
             'company_name.required_if'       => 'Введите название организации для оплаты по счёту.',

@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Orders\Schemas;
 
+use App\Models\Order;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Textarea;
@@ -12,30 +13,53 @@ class OrderForm
 {
     public static function configure(Schema $schema): Schema
     {
-        $deliveryOptions = collect(config('shop.delivery_methods', []))
-            ->mapWithKeys(fn($m, $k) => [$k => $m['name']])
-            ->toArray();
-
-        $paymentOptions = collect(config('shop.payment_methods', []))
-            ->mapWithKeys(fn($m, $k) => [$k => $m['name']])
-            ->toArray();
-
         return $schema
             ->components([
+
+                // ── 1. Быстрое управление ──────────────────────────────────────
+                Section::make('Быстрое управление')
+                    ->description('Основные поля для управления заказом')
+                    ->columns(2)
+                    ->schema([
+                        Select::make('status')
+                            ->label('Статус заказа')
+                            ->options(Order::STATUSES)
+                            ->required()
+                            ->native(false),
+
+                        Select::make('payment_status')
+                            ->label('Статус оплаты')
+                            ->options([
+                                'pending'  => 'Ожидает оплаты',
+                                'paid'     => 'Оплачен',
+                                'failed'   => 'Ошибка оплаты',
+                                'refunded' => 'Возврат',
+                            ])
+                            ->required()
+                            ->native(false),
+
+                        Select::make('payment_type')
+                            ->label('Способ оплаты')
+                            ->options(Order::PAYMENT_TYPES)
+                            ->required()
+                            ->native(false),
+
+                        Select::make('delivery_type')
+                            ->label('Тип доставки')
+                            ->options(Order::DELIVERY_TYPES)
+                            ->required()
+                            ->native(false),
+
+                        Textarea::make('admin_comment')
+                            ->label('Комментарий менеджера')
+                            ->rows(3)
+                            ->columnSpanFull(),
+                    ]),
+
+                // ── 2. Клиент ─────────────────────────────────────────────────
                 Section::make('Клиент')
                     ->columns(2)
                     ->schema([
-                        Select::make('user_id')
-                            ->label('Пользователь')
-                            ->relationship('user', 'name')
-                            ->searchable()
-                            ->placeholder('— Гость —'),
-
-                        TextInput::make('number')
-                            ->label('Номер заказа')
-                            ->required()
-                            ->default(fn() => \App\Models\Order::generateNumber()),
-
                         TextInput::make('customer_name')
                             ->label('Имя клиента')
                             ->required(),
@@ -47,74 +71,70 @@ class OrderForm
 
                         TextInput::make('customer_email')
                             ->label('Email')
-                            ->email(),
+                            ->email()
+                            ->columnSpanFull(),
                     ]),
 
-                Section::make('Статус')
+                // ── 3. Юридическое лицо ───────────────────────────────────────
+                Section::make('Юридическое лицо')
+                    ->collapsed()
                     ->columns(2)
                     ->schema([
-                        Select::make('status')
-                            ->label('Статус заказа')
-                            ->options(\App\Models\Order::STATUSES)
-                            ->default('new')
-                            ->required(),
+                        TextInput::make('company_name')
+                            ->label('Название организации'),
 
-                        Select::make('payment_status')
-                            ->label('Статус оплаты')
-                            ->options([
-                                'pending' => 'Ожидает оплаты',
-                                'paid'    => 'Оплачен',
-                            ])
-                            ->default('pending')
-                            ->required(),
+                        TextInput::make('company_unp')
+                            ->label('УНП / ИНН'),
+
+                        TextInput::make('company_address')
+                            ->label('Адрес компании')
+                            ->columnSpanFull(),
+
+                        TextInput::make('company_email')
+                            ->label('Email компании')
+                            ->email()
+                            ->columnSpanFull(),
                     ]),
 
+                // ── 4. Доставка ───────────────────────────────────────────────
                 Section::make('Доставка')
                     ->columns(2)
                     ->schema([
-                        Select::make('delivery_type')
-                            ->label('Тип доставки')
-                            ->options($deliveryOptions)
-                            ->default('courier')
-                            ->required(),
-
-                        TextInput::make('delivery_price')
-                            ->label('Стоимость доставки')
-                            ->numeric()
-                            ->prefix('BYN')
-                            ->default(0),
-
                         TextInput::make('delivery_region')
-                            ->label('Регион'),
+                            ->label('Область / регион'),
 
                         TextInput::make('delivery_city')
                             ->label('Город'),
 
                         TextInput::make('delivery_address')
-                            ->label('Адрес')
+                            ->label('Адрес доставки')
                             ->columnSpanFull(),
+
+                        TextInput::make('delivery_price')
+                            ->label('Стоимость доставки')
+                            ->numeric()
+                            ->prefix('BYN')
+                            ->helperText(
+                                fn ($get) => $get('delivery_type') === 'kit'
+                                    ? 'Для ТК КИТ цена 0 означает "Стоимость уточняется", а не бесплатную доставку.'
+                                    : null
+                            )
+                            ->default(0),
                     ]),
 
-                Section::make('Оплата и скидки')
+                // ── 5. Суммы ──────────────────────────────────────────────────
+                Section::make('Суммы')
+                    ->description('Изменение сумм влияет только на заказ в админке и не пересчитывает товары автоматически.')
                     ->columns(2)
                     ->schema([
-                        Select::make('payment_type')
-                            ->label('Способ оплаты')
-                            ->options($paymentOptions)
-                            ->default('cash')
-                            ->required(),
-
-                        TextInput::make('coupon_code')
-                            ->label('Промокод'),
-
-                        TextInput::make('discount')
-                            ->label('Скидка')
+                        TextInput::make('subtotal')
+                            ->label('Сумма товаров')
                             ->numeric()
                             ->prefix('BYN')
                             ->default(0),
 
-                        TextInput::make('subtotal')
-                            ->label('Сумма товаров')
+                        TextInput::make('discount')
+                            ->label('Скидка')
                             ->numeric()
                             ->prefix('BYN')
                             ->default(0),
@@ -126,16 +146,36 @@ class OrderForm
                             ->default(0),
                     ]),
 
-                Section::make('Комментарии')
+                // ── 6. Комментарии ────────────────────────────────────────────
+                Section::make('Комментарий клиента')
                     ->schema([
                         Textarea::make('comment')
                             ->label('Комментарий клиента')
-                            ->rows(3),
-
-                        Textarea::make('admin_comment')
-                            ->label('Комментарий менеджера')
-                            ->rows(3),
+                            ->rows(3)
+                            ->disabled()
+                            ->dehydrated(false),
                     ]),
+
+                // ── 7. Техническая информация ─────────────────────────────────
+                Section::make('Техническая информация')
+                    ->collapsed()
+                    ->columns(2)
+                    ->schema([
+                        TextInput::make('number')
+                            ->label('Номер заказа')
+                            ->required()
+                            ->default(fn () => Order::generateNumber()),
+
+                        Select::make('user_id')
+                            ->label('Аккаунт пользователя')
+                            ->relationship('user', 'name')
+                            ->searchable()
+                            ->placeholder('— Гость —'),
+
+                        TextInput::make('coupon_code')
+                            ->label('Промокод'),
+                    ]),
+
             ]);
     }
 }
