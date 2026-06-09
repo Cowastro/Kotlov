@@ -2,9 +2,9 @@
 
 namespace App\Filament\Resources\Orders\Schemas;
 
+use App\Models\Order;
 use Filament\Infolists\Components\RepeatableEntry;
 use Filament\Infolists\Components\TextEntry;
-use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 
@@ -17,179 +17,280 @@ class OrderInfolist
 
         $byn = fn($state) => number_format((float) $state, 2, '.', ' ') . ' BYN';
 
-        return $schema->components([
+        $statusColor = fn(?string $state) => match($state) {
+            'new'        => 'info',
+            'confirmed'  => 'warning',
+            'processing' => 'warning',
+            'shipped'    => 'primary',
+            'delivered'  => 'success',
+            'completed'  => 'success',
+            'cancelled'  => 'danger',
+            default      => 'gray',
+        };
 
-            Section::make('Основная информация')
-                ->icon('heroicon-o-document-text')
-                ->columns(4)
-                ->schema([
-                    TextEntry::make('number')
-                        ->label('Номер заказа')
-                        ->copyable(),
+        $paymentStatusColor = fn(?string $state) => match($state) {
+            'paid'     => 'success',
+            'pending'  => 'warning',
+            'failed'   => 'danger',
+            'refunded' => 'info',
+            default    => 'gray',
+        };
 
-                    TextEntry::make('status')
-                        ->label('Статус')
-                        ->badge()
-                        ->color(fn(string $state) => match($state) {
-                            'new'        => 'info',
-                            'confirmed'  => 'warning',
-                            'processing' => 'warning',
-                            'shipped'    => 'primary',
-                            'delivered'  => 'success',
-                            'cancelled'  => 'danger',
-                            default      => 'gray',
-                        })
-                        ->formatStateUsing(fn(string $state) => \App\Models\Order::STATUSES[$state] ?? $state),
+        $paymentStatusLabel = fn(?string $state) => match($state) {
+            'paid'     => 'Оплачен',
+            'pending'  => 'Ожидает оплаты',
+            'failed'   => 'Ошибка оплаты',
+            'refunded' => 'Возврат',
+            default    => $state,
+        };
 
-                    TextEntry::make('created_at')
-                        ->label('Дата заказа')
-                        ->dateTime('d.m.Y H:i'),
+        return $schema
+            ->columns(3)
+            ->components([
 
-                    TextEntry::make('user.name')
-                        ->label('Аккаунт')
-                        ->placeholder('Гость'),
-                ]),
+                // ── Шапка: полная ширина ──────────────────────────────────────
+                Section::make()
+                    ->columnSpanFull()
+                    ->columns(7)
+                    ->compact()
+                    ->schema([
+                        TextEntry::make('number')
+                            ->label('Номер заказа')
+                            ->copyable()
+                            ->weight('bold'),
 
-            Section::make('Клиент')
-                ->icon('heroicon-o-user')
-                ->columns(3)
-                ->schema([
-                    TextEntry::make('customer_name')
-                        ->label('Имя'),
+                        TextEntry::make('status')
+                            ->label('Статус')
+                            ->badge()
+                            ->color($statusColor)
+                            ->formatStateUsing(fn(string $state) => Order::STATUSES[$state] ?? $state),
 
-                    TextEntry::make('customer_phone')
-                        ->label('Телефон')
-                        ->copyable(),
+                        TextEntry::make('created_at')
+                            ->label('Создан')
+                            ->dateTime('d.m.Y H:i'),
 
-                    TextEntry::make('customer_email')
-                        ->label('Email')
-                        ->copyable()
-                        ->placeholder('—'),
-                ]),
+                        TextEntry::make('updated_at')
+                            ->label('Обновлён')
+                            ->dateTime('d.m.Y H:i'),
 
-            Section::make('Доставка')
-                ->icon('heroicon-o-truck')
-                ->columns(3)
-                ->schema([
-                    TextEntry::make('delivery_type')
-                        ->label('Способ доставки')
-                        ->formatStateUsing(fn(string $state) => $deliveryNames[$state] ?? $state),
+                        TextEntry::make('items_count')
+                            ->label('Позиций')
+                            ->getStateUsing(fn($record) => $record->items->count() . ' шт.'),
 
-                    TextEntry::make('delivery_price')
-                        ->label('Стоимость доставки')
-                        ->formatStateUsing(fn($state) => (float) $state === 0.0 ? 'Бесплатно' : $byn($state)),
+                        TextEntry::make('total')
+                            ->label('Итого')
+                            ->weight('bold')
+                            ->color('primary')
+                            ->formatStateUsing($byn),
 
-                    TextEntry::make('delivery_region')
-                        ->label('Регион')
-                        ->placeholder('—'),
+                        TextEntry::make('payment_status')
+                            ->label('Статус оплаты')
+                            ->badge()
+                            ->color($paymentStatusColor)
+                            ->formatStateUsing($paymentStatusLabel),
+                    ]),
 
-                    TextEntry::make('delivery_city')
-                        ->label('Город')
-                        ->placeholder('—'),
+                // ── Клиент (1 из 3) ──────────────────────────────────────────
+                Section::make('Клиент')
+                    ->icon('heroicon-o-user')
+                    ->compact()
+                    ->columns(2)
+                    ->schema([
+                        TextEntry::make('customer_name')
+                            ->label('Имя'),
 
-                    TextEntry::make('delivery_address')
-                        ->label('Адрес')
-                        ->placeholder('—')
-                        ->columnSpan(2),
-                ]),
+                        TextEntry::make('customer_phone')
+                            ->label('Телефон')
+                            ->copyable()
+                            ->url(fn($state) => $state ? 'tel:' . preg_replace('/\s+/', '', $state) : null),
 
-            Section::make('Оплата')
-                ->icon('heroicon-o-credit-card')
-                ->columns(4)
-                ->schema([
-                    TextEntry::make('payment_type')
-                        ->label('Способ оплаты')
-                        ->formatStateUsing(fn(string $state) => $paymentNames[$state] ?? $state),
+                        TextEntry::make('customer_email')
+                            ->label('Email')
+                            ->copyable()
+                            ->placeholder('—')
+                            ->url(fn($state) => $state ? 'mailto:' . $state : null),
 
-                    TextEntry::make('payment_status')
-                        ->label('Статус оплаты')
-                        ->badge()
-                        ->color(fn(string $state) => match($state) {
-                            'paid'    => 'success',
-                            'pending' => 'warning',
-                            default   => 'gray',
-                        })
-                        ->formatStateUsing(fn(string $state) => match($state) {
-                            'paid'    => 'Оплачен',
-                            'pending' => 'Ожидает оплаты',
-                            default   => $state,
-                        }),
+                        TextEntry::make('user.name')
+                            ->label('Аккаунт')
+                            ->placeholder('Гость'),
 
-                    TextEntry::make('coupon_code')
-                        ->label('Промокод')
-                        ->placeholder('—'),
+                        TextEntry::make('company_name')
+                            ->label('Организация')
+                            ->placeholder('—')
+                            ->visible(fn($record) => (bool) $record->company_name),
 
-                    TextEntry::make('discount')
-                        ->label('Скидка')
-                        ->formatStateUsing(fn($state) => (float) $state > 0 ? $byn($state) : '—'),
-                ]),
+                        TextEntry::make('company_unp')
+                            ->label('УНП')
+                            ->placeholder('—')
+                            ->visible(fn($record) => (bool) $record->company_unp),
+                    ]),
 
-            Section::make('Суммы')
-                ->icon('heroicon-o-calculator')
-                ->columns(4)
-                ->schema([
-                    TextEntry::make('subtotal')
-                        ->label('Сумма товаров')
-                        ->formatStateUsing($byn),
+                // ── Доставка (2 из 3) ─────────────────────────────────────────
+                Section::make('Доставка')
+                    ->icon('heroicon-o-truck')
+                    ->compact()
+                    ->columns(2)
+                    ->schema([
+                        TextEntry::make('delivery_type')
+                            ->label('Способ')
+                            ->formatStateUsing(fn(string $state) => Order::DELIVERY_TYPES[$state] ?? $deliveryNames[$state] ?? $state),
 
-                    TextEntry::make('delivery_price')
-                        ->label('Доставка')
-                        ->formatStateUsing(fn($state) => (float) $state === 0.0 ? 'Бесплатно' : $byn($state)),
+                        TextEntry::make('delivery_price')
+                            ->label('Стоимость')
+                            ->formatStateUsing(function($state, $record) use ($byn) {
+                                if ($record->delivery_type === 'kit' && (float)$state === 0.0) {
+                                    return 'Уточняется';
+                                }
+                                return (float)$state === 0.0 ? 'Бесплатно' : $byn($state);
+                            }),
 
-                    TextEntry::make('discount')
-                        ->label('Скидка')
-                        ->formatStateUsing(fn($state) => (float) $state > 0 ? $byn($state) : '—'),
+                        TextEntry::make('delivery_region')
+                            ->label('Область')
+                            ->placeholder('—'),
 
-                    TextEntry::make('total')
-                        ->label('Итого')
-                        ->weight('bold')
-                        ->color('primary')
-                        ->formatStateUsing($byn),
-                ]),
+                        TextEntry::make('delivery_city')
+                            ->label('Город')
+                            ->placeholder('—'),
 
-            Section::make('Товары заказа')
-                ->icon('heroicon-o-shopping-bag')
-                ->schema([
-                    RepeatableEntry::make('items')
-                        ->label('')
-                        ->columns(5)
-                        ->schema([
-                            TextEntry::make('product_name')
-                                ->label('Товар')
-                                ->columnSpan(2),
+                        TextEntry::make('delivery_address')
+                            ->label('Адрес')
+                            ->placeholder('—')
+                            ->url(fn($state, $record) => $state
+                                ? 'https://maps.google.com/?q=' . urlencode(implode(', ', array_filter([
+                                    $record->delivery_city,
+                                    $record->delivery_address,
+                                ])))
+                                : null)
+                            ->openUrlInNewTab(),
+                    ]),
 
-                            TextEntry::make('product_sku')
-                                ->label('Артикул')
-                                ->placeholder('—'),
+                // ── Оплата (3 из 3) ──────────────────────────────────────────
+                Section::make('Оплата')
+                    ->icon('heroicon-o-credit-card')
+                    ->compact()
+                    ->columns(2)
+                    ->schema([
+                        TextEntry::make('payment_type')
+                            ->label('Способ')
+                            ->formatStateUsing(fn(string $state) => Order::PAYMENT_TYPES[$state] ?? $paymentNames[$state] ?? $state),
 
-                            TextEntry::make('quantity')
-                                ->label('Кол-во')
-                                ->suffix(' шт.'),
+                        TextEntry::make('payment_status')
+                            ->label('Статус')
+                            ->badge()
+                            ->color($paymentStatusColor)
+                            ->formatStateUsing($paymentStatusLabel),
 
-                            TextEntry::make('price')
-                                ->label('Цена')
-                                ->formatStateUsing($byn),
+                        TextEntry::make('coupon_code')
+                            ->label('Промокод')
+                            ->placeholder('—'),
 
-                            TextEntry::make('total')
-                                ->label('Сумма')
-                                ->weight('bold')
-                                ->formatStateUsing($byn),
-                        ]),
-                ]),
+                        TextEntry::make('discount')
+                            ->label('Скидка')
+                            ->formatStateUsing(fn($state) => (float) $state > 0 ? $byn($state) : '—'),
 
-            Section::make('Комментарии')
-                ->icon('heroicon-o-chat-bubble-left-right')
-                ->columns(2)
-                ->schema([
-                    TextEntry::make('comment')
-                        ->label('Комментарий клиента')
-                        ->placeholder('—'),
+                        TextEntry::make('subtotal')
+                            ->label('Товары')
+                            ->formatStateUsing($byn),
 
-                    TextEntry::make('admin_comment')
-                        ->label('Комментарий менеджера')
-                        ->placeholder('—'),
-                ]),
+                        TextEntry::make('total')
+                            ->label('Итого')
+                            ->weight('bold')
+                            ->color('primary')
+                            ->formatStateUsing($byn),
+                    ]),
 
-        ]);
+                // ── Товары заказа: полная ширина ──────────────────────────────
+                Section::make('Товары заказа')
+                    ->icon('heroicon-o-shopping-bag')
+                    ->columnSpanFull()
+                    ->compact()
+                    ->schema([
+                        RepeatableEntry::make('items')
+                            ->hiddenLabel()
+                            ->columns(6)
+                            ->schema([
+                                TextEntry::make('product_name')
+                                    ->label('Товар')
+                                    ->columnSpan(2)
+                                    ->url(fn($state, $record) => $record->product?->category
+                                        ? url('/' . $record->product->category->slug . '/' . $record->product->slug)
+                                        : null)
+                                    ->openUrlInNewTab(),
+
+                                TextEntry::make('product_sku')
+                                    ->label('Артикул')
+                                    ->placeholder('—')
+                                    ->fontFamily('mono')
+                                    ->copyable(),
+
+                                TextEntry::make('quantity')
+                                    ->label('Кол-во')
+                                    ->suffix(' шт.'),
+
+                                TextEntry::make('price')
+                                    ->label('Цена')
+                                    ->formatStateUsing($byn),
+
+                                TextEntry::make('total')
+                                    ->label('Сумма')
+                                    ->weight('bold')
+                                    ->color('primary')
+                                    ->formatStateUsing($byn),
+                            ]),
+                    ]),
+
+                // ── Комментарии: полная ширина ────────────────────────────────
+                Section::make('Комментарии')
+                    ->icon('heroicon-o-chat-bubble-left-right')
+                    ->columnSpanFull()
+                    ->columns(2)
+                    ->compact()
+                    ->schema([
+                        TextEntry::make('comment')
+                            ->label('Комментарий клиента')
+                            ->placeholder('Комментарий отсутствует'),
+
+                        TextEntry::make('admin_comment')
+                            ->label('Комментарий менеджера')
+                            ->placeholder('Комментарий отсутствует'),
+                    ]),
+
+                // ── История: полная ширина ────────────────────────────────────
+                Section::make('История изменений статуса')
+                    ->icon('heroicon-o-clock')
+                    ->columnSpanFull()
+                    ->schema([
+                        RepeatableEntry::make('statusHistory')
+                            ->hiddenLabel()
+                            ->columns(5)
+                            ->contained(false)
+                            ->schema([
+                                TextEntry::make('created_at')
+                                    ->label('Дата')
+                                    ->dateTime('d.m.Y H:i'),
+
+                                TextEntry::make('user.name')
+                                    ->label('Кто изменил')
+                                    ->placeholder('Система'),
+
+                                TextEntry::make('status_from')
+                                    ->label('Было')
+                                    ->badge()
+                                    ->color($statusColor)
+                                    ->formatStateUsing(fn(?string $state) => $state ? (Order::STATUSES[$state] ?? $state) : '—'),
+
+                                TextEntry::make('status_to')
+                                    ->label('Стало')
+                                    ->badge()
+                                    ->color($statusColor)
+                                    ->formatStateUsing(fn(?string $state) => $state ? (Order::STATUSES[$state] ?? $state) : '—'),
+
+                                TextEntry::make('comment')
+                                    ->label('Комментарий')
+                                    ->placeholder('—'),
+                            ]),
+                    ]),
+
+            ]);
     }
 }

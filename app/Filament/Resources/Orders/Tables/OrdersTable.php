@@ -4,6 +4,7 @@ namespace App\Filament\Resources\Orders\Tables;
 
 use App\Models\Order;
 use Filament\Actions\Action;
+use Filament\Actions\ActionGroup;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
@@ -112,13 +113,15 @@ class OrdersTable
                     ->label('Доставка')
                     ->badge()
                     ->color('gray')
-                    ->formatStateUsing(fn(?string $state) => $state ? ($deliveryNames[$state] ?? $state) : '—'),
+                    ->formatStateUsing(fn(?string $state) => $state ? ($deliveryNames[$state] ?? $state) : '—')
+                    ->toggleable(isToggledHiddenByDefault: true),
 
                 TextColumn::make('payment_type')
                     ->label('Оплата')
                     ->badge()
                     ->color('gray')
-                    ->formatStateUsing(fn(?string $state) => $state ? ($paymentNames[$state] ?? $state) : '—'),
+                    ->formatStateUsing(fn(?string $state) => $state ? ($paymentNames[$state] ?? $state) : '—')
+                    ->toggleable(isToggledHiddenByDefault: true),
 
                 TextColumn::make('payment_status')
                     ->label('Статус оплаты')
@@ -130,6 +133,13 @@ class OrdersTable
                         'refunded' => 'info',
                         default    => 'gray',
                     })
+                    ->icon(fn(?string $state) => match($state) {
+                        'paid'     => 'heroicon-o-check-circle',
+                        'pending'  => 'heroicon-o-clock',
+                        'failed'   => 'heroicon-o-x-circle',
+                        'refunded' => 'heroicon-o-arrow-uturn-left',
+                        default    => null,
+                    })
                     ->formatStateUsing(fn(?string $state) => $state ? ($paymentStatuses[$state] ?? $state) : '—'),
 
                 TextColumn::make('total')
@@ -140,7 +150,8 @@ class OrdersTable
                 TextColumn::make('items_sum_quantity')
                     ->label('Товаров')
                     ->state(fn($record) => (int) ($record->items_sum_quantity ?? 0))
-                    ->sortable(),
+                    ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: true),
 
                 TextColumn::make('status')
                     ->label('Статус')
@@ -156,6 +167,18 @@ class OrdersTable
                         'completed'       => 'success',
                         'cancelled'       => 'danger',
                         default           => 'gray',
+                    })
+                    ->icon(fn(?string $state) => match($state) {
+                        'new'             => 'heroicon-o-sparkles',
+                        'confirmed'       => 'heroicon-o-check',
+                        'processing'      => 'heroicon-o-arrow-path',
+                        'waiting_payment' => 'heroicon-o-clock',
+                        'paid'            => 'heroicon-o-banknotes',
+                        'shipped'         => 'heroicon-o-truck',
+                        'delivered'       => 'heroicon-o-check-circle',
+                        'completed'       => 'heroicon-o-star',
+                        'cancelled'       => 'heroicon-o-x-circle',
+                        default           => null,
                     })
                     ->formatStateUsing(fn(?string $state) => $state ? ($statusNames[$state] ?? $statusLabelOverrides[$state] ?? $state) : '—'),
 
@@ -209,31 +232,33 @@ class OrdersTable
             ])
             ->recordActions([
                 ViewAction::make(),
-                Action::make('confirmed')
-                    ->label('Подтвердить')
-                    ->icon('heroicon-o-check')
-                    ->color('warning')
-                    ->visible(fn ($record) => $record->status === 'new')
-                    ->action(fn ($record) => $record->update(['status' => 'confirmed'])),
-                Action::make('processing')
-                    ->label('В обработке')
-                    ->icon('heroicon-o-arrow-path')
-                    ->color('primary')
-                    ->visible(fn ($record) => in_array($record->status, ['new', 'confirmed']))
-                    ->action(fn ($record) => $record->update(['status' => 'processing'])),
-                Action::make('shipped')
-                    ->label('Отправлен')
-                    ->icon('heroicon-o-truck')
-                    ->color('primary')
-                    ->visible(fn ($record) => in_array($record->status, ['new', 'confirmed', 'processing']))
-                    ->action(fn ($record) => $record->update(['status' => 'shipped'])),
-                Action::make('delivered')
-                    ->label('Доставлен')
-                    ->icon('heroicon-o-check-circle')
-                    ->color('success')
-                    ->visible(fn ($record) => in_array($record->status, ['new', 'confirmed', 'processing', 'shipped']))
-                    ->action(fn ($record) => $record->update(['status' => 'delivered'])),
-                EditAction::make(),
+                ActionGroup::make([
+                    Action::make('confirmed')
+                        ->label('Подтвердить')
+                        ->icon('heroicon-o-check')
+                        ->color('warning')
+                        ->visible(fn ($record) => $record->status === 'new')
+                        ->action(fn ($record) => $record->update(['status' => 'confirmed'])),
+                    Action::make('processing')
+                        ->label('В обработке')
+                        ->icon('heroicon-o-arrow-path')
+                        ->color('primary')
+                        ->visible(fn ($record) => in_array($record->status, ['new', 'confirmed']))
+                        ->action(fn ($record) => $record->update(['status' => 'processing'])),
+                    Action::make('shipped')
+                        ->label('Отправлен')
+                        ->icon('heroicon-o-truck')
+                        ->color('primary')
+                        ->visible(fn ($record) => in_array($record->status, ['new', 'confirmed', 'processing']))
+                        ->action(fn ($record) => $record->update(['status' => 'shipped'])),
+                    Action::make('delivered')
+                        ->label('Доставлен')
+                        ->icon('heroicon-o-check-circle')
+                        ->color('success')
+                        ->visible(fn ($record) => in_array($record->status, ['new', 'confirmed', 'processing', 'shipped']))
+                        ->action(fn ($record) => $record->update(['status' => 'delivered'])),
+                    EditAction::make(),
+                ]),
             ])
             ->toolbarActions([
                 BulkActionGroup::make([
