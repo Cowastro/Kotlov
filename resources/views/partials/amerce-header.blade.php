@@ -48,7 +48,7 @@
                 </div>
 
                <div class="header-left">
-    <div class="box-open-header-bottom m-0">
+    <div class="box-open-header-bottom m-0 d-none d-xl-flex">
         <div class="btn-open-header-bottom cs-pointer">
             <i class="icon icon-List fs-24"></i>
         </div>
