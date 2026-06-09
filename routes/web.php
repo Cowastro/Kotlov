@@ -68,7 +68,7 @@ Route::get('/', function () {
     $kotlyCatId = Category::where('slug', 'kotly')->value('id');
     $kotlyIds = $kotlyCatId ? $categoryBranchIds($kotlyCatId) : collect();
 
-    $nasosCatId = Category::where('slug', 'teplovye-nasosy')->value('id');
+    $nasosCatId = Category::where('slug', 'teplovyie-nasosyi')->value('id');
     $nasosIds = $nasosCatId ? $categoryBranchIds($nasosCatId) : collect();
 
     $kaminCatId = Category::where('slug', 'kaminy')->value('id');
