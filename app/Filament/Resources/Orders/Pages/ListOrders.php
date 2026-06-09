@@ -38,9 +38,17 @@ class ListOrders extends ListRecords
             'cancelled'  => 'danger',
         ];
 
+        $unassigned = Order::whereNull('assigned_to')->count();
+
         $tabs = [
             'all' => Tab::make('Все')
                 ->badge(Order::count()),
+
+            'unassigned' => Tab::make('Без ответственного')
+                ->icon('heroicon-o-user-minus')
+                ->modifyQueryUsing(fn(Builder $query) => $query->whereNull('assigned_to'))
+                ->badge($unassigned ?: null)
+                ->badgeColor('danger'),
         ];
 
         foreach (Order::STATUSES as $key => $label) {

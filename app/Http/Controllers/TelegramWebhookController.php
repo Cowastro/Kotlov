@@ -61,8 +61,11 @@ class TelegramWebhookController extends Controller
             return response()->json(['ok' => true]);
         }
 
-        // Назначаем ответственного
-        $order->updateQuietly(['assigned_to' => $username]);
+        // Назначаем ответственного, меняем статус на "В обработке" если был "Новый"
+        $order->updateQuietly([
+            'assigned_to' => $username,
+            'status'      => $order->status === 'new' ? 'processing' : $order->status,
+        ]);
 
         // Отвечаем на callback
         Http::post("https://api.telegram.org/bot{$token}/answerCallbackQuery", [

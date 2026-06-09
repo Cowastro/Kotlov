@@ -15,6 +15,7 @@ use Filament\Forms\Components\DatePicker;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\Filter;
 use Filament\Tables\Filters\SelectFilter;
+use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 
@@ -229,6 +230,17 @@ class OrdersTable
                 SelectFilter::make('delivery_type')
                     ->label('Доставка')
                     ->options($deliveryNames),
+
+                TernaryFilter::make('assigned_to')
+                    ->label('Ответственный')
+                    ->placeholder('Все заказы')
+                    ->trueLabel('Есть ответственный')
+                    ->falseLabel('Без ответственного')
+                    ->queries(
+                        true:  fn(Builder $query) => $query->whereNotNull('assigned_to'),
+                        false: fn(Builder $query) => $query->whereNull('assigned_to'),
+                        blank: fn(Builder $query) => $query,
+                    ),
 
                 Filter::make('created_at')
                     ->label('Дата создания')
