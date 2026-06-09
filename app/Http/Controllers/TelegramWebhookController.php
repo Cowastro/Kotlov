@@ -43,6 +43,13 @@ class TelegramWebhookController extends Controller
         $orderId = (int) str_replace('take_order:', '', $data);
         $order   = Order::find($orderId);
 
+        Log::info('Telegram take_order', [
+            'raw_data'   => $data,
+            'order_id'   => $orderId,
+            'order_found' => $order !== null,
+            'total_orders' => Order::count(),
+        ]);
+
         if (!$order) {
             Http::post("https://api.telegram.org/bot{$token}/answerCallbackQuery", [
                 'callback_query_id' => $callbackId,
