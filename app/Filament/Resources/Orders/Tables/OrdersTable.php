@@ -3,11 +3,13 @@
 namespace App\Filament\Resources\Orders\Tables;
 
 use App\Models\Order;
+use App\Filament\Exports\OrderExporter;
 use Filament\Actions\Action;
 use Filament\Actions\ActionGroup;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
+use Filament\Actions\ExportAction;
 use Filament\Actions\ViewAction;
 use Filament\Forms\Components\DatePicker;
 use Filament\Tables\Columns\TextColumn;
@@ -261,6 +263,9 @@ class OrdersTable
                 ]),
             ])
             ->toolbarActions([
+                ExportAction::make()
+                    ->label('Экспорт')
+                    ->exporter(OrderExporter::class),
                 BulkActionGroup::make([
                     DeleteBulkAction::make(),
                 ]),
