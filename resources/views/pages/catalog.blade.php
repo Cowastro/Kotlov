@@ -20,9 +20,9 @@
                 </div>
                 <h1>{{ $category->h1 ?: $category->name }}</h1>
                 @if ($category->content)
-                    <div class="text-body-1 cl-text-2">
-                        {!! $category->content !!}
-                    </div>
+                    <p class="text-body-1 cl-text-2">
+                        {!! Str::limit(strip_tags($category->content), 200) !!}
+                    </p>
                 @endif
             </div>
         </div>
