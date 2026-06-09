@@ -135,9 +135,11 @@
                                     <div id="delivery-address-fields">
                                         <div class="tf-grid-layout sm-col-2">
                                             <fieldset class="tf-field">
-                                                <label class="tf-lable fw-medium">Область / Регион</label>
+                                                <label class="tf-lable fw-medium">
+                                                    Область / Регион <span class="text-primary delivery-required-mark">*</span>
+                                                </label>
                                                 <div class="tf-select">
-                                                    <select name="delivery_region">
+                                                    <select name="delivery_region" id="delivery-region" required>
                                                         <option value="">— выберите —</option>
                                                         @foreach(['Минск','Минская область','Брестская область','Гродненская область','Витебская область','Могилёвская область','Гомельская область'] as $region)
                                                             <option value="{{ $region }}"
@@ -149,17 +151,21 @@
                                                 </div>
                                             </fieldset>
                                             <fieldset class="tf-field">
-                                                <label class="tf-lable fw-medium">Город</label>
-                                                <input type="text" name="delivery_city"
+                                                <label class="tf-lable fw-medium">
+                                                    Город <span class="text-primary delivery-required-mark">*</span>
+                                                </label>
+                                                <input type="text" name="delivery_city" id="delivery-city"
                                                     value="{{ old('delivery_city', session('cart_delivery_city')) }}"
-                                                    placeholder="Минск">
+                                                    placeholder="Минск" required>
                                             </fieldset>
                                         </div>
                                         <fieldset class="tf-field">
-                                            <label class="tf-lable fw-medium">Адрес доставки</label>
-                                            <input type="text" name="delivery_address"
+                                            <label class="tf-lable fw-medium">
+                                                Адрес доставки <span class="text-primary delivery-required-mark">*</span>
+                                            </label>
+                                            <input type="text" name="delivery_address" id="delivery-address"
                                                 value="{{ old('delivery_address') }}"
-                                                placeholder="ул. Ленина, д. 1, кв. 5">
+                                                placeholder="ул. Ленина, д. 1, кв. 5" required>
                                         </fieldset>
                                     </div>
 
@@ -456,11 +462,16 @@
     var subtotal = {{ (float) $subtotal }};
 
     // ── Показ/скрытие полей адреса при самовывозе ──
-    var deliverySelect = document.getElementById('delivery-type');
-    var addressFields  = document.getElementById('delivery-address-fields');
+    var deliverySelect   = document.getElementById('delivery-type');
+    var addressFields    = document.getElementById('delivery-address-fields');
+    var addressInputs    = ['delivery-region', 'delivery-city', 'delivery-address'].map(function(id) { return document.getElementById(id); }).filter(Boolean);
+    var requiredMarks    = document.querySelectorAll('.delivery-required-mark');
     if (deliverySelect && addressFields) {
         function toggleAddress() {
-            addressFields.style.display = deliverySelect.value === 'pickup' ? 'none' : '';
+            var isPickup = deliverySelect.value === 'pickup';
+            addressFields.style.display = isPickup ? 'none' : '';
+            addressInputs.forEach(function(el) { el.required = !isPickup; });
+            requiredMarks.forEach(function(el) { el.style.display = isPickup ? 'none' : ''; });
         }
         deliverySelect.addEventListener('change', toggleAddress);
         toggleAddress();
