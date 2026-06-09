@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Events\NewOrderCreated;
 use App\Models\Order;
 use App\Models\OrderItem;
 use Illuminate\Http\Request;
@@ -120,6 +121,8 @@ class CheckoutController extends Controller
 
             return $order;
         });
+
+        NewOrderCreated::dispatch($order->load('items'));
 
         // Очищаем корзину и вспомогательные данные
         session()->forget([
