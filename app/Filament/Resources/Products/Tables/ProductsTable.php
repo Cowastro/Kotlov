@@ -157,8 +157,11 @@ class ProductsTable
                 TernaryFilter::make('is_active')
                     ->label('Активность'),
 
-                TernaryFilter::make('is_archived')
-                    ->label('Архивные'),
+                Filter::make('hide_archived')
+                    ->label('Скрыть архивные')
+                    ->toggle()
+                    ->default(true)
+                    ->query(fn(Builder $query) => $query->where('is_archived', false)),
 
                 TernaryFilter::make('in_stock')
                     ->label('Наличие'),
