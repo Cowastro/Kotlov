@@ -31,6 +31,12 @@ class SupplierProductsRelationManager extends RelationManager
                     ->searchable()
                     ->copyable(),
 
+                TextColumn::make('supplier_article_normalized')
+                    ->label('Ключ артикула')
+                    ->searchable()
+                    ->copyable()
+                    ->toggleable(isToggledHiddenByDefault: true),
+
                 TextColumn::make('product_sku')
                     ->label('SKU KOTLOV')
                     ->searchable()

@@ -57,7 +57,7 @@ class SyncEliconGasMetersCommand extends Command
                             [$item['listing_image'] ?? null],
                             $detail['images_remote'] ?? []
                         )))),
-                        'attributes' => count($detail['attributes'] ?? []),
+                        'attributes' => count(($detail['attributes'] ?? []) + $this->derivedSpecs($item + $detail)),
                         'name' => mb_substr($item['name'], 0, 58),
                     ];
                 } catch (\Throwable $e) {
@@ -150,7 +150,7 @@ class SyncEliconGasMetersCommand extends Command
                     continue;
                 }
 
-                $items[$item['article']] = $item;
+                $items[$this->normalizeSupplierArticle($item['article'])] = $item;
             }
         }
 
@@ -175,7 +175,7 @@ class SyncEliconGasMetersCommand extends Command
 
         $name = $this->cleanText($name ?? '');
         $url = html_entity_decode($url ?? '', ENT_QUOTES | ENT_HTML5, 'UTF-8');
-        $article = html_entity_decode($article ?? '', ENT_QUOTES | ENT_HTML5, 'UTF-8');
+        $article = $this->normalizeSupplierArticle(html_entity_decode($article ?? '', ENT_QUOTES | ENT_HTML5, 'UTF-8'));
 
         if ($name === '' || $url === '' || $article === '') {
             return null;
@@ -363,7 +363,8 @@ class SyncEliconGasMetersCommand extends Command
                 continue;
             }
 
-            $attributeId = $this->ensureAttribute((string) $name, $now);
+            $name = $this->normalizeAttributeName((string) $name);
+            $attributeId = $this->ensureAttribute($name, $now);
             DB::table('product_attribute_values')->updateOrInsert(
                 ['product_id' => $productId, 'attribute_id' => $attributeId],
                 [
@@ -382,6 +383,8 @@ class SyncEliconGasMetersCommand extends Command
 
     private function ensureAttribute(string $name, $now): int
     {
+        $name = $this->normalizeAttributeName($name);
+
         $existing = DB::table('attributes')
             ->where('category_id', self::CATEGORY_ID)
             ->where('name', $name)
@@ -447,8 +450,13 @@ class SyncEliconGasMetersCommand extends Command
 
     private function findProduct(array $item): ?object
     {
+        $articleKey = $this->normalizeSupplierArticle($item['article']);
+
         $supplierProduct = DB::table('supplier_products')
-            ->where('supplier_article', $item['article'])
+            ->where(function ($query) use ($item, $articleKey) {
+                $query->where('supplier_article', $item['article'])
+                    ->orWhere('supplier_article_normalized', $articleKey);
+            })
             ->whereNotNull('product_id')
             ->first();
 
@@ -491,6 +499,7 @@ class SyncEliconGasMetersCommand extends Command
                 'supplier_article' => $item['article'],
             ],
             [
+                'supplier_article_normalized' => $this->normalizeSupplierArticle($item['article']),
                 'supplier_sync_id' => $syncId,
                 'product_id' => $productId,
                 'product_sku' => $productSku,
@@ -504,6 +513,7 @@ class SyncEliconGasMetersCommand extends Command
                 'match_confidence' => 'manual',
                 'raw' => json_encode([
                     'article' => $item['article'],
+                    'article_normalized' => $this->normalizeSupplierArticle($item['article']),
                     'name' => $item['name'],
                     'attributes' => $item['attributes'] ?? [],
                     'images_remote' => $item['images_remote'] ?? [],
@@ -710,18 +720,56 @@ class SyncEliconGasMetersCommand extends Command
     private function derivedSpecs(array $item): array
     {
         $name = $item['name'];
+        $lowerName = mb_strtolower($name);
 
         preg_match('/\bG\s*([0-9]+(?:[,.][0-9]+)?)/u', $name, $gMatch);
         preg_match('/L\s*=\s*([0-9]+)/u', $name, $lengthMatch);
         preg_match('/\((левый|правый)\)/ui', $name, $sideMatch);
+        preg_match('/\bG\s*[0-9]+(?:[,.][0-9]+)?\s*([A-ZА-ЯЁ][A-ZА-ЯЁ0-9\-]*)/ui', $name, $executionMatch);
+
+        $meterType = str_contains($lowerName, 'ультразвуковой') ? 'ультразвуковой' : 'диафрагменный';
+        $execution = $executionMatch[1] ?? null;
+        if ($execution && in_array(mb_strtoupper($execution), ['L'], true)) {
+            $execution = null;
+        }
 
         return array_filter([
-            'Тип счетчика' => str_contains(mb_strtolower($name), 'ультразвуковой') ? 'ультразвуковой' : 'диафрагменный',
-            'Типоразмер' => isset($gMatch[1]) ? 'G' . str_replace(',', '.', $gMatch[1]) : null,
-            'Исполнение' => $sideMatch[1] ?? null,
+            'Тип счетчика' => $meterType,
+            'Номинальный расход' => isset($gMatch[1]) ? 'G' . str_replace(',', '.', $gMatch[1]) : null,
+            'Назначение' => 'бытовой',
+            'Модель/серия' => $this->extractModelSeries($name),
+            'Исполнение' => $execution,
+            'Сторона подключения' => $sideMatch[1] ?? null,
             'Монтажная длина' => isset($lengthMatch[1]) ? $lengthMatch[1] . ' мм' : null,
-            'Термокомпенсация' => str_contains($name, 'термокомпенсатором') ? 'Да' : null,
+            'Термокомпенсация' => str_contains($lowerName, 'термокомпенсатором') || preg_match('/\bG\s*[0-9]+(?:[,.][0-9]+)?\s*ТИ\b/ui', $name) ? 'Да' : 'Нет',
         ], fn($value) => $value !== null);
+    }
+
+    private function extractModelSeries(string $name): ?string
+    {
+        if (preg_match('/\b(СГД[-\s]?[0-9][А-ЯЁA-Z0-9\-]*)/ui', $name, $match)) {
+            return $this->normalizeModelSeries($match[1]);
+        }
+
+        if (preg_match('/\b(СГМН[А-ЯЁA-Z0-9\-]*)/ui', $name, $match)) {
+            return $this->normalizeModelSeries($match[1]);
+        }
+
+        foreach (['СКАТ', 'ВЕГА', 'КАТА'] as $series) {
+            if (mb_stripos($name, $series) !== false) {
+                return $series;
+            }
+        }
+
+        return null;
+    }
+
+    private function normalizeModelSeries(string $value): string
+    {
+        $value = str_replace(['–', '—', '−'], '-', $value);
+        $value = preg_replace('/\s+/u', '', $value);
+
+        return trim($value);
     }
 
     private function parseWeight(?string $value): ?float
@@ -762,6 +810,60 @@ class SyncEliconGasMetersCommand extends Command
         } while (DB::table('products')->where('sku', $sku)->exists());
 
         return $sku;
+    }
+
+    private function normalizeSupplierArticle(string $article): string
+    {
+        $article = html_entity_decode($article, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+        $article = str_replace(['–', '—', '−'], '-', $article);
+        $article = preg_replace('/\s+/u', '', $article) ?? $article;
+
+        return mb_strtoupper(trim($article));
+    }
+
+    private function normalizeAttributeName(string $name): string
+    {
+        $name = trim(str_replace("\u{A0}", ' ', $name));
+        $name = preg_replace('/\s+/u', ' ', $name) ?? $name;
+
+        return match ($name) {
+            'Тип' => 'Тип счетчика',
+            'Типоразмер',
+            'Номинальный расход (Q ном)',
+            'Номинальный расход газа' => 'Номинальный расход',
+            'Максимальный расход (Q макс)',
+            'Максимальный расход газа' => 'Максимальный расход',
+            'Минимальный расход (Q мин)',
+            'Минимальный расход газа' => 'Минимальный расход',
+            'Габаритные размеры',
+            'Габариты (Д×Ш×В)' => 'Габариты',
+            'Масса' => 'Вес',
+            'Гарантийный срок',
+            'Гарантийный срок эксплуатации' => 'Гарантия',
+            'Длина между осями патрубков',
+            'Расстояние между осями патрубков' => 'Межосевое расстояние',
+            'Присоединительная резьба',
+            'Размер резьбы на присоединительных патрубках',
+            'Резьба',
+            'Резьба на присоединительных патрубках',
+            'Резьба патрубков' => 'Резьба подключения',
+            'Рабочая температура',
+            'Температурный диапазон',
+            'Температурный диапазон эксплуатации' => 'Температура эксплуатации',
+            'Допускаемая потеря давления',
+            'Допустимая потеря давления' => 'Потеря давления',
+            'Допускаемая потеря давления при максимальном расходе',
+            'Допустимая потеря давления при максимальном расходе',
+            'При максимальном расходе',
+            'Потеря давления при максимальном расходе' => 'Потеря давления при максимальном расходе',
+            'Допускаемая потеря давления при номинальном расходе',
+            'Допустимая потеря давления при номинальном расходе' => 'Потеря давления при номинальном расходе',
+            'Максимальное рабочее давление' => 'Рабочее давление',
+            'Погрешность измерений',
+            'Максимальная погрешность измерения',
+            'Пределы погрешности' => 'Погрешность измерения',
+            default => $name,
+        };
     }
 
     private function legacySkuToArticle(): array

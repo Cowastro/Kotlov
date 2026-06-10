@@ -13,6 +13,7 @@ class SupplierProduct extends Model
         'product_id',
         'product_sku',
         'supplier_article',
+        'supplier_article_normalized',
         'supplier_name',
         'source_url',
         'source_wp_id',
