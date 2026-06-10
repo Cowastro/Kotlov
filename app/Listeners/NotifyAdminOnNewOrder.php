@@ -4,7 +4,6 @@ namespace App\Listeners;
 
 use App\Events\NewOrderCreated;
 use App\Models\User;
-use Filament\Actions\Action;
 use Filament\Notifications\Notification;
 
 class NotifyAdminOnNewOrder
@@ -27,12 +26,6 @@ class NotifyAdminOnNewOrder
             ->body($body)
             ->icon('heroicon-o-shopping-bag')
             ->iconColor('warning')
-            ->actions([
-                Action::make('view')
-                    ->label('Открыть заказ')
-                    ->url(route('filament.admin.resources.orders.view', $order->id))
-                    ->markAsRead(),
-            ])
             ->sendToDatabase($admins);
     }
 }
