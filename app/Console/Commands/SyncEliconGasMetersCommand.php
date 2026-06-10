@@ -10,6 +10,7 @@ class SyncEliconGasMetersCommand extends Command
 {
     protected $signature = 'supplier:sync-elicon-gas-meters
         {--apply : Write changes to the database}
+        {--dry-run : Preview without writing changes to the database}
         {--limit= : Limit number of products for testing}
         {--no-images : Do not download product images}
         {--sleep=200 : Delay between product requests in milliseconds}';
