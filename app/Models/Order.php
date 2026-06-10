@@ -65,10 +65,20 @@ class Order extends Model
     protected static function booted(): void
     {
         static::updating(function (Order $order) {
+            $userId = Auth::id();
+
+            // Автоназначение ответственного при изменении статуса из CRM
+            // Не перезаписываем если уже назначен
+            if ($order->isDirty('status') && $userId && !$order->manager_id) {
+                $order->manager_id   = $userId;
+                $order->assigned_to  = '@' . (Auth::user()->telegram_username ?? Auth::user()->name);
+            }
+
+            // История изменений статуса
             if ($order->isDirty('status')) {
                 OrderStatusHistory::create([
                     'order_id'    => $order->id,
-                    'user_id'     => Auth::id(),
+                    'user_id'     => $userId,
                     'status_from' => $order->getOriginal('status'),
                     'status_to'   => $order->status,
                 ]);

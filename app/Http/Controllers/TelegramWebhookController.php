@@ -51,10 +51,12 @@ class TelegramWebhookController extends Controller
         }
 
         // Уже кто-то взял
-        if ($order->assigned_to) {
-            Http::post("https://api.telegram.org/bot{$token}/answerCallbackQuery", [
+        // Уже назначен — из CRM или через Telegram
+        if ($order->manager_id || $order->assigned_to) {
+            $who = $order->manager?->name ?? $order->assigned_to ?? 'менеджер';
+            Http::timeout(10)->post("https://api.telegram.org/bot{$token}/answerCallbackQuery", [
                 'callback_query_id' => $callbackId,
-                'text'              => "⚠️ Заказ уже взят: {$order->assigned_to}",
+                'text'              => "⚠️ Заказ уже взят: {$who}",
                 'show_alert'        => true,
             ]);
             return response()->json(['ok' => true]);
