@@ -7,6 +7,8 @@
 .payment-info-list { padding-left: 20px; margin: 0; }
 .payment-info-list li { margin-bottom: 6px; line-height: 1.6; }
 .payment-info-list--disc { list-style-type: disc; }
+.tf-field input.is-invalid,
+.tf-field select.is-invalid { border-color: #dc3545 !important; }
 </style>
 @endpush
 
@@ -79,16 +81,20 @@
                                                 Имя и фамилия <span class="text-primary">*</span>
                                             </label>
                                             <input type="text" name="customer_name"
+                                                class="{{ $errors->has('customer_name') ? 'is-invalid' : '' }}"
                                                 value="{{ old('customer_name', $user->name ?? '') }}"
                                                 placeholder="Иванов Иван" required>
+                                            @error('customer_name') <div class="text-danger text-caption-01 mt-4">{{ $message }}</div> @enderror
                                         </fieldset>
                                         <fieldset class="tf-field">
                                             <label class="tf-lable fw-medium">
                                                 Телефон <span class="text-primary">*</span>
                                             </label>
                                             <input type="tel" name="customer_phone"
+                                                class="{{ $errors->has('customer_phone') ? 'is-invalid' : '' }}"
                                                 value="{{ old('customer_phone', $user->phone ?? '') }}"
                                                 placeholder="+375 (29) 000-00-00" required>
+                                            @error('customer_phone') <div class="text-danger text-caption-01 mt-4">{{ $message }}</div> @enderror
                                         </fieldset>
                                     </div>
 
@@ -140,7 +146,8 @@
                                                     Область / Регион <span class="text-primary delivery-required-mark">*</span>
                                                 </label>
                                                 <div class="tf-select">
-                                                    <select name="delivery_region" id="delivery-region" required>
+                                                    <select name="delivery_region" id="delivery-region"
+                                                        class="{{ $errors->has('delivery_region') ? 'is-invalid' : '' }}" required>
                                                         <option value="">— выберите —</option>
                                                         @foreach(['Минск','Минская область','Брестская область','Гродненская область','Витебская область','Могилёвская область','Гомельская область'] as $region)
                                                             <option value="{{ $region }}"
@@ -150,14 +157,17 @@
                                                         @endforeach
                                                     </select>
                                                 </div>
+                                                @error('delivery_region') <div class="text-danger text-caption-01 mt-4">{{ $message }}</div> @enderror
                                             </fieldset>
                                             <fieldset class="tf-field">
                                                 <label class="tf-lable fw-medium">
                                                     Город <span class="text-primary delivery-required-mark">*</span>
                                                 </label>
                                                 <input type="text" name="delivery_city" id="delivery-city"
+                                                    class="{{ $errors->has('delivery_city') ? 'is-invalid' : '' }}"
                                                     value="{{ old('delivery_city', session('cart_delivery_city')) }}"
                                                     placeholder="Минск" required>
+                                                @error('delivery_city') <div class="text-danger text-caption-01 mt-4">{{ $message }}</div> @enderror
                                             </fieldset>
                                         </div>
                                         <fieldset class="tf-field">
@@ -165,8 +175,10 @@
                                                 Адрес доставки <span class="text-primary delivery-required-mark">*</span>
                                             </label>
                                             <input type="text" name="delivery_address" id="delivery-address"
+                                                class="{{ $errors->has('delivery_address') ? 'is-invalid' : '' }}"
                                                 value="{{ old('delivery_address') }}"
                                                 placeholder="ул. Ленина, д. 1, кв. 5" required>
+                                            @error('delivery_address') <div class="text-danger text-caption-01 mt-4">{{ $message }}</div> @enderror
                                         </fieldset>
                                     </div>
 
