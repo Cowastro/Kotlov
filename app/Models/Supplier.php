@@ -31,4 +31,9 @@ class Supplier extends Model
     {
         return $this->hasMany(SupplierProductMapping::class, 'supplier_code', 'code');
     }
+
+    public function supplierProducts(): HasMany
+    {
+        return $this->hasMany(SupplierProduct::class);
+    }
 }
