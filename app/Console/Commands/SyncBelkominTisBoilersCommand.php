@@ -225,11 +225,12 @@ class SyncBelkominTisBoilersCommand extends Command
     {
         $html = $this->fetch($url);
         $h1 = $this->cleanText($this->match('/<h1[^>]*>(.*?)<\/h1>/u', $html) ?? '');
+        $descriptionHtml = $this->extractDescriptionHtml($html);
         $description = $this->extractDescription($html);
 
         return [
             'h1' => $h1 ?: null,
-            'content' => $description ? $this->descriptionToHtml($description) : null,
+            'content' => $descriptionHtml ?: ($description ? $this->descriptionToHtml($description) : null),
             'meta_title' => $this->cleanText($this->match('/<title>(.*?)<\/title>/u', $html) ?? ''),
             'meta_description' => $this->cleanText($this->match('/<meta name="description" content="([^"]*)"/u', $html) ?? ''),
             'images_remote' => $this->extractImages($html),
@@ -282,6 +283,18 @@ class SyncBelkominTisBoilersCommand extends Command
             ?: '';
 
         return $this->cleanDescription($block);
+    }
+
+    private function extractDescriptionHtml(string $html): ?string
+    {
+        $block = $this->rawMatch('/<div id="bx0"[\s\S]*?<div class="short-desc full">([\s\S]*?)(?=<div class="container">\s*<div id="bx1"|<div id="bx1")/u', $html)
+            ?: $this->rawMatch('/<span class="h2">\s*Описание\s*<\/span>([\s\S]*?)(?=<div id="bx1"|<span class="h2">\s*Характеристики)/u', $html);
+
+        if (! $block) {
+            return null;
+        }
+
+        return $this->cleanDescriptionHtml($block);
     }
 
     private function upsertProduct(array $item, ?object $product, array $images, $now): int
@@ -740,6 +753,11 @@ class SyncBelkominTisBoilersCommand extends Command
         return preg_match($pattern, $subject, $match) ? html_entity_decode($match[1], ENT_QUOTES | ENT_HTML5, 'UTF-8') : null;
     }
 
+    private function rawMatch(string $pattern, string $subject): ?string
+    {
+        return preg_match($pattern, $subject, $match) ? $match[1] : null;
+    }
+
     private function cleanText(string $value): string
     {
         $value = html_entity_decode(strip_tags($value), ENT_QUOTES | ENT_HTML5, 'UTF-8');
@@ -752,6 +770,22 @@ class SyncBelkominTisBoilersCommand extends Command
         $value = str_replace(["\r\n", "\r"], "\n", $value);
         $value = preg_replace("/\n{3,}/u", "\n\n", $value) ?? $value;
         return trim($value);
+    }
+
+    private function cleanDescriptionHtml(string $value): ?string
+    {
+        $value = preg_replace('/<(script|style|svg|form|button|iframe|table)\b[\s\S]*?<\/\1>/iu', '', $value) ?? $value;
+        $value = preg_replace('/<span class="h2">\s*Описание\s*<\/span>/iu', '', $value) ?? $value;
+        $value = preg_replace('/<\/?div\b[^>]*>/iu', '', $value) ?? $value;
+        $value = preg_replace('/<a\b[^>]*>([\s\S]*?)<\/a>/iu', '$1', $value) ?? $value;
+        $value = strip_tags($value, '<p><ul><ol><li><strong><b><em><i><br>');
+        $value = preg_replace('/<([a-z0-9]+)\b[^>]*>/iu', '<$1>', $value) ?? $value;
+        $value = html_entity_decode($value, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+        $value = preg_replace("/[ \t]+\n/u", "\n", $value) ?? $value;
+        $value = preg_replace("/\n{3,}/u", "\n\n", $value) ?? $value;
+        $value = trim($value);
+
+        return $value !== '' ? $value : null;
     }
 
     private function descriptionToHtml(string $description): ?string
