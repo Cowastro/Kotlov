@@ -6,9 +6,14 @@ use App\Events\NewOrderCreated;
 use App\Models\User;
 use Filament\Notifications\Actions\Action;
 use Filament\Notifications\Notification;
+use Illuminate\Contracts\Queue\ShouldQueue;
+use Illuminate\Queue\InteractsWithQueue;
 
-class NotifyAdminOnNewOrder
+class NotifyAdminOnNewOrder implements ShouldQueue
 {
+    use InteractsWithQueue;
+
+    public int $tries = 3;
     public function handle(NewOrderCreated $event): void
     {
         $order = $event->order;

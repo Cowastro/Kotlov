@@ -4,11 +4,18 @@ namespace App\Listeners;
 
 use App\Events\NewOrderCreated;
 use App\Models\Order;
+use Illuminate\Contracts\Queue\ShouldQueue;
+use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
-class SendNewOrderToTelegram
+class SendNewOrderToTelegram implements ShouldQueue
 {
+    use InteractsWithQueue;
+
+    public int $tries = 3;
+    public int $backoff = 30; // повтор через 30 сек при ошибке
+
     public function handle(NewOrderCreated $event): void
     {
         $token  = config('services.telegram.bot_token');
@@ -76,7 +83,7 @@ class SendNewOrderToTelegram
         $text = implode("\n", array_filter($lines, fn($l) => $l !== null));
 
         try {
-            $response = Http::post("https://api.telegram.org/bot{$token}/sendMessage", [
+            $response = Http::timeout(10)->post("https://api.telegram.org/bot{$token}/sendMessage", [
                 'chat_id'      => $chatId,
                 'text'         => $text,
                 'parse_mode'   => 'Markdown',
