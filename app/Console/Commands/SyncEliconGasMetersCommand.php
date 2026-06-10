@@ -82,7 +82,8 @@ class SyncEliconGasMetersCommand extends Command
         }
 
         $now = now();
-        $this->ensureSupplier($now);
+        $supplierId = $this->ensureSupplier($now);
+        $syncId = $this->ensureSupplierSync($now);
         $this->ensureBrand($now);
         $this->ensureCategory($now);
 
@@ -111,8 +112,9 @@ class SyncEliconGasMetersCommand extends Command
                 }
 
                 $productId = $this->upsertProduct($merged, $product, $images, $now);
-                $productSku = $product?->sku ?: 'ELICON-' . $merged['article'];
+                $productSku = (string) DB::table('products')->where('id', $productId)->value('sku');
 
+                $this->upsertSupplierProduct($merged, $productId, $productSku, $supplierId, $syncId, $now);
                 $this->upsertMapping($merged, $productId, $productSku, $now);
                 $stats['attributes'] += $this->syncAttributes($productId, $merged, $now);
 
@@ -315,7 +317,7 @@ class SyncEliconGasMetersCommand extends Command
             'price_old' => null,
             'currency' => 'BYN',
             'content' => $item['content'] ?: null,
-            'short_description' => sprintf('Артикул поставщика Эликон: %s.', $item['article']),
+            'short_description' => null,
             'images' => json_encode($images, JSON_UNESCAPED_UNICODE),
             'specs' => json_encode($attrs + $this->derivedSpecs($item), JSON_UNESCAPED_UNICODE),
             'video_url' => null,
@@ -344,7 +346,7 @@ class SyncEliconGasMetersCommand extends Command
             return (int) $product->id;
         }
 
-        $payload['sku'] = 'ELICON-' . $item['article'];
+        $payload['sku'] = $this->nextKotlovSku();
         $payload['slug'] = $this->uniqueSlug($item['name']);
         $payload['created_at'] = $now;
 
@@ -445,6 +447,18 @@ class SyncEliconGasMetersCommand extends Command
 
     private function findProduct(array $item): ?object
     {
+        $supplierProduct = DB::table('supplier_products')
+            ->where('supplier_article', $item['article'])
+            ->whereNotNull('product_id')
+            ->first();
+
+        if ($supplierProduct) {
+            $product = DB::table('products')->where('id', $supplierProduct->product_id)->first();
+            if ($product) {
+                return $product;
+            }
+        }
+
         $mapping = DB::table('supplier_product_mappings')
             ->where('supplier_code', self::SUPPLIER_CODE)
             ->where('supplier_article', $item['article'])
@@ -469,6 +483,38 @@ class SyncEliconGasMetersCommand extends Command
         return DB::table('products')->where('sku', 'ELICON-' . $item['article'])->first();
     }
 
+    private function upsertSupplierProduct(array $item, int $productId, string $productSku, int $supplierId, ?int $syncId, $now): void
+    {
+        DB::table('supplier_products')->updateOrInsert(
+            [
+                'supplier_id' => $supplierId,
+                'supplier_article' => $item['article'],
+            ],
+            [
+                'supplier_sync_id' => $syncId,
+                'product_id' => $productId,
+                'product_sku' => $productSku,
+                'supplier_name' => $item['name'],
+                'source_url' => $item['url'],
+                'source_wp_id' => $item['wp_id'] ?? null,
+                'price' => $item['price'],
+                'currency' => 'BYN',
+                'in_stock' => $item['price'] !== null,
+                'match_status' => 'matched',
+                'match_confidence' => 'manual',
+                'raw' => json_encode([
+                    'article' => $item['article'],
+                    'name' => $item['name'],
+                    'attributes' => $item['attributes'] ?? [],
+                    'images_remote' => $item['images_remote'] ?? [],
+                ], JSON_UNESCAPED_UNICODE),
+                'last_synced_at' => $now,
+                'created_at' => $now,
+                'updated_at' => $now,
+            ]
+        );
+    }
+
     private function upsertMapping(array $item, int $productId, ?string $productSku, $now): void
     {
         DB::table('supplier_product_mappings')->updateOrInsert(
@@ -489,7 +535,7 @@ class SyncEliconGasMetersCommand extends Command
         );
     }
 
-    private function ensureSupplier($now): void
+    private function ensureSupplier($now): int
     {
         DB::table('suppliers')->updateOrInsert(
             ['code' => self::SUPPLIER_CODE],
@@ -504,6 +550,33 @@ class SyncEliconGasMetersCommand extends Command
                 'updated_at' => $now,
             ]
         );
+
+        return (int) DB::table('suppliers')
+            ->where('code', self::SUPPLIER_CODE)
+            ->value('id');
+    }
+
+    private function ensureSupplierSync($now): ?int
+    {
+        DB::table('supplier_syncs')->updateOrInsert(
+            ['key' => 'elicon_gas_meters'],
+            [
+                'name' => 'Эликон',
+                'code' => self::SUPPLIER_CODE,
+                'title' => 'Эликон: счетчики газа',
+                'description' => 'Обновляет цены, наличие, описания, характеристики и фотографии бытовых счетчиков газа.',
+                'command' => 'supplier:sync-elicon-gas-meters',
+                'source_url' => self::CATEGORY_URL,
+                'image_disk_path' => 'img/products/elicon',
+                'is_active' => true,
+                'created_at' => $now,
+                'updated_at' => $now,
+            ]
+        );
+
+        return DB::table('supplier_syncs')
+            ->where('key', 'elicon_gas_meters')
+            ->value('id');
     }
 
     private function ensureBrand($now): void
@@ -643,9 +716,6 @@ class SyncEliconGasMetersCommand extends Command
         preg_match('/\((левый|правый)\)/ui', $name, $sideMatch);
 
         return array_filter([
-            'Поставщик' => 'Эликон',
-            'Артикул поставщика' => $item['article'],
-            'Источник' => $item['url'],
             'Тип счетчика' => str_contains(mb_strtolower($name), 'ультразвуковой') ? 'ультразвуковой' : 'диафрагменный',
             'Типоразмер' => isset($gMatch[1]) ? 'G' . str_replace(',', '.', $gMatch[1]) : null,
             'Исполнение' => $sideMatch[1] ?? null,
@@ -675,6 +745,23 @@ class SyncEliconGasMetersCommand extends Command
         }
 
         return $slug;
+    }
+
+    private function nextKotlovSku(): string
+    {
+        $max = DB::table('products')
+            ->where('sku', 'like', 'KOTLOV-%')
+            ->pluck('sku')
+            ->map(fn($sku) => preg_match('/^KOTLOV-(\d+)$/', (string) $sku, $match) ? (int) $match[1] : 0)
+            ->max() ?? 0;
+
+        $next = max(0, (int) $max) + 1;
+
+        do {
+            $sku = sprintf('KOTLOV-%06d', $next++);
+        } while (DB::table('products')->where('sku', $sku)->exists());
+
+        return $sku;
     }
 
     private function legacySkuToArticle(): array

@@ -32,8 +32,8 @@ class SupplierSync extends Model
 
     public function getProductsCountAttribute(): int
     {
-        return DB::table('supplier_product_mappings')
-            ->where('supplier_code', $this->code)
+        return DB::table('supplier_products')
+            ->where('supplier_sync_id', $this->id)
             ->whereNotNull('product_id')
             ->distinct()
             ->count('product_id');
@@ -41,15 +41,15 @@ class SupplierSync extends Model
 
     public function getMappingsCountAttribute(): int
     {
-        return DB::table('supplier_product_mappings')
-            ->where('supplier_code', $this->code)
+        return DB::table('supplier_products')
+            ->where('supplier_sync_id', $this->id)
             ->count();
     }
 
     public function getAttributesCountAttribute(): int
     {
-        $productIds = DB::table('supplier_product_mappings')
-            ->where('supplier_code', $this->code)
+        $productIds = DB::table('supplier_products')
+            ->where('supplier_sync_id', $this->id)
             ->whereNotNull('product_id')
             ->distinct()
             ->pluck('product_id');

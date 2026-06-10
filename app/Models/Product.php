@@ -9,6 +9,21 @@ use Illuminate\Database\Eloquent\Relations\MorphMany;
 
 class Product extends Model
 {
+    private const SUPPLIER_TECHNICAL_ATTRIBUTES = [
+        'Поставщик',
+        'Артикул поставщика',
+        'Источник',
+        'supplier',
+        'supplier_article',
+        'source_url',
+        'source_wp_id',
+    ];
+
+    public static function supplierTechnicalAttributeNames(): array
+    {
+        return self::SUPPLIER_TECHNICAL_ATTRIBUTES;
+    }
+
     protected $fillable = [
         'category_id', 'brand_id', 'supplier_id',
         'name', 'slug', 'h1', 'sku',
@@ -74,7 +89,9 @@ class Product extends Model
     {
         return $this->hasMany(ProductAttributeValue::class)
             ->with(['attribute', 'option'])
-            ->whereHas('attribute', fn($q) => $q->where('in_product', true))
+            ->whereHas('attribute', fn($q) => $q
+                ->where('in_product', true)
+                ->whereNotIn('name', self::SUPPLIER_TECHNICAL_ATTRIBUTES))
             ->orderBy('attribute_id');
     }
 
@@ -82,7 +99,9 @@ class Product extends Model
     {
         return $this->hasMany(ProductAttributeValue::class)
             ->with(['attribute', 'option'])
-            ->whereHas('attribute', fn($q) => $q->where('in_brief', true))
+            ->whereHas('attribute', fn($q) => $q
+                ->where('in_brief', true)
+                ->whereNotIn('name', self::SUPPLIER_TECHNICAL_ATTRIBUTES))
             ->orderBy('attribute_id');
     }
 
@@ -194,5 +213,10 @@ class Product extends Model
     public function supplierMappings(): HasMany
     {
         return $this->hasMany(SupplierProductMapping::class);
+    }
+
+    public function supplierProducts(): HasMany
+    {
+        return $this->hasMany(SupplierProduct::class);
     }
 }

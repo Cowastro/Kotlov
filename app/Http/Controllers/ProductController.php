@@ -35,7 +35,9 @@ class ProductController extends Controller
         // Атрибуты товара для вкладки "Характеристики"
         $attributeValues = ProductAttributeValue::where('product_id', $product->id)
             ->with(['attribute', 'option'])
-            ->whereHas('attribute', fn($q) => $q->where('in_product', true))
+            ->whereHas('attribute', fn($q) => $q
+                ->where('in_product', true)
+                ->whereNotIn('name', Product::supplierTechnicalAttributeNames()))
             ->orderBy('attribute_id')
             ->get();
 
