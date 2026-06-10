@@ -81,17 +81,20 @@ class TelegramWebhookController extends Controller
             'text'              => "✅ Вы взяли заказ {$order->number}",
         ]);
 
-        // Редактируем сообщение — убираем кнопку, добавляем исполнителя
+        // Убираем кнопку и добавляем строку кто взял
         if ($messageId && $msgChatId) {
-            $currentText = $callback['message']['text'] ?? '';
-            $newText     = $currentText . "\n\n✅ *Взял:* {$username}";
-
-            Http::post("https://api.telegram.org/bot{$token}/editMessageText", [
+            // 1. Убираем inline-кнопку (не трогаем текст — безопаснее)
+            Http::timeout(10)->post("https://api.telegram.org/bot{$token}/editMessageReplyMarkup", [
                 'chat_id'      => $msgChatId,
                 'message_id'   => $messageId,
-                'text'         => $newText,
-                'parse_mode'   => 'Markdown',
                 'reply_markup' => json_encode(['inline_keyboard' => []]),
+            ]);
+
+            // 2. Отправляем ответ на сообщение кто взял
+            Http::timeout(10)->post("https://api.telegram.org/bot{$token}/sendMessage", [
+                'chat_id'             => $msgChatId,
+                'reply_to_message_id' => $messageId,
+                'text'                => "✅ Взял: {$username}",
             ]);
         }
 
