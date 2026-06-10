@@ -4,9 +4,9 @@ namespace App\Listeners;
 
 use App\Events\NewOrderCreated;
 use App\Models\Order;
+use App\Services\TelegramApi;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Queue\InteractsWithQueue;
-use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
 class SendNewOrderToTelegram implements ShouldQueue
@@ -14,14 +14,13 @@ class SendNewOrderToTelegram implements ShouldQueue
     use InteractsWithQueue;
 
     public int $tries = 3;
-    public int $backoff = 30; // повтор через 30 сек при ошибке
+    public int $backoff = 30;
 
     public function handle(NewOrderCreated $event): void
     {
-        $token  = config('services.telegram.bot_token');
         $chatId = config('services.telegram.orders_chat_id');
 
-        if (!$token || !$chatId) {
+        if (!config('services.telegram.bot_token') || !$chatId) {
             return;
         }
 
@@ -57,7 +56,6 @@ class SendNewOrderToTelegram implements ShouldQueue
 
         $viewUrl = url('/admin/orders/' . $order->id);
 
-        // Экранируем спецсимволы Markdown v1 в пользовательских полях
         $escape = fn(?string $s) => $s ? str_replace(['_', '*', '`', '['], ['\_', '\*', '\`', '\['], $s) : '';
 
         $lines = [
@@ -83,27 +81,22 @@ class SendNewOrderToTelegram implements ShouldQueue
         $text = implode("\n", array_filter($lines, fn($l) => $l !== null));
 
         try {
-            $response = Http::timeout(10)->post("https://api.telegram.org/bot{$token}/sendMessage", [
-                'chat_id'      => $chatId,
-                'text'         => $text,
-                'parse_mode'   => 'Markdown',
+            $tg = new TelegramApi();
+            $result = $tg->sendMessage($chatId, $text, [
                 'reply_markup' => json_encode([
                     'inline_keyboard' => [[
-                        [
-                            'text'          => '✋ Взять заказ',
-                            'callback_data' => 'take_order:' . $order->id,
-                        ],
+                        ['text' => '✋ Взять заказ', 'callback_data' => 'take_order:' . $order->id],
                     ]],
                 ]),
             ]);
 
-            $messageId = $response->json('result.message_id');
-
+            $messageId = $result['result']['message_id'] ?? null;
             if ($messageId) {
                 $order->updateQuietly(['telegram_message_id' => $messageId]);
             }
         } catch (\Throwable $e) {
             Log::error('Telegram notification failed: ' . $e->getMessage());
+            throw $e; // пробрасываем для retry
         }
     }
 }
