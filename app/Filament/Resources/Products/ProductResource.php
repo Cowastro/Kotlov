@@ -13,6 +13,7 @@ use App\Filament\Resources\Products\Tables\ProductsTable;
 use App\Models\Product;
 use BackedEnum;
 use Filament\Resources\Resource;
+use Illuminate\Database\Eloquent\Builder;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
@@ -28,6 +29,12 @@ class ProductResource extends Resource
     protected static ?int $navigationSort = 3;
 
     public static function getNavigationGroup(): ?string { return 'Каталог'; }
+
+    // Eager load связей чтобы избежать N+1 в таблице
+    public static function getEloquentQuery(): Builder
+    {
+        return parent::getEloquentQuery()->with(['category:id,name,slug', 'brand:id,name', 'supplier:id,name']);
+    }
     public static function form(Schema $schema): Schema { return ProductForm::configure($schema); }
     public static function infolist(Schema $schema): Schema { return ProductInfolist::configure($schema); }
     public static function table(Table $table): Table { return ProductsTable::configure($table); }
