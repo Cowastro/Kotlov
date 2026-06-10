@@ -161,6 +161,7 @@ class ProductsTable
                     ->label('Скрыть архивные')
                     ->toggle()
                     ->default(true)
+                    ->indicateUsing(fn() => null)
                     ->query(fn(Builder $query) => $query->where('is_archived', false)),
 
                 TernaryFilter::make('in_stock')
