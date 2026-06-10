@@ -53,7 +53,11 @@ class OrderForm
                         Textarea::make('admin_comment')
                             ->label('Комментарий менеджера')
                             ->rows(3)
-                            ->columnSpanFull(),
+                            ->columnSpanFull()
+                            ->required(fn ($get) => $get('status') === 'cancelled')
+                            ->helperText(fn ($get) => $get('status') === 'cancelled'
+                                ? '⚠️ При отмене заказа необходимо указать причину.'
+                                : null),
                     ]),
 
                 // ── 2. Клиент ─────────────────────────────────────────────────
