@@ -120,6 +120,14 @@ class Product extends Model
         }
 
         // product/000/000065/file.jpg — уже полный путь
+        if (str_starts_with($path, 'http://') || str_starts_with($path, 'https://')) {
+            return $path;
+        }
+
+        if (str_starts_with($path, 'img/') || str_starts_with($path, '/img/')) {
+            return '/' . ltrim($path, '/');
+        }
+
         if (str_starts_with($path, 'product/')) {
             return '/proxy-image/' . $path;
         }
