@@ -10,6 +10,7 @@ use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Filament\Support\Icons\Heroicon;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 class ProductUpdates extends Page
@@ -27,6 +28,29 @@ class ProductUpdates extends Page
     public static function getNavigationGroup(): ?string
     {
         return 'Каталог';
+    }
+
+    public function getEliconStats(): array
+    {
+        $productIds = DB::table('supplier_product_mappings')
+            ->where('supplier_code', 'elicon')
+            ->whereNotNull('product_id')
+            ->pluck('product_id');
+
+        $imageCount = 0;
+        $imageDir = public_path('img/products/elicon');
+        if (is_dir($imageDir)) {
+            $imageCount = count(glob($imageDir . '/*.{jpg,jpeg,png,webp}', GLOB_BRACE) ?: []);
+        }
+
+        return [
+            'products' => $productIds->unique()->count(),
+            'mappings' => DB::table('supplier_product_mappings')->where('supplier_code', 'elicon')->count(),
+            'attributes' => $productIds->isEmpty()
+                ? 0
+                : DB::table('product_attribute_values')->whereIn('product_id', $productIds)->count(),
+            'images' => $imageCount,
+        ];
     }
 
     protected function getHeaderActions(): array
