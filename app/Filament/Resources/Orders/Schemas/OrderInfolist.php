@@ -95,10 +95,9 @@ class OrderInfolist
                             ->icon('heroicon-o-user-circle')
                             ->iconColor(fn($state) => $state ? 'success' : 'gray')
                             ->color(fn($state) => $state ? 'success' : 'gray')
-                            ->getStateUsing(fn($record) => $record->manager?->name ?? $record->assigned_to)
-                            ->description(fn($record) => $record->manager && $record->assigned_to
-                                ? 'Telegram: ' . $record->assigned_to
-                                : null),
+                            ->getStateUsing(fn($record) => $record->manager
+                                ? $record->manager->name . ($record->assigned_to ? ' (' . $record->assigned_to . ')' : '')
+                                : ($record->assigned_to ?? null)),
                     ]),
 
                 // ── Клиент (1 из 3) ──────────────────────────────────────────

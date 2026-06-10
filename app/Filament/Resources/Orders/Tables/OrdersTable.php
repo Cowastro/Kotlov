@@ -190,10 +190,9 @@ class OrdersTable
                     ->label('Ответственный')
                     ->icon('heroicon-o-user-circle')
                     ->placeholder('—')
-                    ->getStateUsing(fn($record) => $record->manager?->name ?? $record->assigned_to)
-                    ->description(fn($record) => $record->manager && $record->assigned_to
-                        ? $record->assigned_to  // Telegram username под именем CRM-пользователя
-                        : null)
+                    ->getStateUsing(fn($record) => $record->manager
+                        ? $record->manager->name . ($record->assigned_to ? ' (' . $record->assigned_to . ')' : '')
+                        : ($record->assigned_to ?? null))
                     ->searchable(query: fn(Builder $query, string $search) => $query
                         ->where('assigned_to', 'like', "%{$search}%")
                         ->orWhereHas('manager', fn($q) => $q->where('name', 'like', "%{$search}%"))),
