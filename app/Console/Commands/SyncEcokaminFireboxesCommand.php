@@ -717,7 +717,7 @@ class SyncEcokaminFireboxesCommand extends Command
     private function normalizeProductName(string $name): string
     {
         $name = mb_strtoupper($this->cleanText($name));
-        $name = str_replace(['КАМИННАЯ', 'ТОПКА', 'ЧУГУННАЯ'], '', $name);
+        $name = str_replace(['КАМИННАЯ', 'ТОПКА', 'ЧУГУННАЯ', 'ЭКОКАМИН', 'ECOKAMIN'], '', $name);
         $name = preg_replace('/[^A-ZА-ЯЁ0-9]+/u', ' ', $name) ?? $name;
 
         return trim(preg_replace('/\s+/u', ' ', $name) ?? $name);
