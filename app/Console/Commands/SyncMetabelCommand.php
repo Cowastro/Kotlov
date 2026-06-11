@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Services\AiContentEnricher;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -15,6 +16,7 @@ class SyncMetabelCommand extends Command
         {--limit= : Limit number of items for testing}
         {--no-images : Skip downloading product images from metabel.by}
         {--no-scrape : Skip website scraping — update prices only}
+        {--enrich : Generate unique SEO descriptions via Claude API (requires ANTHROPIC_API_KEY)}
         {--sleep=200 : Delay between website requests in milliseconds}
         {--price-file= : Path to Excel price file (default: storage/prices/meta_2025.xlsx)}';
 
@@ -63,7 +65,14 @@ class SyncMetabelCommand extends Command
         $limit          = $this->option('limit') !== null ? (int) $this->option('limit') : null;
         $downloadImages = ! (bool) $this->option('no-images');
         $scrapeWeb      = ! (bool) $this->option('no-scrape');
+        $enrichContent  = (bool) $this->option('enrich');
         $sleepMs        = max(0, (int) ($this->option('sleep') ?? 200));
+
+        $enricher = new AiContentEnricher();
+        if ($enrichContent && ! $enricher->isAvailable()) {
+            $this->warn('--enrich: no AI provider configured, enrichment skipped.');
+            $enrichContent = false;
+        }
         $priceFile      = $this->option('price-file') ?: storage_path('prices/meta_2025.xlsx');
 
         $this->line($apply
@@ -147,6 +156,14 @@ class SyncMetabelCommand extends Command
                 $product = $this->findProduct($item, $supplierId);
 
                 if (! $product) {
+                    if ($enrichContent) {
+                        $aiText = $enricher->enrich($item['price_name'], 'Мета-Бел', $webData['content'] ?? null, $webData['attributes'] ?? []);
+                        if ($aiText) {
+                            $webData['content'] = $aiText;
+                            $this->line('  <fg=cyan>AI content generated.</>');
+                        }
+                    }
+
                     $productId = $this->createProduct($item, $webData, $downloadImages, $now);
                     $sku       = (string) DB::table('products')->where('id', $productId)->value('sku');
                     $this->upsertSupplierProduct($item, $productId, $sku, $supplierId, $syncId, $now);

@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Services\AiContentEnricher;
 use App\Services\Pricing\CurrencyPriceConverter;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
@@ -14,6 +15,7 @@ class SyncBelkominTisBoilersCommand extends Command
         {--dry-run : Preview without writing changes to the database}
         {--limit= : Limit number of products for testing}
         {--no-images : Do not download product images}
+        {--enrich : Generate unique SEO descriptions via Claude API (requires ANTHROPIC_API_KEY)}
         {--sleep=150 : Delay between product requests in milliseconds}';
 
     protected $description = 'Scrape belkomin.com TIS boilers and sync prices, cards, photos and attributes.';
@@ -49,9 +51,16 @@ class SyncBelkominTisBoilersCommand extends Command
 
     public function handle(): int
     {
-        $apply = (bool) $this->option('apply');
-        $limit = $this->option('limit') !== null ? (int) $this->option('limit') : null;
+        $apply          = (bool) $this->option('apply');
+        $limit          = $this->option('limit') !== null ? (int) $this->option('limit') : null;
         $downloadImages = ! (bool) $this->option('no-images');
+        $enrichContent  = (bool) $this->option('enrich');
+
+        $enricher = new AiContentEnricher();
+        if ($enrichContent && ! $enricher->isAvailable()) {
+            $this->warn('--enrich: no AI provider configured, enrichment skipped.');
+            $enrichContent = false;
+        }
 
         $this->line($apply
             ? '<fg=red;options=bold>APPLY: database will be updated.</>'
@@ -145,6 +154,14 @@ class SyncBelkominTisBoilersCommand extends Command
                 $product = $this->findProduct($merged, $supplierId);
                 $isNew = ! $product;
                 $images = [];
+
+                if ($isNew && $enrichContent) {
+                    $aiText = $enricher->enrich($item['name'], 'TIS', $merged['content'] ?? null, $merged['attributes'] ?? []);
+                    if ($aiText) {
+                        $merged['content'] = $aiText;
+                        $this->line('  <fg=cyan>AI content generated.</>');
+                    }
+                }
 
                 if ($downloadImages) {
                     $images = $this->downloadImages($merged);
