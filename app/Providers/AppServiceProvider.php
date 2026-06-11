@@ -167,22 +167,26 @@ private function getCitiesByRegion(): array
 
 private function getNavBrands(): \Illuminate\Support\Collection
 {
-    return Brand::active()
-        ->orderBy('sort_order')
-        ->get(['name', 'slug'])
-        ->keyBy('slug');
+    return Cache::remember('nav:brands', 3600, function () {
+        return Brand::active()
+            ->orderBy('sort_order')
+            ->get(['name', 'slug'])
+            ->keyBy('slug');
+    });
 }
 
 private function getNavCategories()
 {
-    return Category::query()
-        ->where('parent_id', 0)
-        ->where('is_active', true)
-        ->with(['children' => function ($q) {
-            $q->where('is_active', true)
-              ->orderBy('sort_order');
-        }])
-        ->orderBy('sort_order')
-        ->get();
+    return Cache::remember('nav:categories', 3600, function () {
+        return Category::query()
+            ->where('parent_id', 0)
+            ->where('is_active', true)
+            ->with(['children' => function ($q) {
+                $q->where('is_active', true)
+                  ->orderBy('sort_order');
+            }])
+            ->orderBy('sort_order')
+            ->get();
+    });
 }
 }

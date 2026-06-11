@@ -18,8 +18,29 @@
     RewriteCond %{REQUEST_URI} (.+)/$
     RewriteRule ^ %1 [L,R=301]
 
+    # Картинки старого сайта: файл уже скопирован в public/images —
+    # отдаём статикой, не запуская PHP (docroot может быть корнем проекта или public/)
+    RewriteCond %{DOCUMENT_ROOT}/public/images/$1 -f [OR]
+    RewriteCond %{DOCUMENT_ROOT}/images/$1 -f
+    RewriteRule ^proxy-image/(.+)$ images/$1 [L]
+
     # Send Requests To Front Controller...
     RewriteCond %{REQUEST_FILENAME} !-d
     RewriteCond %{REQUEST_FILENAME} !-f
     RewriteRule ^ index.php [L]
+</IfModule>
+
+# Браузерный кеш для статики (раньше был только ETag — браузер перепроверял каждый файл)
+<IfModule mod_expires.c>
+    ExpiresActive On
+    ExpiresByType image/jpeg  "access plus 30 days"
+    ExpiresByType image/png   "access plus 30 days"
+    ExpiresByType image/gif   "access plus 30 days"
+    ExpiresByType image/webp  "access plus 30 days"
+    ExpiresByType image/svg+xml "access plus 30 days"
+    ExpiresByType image/x-icon  "access plus 30 days"
+    ExpiresByType font/woff   "access plus 30 days"
+    ExpiresByType font/woff2  "access plus 30 days"
+    ExpiresByType text/css        "access plus 7 days"
+    ExpiresByType application/javascript "access plus 7 days"
 </IfModule>

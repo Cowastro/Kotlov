@@ -29,6 +29,9 @@ use Illuminate\Support\Facades\Http;
 
 // ===== Главная =====
 Route::get('/', function () {
+    // Все данные блоков главной — тяжёлые (~50 запросов), кешируем на 10 минут.
+    // Изменения товаров/баннеров в админке появятся на главной с задержкой до 10 мин.
+    $data = \Illuminate\Support\Facades\Cache::remember('home:data', 600, function () {
     $categoryBranchIds = function ($categoryId) {
         $categories = Category::where('is_active', true)
             ->get(['id', 'parent_id'])
@@ -105,7 +108,7 @@ Route::get('/', function () {
     $bannerPromoAkcii   = Banner::active()->byPosition('promo_akcii')->first();
     $bannerPartners     = Banner::active()->byPosition('partners')->first();
 
-    return view('pages.home-new', compact(
+    return compact(
         'popularCategories',
         'productsKotly', 'productsNasosy',
         'productsKaminy', 'productsAkcii',
@@ -113,7 +116,10 @@ Route::get('/', function () {
         'bannerPromoKotly', 'bannerPromoNasosy',
         'bannerPromoKaminy', 'bannerPromoAkcii',
         'bannerPartners'
-    ));
+    );
+    });
+
+    return view('pages.home-new', $data);
 });
 
 // ===== Статичные страницы — ДО динамических! =====
@@ -261,9 +267,17 @@ Route::get('/proxy-image/{path}', function ($path) {
                 'Cache-Control' => 'public, max-age=604800',
             ]);
         }
+
+        // Файла нет — сразу placeholder. Внешний запрос делать НЕЛЬЗЯ:
+        // после переезда DNS kotlov.by указывает на этот же сервер,
+        // и fallback превращался в запрос сервера к самому себе (петля).
+        return response()->file($placeholder, [
+            'Content-Type'  => 'image/jpeg',
+            'Cache-Control' => 'public, max-age=3600',
+        ]);
     }
 
-    // На локалке и fallback на проде: берём со старого сервера
+    // На локалке: берём с боевого сервера (там файлы отдаются статикой)
     $baseUrl = rtrim(env('LEGACY_SITE_URL', 'https://kotlov.by'), '/');
     $url = "{$baseUrl}/images/{$path}";
 
@@ -280,7 +294,13 @@ Route::get('/proxy-image/{path}', function ($path) {
     } catch (\Exception $e) {
         return response()->file($placeholder, ['Content-Type' => 'image/jpeg']);
     }
-})->where('path', '.*');
+})->where('path', '.*')
+  // Картинкам сессия не нужна — иначе каждый запрос краулера создаёт строку в `sessions`
+  ->withoutMiddleware([
+      \Illuminate\Session\Middleware\StartSession::class,
+      \Illuminate\View\Middleware\ShareErrorsFromSession::class,
+      \Illuminate\Foundation\Http\Middleware\ValidateCsrfToken::class,
+  ]);
 
 // ===== Динамические роуты — ПОСЛЕДНИМИ =====
 
