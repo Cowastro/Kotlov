@@ -307,7 +307,7 @@ class SyncTekhnoLitCommand extends Command
         $candidates = DB::table('products')
             ->where('brand_id', $brandId)
             ->where('is_archived', false)
-            ->get(['id', 'sku', 'name', 'price']);
+            ->get(['id', 'sku', 'name', 'price', 'content', 'images']);
 
         foreach ($candidates as $c) {
             if ($this->normalizeName($c->name) === $norm) {
