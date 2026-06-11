@@ -5,6 +5,13 @@
 
     RewriteEngine On
 
+    # ── Блокируем агрессивных AI/SEO-скрейперов ─────────────────────────
+    # 403 на уровне Apache, до запуска PHP. Реальным посетителям и
+    # Google/Bing/Yandex не мешает. Если что-то ломает индексацию —
+    # достаточно убрать конкретного бота из списка.
+    RewriteCond %{HTTP_USER_AGENT} (SemrushBot|GPTBot|GeedoShop|PetalBot|AhrefsBot|MJ12bot|DotBot|DataForSeoBot|ClaudeBot|Claude-Web|Bytespider|CCBot|Amazonbot|FacebookBot|Applebot-Extended|anthropic-ai|cohere-ai|Diffbot|ImagesiftBot|Omgilibot|Omgili|Timpibot|YouBot|ZoominfoBot) [NC]
+    RewriteRule .* - [F,L]
+
     # Handle Authorization Header
     RewriteCond %{HTTP:Authorization} .
     RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
