@@ -580,7 +580,7 @@ class SyncMetabelCommand extends Command
             'is_new'            => true,
             'is_sale'           => false,
             'sort_order'        => 0,
-            'meta_title'        => $name . ' купить в Минске',
+            'meta_title'        => $name . ' купить в %city%',
             'meta_keywords'     => 'Мета-Бел, ' . $name,
             'meta_description'  => $name . ' — купить по лучшей цене.',
             'rating'            => 0,

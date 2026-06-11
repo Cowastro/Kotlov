@@ -369,7 +369,7 @@ class SyncBelkominTisBoilersCommand extends Command
             'is_new' => false,
             'is_sale' => $item['price_old'] !== null && $item['price'] !== null && $item['price_old'] > $item['price'],
             'sort_order' => 0,
-            'meta_title' => $item['meta_title'] ?: $item['name'] . ' купить в Минске',
+            'meta_title' => $item['meta_title'] ?: $item['name'] . ' купить в %city%',
             'meta_keywords' => 'котел TIS, твердотопливный котел, БелКомин, ' . $item['name'],
             'meta_description' => $item['meta_description'] ?: $item['name'],
             'rating' => 0,

@@ -427,7 +427,7 @@ class SyncEcokaminFireboxesCommand extends Command
             'is_new' => false,
             'is_sale' => $item['price_old_byn'] !== null,
             'sort_order' => 0,
-            'meta_title' => $item['meta_title'] ?: $item['name'] . ' купить в Минске',
+            'meta_title' => $item['meta_title'] ?: $item['name'] . ' купить в %city%',
             'meta_keywords' => 'каминная топка, ЭкоКамин, ' . $item['name'],
             'meta_description' => $item['meta_description'] ?: $item['name'],
             'rating' => 0,

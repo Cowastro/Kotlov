@@ -376,7 +376,7 @@ class SyncTekhnoLitCommand extends Command
             'is_new'            => false,
             'is_sale'           => false,
             'sort_order'        => 0,
-            'meta_title'        => $item['name'] . ' купить в Минске',
+            'meta_title'        => $item['name'] . ' купить в %city%',
             'meta_keywords'     => 'ТехноЛит, банная печь, ' . $item['name'],
             'meta_description'  => $item['name'] . ' — купить по лучшей цене.',
             'rating'            => 0,

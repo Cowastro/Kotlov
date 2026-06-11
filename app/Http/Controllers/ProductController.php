@@ -83,6 +83,11 @@ class ProductController extends Controller
         $keywords = $replaceCityIn($product->meta_keywords)
             ?: ($nameFull . ', купить ' . mb_strtolower($nameFull) . ', цена, ' . $cityIn);
 
+        // Replace %city% placeholders in product body content too
+        if ($product->content) {
+            $product->content = $replaceCityIn($product->content);
+        }
+
         $canonical = 'https://kotlov.by/' . $product->category->slug . '/' . $product->slug;
 
         $firstImage = $product->imageUrl(0);

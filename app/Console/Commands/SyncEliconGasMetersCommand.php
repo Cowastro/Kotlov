@@ -356,7 +356,7 @@ class SyncEliconGasMetersCommand extends Command
             'is_new' => false,
             'is_sale' => false,
             'sort_order' => 0,
-            'meta_title' => $item['meta_title'] ?: $item['name'] . ' купить в Минске',
+            'meta_title' => $item['meta_title'] ?: $item['name'] . ' купить в %city%',
             'meta_keywords' => 'счетчик газа, БелОМО, Эликон, ' . $item['article'],
             'meta_description' => $item['meta_description'] ?: $item['name'],
             'rating' => 0,
