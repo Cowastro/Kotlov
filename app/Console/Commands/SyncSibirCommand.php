@@ -75,6 +75,7 @@ class SyncSibirCommand extends Command
             'no_change'  => 0,
             'images'     => 0,
             'attributes' => 0,
+            'skipped'    => 0,
             'errors'     => 0,
         ];
 
@@ -82,7 +83,14 @@ class SyncSibirCommand extends Command
             $this->line(sprintf('[%d/%d] %s', $i + 1, count($items), mb_substr($item['name'], 0, 60)));
 
             try {
-                $detail = $this->scrapeProduct($item['url']);
+                try {
+                    $detail = $this->scrapeProduct($item['url']);
+                } catch (\Throwable $e) {
+                    $stats['skipped']++;
+                    $this->warn('  skipped detail page: ' . $e->getMessage());
+                    continue;
+                }
+
                 $merged = array_merge($item, $detail);
 
                 $images = [];
@@ -200,6 +208,10 @@ class SyncSibirCommand extends Command
 
             $url  = $linkMatch[1];
             $name = $this->cleanText($linkMatch[2]);
+
+            if (! $this->isSibirProduct($name)) {
+                continue;
+            }
 
             if (! preg_match('/class="js_shop_price">([\d.,]+)</', $block, $priceMatch)) {
                 continue;
@@ -333,6 +345,13 @@ class SyncSibirCommand extends Command
         $name = preg_replace('/\b(КОТЕЛ\s+ТВЕРДОТОПЛИВНЫЙ|ТВЕРДОТОПЛИВНЫЙ\s+КОТЕЛ|КОТЕЛ|СИБИРЬ|SIBIR)\b/u', '', $name);
         $name = preg_replace('/[^А-ЯЁA-Z0-9(). ]+/u', ' ', $name);
         return trim(preg_replace('/\s+/u', ' ', $name));
+    }
+
+    private function isSibirProduct(string $name): bool
+    {
+        $upper = mb_strtoupper($name);
+
+        return str_contains($upper, 'СИБИРЬ') || str_contains($upper, 'SIBIR');
     }
 
     // ── Persistence ───────────────────────────────────────────────────────────────
