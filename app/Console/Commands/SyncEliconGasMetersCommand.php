@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Services\Pricing\CurrencyPriceConverter;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -21,6 +22,9 @@ class SyncEliconGasMetersCommand extends Command
     private const CATEGORY_ID = 96;
     private const BRAND_ID = 112;
     private const CATEGORY_URL = 'https://elicon.by/product-category/bitovie_schetchiki_gaza/';
+
+    private string $supplierCurrency = CurrencyPriceConverter::BASE_CURRENCY;
+    private float $supplierRate = 1.0;
 
     public function handle(): int
     {
@@ -45,28 +49,47 @@ class SyncEliconGasMetersCommand extends Command
 
         $this->info('Found gas meters: ' . count($items));
 
+        try {
+            $this->loadSupplierCurrency();
+        } catch (\Throwable $e) {
+            $this->error($e->getMessage());
+            return self::FAILURE;
+        }
+
+        $this->line(sprintf('Supplier currency: %s, rate to BYN: %s', $this->supplierCurrency, $this->supplierRate));
+
         if (! $apply) {
             $preview = [];
             foreach ($items as $item) {
+                $priceByn = CurrencyPriceConverter::convertToByn($item['price'], $this->supplierCurrency, $this->supplierRate);
+
                 try {
                     $detail = $this->scrapeProduct($item['url']);
                     $preview[] = [
                         'article' => $item['article'],
-                        'price' => $item['price'] !== null ? number_format($item['price'], 2, '.', '') : 'no price',
+                        'price' => $item['price'] !== null
+                            ? number_format($item['price'], 2, '.', '') . ' ' . $this->supplierCurrency
+                            : 'no price',
+                        'price_byn' => $priceByn !== null ? number_format($priceByn, 2, '.', '') : '—',
+                        'product' => $this->previewPriceAction($item, $priceByn),
                         'images' => count(array_unique(array_filter(array_merge(
                             [$item['listing_image'] ?? null],
                             $detail['images_remote'] ?? []
                         )))),
                         'attributes' => count(($detail['attributes'] ?? []) + $this->derivedSpecs($item + $detail)),
-                        'name' => mb_substr($item['name'], 0, 58),
+                        'name' => mb_substr($item['name'], 0, 48),
                     ];
                 } catch (\Throwable $e) {
                     $preview[] = [
                         'article' => $item['article'],
-                        'price' => $item['price'] !== null ? number_format($item['price'], 2, '.', '') : 'no price',
+                        'price' => $item['price'] !== null
+                            ? number_format($item['price'], 2, '.', '') . ' ' . $this->supplierCurrency
+                            : 'no price',
+                        'price_byn' => $priceByn !== null ? number_format($priceByn, 2, '.', '') : '—',
+                        'product' => $this->previewPriceAction($item, $priceByn),
                         'images' => 'error',
                         'attributes' => 'error',
-                        'name' => mb_substr($item['name'], 0, 58),
+                        'name' => mb_substr($item['name'], 0, 48),
                     ];
                 }
 
@@ -74,7 +97,7 @@ class SyncEliconGasMetersCommand extends Command
             }
 
             $this->table(
-                ['article', 'price', 'images', 'attributes', 'name'],
+                ['article', 'price', 'price_byn', 'product', 'images', 'attributes', 'name'],
                 $preview
             );
             $this->line('Run with --apply to update products, attributes and images.');
@@ -101,6 +124,7 @@ class SyncEliconGasMetersCommand extends Command
             try {
                 $detail = $this->scrapeProduct($item['url']);
                 $merged = array_merge($item, $detail);
+                $merged['price_byn'] = CurrencyPriceConverter::convertToByn($merged['price'], $this->supplierCurrency, $this->supplierRate);
 
                 $product = $this->findProduct($merged);
                 $isNew = ! $product;
@@ -300,7 +324,7 @@ class SyncEliconGasMetersCommand extends Command
 
     private function upsertProduct(array $item, ?object $product, array $images, $now): int
     {
-        $price = $item['price'];
+        $price = $item['price_byn'] ?? null;
         $attrs = $item['attributes'] ?? [];
 
         if (empty($images) && $product?->images) {
@@ -507,7 +531,9 @@ class SyncEliconGasMetersCommand extends Command
                 'source_url' => $item['url'],
                 'source_wp_id' => $item['wp_id'] ?? null,
                 'price' => $item['price'],
-                'currency' => 'BYN',
+                'currency' => $this->supplierCurrency,
+                'currency_rate' => $this->supplierRate,
+                'price_byn' => $item['price_byn'] ?? null,
                 'in_stock' => $item['price'] !== null,
                 'match_status' => 'matched',
                 'match_confidence' => 'manual',
@@ -547,23 +573,58 @@ class SyncEliconGasMetersCommand extends Command
 
     private function ensureSupplier($now): int
     {
-        DB::table('suppliers')->updateOrInsert(
-            ['code' => self::SUPPLIER_CODE],
-            [
-                'name' => 'Эликон',
-                'currency' => 'BYN',
-                'currency_rate' => 1,
-                'contact' => self::CATEGORY_URL,
-                'notes' => 'Каталог бытовых счетчиков газа БелОМО.',
-                'is_active' => true,
-                'created_at' => $now,
-                'updated_at' => $now,
-            ]
-        );
+        $existing = DB::table('suppliers')->where('code', self::SUPPLIER_CODE)->first();
 
-        return (int) DB::table('suppliers')
-            ->where('code', self::SUPPLIER_CODE)
-            ->value('id');
+        // Валюту и курс не трогаем — ими управляет админка (Filament SupplierResource).
+        if ($existing) {
+            DB::table('suppliers')->where('id', $existing->id)->update([
+                'name' => 'Эликон',
+                'contact' => self::CATEGORY_URL,
+                'is_active' => true,
+                'updated_at' => $now,
+            ]);
+
+            return (int) $existing->id;
+        }
+
+        return (int) DB::table('suppliers')->insertGetId([
+            'code' => self::SUPPLIER_CODE,
+            'name' => 'Эликон',
+            'currency' => 'BYN',
+            'currency_rate' => 1,
+            'contact' => self::CATEGORY_URL,
+            'notes' => 'Каталог бытовых счетчиков газа БелОМО.',
+            'is_active' => true,
+            'created_at' => $now,
+            'updated_at' => $now,
+        ]);
+    }
+
+    private function loadSupplierCurrency(): void
+    {
+        $supplier = DB::table('suppliers')->where('code', self::SUPPLIER_CODE)->first();
+
+        $this->supplierCurrency = CurrencyPriceConverter::normalizeCurrency($supplier->currency ?? null);
+        $this->supplierRate = CurrencyPriceConverter::rateFor($this->supplierCurrency, $supplier->currency_rate ?? 1);
+    }
+
+    private function previewPriceAction(array $item, ?float $priceByn): string
+    {
+        $product = $this->findProduct($item);
+
+        if (! $product) {
+            return 'create';
+        }
+
+        if ($priceByn === null) {
+            return 'keep price';
+        }
+
+        if (abs((float) $product->price - $priceByn) < 0.01) {
+            return 'no change';
+        }
+
+        return sprintf('%.2f → %.2f', (float) $product->price, $priceByn);
     }
 
     private function ensureSupplierSync($now): ?int

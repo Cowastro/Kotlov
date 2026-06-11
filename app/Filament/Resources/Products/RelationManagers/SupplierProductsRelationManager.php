@@ -43,10 +43,20 @@ class SupplierProductsRelationManager extends RelationManager
                     ->copyable(),
 
                 TextColumn::make('price')
-                    ->label('Цена')
+                    ->label('Цена поставщика')
                     ->formatStateUsing(fn($state, $record): string => $state === null
                         ? '—'
                         : number_format((float) $state, 2, ',', ' ') . ' ' . ($record->currency ?: 'BYN'))
+                    ->description(fn($record) => $record->currency && $record->currency !== 'BYN'
+                        ? 'курс ' . rtrim(rtrim(number_format((float) $record->currency_rate, 4, '.', ''), '0'), '.')
+                        : null)
+                    ->sortable(),
+
+                TextColumn::make('price_byn')
+                    ->label('Цена, BYN')
+                    ->formatStateUsing(fn($state): string => $state === null
+                        ? '—'
+                        : number_format((float) $state, 2, ',', ' ') . ' BYN')
                     ->sortable(),
 
                 IconColumn::make('in_stock')

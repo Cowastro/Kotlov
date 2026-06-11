@@ -6,6 +6,7 @@ use App\Models\Supplier;
 use App\Models\SupplierPriceImport;
 use App\Models\SupplierPriceItem;
 use App\Services\PriceList\SupplierAdapter;
+use App\Services\Pricing\CurrencyPriceConverter;
 use Illuminate\Console\Command;
 
 /**
@@ -92,18 +93,21 @@ class SupplierImportCommand extends Command
             'status'      => 'processing',
         ]);
 
-        $rate  = $supplier->currency_rate ?: 1.0;
+        $currency = CurrencyPriceConverter::normalizeCurrency($supplier->currency);
+        $rate     = CurrencyPriceConverter::rateFor($currency, $supplier->currency_rate);
+        $this->line("Валюта поставщика: $currency, курс к BYN: $rate");
+
         $batch = [];
         $total = 0;
 
         $this->output->write('Сохраняю...');
         foreach ($rows as $row) {
-            $priceByn    = round((float)$row['price'] * $rate, 2);
+            $priceByn    = CurrencyPriceConverter::convertToByn($row['price'], $currency, $rate);
             $priceOldByn = null;
             if ($colPriceOld && isset($row['raw'][$colPriceOld])) {
                 $parsed = SupplierAdapter::parsePrice($row['raw'][$colPriceOld]);
                 if ($parsed > 0) {
-                    $priceOldByn = round($parsed * $rate, 2);
+                    $priceOldByn = CurrencyPriceConverter::convertToByn($parsed, $currency, $rate);
                 }
             }
 
@@ -119,6 +123,8 @@ class SupplierImportCommand extends Command
                 'article'      => $row['article'],
                 'name'         => $row['name'],
                 'price'        => $row['price'],
+                'currency'     => $currency,
+                'currency_rate' => $rate,
                 'price_byn'    => $priceByn,
                 'price_old'    => $priceOldByn,
                 'in_stock'     => $inStock,

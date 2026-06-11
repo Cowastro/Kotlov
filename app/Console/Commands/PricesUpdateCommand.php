@@ -5,6 +5,7 @@ namespace App\Console\Commands;
 use App\Models\Supplier;
 use App\Models\SupplierPriceItem;
 use App\Models\Product;
+use App\Services\Pricing\CurrencyPriceConverter;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 
@@ -65,7 +66,10 @@ class PricesUpdateCommand extends Command
             return;
         }
 
-        $this->info("\n📦 Поставщик: {$supplier->name} (импорт #{$import->id})");
+        $supplierCurrency = CurrencyPriceConverter::normalizeCurrency($supplier->currency);
+        $supplierRate     = CurrencyPriceConverter::rateFor($supplierCurrency, $supplier->currency_rate);
+
+        $this->info("\n📦 Поставщик: {$supplier->name} (импорт #{$import->id}) | валюта: $supplierCurrency, курс к BYN: $supplierRate");
 
         $items = SupplierPriceItem::where('import_id', $import->id)
             ->where('match_status', 'matched')
@@ -94,7 +98,11 @@ class PricesUpdateCommand extends Command
                     continue;
                 }
 
-                $newPrice = $item->price_byn ?? $item->price;
+                // Валюта/курс зафиксированы на строке при импорте; для старых строк — текущие настройки поставщика.
+                $itemCurrency = CurrencyPriceConverter::normalizeCurrency($item->currency ?: $supplierCurrency);
+                $itemRate     = (float) ($item->currency_rate ?: 0) > 0 ? (float) $item->currency_rate : $supplierRate;
+
+                $newPrice = $item->price_byn ?? CurrencyPriceConverter::convertToByn($item->price, $itemCurrency, $itemRate);
 
                 // Пропустить если цена не изменилась
                 if (!$this->option('force') && abs($product->price - $newPrice) < 0.01) {
@@ -111,12 +119,15 @@ class PricesUpdateCommand extends Command
 
                 if ($dryRun) {
                     $this->line(sprintf(
-                        "\n  %s: %.2f → %.2f%s %s",
+                        "\n  %s: %.2f %s × %s = %.2f BYN | на сайте %.2f → %.2f BYN%s",
                         $product->name,
+                        $item->price,
+                        $itemCurrency,
+                        $itemRate,
+                        $newPrice,
                         $product->price,
                         $newPrice,
-                        $priceOld ? " (РРЦ: {$priceOld})" : '',
-                        $product->currency
+                        $priceOld ? " (РРЦ: {$priceOld})" : ''
                     ));
                 } else {
                     DB::table('products')->where('id', $product->id)->update([

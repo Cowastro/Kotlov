@@ -9,13 +9,15 @@ class SupplierPriceItem extends Model
 {
     protected $fillable = [
         'supplier_id', 'import_id', 'article', 'name',
-        'price', 'price_byn', 'in_stock', 'stock_qty', 'raw',
+        'price', 'currency', 'currency_rate', 'price_byn',
+        'in_stock', 'stock_qty', 'raw',
         'product_id', 'product_sku', 'match_status', 'match_method',
     ];
 
     protected $casts = [
-        'in_stock' => 'boolean',
-        'raw'      => 'array',
+        'in_stock'      => 'boolean',
+        'currency_rate' => 'float',
+        'raw'           => 'array',
     ];
 
     public function supplier(): BelongsTo

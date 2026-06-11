@@ -19,6 +19,8 @@ class SupplierProduct extends Model
         'source_wp_id',
         'price',
         'currency',
+        'currency_rate',
+        'price_byn',
         'in_stock',
         'match_status',
         'match_confidence',
@@ -28,6 +30,8 @@ class SupplierProduct extends Model
 
     protected $casts = [
         'price' => 'decimal:2',
+        'currency_rate' => 'float',
+        'price_byn' => 'decimal:2',
         'in_stock' => 'boolean',
         'raw' => 'array',
         'last_synced_at' => 'datetime',

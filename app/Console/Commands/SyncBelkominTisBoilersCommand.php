@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Services\Pricing\CurrencyPriceConverter;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -43,6 +44,9 @@ class SyncBelkominTisBoilersCommand extends Command
         'katalog/kotlyi-tis-hard-eko/',
     ];
 
+    private string $supplierCurrency = CurrencyPriceConverter::BASE_CURRENCY;
+    private float $supplierRate = 1.0;
+
     public function handle(): int
     {
         $apply = (bool) $this->option('apply');
@@ -66,34 +70,50 @@ class SyncBelkominTisBoilersCommand extends Command
 
         $this->info('Found TIS boilers: ' . count($items));
 
+        try {
+            $this->loadSupplierCurrency();
+        } catch (\Throwable $e) {
+            $this->error($e->getMessage());
+            return self::FAILURE;
+        }
+
+        $this->line(sprintf('Supplier currency: %s, rate to BYN: %s', $this->supplierCurrency, $this->supplierRate));
+
         if (! $apply) {
+            $previewSupplierId = (int) (DB::table('suppliers')->where('code', self::SUPPLIER_CODE)->value('id') ?? 0);
             $preview = [];
             foreach ($items as $item) {
+                $priceByn = CurrencyPriceConverter::convertToByn($item['price'], $this->supplierCurrency, $this->supplierRate);
+
                 try {
                     $detail = $this->scrapeProduct($item['url']);
                     $preview[] = [
                         'article' => $item['article'],
-                        'price' => $item['price'] !== null ? number_format($item['price'], 2, '.', '') : 'no price',
-                        'old' => $item['price_old'] !== null ? number_format($item['price_old'], 2, '.', '') : '',
+                        'price' => $item['price'] !== null
+                            ? number_format($item['price'], 2, '.', '') . ' ' . $this->supplierCurrency
+                            : 'no price',
+                        'price_byn' => $priceByn !== null ? number_format($priceByn, 2, '.', '') : '—',
+                        'product' => $this->previewPriceAction($item, $priceByn, $previewSupplierId),
                         'images' => count(array_unique(array_filter(array_merge([$item['listing_image']], $detail['images_remote'] ?? [])))),
                         'attributes' => count(($item['attributes'] ?? []) + ($detail['attributes'] ?? []) + $this->derivedSpecs($item)),
-                        'name' => mb_substr($item['name'], 0, 54),
+                        'name' => mb_substr($item['name'], 0, 48),
                     ];
                 } catch (\Throwable $e) {
                     $preview[] = [
                         'article' => $item['article'],
                         'price' => 'error',
-                        'old' => '',
+                        'price_byn' => '—',
+                        'product' => 'error',
                         'images' => 'error',
                         'attributes' => 'error',
-                        'name' => mb_substr($item['name'], 0, 54),
+                        'name' => mb_substr($item['name'], 0, 48),
                     ];
                 }
 
                 usleep(max(0, (int) $this->option('sleep')) * 1000);
             }
 
-            $this->table(['article', 'price', 'old', 'images', 'attributes', 'name'], $preview);
+            $this->table(['article', 'price', 'price_byn', 'product', 'images', 'attributes', 'name'], $preview);
             $this->line('Run with --apply to update products, attributes and images.');
             return self::SUCCESS;
         }
@@ -119,6 +139,8 @@ class SyncBelkominTisBoilersCommand extends Command
                 $detail = $this->scrapeProduct($item['url']);
                 $merged = array_merge($item, $detail);
                 $merged['attributes'] = ($item['attributes'] ?? []) + ($detail['attributes'] ?? []);
+                $merged['price_byn'] = CurrencyPriceConverter::convertToByn($merged['price'], $this->supplierCurrency, $this->supplierRate);
+                $merged['price_old_byn'] = CurrencyPriceConverter::convertToByn($merged['price_old'], $this->supplierCurrency, $this->supplierRate);
 
                 $product = $this->findProduct($merged, $supplierId);
                 $isNew = ! $product;
@@ -311,8 +333,8 @@ class SyncBelkominTisBoilersCommand extends Command
             'supplier_id' => null,
             'name' => $item['name'],
             'h1' => $item['h1'] ?: $item['name'],
-            'price' => $item['price'] ?? 0,
-            'price_old' => $item['price_old'],
+            'price' => $item['price_byn'] ?? 0,
+            'price_old' => $item['price_old_byn'] ?? null,
             'currency' => 'BYN',
             'content' => $item['content'] ?: null,
             'short_description' => null,
@@ -436,7 +458,7 @@ class SyncBelkominTisBoilersCommand extends Command
                 $query->where('brand_id', self::BRAND_ID)
                     ->orWhere('name', 'like', '%TIS%');
             })
-            ->get(['id', 'sku', 'name', 'images']);
+            ->get(['id', 'sku', 'name', 'images', 'price']);
 
         foreach ($candidates as $candidate) {
             if ($this->normalizeProductName($candidate->name) === $normalizedName) {
@@ -463,7 +485,9 @@ class SyncBelkominTisBoilersCommand extends Command
                 'source_url' => $item['url'],
                 'source_wp_id' => null,
                 'price' => $item['price'],
-                'currency' => 'BYN',
+                'currency' => $this->supplierCurrency,
+                'currency_rate' => $this->supplierRate,
+                'price_byn' => $item['price_byn'] ?? null,
                 'in_stock' => $item['price'] !== null,
                 'match_status' => 'matched',
                 'match_confidence' => 'auto_name',
@@ -518,21 +542,60 @@ class SyncBelkominTisBoilersCommand extends Command
 
     private function ensureSupplier($now): int
     {
-        DB::table('suppliers')->updateOrInsert(
-            ['code' => self::SUPPLIER_CODE],
-            [
-                'name' => 'БелКомин',
-                'currency' => 'BYN',
-                'currency_rate' => 1,
-                'contact' => self::SOURCE_URL,
-                'notes' => 'Официальный сайт производителя котлов TIS.',
-                'is_active' => true,
-                'created_at' => $now,
-                'updated_at' => $now,
-            ]
-        );
+        $existing = DB::table('suppliers')->where('code', self::SUPPLIER_CODE)->first();
 
-        return (int) DB::table('suppliers')->where('code', self::SUPPLIER_CODE)->value('id');
+        // Валюту и курс не трогаем — ими управляет админка (Filament SupplierResource).
+        if ($existing) {
+            DB::table('suppliers')->where('id', $existing->id)->update([
+                'name' => 'БелКомин',
+                'contact' => self::SOURCE_URL,
+                'is_active' => true,
+                'updated_at' => $now,
+            ]);
+
+            return (int) $existing->id;
+        }
+
+        return (int) DB::table('suppliers')->insertGetId([
+            'code' => self::SUPPLIER_CODE,
+            'name' => 'БелКомин',
+            'currency' => 'BYN',
+            'currency_rate' => 1,
+            'contact' => self::SOURCE_URL,
+            'notes' => 'Официальный сайт производителя котлов TIS.',
+            'is_active' => true,
+            'created_at' => $now,
+            'updated_at' => $now,
+        ]);
+    }
+
+    private function loadSupplierCurrency(): void
+    {
+        $supplier = DB::table('suppliers')->where('code', self::SUPPLIER_CODE)->first();
+
+        $this->supplierCurrency = CurrencyPriceConverter::normalizeCurrency($supplier->currency ?? null);
+        $this->supplierRate = CurrencyPriceConverter::rateFor($this->supplierCurrency, $supplier->currency_rate ?? 1);
+    }
+
+    private function previewPriceAction(array $item, ?float $priceByn, int $supplierId): string
+    {
+        $product = $this->findProduct($item, $supplierId);
+
+        if (! $product) {
+            return 'create';
+        }
+
+        if ($priceByn === null) {
+            return 'keep price';
+        }
+
+        $currentPrice = (float) ($product->price ?? 0);
+
+        if (abs($currentPrice - $priceByn) < 0.01) {
+            return 'no change';
+        }
+
+        return sprintf('%.2f → %.2f', $currentPrice, $priceByn);
     }
 
     private function ensureSupplierSync($now): ?int
