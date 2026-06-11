@@ -578,10 +578,12 @@ class SyncEcokaminFireboxesCommand extends Command
 
     private function downloadImages(array $item): array
     {
-        $urls = array_values(array_unique(array_filter(array_merge(
-            [$item['listing_image'] ?? null],
-            $item['images_remote'] ?? []
-        ))));
+        // listing_image — превью 133×200 из каталога, на сайте получается размытым.
+        // Используем его только если детальная страница не отдала ни одной картинки.
+        $detail = array_values(array_filter($item['images_remote'] ?? []));
+        $urls = $detail !== []
+            ? array_values(array_unique($detail))
+            : array_values(array_filter([$item['listing_image'] ?? null]));
 
         $paths = [];
         $dir = public_path('img/products/ecokamin');
