@@ -209,10 +209,6 @@ class SyncSibirCommand extends Command
             $url  = $linkMatch[1];
             $name = $this->cleanText($linkMatch[2]);
 
-            if (! $this->isSibirProduct($name)) {
-                continue;
-            }
-
             if (! preg_match('/class="js_shop_price">([\d.,]+)</', $block, $priceMatch)) {
                 continue;
             }
@@ -345,13 +341,6 @@ class SyncSibirCommand extends Command
         $name = preg_replace('/\b(КОТЕЛ\s+ТВЕРДОТОПЛИВНЫЙ|ТВЕРДОТОПЛИВНЫЙ\s+КОТЕЛ|КОТЕЛ|СИБИРЬ|SIBIR)\b/u', '', $name);
         $name = preg_replace('/[^А-ЯЁA-Z0-9(). ]+/u', ' ', $name);
         return trim(preg_replace('/\s+/u', ' ', $name));
-    }
-
-    private function isSibirProduct(string $name): bool
-    {
-        $upper = mb_strtoupper($name);
-
-        return str_contains($upper, 'СИБИРЬ') || str_contains($upper, 'SIBIR');
     }
 
     // ── Persistence ───────────────────────────────────────────────────────────────
