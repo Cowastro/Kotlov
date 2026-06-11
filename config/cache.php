@@ -125,6 +125,8 @@ return [
     |
     */
 
-    'serializable_classes' => false,
+    // true: в кеше (nav-меню, блоки главной) лежат Eloquent-модели; при false
+    // они возвращаются как __PHP_Incomplete_Class и сайт падает с 500
+    'serializable_classes' => true,
 
 ];
