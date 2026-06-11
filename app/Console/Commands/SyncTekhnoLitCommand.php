@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Services\AiContentEnricher;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -13,6 +14,7 @@ class SyncTekhnoLitCommand extends Command
         {--dry-run : Preview without writing changes}
         {--limit= : Limit number of products for testing}
         {--no-images : Skip downloading product images}
+        {--enrich : Generate unique SEO descriptions via Claude API (requires ANTHROPIC_API_KEY)}
         {--sleep=300 : Delay between requests in milliseconds}';
 
     protected $description = 'Scrape ТехноЛит bath stoves from teplodvor.by and sync prices, cards, photos and attributes.';
@@ -32,7 +34,14 @@ class SyncTekhnoLitCommand extends Command
         $apply          = (bool) $this->option('apply');
         $limit          = $this->option('limit') !== null ? (int) $this->option('limit') : null;
         $downloadImages = ! (bool) $this->option('no-images');
+        $enrichContent  = (bool) $this->option('enrich');
         $sleepMs        = max(0, (int) ($this->option('sleep') ?? 300));
+
+        $enricher = new AiContentEnricher();
+        if ($enrichContent && ! $enricher->isAvailable()) {
+            $this->warn('--enrich: ANTHROPIC_API_KEY not set, content enrichment skipped.');
+            $enrichContent = false;
+        }
 
         $this->line($apply
             ? '<fg=red;options=bold>APPLY: database will be updated.</>'
@@ -84,6 +93,14 @@ class SyncTekhnoLitCommand extends Command
 
                 $product = $this->findProduct($merged, $supplierId, $brandId);
                 $isNew   = ! $product;
+
+                if ($isNew && $enrichContent) {
+                    $aiText = $enricher->enrich($item['name'], 'ТехноЛит', $merged['content'] ?? null, $merged['attributes'] ?? []);
+                    if ($aiText) {
+                        $merged['content'] = $aiText;
+                        $this->line('  <fg=cyan>AI content generated.</>');
+                    }
+                }
 
                 $productId  = $this->upsertProduct($merged, $product, $images, $brandId, $now);
                 $productSku = (string) DB::table('products')->where('id', $productId)->value('sku');
