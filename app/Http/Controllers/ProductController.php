@@ -44,7 +44,8 @@ class ProductController extends Controller
         // Похожие товары
         $relatedProducts = Product::where('category_id', $product->category_id)
             ->where('id', '!=', $product->id)
-            ->where('is_active', true)
+            ->active()
+            ->notArchived()
             ->with(['category', 'brand'])
             ->inRandomOrder()
             ->limit(8)
