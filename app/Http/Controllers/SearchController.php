@@ -21,8 +21,8 @@ class SearchController extends Controller
             // Разбиваем на слова — каждое слово должно встречаться в названии
             $words = array_filter(array_map('trim', explode(' ', $q)), fn($w) => mb_strlen($w) >= 1);
 
-            $query = Product::where('is_active', true)
-                ->where('is_archived', false)
+            $query = Product::active()
+                ->notArchived()
                 ->where(function ($qb) use ($words, $q) {
                     // Сначала пробуем полное совпадение
                     $qb->where('name', 'like', "%{$q}%")
@@ -79,8 +79,8 @@ class SearchController extends Controller
         // Товары
         $words = array_filter(array_map('trim', explode(' ', $q)), fn($w) => mb_strlen($w) >= 1);
 
-        $products = Product::where('is_active', true)
-            ->where('is_archived', false)
+        $products = Product::active()
+            ->notArchived()
             ->where(function ($qb) use ($q, $words) {
                 $qb->where('name', 'like', "%{$q}%")
                    ->orWhere('sku', 'like', "{$q}%")
@@ -107,6 +107,7 @@ class SearchController extends Controller
         // Категории
         $categories = Category::where('is_active', true)
             ->where('name', 'like', "%{$q}%")
+            ->whereHas('products', fn($products) => $products->active()->notArchived())
             ->select('id', 'name', 'slug')
             ->limit(3)
             ->get()
