@@ -94,9 +94,22 @@ class CatalogController extends Controller
             ->orderBy('sort_order')
             ->get();
 
+        // Счётчики товаров по всем опциям одним групповым запросом —
+        // раньше был отдельный COUNT на каждую опцию каждого фильтра (N+1)
+        $optionCounts = ProductAttributeValue::query()
+            ->whereIn('attribute_id', $rawAttributes->pluck('id'))
+            ->whereNotNull('option_id')
+            ->whereHas('product', fn($q) => $q
+                ->where('is_active', true)->where('is_archived', false)
+                ->whereIn('category_id', $activeCategoryIds)
+            )
+            ->groupBy('attribute_id', 'option_id')
+            ->selectRaw('attribute_id, option_id, count(*) as cnt')
+            ->get();
+
         $filterAttributes = $rawAttributes
             ->groupBy(fn($attr) => $this->normalizeFilterName($attr->name))
-            ->map(function ($group) use ($activeCategoryIds) {
+            ->map(function ($group) use ($optionCounts) {
                 /** @var Attribute $primary */
                 $primary = $group->first();
                 $allAttrIds = $group->pluck('id')->all();
@@ -104,16 +117,13 @@ class CatalogController extends Controller
                 $mergedOptions = $group
                     ->flatMap(fn($attr) => $attr->options)
                     ->groupBy(fn($option) => $this->normalizeFilterName($option->name))
-                    ->map(function ($options) use ($allAttrIds, $activeCategoryIds) {
+                    ->map(function ($options) use ($allAttrIds, $optionCounts) {
                         $primaryOption = $options->sortBy('sort_order')->first();
                         $optionIds = $options->pluck('id')->all();
-                        $productsCount = ProductAttributeValue::whereIn('attribute_id', $allAttrIds)
+                        $productsCount = (int) $optionCounts
+                            ->whereIn('attribute_id', $allAttrIds)
                             ->whereIn('option_id', $optionIds)
-                            ->whereHas('product', fn($q) => $q
-                                ->where('is_active', true)->where('is_archived', false)
-                                ->whereIn('category_id', $activeCategoryIds)
-                            )
-                            ->count();
+                            ->sum('cnt');
 
                         if ($productsCount === 0) {
                             return null;
