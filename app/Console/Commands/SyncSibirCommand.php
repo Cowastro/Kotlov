@@ -39,7 +39,7 @@ class SyncSibirCommand extends Command
 
         $enricher = new AiContentEnricher();
         if ($enrichContent && ! $enricher->isAvailable()) {
-            $this->warn('--enrich: ANTHROPIC_API_KEY not set, content enrichment skipped.');
+            $this->warn('--enrich: no AI provider configured, content enrichment skipped.');
             $enrichContent = false;
         }
 
@@ -102,11 +102,13 @@ class SyncSibirCommand extends Command
                 $product = $this->findProduct($merged, $supplierId, $brandId);
                 $isNew   = ! $product;
 
-                if ($isNew && $enrichContent) {
+                if ($enrichContent) {
                     $aiText = $enricher->enrich($item['name'], 'Сибирь', $merged['content'] ?? null, $merged['attributes'] ?? []);
                     if ($aiText) {
                         $merged['content'] = $aiText;
                         $this->line('  <fg=cyan>AI content generated.</>');
+                    } elseif ($product && ! empty($product->content)) {
+                        $merged['content'] = $product->content;
                     }
                 }
 
