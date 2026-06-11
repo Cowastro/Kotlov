@@ -13,15 +13,19 @@ class SyncMetabelCommand extends Command
         {--apply : Write changes to the database}
         {--dry-run : Preview without writing changes}
         {--limit= : Limit number of items for testing}
-        {--no-images : Ignored; MetaBel Excel has no image URLs}
+        {--no-images : Skip downloading product images from metabel.by}
+        {--no-scrape : Skip website scraping — update prices only}
+        {--sleep=200 : Delay between website requests in milliseconds}
         {--price-file= : Path to Excel price file (default: storage/prices/meta_2025.xlsx)}';
 
-    protected $description = 'Sync MetaBel prices from Excel МРЦ price list.';
+    protected $description = 'Sync MetaBel prices from Excel МРЦ and enrich product cards from metabel.by.';
 
-    private const SUPPLIER_CODE = 'metabel';
-    private const SYNC_KEY      = 'metabel_price';
-    private const BRAND_ID      = 45;
-    private const SOURCE_URL    = 'https://metabel.by/produktsiya';
+    private const SUPPLIER_CODE   = 'metabel';
+    private const SYNC_KEY        = 'metabel_price';
+    private const BRAND_ID        = 45;
+    private const SOURCE_URL      = 'https://metabel.by/produktsiya';
+    private const BASE_URL        = 'https://metabel.by';
+    private const IMAGE_DISK_PATH = 'img/products/metabel';
 
     private const CATEGORY_KEYWORDS = [
         'ПЕЧИ БАННЫЕ'        => 69,
@@ -31,27 +35,36 @@ class SyncMetabelCommand extends Command
         'ГРИЛИ И АКСЕССУАРЫ' => null,
     ];
 
-    // Supplier article → our SKU for cases where name normalization can't resolve the match.
-    // "Ока с плитой" vs "с варочной панелью", "ПБМ 20В" vs "ПБМ 20 с вермикулитом".
+    private const CATALOG_URLS = [
+        '/produktsiya/pechi-kaminy',
+        '/produktsiya/bannye-pechi',
+        '/produktsiya/kaminnye-topki',
+        '/produktsiya/dveri-pechnye',
+        '/produktsiya/barbekyu-gril',
+        '/produktsiya/aksessuary',
+    ];
+
     private const MANUAL_MATCH = [
-        // Name mismatch: cannot be resolved by normalization alone
-        'ОКА С ПЛИТОЙ'                            => 'PS-002.811', // "плитой" vs "варочной панелью"
-        'ПЕЧЬ БАННАЯ ПБМ 20В (С ВЕРМИКУЛИТОМ)'    => 'PS-009.545', // "20В" vs "20 с вермикулитом"
-        // ПС-варианты: normalizePriceName extracts only "ПС" from "(в модификации ПС)"
+        'ОКА С ПЛИТОЙ'                            => 'PS-002.811',
+        'ПЕЧЬ БАННАЯ ПБМ 20В (С ВЕРМИКУЛИТОМ)'    => 'PS-009.545',
         'ПЕЧЬ БАННАЯ ПБМ 16 (В МОДИФИКАЦИИ ПС)'   => 'PS-006.589',
         'ПЕЧЬ БАННАЯ ПБМ 20 (В МОДИФИКАЦИИ ПС)'   => 'PS-012.050',
-        // Doors renamed in new price list (ДП-01 was "Волга", ДП-02 was "Енисей" etc.)
         'ДВЕРЬ ПЕЧНАЯ ДП-01'                      => 'PS-001.899',
         'ДВЕРЬ ПЕЧНАЯ ДП-02'                      => 'PS-001.900',
         'ДВЕРЬ ПЕЧНАЯ ДП-05'                      => 'PS-001.901',
         'ДВЕРЬ КАМИННАЯ ДК-01'                    => 'PS-001.902',
     ];
 
+    // ── Entry point ───────────────────────────────────────────────────────────────
+
     public function handle(): int
     {
-        $apply     = (bool) $this->option('apply');
-        $limit     = $this->option('limit') !== null ? (int) $this->option('limit') : null;
-        $priceFile = $this->option('price-file') ?: storage_path('prices/meta_2025.xlsx');
+        $apply          = (bool) $this->option('apply');
+        $limit          = $this->option('limit') !== null ? (int) $this->option('limit') : null;
+        $downloadImages = ! (bool) $this->option('no-images');
+        $scrapeWeb      = ! (bool) $this->option('no-scrape');
+        $sleepMs        = max(0, (int) ($this->option('sleep') ?? 200));
+        $priceFile      = $this->option('price-file') ?: storage_path('prices/meta_2025.xlsx');
 
         $this->line($apply
             ? '<fg=red;options=bold>APPLY: database will be updated.</>'
@@ -79,6 +92,18 @@ class SyncMetabelCommand extends Command
             return $this->dryRun($items);
         }
 
+        // Scrape website catalog list pages (fast — listing only, no detail pages yet)
+        $webCatalog = [];
+        if ($scrapeWeb) {
+            $this->line('Scraping metabel.by catalog...');
+            try {
+                $webCatalog = $this->scrapeWebsiteCatalog($sleepMs);
+                $this->info(sprintf('Found %d products on website.', count($webCatalog)));
+            } catch (\Throwable $e) {
+                $this->warn('Website catalog scrape failed: ' . $e->getMessage() . '. Continuing price-only.');
+            }
+        }
+
         $now        = now();
         $supplierId = $this->ensureSupplier($now);
         $syncId     = $this->ensureSupplierSync($now);
@@ -87,6 +112,7 @@ class SyncMetabelCommand extends Command
             'created'           => 0,
             'update_price'      => 0,
             'no_change'         => 0,
+            'content_updated'   => 0,
             'skipped_no_price'  => 0,
             'skipped_duplicate' => 0,
             'errors'            => 0,
@@ -100,23 +126,48 @@ class SyncMetabelCommand extends Command
 
             if (($item['price_byn'] ?? null) === null || $item['price_byn'] <= 0) {
                 $stats['skipped_no_price']++;
-                $this->line('[skip/no_price] ' . mb_substr($item['price_name'], 0, 60));
                 continue;
             }
 
             try {
+                // Scrape detail page for this item if a matching URL was found
+                $webData = [];
+                if ($scrapeWeb && ! empty($webCatalog)) {
+                    $webPage = $this->matchWebPage($item, $webCatalog);
+                    if ($webPage) {
+                        try {
+                            $webData = $this->scrapeProductPage($webPage['url']);
+                            usleep($sleepMs * 1000);
+                        } catch (\Throwable $e) {
+                            $this->warn('  web detail failed [' . $item['supplier_article'] . ']: ' . $e->getMessage());
+                        }
+                    }
+                }
+
                 $product = $this->findProduct($item, $supplierId);
 
                 if (! $product) {
-                    $productId = $this->createProduct($item, $now);
+                    $productId = $this->createProduct($item, $webData, $downloadImages, $now);
                     $sku       = (string) DB::table('products')->where('id', $productId)->value('sku');
                     $this->upsertSupplierProduct($item, $productId, $sku, $supplierId, $syncId, $now);
+
+                    if (! empty($webData['attributes'])) {
+                        $this->syncAttributes($productId, $webData['attributes'], $item['cat_id'], $now);
+                    }
+
                     $stats['created']++;
                     $this->line('[create] ' . $item['price_name']);
                 } else {
                     $prevPrice = (float) ($product->price ?? 0);
                     $this->updateProductPrice($product->id, $item['price_byn'], $now);
                     $this->upsertSupplierProduct($item, $product->id, (string) $product->sku, $supplierId, $syncId, $now);
+
+                    if (! empty($webData)) {
+                        $enriched = $this->updateProductContent($product, $item['cat_id'], $webData, $downloadImages, $now);
+                        if ($enriched > 0) {
+                            $stats['content_updated']++;
+                        }
+                    }
 
                     if (abs($prevPrice - $item['price_byn']) > 0.01) {
                         $stats['update_price']++;
@@ -146,7 +197,7 @@ class SyncMetabelCommand extends Command
         return $stats['errors'] > 0 ? self::FAILURE : self::SUCCESS;
     }
 
-    // ── Dry-run ──────────────────────────────────────────────────────────────────
+    // ── Dry-run ───────────────────────────────────────────────────────────────────
 
     private function dryRun(array $items): int
     {
@@ -181,15 +232,13 @@ class SyncMetabelCommand extends Command
         }
 
         $this->table(['action', 'price_byn', 'db_sku', 'price_name'], $rows);
-
         $this->showArchiveCandidates($items, $supplierId);
-
         $this->line('Run with --apply to update the database.');
 
         return self::SUCCESS;
     }
 
-    // ── Excel parsing ─────────────────────────────────────────────────────────────
+    // ── Excel parsing ──────────────────────────────────────────────────────────────
 
     private function parsePriceFile(string $path): array
     {
@@ -203,7 +252,6 @@ class SyncMetabelCommand extends Command
             $num  = trim((string) ($row[0] ?? ''));
             $name = trim((string) ($row[1] ?? ''));
 
-            // Detect category header: the keyword is in col[0]+col[1] combined, spaces normalised
             $combined = preg_replace('/\s+/', ' ', mb_strtoupper("{$num} {$name}"));
             foreach (self::CATEGORY_KEYWORDS as $keyword => $catId) {
                 if (str_contains($combined, $keyword)) {
@@ -217,7 +265,7 @@ class SyncMetabelCommand extends Command
             }
 
             $raw      = $row[3] ?? null;
-            $rawStr   = str_replace(',', '', (string) $raw); // remove thousands separator
+            $rawStr   = str_replace(',', '', (string) $raw);
             $priceByn = is_numeric($rawStr) ? round((float) $rawStr, 2) : null;
             $article  = $this->supplierArticleFromName($name);
 
@@ -246,7 +294,6 @@ class SyncMetabelCommand extends Command
 
     private function supplierArticleFromName(string $name): string
     {
-        // Prefer model name in guillemets/quotes as the stable identifier across price file revisions
         if (preg_match('/[«"](.*?)[»"]/u', $name, $m)) {
             return $this->normalizeSupplierArticle($m[1]);
         }
@@ -254,11 +301,161 @@ class SyncMetabelCommand extends Command
         return $this->normalizeSupplierArticle($name);
     }
 
+    // ── Website scraping ──────────────────────────────────────────────────────────
+
+    /**
+     * Scrape all MetaBel catalog pages and return a map:
+     * normalizedKey => ['url' => '...', 'name' => '...']
+     */
+    private function scrapeWebsiteCatalog(int $sleepMs): array
+    {
+        $catalog = [];
+
+        foreach (self::CATALOG_URLS as $categoryPath) {
+            $page = 0;
+
+            do {
+                $url  = self::BASE_URL . $categoryPath . ($page > 0 ? '?start=' . ($page * 12) : '');
+                $html = $this->fetch($url);
+                $found = $this->parseListingPage($html, $catalog);
+                $hasNext = str_contains($html, 'class="hasTooltip pagenav">Вперед');
+                $page++;
+                usleep($sleepMs * 1000);
+            } while ($found > 0 && $hasNext && $page < 20);
+        }
+
+        return $catalog;
+    }
+
+    private function parseListingPage(string $html, array &$catalog): int
+    {
+        $found = 0;
+
+        // Each product has a <div class="name"><a href="/produktsiya/...">Name</a></div>
+        preg_match_all('/<div class="name">\s*<a href="([^"]+)">([\s\S]*?)<\/a>/u', $html, $matches, PREG_SET_ORDER);
+
+        foreach ($matches as $match) {
+            $url  = self::BASE_URL . $match[1];
+            $name = $this->cleanText($match[2]);
+
+            if ($name === '') {
+                continue;
+            }
+
+            $key = $this->normalizePriceName($name);
+
+            if ($key !== '' && ! isset($catalog[$key])) {
+                $catalog[$key] = ['url' => $url, 'name' => $name];
+                $found++;
+            }
+        }
+
+        return $found;
+    }
+
+    private function matchWebPage(array $item, array $webCatalog): ?array
+    {
+        $key = $this->normalizePriceName($item['price_name']);
+        return $webCatalog[$key] ?? null;
+    }
+
+    private function scrapeProductPage(string $url): array
+    {
+        $html = $this->fetch($url);
+
+        return [
+            'h1'             => $this->cleanText($this->match('/<h1[^>]*>([\s\S]*?)<\/h1>/u', $html) ?? ''),
+            'content'        => $this->extractDescription($html),
+            'images_remote'  => $this->extractImages($html),
+            'attributes'     => $this->parseAttributes($html),
+        ];
+    }
+
+    private function extractDescription(string $html): ?string
+    {
+        if (! preg_match('/<div class="jshop_prod_description">([\s\S]*?)<\/div>/u', $html, $m)) {
+            return null;
+        }
+
+        $content = $m[1];
+        // Strip the <h3>ОПИСАНИЕ</h3> header
+        $content = preg_replace('/<h3[^>]*>[\s\S]*?<\/h3>/iu', '', $content) ?? $content;
+        // Remove links, scripts, styles
+        $content = preg_replace('/<(script|style)\b[\s\S]*?<\/\1>/iu', '', $content) ?? $content;
+        $content = preg_replace('/<a\b[^>]*>([\s\S]*?)<\/a>/iu', '$1', $content) ?? $content;
+        // Keep only safe tags
+        $content = strip_tags($content, '<p><ul><ol><li><strong><b><em><i><br>');
+        $content = html_entity_decode($content, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+        $content = preg_replace('/\n{3,}/u', "\n\n", $content) ?? $content;
+        $content = trim($content);
+
+        return $content !== '' ? $content : null;
+    }
+
+    private function extractImages(string $html): array
+    {
+        // Full images have "full_" prefix in img_products directory
+        preg_match_all('/img_products\/(full_[^"\']+\.(?:jpg|jpeg|png|webp))/iu', $html, $matches);
+        $images = array_values(array_unique($matches[1] ?? []));
+
+        return array_slice($images, 0, 8);
+    }
+
+    private function parseAttributes(string $html): array
+    {
+        $attrs = [];
+
+        preg_match_all(
+            '/<span class="extra_fields_name">([\s\S]*?)<\/span>[\s\S]*?<span class="extra_fields_value">([\s\S]*?)<\/span>/u',
+            $html, $matches, PREG_SET_ORDER
+        );
+
+        foreach ($matches as $match) {
+            $name  = $this->normalizeAttributeName($this->cleanText($match[1]));
+            $value = $this->cleanText($match[2]);
+
+            if ($name !== '' && $value !== '' && mb_strlen($name) <= 120) {
+                $attrs[$name] = $value;
+            }
+        }
+
+        return $attrs;
+    }
+
+    private function downloadImages(array $filenames): array
+    {
+        $paths = [];
+        $dir   = public_path(self::IMAGE_DISK_PATH);
+
+        if (! is_dir($dir)) {
+            mkdir($dir, 0755, true);
+        }
+
+        $base = 'https://metabel.by/components/com_jshopping/files/img_products/';
+
+        foreach ($filenames as $filename) {
+            try {
+                $ext       = strtolower(pathinfo($filename, PATHINFO_EXTENSION)) ?: 'jpg';
+                $localName = preg_replace('/[^A-Za-z0-9_.-]+/', '-', $filename);
+                $target    = $dir . DIRECTORY_SEPARATOR . $localName;
+
+                if (! file_exists($target)) {
+                    file_put_contents($target, $this->fetch($base . $filename));
+                }
+
+                $paths[] = self::IMAGE_DISK_PATH . '/' . $localName;
+            } catch (\Throwable $e) {
+                $this->warn('  image skipped: ' . $filename);
+            }
+        }
+
+        return array_values(array_unique($paths));
+    }
+
     // ── Matching ──────────────────────────────────────────────────────────────────
 
     private function findProduct(array $item, int $supplierId): ?object
     {
-        // 1. Already tracked via supplier_products (works on every run after first --apply)
         if ($supplierId > 0) {
             $sp = DB::table('supplier_products')
                 ->where('supplier_id', $supplierId)
@@ -271,14 +468,12 @@ class SyncMetabelCommand extends Command
             }
         }
 
-        // 2. Manual override for the ~2 cases where name normalization fails
         if (isset(self::MANUAL_MATCH[$item['supplier_article']])) {
             return DB::table('products')
                 ->where('sku', self::MANUAL_MATCH[$item['supplier_article']])
                 ->first();
         }
 
-        // 3. Normalized name scan against active MetaBel products
         $pNorm = $this->normalizePriceName($item['price_name']);
 
         if ($pNorm === '') {
@@ -303,17 +498,13 @@ class SyncMetabelCommand extends Command
     {
         $name = mb_strtoupper($name);
 
-        // "(в модификации Аврора С2)" → keep only the model part
         if (preg_match('/\(В\s+МОДИФИКАЦИИ\s+([^)]+)\)/u', $name, $m)) {
             $name = $m[1];
         } elseif (preg_match('/[«"](.*?)[»"]/u', $name, $m)) {
-            // Guillemets/quotes → model name
             $name = $m[1];
         } else {
-            // Accessories and ПБМ items: strip type prefix, keep core identifier
             $name = preg_replace('/\b(АОТК?В?|ТКТ)\s*[\d.,]+[-\d.,]*/u', '', $name);
             $name = preg_replace('/\b(ПЕЧЬ-КАМИН|ПЕЧЬ|ТОПКА|КАМИННАЯ|БАННАЯ|КАМЕНКА)\b/u', '', $name);
-            // Unwrap parens: keep content (preserves "без стекла", "с вермикулитом" etc.)
             $name = preg_replace('/\(([^)]+)\)/u', ' $1 ', $name);
         }
 
@@ -326,13 +517,9 @@ class SyncMetabelCommand extends Command
         $name = mb_strtoupper($name);
         $name = preg_replace('/\bМЕТА[-\s]*БЕЛ\b/u', '', $name);
         $name = preg_replace('/\b(ПЕЧЬ-КАМИН|ПЕЧЬ|ТОПКА|КАМИННАЯ|КАМИННЫЙ|БАННАЯ|КАМЕНКА|ДРОВЯНАЯ|ОТОПИТЕЛЬНАЯ)\b/u', '', $name);
-        // Unwrap "(в модификации X)" → keep X
         $name = preg_replace('/\(В\s+МОДИФИКАЦИИ\s+([^)]+)\)/iu', ' $1 ', $name);
-        // Remove remaining parenthetical code suffixes: (АОТ-7,0), (туннельная), (без пьедестала)
         $name = preg_replace('/\([^)]+\)/u', '', $name);
-        // Remove standalone АОТ/ТКТ/АОТК codes not in parens
         $name = preg_replace('/\b(АОТК?В?|ТКТ)\s*[-–]?\s*\d[\d.,\-]*/u', '', $name);
-        // Remove "N кВт" inline power specs
         $name = preg_replace('/\b\d+\s*КВТ\b/iu', '', $name);
 
         $name = preg_replace('/[^А-ЯЁA-Z0-9+ ]+/u', ' ', $name);
@@ -341,27 +528,33 @@ class SyncMetabelCommand extends Command
 
     // ── Persistence ───────────────────────────────────────────────────────────────
 
-    private function createProduct(array $item, $now): int
+    private function createProduct(array $item, array $webData, bool $downloadImages, $now): int
     {
-        $name = $this->buildProductName($item);
+        $name   = $this->buildProductName($item);
+        $h1     = $webData['h1'] ?? '';
+        $images = [];
+
+        if ($downloadImages && ! empty($webData['images_remote'])) {
+            $images = $this->downloadImages($webData['images_remote']);
+        }
 
         return (int) DB::table('products')->insertGetId([
             'category_id'       => $item['cat_id'] ?? 287,
             'brand_id'          => self::BRAND_ID,
             'supplier_id'       => null,
             'name'              => $name,
-            'h1'                => $name,
+            'h1'                => $h1 ?: $name,
             'sku'               => $this->nextKotlovSku(),
             'slug'              => $this->uniqueSlug($name),
             'price'             => $item['price_byn'],
             'price_old'         => null,
             'currency'          => 'BYN',
-            'content'           => null,
+            'content'           => $webData['content'] ?? null,
             'short_description' => null,
-            'images'            => json_encode([]),
-            'specs'             => json_encode([]),
+            'images'            => json_encode($images, JSON_UNESCAPED_UNICODE),
+            'specs'             => json_encode($webData['attributes'] ?? [], JSON_UNESCAPED_UNICODE),
             'unit'              => 'шт',
-            'warranty'          => null,
+            'warranty'          => $webData['attributes']['Гарантия'] ?? null,
             'is_active'         => true,
             'is_archived'       => false,
             'in_stock'          => true,
@@ -386,6 +579,104 @@ class SyncMetabelCommand extends Command
         DB::table('products')->where('id', $productId)->update([
             'price'      => $priceByn,
             'updated_at' => $now,
+        ]);
+    }
+
+    /**
+     * Enrich existing product with website content/images/attributes.
+     * Only fills in what is currently missing — never overwrites existing content.
+     * Returns the number of fields actually updated.
+     */
+    private function updateProductContent(object $product, ?int $categoryId, array $webData, bool $downloadImages, $now): int
+    {
+        $updates   = [];
+        $enriched  = 0;
+
+        if (! $product->content && ! empty($webData['content'])) {
+            $updates['content'] = $webData['content'];
+            $enriched++;
+        }
+
+        $existingImages = json_decode($product->images ?? '[]', true) ?: [];
+        if (empty($existingImages) && ! empty($webData['images_remote']) && $downloadImages) {
+            $updates['images'] = json_encode(
+                $this->downloadImages($webData['images_remote']),
+                JSON_UNESCAPED_UNICODE
+            );
+            $enriched++;
+        }
+
+        if (! empty($updates)) {
+            $updates['updated_at'] = $now;
+            DB::table('products')->where('id', $product->id)->update($updates);
+        }
+
+        if (! empty($webData['attributes'])) {
+            $count = $this->syncAttributes((int) $product->id, $webData['attributes'], $categoryId, $now);
+            if ($count > 0) {
+                $enriched++;
+            }
+        }
+
+        return $enriched;
+    }
+
+    private function syncAttributes(int $productId, array $attributes, ?int $categoryId, $now): int
+    {
+        $count = 0;
+        $catId = $categoryId ?? 287;
+
+        foreach ($attributes as $name => $value) {
+            if (! $name || ! $value) {
+                continue;
+            }
+
+            $attrId = $this->ensureAttribute((string) $name, $catId, $now);
+
+            DB::table('product_attribute_values')->updateOrInsert(
+                ['product_id' => $productId, 'attribute_id' => $attrId],
+                [
+                    'option_id'  => null,
+                    'is_checked' => null,
+                    'value'      => (string) $value,
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                ]
+            );
+
+            $count++;
+        }
+
+        return $count;
+    }
+
+    private function ensureAttribute(string $name, int $categoryId, $now): int
+    {
+        $existing = DB::table('attributes')
+            ->where('category_id', $categoryId)
+            ->where('name', $name)
+            ->first();
+
+        if ($existing) {
+            return (int) $existing->id;
+        }
+
+        $inBrief = in_array($name, ['Мощность', 'Площадь обогрева', 'Площадь отапливаемого помещения', 'Вид топки', 'Материал'], true);
+
+        return (int) DB::table('attributes')->insertGetId([
+            'category_id'   => $categoryId,
+            'group_id'      => 0,
+            'sort_order'    => 500,
+            'type'          => 'value',
+            'name'          => $name,
+            'suffix'        => null,
+            'in_filter'     => false,
+            'in_sort'       => false,
+            'in_product'    => true,
+            'in_brief'      => $inBrief,
+            'is_comparable' => true,
+            'created_at'    => $now,
+            'updated_at'    => $now,
         ]);
     }
 
@@ -490,7 +781,6 @@ class SyncMetabelCommand extends Command
         $existing = DB::table('suppliers')->where('code', self::SUPPLIER_CODE)->first();
 
         if ($existing) {
-            // Never overwrite currency/currency_rate — managed via /admin/suppliers
             DB::table('suppliers')->where('id', $existing->id)->update([
                 'name'       => 'Мета-Бел',
                 'contact'    => self::SOURCE_URL,
@@ -521,11 +811,11 @@ class SyncMetabelCommand extends Command
             [
                 'name'            => 'Мета-Бел',
                 'code'            => self::SUPPLIER_CODE,
-                'title'           => 'МЕТА-БЕЛ: обновление цен из прайса',
-                'description'     => 'Обновляет цены на товары Мета-Бел по файлу МРЦ. Новые товары создаёт; не удаляет и не архивирует автоматически.',
+                'title'           => 'МЕТА-БЕЛ: цены + карточки',
+                'description'     => 'Обновляет цены из Excel МРЦ и обогащает карточки (описание, фото, характеристики) с metabel.by.',
                 'command'         => 'supplier:sync-metabel',
                 'source_url'      => self::SOURCE_URL,
-                'image_disk_path' => null,
+                'image_disk_path' => self::IMAGE_DISK_PATH,
                 'is_active'       => true,
                 'created_at'      => $now,
                 'updated_at'      => $now,
@@ -537,10 +827,30 @@ class SyncMetabelCommand extends Command
 
     // ── Helpers ───────────────────────────────────────────────────────────────────
 
+    private function normalizeAttributeName(string $name): string
+    {
+        $name = trim(str_replace("\u{A0}", ' ', $name), " :\t");
+        $name = trim(preg_replace('/\s+/u', ' ', $name) ?? $name);
+
+        return match ($name) {
+            'Номинальная тепловая  мощность',
+            'Номинальная тепловая мощность' => 'Мощность',
+            'Отапливаемая площадь',
+            'Площадь отапливаемого помещения' => 'Площадь обогрева',
+            'Масса' => 'Вес',
+            'Диаметр дымохода, мм' => 'Диаметр дымохода',
+            default => $name,
+        };
+    }
+
     private function normalizeSupplierArticle(string $s): string
     {
         $s = mb_strtoupper(trim($s));
-        $s = str_replace(['«', '»', '“', '”', '‘', '’', '–', '—', '−'], ['', '', '', '', '', '', '-', '-', '-'], $s);
+        $s = str_replace(
+            ["\u{AB}", "\u{BB}", "\u{201C}", "\u{201D}", "\u{2018}", "\u{2019}", "\u{2013}", "\u{2014}", "\u{2212}"],
+            ['',       '',       '',         '',         '',         '',         '-',        '-',        '-'],
+            $s
+        );
         $s = preg_replace('/\s+/u', ' ', $s) ?? $s;
 
         return trim($s);
@@ -574,5 +884,41 @@ class SyncMetabelCommand extends Command
         }
 
         return $slug;
+    }
+
+    private function fetch(string $url): string
+    {
+        $context = stream_context_create([
+            'http' => [
+                'method'  => 'GET',
+                'header'  => "User-Agent: Mozilla/5.0 (compatible; KotlovBot/1.0)\r\nAccept-Language: ru,en;q=0.8\r\n",
+                'timeout' => 30,
+            ],
+            'ssl' => [
+                'verify_peer'      => true,
+                'verify_peer_name' => true,
+            ],
+        ]);
+
+        $body = file_get_contents($url, false, $context);
+
+        if ($body === false) {
+            throw new \RuntimeException('Could not fetch ' . $url);
+        }
+
+        return $body;
+    }
+
+    private function match(string $pattern, string $subject): ?string
+    {
+        return preg_match($pattern, $subject, $m)
+            ? html_entity_decode($m[1], ENT_QUOTES | ENT_HTML5, 'UTF-8')
+            : null;
+    }
+
+    private function cleanText(string $value): string
+    {
+        $value = html_entity_decode(strip_tags($value), ENT_QUOTES | ENT_HTML5, 'UTF-8');
+        return trim(preg_replace('/\s+/u', ' ', $value) ?? $value);
     }
 }
