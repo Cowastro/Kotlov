@@ -42,6 +42,25 @@ class CheckoutController extends Controller
             return redirect()->route('cart')->with('info', 'Корзина пуста.');
         }
 
+        // Убираем из заказа товары, снятые с продажи (могли попасть в корзину до архивации)
+        $archivedIds = \App\Models\Product::whereIn('id', array_keys($cart))
+            ->where('is_archived', true)
+            ->pluck('id')
+            ->all();
+
+        if (!empty($archivedIds)) {
+            foreach ($archivedIds as $aid) {
+                unset($cart[$aid]);
+            }
+            session([self::CART_KEY => $cart]);
+
+            if (empty($cart)) {
+                return redirect()->route('cart')->with('error', 'Товары в корзине сняты с продажи и недоступны для заказа.');
+            }
+
+            return redirect()->route('cart')->with('error', 'Некоторые товары сняты с продажи и были удалены из корзины. Проверьте заказ.');
+        }
+
         // Защита от двойного сабмита — один токен = один заказ
         $token = $request->input('order_token');
         if (!$token || session('order_token_used_' . $token)) {

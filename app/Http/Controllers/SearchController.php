@@ -22,6 +22,7 @@ class SearchController extends Controller
             $words = array_filter(array_map('trim', explode(' ', $q)), fn($w) => mb_strlen($w) >= 1);
 
             $query = Product::where('is_active', true)
+                ->where('is_archived', false)
                 ->where(function ($qb) use ($words, $q) {
                     // Сначала пробуем полное совпадение
                     $qb->where('name', 'like', "%{$q}%")
@@ -79,6 +80,7 @@ class SearchController extends Controller
         $words = array_filter(array_map('trim', explode(' ', $q)), fn($w) => mb_strlen($w) >= 1);
 
         $products = Product::where('is_active', true)
+            ->where('is_archived', false)
             ->where(function ($qb) use ($q, $words) {
                 $qb->where('name', 'like', "%{$q}%")
                    ->orWhere('sku', 'like', "{$q}%")

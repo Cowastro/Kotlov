@@ -166,7 +166,9 @@
 
                                 {{-- Цена --}}
                                 <div class="product-infor-price mb-12">
-                                    @if ($product->price > 0)
+                                    @if ($product->is_archived)
+                                        <h4 class="price-on-sale text-muted">Снят с продажи</h4>
+                                    @elseif ($product->price > 0)
                                         <h4 class="price-on-sale">
                                             {{ number_format($product->price, 2, '.', ' ') }} BYN
                                         </h4>
@@ -196,7 +198,11 @@
 
                                 {{-- Наличие --}}
                                 <div class="product-stock mb-12">
-                                    @if ($product->in_stock)
+                                    @if ($product->is_archived)
+                                        <span class="stock out-stock fw-medium text-danger">
+                                            <i class="icon icon-XCircle"></i> Снят с продажи
+                                        </span>
+                                    @elseif ($product->in_stock)
                                         <span class="stock in-stock fw-medium text-success">
                                             <i class="icon icon-CheckCircle"></i> В наличии
                                         </span>
@@ -210,7 +216,13 @@
 
                             <div class="br-line"></div>
 
-                            @if ($product->in_stock)
+                            @if ($product->is_archived)
+                                {{-- Снят с продажи — только консультация --}}
+                                <a href="#ask" data-bs-toggle="modal"
+                                    class="tf-btn type-xl btn-primary animate-btn w-100">
+                                    Заказать консультацию
+                                </a>
+                            @elseif ($product->in_stock)
                                 {{-- Количество и кнопки — есть в наличии --}}
                                 <div class="tf-product-variant">
                                     <div class="tf-product-total-quantity">
@@ -339,6 +351,7 @@
     </section>
 
     {{-- Sticky кнопка "В корзину" при скролле --}}
+    @if (!$product->is_archived)
     <div class="tf-sticky-btn-atc">
         <div class="container">
             <div class="tf-height-observer w-100 d-flex align-items-center">
@@ -388,6 +401,7 @@
             </div>
         </div>
     </div>
+    @endif
 
     {{-- Описание, характеристики, отзывы --}}
     <section class="section-product-description flat-spacing flat-animate-tab">

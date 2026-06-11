@@ -32,6 +32,15 @@ class CartController extends Controller
         ]);
 
         $product = Product::with('category:id,slug')->findOrFail($request->product_id);
+
+        // Снятый с продажи товар нельзя заказать
+        if ($product->is_archived) {
+            if ($request->expectsJson()) {
+                return response()->json(['message' => 'Товар снят с продажи и недоступен для заказа.'], 422);
+            }
+            return back()->with('error', 'Товар снят с продажи и недоступен для заказа.');
+        }
+
         $qty     = max(1, (int) $request->input('quantity', 1));
 
         $cart = session(self::KEY, []);
