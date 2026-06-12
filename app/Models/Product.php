@@ -29,7 +29,7 @@ class Product extends Model
         'name', 'slug', 'h1', 'sku',
         'price', 'price_old', 'currency',
         'content', 'short_description',
-        'images', 'specs', 'video_url',
+        'images', 'specs', 'service_info', 'documents', 'promo_flags', 'video_url',
         'weight', 'unit', 'warranty',
         'is_active', 'is_archived', 'in_stock', 'stock_qty',
         'is_featured', 'is_new', 'is_sale', 'sort_order',
@@ -40,6 +40,9 @@ class Product extends Model
     protected $casts = [
         'images'      => 'array',
         'specs'       => 'array',
+        'service_info' => 'array',
+        'documents'   => 'array',
+        'promo_flags' => 'array',
         'is_active'   => 'boolean',
         'is_archived' => 'boolean',
         'in_stock'    => 'boolean',

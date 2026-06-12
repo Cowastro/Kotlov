@@ -189,6 +189,21 @@
                                     @endif
                                 </div>
 
+                                @if (!empty($product->promo_flags))
+                                    <div class="d-flex flex-wrap gap-2 mb-12">
+                                        @foreach ($product->promo_flags as $flag)
+                                            @php
+                                                $flagLabel = is_array($flag) ? ($flag['label'] ?? null) : $flag;
+                                            @endphp
+                                            @if ($flagLabel)
+                                                <span class="badge-sale text-white fw-semibold text-caption-02">
+                                                    {{ $flagLabel }}
+                                                </span>
+                                            @endif
+                                        @endforeach
+                                    </div>
+                                @endif
+
                                 {{-- Краткое описание --}}
                                 @if ($product->short_description)
                                     <p class="product-infor-desc cl-text-2 mb-12">
@@ -403,9 +418,13 @@
     </div>
     @endif
 
-    {{-- Описание, характеристики, отзывы --}}
+    {{-- Описание, характеристики, сервис, документы, отзывы --}}
     <section class="section-product-description flat-spacing flat-animate-tab">
         <div class="container">
+            @php
+                $serviceInfo = is_array($product->service_info) ? array_filter($product->service_info) : [];
+                $documents = is_array($product->documents) ? array_filter($product->documents) : [];
+            @endphp
             <ul class="tab-btn-wrap-v1" role="tablist">
                 <li class="nav-tab-item" role="presentation">
                     <a href="#description" data-bs-toggle="tab" class="tf-btn-tab active" role="tab">
@@ -416,6 +435,20 @@
                     <li class="nav-tab-item" role="presentation">
                         <a href="#specifications" data-bs-toggle="tab" class="tf-btn-tab" role="tab">
                             <span class="h5 fw-medium">Характеристики</span>
+                        </a>
+                    </li>
+                @endif
+                @if (!empty($serviceInfo))
+                    <li class="nav-tab-item" role="presentation">
+                        <a href="#service-info" data-bs-toggle="tab" class="tf-btn-tab" role="tab">
+                            <span class="h5 fw-medium">Сервис</span>
+                        </a>
+                    </li>
+                @endif
+                @if (!empty($documents))
+                    <li class="nav-tab-item" role="presentation">
+                        <a href="#documents" data-bs-toggle="tab" class="tf-btn-tab" role="tab">
+                            <span class="h5 fw-medium">Документы</span>
                         </a>
                     </li>
                 @endif
@@ -492,6 +525,47 @@
                                     @endforeach
                                 </tbody>
                             </table>
+                        </div>
+                    </div>
+                @endif
+
+                {{-- Сервис --}}
+                @if (!empty($serviceInfo))
+                    <div class="tab-pane" id="service-info" role="tabpanel">
+                        <div class="tab-content_desc">
+                            <table class="table table-bordered table-striped">
+                                <tbody>
+                                    @foreach ($serviceInfo as $label => $value)
+                                        @if (is_scalar($value) && trim((string) $value) !== '')
+                                            <tr>
+                                                <td class="fw-medium" style="width:45%">{{ $label }}</td>
+                                                <td>{{ $value }}</td>
+                                            </tr>
+                                        @endif
+                                    @endforeach
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                @endif
+
+                {{-- Документы --}}
+                @if (!empty($documents))
+                    <div class="tab-pane" id="documents" role="tabpanel">
+                        <div class="tab-content_desc">
+                            <div class="d-flex flex-column gap-3">
+                                @foreach ($documents as $document)
+                                    @php
+                                        $label = is_array($document) ? ($document['label'] ?? 'Документ') : 'Документ';
+                                        $url = is_array($document) ? ($document['url'] ?? null) : $document;
+                                    @endphp
+                                    @if ($url)
+                                        <a href="{{ $url }}" class="link fw-medium" target="_blank" rel="nofollow noopener">
+                                            {{ $label }}
+                                        </a>
+                                    @endif
+                                @endforeach
+                            </div>
                         </div>
                     </div>
                 @endif
