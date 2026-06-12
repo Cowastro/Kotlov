@@ -364,8 +364,22 @@ class EnrichFromManufacturerCommand extends Command
 
     private function loadSitemap(string $sitemapUrl): array
     {
-        $xml = $this->fetchPage($sitemapUrl);
-        if (! $xml) {
+        $this->line("  Loading sitemap: {$sitemapUrl}");
+
+        try {
+            $response = \Illuminate\Support\Facades\Http::withHeaders([
+                'User-Agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+                'Accept'     => 'application/xml,text/xml,*/*',
+            ])->timeout(60)->get($sitemapUrl);
+
+            if (! $response->successful()) {
+                $this->warn("  Sitemap HTTP {$response->status()} — skipping");
+                return [];
+            }
+
+            $xml = $response->body();
+        } catch (\Throwable $e) {
+            $this->warn("  Sitemap fetch error: {$e->getMessage()}");
             return [];
         }
 
@@ -375,7 +389,12 @@ class EnrichFromManufacturerCommand extends Command
 
         foreach ($m[1] as $url) {
             $url = trim($url);
-            if (preg_match('/sitemap|category|catalog|xml$/i', $url)) {
+            // Skip sub-sitemap files and category/catalog pages
+            if (preg_match('/\.xml$/i', $url)) {
+                continue;
+            }
+            // For rusklimat.ru: only keep /product/ URLs (skip catalog/category pages)
+            if (str_contains($url, 'rusklimat.ru') && ! str_contains($url, '/product/')) {
                 continue;
             }
             if ($filter !== '' && ! str_contains(mb_strtolower($url), mb_strtolower($filter))) {
@@ -383,6 +402,8 @@ class EnrichFromManufacturerCommand extends Command
             }
             $urls[] = $url;
         }
+
+        $this->line("  Loaded " . count($urls) . " product URLs" . ($filter ? " (filter: {$filter})" : ''));
 
         return $urls;
     }
