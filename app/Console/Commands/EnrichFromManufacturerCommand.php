@@ -56,6 +56,7 @@ class EnrichFromManufacturerCommand extends Command
 
     /** @var string[] cached sitemap URLs for current brand */
     private array $sitemapUrls = [];
+    private string $sitemapFilter = '';
 
     public function handle(): int
     {
@@ -105,7 +106,8 @@ class EnrichFromManufacturerCommand extends Command
 
             // Pre-load sitemap if configured
             if (! empty($sourceConf['sitemap_url'])) {
-                $this->sitemapUrls = $this->loadSitemap($sourceConf['sitemap_url']);
+                $this->sitemapFilter = $sourceConf['sitemap_filter'] ?? '';
+                $this->sitemapUrls   = $this->loadSitemap($sourceConf['sitemap_url']);
                 $this->info(sprintf('Sitemap: %d URLs loaded', count($this->sitemapUrls)));
             }
         }
@@ -365,12 +367,15 @@ class EnrichFromManufacturerCommand extends Command
         }
 
         preg_match_all('/<loc>(.*?)<\/loc>/s', $xml, $m);
-        $urls = [];
+        $filter = $this->sitemapFilter ?? '';
+        $urls   = [];
 
         foreach ($m[1] as $url) {
             $url = trim($url);
-            // Skip non-product URLs (category pages etc.)
             if (preg_match('/sitemap|category|catalog|xml$/i', $url)) {
+                continue;
+            }
+            if ($filter !== '' && ! str_contains(mb_strtolower($url), mb_strtolower($filter))) {
                 continue;
             }
             $urls[] = $url;
