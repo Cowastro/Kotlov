@@ -699,8 +699,8 @@ class EnrichFromManufacturerCommand extends Command
         //    Tooltip: <span class="characteristics__property"> VALUE <div class="glossary-tooltip">...</span>
         //    List:    <span class="characteristics__property"> <ul><li>...</li></ul> </span>
         $r = [];
-        preg_match_all('/<span[^>]+class=["\']characteristics__name["\'][^>]*>(.*?)<\/span>/si', $html, $nameM4);
-        preg_match_all('/<span[^>]+class=["\']characteristics__property["\'][^>]*>(.*?)<\/span>/si', $html, $propM4);
+        preg_match_all('/<span[^>]+class=["\'][^"\']*characteristics__name[^"\']*["\'][^>]*>(.*?)<\/span>/si', $html, $nameM4);
+        preg_match_all('/<span[^>]+class=["\'][^"\']*characteristics__property[^"\']*["\'][^>]*>(.*?)<\/span>/si', $html, $propM4);
         foreach (($nameM4[1] ?? []) as $i => $rawKey4) {
             $k = trim(strip_tags($rawKey4));
             if ($k === '' || mb_strlen($k) > 120 || ! isset($propM4[1][$i])) {
