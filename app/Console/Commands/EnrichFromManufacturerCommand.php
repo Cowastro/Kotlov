@@ -193,11 +193,21 @@ class EnrichFromManufacturerCommand extends Command
 
             // ── Step 2: Download image (skip if product already has photos) ──────
             $hasImages = ! empty($product->images) && $product->images !== '[]';
-            if (! $this->option('skip-images') && ! $hasImages && ! empty($scraped['image_url'])) {
-                $localPath = $this->downloadImage($scraped['image_url'], $product->slug ?? $product->sku, $imgDir, $brand->name);
-                if ($localPath) {
-                    $scraped['local_image'] = $localPath;
-                    $this->stats['images']++;
+            if (! $this->option('skip-images')) {
+                if ($hasImages && ! $force) {
+                    $this->line('  <fg=yellow>↷</> image: skipped (already has photos; use --force to overwrite)');
+                } elseif (empty($scraped['image_url'])) {
+                    $this->line('  <fg=red>✗</> image: no URL found on manufacturer page');
+                } else {
+                    $this->line('  <fg=cyan>↓</> image: ' . $scraped['image_url']);
+                    $localPath = $this->downloadImage($scraped['image_url'], $product->slug ?? $product->sku, $imgDir, $brand->name);
+                    if ($localPath) {
+                        $scraped['local_image'] = $localPath;
+                        $this->stats['images']++;
+                        $this->line('  <fg=green>✓</> saved: ' . $localPath);
+                    } else {
+                        $this->line('  <fg=red>✗</> image download failed');
+                    }
                 }
             }
 
@@ -369,7 +379,12 @@ class EnrichFromManufacturerCommand extends Command
             }
         }
 
-        // ── og:image — on product pages this is the product photo ──────────────────
+        // ── Product gallery image (Bitrix / common CMS patterns) ────────────────────
+        if ($result['image_url'] === null) {
+            $result['image_url'] = $this->findProductImage($html, $url);
+        }
+
+        // ── og:image as last resort (may be a generic brand banner) ──────────────
         if ($result['image_url'] === null) {
             if (preg_match('/<meta[^>]+property=["\']og:image["\'][^>]+content=["\'](.*?)["\'][^>]*>/si', $html, $m)) {
                 $ogImg = $m[1];
@@ -377,11 +392,6 @@ class EnrichFromManufacturerCommand extends Command
                     $result['image_url'] = $ogImg;
                 }
             }
-        }
-
-        // ── Fallback: scan HTML for product images ────────────────────────────────
-        if ($result['image_url'] === null) {
-            $result['image_url'] = $this->findProductImage($html, $url);
         }
 
         // ── Specs: look for <table> or <dl> with characteristics ─────────────────
@@ -394,42 +404,57 @@ class EnrichFromManufacturerCommand extends Command
     {
         $host = parse_url($pageUrl, PHP_URL_SCHEME) . '://' . parse_url($pageUrl, PHP_URL_HOST);
 
-        // 1. Look for <img> tags with product-related path segments (not logos/icons)
-        $productPathPatterns = [
-            'upload', 'products', 'catalog', 'goods', 'items', 'photo', 'images/product',
-        ];
+        $makeAbsolute = function (string $url) use ($host): string {
+            if (str_starts_with($url, 'http')) {
+                return $url;
+            }
+            if (str_starts_with($url, '//')) {
+                return 'https:' . $url;
+            }
+            return $host . '/' . ltrim($url, '/');
+        };
 
-        if (preg_match_all('/<img[^>]+src=["\']([^"\']+)["\'][^>]*>/i', $html, $imgs)) {
-            $candidates = [];
+        $skipPatterns = '/logo|icon|favicon|banner|sprite|pixel|1x1|arrow|star|noimage|nophoto/i';
 
-            foreach ($imgs[1] as $src) {
-                // Skip small icons/logos
-                if (preg_match('/logo|icon|favicon|banner|sprite|pixel|1x1|arrow|star/i', $src)) {
-                    continue;
-                }
-                // Skip data URIs and external CDNs unlikely to be product photos
-                if (str_starts_with($src, 'data:')) {
-                    continue;
-                }
-
-                $srcLower = mb_strtolower($src);
-                foreach ($productPathPatterns as $pattern) {
-                    if (str_contains($srcLower, $pattern)) {
-                        $candidates[] = $src;
-                        break;
-                    }
+        // 1. Bitrix: <a href="/upload/iblock/..." data-fancybox> — full-size gallery link
+        if (preg_match_all('/<a[^>]+href=["\']([^"\']*\/upload\/(?:iblock|resize_cache)[^"\']*\.(?:jpg|jpeg|png|webp))["\'][^>]*>/i', $html, $m)) {
+            foreach ($m[1] as $href) {
+                if (! preg_match($skipPatterns, $href)) {
+                    return $makeAbsolute($href);
                 }
             }
+        }
 
-            if (! empty($candidates)) {
-                $url = $candidates[0];
-                if (str_starts_with($url, '//')) {
-                    return 'https:' . $url;
+        // 2. <img data-src="...upload..."> (lazy-loaded Bitrix / other CMS)
+        if (preg_match_all('/<img[^>]+data-src=["\']([^"\']+)["\'][^>]*>/i', $html, $imgs)) {
+            foreach ($imgs[1] as $src) {
+                if (str_starts_with($src, 'data:') || preg_match($skipPatterns, $src)) {
+                    continue;
                 }
-                if (str_starts_with($url, '/')) {
-                    return $host . $url;
+                if (preg_match('/upload|products|catalog|goods|items|photo/i', $src)) {
+                    return $makeAbsolute($src);
                 }
-                return $url;
+            }
+        }
+
+        // 3. <img src="...upload...resize_cache...700_700..."> — Bitrix resized product photo
+        if (preg_match_all('/<img[^>]+src=["\']([^"\']+)["\'][^>]*>/i', $html, $imgs)) {
+            $best = null;
+            foreach ($imgs[1] as $src) {
+                if (str_starts_with($src, 'data:') || preg_match($skipPatterns, $src)) {
+                    continue;
+                }
+                $sl = mb_strtolower($src);
+                // Prefer resize_cache with large size (product photo)
+                if (str_contains($sl, 'resize_cache') && preg_match('/[4-9]\d\d_[4-9]\d\d/', $src)) {
+                    return $makeAbsolute($src);
+                }
+                if (! $best && preg_match('/upload|products|catalog|goods|items|photo/i', $src)) {
+                    $best = $src;
+                }
+            }
+            if ($best) {
+                return $makeAbsolute($best);
             }
         }
 
