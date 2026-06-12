@@ -346,9 +346,13 @@ class EnrichFromManufacturerCommand extends Command
             usleep(500_000);
             $html = $this->fetchPage($searchUrl);
             if ($html && ! empty($conf['fallback_link_pattern'])) {
-                if (preg_match($conf['fallback_link_pattern'], $html, $m)) {
-                    $path = $m[1];
-                    return str_starts_with($path, 'http') ? $path : $fallbackSite . '/' . ltrim($path, '/');
+                if (preg_match_all($conf['fallback_link_pattern'], $html, $m)) {
+                    // Find the link whose path contains the compact model slug
+                    foreach ($m[1] as $path) {
+                        if (str_contains(mb_strtolower($path), $compact)) {
+                            return str_starts_with($path, 'http') ? $path : $fallbackSite . '/' . ltrim($path, '/');
+                        }
+                    }
                 }
             }
         }

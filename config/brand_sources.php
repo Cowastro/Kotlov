@@ -16,9 +16,12 @@ return [
     ],
 
     'electrolux' => [
-        'site'           => 'https://electrolux-home.ru',
-        'sitemap_url'    => 'https://electrolux-home.ru/sitemap.xml',
-        'sitemap_filter' => 'kondicionery',
+        'site'                  => 'https://electrolux-home.ru',
+        'sitemap_url'           => 'https://electrolux-home.ru/sitemap.xml',
+        'sitemap_filter'        => 'kondicionery',
+        'fallback_site'         => 'https://www.21vek.by',
+        'fallback_search_url'   => 'https://www.21vek.by/conditioners/all/electrolux/',
+        'fallback_link_pattern' => '#href=["\'](/conditioners/[a-z0-9_\-]+electrolux[^"\']*\.html)["\']#i',
     ],
 
     'ballu' => [
