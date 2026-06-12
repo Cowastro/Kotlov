@@ -280,22 +280,25 @@ class EnrichRusklimatCommand extends Command
 
     /**
      * Find the product page URL on rusklimat.by.
-     * Strategy: (1) transliterate product name → check sitemap index
-     *           (2) try direct URL construction
+     * Strategy:
+     *  1. Exact sitemap slug match (fastest)
+     *  2. Fuzzy sitemap match by key tokens
+     *  3. rusklimat.by search by article code (finds products not in sitemap)
+     *  4. Direct URL construction (HEAD request)
      */
     private function findProductUrl(string $productName, string $article): ?string
     {
         // Build candidate slugs from product name
-        $candidates = $this->buildCandidateSlugs($productName);
+        $candidates = $this->buildCandidateSlugs($productName, $article);
 
-        // Try exact sitemap match first
+        // 1. Exact sitemap match
         foreach ($candidates as $slug) {
             if (isset($this->sitemapIndex[$slug])) {
                 return $this->sitemapIndex[$slug];
             }
         }
 
-        // Fuzzy: find any sitemap slug that contains key tokens from product name
+        // 2. Fuzzy sitemap match by key tokens
         if (! empty($this->sitemapIndex)) {
             $tokens = $this->extractKeyTokens($productName);
             if (count($tokens) >= 2) {
@@ -306,7 +309,6 @@ class EnrichRusklimatCommand extends Command
                             $matched++;
                         }
                     }
-                    // Require at least 70% of key tokens to match
                     if ($matched >= max(2, (int) ceil(count($tokens) * 0.7))) {
                         return $url;
                     }
@@ -314,20 +316,50 @@ class EnrichRusklimatCommand extends Command
             }
         }
 
-        // Try direct URL: https://rusklimat.by/product/{slug}
+        // 3. Search by article code on rusklimat.by
+        if ($article !== '') {
+            $found = $this->searchByArticle($article);
+            if ($found !== null) {
+                return $found;
+            }
+        }
+
+        // 4. Try direct URL: https://rusklimat.by/product/{slug}
         foreach ($candidates as $slug) {
             $url  = 'https://rusklimat.by/product/' . $slug;
             $code = $this->headRequest($url);
             if ($code === 200) {
                 return $url;
             }
-            usleep(400_000); // 0.4s between HEAD requests
+            usleep(400_000);
         }
 
         return null;
     }
 
-    private function buildCandidateSlugs(string $name): array
+    /**
+     * Search rusklimat.by by article code and return the first product URL found.
+     * Uses their search page: https://rusklimat.by/search/?q=EWH-10-Q-bic-O
+     */
+    private function searchByArticle(string $article): ?string
+    {
+        $searchUrl = 'https://rusklimat.by/search/?q=' . urlencode($article);
+
+        $html = $this->fetchPage($searchUrl);
+        if ($html === null) {
+            return null;
+        }
+
+        // Extract first product link from search results
+        // rusklimat.by search results contain links like /product/some-slug
+        if (preg_match('#href=["\'](?:https://rusklimat\.by)?(/product/[a-z0-9][a-z0-9\-]+)["\']#i', $html, $m)) {
+            return 'https://rusklimat.by' . $m[1];
+        }
+
+        return null;
+    }
+
+    private function buildCandidateSlugs(string $name, string $article = ''): array
     {
         // Transliterate Russian → Latin then slug
         $translit = $this->transliterate($name);
@@ -341,14 +373,17 @@ class EnrichRusklimatCommand extends Command
         );
         $slug2 = Str::slug($this->transliterate($noPrefix));
 
-        return array_unique(array_filter([$slug1, $slug2]));
+        // Article-based slug (e.g. EWH-10-Q-bic-O → ewh-10-q-bic-o)
+        $slug3 = $article !== '' ? Str::slug(mb_strtolower($article)) : '';
+
+        return array_unique(array_filter([$slug1, $slug2, $slug3]));
     }
 
     private function extractKeyTokens(string $name): array
     {
         // Transliterate and extract tokens > 3 chars (skip brand/model noise)
         $translit = Str::slug($this->transliterate($name));
-        $tokens   = array_filter(explode('-', $translit), fn ($t) => mb_strlen($t) > 3);
+        $tokens   = array_filter(explode('-', $translit), fn ($t) => mb_strlen($t) >= 3);
 
         // Keep max 5 tokens (brand + model are most discriminative)
         return array_slice(array_values($tokens), 0, 5);
