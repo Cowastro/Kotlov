@@ -16,9 +16,9 @@ return [
     ],
 
     'electrolux' => [
-        'site'             => 'https://www.rusklimat.ru',
-        'sitemap_url'      => 'https://www.rusklimat.ru/sitemap_msk.xml',
-        'sitemap_filter'   => 'electrolux',   // only load URLs containing this keyword
+        'site'           => 'https://electrolux-home.ru',
+        'sitemap_url'    => 'https://electrolux-home.ru/sitemap.xml',
+        'sitemap_filter' => 'kondicionery',
     ],
 
     'ballu' => [

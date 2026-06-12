@@ -290,9 +290,17 @@ class EnrichFromManufacturerCommand extends Command
 
     private function findProductUrl(string $name, string $article, array $conf): ?string
     {
-        // Sitemap-based matching (e.g. Electrolux)
+        // Sitemap-based matching (e.g. Electrolux on rusklimat.ru)
         if (! empty($this->sitemapUrls)) {
             $url = $this->findBySitemap($name, $article, $conf['site']);
+            if ($url) {
+                return $url;
+            }
+        }
+
+        // Fallback site (e.g. 21vek.by for Electrolux models not on rusklimat.ru)
+        if (! empty($conf['fallback_site'])) {
+            $url = $this->findOnFallback($name, $article, $conf);
             if ($url) {
                 return $url;
             }
@@ -302,20 +310,46 @@ class EnrichFromManufacturerCommand extends Command
             return null;
         }
 
-        // 1. Search by article (most precise)
-        if ($article !== '') {
+        // Search by article or model
+        if ($article !== '' && ! preg_match('/^KOTLOV-/i', $article)) {
             $url = $this->searchOnSite($article, $conf);
             if ($url) {
                 return $url;
             }
         }
 
-        // 2. Search by model (strip brand prefix from name)
         $model = $this->extractModelFromName($name);
         if ($model !== '' && $model !== $article) {
             $url = $this->searchOnSite($model, $conf);
             if ($url) {
                 return $url;
+            }
+        }
+
+        return null;
+    }
+
+    private function findOnFallback(string $name, string $article, array $conf): ?string
+    {
+        $model       = $this->extractModelFromName($name);
+        $fallbackSite = rtrim($conf['fallback_site'], '/');
+
+        // Build compact slug: EACS/I-12HVA/HC/N8 → eacsi12hvahcn8
+        $compact = preg_replace('/[^a-z0-9]/', '', mb_strtolower($model));
+        if (mb_strlen($compact) < 5) {
+            return null;
+        }
+
+        // Try search on fallback site
+        if (! empty($conf['fallback_search_url'])) {
+            $searchUrl = sprintf($conf['fallback_search_url'], urlencode($model));
+            usleep(500_000);
+            $html = $this->fetchPage($searchUrl);
+            if ($html && ! empty($conf['fallback_link_pattern'])) {
+                if (preg_match($conf['fallback_link_pattern'], $html, $m)) {
+                    $path = $m[1];
+                    return str_starts_with($path, 'http') ? $path : $fallbackSite . '/' . ltrim($path, '/');
+                }
             }
         }
 
