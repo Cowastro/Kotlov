@@ -164,11 +164,17 @@
                                     @endif
                                 </div>
 
+                                @php
+                                    $availabilityStatus = method_exists($product, 'effectiveAvailabilityStatus') ? $product->effectiveAvailabilityStatus() : ($product->in_stock ? 'in_stock' : 'out_of_stock');
+                                    $availabilityLabel = method_exists($product, 'availabilityLabel') ? $product->availabilityLabel() : ($product->in_stock ? 'В наличии' : 'Нет в наличии');
+                                    $canBuy = method_exists($product, 'canBeOrdered') ? $product->canBeOrdered() : ($product->in_stock && $product->price > 0);
+                                @endphp
+
                                 {{-- Цена --}}
                                 <div class="product-infor-price mb-12">
                                     @if ($product->is_archived)
                                         <h4 class="price-on-sale text-muted">Снят с продажи</h4>
-                                    @elseif ($product->in_stock && $product->price > 0)
+                                    @elseif ($canBuy)
                                         <h4 class="price-on-sale">
                                             {{ number_format($product->price, 2, '.', ' ') }} BYN
                                         </h4>
@@ -217,9 +223,13 @@
                                         <span class="stock out-stock fw-medium text-danger">
                                             <i class="icon icon-XCircle"></i> Снят с продажи
                                         </span>
-                                    @elseif ($product->in_stock && $product->price > 0)
+                                    @elseif ($availabilityStatus === 'in_stock')
                                         <span class="stock in-stock fw-medium text-success">
                                             <i class="icon icon-CheckCircle"></i> В наличии
+                                        </span>
+                                    @elseif ($availabilityStatus === 'check')
+                                        <span class="stock in-stock fw-medium text-warning">
+                                            <i class="icon icon-CheckCircle"></i> {{ $availabilityLabel }}
                                         </span>
                                     @else
                                         <span class="stock out-stock fw-medium text-danger">
@@ -237,7 +247,7 @@
                                     class="tf-btn type-xl btn-primary animate-btn w-100">
                                     Заказать консультацию
                                 </a>
-                            @elseif ($product->in_stock && $product->price > 0)
+                            @elseif ($canBuy)
                                 {{-- Количество и кнопки — есть в наличии --}}
                                 <div class="tf-product-variant">
                                     <div class="tf-product-total-quantity">
@@ -271,7 +281,7 @@
                                         </a>
                                     </div>
                                 </div>
-                            @elseif ($product->in_stock)
+                            @elseif ($availabilityStatus === 'check')
                                 <a href="#ask" data-bs-toggle="modal"
                                     class="tf-btn type-xl btn-primary animate-btn w-100">
                                     Заказать консультацию

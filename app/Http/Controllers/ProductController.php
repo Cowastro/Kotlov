@@ -44,8 +44,7 @@ class ProductController extends Controller
         // Похожие товары
         $relatedProducts = Product::where('category_id', $product->category_id)
             ->where('id', '!=', $product->id)
-            ->active()
-            ->notArchived()
+            ->orderable()
             ->with(['category', 'brand'])
             ->inRandomOrder()
             ->limit(8)
@@ -114,13 +113,17 @@ class ProductController extends Controller
             $schema['brand'] = ['@type' => 'Brand', 'name' => $brandName];
         }
         if ($product->price) {
+            $availability = match ($product->effectiveAvailabilityStatus()) {
+                Product::AVAILABILITY_IN_STOCK => 'https://schema.org/InStock',
+                Product::AVAILABILITY_CHECK => 'https://schema.org/LimitedAvailability',
+                default => 'https://schema.org/OutOfStock',
+            };
+
             $schema['offers'] = [
                 '@type'         => 'Offer',
                 'price'         => (string) $product->price,
                 'priceCurrency' => 'BYN',
-                'availability'  => $product->in_stock
-                    ? 'https://schema.org/InStock'
-                    : 'https://schema.org/OutOfStock',
+                'availability'  => $availability,
                 'url'           => $canonical,
             ];
         }

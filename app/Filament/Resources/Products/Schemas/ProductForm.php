@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Products\Schemas;
 
+use App\Models\Product;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\KeyValue;
 use Filament\Forms\Components\Placeholder;
@@ -84,6 +85,11 @@ class ProductForm
                                     ->label('В наличии')
                                     ->default(true),
 
+                                Select::make('availability_status')
+                                    ->label('Статус наличия')
+                                    ->options(Product::availabilityStatusOptions())
+                                    ->default(Product::AVAILABILITY_IN_STOCK)
+                                    ->required(),
                                 Toggle::make('is_featured')
                                     ->label('Хит продаж'),
 

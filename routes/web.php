@@ -52,10 +52,7 @@ Route::get('/', function () {
         return $ids->unique()->values();
     };
 
-    $sellableProducts = fn () => Product::where('is_active', true)
-        ->where('is_archived', false)
-        ->where('in_stock', true)
-        ->where('price', '>', 0);
+    $sellableProducts = fn () => Product::query()->orderable();
 
     $popularCategories = Category::query()
         ->where('is_active', true)

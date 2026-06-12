@@ -467,6 +467,7 @@ class SyncThermostudioAristonCommand extends Command
             'is_active' => true,
             'is_archived' => false,
             'in_stock' => (bool) ($item['in_stock'] ?? true),
+            'availability_status' => $item['availability_status'] ?? (($item['in_stock'] ?? true) ? 'in_stock' : 'out_of_stock'),
             'stock_qty' => null,
             'is_featured' => false,
             'is_new' => false,

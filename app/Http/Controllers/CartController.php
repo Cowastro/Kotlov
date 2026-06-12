@@ -41,6 +41,13 @@ class CartController extends Controller
             return back()->with('error', 'Товар снят с продажи и недоступен для заказа.');
         }
 
+        if (! $product->canBeOrdered()) {
+            if ($request->expectsJson()) {
+                return response()->json(['message' => 'Товар сейчас недоступен для оформления заказа.'], 422);
+            }
+            return back()->with('error', 'Товар сейчас недоступен для оформления заказа.');
+        }
+
         $qty     = max(1, (int) $request->input('quantity', 1));
 
         $cart = session(self::KEY, []);

@@ -80,7 +80,8 @@ class SyncGorodkotlovVaillantCommand extends SyncThermostudioAristonCommand
             'h1' => $name,
             'price_byn' => $price,
             'source_wp_id' => md5($url),
-            'in_stock' => ! preg_match('/(нет\s+в\s+наличии|под\s+заказ)/iu', $this->cleanText($body)),
+            'in_stock' => true,
+            'availability_status' => 'check',
             'content' => $this->extractDescription($body),
             'attributes' => $attributes,
             'service_info' => $serviceInfo,
@@ -104,9 +105,13 @@ class SyncGorodkotlovVaillantCommand extends SyncThermostudioAristonCommand
                 continue;
             }
 
+            $documentUrl = (bool) $this->option('apply')
+                ? $this->downloadDocument($url, $label)
+                : $url;
+
             $documents[$url] = [
                 'label' => $label,
-                'url' => $url,
+                'url' => $documentUrl,
             ];
         }
 
@@ -299,5 +304,38 @@ class SyncGorodkotlovVaillantCommand extends SyncThermostudioAristonCommand
         }
 
         return rtrim(static::BASE_URL, '/') . '/' . ltrim($url, '/');
+    }
+
+    private function downloadDocument(string $url, string $label): string
+    {
+        $dir = public_path('docs/suppliers/gorodkotlov/vaillant');
+        if (! is_dir($dir)) {
+            mkdir($dir, 0775, true);
+        }
+
+        $path = parse_url($url, PHP_URL_PATH) ?: '';
+        $extension = pathinfo($path, PATHINFO_EXTENSION) ?: 'pdf';
+        $base = Str::slug($label) ?: md5($url);
+        $filename = $base . '-' . substr(md5($url), 0, 8) . '.' . $extension;
+        $target = rtrim($dir, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR . $filename;
+
+        if (! file_exists($target)) {
+            $context = stream_context_create([
+                'http' => [
+                    'method' => 'GET',
+                    'header' => "User-Agent: Mozilla/5.0 (compatible; KotlovBot/1.0)\r\n",
+                    'timeout' => 30,
+                ],
+            ]);
+
+            $body = @file_get_contents($url, false, $context);
+            if ($body === false || $body === '') {
+                return $url;
+            }
+
+            file_put_contents($target, $body);
+        }
+
+        return '/docs/suppliers/gorodkotlov/vaillant/' . $filename;
     }
 }

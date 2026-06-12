@@ -4,11 +4,13 @@
     $imageUrl   = $product->image_url;
     $imageHover = $product->imageUrl(1);
 
-    $canBuy = $product->in_stock && $product->price > 0;
+    $availabilityStatus = method_exists($product, 'effectiveAvailabilityStatus') ? $product->effectiveAvailabilityStatus() : ($product->in_stock ? 'in_stock' : 'out_of_stock');
+    $availabilityLabel = method_exists($product, 'availabilityLabel') ? $product->availabilityLabel() : ($product->in_stock ? 'В наличии' : 'Нет в наличии');
+    $canBuy = method_exists($product, 'canBeOrdered') ? $product->canBeOrdered() : ($product->in_stock && $product->price > 0);
 
     $price = $canBuy
         ? number_format($product->price, 2, '.', ' ') . ' BYN'
-        : ($product->in_stock ? 'Цена по запросу' : 'Нет в наличии');
+        : ($availabilityStatus === 'out_of_stock' ? 'Нет в наличии' : 'Цена по запросу');
 
     $priceOld = ($product->price_old && $product->price_old > 0)
         ? number_format($product->price_old, 2, '.', ' ') . ' BYN'

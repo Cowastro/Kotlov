@@ -9,6 +9,10 @@ use Illuminate\Database\Eloquent\Relations\MorphMany;
 
 class Product extends Model
 {
+    public const AVAILABILITY_IN_STOCK = 'in_stock';
+    public const AVAILABILITY_CHECK = 'check';
+    public const AVAILABILITY_OUT_OF_STOCK = 'out_of_stock';
+
     private const SUPPLIER_TECHNICAL_ATTRIBUTES = [
         'Поставщик',
         'Артикул поставщика',
@@ -31,7 +35,7 @@ class Product extends Model
         'content', 'short_description',
         'images', 'specs', 'service_info', 'documents', 'promo_flags', 'video_url',
         'weight', 'unit', 'warranty',
-        'is_active', 'is_archived', 'in_stock', 'stock_qty',
+        'is_active', 'is_archived', 'in_stock', 'availability_status', 'stock_qty',
         'is_featured', 'is_new', 'is_sale', 'sort_order',
         'meta_title', 'meta_keywords', 'meta_description',
         'rating', 'reviews_count', 'views_count',
@@ -52,6 +56,49 @@ class Product extends Model
         'price'       => 'decimal:2',
         'price_old'   => 'decimal:2',
     ];
+
+    public static function availabilityStatusOptions(): array
+    {
+        return [
+            self::AVAILABILITY_IN_STOCK => 'В наличии',
+            self::AVAILABILITY_CHECK => 'Уточняйте наличие',
+            self::AVAILABILITY_OUT_OF_STOCK => 'Нет в наличии',
+        ];
+    }
+
+    public function effectiveAvailabilityStatus(): string
+    {
+        $status = $this->availability_status ?: null;
+
+        if ($status === self::AVAILABILITY_CHECK) {
+            return self::AVAILABILITY_CHECK;
+        }
+
+        if ($status === self::AVAILABILITY_IN_STOCK) {
+            return $this->in_stock ? self::AVAILABILITY_IN_STOCK : self::AVAILABILITY_OUT_OF_STOCK;
+        }
+
+        if ($status === self::AVAILABILITY_OUT_OF_STOCK) {
+            return self::AVAILABILITY_OUT_OF_STOCK;
+        }
+
+        return $this->in_stock ? self::AVAILABILITY_IN_STOCK : self::AVAILABILITY_OUT_OF_STOCK;
+    }
+
+    public function availabilityLabel(): string
+    {
+        return self::availabilityStatusOptions()[$this->effectiveAvailabilityStatus()] ?? 'Уточняйте наличие';
+    }
+
+    public function canBeOrdered(): bool
+    {
+        return ! $this->is_archived
+            && (float) $this->price > 0
+            && in_array($this->effectiveAvailabilityStatus(), [
+                self::AVAILABILITY_IN_STOCK,
+                self::AVAILABILITY_CHECK,
+            ], true);
+    }
 
     public function category(): BelongsTo
     {
@@ -211,6 +258,21 @@ class Product extends Model
     public function scopeInStock($query)
     {
         return $query->where('in_stock', true);
+    }
+
+    public function scopeOrderable($query)
+    {
+        return $query
+            ->where('is_active', true)
+            ->where('is_archived', false)
+            ->where('price', '>', 0)
+            ->where(function ($query) {
+                $query->where('availability_status', self::AVAILABILITY_CHECK)
+                    ->orWhere(function ($query) {
+                        $query->where('availability_status', self::AVAILABILITY_IN_STOCK)
+                            ->where('in_stock', true);
+                    });
+            });
     }
 
     public function supplierMappings(): HasMany
