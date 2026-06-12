@@ -153,43 +153,16 @@ class ProductsTable
             ])
             ->defaultSort('sort_order')
             ->paginated([25, 50, 100])
-            ->modifyQueryUsing(fn(Builder $query) => $query->where('is_archived', false))
             ->filters([
                 TernaryFilter::make('is_active')
                     ->label('Активность'),
 
-                Filter::make('show_archived')
-                    ->label('Включить архивные')
-                    ->toggle()
-                    ->indicateUsing(fn() => null)
-                    ->query(fn(Builder $query) => tap($query, function ($q) {
-                        // Убираем WHERE is_archived = false добавленный modifyQueryUsing
-                        $inner = $q->getQuery();
-                        $wheres   = $inner->wheres ?? [];
-                        $bindings = $inner->bindings['where'] ?? [];
-                        $newWheres   = [];
-                        $newBindings = [];
-                        $bindingIdx  = 0;
-                        foreach ($wheres as $where) {
-                            $isTarget = ($where['type'] ?? '') === 'Basic'
-                                && in_array($where['column'] ?? '', ['is_archived', 'products.is_archived'])
-                                && $where['value'] === false;
-                            if (!$isTarget) {
-                                $newWheres[] = $where;
-                                if (($where['type'] ?? '') === 'Basic') {
-                                    if (isset($bindings[$bindingIdx])) {
-                                        $newBindings[] = $bindings[$bindingIdx];
-                                    }
-                                }
-                            }
-                            if (($where['type'] ?? '') === 'Basic') {
-                                $bindingIdx++;
-                            }
-                        }
-                        $inner->wheres = array_values($newWheres);
-                        $inner->bindings['where'] = array_values($newBindings);
-                    })),
-
+                TernaryFilter::make('is_archived')
+                    ->label('Архив')
+                    ->placeholder('Все')
+                    ->trueLabel('Только архив')
+                    ->falseLabel('Без архива')
+                    ->default(false),
                 TernaryFilter::make('in_stock')
                     ->label('Наличие'),
 
