@@ -165,10 +165,22 @@
                                 </div>
 
                                 @php
-                                    $availabilityStatus = method_exists($product, 'effectiveAvailabilityStatus') ? $product->effectiveAvailabilityStatus() : ($product->in_stock ? 'in_stock' : 'out_of_stock');
-                                    $availabilityLabel = method_exists($product, 'availabilityLabel') ? $product->availabilityLabel() : ($product->in_stock ? 'В наличии' : 'Нет в наличии');
-                                    $canBuy = method_exists($product, 'canBeOrdered') ? $product->canBeOrdered() : ($product->in_stock && $product->price > 0);
-                                    $totalSupplierStock = $product->supplierProducts()->whereNotNull('stock_quantity')->where('stock_quantity', '>', 0)->sum('stock_quantity');
+                                    $totalSupplierStock = $product->supplierProducts->where('stock_quantity', '>', 0)->sum('stock_quantity');
+                                    // Auto-determine status from supplier stock if not explicitly set
+                                    if ($totalSupplierStock > 0) {
+                                        $availabilityStatus = 'in_stock';
+                                    } else {
+                                        $availabilityStatus = method_exists($product, 'effectiveAvailabilityStatus')
+                                            ? $product->effectiveAvailabilityStatus()
+                                            : 'check';
+                                        // Never show "нет в наличии" for non-archived — use "уточняйте наличие"
+                                        if ($availabilityStatus === 'out_of_stock' && ! $product->is_archived) {
+                                            $availabilityStatus = 'check';
+                                        }
+                                    }
+                                    $canBuy = ! $product->is_archived
+                                        && (float) $product->price > 0
+                                        && in_array($availabilityStatus, ['in_stock', 'check']);
                                 @endphp
 
                                 {{-- Цена --}}
