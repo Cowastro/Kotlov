@@ -196,9 +196,6 @@ class EnrichFromManufacturerCommand extends Command
                         $specCount = count($scraped['specs'] ?? []);
                         if ($specCount > 0) {
                             $this->stats['specs']++;
-                            $this->line("  <fg=green>✓</> specs: {$specCount} rows");
-                        } else {
-                            $this->line('  <fg=yellow>!</> specs: none found on page');
                         }
                     }
                 } else {
