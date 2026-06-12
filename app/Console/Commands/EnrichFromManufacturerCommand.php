@@ -56,7 +56,7 @@ class EnrichFromManufacturerCommand extends Command
 
     /** @var string[] cached sitemap URLs for current brand */
     private array $sitemapUrls = [];
-    private string $sitemapFilter = '';
+    private string|array $sitemapFilter = '';
 
     public function handle(): int
     {
@@ -442,8 +442,9 @@ class EnrichFromManufacturerCommand extends Command
         }
 
         preg_match_all('/<loc>(.*?)<\/loc>/s', $xml, $m);
-        $filter = $this->sitemapFilter ?? '';
-        $urls   = [];
+        $filter  = $this->sitemapFilter ?? '';
+        $filters = is_array($filter) ? $filter : ($filter !== '' ? [$filter] : []);
+        $urls    = [];
 
         foreach ($m[1] as $url) {
             $url = trim($url);
@@ -455,13 +456,24 @@ class EnrichFromManufacturerCommand extends Command
             if (str_contains($url, 'rusklimat.ru') && ! str_contains($url, '/product/')) {
                 continue;
             }
-            if ($filter !== '' && ! str_contains(mb_strtolower($url), mb_strtolower($filter))) {
-                continue;
+            if (! empty($filters)) {
+                $urlLower = mb_strtolower($url);
+                $match = false;
+                foreach ($filters as $f) {
+                    if (str_contains($urlLower, mb_strtolower($f))) {
+                        $match = true;
+                        break;
+                    }
+                }
+                if (! $match) {
+                    continue;
+                }
             }
             $urls[] = $url;
         }
 
-        $this->line("  Loaded " . count($urls) . " product URLs" . ($filter ? " (filter: {$filter})" : ''));
+        $filterLabel = empty($filters) ? '' : ' (filter: ' . implode('|', $filters) . ')';
+        $this->line("  Loaded " . count($urls) . " product URLs" . $filterLabel);
 
         return $urls;
     }
