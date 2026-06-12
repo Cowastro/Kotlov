@@ -494,8 +494,10 @@ class SyncRusklimatCommand extends Command
 
     private function extractRow(array $row, array $colMap, string $article, string $normArticle): array
     {
-        $priceRaw = $this->getCol($row, $colMap, 'price');
-        $price    = $priceRaw !== '' ? (float) str_replace([' ', ','], ['', '.'], $priceRaw) : null;
+        $priceRaw       = $this->getCol($row, $colMap, 'price');
+        $price          = $priceRaw !== '' ? (float) str_replace([' ', ','], ['', '.'], $priceRaw) : null;
+        $retailPriceRaw = $this->getCol($row, $colMap, 'retail_price');
+        $retailPrice    = $retailPriceRaw !== '' ? (float) str_replace([' ', ','], ['', '.'], $retailPriceRaw) : null;
 
         $qtyRaw = $this->getCol($row, $colMap, 'quantity');
         $qty    = is_numeric($qtyRaw) ? (int) $qtyRaw : null;
@@ -514,6 +516,7 @@ class SyncRusklimatCommand extends Command
             'brand'        => $this->getCol($row, $colMap, 'brand'),
             'category'     => $this->getCol($row, $colMap, 'category'),
             'price'        => $price,
+            'retail_price' => $retailPrice,
             'currency'     => $currency,
             'quantity'     => $qty,
             'status_text'  => $statusText,
@@ -535,7 +538,8 @@ class SyncRusklimatCommand extends Command
             'name'      => ['наименование', 'название', 'товар', 'name', 'product', 'позиция', 'модель', 'model'],
             'brand'     => ['бренд', 'производитель', 'brand', 'марка', 'manufacturer'],
             'category'  => ['категория', 'группа', 'раздел', 'category', 'group', 'section'],
-            'price'     => ['дилер', 'цена', 'price', 'стоимость', 'мрц', 'мрц без', 'розница'],
+            'price'        => ['дилер', 'дилерская', 'закупка', 'закупочная', 'цена дилера', 'price', 'цена', 'стоимость'],
+            'retail_price' => ['розница', 'мрц', 'рекомендованная', 'ррц', 'retail', 'розничная'],
             'currency'  => ['валюта', 'currency', 'curr'],
             'quantity'  => ['остаток', 'количество', 'кол-во', 'qty', 'quantity', 'stock', 'наличие'],
             'status'    => ['статус', 'наличие', 'status', 'availability', 'доступность'],
@@ -1108,6 +1112,14 @@ class SyncRusklimatCommand extends Command
         $brand    = $this->brandById[$brandId] ?? '';
         $name     = $this->buildProductName($row['name'], $brand);
 
+        // Use retail price from CSV if available; convert currency if needed
+        $retailByn = null;
+        if ($row['retail_price'] !== null) {
+            $retailByn = $row['currency'] === 'BYN'
+                ? $row['retail_price']
+                : CurrencyPriceConverter::convertToByn($row['retail_price'], $row['currency'], $this->supplierCurrencyRate());
+        }
+
         return (int) DB::table('products')->insertGetId([
             'category_id'       => $catId,
             'brand_id'          => $brandId,
@@ -1116,7 +1128,7 @@ class SyncRusklimatCommand extends Command
             'h1'                => $name,
             'sku'               => $this->nextKotlovSku(),
             'slug'              => $this->uniqueSlug($name),
-            'price'             => 0,  // retail price set manually by admin
+            'price'             => $retailByn ?? 0,
             'price_old'         => null,
             'currency'          => 'BYN',
             'content'           => null,
