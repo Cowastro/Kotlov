@@ -54,6 +54,10 @@ class EnrichFromManufacturerCommand extends Command
         'errors'    => 0,
     ];
 
+    /** @var string[] cached sitemap URLs for current brand */
+    private array $sitemapUrls = [];
+    private string|array $sitemapFilter = '';
+
     public function handle(): int
     {
         $brandFilter = trim((string) $this->option('brand'));
@@ -99,6 +103,13 @@ class EnrichFromManufacturerCommand extends Command
             $this->warn("No manufacturer source configured for \"{$brand->name}\" — falling back to AI-only.");
         } elseif ($sourceConf) {
             $this->info("Source: <fg=yellow>{$sourceConf['site']}</>");
+
+            // Pre-load sitemap if configured
+            if (! empty($sourceConf['sitemap_url'])) {
+                $this->sitemapFilter = $sourceConf['sitemap_filter'] ?? '';
+                $this->sitemapUrls   = $this->loadSitemap($sourceConf['sitemap_url']);
+                $this->info(sprintf('Sitemap: %d URLs loaded', count($this->sitemapUrls)));
+            }
         }
 
         // ── Build product query ───────────────────────────────────────────────────
@@ -182,7 +193,8 @@ class EnrichFromManufacturerCommand extends Command
 
                     if ($scraped) {
                         $this->stats['scraped']++;
-                        if (! empty($scraped['specs'])) {
+                        $specCount = count($scraped['specs'] ?? []);
+                        if ($specCount > 0) {
                             $this->stats['specs']++;
                         }
                     }
@@ -193,11 +205,21 @@ class EnrichFromManufacturerCommand extends Command
 
             // ── Step 2: Download image (skip if product already has photos) ──────
             $hasImages = ! empty($product->images) && $product->images !== '[]';
-            if (! $this->option('skip-images') && ! $hasImages && ! empty($scraped['image_url'])) {
-                $localPath = $this->downloadImage($scraped['image_url'], $product->slug ?? $product->sku, $imgDir, $brand->name);
-                if ($localPath) {
-                    $scraped['local_image'] = $localPath;
-                    $this->stats['images']++;
+            if (! $this->option('skip-images')) {
+                if ($hasImages && ! $force) {
+                    $this->line('  <fg=yellow>↷</> image: skipped (already has photos; use --force to overwrite)');
+                } elseif (empty($scraped['image_url'])) {
+                    $this->line('  <fg=red>✗</> image: no URL found on manufacturer page');
+                } else {
+                    $this->line('  <fg=cyan>↓</> image: ' . $scraped['image_url']);
+                    $localPath = $this->downloadImage($scraped['image_url'], $product->slug ?? $product->sku, $imgDir, $brand->name);
+                    if ($localPath) {
+                        $scraped['local_image'] = $localPath;
+                        $this->stats['images']++;
+                        $this->line('  <fg=green>✓</> saved: ' . $localPath);
+                    } else {
+                        $this->line('  <fg=red>✗</> image download failed');
+                    }
                 }
             }
 
@@ -268,15 +290,42 @@ class EnrichFromManufacturerCommand extends Command
 
     private function findProductUrl(string $name, string $article, array $conf): ?string
     {
-        // 1. Search by article (most precise)
-        if ($article !== '') {
+        // Sitemap-based matching (e.g. Electrolux on rusklimat.ru)
+        if (! empty($this->sitemapUrls)) {
+            $url = $this->findBySitemap($name, $article, $conf['site']);
+            if ($url) {
+                return $url;
+            }
+        }
+
+        // Fallback sites (supports 'fallbacks' array or legacy single 'fallback_site')
+        $fallbackList = $conf['fallbacks'] ?? [];
+        if (empty($fallbackList) && ! empty($conf['fallback_site'])) {
+            $fallbackList[] = [
+                'site'         => $conf['fallback_site'],
+                'search_url'   => $conf['fallback_search_url'] ?? '',
+                'link_pattern' => $conf['fallback_link_pattern'] ?? '',
+            ];
+        }
+        foreach ($fallbackList as $fb) {
+            $url = $this->findOnFallback($name, $article, $fb);
+            if ($url) {
+                return $url;
+            }
+        }
+
+        if (empty($conf['search_url'])) {
+            return null;
+        }
+
+        // Search by article or model
+        if ($article !== '' && ! preg_match('/^KOTLOV-/i', $article)) {
             $url = $this->searchOnSite($article, $conf);
             if ($url) {
                 return $url;
             }
         }
 
-        // 2. Search by model (strip brand prefix from name)
         $model = $this->extractModelFromName($name);
         if ($model !== '' && $model !== $article) {
             $url = $this->searchOnSite($model, $conf);
@@ -286,6 +335,157 @@ class EnrichFromManufacturerCommand extends Command
         }
 
         return null;
+    }
+
+    private function findOnFallback(string $name, string $article, array $conf): ?string
+    {
+        $model        = $this->extractModelFromName($name);
+        $fallbackSite = rtrim($conf['site'] ?? $conf['fallback_site'] ?? '', '/');
+
+        // Build compact slug: EACS/I-12HVA/HC/N8 → eacsi12hvahcn8
+        $compact = preg_replace('/[^a-z0-9]/', '', mb_strtolower($model));
+        if (mb_strlen($compact) < 5) {
+            return null;
+        }
+
+        // Try search on fallback site
+        $fallbackSearchUrl   = $conf['search_url'] ?? $conf['fallback_search_url'] ?? '';
+        $fallbackLinkPattern = $conf['link_pattern'] ?? $conf['fallback_link_pattern'] ?? '';
+        if (! empty($fallbackSearchUrl)) {
+            $searchUrl = sprintf($fallbackSearchUrl, urlencode($model));
+            usleep(500_000);
+            $html = $this->fetchPage($searchUrl);
+            if ($html && ! empty($fallbackLinkPattern)) {
+                if (preg_match_all($fallbackLinkPattern, $html, $m)) {
+                    // Find the link whose path contains the compact model slug
+                    foreach ($m[1] as $path) {
+                        if (str_contains(mb_strtolower($path), $compact)) {
+                            return str_starts_with($path, 'http') ? $path : $fallbackSite . '/' . ltrim($path, '/');
+                        }
+                    }
+                }
+            }
+        }
+
+        return null;
+    }
+
+    private function findBySitemap(string $name, string $article, string $site): ?string
+    {
+        // Always extract model from name — article may be an internal SKU (e.g. KOTLOV-000556)
+        $model = $this->extractModelFromName($name);
+
+        $tokens = [];
+
+        // If article looks like a real model code (not internal SKU), use it too
+        if ($article !== '' && ! preg_match('/^KOTLOV-/i', $article)) {
+            $tokens[] = $this->toSlug($article);                         // slash→removed
+            $tokens[] = $this->toSlugDash($article);                     // slash→dash
+        }
+
+        // Model extracted from name — two variants
+        if ($model !== '') {
+            $tokens[] = $this->toSlug($model);                           // slash→removed
+            $tokens[] = $this->toSlugDash($model);                       // slash→dash
+        }
+
+        // Core model token: first segment like 09HIX, 07HSM, 18HEN
+        foreach ([$model, $article] as $src) {
+            if (preg_match('/[-\/](\d{2}[A-Z]{2,}[0-9A-Z\-]*)/i', $src, $mCore)) {
+                $tokens[] = mb_strtolower($mCore[1]);
+                break;
+            }
+        }
+
+        $tokens = array_unique(array_filter($tokens, fn ($t) => mb_strlen($t) >= 4));
+
+        foreach ($tokens as $token) {
+            foreach ($this->sitemapUrls as $url) {
+                $urlSlug = mb_strtolower(basename(rtrim($url, '/')));
+                if (str_contains($urlSlug, $token)) {
+                    return $url;
+                }
+            }
+        }
+
+        return null;
+    }
+
+    /** Replaces / with - (for rusklimat.ru: EACS/I → eacs-i) */
+    private function toSlugDash(string $s): string
+    {
+        $s = mb_strtolower($s);
+        $s = str_replace('/', '-', $s);
+        $s = preg_replace('/[^a-z0-9]+/', '-', $s);
+        return trim($s, '-');
+    }
+
+    private function loadSitemap(string $sitemapUrl): array
+    {
+        $this->line("  Loading sitemap: {$sitemapUrl}");
+
+        try {
+            $response = \Illuminate\Support\Facades\Http::withHeaders([
+                'User-Agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+                'Accept'     => 'application/xml,text/xml,*/*',
+            ])->timeout(60)->get($sitemapUrl);
+
+            if (! $response->successful()) {
+                $this->warn("  Sitemap HTTP {$response->status()} — skipping");
+                return [];
+            }
+
+            $xml = $response->body();
+        } catch (\Throwable $e) {
+            $this->warn("  Sitemap fetch error: {$e->getMessage()}");
+            return [];
+        }
+
+        preg_match_all('/<loc>(.*?)<\/loc>/s', $xml, $m);
+        $filter  = $this->sitemapFilter ?? '';
+        $filters = is_array($filter) ? $filter : ($filter !== '' ? [$filter] : []);
+        $urls    = [];
+
+        foreach ($m[1] as $url) {
+            $url = trim($url);
+            // Skip sub-sitemap files and category/catalog pages
+            if (preg_match('/\.xml$/i', $url)) {
+                continue;
+            }
+            // For rusklimat.ru: only keep /product/ URLs (skip catalog/category pages)
+            if (str_contains($url, 'rusklimat.ru') && ! str_contains($url, '/product/')) {
+                continue;
+            }
+            if (! empty($filters)) {
+                $urlLower = mb_strtolower($url);
+                $match = false;
+                foreach ($filters as $f) {
+                    if (str_contains($urlLower, mb_strtolower($f))) {
+                        $match = true;
+                        break;
+                    }
+                }
+                if (! $match) {
+                    continue;
+                }
+            }
+            $urls[] = $url;
+        }
+
+        $filterLabel = empty($filters) ? '' : ' (filter: ' . implode('|', $filters) . ')';
+        $this->line("  Loaded " . count($urls) . " product URLs" . $filterLabel);
+
+        return $urls;
+    }
+
+    private function toSlug(string $s): string
+    {
+        $s = mb_strtolower($s);
+        // Remove slashes without adding a separator (EACS/I → eacsi, 321/Y → 321y)
+        $s = str_replace('/', '', $s);
+        // Replace remaining non-alphanumeric with dash
+        $s = preg_replace('/[^a-z0-9]+/', '-', $s);
+        return trim($s, '-');
     }
 
     private function searchOnSite(string $query, array $conf): ?string
@@ -302,7 +502,6 @@ class EnrichFromManufacturerCommand extends Command
 
         if (preg_match($pattern, $html, $m)) {
             $path = $m[1];
-            // If it's already a full URL, return as-is
             if (str_starts_with($path, 'http')) {
                 return $path;
             }
@@ -369,7 +568,12 @@ class EnrichFromManufacturerCommand extends Command
             }
         }
 
-        // ── og:image — on product pages this is the product photo ──────────────────
+        // ── Product gallery image (Bitrix / common CMS patterns) ────────────────────
+        if ($result['image_url'] === null) {
+            $result['image_url'] = $this->findProductImage($html, $url);
+        }
+
+        // ── og:image as last resort (may be a generic brand banner) ──────────────
         if ($result['image_url'] === null) {
             if (preg_match('/<meta[^>]+property=["\']og:image["\'][^>]+content=["\'](.*?)["\'][^>]*>/si', $html, $m)) {
                 $ogImg = $m[1];
@@ -377,11 +581,6 @@ class EnrichFromManufacturerCommand extends Command
                     $result['image_url'] = $ogImg;
                 }
             }
-        }
-
-        // ── Fallback: scan HTML for product images ────────────────────────────────
-        if ($result['image_url'] === null) {
-            $result['image_url'] = $this->findProductImage($html, $url);
         }
 
         // ── Specs: look for <table> or <dl> with characteristics ─────────────────
@@ -394,42 +593,57 @@ class EnrichFromManufacturerCommand extends Command
     {
         $host = parse_url($pageUrl, PHP_URL_SCHEME) . '://' . parse_url($pageUrl, PHP_URL_HOST);
 
-        // 1. Look for <img> tags with product-related path segments (not logos/icons)
-        $productPathPatterns = [
-            'upload', 'products', 'catalog', 'goods', 'items', 'photo', 'images/product',
-        ];
+        $makeAbsolute = function (string $url) use ($host): string {
+            if (str_starts_with($url, 'http')) {
+                return $url;
+            }
+            if (str_starts_with($url, '//')) {
+                return 'https:' . $url;
+            }
+            return $host . '/' . ltrim($url, '/');
+        };
 
-        if (preg_match_all('/<img[^>]+src=["\']([^"\']+)["\'][^>]*>/i', $html, $imgs)) {
-            $candidates = [];
+        $skipPatterns = '/logo|icon|favicon|banner|sprite|pixel|1x1|arrow|star|noimage|nophoto/i';
 
-            foreach ($imgs[1] as $src) {
-                // Skip small icons/logos
-                if (preg_match('/logo|icon|favicon|banner|sprite|pixel|1x1|arrow|star/i', $src)) {
-                    continue;
-                }
-                // Skip data URIs and external CDNs unlikely to be product photos
-                if (str_starts_with($src, 'data:')) {
-                    continue;
-                }
-
-                $srcLower = mb_strtolower($src);
-                foreach ($productPathPatterns as $pattern) {
-                    if (str_contains($srcLower, $pattern)) {
-                        $candidates[] = $src;
-                        break;
-                    }
+        // 1. Bitrix: <a href="/upload/iblock/..." data-fancybox> — full-size gallery link
+        if (preg_match_all('/<a[^>]+href=["\']([^"\']*\/upload\/(?:iblock|resize_cache)[^"\']*\.(?:jpg|jpeg|png|webp))["\'][^>]*>/i', $html, $m)) {
+            foreach ($m[1] as $href) {
+                if (! preg_match($skipPatterns, $href)) {
+                    return $makeAbsolute($href);
                 }
             }
+        }
 
-            if (! empty($candidates)) {
-                $url = $candidates[0];
-                if (str_starts_with($url, '//')) {
-                    return 'https:' . $url;
+        // 2. <img data-src="...upload..."> (lazy-loaded Bitrix / other CMS)
+        if (preg_match_all('/<img[^>]+data-src=["\']([^"\']+)["\'][^>]*>/i', $html, $imgs)) {
+            foreach ($imgs[1] as $src) {
+                if (str_starts_with($src, 'data:') || preg_match($skipPatterns, $src)) {
+                    continue;
                 }
-                if (str_starts_with($url, '/')) {
-                    return $host . $url;
+                if (preg_match('/upload|products|catalog|goods|items|photo/i', $src)) {
+                    return $makeAbsolute($src);
                 }
-                return $url;
+            }
+        }
+
+        // 3. <img src="...upload...resize_cache...700_700..."> — Bitrix resized product photo
+        if (preg_match_all('/<img[^>]+src=["\']([^"\']+)["\'][^>]*>/i', $html, $imgs)) {
+            $best = null;
+            foreach ($imgs[1] as $src) {
+                if (str_starts_with($src, 'data:') || preg_match($skipPatterns, $src)) {
+                    continue;
+                }
+                $sl = mb_strtolower($src);
+                // Prefer resize_cache with large size (product photo)
+                if (str_contains($sl, 'resize_cache') && preg_match('/[4-9]\d\d_[4-9]\d\d/', $src)) {
+                    return $makeAbsolute($src);
+                }
+                if (! $best && preg_match('/upload|products|catalog|goods|items|photo/i', $src)) {
+                    $best = $src;
+                }
+            }
+            if ($best) {
+                return $makeAbsolute($best);
             }
         }
 
@@ -438,31 +652,106 @@ class EnrichFromManufacturerCommand extends Command
 
     private function parseSpecs(string $html): array
     {
-        $raw = [];
+        $candidates = [];
 
-        // Try <table> rows: first column = name, second = value
-        if (preg_match_all('/<tr[^>]*>\s*<t[dh][^>]*>(.*?)<\/t[dh]>\s*<t[dh][^>]*>(.*?)<\/t[dh]>/si', $html, $rows)) {
-            foreach ($rows[1] as $i => $key) {
+        // 0. electrolux.com.by: <div class="short-attribute">
+        $r = [];
+        if (preg_match_all(
+            '/<div[^>]+class="short-attribute"[^>]*>.*?<span[^>]+class="attr-name"[^>]*>\s*<span[^>]*>(.*?)<\/span>.*?<span[^>]+class="attr-text"[^>]*>\s*<span[^>]*>(.*?)<\/span>/si',
+            $html, $saRows
+        )) {
+            foreach ($saRows[1] as $i => $key) {
                 $k = trim(strip_tags($key));
-                $v = trim(strip_tags($rows[2][$i]));
-                if ($k !== '' && $v !== '' && mb_strlen($k) < 100 && mb_strlen($v) < 200) {
-                    $raw[$k] = $v;
+                $v = trim(strip_tags($saRows[2][$i]));
+                if ($k !== '' && $v !== '') {
+                    $r[$k] = $v;
                 }
             }
         }
+        $candidates[] = $r;
 
-        // Try <dl><dt>/<dd> pattern
-        if (empty($raw) && preg_match_all('/<dt[^>]*>(.*?)<\/dt>\s*<dd[^>]*>(.*?)<\/dd>/si', $html, $dl)) {
+        // 1. <dl><dt>/<dd>
+        $r = [];
+        if (preg_match_all('/<dt[^>]*>(.*?)<\/dt>\s*<dd[^>]*>(.*?)<\/dd>/si', $html, $dl)) {
             foreach ($dl[1] as $i => $key) {
                 $k = trim(strip_tags($key));
                 $v = trim(strip_tags($dl[2][$i]));
-                if ($k !== '' && $v !== '' && mb_strlen($k) < 100) {
-                    $raw[$k] = $v;
+                if ($k !== '' && $v !== '' && mb_strlen($k) < 120 && mb_strlen($v) < 300) {
+                    $r[$k] = $v;
                 }
             }
         }
+        $candidates[] = $r;
 
-        // Convert to [{key, value, unit}] format (matches Filament Repeater + infolist)
+        // 2. <table> rows — skip rows where key cell contains links (navigation tables)
+        $r = [];
+        if (preg_match_all('/<tr[^>]*>\s*<t[dh][^>]*>(.*?)<\/t[dh]>\s*<t[dh][^>]*>(.*?)<\/t[dh]>/si', $html, $rows)) {
+            foreach ($rows[1] as $i => $key) {
+                if (str_contains($key, '<a ') || str_contains($key, '<img')) {
+                    continue; // skip navigation/image rows
+                }
+                $k = trim(strip_tags($key));
+                $v = trim(strip_tags($rows[2][$i]));
+                if ($k !== '' && $v !== '' && mb_strlen($k) < 120 && mb_strlen($v) < 300 && mb_strlen($k) > 2) {
+                    $r[$k] = $v;
+                }
+            }
+        }
+        $candidates[] = $r;
+
+        // 3. JSON-LD additionalProperty
+        $r = [];
+        if (preg_match_all('/<script[^>]+type=["\']application\/ld\+json["\'][^>]*>(.*?)<\/script>/si', $html, $scripts)) {
+            foreach ($scripts[1] as $json) {
+                $data = json_decode(trim($json), true);
+                if (! $data) { continue; }
+                $items = isset($data[0]) ? $data : [$data];
+                foreach ($items as $item) {
+                    if (($item['@type'] ?? '') === 'Product' && ! empty($item['additionalProperty'])) {
+                        foreach ($item['additionalProperty'] as $prop) {
+                            $k = $prop['name'] ?? '';
+                            $v = $prop['value'] ?? '';
+                            if ($k !== '' && $v !== '') { $r[$k] = (string) $v; }
+                        }
+                        break 2;
+                    }
+                }
+            }
+        }
+        $candidates[] = $r;
+
+        // 4. electrolux-home.ru / Bitrix: characteristics__row with name+property spans
+        //    Simple:  <span class="characteristics__property"> VALUE </span>
+        //    Tooltip: <span class="characteristics__property"> VALUE <div class="glossary-tooltip">...</span>
+        //    List:    <span class="characteristics__property"> <ul><li>...</li></ul> </span>
+        $r = [];
+        preg_match_all('/<span[^>]+class=["\'][^"\']*characteristics__name[^"\']*["\'][^>]*>(.*?)<\/span>/si', $html, $nameM4);
+        preg_match_all('/<span[^>]+class=["\'][^"\']*characteristics__property[^"\']*["\'][^>]*>(.*?)<\/span>/si', $html, $propM4);
+        foreach (($nameM4[1] ?? []) as $i => $rawKey4) {
+            $k = trim(strip_tags($rawKey4));
+            if ($k === '' || mb_strlen($k) > 120 || ! isset($propM4[1][$i])) {
+                continue;
+            }
+            $rawVal4 = $propM4[1][$i];
+            if (preg_match('/<ul[^>]*>(.*?)<\/ul>/si', $rawVal4, $ulM4)) {
+                preg_match_all('/<li[^>]*>(.*?)<\/li>/si', $ulM4[1], $liM4);
+                $v = implode(', ', array_map(fn ($l) => trim(strip_tags($l)), $liM4[1]));
+            } else {
+                // Remove block-level child elements (glossary-tooltip divs etc.)
+                $clean4 = preg_replace('/\s*<(?:div|table)[^>]*>.*$/si', '', $rawVal4);
+                $v = trim(strip_tags($clean4));
+            }
+            if ($v !== '') {
+                $r[$k] = $v;
+            }
+        }
+        $candidates[] = $r;
+
+        // Pick the candidate with the most entries
+        usort($candidates, fn ($a, $b) => count($b) - count($a));
+        $raw = $candidates[0] ?? [];
+
+        // Convert to [{key, value, unit}] format
         $specs = [];
         foreach ($raw as $k => $v) {
             $specs[] = ['key' => $k, 'value' => $v, 'unit' => ''];

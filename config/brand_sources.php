@@ -16,9 +16,21 @@ return [
     ],
 
     'electrolux' => [
-        'site'                 => 'https://www.electrolux.ru',
-        'search_url'           => 'https://www.electrolux.ru/search/?q=%s',
-        'product_link_pattern' => '#href=["\'](/[a-z0-9\-]+/[a-z0-9\-]+/)["\']#i',
+        'site'           => 'https://electrolux-home.ru',
+        'sitemap_url'    => 'https://electrolux-home.ru/sitemap.xml',
+        'sitemap_filter' => ['kondicionery', 'obogrevateli-i-teplovye-zavesy', 'uvlazhniteli', 'ventilyatory', 'ochistit'],
+        'fallbacks' => [
+            [
+                'site'         => 'https://www.21vek.by',
+                'search_url'   => 'https://www.21vek.by/conditioners/all/electrolux/',
+                'link_pattern' => '#href=["\'](/conditioners/[a-z0-9_\-]+electrolux[^"\']*\.html)["\']#i',
+            ],
+            [
+                'site'         => 'https://www.21vek.by',
+                'search_url'   => 'https://www.21vek.by/humidifiers/all/electrolux/',
+                'link_pattern' => '#href=["\'](/humidifiers/[a-z0-9_\-]+electrolux[^"\']*\.html)["\']#i',
+            ],
+        ],
     ],
 
     'ballu' => [
