@@ -81,6 +81,10 @@ class ProductsTable
                         return $articles->isNotEmpty() ? $articles->implode(' / ') : '—';
                     })
                     ->copyable()
+                    ->searchable(query: fn (Builder $query, string $search) => $query->whereHas(
+                        'supplierProducts',
+                        fn ($q) => $q->where('supplier_article', 'like', "%{$search}%")
+                    ))
                     ->toggleable(),
 
                 TextColumn::make('supplier_stock')
