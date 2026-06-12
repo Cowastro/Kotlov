@@ -22,6 +22,7 @@ class SyncThermostudioAristonCommand extends Command
     protected const SUPPLIER_CODE = 'thermostudio';
     protected const SYNC_KEY = 'thermostudio_ariston_gas_boilers';
     protected const SOURCE_URL = 'https://teplo.by/catalog/gazovye-kotly/?jsf=jet-woo-products-grid&tax=product_cat:553';
+    protected const SOURCE_SITE_NAME = 'teplo.by';
     protected const CATALOG_PAGE_QUERY = '?jsf=jet-woo-products-grid&tax=product_cat:553';
     protected const CATALOG_BASE_URL = 'https://teplo.by/catalog/gazovye-kotly/';
     protected const BASE_URL = 'https://teplo.by';
@@ -89,7 +90,7 @@ class SyncThermostudioAristonCommand extends Command
             $items = array_slice($items, 0, $limit);
         }
 
-        $this->info(sprintf('Found %d unique %s products on teplo.by.', count($items), static::BRAND_NAME));
+        $this->info(sprintf('Found %d unique %s products on %s.', count($items), static::BRAND_NAME, static::SOURCE_SITE_NAME));
 
         if (! $apply) {
             return $this->dryRun($items, $sleepMs);
@@ -166,7 +167,7 @@ class SyncThermostudioAristonCommand extends Command
         return $stats['errors'] > 0 ? self::FAILURE : self::SUCCESS;
     }
 
-    private function dryRun(array $items, int $sleepMs): int
+    protected function dryRun(array $items, int $sleepMs): int
     {
         $supplierId = (int) (DB::table('suppliers')->where('code', static::SUPPLIER_CODE)->value('id') ?? 0);
         $brandId = (int) (DB::table('brands')->where('slug', static::BRAND_SLUG)->value('id') ?? 0);
@@ -207,7 +208,7 @@ class SyncThermostudioAristonCommand extends Command
         return self::SUCCESS;
     }
 
-    private function scrapeCatalog(int $sleepMs): array
+    protected function scrapeCatalog(int $sleepMs): array
     {
         $items = [];
 
@@ -244,7 +245,7 @@ class SyncThermostudioAristonCommand extends Command
         return array_values($items);
     }
 
-    private function scrapeProduct(string $url): array
+    protected function scrapeProduct(string $url): array
     {
         $html = $this->fetch($url);
         $body = str_contains($html, '<body') ? substr($html, strpos($html, '<body')) : $html;
@@ -298,7 +299,7 @@ class SyncThermostudioAristonCommand extends Command
         ];
     }
 
-    private function isBrandProductUrl(string $productUrl): bool
+    protected function isBrandProductUrl(string $productUrl): bool
     {
         foreach (static::PRODUCT_URL_HINTS as $hint) {
             if (str_contains($productUrl, $hint)) {
@@ -309,7 +310,7 @@ class SyncThermostudioAristonCommand extends Command
         return false;
     }
 
-    private function extractDynamicBlocks(string $body): array
+    protected function extractDynamicBlocks(string $body): array
     {
         preg_match_all(
             '/<div class="elementor-element[\s\S]{0,2500}?jet-listing-dynamic-field__content[\s\S]{0,2500}?<\/div>\s*<\/div>/u',
@@ -328,7 +329,7 @@ class SyncThermostudioAristonCommand extends Command
         return array_values(array_unique($blocks));
     }
 
-    private function extractDocuments(string $body): array
+    protected function extractDocuments(string $body): array
     {
         preg_match_all('/<a[^>]+href="([^"]+\.pdf[^"]*)"[^>]*>([\s\S]*?)<\/a>/iu', $body, $matches, PREG_SET_ORDER);
 
@@ -346,7 +347,7 @@ class SyncThermostudioAristonCommand extends Command
         return array_values($documents);
     }
 
-    private function extractPromoFlags(string $body, string $url, string $name): array
+    protected function extractPromoFlags(string $body, string $url, string $name): array
     {
         $plain = mb_strtolower($this->cleanText($body . ' ' . $url . ' ' . $name));
         $flags = [];
@@ -362,7 +363,7 @@ class SyncThermostudioAristonCommand extends Command
         return $flags;
     }
 
-    private function extractImages(string $html): array
+    protected function extractImages(string $html): array
     {
         $images = [];
 
@@ -378,7 +379,7 @@ class SyncThermostudioAristonCommand extends Command
         return array_values(array_unique($images));
     }
 
-    private function extractDescription(string $body): ?string
+    protected function extractDescription(string $body): ?string
     {
         if (preg_match('/<div[^>]+class="[^"]*elementor-tab-title[^"]*"[^>]*>\s*Описание\s*<\/div>\s*<div[^>]+class="[^"]*elementor-tab-content[^"]*"[^>]*>([\s\S]*?)<\/div>/iu', $body, $m)) {
             $content = $this->sanitizeHtml($m[1]);
@@ -393,7 +394,7 @@ class SyncThermostudioAristonCommand extends Command
         return null;
     }
 
-    private function extractVideoUrl(string $body): ?string
+    protected function extractVideoUrl(string $body): ?string
     {
         if (preg_match('/https?:\/\/(?:www\.)?(?:youtube\.com|youtu\.be)\/[^"\s<]+/iu', $body, $m)) {
             return html_entity_decode($m[0], ENT_QUOTES | ENT_HTML5, 'UTF-8');
@@ -402,7 +403,7 @@ class SyncThermostudioAristonCommand extends Command
         return null;
     }
 
-    private function findProduct(array $item, int $supplierId, int $brandId): ?object
+    protected function findProduct(array $item, int $supplierId, int $brandId): ?object
     {
         if ($supplierId > 0) {
             $sp = DB::table('supplier_products')
@@ -437,7 +438,7 @@ class SyncThermostudioAristonCommand extends Command
         return null;
     }
 
-    private function upsertProduct(array $item, ?object $product, int $brandId, int $categoryId, $now): int
+    protected function upsertProduct(array $item, ?object $product, int $brandId, int $categoryId, $now): int
     {
         $images = $item['images'] ?? [];
         if ($product && empty($images)) {
@@ -499,7 +500,7 @@ class SyncThermostudioAristonCommand extends Command
         return (int) DB::table('products')->insertGetId($payload);
     }
 
-    private function syncAttributes(int $productId, array $attributes, int $categoryId, $now): void
+    protected function syncAttributes(int $productId, array $attributes, int $categoryId, $now): void
     {
         foreach ($attributes as $name => $value) {
             if (! $name || ! $value) {
@@ -520,7 +521,7 @@ class SyncThermostudioAristonCommand extends Command
         }
     }
 
-    private function ensureAttribute(string $name, int $categoryId, $now): int
+    protected function ensureAttribute(string $name, int $categoryId, $now): int
     {
         $existing = DB::table('attributes')
             ->where('category_id', $categoryId)
@@ -557,7 +558,7 @@ class SyncThermostudioAristonCommand extends Command
         ]);
     }
 
-    private function upsertSupplierProduct(array $item, int $productId, string $productSku, int $supplierId, ?int $syncId, $now): void
+    protected function upsertSupplierProduct(array $item, int $productId, string $productSku, int $supplierId, ?int $syncId, $now): void
     {
         DB::table('supplier_products')->updateOrInsert(
             ['supplier_id' => $supplierId, 'supplier_article' => $item['source_wp_id']],
@@ -588,7 +589,7 @@ class SyncThermostudioAristonCommand extends Command
         );
     }
 
-    private function ensureBrand($now): int
+    protected function ensureBrand($now): int
     {
         $existing = DB::table('brands')->where('slug', static::BRAND_SLUG)->first();
         if ($existing) {
@@ -606,7 +607,7 @@ class SyncThermostudioAristonCommand extends Command
         ]);
     }
 
-    private function ensureSupplier($now): int
+    protected function ensureSupplier($now): int
     {
         $existing = DB::table('suppliers')->where('code', static::SUPPLIER_CODE)->first();
         if ($existing) {
@@ -632,7 +633,7 @@ class SyncThermostudioAristonCommand extends Command
         ]);
     }
 
-    private function ensureSupplierSync($now): ?int
+    protected function ensureSupplierSync($now): ?int
     {
         DB::table('supplier_syncs')->updateOrInsert(
             ['key' => static::SYNC_KEY],
@@ -653,7 +654,7 @@ class SyncThermostudioAristonCommand extends Command
         return DB::table('supplier_syncs')->where('key', static::SYNC_KEY)->value('id');
     }
 
-    private function categoryId(): int
+    protected function categoryId(): int
     {
         $categoryId = DB::table('categories')->where('slug', static::CATEGORY_SLUG)->value('id');
         if (! $categoryId) {
@@ -663,7 +664,7 @@ class SyncThermostudioAristonCommand extends Command
         return (int) $categoryId;
     }
 
-    private function normalizeName(string $name): string
+    protected function normalizeName(string $name): string
     {
         $name = mb_strtoupper($name);
         $name = preg_replace('/\b(ГАЗОВЫЙ|КОТЕЛ|КОТЁЛ|ТРАДИЦИОННЫЙ|КОНДЕНСАЦИОННЫЙ|ARISTON|АРИСТОН|В\s+КОМПЛЕКТЕ\s+С\s+ДЫМОХОДОМ)\b/u', '', $name) ?? $name;
@@ -673,7 +674,7 @@ class SyncThermostudioAristonCommand extends Command
         return trim(preg_replace('/\s+/u', ' ', $name) ?? $name);
     }
 
-    private function nextKotlovSku(): string
+    protected function nextKotlovSku(): string
     {
         $max = DB::table('products')
             ->where('sku', 'like', 'KOTLOV-%')
@@ -689,7 +690,7 @@ class SyncThermostudioAristonCommand extends Command
         return $sku;
     }
 
-    private function uniqueSlug(string $name): string
+    protected function uniqueSlug(string $name): string
     {
         $base = Str::slug($name) ?: static::BRAND_SLUG . '-gas-boiler';
         $slug = $base;
@@ -702,7 +703,7 @@ class SyncThermostudioAristonCommand extends Command
         return $slug;
     }
 
-    private function fetch(string $url): string
+    protected function fetch(string $url): string
     {
         $context = stream_context_create([
             'http' => [
@@ -721,20 +722,20 @@ class SyncThermostudioAristonCommand extends Command
         return $body;
     }
 
-    private function match(string $pattern, string $subject): ?string
+    protected function match(string $pattern, string $subject): ?string
     {
         return preg_match($pattern, $subject, $m)
             ? html_entity_decode($m[1], ENT_QUOTES | ENT_HTML5, 'UTF-8')
             : null;
     }
 
-    private function cleanText(string $value): string
+    protected function cleanText(string $value): string
     {
         $value = html_entity_decode(strip_tags($value), ENT_QUOTES | ENT_HTML5, 'UTF-8');
         return trim(preg_replace('/\s+/u', ' ', $value) ?? $value);
     }
 
-    private function sanitizeHtml(string $value): string
+    protected function sanitizeHtml(string $value): string
     {
         $value = preg_replace('/<(script|style)\b[\s\S]*?<\/\1>/iu', '', $value) ?? $value;
         $value = preg_replace('/<a\b[^>]*>([\s\S]*?)<\/a>/iu', '$1', $value) ?? $value;
