@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Products\Tables;
 
+use App\Models\Supplier;
 use App\Models\User;
 use Filament\Actions\BulkAction;
 use Filament\Actions\BulkActionGroup;
@@ -217,10 +218,14 @@ class ProductsTable
                     ->searchable()
                     ->preload(),
 
-                SelectFilter::make('supplier_id')
+                SelectFilter::make('supplier')
                     ->label('Поставщик')
-                    ->relationship('supplier', 'name', fn($query) => $query->where('role', 'supplier'))
-                    ->searchable(),
+                    ->options(fn () => Supplier::orderBy('name')->pluck('name', 'id'))
+                    ->searchable()
+                    ->query(fn (Builder $query, array $data) => $data['value']
+                        ? $query->whereHas('supplierProducts', fn ($q) => $q->where('supplier_id', $data['value']))
+                        : $query
+                    ),
 
                 Filter::make('without_photo')
                     ->label('Без фото')
