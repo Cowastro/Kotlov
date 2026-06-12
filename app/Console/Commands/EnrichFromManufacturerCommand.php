@@ -369,20 +369,19 @@ class EnrichFromManufacturerCommand extends Command
             }
         }
 
-        // ── Product image — prefer gallery/product imgs over og:image (often a logo) ──
-        if ($result['image_url'] === null) {
-            $result['image_url'] = $this->findProductImage($html, $url);
-        }
-
-        // og:image only as last resort, skip if it looks like a logo/banner
+        // ── og:image — on product pages this is the product photo ──────────────────
         if ($result['image_url'] === null) {
             if (preg_match('/<meta[^>]+property=["\']og:image["\'][^>]+content=["\'](.*?)["\'][^>]*>/si', $html, $m)) {
                 $ogImg = $m[1];
-                // Skip obvious logos/banners
-                if (! preg_match('/logo|banner|icon|favicon|sprite/i', $ogImg)) {
+                if (! preg_match('/logo|icon|favicon|sprite/i', $ogImg)) {
                     $result['image_url'] = $ogImg;
                 }
             }
+        }
+
+        // ── Fallback: scan HTML for product images ────────────────────────────────
+        if ($result['image_url'] === null) {
+            $result['image_url'] = $this->findProductImage($html, $url);
         }
 
         // ── Specs: look for <table> or <dl> with characteristics ─────────────────
