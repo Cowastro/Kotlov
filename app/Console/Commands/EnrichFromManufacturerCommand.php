@@ -191,8 +191,9 @@ class EnrichFromManufacturerCommand extends Command
                 }
             }
 
-            // ── Step 2: Download image ─────────────────────────────────────────────
-            if (! $this->option('skip-images') && ! empty($scraped['image_url'])) {
+            // ── Step 2: Download image (skip if product already has photos) ──────
+            $hasImages = ! empty($product->images) && $product->images !== '[]';
+            if (! $this->option('skip-images') && ! $hasImages && ! empty($scraped['image_url'])) {
                 $localPath = $this->downloadImage($scraped['image_url'], $product->slug ?? $product->sku, $imgDir, $brand->name);
                 if ($localPath) {
                     $scraped['local_image'] = $localPath;
@@ -438,7 +439,7 @@ class EnrichFromManufacturerCommand extends Command
 
     private function parseSpecs(string $html): array
     {
-        $specs = [];
+        $raw = [];
 
         // Try <table> rows: first column = name, second = value
         if (preg_match_all('/<tr[^>]*>\s*<t[dh][^>]*>(.*?)<\/t[dh]>\s*<t[dh][^>]*>(.*?)<\/t[dh]>/si', $html, $rows)) {
@@ -446,20 +447,26 @@ class EnrichFromManufacturerCommand extends Command
                 $k = trim(strip_tags($key));
                 $v = trim(strip_tags($rows[2][$i]));
                 if ($k !== '' && $v !== '' && mb_strlen($k) < 100 && mb_strlen($v) < 200) {
-                    $specs[$k] = $v;
+                    $raw[$k] = $v;
                 }
             }
         }
 
         // Try <dl><dt>/<dd> pattern
-        if (empty($specs) && preg_match_all('/<dt[^>]*>(.*?)<\/dt>\s*<dd[^>]*>(.*?)<\/dd>/si', $html, $dl)) {
+        if (empty($raw) && preg_match_all('/<dt[^>]*>(.*?)<\/dt>\s*<dd[^>]*>(.*?)<\/dd>/si', $html, $dl)) {
             foreach ($dl[1] as $i => $key) {
                 $k = trim(strip_tags($key));
                 $v = trim(strip_tags($dl[2][$i]));
                 if ($k !== '' && $v !== '' && mb_strlen($k) < 100) {
-                    $specs[$k] = $v;
+                    $raw[$k] = $v;
                 }
             }
+        }
+
+        // Convert to [{key, value, unit}] format (matches Filament Repeater + infolist)
+        $specs = [];
+        foreach ($raw as $k => $v) {
+            $specs[] = ['key' => $k, 'value' => $v, 'unit' => ''];
         }
 
         return $specs;
