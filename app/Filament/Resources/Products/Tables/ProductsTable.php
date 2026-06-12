@@ -189,13 +189,19 @@ class ProductsTable
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
 
+                TextColumn::make('created_at')
+                    ->label('Добавлен')
+                    ->dateTime('d.m.Y H:i')
+                    ->sortable()
+                    ->toggleable(),
+
                 TextColumn::make('updated_at')
                     ->label('Обновлён')
                     ->dateTime('d.m.Y')
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
-            ->defaultSort('sort_order')
+            ->defaultSort('created_at', 'desc')
             ->paginated([25, 50, 100])
             ->filters([
                 TernaryFilter::make('is_active')
