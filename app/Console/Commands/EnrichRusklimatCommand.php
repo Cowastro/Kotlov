@@ -31,6 +31,8 @@ class EnrichRusklimatCommand extends Command
     protected $signature = 'supplier:enrich-rusklimat
         {--limit=50          : Max products to process per run}
         {--offset=0          : Skip first N products (for batching)}
+        {--brand=            : Filter by brand name (partial match, e.g. --brand=Ballu)}
+        {--category=         : Filter by category id (e.g. --category=306)}
         {--force             : Overwrite existing content / specs / images}
         {--skip-images       : Do not download images}
         {--skip-content      : Do not generate AI description}
@@ -93,6 +95,15 @@ class EnrichRusklimatCommand extends Command
             ->select('p.id', 'p.name', 'p.slug', 'p.content', 'p.specs',
                      'p.images', 'p.short_description', 'sp.supplier_article', 'sp.raw');
 
+        if ($brandFilter = $this->option('brand')) {
+            $query->join('brands as br', 'p.brand_id', '=', 'br.id')
+                  ->where('br.name', 'like', '%' . $brandFilter . '%');
+        }
+
+        if ($categoryFilter = $this->option('category')) {
+            $query->where('p.category_id', (int) $categoryFilter);
+        }
+
         if (! $force) {
             $query->where(function ($q) {
                 $q->whereNull('p.content')->orWhere('p.content', '')
@@ -107,8 +118,11 @@ class EnrichRusklimatCommand extends Command
 
         $this->newLine();
         $this->info(sprintf(
-            'Products to enrich: %d (processing %d, offset %d%s)',
-            $total, $products->count(), $offset, $force ? ', --force' : ''
+            'Products to enrich: %d (processing %d, offset %d%s%s%s)',
+            $total, $products->count(), $offset,
+            $force ? ', --force' : '',
+            $brandFilter ? ', brand=' . $brandFilter : '',
+            $categoryFilter ? ', category=' . $categoryFilter : ''
         ));
 
         if ($products->isEmpty()) {

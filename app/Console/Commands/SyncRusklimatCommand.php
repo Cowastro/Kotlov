@@ -121,13 +121,17 @@ class SyncRusklimatCommand extends Command
         'фильтр'                   => 203,
         'filter'                   => 203,
         'счетчик газа'             => 96,
-        'кондиционер'              => 304,
-        'kondicionery'             => 304,
-        'wall_mounted_air_conditioners' => 304,
-        'mobile_air_conditioners'      => 304,
-        'cassette_air_conditioners'    => 304,
-        'duct_air_conditioners'        => 304,
-        'floor_and_ceiling_air_conditioners' => 304,
+        'кондиционер'              => 305,  // generic → Сплит-системы
+        'kondicionery'             => 305,
+        'wall_mounted_air_conditioners'      => 305,  // Настенные сплит-системы
+        'mobile_air_conditioners'            => 306,  // Мобильные кондиционеры
+        'cassette_air_conditioners'          => 307,  // Кассетные кондиционеры
+        'duct_air_conditioners'              => 308,  // Канальные кондиционеры
+        'floor_and_ceiling_air_conditioners' => 309,  // Напольно-потолочные
+        'multi_split_systems'                => 310,  // Мультисплит
+        'мультисплит'                        => 310,
+        'наружный блок'                      => 310,
+        'внутренний блок'                    => 310,
         // ── Rusklimat-specific categories ────────────────────────────────────────
         'газовые колонки'                        => 99,
         'радиаторная арматура'                   => 195,
