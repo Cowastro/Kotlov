@@ -626,9 +626,10 @@ class EnrichFromManufacturerCommand extends Command
 
     private function parseSpecs(string $html): array
     {
-        $raw = [];
+        $candidates = [];
 
-        // 0. electrolux.com.by: <div class="short-attribute"><span class="attr-name">...<span class="attr-text">...
+        // 0. electrolux.com.by: <div class="short-attribute">
+        $r = [];
         if (preg_match_all(
             '/<div[^>]+class="short-attribute"[^>]*>.*?<span[^>]+class="attr-name"[^>]*>\s*<span[^>]*>(.*?)<\/span>.*?<span[^>]+class="attr-text"[^>]*>\s*<span[^>]*>(.*?)<\/span>/si',
             $html, $saRows
@@ -637,70 +638,62 @@ class EnrichFromManufacturerCommand extends Command
                 $k = trim(strip_tags($key));
                 $v = trim(strip_tags($saRows[2][$i]));
                 if ($k !== '' && $v !== '') {
-                    $raw[$k] = $v;
+                    $r[$k] = $v;
                 }
             }
         }
+        $candidates[] = $r;
 
-        // 1. <table> rows: first column = name, second = value
+        // 1. <dl><dt>/<dd>
+        $r = [];
+        if (preg_match_all('/<dt[^>]*>(.*?)<\/dt>\s*<dd[^>]*>(.*?)<\/dd>/si', $html, $dl)) {
+            foreach ($dl[1] as $i => $key) {
+                $k = trim(strip_tags($key));
+                $v = trim(strip_tags($dl[2][$i]));
+                if ($k !== '' && $v !== '' && mb_strlen($k) < 120 && mb_strlen($v) < 300) {
+                    $r[$k] = $v;
+                }
+            }
+        }
+        $candidates[] = $r;
+
+        // 2. <table> rows
+        $r = [];
         if (preg_match_all('/<tr[^>]*>\s*<t[dh][^>]*>(.*?)<\/t[dh]>\s*<t[dh][^>]*>(.*?)<\/t[dh]>/si', $html, $rows)) {
             foreach ($rows[1] as $i => $key) {
                 $k = trim(strip_tags($key));
                 $v = trim(strip_tags($rows[2][$i]));
                 if ($k !== '' && $v !== '' && mb_strlen($k) < 120 && mb_strlen($v) < 300) {
-                    $raw[$k] = $v;
+                    $r[$k] = $v;
                 }
             }
         }
+        $candidates[] = $r;
 
-        // 2. <dl><dt>/<dd>
-        if (empty($raw) && preg_match_all('/<dt[^>]*>(.*?)<\/dt>\s*<dd[^>]*>(.*?)<\/dd>/si', $html, $dl)) {
-            foreach ($dl[1] as $i => $key) {
-                $k = trim(strip_tags($key));
-                $v = trim(strip_tags($dl[2][$i]));
-                if ($k !== '' && $v !== '' && mb_strlen($k) < 120 && mb_strlen($v) < 300) {
-                    $raw[$k] = $v;
-                }
-            }
-        }
-
-        // 3. Two sibling <span> / <div> inside a row-like container (common in React/Vue SPAs)
-        //    Pattern: <li|div class="..."><span|div>Name</span><span|div>Value</span></li|div>
-        if (empty($raw)) {
-            $pattern = '/<(?:li|div)[^>]*>\s*<(?:span|div)[^>]*>\s*([\w][^<]{1,100}?)\s*<\/(?:span|div)>\s*<(?:span|div)[^>]*>\s*([^<]{1,300}?)\s*<\/(?:span|div)>\s*<\/(?:li|div)>/si';
-            if (preg_match_all($pattern, $html, $divRows)) {
-                foreach ($divRows[1] as $i => $key) {
-                    $k = trim(strip_tags($key));
-                    $v = trim(strip_tags($divRows[2][$i]));
-                    if ($k !== '' && $v !== '' && mb_strlen($k) < 120 && ! is_numeric($k)) {
-                        $raw[$k] = $v;
-                    }
-                }
-            }
-        }
-
-        // 4. JSON-LD additionalProperty: {name, value} pairs
-        if (empty($raw) && preg_match_all('/<script[^>]+type=["\']application\/ld\+json["\'][^>]*>(.*?)<\/script>/si', $html, $scripts)) {
+        // 3. JSON-LD additionalProperty
+        $r = [];
+        if (preg_match_all('/<script[^>]+type=["\']application\/ld\+json["\'][^>]*>(.*?)<\/script>/si', $html, $scripts)) {
             foreach ($scripts[1] as $json) {
                 $data = json_decode(trim($json), true);
-                if (! $data) {
-                    continue;
-                }
+                if (! $data) { continue; }
                 $items = isset($data[0]) ? $data : [$data];
                 foreach ($items as $item) {
                     if (($item['@type'] ?? '') === 'Product' && ! empty($item['additionalProperty'])) {
                         foreach ($item['additionalProperty'] as $prop) {
                             $k = $prop['name'] ?? '';
                             $v = $prop['value'] ?? '';
-                            if ($k !== '' && $v !== '') {
-                                $raw[$k] = (string) $v;
-                            }
+                            if ($k !== '' && $v !== '') { $r[$k] = (string) $v; }
                         }
                         break 2;
                     }
                 }
             }
         }
+        $candidates[] = $r;
+
+        // Pick the candidate with the most entries
+        usort($candidates, fn ($a, $b) => count($b) - count($a));
+        $raw = $candidates[0] ?? [];
 
         // Convert to [{key, value, unit}] format
         $specs = [];
