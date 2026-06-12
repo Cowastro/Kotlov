@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Services\AiContentEnricher;
 use App\Services\Pricing\CurrencyPriceConverter;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
@@ -28,7 +29,8 @@ class SyncRusklimatCommand extends Command
         {--sheet-url= : Google Sheets URL to download (overrides built-in default)}
         {--no-images : Skip downloading product images}
         {--create-new : Create new products for rows that have no match in KOTLOV}
-        {--only-existing : Only update supplier_products for already-matched products; skip create_candidates}';
+        {--only-existing : Only update supplier_products for already-matched products; skip create_candidates}
+        {--enrich : Generate AI descriptions for new products (requires ANTHROPIC_API_KEY or AI_API_KEY)}';
 
     protected $description = 'Sync Русклимат prices and stock from Google Sheets (auto-download) or a local CSV/XLSX file.';
 
@@ -124,6 +126,34 @@ class SyncRusklimatCommand extends Command
         'cassette_air_conditioners'    => 304,
         'duct_air_conditioners'        => 304,
         'floor_and_ceiling_air_conditioners' => 304,
+        // ── Rusklimat-specific categories ────────────────────────────────────────
+        'газовые колонки'                        => 99,
+        'радиаторная арматура'                   => 195,
+        'аксессуары и комплектующие для радиатор' => 195,
+        'аксессуары для обогревател'             => 202,
+        'тепловое оборудование'                  => 202,
+        'тепловой насос'                         => 286,
+        'каминокомплект'                         => 105,
+        'электрокамин'                           => 104,
+        'биокамин'                               => 104,
+        'теплые полы'                            => 109,
+        'теплый пол'                             => 109,
+        'коллектор'                              => 242,
+        'дренажный насос'                        => 265,
+        'установки для отвода'                   => 265,
+        'насос повышения давления'               => 60,
+        'тэн'                                    => 299,
+        'увлажнитель'                            => 304,
+        'осушитель'                              => 304,
+        'очиститель'                             => 304,
+        'вентилятор'                             => 304,
+        'вытяжная'                               => 304,
+        'полупромышленные'                       => 304,
+        'труба'                                  => 193,
+        'обогреватель'                           => 202,
+        // Broad fallbacks — must remain last so specific entries above win
+        'водонагреватель'                        => 98,
+        'радиатор'                               => 87,
     ];
 
     // ── Words to strip when normalising a product name for matching ───────────────
@@ -903,9 +933,16 @@ class SyncRusklimatCommand extends Command
 
     private function applyChanges(array $classified, bool $createNew, bool $noImages): int
     {
-        $now        = now();
-        $supplierId = $this->ensureSupplier($now);
-        $syncId     = $this->ensureSupplierSync($now);
+        $now         = now();
+        $supplierId  = $this->ensureSupplier($now);
+        $syncId      = $this->ensureSupplierSync($now);
+        $doEnrich    = (bool) $this->option('enrich');
+        $enricher    = new AiContentEnricher();
+
+        if ($doEnrich && ! $enricher->isAvailable()) {
+            $this->warn('--enrich: no AI provider configured (set ANTHROPIC_API_KEY or AI_API_KEY), skipping content generation.');
+            $doEnrich = false;
+        }
 
         $stats = array_fill_keys([
             'matched', 'update_price', 'update_stock',
@@ -972,6 +1009,15 @@ class SyncRusklimatCommand extends Command
                     $this->upsertSupplierProduct($row, $productId, $sku, $supplierId, $syncId, $now);
                     $stats['created']++;
                     $this->line(sprintf('[create]  %s  →  %s  %.2f BYN', $row['article'], $sku, $row['price_byn'] ?? 0));
+
+                    // AI content enrichment for newly created products
+                    if ($doEnrich) {
+                        $brandName = $this->brandById[(int) $row['resolved_brand_id']] ?? '';
+                        $aiText    = $enricher->enrich($row['name'], $brandName, null, []);
+                        if ($aiText) {
+                            DB::table('products')->where('id', $productId)->update(['content' => $aiText]);
+                        }
+                    }
                 } else {
                     $stats['create_candidate']++;
                 }

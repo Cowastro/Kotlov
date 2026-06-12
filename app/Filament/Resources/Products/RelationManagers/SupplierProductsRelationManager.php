@@ -59,6 +59,38 @@ class SupplierProductsRelationManager extends RelationManager
                         : number_format((float) $state, 2, ',', ' ') . ' BYN')
                     ->sortable(),
 
+                TextColumn::make('stock_quantity')
+                    ->label('Кол-во, шт')
+                    ->formatStateUsing(fn($state): string => $state !== null ? (string) $state : '—')
+                    ->sortable()
+                    ->placeholder('—'),
+
+                TextColumn::make('stock_status')
+                    ->label('Статус склада')
+                    ->badge()
+                    ->color(fn(?string $state): string => match($state) {
+                        'in_stock'     => 'success',
+                        'low_stock'    => 'warning',
+                        'preorder'     => 'info',
+                        'out_of_stock' => 'danger',
+                        'discontinued' => 'gray',
+                        default        => 'gray',
+                    })
+                    ->formatStateUsing(fn(?string $state): string => match($state) {
+                        'in_stock'     => 'В наличии',
+                        'low_stock'    => 'Мало',
+                        'preorder'     => 'Под заказ',
+                        'out_of_stock' => 'Нет',
+                        'discontinued' => 'Снято',
+                        default        => $state ?? '—',
+                    })
+                    ->placeholder('—'),
+
+                TextColumn::make('warehouse_name')
+                    ->label('Склад')
+                    ->placeholder('—')
+                    ->toggleable(isToggledHiddenByDefault: true),
+
                 IconColumn::make('in_stock')
                     ->label('Наличие')
                     ->boolean(),
@@ -80,11 +112,18 @@ class SupplierProductsRelationManager extends RelationManager
                     ->url(fn($state) => $state)
                     ->openUrlInNewTab(),
 
-                TextColumn::make('last_synced_at')
-                    ->label('Обновлено')
+                TextColumn::make('last_stock_synced_at')
+                    ->label('Остатки обновлены')
                     ->dateTime('d.m.Y H:i')
                     ->sortable()
                     ->placeholder('—'),
+
+                TextColumn::make('last_synced_at')
+                    ->label('Синхронизирован')
+                    ->dateTime('d.m.Y H:i')
+                    ->sortable()
+                    ->placeholder('—')
+                    ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->recordActions([
                 Action::make('source')

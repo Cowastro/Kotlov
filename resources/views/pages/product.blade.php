@@ -168,6 +168,7 @@
                                     $availabilityStatus = method_exists($product, 'effectiveAvailabilityStatus') ? $product->effectiveAvailabilityStatus() : ($product->in_stock ? 'in_stock' : 'out_of_stock');
                                     $availabilityLabel = method_exists($product, 'availabilityLabel') ? $product->availabilityLabel() : ($product->in_stock ? 'В наличии' : 'Нет в наличии');
                                     $canBuy = method_exists($product, 'canBeOrdered') ? $product->canBeOrdered() : ($product->in_stock && $product->price > 0);
+                                    $totalSupplierStock = $product->supplierProducts()->whereNotNull('stock_quantity')->where('stock_quantity', '>', 0)->sum('stock_quantity');
                                 @endphp
 
                                 {{-- Цена --}}
@@ -225,11 +226,11 @@
                                         </span>
                                     @elseif ($availabilityStatus === 'in_stock')
                                         <span class="stock in-stock fw-medium text-success">
-                                            <i class="icon icon-CheckCircle"></i> В наличии
+                                            <i class="icon icon-CheckCircle"></i> В наличии@if($totalSupplierStock > 0) <span class="text-muted fw-normal" style="font-size:0.88em;">({{ $totalSupplierStock }} шт.)</span>@endif
                                         </span>
                                     @elseif ($availabilityStatus === 'check')
-                                        <span class="stock in-stock fw-medium text-warning">
-                                            <i class="icon icon-CheckCircle"></i> {{ $availabilityLabel }}
+                                        <span class="stock check-stock fw-medium" style="color:#b45309;">
+                                            <i class="icon icon-CheckCircle" style="color:#b45309;"></i> {{ $availabilityLabel }}
                                         </span>
                                     @else
                                         <span class="stock out-stock fw-medium text-danger">
