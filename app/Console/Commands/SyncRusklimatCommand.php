@@ -928,16 +928,17 @@ class SyncRusklimatCommand extends Command
                 mb_substr($row['name'] ?? '',            0, 44),
                 mb_substr($row['brand'] ?? '',           0, 16),
                 $row['matched_sku']                   ?? '—',
-                $row['price_byn'] !== null ? number_format($row['price_byn'], 2) : '—',
-                $row['quantity']  !== null ? (string) $row['quantity']           : '—',
-                $row['stock_status']                  ?? '—',
+                $row['price_byn']     !== null ? number_format($row['price_byn'], 2)     : '—',
+                $row['retail_price']  !== null ? number_format($row['retail_price'], 2)  : '—',
+                $row['quantity']      !== null ? (string) $row['quantity']               : '—',
+                $row['stock_status']           ?? '—',
                 $action,
                 mb_substr($confidence,                   0, 26),
             ];
         }
 
         $this->table(
-            ['article', 'name', 'brand', 'matched_sku', 'price_byn', 'qty', 'stock_status', 'action', 'confidence'],
+            ['article', 'name', 'brand', 'matched_sku', 'price_byn(закупка)', 'retail_price(розница)', 'qty', 'stock_status', 'action', 'confidence'],
             $tableRows
         );
 
