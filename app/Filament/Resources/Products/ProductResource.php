@@ -34,7 +34,13 @@ class ProductResource extends Resource
     // Eager load связей чтобы избежать N+1 в таблице
     public static function getEloquentQuery(): Builder
     {
-        return parent::getEloquentQuery()->with(['category:id,name,slug', 'brand:id,name', 'supplier:id,name']);
+        return parent::getEloquentQuery()
+            ->with([
+                'category:id,name,slug',
+                'brand:id,name',
+                'supplier:id,name',
+                'supplierProducts:id,product_id,supplier_id,supplier_article,price_byn,stock_quantity,stock_status',
+            ]);
     }
     public static function form(Schema $schema): Schema { return ProductForm::configure($schema); }
     public static function infolist(Schema $schema): Schema { return ProductInfolist::configure($schema); }

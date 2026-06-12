@@ -681,6 +681,8 @@ class SyncRusklimatCommand extends Command
                 $action = 'category_missing';
             } elseif ($onlyExisting) {
                 $action = 'skipped_no_match';
+            } elseif (! in_array($stockStat, ['in_stock', 'low_stock', 'preorder'], true)) {
+                $action = 'skipped_zero_stock';
             } else {
                 $action = 'create_candidate';
             }
@@ -902,7 +904,7 @@ class SyncRusklimatCommand extends Command
         $stats     = array_fill_keys([
             'matched', 'update_price', 'update_stock', 'create_candidate',
             'brand_missing', 'category_missing', 'skipped_duplicate',
-            'skipped_no_match', 'manual_review',
+            'skipped_no_match', 'skipped_zero_stock', 'manual_review',
         ], 0);
 
         foreach ($classified as $row) {
@@ -968,7 +970,7 @@ class SyncRusklimatCommand extends Command
         $stats = array_fill_keys([
             'matched', 'update_price', 'update_stock',
             'created', 'create_candidate', 'skipped_duplicate',
-            'skipped_no_match', 'brand_missing', 'category_missing',
+            'skipped_no_match', 'skipped_zero_stock', 'brand_missing', 'category_missing',
             'manual_review', 'errors',
         ], 0);
 
@@ -976,7 +978,7 @@ class SyncRusklimatCommand extends Command
             $action     = $row['action'] ?? 'unknown';
             $confidence = $row['confidence'] ?? '';
 
-            if ($action === 'skipped_duplicate' || $action === 'skipped_no_match') {
+            if (in_array($action, ['skipped_duplicate', 'skipped_no_match', 'skipped_zero_stock'], true)) {
                 $stats[$action] = ($stats[$action] ?? 0) + 1;
                 continue;
             }
@@ -1114,7 +1116,7 @@ class SyncRusklimatCommand extends Command
             'h1'                => $name,
             'sku'               => $this->nextKotlovSku(),
             'slug'              => $this->uniqueSlug($name),
-            'price'             => $row['price_byn'] ?? 0,
+            'price'             => 0,  // retail price set manually by admin
             'price_old'         => null,
             'currency'          => 'BYN',
             'content'           => null,

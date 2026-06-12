@@ -55,7 +55,7 @@ class ProductsTable
                     ->label('Артикул')
                     ->searchable()
                     ->copyable()
-                    ->toggleable(isToggledHiddenByDefault: true),
+                    ->toggleable(),
 
                 TextColumn::make('category.name')
                     ->label('Категория')
@@ -69,6 +69,39 @@ class ProductsTable
                     ->placeholder('—')
                     ->toggleable(),
 
+                TextColumn::make('supplier_article')
+                    ->label('Арт. пост.')
+                    ->getStateUsing(function ($record): string {
+                        $articles = $record->supplierProducts
+                            ->map(fn ($sp) => $sp->supplier_article)
+                            ->filter()
+                            ->unique()
+                            ->values();
+                        return $articles->isNotEmpty() ? $articles->implode(' / ') : '—';
+                    })
+                    ->copyable()
+                    ->searchable(query: function ($query, string $search) {
+                        $query->whereHas('supplierProducts', fn ($q) => $q->where('supplier_article', 'like', "%{$search}%"));
+                    })
+                    ->toggleable(),
+
+                TextColumn::make('supplier_stock')
+                    ->label('Кол-во (пост.)')
+                    ->getStateUsing(fn ($record): int => (int) $record->supplierProducts->sum('stock_quantity'))
+                    ->sortable(query: function ($query, string $direction) {
+                        $query->withSum('supplierProducts', 'stock_quantity')
+                              ->orderBy('supplier_products_sum_stock_quantity', $direction);
+                    })
+                    ->toggleable(),
+
+                TextColumn::make('supplier_price')
+                    ->label('Цена пост.')
+                    ->getStateUsing(function ($record): string {
+                        $min = $record->supplierProducts->min('price_byn');
+                        return $min ? number_format((float) $min, 2) . ' BYN' : '—';
+                    })
+                    ->toggleable(),
+
                 TextColumn::make('supplier.name')
                     ->label('Поставщик')
                     ->sortable()
@@ -76,9 +109,13 @@ class ProductsTable
                     ->toggleable(isToggledHiddenByDefault: true),
 
                 TextColumn::make('price')
-                    ->label('Цена')
+                    ->label('Цена розн.')
                     ->sortable()
-                    ->formatStateUsing(fn($state, $record) => number_format((float) $state, 2) . ' ' . ($record->currency ?: 'BYN')),
+                    ->formatStateUsing(fn($state, $record) => $state > 0
+                        ? number_format((float) $state, 2) . ' ' . ($record->currency ?: 'BYN')
+                        : '<span class="text-danger-500 font-bold">— не задана</span>'
+                    )
+                    ->html(),
 
                 TextColumn::make('price_old')
                     ->label('Старая цена')

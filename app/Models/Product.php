@@ -130,6 +130,11 @@ class Product extends Model
         return $this->hasMany(ProductView::class);
     }
 
+    public function supplierProducts(): HasMany
+    {
+        return $this->hasMany(SupplierProduct::class);
+    }
+
     public function allAttributeValues(): HasMany
     {
         return $this->hasMany(ProductAttributeValue::class);
