@@ -657,13 +657,16 @@ class EnrichFromManufacturerCommand extends Command
         }
         $candidates[] = $r;
 
-        // 2. <table> rows
+        // 2. <table> rows — skip rows where key cell contains links (navigation tables)
         $r = [];
         if (preg_match_all('/<tr[^>]*>\s*<t[dh][^>]*>(.*?)<\/t[dh]>\s*<t[dh][^>]*>(.*?)<\/t[dh]>/si', $html, $rows)) {
             foreach ($rows[1] as $i => $key) {
+                if (str_contains($key, '<a ') || str_contains($key, '<img')) {
+                    continue; // skip navigation/image rows
+                }
                 $k = trim(strip_tags($key));
                 $v = trim(strip_tags($rows[2][$i]));
-                if ($k !== '' && $v !== '' && mb_strlen($k) < 120 && mb_strlen($v) < 300) {
+                if ($k !== '' && $v !== '' && mb_strlen($k) < 120 && mb_strlen($v) < 300 && mb_strlen($k) > 2) {
                     $r[$k] = $v;
                 }
             }
