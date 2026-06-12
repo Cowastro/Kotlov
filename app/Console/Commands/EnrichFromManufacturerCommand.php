@@ -220,8 +220,12 @@ class EnrichFromManufacturerCommand extends Command
                 $update['content'] = $aiText;
             }
 
-            if (! empty($scraped['short_desc']) && (empty($product->short_description) || $force)) {
-                $update['short_description'] = $scraped['short_desc'];
+            // Generate short description via AI — never use manufacturer's OG copy
+            if (empty($product->short_description) || $force) {
+                $shortDesc = $this->ai->shortDescription($product->name, $brand->name, $scraped['specs'] ?? []);
+                if ($shortDesc) {
+                    $update['short_description'] = $shortDesc;
+                }
             }
 
             if (! $this->option('skip-specs') && ! empty($scraped['specs']) && (empty($product->specs) || $product->specs === '[]' || $force)) {
@@ -364,16 +368,19 @@ class EnrichFromManufacturerCommand extends Command
             }
         }
 
-        // ── Open Graph fallback ───────────────────────────────────────────────────
-        if ($result['short_desc'] === '') {
-            if (preg_match('/<meta[^>]+property=["\']og:description["\'][^>]+content=["\'](.*?)["\'][^>]*>/si', $html, $m)) {
-                $result['short_desc'] = html_entity_decode(strip_tags($m[1]), ENT_QUOTES, 'UTF-8');
-            }
+        // ── Product image — prefer gallery/product imgs over og:image (often a logo) ──
+        if ($result['image_url'] === null) {
+            $result['image_url'] = $this->findProductImage($html, $url);
         }
 
+        // og:image only as last resort, skip if it looks like a logo/banner
         if ($result['image_url'] === null) {
             if (preg_match('/<meta[^>]+property=["\']og:image["\'][^>]+content=["\'](.*?)["\'][^>]*>/si', $html, $m)) {
-                $result['image_url'] = $m[1];
+                $ogImg = $m[1];
+                // Skip obvious logos/banners
+                if (! preg_match('/logo|banner|icon|favicon|sprite/i', $ogImg)) {
+                    $result['image_url'] = $ogImg;
+                }
             }
         }
 
@@ -381,6 +388,52 @@ class EnrichFromManufacturerCommand extends Command
         $result['specs'] = $this->parseSpecs($html);
 
         return $result;
+    }
+
+    private function findProductImage(string $html, string $pageUrl): ?string
+    {
+        $host = parse_url($pageUrl, PHP_URL_SCHEME) . '://' . parse_url($pageUrl, PHP_URL_HOST);
+
+        // 1. Look for <img> tags with product-related path segments (not logos/icons)
+        $productPathPatterns = [
+            'upload', 'products', 'catalog', 'goods', 'items', 'photo', 'images/product',
+        ];
+
+        if (preg_match_all('/<img[^>]+src=["\']([^"\']+)["\'][^>]*>/i', $html, $imgs)) {
+            $candidates = [];
+
+            foreach ($imgs[1] as $src) {
+                // Skip small icons/logos
+                if (preg_match('/logo|icon|favicon|banner|sprite|pixel|1x1|arrow|star/i', $src)) {
+                    continue;
+                }
+                // Skip data URIs and external CDNs unlikely to be product photos
+                if (str_starts_with($src, 'data:')) {
+                    continue;
+                }
+
+                $srcLower = mb_strtolower($src);
+                foreach ($productPathPatterns as $pattern) {
+                    if (str_contains($srcLower, $pattern)) {
+                        $candidates[] = $src;
+                        break;
+                    }
+                }
+            }
+
+            if (! empty($candidates)) {
+                $url = $candidates[0];
+                if (str_starts_with($url, '//')) {
+                    return 'https:' . $url;
+                }
+                if (str_starts_with($url, '/')) {
+                    return $host . $url;
+                }
+                return $url;
+            }
+        }
+
+        return null;
     }
 
     private function parseSpecs(string $html): array

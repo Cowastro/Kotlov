@@ -145,6 +145,41 @@ PROMPT;
         }
     }
 
+    /**
+     * Generate a short 1–2 sentence product description (plain text, no HTML).
+     */
+    public function shortDescription(string $productName, string $brandName, array $specs = []): ?string
+    {
+        if ($this->mode === 'none') {
+            return null;
+        }
+
+        $specsLine = empty($specs)
+            ? ''
+            : 'Характеристики: ' . implode(', ', array_map(fn ($v, $k) => "$k: $v", $specs, array_keys($specs)));
+
+        $prompt = <<<PROMPT
+Напиши краткое описание товара для белорусского интернет-магазина kotlov.by — 1–2 предложения, обычный текст без HTML-тегов.
+Описание должно отражать суть и назначение товара. Без упоминания России, Москвы, телефонов и сторонних сайтов.
+
+Товар: {$productName}
+Бренд: {$brandName}
+{$specsLine}
+
+Только текст, без кавычек, без HTML.
+PROMPT;
+
+        try {
+            return match ($this->mode) {
+                'anthropic'    => $this->callAnthropic($prompt),
+                'openai_compat' => $this->callOpenAiCompat($prompt),
+                default        => null,
+            };
+        } catch (\Throwable) {
+            return null;
+        }
+    }
+
     // ── Providers ─────────────────────────────────────────────────────────────────
 
     private function callAnthropic(string $prompt): ?string
