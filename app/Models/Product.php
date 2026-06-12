@@ -70,19 +70,23 @@ class Product extends Model
     {
         $status = $this->availability_status ?: null;
 
+        // Explicitly marked "уточняйте наличие"
         if ($status === self::AVAILABILITY_CHECK) {
             return self::AVAILABILITY_CHECK;
         }
 
-        if ($status === self::AVAILABILITY_IN_STOCK) {
-            return $this->in_stock ? self::AVAILABILITY_IN_STOCK : self::AVAILABILITY_OUT_OF_STOCK;
-        }
-
+        // Explicitly marked "нет в наличии" — only case that shows "Нет в наличии"
         if ($status === self::AVAILABILITY_OUT_OF_STOCK) {
             return self::AVAILABILITY_OUT_OF_STOCK;
         }
 
-        return $this->in_stock ? self::AVAILABILITY_IN_STOCK : self::AVAILABILITY_OUT_OF_STOCK;
+        // In_stock flag is the source of truth for "В наличии"
+        if ($this->in_stock) {
+            return self::AVAILABILITY_IN_STOCK;
+        }
+
+        // Not in stock but not explicitly marked — show "Уточняйте наличие"
+        return self::AVAILABILITY_CHECK;
     }
 
     public function availabilityLabel(): string

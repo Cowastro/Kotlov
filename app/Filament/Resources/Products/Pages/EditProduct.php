@@ -30,14 +30,15 @@ class EditProduct extends EditRecord
      */
     protected function mutateFormDataBeforeFill(array $data): array
     {
+        // ── Images ──────────────────────────────────────────────────────────────
         $rawImages = $this->normalizeImages($data['images'] ?? []);
-
         $data['existing_images'] = array_values(
             array_map(fn($path) => ['path' => $path], $rawImages)
         );
-
-        // FileUpload — только для новых загрузок
         $data['images'] = [];
+
+        // ── Specs: normalize both {key:val} and [{key,value,unit}] formats ──────
+        $data['specs'] = $this->normalizeSpecs($data['specs'] ?? []);
 
         return $data;
     }
@@ -63,6 +64,43 @@ class EditProduct extends EditRecord
         )));
 
         return $data;
+    }
+
+    /**
+     * Convert specs from either storage format to Repeater format [{key,value,unit}].
+     * Handles:
+     *   - {"Мощность":"2 кВт"}  → [{key:"Мощность",value:"2 кВт",unit:""}]
+     *   - [{key:"Мощность",value:"2 кВт"}]  → unchanged
+     */
+    private function normalizeSpecs(mixed $specs): array
+    {
+        if (is_string($specs)) {
+            $decoded = json_decode($specs, true);
+            $specs = json_last_error() === JSON_ERROR_NONE ? $decoded : [];
+        }
+
+        if (! is_array($specs)) {
+            return [];
+        }
+
+        // Already in [{key,value,unit}] format
+        if (isset($specs[0]) && is_array($specs[0]) && array_key_exists('key', $specs[0])) {
+            return array_map(fn($s) => [
+                'key'   => $s['key'] ?? '',
+                'value' => $s['value'] ?? '',
+                'unit'  => $s['unit'] ?? '',
+            ], $specs);
+        }
+
+        // Convert from {name => value} object format
+        $result = [];
+        foreach ($specs as $k => $v) {
+            if (is_string($k) && ($v !== '' && $v !== null)) {
+                $result[] = ['key' => (string) $k, 'value' => (string) $v, 'unit' => ''];
+            }
+        }
+
+        return $result;
     }
 
     private function normalizeImages(mixed $images): array

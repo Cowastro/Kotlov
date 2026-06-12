@@ -328,6 +328,11 @@ class ProductForm
             return \Storage::url($path);
         }
 
+        // img/products/... → public path
+        if (str_starts_with($path, 'img/') || str_starts_with($path, '/img/')) {
+            return '/' . ltrim($path, '/');
+        }
+
         // product/000/000065/file.jpg
         if (str_starts_with($path, 'product/')) {
             return '/proxy-image/' . $path;
