@@ -327,30 +327,33 @@ class EnrichFromManufacturerCommand extends Command
 
     private function findBySitemap(string $name, string $article, string $site): ?string
     {
-        $model       = $this->extractModelFromName($name);
-        $articleSlug = $this->toSlug($article);
-        $modelSlug   = $this->toSlug($model);
+        $model = $this->extractModelFromName($name);
 
-        // Also try compact version (no dashes at all) for partial matching
-        $articleCompact = preg_replace('/[^a-z0-9]/', '', mb_strtolower(str_replace('/', '', $article)));
-        $modelCompact   = preg_replace('/[^a-z0-9]/', '', mb_strtolower(str_replace('/', '', $model)));
+        // Build multiple search tokens — try from most specific to least
+        $tokens = [];
 
-        $slugVariants = array_unique(array_filter([
-            $articleSlug, $modelSlug, $articleCompact, $modelCompact,
-        ]));
+        // Full article slug: EACS/I-09HSM/N8_V2 → eacsi-09hsm-n8-v2
+        $tokens[] = $this->toSlug($article);
 
-        foreach ($slugVariants as $slug) {
-            if (mb_strlen($slug) < 4) {
-                continue;
-            }
+        // Without slash-letter suffix: EACS/I → EACS, 321/Y → 321
+        $articleStripped = preg_replace('#/[A-Z](?=[^A-Z]|$)#', '', $article);
+        $tokens[] = $this->toSlug($articleStripped);
+
+        // Model slug
+        $tokens[] = $this->toSlug($model);
+
+        // Core model token — first alphanumeric segment that looks like a model code
+        // e.g. EACS/I-09HSM → 09hsm, EACS-09HARAN321 → 09haran321
+        if (preg_match('/[-\/](\d{2}[A-Z0-9]{2,})/i', $article, $mCore)) {
+            $tokens[] = mb_strtolower($mCore[1]); // e.g. 09hsm
+        }
+
+        $tokens = array_unique(array_filter($tokens, fn ($t) => mb_strlen($t) >= 4));
+
+        foreach ($tokens as $token) {
             foreach ($this->sitemapUrls as $url) {
-                $urlSlug        = basename(rtrim($url, '/'));
-                $urlSlugCompact = preg_replace('/[^a-z0-9]/', '', $urlSlug);
-
-                if ($urlSlug === $slug
-                    || str_contains($urlSlug, $slug)
-                    || str_contains($urlSlugCompact, $articleCompact)
-                ) {
+                $urlSlug = mb_strtolower(basename(rtrim($url, '/')));
+                if (str_contains($urlSlug, $token)) {
                     return $url;
                 }
             }
