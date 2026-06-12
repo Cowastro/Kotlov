@@ -327,34 +327,32 @@ class EnrichFromManufacturerCommand extends Command
 
     private function findBySitemap(string $name, string $article, string $site): ?string
     {
+        // Always extract model from name — article may be an internal SKU (e.g. KOTLOV-000556)
         $model = $this->extractModelFromName($name);
 
-        // Build multiple search tokens — try from most specific to least
         $tokens = [];
 
-        // Full article slug: EACS/I-09HSM/N8_V2 → eacsi-09hsm-n8-v2
-        $tokens[] = $this->toSlug($article);
+        // If article looks like a real model code (not internal SKU), use it too
+        if ($article !== '' && ! preg_match('/^KOTLOV-/i', $article)) {
+            $tokens[] = $this->toSlug($article);                         // slash→removed
+            $tokens[] = $this->toSlugDash($article);                     // slash→dash
+        }
 
-        // Without slash-letter suffix: EACS/I → EACS, 321/Y → 321
-        $articleStripped = preg_replace('#/[A-Z](?=[^A-Z]|$)#', '', $article);
-        $tokens[] = $this->toSlug($articleStripped);
+        // Model extracted from name — two variants
+        if ($model !== '') {
+            $tokens[] = $this->toSlug($model);                           // slash→removed
+            $tokens[] = $this->toSlugDash($model);                       // slash→dash
+        }
 
-        // Model slug
-        $tokens[] = $this->toSlug($model);
-
-        // Core model token — first alphanumeric segment that looks like a model code
-        // e.g. EACS/I-09HSM → 09hsm, EACS-09HARAN321 → 09haran321
-        if (preg_match('/[-\/](\d{2}[A-Z0-9]{2,})/i', $article, $mCore)) {
-            $tokens[] = mb_strtolower($mCore[1]); // e.g. 09hsm
+        // Core model token: first segment like 09HIX, 07HSM, 18HEN
+        foreach ([$model, $article] as $src) {
+            if (preg_match('/[-\/](\d{2}[A-Z]{2,}[0-9A-Z\-]*)/i', $src, $mCore)) {
+                $tokens[] = mb_strtolower($mCore[1]);
+                break;
+            }
         }
 
         $tokens = array_unique(array_filter($tokens, fn ($t) => mb_strlen($t) >= 4));
-
-        $this->line('  [debug] tokens: ' . implode(', ', $tokens));
-        $this->line('  [debug] sitemap count: ' . count($this->sitemapUrls));
-        if (! empty($this->sitemapUrls)) {
-            $this->line('  [debug] first sitemap url: ' . $this->sitemapUrls[0]);
-        }
 
         foreach ($tokens as $token) {
             foreach ($this->sitemapUrls as $url) {
@@ -366,6 +364,15 @@ class EnrichFromManufacturerCommand extends Command
         }
 
         return null;
+    }
+
+    /** Replaces / with - (for rusklimat.ru: EACS/I → eacs-i) */
+    private function toSlugDash(string $s): string
+    {
+        $s = mb_strtolower($s);
+        $s = str_replace('/', '-', $s);
+        $s = preg_replace('/[^a-z0-9]+/', '-', $s);
+        return trim($s, '-');
     }
 
     private function loadSitemap(string $sitemapUrl): array
