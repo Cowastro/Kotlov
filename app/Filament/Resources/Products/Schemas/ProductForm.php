@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\Products\Schemas;
 
 use Filament\Forms\Components\FileUpload;
+use Filament\Forms\Components\KeyValue;
 use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\RichEditor;
@@ -245,6 +246,49 @@ class ProductForm
                     ]),
 
                 // ── SEO ───────────────────────────────────────────────────────
+                Section::make('Промо, сервис и документы')
+                    ->columnSpanFull()
+                    ->columns(2)
+                    ->collapsed()
+                    ->schema([
+                        Repeater::make('promo_flags')
+                            ->label('Промо-флаги')
+                            ->helperText('Показываются рядом с ценой на карточке товара.')
+                            ->schema([
+                                TextInput::make('key')
+                                    ->label('Код')
+                                    ->helperText('Например: chimney_gift, free_delivery, warranty')
+                                    ->required(),
+                                TextInput::make('label')
+                                    ->label('Текст')
+                                    ->required(),
+                            ])
+                            ->columns(2)
+                            ->addActionLabel('Добавить флаг')
+                            ->defaultItems(0),
+
+                        KeyValue::make('service_info')
+                            ->label('Вкладка "Сервис"')
+                            ->keyLabel('Поле')
+                            ->valueLabel('Значение')
+                            ->addActionLabel('Добавить строку'),
+
+                        Repeater::make('documents')
+                            ->label('Документы')
+                            ->schema([
+                                TextInput::make('label')
+                                    ->label('Название')
+                                    ->required(),
+                                TextInput::make('url')
+                                    ->label('URL')
+                                    ->url()
+                                    ->required(),
+                            ])
+                            ->columns(2)
+                            ->addActionLabel('Добавить документ')
+                            ->defaultItems(0)
+                            ->columnSpanFull(),
+                    ]),
                 Section::make('SEO')
                     ->columnSpanFull()
                     ->collapsed()

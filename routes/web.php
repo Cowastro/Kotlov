@@ -52,6 +52,11 @@ Route::get('/', function () {
         return $ids->unique()->values();
     };
 
+    $sellableProducts = fn () => Product::where('is_active', true)
+        ->where('is_archived', false)
+        ->where('in_stock', true)
+        ->where('price', '>', 0);
+
     $popularCategories = Category::query()
         ->where('is_active', true)
         ->whereIn('slug', [
@@ -62,8 +67,8 @@ Route::get('/', function () {
         ->orderBy('sort_order')
         ->limit(10)
         ->get()
-        ->each(function ($category) use ($categoryBranchIds) {
-            $category->products_count = Product::where('is_active', true)
+        ->each(function ($category) use ($categoryBranchIds, $sellableProducts) {
+            $category->products_count = $sellableProducts()
                 ->whereIn('category_id', $categoryBranchIds($category->id))
                 ->count();
         });
@@ -77,25 +82,25 @@ Route::get('/', function () {
     $kaminCatId = Category::where('slug', 'kaminy')->value('id');
     $kaminIds = $kaminCatId ? $categoryBranchIds($kaminCatId) : collect();
 
-    $productsKotly = Product::where('is_active', true)
+    $productsKotly = $sellableProducts()
         ->whereIn('category_id', $kotlyIds)
         ->with(['category', 'brand'])
         ->orderByDesc('is_featured')->orderByDesc('rating')
         ->limit(8)->get();
 
-    $productsNasosy = Product::where('is_active', true)
+    $productsNasosy = $sellableProducts()
         ->whereIn('category_id', $nasosIds)
         ->with(['category', 'brand'])
         ->orderByDesc('is_featured')->orderByDesc('rating')
         ->limit(8)->get();
 
-    $productsKaminy = Product::where('is_active', true)
+    $productsKaminy = $sellableProducts()
         ->whereIn('category_id', $kaminIds)
         ->with(['category', 'brand'])
         ->orderByDesc('is_featured')->orderByDesc('rating')
         ->limit(8)->get();
 
-    $productsAkcii = Product::where('is_active', true)
+    $productsAkcii = $sellableProducts()
         ->where('is_sale', true)
         ->with(['category', 'brand'])
         ->orderByDesc('rating')

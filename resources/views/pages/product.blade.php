@@ -168,7 +168,7 @@
                                 <div class="product-infor-price mb-12">
                                     @if ($product->is_archived)
                                         <h4 class="price-on-sale text-muted">Снят с продажи</h4>
-                                    @elseif ($product->price > 0)
+                                    @elseif ($product->in_stock && $product->price > 0)
                                         <h4 class="price-on-sale">
                                             {{ number_format($product->price, 2, '.', ' ') }} BYN
                                         </h4>
@@ -217,7 +217,7 @@
                                         <span class="stock out-stock fw-medium text-danger">
                                             <i class="icon icon-XCircle"></i> Снят с продажи
                                         </span>
-                                    @elseif ($product->in_stock)
+                                    @elseif ($product->in_stock && $product->price > 0)
                                         <span class="stock in-stock fw-medium text-success">
                                             <i class="icon icon-CheckCircle"></i> В наличии
                                         </span>
@@ -237,7 +237,7 @@
                                     class="tf-btn type-xl btn-primary animate-btn w-100">
                                     Заказать консультацию
                                 </a>
-                            @elseif ($product->in_stock)
+                            @elseif ($product->in_stock && $product->price > 0)
                                 {{-- Количество и кнопки — есть в наличии --}}
                                 <div class="tf-product-variant">
                                     <div class="tf-product-total-quantity">
@@ -271,6 +271,11 @@
                                         </a>
                                     </div>
                                 </div>
+                            @elseif ($product->in_stock)
+                                <a href="#ask" data-bs-toggle="modal"
+                                    class="tf-btn type-xl btn-primary animate-btn w-100">
+                                    Заказать консультацию
+                                </a>
                             @else
                                 {{-- Форма уведомления — нет в наличии --}}
                                 <form class="form-notice-stock" action="/subscribe-stock" method="POST">

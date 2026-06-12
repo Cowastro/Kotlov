@@ -4,9 +4,11 @@
     $imageUrl   = $product->image_url;
     $imageHover = $product->imageUrl(1);
 
-    $price = $product->price > 0
+    $canBuy = $product->in_stock && $product->price > 0;
+
+    $price = $canBuy
         ? number_format($product->price, 2, '.', ' ') . ' BYN'
-        : 'Цена по запросу';
+        : ($product->in_stock ? 'Цена по запросу' : 'Нет в наличии');
 
     $priceOld = ($product->price_old && $product->price_old > 0)
         ? number_format($product->price_old, 2, '.', ' ') . ' BYN'
@@ -86,6 +88,7 @@
             </ul>
         @endif
 
+        @if ($canBuy)
         <div class="product-action_bot">
             <a href="#shoppingCart"
                 class="tf-btn btn-white small w-100 btn-add-to-cart"
@@ -95,6 +98,7 @@
                 <span class="add-to-cart-label">В корзину</span>
             </a>
         </div>
+        @endif
     </div>
 
     <div class="card-product_info">

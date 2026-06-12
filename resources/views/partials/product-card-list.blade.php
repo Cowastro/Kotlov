@@ -6,9 +6,11 @@
     $imageUrl  = $product->image_url;
     $imageUrl2 = $product->imageUrl(1);
 
-    $price = $product->price > 0
+    $canBuy = $product->in_stock && $product->price > 0;
+
+    $price = $canBuy
         ? number_format($product->price, 2, '.', ' ') . ' BYN'
-        : 'Цена по запросу';
+        : ($product->in_stock ? 'Цена по запросу' : 'Нет в наличии');
     $priceOld = ($product->price_old && $product->price_old > 0)
         ? number_format($product->price_old, 2, '.', ' ') . ' BYN'
         : null;
@@ -110,6 +112,7 @@
 
         {{-- Действия --}}
         <ul class="product-action_list">
+            @if ($canBuy)
             <li>
                 <a href="#shoppingCart"
                     class="hover-tooltip box-icon btn-add-to-cart"
@@ -118,6 +121,7 @@
                     <span class="tooltip">В корзину</span>
                 </a>
             </li>
+            @endif
             <li class="wishlist">
                 <a href="#" class="hover-tooltip box-icon"
                     data-product-id="{{ $product->id }}">
