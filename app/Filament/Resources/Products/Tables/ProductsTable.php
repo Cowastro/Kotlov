@@ -108,6 +108,11 @@ class ProductsTable
                         ->unique()
                         ->implode(', ') ?: '—'
                     )
+                    ->searchable(query: fn (Builder $query, string $search) => $query->whereHas(
+                        'supplierProducts', fn ($q) => $q->whereHas(
+                            'supplier', fn ($q2) => $q2->where('name', 'like', "%{$search}%")
+                        )
+                    ))
                     ->toggleable(),
 
                 TextColumn::make('price')
