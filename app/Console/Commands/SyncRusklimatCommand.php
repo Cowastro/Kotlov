@@ -1216,9 +1216,14 @@ class SyncRusklimatCommand extends Command
         $missingBrands     = [];
         $missingCategories = [];
 
+        $emptyBrandCount = 0;
         foreach ($classified as $row) {
-            if ($row['action'] === 'brand_missing' && $row['brand'] !== '') {
-                $missingBrands[$row['brand']] = ($missingBrands[$row['brand']] ?? 0) + 1;
+            if ($row['action'] === 'brand_missing') {
+                if ($row['brand'] !== '') {
+                    $missingBrands[$row['brand']] = ($missingBrands[$row['brand']] ?? 0) + 1;
+                } else {
+                    $emptyBrandCount++;
+                }
             }
             if ($row['action'] === 'category_missing' && $row['category'] !== '') {
                 $missingCategories[$row['category']] = ($missingCategories[$row['category']] ?? 0) + 1;
@@ -1229,6 +1234,9 @@ class SyncRusklimatCommand extends Command
             arsort($missingBrands);
             $this->warn(sprintf("\n⚠  Missing brands (%d unique):", count($missingBrands)));
             $this->table(['brand', 'rows'], array_map(fn ($b, $c) => [$b, $c], array_keys($missingBrands), $missingBrands));
+        }
+        if ($emptyBrandCount > 0) {
+            $this->warn(sprintf("\n⚠  %d row(s) have empty brand in CSV — skipped.", $emptyBrandCount));
         }
 
         if (! empty($missingCategories)) {
