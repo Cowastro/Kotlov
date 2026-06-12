@@ -350,6 +350,12 @@ class EnrichFromManufacturerCommand extends Command
 
         $tokens = array_unique(array_filter($tokens, fn ($t) => mb_strlen($t) >= 4));
 
+        $this->line('  [debug] tokens: ' . implode(', ', $tokens));
+        $this->line('  [debug] sitemap count: ' . count($this->sitemapUrls));
+        if (! empty($this->sitemapUrls)) {
+            $this->line('  [debug] first sitemap url: ' . $this->sitemapUrls[0]);
+        }
+
         foreach ($tokens as $token) {
             foreach ($this->sitemapUrls as $url) {
                 $urlSlug = mb_strtolower(basename(rtrim($url, '/')));
