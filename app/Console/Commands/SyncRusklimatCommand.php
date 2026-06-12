@@ -30,6 +30,7 @@ class SyncRusklimatCommand extends Command
         {--no-images : Skip downloading product images}
         {--create-new : Create new products for rows that have no match in KOTLOV}
         {--only-existing : Only update supplier_products for already-matched products; skip create_candidates}
+        {--fix-retail-prices : Update products.price from розница column for matched products (fixes existing wrong prices)}
         {--enrich : Generate AI descriptions for new products (requires ANTHROPIC_API_KEY or AI_API_KEY)}';
 
     protected $description = 'Sync Русклимат prices and stock from Google Sheets (auto-download) or a local CSV/XLSX file.';
@@ -961,11 +962,12 @@ class SyncRusklimatCommand extends Command
 
     private function applyChanges(array $classified, bool $createNew, bool $noImages): int
     {
-        $now         = now();
-        $supplierId  = $this->ensureSupplier($now);
-        $syncId      = $this->ensureSupplierSync($now);
-        $doEnrich    = (bool) $this->option('enrich');
-        $enricher    = new AiContentEnricher();
+        $now             = now();
+        $supplierId      = $this->ensureSupplier($now);
+        $syncId          = $this->ensureSupplierSync($now);
+        $doEnrich        = (bool) $this->option('enrich');
+        $fixRetailPrices = (bool) $this->option('fix-retail-prices');
+        $enricher        = new AiContentEnricher();
 
         if ($doEnrich && ! $enricher->isAvailable()) {
             $this->warn('--enrich: no AI provider configured (set ANTHROPIC_API_KEY or AI_API_KEY), skipping content generation.');
@@ -1009,13 +1011,24 @@ class SyncRusklimatCommand extends Command
                     // Product already exists — upsert supplier_products
                     $this->upsertSupplierProduct($row, (int) $row['matched_product_id'], (string) ($row['matched_sku'] ?? ''), $supplierId, $syncId, $now);
 
+                    // Optionally update retail price on the product itself
+                    if ($fixRetailPrices && $row['retail_price'] !== null) {
+                        $retailByn = $row['currency'] === 'BYN'
+                            ? $row['retail_price']
+                            : CurrencyPriceConverter::convertToByn($row['retail_price'], $row['currency'], $this->supplierCurrencyRate());
+                        DB::table('products')
+                            ->where('id', (int) $row['matched_product_id'])
+                            ->update(['price' => $retailByn, 'updated_at' => $now]);
+                    }
+
                     if ($action === 'update_price') {
                         $stats['update_price']++;
                         $this->line(sprintf(
-                            '[update_price]  %s  %s  %.2f BYN  qty=%s',
+                            '[update_price]  %s  %s  закупка=%.2f  розница=%s BYN  qty=%s',
                             $row['article'],
                             $row['matched_sku'],
                             $row['price_byn'] ?? 0,
+                            $row['retail_price'] !== null ? number_format((float) $row['retail_price'], 2) : '—',
                             $row['quantity'] ?? '—'
                         ));
                     } elseif ($action === 'update_stock') {
@@ -1036,7 +1049,12 @@ class SyncRusklimatCommand extends Command
                     $sku       = (string) DB::table('products')->where('id', $productId)->value('sku');
                     $this->upsertSupplierProduct($row, $productId, $sku, $supplierId, $syncId, $now);
                     $stats['created']++;
-                    $this->line(sprintf('[create]  %s  →  %s  %.2f BYN', $row['article'], $sku, $row['price_byn'] ?? 0));
+                    $this->line(sprintf(
+                        '[create]  %s  →  %s  закупка=%.2f  розница=%s BYN',
+                        $row['article'], $sku,
+                        $row['price_byn'] ?? 0,
+                        $row['retail_price'] !== null ? number_format((float) $row['retail_price'], 2) : '—'
+                    ));
 
                     // AI content enrichment for newly created products
                     if ($doEnrich) {
