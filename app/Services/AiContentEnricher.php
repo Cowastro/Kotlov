@@ -79,9 +79,23 @@ class AiContentEnricher
             return null;
         }
 
-        $attrText   = empty($attributes)
+        // Support both [{key,value,unit}] and {key:value} formats
+        $flatAttrs = [];
+        foreach ($attributes as $k => $v) {
+            if (is_array($v)) {
+                $key = $v['key'] ?? $k;
+                $val = $v['value'] ?? '';
+                $unit = $v['unit'] ?? '';
+                if ($key !== '' && $val !== '') {
+                    $flatAttrs[$key] = $val . ($unit ? ' ' . $unit : '');
+                }
+            } else {
+                $flatAttrs[$k] = $v;
+            }
+        }
+        $attrText = empty($flatAttrs)
             ? ''
-            : implode(', ', array_map(fn ($v, $k) => "$k: $v", $attributes, array_keys($attributes)));
+            : implode(', ', array_map(fn ($v, $k) => "$k: $v", $flatAttrs, array_keys($flatAttrs)));
 
         $rawSnippet = $rawContent
             ? mb_substr(strip_tags($rawContent), 0, 800)
@@ -154,9 +168,19 @@ PROMPT;
             return null;
         }
 
-        $specsLine = empty($specs)
-            ? ''
-            : 'Характеристики: ' . implode(', ', array_map(fn ($v, $k) => "$k: $v", $specs, array_keys($specs)));
+        $flatSpecs = [];
+        foreach ($specs as $k => $v) {
+            if (is_array($v)) {
+                $key = $v['key'] ?? $k;
+                $val = ($v['value'] ?? '') . ($v['unit'] ?? '' ? ' ' . $v['unit'] : '');
+                if ($key !== '' && trim($val) !== '') {
+                    $flatSpecs[] = "$key: $val";
+                }
+            } else {
+                $flatSpecs[] = "$k: $v";
+            }
+        }
+        $specsLine = empty($flatSpecs) ? '' : 'Характеристики: ' . implode(', ', $flatSpecs);
 
         $prompt = <<<PROMPT
 Напиши краткое описание товара для белорусского интернет-магазина kotlov.by — 1–2 предложения, обычный текст без HTML-тегов.
