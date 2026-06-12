@@ -325,31 +325,36 @@ class EnrichFromManufacturerCommand extends Command
 
     private function findBySitemap(string $name, string $article, string $site): ?string
     {
-        $candidates = [];
-
-        // Build slug variants from article and model name
-        $model      = $this->extractModelFromName($name);
+        $model       = $this->extractModelFromName($name);
         $articleSlug = $this->toSlug($article);
-        $modelSlug  = $this->toSlug($model);
+        $modelSlug   = $this->toSlug($model);
 
-        foreach (array_unique(array_filter([$articleSlug, $modelSlug])) as $slug) {
+        // Also try compact version (no dashes at all) for partial matching
+        $articleCompact = preg_replace('/[^a-z0-9]/', '', mb_strtolower(str_replace('/', '', $article)));
+        $modelCompact   = preg_replace('/[^a-z0-9]/', '', mb_strtolower(str_replace('/', '', $model)));
+
+        $slugVariants = array_unique(array_filter([
+            $articleSlug, $modelSlug, $articleCompact, $modelCompact,
+        ]));
+
+        foreach ($slugVariants as $slug) {
             if (mb_strlen($slug) < 4) {
                 continue;
             }
             foreach ($this->sitemapUrls as $url) {
-                $urlSlug = basename(rtrim($url, '/'));
-                // Exact slug match or sitemap URL contains the slug
-                if ($urlSlug === $slug || str_contains($urlSlug, $slug)) {
-                    $candidates[] = $url;
-                    break;
+                $urlSlug        = basename(rtrim($url, '/'));
+                $urlSlugCompact = preg_replace('/[^a-z0-9]/', '', $urlSlug);
+
+                if ($urlSlug === $slug
+                    || str_contains($urlSlug, $slug)
+                    || str_contains($urlSlugCompact, $articleCompact)
+                ) {
+                    return $url;
                 }
-            }
-            if (! empty($candidates)) {
-                break;
             }
         }
 
-        return $candidates[0] ?? null;
+        return null;
     }
 
     private function loadSitemap(string $sitemapUrl): array
@@ -376,8 +381,10 @@ class EnrichFromManufacturerCommand extends Command
 
     private function toSlug(string $s): string
     {
-        // Lowercase, remove special chars, collapse dashes
         $s = mb_strtolower($s);
+        // Remove slashes without adding a separator (EACS/I → eacsi, 321/Y → 321y)
+        $s = str_replace('/', '', $s);
+        // Replace remaining non-alphanumeric with dash
         $s = preg_replace('/[^a-z0-9]+/', '-', $s);
         return trim($s, '-');
     }
