@@ -548,6 +548,20 @@ class EnrichFromManufacturerCommand extends Command
     {
         $raw = [];
 
+        // 0. electrolux.com.by: <div class="short-attribute"><span class="attr-name">...<span class="attr-text">...
+        if (preg_match_all(
+            '/<div[^>]+class="short-attribute"[^>]*>.*?<span[^>]+class="attr-name"[^>]*>\s*<span[^>]*>(.*?)<\/span>.*?<span[^>]+class="attr-text"[^>]*>\s*<span[^>]*>(.*?)<\/span>/si',
+            $html, $saRows
+        )) {
+            foreach ($saRows[1] as $i => $key) {
+                $k = trim(strip_tags($key));
+                $v = trim(strip_tags($saRows[2][$i]));
+                if ($k !== '' && $v !== '') {
+                    $raw[$k] = $v;
+                }
+            }
+        }
+
         // 1. <table> rows: first column = name, second = value
         if (preg_match_all('/<tr[^>]*>\s*<t[dh][^>]*>(.*?)<\/t[dh]>\s*<t[dh][^>]*>(.*?)<\/t[dh]>/si', $html, $rows)) {
             foreach ($rows[1] as $i => $key) {
