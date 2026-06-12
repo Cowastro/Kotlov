@@ -19,17 +19,21 @@ class SyncThermostudioAristonCommand extends Command
 
     protected $description = 'Scrape Ariston gas boilers from teplo.by and sync prices, cards, service info, documents and attributes.';
 
-    private const SUPPLIER_CODE = 'thermostudio';
-    private const SYNC_KEY = 'thermostudio_ariston_gas_boilers';
-    private const SOURCE_URL = 'https://teplo.by/catalog/gazovye-kotly/?jsf=jet-woo-products-grid&tax=product_cat:553';
-    private const CATALOG_BASE_URL = 'https://teplo.by/catalog/gazovye-kotly/';
-    private const BASE_URL = 'https://teplo.by';
-    private const CATEGORY_SLUG = 'gazovye';
-    private const BRAND_SLUG = 'ariston';
-    private const IMAGE_DISK_PATH = 'img/products/thermostudio/ariston';
-    private const MAX_PAGES = 20;
+    protected const SUPPLIER_CODE = 'thermostudio';
+    protected const SYNC_KEY = 'thermostudio_ariston_gas_boilers';
+    protected const SOURCE_URL = 'https://teplo.by/catalog/gazovye-kotly/?jsf=jet-woo-products-grid&tax=product_cat:553';
+    protected const CATALOG_PAGE_QUERY = '?jsf=jet-woo-products-grid&tax=product_cat:553';
+    protected const CATALOG_BASE_URL = 'https://teplo.by/catalog/gazovye-kotly/';
+    protected const BASE_URL = 'https://teplo.by';
+    protected const CATEGORY_SLUG = 'gazovye';
+    protected const BRAND_NAME = 'Ariston';
+    protected const BRAND_SLUG = 'ariston';
+    protected const BRAND_COUNTRY = 'Италия';
+    protected const PRODUCT_URL_HINTS = ['ariston'];
+    protected const IMAGE_DISK_PATH = 'img/products/thermostudio/ariston';
+    protected const MAX_PAGES = 20;
 
-    private const CHARACTERISTIC_LABELS = [
+    protected const CHARACTERISTIC_LABELS = [
         'Тип газового котла',
         'Тепловая мощность, кВт',
         'Площадь обогрева, м²',
@@ -47,7 +51,7 @@ class SyncThermostudioAristonCommand extends Command
         'Вес, кг.',
     ];
 
-    private const SERVICE_LABELS = [
+    protected const SERVICE_LABELS = [
         'Гарантия',
         'Срок службы',
         'Страна изготовления',
@@ -85,7 +89,7 @@ class SyncThermostudioAristonCommand extends Command
             $items = array_slice($items, 0, $limit);
         }
 
-        $this->info(sprintf('Found %d unique Ariston products on teplo.by.', count($items)));
+        $this->info(sprintf('Found %d unique %s products on teplo.by.', count($items), static::BRAND_NAME));
 
         if (! $apply) {
             return $this->dryRun($items, $sleepMs);
@@ -128,7 +132,7 @@ class SyncThermostudioAristonCommand extends Command
                 $isNew = ! $product;
 
                 if ($enrichContent) {
-                    $aiText = $enricher->enrich($merged['name'], 'Ariston', $merged['content'] ?? null, $merged['attributes'] ?? []);
+                    $aiText = $enricher->enrich($merged['name'], static::BRAND_NAME, $merged['content'] ?? null, $merged['attributes'] ?? []);
                     if ($aiText) {
                         $merged['content'] = $aiText;
                         $stats['seo']++;
@@ -164,8 +168,8 @@ class SyncThermostudioAristonCommand extends Command
 
     private function dryRun(array $items, int $sleepMs): int
     {
-        $supplierId = (int) (DB::table('suppliers')->where('code', self::SUPPLIER_CODE)->value('id') ?? 0);
-        $brandId = (int) (DB::table('brands')->where('slug', self::BRAND_SLUG)->value('id') ?? 0);
+        $supplierId = (int) (DB::table('suppliers')->where('code', static::SUPPLIER_CODE)->value('id') ?? 0);
+        $brandId = (int) (DB::table('brands')->where('slug', static::BRAND_SLUG)->value('id') ?? 0);
         $rows = [];
 
         foreach ($items as $item) {
@@ -207,17 +211,17 @@ class SyncThermostudioAristonCommand extends Command
     {
         $items = [];
 
-        for ($page = 1; $page <= self::MAX_PAGES; $page++) {
+        for ($page = 1; $page <= static::MAX_PAGES; $page++) {
             $url = $page === 1
-                ? self::SOURCE_URL
-                : self::CATALOG_BASE_URL . 'page/' . $page . '/?jsf=jet-woo-products-grid&tax=product_cat:553';
+                ? static::SOURCE_URL
+                : static::CATALOG_BASE_URL . 'page/' . $page . '/' . static::CATALOG_PAGE_QUERY;
 
             $html = $this->fetch($url);
             preg_match_all('/https:\/\/teplo\.by\/product\/[^"\s<]+/u', $html, $matches);
 
             foreach (array_unique($matches[0] ?? []) as $productUrl) {
                 $productUrl = strtok($productUrl, '?#') ?: $productUrl;
-                if (! str_contains($productUrl, 'ariston')) {
+                if (! $this->isBrandProductUrl($productUrl)) {
                     continue;
                 }
 
@@ -253,14 +257,14 @@ class SyncThermostudioAristonCommand extends Command
         $attributes = [];
         $serviceInfo = [];
         foreach ($this->extractDynamicBlocks($body) as $text) {
-            foreach (self::CHARACTERISTIC_LABELS as $label) {
+            foreach (static::CHARACTERISTIC_LABELS as $label) {
                 if (str_starts_with($text, $label . ' ')) {
                     $attributes[$label] = trim(mb_substr($text, mb_strlen($label)));
                     continue 2;
                 }
             }
 
-            foreach (self::SERVICE_LABELS as $label) {
+            foreach (static::SERVICE_LABELS as $label) {
                 if (str_starts_with($text, $label . ' ')) {
                     $serviceInfo[$label] = trim(mb_substr($text, mb_strlen($label)));
                     continue 2;
@@ -292,6 +296,17 @@ class SyncThermostudioAristonCommand extends Command
             'images' => $images,
             'video_url' => $videoUrl,
         ];
+    }
+
+    private function isBrandProductUrl(string $productUrl): bool
+    {
+        foreach (static::PRODUCT_URL_HINTS as $hint) {
+            if (str_contains($productUrl, $hint)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private function extractDynamicBlocks(string $body): array
@@ -457,7 +472,7 @@ class SyncThermostudioAristonCommand extends Command
             'is_sale' => false,
             'sort_order' => 0,
             'meta_title' => $item['name'] . ' купить в %city%',
-            'meta_keywords' => 'Ariston, газовый котел, ' . $item['name'],
+            'meta_keywords' => static::BRAND_NAME . ', газовый котел, ' . $item['name'],
             'meta_description' => $item['name'] . ' — купить по лучшей цене с доставкой по Беларуси.',
             'rating' => 0,
             'reviews_count' => 0,
@@ -575,16 +590,16 @@ class SyncThermostudioAristonCommand extends Command
 
     private function ensureBrand($now): int
     {
-        $existing = DB::table('brands')->where('slug', self::BRAND_SLUG)->first();
+        $existing = DB::table('brands')->where('slug', static::BRAND_SLUG)->first();
         if ($existing) {
             return (int) $existing->id;
         }
 
         return (int) DB::table('brands')->insertGetId([
-            'name' => 'Ariston',
-            'slug' => self::BRAND_SLUG,
-            'h1' => 'Ariston',
-            'country' => 'Италия',
+            'name' => static::BRAND_NAME,
+            'slug' => static::BRAND_SLUG,
+            'h1' => static::BRAND_NAME,
+            'country' => static::BRAND_COUNTRY,
             'is_active' => true,
             'created_at' => $now,
             'updated_at' => $now,
@@ -593,11 +608,11 @@ class SyncThermostudioAristonCommand extends Command
 
     private function ensureSupplier($now): int
     {
-        $existing = DB::table('suppliers')->where('code', self::SUPPLIER_CODE)->first();
+        $existing = DB::table('suppliers')->where('code', static::SUPPLIER_CODE)->first();
         if ($existing) {
             DB::table('suppliers')->where('id', $existing->id)->update([
                 'name' => 'Термостудия',
-                'contact' => self::SOURCE_URL,
+                'contact' => static::SOURCE_URL,
                 'is_active' => true,
                 'updated_at' => $now,
             ]);
@@ -605,12 +620,12 @@ class SyncThermostudioAristonCommand extends Command
         }
 
         return (int) DB::table('suppliers')->insertGetId([
-            'code' => self::SUPPLIER_CODE,
+            'code' => static::SUPPLIER_CODE,
             'name' => 'Термостудия',
             'currency' => 'BYN',
             'currency_rate' => 1,
-            'contact' => self::SOURCE_URL,
-            'notes' => 'Газовые котлы Ariston с teplo.by. Цены BYN.',
+            'contact' => static::SOURCE_URL,
+            'notes' => 'Газовые котлы ' . static::BRAND_NAME . ' с teplo.by. Цены BYN.',
             'is_active' => true,
             'created_at' => $now,
             'updated_at' => $now,
@@ -620,29 +635,29 @@ class SyncThermostudioAristonCommand extends Command
     private function ensureSupplierSync($now): ?int
     {
         DB::table('supplier_syncs')->updateOrInsert(
-            ['key' => self::SYNC_KEY],
+            ['key' => static::SYNC_KEY],
             [
-                'name' => 'Термостудия Ariston',
-                'code' => self::SUPPLIER_CODE,
-                'title' => 'Термостудия: газовые котлы Ariston',
-                'description' => 'Скрапит газовые котлы Ariston с teplo.by: цены BYN, характеристики, сервис, документы, фото и промо-флаги.',
-                'command' => 'supplier:sync-thermostudio-ariston',
-                'source_url' => self::SOURCE_URL,
-                'image_disk_path' => self::IMAGE_DISK_PATH,
+                'name' => 'Термостудия ' . static::BRAND_NAME,
+                'code' => static::SUPPLIER_CODE,
+                'title' => 'Термостудия: газовые котлы ' . static::BRAND_NAME,
+                'description' => 'Скрапит газовые котлы ' . static::BRAND_NAME . ' с teplo.by: цены BYN, характеристики, сервис, документы, фото и промо-флаги.',
+                'command' => $this->getName(),
+                'source_url' => static::SOURCE_URL,
+                'image_disk_path' => static::IMAGE_DISK_PATH,
                 'is_active' => true,
                 'created_at' => $now,
                 'updated_at' => $now,
             ]
         );
 
-        return DB::table('supplier_syncs')->where('key', self::SYNC_KEY)->value('id');
+        return DB::table('supplier_syncs')->where('key', static::SYNC_KEY)->value('id');
     }
 
     private function categoryId(): int
     {
-        $categoryId = DB::table('categories')->where('slug', self::CATEGORY_SLUG)->value('id');
+        $categoryId = DB::table('categories')->where('slug', static::CATEGORY_SLUG)->value('id');
         if (! $categoryId) {
-            throw new \RuntimeException('Category not found by slug: ' . self::CATEGORY_SLUG);
+            throw new \RuntimeException('Category not found by slug: ' . static::CATEGORY_SLUG);
         }
 
         return (int) $categoryId;
@@ -652,6 +667,8 @@ class SyncThermostudioAristonCommand extends Command
     {
         $name = mb_strtoupper($name);
         $name = preg_replace('/\b(ГАЗОВЫЙ|КОТЕЛ|КОТЁЛ|ТРАДИЦИОННЫЙ|КОНДЕНСАЦИОННЫЙ|ARISTON|АРИСТОН|В\s+КОМПЛЕКТЕ\s+С\s+ДЫМОХОДОМ)\b/u', '', $name) ?? $name;
+        $brand = preg_quote(mb_strtoupper(static::BRAND_NAME), '/');
+        $name = preg_replace('/\b' . $brand . '\b/u', '', $name) ?? $name;
         $name = preg_replace('/[^А-ЯЁA-Z0-9().+\- ]+/u', ' ', $name) ?? $name;
         return trim(preg_replace('/\s+/u', ' ', $name) ?? $name);
     }
@@ -674,7 +691,7 @@ class SyncThermostudioAristonCommand extends Command
 
     private function uniqueSlug(string $name): string
     {
-        $base = Str::slug($name) ?: 'ariston-gas-boiler';
+        $base = Str::slug($name) ?: static::BRAND_SLUG . '-gas-boiler';
         $slug = $base;
         $i = 2;
 
