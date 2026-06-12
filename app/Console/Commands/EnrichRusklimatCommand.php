@@ -204,12 +204,7 @@ class EnrichRusklimatCommand extends Command
                 $scrapadSpecs = $scraped['specs'] ?? [];
                 $rawShort     = $scraped['short_description'] ?? null;
 
-                // Require scraped specs so AI doesn't invent characteristics
-                $hasEnoughData = count($scrapadSpecs) >= 3 || mb_strlen((string) $rawShort) > 30;
-
-                if ($needsAi && ! $hasEnoughData) {
-                    $this->line('  <fg=yellow>— skipping AI: no scraped specs to base description on</>');
-                } elseif ($needsAi && $this->ai->isAvailable()) {
+                if ($needsAi && $this->ai->isAvailable()) {
                     $aiText = $this->ai->enrich($product->name, $brand, $rawShort, $scrapadSpecs);
                     if ($aiText) {
                         $updates['content'] = $aiText;
