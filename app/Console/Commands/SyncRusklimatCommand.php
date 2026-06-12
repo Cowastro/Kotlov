@@ -23,17 +23,24 @@ class SyncRusklimatCommand extends Command
         {--dry-run : Preview what would happen — nothing is written to the database}
         {--apply : Write changes to the database}
         {--limit= : Process only the first N rows (for testing)}
-        {--stock-file= : Path to CSV/XLSX file with stock data (default: storage/prices/rusklimat.csv)}
-        {--price-file= : Alias for --stock-file (same file contains both prices and stock)}
+        {--stock-file= : Path to a local CSV/XLSX file (skips Google Sheet download)}
+        {--price-file= : Alias for --stock-file}
+        {--sheet-url= : Google Sheets URL to download (overrides built-in default)}
         {--no-images : Skip downloading product images}
         {--create-new : Create new products for rows that have no match in KOTLOV}
         {--only-existing : Only update supplier_products for already-matched products; skip create_candidates}';
 
-    protected $description = 'Sync Русклимат prices and stock from a Google Sheets export (CSV/XLSX) into KOTLOV supplier_products.';
+    protected $description = 'Sync Русклимат prices and stock from Google Sheets (auto-download) or a local CSV/XLSX file.';
 
     private const SUPPLIER_CODE = 'rusklimat';
     private const SYNC_KEY      = 'rusklimat_stock';
     private const SOURCE_URL    = 'https://rusklimat.by/';
+
+    /** Public Google Sheet with Rusklimat stock data */
+    private const DEFAULT_SHEET_URL = 'https://docs.google.com/spreadsheets/d/1knVFWPz3a6_aH7nvtsaeSka2nH0yAriGvZAEsJ6o-gE/edit?gid=1615075392#gid=1615075392';
+
+    /** Local cache path for downloaded sheet */
+    private const SHEET_CACHE_PATH = 'supplier-cache/rusklimat.csv';
 
     // ── Stock status vocabulary ───────────────────────────────────────────────────
 
@@ -166,19 +173,35 @@ class SyncRusklimatCommand extends Command
         $onlyExisting = (bool) $this->option('only-existing');
         $noImages     = (bool) $this->option('no-images');
 
-        $stockFile = $this->option('stock-file')
-            ?: $this->option('price-file')
-            ?: storage_path('prices/rusklimat.csv');
-
         $this->line($apply && ! $this->option('dry-run')
             ? '<fg=red;options=bold>APPLY: database will be updated.</>'
             : '<fg=yellow;options=bold>DRY RUN: database will not be changed.</>');
 
-        if (! file_exists($stockFile)) {
-            $this->error("Stock file not found: {$stockFile}");
-            $this->line('Export the Google Sheet as CSV and place it at: ' . $stockFile);
-            $this->line('Or pass --stock-file=path/to/file.csv');
-            return self::FAILURE;
+        // ── Resolve stock file ────────────────────────────────────────────────────
+        $stockFile = $this->option('stock-file') ?: $this->option('price-file');
+
+        if ($stockFile !== null) {
+            // Local file explicitly provided
+            if (! file_exists($stockFile)) {
+                $this->error("Stock file not found: {$stockFile}");
+                return self::FAILURE;
+            }
+            $this->line("Using local file: {$stockFile}");
+        } else {
+            // Download from Google Sheets
+            $sheetUrl = $this->option('sheet-url') ?: self::DEFAULT_SHEET_URL;
+            try {
+                $stockFile = $this->downloadGoogleSheet($sheetUrl);
+            } catch (\RuntimeException $e) {
+                if ($e->getMessage() === 'private') {
+                    $this->error('Google Sheet недоступен для публичного экспорта.');
+                    $this->line('Откройте доступ "Anyone with the link" на странице таблицы,');
+                    $this->line('или используйте --stock-file=path/to/rusklimat.csv');
+                    return self::FAILURE;
+                }
+                $this->error('Failed to download Google Sheet: ' . $e->getMessage());
+                return self::FAILURE;
+            }
         }
 
         // ── Parse file ────────────────────────────────────────────────────────────
@@ -214,6 +237,111 @@ class SyncRusklimatCommand extends Command
         }
 
         return $this->applyChanges($classified, $createNew, $noImages);
+    }
+
+    // ── Google Sheet download ─────────────────────────────────────────────────────
+
+    /**
+     * Download the public Google Sheet as CSV, cache it locally and return the path.
+     *
+     * @throws \RuntimeException  'private' if the sheet is not publicly accessible.
+     * @throws \RuntimeException  message on network/parse error.
+     */
+    private function downloadGoogleSheet(string $sheetUrl): string
+    {
+        $exportUrl = $this->buildExportUrl($sheetUrl);
+
+        $this->line("Downloading stock sheet from Google Sheets…");
+
+        $context = stream_context_create([
+            'http' => [
+                'method'          => 'GET',
+                'header'          => implode("\r\n", [
+                    'User-Agent: Mozilla/5.0 (compatible; KotlovBot/1.0)',
+                    'Accept: text/csv,text/plain,*/*',
+                ]),
+                'timeout'         => 45,
+                'follow_location' => 1,
+                'max_redirects'   => 10,
+            ],
+            'ssl' => [
+                'verify_peer'      => true,
+                'verify_peer_name' => true,
+            ],
+        ]);
+
+        $content = @file_get_contents($exportUrl, false, $context);
+
+        if ($content === false) {
+            // Try without SSL verification as a fallback (some Windows setups lack CA bundle)
+            $contextNoSsl = stream_context_create([
+                'http' => [
+                    'method'          => 'GET',
+                    'header'          => 'User-Agent: Mozilla/5.0 (compatible; KotlovBot/1.0)',
+                    'timeout'         => 45,
+                    'follow_location' => 1,
+                    'max_redirects'   => 10,
+                ],
+                'ssl' => [
+                    'verify_peer'      => false,
+                    'verify_peer_name' => false,
+                ],
+            ]);
+            $content = @file_get_contents($exportUrl, false, $contextNoSsl);
+        }
+
+        if ($content === false || trim($content) === '') {
+            throw new \RuntimeException(
+                'Could not fetch URL. Check network access and that the sheet URL is correct.'
+            );
+        }
+
+        // Detect login/auth redirect: Google returns an HTML page when sheet is private
+        $trimmed = ltrim($content);
+        if (str_starts_with($trimmed, '<') || stripos($content, '<html') !== false) {
+            throw new \RuntimeException('private');
+        }
+
+        // Persist to cache
+        $cachePath = storage_path('app/' . self::SHEET_CACHE_PATH);
+        $cacheDir  = dirname($cachePath);
+
+        if (! is_dir($cacheDir)) {
+            mkdir($cacheDir, 0755, true);
+        }
+
+        file_put_contents($cachePath, $content);
+
+        $this->info('Downloaded stock sheet to storage/app/' . self::SHEET_CACHE_PATH);
+
+        return $cachePath;
+    }
+
+    /**
+     * Convert a Google Sheets edit/view URL to a CSV export URL.
+     *
+     * Handles both formats:
+     *   .../edit?gid=1615075392#gid=1615075392
+     *   .../edit#gid=1615075392
+     *   .../d/ID/edit
+     */
+    private function buildExportUrl(string $url): string
+    {
+        if (! preg_match('#/spreadsheets/d/([a-zA-Z0-9_-]+)#', $url, $idMatch)) {
+            throw new \RuntimeException(
+                'Invalid Google Sheets URL — expected .../spreadsheets/d/{ID}/...'
+            );
+        }
+
+        $id = $idMatch[1];
+
+        // gid may appear as ?gid=, &gid=, or #gid=
+        $gid = '0';
+        if (preg_match('/[#?&]gid=(\d+)/', $url, $gidMatch)) {
+            $gid = $gidMatch[1];
+        }
+
+        return "https://docs.google.com/spreadsheets/d/{$id}/export?format=csv&gid={$gid}";
     }
 
     // ── File parsing ──────────────────────────────────────────────────────────────
@@ -353,29 +481,35 @@ class SyncRusklimatCommand extends Command
 
         $patterns = [
             'article'   => ['артикул', 'article', 'sku', 'код', 'code', 'vendor_code', 'арт'],
-            'name'      => ['наименование', 'название', 'товар', 'name', 'product', 'позиция'],
+            'name'      => ['наименование', 'название', 'товар', 'name', 'product', 'позиция', 'модель', 'model'],
             'brand'     => ['бренд', 'производитель', 'brand', 'марка', 'manufacturer'],
             'category'  => ['категория', 'группа', 'раздел', 'category', 'group', 'section'],
-            'price'     => ['цена', 'price', 'стоимость', 'мрц', 'мрц без', 'розница'],
+            'price'     => ['дилер', 'цена', 'price', 'стоимость', 'мрц', 'мрц без', 'розница'],
             'currency'  => ['валюта', 'currency', 'curr'],
             'quantity'  => ['остаток', 'количество', 'кол-во', 'qty', 'quantity', 'stock', 'наличие'],
             'status'    => ['статус', 'наличие', 'status', 'availability', 'доступность'],
             'warehouse' => ['склад', 'warehouse', 'место', 'хранение'],
         ];
 
+        // Two-pass: collect best match per key (lowest pattern-priority wins over CSV position)
+        $candidates = []; // key => [pattern_priority, col_idx]
+
         foreach ($header as $idx => $cell) {
             $lower = mb_strtolower(trim($cell));
             foreach ($patterns as $key => $keywords) {
-                if (isset($map[$key])) {
-                    continue;
-                }
-                foreach ($keywords as $kw) {
+                foreach ($keywords as $priority => $kw) {
                     if ($lower === $kw || str_starts_with($lower, $kw)) {
-                        $map[$key] = $idx;
-                        break 2;
+                        if (! isset($candidates[$key]) || $priority < $candidates[$key][0]) {
+                            $candidates[$key] = [$priority, $idx];
+                        }
+                        break;
                     }
                 }
             }
+        }
+
+        foreach ($candidates as $key => [, $idx]) {
+            $map[$key] = $idx;
         }
 
         // Accept file if at minimum article + (name or price) are detected
