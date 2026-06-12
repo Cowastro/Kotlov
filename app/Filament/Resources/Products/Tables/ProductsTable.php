@@ -96,11 +96,15 @@ class ProductsTable
                     })
                     ->toggleable(),
 
-                TextColumn::make('supplier.name')
+                TextColumn::make('suppliers_list')
                     ->label('Поставщик')
-                    ->sortable()
-                    ->placeholder('—')
-                    ->toggleable(isToggledHiddenByDefault: true),
+                    ->getStateUsing(fn ($record): string => $record->supplierProducts
+                        ->map(fn ($sp) => $sp->supplier?->name)
+                        ->filter()
+                        ->unique()
+                        ->implode(', ') ?: '—'
+                    )
+                    ->toggleable(),
 
                 TextColumn::make('price')
                     ->label('Цена розн.')

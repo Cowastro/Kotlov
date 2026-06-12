@@ -40,6 +40,7 @@ class ProductResource extends Resource
                 'brand:id,name',
                 'supplier:id,name',
                 'supplierProducts:id,product_id,supplier_id,supplier_article,price_byn,stock_quantity,stock_status',
+                'supplierProducts.supplier:id,name',
             ]);
     }
     public static function form(Schema $schema): Schema { return ProductForm::configure($schema); }
