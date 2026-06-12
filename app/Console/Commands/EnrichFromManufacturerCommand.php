@@ -694,6 +694,33 @@ class EnrichFromManufacturerCommand extends Command
         }
         $candidates[] = $r;
 
+        // 4. electrolux-home.ru / Bitrix: characteristics__row with name+property spans
+        //    Simple:  <span class="characteristics__property"> VALUE </span>
+        //    Tooltip: <span class="characteristics__property"> VALUE <div class="glossary-tooltip">...</span>
+        //    List:    <span class="characteristics__property"> <ul><li>...</li></ul> </span>
+        $r = [];
+        preg_match_all('/<span[^>]+class=["\']characteristics__name["\'][^>]*>(.*?)<\/span>/si', $html, $nameM4);
+        preg_match_all('/<span[^>]+class=["\']characteristics__property["\'][^>]*>(.*?)<\/span>/si', $html, $propM4);
+        foreach (($nameM4[1] ?? []) as $i => $rawKey4) {
+            $k = trim(strip_tags($rawKey4));
+            if ($k === '' || mb_strlen($k) > 120 || ! isset($propM4[1][$i])) {
+                continue;
+            }
+            $rawVal4 = $propM4[1][$i];
+            if (preg_match('/<ul[^>]*>(.*?)<\/ul>/si', $rawVal4, $ulM4)) {
+                preg_match_all('/<li[^>]*>(.*?)<\/li>/si', $ulM4[1], $liM4);
+                $v = implode(', ', array_map(fn ($l) => trim(strip_tags($l)), $liM4[1]));
+            } else {
+                // Remove block-level child elements (glossary-tooltip divs etc.)
+                $clean4 = preg_replace('/\s*<(?:div|table)[^>]*>.*$/si', '', $rawVal4);
+                $v = trim(strip_tags($clean4));
+            }
+            if ($v !== '') {
+                $r[$k] = $v;
+            }
+        }
+        $candidates[] = $r;
+
         // Pick the candidate with the most entries
         usort($candidates, fn ($a, $b) => count($b) - count($a));
         $raw = $candidates[0] ?? [];
