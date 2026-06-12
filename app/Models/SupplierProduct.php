@@ -22,6 +22,12 @@ class SupplierProduct extends Model
         'currency_rate',
         'price_byn',
         'in_stock',
+        'stock_quantity',
+        'stock_status',
+        'stock_text',
+        'warehouse_name',
+        'delivery_days',
+        'last_stock_synced_at',
         'match_status',
         'match_confidence',
         'raw',
@@ -29,12 +35,15 @@ class SupplierProduct extends Model
     ];
 
     protected $casts = [
-        'price' => 'decimal:2',
-        'currency_rate' => 'float',
-        'price_byn' => 'decimal:2',
-        'in_stock' => 'boolean',
-        'raw' => 'array',
-        'last_synced_at' => 'datetime',
+        'price'                => 'decimal:2',
+        'currency_rate'        => 'float',
+        'price_byn'            => 'decimal:2',
+        'in_stock'             => 'boolean',
+        'stock_quantity'       => 'integer',
+        'delivery_days'        => 'integer',
+        'raw'                  => 'array',
+        'last_synced_at'       => 'datetime',
+        'last_stock_synced_at' => 'datetime',
     ];
 
     public function supplier(): BelongsTo
