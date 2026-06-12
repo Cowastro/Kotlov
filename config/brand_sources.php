@@ -16,9 +16,8 @@ return [
     ],
 
     'electrolux' => [
-        'site'                 => 'https://www.electrolux.com.by',
-        'search_url'           => 'https://www.electrolux.com.by/search/?q=%s',
-        'product_link_pattern' => '#href=["\'](/[a-z][a-z0-9\-]*/[a-z][a-z0-9\-]*/)["\']#i',
+        'site'        => 'https://electrolux.com.by',
+        'sitemap_url' => 'https://electrolux.com.by/sitemap.xml',
     ],
 
     'ballu' => [

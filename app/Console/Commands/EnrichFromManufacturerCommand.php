@@ -54,6 +54,9 @@ class EnrichFromManufacturerCommand extends Command
         'errors'    => 0,
     ];
 
+    /** @var string[] cached sitemap URLs for current brand */
+    private array $sitemapUrls = [];
+
     public function handle(): int
     {
         $brandFilter = trim((string) $this->option('brand'));
@@ -99,6 +102,12 @@ class EnrichFromManufacturerCommand extends Command
             $this->warn("No manufacturer source configured for \"{$brand->name}\" — falling back to AI-only.");
         } elseif ($sourceConf) {
             $this->info("Source: <fg=yellow>{$sourceConf['site']}</>");
+
+            // Pre-load sitemap if configured
+            if (! empty($sourceConf['sitemap_url'])) {
+                $this->sitemapUrls = $this->loadSitemap($sourceConf['sitemap_url']);
+                $this->info(sprintf('Sitemap: %d URLs loaded', count($this->sitemapUrls)));
+            }
         }
 
         // ── Build product query ───────────────────────────────────────────────────
@@ -278,6 +287,18 @@ class EnrichFromManufacturerCommand extends Command
 
     private function findProductUrl(string $name, string $article, array $conf): ?string
     {
+        // Sitemap-based matching (e.g. Electrolux)
+        if (! empty($this->sitemapUrls)) {
+            $url = $this->findBySitemap($name, $article, $conf['site']);
+            if ($url) {
+                return $url;
+            }
+        }
+
+        if (empty($conf['search_url'])) {
+            return null;
+        }
+
         // 1. Search by article (most precise)
         if ($article !== '') {
             $url = $this->searchOnSite($article, $conf);
@@ -298,6 +319,65 @@ class EnrichFromManufacturerCommand extends Command
         return null;
     }
 
+    private function findBySitemap(string $name, string $article, string $site): ?string
+    {
+        $candidates = [];
+
+        // Build slug variants from article and model name
+        $model      = $this->extractModelFromName($name);
+        $articleSlug = $this->toSlug($article);
+        $modelSlug  = $this->toSlug($model);
+
+        foreach (array_unique(array_filter([$articleSlug, $modelSlug])) as $slug) {
+            if (mb_strlen($slug) < 4) {
+                continue;
+            }
+            foreach ($this->sitemapUrls as $url) {
+                $urlSlug = basename(rtrim($url, '/'));
+                // Exact slug match or sitemap URL contains the slug
+                if ($urlSlug === $slug || str_contains($urlSlug, $slug)) {
+                    $candidates[] = $url;
+                    break;
+                }
+            }
+            if (! empty($candidates)) {
+                break;
+            }
+        }
+
+        return $candidates[0] ?? null;
+    }
+
+    private function loadSitemap(string $sitemapUrl): array
+    {
+        $xml = $this->fetchPage($sitemapUrl);
+        if (! $xml) {
+            return [];
+        }
+
+        preg_match_all('/<loc>(.*?)<\/loc>/s', $xml, $m);
+        $urls = [];
+
+        foreach ($m[1] as $url) {
+            $url = trim($url);
+            // Skip non-product URLs (category pages etc.)
+            if (preg_match('/sitemap|category|catalog|xml$/i', $url)) {
+                continue;
+            }
+            $urls[] = $url;
+        }
+
+        return $urls;
+    }
+
+    private function toSlug(string $s): string
+    {
+        // Lowercase, remove special chars, collapse dashes
+        $s = mb_strtolower($s);
+        $s = preg_replace('/[^a-z0-9]+/', '-', $s);
+        return trim($s, '-');
+    }
+
     private function searchOnSite(string $query, array $conf): ?string
     {
         $searchUrl = sprintf($conf['search_url'], urlencode($query));
@@ -312,7 +392,6 @@ class EnrichFromManufacturerCommand extends Command
 
         if (preg_match($pattern, $html, $m)) {
             $path = $m[1];
-            // If it's already a full URL, return as-is
             if (str_starts_with($path, 'http')) {
                 return $path;
             }
