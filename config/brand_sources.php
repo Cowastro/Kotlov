@@ -16,12 +16,21 @@ return [
     ],
 
     'electrolux' => [
-        'site'                  => 'https://electrolux-home.ru',
-        'sitemap_url'           => 'https://electrolux-home.ru/sitemap.xml',
-        'sitemap_filter'        => 'kondicionery',
-        'fallback_site'         => 'https://www.21vek.by',
-        'fallback_search_url'   => 'https://www.21vek.by/conditioners/all/electrolux/',
-        'fallback_link_pattern' => '#href=["\'](/conditioners/[a-z0-9_\-]+electrolux[^"\']*\.html)["\']#i',
+        'site'           => 'https://electrolux-home.ru',
+        'sitemap_url'    => 'https://electrolux-home.ru/sitemap.xml',
+        'sitemap_filter' => 'kondicionery',
+        'fallbacks' => [
+            [
+                'site'         => 'https://www.21vek.by',
+                'search_url'   => 'https://www.21vek.by/conditioners/all/electrolux/',
+                'link_pattern' => '#href=["\'](/conditioners/[a-z0-9_\-]+electrolux[^"\']*\.html)["\']#i',
+            ],
+            [
+                'site'         => 'https://www.21vek.by',
+                'search_url'   => 'https://www.21vek.by/humidifiers/all/electrolux/',
+                'link_pattern' => '#href=["\'](/humidifiers/[a-z0-9_\-]+electrolux[^"\']*\.html)["\']#i',
+            ],
+        ],
     ],
 
     'ballu' => [

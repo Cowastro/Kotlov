@@ -298,9 +298,17 @@ class EnrichFromManufacturerCommand extends Command
             }
         }
 
-        // Fallback site (e.g. 21vek.by for Electrolux models not on rusklimat.ru)
-        if (! empty($conf['fallback_site'])) {
-            $url = $this->findOnFallback($name, $article, $conf);
+        // Fallback sites (supports 'fallbacks' array or legacy single 'fallback_site')
+        $fallbackList = $conf['fallbacks'] ?? [];
+        if (empty($fallbackList) && ! empty($conf['fallback_site'])) {
+            $fallbackList[] = [
+                'site'         => $conf['fallback_site'],
+                'search_url'   => $conf['fallback_search_url'] ?? '',
+                'link_pattern' => $conf['fallback_link_pattern'] ?? '',
+            ];
+        }
+        foreach ($fallbackList as $fb) {
+            $url = $this->findOnFallback($name, $article, $fb);
             if ($url) {
                 return $url;
             }
@@ -331,8 +339,8 @@ class EnrichFromManufacturerCommand extends Command
 
     private function findOnFallback(string $name, string $article, array $conf): ?string
     {
-        $model       = $this->extractModelFromName($name);
-        $fallbackSite = rtrim($conf['fallback_site'], '/');
+        $model        = $this->extractModelFromName($name);
+        $fallbackSite = rtrim($conf['site'] ?? $conf['fallback_site'] ?? '', '/');
 
         // Build compact slug: EACS/I-12HVA/HC/N8 → eacsi12hvahcn8
         $compact = preg_replace('/[^a-z0-9]/', '', mb_strtolower($model));
@@ -341,12 +349,14 @@ class EnrichFromManufacturerCommand extends Command
         }
 
         // Try search on fallback site
-        if (! empty($conf['fallback_search_url'])) {
-            $searchUrl = sprintf($conf['fallback_search_url'], urlencode($model));
+        $fallbackSearchUrl   = $conf['search_url'] ?? $conf['fallback_search_url'] ?? '';
+        $fallbackLinkPattern = $conf['link_pattern'] ?? $conf['fallback_link_pattern'] ?? '';
+        if (! empty($fallbackSearchUrl)) {
+            $searchUrl = sprintf($fallbackSearchUrl, urlencode($model));
             usleep(500_000);
             $html = $this->fetchPage($searchUrl);
-            if ($html && ! empty($conf['fallback_link_pattern'])) {
-                if (preg_match_all($conf['fallback_link_pattern'], $html, $m)) {
+            if ($html && ! empty($fallbackLinkPattern)) {
+                if (preg_match_all($fallbackLinkPattern, $html, $m)) {
                     // Find the link whose path contains the compact model slug
                     foreach ($m[1] as $path) {
                         if (str_contains(mb_strtolower($path), $compact)) {
