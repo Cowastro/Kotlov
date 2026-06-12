@@ -16,8 +16,9 @@ return [
     ],
 
     'electrolux' => [
-        'site'        => 'https://electrolux.com.by',
-        'sitemap_url' => 'https://electrolux.com.by/sitemap.xml',
+        'site'                 => 'https://www.rusklimat.ru',
+        'search_url'           => 'https://www.rusklimat.ru/search/?q=%s',
+        'product_link_pattern' => '#href=["\'](/product/[a-z0-9_\-/]+/)["\']#i',
     ],
 
     'ballu' => [
