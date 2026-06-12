@@ -80,18 +80,11 @@ class ProductsTable
                         return $articles->isNotEmpty() ? $articles->implode(' / ') : '—';
                     })
                     ->copyable()
-                    ->searchable(query: function ($query, string $search) {
-                        $query->whereHas('supplierProducts', fn ($q) => $q->where('supplier_article', 'like', "%{$search}%"));
-                    })
                     ->toggleable(),
 
                 TextColumn::make('supplier_stock')
                     ->label('Кол-во (пост.)')
                     ->getStateUsing(fn ($record): int => (int) $record->supplierProducts->sum('stock_quantity'))
-                    ->sortable(query: function ($query, string $direction) {
-                        $query->withSum('supplierProducts', 'stock_quantity')
-                              ->orderBy('supplier_products_sum_stock_quantity', $direction);
-                    })
                     ->toggleable(),
 
                 TextColumn::make('supplier_price')
