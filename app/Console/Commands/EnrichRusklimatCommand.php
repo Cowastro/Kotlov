@@ -89,6 +89,7 @@ class EnrichRusklimatCommand extends Command
         $query = DB::table('products as p')
             ->join('supplier_products as sp', 'p.id', '=', 'sp.product_id')
             ->where('sp.supplier_id', $supplierId)
+            ->where('p.is_archived', false)
             ->select('p.id', 'p.name', 'p.slug', 'p.content', 'p.specs',
                      'p.images', 'p.short_description', 'sp.supplier_article', 'sp.raw');
 
