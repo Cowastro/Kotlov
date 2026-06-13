@@ -358,8 +358,10 @@ class EnrichFromManufacturerCommand extends Command
             if ($html && ! empty($fallbackLinkPattern)) {
                 if (preg_match_all($fallbackLinkPattern, $html, $m)) {
                     // Find the link whose path contains the compact model slug
+                    // Compare compact-to-compact (strip non-alphanumeric from both sides)
                     foreach ($m[1] as $path) {
-                        if (str_contains(mb_strtolower($path), $compact)) {
+                        $compactPath = preg_replace('/[^a-z0-9]/', '', mb_strtolower($path));
+                        if (str_contains($compactPath, $compact)) {
                             return str_starts_with($path, 'http') ? $path : $fallbackSite . '/' . ltrim($path, '/');
                         }
                     }
