@@ -109,6 +109,14 @@ class EnrichFromManufacturerCommand extends Command
             if (! empty($sourceConf['sitemap_url'])) {
                 $this->sitemapFilter = $sourceConf['sitemap_filter'] ?? '';
                 $this->sitemapUrls   = $this->loadSitemap($sourceConf['sitemap_url']);
+
+                // Load additional sitemaps (e.g. fallback retailer sites)
+                foreach ($sourceConf['additional_sitemaps'] ?? [] as $extra) {
+                    $this->sitemapFilter = $extra['filter'] ?? '';
+                    $extra_urls = $this->loadSitemap($extra['url']);
+                    $this->sitemapUrls = array_merge($this->sitemapUrls, $extra_urls);
+                }
+
                 $this->info(sprintf('Sitemap: %d URLs loaded', count($this->sitemapUrls)));
             }
         }
