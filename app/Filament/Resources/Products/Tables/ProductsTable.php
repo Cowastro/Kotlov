@@ -136,6 +136,7 @@ class ProductsTable
 
                 IconColumn::make('in_stock')
                     ->label('Наличие')
+                    ->getStateUsing(fn($record) => $record->in_stock || $record->supplierProducts->sum('stock_quantity') > 0)
                     ->boolean(),
 
                 IconColumn::make('is_active')
