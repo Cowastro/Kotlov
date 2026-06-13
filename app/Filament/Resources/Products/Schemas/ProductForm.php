@@ -207,7 +207,7 @@ class ProductForm
                         FileUpload::make('images')
                             ->label('Загрузить новые фото')
                             ->helperText('Новые файлы добавятся к существующим')
-                            ->image()
+                            ->acceptedFileTypes(['image/jpeg', 'image/png', 'image/gif', 'image/webp'])
                             ->multiple()
                             ->reorderable()
                             ->directory('products')
