@@ -281,6 +281,10 @@ class CatalogController extends Controller
             return $text;
         };
 
+        $category->name        = $replaceCityIn($category->name)        ?? $category->name;
+        $category->h1          = $replaceCityIn($category->h1)          ?? $category->h1;
+        $category->description = $replaceCityIn($category->description) ?? $category->description;
+
         $name      = $category->name;
         $nameLower = mb_strtolower($name);
 
