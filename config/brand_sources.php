@@ -23,6 +23,9 @@ return [
             ['url' => 'https://www.teplodvor.by/map/sitemap/1/', 'filter' => 'electrolux'],
             ['url' => 'https://www.teplodvor.by/map/sitemap/2/', 'filter' => 'electrolux'],
             ['url' => 'https://www.teplodvor.by/map/sitemap/3/', 'filter' => 'electrolux'],
+            ['url' => 'https://www.teplodvor.by/map/sitemap/4/', 'filter' => 'electrolux'],
+            ['url' => 'https://www.teplodvor.by/map/sitemap/5/', 'filter' => 'electrolux'],
+            ['url' => 'https://www.teplodvor.by/map/sitemap/6/', 'filter' => 'electrolux'],
         ],
         'fallbacks' => [
             [
