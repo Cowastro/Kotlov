@@ -201,6 +201,11 @@ class Product extends Model
             return '/' . ltrim($path, '/');
         }
 
+        // Загружено вручную через FileUpload → storage disk
+        if (str_starts_with($path, 'products/')) {
+            return \Illuminate\Support\Facades\Storage::url($path);
+        }
+
         if (str_starts_with($path, 'product/')) {
             return '/proxy-image/' . $path;
         }
