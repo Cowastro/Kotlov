@@ -28,8 +28,20 @@ class CitySubdomain
             }
         }
 
-        view()->share('currentCity', view()->shared('currentCity', null));
-        view()->share('cityIn', view()->shared('cityIn', null));
+        // Default to Minsk on main domain (no subdomain)
+        if (! view()->shared('currentCity')) {
+            $minsk = City::findBySlug('minsk');
+            if ($minsk) {
+                view()->share('currentCity', $minsk);
+                view()->share('cityIn',    $minsk->name_in);
+                view()->share('cityTitle', $minsk->name_title);
+                view()->share('cityName',  $minsk->name);
+            } else {
+                view()->share('cityIn',    'в Минске');
+                view()->share('cityTitle', 'Минске');
+                view()->share('cityName',  'Минск');
+            }
+        }
 
         return $next($request);
     }
