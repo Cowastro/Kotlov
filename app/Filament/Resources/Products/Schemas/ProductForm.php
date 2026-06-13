@@ -208,6 +208,7 @@ class ProductForm
                             ->label('Загрузить новые фото')
                             ->helperText('Новые файлы добавятся к существующим')
                             ->acceptedFileTypes(['image/jpeg', 'image/png', 'image/gif', 'image/webp'])
+                            ->disk('public')
                             ->multiple()
                             ->reorderable()
                             ->directory('products')
@@ -323,9 +324,9 @@ class ProductForm
      */
     private static function resolveImageUrl(string $path, ?object $record = null): string
     {
-        // Загружено через FileUpload → путь в storage
+        // Загружено через FileUpload → public storage
         if (str_starts_with($path, 'products/')) {
-            return \Storage::url($path);
+            return asset('storage/' . $path);
         }
 
         // img/products/... → public path

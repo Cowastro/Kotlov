@@ -201,9 +201,9 @@ class Product extends Model
             return '/' . ltrim($path, '/');
         }
 
-        // Загружено вручную через FileUpload → storage disk
+        // Загружено вручную через FileUpload → public storage
         if (str_starts_with($path, 'products/')) {
-            return \Illuminate\Support\Facades\Storage::url($path);
+            return asset('storage/' . $path);
         }
 
         if (str_starts_with($path, 'product/')) {
