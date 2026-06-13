@@ -19,6 +19,16 @@ return [
         'site'           => 'https://electrolux-home.ru',
         'sitemap_url'    => 'https://electrolux-home.ru/sitemap.xml',
         'sitemap_filter' => ['kondicionery', 'obogrevateli-i-teplovye-zavesy', 'uvlazhniteli', 'ventilyatory', 'ochistit', 'nagrevateli', 'teplyy-pol', 'termoregulyator'],
+        'additional_sitemaps' => [
+            ['url' => 'https://www.teplodvor.by/map/sitemap/1/', 'filter' => 'electrolux'],
+            ['url' => 'https://www.teplodvor.by/map/sitemap/2/', 'filter' => 'electrolux'],
+            ['url' => 'https://www.teplodvor.by/map/sitemap/3/', 'filter' => 'electrolux'],
+        ],
+        'additional_sitemaps' => [
+            ['url' => 'https://www.teplodvor.by/map/sitemap/1/', 'filter' => 'electrolux'],
+            ['url' => 'https://www.teplodvor.by/map/sitemap/2/', 'filter' => 'electrolux'],
+            ['url' => 'https://www.teplodvor.by/map/sitemap/3/', 'filter' => 'electrolux'],
+        ],
         'fallbacks' => [
             [
                 'site'         => 'https://www.21vek.by',
