@@ -579,7 +579,7 @@ class SyncEcokaminFireboxesCommand extends Command
         $normalizedName = $this->normalizeProductName($item['name']);
         $candidates = DB::table('products')
             ->where('category_id', self::CATEGORY_ID)
-            ->get(['id', 'sku', 'name', 'images', 'price']);
+            ->get(['id', 'sku', 'name', 'images', 'price', 'content', 'specs']);
 
         foreach ($candidates as $candidate) {
             if ($this->normalizeProductName($candidate->name) === $normalizedName) {
