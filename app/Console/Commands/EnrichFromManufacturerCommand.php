@@ -615,8 +615,8 @@ class EnrichFromManufacturerCommand extends Command
 
         $skipPatterns = '/logo|icon|favicon|banner|sprite|pixel|1x1|arrow|star|noimage|nophoto/i';
 
-        // 1. Bitrix: <a href="/upload/iblock/..." data-fancybox> — full-size gallery link
-        if (preg_match_all('/<a[^>]+href=["\']([^"\']*\/upload\/(?:iblock|resize_cache)[^"\']*\.(?:jpg|jpeg|png|webp))["\'][^>]*>/i', $html, $m)) {
+        // 1. Bitrix or teplodvor.by: <a href="...upload/iblock/..." or "...userfls/shop/large/..."> — full-size gallery link
+        if (preg_match_all('/<a[^>]+href=["\']([^"\']*(?:\/upload\/(?:iblock|resize_cache)|userfls\/shop\/large)[^"\']*\.(?:jpg|jpeg|png|webp))["\'][^>]*>/i', $html, $m)) {
             foreach ($m[1] as $href) {
                 if (! preg_match($skipPatterns, $href)) {
                     return $makeAbsolute($href);
@@ -648,7 +648,7 @@ class EnrichFromManufacturerCommand extends Command
                 if (str_contains($sl, 'resize_cache') && preg_match('/[4-9]\d\d_[4-9]\d\d/', $src)) {
                     return $makeAbsolute($src);
                 }
-                if (! $best && preg_match('/upload|products|catalog|goods|items|photo/i', $src)) {
+                if (! $best && preg_match('/upload|products|catalog|goods|items|photo|userfls/i', $src)) {
                     $best = $src;
                 }
             }
