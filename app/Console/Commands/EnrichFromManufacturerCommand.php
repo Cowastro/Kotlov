@@ -34,6 +34,7 @@ class EnrichFromManufacturerCommand extends Command
         {--skip-content      : Do not generate AI description}
         {--skip-specs        : Do not update specs}
         {--ai-only           : Only generate AI content, skip web scraping}
+        {--include-archived  : Also process archived products}
         {--dry-run           : Preview — no DB writes}';
 
     protected $description = 'Enrich products from manufacturer website (descriptions, specs, images)';
@@ -119,7 +120,7 @@ class EnrichFromManufacturerCommand extends Command
 
         $query = DB::table('products as p')
             ->where('p.brand_id', $brand->id)
-            ->where('p.is_archived', false)
+            ->when(! $this->option('include-archived'), fn ($q) => $q->where('p.is_archived', false))
             ->select('p.id', 'p.name', 'p.slug', 'p.sku', 'p.content', 'p.specs',
                      'p.images', 'p.short_description');
 
@@ -139,9 +140,8 @@ class EnrichFromManufacturerCommand extends Command
         if (! $force) {
             $query->where(function ($q) {
                 $q->whereNull('p.content')->orWhere('p.content', '')
-                  ->orWhereNull('p.specs')->orWhere('p.specs', '[]')
-                  ->orWhere('p.specs', '{}')->orWhere('p.specs', 'null')
-                  ->orWhereNull('p.images')->orWhere('p.images', '[]');
+                  ->orWhereNull('p.specs')->orWhereRaw('JSON_LENGTH(p.specs) = 0')
+                  ->orWhereNull('p.images')->orWhereRaw('JSON_LENGTH(p.images) = 0');
             });
         }
 
