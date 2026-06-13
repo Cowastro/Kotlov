@@ -9,6 +9,7 @@ use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Actions\ViewAction;
+use Filament\Tables\Actions\ActionGroup;
 use Filament\Forms\Components\Select as FormSelect;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\ImageColumn;
@@ -38,11 +39,8 @@ class ProductsTable
                     ->searchable()
                     ->sortable()
                     ->weight('bold')
-                    ->limit(58)
-                    ->description(fn($record) => collect([
-                        $record->sku ? 'SKU: ' . $record->sku : null,
-                        $record->slug ? '/' . $record->slug : null,
-                    ])->filter()->implode(' · ')),
+                    ->limit(40)
+                    ->description(fn($record) => $record->sku ? 'SKU: ' . $record->sku : null),
 
                 TextColumn::make('frontend_url')
                     ->label('Сайт')
@@ -263,8 +261,10 @@ class ProductsTable
                     ->toggle(),
             ])
             ->recordActions([
-                ViewAction::make(),
-                EditAction::make(),
+                ActionGroup::make([
+                    ViewAction::make(),
+                    EditAction::make(),
+                ])->icon('heroicon-m-ellipsis-vertical'),
             ])
             ->toolbarActions([
                 BulkActionGroup::make([
