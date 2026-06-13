@@ -360,16 +360,17 @@ class SyncEcokaminFireboxesCommand extends Command
     {
         $images = [];
 
-        // 1. Full-size gallery links: <a href="/upload/iblock/...">
-        preg_match_all('/href="(\/upload\/iblock\/[^"]+\.(?:jpg|jpeg|png|webp|gif))"/iu', $html, $m1);
+        // 1. Full-size gallery links: <a href="/upload/iblock/..."> (gif excluded — animated demos)
+        preg_match_all('/href="(\/upload\/iblock\/[^"]+\.(?:jpg|jpeg|png|webp))"/iu', $html, $m1);
         foreach ($m1[1] ?? [] as $path) {
             $images[] = $this->absoluteUrl($path);
         }
 
         // 2. Fallback: <img src="/upload/iblock/..."> (skip resize_cache thumbnails)
         if (empty($images)) {
-            preg_match_all('/<img[^>]+src="(\/upload\/iblock\/[^"]+\.(?:jpg|jpeg|png|webp|gif))"/iu', $html, $m2);
+            preg_match_all('/<img[^>]+src="(\/upload\/iblock\/[^"]+\.(?:jpg|jpeg|png|webp))"/iu', $html, $m2);
             foreach ($m2[1] ?? [] as $path) {
+                if (str_contains($path, '/resize_cache/')) continue;
                 $images[] = $this->absoluteUrl($path);
             }
         }
