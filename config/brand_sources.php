@@ -30,6 +30,16 @@ return [
                 'search_url'   => 'https://www.21vek.by/humidifiers/all/electrolux/',
                 'link_pattern' => '#href=["\'](/humidifiers/[a-z0-9_\-]+electrolux[^"\']*\.html)["\']#i',
             ],
+            [
+                'site'         => 'https://agrox.by',
+                'search_url'   => 'https://agrox.by/klimaticheskoe-oborudovanie/klimat/kondicionery-nastennye/',
+                'link_pattern' => '#href=["\'](/klimaticheskoe-oborudovanie/klimat/kondicionery-nastennye/[a-z0-9\-]+)["\']#i',
+            ],
+            [
+                'site'         => 'https://www.idstore.by',
+                'search_url'   => 'https://www.idstore.by/conditioners/electrolux/',
+                'link_pattern' => '#href=["\'](/conditioners/electrolux/[a-z0-9]+)["\']#i',
+            ],
         ],
     ],
 
