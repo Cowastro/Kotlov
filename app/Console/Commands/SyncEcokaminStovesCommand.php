@@ -8,9 +8,9 @@ use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
-class SyncEcokaminFireboxesCommand extends Command
+class SyncEcokaminStovesCommand extends Command
 {
-    protected $signature = 'supplier:sync-ecokamin-fireboxes
+    protected $signature = 'supplier:sync-ecokamin-stoves
         {--apply : Write changes to the database}
         {--dry-run : Preview without writing changes to the database}
         {--limit= : Limit number of products for testing}
@@ -18,18 +18,28 @@ class SyncEcokaminFireboxesCommand extends Command
         {--enrich : Generate unique SEO descriptions via Claude API (requires ANTHROPIC_API_KEY)}
         {--sleep=150 : Delay between product requests in milliseconds}';
 
-    protected $description = 'Scrape ecokamin.ru fireboxes (кроме Invicta) and sync prices, cards, photos and attributes.';
+    protected $description = 'Scrape ecokamin.ru pechi-kaminy (кроме Invicta) and sync prices, cards, photos and attributes.';
 
-    private const SUPPLIER_CODE = 'ecokamin';
-    private const SYNC_KEY = 'ecokamin_fireboxes';
-    private const CATEGORY_ID = 90;   // Камины → Топки
-    private const BRAND_ID = 231;     // ЭкоКамин
-    private const SOURCE_URL = 'https://ecokamin.ru/catalog/kaminnye_topki/';
-    private const BASE_URL = 'https://ecokamin.ru/';
-    private const MAX_PAGES = 15;
+    private const SUPPLIER_CODE    = 'ecokamin';
+    private const SYNC_KEY        = 'ecokamin_stoves';
+    private const CATEGORY_ID     = 61;    // Печи → Печи-камины
+    private const BRAND_ID        = 231;   // ЭкоКамин
+    private const SOURCE_URL      = 'https://ecokamin.ru/catalog/pechi_kaminy/';
+    private const EXTRA_SECTIONS  = [
+        'https://ecokamin.ru/catalog/kaminy/',
+    ];
+    private const BASE_URL        = 'https://ecokamin.ru/';
+    private const MAX_PAGES       = 15;
+
+    private const SERVICE_INFO = [
+        'Производитель'  => 'ЭкоКамин, Россия',
+        'Импортер в РБ'  => 'ООО СанБизнесГруп',
+        'Сервисный центр'=> 'ООО СанБизнесГруп',
+        'Гарантия'       => '1 год',
+    ];
 
     private string $supplierCurrency = 'RUB';
-    private float $supplierRate = 1.0;
+    private float  $supplierRate     = 1.0;
 
     public function handle(): int
     {
@@ -57,7 +67,6 @@ class SyncEcokaminFireboxesCommand extends Command
 
         $this->line(sprintf('Supplier currency: %s, rate to BYN: %s', $this->supplierCurrency, $this->supplierRate));
 
-        // Защита от запуска с курсом-заглушкой: 99990 RUB превратились бы в 99990 BYN.
         if ($apply && $this->supplierCurrency !== CurrencyPriceConverter::BASE_CURRENCY && abs($this->supplierRate - 1.0) < 0.0001) {
             $this->error(sprintf(
                 'У поставщика валюта %s, но курс к BYN = 1 (заглушка). Задайте реальный курс в админке /admin/suppliers и повторите.',
@@ -73,7 +82,7 @@ class SyncEcokaminFireboxesCommand extends Command
             return self::FAILURE;
         }
 
-        $this->info(sprintf('Found fireboxes: %d (skipped Invicta: %d)', count($items), count($skippedInvicta)));
+        $this->info(sprintf('Found stoves: %d (skipped Invicta: %d)', count($items), count($skippedInvicta)));
 
         if ($limit !== null && $limit > 0) {
             $items = array_slice($items, 0, $limit);
@@ -83,35 +92,35 @@ class SyncEcokaminFireboxesCommand extends Command
             return $this->dryRun($items, $skippedInvicta);
         }
 
-        $now = now();
+        $now        = now();
         $supplierId = $this->ensureSupplier($now);
-        $syncId = $this->ensureSupplierSync($now);
+        $syncId     = $this->ensureSupplierSync($now);
         $this->ensureBrand($now);
         $this->ensureCategory($now);
 
         $stats = [
-            'created' => 0,
-            'updated' => 0,
-            'attributes' => 0,
-            'images' => 0,
-            'skipped_invicta' => count($skippedInvicta),
-            'errors' => 0,
+            'created'          => 0,
+            'updated'          => 0,
+            'attributes'       => 0,
+            'images'           => 0,
+            'skipped_invicta'  => count($skippedInvicta),
+            'errors'           => 0,
         ];
 
         foreach ($items as $i => $item) {
             $this->line(sprintf('[%d/%d] %s', $i + 1, count($items), $item['article']));
 
             try {
-                $detail = $this->scrapeProduct($item['url']);
-                $merged = array_merge($item, $detail);
-                $merged['article'] = $detail['article'] ?: $item['article'];
+                $detail           = $this->scrapeProduct($item['url']);
+                $merged           = array_merge($item, $detail);
+                $merged['article']    = $detail['article'] ?: $item['article'];
                 $merged['attributes'] = $detail['attributes'] ?? [];
-                $merged['price_byn'] = CurrencyPriceConverter::convertToByn($merged['price'], $this->supplierCurrency, $this->supplierRate);
+                $merged['price_byn']     = CurrencyPriceConverter::convertToByn($merged['price'], $this->supplierCurrency, $this->supplierRate);
                 $merged['price_old_byn'] = CurrencyPriceConverter::convertToByn($merged['price_old'], $this->supplierCurrency, $this->supplierRate);
 
                 $product = $this->findProduct($merged, $supplierId);
-                $isNew = ! $product;
-                $images = [];
+                $isNew   = ! $product;
+                $images  = [];
 
                 if ($isNew && $enrichContent) {
                     $aiText = $enricher->enrich($item['name'], 'ЭкоКамин', $merged['content'] ?? null, $merged['attributes'] ?? []);
@@ -126,7 +135,7 @@ class SyncEcokaminFireboxesCommand extends Command
                     $stats['images'] += count($images);
                 }
 
-                $productId = $this->upsertProduct($merged, $product, $images, $now);
+                $productId  = $this->upsertProduct($merged, $product, $images, $now);
                 $productSku = (string) DB::table('products')->where('id', $productId)->value('sku');
 
                 $this->upsertSupplierProduct($merged, $productId, $productSku, $supplierId, $syncId, $now);
@@ -164,28 +173,28 @@ class SyncEcokaminFireboxesCommand extends Command
             $priceByn = CurrencyPriceConverter::convertToByn($item['price'], $this->supplierCurrency, $this->supplierRate);
 
             try {
-                $detail = $this->scrapeProduct($item['url']);
+                $detail  = $this->scrapeProduct($item['url']);
                 $article = $detail['article'] ?: $item['article'];
                 $preview[] = [
-                    'article' => $article,
-                    'brand' => $item['brand'],
-                    'price' => $item['price'] !== null
+                    'article'   => $article,
+                    'brand'     => $item['brand'],
+                    'price'     => $item['price'] !== null
                         ? number_format($item['price'], 2, '.', '') . ' ' . $this->supplierCurrency
                         : 'no price',
                     'price_byn' => $priceByn !== null ? number_format($priceByn, 2, '.', '') : '—',
-                    'action' => $this->previewPriceAction(['article' => $article] + $item, $priceByn, $previewSupplierId),
-                    'name' => mb_substr($item['name'], 0, 44),
-                    'url' => $this->shortUrl($item['url']),
+                    'action'    => $this->previewPriceAction(['article' => $article] + $item, $priceByn, $previewSupplierId),
+                    'name'      => mb_substr($item['name'], 0, 44),
+                    'url'       => $this->shortUrl($item['url']),
                 ];
             } catch (\Throwable $e) {
                 $preview[] = [
-                    'article' => $item['article'],
-                    'brand' => $item['brand'],
-                    'price' => 'error',
+                    'article'   => $item['article'],
+                    'brand'     => $item['brand'],
+                    'price'     => 'error',
                     'price_byn' => '—',
-                    'action' => 'error',
-                    'name' => mb_substr($item['name'], 0, 44),
-                    'url' => $this->shortUrl($item['url']),
+                    'action'    => 'error',
+                    'name'      => mb_substr($item['name'], 0, 44),
+                    'url'       => $this->shortUrl($item['url']),
                 ];
             }
 
@@ -194,15 +203,15 @@ class SyncEcokaminFireboxesCommand extends Command
 
         foreach ($skippedInvicta as $item) {
             $preview[] = [
-                'article' => $item['article'],
-                'brand' => 'Invicta',
-                'price' => $item['price'] !== null
+                'article'   => $item['article'],
+                'brand'     => 'Invicta',
+                'price'     => $item['price'] !== null
                     ? number_format($item['price'], 2, '.', '') . ' ' . $this->supplierCurrency
                     : 'no price',
                 'price_byn' => '—',
-                'action' => 'skipped Invicta',
-                'name' => mb_substr($item['name'], 0, 44),
-                'url' => $this->shortUrl($item['url']),
+                'action'    => 'skipped Invicta',
+                'name'      => mb_substr($item['name'], 0, 44),
+                'url'       => $this->shortUrl($item['url']),
             ];
         }
 
@@ -216,21 +225,69 @@ class SyncEcokaminFireboxesCommand extends Command
 
     private function scrapeCatalog(): array
     {
-        $items = [];
+        $items   = [];
         $skipped = [];
 
+        // Discover non-Invicta subfolders of pechi_kaminy + extra sections
+        $sections = $this->discoverSections();
+
+        foreach ($sections as $sectionUrl) {
+            $this->line('  Раздел: ' . $sectionUrl);
+            $this->scrapeSection($sectionUrl, $items, $skipped);
+        }
+
+        return [array_values($items), array_values($skipped)];
+    }
+
+    private function discoverSections(): array
+    {
+        $sections = [];
+
+        try {
+            $html = $this->fetch(self::SOURCE_URL);
+        } catch (\Throwable $e) {
+            throw new \RuntimeException('Cannot fetch main catalog: ' . $e->getMessage());
+        }
+
+        // Find subfolder links: /catalog/pechi_kaminy/SUBFOLDER/ (slug-only, no query string, no numeric IDs)
+        preg_match_all('~href="(/catalog/pechi_kaminy/([a-z0-9_-]+)/)"~ui', $html, $matches, PREG_SET_ORDER);
+        foreach ($matches as $m) {
+            $subfolder = $m[2];
+            if ($subfolder === '' || preg_match('/^\d+$/', $subfolder)) {
+                continue; // skip empty or product-id links
+            }
+
+            $subUrl = $this->absoluteUrl($m[1]);
+
+            if ($this->isInvictaUrl($subUrl) || isset($sections[$subUrl])) {
+                continue;
+            }
+
+            $sections[$subUrl] = $subUrl;
+        }
+
+        // Add extra sections
+        foreach (self::EXTRA_SECTIONS as $extra) {
+            $sections[$extra] = $extra;
+        }
+
+        return array_values($sections);
+    }
+
+    private function scrapeSection(string $sectionUrl, array &$items, array &$skipped): void
+    {
         for ($page = 1; $page <= self::MAX_PAGES; $page++) {
-            $url = $page === 1 ? self::SOURCE_URL : self::SOURCE_URL . '?PAGEN_7=' . $page;
+            $url = $page === 1 ? $sectionUrl : $sectionUrl . '?PAGEN_7=' . $page;
 
             try {
                 $html = $this->fetch($url);
             } catch (\Throwable $e) {
-                // Страница за пределами пагинации отдаёт 404 — это конец каталога.
                 if ($page > 1) {
                     break;
                 }
 
-                throw $e;
+                $this->warn('  Cannot fetch section: ' . $sectionUrl . ' — ' . $e->getMessage());
+                return;
             }
 
             $found = 0;
@@ -259,8 +316,6 @@ class SyncEcokaminFireboxesCommand extends Command
                 break;
             }
         }
-
-        return [array_values($items), array_values($skipped)];
     }
 
     private function productNodes(string $html): array
@@ -276,19 +331,19 @@ class SyncEcokaminFireboxesCommand extends Command
             return null;
         }
 
-        $url = $this->absoluteUrl($link[1]);
+        $url      = $this->absoluteUrl($link[1]);
         $bitrixId = $link[2];
-        $name = $this->cleanText($link[3]);
+        $name     = $this->cleanText($link[3]);
 
         if ($name === '') {
             return null;
         }
 
         $article = $this->match('/article_block"[^>]*data-value="([^"]*)"/u', $html) ?: $bitrixId;
-        $image = $this->match('/<img[^>]+src="(\/upload\/[^"]+)"/u', $html);
+        $image   = $this->match('/<img[^>]+src="(\/upload\/[^"]+)"/u', $html);
 
         $current = null;
-        $old = null;
+        $old     = null;
 
         if (preg_match('/<div class="price"\s+data-currency="[A-Z]+"\s+data-value="([\d.]+)"/u', $html, $priceMatch)) {
             $current = round((float) $priceMatch[1], 2);
@@ -302,15 +357,15 @@ class SyncEcokaminFireboxesCommand extends Command
         }
 
         return [
-            'bitrix_id' => $bitrixId,
-            'article' => $this->normalizeSupplierArticle($article),
+            'bitrix_id'          => $bitrixId,
+            'article'            => $this->normalizeSupplierArticle($article),
             'article_normalized' => $this->normalizeSupplierArticle($article),
-            'name' => $name,
-            'brand' => $this->detectBrand($name, $url),
-            'url' => $url,
-            'price' => $current,
-            'price_old' => $old,
-            'listing_image' => $image ? $this->absoluteUrl($image) : null,
+            'name'               => $name,
+            'brand'              => $this->detectBrand($name, $url),
+            'url'                => $url,
+            'price'              => $current,
+            'price_old'          => $old,
+            'listing_image'      => $image ? $this->absoluteUrl($image) : null,
         ];
     }
 
@@ -319,14 +374,14 @@ class SyncEcokaminFireboxesCommand extends Command
         $html = $this->fetch($url);
 
         return [
-            'h1' => $this->cleanText($this->match('/<h1[^>]*>([\s\S]*?)<\/h1>/u', $html) ?? '') ?: null,
-            'article' => $this->normalizeSupplierArticle($this->match('/class="article__value">([^<]+)</u', $html) ?? ''),
-            'content' => $this->extractDescriptionHtml($html),
-            'meta_title' => $this->cleanText($this->match('/<title>([\s\S]*?)<\/title>/u', $html) ?? ''),
+            'h1'               => $this->cleanText($this->match('/<h1[^>]*>([\s\S]*?)<\/h1>/u', $html) ?? '') ?: null,
+            'article'          => $this->normalizeSupplierArticle($this->match('/class="article__value">([^<]+)</u', $html) ?? ''),
+            'content'          => $this->extractDescriptionHtml($html),
+            'meta_title'       => $this->cleanText($this->match('/<title>([\s\S]*?)<\/title>/u', $html) ?? ''),
             'meta_description' => $this->cleanText($this->match('/<meta name="description" content="([^"]*)"/u', $html) ?? ''),
-            'images_remote' => $this->extractImages($html),
-            'attributes' => $this->parseDetailAttributes($html),
-            'in_stock' => $this->parseStock($html),
+            'images_remote'    => $this->extractImages($html),
+            'attributes'       => $this->parseDetailAttributes($html),
+            'in_stock'         => $this->parseStock($html),
         ];
     }
 
@@ -336,7 +391,7 @@ class SyncEcokaminFireboxesCommand extends Command
         preg_match_all('/<span itemprop="name">([\s\S]*?)<\/span>[\s\S]*?<span itemprop="value">([\s\S]*?)<\/span>/u', $html, $matches, PREG_SET_ORDER);
 
         foreach ($matches as $match) {
-            $name = $this->normalizeAttributeName($this->cleanText($match[1]));
+            $name  = $this->normalizeAttributeName($this->cleanText($match[1]));
             $value = $this->cleanText($match[2]);
 
             if ($name !== '' && $value !== '' && mb_strlen($name) <= 120) {
@@ -384,8 +439,13 @@ class SyncEcokaminFireboxesCommand extends Command
 
     private function isInvicta(array $item): bool
     {
-        return str_contains(mb_strtolower($item['url']), 'invicta')
+        return $this->isInvictaUrl($item['url'])
             || preg_match('/invicta|инвикта/ui', $item['name']) === 1;
+    }
+
+    private function isInvictaUrl(string $url): bool
+    {
+        return str_contains(mb_strtolower($url), 'invicta');
     }
 
     private function detectBrand(string $name, string $url): string
@@ -417,41 +477,44 @@ class SyncEcokaminFireboxesCommand extends Command
         $hasSpecs = ! empty($existingSpecs);
 
         $payload = [
-            'category_id' => self::CATEGORY_ID,
-            'brand_id' => self::BRAND_ID,
-            'supplier_id' => null,
-            'name' => $item['name'],
-            'h1' => $item['h1'] ?: $item['name'],
-            'price' => $item['price_byn'] ?? 0,
-            'price_old' => $item['price_old_byn'] ?? null,
-            'currency' => 'BYN',
-            'content' => ($existingContent !== null && $existingContent !== '')
-                             ? $existingContent
-                             : ($item['content'] ?: null),
+            'category_id'       => self::CATEGORY_ID,
+            'brand_id'          => self::BRAND_ID,
+            'supplier_id'       => null,
+            'name'              => $item['name'],
+            'h1'                => $item['h1'] ?: $item['name'],
+            'price'             => $item['price_byn'] ?? 0,
+            'price_old'         => $item['price_old_byn'] ?? null,
+            'currency'          => 'BYN',
+            // Preserve existing description; write only if product has none yet
+            'content'           => ($existingContent !== null && $existingContent !== '')
+                                        ? $existingContent
+                                        : ($item['content'] ?: null),
             'short_description' => null,
-            'images' => json_encode($images, JSON_UNESCAPED_UNICODE),
-            'specs' => $hasSpecs
-                           ? json_encode($existingSpecs, JSON_UNESCAPED_UNICODE)
-                           : json_encode($attrs, JSON_UNESCAPED_UNICODE),
-            'video_url' => null,
-            'weight' => $this->parseNumber($attrs['Вес'] ?? $attrs['Масса'] ?? null),
-            'unit' => 'шт',
-            'warranty' => $attrs['Гарантия'] ?? null,
-            'is_active' => true,
-            'is_archived' => false,
-            'in_stock' => ($item['in_stock'] ?? true) && $item['price'] !== null,
-            'stock_qty' => null,
-            'is_featured' => false,
-            'is_new' => false,
-            'is_sale' => $item['price_old_byn'] !== null,
-            'sort_order' => 0,
-            'meta_title' => $item['meta_title'] ?: $item['name'] . ' купить в %city%',
-            'meta_keywords' => 'каминная топка, ЭкоКамин, ' . $item['name'],
-            'meta_description' => $item['meta_description'] ?: $item['name'],
-            'rating' => 0,
-            'reviews_count' => 0,
-            'views_count' => 0,
-            'updated_at' => $now,
+            'images'            => json_encode($images, JSON_UNESCAPED_UNICODE),
+            // Preserve existing specs; write only if product has none yet
+            'specs'             => $hasSpecs
+                                        ? json_encode($existingSpecs, JSON_UNESCAPED_UNICODE)
+                                        : json_encode($attrs, JSON_UNESCAPED_UNICODE),
+            'service_info'      => json_encode(self::SERVICE_INFO, JSON_UNESCAPED_UNICODE),
+            'video_url'         => null,
+            'weight'            => $this->parseNumber($attrs['Вес'] ?? $attrs['Масса'] ?? null),
+            'unit'              => 'шт',
+            'warranty'          => $attrs['Гарантия'] ?? null,
+            'is_active'         => true,
+            'is_archived'       => false,
+            'in_stock'          => ($item['in_stock'] ?? true) && $item['price'] !== null,
+            'stock_qty'         => null,
+            'is_featured'       => false,
+            'is_new'            => false,
+            'is_sale'           => $item['price_old_byn'] !== null,
+            'sort_order'        => 0,
+            'meta_title'        => $item['meta_title'] ?: $item['name'] . ' купить в %city%',
+            'meta_keywords'     => 'печь-камин, ЭкоКамин, ' . $item['name'],
+            'meta_description'  => $item['meta_description'] ?: $item['name'],
+            'rating'            => 0,
+            'reviews_count'     => 0,
+            'views_count'       => 0,
+            'updated_at'        => $now,
         ];
 
         if ($product) {
@@ -459,8 +522,8 @@ class SyncEcokaminFireboxesCommand extends Command
             return (int) $product->id;
         }
 
-        $payload['sku'] = $this->nextKotlovSku();
-        $payload['slug'] = $this->uniqueSlug($item['name']);
+        $payload['sku']        = $this->nextKotlovSku();
+        $payload['slug']       = $this->uniqueSlug($item['name']);
         $payload['created_at'] = $now;
 
         return (int) DB::table('products')->insertGetId($payload);
@@ -470,33 +533,33 @@ class SyncEcokaminFireboxesCommand extends Command
     {
         DB::table('supplier_products')->updateOrInsert(
             [
-                'supplier_id' => $supplierId,
+                'supplier_id'      => $supplierId,
                 'supplier_article' => $item['article'],
             ],
             [
                 'supplier_article_normalized' => $this->normalizeSupplierArticle($item['article']),
-                'supplier_sync_id' => $syncId,
-                'product_id' => $productId,
-                'product_sku' => $productSku,
-                'supplier_name' => $item['name'],
-                'source_url' => $item['url'],
-                'source_wp_id' => $item['bitrix_id'] ?? null,
-                'price' => $item['price'],
-                'currency' => $this->supplierCurrency,
-                'currency_rate' => $this->supplierRate,
-                'price_byn' => $item['price_byn'] ?? null,
-                'in_stock' => ($item['in_stock'] ?? true) && $item['price'] !== null,
-                'match_status' => 'matched',
-                'match_confidence' => 'auto_name',
-                'raw' => json_encode([
-                    'bitrix_id' => $item['bitrix_id'] ?? null,
-                    'brand' => $item['brand'] ?? null,
-                    'attributes' => $item['attributes'] ?? [],
-                    'images_remote' => $item['images_remote'] ?? [],
+                'supplier_sync_id'  => $syncId,
+                'product_id'        => $productId,
+                'product_sku'       => $productSku,
+                'supplier_name'     => $item['name'],
+                'source_url'        => $item['url'],
+                'source_wp_id'      => $item['bitrix_id'] ?? null,
+                'price'             => $item['price'],
+                'currency'          => $this->supplierCurrency,
+                'currency_rate'     => $this->supplierRate,
+                'price_byn'         => $item['price_byn'] ?? null,
+                'in_stock'          => ($item['in_stock'] ?? true) && $item['price'] !== null,
+                'match_status'      => 'matched',
+                'match_confidence'  => 'auto_name',
+                'raw'               => json_encode([
+                    'bitrix_id'      => $item['bitrix_id'] ?? null,
+                    'brand'          => $item['brand'] ?? null,
+                    'attributes'     => $item['attributes'] ?? [],
+                    'images_remote'  => $item['images_remote'] ?? [],
                 ], JSON_UNESCAPED_UNICODE),
-                'last_synced_at' => $now,
-                'created_at' => $now,
-                'updated_at' => $now,
+                'last_synced_at'   => $now,
+                'created_at'       => $now,
+                'updated_at'       => $now,
             ]
         );
     }
@@ -510,15 +573,15 @@ class SyncEcokaminFireboxesCommand extends Command
                 continue;
             }
 
-            $name = $this->normalizeAttributeName((string) $name);
+            $name        = $this->normalizeAttributeName((string) $name);
             $attributeId = $this->ensureAttribute($name, $now);
 
             DB::table('product_attribute_values')->updateOrInsert(
                 ['product_id' => $productId, 'attribute_id' => $attributeId],
                 [
-                    'option_id' => null,
+                    'option_id'  => null,
                     'is_checked' => null,
-                    'value' => (string) $value,
+                    'value'      => (string) $value,
                     'created_at' => $now,
                     'updated_at' => $now,
                 ]
@@ -542,19 +605,19 @@ class SyncEcokaminFireboxesCommand extends Command
         }
 
         return (int) DB::table('attributes')->insertGetId([
-            'category_id' => self::CATEGORY_ID,
-            'group_id' => 0,
-            'sort_order' => 500,
-            'type' => 'value',
-            'name' => $name,
-            'suffix' => null,
-            'in_filter' => false,
-            'in_sort' => false,
-            'in_product' => true,
-            'in_brief' => in_array($name, ['Мощность', 'Площадь обогрева', 'Вид топки', 'Материал'], true),
+            'category_id'   => self::CATEGORY_ID,
+            'group_id'      => 0,
+            'sort_order'    => 500,
+            'type'          => 'value',
+            'name'          => $name,
+            'suffix'        => null,
+            'in_filter'     => false,
+            'in_sort'       => false,
+            'in_product'    => true,
+            'in_brief'      => in_array($name, ['Мощность', 'Площадь обогрева', 'Вид топлива', 'Материал корпуса'], true),
             'is_comparable' => true,
-            'created_at' => $now,
-            'updated_at' => $now,
+            'created_at'    => $now,
+            'updated_at'    => $now,
         ]);
     }
 
@@ -577,7 +640,7 @@ class SyncEcokaminFireboxesCommand extends Command
         }
 
         $normalizedName = $this->normalizeProductName($item['name']);
-        $candidates = DB::table('products')
+        $candidates     = DB::table('products')
             ->where('category_id', self::CATEGORY_ID)
             ->get(['id', 'sku', 'name', 'images', 'price']);
 
@@ -613,15 +676,13 @@ class SyncEcokaminFireboxesCommand extends Command
 
     private function downloadImages(array $item): array
     {
-        // listing_image — превью 133×200 из каталога, на сайте получается размытым.
-        // Используем его только если детальная страница не отдала ни одной картинки.
         $detail = array_values(array_filter($item['images_remote'] ?? []));
-        $urls = $detail !== []
+        $urls   = $detail !== []
             ? array_values(array_unique($detail))
             : array_values(array_filter([$item['listing_image'] ?? null]));
 
         $paths = [];
-        $dir = public_path('img/products/ecokamin');
+        $dir   = public_path('img/products/ecokamin');
         if (! is_dir($dir)) {
             mkdir($dir, 0755, true);
         }
@@ -634,7 +695,7 @@ class SyncEcokaminFireboxesCommand extends Command
                 }
 
                 $filename = preg_replace('/[^A-Za-z0-9_.-]+/', '-', $item['article']) . '-' . ($index + 1) . '.' . $ext;
-                $target = $dir . DIRECTORY_SEPARATOR . $filename;
+                $target   = $dir . DIRECTORY_SEPARATOR . $filename;
 
                 if (! file_exists($target)) {
                     file_put_contents($target, $this->fetch($url));
@@ -655,12 +716,11 @@ class SyncEcokaminFireboxesCommand extends Command
     {
         $existing = DB::table('suppliers')->where('code', self::SUPPLIER_CODE)->first();
 
-        // Валюту и курс не трогаем — ими управляет админка (Filament SupplierResource).
         if ($existing) {
             DB::table('suppliers')->where('id', $existing->id)->update([
-                'name' => 'EcoKamin',
-                'contact' => self::SOURCE_URL,
-                'is_active' => true,
+                'name'       => 'EcoKamin',
+                'contact'    => self::SOURCE_URL,
+                'is_active'  => true,
                 'updated_at' => $now,
             ]);
 
@@ -668,15 +728,15 @@ class SyncEcokaminFireboxesCommand extends Command
         }
 
         return (int) DB::table('suppliers')->insertGetId([
-            'code' => self::SUPPLIER_CODE,
-            'name' => 'EcoKamin',
-            'currency' => 'RUB',
+            'code'          => self::SUPPLIER_CODE,
+            'name'          => 'EcoKamin',
+            'currency'      => 'RUB',
             'currency_rate' => 1,
-            'contact' => self::SOURCE_URL,
-            'notes' => 'Каминные топки ecokamin.ru (кроме Invicta). Перед боевым запуском задать курс RUB → BYN.',
-            'is_active' => true,
-            'created_at' => $now,
-            'updated_at' => $now,
+            'contact'       => self::SOURCE_URL,
+            'notes'         => 'Печи-камины ecokamin.ru (кроме Invicta). Перед боевым запуском задать курс RUB → BYN.',
+            'is_active'     => true,
+            'created_at'    => $now,
+            'updated_at'    => $now,
         ]);
     }
 
@@ -685,16 +745,16 @@ class SyncEcokaminFireboxesCommand extends Command
         DB::table('supplier_syncs')->updateOrInsert(
             ['key' => self::SYNC_KEY],
             [
-                'name' => 'EcoKamin',
-                'code' => self::SUPPLIER_CODE,
-                'title' => 'EcoKamin: каминные топки',
-                'description' => 'Обновляет цены и карточки каминных топок с EcoKamin, кроме Invicta.',
-                'command' => 'supplier:sync-ecokamin-fireboxes',
-                'source_url' => self::SOURCE_URL,
+                'name'            => 'EcoKamin',
+                'code'            => self::SUPPLIER_CODE,
+                'title'           => 'EcoKamin: печи-камины',
+                'description'     => 'Обновляет цены и карточки печей-каминов с EcoKamin, кроме Invicta.',
+                'command'         => 'supplier:sync-ecokamin-stoves',
+                'source_url'      => self::SOURCE_URL,
                 'image_disk_path' => 'img/products/ecokamin',
-                'is_active' => true,
-                'created_at' => $now,
-                'updated_at' => $now,
+                'is_active'       => true,
+                'created_at'      => $now,
+                'updated_at'      => $now,
             ]
         );
 
@@ -706,11 +766,11 @@ class SyncEcokaminFireboxesCommand extends Command
         DB::table('brands')->updateOrInsert(
             ['id' => self::BRAND_ID],
             [
-                'name' => 'ЭкоКамин',
-                'slug' => 'ecokamin',
-                'h1' => 'ЭкоКамин',
-                'country' => 'Россия',
-                'is_active' => true,
+                'name'       => 'ЭкоКамин',
+                'slug'       => 'ecokamin',
+                'h1'         => 'ЭкоКамин',
+                'country'    => 'Россия',
+                'is_active'  => true,
                 'updated_at' => $now,
                 'created_at' => $now,
             ]
@@ -720,7 +780,7 @@ class SyncEcokaminFireboxesCommand extends Command
     private function ensureCategory($now): void
     {
         DB::table('categories')->where('id', self::CATEGORY_ID)->update([
-            'is_active' => true,
+            'is_active'  => true,
             'updated_at' => $now,
         ]);
     }
@@ -730,7 +790,7 @@ class SyncEcokaminFireboxesCommand extends Command
         $supplier = DB::table('suppliers')->where('code', self::SUPPLIER_CODE)->first();
 
         $this->supplierCurrency = CurrencyPriceConverter::normalizeCurrency($supplier->currency ?? 'RUB');
-        $this->supplierRate = CurrencyPriceConverter::rateFor($this->supplierCurrency, $supplier->currency_rate ?? 1);
+        $this->supplierRate     = CurrencyPriceConverter::rateFor($this->supplierCurrency, $supplier->currency_rate ?? 1);
     }
 
     // ── Helpers ────────────────────────────────────────────────────────────────
@@ -742,19 +802,19 @@ class SyncEcokaminFireboxesCommand extends Command
 
         return match ($name) {
             'Мощность, кВт',
-            'Мощность номинальная' => 'Мощность',
+            'Мощность номинальная'  => 'Мощность',
             'Отапливаемая площадь',
-            'Обогреваемая площадь' => 'Площадь обогрева',
-            'Масса', 'Вес, кг' => 'Вес',
-            'Диаметр дымохода, мм' => 'Диаметр дымохода',
-            default => $name,
+            'Обогреваемая площадь'  => 'Площадь обогрева',
+            'Масса', 'Вес, кг'      => 'Вес',
+            'Диаметр дымохода, мм'  => 'Диаметр дымохода',
+            default                  => $name,
         };
     }
 
     private function normalizeProductName(string $name): string
     {
         $name = mb_strtoupper($this->cleanText($name));
-        $name = str_replace(['КАМИННАЯ', 'ТОПКА', 'ЧУГУННАЯ', 'ЭКОКАМИН', 'ECOKAMIN'], '', $name);
+        $name = str_replace(['ПЕЧЬ-КАМИН', 'КАМИН-ПЕЧЬ', 'КАМИННАЯ', 'ТОПКА', 'ЧУГУННАЯ', 'ПЕЧЬ', 'КАМИН', 'ЭКОКАМИН', 'ECOKAMIN'], '', $name);
         $name = preg_replace('/[^A-ZА-ЯЁ0-9]+/u', ' ', $name) ?? $name;
 
         return trim(preg_replace('/\s+/u', ' ', $name) ?? $name);
@@ -780,9 +840,9 @@ class SyncEcokaminFireboxesCommand extends Command
 
     private function uniqueSlug(string $name): string
     {
-        $base = Str::slug($name) ?: 'ecokamin-firebox';
+        $base = Str::slug($name) ?: 'ecokamin-stove';
         $slug = $base;
-        $i = 2;
+        $i    = 2;
 
         while (DB::table('products')->where('slug', $slug)->exists()) {
             $slug = $base . '-' . $i;
@@ -831,12 +891,12 @@ class SyncEcokaminFireboxesCommand extends Command
 
         $context = stream_context_create([
             'http' => [
-                'method' => 'GET',
-                'header' => "User-Agent: Mozilla/5.0 (compatible; KotlovBot/1.0)\r\nAccept-Language: ru,en;q=0.8\r\n",
+                'method'  => 'GET',
+                'header'  => "User-Agent: Mozilla/5.0 (compatible; KotlovBot/1.0)\r\nAccept-Language: ru,en;q=0.8\r\n",
                 'timeout' => 30,
             ],
             'ssl' => [
-                'verify_peer' => true,
+                'verify_peer'      => true,
                 'verify_peer_name' => true,
             ],
         ]);
