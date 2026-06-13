@@ -122,7 +122,12 @@ class SyncEcokaminStovesCommand extends Command
                 $isNew   = ! $product;
                 $images  = [];
 
-                if ($isNew && $enrichContent) {
+                // Enrich with AI if flag set and product has no description yet
+                $productHasContent = $product
+                    && is_string($product->content)
+                    && trim($product->content) !== '';
+
+                if ($enrichContent && ! $productHasContent) {
                     $aiText = $enricher->enrich($item['name'], 'ЭкоКамин', $merged['content'] ?? null, $merged['attributes'] ?? []);
                     if ($aiText) {
                         $merged['content'] = $aiText;
@@ -406,9 +411,18 @@ class SyncEcokaminStovesCommand extends Command
     {
         $images = [];
 
-        preg_match_all('/href="(\/upload\/iblock\/[^"]+\.(?:jpg|jpeg|png|webp))"/iu', $html, $matches);
-        foreach ($matches[1] ?? [] as $path) {
+        // 1. Full-size gallery links: <a href="/upload/iblock/...">
+        preg_match_all('/href="(\/upload\/iblock\/[^"]+\.(?:jpg|jpeg|png|webp))"/iu', $html, $m1);
+        foreach ($m1[1] ?? [] as $path) {
             $images[] = $this->absoluteUrl($path);
+        }
+
+        // 2. Fallback: <img src="/upload/iblock/..."> (skip resize_cache thumbnails)
+        if (empty($images)) {
+            preg_match_all('/<img[^>]+src="(\/upload\/iblock\/[^"]+\.(?:jpg|jpeg|png|webp))"/iu', $html, $m2);
+            foreach ($m2[1] ?? [] as $path) {
+                $images[] = $this->absoluteUrl($path);
+            }
         }
 
         return array_slice(array_values(array_unique($images)), 0, 8);
