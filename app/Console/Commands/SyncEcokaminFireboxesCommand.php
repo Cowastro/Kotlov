@@ -15,7 +15,8 @@ class SyncEcokaminFireboxesCommand extends Command
         {--dry-run : Preview without writing changes to the database}
         {--limit= : Limit number of products for testing}
         {--no-images : Do not download product images}
-        {--enrich : Generate unique SEO descriptions via Claude API (requires ANTHROPIC_API_KEY)}
+        {--force-images : Re-download images even if local file already exists}
+        {--enrich : Generate AI descriptions for products that have none (DeepSeek)}
         {--sleep=150 : Delay between product requests in milliseconds}';
 
     protected $description = 'Scrape ecokamin.ru fireboxes (кроме Invicta) and sync prices, cards, photos and attributes.';
@@ -36,6 +37,7 @@ class SyncEcokaminFireboxesCommand extends Command
         $apply          = (bool) $this->option('apply');
         $limit          = $this->option('limit') !== null ? (int) $this->option('limit') : null;
         $downloadImages = ! (bool) $this->option('no-images');
+        $forceImages    = (bool) $this->option('force-images');
         $enrichContent  = (bool) $this->option('enrich');
 
         $enricher = new AiContentEnricher();
@@ -127,11 +129,11 @@ class SyncEcokaminFireboxesCommand extends Command
                 }
 
                 if ($downloadImages) {
-                    $images = $this->downloadImages($merged);
+                    $images = $this->downloadImages($merged, $forceImages);
                     $stats['images'] += count($images);
                 }
 
-                $productId = $this->upsertProduct($merged, $product, $images, $now);
+                $productId = $this->upsertProduct($merged, $product, $images, $forceImages, $now);
                 $productSku = (string) DB::table('products')->where('id', $productId)->value('sku');
 
                 $this->upsertSupplierProduct($merged, $productId, $productSku, $supplierId, $syncId, $now);
@@ -413,9 +415,9 @@ class SyncEcokaminFireboxesCommand extends Command
 
     // ── Persistence ────────────────────────────────────────────────────────────
 
-    private function upsertProduct(array $item, ?object $product, array $images, $now): int
+    private function upsertProduct(array $item, ?object $product, array $images, bool $forceImages, $now): int
     {
-        if (empty($images) && $product?->images) {
+        if (empty($images) && ! $forceImages && $product?->images) {
             $images = is_string($product->images) ? (json_decode($product->images, true) ?: []) : (array) $product->images;
         }
 
@@ -625,10 +627,10 @@ class SyncEcokaminFireboxesCommand extends Command
         return sprintf('%.2f → %.2f', $currentPrice, $priceByn);
     }
 
-    private function downloadImages(array $item): array
+    private function downloadImages(array $item, bool $force = false): array
     {
         // listing_image — превью 133×200 из каталога, на сайте получается размытым.
-        // Используем его только если детальная страница не отдала ни одной картинки.
+        // Используем его только если детальная страница не отдала ни одной картинок.
         $detail = array_values(array_filter($item['images_remote'] ?? []));
         $urls = $detail !== []
             ? array_values(array_unique($detail))
@@ -650,7 +652,7 @@ class SyncEcokaminFireboxesCommand extends Command
                 $filename = preg_replace('/[^A-Za-z0-9_.-]+/', '-', $item['article']) . '-' . ($index + 1) . '.' . $ext;
                 $target = $dir . DIRECTORY_SEPARATOR . $filename;
 
-                if (! file_exists($target)) {
+                if ($force || ! file_exists($target)) {
                     file_put_contents($target, $this->fetch($url));
                 }
 
