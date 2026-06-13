@@ -117,12 +117,23 @@ class SyncEcokaminFireboxesCommand extends Command
                 $productHasContent = $product
                     && is_string($product->content)
                     && trim($product->content) !== '';
+                $productHasShortDesc = $product
+                    && is_string($product->short_description)
+                    && trim($product->short_description) !== '';
 
                 if ($enrichContent && ! $productHasContent) {
                     $aiText = $enricher->enrich($item['name'], 'ЭкоКамин', $merged['content'] ?? null, $merged['attributes'] ?? []);
                     if ($aiText) {
                         $merged['content'] = $aiText;
                         $this->line('  <fg=cyan>AI content generated.</>');
+                    }
+                }
+
+                if ($enrichContent && ! $productHasShortDesc) {
+                    $aiShort = $enricher->shortDescription($item['name'], 'ЭкоКамин', $merged['attributes'] ?? []);
+                    if ($aiShort) {
+                        $merged['short_description'] = $aiShort;
+                        $this->line('  <fg=cyan>AI short description generated.</>');
                     }
                 }
 
@@ -430,6 +441,10 @@ class SyncEcokaminFireboxesCommand extends Command
             ? (is_string($product->content) ? trim($product->content) : null)
             : null;
 
+        $existingShortDesc = $product
+            ? (is_string($product->short_description) ? trim($product->short_description) : null)
+            : null;
+
         $existingSpecs = $product
             ? (is_string($product->specs) ? json_decode($product->specs, true) : null)
             : null;
@@ -447,7 +462,9 @@ class SyncEcokaminFireboxesCommand extends Command
             'content' => ($existingContent !== null && $existingContent !== '')
                              ? $existingContent
                              : ($item['content'] ?: null),
-            'short_description' => null,
+            'short_description' => ($existingShortDesc !== null && $existingShortDesc !== '')
+                                        ? $existingShortDesc
+                                        : ($item['short_description'] ?? null),
             'images' => json_encode($images, JSON_UNESCAPED_UNICODE),
             'specs' => $hasSpecs
                            ? json_encode($existingSpecs, JSON_UNESCAPED_UNICODE)
@@ -598,7 +615,7 @@ class SyncEcokaminFireboxesCommand extends Command
         $normalizedName = $this->normalizeProductName($item['name']);
         $candidates = DB::table('products')
             ->where('category_id', self::CATEGORY_ID)
-            ->get(['id', 'sku', 'name', 'images', 'price', 'content', 'specs']);
+            ->get(['id', 'sku', 'name', 'images', 'price', 'content', 'short_description', 'specs']);
 
         foreach ($candidates as $candidate) {
             if ($this->normalizeProductName($candidate->name) === $normalizedName) {
