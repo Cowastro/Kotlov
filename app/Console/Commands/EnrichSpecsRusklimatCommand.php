@@ -23,6 +23,7 @@ class EnrichSpecsRusklimatCommand extends Command
         {--limit=20         : Max products per run}
         {--offset=0         : Skip first N products}
         {--sleep=500        : Delay between products in ms}
+        {--show-keys        : Just print scraped key:value pairs (vocabulary gathering, no writes)}
         {--apply            : Write changes (default is preview)}
         {--dry-run          : Preview only (default)}';
 
@@ -111,6 +112,17 @@ class EnrichSpecsRusklimatCommand extends Command
 
             $specs = $this->parseSpecs($html);
             $short = $this->parseShort($html);
+
+            // Vocabulary mode: just dump every scraped key:value, no writes.
+            if ($this->option('show-keys')) {
+                $this->line('  cat=' . (DB::table('products')->where('id', $p->id)->value('category_id'))
+                    . ' scraped ' . count($specs) . ':');
+                foreach ($specs as $k => $v) {
+                    $this->line('    · ' . $k . ' = ' . $v);
+                }
+                usleep((int) $this->option('sleep') * 1000);
+                continue;
+            }
 
             $this->line('  scraped specs: ' . count($specs) . ($short ? ' | short: yes' : ''));
             if ($specs !== []) {
