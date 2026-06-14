@@ -14,8 +14,8 @@
     @endif
     @if(isset($canonical) && $canonical)
     <link rel="canonical" href="{{ $canonical }}">
-    @elseif(!isset($currentCity) || !$currentCity)
-    <link rel="canonical" href="https://kotlov.by{{ request()->getPathInfo() }}">
+    @else
+    <link rel="canonical" href="https://{{ request()->getHost() }}{{ request()->getPathInfo() }}">
     @endif
     <meta name="keywords" content="{{ $keywords ?? 'котлы, печи, камины, дымоходы, отопление, монтаж, маркетплейс отопления' }}">
 

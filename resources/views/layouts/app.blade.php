@@ -30,6 +30,8 @@
 
     @isset($canonical)
         <link rel="canonical" href="{{ $canonical }}">
+    @else
+        <link rel="canonical" href="https://{{ request()->getHost() }}{{ request()->getPathInfo() }}">
     @endisset
 
     <link type="image/ico" href="/favicon.ico" rel="shortcut icon">

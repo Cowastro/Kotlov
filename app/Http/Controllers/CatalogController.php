@@ -305,11 +305,12 @@ class CatalogController extends Controller
         $keywords = $replaceCityIn($category->meta_keywords)
             ?: ($name . ', купить ' . $nameLower . ' ' . $cityIn . ', цена, каталог');
 
-        $canonical = 'https://kotlov.by/' . $category->slug;
+        $canonicalBase = 'https://' . request()->getHost();
+        $canonical = $canonicalBase . '/' . $category->slug;
 
         // Schema.org BreadcrumbList
         $breadcrumbs = [
-            ['@type' => 'ListItem', 'position' => 1, 'name' => 'Главная', 'item' => 'https://kotlov.by/'],
+            ['@type' => 'ListItem', 'position' => 1, 'name' => 'Главная', 'item' => $canonicalBase . '/'],
         ];
         $pos = 2;
         if ($category->parent_id && $category->parent) {
@@ -317,7 +318,7 @@ class CatalogController extends Controller
                 '@type'    => 'ListItem',
                 'position' => $pos++,
                 'name'     => $category->parent->name,
-                'item'     => 'https://kotlov.by/' . $category->parent->slug,
+                'item'     => $canonicalBase . '/' . $category->parent->slug,
             ];
         }
         $breadcrumbs[] = [

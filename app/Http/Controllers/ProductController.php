@@ -110,7 +110,8 @@ class ProductController extends Controller
             $product->content = $replaceCityIn($product->content);
         }
 
-        $canonical = 'https://kotlov.by/' . $productCategory->slug . '/' . $product->slug;
+        $canonicalBase = 'https://' . request()->getHost();
+        $canonical = $canonicalBase . '/' . $productCategory->slug . '/' . $product->slug;
 
         $firstImage = $product->imageUrl(0);
         $ogImageRaw = $firstImage ?: asset('img/og-default.jpg');
@@ -152,8 +153,8 @@ class ProductController extends Controller
 
         // BreadcrumbList
         $breadcrumbs = [
-            ['@type' => 'ListItem', 'position' => 1, 'name' => 'Главная',      'item' => 'https://kotlov.by/'],
-            ['@type' => 'ListItem', 'position' => 2, 'name' => $productCategory->name, 'item' => 'https://kotlov.by/' . $productCategory->slug],
+            ['@type' => 'ListItem', 'position' => 1, 'name' => 'Главная',      'item' => $canonicalBase . '/'],
+            ['@type' => 'ListItem', 'position' => 2, 'name' => $productCategory->name, 'item' => $canonicalBase . '/' . $productCategory->slug],
             ['@type' => 'ListItem', 'position' => 3, 'name' => $nameFull,      'item' => $canonical],
         ];
         $breadcrumbSchema = [
