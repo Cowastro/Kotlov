@@ -165,17 +165,42 @@ class EnrichSpecsRusklimatCommand extends Command
             $name,
         ])));
 
+        $candidates = [];
         foreach ($queries as $q) {
             foreach ($this->serperOrganic($q) as $link) {
                 $host = mb_strtolower(parse_url($link, PHP_URL_HOST) ?: '');
                 foreach (self::SPEC_DOMAINS as $d) {
-                    if (str_contains($host, $d) && str_contains($link, '/product/') || (str_contains($host, $d) && str_contains($link, 'catalog'))) {
-                        return $link;
+                    if (str_contains($host, $d)) {
+                        $candidates[] = $link;
+                        break;
                     }
                 }
             }
+            if ($candidates !== []) {
+                break; // первый запрос, давший кандидатов
+            }
         }
-        return null;
+
+        if ($candidates === []) {
+            return null;
+        }
+
+        // rusklimat.ru/.../product/ отдаёт характеристики в HTML; b2b — JS (specs=0).
+        usort($candidates, fn ($a, $b) => $this->pageRank($a) <=> $this->pageRank($b));
+        return $candidates[0];
+    }
+
+    private function pageRank(string $link): int
+    {
+        $host    = mb_strtolower(parse_url($link, PHP_URL_HOST) ?: '');
+        $product = str_contains($link, '/product/');
+        return match (true) {
+            str_contains($host, 'rusklimat.ru') && $product => 0,
+            str_contains($host, 'rusklimat.by') && $product => 1,
+            $product                                        => 2,
+            str_contains($host, 'rusklimat.ru')             => 3,
+            default                                         => 5,
+        };
     }
 
     /** @return string[] organic result links */

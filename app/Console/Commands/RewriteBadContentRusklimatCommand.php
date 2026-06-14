@@ -65,7 +65,7 @@ class RewriteBadContentRusklimatCommand extends Command
             ->orderBy('p.id')
             ->get(['p.id', 'p.name', 'p.content', 'p.specs', 'b.name as brand', 'c.name as category']);
 
-        $stats = ['bad_found' => 0, 'rewritten' => 0, 'no_specs_skipped' => 0, 'no_result' => 0, 'errors' => 0];
+        $stats = ['bad_found' => 0, 'rewritten' => 0, 'by_ai' => 0, 'by_build' => 0, 'no_result' => 0, 'errors' => 0];
         $seenBad = 0;
 
         foreach ($candidates as $p) {
@@ -78,7 +78,7 @@ class RewriteBadContentRusklimatCommand extends Command
             if ($seenBad <= $offset) {
                 continue;
             }
-            if ($stats['rewritten'] + $stats['no_specs_skipped'] + $stats['no_result'] + $stats['errors'] >= $limit) {
+            if ($stats['rewritten'] + $stats['no_result'] + $stats['errors'] >= $limit) {
                 break;
             }
 
@@ -99,31 +99,40 @@ class RewriteBadContentRusklimatCommand extends Command
                 continue;
             }
 
-            if ($seo === null || $seo['content'] === '') {
+            // Prefer a clean AI result; otherwise fall back to a deterministic
+            // clean build so the orphan-unit content is always replaced.
+            $newContent = null;
+            $source     = '';
+            if ($seo !== null && $seo['content'] !== '' && ! $this->hasBadContent($seo['content'])) {
+                $newContent = $seo['content'];
+                $source     = 'AI';
+            } else {
+                $built = $this->buildCleanContent((string) $p->name, (string) ($p->brand ?? ''), (string) ($p->category ?? ''), $specs);
+                if ($built !== '') {
+                    $newContent = $built;
+                    $source     = 'built';
+                }
+            }
+
+            if ($newContent === null) {
                 $stats['no_result']++;
-                $this->line('  <fg=yellow>no content from AI — kept old</>');
+                $this->line('  <fg=yellow>could not produce clean content — kept old</>');
                 continue;
             }
 
-            // Safety: the regenerated content must itself be clean.
-            if ($this->hasBadContent($seo['content'])) {
-                $stats['no_result']++;
-                $this->line('  <fg=yellow>regenerated content still has orphan units — kept old</>');
-                continue;
-            }
-
-            $this->line('  <fg=green>new:</> ' . mb_substr(trim(preg_replace('/\s+/u', ' ', strip_tags($seo['content'])) ?? ''), 0, 90));
+            $this->line('  <fg=green>new (' . $source . '):</> ' . mb_substr(trim(preg_replace('/\s+/u', ' ', strip_tags($newContent)) ?? ''), 0, 90));
 
             if ($apply) {
                 DB::table('products')->where('id', $p->id)->update([
-                    'content'    => $seo['content'],
+                    'content'    => $newContent,
                     'updated_at' => now(),
                 ]);
-                $this->line('  <fg=green>rewritten</>');
+                $this->line('  <fg=green>rewritten (' . $source . ')</>');
             } else {
-                $this->line('  <fg=blue>[dry-run] would rewrite content</>');
+                $this->line('  <fg=blue>[dry-run] would rewrite content (' . $source . ')</>');
             }
             $stats['rewritten']++;
+            $stats[$source === 'AI' ? 'by_ai' : 'by_build']++;
         }
 
         $this->newLine();
@@ -131,5 +140,47 @@ class RewriteBadContentRusklimatCommand extends Command
         $this->line(sprintf('Total bad-content found so far in scan: %d', $stats['bad_found']));
 
         return self::SUCCESS;
+    }
+
+    /**
+     * Deterministic clean content from supplier data — guaranteed free of orphan
+     * units (drops any spec/value that would reintroduce them). '' if no data.
+     */
+    private function buildCleanContent(string $name, string $brand, string $category, array $specs): string
+    {
+        $flat = [];
+        foreach ($specs as $k => $v) {
+            if (is_array($v)) {
+                $key = trim((string) ($v['key'] ?? $k));
+                $val = trim((string) ($v['value'] ?? '')) . (($v['unit'] ?? '') ? ' ' . $v['unit'] : '');
+            } else {
+                $key = trim((string) $k);
+                $val = trim((string) $v);
+            }
+            $val = trim($val);
+            if ($key === '' || $val === '' || $val === '—') {
+                continue;
+            }
+            $flat[$key] = $val;
+        }
+
+        $cat   = $category !== '' ? mb_strtolower($category) : 'оборудование';
+        $intro = '<p>' . e(trim($brand . ' ' . $name)) . ' — ' . e($cat) . '.</p>';
+
+        if ($flat === []) {
+            return $this->hasBadContent($intro) ? '' : $intro;
+        }
+
+        $li = '';
+        foreach ($flat as $k => $v) {
+            $li .= '<li><strong>' . e($k) . ':</strong> ' . e($v) . '</li>';
+        }
+        $full = $intro . "\n" . '<h3>Характеристики</h3>' . "\n" . '<ul>' . $li . '</ul>';
+
+        // Guarantee the result itself has no orphan units; degrade if needed.
+        if (! $this->hasBadContent($full)) {
+            return $full;
+        }
+        return $this->hasBadContent($intro) ? '' : $intro;
     }
 }
