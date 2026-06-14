@@ -5,6 +5,7 @@ namespace App\Console\Commands;
 use App\Console\Commands\Concerns\ScrapesRusklimatSpecs;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 /**
  * Populate the structured «Характеристики» tab (product_attribute_values) for
@@ -36,6 +37,9 @@ class ImportAttributesRusklimatCommand extends Command
     protected $description = 'Map product specs to product_attribute_values (curated, per category).';
 
     private const SUPPLIER_CODE = 'rusklimat';
+
+    /** Re-try a product that yielded no specs only after this many days. */
+    private const FAILURE_TTL_DAYS = 30;
 
     /** Mapping for the products.specs JSON source: specs key => attribute. */
     private const MAP_SPECS = [
@@ -118,6 +122,10 @@ class ImportAttributesRusklimatCommand extends Command
             ->where('p.category_id', $catId)
             ->where('p.is_archived', false)
             ->whereNotExists(fn ($w) => $w->from('product_attribute_values as pav')->whereColumn('pav.product_id', 'p.id'))
+            ->when($this->failuresTable(), fn ($qq) => $qq->whereNotExists(fn ($w) => $w
+                ->from('attribute_import_failures as f')
+                ->whereColumn('f.product_id', 'p.id')
+                ->where('f.attempted_at', '>=', now()->subDays(self::FAILURE_TTL_DAYS))))
             ->orderBy('p.id');
         if ($this->option('limit')) {
             $q->limit((int) $this->option('limit'));
@@ -138,6 +146,7 @@ class ImportAttributesRusklimatCommand extends Command
             if ($url === null) {
                 $stats['not_found']++;
                 $this->line('  <fg=yellow>page not found</>');
+                $this->recordFailure((int) $p->id, $apply);
                 usleep((int) $this->option('sleep') * 1000);
                 continue;
             }
@@ -145,6 +154,7 @@ class ImportAttributesRusklimatCommand extends Command
             if ($html === null) {
                 $stats['not_found']++;
                 $this->line('  <fg=red>fetch failed</>');
+                $this->recordFailure((int) $p->id, $apply);
                 usleep((int) $this->option('sleep') * 1000);
                 continue;
             }
@@ -152,7 +162,10 @@ class ImportAttributesRusklimatCommand extends Command
             $this->line('  page: ' . mb_substr($url, 0, 78));
 
             $scraped = $this->scrapeSpecs($html);
-            $this->writeMapped($p, $catId, $map, $scraped, $apply, $stats);
+            $created = $this->writeMapped($p, $catId, $map, $scraped, $apply, $stats);
+            if ($apply) {
+                $created > 0 ? $this->clearFailure((int) $p->id) : $this->recordFailure((int) $p->id, true);
+            }
             usleep((int) $this->option('sleep') * 1000);
         }
 
@@ -209,8 +222,9 @@ class ImportAttributesRusklimatCommand extends Command
 
     // ── Shared mapping/writing ────────────────────────────────────────────────────
 
-    private function writeMapped(object $p, int $catId, array $map, array $data, bool $apply, array &$stats): void
+    private function writeMapped(object $p, int $catId, array $map, array $data, bool $apply, array &$stats): int
     {
+        $created = 0;
         $printedHeader = isset($stats['page_found']); // scrape already printed a header line
         foreach ($map as $specKey => $mapping) {
             if (! array_key_exists($specKey, $data)) {
@@ -253,6 +267,31 @@ class ImportAttributesRusklimatCommand extends Command
                 ]);
             }
             $stats['values_created']++;
+            $created++;
+        }
+
+        return $created;
+    }
+
+    private function failuresTable(): bool
+    {
+        return Schema::hasTable('attribute_import_failures');
+    }
+
+    private function recordFailure(int $productId, bool $apply): void
+    {
+        if ($apply && $this->failuresTable()) {
+            DB::table('attribute_import_failures')->updateOrInsert(
+                ['product_id' => $productId],
+                ['attempted_at' => now(), 'updated_at' => now()]
+            );
+        }
+    }
+
+    private function clearFailure(int $productId): void
+    {
+        if ($this->failuresTable()) {
+            DB::table('attribute_import_failures')->where('product_id', $productId)->delete();
         }
     }
 
