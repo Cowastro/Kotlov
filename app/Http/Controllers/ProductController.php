@@ -152,10 +152,13 @@ class ProductController extends Controller
         }
 
         // BreadcrumbList
+        $categorySchemaName = trim((string) ($productCategory->name ?: $productCategory->slug));
+        $productSchemaName = trim((string) ($nameFull ?: $product->name ?: $product->slug));
+
         $breadcrumbs = [
             ['@type' => 'ListItem', 'position' => 1, 'name' => 'Главная',      'item' => $canonicalBase . '/'],
-            ['@type' => 'ListItem', 'position' => 2, 'name' => $productCategory->name, 'item' => $canonicalBase . '/' . $productCategory->slug],
-            ['@type' => 'ListItem', 'position' => 3, 'name' => $nameFull,      'item' => $canonical],
+            ['@type' => 'ListItem', 'position' => 2, 'name' => $categorySchemaName, 'item' => $canonicalBase . '/' . $productCategory->slug],
+            ['@type' => 'ListItem', 'position' => 3, 'name' => $productSchemaName,      'item' => $canonical],
         ];
         $breadcrumbSchema = [
             '@context'        => 'https://schema.org',

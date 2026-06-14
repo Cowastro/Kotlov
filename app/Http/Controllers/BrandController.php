@@ -47,7 +47,7 @@ class BrandController extends Controller
             ->orderByDesc('rating')
             ->paginate(24);
 
-        $brandName = $brand->name;
+        $brandName = trim((string) ($brand->name ?: $brand->slug));
         $h1        = $brand->h1 ?: "Каталог {$brandName}";
         $title     = $brand->meta_title    ?: "{$brandName} — купить в Беларуси | KOTLOV";
         $description = $brand->meta_description ?: "Каталог товаров бренда {$brandName}. Купить {$brandName} в Беларуси с доставкой. Гарантия, монтаж.";

@@ -314,17 +314,22 @@ class CatalogController extends Controller
         ];
         $pos = 2;
         if ($category->parent_id && $category->parent) {
+            $parentSchemaName = trim((string) ($category->parent->name ?: $category->parent->slug));
+
             $breadcrumbs[] = [
                 '@type'    => 'ListItem',
                 'position' => $pos++,
-                'name'     => $category->parent->name,
+                'name'     => $parentSchemaName,
                 'item'     => $canonicalBase . '/' . $category->parent->slug,
             ];
         }
+
+        $categorySchemaName = trim((string) ($category->h1 ?: $category->name ?: $category->slug));
+
         $breadcrumbs[] = [
             '@type'    => 'ListItem',
             'position' => $pos,
-            'name'     => $category->h1 ?? $category->name,
+            'name'     => $categorySchemaName,
             'item'     => $canonical,
         ];
 
