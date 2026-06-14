@@ -45,6 +45,7 @@ class EnrichImagesCommand extends Command
         {--min-kb=30        : Minimum image size in KB}
         {--min-width=400    : Minimum image width in px}
         {--allow-untrusted  : Allow images from non-trusted domains (default: trusted only)}
+        {--site=            : Restrict search to one domain (site:) and trust it — targeted backfill, e.g. --site=hommet-shop.ru}
         {--skip-known-failures : Skip products that recently failed image search (TTL 30 days)}
         {--sleep=600        : Delay between products in milliseconds}
         {--dry-run          : Preview queries + candidate URLs, write nothing}';
@@ -127,7 +128,12 @@ class EnrichImagesCommand extends Command
         $limit           = max(1, (int) $this->option('limit'));
         $offset          = max(0, (int) $this->option('offset'));
         $skipFailures    = (bool) $this->option('skip-known-failures');
+        $site            = trim((string) $this->option('site'));
         $failuresTable   = Schema::hasTable('image_search_failures');
+
+        if ($site !== '') {
+            $this->info('Scoped to site:' . $site . ' (treated as preferred).');
+        }
 
         if ($skipFailures && ! $failuresTable) {
             $this->warn('--skip-known-failures: table image_search_failures missing — run migrate. Ignoring flag.');
@@ -196,8 +202,9 @@ class EnrichImagesCommand extends Command
                     continue;
                 }
 
-                $candidates = $this->search($provider, $q);
-                $this->line(sprintf('  query:  %s   <fg=gray>(%d candidates)</>', $q, count($candidates)));
+                $qFull      = $site !== '' ? $q . ' site:' . $site : $q;
+                $candidates = $this->search($provider, $qFull);
+                $this->line(sprintf('  query:  %s   <fg=gray>(%d candidates)</>', $qFull, count($candidates)));
 
                 foreach ($candidates as $c) {
                     // Hard deny — skip before any download.
@@ -209,6 +216,10 @@ class EnrichImagesCommand extends Command
 
                     $check  = $this->validateImage($c['image_url']);
                     $tier   = $this->domainTier($c['domain'] ?? '', $c['image_url']);
+                    // --site: treat the requested domain as preferred so it always wins.
+                    if ($site !== '' && str_contains(mb_strtolower(($c['domain'] ?? '') . ' ' . $c['image_url']), mb_strtolower($site))) {
+                        $tier = 'preferred';
+                    }
                     $apiDim = ($c['width'] && $c['height']) ? sprintf('%dx%d', $c['width'], $c['height']) : '—';
                     $verdict = $check['ok']
                         ? '<fg=green>ACCEPTED</> [' . $tier . ']'
