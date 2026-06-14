@@ -27,7 +27,8 @@ class AuditRusklimatCommand extends Command
     protected $signature = 'supplier:audit-rusklimat
         {--brand=         : Focus the detailed list on one brand (partial match, e.g. --brand=Electrolux)}
         {--list           : Print a per-product table for the focused/missing set}
-        {--missing-photos : Restrict the --list table to products without a photo}
+        {--missing-photos : Restrict the --list table to products without a real photo}
+        {--active-only    : Restrict the --list table to active (non-archived) products}
         {--limit=80       : Max rows in the per-product list}';
 
     protected $description = 'Read-only audit of Rusklimat products: photos, descriptions, brands, match confidence (no writes).';
@@ -273,30 +274,36 @@ class AuditRusklimatCommand extends Command
         if ($this->option('list')) {
             $limit       = max(1, (int) $this->option('limit'));
             $onlyMissing = (bool) $this->option('missing-photos');
+            $activeOnly  = (bool) $this->option('active-only');
 
             $q = DB::table('products as p')
                 ->join('supplier_products as sp', 'p.id', '=', 'sp.product_id')
                 ->leftJoin('brands as b', 'p.brand_id', '=', 'b.id')
                 ->where('sp.supplier_id', $supplierId)
                 ->when($focusBrand !== '', fn ($q) => $q->where('b.name', 'like', '%' . $focusBrand . '%'))
+                ->when($activeOnly, fn ($q) => $q->where('p.is_archived', false))
                 ->orderBy('p.id')
-                ->get(['p.id', 'p.sku', 'p.name', 'p.images', 'p.content', 'sp.supplier_article', 'b.name as brand']);
+                ->get(['p.id', 'p.sku', 'p.name', 'p.images', 'p.content', 'p.short_description',
+                       'p.specs', 'p.is_archived', 'sp.supplier_article', 'sp.stock_status', 'b.name as brand']);
 
             $listRows = [];
             foreach ($q as $r) {
-                [$cat] = $this->classifyImages($r->images, (string) $r->sku, (int) $r->id);
-                $hasPhoto = in_array($cat, ['images_file_exists', 'images_external_url'], true);
-                if ($onlyMissing && $hasPhoto) {
+                [$cat]    = $this->classifyImages($r->images, (string) $r->sku, (int) $r->id);
+                $missPhoto = ! in_array($cat, ['images_file_exists', 'images_external_url'], true);
+                if ($onlyMissing && ! $missPhoto) {
                     continue;
                 }
                 $listRows[] = [
                     $r->id,
                     $r->sku,
-                    mb_substr((string) $r->supplier_article, 0, 22),
-                    mb_substr((string) ($r->brand ?? '—'), 0, 14),
-                    mb_substr((string) $r->name, 0, 40),
-                    str_replace('images_', '', $cat),
-                    trim((string) $r->content) !== '' ? 'yes' : 'NO',
+                    mb_substr((string) $r->supplier_article, 0, 20),
+                    mb_substr((string) ($r->brand ?? '—'), 0, 12),
+                    mb_substr((string) $r->name, 0, 34),
+                    (string) ($r->stock_status ?? '—'),
+                    $missPhoto ? 'MISS' : 'ok',
+                    trim((string) $r->short_description) === '' ? 'MISS' : 'ok',
+                    trim((string) $r->content) === '' ? 'MISS' : 'ok',
+                    $this->specsEmptyValue($r->specs) ? 'MISS' : 'ok',
                 ];
                 if (count($listRows) >= $limit) {
                     break;
@@ -304,8 +311,16 @@ class AuditRusklimatCommand extends Command
             }
 
             $this->newLine();
-            $this->info(sprintf('── Per-product list (%d rows%s) ─────────────', count($listRows), $onlyMissing ? ', missing photos only' : ''));
-            $this->table(['id', 'sku', 'supplier_article', 'brand', 'name', 'photo_state', 'desc'], $listRows);
+            $this->info(sprintf('── Per-product list (%d rows%s%s) ─────────────',
+                count($listRows),
+                $activeOnly ? ', active only' : '',
+                $onlyMissing ? ', missing photo only' : ''
+            ));
+            $this->table(
+                ['id', 'sku', 'supplier_article', 'brand', 'name', 'stock', 'photo', 'short', 'content', 'specs'],
+                $listRows
+            );
+            $this->line('<fg=gray>MISS = поле пустое/нет файла; columns: photo=реальный файл, short=short_description, content=длинное описание, specs=характеристики</>');
         }
 
         $this->newLine();
@@ -313,6 +328,20 @@ class AuditRusklimatCommand extends Command
             . '<fg=green>php artisan supplier:enrich-rusklimat --limit=80</> (only touches empty fields).');
 
         return self::SUCCESS;
+    }
+
+    /** True when specs is null, "", [], {}, "null" or decodes to an empty array. */
+    private function specsEmptyValue(?string $raw): bool
+    {
+        if ($raw === null) {
+            return true;
+        }
+        $t = trim($raw);
+        if (in_array($t, ['', '[]', '{}', 'null'], true)) {
+            return true;
+        }
+        $decoded = json_decode($raw, true);
+        return is_array($decoded) && count($decoded) === 0;
     }
 
     /**
