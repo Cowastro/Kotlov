@@ -60,6 +60,13 @@ class HandleRedirects
             }
         }
 
+        if (preg_match('#^(.+)/shop-default\.html$#', $path, $matches)) {
+            $target = rtrim($matches[1], '/') ?: '/';
+            $query = $request->getQueryString();
+
+            return redirect($target . ($query ? '?' . $query : ''), 301);
+        }
+
         // ── Паттерн-редиректы для старого сайта kotlov.by ────────────────────
         //
         // Логика старого сайта (RoutMap.php):
@@ -132,7 +139,7 @@ class HandleRedirects
         }
         // ─────────────────────────────────────────────────────────────────────
 
-        if ($legacyProductRedirect = $this->redirectLegacyProductSlug($request, $path)) {
+        if ($legacyProductRedirect = $this->redirectLegacyProductPath($request, $path)) {
             return $legacyProductRedirect;
         }
 
@@ -194,9 +201,9 @@ class HandleRedirects
         return redirect()->away($target, 301);
     }
 
-    private function redirectLegacyProductSlug(Request $request, string $path): ?Response
+    private function redirectLegacyProductPath(Request $request, string $path): ?Response
     {
-        if (! preg_match('/[(),]/', $path)) {
+        if (str_starts_with($path, '/images/') || str_starts_with($path, '/storage/')) {
             return null;
         }
 
