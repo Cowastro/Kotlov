@@ -8,6 +8,7 @@ class ContactRequest extends Model
 {
     protected $fillable = [
         'name', 'phone', 'email', 'message', 'status', 'admin_notes',
+        'product_id', 'product_name', 'product_url', 'city', 'source',
     ];
 
     public static array $statuses = [

@@ -205,6 +205,15 @@
                 <form class="form-log mb-20" action="{{ route('ask.store') }}" method="POST">
                     @csrf
                     <x-form-protection />
+                    @isset($product)
+                        <input type="hidden" name="product_id" value="{{ $product->id }}">
+                        <input type="hidden" name="product_name" value="{{ $product->name }}">
+                        <input type="hidden" name="product_url" value="{{ url()->current() }}">
+                        <input type="hidden" name="source" value="product_page">
+                    @else
+                        <input type="hidden" name="source" value="consultation_form">
+                    @endisset
+                    <input type="hidden" name="city" value="{{ $cityName ?? ($currentCity->name ?? '') }}">
                     <div class="form-content">
                         <fieldset class="tf-field">
                             <label for="name-ask" class="tf-lable fw-medium">Ваше имя <span class="text-primary">*</span></label>

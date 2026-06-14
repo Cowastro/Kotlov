@@ -13,18 +13,28 @@ class ContactRequestController extends Controller
     public function store(Request $request): RedirectResponse
     {
         $validated = $request->validate([
-            'name'    => ['required', 'string', 'max:255'],
-            'phone'   => ['required', 'string', 'max:50'],
-            'email'   => ['nullable', 'email', 'max:255'],
-            'message' => ['nullable', 'string', 'max:2000'],
+            'name'         => ['required', 'string', 'max:255'],
+            'phone'        => ['required', 'string', 'max:50'],
+            'email'        => ['nullable', 'email', 'max:255'],
+            'message'      => ['nullable', 'string', 'max:2000'],
+            'product_id'   => ['nullable', 'integer'],
+            'product_name' => ['nullable', 'string', 'max:255'],
+            'product_url'  => ['nullable', 'string', 'max:1000'],
+            'city'         => ['nullable', 'string', 'max:255'],
+            'source'       => ['nullable', 'string', 'max:100'],
         ]);
 
         $contactRequest = ContactRequest::create([
-            'name'    => $validated['name'],
-            'phone'   => $validated['phone'],
-            'email'   => $validated['email'] ?? null,
-            'message' => $validated['message'] ?? '',
-            'status'  => 'new',
+            'name'         => $validated['name'],
+            'phone'        => $validated['phone'],
+            'email'        => $validated['email'] ?? null,
+            'message'      => $validated['message'] ?? '',
+            'product_id'   => $validated['product_id'] ?? null,
+            'product_name' => $validated['product_name'] ?? null,
+            'product_url'  => $validated['product_url'] ?? null,
+            'city'         => $validated['city'] ?? null,
+            'source'       => $validated['source'] ?? null,
+            'status'       => 'new',
         ]);
 
         $this->sendTelegramNotification($contactRequest);
@@ -50,8 +60,24 @@ class ContactRequestController extends Controller
             (string) $value
         );
 
+        $sourceLabels = [
+            'product_page' => 'Карточка товара',
+            'consultation_form' => 'Форма консультации',
+        ];
+
+        $source = $contactRequest->source
+            ? ($sourceLabels[$contactRequest->source] ?? $contactRequest->source)
+            : null;
+
         $lines = [
             '🔥 *Новая заявка на консультацию*',
+            '',
+            $source ? '*Источник:* ' . $escape($source) : null,
+            $contactRequest->city ? '*Город:* ' . $escape($contactRequest->city) : null,
+            $contactRequest->product_name ? '' : null,
+            $contactRequest->product_name ? "*Товар:*\n" . $escape($contactRequest->product_name) : null,
+            $contactRequest->product_url ? '' : null,
+            $contactRequest->product_url ? "*Страница:*\n" . $escape($contactRequest->product_url) : null,
             '',
             '*Имя:* ' . $escape($contactRequest->name),
             '*Телефон:* ' . $escape($contactRequest->phone),

@@ -34,6 +34,28 @@ class ContactRequestsTable
                     ->label('Сообщение')
                     ->limit(60)
                     ->tooltip(fn ($record) => $record->message),
+                TextColumn::make('product_name')
+                    ->label('Товар')
+                    ->limit(40)
+                    ->tooltip(fn ($record) => $record->product_name)
+                    ->placeholder('-')
+                    ->searchable()
+                    ->toggleable(),
+                TextColumn::make('city')
+                    ->label('Город')
+                    ->placeholder('-')
+                    ->searchable()
+                    ->sortable(),
+                TextColumn::make('source')
+                    ->label('Источник')
+                    ->badge()
+                    ->formatStateUsing(fn (?string $state) => match ($state) {
+                        'product_page' => 'Карточка товара',
+                        'consultation_form' => 'Форма консультации',
+                        default => $state ?: '-',
+                    })
+                    ->color('gray')
+                    ->toggleable(),
                 TextColumn::make('status')
                     ->label('Статус')
                     ->badge()

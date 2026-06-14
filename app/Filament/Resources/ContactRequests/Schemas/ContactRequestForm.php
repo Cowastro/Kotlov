@@ -16,7 +16,12 @@ class ContactRequestForm
             TextInput::make('name')->label('Имя')->required(),
             TextInput::make('phone')->label('Телефон')->required(),
             TextInput::make('email')->label('Email')->email(),
-            Textarea::make('message')->label('Сообщение')->rows(4)->required(),
+            Textarea::make('message')->label('Сообщение')->rows(4),
+            TextInput::make('product_id')->label('ID товара')->numeric(),
+            TextInput::make('product_name')->label('Товар'),
+            TextInput::make('product_url')->label('Ссылка на страницу')->url(),
+            TextInput::make('city')->label('Город'),
+            TextInput::make('source')->label('Источник'),
             Select::make('status')->label('Статус')->options(ContactRequest::$statuses)->required(),
             Textarea::make('admin_notes')->label('Заметки')->rows(2),
         ]);
