@@ -146,7 +146,7 @@ class AuditRusklimatCommand extends Command
                 $q->from('supplier_products')->select('product_id')
                   ->where('supplier_id', $supplierId)->whereNotNull('product_id');
             })
-            ->get(['p.id', 'p.sku', 'p.images', 'b.name as brand']);
+            ->get(['p.id', 'p.sku', 'p.images', 'p.is_archived', 'b.name as brand']);
 
         $cats   = array_fill_keys(
             ['images_null', 'images_empty_json_array', 'images_invalid_values',
@@ -158,15 +158,36 @@ class AuditRusklimatCommand extends Command
         $focusN = 0;
         $focusLc = mb_strtolower($focusBrand);
 
+        $activeTotal     = 0;   // active (storefront-visible) products
+        $activeRealPhoto = 0;   // …of which have a real usable photo
+        $focusActive     = 0;
+        $focusActivePhoto = 0;
+
         foreach ($scan as $r) {
             [$cat, $format] = $this->classifyImages($r->images, (string) $r->sku, (int) $r->id);
             $cats[$cat]++;
             if ($format !== null) {
                 $fmt[$format] = ($fmt[$format] ?? 0) + 1;
             }
-            if ($focusBrand !== '' && $r->brand !== null && str_contains(mb_strtolower($r->brand), $focusLc)) {
+            $hasRealPhoto = in_array($cat, ['images_file_exists', 'images_external_url'], true);
+            $isActive     = ! (bool) $r->is_archived;
+            $inFocus      = $focusBrand !== '' && $r->brand !== null && str_contains(mb_strtolower($r->brand), $focusLc);
+
+            if ($isActive) {
+                $activeTotal++;
+                if ($hasRealPhoto) {
+                    $activeRealPhoto++;
+                }
+            }
+            if ($inFocus) {
                 $focusN++;
                 $focus[$cat]++;
+                if ($isActive) {
+                    $focusActive++;
+                    if ($hasRealPhoto) {
+                        $focusActivePhoto++;
+                    }
+                }
             }
         }
 
@@ -187,6 +208,24 @@ class AuditRusklimatCommand extends Command
             ['── broken or empty (no real photo)', $brokenOrEmpty],
         ]);
 
+        // ── Active products only (what actually shows on the storefront) ──────────
+        $activeBase    = (clone $base)->where('p.is_archived', false);
+        $aNoContent    = (clone $activeBase)->where($emptyContent)->distinct('p.id')->count('p.id');
+        $aNoShort      = (clone $activeBase)->where(fn ($c) => $c->whereNull('p.short_description')->orWhere('p.short_description', ''))
+                                            ->distinct('p.id')->count('p.id');
+        $aNoSpecs      = (clone $activeBase)->where($emptySpecs)->distinct('p.id')->count('p.id');
+
+        $this->newLine();
+        $this->info('── ACTIVE products only (storefront) ────────────────────────────');
+        $this->table(['metric', 'count'], [
+            ['active total',                       $activeTotal],
+            ['active WITHOUT real photo',          $activeTotal - $activeRealPhoto],
+            ['  · active with real photo',         $activeRealPhoto],
+            ['active without short_description',   $aNoShort],
+            ['active without content (long desc)', $aNoContent],
+            ['active without specs',               $aNoSpecs],
+        ]);
+
         $this->newLine();
         $this->info('── First-image path format ──────────────────────────────────────');
         $this->table(
@@ -204,6 +243,8 @@ class AuditRusklimatCommand extends Command
                 ['junk values',                  $focus['images_invalid_values']],
                 ['path set but FILE MISSING',    $focus['images_file_missing']],
                 ['null / empty',                 $focus['images_null']],
+                ['── ACTIVE total',              $focusActive],
+                ['── ACTIVE without real photo', $focusActive - $focusActivePhoto],
             ]);
         }
 
