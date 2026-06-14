@@ -249,12 +249,31 @@ class EnrichSpecsRusklimatCommand extends Command
         return $specs;
     }
 
+    /** Non-spec keys that table/gallery headers leak in. */
+    private const SPEC_KEY_DENY = ['фото', 'наименование', 'код товара', 'артикул', 'цена', 'кол-во', 'количество', 'бренд', 'производитель', 'описание'];
+
     private function collect(array &$specs, array $keys, array $vals): void
     {
         for ($i = 0, $n = count($keys); $i < $n; $i++) {
             $k = trim(preg_replace('/\s+/u', ' ', strip_tags($keys[$i])) ?? '');
             $v = trim(preg_replace('/\s+/u', ' ', strip_tags($vals[$i] ?? '')) ?? '');
-            if ($k !== '' && $v !== '' && $v !== '—' && mb_strlen($k) <= 80 && ! isset($specs[$k])) {
+
+            if ($k === '' || $v === '' || $v === '—') {
+                continue;
+            }
+            if (mb_strlen($k) > 50 || mb_strlen($v) > 80) {
+                continue; // headers / prose, not a spec pair
+            }
+            if (str_word_count(strip_tags($v), 0, 'абвгдеёжзийклмнопрстуфхцчшщъыьэюя') > 8) {
+                continue; // value looks like a sentence, not a spec
+            }
+            $kl = mb_strtolower($k);
+            foreach (self::SPEC_KEY_DENY as $deny) {
+                if (str_starts_with($kl, $deny)) {
+                    continue 2;
+                }
+            }
+            if (! isset($specs[$k])) {
                 $specs[$k] = $v;
             }
         }
