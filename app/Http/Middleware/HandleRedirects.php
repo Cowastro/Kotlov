@@ -2,6 +2,9 @@
 
 namespace App\Http\Middleware;
 
+use App\Models\Brand;
+use App\Models\Category;
+use App\Models\City;
 use App\Models\Product;
 use Closure;
 use Illuminate\Http\Request;
@@ -44,6 +47,10 @@ class HandleRedirects
 
         if ($cityRedirect = $this->redirectCityAlias($request)) {
             return $cityRedirect;
+        }
+
+        if ($unknownCityRedirect = $this->redirectUnknownCityToBaseDomain($request)) {
+            return $unknownCityRedirect;
         }
 
         // Исключаем служебные пути
@@ -145,6 +152,10 @@ class HandleRedirects
             return $legacyProductRedirect;
         }
 
+        if ($legacyBrandCategoryRedirect = $this->redirectLegacyBrandCategoryPath($request, $path)) {
+            return $legacyBrandCategoryRedirect;
+        }
+
         $redirect = DB::table('redirects')
             ->where('from_url', $path)
             ->where('is_active', 1)
@@ -201,6 +212,62 @@ class HandleRedirects
         $target = $request->getScheme() . '://' . $canonical . '.' . $baseDomain . $request->getRequestUri();
 
         return redirect()->away($target, 301);
+    }
+
+    private function redirectUnknownCityToBaseDomain(Request $request): ?Response
+    {
+        $host = $request->getHost();
+        $baseDomain = config('app.base_domain', 'kotlov.by');
+
+        if (! str_ends_with($host, '.' . $baseDomain)) {
+            return null;
+        }
+
+        $subdomain = str_replace('.' . $baseDomain, '', $host);
+
+        if (in_array($subdomain, ['www', 'new', 'admin'], true)) {
+            return null;
+        }
+
+        if (City::findBySlug($subdomain)) {
+            return null;
+        }
+
+        $target = $request->getScheme() . '://' . $baseDomain . $request->getRequestUri();
+
+        return redirect()->away($target, 301);
+    }
+
+    private function redirectLegacyBrandCategoryPath(Request $request, string $path): ?Response
+    {
+        $segments = array_values(array_filter(explode('/', trim($path, '/'))));
+
+        if (count($segments) !== 2) {
+            return null;
+        }
+
+        [$brandSlug, $categorySlug] = $segments;
+
+        $brandExists = Brand::query()
+            ->whereRaw('LOWER(slug) = ?', [strtolower($brandSlug)])
+            ->exists();
+
+        if (! $brandExists) {
+            return null;
+        }
+
+        $categoryExists = Category::query()
+            ->where('slug', $categorySlug)
+            ->where('is_active', true)
+            ->exists();
+
+        if (! $categoryExists) {
+            return null;
+        }
+
+        $query = $request->getQueryString();
+
+        return redirect('/' . $categorySlug . ($query ? '?' . $query : ''), 301);
     }
 
     private function redirectLegacyProductPath(Request $request, string $path): ?Response
