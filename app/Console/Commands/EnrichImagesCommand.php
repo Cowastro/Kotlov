@@ -6,6 +6,7 @@ use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 
 /**
@@ -44,12 +45,16 @@ class EnrichImagesCommand extends Command
         {--min-kb=30        : Minimum image size in KB}
         {--min-width=400    : Minimum image width in px}
         {--allow-untrusted  : Allow images from non-trusted domains (default: trusted only)}
+        {--skip-known-failures : Skip products that recently failed image search (TTL 30 days)}
         {--sleep=600        : Delay between products in milliseconds}
         {--dry-run          : Preview queries + candidate URLs, write nothing}';
 
     protected $description = 'Find & download photos for products with no real photo (web image search, no AI).';
 
     private const IMAGE_DIR = 'img/products/rusklimat';
+
+    /** Re-try a previously failed product only after this many days. */
+    private const FAILURE_TTL_DAYS = 30;
 
     /** Reject obvious non-product images by URL/filename. */
     private const BAD_URL_MARKERS = [
@@ -121,6 +126,13 @@ class EnrichImagesCommand extends Command
         $brandFilter     = $this->option('brand');
         $limit           = max(1, (int) $this->option('limit'));
         $offset          = max(0, (int) $this->option('offset'));
+        $skipFailures    = (bool) $this->option('skip-known-failures');
+        $failuresTable   = Schema::hasTable('image_search_failures');
+
+        if ($skipFailures && ! $failuresTable) {
+            $this->warn('--skip-known-failures: table image_search_failures missing — run migrate. Ignoring flag.');
+            $skipFailures = false;
+        }
 
         // Candidates: linked to supplier, images empty (JSON-safe), active by default.
         $query = DB::table('products as p')
@@ -129,6 +141,12 @@ class EnrichImagesCommand extends Command
             ->where('sp.supplier_id', $supplierId)
             ->when($activeOnly && ! $includeArchived, fn ($q) => $q->where('p.is_archived', false))
             ->when($brandFilter, fn ($q) => $q->where('b.name', 'like', '%' . $brandFilter . '%'))
+            ->when($skipFailures, fn ($q) => $q->whereNotExists(function ($sub) use ($supplierId) {
+                $sub->from('image_search_failures as f')
+                    ->whereColumn('f.product_id', 'p.id')
+                    ->where('f.supplier_id', $supplierId)
+                    ->where('f.searched_at', '>=', now()->subDays(self::FAILURE_TTL_DAYS));
+            }))
             ->where(function ($q) {
                 $q->whereNull('p.images')->orWhere('p.images', '')->orWhere('p.images', '[]')
                   ->orWhereRaw('(JSON_VALID(p.images) AND JSON_LENGTH(p.images) = 0)');
@@ -234,6 +252,12 @@ class EnrichImagesCommand extends Command
                     : 'NO USABLE IMAGE';
                 $this->line('  <fg=yellow>result: ' . $reason . '</>');
                 $this->logResult($product, '', '', '', 'no_image');
+                if (! $this->dryRun && $failuresTable) {
+                    DB::table('image_search_failures')->updateOrInsert(
+                        ['product_id' => $product->id, 'supplier_id' => $supplierId],
+                        ['searched_at' => now(), 'updated_at' => now()]
+                    );
+                }
                 continue;
             }
 
@@ -257,6 +281,10 @@ class EnrichImagesCommand extends Command
                 $this->stats['downloaded']++;
                 $this->line('  <fg=green>result: SAVED ' . $saved . '</>');
                 $this->logResult($product, $picked['query'], (string) $provider, $picked['image_url'], 'saved:' . $saved);
+                if ($failuresTable) {
+                    DB::table('image_search_failures')
+                        ->where('product_id', $product->id)->where('supplier_id', $supplierId)->delete();
+                }
             } catch (\Throwable $e) {
                 $this->stats['errors']++;
                 $this->line('  <fg=red>result: ERROR ' . $e->getMessage() . '</>');
