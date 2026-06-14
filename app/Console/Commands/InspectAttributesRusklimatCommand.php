@@ -18,7 +18,8 @@ use Illuminate\Support\Facades\DB;
 class InspectAttributesRusklimatCommand extends Command
 {
     protected $signature = 'supplier:inspect-attributes-rusklimat
-        {--category=  : Show the attribute list for one category id}';
+        {--category=  : Show the attribute list for one category id}
+        {--spec-keys  : Dump distinct products.specs keys per category (no network)}';
 
     protected $description = 'Read-only: attribute-tab coverage for Rusklimat product categories.';
 
@@ -60,6 +61,39 @@ class InspectAttributesRusklimatCommand extends Command
             ->select('category_id', DB::raw('count(*) as c'))
             ->groupBy('category_id')
             ->pluck('c', 'category_id');
+
+        // Vocabulary of existing products.specs keys per category (no network).
+        if ($this->option('spec-keys')) {
+            $specRows = DB::table('products as p')
+                ->join('supplier_products as sp', 'p.id', '=', 'sp.product_id')
+                ->leftJoin('categories as c', 'p.category_id', '=', 'c.id')
+                ->where('sp.supplier_id', $supplierId)
+                ->where('p.is_archived', false)
+                ->whereNotNull('p.specs')->where('p.specs', '!=', '')->where('p.specs', '!=', '[]')
+                ->get(['p.category_id', 'c.name as category', 'p.specs']);
+
+            $byCat = [];
+            foreach ($specRows as $r) {
+                $decoded = json_decode($r->specs, true);
+                if (! is_array($decoded) || $decoded === []) {
+                    continue;
+                }
+                $byCat[$r->category_id]['name'] = $r->category;
+                foreach (array_keys($decoded) as $k) {
+                    $byCat[$r->category_id]['keys'][$k] = ($byCat[$r->category_id]['keys'][$k] ?? 0) + 1;
+                }
+            }
+
+            foreach ($byCat as $catId => $info) {
+                arsort($info['keys']);
+                $this->newLine();
+                $this->info(sprintf('── cat %d %s — products.specs keys (key×count) ──', $catId, $info['name'] ?? ''));
+                foreach (array_slice($info['keys'], 0, 30, true) as $k => $cnt) {
+                    $this->line(sprintf('    %4d × %s', $cnt, $k));
+                }
+            }
+            return self::SUCCESS;
+        }
 
         $this->info('── Rusklimat active products: «Характеристики» tab coverage ──');
         $this->table(
