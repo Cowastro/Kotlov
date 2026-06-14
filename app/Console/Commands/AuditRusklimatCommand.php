@@ -29,6 +29,7 @@ class AuditRusklimatCommand extends Command
         {--list           : Print a per-product table for the focused/missing set}
         {--missing-photos : Restrict the --list table to products without a real photo}
         {--active-only    : Restrict the --list table to active (non-archived) products}
+        {--dupe-photos    : Find products sharing the SAME image file (md5), e.g. wrong reused photos}
         {--limit=80       : Max rows in the per-product list}';
 
     protected $description = 'Read-only audit of Rusklimat products: photos, descriptions, brands, match confidence (no writes).';
@@ -270,6 +271,55 @@ class AuditRusklimatCommand extends Command
             ]);
         }
 
+        // ── Duplicate photos: same image file used by different products ───────────
+        if ($this->option('dupe-photos')) {
+            $rows = DB::table('products as p')
+                ->leftJoin('brands as b', 'p.brand_id', '=', 'b.id')
+                ->whereIn('p.id', function ($q) use ($supplierId) {
+                    $q->from('supplier_products')->select('product_id')
+                      ->where('supplier_id', $supplierId)->whereNotNull('product_id');
+                })
+                ->where('p.is_archived', false)
+                ->get(['p.id', 'p.sku', 'p.name', 'p.images', 'b.name as brand']);
+
+            $byHash = [];
+            foreach ($rows as $r) {
+                $file = $this->firstImageFile($r->images, (string) $r->sku, (int) $r->id);
+                if ($file === null || ! is_file($file)) {
+                    continue;
+                }
+                $hash = @md5_file($file);
+                if ($hash === false) {
+                    continue;
+                }
+                $byHash[$hash][] = $r;
+            }
+
+            $dupes = array_filter($byHash, fn ($g) => count($g) > 1);
+            uasort($dupes, fn ($a, $b) => count($b) <=> count($a));
+
+            $this->newLine();
+            $this->info(sprintf('── Duplicate photos: %d shared images across %d products ───',
+                count($dupes), array_sum(array_map('count', $dupes))));
+
+            $dupeRows = [];
+            foreach ($dupes as $group) {
+                $first = $group[0];
+                foreach ($group as $g) {
+                    $dupeRows[] = [
+                        count($group),
+                        $g->id,
+                        $g->sku,
+                        mb_substr((string) ($g->brand ?? '—'), 0, 12),
+                        mb_substr((string) $g->name, 0, 46),
+                    ];
+                }
+                $dupeRows[] = ['', '', '', '', '────────'];
+            }
+            $this->table(['shared_by', 'id', 'sku', 'brand', 'name'], $dupeRows ?: [['—', '', '', '', 'no duplicates']]);
+            $this->line('<fg=yellow>Чистка дубля:</> очисти images у лишних: UPDATE products SET images=\'[]\' WHERE id IN (...); затем повтори enrich-images.');
+        }
+
         // ── Optional per-product list ─────────────────────────────────────────────
         if ($this->option('list')) {
             $limit       = max(1, (int) $this->option('limit'));
@@ -328,6 +378,33 @@ class AuditRusklimatCommand extends Command
             . '<fg=green>php artisan supplier:enrich-rusklimat --limit=80</> (only touches empty fields).');
 
         return self::SUCCESS;
+    }
+
+    /** Resolve the on-disk path of a product's first LOCAL image (null if none/external). */
+    private function firstImageFile(?string $raw, string $sku, int $id): ?string
+    {
+        if ($raw === null) {
+            return null;
+        }
+        $decoded = json_decode($raw, true);
+        if (! is_array($decoded)) {
+            return null;
+        }
+        foreach ($decoded as $entry) {
+            if (! is_string($entry)) {
+                continue;
+            }
+            $e = trim($entry);
+            if ($e === '' || $e === '[]' || $e === 'null' || $e === '""') {
+                continue;
+            }
+            if (str_starts_with($e, 'http://') || str_starts_with($e, 'https://')) {
+                return null; // external — cannot hash locally
+            }
+            [$file] = $this->resolveLocalFile($e, $sku, $id);
+            return $file;
+        }
+        return null;
     }
 
     /** True when specs is null, "", [], {}, "null" or decodes to an empty array. */
