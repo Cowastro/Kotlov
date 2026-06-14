@@ -38,6 +38,9 @@ class EnrichRusklimatCommand extends Command
         {--skip-content      : Do not generate AI description}
         {--skip-specs        : Do not update specs}
         {--ai-only           : Skip web scraping, use AI for description only}
+        {--no-scrape         : Do not touch the web at all (build from existing DB data only)}
+        {--build-content     : Compose content from short_description + specs (no AI, supplier data)}
+        {--build-short       : Compose short_description from content/specs (no AI, supplier data)}
         {--include-archived  : Also process archived products (default: active only)}
         {--dry-run           : Preview only, no DB writes}';
 
@@ -57,6 +60,8 @@ class EnrichRusklimatCommand extends Command
         'ai_used'   => 0,
         'images'    => 0,
         'specs'     => 0,
+        'built_content' => 0,
+        'built_short'   => 0,
         'skipped'   => 0,
         'errors'    => 0,
     ];
@@ -181,7 +186,7 @@ class EnrichRusklimatCommand extends Command
             $scraped = null;
 
             // ── Step 1: Scrape rusklimat.by ───────────────────────────────────────
-            if (! $this->option('ai-only')) {
+            if (! $this->option('ai-only') && ! $this->option('no-scrape')) {
                 $pageUrl = $this->findProductUrl($product->name, $article);
                 if ($pageUrl) {
                     $html = $this->fetchPage($pageUrl);
@@ -253,6 +258,40 @@ class EnrichRusklimatCommand extends Command
                     }
                 } elseif ($needsAi && ! $this->ai->isAvailable()) {
                     $this->line('  <fg=yellow>— AI not configured (set ANTHROPIC_API_KEY or AI_API_KEY)</>');
+                }
+            }
+
+            // ── Step 6: Build long content from supplier data (no AI) ────────────
+            if ($this->option('build-content')) {
+                $haveContent = isset($updates['content']) || trim((string) $product->content) !== '';
+                if ($force || ! $haveContent) {
+                    $built = $this->buildContentFromData(
+                        $product->name, $brand,
+                        $updates['short_description'] ?? $product->short_description,
+                        $updates['specs'] ?? $product->specs
+                    );
+                    if ($built !== '') {
+                        $updates['content'] = $built;
+                        $this->stats['built_content']++;
+                        $this->line('  <fg=green>✓ content built from supplier data</>');
+                    }
+                }
+            }
+
+            // ── Step 7: Build short_description from supplier data (no AI) ────────
+            if ($this->option('build-short')) {
+                $haveShort = isset($updates['short_description']) || trim((string) $product->short_description) !== '';
+                if ($force || ! $haveShort) {
+                    $built = $this->buildShortFromData(
+                        $product->name, $brand,
+                        $updates['content'] ?? $product->content,
+                        $updates['specs'] ?? $product->specs
+                    );
+                    if ($built !== '') {
+                        $updates['short_description'] = $built;
+                        $this->stats['built_short']++;
+                        $this->line('  <fg=green>✓ short built from supplier data</>');
+                    }
                 }
             }
 
@@ -571,6 +610,68 @@ class EnrichRusklimatCommand extends Command
         ];
 
         return strtr($text, $map);
+    }
+
+    // ── Deterministic content builders (no AI, supplier data only) ───────────────
+
+    /** Decode a specs JSON value into a clean [key => scalar] map. */
+    private function decodeSpecs(?string $specsJson): array
+    {
+        $specs = json_decode((string) ($specsJson ?: '[]'), true);
+        if (! is_array($specs)) {
+            return [];
+        }
+        return array_filter($specs, fn ($v) => is_scalar($v) && trim((string) $v) !== '');
+    }
+
+    /** Compose HTML content from short_description + specs. Returns '' if no real data. */
+    private function buildContentFromData(string $name, string $brand, ?string $short, ?string $specsJson): string
+    {
+        $short = trim(strip_tags((string) $short));
+        $specs = $this->decodeSpecs($specsJson);
+
+        if ($short === '' && empty($specs)) {
+            return ''; // no supplier data — don't fabricate
+        }
+
+        $parts = [];
+        $parts[] = $short !== ''
+            ? '<p>' . e($short) . '</p>'
+            : '<p>' . e(trim($brand . ' ' . $name)) . ' — основные характеристики приведены ниже.</p>';
+
+        if (! empty($specs)) {
+            $li = '';
+            foreach ($specs as $k => $v) {
+                $li .= '<li><strong>' . e((string) $k) . ':</strong> ' . e((string) $v) . '</li>';
+            }
+            $parts[] = '<h3>Характеристики</h3>' . "\n" . '<ul>' . $li . '</ul>';
+        }
+
+        return implode("\n", $parts);
+    }
+
+    /** Compose a short description from existing content, else from name + key specs. */
+    private function buildShortFromData(string $name, string $brand, ?string $content, ?string $specsJson): string
+    {
+        $text = trim(preg_replace('/\s+/u', ' ', strip_tags((string) $content)) ?? '');
+        if ($text !== '') {
+            if (mb_strlen($text) > 200) {
+                $cut = mb_substr($text, 0, 200);
+                $dot = mb_strrpos($cut, '.');
+                $text = ($dot !== false && $dot > 80) ? mb_substr($cut, 0, $dot + 1) : rtrim($cut) . '…';
+            }
+            return $text;
+        }
+
+        $specs = $this->decodeSpecs($specsJson);
+        if (empty($specs)) {
+            return '';
+        }
+        $pairs = [];
+        foreach (array_slice($specs, 0, 3, true) as $k => $v) {
+            $pairs[] = $k . ': ' . $v;
+        }
+        return trim($brand . ' ' . $name) . '. ' . implode('; ', $pairs) . '.';
     }
 
     // ── Emptiness helpers (JSON-safe) ─────────────────────────────────────────────
