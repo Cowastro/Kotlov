@@ -67,6 +67,14 @@ class EnrichImagesCommand extends Command
         'ksk.by', 'btsprom.by', 'ridan.ru',
     ];
 
+    /** Hard-rejected sources: marketplaces / fashion / auto / irrelevant.
+     *  Dropped even with --allow-untrusted (НС codes collide with their ids). */
+    private const DENY_DOMAINS = [
+        'oskelly', 'lowes.', 'avtoall', 'wildberries', 'ozon.', 'aliexpress',
+        'lamoda', 'market.yandex', 'megamarket', 'harley-davidson', 'usmall',
+        'pinterest', 'drom.ru', 'avito', 'ebay.', 'youtube', 'vk.com',
+    ];
+
     private bool $dryRun;
     private int  $minBytes;
     private int  $minWidth;
@@ -174,6 +182,13 @@ class EnrichImagesCommand extends Command
                 $this->line(sprintf('  query:  %s   <fg=gray>(%d candidates)</>', $q, count($candidates)));
 
                 foreach ($candidates as $c) {
+                    // Hard deny — skip before any download.
+                    if ($this->isDenied($c['domain'] ?? '', $c['image_url'])) {
+                        $this->stats['rejected']++;
+                        $this->line(sprintf('    - %-24s <fg=yellow>rejected:deny-domain</>', mb_substr($c['domain'] ?: '?', 0, 24)));
+                        continue;
+                    }
+
                     $check  = $this->validateImage($c['image_url']);
                     $tier   = $this->domainTier($c['domain'] ?? '', $c['image_url']);
                     $apiDim = ($c['width'] && $c['height']) ? sprintf('%dx%d', $c['width'], $c['height']) : '—';
@@ -376,6 +391,18 @@ class EnrichImagesCommand extends Command
     private function normalizeCandidates(array $items): array
     {
         return array_values(array_filter($items, fn ($c) => ! empty($c['image_url'])));
+    }
+
+    /** Hard-deny irrelevant marketplaces/fashion/auto sources. */
+    private function isDenied(string $domain, string $imageUrl): bool
+    {
+        $hay = mb_strtolower($domain . ' ' . $imageUrl);
+        foreach (self::DENY_DOMAINS as $d) {
+            if (str_contains($hay, $d)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /** Classify a candidate by trust: preferred (supplier) > trusted > untrusted. */
