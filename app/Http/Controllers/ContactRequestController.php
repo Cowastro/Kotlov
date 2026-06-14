@@ -3,7 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Models\ContactRequest;
+use App\Models\User;
 use App\Services\TelegramApi;
+use Filament\Notifications\Notification;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -37,9 +39,34 @@ class ContactRequestController extends Controller
             'status'       => 'new',
         ]);
 
+        $this->sendAdminNotification($contactRequest);
         $this->sendTelegramNotification($contactRequest);
 
         return back()->with('success', 'Спасибо! Ваша заявка отправлена. Мы скоро свяжемся с вами.');
+    }
+
+    private function sendAdminNotification(ContactRequest $contactRequest): void
+    {
+        $admins = User::where('role', 'admin')->get();
+
+        if ($admins->isEmpty()) {
+            return;
+        }
+
+        $title = 'Новая заявка на консультацию';
+        $body = implode(' · ', array_filter([
+            $contactRequest->name,
+            $contactRequest->phone,
+            $contactRequest->product_name,
+            $contactRequest->city,
+        ]));
+
+        Notification::make()
+            ->title($title)
+            ->body($body)
+            ->icon('heroicon-o-chat-bubble-left-right')
+            ->iconColor('warning')
+            ->sendToDatabase($admins);
     }
 
     private function sendTelegramNotification(ContactRequest $contactRequest): void
