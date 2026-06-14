@@ -174,12 +174,14 @@ class EnrichSpecsRusklimatCommand extends Command
             return $out;
         };
 
+        $match = fn ($l) => $this->pageMatchesProduct($l, $brand, $name);
+
         // 1) Force the retail site rusklimat.ru — its /product/ pages expose specs.
         $primary = array_values(array_filter([
             $article !== '' ? "{$article} site:rusklimat.ru" : '',
             $name !== '' ? "{$name} site:rusklimat.ru" : '',
         ]));
-        $candidates = $collect($primary);
+        $candidates = array_values(array_filter($collect($primary), $match));
         $best = $this->bestProductPage($candidates);
         if ($best !== null) {
             return $best;
@@ -192,13 +194,56 @@ class EnrichSpecsRusklimatCommand extends Command
             $brand !== '' && $name !== '' ? "{$brand} {$name}" : '',
             $name,
         ])));
-        $candidates = array_merge($candidates, $collect($fallback));
+        $candidates = array_merge($candidates, array_values(array_filter($collect($fallback), $match)));
 
         if ($candidates === []) {
             return null;
         }
         usort($candidates, fn ($a, $b) => $this->pageRank($a) <=> $this->pageRank($b));
         return $candidates[0];
+    }
+
+    /**
+     * Guard against wrong-product pages: the URL must mention the brand and,
+     * if the name has a model code (token with a digit), that code too.
+     */
+    private function pageMatchesProduct(string $url, string $brand, string $name): bool
+    {
+        $u = mb_strtolower($url);
+
+        $brandOk = true;
+        $bWord = preg_split('/\s+/', trim($this->translitLower($brand)))[0] ?? '';
+        if ($bWord !== '' && mb_strlen($bWord) >= 3) {
+            $brandOk = str_contains($u, $bWord);
+        }
+
+        $tokens = [];
+        preg_match_all('/[a-z0-9]{2,}/', $this->translitLower($name), $mm);
+        foreach ($mm[0] as $t) {
+            if (mb_strlen($t) >= 3 && preg_match('/\d/', $t)) {
+                $tokens[] = $t;
+            }
+        }
+        $modelOk = $tokens === [];
+        foreach ($tokens as $t) {
+            if (str_contains($u, $t)) {
+                $modelOk = true;
+                break;
+            }
+        }
+
+        return $brandOk && $modelOk;
+    }
+
+    private function translitLower(string $s): string
+    {
+        $map = [
+            'а'=>'a','б'=>'b','в'=>'v','г'=>'g','д'=>'d','е'=>'e','ё'=>'e','ж'=>'zh','з'=>'z','и'=>'i',
+            'й'=>'y','к'=>'k','л'=>'l','м'=>'m','н'=>'n','о'=>'o','п'=>'p','р'=>'r','с'=>'s','т'=>'t',
+            'у'=>'u','ф'=>'f','х'=>'kh','ц'=>'ts','ч'=>'ch','ш'=>'sh','щ'=>'shch','ъ'=>'','ы'=>'y','ь'=>'',
+            'э'=>'e','ю'=>'yu','я'=>'ya',
+        ];
+        return strtr(mb_strtolower($s), $map);
     }
 
     /** Return the best rusklimat product page (rank ≤ 2) from candidates, or null. */
