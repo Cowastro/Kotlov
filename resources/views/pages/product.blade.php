@@ -7,6 +7,24 @@
 @section('content')
 <main id="wrapper">
 
+    @if (session('success'))
+    <div class="container mt-16">
+        <div class="alert alert-success mb-20">{{ session('success') }}</div>
+    </div>
+    @endif
+
+    @if ($errors->any())
+    <div class="container mt-16">
+        <div class="alert alert-danger mb-20">
+            <ul class="mb-0">
+                @foreach ($errors->all() as $error)
+                    <li>{{ $error }}</li>
+                @endforeach
+            </ul>
+        </div>
+    </div>
+    @endif
+
     @if($product->is_archived)
     <div class="container mt-16">
         <div class="alert" style="background:#fff3cd;border:1px solid #ffc107;border-radius:8px;padding:12px 20px;color:#856404;">

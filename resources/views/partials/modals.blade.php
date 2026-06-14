@@ -202,8 +202,9 @@
                 <p class="desc-pop cl-text-2">Наш специалист ответит в течение рабочего дня.</p>
             </div>
             <div class="modal-main">
-                <form class="form-log mb-20" action="/ask" method="POST">
+                <form class="form-log mb-20" action="{{ route('ask.store') }}" method="POST">
                     @csrf
+                    <x-form-protection />
                     <div class="form-content">
                         <fieldset class="tf-field">
                             <label for="name-ask" class="tf-lable fw-medium">Ваше имя <span class="text-primary">*</span></label>
@@ -218,8 +219,8 @@
                             <input type="email" name="email" id="email-ask" placeholder="Ваш email">
                         </fieldset>
                         <fieldset class="tf-field">
-                            <label for="message-ask" class="tf-lable fw-medium">Вопрос <span class="text-primary">*</span></label>
-                            <textarea name="message" id="message-ask" placeholder="Опишите ваш вопрос..." required></textarea>
+                            <label for="message-ask" class="tf-lable fw-medium">Вопрос</label>
+                            <textarea name="message" id="message-ask" placeholder="Опишите ваш вопрос..."></textarea>
                         </fieldset>
                     </div>
                     <div class="group-action">

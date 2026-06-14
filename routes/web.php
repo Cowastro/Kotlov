@@ -10,6 +10,7 @@ use App\Http\Controllers\CartController;
 use App\Http\Controllers\CatalogController;
 use App\Http\Controllers\CatalogIndexController;
 use App\Http\Controllers\CheckoutController;
+use App\Http\Controllers\ContactRequestController;
 use App\Http\Controllers\TelegramWebhookController;
 use App\Http\Controllers\CompareController;
 use App\Http\Controllers\ProductController;
@@ -222,7 +223,9 @@ Route::post('/telegram/webhook', [TelegramWebhookController::class, 'handle']);
 // sitemap.xml — вынесен в routes/sitemap.php без session middleware
 
 // ===== Прочие формы =====
-Route::post('/ask', fn() => back()->with('success', 'Вопрос отправлен!'))->name('ask.store');
+Route::post('/ask', [ContactRequestController::class, 'store'])
+    ->middleware('public.form.protect:ask')
+    ->name('ask.store');
 
 // ===== Подписка на рассылку =====
 Route::post('/subscribe', function (\Illuminate\Http\Request $request) {
