@@ -325,10 +325,10 @@ Route::get('/{category}', [CatalogController::class, 'show'])
 // 2 сегмента — подкатегория ИЛИ товар
 Route::get('/{category}/{product}', [ProductController::class, 'show'])
     ->where('category', '[a-z0-9\-\_]+')
-    ->where('product',  '[a-z0-9\-\_]+');
+    ->where('product',  '[a-z0-9\-\_,\(\)]+');
 
 // 3 сегмента — категория/подкатегория/товар
 Route::get('/{category}/{subcategory}/{product}', [ProductController::class, 'show'])
     ->where('category',    '[a-z0-9\-\_]+')
     ->where('subcategory', '[a-z0-9\-\_]+')
-    ->where('product',     '[a-z0-9\-\_]+');
+    ->where('product',     '[a-z0-9\-\_,\(\)]+');
