@@ -43,6 +43,7 @@ class EnrichImagesCommand extends Command
         {--offset=0         : Skip first N products (batching)}
         {--min-kb=30        : Minimum image size in KB}
         {--min-width=400    : Minimum image width in px}
+        {--allow-untrusted  : Allow images from non-trusted domains (default: trusted only)}
         {--sleep=600        : Delay between products in milliseconds}
         {--dry-run          : Preview queries + candidate URLs, write nothing}';
 
@@ -52,8 +53,18 @@ class EnrichImagesCommand extends Command
 
     /** Reject obvious non-product images by URL/filename. */
     private const BAD_URL_MARKERS = [
-        'logo', 'placeholder', 'no-photo', 'nophoto', 'noimage', 'no-image',
-        'sprite', 'icon', 'favicon', 'default', 'stub', 'banner', 'thumb',
+        'logo', 'placeholder', 'no-photo', 'nophoto', 'no_photo', 'noimage',
+        'no-image', 'no_image', 'sprite', 'icon', 'favicon', 'default',
+        'stub', 'banner', 'thumb', '/endeca/',
+    ];
+
+    /** Supplier-owned sources — exact product, highest trust. */
+    private const PREFERRED_DOMAINS = ['rusklimat.ru', 'rusklimat.com', 'rkcdn.ru'];
+
+    /** Reputable HVAC retailers/catalogs — accepted when no preferred source. */
+    private const TRUSTED_DOMAINS = [
+        'satro-paladin.com', '7-kvt.ru', 'dc-electro.ru', 'pro-komfort.com',
+        'ksk.by', 'btsprom.by', 'ridan.ru',
     ];
 
     private bool $dryRun;
@@ -147,8 +158,11 @@ class EnrichImagesCommand extends Command
             $this->line(sprintf('[%d/%d] <fg=cyan>%s</> %s',
                 $i + 1, $products->count(), $product->brand ?? '—', mb_substr($product->name, 0, 56)));
 
-            $queries = $this->buildQueries($product);
-            $picked  = null;
+            $queries        = $this->buildQueries($product);
+            $allowUntrusted = (bool) $this->option('allow-untrusted');
+            $pickPreferred  = null;
+            $pickTrusted    = null;
+            $pickUntrusted  = null;
 
             foreach ($queries as $q) {
                 if ($provider === null) {
@@ -161,44 +175,58 @@ class EnrichImagesCommand extends Command
 
                 foreach ($candidates as $c) {
                     $check  = $this->validateImage($c['image_url']);
+                    $tier   = $this->domainTier($c['domain'] ?? '', $c['image_url']);
                     $apiDim = ($c['width'] && $c['height']) ? sprintf('%dx%d', $c['width'], $c['height']) : '—';
                     $verdict = $check['ok']
-                        ? '<fg=green>ACCEPTED</>'
+                        ? '<fg=green>ACCEPTED</> [' . $tier . ']'
                         : '<fg=yellow>rejected:' . $check['reason'] . '</>';
 
                     $this->line(sprintf('    - %-24s api:%-9s %s', mb_substr($c['domain'] ?: '?', 0, 24), $apiDim, $verdict));
                     $this->line('      image_url:  ' . mb_substr($c['image_url'], 0, 86));
                     $this->line('      source_url: ' . mb_substr($c['source_url'] ?: '—', 0, 86));
 
-                    if ($check['ok']) {
-                        if ($picked === null) {
-                            $picked = $c + ['query' => $q, 'meta' => $check];
-                            if (! $this->dryRun) {
-                                break; // real run: first accepted is enough
-                            }
-                        }
-                    } else {
+                    if (! $check['ok']) {
                         $this->stats['rejected']++;
+                        continue;
+                    }
+
+                    $entry = $c + ['query' => $q, 'tier' => $tier, 'meta' => $check];
+                    if ($tier === 'preferred' && $pickPreferred === null) {
+                        $pickPreferred = $entry;
+                    } elseif ($tier === 'trusted' && $pickTrusted === null) {
+                        $pickTrusted = $entry;
+                    } elseif ($tier === 'untrusted' && $pickUntrusted === null) {
+                        $pickUntrusted = $entry;
+                    }
+
+                    if ($pickPreferred !== null && ! $this->dryRun) {
+                        break; // supplier-owned image found — best possible
                     }
                 }
 
                 usleep(max(0, (int) $this->option('sleep')) * 1000);
-                if ($picked !== null) {
-                    break; // usable image found for this product
+                if (($pickPreferred ?? $pickTrusted) !== null && ! $this->dryRun) {
+                    break; // good enough — stop querying
                 }
             }
 
+            $picked = $pickPreferred ?? $pickTrusted ?? ($allowUntrusted ? $pickUntrusted : null);
+
             if ($picked === null) {
                 $this->stats['no_candidate']++;
-                $this->line('  <fg=yellow>result: NO USABLE IMAGE</>');
+                $reason = ($pickUntrusted !== null && ! $allowUntrusted)
+                    ? 'NO TRUSTED IMAGE (only untrusted found — re-run with --allow-untrusted to accept)'
+                    : 'NO USABLE IMAGE';
+                $this->line('  <fg=yellow>result: ' . $reason . '</>');
                 $this->logResult($product, '', '', '', 'no_image');
                 continue;
             }
 
             if ($this->dryRun) {
                 $this->stats['would_download']++;
-                $this->line(sprintf('  <fg=green>result: WOULD DOWNLOAD</> %s  (%dx%d, %dKB) @ %s',
-                    mb_substr($picked['image_url'], 0, 64),
+                $this->line(sprintf('  <fg=green>result: WOULD DOWNLOAD</> [%s] %s  (%dx%d, %dKB) @ %s',
+                    $picked['tier'],
+                    mb_substr($picked['image_url'], 0, 60),
                     $picked['meta']['width'], $picked['meta']['height'],
                     (int) ($picked['meta']['bytes'] / 1024), $picked['domain'] ?: '?'));
                 $this->logResult($product, $picked['query'], (string) $provider, $picked['image_url'], 'would_download');
@@ -348,6 +376,23 @@ class EnrichImagesCommand extends Command
     private function normalizeCandidates(array $items): array
     {
         return array_values(array_filter($items, fn ($c) => ! empty($c['image_url'])));
+    }
+
+    /** Classify a candidate by trust: preferred (supplier) > trusted > untrusted. */
+    private function domainTier(string $domain, string $imageUrl): string
+    {
+        $hay = mb_strtolower($domain . ' ' . $imageUrl);
+        foreach (self::PREFERRED_DOMAINS as $d) {
+            if (str_contains($hay, $d)) {
+                return 'preferred';
+            }
+        }
+        foreach (self::TRUSTED_DOMAINS as $d) {
+            if (str_contains($hay, $d)) {
+                return 'trusted';
+            }
+        }
+        return 'untrusted';
     }
 
     // ── Validation & download ─────────────────────────────────────────────────────
