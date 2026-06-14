@@ -181,6 +181,9 @@
                                     $canBuy = ! $product->is_archived
                                         && (float) $product->price > 0
                                         && in_array($availabilityStatus, ['in_stock', 'check']);
+                                    $availabilityLabel = method_exists($product, 'availabilityLabel')
+                                        ? $product->availabilityLabel()
+                                        : 'Уточняйте наличие';
                                 @endphp
 
                                 {{-- Цена --}}

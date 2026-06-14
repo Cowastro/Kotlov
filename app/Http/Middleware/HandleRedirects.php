@@ -2,22 +2,62 @@
 
 namespace App\Http\Middleware;
 
+use App\Models\Product;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 use Symfony\Component\HttpFoundation\Response;
 
 class HandleRedirects
 {
+    private const CITY_ALIASES = [
+        'rechitsa' => 'rechica',
+        'volojin' => 'volozhin',
+        'jitkovichi' => 'zhitkovichi',
+        'logoysk' => 'logojsk',
+        'dzerjinsk' => 'dzerzhinsk',
+        'jodino' => 'zhodino',
+        'kopyil' => 'kopyl',
+        'belyinichi' => 'belynichi',
+        'polotsk' => 'polack',
+        'novopolotsk' => 'novopolock',
+        'mioryi' => 'miory',
+        'nesvij' => 'nesvizh',
+        'staryie-dorogi' => 'starye-dorogi',
+        'stolbtsyi' => 'stolbcy',
+        'volkovyisk' => 'volkovysk',
+        'oshmyanyi' => 'oshnyany',
+        'schuchin' => 'shchuchin',
+        'byihov' => 'byhov',
+        'dokshitsyi' => 'dokshicy',
+        'prujanyi' => 'pruzhany',
+    ];
+
     public function handle(Request $request, Closure $next): Response
     {
         // Проверяем ДО роутинга — не ждём 404
         $path = '/' . ltrim($request->getPathInfo(), '/');
         $path = rtrim($path, '/') ?: '/';
 
+        if ($cityRedirect = $this->redirectCityAlias($request)) {
+            return $cityRedirect;
+        }
+
         // Исключаем служебные пути
         if ($this->shouldSkip($path)) {
             return $next($request);
+        }
+
+        if (preg_match('#^(.*)/page:(\d+)$#', $path, $matches)) {
+            $basePath = rtrim($matches[1], '/') ?: '/';
+            $query = $request->getQueryString();
+            $target = $basePath . ($query ? '?' . $query : '');
+
+            if ($target !== $path) {
+                return redirect($target, 301);
+            }
         }
 
         // ── Паттерн-редиректы для старого сайта kotlov.by ────────────────────
@@ -92,6 +132,10 @@ class HandleRedirects
         }
         // ─────────────────────────────────────────────────────────────────────
 
+        if ($legacyProductRedirect = $this->redirectLegacyProductSlug($request, $path)) {
+            return $legacyProductRedirect;
+        }
+
         $redirect = DB::table('redirects')
             ->where('from_url', $path)
             ->where('is_active', 1)
@@ -127,5 +171,88 @@ class HandleRedirects
         }
 
         return false;
+    }
+
+    private function redirectCityAlias(Request $request): ?Response
+    {
+        $host = $request->getHost();
+        $baseDomain = config('app.base_domain', 'kotlov.by');
+
+        if (! str_ends_with($host, '.' . $baseDomain)) {
+            return null;
+        }
+
+        $subdomain = str_replace('.' . $baseDomain, '', $host);
+        $canonical = self::CITY_ALIASES[$subdomain] ?? null;
+
+        if (! $canonical || $canonical === $subdomain) {
+            return null;
+        }
+
+        $target = $request->getScheme() . '://' . $canonical . '.' . $baseDomain . $request->getRequestUri();
+
+        return redirect()->away($target, 301);
+    }
+
+    private function redirectLegacyProductSlug(Request $request, string $path): ?Response
+    {
+        if (! preg_match('/[(),]/', $path)) {
+            return null;
+        }
+
+        $segments = array_values(array_filter(explode('/', trim($path, '/'))));
+
+        if (count($segments) < 2) {
+            return null;
+        }
+
+        $legacySlug = rawurldecode((string) end($segments));
+        $normalizedSlug = $this->normalizeLegacySlug($legacySlug);
+
+        $candidates = collect([
+            $legacySlug,
+            $normalizedSlug,
+            Str::slug(str_replace('_', '-', $legacySlug)),
+            Str::slug($legacySlug),
+        ])->filter()->unique()->values();
+
+        $product = Product::query()
+            ->whereIn('slug', $candidates)
+            ->where(fn ($query) => $query->where('is_active', true)->orWhere('is_archived', true))
+            ->with('category')
+            ->first();
+
+        if (! $product) {
+            return null;
+        }
+
+        if (! $product->category) {
+            Log::warning('Legacy product URL matched product without category', [
+                'product_id' => $product->id,
+                'product_slug' => $product->slug,
+                'legacy_path' => $path,
+                'url' => $request->fullUrl(),
+            ]);
+
+            return null;
+        }
+
+        $targetPath = '/' . $product->category->slug . '/' . $product->slug;
+
+        if ($targetPath === $path) {
+            return null;
+        }
+
+        $query = $request->getQueryString();
+
+        return redirect($targetPath . ($query ? '?' . $query : ''), 301);
+    }
+
+    private function normalizeLegacySlug(string $slug): string
+    {
+        $slug = str_replace(['(', ')', ',', '–', '—'], ['-', '-', '-', '-', '-'], $slug);
+        $slug = preg_replace('/-+/', '-', $slug) ?: $slug;
+
+        return trim($slug, '-');
     }
 }

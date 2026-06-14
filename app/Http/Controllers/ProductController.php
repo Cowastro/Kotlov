@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Product;
 use App\Models\Category;
 use App\Models\ProductAttributeValue;
+use Illuminate\Support\Facades\Log;
 
 class ProductController extends Controller
 {
@@ -31,6 +32,27 @@ class ProductController extends Controller
                 'reviews' => fn($q) => $q->where('is_approved', true)->latest()->limit(10),
             ])
             ->firstOrFail();
+
+        $productCategory = $product->category;
+
+        if (! $productCategory) {
+            Log::warning('Product page requested for product without category', [
+                'product_id' => $product->id,
+                'product_slug' => $product->slug,
+                'requested_category' => $category,
+                'requested_product' => $productSlug,
+                'url' => request()->fullUrl(),
+            ]);
+
+            abort(404);
+        }
+
+        $canonicalPath = '/' . $productCategory->slug . '/' . $product->slug;
+        $currentPath = '/' . trim(request()->path(), '/');
+
+        if ($currentPath !== $canonicalPath) {
+            return redirect($canonicalPath, 301);
+        }
 
         // Атрибуты товара для вкладки "Характеристики"
         $attributeValues = ProductAttributeValue::where('product_id', $product->id)
@@ -88,7 +110,7 @@ class ProductController extends Controller
             $product->content = $replaceCityIn($product->content);
         }
 
-        $canonical = 'https://kotlov.by/' . $product->category->slug . '/' . $product->slug;
+        $canonical = 'https://kotlov.by/' . $productCategory->slug . '/' . $product->slug;
 
         $firstImage = $product->imageUrl(0);
         $ogImageRaw = $firstImage ?: asset('img/og-default.jpg');
@@ -131,7 +153,7 @@ class ProductController extends Controller
         // BreadcrumbList
         $breadcrumbs = [
             ['@type' => 'ListItem', 'position' => 1, 'name' => 'Главная',      'item' => 'https://kotlov.by/'],
-            ['@type' => 'ListItem', 'position' => 2, 'name' => $product->category->name, 'item' => 'https://kotlov.by/' . $product->category->slug],
+            ['@type' => 'ListItem', 'position' => 2, 'name' => $productCategory->name, 'item' => 'https://kotlov.by/' . $productCategory->slug],
             ['@type' => 'ListItem', 'position' => 3, 'name' => $nameFull,      'item' => $canonical],
         ];
         $breadcrumbSchema = [

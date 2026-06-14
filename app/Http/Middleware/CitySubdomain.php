@@ -16,7 +16,7 @@ class CitySubdomain
         if (str_ends_with($host, '.' . $baseDomain)) {
             $subdomain = str_replace('.' . $baseDomain, '', $host);
 
-            if ($subdomain && $subdomain !== 'www' && $subdomain !== 'new') {
+            if ($subdomain && ! in_array($subdomain, ['www', 'new', 'admin'], true)) {
                 $city = City::findBySlug($subdomain);
 
                 if ($city) {
@@ -24,6 +24,8 @@ class CitySubdomain
                     view()->share('cityIn', $city->name_in);
                     view()->share('cityTitle', $city->name_title);
                     view()->share('cityName', $city->name);
+                } else {
+                    abort(404);
                 }
             }
         }

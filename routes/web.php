@@ -27,6 +27,17 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Http;
 
+Route::get('/robots.txt', function (Request $request) {
+    if ($request->getHost() === 'admin.' . config('app.base_domain', 'kotlov.by')) {
+        return response("User-agent: *\nDisallow: /\n", 200)
+            ->header('Content-Type', 'text/plain; charset=UTF-8')
+            ->header('X-Robots-Tag', 'noindex, nofollow');
+    }
+
+    return response(file_get_contents(public_path('robots.txt')), 200)
+        ->header('Content-Type', 'text/plain; charset=UTF-8');
+});
+
 // ===== Главная =====
 Route::get('/', function () {
     // Все данные блоков главной — тяжёлые (~50 запросов), кешируем на 10 минут.
