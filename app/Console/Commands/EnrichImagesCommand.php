@@ -151,19 +151,41 @@ class EnrichImagesCommand extends Command
             $picked  = null;
 
             foreach ($queries as $q) {
-                $this->line('  query:  ' . $q);
-
-                $candidates = $provider !== null ? $this->search($provider, $q) : [];
-                foreach ($candidates as $url) {
-                    $check = $this->validateImage($url);
-                    if ($check['ok']) {
-                        $picked = ['query' => $q, 'url' => $url, 'meta' => $check];
-                        break 2;
-                    }
-                    $this->line('  reject: ' . $check['reason'] . '  ' . mb_substr($url, 0, 70));
-                    $this->stats['rejected']++;
+                if ($provider === null) {
+                    $this->line('  query:  ' . $q . '   <fg=gray>(no provider — set SERPER_API_KEY)</>');
+                    continue;
                 }
+
+                $candidates = $this->search($provider, $q);
+                $this->line(sprintf('  query:  %s   <fg=gray>(%d candidates)</>', $q, count($candidates)));
+
+                foreach ($candidates as $c) {
+                    $check  = $this->validateImage($c['image_url']);
+                    $apiDim = ($c['width'] && $c['height']) ? sprintf('%dx%d', $c['width'], $c['height']) : '—';
+                    $verdict = $check['ok']
+                        ? '<fg=green>ACCEPTED</>'
+                        : '<fg=yellow>rejected:' . $check['reason'] . '</>';
+
+                    $this->line(sprintf('    - %-24s api:%-9s %s', mb_substr($c['domain'] ?: '?', 0, 24), $apiDim, $verdict));
+                    $this->line('      image_url:  ' . mb_substr($c['image_url'], 0, 86));
+                    $this->line('      source_url: ' . mb_substr($c['source_url'] ?: '—', 0, 86));
+
+                    if ($check['ok']) {
+                        if ($picked === null) {
+                            $picked = $c + ['query' => $q, 'meta' => $check];
+                            if (! $this->dryRun) {
+                                break; // real run: first accepted is enough
+                            }
+                        }
+                    } else {
+                        $this->stats['rejected']++;
+                    }
+                }
+
                 usleep(max(0, (int) $this->option('sleep')) * 1000);
+                if ($picked !== null) {
+                    break; // usable image found for this product
+                }
             }
 
             if ($picked === null) {
@@ -173,31 +195,29 @@ class EnrichImagesCommand extends Command
                 continue;
             }
 
-            $this->line(sprintf('  source: %s', $provider));
-            $this->line(sprintf('  image:  %s  (%dx%d, %dKB)',
-                mb_substr($picked['url'], 0, 80),
-                $picked['meta']['width'], $picked['meta']['height'], (int) ($picked['meta']['bytes'] / 1024)));
-
             if ($this->dryRun) {
                 $this->stats['would_download']++;
-                $this->line('  <fg=green>result: WOULD DOWNLOAD</>');
-                $this->logResult($product, $picked['query'], (string) $provider, $picked['url'], 'would_download');
+                $this->line(sprintf('  <fg=green>result: WOULD DOWNLOAD</> %s  (%dx%d, %dKB) @ %s',
+                    mb_substr($picked['image_url'], 0, 64),
+                    $picked['meta']['width'], $picked['meta']['height'],
+                    (int) ($picked['meta']['bytes'] / 1024), $picked['domain'] ?: '?'));
+                $this->logResult($product, $picked['query'], (string) $provider, $picked['image_url'], 'would_download');
                 continue;
             }
 
             try {
-                $saved = $this->saveImage($picked['meta']['body'], $picked['url'], $product->slug, $dir);
+                $saved = $this->saveImage($picked['meta']['body'], $picked['image_url'], $product->slug, $dir);
                 DB::table('products')->where('id', $product->id)->update([
                     'images'     => json_encode([self::IMAGE_DIR . '/' . $saved], JSON_UNESCAPED_UNICODE),
                     'updated_at' => now(),
                 ]);
                 $this->stats['downloaded']++;
                 $this->line('  <fg=green>result: SAVED ' . $saved . '</>');
-                $this->logResult($product, $picked['query'], (string) $provider, $picked['url'], 'saved:' . $saved);
+                $this->logResult($product, $picked['query'], (string) $provider, $picked['image_url'], 'saved:' . $saved);
             } catch (\Throwable $e) {
                 $this->stats['errors']++;
                 $this->line('  <fg=red>result: ERROR ' . $e->getMessage() . '</>');
-                $this->logResult($product, $picked['query'], (string) $provider, $picked['url'], 'error:' . $e->getMessage());
+                $this->logResult($product, $picked['query'], (string) $provider, $picked['image_url'], 'error:' . $e->getMessage());
             }
         }
 
@@ -253,7 +273,9 @@ class EnrichImagesCommand extends Command
         return null;
     }
 
-    /** @return string[] candidate image URLs */
+    /**
+     * @return array<int,array{image_url:string,source_url:string,domain:string,width:int,height:int}>
+     */
     private function search(string $provider, string $query): array
     {
         try {
@@ -278,7 +300,13 @@ class EnrichImagesCommand extends Command
         if (! $r->successful()) {
             return [];
         }
-        return array_values(array_filter(array_map(fn ($it) => $it['link'] ?? null, $r->json('items') ?? [])));
+        return $this->normalizeCandidates(array_map(fn ($it) => [
+            'image_url'  => $it['link'] ?? '',
+            'source_url' => $it['image']['contextLink'] ?? '',
+            'domain'     => $it['displayLink'] ?? '',
+            'width'      => (int) ($it['image']['width'] ?? 0),
+            'height'     => (int) ($it['image']['height'] ?? 0),
+        ], $r->json('items') ?? []));
     }
 
     private function searchSerper(string $query): array
@@ -287,9 +315,16 @@ class EnrichImagesCommand extends Command
             ->withHeaders(['X-API-KEY' => env('SERPER_API_KEY'), 'Content-Type' => 'application/json'])
             ->post('https://google.serper.dev/images', ['q' => $query, 'num' => 6]);
         if (! $r->successful()) {
+            $this->line('  <fg=red>serper http-' . $r->status() . '</>');
             return [];
         }
-        return array_values(array_filter(array_map(fn ($it) => $it['imageUrl'] ?? null, $r->json('images') ?? [])));
+        return $this->normalizeCandidates(array_map(fn ($it) => [
+            'image_url'  => $it['imageUrl'] ?? '',
+            'source_url' => $it['link'] ?? '',
+            'domain'     => $it['domain'] ?? (parse_url($it['link'] ?? '', PHP_URL_HOST) ?: ''),
+            'width'      => (int) ($it['imageWidth'] ?? 0),
+            'height'     => (int) ($it['imageHeight'] ?? 0),
+        ], $r->json('images') ?? []));
     }
 
     private function searchBing(string $query): array
@@ -300,7 +335,19 @@ class EnrichImagesCommand extends Command
         if (! $r->successful()) {
             return [];
         }
-        return array_values(array_filter(array_map(fn ($it) => $it['contentUrl'] ?? null, $r->json('value') ?? [])));
+        return $this->normalizeCandidates(array_map(fn ($it) => [
+            'image_url'  => $it['contentUrl'] ?? '',
+            'source_url' => $it['hostPageUrl'] ?? '',
+            'domain'     => parse_url($it['hostPageUrl'] ?? '', PHP_URL_HOST) ?: '',
+            'width'      => (int) ($it['width'] ?? 0),
+            'height'     => (int) ($it['height'] ?? 0),
+        ], $r->json('value') ?? []));
+    }
+
+    /** Drop entries without an image URL and re-index. */
+    private function normalizeCandidates(array $items): array
+    {
+        return array_values(array_filter($items, fn ($c) => ! empty($c['image_url'])));
     }
 
     // ── Validation & download ─────────────────────────────────────────────────────
