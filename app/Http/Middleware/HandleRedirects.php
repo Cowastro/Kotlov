@@ -16,6 +16,7 @@ class HandleRedirects
         'rechitsa' => 'rechica',
         'volojin' => 'volozhin',
         'jitkovichi' => 'zhitkovichi',
+        'jlobin' => 'zhlobin',
         'logoysk' => 'logojsk',
         'dzerjinsk' => 'dzerzhinsk',
         'jodino' => 'zhodino',
