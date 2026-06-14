@@ -219,7 +219,10 @@ class EnrichRusklimatCommand extends Command
                 $scrapadSpecs = $scraped['specs'] ?? [];
                 $rawShort     = $scraped['short_description'] ?? null;
 
-                if ($needsAi && $this->ai->isAvailable()) {
+                if ($needsAi && $this->ai->isAvailable() && $this->dryRun) {
+                    // Dry-run must NOT spend money on the AI API — just report intent.
+                    $this->line('  <fg=blue>[dry-run] would generate AI description (' . $this->ai->providerName() . ')</>');
+                } elseif ($needsAi && $this->ai->isAvailable()) {
                     $aiText = $this->ai->enrich($product->name, $brand, $rawShort, $scrapadSpecs);
                     if ($aiText) {
                         $updates['content'] = $aiText;
