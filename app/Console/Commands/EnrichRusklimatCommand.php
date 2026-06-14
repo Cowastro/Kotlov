@@ -273,7 +273,7 @@ class EnrichRusklimatCommand extends Command
                     if ($built !== '') {
                         $updates['content'] = $built;
                         $this->stats['built_content']++;
-                        $this->line('  <fg=green>✓ content built from supplier data</>');
+                        $this->line('  <fg=green>✓ content built:</> ' . mb_substr(trim(preg_replace('/\s+/u', ' ', strip_tags($built)) ?? ''), 0, 90));
                     }
                 }
             }
@@ -290,7 +290,7 @@ class EnrichRusklimatCommand extends Command
                     if ($built !== '') {
                         $updates['short_description'] = $built;
                         $this->stats['built_short']++;
-                        $this->line('  <fg=green>✓ short built from supplier data</>');
+                        $this->line('  <fg=green>✓ short built:</> ' . mb_substr($built, 0, 90));
                     }
                 }
             }
