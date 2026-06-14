@@ -58,6 +58,10 @@ class HandleRedirects
             return $next($request);
         }
 
+        if ($percentRedirect = $this->redirectPercentPath($request, $path)) {
+            return $percentRedirect;
+        }
+
         if (preg_match('#^(.*)/page:(\d+)$#', $path, $matches)) {
             $basePath = rtrim($matches[1], '/') ?: '/';
             $query = $request->getQueryString();
@@ -191,6 +195,23 @@ class HandleRedirects
         }
 
         return false;
+    }
+
+    private function redirectPercentPath(Request $request, string $path): ?Response
+    {
+        if (! str_contains($path, '%')) {
+            return null;
+        }
+
+        $targetPath = str_replace('%', '', $path);
+
+        if ($targetPath === '' || $targetPath === $path) {
+            return null;
+        }
+
+        $query = $request->getQueryString();
+
+        return redirect($targetPath . ($query ? '?' . $query : ''), 301);
     }
 
     private function redirectCityAlias(Request $request): ?Response
