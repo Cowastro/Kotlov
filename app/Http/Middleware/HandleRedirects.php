@@ -84,6 +84,7 @@ class HandleRedirects
             // /teplovye-nasosy → /teplovyie-nasosyi (старое написание без iye)
             '~^/teplovye-nasosy/(.+)$~'                                  => '/teplovyie-nasosyi/$1',
             '~^/teplovye-nasosy$~'                                       => '/teplovyie-nasosyi',
+            '~^/truby-i-fitingi$~'                                       => '/otoplenie',
 
             // ── /kotly ────────────────────────────────────────────────────────
             // /kotly/teplovyie-nasosyi → /teplovyie-nasosyi (старый URL тепловых насосов)
