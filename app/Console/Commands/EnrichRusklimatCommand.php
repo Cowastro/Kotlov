@@ -634,20 +634,15 @@ class EnrichRusklimatCommand extends Command
             return ''; // no supplier data — don't fabricate
         }
 
-        $parts = [];
-        $parts[] = $short !== ''
-            ? '<p>' . e($short) . '</p>'
-            : '<p>' . e(trim($brand . ' ' . $name)) . ' — основные характеристики приведены ниже.</p>';
-
-        if (! empty($specs)) {
-            $li = '';
-            foreach ($specs as $k => $v) {
-                $li .= '<li><strong>' . e((string) $k) . ':</strong> ' . e((string) $v) . '</li>';
-            }
-            $parts[] = '<h3>Характеристики</h3>' . "\n" . '<ul>' . $li . '</ul>';
+        // PROSE ONLY — specs belong in the structured «Характеристики» tab,
+        // never inside content.
+        if ($short !== '') {
+            return '<p>' . e($short) . '</p>';
         }
-
-        return implode("\n", $parts);
+        if (trim($name) !== '') {
+            return '<p>' . e(trim($brand . ' ' . $name)) . '.</p>';
+        }
+        return '';
     }
 
     /** Compose a short description from existing content, else from name + key specs. */

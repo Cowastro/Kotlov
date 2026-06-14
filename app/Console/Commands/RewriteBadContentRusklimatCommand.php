@@ -164,23 +164,12 @@ class RewriteBadContentRusklimatCommand extends Command
             $flat[$key] = $val;
         }
 
+        // Content is PROSE ONLY — specs live in the structured «Характеристики»
+        // tab (product_attribute_values), never inside the description.
         $cat   = $category !== '' ? mb_strtolower($category) : 'оборудование';
-        $intro = '<p>' . e(trim($brand . ' ' . $name)) . ' — ' . e($cat) . '.</p>';
+        $intro = '<p>' . e(trim($brand . ' ' . $name)) . ' — ' . e($cat)
+            . ' от производителя ' . e($brand !== '' ? $brand : 'бренда') . '.</p>';
 
-        if ($flat === []) {
-            return $this->hasBadContent($intro) ? '' : $intro;
-        }
-
-        $li = '';
-        foreach ($flat as $k => $v) {
-            $li .= '<li><strong>' . e($k) . ':</strong> ' . e($v) . '</li>';
-        }
-        $full = $intro . "\n" . '<h3>Характеристики</h3>' . "\n" . '<ul>' . $li . '</ul>';
-
-        // Guarantee the result itself has no orphan units; degrade if needed.
-        if (! $this->hasBadContent($full)) {
-            return $full;
-        }
         return $this->hasBadContent($intro) ? '' : $intro;
     }
 }
