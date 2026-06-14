@@ -52,10 +52,14 @@ class AuditRusklimatCommand extends Command
             ->join('supplier_products as sp', 'p.id', '=', 'sp.product_id')
             ->where('sp.supplier_id', $supplierId);
 
-        $emptyImages  = fn ($c) => $c->whereNull('p.images')->orWhere('p.images', '')->orWhere('p.images', '[]');
+        // JSON-safe emptiness: specs/images may be JSON columns where a string
+        // compare to '[]' silently misses real empty arrays — use JSON_LENGTH.
+        $emptyImages  = fn ($c) => $c->whereNull('p.images')->orWhere('p.images', '')->orWhere('p.images', '[]')
+                                     ->orWhereRaw('(JSON_VALID(p.images) AND JSON_LENGTH(p.images) = 0)');
         $emptyContent = fn ($c) => $c->whereNull('p.content')->orWhere('p.content', '');
         $emptySpecs   = fn ($c) => $c->whereNull('p.specs')->orWhere('p.specs', '')
-                                     ->orWhere('p.specs', '[]')->orWhere('p.specs', '{}')->orWhere('p.specs', 'null');
+                                     ->orWhere('p.specs', '[]')->orWhere('p.specs', '{}')->orWhere('p.specs', 'null')
+                                     ->orWhereRaw('(JSON_VALID(p.specs) AND JSON_LENGTH(p.specs) = 0)');
 
         $linked      = (clone $base)->distinct('p.id')->count('p.id');
         $active      = (clone $base)->where('p.is_archived', false)->distinct('p.id')->count('p.id');
