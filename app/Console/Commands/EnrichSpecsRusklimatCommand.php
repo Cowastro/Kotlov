@@ -158,34 +158,56 @@ class EnrichSpecsRusklimatCommand extends Command
 
     private function findPage(string $article, string $brand, string $name): ?string
     {
-        $queries = array_values(array_unique(array_filter([
+        $collect = function (array $queries): array {
+            $out = [];
+            foreach ($queries as $q) {
+                foreach ($this->serperOrganic($q) as $link) {
+                    $host = mb_strtolower(parse_url($link, PHP_URL_HOST) ?: '');
+                    foreach (self::SPEC_DOMAINS as $d) {
+                        if (str_contains($host, $d)) {
+                            $out[] = $link;
+                            break;
+                        }
+                    }
+                }
+            }
+            return $out;
+        };
+
+        // 1) Force the retail site rusklimat.ru — its /product/ pages expose specs.
+        $primary = array_values(array_filter([
+            $article !== '' ? "{$article} site:rusklimat.ru" : '',
+            $name !== '' ? "{$name} site:rusklimat.ru" : '',
+        ]));
+        $candidates = $collect($primary);
+        $best = $this->bestProductPage($candidates);
+        if ($best !== null) {
+            return $best;
+        }
+
+        // 2) Fallback: plain queries across trusted sources.
+        $fallback = array_values(array_unique(array_filter([
             $article,
             $brand !== '' && $article !== '' ? "{$brand} {$article}" : '',
             $brand !== '' && $name !== '' ? "{$brand} {$name}" : '',
             $name,
         ])));
-
-        $candidates = [];
-        foreach ($queries as $q) {
-            foreach ($this->serperOrganic($q) as $link) {
-                $host = mb_strtolower(parse_url($link, PHP_URL_HOST) ?: '');
-                foreach (self::SPEC_DOMAINS as $d) {
-                    if (str_contains($host, $d)) {
-                        $candidates[] = $link;
-                        break;
-                    }
-                }
-            }
-            if ($candidates !== []) {
-                break; // первый запрос, давший кандидатов
-            }
-        }
+        $candidates = array_merge($candidates, $collect($fallback));
 
         if ($candidates === []) {
             return null;
         }
+        usort($candidates, fn ($a, $b) => $this->pageRank($a) <=> $this->pageRank($b));
+        return $candidates[0];
+    }
 
-        // rusklimat.ru/.../product/ отдаёт характеристики в HTML; b2b — JS (specs=0).
+    /** Return the best rusklimat product page (rank ≤ 2) from candidates, or null. */
+    private function bestProductPage(array $candidates): ?string
+    {
+        $candidates = array_values(array_filter($candidates, fn ($l) => $this->pageRank($l) <= 2));
+        if ($candidates === []) {
+            return null;
+        }
         usort($candidates, fn ($a, $b) => $this->pageRank($a) <=> $this->pageRank($b));
         return $candidates[0];
     }
