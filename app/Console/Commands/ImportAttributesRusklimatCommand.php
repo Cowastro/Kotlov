@@ -232,17 +232,19 @@ class ImportAttributesRusklimatCommand extends Command
             return null;
         }
 
-        // value: drop the unit suffix if the supplier repeated it, keep the rest.
+        // Numeric (unit) attribute: take ONLY the number. No number → orphan → skip.
         if ($suffix !== '') {
-            $raw = trim(preg_replace('/\s*' . preg_quote($suffix, '/') . '\.?$/ui', '', $raw) ?? $raw);
-        }
-        $raw = trim($raw, " \t\u{00A0}:;");
-
-        // Reject empty / pure-unit leftovers (orphan units).
-        if ($raw === '' || ! preg_match('/[0-9A-Za-zА-Яа-яё]/u', $raw)) {
+            if (preg_match('/-?\d+(?:[.,]\d+)?/u', $raw, $m)) {
+                return str_replace(',', '.', $m[0]);
+            }
             return null;
         }
-        return mb_substr($raw, 0, 120);
+
+        // Text attribute (резьба, гарантия): require a digit, else it's an orphan unit.
+        if (! preg_match('/\d/u', $raw)) {
+            return null;
+        }
+        return mb_substr(trim($raw, " \t\u{00A0}:;"), 0, 60);
     }
 
     private function isNumericKeyed(array $specs): bool
