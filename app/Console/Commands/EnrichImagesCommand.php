@@ -285,6 +285,19 @@ class EnrichImagesCommand extends Command
                     DB::table('image_search_failures')
                         ->where('product_id', $product->id)->where('supplier_id', $supplierId)->delete();
                 }
+                if (Schema::hasTable('image_enrichment_logs')) {
+                    DB::table('image_enrichment_logs')->insert([
+                        'product_id'    => $product->id,
+                        'supplier_id'   => $supplierId,
+                        'image_path'    => self::IMAGE_DIR . '/' . $saved,
+                        'image_url'     => $picked['image_url'],
+                        'source_url'    => $picked['source_url'] ?? null,
+                        'provider'      => (string) $provider,
+                        'trusted_level' => $picked['tier'] ?? null,
+                        'created_at'    => now(),
+                        'updated_at'    => now(),
+                    ]);
+                }
             } catch (\Throwable $e) {
                 $this->stats['errors']++;
                 $this->line('  <fg=red>result: ERROR ' . $e->getMessage() . '</>');

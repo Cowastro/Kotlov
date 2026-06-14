@@ -30,6 +30,8 @@ class AuditRusklimatCommand extends Command
         {--missing-photos : Restrict the --list table to products without a real photo}
         {--active-only    : Restrict the --list table to active (non-archived) products}
         {--dupe-photos    : Find products sharing the SAME image file (md5), e.g. wrong reused photos}
+        {--min-shared=    : With --dupe-photos: only groups shared by >= N products (default 2, or 5 with --suspicious)}
+        {--suspicious     : With --dupe-photos: only suspect groups (different names, brand not Royal Thermo)}
         {--limit=80       : Max rows in the per-product list}';
 
     protected $description = 'Read-only audit of Rusklimat products: photos, descriptions, brands, match confidence (no writes).';
@@ -273,14 +275,18 @@ class AuditRusklimatCommand extends Command
 
         // ── Duplicate photos: same image file used by different products ───────────
         if ($this->option('dupe-photos')) {
+            $suspiciousOnly = (bool) $this->option('suspicious');
+            $minShared = ($this->option('min-shared') !== null && $this->option('min-shared') !== '')
+                ? max(2, (int) $this->option('min-shared'))
+                : ($suspiciousOnly ? 5 : 2);
+
             $rows = DB::table('products as p')
+                ->join('supplier_products as sp', 'p.id', '=', 'sp.product_id')
                 ->leftJoin('brands as b', 'p.brand_id', '=', 'b.id')
-                ->whereIn('p.id', function ($q) use ($supplierId) {
-                    $q->from('supplier_products')->select('product_id')
-                      ->where('supplier_id', $supplierId)->whereNotNull('product_id');
-                })
+                ->where('sp.supplier_id', $supplierId)
                 ->where('p.is_archived', false)
-                ->get(['p.id', 'p.sku', 'p.name', 'p.images', 'b.name as brand']);
+                ->when($focusBrand !== '', fn ($q) => $q->where('b.name', 'like', '%' . $focusBrand . '%'))
+                ->get(['p.id', 'p.sku', 'p.name', 'p.images', 'b.name as brand', 'sp.supplier_article']);
 
             $byHash = [];
             foreach ($rows as $r) {
@@ -289,35 +295,58 @@ class AuditRusklimatCommand extends Command
                     continue;
                 }
                 $hash = @md5_file($file);
-                if ($hash === false) {
+                if ($hash !== false) {
+                    $byHash[$hash][] = $r;
+                }
+            }
+
+            // Keep groups shared by >= minShared; optionally only "suspect" ones.
+            $dupes = [];
+            foreach ($byHash as $hash => $group) {
+                if (count($group) < $minShared) {
                     continue;
                 }
-                $byHash[$hash][] = $r;
+                $distinctNames = count(array_unique(array_map(fn ($g) => mb_strtolower(trim($g->name)), $group)));
+                $brand0 = mb_strtolower((string) ($group[0]->brand ?? ''));
+                $suspect = $distinctNames > 1 && ! str_contains($brand0, 'royal thermo');
+                if ($suspiciousOnly && ! $suspect) {
+                    continue;
+                }
+                $dupes[$hash] = ['items' => $group, 'suspect' => $suspect];
             }
+            uasort($dupes, fn ($a, $b) => count($b['items']) <=> count($a['items']));
 
-            $dupes = array_filter($byHash, fn ($g) => count($g) > 1);
-            uasort($dupes, fn ($a, $b) => count($b) <=> count($a));
+            // Source URLs from the enrichment log, if present.
+            $logs = collect();
+            if (Schema::hasTable('image_enrichment_logs') && ! empty($dupes)) {
+                $ids = collect($dupes)->flatMap(fn ($d) => array_map(fn ($g) => $g->id, $d['items']))->all();
+                $logs = DB::table('image_enrichment_logs')->whereIn('product_id', $ids)->get()->keyBy('product_id');
+            }
 
             $this->newLine();
-            $this->info(sprintf('── Duplicate photos: %d shared images across %d products ───',
-                count($dupes), array_sum(array_map('count', $dupes))));
+            $this->info(sprintf('── Duplicate photos%s (min-shared=%d): %d groups, %d products ───',
+                $suspiciousOnly ? ' [SUSPECT only]' : '', $minShared,
+                count($dupes), array_sum(array_map(fn ($d) => count($d['items']), $dupes))));
 
             $dupeRows = [];
-            foreach ($dupes as $group) {
-                $first = $group[0];
-                foreach ($group as $g) {
+            foreach ($dupes as $d) {
+                foreach ($d['items'] as $g) {
+                    $log = $logs[$g->id] ?? null;
                     $dupeRows[] = [
-                        count($group),
+                        count($d['items']) . ($d['suspect'] ? ' ⚠' : ''),
                         $g->id,
                         $g->sku,
-                        mb_substr((string) ($g->brand ?? '—'), 0, 12),
-                        mb_substr((string) $g->name, 0, 46),
+                        mb_substr((string) $g->supplier_article, 0, 14),
+                        mb_substr((string) $g->name, 0, 38),
+                        mb_substr((string) ($log->source_url ?? '—'), 0, 40),
                     ];
                 }
-                $dupeRows[] = ['', '', '', '', '────────'];
+                $dupeRows[] = ['', '', '', '', '────────', ''];
             }
-            $this->table(['shared_by', 'id', 'sku', 'brand', 'name'], $dupeRows ?: [['—', '', '', '', 'no duplicates']]);
-            $this->line('<fg=yellow>Чистка дубля:</> очисти images у лишних: UPDATE products SET images=\'[]\' WHERE id IN (...); затем повтори enrich-images.');
+            $this->table(['shared', 'id', 'sku', 'article', 'name', 'source_url'],
+                $dupeRows ?: [['—', '', '', '', 'no duplicates', '']]);
+            $this->line('<fg=gray>⚠ = SUSPECT (разные названия, бренд не Royal Thermo). source_url есть только у фото, скачанных после включения логов.</>');
+            $this->line('<fg=yellow>Точечно:</> где фото реально неверное — обнули у конкретных id (images=\'[]\') и перегони enrich-images. Массовый UPDATE не нужен.');
         }
 
         // ── Optional per-product list ─────────────────────────────────────────────
