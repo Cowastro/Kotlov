@@ -38,7 +38,7 @@ class SyncTskNasosyCommand extends Command
     private const SYNC_KEY      = 'tsk_nasosy_stock';
     private const SOURCE_URL    = 'https://aqualider.by/';
     private const DEFAULT_SHEET_URL = 'https://docs.google.com/spreadsheets/d/1NlqXqVky2cDDAELEEKKAO0e07mpZjpkhLOQN13YWiuU/edit';
-    private const SHEET_NAME        = 'Одним листом'; // consolidated data tab (gviz by name)
+    private const SHEET_GID          = '1219012142'; // full price tab (1052 rows): N=Опт1, Q=наличие
     private const SHEET_CACHE_PATH  = 'supplier-cache/tsk-nasosy.csv';
 
     /**
@@ -54,19 +54,26 @@ class SyncTskNasosyCommand extends Command
         'status'       => 16, // Наличие в Минске
     ];
 
-    /** name keyword → KOTLOV category_id (for --create-new). */
+    /** name/model keyword → KOTLOV category_id (checked in order). */
     private const CATEGORY_MAP = [
+        'фекаль'       => 265,
+        'дренаж'       => 265,
+        'канализац'    => 265,
+        'fekamax'      => 265,
+        'wq'           => 265, // WELLMIX WQ — погружные дренажно-фекальные
         'эцв'          => 272, // скважинные
         'скважин'      => 272,
+        'eco maxi'     => 272,
         'циркуляц'     => 60,
+        'nmt'          => 60,  // IMP/WELLMIX циркуляционные
         'насосная станция' => 251,
         'станци'       => 251,
-        'дренаж'       => 265,
-        'фекаль'       => 265,
-        'канализац'    => 265,
         'повышения давления' => 60,
-        'насос'        => 272, // generic pump fallback
+        'насос'        => 272, // generic pump
     ];
+
+    /** Default category when nothing matches (so every priced row is created). */
+    private const DEFAULT_CATEGORY = 272;
 
     private array $indexBySupplierArticle = [];
     private array $indexBySku = [];
@@ -134,8 +141,8 @@ class SyncTskNasosyCommand extends Command
             throw new \RuntimeException('Invalid Google Sheets URL.');
         }
         $id = $m[1];
-        // Use gviz by sheet NAME — the data lives on «Одним листом», not the default gid.
-        $export = "https://docs.google.com/spreadsheets/d/{$id}/gviz/tq?tqx=out:csv&sheet=" . rawurlencode(self::SHEET_NAME);
+        // Full price tab by gid (1052 rows; N=Опт1, Q=наличие).
+        $export = "https://docs.google.com/spreadsheets/d/{$id}/export?format=csv&gid=" . self::SHEET_GID;
 
         $ctx = stream_context_create([
             'http' => ['method' => 'GET', 'timeout' => 45, 'follow_location' => 1, 'max_redirects' => 10,
@@ -192,8 +199,10 @@ class SyncTskNasosyCommand extends Command
         $seen  = [];
         foreach ($raw as $row) {
             $article = trim((string) ($row[$c['article']] ?? ''));
-            if (! preg_match('/^\d{3,}$/u', $article)) {
-                continue; // not a data row (title/section/brand banner/empty)
+            // Data row = article that contains a digit (numeric 61656 or alnum СС02428)
+            // + a numeric Опт1 price. Skips title/section/brand-banner rows.
+            if ($article === '' || mb_strtolower($article) === 'артикул' || ! preg_match('/\d/u', $article)) {
+                continue;
             }
             $price = $this->num((string) ($row[$c['price']] ?? ''));
             if ($price === null) {
@@ -374,7 +383,7 @@ class SyncTskNasosyCommand extends Command
         return null;
     }
 
-    private function resolveCategory(string $name): ?int
+    private function resolveCategory(string $name): int
     {
         $low = mb_strtolower($name);
         foreach (self::CATEGORY_MAP as $kw => $cat) {
@@ -382,7 +391,7 @@ class SyncTskNasosyCommand extends Command
                 return $cat;
             }
         }
-        return null;
+        return self::DEFAULT_CATEGORY;
     }
 
     // ── Dry-run report (step 12) ──────────────────────────────────────────────────
@@ -658,7 +667,10 @@ class SyncTskNasosyCommand extends Command
 
     private function normArticle(string $s): string
     {
-        return trim(preg_replace('/\s+/u', ' ', mb_strtoupper(trim($s))) ?? $s);
+        $s = mb_strtoupper(trim($s));
+        // Fold Cyrillic look-alikes to Latin so «СС02428» (sheet) == «CC02428» (site).
+        $s = strtr($s, ['А'=>'A','В'=>'B','Е'=>'E','К'=>'K','М'=>'M','Н'=>'H','О'=>'O','Р'=>'P','С'=>'C','Т'=>'T','У'=>'Y','Х'=>'X']);
+        return trim(preg_replace('/\s+/u', ' ', $s) ?? $s);
     }
 
     private function model(string $productName, string $brand): string

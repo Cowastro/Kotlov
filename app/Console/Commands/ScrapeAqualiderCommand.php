@@ -158,6 +158,9 @@ class ScrapeAqualiderCommand extends Command
             $this->stats['matched']++;
         }
 
+        // Stock from the SITE (sheet sync later overrides for products in the price).
+        DB::table('products')->where('id', $productId)->update(['in_stock' => $d['inStock'], 'updated_at' => $now]);
+
         if ($d['image'] !== null) {
             $this->maybeDownloadImage($productId, $d['image']);
         }
@@ -303,7 +306,7 @@ class ScrapeAqualiderCommand extends Command
             'content' => $d['desc'] !== '' ? '<p>' . e($d['desc']) . '</p>' : null,
             'short_description' => $d['desc'] !== '' ? mb_substr($d['desc'], 0, 250) : null,
             'images' => json_encode([]), 'specs' => json_encode([]), 'unit' => 'шт',
-            'is_active' => true, 'is_archived' => false, 'in_stock' => false, 'is_new' => true,
+            'is_active' => true, 'is_archived' => false, 'in_stock' => $d['inStock'], 'is_new' => true,
             'meta_title' => $name . ' купить в %city%',
             'meta_description' => $name . ' — купить в Беларуси.',
             'created_at' => $now, 'updated_at' => $now,
@@ -398,14 +401,19 @@ class ScrapeAqualiderCommand extends Command
                 'contact' => self::BASE, 'is_active' => true, 'created_at' => $now, 'updated_at' => $now,
             ]);
         }
-        $art = mb_strtoupper(trim($d['article']));
+        // Fold Cyrillic look-alikes to Latin so the article matches the price sheet.
+        $art = strtr(mb_strtoupper(trim($d['article'])),
+            ['А'=>'A','В'=>'B','Е'=>'E','К'=>'K','М'=>'M','Н'=>'H','О'=>'O','Р'=>'P','С'=>'C','Т'=>'T','У'=>'Y','Х'=>'X']);
         DB::table('supplier_products')->updateOrInsert(
             ['supplier_id' => $sid, 'supplier_article' => $art],
-            // Link only — purchase price (Опт1) and stock come from the price sheet
-            // via supplier:sync-tsk-nasosy. Site price/stock are NOT our cost.
+            // Purchase price (Опт1) comes ONLY from the price sheet (sync-tsk-nasosy).
+            // Stock is taken from the SITE here (sheet overrides it for priced items).
             ['supplier_article_normalized' => $art, 'product_id' => $productId,
              'product_sku' => (string) DB::table('products')->where('id', $productId)->value('sku'),
              'supplier_name' => $d['name'], 'source_url' => $url,
+             'in_stock' => $d['inStock'], 'stock_status' => $d['stockStatus'],
+             'stock_text' => $d['stockText'] !== '' ? $d['stockText'] : null,
+             'last_stock_synced_at' => $now,
              'match_status' => 'matched', 'match_confidence' => 'aqualider_scrape',
              'updated_at' => $now, 'created_at' => $now]
         );
