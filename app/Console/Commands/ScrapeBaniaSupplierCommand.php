@@ -1720,7 +1720,7 @@ class ScrapeBaniaSupplierCommand extends Command
     private function extractImages(string $html, string $pageUrl): array
     {
         $images = [];
-        if (preg_match_all('~(?:href|src|data-src|data-large|data-image)=["\']([^"\']+\.(?:jpg|jpeg|png|webp)(?:\?[^"\']*)?)["\']~iu', $html, $matches)) {
+        if (preg_match_all('~(?:href|src|data-src|data-large|data-image|data-image-large|data-image-thumb)=["\']([^"\']+\.(?:jpg|jpeg|png|webp)(?:\?[^"\']*)?)["\']~iu', $html, $matches)) {
             foreach ($matches[1] as $src) {
                 $url = $this->normalizeBaniaImageUrl($this->absoluteUrl($src, $pageUrl));
                 if (! $this->isProductImageCandidate($url)) {
@@ -1735,7 +1735,7 @@ class ScrapeBaniaSupplierCommand extends Command
 
     private function firstImageFromHtml(string $html): ?string
     {
-        if (preg_match_all('~(?:src|data-src)=["\']([^"\']+\.(?:jpg|jpeg|png|webp)(?:\?[^"\']*)?)["\']~iu', $html, $matches)) {
+        if (preg_match_all('~(?:src|data-src|data-image-large|data-image-thumb)=["\']([^"\']+\.(?:jpg|jpeg|png|webp)(?:\?[^"\']*)?)["\']~iu', $html, $matches)) {
             foreach ($matches[1] as $src) {
                 $url = $this->normalizeBaniaImageUrl($this->absoluteUrl($src));
                 if ($this->isProductImageCandidate($url)) {
@@ -1765,7 +1765,19 @@ class ScrapeBaniaSupplierCommand extends Command
             return false;
         }
 
-        if (preg_match('~/(?:logo|icon|icons|payment|social|banner|manufacturer)/|(?:logo|icon|sprite|placeholder|telegram|viber|whatsapp|email|tel)~i', $url)) {
+        $path = (string) parse_url($url, PHP_URL_PATH);
+        $filename = strtolower(pathinfo($path, PATHINFO_FILENAME));
+        $segments = array_map('strtolower', array_filter(explode('/', trim($path, '/'))));
+
+        if (array_intersect($segments, ['logo', 'icon', 'icons', 'payment', 'social', 'banner', 'manufacturer']) !== []) {
+            return false;
+        }
+
+        if (str_starts_with($filename, 'logo')) {
+            return false;
+        }
+
+        if (preg_match('~(?:^|[-_])(?:logo|icon|sprite|placeholder|telegram|viber|whatsapp|email|tel|erip|halva|a1|mts)(?:$|[-_])~i', $filename)) {
             return false;
         }
 
