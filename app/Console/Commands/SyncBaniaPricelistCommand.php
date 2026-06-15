@@ -428,6 +428,15 @@ class SyncBaniaPricelistCommand extends Command
             ];
         }
 
+        if ($best['score'] >= 80 && $this->needsSupplierCostRepair($best['supplier_product'] ?? null)) {
+            return [
+                'supplier_product' => $best['supplier_product'],
+                'match_type' => 'title_repair_equal_retail',
+                'confidence' => $best['score'],
+                'reason' => 'supplier cost equals product retail; repairing from BANIA price list',
+            ];
+        }
+
         if ($best['score'] >= 72) {
             return [
                 'action' => 'manual_review',
@@ -462,6 +471,15 @@ class SyncBaniaPricelistCommand extends Command
         }
 
         return $best;
+    }
+
+    private function needsSupplierCostRepair(?object $supplierProduct): bool
+    {
+        if (! $supplierProduct || $supplierProduct->price_byn === null || $supplierProduct->product_price === null) {
+            return false;
+        }
+
+        return abs((float) $supplierProduct->price_byn - (float) $supplierProduct->product_price) < 0.01;
     }
 
     private function candidateScore(string $priceName, string $candidateName): int
