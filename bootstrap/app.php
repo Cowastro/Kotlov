@@ -16,6 +16,9 @@ return Application::configure(basePath: dirname(__DIR__))
             );
         },
     )
+    ->withCommands([
+        __DIR__.'/../app/Console/Commands',
+    ])
     ->withMiddleware(function (Middleware $middleware) {
         // Исключаем Telegram webhook из CSRF-проверки
         $middleware->validateCsrfTokens(except: [
