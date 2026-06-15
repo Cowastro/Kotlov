@@ -8,6 +8,7 @@ use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
+use PhpOffice\PhpSpreadsheet\IOFactory;
 
 class ScrapeBaniaSupplierCommand extends Command
 {
@@ -22,6 +23,8 @@ class ScrapeBaniaSupplierCommand extends Command
         {--replace-empty-images-only : Add BANIA images only when the matched product has no images}
         {--sync-characteristics : Save normalized BANIA technical characteristics when product fields are empty}
         {--sync-prices : Deprecated: BANIA prices are synced from the Google supplier price list}
+        {--price-file= : BANIA wholesale XLSX used to allow only products present in the price list}
+        {--require-price-list : Only process products that are present in the BANIA wholesale price list}
         {--generate-descriptions : Generate unique descriptions for products without content}
         {--update-existing : Update matched products base price/content/images when safe}
         {--update-only : Do not create new products; send unmatched rows to manual review}
@@ -70,6 +73,18 @@ class ScrapeBaniaSupplierCommand extends Command
                 'pechi-kamenka',
                 'pechi-dlya-bani',
                 'bani-i-sauny',
+            ],
+        ],
+        'heating' => [
+            'source_path' => 'otopitelnye-pechi-dlia-doma',
+            'sync_key' => 'bania_heating_stoves',
+            'title' => 'BANIA.by: heating stoves',
+            'description' => 'Scrapes BANIA.by home heating stoves, photos and attributes only when they exist in the wholesale price list.',
+            'requires_price_list' => true,
+            'category_slugs' => [
+                'pechki',
+                'pechi',
+                'pechi-kaminy',
             ],
         ],
     ];
@@ -136,6 +151,8 @@ class ScrapeBaniaSupplierCommand extends Command
         $downloadImages = (bool) $this->option('download-images');
         $syncCharacteristics = (bool) $this->option('sync-characteristics');
         $syncPrices = (bool) $this->option('sync-prices');
+        $requirePriceList = (bool) $this->option('require-price-list') || (bool) ($this->categoryProfile()['requires_price_list'] ?? false);
+        $priceListIndex = null;
         $generateDescriptions = (bool) $this->option('generate-descriptions');
         $updateExisting = (bool) $this->option('update-existing');
         $this->runStats = [
@@ -162,6 +179,16 @@ class ScrapeBaniaSupplierCommand extends Command
             $this->warn('--sync-prices is disabled for supplier:scrape-bania: BANIA supplier cost and stock must come from the Google price list.');
             $this->warn('Use supplier:sync-bania-pricelist instead. Product retail prices are not updated by the scraper.');
             $syncPrices = false;
+        }
+
+        if ($requirePriceList) {
+            try {
+                $priceListIndex = $this->loadPriceListIndex((string) ($this->option('price-file') ?? ''));
+                $this->info(sprintf('BANIA price-list guard enabled: %d rows loaded.', count($priceListIndex['names'])));
+            } catch (\Throwable $e) {
+                $this->error('BANIA price-list guard failed: ' . $e->getMessage());
+                return self::FAILURE;
+            }
         }
 
         $enricher = new AiContentEnricher();
@@ -213,6 +240,7 @@ class ScrapeBaniaSupplierCommand extends Command
             'skipped_duplicate' => 0,
             'skipped_out_of_stock' => 0,
             'skipped_brand' => 0,
+            'skipped_not_in_price_list' => 0,
             'create_candidate' => 0,
             'error' => 0,
         ];
@@ -234,6 +262,12 @@ class ScrapeBaniaSupplierCommand extends Command
                 $match = $this->matchProduct($item, $supplierId);
                 if (! $this->brandAllowed($item, $match, $allowedBrands)) {
                     $stats['skipped_brand']++;
+                    continue;
+                }
+
+                if ($requirePriceList && ! $this->isInPriceList($item, $priceListIndex ?? ['articles' => [], 'names' => []])) {
+                    $stats['skipped_not_in_price_list']++;
+                    $this->addReportRow($item, null, 'skipped_not_in_price_list', 'not found in BANIA wholesale price list');
                     continue;
                 }
 
@@ -1296,17 +1330,109 @@ class ScrapeBaniaSupplierCommand extends Command
         return null;
     }
 
+    private function loadPriceListIndex(string $priceFile): array
+    {
+        $priceFile = trim($priceFile);
+        if ($priceFile === '') {
+            $default = storage_path('app/supplier-cache/bania-pricelist.xlsx');
+            $priceFile = file_exists($default) ? $default : storage_path('app/pricelists/google/bania-dynamic-price.xlsx');
+        } elseif (! str_starts_with($priceFile, DIRECTORY_SEPARATOR) && ! preg_match('/^[A-Z]:\\\\/i', $priceFile)) {
+            $priceFile = base_path($priceFile);
+        }
+
+        if (! file_exists($priceFile)) {
+            throw new \RuntimeException('Price file not found: ' . $priceFile);
+        }
+
+        $reader = IOFactory::createReaderForFile($priceFile);
+        $reader->setReadDataOnly(true);
+        $rows = $reader->load($priceFile)->getActiveSheet()->toArray(null, true, true, false);
+
+        $articles = [];
+        $names = [];
+
+        foreach ($rows as $index => $row) {
+            $name = $this->cleanText((string) ($row[0] ?? ''));
+            $article = $this->normalizeArticle((string) ($row[2] ?? ''));
+            $price = $this->parsePriceListMoney((string) ($row[5] ?? ''));
+
+            if ($index < 5 || $name === '' || $price === null || $price <= 0) {
+                continue;
+            }
+
+            $normalizedName = $this->normalizeTitle($name);
+            if ($article !== '') {
+                $articles[$article] = true;
+            }
+            if ($normalizedName !== '') {
+                $names[$normalizedName] = true;
+            }
+        }
+
+        return ['articles' => $articles, 'names' => $names];
+    }
+
+    private function isInPriceList(array $item, array $priceListIndex): bool
+    {
+        $article = $this->normalizeArticle((string) ($item['sku'] ?? ''));
+        if ($article !== '' && isset($priceListIndex['articles'][$article])) {
+            return true;
+        }
+
+        $title = $this->normalizeTitle((string) ($item['title'] ?? ''));
+        if ($title === '') {
+            return false;
+        }
+
+        if (isset($priceListIndex['names'][$title])) {
+            return true;
+        }
+
+        foreach (array_keys($priceListIndex['names']) as $priceListTitle) {
+            if (! $this->titlesAreCompatible($title, $priceListTitle)) {
+                continue;
+            }
+
+            if ($this->similarity($title, $priceListTitle) >= 94.0) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private function parsePriceListMoney(string $value): ?float
+    {
+        $value = trim(str_replace(["\xc2\xa0", ' '], '', $value));
+        $value = preg_replace('/[^0-9,.\-]/u', '', $value) ?? '';
+        if ($value === '' || $value === '-') {
+            return null;
+        }
+
+        if (str_contains($value, ',') && str_contains($value, '.')) {
+            $value = str_replace(',', '', $value);
+        } else {
+            $value = str_replace(',', '.', $value);
+        }
+
+        return is_numeric($value) ? round((float) $value, 2) : null;
+    }
+
     private function parseBrandFilter(string $brands): array
     {
         $productionBrands = $this->productionBrandFilter();
         if (trim($brands) === '') {
+            if ((bool) ($this->categoryProfile()['requires_price_list'] ?? false)) {
+                return [];
+            }
+
             return $productionBrands;
         }
 
         $allowed = [];
         foreach (explode(',', $brands) as $brand) {
             $normalized = $this->normalizeBrand($brand);
-            if ($normalized !== '' && isset($productionBrands[$normalized])) {
+            if ($normalized !== '' && ((bool) ($this->categoryProfile()['requires_price_list'] ?? false) || isset($productionBrands[$normalized]))) {
                 $allowed[$normalized] = true;
             }
         }
