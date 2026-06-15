@@ -187,6 +187,7 @@ class ScrapeBaniaSupplierCommand extends Command
         'PROmetall' => ['prometall', 'pro-metall'],
         'Meta-Bel' => ['meta-bel'],
         'NMK' => ['nmk'],
+        'DoorWood' => ['doorwood', 'door-wood'],
         'Везувий' => ['vezuvij', 'vezuviy', 'vezuvii'],
         'Теплодар' => ['teplodar', 'siesta', 'bylina', 'sibirskij-utes', 'sibirskii-utes', 'kupper', 'kuper'],
     ];
@@ -535,6 +536,11 @@ class ScrapeBaniaSupplierCommand extends Command
     private function mergeItem(array $listItem, array $detail): array
     {
         $title = $detail['title'] ?: $listItem['title'];
+        $sku = $this->normalizeArticle($detail['sku'] ?? '');
+        $brand = $this->canonicalBrand((string) ($detail['brand'] ?? ''), $title, (string) $listItem['url']);
+        if ($brand === '' && $this->isDoorWoodArticle($sku)) {
+            $brand = 'DoorWood';
+        }
         $price = $detail['price'] ?? $listItem['price'];
         $retailPrice = $price;
         $stockText = $detail['stock_text'] ?: $listItem['stock_text'];
@@ -554,9 +560,9 @@ class ScrapeBaniaSupplierCommand extends Command
         return [
             'title' => $this->cleanText($title),
             'normalized_title' => $this->normalizeTitle($title),
-            'brand' => $this->canonicalBrand((string) ($detail['brand'] ?? ''), $title, (string) $listItem['url']),
+            'brand' => $brand,
             'brand_id' => null,
-            'sku' => $this->normalizeArticle($detail['sku'] ?? ''),
+            'sku' => $sku,
             'url' => $listItem['url'],
             'price' => $price,
             'currency' => 'BYN',
@@ -679,6 +685,10 @@ class ScrapeBaniaSupplierCommand extends Command
                 return ['product' => null, 'type' => 'none', 'confidence' => 0, 'reason' => 'distinct KARINA variant'];
             }
 
+            if ($this->isSaunaDoorItem($item)) {
+                return ['product' => null, 'type' => 'none', 'confidence' => 0, 'reason' => 'distinct sauna door variant'];
+            }
+
             if ($this->hasDifferentSupplierProductMapping($best, $item, $supplierId)) {
                 return [
                     'product' => $best,
@@ -698,6 +708,10 @@ class ScrapeBaniaSupplierCommand extends Command
 
             if ($this->isDistinctKarinaVariant($item, $best)) {
                 return ['product' => null, 'type' => 'none', 'confidence' => 0, 'reason' => 'distinct KARINA variant'];
+            }
+
+            if ($this->isSaunaDoorItem($item)) {
+                return ['product' => null, 'type' => 'none', 'confidence' => 0, 'reason' => 'distinct sauna door variant'];
             }
 
             if ($this->hasDifferentSupplierProductMapping($best, $item, $supplierId)) {
@@ -2350,6 +2364,19 @@ class ScrapeBaniaSupplierCommand extends Command
         $article = $this->normalizeArticle((string) $article);
 
         return mb_strlen($article) >= 6 && preg_match('/\d/u', $article) === 1;
+    }
+
+    private function isDoorWoodArticle(?string $article): bool
+    {
+        return preg_match('/^DW\d{3,}$/i', $this->normalizeArticle((string) $article)) === 1;
+    }
+
+    private function isSaunaDoorItem(array $item): bool
+    {
+        $source = (string) ($item['source_category'] ?? $item['url'] ?? '');
+
+        return str_contains($source, 'dveri-dlya-bani')
+            || $this->isDoorWoodArticle($item['sku'] ?? '');
     }
 
     private function titlesAreCompatible(string $supplierTitle, string $productTitle): bool
