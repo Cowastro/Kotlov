@@ -66,6 +66,23 @@ class AiContentEnricher
         };
     }
 
+    public function complete(string $prompt, int $maxTokens = 700): ?string
+    {
+        if ($this->mode === 'none') {
+            return null;
+        }
+
+        try {
+            return match ($this->mode) {
+                'anthropic' => $this->callAnthropic($prompt, $maxTokens),
+                'openai_compat' => $this->callOpenAiCompat($prompt, $maxTokens),
+                default => null,
+            };
+        } catch (\Throwable) {
+            return null;
+        }
+    }
+
     /**
      * Generate unique SEO HTML description. Returns null on failure.
      */
@@ -206,7 +223,7 @@ PROMPT;
 
     // ── Providers ─────────────────────────────────────────────────────────────────
 
-    private function callAnthropic(string $prompt): ?string
+    private function callAnthropic(string $prompt, int $maxTokens = 1024): ?string
     {
         $response = Http::timeout(45)
             ->withHeaders([
@@ -216,7 +233,7 @@ PROMPT;
             ])
             ->post($this->apiUrl, [
                 'model'      => $this->model,
-                'max_tokens' => 1024,
+                'max_tokens' => $maxTokens,
                 'messages'   => [['role' => 'user', 'content' => $prompt]],
             ]);
 
@@ -225,13 +242,13 @@ PROMPT;
             : null;
     }
 
-    private function callOpenAiCompat(string $prompt): ?string
+    private function callOpenAiCompat(string $prompt, int $maxTokens = 1024): ?string
     {
         $response = Http::timeout(45)
             ->withToken($this->apiKey)
             ->post($this->apiUrl, [
                 'model'      => $this->model,
-                'max_tokens' => 1024,
+                'max_tokens' => $maxTokens,
                 'messages'   => [['role' => 'user', 'content' => $prompt]],
             ]);
 
