@@ -224,21 +224,43 @@ class SyncTskNasosyCommand extends Command
 
     private function normalise(array $raw): array
     {
-        // Fixed column layout (see self::COLS) — the export has no text header,
-        // so a data row is detected by a numeric article + numeric Опт1 price.
-        $this->detectedColumns = self::COLS;
+        // Column layout varies per tab — «Одним листом» puts Опт1/МРЦ/Наличие at
+        // 13/15/16, while category tabs («Циркуляционные» etc.) shift them to
+        // 11/13/14 and add a second «Наличие». So detect columns from the tab's
+        // own header row («Артикул» …); fall back to the fixed layout if absent.
         $c = self::COLS;
+        $headerIdx = -1;
+        foreach ($raw as $i => $row) {
+            foreach ($row as $cell) {
+                if (mb_strtolower(trim((string) $cell)) === 'артикул') {
+                    $headerIdx = $i;
+                    break 2;
+                }
+            }
+        }
+        if ($headerIdx >= 0) {
+            $detected = $this->detectColumns($raw[$headerIdx]);
+            if (isset($detected['article'], $detected['price'])) {
+                $c = $detected + self::COLS; // detected wins; defaults fill any gap
+            }
+        }
+        $this->detectedColumns = $c;
+
+        $get = fn (array $row, string $key): string => isset($c[$key]) ? trim((string) ($row[$c[$key]] ?? '')) : '';
 
         $items = [];
         $seen  = [];
-        foreach ($raw as $row) {
-            $article = trim((string) ($row[$c['article']] ?? ''));
+        foreach ($raw as $i => $row) {
+            if ($i <= $headerIdx) {
+                continue; // skip everything up to and including the header
+            }
+            $article = $get($row, 'article');
             // Data row = article that contains a digit (numeric 61656 or alnum СС02428)
             // + a numeric Опт1 price. Skips title/section/brand-banner rows.
             if ($article === '' || mb_strtolower($article) === 'артикул' || ! preg_match('/\d/u', $article)) {
                 continue;
             }
-            $price = $this->num((string) ($row[$c['price']] ?? ''));
+            $price = $this->num($get($row, 'price'));
             if ($price === null) {
                 continue;
             }
@@ -251,11 +273,11 @@ class SyncTskNasosyCommand extends Command
             $items[] = [
                 'article'      => $article,
                 'norm_article' => $norm,
-                'brand'        => trim((string) ($row[$c['brand']] ?? '')),
-                'name'         => trim((string) ($row[$c['name']] ?? '')),
+                'brand'        => $get($row, 'brand'),
+                'name'         => $get($row, 'name'),
                 'price'        => $price,
-                'retail_price' => $this->num((string) ($row[$c['retail_price']] ?? '')),
-                'status_text'  => trim((string) ($row[$c['status']] ?? '')),
+                'retail_price' => $this->num($get($row, 'retail_price')),
+                'status_text'  => $get($row, 'status'),
             ];
         }
         return $items;
@@ -721,6 +743,13 @@ class SyncTskNasosyCommand extends Command
         return trim(preg_replace('/\s+/u', ' ', $s) ?? $s);
     }
 
+    /** Category words to drop so «Насос Unipump CP 32-60 180» == «CP 32-60 180». */
+    private const MODEL_STOPWORDS = [
+        'НАСОС', 'НАСОСНЫЙ', 'НАСОСНАЯ', 'ЦИРКУЛЯЦИОННЫЙ', 'ЦИРКУЛЯЦИОННАЯ',
+        'СКВАЖИННЫЙ', 'ДРЕНАЖНЫЙ', 'ДРЕНАЖНО', 'ФЕКАЛЬНЫЙ', 'ПОВЕРХНОСТНЫЙ',
+        'ПОГРУЖНОЙ', 'ВИХРЕВОЙ', 'САМОВСАСЫВАЮЩИЙ', 'СТАНЦИЯ', 'КОМПЛЕКТ',
+    ];
+
     private function model(string $productName, string $brand): string
     {
         $n = mb_strtoupper($productName);
@@ -728,7 +757,11 @@ class SyncTskNasosyCommand extends Command
             $n = preg_replace('/' . preg_quote(mb_strtoupper($brand), '/') . '/u', '', $n) ?? $n;
         }
         $n = preg_replace('/[^А-ЯЁA-Z0-9\-\/.]/u', ' ', $n) ?? $n;
-        return trim(preg_replace('/\s+/u', ' ', $n) ?? $n);
+        $toks = array_filter(
+            preg_split('/\s+/u', trim($n)) ?: [],
+            fn ($t) => $t !== '' && ! in_array($t, self::MODEL_STOPWORDS, true)
+        );
+        return implode(' ', $toks);
     }
 
     private function num(string $v): ?float
