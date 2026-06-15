@@ -408,6 +408,43 @@ class SyncTskNasosyCommand extends Command
         $this->info('Действия:');
         $this->table(['action', 'кол-во'], array_map(fn ($k, $v) => [$k, $v], array_keys($actions), array_values($actions)));
 
+        // ── Покрытие брендов: что из прайса уже есть в каталоге ───────────────────
+        $brands = [];
+        foreach ($rows as $r) {
+            $b = trim($r['brand']);
+            if ($b === '') {
+                continue;
+            }
+            $brands[$b]['rows'] = ($brands[$b]['rows'] ?? 0) + 1;
+            $brands[$b]['resolved'] = $r['resolved_brand_id'] !== null;
+        }
+        ksort($brands);
+        $this->newLine();
+        $this->info('Бренды прайса (есть ли в каталоге):');
+        $this->table(['бренд', 'строк', 'в каталоге?'],
+            array_map(fn ($b, $i) => [$b, $i['rows'], $i['resolved'] ? 'да' : '<fg=yellow>НЕТ</>'], array_keys($brands), $brands));
+
+        // ── Что уже есть локально в целевых категориях насосов ────────────────────
+        $catNames = DB::table('categories')->whereIn('id', [272, 60, 251, 265])->pluck('name', 'id');
+        $existing = DB::table('products')->where('is_archived', false)
+            ->whereIn('category_id', [272, 60, 251, 265])
+            ->select('category_id', DB::raw('count(*) as c'))->groupBy('category_id')->pluck('c', 'category_id');
+        $this->info('Существующие активные товары в категориях насосов (с чем будем склеивать):');
+        $this->table(['cat_id', 'категория', 'товаров в каталоге'],
+            collect([272, 60, 251, 265])->map(fn ($c) => [$c, $catNames[$c] ?? '—', $existing[$c] ?? 0])->all());
+
+        // ── Уверенность матчинга (как именно склеилось) ───────────────────────────
+        $conf = [];
+        foreach ($rows as $r) {
+            if ($r['action'] === 'matched') {
+                $conf[$r['confidence']] = ($conf[$r['confidence']] ?? 0) + 1;
+            }
+        }
+        if ($conf !== []) {
+            $this->info('Матчинг по уверенности:');
+            $this->table(['confidence', 'кол-во'], array_map(fn ($k, $v) => [$k, $v], array_keys($conf), array_values($conf)));
+        }
+
         $this->info('Примеры (10):');
         $this->table(
             ['article', 'brand', 'name', 'опт1', 'мрц', 'статус', 'in_stock', 'action', 'matched_sku'],
