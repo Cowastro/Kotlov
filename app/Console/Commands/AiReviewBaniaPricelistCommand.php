@@ -5,14 +5,18 @@ namespace App\Console\Commands;
 use App\Services\AiContentEnricher;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
+use PhpOffice\PhpSpreadsheet\IOFactory;
 
 class AiReviewBaniaPricelistCommand extends Command
 {
     protected $signature = 'supplier:ai-review-bania-pricelist
         {--review-file= : Manual-review CSV path; defaults to latest BANIA price-list manual-review report}
+        {--price-file= : BANIA wholesale XLSX/CSV path for --from-equal-prices}
         {--limit=30 : Maximum rows to send to AI}
         {--offset=0 : Skip N rows after filtering}
         {--cost-repair-only : Review only rows whose possible supplier_product still has supplier cost equal to retail and no google price-list link}
+        {--from-equal-prices : Build AI-review rows directly from BANIA supplier_products where supplier cost equals retail and no price-list link exists}
+        {--build-only : Build the review CSV without sending rows to AI}
         {--min-confidence=95 : Confidence threshold for recommended auto-approval}';
 
     protected $description = 'Use AI to review BANIA price-list manual-review matches and write a recommendation CSV without database writes.';
@@ -20,24 +24,32 @@ class AiReviewBaniaPricelistCommand extends Command
     public function handle(): int
     {
         $ai = new AiContentEnricher();
-        if (! $ai->isAvailable()) {
+        $buildOnly = (bool) $this->option('build-only');
+        if (! $buildOnly && ! $ai->isAvailable()) {
             $this->error('No AI provider configured. Set ANTHROPIC_API_KEY or AI_API_KEY + AI_API_URL + AI_MODEL.');
-            return self::FAILURE;
-        }
-
-        $reviewFile = $this->resolveReviewFile((string) ($this->option('review-file') ?? ''));
-        if (! $reviewFile || ! file_exists($reviewFile)) {
-            $this->error('Manual-review CSV not found.');
             return self::FAILURE;
         }
 
         $limit = max(1, (int) $this->option('limit'));
         $offset = max(0, (int) $this->option('offset'));
         $minConfidence = max(1, min(100, (int) $this->option('min-confidence')));
-        $allRows = $this->readCsv($reviewFile);
-        if ((bool) $this->option('cost-repair-only')) {
-            $allRows = $this->filterCostRepairRows($allRows);
-            $this->info(sprintf('Cost repair filter: %d rows remain.', count($allRows)));
+
+        if ((bool) $this->option('from-equal-prices')) {
+            $priceRows = $this->readPriceRows($this->resolvePriceFile((string) ($this->option('price-file') ?? '')));
+            $allRows = $this->buildRowsFromEqualPrices($priceRows);
+            $this->info(sprintf('Equal-price source: %d rows built.', count($allRows)));
+        } else {
+            $reviewFile = $this->resolveReviewFile((string) ($this->option('review-file') ?? ''));
+            if (! $reviewFile || ! file_exists($reviewFile)) {
+                $this->error('Manual-review CSV not found.');
+                return self::FAILURE;
+            }
+
+            $allRows = $this->readCsv($reviewFile);
+            if ((bool) $this->option('cost-repair-only')) {
+                $allRows = $this->filterCostRepairRows($allRows);
+                $this->info(sprintf('Cost repair filter: %d rows remain.', count($allRows)));
+            }
         }
 
         $rows = array_slice($allRows, $offset, $limit);
@@ -47,14 +59,18 @@ class AiReviewBaniaPricelistCommand extends Command
             return self::SUCCESS;
         }
 
-        $this->info('AI provider: ' . $ai->providerName());
-        $this->info('Review file: ' . $reviewFile);
+        $this->info($buildOnly ? 'AI provider: skipped by --build-only' : 'AI provider: ' . $ai->providerName());
+        if (! (bool) $this->option('from-equal-prices')) {
+            $this->info('Review file: ' . $reviewFile);
+        }
 
         $results = [];
         foreach ($rows as $index => $row) {
             $this->line(sprintf('[%d/%d] price row %s', $index + 1, count($rows), $row['price_row'] ?? ''));
 
-            $decision = $this->reviewRow($ai, $row);
+            $decision = $buildOnly
+                ? ['decision' => 'not_enough_data', 'confidence' => 0, 'reason' => 'build-only']
+                : $this->reviewRow($ai, $row);
             $confidence = (int) ($decision['confidence'] ?? 0);
             $aiDecision = (string) ($decision['decision'] ?? 'not_enough_data');
 
@@ -127,6 +143,127 @@ class AiReviewBaniaPricelistCommand extends Command
 
         fclose($handle);
         return $rows;
+    }
+
+    private function resolvePriceFile(string $priceFile): string
+    {
+        $priceFile = trim($priceFile);
+        if ($priceFile === '') {
+            $default = storage_path('app/supplier-cache/bania-pricelist.xlsx');
+            $priceFile = file_exists($default) ? $default : storage_path('app/pricelists/google/bania-dynamic-price.xlsx');
+        } elseif (! str_starts_with($priceFile, DIRECTORY_SEPARATOR) && ! preg_match('/^[A-Z]:\\\\/i', $priceFile)) {
+            $priceFile = base_path($priceFile);
+        }
+
+        if (! file_exists($priceFile)) {
+            throw new \RuntimeException('Price file not found: ' . $priceFile);
+        }
+
+        return $priceFile;
+    }
+
+    private function readPriceRows(string $priceFile): array
+    {
+        $reader = IOFactory::createReaderForFile($priceFile);
+        $reader->setReadDataOnly(true);
+        $rows = $reader->load($priceFile)->getActiveSheet()->toArray(null, true, true, false);
+
+        $result = [];
+        foreach ($rows as $index => $row) {
+            $name = trim((string) ($row[0] ?? ''));
+            $article = $this->normalizeArticle((string) ($row[2] ?? ''));
+            $price = $this->parseMoney((string) ($row[5] ?? ''));
+            if ($index < 5 || $name === '' || $price === null || $price <= 0) {
+                continue;
+            }
+
+            $result[] = [
+                'row' => $index + 1,
+                'name' => $name,
+                'article' => $article,
+                'price' => $price,
+                'normalized_name' => $this->normalizeName($name),
+            ];
+        }
+
+        return $result;
+    }
+
+    private function buildRowsFromEqualPrices(array $priceRows): array
+    {
+        $supplierProducts = DB::table('supplier_products as sp')
+            ->join('suppliers as s', 's.id', '=', 'sp.supplier_id')
+            ->join('products as p', 'p.id', '=', 'sp.product_id')
+            ->leftJoin('brands as b', 'b.id', '=', 'p.brand_id')
+            ->where('s.code', 'bania')
+            ->whereNotNull('sp.price_byn')
+            ->whereNotNull('p.price')
+            ->whereRaw('ABS(sp.price_byn - p.price) < 0.01')
+            ->select([
+                'sp.id as supplier_product_id',
+                'sp.product_id',
+                'sp.supplier_article',
+                'sp.supplier_name',
+                'sp.raw',
+                'p.name as product_name',
+                'p.price as product_price',
+                'b.name as brand',
+            ])
+            ->orderByDesc('p.id')
+            ->get();
+
+        $rows = [];
+        foreach ($supplierProducts as $supplierProduct) {
+            $raw = json_decode((string) ($supplierProduct->raw ?? ''), true);
+            if (is_array($raw) && ! empty($raw['google_price_list'])) {
+                continue;
+            }
+
+            $best = $this->bestPriceRowForSupplierProduct($supplierProduct, $priceRows);
+            if (! $best) {
+                continue;
+            }
+
+            $rows[] = [
+                'price_row' => $best['row'],
+                'price_title' => $best['name'],
+                'price_article' => $best['article'],
+                'price_value' => $best['price'],
+                'possible_supplier_product_id' => $supplierProduct->supplier_product_id,
+                'possible_product_id' => $supplierProduct->product_id,
+                'possible_supplier_title' => $supplierProduct->supplier_name,
+                'possible_product_title' => $supplierProduct->product_name,
+                'product_brand' => $supplierProduct->brand,
+                'product_retail_price' => $supplierProduct->product_price,
+                'match_type' => 'equal_price_best_price_row',
+                'confidence' => $best['score'],
+                'reason' => 'built from supplier_products where supplier cost equals retail and no google price-list link exists',
+            ];
+        }
+
+        return $rows;
+    }
+
+    private function bestPriceRowForSupplierProduct(object $supplierProduct, array $priceRows): ?array
+    {
+        $candidateNames = array_filter([
+            $this->normalizeName((string) $supplierProduct->supplier_name),
+            $this->normalizeName((string) $supplierProduct->product_name),
+        ]);
+
+        $best = null;
+        foreach ($priceRows as $row) {
+            $score = 0;
+            foreach ($candidateNames as $candidateName) {
+                $score = max($score, $this->candidateScore($row['normalized_name'], $candidateName));
+            }
+
+            if (! $best || $score > $best['score']) {
+                $best = $row + ['score' => $score];
+            }
+        }
+
+        return $best && $best['score'] >= 60 ? $best : null;
     }
 
     private function filterCostRepairRows(array $rows): array
@@ -225,6 +362,84 @@ PROMPT;
             'confidence' => max(0, min(100, (int) ($data['confidence'] ?? 0))),
             'reason' => trim((string) ($data['reason'] ?? '')),
         ];
+    }
+
+    private function candidateScore(string $priceName, string $candidateName): int
+    {
+        $score = $this->similarity($priceName, $candidateName);
+
+        $priceNumbers = $this->modelNumbers($priceName);
+        $candidateNumbers = $this->modelNumbers($candidateName);
+        if ($priceNumbers !== [] && $candidateNumbers !== [] && array_intersect($priceNumbers, $candidateNumbers) === []) {
+            return min($score, 70);
+        }
+
+        return $score;
+    }
+
+    private function similarity(string $left, string $right): int
+    {
+        if ($left === '' || $right === '') {
+            return 0;
+        }
+
+        if ($left === $right) {
+            return 100;
+        }
+
+        if (str_contains($left, $right) || str_contains($right, $left)) {
+            return 92;
+        }
+
+        similar_text($left, $right, $percent);
+        return (int) round($percent);
+    }
+
+    private function modelNumbers(string $name): array
+    {
+        preg_match_all('/\b\d{1,3}(?:[.,]\d+)?\b/u', $name, $matches);
+        $numbers = [];
+        foreach ($matches[0] ?? [] as $match) {
+            $number = (float) str_replace(',', '.', $match);
+            if ($number > 0 && $number <= 100) {
+                $numbers[] = (string) rtrim(rtrim((string) $number, '0'), '.');
+            }
+        }
+
+        return array_values(array_unique($numbers));
+    }
+
+    private function normalizeName(string $value): string
+    {
+        $value = mb_strtolower(trim($value));
+        $value = str_replace(["\xc2\xa0", '–', '—', '‑'], [' ', '-', '-', '-'], $value);
+        $value = preg_replace('/\b(печь|для|бани|банная|электрокаменка|каменка|электрическая|дровяная|пб|чугунная)\b/u', ' ', $value) ?? $value;
+        $value = preg_replace('/[^0-9a-zа-яё]+/u', ' ', $value) ?? $value;
+        $value = preg_replace('/\s+/u', ' ', $value) ?? $value;
+
+        return trim($value);
+    }
+
+    private function normalizeArticle(string $value): string
+    {
+        return mb_strtoupper(preg_replace('/[^0-9A-ZА-ЯЁ]+/u', '', trim($value)) ?? '');
+    }
+
+    private function parseMoney(string $value): ?float
+    {
+        $normalized = trim(str_replace(["\xc2\xa0", ' '], '', $value));
+        $normalized = preg_replace('/[^0-9,.\-]/u', '', $normalized) ?? '';
+        if ($normalized === '' || $normalized === '-') {
+            return null;
+        }
+
+        if (str_contains($normalized, ',') && str_contains($normalized, '.')) {
+            $normalized = str_replace(',', '', $normalized);
+        } else {
+            $normalized = str_replace(',', '.', $normalized);
+        }
+
+        return is_numeric($normalized) ? round((float) $normalized, 2) : null;
     }
 
     private function extractJson(string $response): string
