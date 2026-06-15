@@ -19,7 +19,7 @@ class SupplierProductsRelationManager extends RelationManager
     public function table(Table $table): Table
     {
         return $table
-            ->modifyQueryUsing(fn($query) => $query->with(['supplier', 'supplierSync']))
+            ->modifyQueryUsing(fn($query) => $query->with(['supplier', 'supplierSync', 'product']))
             ->columns([
                 TextColumn::make('supplier.name')
                     ->label('Поставщик')
@@ -43,7 +43,7 @@ class SupplierProductsRelationManager extends RelationManager
                     ->copyable(),
 
                 TextColumn::make('price')
-                    ->label('Цена поставщика')
+                    ->label('Закупка поставщика')
                     ->formatStateUsing(fn($state, $record): string => $state === null
                         ? '—'
                         : number_format((float) $state, 2, ',', ' ') . ' ' . ($record->currency ?: 'BYN'))
@@ -53,11 +53,75 @@ class SupplierProductsRelationManager extends RelationManager
                     ->sortable(),
 
                 TextColumn::make('price_byn')
-                    ->label('Цена, BYN')
+                    ->label('Закупка, BYN')
                     ->formatStateUsing(fn($state): string => $state === null
                         ? '—'
                         : number_format((float) $state, 2, ',', ' ') . ' BYN')
                     ->sortable(),
+
+                TextColumn::make('product.price')
+                    ->label('Розница сайта')
+                    ->formatStateUsing(fn($state, $record): string => $state === null || (float) $state <= 0
+                        ? '—'
+                        : number_format((float) $state, 2, ',', ' ') . ' ' . ($record->product?->currency ?: 'BYN'))
+                    ->sortable()
+                    ->toggleable(),
+
+                TextColumn::make('margin')
+                    ->label('Маржа')
+                    ->getStateUsing(function ($record): string {
+                        $cost = $record->price_byn !== null ? (float) $record->price_byn : 0.0;
+                        $retail = $record->product?->price !== null ? (float) $record->product->price : 0.0;
+
+                        if ($cost <= 0 || $retail <= 0) {
+                            return '—';
+                        }
+
+                        $margin = $retail - $cost;
+                        $percent = $retail > 0 ? ($margin / $retail) * 100 : 0;
+
+                        return number_format($margin, 2, ',', ' ') . ' BYN / ' . number_format($percent, 1, ',', ' ') . '%';
+                    })
+                    ->badge()
+                    ->color(function ($record): string {
+                        $cost = $record->price_byn !== null ? (float) $record->price_byn : 0.0;
+                        $retail = $record->product?->price !== null ? (float) $record->product->price : 0.0;
+
+                        if ($cost <= 0 || $retail <= 0) {
+                            return 'gray';
+                        }
+
+                        $percent = (($retail - $cost) / $retail) * 100;
+
+                        return match (true) {
+                            $percent <= 0 => 'danger',
+                            $percent < 10 => 'warning',
+                            default => 'success',
+                        };
+                    }),
+
+                TextColumn::make('price_source')
+                    ->label('Источник закупки')
+                    ->getStateUsing(function ($record): string {
+                        $raw = is_array($record->raw) ? $record->raw : [];
+                        $isBania = mb_strtolower((string) ($record->supplier?->code ?? '')) === 'bania';
+
+                        if ($isBania && isset($raw['google_price_list'])) {
+                            return 'Прайс BANIA';
+                        }
+
+                        if ($isBania) {
+                            return 'Уточнить';
+                        }
+
+                        return 'Импорт';
+                    })
+                    ->badge()
+                    ->color(fn(string $state): string => match ($state) {
+                        'Прайс BANIA' => 'success',
+                        'Уточнить' => 'warning',
+                        default => 'gray',
+                    }),
 
                 TextColumn::make('stock_quantity')
                     ->label('Кол-во, шт')
