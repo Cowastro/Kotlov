@@ -4,12 +4,15 @@ namespace App\Console\Commands;
 
 use App\Services\AiContentEnricher;
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\DB;
 
 class AiReviewBaniaPricelistCommand extends Command
 {
     protected $signature = 'supplier:ai-review-bania-pricelist
         {--review-file= : Manual-review CSV path; defaults to latest BANIA price-list manual-review report}
         {--limit=30 : Maximum rows to send to AI}
+        {--offset=0 : Skip N rows after filtering}
+        {--cost-repair-only : Review only rows whose possible supplier_product still has supplier cost equal to retail and no google price-list link}
         {--min-confidence=95 : Confidence threshold for recommended auto-approval}';
 
     protected $description = 'Use AI to review BANIA price-list manual-review matches and write a recommendation CSV without database writes.';
@@ -29,8 +32,15 @@ class AiReviewBaniaPricelistCommand extends Command
         }
 
         $limit = max(1, (int) $this->option('limit'));
+        $offset = max(0, (int) $this->option('offset'));
         $minConfidence = max(1, min(100, (int) $this->option('min-confidence')));
-        $rows = array_slice($this->readCsv($reviewFile), 0, $limit);
+        $allRows = $this->readCsv($reviewFile);
+        if ((bool) $this->option('cost-repair-only')) {
+            $allRows = $this->filterCostRepairRows($allRows);
+            $this->info(sprintf('Cost repair filter: %d rows remain.', count($allRows)));
+        }
+
+        $rows = array_slice($allRows, $offset, $limit);
 
         if ($rows === []) {
             $this->info('Manual-review CSV has no rows.');
@@ -117,6 +127,43 @@ class AiReviewBaniaPricelistCommand extends Command
 
         fclose($handle);
         return $rows;
+    }
+
+    private function filterCostRepairRows(array $rows): array
+    {
+        $ids = collect($rows)
+            ->pluck('possible_supplier_product_id')
+            ->filter(fn ($id) => (int) $id > 0)
+            ->map(fn ($id) => (int) $id)
+            ->unique()
+            ->values()
+            ->all();
+
+        if ($ids === []) {
+            return [];
+        }
+
+        $eligible = [];
+        DB::table('supplier_products as sp')
+            ->join('products as p', 'p.id', '=', 'sp.product_id')
+            ->whereIn('sp.id', $ids)
+            ->whereNotNull('sp.price_byn')
+            ->whereNotNull('p.price')
+            ->whereRaw('ABS(sp.price_byn - p.price) < 0.01')
+            ->get(['sp.id', 'sp.raw'])
+            ->each(function ($row) use (&$eligible): void {
+                $raw = json_decode((string) ($row->raw ?? ''), true);
+                if (is_array($raw) && ! empty($raw['google_price_list'])) {
+                    return;
+                }
+
+                $eligible[(int) $row->id] = true;
+            });
+
+        return array_values(array_filter(
+            $rows,
+            fn (array $row): bool => isset($eligible[(int) ($row['possible_supplier_product_id'] ?? 0)])
+        ));
     }
 
     private function reviewRow(AiContentEnricher $ai, array $row): array
