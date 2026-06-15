@@ -401,14 +401,13 @@ class ScrapeAqualiderCommand extends Command
         $art = mb_strtoupper(trim($d['article']));
         DB::table('supplier_products')->updateOrInsert(
             ['supplier_id' => $sid, 'supplier_article' => $art],
+            // Link only — purchase price (Опт1) and stock come from the price sheet
+            // via supplier:sync-tsk-nasosy. Site price/stock are NOT our cost.
             ['supplier_article_normalized' => $art, 'product_id' => $productId,
              'product_sku' => (string) DB::table('products')->where('id', $productId)->value('sku'),
              'supplier_name' => $d['name'], 'source_url' => $url,
-             'price' => $d['price'], 'currency' => 'BYN', 'currency_rate' => 1.0, 'price_byn' => $d['price'],
-             'in_stock' => $d['inStock'], 'stock_status' => $d['stockStatus'],
-             'stock_text' => $d['stockText'] !== '' ? $d['stockText'] : null,
              'match_status' => 'matched', 'match_confidence' => 'aqualider_scrape',
-             'last_stock_synced_at' => $now, 'updated_at' => $now, 'created_at' => $now]
+             'updated_at' => $now, 'created_at' => $now]
         );
     }
 

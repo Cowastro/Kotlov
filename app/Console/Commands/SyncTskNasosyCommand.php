@@ -511,31 +511,40 @@ class SyncTskNasosyCommand extends Command
 
     private function upsertSupplierProduct(array $r, int $pid, string $sku, int $sid, ?int $syncId, $now): void
     {
+        $payload = [
+            'supplier_article'            => $r['norm_article'],
+            'supplier_article_normalized' => $r['norm_article'],
+            'supplier_sync_id' => $syncId,
+            'product_id'   => $pid,
+            'product_sku'  => $sku,
+            'supplier_name' => trim($r['brand'] . ' ' . $r['name']),
+            'source_url'   => self::SOURCE_URL,
+            'price'        => $r['price'],          // Опт1 — закупка
+            'currency'     => 'BYN',
+            'currency_rate' => 1.0,
+            'price_byn'    => $r['price'],
+            'in_stock'     => $r['stock']['in_stock'],
+            'stock_status' => $r['stock']['status'],
+            'stock_text'   => $r['status_text'] !== '' ? $r['status_text'] : null,
+            'delivery_days' => $r['stock']['delivery_days'],
+            'match_status' => 'matched',
+            'match_confidence' => $r['confidence'],
+            'raw'          => json_encode(['article' => $r['article'], 'brand' => $r['brand'], 'retail' => $r['retail_price']], JSON_UNESCAPED_UNICODE),
+            'last_synced_at' => $now,
+            'last_stock_synced_at' => $now,
+            'updated_at'   => $now,
+        ];
+
+        // Prefer updating the existing link for this product (e.g. created by the
+        // aqualider scraper with a different supplier_article) — one row per product.
+        $existing = DB::table('supplier_products')->where('supplier_id', $sid)->where('product_id', $pid)->value('id');
+        if ($existing) {
+            DB::table('supplier_products')->where('id', $existing)->update($payload);
+            return;
+        }
         DB::table('supplier_products')->updateOrInsert(
             ['supplier_id' => $sid, 'supplier_article' => $r['norm_article']],
-            [
-                'supplier_article_normalized' => $r['norm_article'],
-                'supplier_sync_id' => $syncId,
-                'product_id'   => $pid,
-                'product_sku'  => $sku,
-                'supplier_name' => trim($r['brand'] . ' ' . $r['name']),
-                'source_url'   => self::SOURCE_URL,
-                'price'        => $r['price'],
-                'currency'     => 'BYN',
-                'currency_rate' => 1.0,
-                'price_byn'    => $r['price'],
-                'in_stock'     => $r['stock']['in_stock'],
-                'stock_status' => $r['stock']['status'],
-                'stock_text'   => $r['status_text'] !== '' ? $r['status_text'] : null,
-                'delivery_days' => $r['stock']['delivery_days'],
-                'match_status' => 'matched',
-                'match_confidence' => $r['confidence'],
-                'raw'          => json_encode(['article' => $r['article'], 'brand' => $r['brand'], 'retail' => $r['retail_price']], JSON_UNESCAPED_UNICODE),
-                'last_synced_at' => $now,
-                'last_stock_synced_at' => $now,
-                'updated_at'   => $now,
-                'created_at'   => $now,
-            ]
+            $payload + ['created_at' => $now]
         );
     }
 
