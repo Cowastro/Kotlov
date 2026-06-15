@@ -437,6 +437,15 @@ class SyncBaniaPricelistCommand extends Command
             ];
         }
 
+        if ($best['score'] >= 70 && $this->canRepairSaunaStoveCostByTitle($row, $best)) {
+            return [
+                'supplier_product' => $best['supplier_product'],
+                'match_type' => 'title_repair_sauna_stove_equal_retail',
+                'confidence' => $best['score'],
+                'reason' => 'sauna stove supplier cost equals retail and has no price-list link; repairing from BANIA price list',
+            ];
+        }
+
         if ($best['score'] >= 72) {
             return [
                 'action' => 'manual_review',
@@ -480,6 +489,48 @@ class SyncBaniaPricelistCommand extends Command
         }
 
         return abs((float) $supplierProduct->price_byn - (float) $supplierProduct->product_price) < 0.01;
+    }
+
+    private function canRepairSaunaStoveCostByTitle(array $row, array $best): bool
+    {
+        $supplierProduct = $best['supplier_product'] ?? null;
+        if (! $this->needsSupplierCostRepair($supplierProduct) || ! $this->isSaunaStoveSupplierProduct($supplierProduct)) {
+            return false;
+        }
+
+        $raw = json_decode((string) ($supplierProduct->raw ?? ''), true);
+        if (is_array($raw) && ! empty($raw['google_price_list'])) {
+            return false;
+        }
+
+        $priceNumbers = $this->modelNumbers((string) ($row['normalized_name'] ?? ''));
+        $candidateNumbers = array_values(array_unique(array_merge(
+            $this->modelNumbers($this->normalizeName((string) ($supplierProduct->supplier_name ?? ''))),
+            $this->modelNumbers($this->normalizeName((string) ($supplierProduct->product_name ?? '')))
+        )));
+
+        if ($priceNumbers !== [] && $candidateNumbers !== [] && array_intersect($priceNumbers, $candidateNumbers) === []) {
+            return false;
+        }
+
+        return true;
+    }
+
+    private function isSaunaStoveSupplierProduct(?object $supplierProduct): bool
+    {
+        if (! $supplierProduct) {
+            return false;
+        }
+
+        return in_array((string) ($supplierProduct->category_slug ?? ''), [
+            'drovyanye-pechi-dlya-bani',
+            'pechi-dlya-bani',
+            'dlya-bani',
+            'bani-i-sauny',
+            'elektrokamenki',
+            'pechi-sauna',
+            'pechi-kamenka',
+        ], true);
     }
 
     private function candidateScore(string $priceName, string $candidateName): int
