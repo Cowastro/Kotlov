@@ -29,6 +29,7 @@ class SyncTskNasosyCommand extends Command
         {--limit= : Process only the first N data rows}
         {--stock-file= : Local CSV/XLSX path (skips Google Sheet download)}
         {--sheet-url= : Override the default Google Sheet URL}
+        {--in-stock-only : Create products only for rows «в наличии» (skip preorder/out)}
         {--create-new : Create products for rows with no match}';
 
     protected $description = 'Sync ТСК Насосы prices & stock from Google Sheets into supplier_products.';
@@ -38,8 +39,7 @@ class SyncTskNasosyCommand extends Command
     private const SYNC_KEY      = 'tsk_nasosy_stock';
     private const SOURCE_URL    = 'https://aqualider.by/';
     private const DEFAULT_SHEET_URL = 'https://docs.google.com/spreadsheets/d/1NlqXqVky2cDDAELEEKKAO0e07mpZjpkhLOQN13YWiuU/edit';
-    private const SHEET_GID          = '1219012142'; // full price tab (1052 rows): N=Опт1, Q=наличие
-    private const SHEET_CACHE_PATH  = 'supplier-cache/tsk-nasosy.csv';
+    private const SHEET_CACHE_PATH  = 'supplier-cache/tsk-nasosy.xlsx';
 
     /**
      * Fixed column layout of the «Одним листом» tab — the CSV export has NO text
@@ -91,32 +91,31 @@ class SyncTskNasosyCommand extends Command
             ? '<fg=red;options=bold>APPLY: database will be updated.</>'
             : '<fg=yellow;options=bold>DRY RUN: database will not be changed.</>');
 
-        // ── Resolve file ──────────────────────────────────────────────────────────
+        // ── Collect rows ──────────────────────────────────────────────────────────
         $file = $this->option('stock-file');
         if ($file !== null) {
             if (! file_exists($file)) {
                 $this->error("File not found: {$file}");
                 return self::FAILURE;
             }
-        } else {
             try {
-                $file = $this->downloadGoogleSheet($this->option('sheet-url') ?: self::DEFAULT_SHEET_URL);
+                $rows = $this->parseFile($file);
+            } catch (\Throwable $e) {
+                $this->error('Parse failed: ' . $e->getMessage());
+                return self::FAILURE;
+            }
+        } else {
+            // Light per-tab CSV crawl of the whole workbook (assortment is split
+            // across many tabs; avoids the heavy XLSX load).
+            try {
+                $rows = $this->downloadAllTabs($this->option('sheet-url') ?: self::DEFAULT_SHEET_URL);
             } catch (\RuntimeException $e) {
-                $this->error($e->getMessage() === 'private'
-                    ? 'Google Sheet недоступен публично. Открой доступ «Anyone with the link» или используй --stock-file=.'
-                    : 'Download failed: ' . $e->getMessage());
+                $this->error('Download failed: ' . $e->getMessage());
                 return self::FAILURE;
             }
         }
 
-        try {
-            $rows = $this->parseFile($file);
-        } catch (\Throwable $e) {
-            $this->error('Parse failed: ' . $e->getMessage());
-            return self::FAILURE;
-        }
-
-        $this->info(sprintf('Parsed %d data rows from %s', count($rows), basename($file)));
+        $this->info(sprintf('Parsed %d data rows from price sheet (all tabs)', count($rows)));
         if ($limit) {
             $rows = array_slice($rows, 0, $limit);
         }
@@ -133,54 +132,89 @@ class SyncTskNasosyCommand extends Command
             : $this->showDryRun($classified);
     }
 
-    // ── Google Sheet download (same approach as sync-rusklimat) ───────────────────
+    // ── Workbook download: per-tab CSV crawl (light, no XLSX) ─────────────────────
 
-    private function downloadGoogleSheet(string $url): string
+    /** Crawl every tab of the workbook as CSV and merge data rows (deduped by article). */
+    private function downloadAllTabs(string $url): array
     {
         if (! preg_match('#/spreadsheets/d/([a-zA-Z0-9_-]+)#', $url, $m)) {
             throw new \RuntimeException('Invalid Google Sheets URL.');
         }
-        $id = $m[1];
-        // Full price tab by gid (1052 rows; N=Опт1, Q=наличие).
-        $export = "https://docs.google.com/spreadsheets/d/{$id}/export?format=csv&gid=" . self::SHEET_GID;
+        $id   = $m[1];
+        $gids = $this->fetchAllGids($id);
+        if ($gids === []) {
+            throw new \RuntimeException('Не удалось получить список вкладок (gid) книги.');
+        }
+        $this->line(sprintf('Tabs found: %d', count($gids)));
 
-        $ctx = stream_context_create([
-            'http' => ['method' => 'GET', 'timeout' => 45, 'follow_location' => 1, 'max_redirects' => 10,
-                       'header' => "User-Agent: Mozilla/5.0 (compatible; KotlovBot/1.0)\r\nAccept: text/csv,*/*"],
-            'ssl'  => ['verify_peer' => false, 'verify_peer_name' => false],
-        ]);
-        $content = @file_get_contents($export, false, $ctx);
-        if ($content === false || trim($content) === '') {
-            throw new \RuntimeException('Could not fetch the sheet.');
+        $all = [];
+        $seen = [];
+        $tabsWithData = 0;
+        foreach ($gids as $gid) {
+            $csv = $this->fetchUrl("https://docs.google.com/spreadsheets/d/{$id}/export?format=csv&gid={$gid}");
+            if ($csv === null || str_starts_with(ltrim($csv), '<')) {
+                continue;
+            }
+            $rows = $this->normalise($this->csvToRows($csv));
+            if ($rows !== []) {
+                $tabsWithData++;
+            }
+            foreach ($rows as $item) {
+                if (! isset($seen[$item['norm_article']])) {
+                    $seen[$item['norm_article']] = true;
+                    $all[] = $item;
+                }
+            }
         }
-        if (str_starts_with(ltrim($content), '<') || stripos($content, '<html') !== false) {
-            throw new \RuntimeException('private');
-        }
-        $path = storage_path('app/' . self::SHEET_CACHE_PATH);
-        if (! is_dir(dirname($path))) {
-            mkdir(dirname($path), 0755, true);
-        }
-        file_put_contents($path, $content);
-        $this->info('Downloaded to storage/app/' . self::SHEET_CACHE_PATH);
-        return $path;
+        $this->line(sprintf('Tabs with data: %d', $tabsWithData));
+        return $all;
     }
 
-    // ── Parse ─────────────────────────────────────────────────────────────────────
+    /** @return string[] unique gids from the workbook htmlview */
+    private function fetchAllGids(string $id): array
+    {
+        $hv = $this->fetchUrl("https://docs.google.com/spreadsheets/d/{$id}/htmlview");
+        if ($hv === null) {
+            return [];
+        }
+        preg_match_all('/gid[=:]\s*"?(\d+)/', $hv, $m);
+        return array_values(array_unique($m[1]));
+    }
+
+    private function fetchUrl(string $url): ?string
+    {
+        $ctx = stream_context_create([
+            'http' => ['method' => 'GET', 'timeout' => 45, 'follow_location' => 1, 'max_redirects' => 10,
+                       'header' => "User-Agent: Mozilla/5.0 (compatible; KotlovBot/1.0)\r\nAccept: */*"],
+            'ssl'  => ['verify_peer' => false, 'verify_peer_name' => false],
+        ]);
+        $c = @file_get_contents($url, false, $ctx);
+        return ($c === false || $c === '') ? null : $c;
+    }
+
+    /** @return array<int,array<int,string>> */
+    private function csvToRows(string $csv): array
+    {
+        $head  = substr($csv, 0, 16384);
+        $delim = substr_count($head, ';') > substr_count($head, ',') ? ';' : ',';
+        $rows  = [];
+        $h = fopen('php://temp', 'r+');
+        fwrite($h, $csv);
+        rewind($h);
+        while (($r = fgetcsv($h, 0, $delim)) !== false) {
+            $rows[] = array_map(fn ($v) => $this->clean((string) $v), $r);
+        }
+        fclose($h);
+        return $rows;
+    }
+
+    // ── Parse local file (--stock-file) ───────────────────────────────────────────
 
     private function parseFile(string $path): array
     {
         $ext = strtolower(pathinfo($path, PATHINFO_EXTENSION));
         if ($ext === 'csv') {
-            $h = fopen($path, 'r');
-            // Detect delimiter over a chunk (first line may be a multiline quoted title).
-            $sample = (string) fread($h, 16384); rewind($h);
-            $delim = substr_count($sample, ';') > substr_count($sample, ',') ? ';' : ',';
-            $raw = [];
-            while (($r = fgetcsv($h, 0, $delim)) !== false) {
-                $raw[] = array_map(fn ($v) => $this->clean((string) $v), $r);
-            }
-            fclose($h);
-            return $this->normalise($raw);
+            return $this->normalise($this->csvToRows((string) file_get_contents($path)));
         }
         $sheet = IOFactory::load($path)->getActiveSheet();
         $raw = array_map(fn ($r) => array_map(fn ($v) => $this->clean((string) ($v ?? '')), $r),
@@ -329,10 +363,10 @@ class SyncTskNasosyCommand extends Command
 
         $action = match (true) {
             $match !== null                         => 'matched',
-            $brandId === null                       => 'brand_missing',
-            $catId === null                         => 'category_missing',
+            trim($row['brand']) === ''              => 'brand_missing', // only when no brand text at all
             $stock['status'] === 'out_of_stock'     => 'skipped_out_of_stock',
-            default                                 => 'create_candidate',
+            $this->option('in-stock-only') && $stock['status'] !== 'in_stock' => 'skipped_not_in_stock',
+            default                                 => 'create_candidate', // brand auto-created at apply if new
         };
 
         return $row + [
@@ -381,6 +415,19 @@ class SyncTskNasosyCommand extends Command
             }
         }
         return null;
+    }
+
+    private function findOrCreateBrand(string $name): int
+    {
+        $name = trim($name);
+        $existing = DB::table('brands')->whereRaw('LOWER(name) = ?', [mb_strtolower($name)])->value('id');
+        if ($existing) {
+            return (int) $existing;
+        }
+        return (int) DB::table('brands')->insertGetId([
+            'name' => $name, 'slug' => Str::slug($name) ?: Str::random(8),
+            'h1' => $name, 'is_active' => true, 'created_at' => now(), 'updated_at' => now(),
+        ]);
     }
 
     private function resolveCategory(string $name): int
@@ -486,7 +533,7 @@ class SyncTskNasosyCommand extends Command
                 $stats[$r['action']]++;
                 continue;
             }
-            if ($r['action'] === 'skipped_out_of_stock') {
+            if ($r['action'] === 'skipped_out_of_stock' || $r['action'] === 'skipped_not_in_stock') {
                 $stats['skipped']++;
                 continue;
             }
@@ -494,7 +541,8 @@ class SyncTskNasosyCommand extends Command
                 if ($r['matched_product_id'] !== null) {
                     $this->upsertSupplierProduct($r, (int) $r['matched_product_id'], (string) $r['matched_sku'], $sid, $syncId, $now);
                     $stats['matched']++;
-                } elseif ($createNew && $r['resolved_brand_id'] !== null && $r['resolved_category_id'] !== null) {
+                } elseif ($createNew && trim($r['brand']) !== '' && $r['resolved_category_id'] !== null) {
+                    $r['resolved_brand_id'] = $r['resolved_brand_id'] ?? $this->findOrCreateBrand($r['brand']);
                     $pid = $this->createProduct($r, $now);
                     $sku = $this->sku($pid);
                     $this->upsertSupplierProduct($r, $pid, $sku, $sid, $syncId, $now);
