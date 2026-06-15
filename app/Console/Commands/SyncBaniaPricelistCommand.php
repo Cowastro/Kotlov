@@ -44,6 +44,8 @@ class SyncBaniaPricelistCommand extends Command
         'kombinirovannye-kotly',
         'kotly-na-ugle',
         'kotly-na-pelletah',
+        'pechnoe-i-kaminnoe-lite',
+        'dveri-dlya-ban-i-saun',
     ];
 
     private array $reportRows = [];

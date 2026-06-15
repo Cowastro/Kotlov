@@ -126,6 +126,26 @@ class ScrapeBaniaSupplierCommand extends Command
                 'kotly-na-pelletah',
             ],
         ],
+        'cast_iron_doors' => [
+            'source_path' => 'chugunnye-dverki',
+            'sync_key' => 'bania_cast_iron_doors',
+            'title' => 'BANIA.by: cast iron stove doors',
+            'description' => 'Scrapes BANIA.by cast iron stove doors only when they exist in the wholesale price list.',
+            'requires_price_list' => true,
+            'category_slugs' => [
+                'pechnoe-i-kaminnoe-lite',
+            ],
+        ],
+        'sauna_doors' => [
+            'source_path' => 'dveri-dlya-bani',
+            'sync_key' => 'bania_sauna_doors',
+            'title' => 'BANIA.by: sauna doors',
+            'description' => 'Scrapes BANIA.by sauna doors only when they exist in the wholesale price list.',
+            'requires_price_list' => true,
+            'category_slugs' => [
+                'dveri-dlya-ban-i-saun',
+            ],
+        ],
     ];
     private const MODEL_TOKENS = [
         'aston',
