@@ -32,6 +32,11 @@ class SyncBaniaPricelistCommand extends Command
         'Этна',
         'ЭТНА',
     ];
+    private const HEATING_CATEGORY_SLUGS = [
+        'pechki',
+        'pechi',
+        'pechi-kaminy',
+    ];
 
     private array $reportRows = [];
     private array $manualRows = [];
@@ -73,7 +78,7 @@ class SyncBaniaPricelistCommand extends Command
         $supplierProductsTotal = count($supplierProducts);
         $supplierProducts = array_values(array_filter(
             $supplierProducts,
-            fn (object $supplierProduct): bool => $this->isProductionBrand((string) ($supplierProduct->brand_name ?? ''))
+            fn (object $supplierProduct): bool => $this->isAllowedSupplierProduct($supplierProduct)
         ));
         $indexes = $this->buildIndexes($supplierProducts);
         $now = now();
@@ -199,7 +204,7 @@ class SyncBaniaPricelistCommand extends Command
         ));
 
         $this->info('Products with recalculated availability: ' . count($changedProductIds));
-        $this->info(sprintf('BANIA supplier_products in allowed production brands: %d of %d', count($supplierProducts), $supplierProductsTotal));
+        $this->info(sprintf('BANIA supplier_products in allowed sync scope: %d of %d', count($supplierProducts), $supplierProductsTotal));
         $this->warn('products.price was not updated. The price-list column "OPT with VAT" is supplier purchase cost.');
 
         return $stats['errors'] > 0 ? self::FAILURE : self::SUCCESS;
@@ -305,6 +310,7 @@ class SyncBaniaPricelistCommand extends Command
         return DB::table('supplier_products as sp')
             ->leftJoin('products as p', 'p.id', '=', 'sp.product_id')
             ->leftJoin('brands as b', 'b.id', '=', 'p.brand_id')
+            ->leftJoin('categories as c', 'c.id', '=', 'p.category_id')
             ->where('sp.supplier_id', $supplierId)
             ->select([
                 'sp.id',
@@ -325,6 +331,7 @@ class SyncBaniaPricelistCommand extends Command
                 'p.price as product_price',
                 'p.in_stock as product_in_stock',
                 'b.name as brand_name',
+                'c.slug as category_slug',
             ])
             ->get()
             ->all();
@@ -593,6 +600,15 @@ class SyncBaniaPricelistCommand extends Command
         }
 
         return false;
+    }
+
+    private function isAllowedSupplierProduct(object $supplierProduct): bool
+    {
+        if ($this->isProductionBrand((string) ($supplierProduct->brand_name ?? ''))) {
+            return true;
+        }
+
+        return in_array((string) ($supplierProduct->category_slug ?? ''), self::HEATING_CATEGORY_SLUGS, true);
     }
 
     private function normalizeBrand(string $brand): string

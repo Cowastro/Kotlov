@@ -98,21 +98,6 @@ class ProductsTable
                     })
                     ->toggleable(),
 
-                TextColumn::make('suppliers_list')
-                    ->label('Поставщик')
-                    ->getStateUsing(fn ($record): string => $record->supplierProducts
-                        ->map(fn ($sp) => $sp->supplier?->name)
-                        ->filter()
-                        ->unique()
-                        ->implode(', ') ?: '—'
-                    )
-                    ->searchable(query: fn (Builder $query, string $search) => $query->whereHas(
-                        'supplierProducts', fn ($q) => $q->whereHas(
-                            'supplier', fn ($q2) => $q2->where('name', 'like', "%{$search}%")
-                        )
-                    ))
-                    ->toggleable(),
-
                 TextColumn::make('price')
                     ->label('Розница сайта')
                     ->sortable()
@@ -155,6 +140,21 @@ class ProductsTable
                             default => 'success',
                         };
                     })
+                    ->toggleable(),
+
+                TextColumn::make('suppliers_list')
+                    ->label('Поставщик')
+                    ->getStateUsing(fn ($record): string => $record->supplierProducts
+                        ->map(fn ($sp) => $sp->supplier?->name)
+                        ->filter()
+                        ->unique()
+                        ->implode(', ') ?: '—'
+                    )
+                    ->searchable(query: fn (Builder $query, string $search) => $query->whereHas(
+                        'supplierProducts', fn ($q) => $q->whereHas(
+                            'supplier', fn ($q2) => $q2->where('name', 'like', "%{$search}%")
+                        )
+                    ))
                     ->toggleable(),
 
                 TextColumn::make('price_old')
