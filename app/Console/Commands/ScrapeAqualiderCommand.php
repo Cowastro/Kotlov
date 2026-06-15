@@ -32,33 +32,32 @@ class ScrapeAqualiderCommand extends Command
     private const BASE = 'https://aqualider.by';
     private const IMAGE_DIR = 'img/products/tsk-nasosy';
 
-    /** Shortcut key → listing path. */
+    /** Shortcut key → [listing path, default KOTLOV category_id]. */
     private const CATEGORIES = [
-        'tsirkulyatsionnye' => '/catalog/nasosy/tsirkulyatsionnye_nasosy/',
-        'promyshlennye'     => '/catalog/promyshlennye_nasosy/',
-        'stantsii'          => '/catalog/nasosnye_stantsii_1/',
-        'kanalizacionnye'   => '/catalog/kanalizatsionnye_nasosnye_stantsii/',
-        'otoplenie'         => '/catalog/komplektuyushchie_dlya_sistem_otopleniya/',
-        'vodosnabzhenie'    => '/catalog/komplektuyushchie_dlya_sistem_vodosnabzheniya/',
-        'armatura'          => '/catalog/zapornaya_i_reguliruyushchaya_armatura/',
-        'baki'              => '/catalog/membrannye_baki_dlya_vody/',
+        'tsirkulyatsionnye' => ['/catalog/nasosy/tsirkulyatsionnye_nasosy/', 60],
+        'promyshlennye'     => ['/catalog/promyshlennye_nasosy/', 272],
+        'stantsii'          => ['/catalog/nasosnye_stantsii_1/', 251],
+        'kanalizacionnye'   => ['/catalog/kanalizatsionnye_nasosnye_stantsii/', 265],
+        'otoplenie'         => ['/catalog/komplektuyushchie_dlya_sistem_otopleniya/', 195],
+        'vodosnabzhenie'    => ['/catalog/komplektuyushchie_dlya_sistem_vodosnabzheniya/', 195],
+        'armatura'          => ['/catalog/zapornaya_i_reguliruyushchaya_armatura/', 195],
+        'baki'              => ['/catalog/membrannye_baki_dlya_vody/', 89],
     ];
 
-    /** Breadcrumb keyword → KOTLOV category_id. */
+    /**
+     * Specific breadcrumb keyword → category, checked IN ORDER (more specific
+     * first). If none match, the run's default category (above) is used.
+     */
     private const CATEGORY_MAP = [
+        'канализац'  => 265,
+        'фекаль'     => 265,
+        'дренаж'     => 265,
         'циркуляц'   => 60,
         'скважин'    => 272,
-        'промышленн' => 272,
-        'насосные станции' => 251,
-        'канализац'  => 265,
-        'дренаж'     => 265,
-        'фекаль'     => 265,
+        'гидроаккум' => 89,
         'мембранн'   => 89,
         'расширительн' => 89,
-        'отоплен'    => 195,
-        'водоснабж'  => 251,
-        'арматур'    => 195,
-        'насос'      => 272, // generic pump fallback
+        'насосные станции' => 251,
     ];
 
     private bool $apply;
@@ -70,9 +69,13 @@ class ScrapeAqualiderCommand extends Command
         $this->apply = (bool) $this->option('apply') && ! $this->option('dry-run');
         $this->line($this->apply ? '<fg=red;options=bold>APPLY</>' : '<fg=yellow;options=bold>DRY RUN</>');
 
-        $cat = (string) $this->option('category');
-        $path = self::CATEGORIES[$cat] ?? (str_starts_with($cat, '/catalog/') ? $cat : null);
-        if ($path === null) {
+        $key = (string) $this->option('category');
+        if (isset(self::CATEGORIES[$key])) {
+            [$path, $defaultCat] = self::CATEGORIES[$key];
+        } elseif (str_starts_with($key, '/catalog/')) {
+            $path = $key;
+            $defaultCat = 272;
+        } else {
             $this->error('Unknown category. Keys: ' . implode(', ', array_keys(self::CATEGORIES)) . ' (or a /catalog/... path)');
             return self::FAILURE;
         }
@@ -87,7 +90,7 @@ class ScrapeAqualiderCommand extends Command
         $limit = $this->option('limit') ? (int) $this->option('limit') : count($links);
         foreach (array_slice($links, 0, $limit) as $url) {
             try {
-                $this->processProduct($url);
+                $this->processProduct($url, $defaultCat);
             } catch (\Throwable $e) {
                 $this->stats['errors']++;
                 $this->warn('  error: ' . $e->getMessage());
@@ -119,7 +122,7 @@ class ScrapeAqualiderCommand extends Command
         return array_keys($links);
     }
 
-    private function processProduct(string $url): void
+    private function processProduct(string $url, int $defaultCat): void
     {
         $html = $this->fetch($url);
         if ($html === null) {
@@ -129,12 +132,7 @@ class ScrapeAqualiderCommand extends Command
         $d = $this->parseProduct($html, $url);
         $this->stats['parsed']++;
 
-        $catId = $this->resolveCategory($d['breadcrumb']);
-        if ($catId === null) {
-            $this->stats['no_category']++;
-            $this->line("  <fg=yellow>no category</> {$d['name']}  [" . mb_substr($d['breadcrumb'], 0, 50) . ']');
-            return;
-        }
+        $catId = $this->resolveCategory($d['breadcrumb'], $defaultCat);
 
         $this->line(sprintf('<fg=cyan>%s</> %s | бренд:%s | цена:%s | specs:%d | cat:%d',
             $d['article'], mb_substr($d['name'], 0, 44), $d['brand'] ?: '—',
@@ -226,7 +224,7 @@ class ScrapeAqualiderCommand extends Command
         return '';
     }
 
-    private function resolveCategory(string $breadcrumb): ?int
+    private function resolveCategory(string $breadcrumb, int $default): int
     {
         $low = mb_strtolower($breadcrumb);
         foreach (self::CATEGORY_MAP as $kw => $cat) {
@@ -234,7 +232,7 @@ class ScrapeAqualiderCommand extends Command
                 return $cat;
             }
         }
-        return null;
+        return $default;
     }
 
     // ── DB writes ───────────────────────────────────────────────────────────────
