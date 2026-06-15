@@ -163,9 +163,7 @@ class ScrapeAqualiderCommand extends Command
         // Stock from the SITE (sheet sync later overrides for products in the price).
         DB::table('products')->where('id', $productId)->update(['in_stock' => $d['inStock'], 'updated_at' => $now]);
 
-        if ($d['image'] !== null && $this->downloadCardImage($productId, $d['image'], self::IMAGE_DIR)) {
-            $this->stats['images']++;
-        }
+        $this->stats['images'] += $this->downloadCardImages($productId, $d['images'], self::IMAGE_DIR);
         $this->stats['attrs_written'] += $this->writeCardSpecs($productId, $catId, $d['specs']);
         $this->upsertSupplierProduct($productId, $d, $url, $now);
     }

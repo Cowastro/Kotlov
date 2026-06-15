@@ -139,11 +139,11 @@ class EnrichTskNasosyCommand extends Command
         $pid = (int) $r->product_id;
         $catId = (int) $r->category_id;
 
-        // Photo (skip if present unless --overwrite-images).
-        if ($d['image'] !== null
-            && $this->downloadCardImage($pid, $d['image'], self::IMAGE_DIR, (bool) $this->option('overwrite-images'))) {
-            $this->stats['images']++;
-        }
+        // Photos — full gallery, thumbnails/placeholders filtered out
+        // (skip if already present unless --overwrite-images).
+        $this->stats['images'] += $this->downloadCardImages(
+            $pid, $d['images'], self::IMAGE_DIR, (bool) $this->option('overwrite-images')
+        );
 
         // Description — only fill when empty (never clobber curated text).
         if ($d['desc'] !== '' && trim((string) $r->content) === '') {
@@ -165,9 +165,9 @@ class EnrichTskNasosyCommand extends Command
             $this->stats['url_updated']++;
         }
 
-        $this->line(sprintf('<fg=cyan>%s</> #%d %s | img:%s specs:%d',
+        $this->line(sprintf('<fg=cyan>%s</> #%d %s | фото:%d specs:%d',
             $r->supplier_article, $pid, mb_substr((string) $r->name, 0, 40),
-            $d['image'] !== null ? 'да' : '—', count($d['specs'])));
+            count($d['images']), count($d['specs'])));
     }
 
     private function needsContent(object $r): bool
