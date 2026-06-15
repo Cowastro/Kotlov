@@ -530,7 +530,6 @@ class SyncTskNasosyCommand extends Command
                 'delivery_days' => $r['stock']['delivery_days'],
                 'match_status' => 'matched',
                 'match_confidence' => $r['confidence'],
-                'is_active'    => true,
                 'raw'          => json_encode(['article' => $r['article'], 'brand' => $r['brand'], 'retail' => $r['retail_price']], JSON_UNESCAPED_UNICODE),
                 'last_synced_at' => $now,
                 'last_stock_synced_at' => $now,
@@ -575,7 +574,7 @@ class SyncTskNasosyCommand extends Command
         DB::table('supplier_products')
             ->where('supplier_id', $sid)
             ->when($present !== [], fn ($q) => $q->whereNotIn('supplier_article', $present))
-            ->update(['is_active' => false, 'in_stock' => false, 'stock_status' => 'out_of_stock', 'updated_at' => $now]);
+            ->update(['in_stock' => false, 'stock_status' => 'out_of_stock', 'updated_at' => $now]);
     }
 
     // ── Supplier / sync registration ──────────────────────────────────────────────
