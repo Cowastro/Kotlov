@@ -265,10 +265,15 @@ class ScrapeBaniaSupplierCommand extends Command
                     continue;
                 }
 
-                if ($requirePriceList && ! $this->isInPriceList($item, $priceListIndex ?? ['articles' => [], 'names' => []])) {
-                    $stats['skipped_not_in_price_list']++;
-                    $this->addReportRow($item, null, 'skipped_not_in_price_list', 'not found in BANIA wholesale price list');
-                    continue;
+                if ($requirePriceList) {
+                    $priceListMatch = $this->findPriceListMatch($item, $priceListIndex ?? ['articles' => [], 'names' => []]);
+                    if ($priceListMatch === null) {
+                        $stats['skipped_not_in_price_list']++;
+                        $this->addReportRow($item, null, 'skipped_not_in_price_list', 'not found in BANIA wholesale price list');
+                        continue;
+                    }
+
+                    $item = $this->applyPriceListCost($item, $priceListMatch);
                 }
 
                 $action = $this->decideAction($item, $match);
@@ -758,6 +763,24 @@ class ScrapeBaniaSupplierCommand extends Command
     private function upsertSupplierProduct(array $item, int $productId, string $productSku, int $supplierId, ?int $syncId, $now): void
     {
         $supplierArticle = $this->uniqueSupplierArticle($item, $supplierId);
+        $raw = [
+            'brand' => $item['brand'],
+            'breadcrumbs' => $item['breadcrumbs'],
+            'attributes' => $item['attributes'],
+            'images_remote' => $item['images'],
+        ];
+
+        if (($item['price_source'] ?? null) === 'bania_price_list' && ! empty($item['price_list_row'])) {
+            $priceListRow = $item['price_list_row'];
+            $raw['google_price_list'] = [
+                'row' => $priceListRow['row'] ?? null,
+                'name' => $priceListRow['name'] ?? '',
+                'article' => $priceListRow['article'] ?? '',
+                'price_column' => 'OPT with VAT',
+                'price_is_supplier_cost' => true,
+            ];
+        }
+
         DB::table('supplier_products')->updateOrInsert(
             [
                 'supplier_id' => $supplierId,
@@ -782,12 +805,7 @@ class ScrapeBaniaSupplierCommand extends Command
                 'last_stock_synced_at' => $now,
                 'match_status' => 'matched',
                 'match_confidence' => 'auto',
-                'raw' => json_encode([
-                    'brand' => $item['brand'],
-                    'breadcrumbs' => $item['breadcrumbs'],
-                    'attributes' => $item['attributes'],
-                    'images_remote' => $item['images'],
-                ], JSON_UNESCAPED_UNICODE),
+                'raw' => json_encode($raw, JSON_UNESCAPED_UNICODE),
                 'last_synced_at' => $now,
                 'created_at' => $now,
                 'updated_at' => $now,
@@ -1361,11 +1379,19 @@ class ScrapeBaniaSupplierCommand extends Command
             }
 
             $normalizedName = $this->normalizeTitle($name);
-            if ($article !== '') {
-                $articles[$article] = true;
+            $indexedRow = [
+                'row' => $index + 1,
+                'name' => $name,
+                'article' => $article,
+                'price' => $price,
+                'normalized_name' => $normalizedName,
+            ];
+
+            if ($article !== '' && ! isset($articles[$article])) {
+                $articles[$article] = $indexedRow;
             }
             if ($normalizedName !== '') {
-                $names[$normalizedName] = true;
+                $names[$normalizedName][] = $indexedRow;
             }
         }
 
@@ -1374,31 +1400,51 @@ class ScrapeBaniaSupplierCommand extends Command
 
     private function isInPriceList(array $item, array $priceListIndex): bool
     {
+        return $this->findPriceListMatch($item, $priceListIndex) !== null;
+    }
+
+    private function findPriceListMatch(array $item, array $priceListIndex): ?array
+    {
         $article = $this->normalizeArticle((string) ($item['sku'] ?? ''));
         if ($article !== '' && isset($priceListIndex['articles'][$article])) {
-            return true;
+            return $priceListIndex['articles'][$article];
         }
 
         $title = $this->normalizeTitle((string) ($item['title'] ?? ''));
         if ($title === '') {
-            return false;
+            return null;
         }
 
         if (isset($priceListIndex['names'][$title])) {
-            return true;
+            return $priceListIndex['names'][$title][0];
         }
 
-        foreach (array_keys($priceListIndex['names']) as $priceListTitle) {
+        foreach ($priceListIndex['names'] as $priceListTitle => $rows) {
             if (! $this->titlesAreCompatible($title, $priceListTitle)) {
                 continue;
             }
 
             if ($this->similarity($title, $priceListTitle) >= 94.0) {
-                return true;
+                return $rows[0];
             }
         }
 
-        return false;
+        return null;
+    }
+
+    private function applyPriceListCost(array $item, array $priceListRow): array
+    {
+        $price = (float) ($priceListRow['price'] ?? 0);
+        if ($price <= 0) {
+            return $item;
+        }
+
+        $item['price'] = $price;
+        $item['price_byn'] = $price;
+        $item['price_source'] = 'bania_price_list';
+        $item['price_list_row'] = $priceListRow;
+
+        return $item;
     }
 
     private function parsePriceListMoney(string $value): ?float
