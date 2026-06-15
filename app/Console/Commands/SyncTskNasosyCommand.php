@@ -37,8 +37,22 @@ class SyncTskNasosyCommand extends Command
     private const SUPPLIER_NAME = 'ТСК Насосы';
     private const SYNC_KEY      = 'tsk_nasosy_stock';
     private const SOURCE_URL    = 'https://aqualider.by/';
-    private const DEFAULT_SHEET_URL = 'https://docs.google.com/spreadsheets/d/1NlqXqVky2cDDAELEEKKAO0e07mpZjpkhLOQN13YWiuU/edit?gid=2120474370#gid=2120474370';
+    private const DEFAULT_SHEET_URL = 'https://docs.google.com/spreadsheets/d/1NlqXqVky2cDDAELEEKKAO0e07mpZjpkhLOQN13YWiuU/edit';
+    private const SHEET_NAME        = 'Одним листом'; // consolidated data tab (gviz by name)
     private const SHEET_CACHE_PATH  = 'supplier-cache/tsk-nasosy.csv';
+
+    /**
+     * Fixed column layout of the «Одним листом» tab — the CSV export has NO text
+     * header row (column captions are frozen labels), so we map by position.
+     */
+    private const COLS = [
+        'article'      => 0,  // Артикул
+        'brand'        => 2,  // Бренд
+        'name'         => 3,  // Модель
+        'price'        => 13, // Опт 1 с НДС (закупка)
+        'retail_price' => 15, // МРЦ с НДС
+        'status'       => 16, // Наличие в Минске
+    ];
 
     /** name keyword → KOTLOV category_id (for --create-new). */
     private const CATEGORY_MAP = [
@@ -119,9 +133,9 @@ class SyncTskNasosyCommand extends Command
         if (! preg_match('#/spreadsheets/d/([a-zA-Z0-9_-]+)#', $url, $m)) {
             throw new \RuntimeException('Invalid Google Sheets URL.');
         }
-        $id  = $m[1];
-        $gid = preg_match('/[#?&]gid=(\d+)/', $url, $g) ? $g[1] : '0';
-        $export = "https://docs.google.com/spreadsheets/d/{$id}/export?format=csv&gid={$gid}";
+        $id = $m[1];
+        // Use gviz by sheet NAME — the data lives on «Одним листом», not the default gid.
+        $export = "https://docs.google.com/spreadsheets/d/{$id}/gviz/tq?tqx=out:csv&sheet=" . rawurlencode(self::SHEET_NAME);
 
         $ctx = stream_context_create([
             'http' => ['method' => 'GET', 'timeout' => 45, 'follow_location' => 1, 'max_redirects' => 10,
@@ -151,8 +165,9 @@ class SyncTskNasosyCommand extends Command
         $ext = strtolower(pathinfo($path, PATHINFO_EXTENSION));
         if ($ext === 'csv') {
             $h = fopen($path, 'r');
-            $first = fgets($h); rewind($h);
-            $delim = substr_count((string) $first, ';') >= substr_count((string) $first, ',') ? ';' : ',';
+            // Detect delimiter over a chunk (first line may be a multiline quoted title).
+            $sample = (string) fread($h, 16384); rewind($h);
+            $delim = substr_count($sample, ';') > substr_count($sample, ',') ? ';' : ',';
             $raw = [];
             while (($r = fgetcsv($h, 0, $delim)) !== false) {
                 $raw[] = array_map(fn ($v) => $this->clean((string) $v), $r);
@@ -168,32 +183,20 @@ class SyncTskNasosyCommand extends Command
 
     private function normalise(array $raw): array
     {
-        // Header row = first row containing the «Артикул» column.
-        $headerIdx = null;
-        $colMap = [];
-        foreach ($raw as $i => $row) {
-            $map = $this->detectColumns($row);
-            if (isset($map['article'], $map['price'])) {
-                $headerIdx = $i;
-                $colMap = $map;
-                break;
-            }
-        }
-        if ($headerIdx === null) {
-            throw new \RuntimeException('Не найдены колонки «Артикул»/«Опт 1». Проверь лист.');
-        }
-        $this->detectedColumns = $colMap;
+        // Fixed column layout (see self::COLS) — the export has no text header,
+        // so a data row is detected by a numeric article + numeric Опт1 price.
+        $this->detectedColumns = self::COLS;
+        $c = self::COLS;
 
         $items = [];
-        $seen = [];
-        for ($i = $headerIdx + 1; $i < count($raw); $i++) {
-            $row     = $raw[$i];
-            $article = $this->col($row, $colMap, 'article');
-            $priceRaw = $this->col($row, $colMap, 'price');
-            $price   = $this->num($priceRaw);
-
-            // Skip section titles / repeated headers / empty rows.
-            if ($article === '' || $price === null || mb_strtolower($article) === 'артикул') {
+        $seen  = [];
+        foreach ($raw as $row) {
+            $article = trim((string) ($row[$c['article']] ?? ''));
+            if (! preg_match('/^\d{3,}$/u', $article)) {
+                continue; // not a data row (title/section/brand banner/empty)
+            }
+            $price = $this->num((string) ($row[$c['price']] ?? ''));
+            if ($price === null) {
                 continue;
             }
             $norm = $this->normArticle($article);
@@ -205,11 +208,11 @@ class SyncTskNasosyCommand extends Command
             $items[] = [
                 'article'      => $article,
                 'norm_article' => $norm,
-                'brand'        => $this->col($row, $colMap, 'brand'),
-                'name'         => $this->col($row, $colMap, 'name'),
+                'brand'        => trim((string) ($row[$c['brand']] ?? '')),
+                'name'         => trim((string) ($row[$c['name']] ?? '')),
                 'price'        => $price,
-                'retail_price' => $this->num($this->col($row, $colMap, 'retail_price')),
-                'status_text'  => $this->col($row, $colMap, 'status'),
+                'retail_price' => $this->num((string) ($row[$c['retail_price']] ?? '')),
+                'status_text'  => trim((string) ($row[$c['status']] ?? '')),
             ];
         }
         return $items;
