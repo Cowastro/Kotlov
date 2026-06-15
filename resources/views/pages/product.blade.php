@@ -483,7 +483,7 @@
                 @if ($attributeValues->count() > 0)
                     <li class="nav-tab-item" role="presentation">
                         <a href="#specifications" data-bs-toggle="tab" class="tf-btn-tab" role="tab">
-                            <span class="h5 fw-medium">Характеристики</span>
+                            <span class="h5 fw-medium">Технические характеристики</span>
                         </a>
                     </li>
                 @endif
