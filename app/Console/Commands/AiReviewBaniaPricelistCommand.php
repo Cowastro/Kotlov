@@ -249,15 +249,19 @@ class AiReviewBaniaPricelistCommand extends Command
 
     private function bestPriceRowsForSupplierProduct(object $supplierProduct, array $priceRows, int $limit): array
     {
-        $candidateNames = array_filter([
-            $this->normalizeName((string) $supplierProduct->supplier_name),
-            $this->normalizeName((string) $supplierProduct->product_name),
+        $rawCandidateNames = array_filter([
+            (string) $supplierProduct->supplier_name,
+            (string) $supplierProduct->product_name,
         ]);
+        $candidateNames = array_map(fn (string $name): string => $this->normalizeName($name), $rawCandidateNames);
         $brand = $this->normalizeName((string) ($supplierProduct->brand ?? ''));
 
         $scored = [];
         foreach ($priceRows as $row) {
             if ($this->hasForeignBrandConflict($row['normalized_name'], $brand)) {
+                continue;
+            }
+            if ($this->hasUsedConditionConflict((string) $row['name'], $rawCandidateNames)) {
                 continue;
             }
 
@@ -343,6 +347,7 @@ Rules:
 - Approve only when it is the same product/model, not just the same brand or product family.
 - Model numbers, dimensions, suffixes, materials and modifiers matter.
 - Treat different sizes, DT-3 vs DT-4, 205 vs 224 vs 270 vs 505, INOX, panorama, with/without glass, with/without tank, left/right as different variants unless the texts clearly say the same thing.
+- Treat Б/В (used/display sample) vs a product without Б/В as different variants. Do not approve if only one side contains Б/В.
 - The supplier article is useful but can be absent or different for variants.
 - If unsure, use not_enough_data.
 
@@ -439,6 +444,23 @@ PROMPT;
         }
 
         return false;
+    }
+
+    private function hasUsedConditionConflict(string $priceTitle, array $candidateTitles): bool
+    {
+        $priceUsed = $this->hasUsedConditionMarker($priceTitle);
+        foreach ($candidateTitles as $candidateTitle) {
+            if ($priceUsed === $this->hasUsedConditionMarker((string) $candidateTitle)) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private function hasUsedConditionMarker(string $title): bool
+    {
+        return preg_match('/(^|[^a-zа-яё])б\s*\/?\s*в($|[^a-zа-яё])/iu', $title) === 1;
     }
 
     private function candidateScore(string $priceName, string $candidateName): int
