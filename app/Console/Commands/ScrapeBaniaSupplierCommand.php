@@ -29,6 +29,7 @@ class ScrapeBaniaSupplierCommand extends Command
         {--update-existing : Update matched products base price/content/images when safe}
         {--update-only : Do not create new products; send unmatched rows to manual review}
         {--create-unmatched : Create new products for unmatched rows even when a similar catalog title exists}
+        {--create-ambiguous-as-new : Create new products for ambiguous BANIA rows instead of linking to stale similar catalog items}
         {--only-in-stock : Skip out-of-stock BANIA rows}
         {--report : Deprecated; reports are written for every run}
         {--sleep=200 : Delay between detail requests in milliseconds}';
@@ -344,6 +345,13 @@ class ScrapeBaniaSupplierCommand extends Command
                 if ((bool) $this->option('create-unmatched') && $action === 'manual_review' && ($match['product'] ?? null) === null) {
                     $action = $apply ? 'created' : 'create_candidate';
                     $match['reason'] = 'unmatched row allowed by --create-unmatched';
+                }
+                if ((bool) $this->option('create-ambiguous-as-new') && $this->canCreateAmbiguousAsNew($action, $match)) {
+                    $action = $apply ? 'created' : 'create_candidate';
+                    $match['product'] = null;
+                    $match['type'] = 'ambiguous_created_as_new';
+                    $match['confidence'] = 0;
+                    $match['reason'] = 'ambiguous row allowed by --create-ambiguous-as-new';
                 }
                 if (in_array($action, ['created', 'create_candidate'], true) && $item['brand_id'] === null) {
                     $action = 'manual_review';
@@ -820,6 +828,10 @@ class ScrapeBaniaSupplierCommand extends Command
 
     private function looksLikeDuplicate(array $item): bool
     {
+        if ((bool) $this->option('create-ambiguous-as-new')) {
+            return false;
+        }
+
         $needle = $item['normalized_title'];
         if ($needle === '') {
             return false;
@@ -834,6 +846,16 @@ class ScrapeBaniaSupplierCommand extends Command
             ->where('is_archived', false)
             ->where('name', 'like', '%' . $firstWords . '%')
             ->exists();
+    }
+
+    private function canCreateAmbiguousAsNew(string $action, array $match): bool
+    {
+        if ($action !== 'manual_review' || ($match['product'] ?? null) === null) {
+            return false;
+        }
+
+        return in_array($match['type'] ?? '', ['fuzzy', 'name_brand', 'supplier_product_conflict'], true)
+            && (float) ($match['confidence'] ?? 0) < 90;
     }
 
     private function upsertSupplierProduct(array $item, int $productId, string $productSku, int $supplierId, ?int $syncId, $now): void
