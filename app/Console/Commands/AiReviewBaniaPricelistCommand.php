@@ -16,6 +16,7 @@ class AiReviewBaniaPricelistCommand extends Command
         {--offset=0 : Skip N rows after filtering}
         {--cost-repair-only : Review only rows whose possible supplier_product still has supplier cost equal to retail and no google price-list link}
         {--from-equal-prices : Build AI-review rows directly from BANIA supplier_products where supplier cost equals retail and no price-list link exists}
+        {--candidates-per-product=3 : For --from-equal-prices, send this many top price-list candidates per product}
         {--build-only : Build the review CSV without sending rows to AI}
         {--min-confidence=95 : Confidence threshold for recommended auto-approval}';
 
@@ -36,7 +37,7 @@ class AiReviewBaniaPricelistCommand extends Command
 
         if ((bool) $this->option('from-equal-prices')) {
             $priceRows = $this->readPriceRows($this->resolvePriceFile((string) ($this->option('price-file') ?? '')));
-            $allRows = $this->buildRowsFromEqualPrices($priceRows);
+            $allRows = $this->buildRowsFromEqualPrices($priceRows, max(1, (int) $this->option('candidates-per-product')));
             $this->info(sprintf('Equal-price source: %d rows built.', count($allRows)));
         } else {
             $reviewFile = $this->resolveReviewFile((string) ($this->option('review-file') ?? ''));
@@ -189,7 +190,7 @@ class AiReviewBaniaPricelistCommand extends Command
         return $result;
     }
 
-    private function buildRowsFromEqualPrices(array $priceRows): array
+    private function buildRowsFromEqualPrices(array $priceRows, int $candidatesPerProduct): array
     {
         $supplierProducts = DB::table('supplier_products as sp')
             ->join('suppliers as s', 's.id', '=', 'sp.supplier_id')
@@ -219,51 +220,76 @@ class AiReviewBaniaPricelistCommand extends Command
                 continue;
             }
 
-            $best = $this->bestPriceRowForSupplierProduct($supplierProduct, $priceRows);
-            if (! $best) {
+            $candidates = $this->bestPriceRowsForSupplierProduct($supplierProduct, $priceRows, $candidatesPerProduct);
+            if ($candidates === []) {
                 continue;
             }
 
-            $rows[] = [
-                'price_row' => $best['row'],
-                'price_title' => $best['name'],
-                'price_article' => $best['article'],
-                'price_value' => $best['price'],
-                'possible_supplier_product_id' => $supplierProduct->supplier_product_id,
-                'possible_product_id' => $supplierProduct->product_id,
-                'possible_supplier_title' => $supplierProduct->supplier_name,
-                'possible_product_title' => $supplierProduct->product_name,
-                'product_brand' => $supplierProduct->brand,
-                'product_retail_price' => $supplierProduct->product_price,
-                'match_type' => 'equal_price_best_price_row',
-                'confidence' => $best['score'],
-                'reason' => 'built from supplier_products where supplier cost equals retail and no google price-list link exists',
-            ];
+            foreach ($candidates as $candidate) {
+                $rows[] = [
+                    'price_row' => $candidate['row'],
+                    'price_title' => $candidate['name'],
+                    'price_article' => $candidate['article'],
+                    'price_value' => $candidate['price'],
+                    'possible_supplier_product_id' => $supplierProduct->supplier_product_id,
+                    'possible_product_id' => $supplierProduct->product_id,
+                    'possible_supplier_title' => $supplierProduct->supplier_name,
+                    'possible_product_title' => $supplierProduct->product_name,
+                    'product_brand' => $supplierProduct->brand,
+                    'product_retail_price' => $supplierProduct->product_price,
+                    'match_type' => 'equal_price_top_price_row',
+                    'confidence' => $candidate['score'],
+                    'reason' => 'built from supplier_products where supplier cost equals retail and no google price-list link exists',
+                ];
+            }
         }
 
         return $rows;
     }
 
-    private function bestPriceRowForSupplierProduct(object $supplierProduct, array $priceRows): ?array
+    private function bestPriceRowsForSupplierProduct(object $supplierProduct, array $priceRows, int $limit): array
     {
         $candidateNames = array_filter([
             $this->normalizeName((string) $supplierProduct->supplier_name),
             $this->normalizeName((string) $supplierProduct->product_name),
         ]);
+        $brand = $this->normalizeName((string) ($supplierProduct->brand ?? ''));
 
-        $best = null;
+        $scored = [];
         foreach ($priceRows as $row) {
+            if ($this->hasForeignBrandConflict($row['normalized_name'], $brand)) {
+                continue;
+            }
+
             $score = 0;
             foreach ($candidateNames as $candidateName) {
                 $score = max($score, $this->candidateScore($row['normalized_name'], $candidateName));
             }
 
-            if (! $best || $score > $best['score']) {
-                $best = $row + ['score' => $score];
+            if ($score < 55) {
+                continue;
+            }
+
+            $scored[] = $row + ['score' => $score];
+        }
+
+        usort($scored, fn (array $left, array $right): int => $right['score'] <=> $left['score']);
+
+        $seen = [];
+        $result = [];
+        foreach ($scored as $row) {
+            $key = $row['row'] . '|' . $row['article'];
+            if (isset($seen[$key])) {
+                continue;
+            }
+            $seen[$key] = true;
+            $result[] = $row;
+            if (count($result) >= $limit) {
+                break;
             }
         }
 
-        return $best && $best['score'] >= 60 ? $best : null;
+        return $result;
     }
 
     private function filterCostRepairRows(array $rows): array
@@ -362,6 +388,57 @@ PROMPT;
             'confidence' => max(0, min(100, (int) ($data['confidence'] ?? 0))),
             'reason' => trim((string) ($data['reason'] ?? '')),
         ];
+    }
+
+    private function hasForeignBrandConflict(string $priceName, string $productBrand): bool
+    {
+        if ($productBrand === '') {
+            return false;
+        }
+
+        $brandAliases = [
+            'везувий' => ['везувий'],
+            'теплодар' => ['теплодар', 'сахара', 'русь', 'былина', 'сибирь'],
+            'tmf' => ['tmf', 'термофор'],
+            'термофор' => ['tmf', 'термофор'],
+            'эверест' => ['everest', 'эверест'],
+            'everest' => ['everest', 'эверест'],
+            'этна' => ['etna', 'этна'],
+            'etna' => ['etna', 'этна'],
+            'aston' => ['aston', 'астон'],
+            'harvia' => ['harvia'],
+            'harbin' => ['harbin'],
+            'doorwood' => ['doorwood'],
+            'факел' => ['факел'],
+        ];
+
+        $knownBrands = array_values(array_unique(array_merge(...array_values($brandAliases))));
+        $allowedAliases = [];
+        foreach ($brandAliases as $brand => $aliases) {
+            if ($brand === $productBrand || in_array($productBrand, $aliases, true)) {
+                $allowedAliases = array_merge($allowedAliases, $aliases);
+            }
+        }
+
+        if ($allowedAliases === []) {
+            return false;
+        }
+
+        foreach ($knownBrands as $knownBrand) {
+            if (! str_contains($priceName, $knownBrand)) {
+                continue;
+            }
+
+            foreach ($allowedAliases as $allowedAlias) {
+                if (str_contains($priceName, $allowedAlias)) {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        return false;
     }
 
     private function candidateScore(string $priceName, string $candidateName): int
