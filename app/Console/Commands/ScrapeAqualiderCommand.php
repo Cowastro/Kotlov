@@ -178,9 +178,9 @@ class ScrapeAqualiderCommand extends Command
             $html, $m
         );
         for ($i = 0, $n = count($m[1]); $i < $n; $i++) {
-            $k = trim(preg_replace('/\s+/u', ' ', $m[1][$i]) ?? '');
-            $v = trim(preg_replace('/\s+/u', ' ', $m[2][$i]) ?? '');
-            if ($k !== '' && $v !== '' && mb_strlen($k) <= 60 && ! isset($specs[$k])) {
+            $k = trim(preg_replace('/\s+/u', ' ', html_entity_decode($m[1][$i], ENT_QUOTES | ENT_HTML5, 'UTF-8')) ?? '');
+            $v = trim(preg_replace('/\s+/u', ' ', html_entity_decode($m[2][$i], ENT_QUOTES | ENT_HTML5, 'UTF-8')) ?? '');
+            if ($k !== '' && $v !== '' && mb_strlen($k) <= 80 && ! isset($specs[$k])) {
                 $specs[$k] = $v;
             }
         }
@@ -212,7 +212,24 @@ class ScrapeAqualiderCommand extends Command
 
         $desc = $this->meta($html, 'og:description');
 
-        return compact('name', 'brand', 'article', 'price', 'specs', 'image', 'breadcrumb', 'desc');
+        // Availability from the site (Достаточно/Мало/Нет/Под заказ).
+        $stockText = ''; $stockStatus = 'unknown'; $inStock = false;
+        if (preg_match('/(Нет в наличии|Под заказ|Достаточно|Мало|В наличии)/u', $html, $sm)) {
+            $stockText = $sm[1];
+            $l = mb_strtolower($sm[1]);
+            if (str_contains($l, 'нет')) {
+                $stockStatus = 'out_of_stock';
+            } elseif (str_contains($l, 'заказ')) {
+                $stockStatus = 'preorder';
+            } elseif (str_contains($l, 'мало')) {
+                $stockStatus = 'low_stock'; $inStock = true;
+            } else { // Достаточно / В наличии
+                $stockStatus = 'in_stock'; $inStock = true;
+            }
+        }
+
+        return compact('name', 'brand', 'article', 'price', 'specs', 'image', 'breadcrumb', 'desc',
+            'stockText', 'stockStatus', 'inStock');
     }
 
     private function meta(string $html, string $prop): string
@@ -387,8 +404,11 @@ class ScrapeAqualiderCommand extends Command
             ['supplier_article_normalized' => $art, 'product_id' => $productId,
              'product_sku' => (string) DB::table('products')->where('id', $productId)->value('sku'),
              'supplier_name' => $d['name'], 'source_url' => $url,
+             'price' => $d['price'], 'currency' => 'BYN', 'currency_rate' => 1.0, 'price_byn' => $d['price'],
+             'in_stock' => $d['inStock'], 'stock_status' => $d['stockStatus'],
+             'stock_text' => $d['stockText'] !== '' ? $d['stockText'] : null,
              'match_status' => 'matched', 'match_confidence' => 'aqualider_scrape',
-             'updated_at' => $now, 'created_at' => $now]
+             'last_stock_synced_at' => $now, 'updated_at' => $now, 'created_at' => $now]
         );
     }
 
