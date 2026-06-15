@@ -87,6 +87,45 @@ class ScrapeBaniaSupplierCommand extends Command
                 'pechi-kaminy',
             ],
         ],
+        'fireplace_stoves' => [
+            'source_path' => 'pechi-kaminy',
+            'sync_key' => 'bania_fireplace_stoves',
+            'title' => 'BANIA.by: fireplace stoves',
+            'description' => 'Scrapes BANIA.by fireplace stoves only when they exist in the wholesale price list.',
+            'requires_price_list' => true,
+            'category_slugs' => [
+                'pechi-kaminy',
+                'kaminy',
+                'pechi',
+                'pechki',
+            ],
+        ],
+        'fireboxes' => [
+            'source_path' => 'kaminnye-topki',
+            'sync_key' => 'bania_fireboxes',
+            'title' => 'BANIA.by: fireplace inserts',
+            'description' => 'Scrapes BANIA.by fireplace inserts only when they exist in the wholesale price list.',
+            'requires_price_list' => true,
+            'category_slugs' => [
+                'topki',
+                'kaminy',
+            ],
+        ],
+        'heating_boilers' => [
+            'source_path' => 'otopitelnye-kotly',
+            'sync_key' => 'bania_heating_boilers',
+            'title' => 'BANIA.by: heating boilers',
+            'description' => 'Scrapes BANIA.by heating boilers only when they exist in the wholesale price list.',
+            'requires_price_list' => true,
+            'category_slugs' => [
+                'kotly',
+                'kotly-na-drovah',
+                'belorusskie-kotly',
+                'kombinirovannye-kotly',
+                'kotly-na-ugle',
+                'kotly-na-pelletah',
+            ],
+        ],
     ];
     private const MODEL_TOKENS = [
         'aston',
@@ -129,7 +168,7 @@ class ScrapeBaniaSupplierCommand extends Command
         'Meta-Bel' => ['meta-bel'],
         'NMK' => ['nmk'],
         'Везувий' => ['vezuvij', 'vezuviy', 'vezuvii'],
-        'Теплодар' => ['teplodar', 'siesta', 'bylina', 'sibirskij-utes', 'sibirskii-utes'],
+        'Теплодар' => ['teplodar', 'siesta', 'bylina', 'sibirskij-utes', 'sibirskii-utes', 'kupper', 'kuper'],
     ];
 
     private array $brandCache = [];

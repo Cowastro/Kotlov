@@ -36,6 +36,14 @@ class SyncBaniaPricelistCommand extends Command
         'pechki',
         'pechi',
         'pechi-kaminy',
+        'kaminy',
+        'topki',
+        'kotly',
+        'kotly-na-drovah',
+        'belorusskie-kotly',
+        'kombinirovannye-kotly',
+        'kotly-na-ugle',
+        'kotly-na-pelletah',
     ];
 
     private array $reportRows = [];
