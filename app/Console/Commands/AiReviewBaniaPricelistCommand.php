@@ -264,6 +264,9 @@ class AiReviewBaniaPricelistCommand extends Command
             if ($this->hasUsedConditionConflict((string) $row['name'], $rawCandidateNames)) {
                 continue;
             }
+            if ($this->hasImportantModifierConflict((string) $row['name'], $rawCandidateNames)) {
+                continue;
+            }
 
             $score = 0;
             foreach ($candidateNames as $candidateName) {
@@ -348,6 +351,7 @@ Rules:
 - Model numbers, dimensions, suffixes, materials and modifiers matter.
 - Treat different sizes, DT-3 vs DT-4, 205 vs 224 vs 270 vs 505, INOX, panorama, with/without glass, with/without tank, left/right as different variants unless the texts clearly say the same thing.
 - Treat Б/В (used/display sample) vs a product without Б/В as different variants. Do not approve if only one side contains Б/В.
+- Treat important Cyrillic/Latin suffixes as meaningful: ЛНЗП, ЛКП, ЛК, ЛП, ДТ-3, ДТ-4, INOX, Панорама, Стандарт, Профи. Do not approve if a suffix is present only on one side.
 - The supplier article is useful but can be absent or different for variants.
 - If unsure, use not_enough_data.
 
@@ -461,6 +465,45 @@ PROMPT;
     private function hasUsedConditionMarker(string $title): bool
     {
         return preg_match('/(^|[^a-zа-яё])б\s*\/?\s*в($|[^a-zа-яё])/iu', $title) === 1;
+    }
+
+    private function hasImportantModifierConflict(string $priceTitle, array $candidateTitles): bool
+    {
+        $priceModifiers = $this->importantModifiers($priceTitle);
+        foreach ($candidateTitles as $candidateTitle) {
+            if ($priceModifiers === $this->importantModifiers((string) $candidateTitle)) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private function importantModifiers(string $title): array
+    {
+        $normalized = $this->normalizeName($title);
+        $modifiers = [
+            'лнзп',
+            'лкп',
+            'лк',
+            'лп',
+            'дт 3',
+            'дт 4',
+            'inox',
+            'панорама',
+            'стандарт',
+            'профи',
+            'закрытая',
+            'облицовка',
+            'талькохлорит',
+            'змеевик',
+            'пироксенит',
+        ];
+
+        return array_values(array_filter(
+            $modifiers,
+            fn (string $modifier): bool => str_contains($normalized, $modifier)
+        ));
     }
 
     private function candidateScore(string $priceName, string $candidateName): int
