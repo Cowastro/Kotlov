@@ -36,6 +36,14 @@ class SyncBaniaPricelistCommand extends Command
         'pechki',
         'pechi',
         'pechi-kaminy',
+        'kaminy',
+        'topki',
+        'kotly',
+        'kotly-na-drovah',
+        'belorusskie-kotly',
+        'kombinirovannye-kotly',
+        'kotly-na-ugle',
+        'kotly-na-pelletah',
     ];
 
     private array $reportRows = [];
@@ -57,7 +65,13 @@ class SyncBaniaPricelistCommand extends Command
             return self::FAILURE;
         }
 
-        $priceFile = $this->resolvePriceFile();
+        try {
+            $priceFile = $this->resolvePriceFile();
+        } catch (\Throwable $e) {
+            $this->error('Price file download failed: ' . $e->getMessage());
+            return self::FAILURE;
+        }
+
         if (! $priceFile || ! file_exists($priceFile)) {
             $this->error('Price file not found.');
             return self::FAILURE;
@@ -229,9 +243,30 @@ class SyncBaniaPricelistCommand extends Command
             mkdir(dirname($path), 0775, true);
         }
 
-        $content = @file_get_contents($exportUrl);
+        $context = stream_context_create([
+            'http' => [
+                'method' => 'GET',
+                'header' => implode("\r\n", [
+                    'User-Agent: Mozilla/5.0 (compatible; KotlovBot/1.0)',
+                    'Accept: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,*/*',
+                ]),
+                'timeout' => 45,
+                'follow_location' => 1,
+                'max_redirects' => 10,
+            ],
+            'ssl' => [
+                'verify_peer' => true,
+                'verify_peer_name' => true,
+            ],
+        ]);
+
+        $content = @file_get_contents($exportUrl, false, $context);
         if ($content === false || strlen($content) < 1000) {
             throw new \RuntimeException('Could not download Google Sheet export.');
+        }
+
+        if (str_starts_with(ltrim($content), '<') || stripos($content, '<html') !== false) {
+            throw new \RuntimeException('Google Sheet export returned HTML instead of XLSX.');
         }
 
         file_put_contents($path, $content);
@@ -243,19 +278,25 @@ class SyncBaniaPricelistCommand extends Command
     private function toExportUrl(string $url): string
     {
         if (str_contains($url, '/export?')) {
-            return $url;
+            $parts = parse_url($url);
+            parse_str((string) ($parts['query'] ?? ''), $query);
+            $query['format'] = 'xlsx';
+            unset($query['gid']);
+
+            return sprintf(
+                '%s://%s%s?%s',
+                $parts['scheme'] ?? 'https',
+                $parts['host'] ?? 'docs.google.com',
+                $parts['path'] ?? '',
+                http_build_query($query)
+            );
         }
 
         if (! preg_match('~/spreadsheets/d/([^/]+)~', $url, $matches)) {
             return $url;
         }
 
-        $gid = '0';
-        if (preg_match('~[#&?]gid=(\d+)~', $url, $gidMatches)) {
-            $gid = $gidMatches[1];
-        }
-
-        return sprintf('https://docs.google.com/spreadsheets/d/%s/export?format=xlsx&gid=%s', $matches[1], $gid);
+        return sprintf('https://docs.google.com/spreadsheets/d/%s/export?format=xlsx', $matches[1]);
     }
 
     private function readPriceRows(string $path): array

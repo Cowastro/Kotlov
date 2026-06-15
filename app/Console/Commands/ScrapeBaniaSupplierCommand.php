@@ -87,6 +87,45 @@ class ScrapeBaniaSupplierCommand extends Command
                 'pechi-kaminy',
             ],
         ],
+        'fireplace_stoves' => [
+            'source_path' => 'pechi-kaminy',
+            'sync_key' => 'bania_fireplace_stoves',
+            'title' => 'BANIA.by: fireplace stoves',
+            'description' => 'Scrapes BANIA.by fireplace stoves only when they exist in the wholesale price list.',
+            'requires_price_list' => true,
+            'category_slugs' => [
+                'pechi-kaminy',
+                'kaminy',
+                'pechi',
+                'pechki',
+            ],
+        ],
+        'fireboxes' => [
+            'source_path' => 'kaminnye-topki',
+            'sync_key' => 'bania_fireboxes',
+            'title' => 'BANIA.by: fireplace inserts',
+            'description' => 'Scrapes BANIA.by fireplace inserts only when they exist in the wholesale price list.',
+            'requires_price_list' => true,
+            'category_slugs' => [
+                'topki',
+                'kaminy',
+            ],
+        ],
+        'heating_boilers' => [
+            'source_path' => 'otopitelnye-kotly',
+            'sync_key' => 'bania_heating_boilers',
+            'title' => 'BANIA.by: heating boilers',
+            'description' => 'Scrapes BANIA.by heating boilers only when they exist in the wholesale price list.',
+            'requires_price_list' => true,
+            'category_slugs' => [
+                'kotly',
+                'kotly-na-drovah',
+                'belorusskie-kotly',
+                'kombinirovannye-kotly',
+                'kotly-na-ugle',
+                'kotly-na-pelletah',
+            ],
+        ],
     ];
     private const MODEL_TOKENS = [
         'aston',
@@ -129,7 +168,7 @@ class ScrapeBaniaSupplierCommand extends Command
         'Meta-Bel' => ['meta-bel'],
         'NMK' => ['nmk'],
         'Везувий' => ['vezuvij', 'vezuviy', 'vezuvii'],
-        'Теплодар' => ['teplodar', 'siesta', 'bylina', 'sibirskij-utes', 'sibirskii-utes'],
+        'Теплодар' => ['teplodar', 'siesta', 'bylina', 'sibirskij-utes', 'sibirskii-utes', 'kupper', 'kuper'],
     ];
 
     private array $brandCache = [];
@@ -265,10 +304,15 @@ class ScrapeBaniaSupplierCommand extends Command
                     continue;
                 }
 
-                if ($requirePriceList && ! $this->isInPriceList($item, $priceListIndex ?? ['articles' => [], 'names' => []])) {
-                    $stats['skipped_not_in_price_list']++;
-                    $this->addReportRow($item, null, 'skipped_not_in_price_list', 'not found in BANIA wholesale price list');
-                    continue;
+                if ($requirePriceList) {
+                    $priceListMatch = $this->findPriceListMatch($item, $priceListIndex ?? ['articles' => [], 'names' => []]);
+                    if ($priceListMatch === null) {
+                        $stats['skipped_not_in_price_list']++;
+                        $this->addReportRow($item, null, 'skipped_not_in_price_list', 'not found in BANIA wholesale price list');
+                        continue;
+                    }
+
+                    $item = $this->applyPriceListCost($item, $priceListMatch);
                 }
 
                 $action = $this->decideAction($item, $match);
@@ -310,6 +354,7 @@ class ScrapeBaniaSupplierCommand extends Command
                 if ($action === 'matched_updated') {
                     $productId = (int) $match['product']->id;
                     $this->upsertSupplierProduct($item, $productId, (string) $match['product']->sku, $supplierId, $syncId, $now);
+                    $this->repairCreatedProductRetailPrice($item, $match['product'], $now);
                     if ($updateExisting) {
                         $this->updateExistingProduct($item, $match['product'], $downloadImages, $generateDescriptions, $enricher, $now);
                     } elseif ($downloadImages && (bool) $this->option('replace-empty-images-only')) {
@@ -471,6 +516,7 @@ class ScrapeBaniaSupplierCommand extends Command
     {
         $title = $detail['title'] ?: $listItem['title'];
         $price = $detail['price'] ?? $listItem['price'];
+        $retailPrice = $price;
         $stockText = $detail['stock_text'] ?: $listItem['stock_text'];
         $stockStatus = $this->stockStatusFromText($stockText);
         $inStock = $detail['in_stock'] || $listItem['in_stock'];
@@ -495,6 +541,7 @@ class ScrapeBaniaSupplierCommand extends Command
             'price' => $price,
             'currency' => 'BYN',
             'price_byn' => $price,
+            'retail_price_byn' => $retailPrice,
             'stock_text' => $stockText,
             'stock_status' => $stockStatus,
             'in_stock' => $inStock,
@@ -758,6 +805,24 @@ class ScrapeBaniaSupplierCommand extends Command
     private function upsertSupplierProduct(array $item, int $productId, string $productSku, int $supplierId, ?int $syncId, $now): void
     {
         $supplierArticle = $this->uniqueSupplierArticle($item, $supplierId);
+        $raw = [
+            'brand' => $item['brand'],
+            'breadcrumbs' => $item['breadcrumbs'],
+            'attributes' => $item['attributes'],
+            'images_remote' => $item['images'],
+        ];
+
+        if (($item['price_source'] ?? null) === 'bania_price_list' && ! empty($item['price_list_row'])) {
+            $priceListRow = $item['price_list_row'];
+            $raw['google_price_list'] = [
+                'row' => $priceListRow['row'] ?? null,
+                'name' => $priceListRow['name'] ?? '',
+                'article' => $priceListRow['article'] ?? '',
+                'price_column' => 'OPT with VAT',
+                'price_is_supplier_cost' => true,
+            ];
+        }
+
         DB::table('supplier_products')->updateOrInsert(
             [
                 'supplier_id' => $supplierId,
@@ -782,12 +847,7 @@ class ScrapeBaniaSupplierCommand extends Command
                 'last_stock_synced_at' => $now,
                 'match_status' => 'matched',
                 'match_confidence' => 'auto',
-                'raw' => json_encode([
-                    'brand' => $item['brand'],
-                    'breadcrumbs' => $item['breadcrumbs'],
-                    'attributes' => $item['attributes'],
-                    'images_remote' => $item['images'],
-                ], JSON_UNESCAPED_UNICODE),
+                'raw' => json_encode($raw, JSON_UNESCAPED_UNICODE),
                 'last_synced_at' => $now,
                 'created_at' => $now,
                 'updated_at' => $now,
@@ -829,7 +889,7 @@ class ScrapeBaniaSupplierCommand extends Command
         $shortDescription = $shortDescription ?: $this->fallbackShortDescription($item);
 
         $name = $this->cleanText($item['title']);
-        $price = $item['price_byn'] ?? 0;
+        $price = $item['retail_price_byn'] ?? $item['price_byn'] ?? 0;
 
         return (int) DB::table('products')->insertGetId([
             'category_id' => $categoryId,
@@ -890,6 +950,35 @@ class ScrapeBaniaSupplierCommand extends Command
         }
 
         DB::table('products')->where('id', $product->id)->update($payload);
+    }
+
+    private function repairCreatedProductRetailPrice(array $item, object $product, $now): void
+    {
+        $retailPrice = (float) ($item['retail_price_byn'] ?? 0);
+        $supplierCost = (float) ($item['price_byn'] ?? 0);
+        $productPrice = (float) ($product->price ?? 0);
+        $productSku = (string) ($product->sku ?? '');
+
+        if ($retailPrice <= 0 || $productPrice <= 0) {
+            return;
+        }
+
+        if (! str_starts_with($productSku, 'KOTLOV-')) {
+            return;
+        }
+
+        if (abs($retailPrice - $supplierCost) <= 0.01) {
+            return;
+        }
+
+        if (abs($productPrice - $supplierCost) > 0.01) {
+            return;
+        }
+
+        DB::table('products')->where('id', $product->id)->update([
+            'price' => $retailPrice,
+            'updated_at' => $now,
+        ]);
     }
 
     private function fillEmptyImages(array $item, object $product, $now): void
@@ -1361,11 +1450,19 @@ class ScrapeBaniaSupplierCommand extends Command
             }
 
             $normalizedName = $this->normalizeTitle($name);
-            if ($article !== '') {
-                $articles[$article] = true;
+            $indexedRow = [
+                'row' => $index + 1,
+                'name' => $name,
+                'article' => $article,
+                'price' => $price,
+                'normalized_name' => $normalizedName,
+            ];
+
+            if ($article !== '' && ! isset($articles[$article])) {
+                $articles[$article] = $indexedRow;
             }
             if ($normalizedName !== '') {
-                $names[$normalizedName] = true;
+                $names[$normalizedName][] = $indexedRow;
             }
         }
 
@@ -1374,31 +1471,51 @@ class ScrapeBaniaSupplierCommand extends Command
 
     private function isInPriceList(array $item, array $priceListIndex): bool
     {
+        return $this->findPriceListMatch($item, $priceListIndex) !== null;
+    }
+
+    private function findPriceListMatch(array $item, array $priceListIndex): ?array
+    {
         $article = $this->normalizeArticle((string) ($item['sku'] ?? ''));
         if ($article !== '' && isset($priceListIndex['articles'][$article])) {
-            return true;
+            return $priceListIndex['articles'][$article];
         }
 
         $title = $this->normalizeTitle((string) ($item['title'] ?? ''));
         if ($title === '') {
-            return false;
+            return null;
         }
 
         if (isset($priceListIndex['names'][$title])) {
-            return true;
+            return $priceListIndex['names'][$title][0];
         }
 
-        foreach (array_keys($priceListIndex['names']) as $priceListTitle) {
+        foreach ($priceListIndex['names'] as $priceListTitle => $rows) {
             if (! $this->titlesAreCompatible($title, $priceListTitle)) {
                 continue;
             }
 
             if ($this->similarity($title, $priceListTitle) >= 94.0) {
-                return true;
+                return $rows[0];
             }
         }
 
-        return false;
+        return null;
+    }
+
+    private function applyPriceListCost(array $item, array $priceListRow): array
+    {
+        $price = (float) ($priceListRow['price'] ?? 0);
+        if ($price <= 0) {
+            return $item;
+        }
+
+        $item['price'] = $price;
+        $item['price_byn'] = $price;
+        $item['price_source'] = 'bania_price_list';
+        $item['price_list_row'] = $priceListRow;
+
+        return $item;
     }
 
     private function parsePriceListMoney(string $value): ?float
@@ -1720,7 +1837,7 @@ class ScrapeBaniaSupplierCommand extends Command
     private function extractImages(string $html, string $pageUrl): array
     {
         $images = [];
-        if (preg_match_all('~(?:href|src|data-src|data-large|data-image)=["\']([^"\']+\.(?:jpg|jpeg|png|webp)(?:\?[^"\']*)?)["\']~iu', $html, $matches)) {
+        if (preg_match_all('~(?:href|src|data-src|data-large|data-image|data-image-large|data-image-thumb)=["\']([^"\']+\.(?:jpg|jpeg|png|webp)(?:\?[^"\']*)?)["\']~iu', $html, $matches)) {
             foreach ($matches[1] as $src) {
                 $url = $this->normalizeBaniaImageUrl($this->absoluteUrl($src, $pageUrl));
                 if (! $this->isProductImageCandidate($url)) {
@@ -1735,7 +1852,7 @@ class ScrapeBaniaSupplierCommand extends Command
 
     private function firstImageFromHtml(string $html): ?string
     {
-        if (preg_match_all('~(?:src|data-src)=["\']([^"\']+\.(?:jpg|jpeg|png|webp)(?:\?[^"\']*)?)["\']~iu', $html, $matches)) {
+        if (preg_match_all('~(?:src|data-src|data-image-large|data-image-thumb)=["\']([^"\']+\.(?:jpg|jpeg|png|webp)(?:\?[^"\']*)?)["\']~iu', $html, $matches)) {
             foreach ($matches[1] as $src) {
                 $url = $this->normalizeBaniaImageUrl($this->absoluteUrl($src));
                 if ($this->isProductImageCandidate($url)) {
@@ -1765,7 +1882,19 @@ class ScrapeBaniaSupplierCommand extends Command
             return false;
         }
 
-        if (preg_match('~/(?:logo|icon|icons|payment|social|banner|manufacturer)/|(?:logo|icon|sprite|placeholder|telegram|viber|whatsapp|email|tel)~i', $url)) {
+        $path = (string) parse_url($url, PHP_URL_PATH);
+        $filename = strtolower(pathinfo($path, PATHINFO_FILENAME));
+        $segments = array_map('strtolower', array_filter(explode('/', trim($path, '/'))));
+
+        if (array_intersect($segments, ['logo', 'icon', 'icons', 'payment', 'social', 'banner', 'manufacturer']) !== []) {
+            return false;
+        }
+
+        if (str_starts_with($filename, 'logo')) {
+            return false;
+        }
+
+        if (preg_match('~(?:^|[-_])(?:logo|icon|sprite|placeholder|telegram|viber|whatsapp|email|tel|erip|halva|a1|mts)(?:$|[-_])~i', $filename)) {
             return false;
         }
 
@@ -1861,6 +1990,18 @@ class ScrapeBaniaSupplierCommand extends Command
             return null;
         }
 
+        foreach ([
+            '~<[^>]+(?:id|class)=["\'][^"\']*(?:main-price|current-price-premium|price-new|price-current)[^"\']*["\'][^>]*>([\s\S]*?)</[^>]+>~iu',
+            '~<meta[^>]+(?:property|itemprop)=["\'](?:product:price:amount|price)["\'][^>]+content=["\']([^"\']+)["\']~iu',
+        ] as $pattern) {
+            if (preg_match($pattern, $text, $match)) {
+                $price = $this->parseNumericMoney($match[1]);
+                if ($price !== null) {
+                    return $price;
+                }
+            }
+        }
+
         $plain = html_entity_decode(strip_tags($text), ENT_QUOTES | ENT_HTML5, 'UTF-8');
         $plain = str_replace(["\u{A0}", ' '], '', $plain);
 
@@ -1868,6 +2009,20 @@ class ScrapeBaniaSupplierCommand extends Command
             if (! preg_match('/([0-9][0-9\s.,]{1,12})/u', $plain, $match)) {
                 return null;
             }
+        }
+
+        $value = str_replace(',', '.', preg_replace('/\s+/u', '', $match[1]) ?? $match[1]);
+
+        return is_numeric($value) ? round((float) $value, 2) : null;
+    }
+
+    private function parseNumericMoney(string $text): ?float
+    {
+        $plain = html_entity_decode(strip_tags($text), ENT_QUOTES | ENT_HTML5, 'UTF-8');
+        $plain = str_replace(["\u{A0}", ' '], '', $plain);
+
+        if (! preg_match('/([0-9]+(?:[.,][0-9]{1,2})?)/u', $plain, $match)) {
+            return null;
         }
 
         $value = str_replace(',', '.', preg_replace('/\s+/u', '', $match[1]) ?? $match[1]);
@@ -1891,7 +2046,9 @@ class ScrapeBaniaSupplierCommand extends Command
 
         return str_contains($raw, 'цена по запросу')
             || str_contains($clean, 'цена по запросу')
-            || str_contains($raw, 'price-request');
+            || str_contains($raw, 'цена по запросу')
+            || str_contains($clean, 'цена по запросу')
+            || preg_match('~<[^>]+class=["\'][^"\']*price-request[^"\']*["\'][^>]*>~i', $raw) === 1;
     }
 
     private function parseStockText(string $html): string
@@ -2028,6 +2185,7 @@ class ScrapeBaniaSupplierCommand extends Command
             'supplier_title' => $item['title'] ?? '',
             'normalized_title' => $item['normalized_title'] ?? $this->normalizeTitle((string) ($item['title'] ?? '')),
             'supplier_price' => $item['price'] ?? '',
+            'supplier_retail_price' => $item['retail_price_byn'] ?? '',
             'supplier_stock_status' => $item['stock_status'] ?? '',
             'has_price' => ($item['price'] ?? null) !== null ? 1 : 0,
             'has_stock' => ($item['stock_status'] ?? 'unknown') !== 'unknown' ? 1 : 0,
