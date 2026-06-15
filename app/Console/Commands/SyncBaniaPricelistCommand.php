@@ -106,6 +106,7 @@ class SyncBaniaPricelistCommand extends Command
             'updated' => 0,
             'unchanged' => 0,
             'manual_review' => 0,
+            'cost_above_retail' => 0,
             'skipped_unrelated' => 0,
             'skipped_empty_price' => 0,
             'errors' => 0,
@@ -149,6 +150,20 @@ class SyncBaniaPricelistCommand extends Command
                 if ($row['price'] === null || $row['price'] <= 0) {
                     $stats['skipped_empty_price']++;
                     $this->addReportRow($row, $match, 'skipped_empty_price');
+                    continue;
+                }
+
+                if ($this->supplierCostAboveRetail($supplierProduct, (float) $row['price'])) {
+                    $stats['cost_above_retail']++;
+                    $reviewMatch = array_merge($match, [
+                        'reason' => sprintf(
+                            'supplier cost %.2f is above product retail %.2f; check price-list match or retail price',
+                            (float) $row['price'],
+                            (float) $supplierProduct->product_price
+                        ),
+                    ]);
+                    $this->addManualRow($row, $reviewMatch);
+                    $this->addReportRow($row, $reviewMatch, 'cost_above_retail');
                     continue;
                 }
 
@@ -491,6 +506,20 @@ class SyncBaniaPricelistCommand extends Command
         return abs((float) $supplierProduct->price_byn - (float) $supplierProduct->product_price) < 0.01;
     }
 
+    private function supplierCostAboveRetail(object $supplierProduct, float $newSupplierCost): bool
+    {
+        if ($newSupplierCost <= 0 || $supplierProduct->product_price === null) {
+            return false;
+        }
+
+        $retail = (float) $supplierProduct->product_price;
+        if ($retail <= 0) {
+            return false;
+        }
+
+        return $newSupplierCost > $retail + 0.01;
+    }
+
     private function canRepairSaunaStoveCostByTitle(array $row, array $best): bool
     {
         $supplierProduct = $best['supplier_product'] ?? null;
@@ -816,6 +845,9 @@ class SyncBaniaPricelistCommand extends Command
             'possible_product_id' => $supplierProduct->product_id ?? '',
             'possible_supplier_title' => $supplierProduct->supplier_name ?? '',
             'possible_product_title' => $supplierProduct->product_name ?? '',
+            'old_supplier_price' => isset($supplierProduct->price_byn) ? $this->formatDecimal((float) $supplierProduct->price_byn) : '',
+            'new_supplier_cost' => isset($row['price']) && $row['price'] !== null ? $this->formatDecimal((float) $row['price']) : '',
+            'product_retail_price' => isset($supplierProduct->product_price) ? $this->formatDecimal((float) $supplierProduct->product_price) : '',
             'match_type' => $match['match_type'] ?? '',
             'confidence' => $match['confidence'] ?? '',
             'reason' => $match['reason'] ?? '',
