@@ -91,10 +91,54 @@ class ProductsTable
                     ->toggleable(),
 
                 TextColumn::make('supplier_price')
-                    ->label('Цена пост.')
+                    ->label('Закупка мин.')
                     ->getStateUsing(function ($record): string {
                         $min = $record->supplierProducts->min('price_byn');
                         return $min ? number_format((float) $min, 2) . ' BYN' : '—';
+                    })
+                    ->toggleable(),
+
+                TextColumn::make('price')
+                    ->label('Розница сайта')
+                    ->sortable()
+                    ->formatStateUsing(fn($state, $record) => $state > 0
+                        ? number_format((float) $state, 2) . ' ' . ($record->currency ?: 'BYN')
+                        : '<span class="text-danger-500 font-bold">— не задана</span>'
+                    )
+                    ->html(),
+
+                TextColumn::make('margin_min')
+                    ->label('Маржа мин.')
+                    ->getStateUsing(function ($record): string {
+                        $cost = $record->supplierProducts->min('price_byn');
+                        $retail = $record->price !== null ? (float) $record->price : 0.0;
+
+                        if (! $cost || $retail <= 0) {
+                            return '—';
+                        }
+
+                        $cost = (float) $cost;
+                        $margin = $retail - $cost;
+                        $percent = $retail > 0 ? ($margin / $retail) * 100 : 0;
+
+                        return number_format($margin, 2) . ' BYN / ' . number_format($percent, 1) . '%';
+                    })
+                    ->badge()
+                    ->color(function ($record): string {
+                        $cost = $record->supplierProducts->min('price_byn');
+                        $retail = $record->price !== null ? (float) $record->price : 0.0;
+
+                        if (! $cost || $retail <= 0) {
+                            return 'gray';
+                        }
+
+                        $percent = (($retail - (float) $cost) / $retail) * 100;
+
+                        return match (true) {
+                            $percent <= 0 => 'danger',
+                            $percent < 10 => 'warning',
+                            default => 'success',
+                        };
                     })
                     ->toggleable(),
 
@@ -112,15 +156,6 @@ class ProductsTable
                         )
                     ))
                     ->toggleable(),
-
-                TextColumn::make('price')
-                    ->label('Цена розн.')
-                    ->sortable()
-                    ->formatStateUsing(fn($state, $record) => $state > 0
-                        ? number_format((float) $state, 2) . ' ' . ($record->currency ?: 'BYN')
-                        : '<span class="text-danger-500 font-bold">— не задана</span>'
-                    )
-                    ->html(),
 
                 TextColumn::make('price_old')
                     ->label('Старая цена')
