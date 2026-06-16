@@ -351,9 +351,12 @@
                                         @endif
                                     </td>
                                     @foreach ($headers as $header)
+                                        @php
+                                            $cellValue = $this->cellValue($header, $row[$header] ?? '');
+                                        @endphp
                                         <td>
-                                            <div class="import-reports-cell" title="{{ (string) ($row[$header] ?? '') }}">
-                                                {{ (string) ($row[$header] ?? '') }}
+                                            <div class="import-reports-cell" title="{{ $cellValue }}">
+                                                {{ $cellValue }}
                                             </div>
                                         </td>
                                     @endforeach

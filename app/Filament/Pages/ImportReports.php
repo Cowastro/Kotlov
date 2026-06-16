@@ -249,6 +249,21 @@ class ImportReports extends Page
         ][$header] ?? Str::of($header)->replace('_', ' ')->title()->toString();
     }
 
+    public function cellValue(string $header, mixed $value): string
+    {
+        $value = (string) $value;
+
+        if (in_array($header, ['reason', 'note', 'error', 'ai_reason'], true)) {
+            return $this->translateReason($value);
+        }
+
+        if (in_array($header, ['action', 'recommended_action', 'match_type', 'ai_decision'], true)) {
+            return $this->translateCode($value);
+        }
+
+        return $value;
+    }
+
     public function downloadSelected(): ?StreamedResponse
     {
         $report = $this->selectedReport();
@@ -289,6 +304,97 @@ class ImportReports extends Page
     {
         $url = trim((string) ($row['source_url'] ?? ''));
         return str_starts_with($url, 'http://') || str_starts_with($url, 'https://') ? $url : null;
+    }
+
+    private function translateReason(string $value): string
+    {
+        $value = trim($value);
+        if ($value === '') {
+            return '';
+        }
+
+        $exact = [
+            'article matched but title compatibility is low' => 'Артикул совпал, но название товара отличается. Нужно проверить вручную.',
+            'similar title requires manual approval' => 'Похожее название, но совпадение не уверенное. Нужно проверить вручную.',
+            'no linked BANIA supplier product found' => 'Не найдена связанная позиция поставщика BANIA.',
+            'no confident supplier_product match' => 'Нет уверенного совпадения с товаром поставщика.',
+            'price list contains another row for the same BANIA supplier_product' => 'В прайсе есть ещё одна строка для той же связки поставщика. Нужно выбрать правильную.',
+            'same supplier article is already mapped to another source' => 'Этот артикул поставщика уже привязан к другой ссылке.',
+            'same supplier already mapped this product to another source' => 'Этот товар уже привязан к другой ссылке этого поставщика.',
+            'same supplier_product' => 'Найдена существующая связка поставщика.',
+            'same sku/article' => 'Совпал артикул / SKU.',
+            'distinct KARINA variant' => 'Другая модификация KARINA. Не склеивать автоматически.',
+            'distinct sauna door variant' => 'Другая модификация двери. Не склеивать автоматически.',
+            'high title similarity' => 'Высокое сходство названий.',
+            'approved equivalent' => 'Заранее утверждённое совпадение.',
+            'similar title' => 'Похожее название.',
+            'no match' => 'Совпадение не найдено.',
+            'not found in BANIA wholesale price list' => 'Товар не найден в оптовом прайсе BANIA.',
+            'No matching row in dynamic BANIA price list' => 'Нет подходящей строки в динамическом прайсе BANIA.',
+            'built from supplier_products where supplier cost equals retail and no google price-list link exists' => 'Построено из связок, где закупка равна рознице и нет привязки к строке прайса.',
+            'build-only' => 'Отчёт построен без AI-проверки.',
+            'AI did not return a response' => 'AI не вернул ответ.',
+        ];
+
+        if (isset($exact[$value])) {
+            return $exact[$value];
+        }
+
+        if (preg_match('/supplier cost ([0-9.]+) is above product retail ([0-9.]+); check price-list match or retail price/i', $value, $match)) {
+            return "Закупка {$match[1]} выше розницы {$match[2]}. Проверь строку прайса или розничную цену.";
+        }
+
+        if (str_starts_with($value, 'AI returned invalid JSON:')) {
+            return 'AI вернул некорректный JSON: ' . trim(Str::after($value, 'AI returned invalid JSON:'));
+        }
+
+        return $value;
+    }
+
+    private function translateCode(string $value): string
+    {
+        $value = trim($value);
+        if ($value === '') {
+            return '';
+        }
+
+        return [
+            'manual_review' => 'Ручная проверка',
+            'manual_review_legacy' => 'Ручная проверка старого товара',
+            'cost_above_retail' => 'Закупка выше розницы',
+            'supplier_cost_stock_updated' => 'Закупка и наличие обновлены',
+            'matched_updated' => 'Найден и обновлён',
+            'created' => 'Создан новый товар',
+            'create_candidate' => 'Кандидат на создание',
+            'skipped_duplicate' => 'Пропущен дубль',
+            'skipped_out_of_stock' => 'Пропущен: нет в наличии',
+            'skipped_brand' => 'Пропущен: бренд не разрешён',
+            'skipped_not_in_price_list' => 'Пропущен: нет в прайсе',
+            'skipped_empty_price' => 'Пропущен: нет цены',
+            'skipped_unrelated' => 'Пропущен: не относится к текущему импорту',
+            'missing_marked_out_of_stock' => 'Нет в прайсе, отмечен как нет в наличии',
+            'unchanged' => 'Без изменений',
+            'error' => 'Ошибка',
+            'article' => 'Совпадение по артикулу',
+            'article_ambiguous' => 'Артикул совпал, название спорное',
+            'title' => 'Совпадение по названию',
+            'title_possible' => 'Похожее название',
+            'title_repair_equal_retail' => 'Ремонт закупки по названию',
+            'title_repair_sauna_stove_equal_retail' => 'Ремонт закупки банной печи по названию',
+            'not_found' => 'Не найдено',
+            'supplier_product' => 'Существующая связка поставщика',
+            'supplier_product_conflict' => 'Конфликт связки поставщика',
+            'sku' => 'Совпадение по SKU',
+            'name_brand' => 'Совпадение по названию и бренду',
+            'approved_equivalent' => 'Утверждённый эквивалент',
+            'fuzzy' => 'Похожее название',
+            'none' => 'Нет совпадения',
+            'approved_match' => 'AI подтвердил совпадение',
+            'different_variant' => 'AI: другая модификация',
+            'not_enough_data' => 'AI: недостаточно данных',
+            'can_apply_after_review' => 'Можно применить после проверки',
+            'keep_manual_review' => 'Оставить в ручной проверке',
+        ][$value] ?? $value;
     }
 
     private function enrichRowsWithProductSkus(array $rows): array
