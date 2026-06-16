@@ -159,7 +159,11 @@ class ScrapeBaniaSupplierCommand extends Command
             'images_downloaded' => 0,
             'image_products_updated' => 0,
             'image_products_skipped_existing' => 0,
+            'image_products_no_remote_images' => 0,
             'image_download_errors' => 0,
+            'content_products_updated' => 0,
+            'content_products_skipped_existing' => 0,
+            'content_products_no_ai' => 0,
             'characteristics_products_updated' => 0,
             'characteristics_values_saved' => 0,
             'products_without_characteristics' => 0,
@@ -876,12 +880,24 @@ class ScrapeBaniaSupplierCommand extends Command
 
         $hasContent = trim((string) ($product->content ?? '')) !== '';
         if ($generateDescriptions && ! $hasContent) {
-            $payload['content'] = $enricher->enrich($item['title'], $item['brand'] ?: '', $item['description'], $item['attributes'])
+            $content = $enricher->enrich($item['title'], $item['brand'] ?: '', $item['description'], $item['attributes'])
                 ?: $this->fallbackDescription($item);
+            if ($content) {
+                $payload['content'] = $content;
+                $this->runStats['content_products_updated']++;
+            } else {
+                $this->runStats['content_products_no_ai']++;
+            }
+        } elseif ($generateDescriptions && $hasContent) {
+            $this->runStats['content_products_skipped_existing']++;
         }
 
         $images = $this->decodeJsonArray($product->images ?? null);
-        if ($downloadImages && $images === []) {
+        if ($downloadImages && $images !== []) {
+            $this->runStats['image_products_skipped_existing']++;
+        } elseif ($downloadImages && empty($item['images'])) {
+            $this->runStats['image_products_no_remote_images']++;
+        } elseif ($downloadImages) {
             $downloadedImages = $this->downloadImages($item);
             if ($downloadedImages !== []) {
                 $payload['images'] = json_encode($downloadedImages, JSON_UNESCAPED_UNICODE);
