@@ -311,6 +311,7 @@
                         <thead>
                             <tr>
                                 <th>Действия</th>
+                                <th>SKU KOTLOV</th>
                                 @foreach ($headers as $header)
                                     <th>{{ $header }}</th>
                                 @endforeach
@@ -321,6 +322,7 @@
                                 @php
                                     $productUrl = $this->productAdminUrl($row);
                                     $sourceUrl = $this->sourceUrl($row);
+                                    $kotlovSku = $this->kotlovSku($row);
                                     $action = strtolower((string) ($row['action'] ?? $row['recommended_action'] ?? ''));
                                     $isAttention = str_contains($action, 'manual')
                                         || str_contains($action, 'error')
@@ -340,6 +342,13 @@
                                                 <span class="import-reports-muted">—</span>
                                             @endif
                                         </div>
+                                    </td>
+                                    <td>
+                                        @if ($kotlovSku !== '')
+                                            <strong>{{ $kotlovSku }}</strong>
+                                        @else
+                                            <span class="import-reports-muted">—</span>
+                                        @endif
                                     </td>
                                     @foreach ($headers as $header)
                                         <td>

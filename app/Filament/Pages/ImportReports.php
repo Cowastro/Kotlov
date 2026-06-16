@@ -6,6 +6,7 @@ use BackedEnum;
 use Filament\Pages\Page;
 use Filament\Support\Enums\Width;
 use Filament\Support\Icons\Heroicon;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
@@ -126,13 +127,27 @@ class ImportReports extends Page
             return [];
         }
 
-        return array_slice($this->readCsv($report['absolute_path']), 0, $this->perPage);
+        return $this->enrichRowsWithProductSkus(
+            array_slice($this->readCsv($report['absolute_path']), 0, $this->perPage)
+        );
     }
 
     public function selectedHeaders(): array
     {
         $rows = $this->selectedRows();
-        return $rows !== [] ? array_keys($rows[0]) : [];
+        if ($rows === []) {
+            return [];
+        }
+
+        return array_values(array_filter(
+            array_keys($rows[0]),
+            fn (string $header): bool => ! in_array($header, [
+                'kotlov_sku',
+                'product_sku',
+                'possible_product_sku',
+                'matched_product_sku',
+            ], true)
+        ));
     }
 
     public function downloadSelected(): ?StreamedResponse
@@ -151,7 +166,7 @@ class ImportReports extends Page
 
     public function productAdminUrl(array $row): ?string
     {
-        $productId = trim((string) ($row['product_id'] ?? $row['possible_product_id'] ?? ''));
+        $productId = $this->productId($row);
         if ($productId === '' || ! ctype_digit($productId)) {
             return null;
         }
@@ -159,10 +174,58 @@ class ImportReports extends Page
         return url('/admin/products/' . $productId . '/edit');
     }
 
+    public function kotlovSku(array $row): string
+    {
+        foreach (['kotlov_sku', 'product_sku', 'possible_product_sku', 'matched_product_sku'] as $key) {
+            $sku = trim((string) ($row[$key] ?? ''));
+            if ($sku !== '') {
+                return $sku;
+            }
+        }
+
+        return '';
+    }
+
     public function sourceUrl(array $row): ?string
     {
         $url = trim((string) ($row['source_url'] ?? ''));
         return str_starts_with($url, 'http://') || str_starts_with($url, 'https://') ? $url : null;
+    }
+
+    private function enrichRowsWithProductSkus(array $rows): array
+    {
+        $missingIds = [];
+        foreach ($rows as $row) {
+            if ($this->kotlovSku($row) !== '') {
+                continue;
+            }
+
+            $productId = $this->productId($row);
+            if ($productId !== '' && ctype_digit($productId)) {
+                $missingIds[] = (int) $productId;
+            }
+        }
+
+        $skus = $missingIds !== []
+            ? DB::table('products')->whereIn('id', array_values(array_unique($missingIds)))->pluck('sku', 'id')->all()
+            : [];
+
+        foreach ($rows as $index => $row) {
+            $sku = $this->kotlovSku($row);
+            if ($sku === '') {
+                $productId = $this->productId($row);
+                $sku = $productId !== '' ? (string) ($skus[(int) $productId] ?? '') : '';
+            }
+
+            $rows[$index] = ['kotlov_sku' => $sku] + $row;
+        }
+
+        return $rows;
+    }
+
+    private function productId(array $row): string
+    {
+        return trim((string) ($row['product_id'] ?? $row['possible_product_id'] ?? $row['matched_product_id'] ?? ''));
     }
 
     private function allReports(): array

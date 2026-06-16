@@ -2251,6 +2251,7 @@ class ScrapeBaniaSupplierCommand extends Command
             'images_count' => count($item['images'] ?? []),
             'description_length' => mb_strlen(strip_tags((string) ($item['description'] ?? ''))),
             'matched_product_id' => $product?->id ?? '',
+            'matched_product_sku' => $product?->sku ?? '',
             'matched_product_title' => $product?->name ?? '',
             'match_type' => $match['type'] ?? '',
             'confidence' => $match['confidence'] ?? '',
@@ -2269,6 +2270,7 @@ class ScrapeBaniaSupplierCommand extends Command
             'supplier_url' => $item['url'] ?? '',
             'supplier_price' => $item['price'] ?? '',
             'matched_product_id' => $product?->id ?? '',
+            'matched_product_sku' => $product?->sku ?? '',
             'matched_product_title' => $product?->name ?? '',
             'confidence' => $match['confidence'] ?? '',
         ];

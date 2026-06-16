@@ -385,6 +385,7 @@ class SyncBaniaPricelistCommand extends Command
                 'sp.stock_status',
                 'sp.stock_text',
                 'sp.raw',
+                'p.sku as catalog_product_sku',
                 'p.name as product_name',
                 'p.price as product_price',
                 'p.in_stock as product_in_stock',
@@ -794,6 +795,7 @@ class SyncBaniaPricelistCommand extends Command
             'price_article' => $row['article'] ?? '',
             'supplier_product_id' => $supplierProduct->id ?? '',
             'product_id' => $supplierProduct->product_id ?? '',
+            'product_sku' => $this->supplierProductSku($supplierProduct),
             'brand' => $supplierProduct->brand_name ?? '',
             'supplier_title' => $supplierProduct->supplier_name ?? '',
             'source_url' => $supplierProduct->source_url ?? '',
@@ -818,6 +820,7 @@ class SyncBaniaPricelistCommand extends Command
             'price_article' => '',
             'supplier_product_id' => $supplierProduct->id,
             'product_id' => $supplierProduct->product_id,
+            'product_sku' => $this->supplierProductSku($supplierProduct),
             'brand' => $supplierProduct->brand_name,
             'supplier_title' => $supplierProduct->supplier_name,
             'source_url' => $supplierProduct->source_url,
@@ -843,6 +846,7 @@ class SyncBaniaPricelistCommand extends Command
             'price_article' => $row['article'] ?? '',
             'possible_supplier_product_id' => $supplierProduct->id ?? '',
             'possible_product_id' => $supplierProduct->product_id ?? '',
+            'possible_product_sku' => $this->supplierProductSku($supplierProduct),
             'possible_supplier_title' => $supplierProduct->supplier_name ?? '',
             'possible_product_title' => $supplierProduct->product_name ?? '',
             'old_supplier_price' => isset($supplierProduct->price_byn) ? $this->formatDecimal((float) $supplierProduct->price_byn) : '',
@@ -852,6 +856,19 @@ class SyncBaniaPricelistCommand extends Command
             'confidence' => $match['confidence'] ?? '',
             'reason' => $match['reason'] ?? '',
         ];
+    }
+
+    private function supplierProductSku(?object $supplierProduct): string
+    {
+        if (! $supplierProduct) {
+            return '';
+        }
+
+        return (string) (
+            $supplierProduct->catalog_product_sku
+            ?? $supplierProduct->product_sku
+            ?? ''
+        );
     }
 
     private function writeReports(): void
