@@ -325,7 +325,7 @@ class EnrichBaniaPriceListProductsCommand extends Command
                 'url' => $url,
                 'title' => $pageTitle,
                 'description' => $this->extractDescription($html),
-                'images' => $this->extractImages($html, $url, $product),
+                'images' => $this->extractImages($html, $url, $product, $this->canUseGenericDoorWoodImages($pageTitle, $product)),
             ];
         }
 
@@ -398,7 +398,7 @@ class EnrichBaniaPriceListProductsCommand extends Command
 
             $html = $this->fetch($url);
             $pageTitle = $this->extractTitle($html);
-            $images = $this->extractImages($html, $url, $product);
+            $images = $this->extractImages($html, $url, $product, $this->canUseGenericDoorWoodImages($pageTitle, $product));
             if ($images === []) {
                 return null;
             }
@@ -447,7 +447,7 @@ class EnrichBaniaPriceListProductsCommand extends Command
             return false;
         }
 
-        if ($this->extractImages($html, $url, $product) === []) {
+        if ($this->extractImages($html, $url, $product, $this->canUseGenericDoorWoodImages($pageTitle, $product)) === []) {
             return false;
         }
 
@@ -502,6 +502,15 @@ class EnrichBaniaPriceListProductsCommand extends Command
     private function isDoorWoodProduct(string $productName): bool
     {
         return str_contains($productName, 'doorwood');
+    }
+
+    private function canUseGenericDoorWoodImages(string $pageTitle, object $product): bool
+    {
+        $productName = $this->normalize((string) ($product->supplier_name ?: $product->name));
+        $candidate = $this->normalize($pageTitle);
+
+        return $this->isDoorWoodProduct($productName)
+            && $this->isLikelyDoorWoodTitleMatch($candidate, $productName);
     }
 
     private function isLikelyDoorWoodTitleMatch(string $candidate, string $productName): bool
@@ -649,7 +658,7 @@ class EnrichBaniaPriceListProductsCommand extends Command
                     'url' => $url,
                     'title' => $pageTitle,
                     'description' => $this->extractDescription($html),
-                    'images' => $this->extractImages($html, $url, $product),
+                    'images' => $this->extractImages($html, $url, $product, $this->canUseGenericDoorWoodImages($pageTitle, $product)),
                 ];
             } catch (\Throwable) {
                 continue;
@@ -875,7 +884,7 @@ class EnrichBaniaPriceListProductsCommand extends Command
         return '';
     }
 
-    private function extractImages(string $html, string $pageUrl, ?object $product = null): array
+    private function extractImages(string $html, string $pageUrl, ?object $product = null, bool $allowGenericProductImages = false): array
     {
         $images = [];
         if (preg_match_all('~<img\b[^>]+>~iu', $html, $imageTags)) {
@@ -892,7 +901,11 @@ class EnrichBaniaPriceListProductsCommand extends Command
 
                 $url = $this->normalizeImageUrl($this->absoluteUrl($src, $pageUrl));
                 $context = trim($this->tagAttribute($tag, 'alt') . ' ' . $this->tagAttribute($tag, 'title') . ' ' . $url);
-                if (! $this->isProductImage($url) || ! $this->imageMatchesProduct($url, $context, $product)) {
+                if (! $this->isProductImage($url)) {
+                    continue;
+                }
+
+                if (! $allowGenericProductImages && ! $this->imageMatchesProduct($url, $context, $product)) {
                     continue;
                 }
 
@@ -903,7 +916,11 @@ class EnrichBaniaPriceListProductsCommand extends Command
         if (preg_match_all('~(?:href|src|data-src|data-large|data-image|data-image-large|data-image-thumb|data-zoom-image)=["\']([^"\']+\.(?:jpg|jpeg|png|webp)(?:\?[^"\']*)?)["\']~iu', $html, $matches)) {
             foreach ($matches[1] as $src) {
                 $url = $this->normalizeImageUrl($this->absoluteUrl($src, $pageUrl));
-                if (! $this->isProductImage($url) || ! $this->imageMatchesProduct($url, $url, $product)) {
+                if (! $this->isProductImage($url)) {
+                    continue;
+                }
+
+                if (! $allowGenericProductImages && ! $this->imageMatchesProduct($url, $url, $product)) {
                     continue;
                 }
                 $images[] = $url;
