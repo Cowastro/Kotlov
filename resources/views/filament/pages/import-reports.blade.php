@@ -37,6 +37,11 @@
             font-size: 14px;
         }
 
+        .import-reports-control option {
+            background: rgb(31, 31, 35);
+            color: rgb(248, 250, 252);
+        }
+
         .import-reports-card {
             border: 1px solid rgba(148, 163, 184, .22);
             border-radius: 12px;
