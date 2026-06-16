@@ -31,6 +31,9 @@ return new class extends Migration
         $this->moveFromDoorCategory($supplierId, $doorCategoryIds, 'pechnoe-i-kaminnoe-lite', [
             'дверца',
             'дверка',
+            'дверь чугунная',
+            'дверь печ',
+            'дверь банных печ',
         ]);
     }
 
