@@ -140,7 +140,16 @@ class SyncBaniaPricelistCommand extends Command
                 $match = $this->matchRow($row, $indexes, $supplierProducts);
                 if (($match['action'] ?? '') === 'manual_review') {
                     $stats['manual_review']++;
-                    $stats['retail_price_skipped_manual_review']++;
+                    if (($match['supplier_product'] ?? null) !== null) {
+                        $match['retail_match'] = $this->matchRetailForSupplierProduct($match['supplier_product'], $retailIndexes);
+                    }
+
+                    if (($match['retail_match']['price'] ?? null) !== null) {
+                        $stats['retail_price_suggested']++;
+                    } else {
+                        $stats['retail_price_skipped_manual_review']++;
+                    }
+
                     $this->addManualRow($row, $match);
                     $this->addReportRow($row, $match, 'manual_review');
                     continue;
@@ -162,6 +171,12 @@ class SyncBaniaPricelistCommand extends Command
                 if (isset($matchedSupplierProductIds[(int) $supplierProduct->id])) {
                     $stats['manual_review']++;
                     $duplicateMatch = array_merge($match, ['reason' => 'price list contains another row for the same BANIA supplier_product']);
+                    $duplicateMatch['retail_match'] = $this->matchRetailForSupplierProduct($supplierProduct, $retailIndexes);
+                    if (($duplicateMatch['retail_match']['price'] ?? null) !== null) {
+                        $stats['retail_price_suggested']++;
+                    } else {
+                        $stats['retail_price_skipped_manual_review']++;
+                    }
                     $this->addManualRow($row, $duplicateMatch);
                     $this->addReportRow($row, $duplicateMatch, 'manual_review');
                     continue;
