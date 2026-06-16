@@ -139,15 +139,114 @@ class ImportReports extends Page
             return [];
         }
 
-        return array_values(array_filter(
+        $hidden = [
+            'kotlov_sku',
+            'product_sku',
+            'possible_product_sku',
+            'matched_product_sku',
+        ];
+
+        $preferred = [
+            'price_row',
+            'price_title',
+            'price_article',
+            'supplier_title',
+            'supplier_sku',
+            'supplier_url',
+            'source_url',
+            'possible_supplier_title',
+            'possible_product_title',
+            'matched_product_title',
+            'title',
+            'possible_supplier_product_id',
+            'supplier_product_id',
+            'possible_product_id',
+            'product_id',
+            'matched_product_id',
+            'brand',
+            'old_supplier_price',
+            'new_supplier_cost',
+            'supplier_price',
+            'product_retail_price',
+            'old_stock_status',
+            'new_stock_status',
+            'stock_status',
+            'match_type',
+            'confidence',
+            'action',
+            'recommended_action',
+            'reason',
+            'note',
+            'error',
+        ];
+
+        $headers = array_values(array_filter(
             array_keys($rows[0]),
-            fn (string $header): bool => ! in_array($header, [
-                'kotlov_sku',
-                'product_sku',
-                'possible_product_sku',
-                'matched_product_sku',
-            ], true)
+            fn (string $header): bool => ! in_array($header, $hidden, true)
         ));
+
+        $ordered = array_values(array_filter(
+            $preferred,
+            fn (string $header): bool => in_array($header, $headers, true)
+        ));
+
+        $tail = array_values(array_filter(
+            $headers,
+            fn (string $header): bool => ! in_array($header, $ordered, true)
+        ));
+
+        return array_merge($ordered, $tail);
+    }
+
+    public function headerLabel(string $header): string
+    {
+        return [
+            'price_row' => 'Строка прайса',
+            'price_title' => 'Товар в прайсе',
+            'price_article' => 'Артикул в прайсе',
+            'price_value' => 'Цена в прайсе',
+            'price_article_normalized' => 'Артикул норм.',
+            'supplier' => 'Поставщик',
+            'supplier_title' => 'Товар поставщика',
+            'supplier_name' => 'Товар поставщика',
+            'supplier_sku' => 'Артикул поставщика',
+            'supplier_article' => 'Артикул поставщика',
+            'supplier_url' => 'URL поставщика',
+            'source_url' => 'URL источника',
+            'source_category' => 'Раздел источника',
+            'possible_supplier_product_id' => 'ID связки поставщика',
+            'supplier_product_id' => 'ID связки поставщика',
+            'possible_supplier_title' => 'Товар в связке поставщика',
+            'possible_product_id' => 'ID товара KOTLOV',
+            'product_id' => 'ID товара KOTLOV',
+            'matched_product_id' => 'ID товара KOTLOV',
+            'possible_product_title' => 'Товар KOTLOV',
+            'matched_product_title' => 'Товар KOTLOV',
+            'title' => 'Товар KOTLOV',
+            'brand' => 'Бренд',
+            'old_supplier_price' => 'Старая закупка',
+            'new_supplier_cost' => 'Новая закупка',
+            'supplier_price' => 'Цена поставщика',
+            'product_retail_price' => 'Розница KOTLOV',
+            'old_stock_status' => 'Старое наличие',
+            'new_stock_status' => 'Новое наличие',
+            'stock_status' => 'Наличие',
+            'stock_text' => 'Текст наличия',
+            'product_in_stock_before' => 'Товар был в наличии',
+            'match_type' => 'Тип совпадения',
+            'confidence' => 'Уверенность',
+            'ai_confidence' => 'Уверенность AI',
+            'ai_decision' => 'Решение AI',
+            'action' => 'Действие',
+            'recommended_action' => 'Рекомендация',
+            'reason' => 'Причина',
+            'note' => 'Примечание',
+            'error' => 'Ошибка',
+            'page' => 'Страница',
+            'attributes_count' => 'Характеристик',
+            'images_count' => 'Фото',
+            'description_length' => 'Длина описания',
+        ][$header] ?? Str::of($header)->replace('_', ' ')->title()->toString();
     }
 
     public function downloadSelected(): ?StreamedResponse

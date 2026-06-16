@@ -311,9 +311,9 @@
                         <thead>
                             <tr>
                                 <th>Действия</th>
-                                <th>SKU KOTLOV</th>
+                                <th>Артикул KOTLOV</th>
                                 @foreach ($headers as $header)
-                                    <th>{{ $header }}</th>
+                                    <th>{{ $this->headerLabel($header) }}</th>
                                 @endforeach
                             </tr>
                         </thead>
