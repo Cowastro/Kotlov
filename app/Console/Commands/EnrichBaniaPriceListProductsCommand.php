@@ -18,7 +18,7 @@ class EnrichBaniaPriceListProductsCommand extends Command
         {--sku= : Process one product SKU}
         {--category= : Filter by category id}
         {--brand= : Filter by brand name fragment}
-        {--source-domain=bania.by : Allowed source domain to search, e.g. aston-pech.ru}
+        {--source-domain=bania.by : Allowed source domain to search, e.g. pech-aston.ru}
         {--source-url= : Start from a specific allowed catalog URL instead of Serper}
         {--force-images : Replace existing images}
         {--force-content : Replace existing content}
@@ -34,6 +34,7 @@ class EnrichBaniaPriceListProductsCommand extends Command
     private const SERPER_URL = 'https://google.serper.dev/search';
     private const ALLOWED_SOURCE_DOMAINS = [
         'bania.by',
+        'pech-aston.ru',
         'aston-pech.ru',
         'doorwood.ru',
         'tmf-shop.ru',
@@ -298,7 +299,7 @@ class EnrichBaniaPriceListProductsCommand extends Command
                 'url' => $url,
                 'title' => $pageTitle,
                 'description' => $this->extractDescription($html),
-                'images' => $this->extractImages($html, $url),
+                'images' => $this->extractImages($html, $url, $product),
             ];
         }
 
@@ -327,7 +328,7 @@ class EnrichBaniaPriceListProductsCommand extends Command
             return false;
         }
 
-        if ($this->extractImages($html, $url) === []) {
+        if ($this->extractImages($html, $url, $product) === []) {
             return false;
         }
 
@@ -466,7 +467,7 @@ class EnrichBaniaPriceListProductsCommand extends Command
                     'url' => $url,
                     'title' => $pageTitle,
                     'description' => $this->extractDescription($html),
-                    'images' => $this->extractImages($html, $url),
+                    'images' => $this->extractImages($html, $url, $product),
                 ];
             } catch (\Throwable) {
                 continue;
@@ -672,13 +673,35 @@ class EnrichBaniaPriceListProductsCommand extends Command
         return '';
     }
 
-    private function extractImages(string $html, string $pageUrl): array
+    private function extractImages(string $html, string $pageUrl, ?object $product = null): array
     {
         $images = [];
+        if (preg_match_all('~<img\b[^>]+>~iu', $html, $imageTags)) {
+            foreach ($imageTags[0] as $tag) {
+                $src = $this->tagAttribute($tag, 'data-large')
+                    ?: $this->tagAttribute($tag, 'data-image-large')
+                    ?: $this->tagAttribute($tag, 'data-zoom-image')
+                    ?: $this->tagAttribute($tag, 'data-src')
+                    ?: $this->tagAttribute($tag, 'src');
+
+                if ($src === '' || ! preg_match('~\.(?:jpg|jpeg|png|webp)(?:\?[^"\']*)?$~i', $src)) {
+                    continue;
+                }
+
+                $url = $this->normalizeImageUrl($this->absoluteUrl($src, $pageUrl));
+                $context = trim($this->tagAttribute($tag, 'alt') . ' ' . $this->tagAttribute($tag, 'title') . ' ' . $url);
+                if (! $this->isProductImage($url) || ! $this->imageMatchesProduct($url, $context, $product)) {
+                    continue;
+                }
+
+                $images[] = $url;
+            }
+        }
+
         if (preg_match_all('~(?:href|src|data-src|data-large|data-image|data-image-large|data-image-thumb|data-zoom-image)=["\']([^"\']+\.(?:jpg|jpeg|png|webp)(?:\?[^"\']*)?)["\']~iu', $html, $matches)) {
             foreach ($matches[1] as $src) {
                 $url = $this->normalizeImageUrl($this->absoluteUrl($src, $pageUrl));
-                if (! $this->isProductImage($url)) {
+                if (! $this->isProductImage($url) || ! $this->imageMatchesProduct($url, $url, $product)) {
                     continue;
                 }
                 $images[] = $url;
@@ -686,6 +709,38 @@ class EnrichBaniaPriceListProductsCommand extends Command
         }
 
         return array_values(array_unique(array_slice($images, 0, 8)));
+    }
+
+    private function tagAttribute(string $tag, string $name): string
+    {
+        if (preg_match('~\b' . preg_quote($name, '~') . '=["\']([^"\']+)["\']~iu', $tag, $match)) {
+            return html_entity_decode($match[1], ENT_QUOTES | ENT_HTML5, 'UTF-8');
+        }
+
+        return '';
+    }
+
+    private function imageMatchesProduct(string $url, string $context, ?object $product): bool
+    {
+        if ($product === null || $this->sourceDomain === 'bania.by') {
+            return true;
+        }
+
+        $context = $this->normalize($context);
+        $productName = $this->normalize((string) ($product->supplier_name ?: $product->name));
+        if ($context === '' || $productName === '') {
+            return false;
+        }
+
+        if ($this->hasVariantConflict($context, $productName)) {
+            return false;
+        }
+
+        $productTokens = $this->specificTokens($productName);
+        $contextTokens = $this->specificTokens($context);
+        $shared = array_intersect($productTokens, $contextTokens);
+
+        return count($shared) >= max(1, min(2, count($productTokens)));
     }
 
     private function downloadImages(array $urls, object $product): array
@@ -736,7 +791,7 @@ class EnrichBaniaPriceListProductsCommand extends Command
 
         $path = strtolower((string) parse_url($url, PHP_URL_PATH));
 
-        if (preg_match('~/(?:logo|icon|icons|payment|social|banner|manufacturer)/|(?:sprite|placeholder|telegram|viber|whatsapp|email|tel|noimage|nophoto)~i', $path)) {
+        if (preg_match('~/(?:logo|icon|icons|payment|social|banner|manufacturer|brand|advantage|advantages|delivery|callback|review|reviews)/|(?:sprite|placeholder|telegram|viber|whatsapp|email|tel|noimage|nophoto|watermark)~i', $path)) {
             return false;
         }
 

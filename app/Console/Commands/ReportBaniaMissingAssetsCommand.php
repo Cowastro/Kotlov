@@ -26,7 +26,7 @@ class ReportBaniaMissingAssetsCommand extends Command
         'doorwood' => 'https://doorwood.ru/',
         'harvia' => 'https://www.harvia.com/',
         'prosept' => 'https://www.prosept.ru/',
-        'aston' => 'https://aston-pech.ru/',
+        'aston' => 'https://pech-aston.ru/katalog/stalnye-bannye-pechi',
         'mangaly' => 'https://bania.by/piknik-dosug-shashlyk-gril/mangaly',
         'kazany' => 'https://bania.by/piknik-dosug-shashlyk-gril/kazany',
         'pechi-dlya-kazana' => 'https://bania.by/piknik-dosug-shashlyk-gril/pechi-dlja-kazana',
