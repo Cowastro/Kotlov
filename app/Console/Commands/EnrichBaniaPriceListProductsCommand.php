@@ -44,6 +44,7 @@ class EnrichBaniaPriceListProductsCommand extends Command
 
     private AiContentEnricher $ai;
     private string $sourceDomain = 'bania.by';
+    private ?array $sourceCatalogLinks = null;
 
     private array $stats = [
         'processed' => 0,
@@ -286,7 +287,7 @@ class EnrichBaniaPriceListProductsCommand extends Command
             ];
         }
 
-        return null;
+        return $this->findSourcePageInCatalog($product);
     }
 
     private function searchText(object $product): string
@@ -306,6 +307,11 @@ class EnrichBaniaPriceListProductsCommand extends Command
             return false;
         }
 
+        $pageText = $this->normalize(strip_tags($html));
+        if (str_contains($pageText, 'фильтры товаров') && (str_contains($pageText, 'сортировать') || str_contains($pageText, 'на страницу'))) {
+            return false;
+        }
+
         if ($this->extractImages($html, $url) === []) {
             return false;
         }
@@ -315,6 +321,142 @@ class EnrichBaniaPriceListProductsCommand extends Command
         similar_text($left, $right, $percent);
 
         return $percent >= 45 || $this->tokenOverlap($left, $right) >= 2;
+    }
+
+    private function findSourcePageInCatalog(object $product): ?array
+    {
+        if ($this->sourceDomain === 'bania.by') {
+            return null;
+        }
+
+        $links = $this->sourceCatalogLinks();
+        $needle = $this->normalize((string) ($product->supplier_name ?: $product->name));
+
+        foreach ($links as $link) {
+            $title = $this->normalize((string) ($link['title'] ?? ''));
+            if ($title === '' || $this->tokenOverlap($title, $needle) < 2) {
+                continue;
+            }
+
+            try {
+                $url = (string) $link['url'];
+                $html = $this->fetch($url);
+                $pageTitle = $this->extractTitle($html) ?: (string) $link['title'];
+
+                if (! $this->isLikelyProductPage($html, $url, $pageTitle, $product)) {
+                    continue;
+                }
+
+                return [
+                    'url' => $url,
+                    'title' => $pageTitle,
+                    'description' => $this->extractDescription($html),
+                    'images' => $this->extractImages($html, $url),
+                ];
+            } catch (\Throwable) {
+                continue;
+            }
+        }
+
+        return null;
+    }
+
+    private function sourceCatalogLinks(): array
+    {
+        if ($this->sourceCatalogLinks !== null) {
+            return $this->sourceCatalogLinks;
+        }
+
+        $root = 'https://' . $this->sourceDomain . '/';
+        $queue = [[$root, 0]];
+        $seen = [];
+        $links = [];
+
+        while ($queue !== [] && count($seen) < 80) {
+            [$url, $depth] = array_shift($queue);
+            $url = strtok((string) $url, '#') ?: (string) $url;
+            if (isset($seen[$url]) || ! $this->urlMatchesSourceDomain($url)) {
+                continue;
+            }
+
+            $seen[$url] = true;
+
+            try {
+                $html = $this->fetch($url);
+            } catch (\Throwable) {
+                continue;
+            }
+
+            foreach ($this->extractAnchors($html, $url) as $anchor) {
+                $anchorUrl = (string) $anchor['url'];
+                $anchorTitle = trim((string) $anchor['title']);
+                if (! $this->urlMatchesSourceDomain($anchorUrl) || $anchorTitle === '') {
+                    continue;
+                }
+
+                if ($this->isCatalogCandidate($anchorUrl, $anchorTitle)) {
+                    $links[$anchorUrl] = [
+                        'url' => $anchorUrl,
+                        'title' => $anchorTitle,
+                    ];
+                }
+
+                if ($depth < 2 && $this->isCatalogNavigationLink($anchorUrl, $anchorTitle)) {
+                    $queue[] = [$anchorUrl, $depth + 1];
+                }
+            }
+        }
+
+        $this->sourceCatalogLinks = array_values($links);
+
+        return $this->sourceCatalogLinks;
+    }
+
+    private function extractAnchors(string $html, string $baseUrl): array
+    {
+        if (! preg_match_all('~<a\b[^>]*href=["\']([^"\']+)["\'][^>]*>(.*?)</a>~isu', $html, $matches, PREG_SET_ORDER)) {
+            return [];
+        }
+
+        $anchors = [];
+        foreach ($matches as $match) {
+            $href = html_entity_decode((string) $match[1], ENT_QUOTES | ENT_HTML5, 'UTF-8');
+            if ($href === '' || str_starts_with($href, 'mailto:') || str_starts_with($href, 'tel:') || str_starts_with($href, 'javascript:')) {
+                continue;
+            }
+
+            $title = $this->cleanText(strip_tags((string) $match[2]));
+            $url = $this->absoluteUrl($href, $baseUrl);
+
+            $anchors[] = [
+                'url' => strtok($url, '#') ?: $url,
+                'title' => $title,
+            ];
+        }
+
+        return $anchors;
+    }
+
+    private function isCatalogNavigationLink(string $url, string $title): bool
+    {
+        $text = $this->normalize($title . ' ' . (string) parse_url($url, PHP_URL_PATH));
+
+        if (preg_match('~(?:contact|kontakty|diler|dealer|about|company|video|faq|privacy|politika|soglashenie|wishlist|compare|cart|login|search|articles|blog|news)~i', $text)) {
+            return false;
+        }
+
+        return preg_match('~(?:catalog|katalog|pech|bann|kamn|kamin|aston|doorwood|dver|aksess|prinad|tmf|termofor|vezuv|teplodar|prosept|harvia)~iu', $text) === 1;
+    }
+
+    private function isCatalogCandidate(string $url, string $title): bool
+    {
+        $text = $this->normalize($title . ' ' . (string) parse_url($url, PHP_URL_PATH));
+
+        if (mb_strlen($title) < 8 || preg_match('~(?:главная|каталог|сбросить|сортировать|на страницу|фильтр|без сортировки|новинки выше|сначала)~iu', $title)) {
+            return false;
+        }
+
+        return preg_match('~(?:pech|печ|kamin|камин|dver|двер|setka|сетка|stekl|стекл|tmf|aston|doorwood|vezuv|teplodar|prosept|harvia)~iu', $text) === 1;
     }
 
     private function buildContent(object $product, array $result): string
@@ -473,7 +615,7 @@ class EnrichBaniaPriceListProductsCommand extends Command
             return str_contains($url, '/image/catalog/');
         }
 
-        return preg_match('~/(?:upload|uploads|images|image|catalog|products|product|goods|items|photo|photos|userfls|iblock|resize_cache)/~i', $path) === 1;
+        return preg_match('~/(?:wa-data|upload|uploads|images|image|catalog|products|product|goods|items|photo|photos|userfls|iblock|resize_cache)/~i', $path) === 1;
     }
 
     private function normalizeImageUrl(string $url): string
