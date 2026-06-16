@@ -25,6 +25,7 @@ class EnrichBaniaPriceListProductsCommand extends Command
         {--skip-images : Do not download images}
         {--skip-content : Do not update content}
         {--missing-images-only : Process only products without any gallery images}
+        {--debug-images : Print candidate image URLs for every matched page}
         {--sleep=300 : Delay between products in milliseconds}';
 
     protected $description = 'Enrich BANIA products created from price-list rows by finding source pages via Serper.';
@@ -122,6 +123,11 @@ class EnrichBaniaPriceListProductsCommand extends Command
 
                 $this->stats['matched_page']++;
                 $this->line('  source: ' . $result['url']);
+                if ($this->option('debug-images')) {
+                    foreach (($result['images'] ?? []) as $imageUrl) {
+                        $this->line('  image: ' . $imageUrl);
+                    }
+                }
 
                 $updates = ['updated_at' => now()];
                 $supplierUpdates = ['updated_at' => now()];
@@ -894,7 +900,7 @@ class EnrichBaniaPriceListProductsCommand extends Command
 
         $path = strtolower((string) parse_url($url, PHP_URL_PATH));
 
-        if (preg_match('~/(?:logo|icon|icons|payment|social|banner|manufacturer|brand|advantage|advantages|delivery|callback|review|reviews)/|(?:sprite|placeholder|telegram|viber|whatsapp|email|tel|noimage|nophoto|watermark)~i', $path)) {
+        if (preg_match('~/(?:logo|icon|icons|payment|social|banner|manufacturer|brand|advantage|advantages|delivery|callback|review|reviews)/|(?:sprite|placeholder|telegram|viber|whatsapp|email|tel|stc|noimage|nophoto|watermark)~i', $path)) {
             return false;
         }
 
@@ -948,8 +954,19 @@ class EnrichBaniaPriceListProductsCommand extends Command
     private function isUsableImage(string $path): bool
     {
         $size = @getimagesize($path);
+        if ($size === false) {
+            return false;
+        }
 
-        return $size !== false && ($size[0] ?? 0) >= 100 && ($size[1] ?? 0) >= 100;
+        $width = (int) ($size[0] ?? 0);
+        $height = (int) ($size[1] ?? 0);
+        if ($width < 100 || $height < 100) {
+            return false;
+        }
+
+        $ratio = $width / max(1, $height);
+
+        return $ratio >= 0.45 && $ratio <= 2.2;
     }
 
     private function decodeArray(mixed $value): array
