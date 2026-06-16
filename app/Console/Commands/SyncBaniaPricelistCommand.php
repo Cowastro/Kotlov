@@ -140,9 +140,7 @@ class SyncBaniaPricelistCommand extends Command
                 $match = $this->matchRow($row, $indexes, $supplierProducts);
                 if (($match['action'] ?? '') === 'manual_review') {
                     $stats['manual_review']++;
-                    if (($match['supplier_product'] ?? null) !== null) {
-                        $match['retail_match'] = $this->matchRetailForSupplierProduct($match['supplier_product'], $retailIndexes);
-                    }
+                    $match['retail_match'] = $this->matchRetailForPriceRow($row, $retailIndexes, $match['supplier_product'] ?? null);
 
                     if (($match['retail_match']['price'] ?? null) !== null) {
                         $stats['retail_price_suggested']++;
@@ -171,7 +169,7 @@ class SyncBaniaPricelistCommand extends Command
                 if (isset($matchedSupplierProductIds[(int) $supplierProduct->id])) {
                     $stats['manual_review']++;
                     $duplicateMatch = array_merge($match, ['reason' => 'price list contains another row for the same BANIA supplier_product']);
-                    $duplicateMatch['retail_match'] = $this->matchRetailForSupplierProduct($supplierProduct, $retailIndexes);
+                    $duplicateMatch['retail_match'] = $this->matchRetailForPriceRow($row, $retailIndexes, $supplierProduct);
                     if (($duplicateMatch['retail_match']['price'] ?? null) !== null) {
                         $stats['retail_price_suggested']++;
                     } else {
@@ -184,7 +182,7 @@ class SyncBaniaPricelistCommand extends Command
 
                 $matchedSupplierProductIds[(int) $supplierProduct->id] = true;
                 $stats['matched']++;
-                $retailMatch = $this->matchRetailForSupplierProduct($supplierProduct, $retailIndexes);
+                $retailMatch = $this->matchRetailForPriceRow($row, $retailIndexes, $supplierProduct);
                 $match['retail_match'] = $retailMatch;
 
                 if ($row['price'] === null || $row['price'] <= 0) {
@@ -633,6 +631,40 @@ class SyncBaniaPricelistCommand extends Command
             'supplier_product' => $best['supplier_product'] ?? null,
             'reason' => 'no linked BANIA supplier product found',
         ];
+    }
+
+    private function matchRetailForPriceRow(array $row, array $indexes, ?object $supplierProduct = null): ?array
+    {
+        $articles = array_values(array_filter(array_unique([
+            $this->normalizeArticle((string) ($row['norm_article'] ?? '')),
+            $this->normalizeArticle((string) ($row['article'] ?? '')),
+        ])));
+
+        foreach ($articles as $article) {
+            $candidates = $indexes['article'][$article] ?? [];
+            if ($candidates === []) {
+                continue;
+            }
+
+            $best = null;
+            $bestScore = 0;
+            foreach ($candidates as $candidate) {
+                $score = $this->candidateScore((string) ($row['normalized_name'] ?? ''), (string) $candidate['normalized_name']);
+                if ($score > $bestScore) {
+                    $best = $candidate;
+                    $bestScore = $score;
+                }
+            }
+
+            if ($best) {
+                return $best + [
+                    'match_type' => 'retail_price_article',
+                    'confidence' => max($bestScore, 95),
+                ];
+            }
+        }
+
+        return $supplierProduct ? $this->matchRetailForSupplierProduct($supplierProduct, $indexes) : null;
     }
 
     private function matchRetailForSupplierProduct(object $supplierProduct, array $indexes): ?array
