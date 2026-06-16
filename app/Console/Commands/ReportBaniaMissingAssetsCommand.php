@@ -26,6 +26,7 @@ class ReportBaniaMissingAssetsCommand extends Command
         'doorwood' => 'https://doorwood.ru/',
         'harvia' => 'https://www.harvia.com/',
         'prosept' => 'https://www.prosept.ru/',
+        'aston' => 'https://aston-pech.ru/',
         'bania' => 'https://bania.by/',
     ];
 
@@ -188,6 +189,7 @@ class ReportBaniaMissingAssetsCommand extends Command
             str_contains($normalized, 'doorwood') || str_contains($normalized, 'door wood') => 'DoorWood',
             str_contains($normalized, 'harvia') => 'Harvia',
             str_contains($normalized, 'prosept') || str_contains($normalized, 'просепт') => 'PROSEPT',
+            str_contains($normalized, 'aston') || str_contains($normalized, 'астон') => 'ASTON',
             default => '',
         };
     }
@@ -203,6 +205,7 @@ class ReportBaniaMissingAssetsCommand extends Command
             str_contains($normalized, 'doorwood') || str_contains($normalized, 'door wood') => self::SOURCE_HINTS['doorwood'],
             str_contains($normalized, 'harvia') => self::SOURCE_HINTS['harvia'],
             str_contains($normalized, 'prosept') || str_contains($normalized, 'просепт') => self::SOURCE_HINTS['prosept'],
+            str_contains($normalized, 'aston') || str_contains($normalized, 'астон') => self::SOURCE_HINTS['aston'],
             default => self::SOURCE_HINTS['bania'],
         };
     }
