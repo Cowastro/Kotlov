@@ -2,7 +2,9 @@
 
 namespace App\Filament\Pages;
 
+use App\Models\SupplierReviewDecision;
 use BackedEnum;
+use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Filament\Support\Enums\Width;
 use Filament\Support\Icons\Heroicon;
@@ -278,6 +280,124 @@ class ImportReports extends Page
         ]);
     }
 
+    public function queueDecision(int $rowIndex, string $decision): void
+    {
+        if (! in_array($decision, [
+            SupplierReviewDecision::DECISION_LINK,
+            SupplierReviewDecision::DECISION_UNLINK,
+            SupplierReviewDecision::DECISION_IGNORE,
+        ], true)) {
+            Notification::make()
+                ->title('Неизвестное действие')
+                ->danger()
+                ->send();
+
+            return;
+        }
+
+        $report = $this->selectedReport();
+        $rows = $this->selectedRows();
+        $row = $rows[$rowIndex] ?? null;
+
+        if (! $report || ! $row) {
+            Notification::make()
+                ->title('Строка отчёта не найдена')
+                ->danger()
+                ->send();
+
+            return;
+        }
+
+        $supplierProductId = $this->supplierProductId($row);
+        $productId = $this->productId($row);
+
+        if ($decision === SupplierReviewDecision::DECISION_LINK && ($supplierProductId === '' || $productId === '')) {
+            Notification::make()
+                ->title('Для связки нужен товар поставщика и товар KOTLOV')
+                ->danger()
+                ->send();
+
+            return;
+        }
+
+        if ($decision === SupplierReviewDecision::DECISION_UNLINK && $supplierProductId === '') {
+            Notification::make()
+                ->title('Для удаления связи нужен товар поставщика')
+                ->danger()
+                ->send();
+
+            return;
+        }
+
+        $reportRow = $this->reportRow($row, $rowIndex);
+        $decisionKey = sha1(implode('|', [
+            $report['relative_path'],
+            $reportRow,
+            $decision,
+            $supplierProductId,
+            $productId,
+        ]));
+
+        $pendingForRow = SupplierReviewDecision::query()
+            ->where('report_file', $report['relative_path'])
+            ->where('report_row', $reportRow)
+            ->where('status', SupplierReviewDecision::STATUS_PENDING)
+            ->first();
+
+        if ($pendingForRow) {
+            Notification::make()
+                ->title('По этой строке уже есть решение в очереди')
+                ->body($this->decisionLabel((string) $pendingForRow->decision))
+                ->warning()
+                ->send();
+
+            return;
+        }
+
+        $existing = SupplierReviewDecision::query()->where('decision_key', $decisionKey)->first();
+        if ($existing) {
+            Notification::make()
+                ->title('Решение уже есть в очереди')
+                ->body('Статус: ' . $this->decisionStatusLabel((string) $existing->status))
+                ->warning()
+                ->send();
+
+            return;
+        }
+
+        SupplierReviewDecision::query()->create([
+            'decision_key' => $decisionKey,
+            'supplier_code' => $report['supplier'] !== 'general' ? $report['supplier'] : null,
+            'report_file' => $report['relative_path'],
+            'report_row' => $reportRow,
+            'decision' => $decision,
+            'status' => SupplierReviewDecision::STATUS_PENDING,
+            'supplier_product_id' => $supplierProductId !== '' ? (int) $supplierProductId : null,
+            'product_id' => $productId !== '' ? (int) $productId : null,
+            'supplier_title' => $this->supplierTitle($row),
+            'supplier_article' => $this->supplierArticle($row),
+            'source_url' => $this->sourceUrl($row),
+            'reason' => $this->translateReason((string) ($row['reason'] ?? $row['note'] ?? $row['error'] ?? '')),
+            'payload' => $row,
+        ]);
+
+        Notification::make()
+            ->title('Решение добавлено в очередь')
+            ->body($this->decisionLabel($decision))
+            ->success()
+            ->send();
+    }
+
+    public function canLink(array $row): bool
+    {
+        return $this->supplierProductId($row) !== '' && $this->productId($row) !== '';
+    }
+
+    public function canUnlink(array $row): bool
+    {
+        return $this->supplierProductId($row) !== '';
+    }
+
     public function productAdminUrl(array $row): ?string
     {
         $productId = $this->productId($row);
@@ -431,6 +551,67 @@ class ImportReports extends Page
     private function productId(array $row): string
     {
         return trim((string) ($row['product_id'] ?? $row['possible_product_id'] ?? $row['matched_product_id'] ?? ''));
+    }
+
+    private function supplierProductId(array $row): string
+    {
+        return trim((string) ($row['supplier_product_id'] ?? $row['possible_supplier_product_id'] ?? $row['matched_supplier_product_id'] ?? ''));
+    }
+
+    private function reportRow(array $row, int $rowIndex): string
+    {
+        foreach (['price_row', 'report_row', 'row', 'line', 'page'] as $key) {
+            $value = trim((string) ($row[$key] ?? ''));
+            if ($value !== '') {
+                return $value;
+            }
+        }
+
+        return (string) ($rowIndex + 1);
+    }
+
+    private function supplierTitle(array $row): ?string
+    {
+        foreach (['possible_supplier_title', 'supplier_title', 'supplier_name', 'price_title', 'title'] as $key) {
+            $value = trim((string) ($row[$key] ?? ''));
+            if ($value !== '') {
+                return $value;
+            }
+        }
+
+        return null;
+    }
+
+    private function supplierArticle(array $row): ?string
+    {
+        foreach (['price_article', 'supplier_sku', 'supplier_article', 'article'] as $key) {
+            $value = trim((string) ($row[$key] ?? ''));
+            if ($value !== '') {
+                return $value;
+            }
+        }
+
+        return null;
+    }
+
+    private function decisionLabel(string $decision): string
+    {
+        return match ($decision) {
+            SupplierReviewDecision::DECISION_LINK => 'Связать товар поставщика с товаром KOTLOV',
+            SupplierReviewDecision::DECISION_UNLINK => 'Удалить связь товара поставщика',
+            SupplierReviewDecision::DECISION_IGNORE => 'Отметить строку как проверенную',
+            default => $decision,
+        };
+    }
+
+    private function decisionStatusLabel(string $status): string
+    {
+        return match ($status) {
+            SupplierReviewDecision::STATUS_PENDING => 'ожидает применения',
+            SupplierReviewDecision::STATUS_APPLIED => 'применено',
+            SupplierReviewDecision::STATUS_FAILED => 'ошибка',
+            default => $status,
+        };
     }
 
     private function allReports(): array

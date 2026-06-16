@@ -147,6 +147,7 @@
 
         .import-reports-actions {
             display: flex;
+            flex-wrap: wrap;
             gap: 10px;
         }
 
@@ -159,6 +160,30 @@
 
         .import-reports-link:hover {
             text-decoration: underline;
+        }
+
+        .import-reports-action-button {
+            border: 0;
+            background: transparent;
+            color: rgb(125, 211, 252);
+            cursor: pointer;
+            font: inherit;
+            font-size: 12px;
+            font-weight: 700;
+            padding: 0;
+            white-space: nowrap;
+        }
+
+        .import-reports-action-button:hover {
+            text-decoration: underline;
+        }
+
+        .import-reports-action-button-danger {
+            color: rgb(252, 165, 165);
+        }
+
+        .import-reports-action-button-muted {
+            color: rgb(148, 163, 184);
         }
 
         .import-reports-cell {
@@ -290,6 +315,10 @@
                     </div>
                     @if ($selectedReport)
                         <div class="import-reports-muted">{{ $selectedReport['relative_path'] }}</div>
+                        <div class="import-reports-muted">
+                            Ручные решения попадают в очередь. Перед применением проверьте:
+                            <code>php artisan supplier:apply-review-decisions --dry-run</code>
+                        </div>
                     @endif
                 </div>
 
@@ -320,6 +349,7 @@
                         <tbody>
                             @foreach ($rows as $row)
                                 @php
+                                    $rowIndex = $loop->index;
                                     $productUrl = $this->productAdminUrl($row);
                                     $sourceUrl = $this->sourceUrl($row);
                                     $kotlovSku = $this->kotlovSku($row);
@@ -338,6 +368,34 @@
                                             @if ($sourceUrl)
                                                 <a class="import-reports-link" href="{{ $sourceUrl }}" target="_blank">Источник</a>
                                             @endif
+                                            @if ($this->canLink($row))
+                                                <button
+                                                    type="button"
+                                                    class="import-reports-action-button"
+                                                    wire:click="queueDecision({{ $rowIndex }}, 'link_supplier_product')"
+                                                    wire:confirm="Добавить решение: связать товар поставщика с этим товаром KOTLOV?"
+                                                >
+                                                    Связать
+                                                </button>
+                                            @endif
+                                            @if ($this->canUnlink($row))
+                                                <button
+                                                    type="button"
+                                                    class="import-reports-action-button import-reports-action-button-danger"
+                                                    wire:click="queueDecision({{ $rowIndex }}, 'unlink_supplier_product')"
+                                                    wire:confirm="Добавить решение: удалить текущую связь товара поставщика?"
+                                                >
+                                                    Удалить связь
+                                                </button>
+                                            @endif
+                                            <button
+                                                type="button"
+                                                class="import-reports-action-button import-reports-action-button-muted"
+                                                wire:click="queueDecision({{ $rowIndex }}, 'ignore')"
+                                                wire:confirm="Отметить эту строку как проверенную без изменений?"
+                                            >
+                                                Игнорировать
+                                            </button>
                                             @if (! $productUrl && ! $sourceUrl)
                                                 <span class="import-reports-muted">—</span>
                                             @endif
