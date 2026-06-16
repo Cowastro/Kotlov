@@ -48,6 +48,7 @@ class ApplySupplierReviewDecisionsCommand extends Command
             'pending' => $decisions->count(),
             'linked' => 0,
             'unlinked' => 0,
+            'retail_updated' => 0,
             'ignored' => 0,
             'failed' => 0,
         ];
@@ -105,6 +106,7 @@ class ApplySupplierReviewDecisionsCommand extends Command
         return match ($decision->decision) {
             SupplierReviewDecision::DECISION_LINK => $this->linkSupplierProduct($decision, $apply),
             SupplierReviewDecision::DECISION_UNLINK => $this->unlinkSupplierProduct($decision, $apply),
+            SupplierReviewDecision::DECISION_UPDATE_RETAIL_PRICE => $this->updateRetailPrice($decision, $apply),
             SupplierReviewDecision::DECISION_IGNORE => $this->ignoreDecision($decision, $apply),
             default => throw new \RuntimeException("Unknown decision: {$decision->decision}"),
         };
@@ -195,6 +197,46 @@ class ApplySupplierReviewDecisionsCommand extends Command
         return 'строка отмечена как проверенная без изменений';
     }
 
+    private function updateRetailPrice(SupplierReviewDecision $decision, bool $apply): string
+    {
+        if (! $decision->product_id) {
+            throw new \RuntimeException('Для обновления розницы нужен product_id.');
+        }
+
+        $payload = is_array($decision->payload) ? $decision->payload : [];
+        $newPrice = $this->parseRetailPrice((string) ($payload['manual_retail_price'] ?? ''));
+        if ($newPrice === null || $newPrice <= 0) {
+            throw new \RuntimeException('Новая розничная цена пустая или некорректная.');
+        }
+
+        $product = DB::table('products')->where('id', $decision->product_id)->first(['id', 'price']);
+        if (! $product) {
+            throw new \RuntimeException('Товар KOTLOV не найден.');
+        }
+
+        $oldPrice = $product->price !== null ? (float) $product->price : null;
+        $note = sprintf(
+            'розница %s -> %.2f',
+            $oldPrice !== null ? number_format($oldPrice, 2, '.', '') : 'NULL',
+            $newPrice
+        );
+
+        if (! $apply) {
+            return $note;
+        }
+
+        DB::transaction(function () use ($decision, $newPrice): void {
+            DB::table('products')->where('id', $decision->product_id)->update([
+                'price' => $newPrice,
+                'updated_at' => now(),
+            ]);
+
+            $this->markApplied($decision);
+        });
+
+        return 'розница обновлена: ' . number_format($newPrice, 2, '.', '');
+    }
+
     private function markApplied(SupplierReviewDecision $decision): void
     {
         $decision->forceFill([
@@ -223,6 +265,7 @@ class ApplySupplierReviewDecisionsCommand extends Command
         return match ($decision) {
             SupplierReviewDecision::DECISION_LINK => 'linked',
             SupplierReviewDecision::DECISION_UNLINK => 'unlinked',
+            SupplierReviewDecision::DECISION_UPDATE_RETAIL_PRICE => 'retail_updated',
             SupplierReviewDecision::DECISION_IGNORE => 'ignored',
             default => 'failed',
         };
@@ -233,8 +276,27 @@ class ApplySupplierReviewDecisionsCommand extends Command
         return match ($decision) {
             SupplierReviewDecision::DECISION_LINK => 'связать',
             SupplierReviewDecision::DECISION_UNLINK => 'удалить связь',
+            SupplierReviewDecision::DECISION_UPDATE_RETAIL_PRICE => 'обновить розницу',
             SupplierReviewDecision::DECISION_IGNORE => 'игнорировать',
             default => $decision,
         };
+    }
+
+    private function parseRetailPrice(string $value): ?float
+    {
+        $normalized = trim(str_replace(["\xc2\xa0", 'BYN', 'byn', ' '], '', $value));
+        if ($normalized === '') {
+            return null;
+        }
+
+        if (str_contains($normalized, ',') && str_contains($normalized, '.')) {
+            $normalized = str_replace(',', '', $normalized);
+        } else {
+            $normalized = str_replace(',', '.', $normalized);
+        }
+
+        $normalized = preg_replace('/[^0-9.\-]/', '', $normalized);
+
+        return is_numeric($normalized) ? round((float) $normalized, 2) : null;
     }
 }

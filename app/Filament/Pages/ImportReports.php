@@ -26,6 +26,7 @@ class ImportReports extends Page
     public ?string $selectedFile = null;
     public int $perPage = 100;
     public bool $showAllColumns = false;
+    public array $retailPriceInputs = [];
 
     public static function getNavigationGroup(): ?string
     {
@@ -441,6 +442,110 @@ class ImportReports extends Page
         return $this->supplierProductId($row) !== '';
     }
 
+    public function queueRetailPriceDecision(int $rowIndex): void
+    {
+        $report = $this->selectedReport();
+        $rows = $this->selectedRows();
+        $row = $rows[$rowIndex] ?? null;
+
+        if (! $report || ! $row) {
+            Notification::make()
+                ->title('Строка отчёта не найдена')
+                ->danger()
+                ->send();
+
+            return;
+        }
+
+        $productId = $this->productId($row);
+        if ($productId === '' || ! ctype_digit($productId)) {
+            Notification::make()
+                ->title('Для обновления розницы нужен товар KOTLOV')
+                ->danger()
+                ->send();
+
+            return;
+        }
+
+        $inputPrice = trim((string) ($this->retailPriceInputs[$rowIndex] ?? ''));
+        if ($inputPrice === '') {
+            $inputPrice = $this->firstFilled($row, ['suggested_retail_price', 'suggested_retail_simple']);
+        }
+
+        $newPrice = $this->parseReportMoney($inputPrice);
+        if ($newPrice === null || $newPrice <= 0) {
+            Notification::make()
+                ->title('Введите корректную розничную цену')
+                ->danger()
+                ->send();
+
+            return;
+        }
+
+        $reportRow = $this->reportRow($row, $rowIndex);
+        $decision = SupplierReviewDecision::DECISION_UPDATE_RETAIL_PRICE;
+        $decisionKey = sha1(implode('|', [
+            $report['relative_path'],
+            $reportRow,
+            $decision,
+            $productId,
+            number_format($newPrice, 2, '.', ''),
+        ]));
+
+        $pendingForRow = SupplierReviewDecision::query()
+            ->where('report_file', $report['relative_path'])
+            ->where('report_row', $reportRow)
+            ->where('status', SupplierReviewDecision::STATUS_PENDING)
+            ->first();
+
+        if ($pendingForRow) {
+            Notification::make()
+                ->title('По этой строке уже есть решение в очереди')
+                ->body($this->decisionLabel((string) $pendingForRow->decision))
+                ->warning()
+                ->send();
+
+            return;
+        }
+
+        $existing = SupplierReviewDecision::query()->where('decision_key', $decisionKey)->first();
+        if ($existing) {
+            Notification::make()
+                ->title('Такое обновление розницы уже было добавлено')
+                ->body('Статус: ' . $this->decisionStatusLabel((string) $existing->status))
+                ->warning()
+                ->send();
+
+            return;
+        }
+
+        SupplierReviewDecision::query()->create([
+            'decision_key' => $decisionKey,
+            'supplier_code' => $report['supplier'] !== 'general' ? $report['supplier'] : null,
+            'report_file' => $report['relative_path'],
+            'report_row' => $reportRow,
+            'decision' => $decision,
+            'status' => SupplierReviewDecision::STATUS_PENDING,
+            'supplier_product_id' => $this->supplierProductId($row) !== '' ? (int) $this->supplierProductId($row) : null,
+            'product_id' => (int) $productId,
+            'supplier_title' => $this->supplierTitle($row),
+            'supplier_article' => $this->supplierArticle($row),
+            'source_url' => $this->sourceUrl($row),
+            'reason' => 'Ручное обновление розничной цены из отчёта импорта',
+            'payload' => [
+                'manual_retail_price' => number_format($newPrice, 2, '.', ''),
+                'old_product_retail_price' => $this->firstFilled($row, ['product_retail_price', 'old_product_price', 'kotlov_retail']),
+                'row' => $row,
+            ],
+        ]);
+
+        Notification::make()
+            ->title('Обновление розницы добавлено в очередь')
+            ->body('Новая розница: ' . number_format($newPrice, 2, '.', '') . ' BYN')
+            ->success()
+            ->send();
+    }
+
     public function productAdminUrl(array $row): ?string
     {
         $productId = $this->productId($row);
@@ -761,6 +866,7 @@ class ImportReports extends Page
         return match ($decision) {
             SupplierReviewDecision::DECISION_LINK => 'Связать товар поставщика с товаром KOTLOV',
             SupplierReviewDecision::DECISION_UNLINK => 'Удалить связь товара поставщика',
+            SupplierReviewDecision::DECISION_UPDATE_RETAIL_PRICE => 'Обновить розничную цену товара',
             SupplierReviewDecision::DECISION_IGNORE => 'Отметить строку как проверенную',
             default => $decision,
         };

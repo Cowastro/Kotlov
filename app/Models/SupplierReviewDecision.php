@@ -9,6 +9,7 @@ class SupplierReviewDecision extends Model
 {
     public const DECISION_LINK = 'link_supplier_product';
     public const DECISION_UNLINK = 'unlink_supplier_product';
+    public const DECISION_UPDATE_RETAIL_PRICE = 'update_product_retail_price';
     public const DECISION_IGNORE = 'ignore';
 
     public const STATUS_PENDING = 'pending';

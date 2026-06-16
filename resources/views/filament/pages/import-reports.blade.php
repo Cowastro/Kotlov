@@ -239,6 +239,24 @@
             color: rgb(148, 163, 184);
         }
 
+        .import-reports-price-action {
+            display: grid;
+            gap: 4px;
+            margin-top: 4px;
+            max-width: 112px;
+        }
+
+        .import-reports-price-input {
+            width: 100%;
+            min-height: 28px;
+            border: 1px solid rgba(148, 163, 184, .32);
+            border-radius: 7px;
+            background: rgba(255, 255, 255, .04);
+            color: inherit;
+            padding: 4px 7px;
+            font-size: 12px;
+        }
+
         .import-reports-cell {
             display: -webkit-box;
             max-width: 280px;
@@ -460,6 +478,24 @@
                                             >
                                                 Игнорировать
                                             </button>
+                                            @if ($productUrl)
+                                                <div class="import-reports-price-action">
+                                                    <input
+                                                        type="text"
+                                                        class="import-reports-price-input"
+                                                        placeholder="Розница"
+                                                        wire:model.defer="retailPriceInputs.{{ $rowIndex }}"
+                                                    />
+                                                    <button
+                                                        type="button"
+                                                        class="import-reports-action-button"
+                                                        wire:click="queueRetailPriceDecision({{ $rowIndex }})"
+                                                        wire:confirm="Добавить решение: обновить розничную цену товара?"
+                                                    >
+                                                        Обновить розницу
+                                                    </button>
+                                                </div>
+                                            @endif
                                             @if (! $productUrl && ! $sourceUrl)
                                                 <span class="import-reports-muted">—</span>
                                             @endif
