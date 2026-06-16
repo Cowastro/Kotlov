@@ -2224,8 +2224,47 @@ class ScrapeBaniaSupplierCommand extends Command
 
     private function extractImages(string $html, string $pageUrl): array
     {
+        $images = $this->extractPrimaryProductImages($html, $pageUrl);
+        if ($images !== []) {
+            return $images;
+        }
+
+        return $this->extractImageUrlsFromHtml($html, $pageUrl, 12);
+    }
+
+    private function extractPrimaryProductImages(string $html, string $pageUrl): array
+    {
+        $dom = $this->dom($html);
+        $xpath = new \DOMXPath($dom);
+        $selectors = [
+            '//*[contains(@class,"product") and (contains(@class,"image") or contains(@class,"gallery") or contains(@class,"thumb"))]',
+            '//*[contains(@class,"thumbnails")]',
+            '//*[contains(@class,"image-additional")]',
+            '//*[contains(@id,"image") and contains(@id,"product")]',
+            '//*[contains(@class,"swiper") and contains(@class,"product")]',
+        ];
+
         $images = [];
-        if (preg_match_all('~(?:href|src|data-src|data-large|data-image|data-image-large|data-image-thumb)=["\']([^"\']+\.(?:jpg|jpeg|png|webp)(?:\?[^"\']*)?)["\']~iu', $html, $matches)) {
+        foreach ($selectors as $selector) {
+            foreach ($xpath->query($selector) ?: [] as $node) {
+                if (! $node instanceof \DOMElement) {
+                    continue;
+                }
+
+                $htmlChunk = $dom->saveHTML($node) ?: '';
+                foreach ($this->extractImageUrlsFromHtml($htmlChunk, $pageUrl, 12) as $url) {
+                    $images[] = $url;
+                }
+            }
+        }
+
+        return array_values(array_unique(array_slice($images, 0, 12)));
+    }
+
+    private function extractImageUrlsFromHtml(string $html, string $pageUrl, int $limit): array
+    {
+        $images = [];
+        if (preg_match_all('~(?:href|src|data-src|data-large|data-image|data-image-large|data-image-thumb|data-zoom-image)=["\']([^"\']+\.(?:jpg|jpeg|png|webp)(?:\?[^"\']*)?)["\']~iu', $html, $matches)) {
             foreach ($matches[1] as $src) {
                 $url = $this->normalizeBaniaImageUrl($this->absoluteUrl($src, $pageUrl));
                 if (! $this->isProductImageCandidate($url)) {
@@ -2235,7 +2274,7 @@ class ScrapeBaniaSupplierCommand extends Command
             }
         }
 
-        return array_values(array_unique(array_slice($images, 0, 12)));
+        return array_values(array_unique(array_slice($images, 0, $limit)));
     }
 
     private function firstImageFromHtml(string $html): ?string
