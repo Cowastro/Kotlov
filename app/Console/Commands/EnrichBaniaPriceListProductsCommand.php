@@ -326,7 +326,7 @@ class EnrichBaniaPriceListProductsCommand extends Command
                 'url' => $url,
                 'title' => $pageTitle,
                 'description' => $this->extractDescription($html),
-                'images' => $this->extractImages($html, $url, $product, $this->canUseGenericDoorWoodImages($pageTitle, $product)),
+                'images' => $this->extractImages($html, $url, $product, $this->canUseGenericProductImages($pageTitle, $product)),
             ];
         }
 
@@ -399,7 +399,7 @@ class EnrichBaniaPriceListProductsCommand extends Command
 
             $html = $this->fetch($url);
             $pageTitle = $this->extractTitle($html);
-            $images = $this->extractImages($html, $url, $product, $this->canUseGenericDoorWoodImages($pageTitle, $product));
+            $images = $this->extractImages($html, $url, $product, $this->canUseGenericProductImages($pageTitle, $product));
             if ($images === []) {
                 return null;
             }
@@ -448,7 +448,7 @@ class EnrichBaniaPriceListProductsCommand extends Command
             return false;
         }
 
-        if ($this->extractImages($html, $url, $product, $this->canUseGenericDoorWoodImages($pageTitle, $product)) === []) {
+        if ($this->extractImages($html, $url, $product, $this->canUseGenericProductImages($pageTitle, $product)) === []) {
             return false;
         }
 
@@ -470,6 +470,10 @@ class EnrichBaniaPriceListProductsCommand extends Command
 
         if ($this->isDoorWoodProduct($productName)) {
             return $this->isLikelyDoorWoodTitleMatch($candidate, $productName);
+        }
+
+        if ($this->isSibirProduct($productName)) {
+            return $this->isLikelySibirTitleMatch($candidate, $productName);
         }
 
         if ($this->hasVariantConflict($candidate, $productName)) {
@@ -505,13 +509,43 @@ class EnrichBaniaPriceListProductsCommand extends Command
         return str_contains($productName, 'doorwood');
     }
 
-    private function canUseGenericDoorWoodImages(string $pageTitle, object $product): bool
+    private function canUseGenericProductImages(string $pageTitle, object $product): bool
     {
         $productName = $this->normalize((string) ($product->supplier_name ?: $product->name));
         $candidate = $this->normalize($pageTitle);
 
-        return $this->isDoorWoodProduct($productName)
-            && $this->isLikelyDoorWoodTitleMatch($candidate, $productName);
+        return ($this->isDoorWoodProduct($productName) && $this->isLikelyDoorWoodTitleMatch($candidate, $productName))
+            || ($this->isSibirProduct($productName) && $this->isLikelySibirTitleMatch($candidate, $productName));
+    }
+
+    private function isSibirProduct(string $productName): bool
+    {
+        return str_contains($productName, 'сибирь');
+    }
+
+    private function isLikelySibirTitleMatch(string $candidate, string $productName): bool
+    {
+        if (! str_contains($candidate, 'сибирь') || ! str_contains($productName, 'сибирь')) {
+            return false;
+        }
+
+        $productModel = $this->firstModelNumber($productName);
+        $candidateModel = $this->firstModelNumber($candidate);
+
+        if ($productModel !== null) {
+            return $candidateModel === $productModel;
+        }
+
+        return $candidateModel === null;
+    }
+
+    private function firstModelNumber(string $value): ?string
+    {
+        if (preg_match('/(?:сибирь|sibir)[^\d]*(\d{2})/iu', $value, $match)) {
+            return $match[1];
+        }
+
+        return null;
     }
 
     private function isLikelyDoorWoodTitleMatch(string $candidate, string $productName): bool
@@ -659,7 +693,7 @@ class EnrichBaniaPriceListProductsCommand extends Command
                     'url' => $url,
                     'title' => $pageTitle,
                     'description' => $this->extractDescription($html),
-                    'images' => $this->extractImages($html, $url, $product, $this->canUseGenericDoorWoodImages($pageTitle, $product)),
+                    'images' => $this->extractImages($html, $url, $product, $this->canUseGenericProductImages($pageTitle, $product)),
                 ];
             } catch (\Throwable) {
                 continue;
@@ -954,6 +988,10 @@ class EnrichBaniaPriceListProductsCommand extends Command
 
         if ($this->isDoorWoodProduct($productName)) {
             return $this->isLikelyDoorWoodTitleMatch($context, $productName);
+        }
+
+        if ($this->isSibirProduct($productName)) {
+            return $this->isLikelySibirTitleMatch($context, $productName);
         }
 
         if ($this->hasVariantConflict($context, $productName)) {
