@@ -39,7 +39,7 @@ class SyncBaniaPricelistCommand extends Command
         'Этна',
         'ЭТНА',
     ];
-    private const HEATING_CATEGORY_SLUGS = [
+    private const ALLOWED_CATEGORY_SLUGS = [
         'pechki',
         'pechi',
         'pechi-kaminy',
@@ -53,6 +53,25 @@ class SyncBaniaPricelistCommand extends Command
         'kotly-na-pelletah',
         'pechnoe-i-kaminnoe-lite',
         'dveri-dlya-ban-i-saun',
+        'aksessuary-dlya-bani',
+        'kaminnye-nabory',
+        'mangaly',
+    ];
+    private const ALLOWED_CATEGORY_NAMES = [
+        'Отделка для парной',
+        'Камни для печей',
+        'Камни для бани',
+        'Аксессуары для бани',
+        'Обливные устройства для бани',
+        'Вентиляционные клапаны и решётки для бани',
+        'Дровницы и каминные принадлежности',
+        'Каминные наборы',
+        'Мангалы',
+        'Казаны',
+        'Печи для казана',
+        'Комплектующие для мангала',
+        'Керамические грили',
+        'Мобильная баня',
     ];
 
     private array $reportRows = [];
@@ -571,6 +590,7 @@ class SyncBaniaPricelistCommand extends Command
                 'p.in_stock as product_in_stock',
                 'b.name as brand_name',
                 'c.slug as category_slug',
+                'c.name as category_name',
             ])
             ->get()
             ->all();
@@ -1181,7 +1201,8 @@ class SyncBaniaPricelistCommand extends Command
             return true;
         }
 
-        return in_array((string) ($supplierProduct->category_slug ?? ''), self::HEATING_CATEGORY_SLUGS, true);
+        return in_array((string) ($supplierProduct->category_slug ?? ''), self::ALLOWED_CATEGORY_SLUGS, true)
+            || in_array((string) ($supplierProduct->category_name ?? ''), self::ALLOWED_CATEGORY_NAMES, true);
     }
 
     private function normalizeBrand(string $brand): string

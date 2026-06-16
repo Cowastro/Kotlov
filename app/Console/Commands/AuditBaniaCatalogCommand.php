@@ -43,6 +43,25 @@ class AuditBaniaCatalogCommand extends Command
         'kotly-na-pelletah',
         'pechnoe-i-kaminnoe-lite',
         'dveri-dlya-ban-i-saun',
+        'aksessuary-dlya-bani',
+        'kaminnye-nabory',
+        'mangaly',
+    ];
+    private const CATEGORY_NAMES = [
+        'Отделка для парной',
+        'Камни для печей',
+        'Камни для бани',
+        'Аксессуары для бани',
+        'Обливные устройства для бани',
+        'Вентиляционные клапаны и решётки для бани',
+        'Дровницы и каминные принадлежности',
+        'Каминные наборы',
+        'Мангалы',
+        'Казаны',
+        'Печи для казана',
+        'Комплектующие для мангала',
+        'Керамические грили',
+        'Мобильная баня',
     ];
 
     public function handle(): int
@@ -165,15 +184,17 @@ class AuditBaniaCatalogCommand extends Command
     private function categoryIds(bool $includeChildren): array
     {
         $categories = DB::table('categories')
-            ->get(['id', 'parent_id', 'slug'])
+            ->get(['id', 'parent_id', 'slug', 'name'])
             ->map(fn ($category) => [
                 'id' => (int) $category->id,
                 'parent_id' => (int) $category->parent_id,
                 'slug' => (string) $category->slug,
+                'name' => (string) $category->name,
             ]);
 
         $ids = $categories
-            ->whereIn('slug', self::CATEGORY_SLUGS)
+            ->filter(fn (array $category) => in_array($category['slug'], self::CATEGORY_SLUGS, true)
+                || in_array($category['name'], self::CATEGORY_NAMES, true))
             ->pluck('id')
             ->all();
 

@@ -147,6 +147,139 @@ class ScrapeBaniaSupplierCommand extends Command
                 'dveri-dlya-ban-i-saun',
             ],
         ],
+        'bath_finishing' => [
+            'source_path' => 'materialy-dlja-otdelki-bani',
+            'sync_key' => 'bania_bath_finishing',
+            'title' => 'BANIA.by: bath finishing materials',
+            'description' => 'Scrapes BANIA.by bath finishing materials only when they exist in the wholesale price list.',
+            'requires_price_list' => true,
+            'category_slugs' => [
+                'aksessuary-dlya-bani',
+            ],
+            'category_names' => [
+                'Отделка для парной',
+            ],
+            'category_map' => [
+                [
+                    'match_paths' => ['materialy-dlja-otdelki-bani'],
+                    'category_names' => ['Отделка для парной'],
+                ],
+            ],
+        ],
+        'bath_stones' => [
+            'source_path' => 'kamni-dlja-pechej',
+            'sync_key' => 'bania_bath_stones',
+            'title' => 'BANIA.by: bath stones',
+            'description' => 'Scrapes BANIA.by bath stones only when they exist in the wholesale price list.',
+            'requires_price_list' => true,
+            'category_slugs' => [
+                'aksessuary-dlya-bani',
+            ],
+            'category_names' => [
+                'Камни для печей',
+                'Камни для бани',
+            ],
+            'category_map' => [
+                [
+                    'match_paths' => ['kamni-dlja-pechej'],
+                    'category_names' => ['Камни для печей', 'Камни для бани'],
+                ],
+            ],
+        ],
+        'bath_accessories' => [
+            'source_path' => 'aksessuary-dlja-bani',
+            'sync_key' => 'bania_bath_accessories',
+            'title' => 'BANIA.by: bath accessories',
+            'description' => 'Scrapes BANIA.by bath accessories only when they exist in the wholesale price list.',
+            'requires_price_list' => true,
+            'category_slugs' => [
+                'aksessuary-dlya-bani',
+                'kaminnye-nabory',
+            ],
+            'category_names' => [
+                'Аксессуары для бани',
+                'Обливные устройства для бани',
+                'Вентиляционные клапаны и решётки для бани',
+                'Дровницы и каминные принадлежности',
+                'Каминные наборы',
+            ],
+            'category_map' => [
+                [
+                    'match_paths' => ['oblivn'],
+                    'category_names' => ['Обливные устройства для бани'],
+                ],
+                [
+                    'match_paths' => ['ventilyacion', 'ventilyatsion'],
+                    'category_names' => ['Вентиляционные клапаны и решётки для бани'],
+                ],
+                [
+                    'match_paths' => ['kaminnye-nabory', 'kaminnie_nabory'],
+                    'category_slugs' => ['kaminnye-nabory'],
+                    'category_names' => ['Каминные наборы'],
+                ],
+                [
+                    'match_paths' => ['drovnic', 'drovnits', 'kaminn'],
+                    'category_names' => ['Дровницы и каминные принадлежности', 'Каминные наборы'],
+                ],
+                [
+                    'match_paths' => ['aksessuary-dlja-bani'],
+                    'category_slugs' => ['aksessuary-dlya-bani'],
+                    'category_names' => ['Аксессуары для бани'],
+                ],
+            ],
+        ],
+        'picnic' => [
+            'source_path' => 'piknik-dosug-shashlyk-gril',
+            'sync_key' => 'bania_picnic_and_grill',
+            'title' => 'BANIA.by: picnic and grill',
+            'description' => 'Scrapes BANIA.by picnic and grill categories only when they exist in the wholesale price list.',
+            'requires_price_list' => true,
+            'category_slugs' => [
+                'mangaly',
+            ],
+            'category_names' => [
+                'Мангалы',
+                'Казаны',
+                'Печи для казана',
+                'Комплектующие для мангала',
+                'Керамические грили',
+                'Мобильная баня',
+            ],
+            'subcategory_paths' => [
+                'mangaly',
+                'kazany',
+                'pechi-dlya-kazana',
+                'komplektuyushhie-dlya-mangala',
+                'keramicheskie-grili',
+                'mobilnaya-banya',
+            ],
+            'category_map' => [
+                [
+                    'match_paths' => ['mangaly'],
+                    'category_names' => ['Мангалы'],
+                ],
+                [
+                    'match_paths' => ['kazany'],
+                    'category_names' => ['Казаны'],
+                ],
+                [
+                    'match_paths' => ['pechi-dlya-kazana'],
+                    'category_names' => ['Печи для казана'],
+                ],
+                [
+                    'match_paths' => ['komplektuyushhie-dlya-mangala'],
+                    'category_names' => ['Комплектующие для мангала'],
+                ],
+                [
+                    'match_paths' => ['keramicheskie-grili'],
+                    'category_names' => ['Керамические грили'],
+                ],
+                [
+                    'match_paths' => ['mobilnaya-banya'],
+                    'category_names' => ['Мобильная баня'],
+                ],
+            ],
+        ],
     ];
     private const MODEL_TOKENS = [
         'aston',
@@ -398,7 +531,7 @@ class ScrapeBaniaSupplierCommand extends Command
                     }
                     $stats['matched_updated']++;
                 } elseif ($action === 'created') {
-                    $productId = $this->createProduct($item, $categoryId, $downloadImages, $generateDescriptions, $enricher, $now);
+                    $productId = $this->createProduct($item, $this->resolveCategoryId($item) ?? $categoryId, $downloadImages, $generateDescriptions, $enricher, $now);
                     $productSku = (string) DB::table('products')->where('id', $productId)->value('sku');
                     $this->upsertSupplierProduct($item, $productId, $productSku, $supplierId, $syncId, $now);
                     if ($syncCharacteristics) {
@@ -441,8 +574,32 @@ class ScrapeBaniaSupplierCommand extends Command
 
     private function discoverCategoryPages(string $categoryUrl): array
     {
+        $pages = $this->discoverListingPages($categoryUrl);
+        $firstHtml = $pages[1]['html'] ?? $this->fetch($categoryUrl);
+
+        if ($this->productLinksFromHtml($firstHtml, $categoryUrl) !== []) {
+            return array_values($pages);
+        }
+
+        $subcategoryUrls = $this->discoverSubcategoryUrls($firstHtml, $categoryUrl);
+        if ($subcategoryUrls === []) {
+            return array_values($pages);
+        }
+
+        $nestedPages = [];
+        foreach ($subcategoryUrls as $subcategoryUrl) {
+            foreach ($this->discoverListingPages($subcategoryUrl) as $page) {
+                $nestedPages[$page['url']] = $page;
+            }
+        }
+
+        return $nestedPages === [] ? array_values($pages) : array_values($nestedPages);
+    }
+
+    private function discoverListingPages(string $categoryUrl): array
+    {
         $firstHtml = $this->fetch($categoryUrl);
-        $pages = [1 => ['page' => 1, 'url' => $categoryUrl, 'html' => $firstHtml]];
+        $pages = [1 => ['page' => 1, 'url' => $categoryUrl, 'html' => $firstHtml, 'source_category' => $categoryUrl]];
 
         foreach ($this->extractLinks($firstHtml) as $url) {
             if (! str_starts_with($url, $categoryUrl) && ! str_contains($url, parse_url($categoryUrl, PHP_URL_PATH) ?: '')) {
@@ -451,7 +608,7 @@ class ScrapeBaniaSupplierCommand extends Command
 
             $pageNumber = $this->pageNumberFromUrl($url);
             if ($pageNumber !== null) {
-                $pages[$pageNumber] = ['page' => $pageNumber, 'url' => $url, 'html' => null];
+                $pages[$pageNumber] = ['page' => $pageNumber, 'url' => $url, 'html' => null, 'source_category' => $categoryUrl];
             }
         }
 
@@ -472,12 +629,12 @@ class ScrapeBaniaSupplierCommand extends Command
                 break;
             }
 
-            $pages[$page] = ['page' => $page, 'url' => $guess, 'html' => $html];
+            $pages[$page] = ['page' => $page, 'url' => $guess, 'html' => $html, 'source_category' => $categoryUrl];
         }
 
         ksort($pages);
 
-        return array_values($pages);
+        return $pages;
     }
 
     private function scrapeCatalog(array $categoryPages): array
@@ -487,7 +644,8 @@ class ScrapeBaniaSupplierCommand extends Command
 
         foreach ($categoryPages as $page) {
             $html = $page['html'] ?? $this->fetch($page['url']);
-            foreach ($this->productLinksFromHtml($html, $this->absoluteUrl((string) $this->option('category-url'))) as $url => $title) {
+            $pageCategoryUrl = $this->absoluteUrl((string) ($page['source_category'] ?? $this->option('category-url')));
+            foreach ($this->productLinksFromHtml($html, $pageCategoryUrl) as $url => $title) {
                 if (isset($seen[$url])) {
                     continue;
                 }
@@ -502,7 +660,7 @@ class ScrapeBaniaSupplierCommand extends Command
                     'in_stock' => $this->parseStockStatus($node),
                     'preview_image' => $this->firstImageFromHtml($node),
                     'page' => (int) $page['page'],
-                    'source_category' => (string) $this->option('category-url'),
+                    'source_category' => (string) ($page['source_category'] ?? $this->option('category-url')),
                 ];
             }
         }
@@ -670,7 +828,7 @@ class ScrapeBaniaSupplierCommand extends Command
         }
 
         $candidates = $query
-            ->whereIn('category_id', $this->candidateCategoryIds())
+            ->whereIn('category_id', $this->candidateCategoryIds($item))
             ->get(['id', 'sku', 'name', 'brand_id', 'price', 'images', 'content', 'short_description']);
 
         $best = null;
@@ -1651,12 +1809,12 @@ class ScrapeBaniaSupplierCommand extends Command
         return $allowed;
     }
 
-    private function resolveCategoryId(): ?int
+    private function resolveCategoryId(?array $item = null): ?int
     {
-        foreach ($this->categorySlugs() as $slug) {
-            $id = DB::table('categories')->where('slug', $slug)->value('id');
+        foreach ($this->resolvedCategorySelectors($item) as $selectors) {
+            $id = $this->findCategoryId($selectors);
             if ($id !== null) {
-                return (int) $id;
+                return $id;
             }
         }
 
@@ -1666,13 +1824,9 @@ class ScrapeBaniaSupplierCommand extends Command
             ->value('id');
     }
 
-    private function candidateCategoryIds(): array
+    private function candidateCategoryIds(?array $item = null): array
     {
-        $profileIds = DB::table('categories')
-            ->whereIn('slug', $this->categorySlugs())
-            ->pluck('id')
-            ->map(fn ($id) => (int) $id)
-            ->all();
+        $profileIds = $this->findCategoryIds($this->resolvedCategorySelectors($item));
 
         if ($profileIds !== []) {
             return $profileIds;
@@ -1686,7 +1840,7 @@ class ScrapeBaniaSupplierCommand extends Command
             ->map(fn ($id) => (int) $id)
             ->all();
 
-        return $ids ?: array_filter([$this->resolveCategoryId()]);
+        return $ids ?: array_filter([$this->resolveCategoryId($item)]);
     }
 
     private function categoryProfile(): array
@@ -1706,9 +1860,119 @@ class ScrapeBaniaSupplierCommand extends Command
         return $this->categoryProfile()['category_slugs'];
     }
 
+    private function categoryNames(): array
+    {
+        return $this->categoryProfile()['category_names'] ?? [];
+    }
+
     private function syncKey(): string
     {
         return $this->categoryProfile()['sync_key'];
+    }
+
+    private function discoverSubcategoryUrls(string $html, string $categoryUrl): array
+    {
+        $paths = $this->categoryProfile()['subcategory_paths'] ?? [];
+        if ($paths === []) {
+            return [];
+        }
+
+        $categoryPath = trim((string) parse_url($categoryUrl, PHP_URL_PATH), '/');
+        $urls = [];
+        foreach ($this->extractLinks($html) as $url) {
+            if (! str_starts_with($url, $categoryUrl . '/')) {
+                continue;
+            }
+
+            $path = trim((string) parse_url($url, PHP_URL_PATH), '/');
+            foreach ($paths as $suffix) {
+                $suffix = trim((string) $suffix, '/');
+                if ($path === $categoryPath . '/' . $suffix || str_ends_with($path, '/' . $suffix)) {
+                    $urls[$url] = $url;
+                    break;
+                }
+            }
+        }
+
+        ksort($urls);
+
+        return array_values($urls);
+    }
+
+    private function resolvedCategorySelectors(?array $item = null): array
+    {
+        $profile = $this->categoryProfile();
+        $context = $this->normalizeCategoryContext($item);
+
+        foreach (($profile['category_map'] ?? []) as $entry) {
+            foreach (($entry['match_paths'] ?? []) as $needle) {
+                if ($needle !== '' && str_contains($context, $this->normalizeCategoryNeedle((string) $needle))) {
+                    return [[
+                        'slugs' => $entry['category_slugs'] ?? [],
+                        'names' => $entry['category_names'] ?? [],
+                    ]];
+                }
+            }
+        }
+
+        return [[
+            'slugs' => $this->categorySlugs(),
+            'names' => $this->categoryNames(),
+        ]];
+    }
+
+    private function normalizeCategoryContext(?array $item = null): string
+    {
+        $parts = [
+            (string) ($item['source_category'] ?? ''),
+            (string) ($item['url'] ?? ''),
+            implode(' ', $item['breadcrumbs'] ?? []),
+            (string) ($item['title'] ?? ''),
+        ];
+
+        return $this->normalizeCategoryNeedle(implode(' ', array_filter($parts)));
+    }
+
+    private function normalizeCategoryNeedle(string $value): string
+    {
+        return Str::of($value)->lower()->ascii()->replace(['_', ' '], '-')->toString();
+    }
+
+    private function findCategoryId(array $selectors): ?int
+    {
+        return $this->findCategoryIds([$selectors])[0] ?? null;
+    }
+
+    private function findCategoryIds(array $selectorSets): array
+    {
+        $categories = DB::table('categories')
+            ->get(['id', 'slug', 'name'])
+            ->map(fn ($category) => [
+                'id' => (int) $category->id,
+                'slug' => (string) ($category->slug ?? ''),
+                'name' => $this->normalizeTitle((string) ($category->name ?? '')),
+            ]);
+
+        $ids = [];
+        foreach ($selectorSets as $selectors) {
+            $slugs = array_values(array_filter($selectors['slugs'] ?? []));
+            $names = array_values(array_filter(array_map(
+                fn (string $name): string => $this->normalizeTitle($name),
+                $selectors['names'] ?? []
+            )));
+
+            foreach ($categories as $category) {
+                if (($slugs !== [] && in_array($category['slug'], $slugs, true))
+                    || ($names !== [] && (
+                        in_array($category['name'], $names, true)
+                        || collect($names)->contains(fn (string $name): bool => str_contains($category['name'], $name) || str_contains($name, $category['name']))
+                    ))) {
+                    $ids[$category['id']] = $category['id'];
+                }
+            }
+        }
+
+        return array_values($ids);
     }
 
     private function productLinksFromHtml(string $html, string $categoryUrl): array
