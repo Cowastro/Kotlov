@@ -467,6 +467,10 @@ class EnrichBaniaPriceListProductsCommand extends Command
             return false;
         }
 
+        if ($this->isDoorWoodProduct($productName)) {
+            return $this->isLikelyDoorWoodTitleMatch($candidate, $productName);
+        }
+
         if ($this->hasVariantConflict($candidate, $productName)) {
             return false;
         }
@@ -493,6 +497,65 @@ class EnrichBaniaPriceListProductsCommand extends Command
         }
 
         return count($shared) >= max(2, (int) ceil(count($productTokens) * 0.65));
+    }
+
+    private function isDoorWoodProduct(string $productName): bool
+    {
+        return str_contains($productName, 'doorwood');
+    }
+
+    private function isLikelyDoorWoodTitleMatch(string $candidate, string $productName): bool
+    {
+        if ($this->hasDoorWoodColorConflict($candidate, $productName)) {
+            return false;
+        }
+
+        $productTokens = $this->doorWoodTokens($productName);
+        $candidateTokens = $this->doorWoodTokens($candidate);
+        if ($productTokens === [] || $candidateTokens === []) {
+            return false;
+        }
+
+        $shared = array_values(array_intersect($productTokens, $candidateTokens));
+
+        return count($shared) >= min(2, count($productTokens));
+    }
+
+    private function hasDoorWoodColorConflict(string $candidate, string $productName): bool
+    {
+        foreach ([
+            ['бронза', 'bronz'],
+            ['графит', 'grafit'],
+            ['сатин', 'satin'],
+            ['прозрач', 'prozrach'],
+        ] as $group) {
+            $candidateHas = $this->containsAnyToken($candidate, $group);
+            $productHas = $this->containsAnyToken($productName, $group);
+
+            if ($candidateHas && ! $productHas) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private function doorWoodTokens(string $value): array
+    {
+        $tokens = $this->specificTokens($value);
+        $stop = [
+            'doorwood', 'door', 'wood', 'дверь', 'двери', 'двер', 'для', 'бани', 'сауны', 'сауна',
+            'стекло', 'стеклянная', 'стеклянные', 'коробка', 'левая', 'лева', 'правая', 'права',
+            'осина', 'липа', 'листва', 'мм', 'бронза', 'матовая', 'матовое', 'матовый',
+        ];
+
+        return array_values(array_filter($tokens, function ($token) use ($stop) {
+            if (preg_match('/^\d+$/', $token) === 1 || in_array($token, $stop, true)) {
+                return false;
+            }
+
+            return mb_strlen($token) >= 3;
+        }));
     }
 
     private function hasVariantConflict(string $candidate, string $productName): bool
@@ -857,6 +920,10 @@ class EnrichBaniaPriceListProductsCommand extends Command
         $productName = $this->normalize((string) ($product->supplier_name ?: $product->name));
         if ($context === '' || $productName === '') {
             return false;
+        }
+
+        if ($this->isDoorWoodProduct($productName)) {
+            return $this->isLikelyDoorWoodTitleMatch($context, $productName);
         }
 
         if ($this->hasVariantConflict($context, $productName)) {
