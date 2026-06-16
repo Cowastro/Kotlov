@@ -335,6 +335,21 @@ class EnrichBaniaPriceListProductsCommand extends Command
 
     private function sourceOverrides(object $product): array
     {
+        $sku = (string) ($product->sku ?? '');
+        $sibirUrlsBySku = [
+            'KOTLOV-004651' => 'https://novmk.ru/product/bannie-pechi/pech-bannaya-chugunnaya-sibir-15-chugunnaya-dvertsa-s-vtk-setka/',
+            'KOTLOV-004652' => 'https://novmk.ru/product/bannie-pechi/pech-bannaya-chugunnaya-sibir-20-panoramnaya-dvertsa-setka/',
+            'KOTLOV-004653' => 'https://novmk.ru/product/bannie-pechi/pech-bannaya-chugunnaya-sibir-20-universalnaya-chugunnaya-dvertsa-setka/',
+            'KOTLOV-004654' => 'https://novmk.ru/product/bannie-pechi/pech-bannaya-chugunnaya-sibir-22-pro-panoramnaya-dvertsa-setka/',
+            'KOTLOV-004655' => 'https://novmk.ru/product/bannie-pechi/pech-bannaya-chugunnaya-sibir-24-pro-panoramnaya-dvertsa-setka/',
+            'KOTLOV-004656' => 'https://novmk.ru/product/bannie-pechi/pech-bannaya-chugunnaya-sibir-24-panoramnaya-dvertsa-setka/',
+            'KOTLOV-004657' => 'https://novmk.ru/product/bannie-pechi/pech-bannaya-chugunnaya-sibir-24-universalnaya-chugunnaya-dvertsa-setka/',
+        ];
+
+        if (isset($sibirUrlsBySku[$sku])) {
+            return [$sibirUrlsBySku[$sku]];
+        }
+
         $name = $this->normalize((string) ($product->supplier_name ?: $product->name));
         if (! str_contains($name, 'aston')) {
             return [];
