@@ -19,6 +19,7 @@ class EnrichBaniaPriceListProductsCommand extends Command
         {--category= : Filter by category id}
         {--brand= : Filter by brand name fragment}
         {--source-domain=bania.by : Allowed source domain to search, e.g. aston-pech.ru}
+        {--source-url= : Start from a specific allowed catalog URL instead of Serper}
         {--force-images : Replace existing images}
         {--force-content : Replace existing content}
         {--skip-images : Do not download images}
@@ -44,6 +45,7 @@ class EnrichBaniaPriceListProductsCommand extends Command
 
     private AiContentEnricher $ai;
     private string $sourceDomain = 'bania.by';
+    private string $sourceStartUrl = '';
     private ?array $sourceCatalogLinks = null;
 
     private array $stats = [
@@ -65,15 +67,16 @@ class EnrichBaniaPriceListProductsCommand extends Command
         $dryRun = (bool) $this->option('dry-run') || ! $apply;
         $apiKey = (string) env('SERPER_API_KEY', '');
         $this->sourceDomain = $this->normalizeSourceDomain((string) $this->option('source-domain'));
+        try {
+            $this->sourceStartUrl = $this->normalizeSourceUrl((string) $this->option('source-url'));
+        } catch (\InvalidArgumentException $e) {
+            $this->error($e->getMessage());
+            return self::FAILURE;
+        }
 
         $this->line($dryRun
             ? '<fg=yellow;options=bold>DRY RUN: database will not be changed.</>'
             : '<fg=red;options=bold>APPLY: products can be updated.</>');
-
-        if ($apiKey === '') {
-            $this->error('SERPER_API_KEY is not configured in .env.');
-            return self::FAILURE;
-        }
 
         if (! in_array($this->sourceDomain, self::ALLOWED_SOURCE_DOMAINS, true)) {
             $this->error('Source domain is not allowed: ' . $this->sourceDomain);
@@ -82,6 +85,12 @@ class EnrichBaniaPriceListProductsCommand extends Command
         }
 
         $this->info('Source domain: ' . $this->sourceDomain);
+        if ($this->sourceStartUrl !== '') {
+            $this->info('Source URL: ' . $this->sourceStartUrl);
+        } elseif ($apiKey === '') {
+            $this->error('SERPER_API_KEY is not configured in .env. Pass --source-url to crawl a known catalog directly.');
+            return self::FAILURE;
+        }
 
         $this->ai = new AiContentEnricher();
         if (! $this->option('skip-content') && ! $this->ai->isAvailable()) {
@@ -117,7 +126,7 @@ class EnrichBaniaPriceListProductsCommand extends Command
                     $raw = [];
                 }
                 $raw['enrichment'] = [
-                    'provider' => 'serper',
+                    'provider' => $this->sourceStartUrl !== '' ? 'catalog' : 'serper',
                     'source_url' => $result['url'],
                     'images_found' => count($result['images'] ?? []),
                     'matched_at' => now()->toDateTimeString(),
@@ -249,6 +258,10 @@ class EnrichBaniaPriceListProductsCommand extends Command
 
     private function findSourcePage(string $apiKey, object $product): ?array
     {
+        if ($this->sourceStartUrl !== '') {
+            return $this->findSourcePageInCatalog($product);
+        }
+
         $query = 'site:' . $this->sourceDomain . ' ' . $this->searchText($product);
         $response = Http::withHeaders([
             'X-API-KEY' => $apiKey,
@@ -426,7 +439,7 @@ class EnrichBaniaPriceListProductsCommand extends Command
 
     private function findSourcePageInCatalog(object $product): ?array
     {
-        if ($this->sourceDomain === 'bania.by') {
+        if ($this->sourceDomain === 'bania.by' && $this->sourceStartUrl === '') {
             return null;
         }
 
@@ -467,7 +480,7 @@ class EnrichBaniaPriceListProductsCommand extends Command
             return $this->sourceCatalogLinks;
         }
 
-        $root = 'https://' . $this->sourceDomain . '/';
+        $root = $this->sourceStartUrl !== '' ? $this->sourceStartUrl : 'https://' . $this->sourceDomain . '/';
         $queue = [[$root, 0]];
         $seen = [];
         $links = [];
@@ -807,6 +820,29 @@ class EnrichBaniaPriceListProductsCommand extends Command
         }
 
         return preg_replace('/^www\./', '', trim($domain, " \t\n\r\0\x0B/")) ?: 'bania.by';
+    }
+
+    private function normalizeSourceUrl(string $url): string
+    {
+        $url = trim($url);
+        if ($url === '') {
+            return '';
+        }
+
+        if (! str_starts_with($url, 'http://') && ! str_starts_with($url, 'https://')) {
+            $url = 'https://' . ltrim($url, '/');
+        }
+
+        $host = $this->normalizeSourceDomain((string) parse_url($url, PHP_URL_HOST));
+        if ($host !== $this->sourceDomain) {
+            throw new \InvalidArgumentException('Source URL host must match --source-domain.');
+        }
+
+        if (! $this->urlMatchesSourceDomain($url)) {
+            throw new \InvalidArgumentException('Source URL is outside allowed source domain.');
+        }
+
+        return rtrim($url, '/');
     }
 
     private function urlMatchesSourceDomain(string $url): bool

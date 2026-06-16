@@ -27,6 +27,11 @@ class ReportBaniaMissingAssetsCommand extends Command
         'harvia' => 'https://www.harvia.com/',
         'prosept' => 'https://www.prosept.ru/',
         'aston' => 'https://aston-pech.ru/',
+        'mangaly' => 'https://bania.by/piknik-dosug-shashlyk-gril/mangaly',
+        'kazany' => 'https://bania.by/piknik-dosug-shashlyk-gril/kazany',
+        'pechi-dlya-kazana' => 'https://bania.by/piknik-dosug-shashlyk-gril/pechi-dlja-kazana',
+        'komplektuyushchie-dlya-mangala' => 'https://bania.by/piknik-dosug-shashlyk-gril/komplektuyushchie-dlya-mangala',
+        'mobilnaja-banja' => 'https://bania.by/piknik-dosug-shashlyk-gril/mobilnaja-banja',
         'bania' => 'https://bania.by/',
     ];
 
@@ -206,6 +211,11 @@ class ReportBaniaMissingAssetsCommand extends Command
             str_contains($normalized, 'harvia') => self::SOURCE_HINTS['harvia'],
             str_contains($normalized, 'prosept') || str_contains($normalized, 'просепт') => self::SOURCE_HINTS['prosept'],
             str_contains($normalized, 'aston') || str_contains($normalized, 'астон') => self::SOURCE_HINTS['aston'],
+            str_contains($normalized, 'мобильн') && str_contains($normalized, 'бан') => self::SOURCE_HINTS['mobilnaja-banja'],
+            str_contains($normalized, 'комплект') && str_contains($normalized, 'мангал') => self::SOURCE_HINTS['komplektuyushchie-dlya-mangala'],
+            str_contains($normalized, 'печ') && str_contains($normalized, 'казан') => self::SOURCE_HINTS['pechi-dlya-kazana'],
+            str_contains($normalized, 'казан') => self::SOURCE_HINTS['kazany'],
+            str_contains($normalized, 'мангал') || str_contains($normalized, 'грил') || str_contains($normalized, 'шашлык') => self::SOURCE_HINTS['mangaly'],
             default => self::SOURCE_HINTS['bania'],
         };
     }
