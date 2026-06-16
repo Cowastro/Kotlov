@@ -270,27 +270,29 @@ class SyncBaniaPricelistCommand extends Command
             }
         }
 
-        if ((bool) $this->option('mark-missing-out-of-stock') || (bool) $this->option('archive-missing-products')) {
+        $markMissingOutOfStock = (bool) $this->option('mark-missing-out-of-stock');
+        $archiveMissingProducts = (bool) $this->option('archive-missing-products');
+
+        if ($markMissingOutOfStock || $archiveMissingProducts) {
             foreach ($supplierProducts as $supplierProduct) {
                 if (isset($matchedSupplierProductIds[(int) $supplierProduct->id])) {
                     continue;
                 }
-                if (! (bool) $supplierProduct->in_stock) {
-                    continue;
-                }
 
                 if (! $dryRun) {
-                    DB::table('supplier_products')->where('id', $supplierProduct->id)->update([
-                        'in_stock' => false,
-                        'stock_quantity' => 0,
-                        'stock_status' => 'out_of_stock',
-                        'stock_text' => 'missing from BANIA Google price list',
-                        'last_stock_synced_at' => $now,
-                        'updated_at' => $now,
-                    ]);
+                    if ($markMissingOutOfStock && (bool) $supplierProduct->in_stock) {
+                        DB::table('supplier_products')->where('id', $supplierProduct->id)->update([
+                            'in_stock' => false,
+                            'stock_quantity' => 0,
+                            'stock_status' => 'out_of_stock',
+                            'stock_text' => 'missing from BANIA Google price list',
+                            'last_stock_synced_at' => $now,
+                            'updated_at' => $now,
+                        ]);
+                    }
 
                     if ($supplierProduct->product_id) {
-                        if ((bool) $this->option('archive-missing-products')) {
+                        if ($archiveMissingProducts) {
                             if ($this->archiveProductIfOnlyBania((int) $supplierProduct->product_id, (int) $supplierProduct->id, $now)) {
                                 $stats['missing_archived']++;
                             } else {
