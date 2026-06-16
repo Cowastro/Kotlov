@@ -394,19 +394,52 @@ class SyncBaniaPricelistCommand extends Command
             ],
         ]);
 
-        $content = @file_get_contents($exportUrl, false, $context);
-        if ($content === false || strlen($content) < 1000) {
-            throw new \RuntimeException('Could not download Google Sheet export.');
+        try {
+            $content = @file_get_contents($exportUrl, false, $context);
+            if ($content === false || strlen($content) < 1000) {
+                throw new \RuntimeException('Could not download Google Sheet export.');
+            }
+
+            if (str_starts_with(ltrim($content), '<') || stripos($content, '<html') !== false) {
+                throw new \RuntimeException('Google Sheet export returned HTML instead of XLSX.');
+            }
+
+            $tmpPath = $path . '.download.xlsx';
+            file_put_contents($tmpPath, $content);
+
+            try {
+                $this->assertReadableSpreadsheet($tmpPath);
+            } catch (\Throwable $e) {
+                @unlink($tmpPath);
+                throw new \RuntimeException('Google Sheet export is not a readable XLSX: ' . $e->getMessage());
+            }
+
+            rename($tmpPath, $path);
+            $this->line('Downloaded ' . $label . ': ' . $path);
+
+            return $path;
+        } catch (\Throwable $e) {
+            if (file_exists($path)) {
+                try {
+                    $this->assertReadableSpreadsheet($path);
+                    $this->warn($label . ' download failed; using previous cached file: ' . $path);
+
+                    return $path;
+                } catch (\Throwable) {
+                    // Cached file is broken too; report the original download error.
+                }
+            }
+
+            throw $e;
         }
+    }
 
-        if (str_starts_with(ltrim($content), '<') || stripos($content, '<html') !== false) {
-            throw new \RuntimeException('Google Sheet export returned HTML instead of XLSX.');
-        }
-
-        file_put_contents($path, $content);
-        $this->line('Downloaded ' . $label . ': ' . $path);
-
-        return $path;
+    private function assertReadableSpreadsheet(string $path): void
+    {
+        $reader = IOFactory::createReaderForFile($path);
+        $reader->setReadDataOnly(true);
+        $spreadsheet = $reader->load($path);
+        $spreadsheet->disconnectWorksheets();
     }
 
     private function toExportUrl(string $url): string
