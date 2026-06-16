@@ -1332,8 +1332,9 @@ class SyncBaniaPricelistCommand extends Command
             str_contains($name, 'котел') || str_contains($name, 'котёл') || str_contains($name, 'купер') => 'kotly',
             str_contains($name, 'печь камин') || str_contains($name, 'печь-камин') => 'pechi-kaminy',
             str_contains($name, 'мангал') || str_contains($name, 'казан') || str_contains($name, 'грил') || str_contains($name, 'шашлык') => 'mangaly',
+            str_contains($name, 'шапк') || str_contains($name, 'мочал') || str_contains($name, 'коврик') || str_contains($name, 'ведро') || str_contains($name, 'обруч') || str_contains($name, 'средство') => 'aksessuary-dlya-bani',
             str_contains($name, 'камень') || str_contains($name, 'жадеит') || str_contains($name, 'нефрит') || str_contains($name, 'талько') => 'aksessuary-dlya-bani',
-            str_contains($name, 'печь') || str_contains($name, 'пб ') || str_contains($name, 'бан') => 'drovyanye-pechi-dlya-bani',
+            str_contains($name, 'печь') || str_contains($name, 'пб ') => 'drovyanye-pechi-dlya-bani',
             default => 'aksessuary-dlya-bani',
         };
 
