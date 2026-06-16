@@ -29,6 +29,7 @@ class ScrapeBaniaSupplierCommand extends Command
         {--update-existing : Update matched products base price/content/images when safe}
         {--update-only : Do not create new products; send unmatched rows to manual review}
         {--create-unmatched : Create new products for unmatched rows even when a similar catalog title exists}
+        {--create-ambiguous-as-new : Create new products for ambiguous BANIA rows instead of linking to stale similar catalog items}
         {--only-in-stock : Skip out-of-stock BANIA rows}
         {--report : Deprecated; reports are written for every run}
         {--sleep=200 : Delay between detail requests in milliseconds}';
@@ -126,6 +127,26 @@ class ScrapeBaniaSupplierCommand extends Command
                 'kotly-na-pelletah',
             ],
         ],
+        'cast_iron_doors' => [
+            'source_path' => 'chugunnye-dverki',
+            'sync_key' => 'bania_cast_iron_doors',
+            'title' => 'BANIA.by: cast iron stove doors',
+            'description' => 'Scrapes BANIA.by cast iron stove doors only when they exist in the wholesale price list.',
+            'requires_price_list' => true,
+            'category_slugs' => [
+                'pechnoe-i-kaminnoe-lite',
+            ],
+        ],
+        'sauna_doors' => [
+            'source_path' => 'dveri-dlya-bani',
+            'sync_key' => 'bania_sauna_doors',
+            'title' => 'BANIA.by: sauna doors',
+            'description' => 'Scrapes BANIA.by sauna doors only when they exist in the wholesale price list.',
+            'requires_price_list' => true,
+            'category_slugs' => [
+                'dveri-dlya-ban-i-saun',
+            ],
+        ],
     ];
     private const MODEL_TOKENS = [
         'aston',
@@ -167,6 +188,7 @@ class ScrapeBaniaSupplierCommand extends Command
         'PROmetall' => ['prometall', 'pro-metall'],
         'Meta-Bel' => ['meta-bel'],
         'NMK' => ['nmk'],
+        'DoorWood' => ['doorwood', 'door-wood'],
         'Везувий' => ['vezuvij', 'vezuviy', 'vezuvii'],
         'Теплодар' => ['teplodar', 'siesta', 'bylina', 'sibirskij-utes', 'sibirskii-utes', 'kupper', 'kuper'],
     ];
@@ -323,6 +345,13 @@ class ScrapeBaniaSupplierCommand extends Command
                 if ((bool) $this->option('create-unmatched') && $action === 'manual_review' && ($match['product'] ?? null) === null) {
                     $action = $apply ? 'created' : 'create_candidate';
                     $match['reason'] = 'unmatched row allowed by --create-unmatched';
+                }
+                if ((bool) $this->option('create-ambiguous-as-new') && $this->canCreateAmbiguousAsNew($action, $match)) {
+                    $action = $apply ? 'created' : 'create_candidate';
+                    $match['product'] = null;
+                    $match['type'] = 'ambiguous_created_as_new';
+                    $match['confidence'] = 0;
+                    $match['reason'] = 'ambiguous row allowed by --create-ambiguous-as-new';
                 }
                 if (in_array($action, ['created', 'create_candidate'], true) && $item['brand_id'] === null) {
                     $action = 'manual_review';
@@ -515,6 +544,11 @@ class ScrapeBaniaSupplierCommand extends Command
     private function mergeItem(array $listItem, array $detail): array
     {
         $title = $detail['title'] ?: $listItem['title'];
+        $sku = $this->normalizeArticle($detail['sku'] ?? '');
+        $brand = $this->canonicalBrand((string) ($detail['brand'] ?? ''), $title, (string) $listItem['url']);
+        if ($brand === '' && $this->isDoorWoodArticle($sku)) {
+            $brand = 'DoorWood';
+        }
         $price = $detail['price'] ?? $listItem['price'];
         $retailPrice = $price;
         $stockText = $detail['stock_text'] ?: $listItem['stock_text'];
@@ -534,9 +568,9 @@ class ScrapeBaniaSupplierCommand extends Command
         return [
             'title' => $this->cleanText($title),
             'normalized_title' => $this->normalizeTitle($title),
-            'brand' => $this->canonicalBrand((string) ($detail['brand'] ?? ''), $title, (string) $listItem['url']),
+            'brand' => $brand,
             'brand_id' => null,
-            'sku' => $this->normalizeArticle($detail['sku'] ?? ''),
+            'sku' => $sku,
             'url' => $listItem['url'],
             'price' => $price,
             'currency' => 'BYN',
@@ -659,6 +693,10 @@ class ScrapeBaniaSupplierCommand extends Command
                 return ['product' => null, 'type' => 'none', 'confidence' => 0, 'reason' => 'distinct KARINA variant'];
             }
 
+            if ($this->isSaunaDoorItem($item)) {
+                return ['product' => null, 'type' => 'none', 'confidence' => 0, 'reason' => 'distinct sauna door variant'];
+            }
+
             if ($this->hasDifferentSupplierProductMapping($best, $item, $supplierId)) {
                 return [
                     'product' => $best,
@@ -678,6 +716,10 @@ class ScrapeBaniaSupplierCommand extends Command
 
             if ($this->isDistinctKarinaVariant($item, $best)) {
                 return ['product' => null, 'type' => 'none', 'confidence' => 0, 'reason' => 'distinct KARINA variant'];
+            }
+
+            if ($this->isSaunaDoorItem($item)) {
+                return ['product' => null, 'type' => 'none', 'confidence' => 0, 'reason' => 'distinct sauna door variant'];
             }
 
             if ($this->hasDifferentSupplierProductMapping($best, $item, $supplierId)) {
@@ -786,6 +828,10 @@ class ScrapeBaniaSupplierCommand extends Command
 
     private function looksLikeDuplicate(array $item): bool
     {
+        if ((bool) $this->option('create-ambiguous-as-new')) {
+            return false;
+        }
+
         $needle = $item['normalized_title'];
         if ($needle === '') {
             return false;
@@ -800,6 +846,16 @@ class ScrapeBaniaSupplierCommand extends Command
             ->where('is_archived', false)
             ->where('name', 'like', '%' . $firstWords . '%')
             ->exists();
+    }
+
+    private function canCreateAmbiguousAsNew(string $action, array $match): bool
+    {
+        if ($action !== 'manual_review' || ($match['product'] ?? null) === null) {
+            return false;
+        }
+
+        return in_array($match['type'] ?? '', ['fuzzy', 'name_brand', 'supplier_product_conflict'], true)
+            && (float) ($match['confidence'] ?? 0) < 90;
     }
 
     private function upsertSupplierProduct(array $item, int $productId, string $productSku, int $supplierId, ?int $syncId, $now): void
@@ -2195,6 +2251,7 @@ class ScrapeBaniaSupplierCommand extends Command
             'images_count' => count($item['images'] ?? []),
             'description_length' => mb_strlen(strip_tags((string) ($item['description'] ?? ''))),
             'matched_product_id' => $product?->id ?? '',
+            'matched_product_sku' => $product?->sku ?? '',
             'matched_product_title' => $product?->name ?? '',
             'match_type' => $match['type'] ?? '',
             'confidence' => $match['confidence'] ?? '',
@@ -2213,6 +2270,7 @@ class ScrapeBaniaSupplierCommand extends Command
             'supplier_url' => $item['url'] ?? '',
             'supplier_price' => $item['price'] ?? '',
             'matched_product_id' => $product?->id ?? '',
+            'matched_product_sku' => $product?->sku ?? '',
             'matched_product_title' => $product?->name ?? '',
             'confidence' => $match['confidence'] ?? '',
         ];
@@ -2330,6 +2388,19 @@ class ScrapeBaniaSupplierCommand extends Command
         $article = $this->normalizeArticle((string) $article);
 
         return mb_strlen($article) >= 6 && preg_match('/\d/u', $article) === 1;
+    }
+
+    private function isDoorWoodArticle(?string $article): bool
+    {
+        return preg_match('/^DW\d{3,}$/i', $this->normalizeArticle((string) $article)) === 1;
+    }
+
+    private function isSaunaDoorItem(array $item): bool
+    {
+        $source = (string) ($item['source_category'] ?? $item['url'] ?? '');
+
+        return str_contains($source, 'dveri-dlya-bani')
+            || $this->isDoorWoodArticle($item['sku'] ?? '');
     }
 
     private function titlesAreCompatible(string $supplierTitle, string $productTitle): bool
