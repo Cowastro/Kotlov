@@ -466,7 +466,10 @@ class SyncBaniaPricelistCommand extends Command
             $name = $this->firstTextCell($cells);
         }
 
-        $article = $this->cell($cells, 2);
+        $article = $this->cell($cells, 1);
+        if ($this->normalizeArticle($article) === '') {
+            $article = $this->cell($cells, 2);
+        }
         if ($this->normalizeArticle($article) === '') {
             $article = $this->firstArticleCell($cells);
         }
@@ -933,6 +936,10 @@ class SyncBaniaPricelistCommand extends Command
 
     private function parseMoney(string $value): ?float
     {
+        if (preg_match('/[A-Za-zА-Яа-яЁё]/u', $value)) {
+            return null;
+        }
+
         $normalized = trim(str_replace(["\xc2\xa0", ' '], '', $value));
         $normalized = preg_replace('/[^0-9,.\-]/u', '', $normalized) ?? '';
         if ($normalized === '' || $normalized === '-') {
@@ -970,7 +977,7 @@ class SyncBaniaPricelistCommand extends Command
         foreach ($cells as $cell) {
             $value = trim((string) $cell);
             $article = $this->normalizeArticle($value);
-            if ($article !== '' && preg_match('/[0-9]/', $article) && mb_strlen($article) >= 4 && $this->parseMoney($value) === null) {
+            if ($article !== '' && preg_match('/[0-9]/', $article) && mb_strlen($article) >= 4) {
                 return $value;
             }
         }
@@ -982,6 +989,10 @@ class SyncBaniaPricelistCommand extends Command
     {
         $price = null;
         foreach ($cells as $cell) {
+            if (preg_match('/[A-Za-zА-Яа-яЁё]/u', (string) $cell)) {
+                continue;
+            }
+
             $value = $this->parseMoney((string) $cell);
             if ($value !== null && $value > 0) {
                 $price = $value;
