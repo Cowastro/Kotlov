@@ -194,7 +194,9 @@ class ImportReports extends Page
             'kotlov_item',
             'current_supplier_cost',
             'kotlov_retail',
+            'suggested_retail_simple',
             'margin_simple',
+            'retail_price_action',
             'report_problem',
         ];
 
@@ -233,7 +235,9 @@ class ImportReports extends Page
             'kotlov_item' => 'Товар KOTLOV',
             'current_supplier_cost' => 'Закупка сейчас',
             'kotlov_retail' => 'Розница сайта',
+            'suggested_retail_simple' => 'Розница из прайса',
             'margin_simple' => 'Маржа / контроль',
+            'retail_price_action' => 'Розница: действие',
             'report_problem' => 'Почему в отчёте',
         ];
 
@@ -298,7 +302,7 @@ class ImportReports extends Page
             return $this->translateReason($value);
         }
 
-        if (in_array($header, ['action', 'recommended_action', 'match_type', 'ai_decision'], true)) {
+        if (in_array($header, ['action', 'recommended_action', 'match_type', 'ai_decision', 'retail_price_action'], true)) {
             return $this->translateCode($value);
         }
 
@@ -553,6 +557,12 @@ class ImportReports extends Page
             'not_enough_data' => 'AI: недостаточно данных',
             'can_apply_after_review' => 'Можно применить после проверки',
             'keep_manual_review' => 'Оставить в ручной проверке',
+            'retail_price_can_sync' => 'Можно обновить розницу',
+            'retail_price_unchanged' => 'Розница совпадает',
+            'retail_price_missing' => 'Нет розницы в прайсе',
+            'retail_current_below_cost' => 'Текущая розница ниже закупки',
+            'retail_skipped_no_product' => 'Нет связанного товара',
+            'supplier_cost_stock_retail_updated' => 'Закупка, наличие и розница обновлены',
         ][$value] ?? $value;
     }
 
@@ -562,6 +572,7 @@ class ImportReports extends Page
             $priceListCost = $this->firstFilled($row, ['new_supplier_cost', 'price_value', 'new_bania_price']);
             $currentSupplierCost = $this->firstFilled($row, ['old_supplier_price', 'supplier_price']);
             $retailPrice = $this->firstFilled($row, ['product_retail_price', 'old_product_price']);
+            $suggestedRetailPrice = $this->firstFilled($row, ['suggested_retail_price']);
             $problem = $this->translateReason((string) $this->firstFilled($row, ['reason', 'note', 'error']));
 
             $rows[$index] = [
@@ -572,7 +583,8 @@ class ImportReports extends Page
                 'kotlov_item' => $this->kotlovTitle($row),
                 'current_supplier_cost' => $currentSupplierCost,
                 'kotlov_retail' => $retailPrice,
-                'margin_simple' => $this->marginText($priceListCost, $retailPrice),
+                'suggested_retail_simple' => $suggestedRetailPrice,
+                'margin_simple' => $this->marginText($priceListCost, $suggestedRetailPrice !== '' ? $suggestedRetailPrice : $retailPrice),
                 'report_problem' => $problem,
             ] + $row;
         }

@@ -14,6 +14,9 @@ class SyncBaniaPricelistCommand extends Command
         {--apply : Update BANIA supplier_products from the price list}
         {--price-file= : Path to a local XLSX/CSV file}
         {--sheet-url= : Google Sheets URL to download}
+        {--retail-price-file= : Path to a local BANIA retail XLSX/CSV file}
+        {--retail-sheet-url= : Google Sheets URL with BANIA retail prices}
+        {--sync-retail-prices : Update products.price from the retail price list when a confident row is found}
         {--limit= : Process only the first N price rows}
         {--mark-missing-out-of-stock : Mark linked BANIA rows missing from the price list as out_of_stock}';
 
@@ -21,7 +24,9 @@ class SyncBaniaPricelistCommand extends Command
 
     private const SUPPLIER_CODE = 'bania';
     private const DEFAULT_SHEET_URL = 'https://docs.google.com/spreadsheets/d/1R2qoKV_NKlOAwaBb5dC58CjRawHXJGGX/edit?gid=1105454588#gid=1105454588';
+    private const DEFAULT_RETAIL_SHEET_URL = 'https://docs.google.com/spreadsheets/d/1tdKCGzoMoeYQngx2ggeI9DifxHKSDMPc/edit?gid=886304601#gid=886304601';
     private const CACHE_PATH = 'supplier-cache/bania-pricelist.xlsx';
+    private const RETAIL_CACHE_PATH = 'supplier-cache/bania-retail-pricelist.xlsx';
     private const PRODUCTION_BRANDS = [
         'Везувий',
         'Теплодар',
@@ -55,6 +60,7 @@ class SyncBaniaPricelistCommand extends Command
     {
         $apply = (bool) $this->option('apply');
         $dryRun = (bool) $this->option('dry-run') || ! $apply;
+        $syncRetailPrices = (bool) $this->option('sync-retail-prices');
         $limit = $this->option('limit') !== null ? max(0, (int) $this->option('limit')) : null;
 
         $this->line($dryRun
@@ -86,6 +92,18 @@ class SyncBaniaPricelistCommand extends Command
             return self::FAILURE;
         }
 
+        $retailIndexes = ['article' => [], 'rows' => []];
+        try {
+            $retailFile = $this->resolveRetailPriceFile();
+            if ($retailFile && file_exists($retailFile)) {
+                $retailRows = $this->readRetailRows($retailFile);
+                $retailIndexes = $this->buildRetailIndexes($retailRows);
+                $this->info('BANIA retail price rows loaded: ' . count($retailRows));
+            }
+        } catch (\Throwable $e) {
+            $this->warn('Retail price list was not loaded: ' . $e->getMessage());
+        }
+
         if ($limit !== null && $limit > 0) {
             $rows = array_slice($rows, 0, $limit);
         }
@@ -111,6 +129,10 @@ class SyncBaniaPricelistCommand extends Command
             'skipped_empty_price' => 0,
             'errors' => 0,
             'missing_marked_out_of_stock' => 0,
+            'retail_price_synced' => 0,
+            'retail_price_suggested' => 0,
+            'retail_price_missing' => 0,
+            'retail_price_skipped_manual_review' => 0,
         ];
 
         foreach ($rows as $row) {
@@ -118,6 +140,7 @@ class SyncBaniaPricelistCommand extends Command
                 $match = $this->matchRow($row, $indexes, $supplierProducts);
                 if (($match['action'] ?? '') === 'manual_review') {
                     $stats['manual_review']++;
+                    $stats['retail_price_skipped_manual_review']++;
                     $this->addManualRow($row, $match);
                     $this->addReportRow($row, $match, 'manual_review');
                     continue;
@@ -146,6 +169,8 @@ class SyncBaniaPricelistCommand extends Command
 
                 $matchedSupplierProductIds[(int) $supplierProduct->id] = true;
                 $stats['matched']++;
+                $retailMatch = $this->matchRetailForSupplierProduct($supplierProduct, $retailIndexes);
+                $match['retail_match'] = $retailMatch;
 
                 if ($row['price'] === null || $row['price'] <= 0) {
                     $stats['skipped_empty_price']++;
@@ -153,7 +178,7 @@ class SyncBaniaPricelistCommand extends Command
                     continue;
                 }
 
-                if ($this->supplierCostAboveRetail($supplierProduct, (float) $row['price'])) {
+                if ($this->supplierCostAboveRetail($supplierProduct, (float) $row['price'], $retailMatch['price'] ?? null)) {
                     $stats['cost_above_retail']++;
                     $reviewMatch = array_merge($match, [
                         'reason' => sprintf(
@@ -169,14 +194,28 @@ class SyncBaniaPricelistCommand extends Command
 
                 $newInStock = $this->isAvailableStock($row['stock_status']);
                 $changed = $this->hasSupplierProductChanges($supplierProduct, $row, $newInStock);
+                $retailChanged = $this->hasRetailPriceChange($supplierProduct, $retailMatch);
                 if (! $changed) {
-                    $stats['unchanged']++;
-                    $this->addReportRow($row, $match, 'unchanged');
-                    continue;
+                    if (! $syncRetailPrices || ! $retailChanged) {
+                        $stats['unchanged']++;
+                        if (($retailMatch['price'] ?? null) !== null) {
+                            $stats['retail_price_suggested']++;
+                        } else {
+                            $stats['retail_price_missing']++;
+                        }
+                        $this->addReportRow($row, $match, 'unchanged');
+                        continue;
+                    }
                 }
 
                 if (! $dryRun) {
-                    $this->updateSupplierProduct($supplierProduct, $row, $newInStock, $now);
+                    if ($changed) {
+                        $this->updateSupplierProduct($supplierProduct, $row, $newInStock, $now);
+                    }
+                    if ($syncRetailPrices && $retailChanged) {
+                        $this->updateProductRetailPrice($supplierProduct, $retailMatch, $now);
+                        $stats['retail_price_synced']++;
+                    }
                     if ($supplierProduct->product_id) {
                         $this->refreshProductAvailability((int) $supplierProduct->product_id, $now);
                     }
@@ -187,7 +226,12 @@ class SyncBaniaPricelistCommand extends Command
                 }
 
                 $stats['updated']++;
-                $this->addReportRow($row, $match, 'supplier_cost_stock_updated');
+                if (($retailMatch['price'] ?? null) !== null) {
+                    $stats['retail_price_suggested']++;
+                } else {
+                    $stats['retail_price_missing']++;
+                }
+                $this->addReportRow($row, $match, $syncRetailPrices && $retailChanged ? 'supplier_cost_stock_retail_updated' : 'supplier_cost_stock_updated');
             } catch (\Throwable $e) {
                 $stats['errors']++;
                 $this->addReportRow($row, ['reason' => $e->getMessage()], 'error');
@@ -236,7 +280,9 @@ class SyncBaniaPricelistCommand extends Command
 
         $this->info('Products with recalculated availability: ' . count($changedProductIds));
         $this->info(sprintf('BANIA supplier_products in allowed sync scope: %d of %d', count($supplierProducts), $supplierProductsTotal));
-        $this->warn('products.price was not updated. The price-list column "OPT with VAT" is supplier purchase cost.');
+        $this->warn($syncRetailPrices
+            ? 'products.price may be updated only from the BANIA retail price list. The wholesale price-list column "OPT with VAT" remains supplier purchase cost.'
+            : 'products.price was not updated. Use --sync-retail-prices to apply confirmed BANIA retail price-list values.');
 
         return $stats['errors'] > 0 ? self::FAILURE : self::SUCCESS;
     }
@@ -249,13 +295,24 @@ class SyncBaniaPricelistCommand extends Command
         }
 
         $url = (string) ($this->option('sheet-url') ?: self::DEFAULT_SHEET_URL);
-        return $this->downloadGoogleSheet($url);
+        return $this->downloadGoogleSheet($url, self::CACHE_PATH, 'Google wholesale price list');
     }
 
-    private function downloadGoogleSheet(string $url): string
+    private function resolveRetailPriceFile(): ?string
+    {
+        $priceFile = $this->option('retail-price-file');
+        if ($priceFile) {
+            return (string) $priceFile;
+        }
+
+        $url = (string) ($this->option('retail-sheet-url') ?: self::DEFAULT_RETAIL_SHEET_URL);
+        return $this->downloadGoogleSheet($url, self::RETAIL_CACHE_PATH, 'Google retail price list');
+    }
+
+    private function downloadGoogleSheet(string $url, string $cachePath, string $label): string
     {
         $exportUrl = $this->toExportUrl($url);
-        $path = storage_path('app/' . self::CACHE_PATH);
+        $path = storage_path('app/' . $cachePath);
         if (! is_dir(dirname($path))) {
             mkdir(dirname($path), 0775, true);
         }
@@ -287,7 +344,7 @@ class SyncBaniaPricelistCommand extends Command
         }
 
         file_put_contents($path, $content);
-        $this->line('Downloaded Google price list: ' . $path);
+        $this->line('Downloaded ' . $label . ': ' . $path);
 
         return $path;
     }
@@ -361,6 +418,85 @@ class SyncBaniaPricelistCommand extends Command
         }
 
         return $rows;
+    }
+
+    private function readRetailRows(string $path): array
+    {
+        $reader = IOFactory::createReaderForFile($path);
+        $reader->setReadDataOnly(true);
+        $spreadsheet = $reader->load($path);
+        $sheet = $spreadsheet->getActiveSheet();
+        $rawRows = $sheet->toArray(null, true, true, false);
+
+        $rows = [];
+        $seen = [];
+
+        foreach ($rawRows as $index => $row) {
+            if ($index < 3) {
+                continue;
+            }
+
+            $parsed = $this->parseRetailRow($row, $index + 1);
+            if (! $parsed) {
+                continue;
+            }
+
+            $key = $parsed['norm_article'] ?: sha1($parsed['normalized_name'] . '|' . $parsed['price']);
+            if (isset($seen[$key])) {
+                continue;
+            }
+
+            $seen[$key] = true;
+            $rows[] = $parsed;
+        }
+
+        return $rows;
+    }
+
+    private function parseRetailRow(array $row, int $rowNumber): ?array
+    {
+        $cells = array_values(array_map(fn ($value): string => trim((string) $value), $row));
+        $joined = mb_strtolower(implode(' ', $cells));
+        if ($joined === '' || str_contains($joined, 'номенклатура') || str_contains($joined, 'рознич')) {
+            return null;
+        }
+
+        $name = $this->cell($cells, 0);
+        if ($name === '') {
+            $name = $this->firstTextCell($cells);
+        }
+
+        $article = $this->cell($cells, 2);
+        if ($this->normalizeArticle($article) === '') {
+            $article = $this->firstArticleCell($cells);
+        }
+
+        $price = $this->lastMoneyCell($cells);
+        $normalizedName = $this->normalizeName($name);
+        if ($normalizedName === '' || $price === null || $price <= 0) {
+            return null;
+        }
+
+        return [
+            'row' => $rowNumber,
+            'name' => $name,
+            'article' => $article,
+            'norm_article' => $this->normalizeArticle($article),
+            'price' => $price,
+            'normalized_name' => $normalizedName,
+        ];
+    }
+
+    private function buildRetailIndexes(array $rows): array
+    {
+        $byArticle = [];
+        foreach ($rows as $row) {
+            if ($row['norm_article'] !== '') {
+                $byArticle[$row['norm_article']][] = $row;
+            }
+        }
+
+        return ['article' => $byArticle, 'rows' => $rows];
     }
 
     private function loadBaniaSupplierProducts(int $supplierId): array
@@ -481,6 +617,50 @@ class SyncBaniaPricelistCommand extends Command
         ];
     }
 
+    private function matchRetailForSupplierProduct(object $supplierProduct, array $indexes): ?array
+    {
+        $articles = array_values(array_filter(array_unique([
+            $this->normalizeArticle((string) ($supplierProduct->supplier_article_normalized ?? '')),
+            $this->normalizeArticle((string) ($supplierProduct->supplier_article ?? '')),
+        ])));
+
+        $candidates = [];
+        foreach ($articles as $article) {
+            foreach ($indexes['article'][$article] ?? [] as $row) {
+                $candidates[] = $row + ['match_type' => 'retail_article'];
+            }
+        }
+
+        if ($candidates === []) {
+            $candidates = array_map(
+                fn (array $row): array => $row + ['match_type' => 'retail_title'],
+                $indexes['rows'] ?? []
+            );
+        }
+
+        $needle = $this->normalizeName(trim((string) ($supplierProduct->supplier_name ?? '') . ' ' . (string) ($supplierProduct->product_name ?? '')));
+        $best = null;
+        $bestScore = 0;
+
+        foreach ($candidates as $candidate) {
+            $score = $this->candidateScore($needle, (string) $candidate['normalized_name']);
+            if (($candidate['match_type'] ?? '') === 'retail_article') {
+                $score = max($score, 85);
+            }
+
+            if ($score > $bestScore) {
+                $best = $candidate;
+                $bestScore = $score;
+            }
+        }
+
+        if (! $best || $bestScore < 72) {
+            return null;
+        }
+
+        return $best + ['confidence' => $bestScore];
+    }
+
     private function bestCandidate(array $row, array $candidates): array
     {
         $best = ['supplier_product' => null, 'score' => 0];
@@ -507,7 +687,7 @@ class SyncBaniaPricelistCommand extends Command
         return abs((float) $supplierProduct->price_byn - (float) $supplierProduct->product_price) < 0.01;
     }
 
-    private function supplierCostAboveRetail(object $supplierProduct, float $newSupplierCost): bool
+    private function supplierCostAboveRetail(object $supplierProduct, float $newSupplierCost, ?float $suggestedRetailPrice = null): bool
     {
         if ($newSupplierCost <= 0 || $supplierProduct->product_price === null) {
             return false;
@@ -518,7 +698,63 @@ class SyncBaniaPricelistCommand extends Command
             return false;
         }
 
+        if ($suggestedRetailPrice !== null && $suggestedRetailPrice >= $newSupplierCost - 0.01) {
+            return false;
+        }
+
         return $newSupplierCost > $retail + 0.01;
+    }
+
+    private function hasRetailPriceChange(object $supplierProduct, ?array $retailMatch): bool
+    {
+        if (! $retailMatch || ! $supplierProduct->product_id || empty($retailMatch['price'])) {
+            return false;
+        }
+
+        $newRetail = (float) $retailMatch['price'];
+        if ($newRetail <= 0) {
+            return false;
+        }
+
+        $oldRetail = $supplierProduct->product_price !== null ? (float) $supplierProduct->product_price : null;
+        return $oldRetail === null || abs($oldRetail - $newRetail) > 0.01;
+    }
+
+    private function updateProductRetailPrice(object $supplierProduct, array $retailMatch, $now): void
+    {
+        if (! $supplierProduct->product_id || empty($retailMatch['price'])) {
+            return;
+        }
+
+        DB::table('products')->where('id', $supplierProduct->product_id)->update([
+            'price' => $retailMatch['price'],
+            'updated_at' => $now,
+        ]);
+    }
+
+    private function retailPriceAction(?object $supplierProduct, ?array $retailMatch): string
+    {
+        if (! $supplierProduct || ! $supplierProduct->product_id) {
+            return 'retail_skipped_no_product';
+        }
+
+        if (! $retailMatch || empty($retailMatch['price'])) {
+            return 'retail_price_missing';
+        }
+
+        $newRetail = (float) $retailMatch['price'];
+        $oldRetail = $supplierProduct->product_price !== null ? (float) $supplierProduct->product_price : null;
+        $supplierCost = $supplierProduct->price_byn !== null ? (float) $supplierProduct->price_byn : null;
+
+        if ($supplierCost !== null && $oldRetail !== null && $oldRetail < $supplierCost - 0.01) {
+            return 'retail_current_below_cost';
+        }
+
+        if ($oldRetail !== null && abs($oldRetail - $newRetail) <= 0.01) {
+            return 'retail_price_unchanged';
+        }
+
+        return 'retail_price_can_sync';
     }
 
     private function canRepairSaunaStoveCostByTitle(array $row, array $best): bool
@@ -717,6 +953,44 @@ class SyncBaniaPricelistCommand extends Command
         return trim((string) ($row[$index] ?? ''));
     }
 
+    private function firstTextCell(array $cells): string
+    {
+        foreach ($cells as $cell) {
+            $value = trim((string) $cell);
+            if ($value !== '' && preg_match('/[A-Za-zА-Яа-яЁё]/u', $value)) {
+                return $value;
+            }
+        }
+
+        return '';
+    }
+
+    private function firstArticleCell(array $cells): string
+    {
+        foreach ($cells as $cell) {
+            $value = trim((string) $cell);
+            $article = $this->normalizeArticle($value);
+            if ($article !== '' && preg_match('/[0-9]/', $article) && mb_strlen($article) >= 4 && $this->parseMoney($value) === null) {
+                return $value;
+            }
+        }
+
+        return '';
+    }
+
+    private function lastMoneyCell(array $cells): ?float
+    {
+        $price = null;
+        foreach ($cells as $cell) {
+            $value = $this->parseMoney((string) $cell);
+            if ($value !== null && $value > 0) {
+                $price = $value;
+            }
+        }
+
+        return $price;
+    }
+
     private function normalizeArticle(string $value): string
     {
         return mb_strtoupper(preg_replace('/[^0-9A-ZА-ЯЁ]+/u', '', trim($value)) ?? '');
@@ -789,6 +1063,7 @@ class SyncBaniaPricelistCommand extends Command
     private function addReportRow(array $row, array $match, string $action): void
     {
         $supplierProduct = $match['supplier_product'] ?? null;
+        $retailMatch = $match['retail_match'] ?? null;
         $this->reportRows[] = [
             'price_row' => $row['row'] ?? '',
             'price_title' => $row['name'] ?? '',
@@ -802,6 +1077,12 @@ class SyncBaniaPricelistCommand extends Command
             'old_supplier_price' => isset($supplierProduct->price_byn) ? $this->formatDecimal((float) $supplierProduct->price_byn) : '',
             'new_supplier_cost' => isset($row['price']) && $row['price'] !== null ? $this->formatDecimal((float) $row['price']) : '',
             'product_retail_price' => isset($supplierProduct->product_price) ? $this->formatDecimal((float) $supplierProduct->product_price) : '',
+            'suggested_retail_price' => isset($retailMatch['price']) ? $this->formatDecimal((float) $retailMatch['price']) : '',
+            'suggested_retail_row' => $retailMatch['row'] ?? '',
+            'suggested_retail_title' => $retailMatch['name'] ?? '',
+            'suggested_retail_article' => $retailMatch['article'] ?? '',
+            'suggested_retail_confidence' => $retailMatch['confidence'] ?? '',
+            'retail_price_action' => $this->retailPriceAction($supplierProduct, $retailMatch),
             'old_stock_status' => $supplierProduct->stock_status ?? '',
             'new_stock_status' => $row['stock_status'] ?? '',
             'product_in_stock_before' => isset($supplierProduct->product_in_stock) ? (int) $supplierProduct->product_in_stock : '',
@@ -827,6 +1108,12 @@ class SyncBaniaPricelistCommand extends Command
             'old_supplier_price' => isset($supplierProduct->price_byn) ? $this->formatDecimal((float) $supplierProduct->price_byn) : '',
             'new_supplier_cost' => '',
             'product_retail_price' => isset($supplierProduct->product_price) ? $this->formatDecimal((float) $supplierProduct->product_price) : '',
+            'suggested_retail_price' => '',
+            'suggested_retail_row' => '',
+            'suggested_retail_title' => '',
+            'suggested_retail_article' => '',
+            'suggested_retail_confidence' => '',
+            'retail_price_action' => 'retail_price_missing',
             'old_stock_status' => $supplierProduct->stock_status,
             'new_stock_status' => 'out_of_stock',
             'product_in_stock_before' => (int) $supplierProduct->product_in_stock,
@@ -840,6 +1127,7 @@ class SyncBaniaPricelistCommand extends Command
     private function addManualRow(array $row, array $match): void
     {
         $supplierProduct = $match['supplier_product'] ?? null;
+        $retailMatch = $match['retail_match'] ?? null;
         $this->manualRows[] = [
             'price_row' => $row['row'] ?? '',
             'price_title' => $row['name'] ?? '',
@@ -852,6 +1140,12 @@ class SyncBaniaPricelistCommand extends Command
             'old_supplier_price' => isset($supplierProduct->price_byn) ? $this->formatDecimal((float) $supplierProduct->price_byn) : '',
             'new_supplier_cost' => isset($row['price']) && $row['price'] !== null ? $this->formatDecimal((float) $row['price']) : '',
             'product_retail_price' => isset($supplierProduct->product_price) ? $this->formatDecimal((float) $supplierProduct->product_price) : '',
+            'suggested_retail_price' => isset($retailMatch['price']) ? $this->formatDecimal((float) $retailMatch['price']) : '',
+            'suggested_retail_row' => $retailMatch['row'] ?? '',
+            'suggested_retail_title' => $retailMatch['name'] ?? '',
+            'suggested_retail_article' => $retailMatch['article'] ?? '',
+            'suggested_retail_confidence' => $retailMatch['confidence'] ?? '',
+            'retail_price_action' => $this->retailPriceAction($supplierProduct, $retailMatch),
             'match_type' => $match['match_type'] ?? '',
             'confidence' => $match['confidence'] ?? '',
             'reason' => $match['reason'] ?? '',
