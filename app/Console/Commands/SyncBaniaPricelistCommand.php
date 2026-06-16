@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Models\SupplierReviewDecision;
 use App\Models\Product;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
@@ -55,6 +56,7 @@ class SyncBaniaPricelistCommand extends Command
 
     private array $reportRows = [];
     private array $manualRows = [];
+    private array $appliedManualLinkIndex = [];
 
     public function handle(): int
     {
@@ -114,6 +116,7 @@ class SyncBaniaPricelistCommand extends Command
             $supplierProducts,
             fn (object $supplierProduct): bool => $this->isAllowedSupplierProduct($supplierProduct)
         ));
+        $this->appliedManualLinkIndex = $this->loadAppliedManualLinkIndex();
         $indexes = $this->buildIndexes($supplierProducts);
         $now = now();
         $matchedSupplierProductIds = [];
@@ -133,12 +136,18 @@ class SyncBaniaPricelistCommand extends Command
             'retail_price_suggested' => 0,
             'retail_price_missing' => 0,
             'retail_price_skipped_manual_review' => 0,
+            'manual_review_resolved' => 0,
         ];
 
         foreach ($rows as $row) {
             try {
                 $match = $this->matchRow($row, $indexes, $supplierProducts);
                 if (($match['action'] ?? '') === 'manual_review') {
+                    if ($this->wasManualLinkApproved($row, $match)) {
+                        $stats['manual_review_resolved']++;
+                        continue;
+                    }
+
                     $stats['manual_review']++;
                     $match['retail_match'] = $this->matchRetailForPriceRow($row, $retailIndexes, $match['supplier_product'] ?? null);
 
@@ -167,6 +176,11 @@ class SyncBaniaPricelistCommand extends Command
                 }
 
                 if (isset($matchedSupplierProductIds[(int) $supplierProduct->id])) {
+                    if ($this->wasManualLinkApproved($row, $match)) {
+                        $stats['manual_review_resolved']++;
+                        continue;
+                    }
+
                     $stats['manual_review']++;
                     $duplicateMatch = array_merge($match, ['reason' => 'price list contains another row for the same BANIA supplier_product']);
                     $duplicateMatch['retail_match'] = $this->matchRetailForPriceRow($row, $retailIndexes, $supplierProduct);
@@ -1257,5 +1271,48 @@ class SyncBaniaPricelistCommand extends Command
     private function formatDecimal(float $value): string
     {
         return number_format($value, 2, '.', '');
+    }
+
+    private function loadAppliedManualLinkIndex(): array
+    {
+        $index = [];
+
+        $rows = SupplierReviewDecision::query()
+            ->where('supplier_code', self::SUPPLIER_CODE)
+            ->where('decision', SupplierReviewDecision::DECISION_LINK)
+            ->where('status', SupplierReviewDecision::STATUS_APPLIED)
+            ->get(['supplier_product_id', 'product_id', 'supplier_article']);
+
+        foreach ($rows as $row) {
+            $supplierProductId = (int) ($row->supplier_product_id ?? 0);
+            $productId = (int) ($row->product_id ?? 0);
+            $article = $this->normalizeArticle((string) ($row->supplier_article ?? ''));
+
+            if ($supplierProductId <= 0 || $productId <= 0 || $article === '') {
+                continue;
+            }
+
+            $index[$supplierProductId . '|' . $productId . '|' . $article] = true;
+        }
+
+        return $index;
+    }
+
+    private function wasManualLinkApproved(array $row, array $match): bool
+    {
+        $supplierProduct = $match['supplier_product'] ?? null;
+        if (! $supplierProduct) {
+            return false;
+        }
+
+        $supplierProductId = (int) ($supplierProduct->id ?? 0);
+        $productId = (int) ($supplierProduct->product_id ?? 0);
+        $article = $this->normalizeArticle((string) ($row['article'] ?? ''));
+
+        if ($supplierProductId <= 0 || $productId <= 0 || $article === '') {
+            return false;
+        }
+
+        return isset($this->appliedManualLinkIndex[$supplierProductId . '|' . $productId . '|' . $article]);
     }
 }
