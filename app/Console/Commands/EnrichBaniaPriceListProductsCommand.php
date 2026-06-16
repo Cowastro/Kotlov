@@ -46,6 +46,7 @@ class EnrichBaniaPriceListProductsCommand extends Command
     private AiContentEnricher $ai;
     private string $sourceDomain = 'bania.by';
     private string $sourceStartUrl = '';
+    private string $sourceStartPath = '';
     private ?array $sourceCatalogLinks = null;
 
     private array $stats = [
@@ -69,6 +70,7 @@ class EnrichBaniaPriceListProductsCommand extends Command
         $this->sourceDomain = $this->normalizeSourceDomain((string) $this->option('source-domain'));
         try {
             $this->sourceStartUrl = $this->normalizeSourceUrl((string) $this->option('source-url'));
+            $this->sourceStartPath = trim((string) parse_url($this->sourceStartUrl, PHP_URL_PATH), '/');
         } catch (\InvalidArgumentException $e) {
             $this->error($e->getMessage());
             return self::FAILURE;
@@ -506,6 +508,9 @@ class EnrichBaniaPriceListProductsCommand extends Command
                 if (! $this->urlMatchesSourceDomain($anchorUrl) || $anchorTitle === '') {
                     continue;
                 }
+                if (! $this->isInsideSourceStartPath($anchorUrl)) {
+                    continue;
+                }
 
                 if ($this->isCatalogCandidate($anchorUrl, $anchorTitle)) {
                     $links[$anchorUrl] = [
@@ -548,6 +553,17 @@ class EnrichBaniaPriceListProductsCommand extends Command
         }
 
         return $anchors;
+    }
+
+    private function isInsideSourceStartPath(string $url): bool
+    {
+        if ($this->sourceStartPath === '') {
+            return true;
+        }
+
+        $path = trim((string) parse_url($url, PHP_URL_PATH), '/');
+
+        return $path === $this->sourceStartPath || str_starts_with($path, $this->sourceStartPath . '/');
     }
 
     private function isCatalogNavigationLink(string $url, string $title): bool
