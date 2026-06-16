@@ -73,7 +73,7 @@ class EnrichBaniaPriceListProductsCommand extends Command
 
             try {
                 $result = $this->findSourcePage($apiKey, $product);
-                if (! $result) {
+                if ($result === null) {
                     $this->warn('  no source page found');
                     $this->stats['images_missing']++;
                     $this->stats['content_missing']++;
@@ -85,10 +85,8 @@ class EnrichBaniaPriceListProductsCommand extends Command
                 $this->line('  source: ' . $result['url']);
 
                 $updates = ['updated_at' => now()];
-                $supplierUpdates = [
-                    'source_url' => $result['url'],
-                    'updated_at' => now(),
-                ];
+                $supplierUpdates = ['updated_at' => now()];
+                $supplierUpdates['source_url'] = $result['url'];
 
                 $raw = json_decode((string) ($product->supplier_raw ?? ''), true);
                 if (! is_array($raw)) {
@@ -97,6 +95,7 @@ class EnrichBaniaPriceListProductsCommand extends Command
                 $raw['enrichment'] = [
                     'provider' => 'serper',
                     'source_url' => $result['url'],
+                    'images_found' => count($result['images'] ?? []),
                     'matched_at' => now()->toDateTimeString(),
                 ];
                 unset($raw['needs_enrichment']);
