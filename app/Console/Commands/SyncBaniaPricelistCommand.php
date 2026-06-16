@@ -1342,12 +1342,12 @@ class SyncBaniaPricelistCommand extends Command
 
     private function priceListShortDescription(string $productName): string
     {
-        return 'Товар BANIA.by из актуального оптового прайса. Цена и наличие обновляются по прайсу поставщика.';
+        return 'Товар доступен к заказу. Актуальная цена и наличие указаны на странице.';
     }
 
     private function priceListDescription(string $productName): string
     {
-        return '<p>' . e($productName) . ' доступен к заказу через поставщика BANIA.by. Карточка создана по актуальному оптовому прайсу; фото и подробные характеристики будут дополнены после обогащения данных.</p>';
+        return '<p>' . e($productName) . ' доступен к заказу. Актуальная цена и наличие указаны на странице; дополнительные параметры можно уточнить у менеджера.</p>';
     }
 
     private function uniqueSlug(string $name): string
