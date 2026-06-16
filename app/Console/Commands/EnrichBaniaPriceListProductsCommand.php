@@ -17,6 +17,8 @@ class EnrichBaniaPriceListProductsCommand extends Command
         {--offset=0 : Skip first N products}
         {--sku= : Process one product SKU}
         {--category= : Filter by category id}
+        {--brand= : Filter by brand name fragment}
+        {--source-domain=bania.by : Allowed source domain to search, e.g. aston-pech.ru}
         {--force-images : Replace existing images}
         {--force-content : Replace existing content}
         {--skip-images : Do not download images}
@@ -29,8 +31,19 @@ class EnrichBaniaPriceListProductsCommand extends Command
     private const SUPPLIER_CODE = 'bania';
     private const IMAGE_DIR = 'img/products/bania';
     private const SERPER_URL = 'https://google.serper.dev/search';
+    private const ALLOWED_SOURCE_DOMAINS = [
+        'bania.by',
+        'aston-pech.ru',
+        'doorwood.ru',
+        'tmf-shop.ru',
+        'vezuviy.su',
+        'teplodar.ru',
+        'prosept.ru',
+        'harvia.com',
+    ];
 
     private AiContentEnricher $ai;
+    private string $sourceDomain = 'bania.by';
 
     private array $stats = [
         'processed' => 0,
@@ -50,6 +63,7 @@ class EnrichBaniaPriceListProductsCommand extends Command
         $apply = (bool) $this->option('apply');
         $dryRun = (bool) $this->option('dry-run') || ! $apply;
         $apiKey = (string) env('SERPER_API_KEY', '');
+        $this->sourceDomain = $this->normalizeSourceDomain((string) $this->option('source-domain'));
 
         $this->line($dryRun
             ? '<fg=yellow;options=bold>DRY RUN: database will not be changed.</>'
@@ -59,6 +73,14 @@ class EnrichBaniaPriceListProductsCommand extends Command
             $this->error('SERPER_API_KEY is not configured in .env.');
             return self::FAILURE;
         }
+
+        if (! in_array($this->sourceDomain, self::ALLOWED_SOURCE_DOMAINS, true)) {
+            $this->error('Source domain is not allowed: ' . $this->sourceDomain);
+            $this->line('Allowed: ' . implode(', ', self::ALLOWED_SOURCE_DOMAINS));
+            return self::FAILURE;
+        }
+
+        $this->info('Source domain: ' . $this->sourceDomain);
 
         $this->ai = new AiContentEnricher();
         if (! $this->option('skip-content') && ! $this->ai->isAvailable()) {
@@ -200,6 +222,15 @@ class EnrichBaniaPriceListProductsCommand extends Command
             $query->where('p.category_id', (int) $categoryId);
         }
 
+        if ($brand = trim((string) $this->option('brand'))) {
+            $needle = '%' . mb_strtolower($brand) . '%';
+            $query->where(function ($q) use ($needle) {
+                $q->whereRaw('LOWER(b.name) LIKE ?', [$needle])
+                    ->orWhereRaw('LOWER(p.name) LIKE ?', [$needle])
+                    ->orWhereRaw('LOWER(sp.supplier_name) LIKE ?', [$needle]);
+            });
+        }
+
         if ($this->option('missing-images-only')) {
             $query->where(function ($q) {
                 $q->whereNull('p.images')
@@ -217,7 +248,7 @@ class EnrichBaniaPriceListProductsCommand extends Command
 
     private function findSourcePage(string $apiKey, object $product): ?array
     {
-        $query = 'site:bania.by ' . $this->searchText($product);
+        $query = 'site:' . $this->sourceDomain . ' ' . $this->searchText($product);
         $response = Http::withHeaders([
             'X-API-KEY' => $apiKey,
             'Content-Type' => 'application/json',
@@ -234,7 +265,7 @@ class EnrichBaniaPriceListProductsCommand extends Command
 
         $links = collect($response->json('organic') ?? [])
             ->pluck('link')
-            ->filter(fn ($url) => is_string($url) && str_contains($url, 'bania.by'))
+            ->filter(fn ($url) => is_string($url) && $this->urlMatchesSourceDomain($url))
             ->unique()
             ->values()
             ->all();
@@ -428,13 +459,21 @@ class EnrichBaniaPriceListProductsCommand extends Command
 
     private function isProductImage(string $url): bool
     {
-        if (! str_contains($url, 'bania.by') || ! str_contains($url, '/image/catalog/')) {
+        if (! $this->urlMatchesSourceDomain($url)) {
             return false;
         }
 
         $path = strtolower((string) parse_url($url, PHP_URL_PATH));
 
-        return ! preg_match('~/(?:logo|icon|icons|payment|social|banner|manufacturer)/|(?:sprite|placeholder|telegram|viber|whatsapp|email|tel)~i', $path);
+        if (preg_match('~/(?:logo|icon|icons|payment|social|banner|manufacturer)/|(?:sprite|placeholder|telegram|viber|whatsapp|email|tel|noimage|nophoto)~i', $path)) {
+            return false;
+        }
+
+        if ($this->sourceDomain === 'bania.by') {
+            return str_contains($url, '/image/catalog/');
+        }
+
+        return preg_match('~/(?:upload|uploads|images|image|catalog|products|product|goods|items|photo|photos|userfls|iblock|resize_cache)/~i', $path) === 1;
     }
 
     private function normalizeImageUrl(string $url): string
@@ -512,6 +551,28 @@ class EnrichBaniaPriceListProductsCommand extends Command
         $rightTokens = array_filter(explode(' ', $right), fn ($token) => mb_strlen($token) >= 3);
 
         return count(array_intersect(array_unique($leftTokens), array_unique($rightTokens)));
+    }
+
+    private function normalizeSourceDomain(string $domain): string
+    {
+        $domain = trim(mb_strtolower($domain));
+        if ($domain === '') {
+            return 'bania.by';
+        }
+
+        if (str_starts_with($domain, 'http://') || str_starts_with($domain, 'https://')) {
+            $domain = (string) parse_url($domain, PHP_URL_HOST);
+        }
+
+        return preg_replace('/^www\./', '', trim($domain, " \t\n\r\0\x0B/")) ?: 'bania.by';
+    }
+
+    private function urlMatchesSourceDomain(string $url): bool
+    {
+        $host = mb_strtolower((string) parse_url($url, PHP_URL_HOST));
+        $host = preg_replace('/^www\./', '', $host) ?: '';
+
+        return $host === $this->sourceDomain || str_ends_with($host, '.' . $this->sourceDomain);
     }
 
     private function cleanDescription(string $html): string
