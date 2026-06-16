@@ -708,7 +708,7 @@ class ImportReports extends Page
 
             $rows[$index] = [
                 'simple_next_step' => $this->simpleNextStep($row, $problem),
-                'supplier_item' => $this->supplierTitle($row) ?: '',
+                'supplier_item' => $this->firstFilled($row, ['price_title', 'supplier_title', 'possible_supplier_title', 'supplier_name', 'title']),
                 'supplier_article_short' => $this->supplierArticle($row) ?: '',
                 'price_list_cost' => $priceListCost,
                 'kotlov_item' => $this->kotlovTitle($row),

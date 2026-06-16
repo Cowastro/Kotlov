@@ -868,6 +868,10 @@ class SyncBaniaPricelistCommand extends Command
         $candidateName = $this->normalizeName($candidateName);
         $score = $this->similarity($priceName, $candidateName);
 
+        if ($this->hasDimensionConflict($priceName, $candidateName)) {
+            return min($score, 45);
+        }
+
         $priceNumbers = $this->modelNumbers($priceName);
         $candidateNumbers = $this->modelNumbers($candidateName);
         if ($priceNumbers !== [] && $candidateNumbers !== [] && array_intersect($priceNumbers, $candidateNumbers) === []) {
@@ -879,6 +883,41 @@ class SyncBaniaPricelistCommand extends Command
         }
 
         return $score;
+    }
+
+    private function hasDimensionConflict(string $left, string $right): bool
+    {
+        $leftDimensions = $this->extractDimensions($left);
+        $rightDimensions = $this->extractDimensions($right);
+
+        if ($leftDimensions === [] || $rightDimensions === []) {
+            return false;
+        }
+
+        return $leftDimensions !== $rightDimensions;
+    }
+
+    private function extractDimensions(string $value): array
+    {
+        preg_match_all('/\b(\d{2,4})\s*[xх×]\s*(\d{2,4})\b/u', $value, $matches, PREG_SET_ORDER);
+
+        $dimensions = [];
+        foreach ($matches as $match) {
+            $left = (int) ($match[1] ?? 0);
+            $right = (int) ($match[2] ?? 0);
+
+            if ($left <= 0 || $right <= 0) {
+                continue;
+            }
+
+            $pair = [$left, $right];
+            sort($pair);
+            $dimensions[] = implode('x', $pair);
+        }
+
+        sort($dimensions);
+
+        return array_values(array_unique($dimensions));
     }
 
     private function hasQualifierConflict(string $left, string $right): bool
