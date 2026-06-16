@@ -1322,7 +1322,8 @@ class SyncBaniaPricelistCommand extends Command
         $name = $this->normalizeName((string) ($row['name'] ?? ''));
         $slug = match (true) {
             str_contains($name, 'электро') || str_contains($name, 'harvia') => 'elektrokamenki',
-            str_contains($name, 'двер') => 'dveri-dlya-ban-i-saun',
+            str_contains($name, 'дверц') || str_contains($name, 'дверк') => 'pechnoe-i-kaminnoe-lite',
+            (str_contains($name, 'двер') && ! str_contains($name, 'печ')) => 'dveri-dlya-ban-i-saun',
             str_contains($name, 'топк') => 'topki',
             str_contains($name, 'котел') || str_contains($name, 'котёл') || str_contains($name, 'купер') => 'kotly',
             str_contains($name, 'печь камин') || str_contains($name, 'печь-камин') => 'pechi-kaminy',
