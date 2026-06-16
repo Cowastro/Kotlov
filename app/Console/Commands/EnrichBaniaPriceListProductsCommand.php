@@ -332,6 +332,10 @@ class EnrichBaniaPriceListProductsCommand extends Command
             return false;
         }
 
+        if ($this->hasVariantConflict($candidate, $productName)) {
+            return false;
+        }
+
         $productTokens = $this->specificTokens($productName);
         $candidateTokens = $this->specificTokens($candidate);
         if ($productTokens === [] || $candidateTokens === []) {
@@ -350,10 +354,51 @@ class EnrichBaniaPriceListProductsCommand extends Command
 
         if (count($productTokens) <= 2) {
             return count($shared) === count($productTokens)
-                && count(array_diff($candidateNumbers, $productNumbers)) === 0;
+                && count(array_diff($candidateTokens, $productTokens)) === 0;
         }
 
         return count($shared) >= max(2, (int) ceil(count($productTokens) * 0.65));
+    }
+
+    private function hasVariantConflict(string $candidate, string $productName): bool
+    {
+        foreach ($this->variantGroups() as $group) {
+            $candidateHas = $this->containsAnyToken($candidate, $group);
+            $productHas = $this->containsAnyToken($productName, $group);
+
+            if ($candidateHas && ! $productHas) {
+                return true;
+            }
+
+            if ($productHas && ! $candidateHas) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private function containsAnyToken(string $value, array $tokens): bool
+    {
+        foreach ($tokens as $token) {
+            if (str_contains($value, $token)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private function variantGroups(): array
+    {
+        return [
+            ['inox', 'инокс', 'нерж', 'нержав'],
+            ['стекло', 'steklo'],
+            ['шторм', 'shtorm'],
+            ['дт', 'dt'],
+            ['аква', 'akva'],
+            ['long', 'лонг'],
+        ];
     }
 
     private function specificTokens(string $value): array
