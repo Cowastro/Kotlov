@@ -38,6 +38,7 @@ class EnrichBaniaPriceListProductsCommand extends Command
         'aston-pech.ru',
         'pechi.by',
         'fornaks.ru',
+        'derdomus.com',
         'doorwood.ru',
         'tmf-shop.ru',
         'vezuviy.su',
@@ -263,8 +264,11 @@ class EnrichBaniaPriceListProductsCommand extends Command
 
     private function findSourcePage(string $apiKey, object $product): ?array
     {
-        if ($override = $this->sourceOverride($product)) {
-            return $this->sourceResultFromUrl($override, $product);
+        foreach ($this->sourceOverrides($product) as $override) {
+            $result = $this->sourceResultFromUrl($override, $product);
+            if ($result !== null) {
+                return $result;
+            }
         }
 
         if ($this->sourceStartUrl !== '') {
@@ -312,11 +316,11 @@ class EnrichBaniaPriceListProductsCommand extends Command
         return $this->findSourcePageInCatalog($product);
     }
 
-    private function sourceOverride(object $product): ?string
+    private function sourceOverrides(object $product): array
     {
         $name = $this->normalize((string) ($product->supplier_name ?: $product->name));
         if (! str_contains($name, 'aston')) {
-            return null;
+            return [];
         }
 
         $rules = [
@@ -331,7 +335,10 @@ class EnrichBaniaPriceListProductsCommand extends Command
             [
                 'tokens' => ['20', 'стекло'],
                 'without' => ['шторм', 'long', 'дт'],
-                'url' => 'https://pech-aston.ru/pech-dlya-bani-aston-20-inox-steklo',
+                'urls' => [
+                    'https://pech-aston.ru/pech-dlya-bani-aston-20-inox-steklo',
+                    'https://derdomus.com/product/pech-aston/',
+                ],
             ],
             [
                 'tokens' => ['шторм', '20', 'long', '350'],
@@ -357,10 +364,10 @@ class EnrichBaniaPriceListProductsCommand extends Command
                 continue;
             }
 
-            return $rule['url'];
+            return $rule['urls'] ?? [$rule['url']];
         }
 
-        return null;
+        return [];
     }
 
     private function sourceResultFromUrl(string $url, object $product): ?array
