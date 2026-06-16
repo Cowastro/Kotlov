@@ -37,6 +37,7 @@ class EnrichBaniaPriceListProductsCommand extends Command
         'pech-aston.ru',
         'aston-pech.ru',
         'pechi.by',
+        'fornaks.ru',
         'doorwood.ru',
         'tmf-shop.ru',
         'vezuviy.su',
@@ -319,6 +320,14 @@ class EnrichBaniaPriceListProductsCommand extends Command
         }
 
         $rules = [
+            [
+                'tokens' => ['стекло', '170', '220'],
+                'url' => 'https://vezuviy.su/pechnye-dveri-i-aksessuary/zharoprochnye-stekla-dlya-dveri-pechi/steklo-aston-170220/',
+            ],
+            [
+                'tokens' => ['24', 'inox', '310', 'long'],
+                'url' => 'https://fornaks.ru/catalog/pechi-dlya-ban-i-saun/drovyanaya-pech-dlya-bani-aston-24-inox-310m-long/',
+            ],
             [
                 'tokens' => ['20', 'стекло'],
                 'without' => ['шторм', 'long', 'дт'],
