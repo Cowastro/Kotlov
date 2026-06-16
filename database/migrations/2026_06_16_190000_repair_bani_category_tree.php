@@ -19,6 +19,7 @@ return new class extends Migration
             'elektrokamenki'            => 30,
             'aksessuary-dlya-bani'      => 40,
             'baki-dlya-bani'            => 50,
+            'dveri-dlya-ban-i-saun'      => 60,
             'dveri-dlya-bani-i-sauny'   => 60,
             'mangaly'                   => 70,
         ];
@@ -68,7 +69,7 @@ return new class extends Migration
 
         if ($aksessBaniId) {
             DB::table('categories')
-                ->whereIn('slug', ['baki-dlya-bani', 'dveri-dlya-bani-i-sauny', 'mangaly'])
+                ->whereIn('slug', ['baki-dlya-bani', 'dveri-dlya-ban-i-saun', 'dveri-dlya-bani-i-sauny', 'mangaly'])
                 ->update([
                     'parent_id'  => $aksessBaniId,
                     'updated_at' => now(),
