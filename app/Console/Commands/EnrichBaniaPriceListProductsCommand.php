@@ -42,6 +42,7 @@ class EnrichBaniaPriceListProductsCommand extends Command
         'fornaks.ru',
         'derdomus.com',
         'doorwood.ru',
+        'doorwood.net',
         'tmf-shop.ru',
         'vezuviy.su',
         'teplodar.ru',
