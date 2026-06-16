@@ -1971,22 +1971,25 @@ class ScrapeBaniaSupplierCommand extends Command
     {
         $profile = $this->categoryProfile();
         $context = $this->normalizeCategoryContext($item);
+        $fallback = [
+            'slugs' => $this->categorySlugs(),
+            'names' => $this->categoryNames(),
+        ];
 
         foreach (($profile['category_map'] ?? []) as $entry) {
             foreach (($entry['match_paths'] ?? []) as $needle) {
                 if ($needle !== '' && str_contains($context, $this->normalizeCategoryNeedle((string) $needle))) {
-                    return [[
+                    $matched = [
                         'slugs' => $entry['category_slugs'] ?? [],
                         'names' => $entry['category_names'] ?? [],
-                    ]];
+                    ];
+
+                    return $matched === $fallback ? [$matched] : [$matched, $fallback];
                 }
             }
         }
 
-        return [[
-            'slugs' => $this->categorySlugs(),
-            'names' => $this->categoryNames(),
-        ]];
+        return [$fallback];
     }
 
     private function normalizeCategoryContext(?array $item = null): string
