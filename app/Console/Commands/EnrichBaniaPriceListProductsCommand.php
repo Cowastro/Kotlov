@@ -19,7 +19,7 @@ class EnrichBaniaPriceListProductsCommand extends Command
         {--category= : Filter by category id}
         {--brand= : Filter by brand name fragment}
         {--source-domain=bania.by : Allowed source domain to search, e.g. pech-aston.ru}
-        {--source-url= : Start from a specific allowed catalog URL instead of Serper}
+        {--source-url= : Start from one or more comma-separated allowed catalog URLs instead of Serper}
         {--force-images : Replace existing images}
         {--force-content : Replace existing content}
         {--skip-images : Do not download images}
@@ -51,7 +51,8 @@ class EnrichBaniaPriceListProductsCommand extends Command
     private AiContentEnricher $ai;
     private string $sourceDomain = 'bania.by';
     private string $sourceStartUrl = '';
-    private string $sourceStartPath = '';
+    private array $sourceStartUrls = [];
+    private array $sourceStartPaths = [];
     private ?array $sourceCatalogLinks = null;
 
     private array $stats = [
@@ -74,8 +75,12 @@ class EnrichBaniaPriceListProductsCommand extends Command
         $apiKey = (string) env('SERPER_API_KEY', '');
         $this->sourceDomain = $this->normalizeSourceDomain((string) $this->option('source-domain'));
         try {
-            $this->sourceStartUrl = $this->normalizeSourceUrl((string) $this->option('source-url'));
-            $this->sourceStartPath = trim((string) parse_url($this->sourceStartUrl, PHP_URL_PATH), '/');
+            $this->sourceStartUrls = $this->normalizeSourceUrls((string) $this->option('source-url'));
+            $this->sourceStartUrl = $this->sourceStartUrls[0] ?? '';
+            $this->sourceStartPaths = array_values(array_unique(array_map(
+                fn ($url) => trim((string) parse_url($url, PHP_URL_PATH), '/'),
+                $this->sourceStartUrls
+            )));
         } catch (\InvalidArgumentException $e) {
             $this->error($e->getMessage());
             return self::FAILURE;
@@ -93,7 +98,9 @@ class EnrichBaniaPriceListProductsCommand extends Command
 
         $this->info('Source domain: ' . $this->sourceDomain);
         if ($this->sourceStartUrl !== '') {
-            $this->info('Source URL: ' . $this->sourceStartUrl);
+            foreach ($this->sourceStartUrls as $sourceUrl) {
+                $this->info('Source URL: ' . $sourceUrl);
+            }
         } elseif ($apiKey === '') {
             $this->error('SERPER_API_KEY is not configured in .env. Pass --source-url to crawl a known catalog directly.');
             return self::FAILURE;
@@ -592,8 +599,8 @@ class EnrichBaniaPriceListProductsCommand extends Command
             return $this->sourceCatalogLinks;
         }
 
-        $root = $this->sourceStartUrl !== '' ? $this->sourceStartUrl : 'https://' . $this->sourceDomain . '/';
-        $queue = [[$root, 0]];
+        $roots = $this->sourceStartUrls !== [] ? $this->sourceStartUrls : ['https://' . $this->sourceDomain . '/'];
+        $queue = array_map(fn ($root) => [$root, 0], $roots);
         $seen = [];
         $links = [];
 
@@ -667,13 +674,19 @@ class EnrichBaniaPriceListProductsCommand extends Command
 
     private function isInsideSourceStartPath(string $url): bool
     {
-        if ($this->sourceStartPath === '') {
+        if ($this->sourceStartPaths === [] || $this->sourceStartPaths === ['']) {
             return true;
         }
 
         $path = trim((string) parse_url($url, PHP_URL_PATH), '/');
 
-        return $path === $this->sourceStartPath || str_starts_with($path, $this->sourceStartPath . '/');
+        foreach ($this->sourceStartPaths as $sourceStartPath) {
+            if ($sourceStartPath === '' || $path === $sourceStartPath || str_starts_with($path, $sourceStartPath . '/')) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private function isCatalogNavigationLink(string $url, string $title): bool
@@ -1034,6 +1047,23 @@ class EnrichBaniaPriceListProductsCommand extends Command
         }
 
         return rtrim($url, '/');
+    }
+
+    private function normalizeSourceUrls(string $urls): array
+    {
+        $parts = preg_split('/[\s,]+/', trim($urls)) ?: [];
+        $normalized = [];
+
+        foreach ($parts as $url) {
+            $url = trim($url);
+            if ($url === '') {
+                continue;
+            }
+
+            $normalized[] = $this->normalizeSourceUrl($url);
+        }
+
+        return array_values(array_unique($normalized));
     }
 
     private function urlMatchesSourceDomain(string $url): bool
