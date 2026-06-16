@@ -34,6 +34,8 @@ class SyncLigmetCommand extends Command
         {--stock-file= : Local .xlsx path (skips download)}
         {--sheet-url= : Override the default spreadsheet URL}
         {--all-categories : Import chimneys/doors/accessories too (default: stoves/fireplaces only)}
+        {--archive-existing : Archive existing active products of these brands (in scope) before import; excludes them from matching}
+        {--redirects : Write an old→new redirect map (archived → recreated, by brand+model)}
         {--create-new : Create products for rows with no match}';
 
     protected $description = 'Sync Лигмет prices & stock (stoves/fireplaces) into supplier_products; retail from the price list.';
@@ -108,6 +110,10 @@ class SyncLigmetCommand extends Command
     private array $indexByBrandModel = [];
     private array $brandById = [];
     private array $brandByName = [];
+    /** product ids excluded from matching because they'll be archived */
+    private array $excludeIds = [];
+    /** created products for redirect mapping: [brand_id][model] => ['id'=>,'slug'=>] */
+    private array $createdByBrandModel = [];
 
     public function handle(): int
     {
@@ -136,12 +142,98 @@ class SyncLigmetCommand extends Command
             return self::SUCCESS;
         }
 
+        // Existing products to archive (and therefore exclude from matching).
+        $archived = [];
+        if ($this->option('archive-existing')) {
+            $archived = $this->archiveExisting($apply);
+            $this->excludeIds = array_map(fn ($a) => (int) $a->id, $archived);
+            $this->info(sprintf('%s %d existing product(s) of these brands (cat %s)',
+                $apply ? 'Archived' : 'Would archive', count($archived), implode('/', self::ALLOWED_CATEGORIES)));
+        }
+
         $this->buildIndex();
         $classified = array_map(fn ($r) => $this->classify($r), $rows);
 
-        return $apply
-            ? $this->applyChanges($classified, $createNew)
-            : $this->showDryRun($classified);
+        if (! $apply) {
+            return $this->showDryRun($classified);
+        }
+
+        $result = $this->applyChanges($classified, $createNew);
+        if ($this->option('redirects') && $archived !== []) {
+            $this->buildRedirects($archived);
+        }
+        return $result;
+    }
+
+    // ── Archive existing brand products (reversible; CSV report) ───────────────────
+
+    /** @return array<int,object> archived rows (id, sku, slug, name, brand_id) */
+    private function archiveExisting(bool $apply): array
+    {
+        $brandIds = array_values(array_unique(array_filter(array_map(
+            fn ($name) => $this->brandByNameId($name),
+            array_values(self::BRAND_MAP)
+        ))));
+        if ($brandIds === []) {
+            return [];
+        }
+        $rows = DB::table('products')
+            ->whereIn('brand_id', $brandIds)
+            ->whereIn('category_id', self::ALLOWED_CATEGORIES)
+            ->where('is_archived', false)
+            ->get(['id', 'sku', 'slug', 'name', 'brand_id', 'category_id'])
+            ->all();
+        if ($rows === [] || ! $apply) {
+            return $rows;
+        }
+
+        $dir = storage_path('app/reports/ligmet');
+        if (! is_dir($dir)) {
+            mkdir($dir, 0755, true);
+        }
+        $csv = $dir . '/archived-' . date('Ymd-His') . '.csv';
+        $fh = fopen($csv, 'w');
+        fputcsv($fh, ['id', 'sku', 'slug', 'name', 'brand_id', 'category_id']);
+        foreach ($rows as $r) {
+            fputcsv($fh, [$r->id, $r->sku, $r->slug, $r->name, $r->brand_id, $r->category_id]);
+        }
+        fclose($fh);
+        $this->line("  archive report: {$csv}");
+
+        DB::table('products')->whereIn('id', array_map(fn ($r) => (int) $r->id, $rows))
+            ->update(['is_archived' => true, 'is_active' => false, 'updated_at' => now()]);
+
+        return $rows;
+    }
+
+    private function brandByNameId(string $name): ?int
+    {
+        return (int) (DB::table('brands')->whereRaw('LOWER(name) = ?', [mb_strtolower($name)])->value('id') ?? 0) ?: null;
+    }
+
+    /** Map archived products to freshly created ones by brand+model → redirect CSV. */
+    private function buildRedirects(array $archived): void
+    {
+        $dir = storage_path('app/reports/ligmet');
+        if (! is_dir($dir)) {
+            mkdir($dir, 0755, true);
+        }
+        $csv = $dir . '/redirects-' . date('Ymd-His') . '.csv';
+        $fh = fopen($csv, 'w');
+        fputcsv($fh, ['old_id', 'old_slug', 'new_id', 'new_slug', 'brand_id', 'model']);
+        $mapped = 0;
+        foreach ($archived as $a) {
+            $bid = (int) $a->brand_id;
+            $model = $this->model((string) $a->name, $this->brandById[$bid] ?? '');
+            $new = $this->createdByBrandModel[$bid][$model] ?? null;
+            if ($new === null) {
+                continue;
+            }
+            fputcsv($fh, [$a->id, $a->slug, $new['id'], $new['slug'], $bid, $model]);
+            $mapped++;
+        }
+        fclose($fh);
+        $this->info("Redirects mapped: {$mapped} → {$csv}");
     }
 
     // ── Download / read workbook ──────────────────────────────────────────────────
@@ -363,8 +455,12 @@ class SyncLigmetCommand extends Command
                 ->each(fn ($sp) => $this->indexBySupplierArticle[$this->normArticle($sp->supplier_article)] = (int) $sp->product_id);
         }
 
+        $exclude = array_flip($this->excludeIds);
         DB::table('products')->where('is_archived', false)->get(['id', 'name', 'brand_id'])
-            ->each(function ($p) {
+            ->each(function ($p) use ($exclude) {
+                if (isset($exclude[(int) $p->id])) {
+                    return; // about to be archived — don't match to it
+                }
                 $bid = (int) $p->brand_id;
                 if ($bid > 0) {
                     $model = $this->model((string) $p->name, $this->brandById[$bid] ?? '');
@@ -506,6 +602,12 @@ class SyncLigmetCommand extends Command
                     $pid = $this->createProduct($r, $now);
                     $sku = $this->sku($pid);
                     $this->upsertSupplierProduct($r, $pid, $sku, $sid, $syncId, $now);
+                    // remember for old→new redirect mapping
+                    $bid = (int) $r['resolved_brand_id'];
+                    $model = $this->model($r['name'], $this->brandById[$bid] ?? $r['brand']);
+                    if ($model !== '') {
+                        $this->createdByBrandModel[$bid][$model] = ['id' => $pid, 'slug' => $this->slugOf($pid)];
+                    }
                     $stats['created']++;
                     $this->line("[create] {$r['brand']} {$r['name']} → {$sku}");
                 } else {
@@ -643,6 +745,11 @@ class SyncLigmetCommand extends Command
     private function sku(int $pid): string
     {
         return (string) DB::table('products')->where('id', $pid)->value('sku');
+    }
+
+    private function slugOf(int $pid): string
+    {
+        return (string) DB::table('products')->where('id', $pid)->value('slug');
     }
 
     private function nextSku(): string
