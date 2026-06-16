@@ -320,7 +320,63 @@ class EnrichBaniaPriceListProductsCommand extends Command
         $right = $this->normalize((string) ($product->supplier_name ?: $product->name));
         similar_text($left, $right, $percent);
 
-        return $percent >= 45 || $this->tokenOverlap($left, $right) >= 2;
+        return $percent >= 70 || $this->isLikelyTitleMatch($pageTitle, $product);
+    }
+
+    private function isLikelyTitleMatch(string $candidateTitle, object $product): bool
+    {
+        $candidate = $this->normalize($candidateTitle);
+        $productName = $this->normalize((string) ($product->supplier_name ?: $product->name));
+
+        if ($candidate === '' || $productName === '') {
+            return false;
+        }
+
+        $productTokens = $this->specificTokens($productName);
+        $candidateTokens = $this->specificTokens($candidate);
+        if ($productTokens === [] || $candidateTokens === []) {
+            return false;
+        }
+
+        $shared = array_values(array_intersect($productTokens, $candidateTokens));
+        $productNumbers = array_values(array_filter($productTokens, fn ($token) => preg_match('/^\d+$/', $token) === 1));
+        $candidateNumbers = array_values(array_filter($candidateTokens, fn ($token) => preg_match('/^\d+$/', $token) === 1));
+
+        foreach ($productNumbers as $number) {
+            if (! in_array($number, $candidateNumbers, true)) {
+                return false;
+            }
+        }
+
+        if (count($productTokens) <= 2) {
+            return count($shared) === count($productTokens)
+                && count(array_diff($candidateNumbers, $productNumbers)) === 0;
+        }
+
+        return count($shared) >= max(2, (int) ceil(count($productTokens) * 0.65));
+    }
+
+    private function specificTokens(string $value): array
+    {
+        $tokens = preg_split('/\s+/u', $this->normalize($value)) ?: [];
+        $stop = [
+            'для', 'бани', 'баня', 'сауны', 'сауна', 'печь', 'печи', 'печ', 'камин', 'камина',
+            'aston', 'астон', 'шт', 'мм', 'см', 'м3', 'квт', 'диаметр', 'круглый',
+            'dlya', 'bani', 'sauny', 'pech', 'kamin',
+        ];
+
+        $result = [];
+        foreach ($tokens as $token) {
+            $token = trim($token);
+            if ($token === '' || in_array($token, $stop, true)) {
+                continue;
+            }
+            if (preg_match('/^\d+$/', $token) === 1 || mb_strlen($token) >= 3) {
+                $result[] = $token;
+            }
+        }
+
+        return array_values(array_unique($result));
     }
 
     private function findSourcePageInCatalog(object $product): ?array
@@ -330,11 +386,10 @@ class EnrichBaniaPriceListProductsCommand extends Command
         }
 
         $links = $this->sourceCatalogLinks();
-        $needle = $this->normalize((string) ($product->supplier_name ?: $product->name));
 
         foreach ($links as $link) {
-            $title = $this->normalize((string) ($link['title'] ?? ''));
-            if ($title === '' || $this->tokenOverlap($title, $needle) < 2) {
+            $title = (string) ($link['title'] ?? '');
+            if ($title === '' || ! $this->isLikelyTitleMatch($title, $product)) {
                 continue;
             }
 
