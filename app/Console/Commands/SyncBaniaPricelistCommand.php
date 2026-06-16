@@ -6,6 +6,7 @@ use App\Models\SupplierReviewDecision;
 use App\Models\Product;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use PhpOffice\PhpSpreadsheet\IOFactory;
 
 class SyncBaniaPricelistCommand extends Command
@@ -18,6 +19,7 @@ class SyncBaniaPricelistCommand extends Command
         {--retail-price-file= : Path to a local BANIA retail XLSX/CSV file}
         {--retail-sheet-url= : Google Sheets URL with BANIA retail prices}
         {--sync-retail-prices : Update products.price from the retail price list when a confident row is found}
+        {--create-missing-products : Create BANIA products from wholesale price-list rows that have no supplier_products link}
         {--limit= : Process only the first N price rows}
         {--mark-missing-out-of-stock : Mark linked BANIA rows missing from the price list as out_of_stock}
         {--archive-missing-products : Archive products whose BANIA wholesale rows disappeared and which have no other supplier links}';
@@ -83,6 +85,7 @@ class SyncBaniaPricelistCommand extends Command
         $apply = (bool) $this->option('apply');
         $dryRun = (bool) $this->option('dry-run') || ! $apply;
         $syncRetailPrices = (bool) $this->option('sync-retail-prices');
+        $createMissingProducts = (bool) $this->option('create-missing-products');
         $limit = $this->option('limit') !== null ? max(0, (int) $this->option('limit')) : null;
 
         $this->line($dryRun
@@ -160,6 +163,12 @@ class SyncBaniaPricelistCommand extends Command
             'missing_archived' => 0,
             'missing_kept_other_suppliers' => 0,
             'restored_from_archive' => 0,
+            'created_from_price_list' => 0,
+            'create_missing_candidate' => 0,
+            'create_missing_skipped_out_of_stock' => 0,
+            'create_missing_skipped_empty_price' => 0,
+            'create_missing_skipped_no_retail' => 0,
+            'create_missing_skipped_duplicate_article' => 0,
         ];
 
         foreach ($rows as $row) {
@@ -186,6 +195,21 @@ class SyncBaniaPricelistCommand extends Command
                 }
 
                 if (($match['action'] ?? '') === 'skipped_unrelated') {
+                    if ($createMissingProducts) {
+                        $createResult = $this->createMissingProductFromPriceRow($row, $retailIndexes, (int) $supplier->id, $dryRun, $now);
+                        $stats[$createResult['stat']]++;
+
+                        if (! empty($createResult['product_id'])) {
+                            $changedProductIds[(int) $createResult['product_id']] = true;
+                        }
+
+                        if (! empty($createResult['supplier_product_id'])) {
+                            $matchedSupplierProductIds[(int) $createResult['supplier_product_id']] = true;
+                        }
+
+                        continue;
+                    }
+
                     $stats['skipped_unrelated']++;
                     continue;
                 }
@@ -1106,6 +1130,254 @@ class SyncBaniaPricelistCommand extends Command
             ]);
     }
 
+    private function createMissingProductFromPriceRow(array $row, array $retailIndexes, int $supplierId, bool $dryRun, $now): array
+    {
+        if ($row['price'] === null || (float) $row['price'] <= 0) {
+            $this->addPriceListCreateRow($row, null, 'create_missing_skipped_empty_price', '', '', 'Wholesale price is empty.');
+            return ['stat' => 'create_missing_skipped_empty_price'];
+        }
+
+        if (! $this->isAvailableStock($row['stock_status'])) {
+            $this->addPriceListCreateRow($row, null, 'create_missing_skipped_out_of_stock', '', '', 'Wholesale price-list row is not available.');
+            return ['stat' => 'create_missing_skipped_out_of_stock'];
+        }
+
+        $supplierArticle = $this->supplierArticleForPriceRow($row);
+        if ($supplierArticle === '') {
+            $this->addPriceListCreateRow($row, null, 'create_missing_skipped_duplicate_article', '', '', 'Cannot create supplier row without article.');
+            return ['stat' => 'create_missing_skipped_duplicate_article'];
+        }
+
+        if (DB::table('supplier_products')->where('supplier_id', $supplierId)->where('supplier_article', $supplierArticle)->exists()) {
+            $this->addPriceListCreateRow($row, null, 'create_missing_skipped_duplicate_article', '', '', 'BANIA supplier_product already exists for this article.');
+            return ['stat' => 'create_missing_skipped_duplicate_article'];
+        }
+
+        $retailMatch = $this->matchRetailForPriceRow($row, $retailIndexes);
+        if (! $retailMatch || empty($retailMatch['price'])) {
+            $this->addPriceListCreateRow($row, null, 'create_missing_skipped_no_retail', '', '', 'Retail price was not found by article.');
+            return ['stat' => 'create_missing_skipped_no_retail'];
+        }
+
+        $categoryId = $this->resolveCategoryIdForPriceRow($row);
+        $brandId = $this->resolveBrandIdForPriceRow($row, $now);
+        $productName = trim((string) $row['name']);
+        $productSku = $this->nextKotlovSku();
+
+        if ($dryRun) {
+            $this->addPriceListCreateRow($row, $retailMatch, 'create_missing_candidate', '', $productSku, 'Would create product from BANIA wholesale price-list row.');
+            return ['stat' => 'create_missing_candidate'];
+        }
+
+        $productId = (int) DB::table('products')->insertGetId([
+            'category_id' => $categoryId,
+            'brand_id' => $brandId,
+            'supplier_id' => null,
+            'name' => $productName,
+            'slug' => $this->uniqueSlug($productName),
+            'h1' => $productName,
+            'sku' => $productSku,
+            'price' => (float) $retailMatch['price'],
+            'price_old' => null,
+            'currency' => 'BYN',
+            'content' => $this->priceListDescription($productName),
+            'short_description' => $this->priceListShortDescription($productName),
+            'images' => json_encode([], JSON_UNESCAPED_UNICODE),
+            'specs' => json_encode([
+                'Артикул поставщика' => $supplierArticle,
+                'Поставщик' => 'BANIA.by',
+            ], JSON_UNESCAPED_UNICODE),
+            'unit' => 'шт',
+            'warranty' => null,
+            'is_active' => true,
+            'is_archived' => false,
+            'in_stock' => true,
+            'availability_status' => Product::AVAILABILITY_IN_STOCK,
+            'stock_qty' => 1,
+            'is_featured' => false,
+            'is_new' => true,
+            'is_sale' => false,
+            'sort_order' => 0,
+            'meta_title' => $productName . ' купить в %city%',
+            'meta_keywords' => $productName . ', BANIA.by',
+            'meta_description' => Str::limit(strip_tags($this->priceListShortDescription($productName)), 250, ''),
+            'rating' => 0,
+            'reviews_count' => 0,
+            'views_count' => 0,
+            'created_at' => $now,
+            'updated_at' => $now,
+        ]);
+
+        $raw = [
+            'source' => 'bania_google_wholesale_price_list',
+            'needs_enrichment' => true,
+            'google_price_list' => [
+                'row' => $row['row'],
+                'name' => $row['name'],
+                'article' => $row['article'],
+                'price_column' => 'OPT with VAT',
+                'price_is_supplier_cost' => true,
+                'stock_text' => $row['stock_text'],
+            ],
+            'google_retail_price_list' => [
+                'row' => $retailMatch['row'] ?? null,
+                'name' => $retailMatch['name'] ?? null,
+                'article' => $retailMatch['article'] ?? null,
+                'price' => $retailMatch['price'] ?? null,
+            ],
+        ];
+
+        $supplierProductId = (int) DB::table('supplier_products')->insertGetId([
+            'supplier_id' => $supplierId,
+            'supplier_sync_id' => null,
+            'product_id' => $productId,
+            'product_sku' => $productSku,
+            'supplier_article' => $supplierArticle,
+            'supplier_article_normalized' => $this->normalizeArticle($supplierArticle),
+            'supplier_name' => $productName,
+            'source_url' => null,
+            'source_wp_id' => null,
+            'price' => (float) $row['price'],
+            'currency' => 'BYN',
+            'currency_rate' => 1,
+            'price_byn' => (float) $row['price'],
+            'in_stock' => true,
+            'stock_quantity' => 1,
+            'stock_status' => $row['stock_status'],
+            'stock_text' => $row['stock_text'] !== '' ? $row['stock_text'] : null,
+            'match_status' => 'created_from_price_list',
+            'match_confidence' => '100',
+            'raw' => json_encode($raw, JSON_UNESCAPED_UNICODE),
+            'last_stock_synced_at' => $now,
+            'last_synced_at' => $now,
+            'created_at' => $now,
+            'updated_at' => $now,
+        ]);
+
+        $this->addPriceListCreateRow($row, $retailMatch, 'created_from_price_list', (string) $productId, $productSku, 'Created from BANIA wholesale price-list row.');
+
+        return [
+            'stat' => 'created_from_price_list',
+            'product_id' => $productId,
+            'supplier_product_id' => $supplierProductId,
+        ];
+    }
+
+    private function supplierArticleForPriceRow(array $row): string
+    {
+        $article = trim((string) ($row['article'] ?? ''));
+        if ($this->normalizeArticle($article) !== '') {
+            return $article;
+        }
+
+        $rowNumber = (int) ($row['row'] ?? 0);
+        return $rowNumber > 0 ? 'BANIA-PRICE-ROW-' . $rowNumber : '';
+    }
+
+    private function resolveBrandIdForPriceRow(array $row, $now): int
+    {
+        $name = (string) ($row['name'] ?? '');
+        $brandMap = [
+            'doorwood' => ['DoorWood', 'doorwood'],
+            'aston' => ['ASTON', 'aston'],
+            'harvia' => ['Harvia', 'harvia'],
+            'tmf' => ['TMF', 'tmf'],
+            'термофор' => ['TMF', 'tmf'],
+            'везувий' => ['Везувий', 'vezuvij'],
+            'теплодар' => ['Теплодар', 'teplodar'],
+            'эверест' => ['Эверест', 'everest'],
+            'everest' => ['Эверест', 'everest'],
+            'этна' => ['ЭТНА', 'etna'],
+            'факел' => ['Факел', 'fakel'],
+        ];
+
+        $normalized = $this->normalizeName($name);
+        foreach ($brandMap as $needle => [$brandName, $slug]) {
+            if (str_contains($normalized, $this->normalizeName($needle))) {
+                return $this->ensureBrand($brandName, $slug, $now);
+            }
+        }
+
+        return $this->ensureBrand('Банька', 'bania', $now);
+    }
+
+    private function ensureBrand(string $name, string $slug, $now): int
+    {
+        $brand = DB::table('brands')->where('slug', $slug)->orWhere('name', $name)->first(['id']);
+        if ($brand) {
+            return (int) $brand->id;
+        }
+
+        return (int) DB::table('brands')->insertGetId([
+            'name' => $name,
+            'slug' => $slug,
+            'is_active' => true,
+            'created_at' => $now,
+            'updated_at' => $now,
+        ]);
+    }
+
+    private function resolveCategoryIdForPriceRow(array $row): int
+    {
+        $name = $this->normalizeName((string) ($row['name'] ?? ''));
+        $slug = match (true) {
+            str_contains($name, 'электро') || str_contains($name, 'harvia') => 'elektrokamenki',
+            str_contains($name, 'двер') => 'dveri-dlya-ban-i-saun',
+            str_contains($name, 'топк') => 'topki',
+            str_contains($name, 'котел') || str_contains($name, 'котёл') || str_contains($name, 'купер') => 'kotly',
+            str_contains($name, 'печь камин') || str_contains($name, 'печь-камин') => 'pechi-kaminy',
+            str_contains($name, 'мангал') || str_contains($name, 'казан') || str_contains($name, 'грил') || str_contains($name, 'шашлык') => 'mangaly',
+            str_contains($name, 'камень') || str_contains($name, 'жадеит') || str_contains($name, 'нефрит') || str_contains($name, 'талько') => 'aksessuary-dlya-bani',
+            str_contains($name, 'печь') || str_contains($name, 'пб ') || str_contains($name, 'бан') => 'drovyanye-pechi-dlya-bani',
+            default => 'aksessuary-dlya-bani',
+        };
+
+        $id = DB::table('categories')->where('slug', $slug)->value('id');
+        if ($id) {
+            return (int) $id;
+        }
+
+        return (int) DB::table('categories')->where('slug', 'aksessuary-dlya-bani')->value('id');
+    }
+
+    private function priceListShortDescription(string $productName): string
+    {
+        return 'Товар BANIA.by из актуального оптового прайса. Цена и наличие обновляются по прайсу поставщика.';
+    }
+
+    private function priceListDescription(string $productName): string
+    {
+        return '<p>' . e($productName) . ' доступен к заказу через поставщика BANIA.by. Карточка создана по актуальному оптовому прайсу; фото и подробные характеристики будут дополнены после обогащения данных.</p>';
+    }
+
+    private function uniqueSlug(string $name): string
+    {
+        $base = Str::slug($name) ?: 'bania-product';
+        $slug = $base;
+        $i = 2;
+        while (DB::table('products')->where('slug', $slug)->exists()) {
+            $slug = $base . '-' . $i++;
+        }
+
+        return $slug;
+    }
+
+    private function nextKotlovSku(): string
+    {
+        $max = DB::table('products')
+            ->where('sku', 'like', 'KOTLOV-%')
+            ->pluck('sku')
+            ->map(fn ($sku) => preg_match('/^KOTLOV-(\d+)$/', (string) $sku, $match) ? (int) $match[1] : 0)
+            ->max() ?? 0;
+
+        $next = $max + 1;
+        do {
+            $sku = sprintf('KOTLOV-%06d', $next++);
+        } while (DB::table('products')->where('sku', $sku)->exists());
+
+        return $sku;
+    }
+
     private function stockStatus(string $text): string
     {
         $normalized = $this->normalizeText($text);
@@ -1269,6 +1541,37 @@ class SyncBaniaPricelistCommand extends Command
 
         similar_text($left, $right, $percent);
         return (int) round($percent);
+    }
+
+    private function addPriceListCreateRow(array $row, ?array $retailMatch, string $action, string $productId, string $productSku, string $note): void
+    {
+        $this->reportRows[] = [
+            'price_row' => $row['row'] ?? '',
+            'price_title' => $row['name'] ?? '',
+            'price_article' => $row['article'] ?? '',
+            'supplier_product_id' => '',
+            'product_id' => $productId,
+            'product_sku' => $productSku,
+            'brand' => '',
+            'supplier_title' => $row['name'] ?? '',
+            'source_url' => '',
+            'old_supplier_price' => '',
+            'new_supplier_cost' => isset($row['price']) && $row['price'] !== null ? $this->formatDecimal((float) $row['price']) : '',
+            'product_retail_price' => '',
+            'suggested_retail_price' => isset($retailMatch['price']) ? $this->formatDecimal((float) $retailMatch['price']) : '',
+            'suggested_retail_row' => $retailMatch['row'] ?? '',
+            'suggested_retail_title' => $retailMatch['name'] ?? '',
+            'suggested_retail_article' => $retailMatch['article'] ?? '',
+            'suggested_retail_confidence' => $retailMatch['confidence'] ?? '',
+            'retail_price_action' => $retailMatch ? 'retail_price_used_for_new_product' : 'retail_price_missing',
+            'old_stock_status' => '',
+            'new_stock_status' => $row['stock_status'] ?? '',
+            'product_in_stock_before' => '',
+            'match_type' => 'price_list_only',
+            'confidence' => $retailMatch ? '100' : '',
+            'action' => $action,
+            'note' => $note,
+        ];
     }
 
     private function addReportRow(array $row, array $match, string $action): void
