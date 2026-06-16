@@ -19,7 +19,8 @@ class SyncBaniaPricelistCommand extends Command
         {--retail-sheet-url= : Google Sheets URL with BANIA retail prices}
         {--sync-retail-prices : Update products.price from the retail price list when a confident row is found}
         {--limit= : Process only the first N price rows}
-        {--mark-missing-out-of-stock : Mark linked BANIA rows missing from the price list as out_of_stock}';
+        {--mark-missing-out-of-stock : Mark linked BANIA rows missing from the price list as out_of_stock}
+        {--archive-missing-products : Archive products whose BANIA wholesale rows disappeared and which have no other supplier links}';
 
     protected $description = 'Sync BANIA supplier cost and stock from the dynamic Google price list without changing products.price.';
 
@@ -137,6 +138,9 @@ class SyncBaniaPricelistCommand extends Command
             'retail_price_missing' => 0,
             'retail_price_skipped_manual_review' => 0,
             'manual_review_resolved' => 0,
+            'missing_archived' => 0,
+            'missing_kept_other_suppliers' => 0,
+            'restored_from_archive' => 0,
         ];
 
         foreach ($rows as $row) {
@@ -244,6 +248,7 @@ class SyncBaniaPricelistCommand extends Command
                         $stats['retail_price_synced']++;
                     }
                     if ($supplierProduct->product_id) {
+                        $stats['restored_from_archive'] += $this->restoreProductFromArchive((int) $supplierProduct->product_id, $now);
                         $this->refreshProductAvailability((int) $supplierProduct->product_id, $now);
                     }
                 }
@@ -265,7 +270,7 @@ class SyncBaniaPricelistCommand extends Command
             }
         }
 
-        if ((bool) $this->option('mark-missing-out-of-stock')) {
+        if ((bool) $this->option('mark-missing-out-of-stock') || (bool) $this->option('archive-missing-products')) {
             foreach ($supplierProducts as $supplierProduct) {
                 if (isset($matchedSupplierProductIds[(int) $supplierProduct->id])) {
                     continue;
@@ -285,6 +290,13 @@ class SyncBaniaPricelistCommand extends Command
                     ]);
 
                     if ($supplierProduct->product_id) {
+                        if ((bool) $this->option('archive-missing-products')) {
+                            if ($this->archiveProductIfOnlyBania((int) $supplierProduct->product_id, (int) $supplierProduct->id, $now)) {
+                                $stats['missing_archived']++;
+                            } else {
+                                $stats['missing_kept_other_suppliers']++;
+                            }
+                        }
                         $this->refreshProductAvailability((int) $supplierProduct->product_id, $now);
                     }
                 }
@@ -1005,6 +1017,38 @@ class SyncBaniaPricelistCommand extends Command
             'availability_status' => $inStock ? Product::AVAILABILITY_IN_STOCK : Product::AVAILABILITY_CHECK,
             'updated_at' => $now,
         ]);
+    }
+
+    private function archiveProductIfOnlyBania(int $productId, int $baniaSupplierProductId, $now): bool
+    {
+        $hasOtherSupplierLinks = DB::table('supplier_products')
+            ->where('product_id', $productId)
+            ->where('id', '<>', $baniaSupplierProductId)
+            ->exists();
+
+        if ($hasOtherSupplierLinks) {
+            return false;
+        }
+
+        return DB::table('products')->where('id', $productId)->update([
+            'is_archived' => true,
+            'is_active' => false,
+            'in_stock' => false,
+            'availability_status' => Product::AVAILABILITY_CHECK,
+            'updated_at' => $now,
+        ]) > 0;
+    }
+
+    private function restoreProductFromArchive(int $productId, $now): int
+    {
+        return DB::table('products')
+            ->where('id', $productId)
+            ->where('is_archived', true)
+            ->update([
+                'is_archived' => false,
+                'is_active' => true,
+                'updated_at' => $now,
+            ]);
     }
 
     private function stockStatus(string $text): string
