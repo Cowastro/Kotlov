@@ -435,6 +435,7 @@
                                     $productUrl = $this->productAdminUrl($row);
                                     $sourceUrl = $this->sourceUrl($row);
                                     $kotlovSku = $this->kotlovSku($row);
+                                    $suggestedRetail = trim((string) ($row['suggested_retail_price'] ?? $row['suggested_retail_simple'] ?? ''));
                                     $action = strtolower((string) ($row['action'] ?? $row['recommended_action'] ?? ''));
                                     $isAttention = str_contains($action, 'manual')
                                         || str_contains($action, 'error')
@@ -480,19 +481,25 @@
                                             </button>
                                             @if ($productUrl)
                                                 <div class="import-reports-price-action">
-                                                    <input
-                                                        type="text"
-                                                        class="import-reports-price-input"
-                                                        placeholder="Розница"
-                                                        wire:model.defer="retailPriceInputs.{{ $rowIndex }}"
-                                                    />
+                                                    @if ($suggestedRetail !== '')
+                                                        <div class="import-reports-muted">
+                                                            Прайс: <strong>{{ $suggestedRetail }} BYN</strong>
+                                                        </div>
+                                                    @else
+                                                        <input
+                                                            type="text"
+                                                            class="import-reports-price-input"
+                                                            placeholder="Розница"
+                                                            wire:model.defer="retailPriceInputs.{{ $rowIndex }}"
+                                                        />
+                                                    @endif
                                                     <button
                                                         type="button"
                                                         class="import-reports-action-button"
                                                         wire:click="queueRetailPriceDecision({{ $rowIndex }})"
                                                         wire:confirm="Добавить решение: обновить розничную цену товара?"
                                                     >
-                                                        Обновить розницу
+                                                        {{ $suggestedRetail !== '' ? 'Принять из прайса' : 'Обновить розницу' }}
                                                     </button>
                                                 </div>
                                             @endif
