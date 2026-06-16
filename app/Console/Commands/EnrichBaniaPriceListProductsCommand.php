@@ -20,6 +20,7 @@ class EnrichBaniaPriceListProductsCommand extends Command
         {--brand= : Filter by brand name fragment}
         {--source-domain=bania.by : Allowed source domain to search, e.g. pech-aston.ru}
         {--source-url= : Start from one or more comma-separated allowed catalog URLs instead of Serper}
+        {--crawl-limit=160 : Max source pages to crawl when --source-url is used}
         {--force-images : Replace existing images}
         {--force-content : Replace existing content}
         {--skip-images : Do not download images}
@@ -604,7 +605,9 @@ class EnrichBaniaPriceListProductsCommand extends Command
         $seen = [];
         $links = [];
 
-        while ($queue !== [] && count($seen) < 80) {
+        $crawlLimit = max(20, (int) $this->option('crawl-limit'));
+
+        while ($queue !== [] && count($seen) < $crawlLimit) {
             [$url, $depth] = array_shift($queue);
             $url = strtok((string) $url, '#') ?: (string) $url;
             if (isset($seen[$url]) || ! $this->urlMatchesSourceDomain($url)) {
