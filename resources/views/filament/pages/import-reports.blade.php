@@ -88,7 +88,7 @@
             z-index: 1;
             background: rgb(31, 31, 35);
             color: rgb(203, 213, 225);
-            padding: 10px 12px;
+            padding: 9px 10px;
             font-size: 11px;
             text-transform: uppercase;
             letter-spacing: .02em;
@@ -97,10 +97,45 @@
         }
 
         .import-reports-table td {
-            padding: 10px 12px;
+            padding: 9px 10px;
             border-bottom: 1px solid rgba(148, 163, 184, .14);
             vertical-align: top;
             white-space: nowrap;
+        }
+
+        .import-reports-data-table {
+            table-layout: fixed;
+        }
+
+        .import-reports-data-table th,
+        .import-reports-data-table td {
+            white-space: normal;
+            overflow-wrap: anywhere;
+            word-break: normal;
+        }
+
+        .import-reports-data-table th:nth-child(1),
+        .import-reports-data-table td:nth-child(1) {
+            width: 112px;
+        }
+
+        .import-reports-data-table th:nth-child(2),
+        .import-reports-data-table td:nth-child(2) {
+            width: 132px;
+        }
+
+        .import-reports-data-table th:nth-child(3),
+        .import-reports-data-table td:nth-child(3) {
+            width: 116px;
+        }
+
+        .import-reports-data-table th:nth-child(4),
+        .import-reports-data-table td:nth-child(4),
+        .import-reports-data-table th:nth-child(6),
+        .import-reports-data-table td:nth-child(6),
+        .import-reports-data-table th:nth-child(7),
+        .import-reports-data-table td:nth-child(7) {
+            width: 24%;
         }
 
         .import-reports-table tr:hover td {
@@ -147,8 +182,10 @@
 
         .import-reports-actions {
             display: flex;
+            flex-direction: column;
             flex-wrap: wrap;
-            gap: 10px;
+            gap: 5px;
+            line-height: 1.2;
         }
 
         .import-reports-link {
@@ -187,9 +224,9 @@
         }
 
         .import-reports-cell {
-            max-width: 420px;
-            overflow: hidden;
-            text-overflow: ellipsis;
+            max-width: 100%;
+            overflow-wrap: anywhere;
+            white-space: normal;
         }
 
         .import-reports-attention-row td {
@@ -336,7 +373,7 @@
 
             @if ($selectedReport && $headers !== [])
                 <div class="import-reports-table-wrap">
-                    <table class="import-reports-table">
+                    <table class="import-reports-table import-reports-data-table">
                         <thead>
                             <tr>
                                 <th>Действия</th>
