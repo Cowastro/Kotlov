@@ -153,6 +153,8 @@ class ScrapeBaniaSupplierCommand extends Command
             'title' => 'BANIA.by: bath finishing materials',
             'description' => 'Scrapes BANIA.by bath finishing materials only when they exist in the wholesale price list.',
             'requires_price_list' => true,
+            'allow_missing_brand' => true,
+            'fallback_brand' => 'Банька',
             'category_slugs' => [
                 'aksessuary-dlya-bani',
             ],
@@ -172,6 +174,8 @@ class ScrapeBaniaSupplierCommand extends Command
             'title' => 'BANIA.by: bath stones',
             'description' => 'Scrapes BANIA.by bath stones only when they exist in the wholesale price list.',
             'requires_price_list' => true,
+            'allow_missing_brand' => true,
+            'fallback_brand' => 'Банька',
             'category_slugs' => [
                 'aksessuary-dlya-bani',
             ],
@@ -192,6 +196,8 @@ class ScrapeBaniaSupplierCommand extends Command
             'title' => 'BANIA.by: bath accessories',
             'description' => 'Scrapes BANIA.by bath accessories only when they exist in the wholesale price list.',
             'requires_price_list' => true,
+            'allow_missing_brand' => true,
+            'fallback_brand' => 'Банька',
             'category_slugs' => [
                 'aksessuary-dlya-bani',
                 'kaminnye-nabory',
@@ -234,6 +240,8 @@ class ScrapeBaniaSupplierCommand extends Command
             'title' => 'BANIA.by: picnic and grill',
             'description' => 'Scrapes BANIA.by picnic and grill categories only when they exist in the wholesale price list.',
             'requires_price_list' => true,
+            'allow_missing_brand' => true,
+            'fallback_brand' => 'Банька',
             'category_slugs' => [
                 'mangaly',
             ],
@@ -445,6 +453,7 @@ class ScrapeBaniaSupplierCommand extends Command
             try {
                 $detail = $this->scrapeProduct($listItem['url']);
                 $item = $this->mergeItem($listItem, $detail);
+                $item = $this->applyFallbackBrand($item);
 
                 if ($onlyInStock && ! $item['in_stock']) {
                     $stats['skipped_out_of_stock']++;
@@ -486,7 +495,7 @@ class ScrapeBaniaSupplierCommand extends Command
                     $match['confidence'] = 0;
                     $match['reason'] = 'ambiguous row allowed by --create-ambiguous-as-new';
                 }
-                if (in_array($action, ['created', 'create_candidate'], true) && $item['brand_id'] === null) {
+                if (in_array($action, ['created', 'create_candidate'], true) && $item['brand_id'] === null && $this->requiresBrandForNewProduct()) {
                     $action = 'manual_review';
                     $match['reason'] = 'missing brand for new product';
                 }
@@ -1624,6 +1633,10 @@ class ScrapeBaniaSupplierCommand extends Command
             return $this->brandCache[$brand];
         }
 
+        if ((bool) $this->option('apply') && $brand !== '' && (string) ($item['brand'] ?? '') === $this->fallbackBrandName()) {
+            return $this->ensureFallbackBrand(now());
+        }
+
         foreach ($this->brandCache as $name => $id) {
             if ($name !== '' && str_contains($item['normalized_title'], $name)) {
                 return $id;
@@ -1868,6 +1881,61 @@ class ScrapeBaniaSupplierCommand extends Command
     private function syncKey(): string
     {
         return $this->categoryProfile()['sync_key'];
+    }
+
+    private function applyFallbackBrand(array $item): array
+    {
+        $fallback = $this->fallbackBrandName();
+        if ($fallback !== '' && trim((string) ($item['brand'] ?? '')) === '') {
+            $item['brand'] = $fallback;
+        }
+
+        return $item;
+    }
+
+    private function fallbackBrandName(): string
+    {
+        return (string) ($this->categoryProfile()['fallback_brand'] ?? '');
+    }
+
+    private function ensureFallbackBrand($now): int
+    {
+        $name = $this->fallbackBrandName();
+        $slug = 'bania';
+        $brand = DB::table('brands')->where('slug', $slug)->orWhere('name', $name)->first(['id']);
+
+        if ($brand) {
+            DB::table('brands')->where('id', $brand->id)->update([
+                'name' => $name,
+                'slug' => $slug,
+                'is_active' => true,
+                'updated_at' => $now,
+            ]);
+            $this->brandCache[$this->normalizeBrand($name)] = (int) $brand->id;
+            $this->brandNames[(int) $brand->id] = $name;
+
+            return (int) $brand->id;
+        }
+
+        $id = (int) DB::table('brands')->insertGetId([
+            'name' => $name,
+            'slug' => $slug,
+            'h1' => $name,
+            'is_active' => true,
+            'sort_order' => 500,
+            'created_at' => $now,
+            'updated_at' => $now,
+        ]);
+
+        $this->brandCache[$this->normalizeBrand($name)] = $id;
+        $this->brandNames[$id] = $name;
+
+        return $id;
+    }
+
+    private function requiresBrandForNewProduct(): bool
+    {
+        return ! (bool) ($this->categoryProfile()['allow_missing_brand'] ?? false);
     }
 
     private function discoverSubcategoryUrls(string $html, string $categoryUrl): array
