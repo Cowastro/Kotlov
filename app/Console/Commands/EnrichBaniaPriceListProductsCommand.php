@@ -21,6 +21,7 @@ class EnrichBaniaPriceListProductsCommand extends Command
         {--force-content : Replace existing content}
         {--skip-images : Do not download images}
         {--skip-content : Do not update content}
+        {--missing-images-only : Process only products without any gallery images}
         {--sleep=300 : Delay between products in milliseconds}';
 
     protected $description = 'Enrich BANIA products created from price-list rows by finding source pages via Serper.';
@@ -197,6 +198,15 @@ class EnrichBaniaPriceListProductsCommand extends Command
 
         if ($categoryId = $this->option('category')) {
             $query->where('p.category_id', (int) $categoryId);
+        }
+
+        if ($this->option('missing-images-only')) {
+            $query->where(function ($q) {
+                $q->whereNull('p.images')
+                    ->orWhere('p.images', '')
+                    ->orWhere('p.images', '[]')
+                    ->orWhereRaw('JSON_LENGTH(p.images) = 0');
+            });
         }
 
         $limit = max(1, (int) $this->option('limit'));
