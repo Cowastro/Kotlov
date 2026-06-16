@@ -25,6 +25,7 @@ class ImportReports extends Page
     public string $search = '';
     public ?string $selectedFile = null;
     public int $perPage = 100;
+    public bool $showAllColumns = false;
 
     public static function getNavigationGroup(): ?string
     {
@@ -129,8 +130,10 @@ class ImportReports extends Page
             return [];
         }
 
-        return $this->enrichRowsWithProductSkus(
-            array_slice($this->readCsv($report['absolute_path']), 0, $this->perPage)
+        return $this->enrichRowsForSimpleReport(
+            $this->enrichRowsWithProductSkus(
+                array_slice($this->readCsv($report['absolute_path']), 0, $this->perPage)
+            )
         );
     }
 
@@ -182,9 +185,29 @@ class ImportReports extends Page
             'error',
         ];
 
+        $simple = [
+            'simple_next_step',
+            'price_row',
+            'supplier_item',
+            'supplier_article_short',
+            'price_list_cost',
+            'kotlov_item',
+            'current_supplier_cost',
+            'kotlov_retail',
+            'margin_simple',
+            'report_problem',
+        ];
+
+        if (! $this->showAllColumns) {
+            return array_values(array_filter(
+                $simple,
+                fn (string $header): bool => array_key_exists($header, $rows[0])
+            ));
+        }
+
         $headers = array_values(array_filter(
             array_keys($rows[0]),
-            fn (string $header): bool => ! in_array($header, $hidden, true)
+            fn (string $header): bool => ! in_array($header, $hidden, true) && ! in_array($header, $simple, true)
         ));
 
         $ordered = array_values(array_filter(
@@ -197,11 +220,27 @@ class ImportReports extends Page
             fn (string $header): bool => ! in_array($header, $ordered, true)
         ));
 
-        return array_merge($ordered, $tail);
+        return array_merge($simple, $ordered, $tail);
     }
 
     public function headerLabel(string $header): string
     {
+        $simpleLabels = [
+            'simple_next_step' => 'Что сделать',
+            'supplier_item' => 'Товар поставщика / прайс',
+            'supplier_article_short' => 'Артикул поставщика',
+            'price_list_cost' => 'Закупка из прайса',
+            'kotlov_item' => 'Товар KOTLOV',
+            'current_supplier_cost' => 'Закупка сейчас',
+            'kotlov_retail' => 'Розница сайта',
+            'margin_simple' => 'Маржа / контроль',
+            'report_problem' => 'Почему в отчёте',
+        ];
+
+        if (isset($simpleLabels[$header])) {
+            return $simpleLabels[$header];
+        }
+
         return [
             'price_row' => 'Строка прайса',
             'price_title' => 'Товар в прайсе',
@@ -515,6 +554,117 @@ class ImportReports extends Page
             'can_apply_after_review' => 'Можно применить после проверки',
             'keep_manual_review' => 'Оставить в ручной проверке',
         ][$value] ?? $value;
+    }
+
+    private function enrichRowsForSimpleReport(array $rows): array
+    {
+        foreach ($rows as $index => $row) {
+            $priceListCost = $this->firstFilled($row, ['new_supplier_cost', 'price_value', 'new_bania_price']);
+            $currentSupplierCost = $this->firstFilled($row, ['old_supplier_price', 'supplier_price']);
+            $retailPrice = $this->firstFilled($row, ['product_retail_price', 'old_product_price']);
+            $problem = $this->translateReason((string) $this->firstFilled($row, ['reason', 'note', 'error']));
+
+            $rows[$index] = [
+                'simple_next_step' => $this->simpleNextStep($row, $problem),
+                'supplier_item' => $this->supplierTitle($row) ?: '',
+                'supplier_article_short' => $this->supplierArticle($row) ?: '',
+                'price_list_cost' => $priceListCost,
+                'kotlov_item' => $this->kotlovTitle($row),
+                'current_supplier_cost' => $currentSupplierCost,
+                'kotlov_retail' => $retailPrice,
+                'margin_simple' => $this->marginText($priceListCost, $retailPrice),
+                'report_problem' => $problem,
+            ] + $row;
+        }
+
+        return $rows;
+    }
+
+    private function firstFilled(array $row, array $keys): string
+    {
+        foreach ($keys as $key) {
+            $value = trim((string) ($row[$key] ?? ''));
+            if ($value !== '') {
+                return $value;
+            }
+        }
+
+        return '';
+    }
+
+    private function kotlovTitle(array $row): string
+    {
+        return $this->firstFilled($row, ['possible_product_title', 'matched_product_title', 'title', 'product_title']);
+    }
+
+    private function simpleNextStep(array $row, string $problem): string
+    {
+        $action = (string) ($row['action'] ?? $row['recommended_action'] ?? '');
+        $code = trim(mb_strtolower($action . ' ' . $problem));
+
+        if (str_contains($code, 'cost_above_retail') || str_contains($problem, 'Закупка') && str_contains($problem, 'выше')) {
+            return 'Проверить цену: закупка выше розницы';
+        }
+
+        if (str_contains($code, 'manual') || str_contains($code, 'ручн')) {
+            return 'Проверить сопоставление';
+        }
+
+        if (str_contains($code, 'created') || str_contains($code, 'создан')) {
+            return 'Новый товар создан';
+        }
+
+        if (str_contains($code, 'matched') || str_contains($code, 'updated') || str_contains($code, 'обнов')) {
+            return 'Сопоставлено, можно контролировать цены';
+        }
+
+        if (str_contains($code, 'not_found') || str_contains($code, 'не найден')) {
+            return 'Нужно найти товар или оставить без связи';
+        }
+
+        return $this->translateCode($action) ?: 'Проверить строку';
+    }
+
+    private function marginText(string $cost, string $retail): string
+    {
+        $costValue = $this->parseReportMoney($cost);
+        $retailValue = $this->parseReportMoney($retail);
+
+        if ($costValue === null || $retailValue === null) {
+            return '';
+        }
+
+        $margin = $retailValue - $costValue;
+        $percent = $retailValue > 0 ? ($margin / $retailValue) * 100 : 0;
+        $text = number_format($margin, 2, ',', ' ') . ' BYN / ' . number_format($percent, 1, ',', ' ') . '%';
+
+        if ($margin < 0) {
+            return 'Проблема: ' . $text;
+        }
+
+        if (abs($margin) < 0.01) {
+            return 'Маржи нет: ' . $text;
+        }
+
+        return $text;
+    }
+
+    private function parseReportMoney(string $value): ?float
+    {
+        $value = trim(str_replace(["\xc2\xa0", 'BYN', 'byn', ' '], '', $value));
+        if ($value === '') {
+            return null;
+        }
+
+        if (str_contains($value, ',') && str_contains($value, '.')) {
+            $value = str_replace(',', '', $value);
+        } else {
+            $value = str_replace(',', '.', $value);
+        }
+
+        $value = preg_replace('/[^0-9.\-]/', '', $value);
+
+        return is_numeric($value) ? (float) $value : null;
     }
 
     private function enrichRowsWithProductSkus(array $rows): array

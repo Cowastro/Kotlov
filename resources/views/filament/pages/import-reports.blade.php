@@ -186,6 +186,24 @@
             line-height: 1.2;
         }
 
+        .import-reports-header-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            align-items: center;
+            justify-content: flex-end;
+        }
+
+        .import-reports-toggle {
+            display: inline-flex;
+            gap: 7px;
+            align-items: center;
+            color: rgb(203, 213, 225);
+            font-size: 12px;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+
         .import-reports-link {
             color: rgb(251, 191, 36);
             font-size: 12px;
@@ -362,14 +380,21 @@
                 </div>
 
                 @if ($selectedReport)
-                    <x-filament::button
-                        type="button"
-                        color="gray"
-                        icon="heroicon-o-arrow-down-tray"
-                        wire:click="downloadSelected"
-                    >
-                        Скачать CSV
-                    </x-filament::button>
+                    <div class="import-reports-header-actions">
+                        <label class="import-reports-toggle">
+                            <input type="checkbox" wire:model.live="showAllColumns" />
+                            Все колонки CSV
+                        </label>
+
+                        <x-filament::button
+                            type="button"
+                            color="gray"
+                            icon="heroicon-o-arrow-down-tray"
+                            wire:click="downloadSelected"
+                        >
+                            Скачать CSV
+                        </x-filament::button>
+                    </div>
                 @endif
             </div>
 
