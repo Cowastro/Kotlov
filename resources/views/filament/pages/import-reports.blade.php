@@ -104,38 +104,36 @@
         }
 
         .import-reports-data-table {
-            table-layout: fixed;
+            width: max-content;
+            min-width: 100%;
+            table-layout: auto;
         }
 
         .import-reports-data-table th,
         .import-reports-data-table td {
             white-space: normal;
-            overflow-wrap: anywhere;
+            overflow-wrap: normal;
             word-break: normal;
+            min-width: 96px;
+            max-width: 300px;
         }
 
         .import-reports-data-table th:nth-child(1),
         .import-reports-data-table td:nth-child(1) {
-            width: 112px;
+            min-width: 112px;
+            max-width: 120px;
         }
 
         .import-reports-data-table th:nth-child(2),
         .import-reports-data-table td:nth-child(2) {
-            width: 132px;
+            min-width: 120px;
+            max-width: 140px;
         }
 
         .import-reports-data-table th:nth-child(3),
         .import-reports-data-table td:nth-child(3) {
-            width: 116px;
-        }
-
-        .import-reports-data-table th:nth-child(4),
-        .import-reports-data-table td:nth-child(4),
-        .import-reports-data-table th:nth-child(6),
-        .import-reports-data-table td:nth-child(6),
-        .import-reports-data-table th:nth-child(7),
-        .import-reports-data-table td:nth-child(7) {
-            width: 24%;
+            min-width: 96px;
+            max-width: 110px;
         }
 
         .import-reports-table tr:hover td {
@@ -224,9 +222,13 @@
         }
 
         .import-reports-cell {
-            max-width: 100%;
-            overflow-wrap: anywhere;
+            display: -webkit-box;
+            max-width: 280px;
+            overflow: hidden;
+            overflow-wrap: break-word;
             white-space: normal;
+            -webkit-box-orient: vertical;
+            -webkit-line-clamp: 3;
         }
 
         .import-reports-attention-row td {
