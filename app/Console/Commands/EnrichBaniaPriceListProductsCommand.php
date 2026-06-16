@@ -687,6 +687,14 @@ class EnrichBaniaPriceListProductsCommand extends Command
                 continue;
             }
 
+            $pageTitle = $this->extractTitle($html);
+            if ($pageTitle !== '' && $this->isCatalogCandidate($url, $pageTitle)) {
+                $links[$url] = [
+                    'url' => $url,
+                    'title' => $pageTitle,
+                ];
+            }
+
             foreach ($this->extractAnchors($html, $url) as $anchor) {
                 $anchorUrl = (string) $anchor['url'];
                 $anchorTitle = trim((string) $anchor['title']);
@@ -747,6 +755,10 @@ class EnrichBaniaPriceListProductsCommand extends Command
         }
 
         $path = trim((string) parse_url($url, PHP_URL_PATH), '/');
+
+        if ($this->sourceDomain === 'doorwood.net' && str_starts_with($path, 'catalog/')) {
+            return true;
+        }
 
         foreach ($this->sourceStartPaths as $sourceStartPath) {
             if ($sourceStartPath === '' || $path === $sourceStartPath || str_starts_with($path, $sourceStartPath . '/')) {
