@@ -36,6 +36,7 @@ class EnrichBaniaPriceListProductsCommand extends Command
         'bania.by',
         'pech-aston.ru',
         'aston-pech.ru',
+        'pechi.by',
         'doorwood.ru',
         'tmf-shop.ru',
         'vezuviy.su',
@@ -261,6 +262,10 @@ class EnrichBaniaPriceListProductsCommand extends Command
 
     private function findSourcePage(string $apiKey, object $product): ?array
     {
+        if ($override = $this->sourceOverride($product)) {
+            return $this->sourceResultFromUrl($override, $product);
+        }
+
         if ($this->sourceStartUrl !== '') {
             return $this->findSourcePageInCatalog($product);
         }
@@ -304,6 +309,88 @@ class EnrichBaniaPriceListProductsCommand extends Command
         }
 
         return $this->findSourcePageInCatalog($product);
+    }
+
+    private function sourceOverride(object $product): ?string
+    {
+        $name = $this->normalize((string) ($product->supplier_name ?: $product->name));
+        if (! str_contains($name, 'aston')) {
+            return null;
+        }
+
+        $rules = [
+            [
+                'tokens' => ['20', 'стекло'],
+                'without' => ['шторм', 'long', 'дт'],
+                'url' => 'https://pech-aston.ru/pech-dlya-bani-aston-20-inox-steklo',
+            ],
+            [
+                'tokens' => ['шторм', '20', 'long', '350'],
+                'url' => 'https://pech-aston.ru/pech-dlya-bani-aston-shtorm-20-long-350',
+            ],
+            [
+                'tokens' => ['шторм', '20', '350'],
+                'without' => ['long'],
+                'url' => 'https://pechi.by/katalog/aston-pech-cast/pech-dlya-bani-aston-shtorm-chugun',
+            ],
+            [
+                'tokens' => ['шторм', '16', 'дт', '4'],
+                'url' => 'https://pech-aston.ru/pech-dlya-bani-aston-shtorm-16-dt-4s',
+            ],
+        ];
+
+        foreach ($rules as $rule) {
+            if (! $this->containsAllTokens($name, $rule['tokens'] ?? [])) {
+                continue;
+            }
+
+            if ($this->containsAnyToken($name, $rule['without'] ?? [])) {
+                continue;
+            }
+
+            return $rule['url'];
+        }
+
+        return null;
+    }
+
+    private function sourceResultFromUrl(string $url, object $product): ?array
+    {
+        $originalDomain = $this->sourceDomain;
+        $this->sourceDomain = $this->normalizeSourceDomain((string) parse_url($url, PHP_URL_HOST));
+
+        try {
+            if (! in_array($this->sourceDomain, self::ALLOWED_SOURCE_DOMAINS, true)) {
+                return null;
+            }
+
+            $html = $this->fetch($url);
+            $pageTitle = $this->extractTitle($html);
+            $images = $this->extractImages($html, $url, $product);
+            if ($images === []) {
+                return null;
+            }
+
+            return [
+                'url' => $url,
+                'title' => $pageTitle,
+                'description' => $this->extractDescription($html),
+                'images' => $images,
+            ];
+        } finally {
+            $this->sourceDomain = $originalDomain;
+        }
+    }
+
+    private function containsAllTokens(string $value, array $tokens): bool
+    {
+        foreach ($tokens as $token) {
+            if (! str_contains($value, $this->normalize($token))) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     private function searchText(object $product): string
