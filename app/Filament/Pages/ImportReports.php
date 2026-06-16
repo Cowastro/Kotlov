@@ -499,6 +499,32 @@ class ImportReports extends Page
             ->first();
 
         if ($pendingForRow) {
+            if ($pendingForRow->decision === SupplierReviewDecision::DECISION_UPDATE_RETAIL_PRICE) {
+                $payload = is_array($pendingForRow->payload) ? $pendingForRow->payload : [];
+                $payload['manual_retail_price'] = number_format($newPrice, 2, '.', '');
+                $payload['old_product_retail_price'] = $this->firstFilled($row, ['product_retail_price', 'old_product_price', 'kotlov_retail']);
+                $payload['row'] = $row;
+
+                $pendingForRow->forceFill([
+                    'product_id' => (int) $productId,
+                    'supplier_product_id' => $this->supplierProductId($row) !== '' ? (int) $this->supplierProductId($row) : null,
+                    'supplier_title' => $this->supplierTitle($row),
+                    'supplier_article' => $this->supplierArticle($row),
+                    'source_url' => $this->sourceUrl($row),
+                    'reason' => 'Ручное обновление розничной цены из отчёта импорта',
+                    'payload' => $payload,
+                    'error' => null,
+                ])->save();
+
+                Notification::make()
+                    ->title('Решение в очереди обновлено')
+                    ->body('Новая розница: ' . number_format($newPrice, 2, '.', '') . ' BYN')
+                    ->success()
+                    ->send();
+
+                return;
+            }
+
             Notification::make()
                 ->title('По этой строке уже есть решение в очереди')
                 ->body($this->decisionLabel((string) $pendingForRow->decision))
