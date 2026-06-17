@@ -893,6 +893,7 @@ class ImportReports extends Page
             SupplierReviewDecision::DECISION_LINK => 'Связать товар поставщика с товаром KOTLOV',
             SupplierReviewDecision::DECISION_UNLINK => 'Удалить связь товара поставщика',
             SupplierReviewDecision::DECISION_UPDATE_RETAIL_PRICE => 'Обновить розничную цену товара',
+            SupplierReviewDecision::DECISION_UPDATE_PRODUCT_CATALOG => 'Обновить бренд/категорию товара',
             SupplierReviewDecision::DECISION_IGNORE => 'Отметить строку как проверенную',
             default => $decision,
         };
