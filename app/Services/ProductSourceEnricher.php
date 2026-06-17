@@ -610,9 +610,63 @@ class ProductSourceEnricher
     private function cleanAttributeValue(string $value): string
     {
         $value = $this->cleanText($value);
+        $value = $this->normalizeBooleanGlyphValue($value);
         $value = trim($value, " \t\n\r\0\x0B:;•—-");
 
         return trim(preg_replace('/\s+/u', ' ', $value) ?? $value);
+    }
+
+    private function normalizeBooleanGlyphValue(string $value): string
+    {
+        $normalized = trim($value);
+        $compact = preg_replace('/\s+/u', '', $normalized) ?? $normalized;
+
+        $yesValues = [
+            '✔',
+            '✔️',
+            '✓',
+            '✅',
+            '☑',
+            'âœ”',
+            'âœ”ï¸',
+            'âœ“',
+            'âœ…',
+            'ђ”',
+            'ђ”пёџ',
+            'ђ”пёЦ',
+        ];
+
+        $noValues = [
+            '❌',
+            '✘',
+            '✕',
+            '✖',
+            '×',
+            '☒',
+            'âŒ',
+            'âœ˜',
+            'âœ•',
+            'âœ–',
+            'ќњ',
+        ];
+
+        if (in_array($compact, $yesValues, true)) {
+            return 'да';
+        }
+
+        if (in_array($compact, $noValues, true)) {
+            return 'нет';
+        }
+
+        if (preg_match('/^(?:[^\p{L}\p{N}]*)?(?:✔|✓|✅|☑)(?:[^\p{L}\p{N}]*)?$/u', $compact)) {
+            return 'да';
+        }
+
+        if (preg_match('/^(?:[^\p{L}\p{N}]*)?(?:❌|✘|✕|✖|×|☒)(?:[^\p{L}\p{N}]*)?$/u', $compact)) {
+            return 'нет';
+        }
+
+        return $value;
     }
 
     private function normalizeAttributeName(string $name): string
