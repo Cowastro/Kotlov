@@ -279,22 +279,16 @@ class EnrichTeplodvorCommand extends Command
             return [];
         }
 
-        $brandSlugs = array_keys(self::BRAND_SLUGS);
-        $links      = [];
+        $links = [];
 
-        // teplodvor.by uses absolute hrefs in product cards.
-        preg_match_all('#href="(https://www\.teplodvor\.by/shop/[^"]+/)"#', $html, $m);
-        foreach (array_unique($m[1]) as $href) {
-            $path  = parse_url($href, PHP_URL_PATH) ?? '';
-            $parts = array_values(array_filter(explode('/', $path)));
-            // Product pages: ≥ 3 path segments, last segment is NOT a brand slug or category.
-            if (count($parts) < 3) {
-                continue;
-            }
-            $last = end($parts);
-            if (in_array($last, $brandSlugs, true) || strlen($last) < 10) {
-                continue;
-            }
+        // Each product block contains a hidden good_id field (Bitrix product ID).
+        // The link to the product page uses class="shop-item-link".
+        preg_match_all('/name="good_id"\s+value="(\d+)"/', $html, $idMatches);
+        preg_match_all('/href="(https?:\/\/www\.teplodvor\.by\/[^"]+)"\s[^>]*class="shop-item-link"/', $html, $linkMatches);
+        // Also try reversed attribute order.
+        preg_match_all('/class="shop-item-link"\s[^>]*href="(https?:\/\/www\.teplodvor\.by\/[^"]+)"/', $html, $linkMatches2);
+
+        foreach (array_unique(array_merge($linkMatches[1] ?? [], $linkMatches2[1] ?? [])) as $href) {
             $links[] = $href;
         }
 
@@ -401,37 +395,56 @@ class EnrichTeplodvorCommand extends Command
 
     private function parsePage(string $html): array
     {
-        // Name: <h1> tag
-        $name = '';
-        if (preg_match('#<h1[^>]*>\s*(.*?)\s*</h1>#s', $html, $m)) {
-            $name = trim(strip_tags(html_entity_decode($m[1], ENT_QUOTES, 'UTF-8')));
-        }
+        // Name: <h1> tag.
+        $name = $this->cleanText(preg_match('/<h1[^>]*>([\s\S]*?)<\/h1>/u', $html, $m) ? $m[1] : '');
 
-        // Images: /userfls/shop/product/ (skip /preview/ and /small/)
+        // Images: full-size in /userfls/shop/large/ (same pattern as SyncTeplodarCommand).
+        preg_match_all('/userfls\/shop\/large\/([\d]+\/[^"\']+\.(?:jpg|jpeg|png|webp))/iu', $html, $m);
         $images = [];
-        preg_match_all('#src="(https://www\.teplodvor\.by//userfls/shop/product/[^"]+\.(?:jpg|jpeg|png|webp))"#i', $html, $m);
-        foreach (array_unique($m[1]) as $src) {
-            $images[] = $src;
+        foreach (array_unique($m[1] ?? []) as $path) {
+            $images[] = self::BASE . '/userfls/shop/large/' . $path;
         }
 
-        // Specs: <dt>key</dt><dd>value</dd> description list
+        // Specs: <td class="parametr"><span>name</span></td><td>value</td>
+        // (same structure as SyncTeplodarCommand confirmed in production)
         $specs = [];
-        preg_match_all('#<dt[^>]*>\s*(.*?)\s*</dt>\s*<dd[^>]*>\s*(.*?)\s*</dd>#s', $html, $m, PREG_SET_ORDER);
+        preg_match_all(
+            '/<td[^>]*class="parametr"[^>]*>\s*<span[^>]*>([\s\S]*?)<\/span>\s*<\/td>\s*<td[^>]*>([\s\S]*?)<\/td>/u',
+            $html, $m, PREG_SET_ORDER
+        );
         foreach ($m as $row) {
-            $key = trim(strip_tags(html_entity_decode($row[1], ENT_QUOTES, 'UTF-8')));
-            $val = trim(strip_tags(html_entity_decode($row[2], ENT_QUOTES, 'UTF-8')));
-            if ($key !== '' && $val !== '' && $key !== $val && mb_strlen($key) < 80) {
+            $key = $this->cleanText($row[1]);
+            $val = $this->cleanText($row[2]);
+            if ($key !== '' && $val !== '' && $key !== $val && mb_strlen($key) <= 120) {
                 $specs[$key] = $val;
             }
         }
+        // Fallback: plain <tr><td>name</td><td>value</td></tr> table rows.
+        if ($specs === []) {
+            preg_match_all('/<tr[^>]*>\s*<td[^>]*>([\s\S]*?)<\/td>\s*<td[^>]*>([\s\S]*?)<\/td>\s*<\/tr>/u', $html, $m, PREG_SET_ORDER);
+            foreach ($m as $row) {
+                $key = $this->cleanText($row[1]);
+                $val = $this->cleanText($row[2]);
+                if ($key !== '' && $val !== '' && $key !== $val && mb_strlen($key) <= 120) {
+                    $specs[$key] = $val;
+                }
+            }
+        }
 
-        // Description: #description section plain text
+        // Description: <section id="description"> (confirmed by SyncTeplodarCommand).
         $desc = '';
-        if (preg_match('#id=["\']description["\'][^>]*>(.*?)</(?:div|section|article)>#s', $html, $m)) {
-            $desc = trim(strip_tags($m[1]));
+        if (preg_match('/<section[^>]*id=["\']description["\'][^>]*>([\s\S]*?)<\/section>/u', $html, $m)) {
+            $raw = preg_replace('/<(script|style)\b[\s\S]*?<\/\1>/iu', '', $m[1]) ?? $m[1];
+            $desc = trim(strip_tags(html_entity_decode($raw, ENT_QUOTES | ENT_HTML5, 'UTF-8')));
         }
 
         return compact('name', 'images', 'specs', 'desc');
+    }
+
+    private function cleanText(string $value): string
+    {
+        $value = html_entity_decode(strip_tags($value), ENT_QUOTES | ENT_HTML5, 'UTF-8');
+        return trim(preg_replace('/\s+/u', ' ', $value) ?? $value);
     }
 
     private function detectBrand(string $name): ?string
@@ -482,11 +495,11 @@ class EnrichTeplodvorCommand extends Command
 
         foreach (array_slice($urls, 0, 8) as $imgUrl) {
             $body = $this->fetch($imgUrl, true);
-            if ($body === null || strlen($body) < 5000) {
+            if ($body === null || strlen($body) < 2000) {
                 continue;
             }
             $size = @getimagesizefromstring($body);
-            if (! $size || $size[0] < 200 || $size[1] < 200) {
+            if (! $size || $size[0] < 100 || $size[1] < 100) {
                 continue;
             }
             $md5 = md5($body);
