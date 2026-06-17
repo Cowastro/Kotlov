@@ -99,13 +99,27 @@ class ProductSourceEnricher
 
         try {
             if (($options['update_content'] ?? true) === true && $parsed['description'] !== '') {
-                $description = Str::limit(trim(strip_tags($parsed['description'])), 1800, '');
-                $updates['content'] = '<p>' . e($description) . '</p>';
-                $updates['short_description'] = Str::limit($parsed['short_description'] ?: $description, 240, '');
-                $updates['meta_description'] = Str::limit($description, 250, '');
-            } elseif (($options['update_content'] ?? true) === true && $parsed['short_description'] !== '') {
-                $updates['short_description'] = Str::limit($parsed['short_description'], 240, '');
-                $updates['meta_description'] = Str::limit($parsed['short_description'], 250, '');
+                $ai = new AiContentEnricher();
+
+                if ($ai->isAvailable()) {
+                    $brandName = (string) ($product->brand?->name ?? '');
+                    $aiContent = $ai->enrich($product->name, $brandName, $parsed['description'], $parsed['specs']);
+
+                    if ($aiContent !== null && trim(strip_tags($aiContent)) !== '') {
+                        $updates['content'] = $this->sanitizeAiHtml($aiContent);
+
+                        $shortDescription = $ai->shortDescription($product->name, $brandName, $parsed['specs'])
+                            ?: $parsed['short_description']
+                            ?: trim(strip_tags($aiContent));
+
+                        $updates['short_description'] = Str::limit($this->cleanText($shortDescription), 240, '');
+                        $updates['meta_description'] = Str::limit($this->cleanText($shortDescription), 250, '');
+                    } else {
+                        $stats['errors'][] = 'content: AI returned empty SEO text';
+                    }
+                } else {
+                    $stats['errors'][] = 'content: AI provider is not configured; raw supplier text was not saved';
+                }
             }
         } catch (\Throwable $e) {
             $stats['errors'][] = 'content: ' . $e->getMessage();
@@ -522,6 +536,17 @@ class ProductSourceEnricher
         }
 
         return is_array($clean) ? $clean : [];
+    }
+
+    private function sanitizeAiHtml(string $html): string
+    {
+        $html = $this->repairMojibake($this->sanitizeUtf8($html));
+        $html = strip_tags($html, '<p><ul><li><strong>');
+        $html = preg_replace('/<(p|ul|li|strong)\b[^>]*>/iu', '<$1>', $html) ?? $html;
+        $html = preg_replace('/\s+/', ' ', $html) ?? $html;
+        $html = str_replace(['> <', '</p> <p>', '</li> <li>', '</ul> <p>'], ['><', "</p>\n<p>", "</li>\n<li>", "</ul>\n<p>"], $html);
+
+        return trim($html);
     }
 
     private function sanitizeUtf8Recursive(mixed $value): mixed

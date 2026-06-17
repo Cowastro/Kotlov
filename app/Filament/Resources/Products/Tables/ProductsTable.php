@@ -582,7 +582,8 @@ class ProductsTable
                 ->label('Обновить характеристики')
                 ->default(true),
             Toggle::make('update_content')
-                ->label('Обновить описание')
+                ->label('SEO-описание через ИИ')
+                ->helperText('Сырой текст поставщика не сохраняется. Если ИИ не настроен, описание не изменится.')
                 ->default(true),
             Toggle::make('update_service')
                 ->label('Обновить сервис')
