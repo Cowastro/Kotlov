@@ -20,6 +20,7 @@ class Enrich100KaminovCommand extends Command
 {
     protected $signature = 'supplier:enrich-100kaminov
         {--brand=      : Limit to one brand (e.g. Kratki)}
+        {--source-url= : Brand-specific category URL (e.g. /g768157-pechi-kaminy?csbss6=8334185); skips default CATEGORIES; comma-separated for multiple}
         {--pages=10    : Max pages to crawl per category}
         {--limit=      : Max products to enrich}
         {--sleep=800   : Delay between HTTP requests, ms}
@@ -113,9 +114,25 @@ class Enrich100KaminovCommand extends Command
         $maxPages    = (int) $this->option('pages');
         $enriched    = 0;
 
+        // Build category list: --source-url overrides defaults (no brand slug filter needed).
+        $sourceUrlOpt = $this->option('source-url');
+        if ($sourceUrlOpt) {
+            $rawPaths = array_map('trim', explode(',', $sourceUrlOpt));
+            $categories = [];
+            foreach ($rawPaths as $p) {
+                // Accept full URLs or just paths.
+                $path = str_starts_with($p, 'http') ? parse_url($p, PHP_URL_PATH) . '?' . (parse_url($p, PHP_URL_QUERY) ?? '') : $p;
+                $categories[rtrim($path, '?')] = null;
+            }
+            $brandSlugFilter = null; // URL already scoped to brand
+        } else {
+            $categories      = self::CATEGORIES;
+            $brandSlugFilter = $brandFilter;
+        }
+
         $seenProductUrls = [];
 
-        foreach (self::CATEGORIES as $path => $catHint) {
+        foreach ($categories as $path => $catHint) {
             if ($enriched >= $limit) {
                 break;
             }
@@ -125,7 +142,7 @@ class Enrich100KaminovCommand extends Command
             for ($page = 1; $page <= $maxPages; $page++) {
                 $sep   = str_contains($path, '?') ? '&' : '?';
                 $url   = self::BASE . $path . ($page > 1 ? "{$sep}page={$page}" : '');
-                $links = $this->collectLinks($url, $brandFilter);
+                $links = $this->collectLinks($url, $brandSlugFilter);
 
                 if ($links === []) {
                     break;
