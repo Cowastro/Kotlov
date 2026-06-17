@@ -5,7 +5,6 @@ namespace App\Console\Commands;
 use App\Services\AiContentEnricher;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 
 /**
@@ -507,37 +506,26 @@ class Enrich100KaminovCommand extends Command
         $now     = now();
 
         foreach ($specs as $key => $val) {
-            // Find or create attribute in this category.
+            // Find existing attribute for this category.
             $attrId = DB::table('attributes')
                 ->where('category_id', $catId)
                 ->whereRaw('LOWER(name) = ?', [mb_strtolower($key)])
                 ->value('id');
 
             if (! $attrId) {
-                // Try global (null category).
-                $attrId = DB::table('attributes')
-                    ->whereNull('category_id')
-                    ->whereRaw('LOWER(name) = ?', [mb_strtolower($key)])
-                    ->value('id');
-            }
-
-            if (! $attrId) {
-                $payload = [
+                // attributes.category_id is NOT NULL (FK), no global fallback.
+                // type ENUM is select|value|check — 'value' = plain text/numeric.
+                $attrId = DB::table('attributes')->insertGetId([
                     'category_id' => $catId,
                     'name'        => $key,
-                    'type'        => 'text',
+                    'type'        => 'value',
                     'in_filter'   => false,
                     'in_product'  => true,
                     'in_brief'    => false,
                     'sort_order'  => 0,
                     'created_at'  => $now,
                     'updated_at'  => $now,
-                ];
-                // slug column exists in some environments but not all
-                if (Schema::hasColumn('attributes', 'slug')) {
-                    $payload['slug'] = Str::slug($key) ?: Str::random(8);
-                }
-                $attrId = DB::table('attributes')->insertGetId($payload);
+                ]);
             }
 
             DB::table('product_attribute_values')->updateOrInsert(
