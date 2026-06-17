@@ -100,10 +100,19 @@ class SyncLigmetCommand extends Command
      */
     private const ALLOWED_CATEGORIES = [61, 90, 69];
 
-    /** Category words dropped from a name to compare models across catalogue/sheet. */
+    /** Category + color words dropped when comparing models across catalogue/sheet. */
     private const MODEL_STOPWORDS = [
+        // category prefixes
         'ПЕЧЬ', 'ПЕЧЬ-КАМИН', 'ПЕЧЬ-КАМИНЫ', 'КАМИН', 'КАМИННАЯ', 'КАМИННЫЙ', 'ТОПКА',
         'ПЕЧНОЙ', 'ДРОВЯНАЯ', 'ДРОВЯНОЙ', 'БАННАЯ', 'ОТОПИТЕЛЬНАЯ', 'ВАРОЧНАЯ',
+        // colors / finish variants (Лигмет often appends color to model name)
+        'СЕРАЯ', 'СЕРЫЙ', 'СЕРОЕ', 'СЕРЫЕ',
+        'ЧЁРНАЯ', 'ЧЁРНЫЙ', 'ЧЁРНОЕ', 'ЧЕРНАЯ', 'ЧЕРНЫЙ', 'ЧЕРНОЕ',
+        'БЕЛАЯ', 'БЕЛЫЙ', 'БЕЛОЕ',
+        'БЕЖЕВАЯ', 'БЕЖЕВЫЙ',
+        'КРАСНАЯ', 'КРАСНЫЙ',
+        'КОРИЧНЕВАЯ', 'КОРИЧНЕВЫЙ',
+        'ПАТИНА', 'АНТРАЦИТ', 'ГРАФИТ', 'КРЕМОВАЯ', 'КРЕМОВЫЙ',
     ];
 
     private array $indexBySupplierArticle = [];
