@@ -4,10 +4,10 @@ namespace App\Filament\Resources\Products\Tables;
 
 use App\Models\Brand;
 use App\Models\Category;
+use App\Models\Product;
 use App\Models\Supplier;
 use App\Models\User;
 use App\Services\ProductSourceEnricher;
-use Filament\Actions\Action;
 use Filament\Actions\ActionGroup;
 use Filament\Actions\BulkAction;
 use Filament\Actions\BulkActionGroup;
@@ -552,30 +552,20 @@ class ProductsTable
                                 ->body(implode("\n", $summary));
 
                             if ($previewOnly && $errors === [] && $processed > 0) {
-                                $token = Str::random(48);
                                 $applyOptions = $options;
                                 $applyOptions['preview_only'] = false;
 
-                                Cache::store('file')->put('product-source-enrichment:' . $token, [
+                                Cache::store('file')->put(self::sourceEnrichmentPreviewCacheKey(), [
                                     'user_id' => auth()->id(),
                                     'product_ids' => $records->pluck('id')->values()->all(),
                                     'source_url' => (string) $data['source_url'],
                                     'options' => $applyOptions,
                                 ], now()->addMinutes(30));
 
-                                $notification
-                                    ->persistent()
-                                    ->actions([
-                                        Action::make('apply')
-                                            ->label('Обновить')
-                                            ->button()
-                                            ->color('success')
-                                            ->url(route('admin.product-source-enrichment.apply', ['token' => $token])),
-                                        Action::make('cancel')
-                                            ->label('Не обновлять')
-                                            ->color('gray')
-                                            ->url(route('admin.product-source-enrichment.cancel', ['token' => $token])),
-                                    ]);
+                                $summary[] = '';
+                                $summary[] = 'Если все верно, выберите действие "Применить последнюю проверку". Если нет - "Сбросить последнюю проверку".';
+
+                                $notification->persistent()->body(implode("\n", $summary));
                             }
 
                             if ($errors === []) {
@@ -585,6 +575,30 @@ class ProductsTable
                             }
 
                             $notification->send();
+                        })
+                        ->deselectRecordsAfterCompletion(),
+
+                    BulkAction::make('apply_source_enrichment_preview')
+                        ->label('Применить последнюю проверку')
+                        ->icon('heroicon-o-check-circle')
+                        ->color('success')
+                        ->requiresConfirmation()
+                        ->modalHeading('Применить последнюю проверку')
+                        ->modalDescription('Будут обновлены именно те товары и та ссылка, которые были сохранены последним предпросмотром.')
+                        ->action(function (): void {
+                            self::applySourceEnrichmentPreview();
+                        })
+                        ->deselectRecordsAfterCompletion(),
+
+                    BulkAction::make('cancel_source_enrichment_preview')
+                        ->label('Сбросить последнюю проверку')
+                        ->icon('heroicon-o-x-circle')
+                        ->color('gray')
+                        ->requiresConfirmation()
+                        ->modalHeading('Сбросить последнюю проверку')
+                        ->modalDescription('Сохраненный предпросмотр будет удален, товары не изменятся.')
+                        ->action(function (): void {
+                            self::cancelSourceEnrichmentPreview();
                         })
                         ->deselectRecordsAfterCompletion(),
 
@@ -667,6 +681,95 @@ class ProductsTable
                     DeleteBulkAction::make(),
                 ]),
             ]);
+    }
+
+    private static function applySourceEnrichmentPreview(): void
+    {
+        $payload = Cache::store('file')->get(self::sourceEnrichmentPreviewCacheKey());
+
+        if (! is_array($payload) || (int) ($payload['user_id'] ?? 0) !== (int) auth()->id()) {
+            Notification::make()
+                ->danger()
+                ->title('Проверка не найдена')
+                ->body('Сначала запустите "Обновить из ссылки" в режиме проверки.')
+                ->send();
+
+            return;
+        }
+
+        Cache::store('file')->forget(self::sourceEnrichmentPreviewCacheKey());
+
+        $enricher = app(ProductSourceEnricher::class);
+        $processed = 0;
+        $errors = [];
+        $totals = [
+            'images_found' => 0,
+            'images_saved' => 0,
+            'specs_found' => 0,
+            'attribute_values_saved' => 0,
+            'service_found' => 0,
+            'content_found' => 0,
+            'short_description_found' => 0,
+        ];
+
+        $products = Product::query()
+            ->whereKey($payload['product_ids'] ?? [])
+            ->get();
+
+        foreach ($products as $product) {
+            try {
+                $result = $enricher->enrich($product, (string) ($payload['source_url'] ?? ''), (array) ($payload['options'] ?? []));
+
+                foreach ($totals as $key => $value) {
+                    $totals[$key] += (int) ($result[$key] ?? 0);
+                }
+
+                foreach (($result['errors'] ?? []) as $error) {
+                    $errors[] = ($product->sku ?: $product->id) . ': ' . $error;
+                }
+
+                $processed++;
+            } catch (\Throwable $e) {
+                $errors[] = ($product->sku ?: $product->id) . ': ' . $e->getMessage();
+            }
+        }
+
+        $summary = [
+            'Фото: найдено ' . $totals['images_found'] . ', сохранено ' . $totals['images_saved'],
+            'Описание: полное ' . $totals['content_found'] . ', короткое ' . $totals['short_description_found'],
+            'Характеристики: найдено ' . $totals['specs_found'] . ', записано в атрибуты ' . $totals['attribute_values_saved'],
+            'Сервис: найдено строк ' . $totals['service_found'],
+        ];
+
+        if ($errors !== []) {
+            $summary[] = '';
+            $summary[] = 'Ошибки:';
+            array_push($summary, ...array_slice($errors, 0, 5));
+        }
+
+        $notification = Notification::make()
+            ->title('Обновлено товаров: ' . $processed)
+            ->body(implode("\n", $summary))
+            ->persistent();
+
+        $errors === [] ? $notification->success() : $notification->warning();
+        $notification->send();
+    }
+
+    private static function cancelSourceEnrichmentPreview(): void
+    {
+        Cache::store('file')->forget(self::sourceEnrichmentPreviewCacheKey());
+
+        Notification::make()
+            ->info()
+            ->title('Проверка сброшена')
+            ->body('Товары не изменялись.')
+            ->send();
+    }
+
+    private static function sourceEnrichmentPreviewCacheKey(): string
+    {
+        return 'product-source-enrichment-user:' . (auth()->id() ?: 'guest');
     }
 
     private static function productUrl(object $record): ?string
