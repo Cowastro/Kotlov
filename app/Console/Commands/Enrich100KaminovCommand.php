@@ -5,6 +5,7 @@ namespace App\Console\Commands;
 use App\Services\AiContentEnricher;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 
 /**
@@ -521,10 +522,9 @@ class Enrich100KaminovCommand extends Command
             }
 
             if (! $attrId) {
-                $attrId = DB::table('attributes')->insertGetId([
+                $payload = [
                     'category_id' => $catId,
                     'name'        => $key,
-                    'slug'        => Str::slug($key) ?: Str::random(8),
                     'type'        => 'text',
                     'in_filter'   => false,
                     'in_product'  => true,
@@ -532,7 +532,12 @@ class Enrich100KaminovCommand extends Command
                     'sort_order'  => 0,
                     'created_at'  => $now,
                     'updated_at'  => $now,
-                ]);
+                ];
+                // slug column exists in some environments but not all
+                if (Schema::hasColumn('attributes', 'slug')) {
+                    $payload['slug'] = Str::slug($key) ?: Str::random(8);
+                }
+                $attrId = DB::table('attributes')->insertGetId($payload);
             }
 
             DB::table('product_attribute_values')->updateOrInsert(
