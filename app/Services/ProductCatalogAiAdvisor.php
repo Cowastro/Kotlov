@@ -52,14 +52,15 @@ class ProductCatalogAiAdvisor
             ? $this->aiAdvice($product, $context, $ruleAdvice)
             : [];
 
-        $brand = $this->resolveBrand($aiAdvice['brand_slug'] ?? null)
-            ?? $this->resolveBrand($ruleAdvice['brand_slug'] ?? null);
-        $category = $this->resolveCategory($aiAdvice['category_slug'] ?? null)
-            ?? $this->resolveCategory($ruleAdvice['category_slug'] ?? null);
+        $brandSlug = $this->chooseBrandSlug($ruleAdvice, $aiAdvice);
+        $categorySlug = $this->chooseCategorySlug($ruleAdvice, $aiAdvice);
+
+        $brand = $this->resolveBrand($brandSlug);
+        $category = $this->resolveCategory($categorySlug);
         $duplicate = $this->findDuplicate($product);
 
-        $confidence = (float) ($aiAdvice['confidence'] ?? $ruleAdvice['confidence'] ?? 0.65);
-        $reason = trim((string) ($aiAdvice['reason'] ?? $ruleAdvice['reason'] ?? ''));
+        $confidence = max((float) ($ruleAdvice['confidence'] ?? 0.0), (float) ($aiAdvice['confidence'] ?? 0.0));
+        $reason = $this->mergeReasons($ruleAdvice, $aiAdvice);
 
         $changes = [];
         if ($brand && (int) $product->brand_id !== (int) $brand->id) {
@@ -145,12 +146,70 @@ class ProductCatalogAiAdvisor
             }
         }
 
+        $confidence = 0.25;
+        if ($brandSlug && $categorySlug) {
+            $confidence = 0.86;
+        } elseif ($brandSlug || $categorySlug) {
+            $confidence = 0.72;
+        }
+
         return [
             'brand_slug' => $brandSlug,
             'category_slug' => $categorySlug,
-            'confidence' => $brandSlug || $categorySlug ? 0.72 : 0.25,
+            'confidence' => $confidence,
             'reason' => $reasons ? implode('; ', $reasons) : 'правила не нашли уверенную подсказку',
         ];
+    }
+
+    /**
+     * @param array<string, mixed> $ruleAdvice
+     * @param array<string, mixed> $aiAdvice
+     */
+    private function chooseBrandSlug(array $ruleAdvice, array $aiAdvice): ?string
+    {
+        $ruleSlug = filled($ruleAdvice['brand_slug'] ?? null) ? (string) $ruleAdvice['brand_slug'] : null;
+        $aiSlug = filled($aiAdvice['brand_slug'] ?? null) ? (string) $aiAdvice['brand_slug'] : null;
+        $aiConfidence = (float) ($aiAdvice['confidence'] ?? 0.0);
+
+        if ($ruleSlug && $aiSlug && $ruleSlug !== $aiSlug) {
+            return $aiConfidence >= 0.94 ? $aiSlug : $ruleSlug;
+        }
+
+        return $ruleSlug ?: $aiSlug;
+    }
+
+    /**
+     * @param array<string, mixed> $ruleAdvice
+     * @param array<string, mixed> $aiAdvice
+     */
+    private function chooseCategorySlug(array $ruleAdvice, array $aiAdvice): ?string
+    {
+        $ruleSlug = filled($ruleAdvice['category_slug'] ?? null) ? (string) $ruleAdvice['category_slug'] : null;
+        $aiSlug = filled($aiAdvice['category_slug'] ?? null) ? (string) $aiAdvice['category_slug'] : null;
+        $aiConfidence = (float) ($aiAdvice['confidence'] ?? 0.0);
+
+        if ($ruleSlug && $aiSlug && $ruleSlug !== $aiSlug) {
+            return $aiConfidence >= 0.90 ? $aiSlug : $ruleSlug;
+        }
+
+        return $ruleSlug ?: $aiSlug;
+    }
+
+    /**
+     * @param array<string, mixed> $ruleAdvice
+     * @param array<string, mixed> $aiAdvice
+     */
+    private function mergeReasons(array $ruleAdvice, array $aiAdvice): string
+    {
+        $parts = [];
+        if (filled($ruleAdvice['reason'] ?? null)) {
+            $parts[] = 'Правила: ' . $ruleAdvice['reason'];
+        }
+        if (filled($aiAdvice['reason'] ?? null)) {
+            $parts[] = 'AI: ' . $aiAdvice['reason'];
+        }
+
+        return implode('; ', $parts);
     }
 
     /**
@@ -179,6 +238,9 @@ class ProductCatalogAiAdvisor
 Ты помогаешь разобрать товары интернет-магазина kotlov.by после импорта поставщика.
 Нужно предложить правильный бренд и категорию только из списков ниже.
 Если не уверен, верни null. Не придумывай новые бренды и категории.
+Важно: Банька, BANIA.by и bania.by — это поставщик/техническая заглушка, а НЕ реальный бренд товара.
+Если текущий бренд Банька, не доверяй ему и ищи настоящий бренд в названии, артикуле и URL.
+Если локальная подсказка правил нашла бренд по явному слову в названии, не меняй его без очень веской причины.
 
 Товар:
 SKU: {$product->sku}
