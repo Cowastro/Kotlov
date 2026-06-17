@@ -550,10 +550,50 @@ class ProductSourceEnricher
             $images[] = $url;
         }
 
-        $images = array_values(array_filter(array_unique($images), fn ($url) => $this->isProductImage($url)));
+        $images = $this->expandedImageCandidates($images);
         usort($images, fn (string $left, string $right): int => $this->imageQualityScore($right) <=> $this->imageQualityScore($left));
 
-        return array_values(array_slice($images, 0, 4));
+        return array_values(array_slice($images, 0, 12));
+    }
+
+    /**
+     * @param array<int, string> $urls
+     * @return array<int, string>
+     */
+    private function expandedImageCandidates(array $urls): array
+    {
+        $expanded = [];
+
+        foreach ($urls as $url) {
+            $expanded[] = $url;
+
+            foreach ($this->highResolutionImageVariants($url) as $variant) {
+                $expanded[] = $variant;
+            }
+        }
+
+        return array_values(array_filter(array_unique($expanded), fn ($url) => $this->isProductImage($url)));
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    private function highResolutionImageVariants(string $url): array
+    {
+        $variants = [];
+        $path = (string) parse_url($url, PHP_URL_PATH);
+
+        if (str_contains($path, '/media/catalog/product/thumbnail/')) {
+            $variants[] = preg_replace('~/image/(\d+)/\d{2,4}x\d{2,4}/~', '/image/$1/1000x1000/', $url) ?? $url;
+            $variants[] = preg_replace('~/image/(\d+)/\d{2,4}x\d{2,4}/~', '/image/$1/1600x1600/', $url) ?? $url;
+        }
+
+        if (preg_match('~(?:^|[/_-])\d{2,4}x\d{2,4}(?:[/_\.-]|$)~', $path)) {
+            $variants[] = preg_replace('~(?<=/)\d{2,4}x\d{2,4}(?=/)~', '1000x1000', $url) ?? $url;
+            $variants[] = preg_replace('~(?<=[_-])\d{2,4}x\d{2,4}(?=[_\.-])~', '1000x1000', $url) ?? $url;
+        }
+
+        return array_values(array_filter(array_unique($variants), fn ($variant) => $variant !== $url));
     }
 
     /**
@@ -642,7 +682,10 @@ class ProductSourceEnricher
         }
 
         $saved = [];
-        foreach ($urls as $index => $url) {
+        $candidateUrls = $this->expandedImageCandidates($urls);
+        usort($candidateUrls, fn (string $left, string $right): int => $this->imageQualityScore($right) <=> $this->imageQualityScore($left));
+
+        foreach ($candidateUrls as $url) {
             try {
                 $response = Http::withHeaders(['User-Agent' => 'Mozilla/5.0'])
                     ->timeout(5)
@@ -657,10 +700,19 @@ class ProductSourceEnricher
                     continue;
                 }
 
+                $body = $response->body();
+                if (! $this->isLargeEnoughImage($body)) {
+                    continue;
+                }
+
                 $extension = $this->imageExtension($contentType, $url);
-                $filename = Str::slug($product->sku ?: $product->slug ?: 'product') . '-' . ($index + 1) . '-' . substr(md5($url), 0, 8) . '.' . $extension;
-                file_put_contents($dir . DIRECTORY_SEPARATOR . $filename, $response->body());
+                $filename = Str::slug($product->sku ?: $product->slug ?: 'product') . '-' . (count($saved) + 1) . '-' . substr(md5($url), 0, 8) . '.' . $extension;
+                file_put_contents($dir . DIRECTORY_SEPARATOR . $filename, $body);
                 $saved[] = self::IMAGE_DIR . '/' . $filename;
+
+                if (count($saved) >= 4) {
+                    break;
+                }
             } catch (\Throwable) {
                 continue;
             }
@@ -681,6 +733,19 @@ class ProductSourceEnricher
         };
     }
 
+    private function isLargeEnoughImage(string $body): bool
+    {
+        $info = @getimagesizefromstring($body);
+        if (! is_array($info)) {
+            return false;
+        }
+
+        $width = (int) ($info[0] ?? 0);
+        $height = (int) ($info[1] ?? 0);
+
+        return $width >= 420 && $height >= 420;
+    }
+
     private function isProductImage(string $url): bool
     {
         $path = strtolower((string) parse_url($url, PHP_URL_PATH));
@@ -689,12 +754,12 @@ class ProductSourceEnricher
             return false;
         }
 
-        if (preg_match('~(?:logo|icon|sprite|placeholder|noimage|nophoto|payment|social|banner|watermark|telegram|viber|whatsapp)~i', $path)) {
+        if (preg_match('~(?:logo|icon|sprite|placeholder|noimage|nophoto|payment|social|banner|watermark|telegram|viber|whatsapp|star|rating|loader|loading|close|cart|wishlist|compare|flag|flags|avatar)~i', $path)) {
             return false;
         }
 
         if (preg_match('~[-_](\d{1,3})x(\d{1,3})(?:\.|$)~', $path, $size)) {
-            return (int) $size[1] >= 120 && (int) $size[2] >= 120;
+            return (int) $size[1] >= 420 && (int) $size[2] >= 420;
         }
 
         return true;
@@ -709,7 +774,7 @@ class ProductSourceEnricher
             $score += 80;
         }
 
-        if (preg_match('~(?:logo|icon|sprite|placeholder|noimage|nophoto|payment|social|banner|watermark|telegram|viber|whatsapp)~i', $path)) {
+        if (preg_match('~(?:logo|icon|sprite|placeholder|noimage|nophoto|payment|social|banner|watermark|telegram|viber|whatsapp|star|rating|loader|loading|close|cart|wishlist|compare|flag|flags|avatar)~i', $path)) {
             $score -= 500;
         }
 
