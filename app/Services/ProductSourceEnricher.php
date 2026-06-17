@@ -153,6 +153,19 @@ class ProductSourceEnricher
             return 0;
         }
 
+        $targetAttributeNames = [];
+        foreach ($specs as $spec) {
+            $name = $this->cleanAttributeName((string) ($spec['key'] ?? ''));
+            $value = $this->cleanAttributeValue((string) ($spec['value'] ?? ''));
+            if ($name === '' || $value === '' || $this->isTechnicalOrJunkAttribute($name, $value)) {
+                continue;
+            }
+
+            $targetAttributeNames[] = $this->normalizeAttributeName($name);
+        }
+
+        $this->deleteExistingAttributeValuesForNames($product, $categoryId, array_values(array_unique(array_filter($targetAttributeNames))));
+
         $saved = 0;
         foreach ($specs as $spec) {
             $name = $this->cleanAttributeName((string) ($spec['key'] ?? ''));
@@ -184,6 +197,35 @@ class ProductSourceEnricher
         }
 
         return $saved;
+    }
+
+    /**
+     * Re-importing source specs must replace previous values, not append near-duplicates
+     * like "Диаметр дымохода, мм" beside "Диаметр дымохода".
+     *
+     * @param array<int, string> $normalizedNames
+     */
+    private function deleteExistingAttributeValuesForNames(Product $product, int $categoryId, array $normalizedNames): void
+    {
+        if ($normalizedNames === []) {
+            return;
+        }
+
+        $attributeIds = DB::table('attributes')
+            ->where('category_id', $categoryId)
+            ->get(['id', 'name'])
+            ->filter(fn ($attribute): bool => in_array($this->normalizeAttributeName((string) $attribute->name), $normalizedNames, true))
+            ->pluck('id')
+            ->all();
+
+        if ($attributeIds === []) {
+            return;
+        }
+
+        DB::table('product_attribute_values')
+            ->where('product_id', $product->id)
+            ->whereIn('attribute_id', $attributeIds)
+            ->delete();
     }
 
     private function ensureAttribute(int $categoryId, string $name, string $unit): int
@@ -610,9 +652,63 @@ class ProductSourceEnricher
     private function cleanAttributeValue(string $value): string
     {
         $value = $this->cleanText($value);
+        $value = $this->normalizeBooleanGlyphValue($value);
         $value = trim($value, " \t\n\r\0\x0B:;•—-");
 
         return trim(preg_replace('/\s+/u', ' ', $value) ?? $value);
+    }
+
+    private function normalizeBooleanGlyphValue(string $value): string
+    {
+        $normalized = trim($value);
+        $compact = preg_replace('/\s+/u', '', $normalized) ?? $normalized;
+
+        $yesValues = [
+            '✔',
+            '✔️',
+            '✓',
+            '✅',
+            '☑',
+            'âœ”',
+            'âœ”ï¸',
+            'âœ“',
+            'âœ…',
+            'ђ”',
+            'ђ”пёџ',
+            'ђ”пёЦ',
+        ];
+
+        $noValues = [
+            '❌',
+            '✘',
+            '✕',
+            '✖',
+            '×',
+            '☒',
+            'âŒ',
+            'âœ˜',
+            'âœ•',
+            'âœ–',
+            'ќњ',
+        ];
+
+        if (in_array($compact, $yesValues, true)) {
+            return 'да';
+        }
+
+        if (in_array($compact, $noValues, true)) {
+            return 'нет';
+        }
+
+        if (preg_match('/^(?:[^\p{L}\p{N}]*)?(?:✔|✓|✅|☑)(?:[^\p{L}\p{N}]*)?$/u', $compact)) {
+            return 'да';
+        }
+
+        if (preg_match('/^(?:[^\p{L}\p{N}]*)?(?:❌|✘|✕|✖|×|☒)(?:[^\p{L}\p{N}]*)?$/u', $compact)) {
+            return 'нет';
+        }
+
+        return $value;
     }
 
     private function normalizeAttributeName(string $name): string
@@ -620,6 +716,7 @@ class ProductSourceEnricher
         $name = mb_strtolower($this->cleanAttributeName($name));
         $name = str_replace('ё', 'е', $name);
         $name = preg_replace('/[^a-zа-я0-9]+/u', ' ', $name) ?? $name;
+        $name = preg_replace('/\b(?:мм|см|м|м2|м3|м²|м³|мкв|мкуб|квт|вт|кг|г|л|литр|литров|час|часов|мес|месяц|месяцев|проц|percent)\b\s*$/u', '', $name) ?? $name;
 
         return trim(preg_replace('/\s+/u', ' ', $name) ?? $name);
     }

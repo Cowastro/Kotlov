@@ -17,6 +17,7 @@ class ApplySupplierReviewDecisionsCommand extends Command
         {--id=* : Limit to one or more decision IDs}
         {--delete=* : Delete one or more pending decision IDs}
         {--supplier= : Limit to supplier code}
+        {--decision= : Limit to decision code}
         {--limit= : Maximum decisions to process}';
 
     protected $description = 'Apply queued manual supplier review decisions safely.';
@@ -47,6 +48,10 @@ class ApplySupplierReviewDecisionsCommand extends Command
             $query->where('supplier_code', $supplier);
         }
 
+        if ($decision = trim((string) $this->option('decision'))) {
+            $query->where('decision', $decision);
+        }
+
         if ($limit = (int) $this->option('limit')) {
             $query->limit($limit);
         }
@@ -75,6 +80,7 @@ class ApplySupplierReviewDecisionsCommand extends Command
             'linked' => 0,
             'unlinked' => 0,
             'retail_updated' => 0,
+            'catalog_updated' => 0,
             'ignored' => 0,
             'failed' => 0,
         ];
@@ -239,6 +245,7 @@ class ApplySupplierReviewDecisionsCommand extends Command
             SupplierReviewDecision::DECISION_LINK => $this->linkSupplierProduct($decision, $apply),
             SupplierReviewDecision::DECISION_UNLINK => $this->unlinkSupplierProduct($decision, $apply),
             SupplierReviewDecision::DECISION_UPDATE_RETAIL_PRICE => $this->updateRetailPrice($decision, $apply),
+            SupplierReviewDecision::DECISION_UPDATE_PRODUCT_CATALOG => $this->updateProductCatalog($decision, $apply),
             SupplierReviewDecision::DECISION_IGNORE => $this->ignoreDecision($decision, $apply),
             default => throw new \RuntimeException("Unknown decision: {$decision->decision}"),
         };
@@ -386,6 +393,57 @@ class ApplySupplierReviewDecisionsCommand extends Command
         return 'розница обновлена: ' . number_format($newPrice, 2, '.', '');
     }
 
+    private function updateProductCatalog(SupplierReviewDecision $decision, bool $apply): string
+    {
+        if (! $decision->product_id) {
+            throw new \RuntimeException('Для обновления каталога нужен product_id.');
+        }
+
+        $payload = is_array($decision->payload) ? $decision->payload : [];
+        $changes = is_array($payload['changes'] ?? null) ? $payload['changes'] : [];
+        $updates = [];
+        $notes = [];
+
+        if (isset($changes['brand_id'])) {
+            $brandId = (int) $changes['brand_id'];
+            if (! DB::table('brands')->where('id', $brandId)->exists()) {
+                throw new \RuntimeException('Предложенный бренд не найден.');
+            }
+            $updates['brand_id'] = $brandId;
+            $notes[] = 'бренд -> ' . ($payload['suggested_brand'] ?? $brandId);
+        }
+
+        if (isset($changes['category_id'])) {
+            $categoryId = (int) $changes['category_id'];
+            if (! DB::table('categories')->where('id', $categoryId)->exists()) {
+                throw new \RuntimeException('Предложенная категория не найдена.');
+            }
+            $updates['category_id'] = $categoryId;
+            $notes[] = 'категория -> ' . ($payload['suggested_category'] ?? $categoryId);
+        }
+
+        if ($updates === []) {
+            $notes[] = filled($payload['duplicate_product_id'] ?? null)
+                ? 'найден возможный дубль ' . ($payload['duplicate_sku'] ?? $payload['duplicate_product_id'])
+                : 'нет изменений для применения';
+        }
+
+        if (! $apply) {
+            return implode('; ', $notes);
+        }
+
+        DB::transaction(function () use ($decision, $updates): void {
+            if ($updates !== []) {
+                $updates['updated_at'] = now();
+                DB::table('products')->where('id', $decision->product_id)->update($updates);
+            }
+
+            $this->markApplied($decision);
+        });
+
+        return $updates === [] ? 'отмечено как проверенное' : 'каталог обновлён: ' . implode('; ', $notes);
+    }
+
     private function markApplied(SupplierReviewDecision $decision): void
     {
         $decision->forceFill([
@@ -415,6 +473,7 @@ class ApplySupplierReviewDecisionsCommand extends Command
             SupplierReviewDecision::DECISION_LINK => 'linked',
             SupplierReviewDecision::DECISION_UNLINK => 'unlinked',
             SupplierReviewDecision::DECISION_UPDATE_RETAIL_PRICE => 'retail_updated',
+            SupplierReviewDecision::DECISION_UPDATE_PRODUCT_CATALOG => 'catalog_updated',
             SupplierReviewDecision::DECISION_IGNORE => 'ignored',
             default => 'failed',
         };
@@ -426,6 +485,7 @@ class ApplySupplierReviewDecisionsCommand extends Command
             SupplierReviewDecision::DECISION_LINK => 'связать',
             SupplierReviewDecision::DECISION_UNLINK => 'удалить связь',
             SupplierReviewDecision::DECISION_UPDATE_RETAIL_PRICE => 'обновить розницу',
+            SupplierReviewDecision::DECISION_UPDATE_PRODUCT_CATALOG => 'обновить бренд/категорию',
             SupplierReviewDecision::DECISION_IGNORE => 'игнорировать',
             default => $decision,
         };

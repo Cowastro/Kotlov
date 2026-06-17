@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Products\Tables;
 
+use App\Jobs\RunProductCatalogAiReview;
 use App\Jobs\RunProductSourceEnrichment;
 use App\Models\Brand;
 use App\Models\Category;
@@ -459,6 +460,24 @@ class ProductsTable
                         ]))
                         ->deselectRecordsAfterCompletion(),
 
+                    BulkAction::make('ai_catalog_review')
+                        ->label('AI-разбор каталога')
+                        ->icon('heroicon-o-sparkles')
+                        ->color('warning')
+                        ->form([
+                            Toggle::make('use_ai')
+                                ->label('Использовать DeepSeek/AI')
+                                ->helperText('Если выключить, сработают только локальные правила по брендам и категориям.')
+                                ->default(true),
+                        ])
+                        ->requiresConfirmation()
+                        ->modalHeading('Разобрать выбранные товары')
+                        ->modalDescription('AI предложит бренд, категорию и отметит возможные дубли. Изменения не применяются сразу: будут созданы решения на проверку.')
+                        ->action(function (Collection $records, array $data): void {
+                            self::queueCatalogAiReview($records, (bool) ($data['use_ai'] ?? true));
+                        })
+                        ->deselectRecordsAfterCompletion(),
+
                     BulkAction::make('enrich_from_source_url')
                         ->label('Обновить из ссылки')
                         ->icon('heroicon-o-link')
@@ -623,6 +642,30 @@ class ProductsTable
             ->success()
             ->title($previewOnly ? 'Проверка поставлена в очередь' : 'Обновление поставлено в очередь')
             ->body('Товаров в задаче: ' . count($productIds) . ".\nРезультат появится в уведомлениях после выполнения очереди."));
+    }
+
+    private static function queueCatalogAiReview(iterable $records, bool $useAi): void
+    {
+        $productIds = collect($records)->pluck('id')->filter()->values()->all();
+        if ($productIds === []) {
+            self::sendAdminNotification(Notification::make()
+                ->warning()
+                ->title('Товары не выбраны')
+                ->body('Выберите товары и повторите действие.'));
+
+            return;
+        }
+
+        RunProductCatalogAiReview::dispatch(
+            $productIds,
+            (int) auth()->id(),
+            $useAi,
+        );
+
+        self::sendAdminNotification(Notification::make()
+            ->success()
+            ->title('AI-разбор поставлен в очередь')
+            ->body('Товаров в задаче: ' . count($productIds) . ".\nРезультат и команды проверки появятся в уведомлениях."));
     }
 
     private static function hasProductImages(Product $record): bool
