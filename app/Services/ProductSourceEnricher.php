@@ -506,6 +506,7 @@ class ProductSourceEnricher
     private function cleanText(string $text): string
     {
         $text = $this->sanitizeUtf8($text);
+        $text = $this->repairMojibake($text);
         $text = html_entity_decode($text, ENT_QUOTES | ENT_HTML5, 'UTF-8');
         $text = preg_replace('/\s+/u', ' ', $text) ?? $text;
 
@@ -526,7 +527,7 @@ class ProductSourceEnricher
     private function sanitizeUtf8Recursive(mixed $value): mixed
     {
         if (is_string($value)) {
-            return $this->sanitizeUtf8($value);
+            return $this->repairMojibake($this->sanitizeUtf8($value));
         }
 
         if (! is_array($value)) {
@@ -535,7 +536,7 @@ class ProductSourceEnricher
 
         $clean = [];
         foreach ($value as $key => $item) {
-            $cleanKey = is_string($key) ? $this->sanitizeUtf8($key) : $key;
+            $cleanKey = is_string($key) ? $this->repairMojibake($this->sanitizeUtf8($key)) : $key;
             $clean[$cleanKey] = $this->sanitizeUtf8Recursive($item);
         }
 
@@ -554,6 +555,23 @@ class ProductSourceEnricher
         }
 
         return iconv('UTF-8', 'UTF-8//IGNORE', $value) ?: '';
+    }
+
+    private function repairMojibake(string $value): string
+    {
+        if (! preg_match('/(?:Р[\\x{0400}-\\x{04FF}]|С[\\x{0400}-\\x{04FF}]|Ð.|Ñ.)/u', $value)) {
+            return $value;
+        }
+
+        $candidate = @iconv('UTF-8', 'Windows-1251//IGNORE', $value);
+        if (! is_string($candidate) || ! mb_check_encoding($candidate, 'UTF-8')) {
+            return $value;
+        }
+
+        $badScore = preg_match_all('/(?:Р[\\x{0400}-\\x{04FF}]|С[\\x{0400}-\\x{04FF}]|Ð.|Ñ.)/u', $value);
+        $candidateBadScore = preg_match_all('/(?:Р[\\x{0400}-\\x{04FF}]|С[\\x{0400}-\\x{04FF}]|Ð.|Ñ.)/u', $candidate);
+
+        return $candidateBadScore < $badScore ? $candidate : $value;
     }
 
     private function cleanAttributeName(string $name): string

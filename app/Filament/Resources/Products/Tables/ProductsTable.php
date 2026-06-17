@@ -642,13 +642,18 @@ class ProductsTable
             array_push($summary, ...array_slice($errors, 0, 5));
         }
 
+        $fullBody = implode("\n", $summary);
+        $toastBody = $previewOnly
+            ? implode("\n", array_slice($summary, 0, 5)) . "\nПодробности сохранены в уведомлениях."
+            : $fullBody;
+
         $notification = Notification::make()
             ->title(($previewOnly ? 'Проверка завершена: ' : 'Обновлено товаров: ') . $processed)
-            ->body(implode("\n", $summary))
+            ->body($toastBody)
             ->persistent();
 
         $errors === [] ? $notification->success() : $notification->warning();
-        self::sendAdminNotification($notification);
+        self::sendAdminNotification($notification, $fullBody);
     }
 
     private static function sourceEnrichmentSummary(array $totals, bool $previewOnly, ?array $preview): array
@@ -692,13 +697,17 @@ class ProductsTable
         return array_values(array_filter((array) $record->images)) !== [];
     }
 
-    private static function sendAdminNotification(Notification $notification): void
+    private static function sendAdminNotification(Notification $notification, ?string $databaseBody = null): void
     {
         $notification->send();
 
         $user = auth()->user();
         if ($user) {
-            $notification->sendToDatabase($user);
+            $databaseNotification = clone $notification;
+            if ($databaseBody !== null) {
+                $databaseNotification->body($databaseBody);
+            }
+            $databaseNotification->sendToDatabase($user);
         }
     }
 
