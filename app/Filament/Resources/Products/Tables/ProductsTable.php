@@ -2,6 +2,8 @@
 
 namespace App\Filament\Resources\Products\Tables;
 
+use App\Models\Brand;
+use App\Models\Category;
 use App\Models\Supplier;
 use App\Models\User;
 use Filament\Actions\ActionGroup;
@@ -385,6 +387,49 @@ class ProductsTable
                         ->icon('heroicon-o-archive-box-x-mark')
                         ->color('success')
                         ->action(fn(Collection $records) => $records->each->update(['is_archived' => false]))
+                        ->deselectRecordsAfterCompletion(),
+
+                    BulkAction::make('change_brand')
+                        ->label('Сменить бренд')
+                        ->icon('heroicon-o-building-storefront')
+                        ->color('info')
+                        ->form([
+                            FormSelect::make('brand_id')
+                                ->label('Бренд')
+                                ->options(fn () => Brand::query()
+                                    ->orderBy('name')
+                                    ->pluck('name', 'id'))
+                                ->searchable()
+                                ->preload()
+                                ->nullable()
+                                ->helperText('Можно оставить пустым, чтобы снять бренд.'),
+                        ])
+                        ->requiresConfirmation()
+                        ->modalHeading('Сменить бренд у выбранных товаров')
+                        ->action(fn(Collection $records, array $data) => $records->each->update([
+                            'brand_id' => $data['brand_id'] ?? null,
+                        ]))
+                        ->deselectRecordsAfterCompletion(),
+
+                    BulkAction::make('change_category')
+                        ->label('Сменить категорию')
+                        ->icon('heroicon-o-folder')
+                        ->color('info')
+                        ->form([
+                            FormSelect::make('category_id')
+                                ->label('Категория')
+                                ->options(fn () => Category::query()
+                                    ->orderBy('name')
+                                    ->pluck('name', 'id'))
+                                ->searchable()
+                                ->preload()
+                                ->required(),
+                        ])
+                        ->requiresConfirmation()
+                        ->modalHeading('Сменить категорию у выбранных товаров')
+                        ->action(fn(Collection $records, array $data) => $records->each->update([
+                            'category_id' => $data['category_id'],
+                        ]))
                         ->deselectRecordsAfterCompletion(),
 
                     BulkAction::make('update_supplier')
