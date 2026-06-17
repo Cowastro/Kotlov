@@ -44,6 +44,7 @@ class RunProductSourceEnrichment implements ShouldQueue
         $totals = [
             'images_found' => 0,
             'images_saved' => 0,
+            'images_replaced' => 0,
             'specs_found' => 0,
             'attribute_values_saved' => 0,
             'service_found' => 0,
@@ -116,7 +117,7 @@ class RunProductSourceEnrichment implements ShouldQueue
     {
         if (! $this->previewOnly) {
             return [
-                'Фото: найдено ' . $totals['images_found'] . ', сохранено ' . $totals['images_saved'],
+                'Фото: найдено ' . $totals['images_found'] . ', сохранено ' . $totals['images_saved'] . ', режим: ' . ($totals['images_replaced'] > 0 ? 'замена' : 'добавление/без замены'),
                 'Описание: полное ' . $totals['content_found'] . ', короткое ' . $totals['short_description_found'],
                 'Характеристики: найдено ' . $totals['specs_found'] . ', записано в атрибуты ' . $totals['attribute_values_saved'],
                 'Сервис: найдено строк ' . $totals['service_found'],

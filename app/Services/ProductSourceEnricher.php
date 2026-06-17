@@ -37,6 +37,7 @@ class ProductSourceEnricher
         $stats = [
             'images_found' => count($parsed['images']),
             'images_saved' => 0,
+            'images_replaced' => 0,
             'specs_found' => count($parsed['specs']),
             'attribute_values_saved' => 0,
             'service_found' => count($parsed['service_info']),
@@ -67,10 +68,15 @@ class ProductSourceEnricher
                 $stats['images_saved'] = count($downloaded);
 
                 if ($downloaded !== []) {
-                    $existing = $this->decodeArray($product->images);
-                    $updates['images'] = ($options['replace_images'] ?? true)
-                        ? $downloaded
-                        : array_values(array_unique(array_merge($existing, $downloaded)));
+                    $replaceImages = (bool) ($options['replace_images'] ?? true);
+
+                    if ($replaceImages) {
+                        $updates['images'] = array_values($downloaded);
+                        $stats['images_replaced'] = 1;
+                    } else {
+                        $existing = $this->decodeArray($product->images);
+                        $updates['images'] = array_values(array_unique(array_merge($existing, $downloaded)));
+                    }
                 }
             }
         } catch (\Throwable $e) {
