@@ -35,12 +35,18 @@ class EnrichTeplodvorCommand extends Command
     private const IMAGE_DIR = 'img/products/ligmet';
     private const SUPPLIER_CODE = 'ligmet';
 
-    /** Known brand listing pages on teplodvor.by. */
+    /**
+     * Known brand listing pages on teplodvor.by.
+     * Value = array of paths; all are crawled when --brand= targets this brand.
+     */
     private const BRAND_SOURCES = [
-        'Kratki'   => '/shop/pechi-kaminy/kratki/',
-        'Ермак'    => '/shop/pechi-kaminy/ermak/',
-        'Nordflam' => '/shop/pechi-kaminy/nordflam/',
-        'Invicta'  => '/shop/pechi-kaminy/invicta/',
+        'Kratki'   => ['/shop/pechi-kaminy/kratki/'],
+        'Ермак'    => [
+            '/shop/pech-dlya-bani/ermak/',   // банные КЛАССИКА/СТАНДАРТ/ПРЕМИУМ
+            '/shop/pechi-kaminy/ermak/',      // каминные STOKER
+        ],
+        'Nordflam' => ['/shop/pechi-kaminy/nordflam/'],
+        'Invicta'  => ['/shop/pechi-kaminy/invicta/'],
         // Add more as discovered: Blist, FireWay, Ferguss, MBS, Panadero
     ];
 
@@ -71,8 +77,12 @@ class EnrichTeplodvorCommand extends Command
         'EKO','PATINE',
         'С','ДУХОВКОЙ','КАМНЕМ','КРЫШКОЙ','ВОДЯНЫМ','ВЕНТИЛЯТОРОМ',
         'КУПИТЬ','МИНСКЕ','ДОСТАВКОЙ','ЦЕНА','ОПИСАНИЕ','ХАРАКТЕРИСТИКИ',
-        // teplodvor.by-specific suffixes
-        'ЧУГУН','ЧУГУННОЙ','PREMIUM','PREMIYM','АКВА','AQUA',
+        // teplodvor.by spec suffixes in product names
+        'КВТ','ОБШИВКА','THERMOTEC','КОНТУРОМ','KAFEL','КАФЕЛЬНАЯ','САДОВЫЙ','САДОВАЯ',
+        'ЧУГУН','ЧУГУННОЙ','PREMIUM','AQUA','АКВА','STOKER',
+        // Brand names as safety-net stopwords (handles Cyrillic/Latin mismatch like ERMAK≠ЕРМАК)
+        'KRATKI','INVICTA','BLIST','FIREWAY','NORDFLAM','FERGUSS','MBS','PANADERO',
+        'ERMAK','ЕРМАК',
     ];
 
     private bool $apply;
@@ -123,7 +133,6 @@ class EnrichTeplodvorCommand extends Command
                 $crawlPaths[] = str_starts_with($p, 'http') ? (parse_url($p, PHP_URL_PATH) ?? $p) : $p;
             }
         } elseif ($brandFilter) {
-            // Find canonical brand name to look up BRAND_SOURCES.
             $canonBrand = null;
             foreach (self::BRAND_SLUGS as $slug => $name) {
                 if (mb_strtolower($name) === $brandFilter || $slug === $brandFilter) {
@@ -132,13 +141,14 @@ class EnrichTeplodvorCommand extends Command
                 }
             }
             if ($canonBrand && isset(self::BRAND_SOURCES[$canonBrand])) {
-                $crawlPaths = [self::BRAND_SOURCES[$canonBrand]];
+                $crawlPaths = self::BRAND_SOURCES[$canonBrand]; // already an array
             } else {
                 $this->error("No default teplodvor.by URL for brand '{$brandFilter}'. Use --source-url=");
                 return self::FAILURE;
             }
         } else {
-            $crawlPaths = array_values(self::BRAND_SOURCES);
+            // Flatten: [brand => [path, ...], ...] → [path, ...]
+            $crawlPaths = array_merge(...array_values(self::BRAND_SOURCES));
         }
 
         $seenUrls = [];
@@ -444,7 +454,11 @@ class EnrichTeplodvorCommand extends Command
         $n    = preg_replace('/[^А-ЯЁA-Z0-9\-]/u', ' ', $n) ?? $n;
         $toks = array_filter(
             preg_split('/\s+/u', trim($n)) ?: [],
-            fn ($t) => $t !== '' && ! in_array($t, self::STOPWORDS, true) && ! preg_match('/^P\d{5,}$/', $t)
+            fn ($t) => $t !== ''
+                && ! in_array($t, self::STOPWORDS, true)
+                && ! preg_match('/^P\d{5,}$/', $t)          // Invicta product codes
+                && ! preg_match('/^\d+КВТ$/u', $t)           // power suffix: 8КВТ, 7КВТ
+                && ! preg_match('/^\d{3,}$/', $t)            // 3+ digit specs: Ø150, 2025
         );
         return implode(' ', $toks);
     }
