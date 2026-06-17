@@ -486,6 +486,7 @@ class ProductsTable
                             $processed = 0;
                             $errors = [];
                             $preview = null;
+                            $parsed = null;
                             $totals = [
                                 'images_found' => 0,
                                 'images_saved' => 0,
@@ -503,6 +504,7 @@ class ProductsTable
                                         $totals[$key] += (int) ($result[$key] ?? 0);
                                     }
                                     $preview ??= $result['preview'] ?? null;
+                                    $parsed ??= $result['parsed'] ?? null;
                                     foreach (($result['errors'] ?? []) as $error) {
                                         $errors[] = ($record->sku ?: $record->id) . ': ' . $error;
                                     }
@@ -560,6 +562,7 @@ class ProductsTable
                                     'product_ids' => $records->pluck('id')->values()->all(),
                                     'source_url' => (string) $data['source_url'],
                                     'options' => $applyOptions,
+                                    'parsed' => $parsed,
                                 ], now()->addMinutes(30));
 
                                 $summary[] = '';
@@ -718,7 +721,9 @@ class ProductsTable
 
         foreach ($products as $product) {
             try {
-                $result = $enricher->enrich($product, (string) ($payload['source_url'] ?? ''), (array) ($payload['options'] ?? []));
+                $result = is_array($payload['parsed'] ?? null)
+                    ? $enricher->enrichFromParsed($product, (string) ($payload['source_url'] ?? ''), (array) $payload['parsed'], (array) ($payload['options'] ?? []))
+                    : $enricher->enrich($product, (string) ($payload['source_url'] ?? ''), (array) ($payload['options'] ?? []));
 
                 foreach ($totals as $key => $value) {
                     $totals[$key] += (int) ($result[$key] ?? 0);

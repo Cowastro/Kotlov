@@ -22,6 +22,17 @@ class ProductSourceEnricher
         $html = $this->fetchHtml($sourceUrl);
         $parsed = $this->parsePage($html, $sourceUrl);
 
+        return $this->enrichFromParsed($product, $sourceUrl, $parsed, $options);
+    }
+
+    public function enrichFromParsed(Product $product, string $sourceUrl, array $parsed, array $options = []): array
+    {
+        $sourceUrl = trim($sourceUrl);
+        if (! filter_var($sourceUrl, FILTER_VALIDATE_URL) || ! in_array(parse_url($sourceUrl, PHP_URL_SCHEME), ['http', 'https'], true)) {
+            throw new \InvalidArgumentException('Invalid source URL.');
+        }
+
+        $parsed = $this->normalizeParsedData($parsed);
         $updates = [];
         $stats = [
             'images_found' => count($parsed['images']),
@@ -42,7 +53,12 @@ class ProductSourceEnricher
         ];
 
         if (($options['preview_only'] ?? false) === true) {
-            return $stats + ['updated_fields' => [], 'preview_only' => true, 'preview' => $preview];
+            return $stats + [
+                'updated_fields' => [],
+                'preview_only' => true,
+                'preview' => $preview,
+                'parsed' => $parsed,
+            ];
         }
 
         try {
@@ -210,12 +226,26 @@ class ProductSourceEnricher
 
     private function parsePage(string $html, string $url): array
     {
-        return [
+        return $this->normalizeParsedData([
             'description' => $this->extractDescription($html),
             'short_description' => $this->extractShortDescription($html),
             'specs' => $this->extractSpecs($html),
             'service_info' => $this->extractServiceInfo($html),
             'images' => $this->extractImages($html, $url),
+        ]);
+    }
+
+    private function normalizeParsedData(array $parsed): array
+    {
+        return [
+            'description' => $this->cleanText((string) ($parsed['description'] ?? '')),
+            'short_description' => $this->cleanText((string) ($parsed['short_description'] ?? '')),
+            'specs' => $this->sanitizeJsonArray((array) ($parsed['specs'] ?? [])),
+            'service_info' => $this->sanitizeJsonArray((array) ($parsed['service_info'] ?? [])),
+            'images' => array_values(array_slice(array_filter(array_map(
+                fn ($url) => filter_var($url, FILTER_VALIDATE_URL) ? (string) $url : '',
+                (array) ($parsed['images'] ?? [])
+            )), 0, 4)),
         ];
     }
 
@@ -375,7 +405,7 @@ class ProductSourceEnricher
             }
         }
 
-        return array_values(array_slice(array_filter(array_unique($images), fn ($url) => $this->isProductImage($url)), 0, 6));
+        return array_values(array_slice(array_filter(array_unique($images), fn ($url) => $this->isProductImage($url)), 0, 4));
     }
 
     private function downloadImages(array $urls, Product $product): array
@@ -389,7 +419,7 @@ class ProductSourceEnricher
         foreach ($urls as $index => $url) {
             try {
                 $response = Http::withHeaders(['User-Agent' => 'Mozilla/5.0'])
-                    ->timeout(10)
+                    ->timeout(5)
                     ->get($url);
 
                 if (! $response->successful()) {
