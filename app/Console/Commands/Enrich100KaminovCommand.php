@@ -435,7 +435,9 @@ class Enrich100KaminovCommand extends Command
         if ($brand !== '') {
             $n = preg_replace('/' . preg_quote(mb_strtoupper($brand), '/') . '/u', '', $n) ?? $n;
         }
-        $n = preg_replace('/[^А-ЯЁA-Z0-9\-\/.]/u', ' ', $n) ?? $n;
+        // Keep only Cyrillic/Latin letters, digits, hyphen. Slash and dot become spaces
+        // so Лигмет variants like "RUNA/BLACK" normalise to "RUNA BLACK" → "RUNA" after stopwords.
+        $n = preg_replace('/[^А-ЯЁA-Z0-9\-]/u', ' ', $n) ?? $n;
         $toks = array_filter(
             preg_split('/\s+/u', trim($n)) ?: [],
             fn ($t) => $t !== '' && ! in_array($t, self::STOPWORDS, true)
