@@ -458,6 +458,9 @@ class ProductsTable
                             Toggle::make('update_content')
                                 ->label('Обновить описание')
                                 ->default(true),
+                            Toggle::make('update_service')
+                                ->label('Обновить сервис')
+                                ->default(false),
                         ])
                         ->requiresConfirmation()
                         ->modalHeading('Обновить выбранные товары из ссылки')
@@ -466,30 +469,55 @@ class ProductsTable
                             $enricher = app(ProductSourceEnricher::class);
                             $updated = 0;
                             $errors = [];
+                            $totals = [
+                                'images_found' => 0,
+                                'images_saved' => 0,
+                                'specs_found' => 0,
+                                'attribute_values_saved' => 0,
+                                'service_found' => 0,
+                                'content_found' => 0,
+                                'short_description_found' => 0,
+                            ];
 
                             foreach ($records as $record) {
                                 try {
-                                    $enricher->enrich($record, (string) $data['source_url'], [
+                                    $result = $enricher->enrich($record, (string) $data['source_url'], [
                                         'update_images' => (bool) ($data['update_images'] ?? true),
                                         'replace_images' => (bool) ($data['replace_images'] ?? true),
                                         'update_specs' => (bool) ($data['update_specs'] ?? true),
                                         'update_content' => (bool) ($data['update_content'] ?? true),
+                                        'update_service' => (bool) ($data['update_service'] ?? false),
                                     ]);
+                                    foreach ($totals as $key => $value) {
+                                        $totals[$key] += (int) ($result[$key] ?? 0);
+                                    }
                                     $updated++;
                                 } catch (\Throwable $e) {
                                     $errors[] = ($record->sku ?: $record->id) . ': ' . $e->getMessage();
                                 }
                             }
 
+                            $summary = [
+                                'Фото: найдено ' . $totals['images_found'] . ', сохранено ' . $totals['images_saved'],
+                                'Описание: полное ' . $totals['content_found'] . ', короткое ' . $totals['short_description_found'],
+                                'Характеристики: найдено ' . $totals['specs_found'] . ', записано в атрибуты ' . $totals['attribute_values_saved'],
+                                'Сервис: найдено строк ' . $totals['service_found'],
+                            ];
+
+                            if ($errors !== []) {
+                                $summary[] = '';
+                                $summary[] = 'Ошибки:';
+                                array_push($summary, ...array_slice($errors, 0, 5));
+                            }
+
                             $notification = Notification::make()
-                                ->title('Обновлено товаров: ' . $updated);
+                                ->title('Обновлено товаров: ' . $updated)
+                                ->body(implode("\n", $summary));
 
                             if ($errors === []) {
                                 $notification->success();
                             } else {
-                                $notification
-                                    ->warning()
-                                    ->body(implode("\n", array_slice($errors, 0, 5)));
+                                $notification->warning();
                             }
 
                             $notification->send();

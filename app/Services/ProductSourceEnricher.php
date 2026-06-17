@@ -26,7 +26,10 @@ class ProductSourceEnricher
             'images_found' => count($parsed['images']),
             'images_saved' => 0,
             'specs_found' => count($parsed['specs']),
+            'attribute_values_saved' => 0,
+            'service_found' => count($parsed['service_info']),
             'content_found' => $parsed['description'] !== '' ? 1 : 0,
+            'short_description_found' => $parsed['short_description'] !== '' ? 1 : 0,
         ];
 
         if (($options['update_images'] ?? true) === true && $parsed['images'] !== []) {
@@ -43,13 +46,21 @@ class ProductSourceEnricher
 
         if (($options['update_specs'] ?? true) === true && $parsed['specs'] !== []) {
             $updates['specs'] = $parsed['specs'];
+            $stats['attribute_values_saved'] = $this->syncAttributeValues($product, $parsed['specs']);
+        }
+
+        if (($options['update_service'] ?? false) === true && $parsed['service_info'] !== []) {
+            $updates['service_info'] = $parsed['service_info'];
         }
 
         if (($options['update_content'] ?? true) === true && $parsed['description'] !== '') {
             $description = Str::limit(trim(strip_tags($parsed['description'])), 1800, '');
             $updates['content'] = '<p>' . e($description) . '</p>';
-            $updates['short_description'] = Str::limit($description, 240, '');
+            $updates['short_description'] = Str::limit($parsed['short_description'] ?: $description, 240, '');
             $updates['meta_description'] = Str::limit($description, 250, '');
+        } elseif (($options['update_content'] ?? true) === true && $parsed['short_description'] !== '') {
+            $updates['short_description'] = Str::limit($parsed['short_description'], 240, '');
+            $updates['meta_description'] = Str::limit($parsed['short_description'], 250, '');
         }
 
         if ($updates !== []) {
@@ -72,6 +83,84 @@ class ProductSourceEnricher
         return $stats + ['updated_fields' => array_keys($updates)];
     }
 
+    private function syncAttributeValues(Product $product, array $specs): int
+    {
+        $categoryId = (int) $product->category_id;
+        if ($categoryId <= 0) {
+            return 0;
+        }
+
+        $saved = 0;
+        foreach ($specs as $spec) {
+            $name = $this->cleanAttributeName((string) ($spec['key'] ?? ''));
+            $value = $this->cleanAttributeValue((string) ($spec['value'] ?? ''));
+            if ($name === '' || $value === '' || $this->isTechnicalOrJunkAttribute($name, $value)) {
+                continue;
+            }
+
+            [$value, $unit] = $this->splitValueAndUnit($value, (string) ($spec['unit'] ?? ''));
+            $attributeId = $this->ensureAttribute($categoryId, $name, $unit);
+            if ($attributeId <= 0) {
+                continue;
+            }
+
+            DB::table('product_attribute_values')->updateOrInsert(
+                [
+                    'product_id' => $product->id,
+                    'attribute_id' => $attributeId,
+                ],
+                [
+                    'option_id' => null,
+                    'is_checked' => null,
+                    'value' => $value,
+                    'updated_at' => now(),
+                    'created_at' => now(),
+                ]
+            );
+            $saved++;
+        }
+
+        return $saved;
+    }
+
+    private function ensureAttribute(int $categoryId, string $name, string $unit): int
+    {
+        $normalized = $this->normalizeAttributeName($name);
+        $existing = DB::table('attributes')
+            ->where('category_id', $categoryId)
+            ->get(['id', 'name', 'suffix'])
+            ->first(fn ($attribute) => $this->normalizeAttributeName((string) $attribute->name) === $normalized);
+
+        if ($existing) {
+            if ($unit !== '' && trim((string) $existing->suffix) === '') {
+                DB::table('attributes')->where('id', $existing->id)->update([
+                    'suffix' => $unit,
+                    'updated_at' => now(),
+                ]);
+            }
+
+            return (int) $existing->id;
+        }
+
+        $sortOrder = (int) DB::table('attributes')->where('category_id', $categoryId)->max('sort_order') + 10;
+
+        return (int) DB::table('attributes')->insertGetId([
+            'category_id' => $categoryId,
+            'group_id' => 0,
+            'sort_order' => $sortOrder,
+            'type' => 'value',
+            'name' => $name,
+            'suffix' => $unit !== '' ? $unit : null,
+            'in_filter' => false,
+            'in_sort' => false,
+            'in_product' => true,
+            'in_brief' => false,
+            'is_comparable' => false,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+    }
+
     private function fetchHtml(string $url): string
     {
         $response = Http::withHeaders([
@@ -90,7 +179,9 @@ class ProductSourceEnricher
     {
         return [
             'description' => $this->extractDescription($html),
+            'short_description' => $this->extractShortDescription($html),
             'specs' => $this->extractSpecs($html),
+            'service_info' => $this->extractServiceInfo($html),
             'images' => $this->extractImages($html, $url),
         ];
     }
@@ -100,6 +191,8 @@ class ProductSourceEnricher
         foreach ([
             '~<div[^>]+class=["\'][^"\']*(?:product-description|description|desc|tab-description)[^"\']*["\'][^>]*>([\s\S]*?)</div>~iu',
             '~<section[^>]+class=["\'][^"\']*(?:product-description|description|desc)[^"\']*["\'][^>]*>([\s\S]*?)</section>~iu',
+            '~<div[^>]+id=["\'][^"\']*(?:product-description|description|desc|tab-description|content)[^"\']*["\'][^>]*>([\s\S]*?)</div>~iu',
+            '~<section[^>]+id=["\'][^"\']*(?:product-description|description|desc|tab-description|content)[^"\']*["\'][^>]*>([\s\S]*?)</section>~iu',
             '~<meta[^>]+name=["\']description["\'][^>]+content=["\'](.*?)["\'][^>]*>~iu',
             '~<meta[^>]+property=["\']og:description["\'][^>]+content=["\'](.*?)["\'][^>]*>~iu',
         ] as $pattern) {
@@ -111,7 +204,48 @@ class ProductSourceEnricher
             }
         }
 
+        return $this->extractLongestDescriptionBlock($html);
+    }
+
+    private function extractShortDescription(string $html): string
+    {
+        foreach ([
+            '~<div[^>]+class=["\'][^"\']*(?:short-description|short_description|intro|summary|product-short)[^"\']*["\'][^>]*>([\s\S]*?)</div>~iu',
+            '~<section[^>]+class=["\'][^"\']*(?:short-description|short_description|intro|summary|product-short)[^"\']*["\'][^>]*>([\s\S]*?)</section>~iu',
+            '~<meta[^>]+property=["\']og:description["\'][^>]+content=["\'](.*?)["\'][^>]*>~iu',
+            '~<meta[^>]+name=["\']description["\'][^>]+content=["\'](.*?)["\'][^>]*>~iu',
+        ] as $pattern) {
+            if (preg_match($pattern, $html, $match)) {
+                $text = $this->cleanText(html_entity_decode(strip_tags($match[1]), ENT_QUOTES | ENT_HTML5, 'UTF-8'));
+                if (mb_strlen($text) >= 25) {
+                    return $text;
+                }
+            }
+        }
+
         return '';
+    }
+
+    private function extractLongestDescriptionBlock(string $html): string
+    {
+        $dom = $this->dom($html);
+        $xpath = new \DOMXPath($dom);
+        $best = '';
+
+        foreach ($xpath->query('//*[self::div or self::section or self::article]') ?: [] as $node) {
+            $marker = mb_strtolower(trim(($node->attributes?->getNamedItem('class')?->nodeValue ?? '') . ' ' . ($node->attributes?->getNamedItem('id')?->nodeValue ?? '')));
+            if (! preg_match('/description|desc|content|detail|text|opis|tabs?/iu', $marker)) {
+                continue;
+            }
+
+            $text = $this->cleanText($node->textContent);
+            $length = mb_strlen($text);
+            if ($length >= 80 && $length <= 5000 && $length > mb_strlen($best)) {
+                $best = $text;
+            }
+        }
+
+        return $best;
     }
 
     private function extractSpecs(string $html): array
@@ -148,12 +282,35 @@ class ProductSourceEnricher
         return array_slice(array_values($specs), 0, 80);
     }
 
+    private function extractServiceInfo(string $html): array
+    {
+        $info = [];
+        $specs = $this->extractSpecs($html);
+
+        foreach ($specs as $spec) {
+            $key = (string) ($spec['key'] ?? '');
+            $value = (string) ($spec['value'] ?? '');
+            $normalized = mb_strtolower($key);
+
+            if (preg_match('/гарант|сервис|производител|страна|импортер|импортёр|срок службы|сертификат/u', $normalized)) {
+                $info[$key] = $value;
+            }
+        }
+
+        $text = $this->cleanText(strip_tags($html));
+        if (! isset($info['Гарантия']) && preg_match('/гаранти[яи]\s*[:\-]?\s*([0-9]+\s*(?:мес|месяц|год|года|лет))/iu', $text, $match)) {
+            $info['Гарантия'] = $this->cleanText($match[1]);
+        }
+
+        return array_slice($info, 0, 20, true);
+    }
+
     private function addSpec(array &$specs, string $key, string $value): void
     {
-        $key = $this->cleanText($key);
-        $value = $this->cleanText($value);
+        $key = $this->cleanAttributeName($key);
+        $value = $this->cleanAttributeValue($value);
 
-        if ($key === '' || $value === '' || mb_strlen($key) > 120 || mb_strlen($value) > 240) {
+        if ($key === '' || $value === '' || mb_strlen($key) > 120 || mb_strlen($value) > 240 || $this->isTechnicalOrJunkAttribute($key, $value)) {
             return;
         }
 
@@ -289,6 +446,61 @@ class ProductSourceEnricher
         $text = preg_replace('/\s+/u', ' ', $text) ?? $text;
 
         return trim($text);
+    }
+
+    private function cleanAttributeName(string $name): string
+    {
+        $name = $this->cleanText($name);
+        $name = trim($name, " \t\n\r\0\x0B:;•—-");
+
+        return trim(preg_replace('/\s+/u', ' ', $name) ?? $name);
+    }
+
+    private function cleanAttributeValue(string $value): string
+    {
+        $value = $this->cleanText($value);
+        $value = trim($value, " \t\n\r\0\x0B:;•—-");
+
+        return trim(preg_replace('/\s+/u', ' ', $value) ?? $value);
+    }
+
+    private function normalizeAttributeName(string $name): string
+    {
+        $name = mb_strtolower($this->cleanAttributeName($name));
+        $name = str_replace('ё', 'е', $name);
+        $name = preg_replace('/[^a-zа-я0-9]+/u', ' ', $name) ?? $name;
+
+        return trim(preg_replace('/\s+/u', ' ', $name) ?? $name);
+    }
+
+    private function isTechnicalOrJunkAttribute(string $name, string $value): bool
+    {
+        $normalizedName = $this->normalizeAttributeName($name);
+        $normalizedValue = mb_strtolower($value);
+
+        if ($normalizedName === '' || mb_strlen($normalizedName) < 2) {
+            return true;
+        }
+
+        if (preg_match('/^(buy|price|delivery|payment|cart|sku|code|reviews|description|купить|цена|наличие|доставка|оплата|корзина|артикул|код товара|похожие товары|отзывы|описание)$/u', $normalizedName)) {
+            return true;
+        }
+
+        return str_contains($normalizedValue, 'javascript:')
+            || str_contains($normalizedValue, 'cookie')
+            || mb_strlen($normalizedValue) > 240;
+    }
+
+    private function splitValueAndUnit(string $value, string $fallbackUnit = ''): array
+    {
+        $unit = trim($fallbackUnit);
+
+        if ($unit === '' && preg_match('/^\s*([0-9]+(?:[,.][0-9]+)?)\s*(kw|w|watt|квт|вт|mm|cm|мм|см|м|l|л|kg|кг|g|г|m2|м2|м²|%|°c|c)\s*$/iu', $value, $match)) {
+            $value = str_replace(',', '.', $match[1]);
+            $unit = $match[2];
+        }
+
+        return [$value, $unit];
     }
 
     private function decodeArray(mixed $value): array
