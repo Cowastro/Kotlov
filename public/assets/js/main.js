@@ -1232,9 +1232,9 @@
                 var value = $this.children("option").eq(i).val();
                 var text = $this.children("option").eq(i).text();
 
-                var link = (value === "all")
-                    ? "collection.html"
-                    : "shop-default.html";
+                var link = value
+                    ? "/" + encodeURIComponent(value)
+                    : "/catalog";
 
                 var $li = $("<li />", {
                     "data-value": value
@@ -1260,7 +1260,7 @@
             $optionlistItems.on("click", function (e) {
                 e.stopPropagation();
                 $customSelect.text($(this).text()).removeClass("active");
-                $this.val($(this).attr("rel"));
+                $this.val($(this).data("value"));
                 $optionlist.hide();
             });
             $(document).on("click", function () {

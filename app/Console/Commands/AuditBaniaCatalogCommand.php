@@ -13,6 +13,7 @@ class AuditBaniaCatalogCommand extends Command
         {--dry-run : Preview without database writes}
         {--apply : Apply archive action when --archive-linked-missing is set}
         {--archive-linked-missing : Archive BANIA-linked products missing from recent supplier scans}
+        {--archive-legacy-unlinked : Archive products in BANIA category scope that have no supplier links at all}
         {--stale-hours=24 : Treat BANIA links older than this many hours as missing after a full scan}
         {--include-child-categories : Include products from child categories of the BANIA category scope}
         {--limit= : Limit archive candidates for testing}';
@@ -42,12 +43,32 @@ class AuditBaniaCatalogCommand extends Command
         'kotly-na-pelletah',
         'pechnoe-i-kaminnoe-lite',
         'dveri-dlya-ban-i-saun',
+        'aksessuary-dlya-bani',
+        'kaminnye-nabory',
+        'mangaly',
+    ];
+    private const CATEGORY_NAMES = [
+        'Отделка для парной',
+        'Камни для печей',
+        'Камни для бани',
+        'Аксессуары для бани',
+        'Обливные устройства для бани',
+        'Вентиляционные клапаны и решётки для бани',
+        'Дровницы и каминные принадлежности',
+        'Каминные наборы',
+        'Мангалы',
+        'Казаны',
+        'Печи для казана',
+        'Комплектующие для мангала',
+        'Керамические грили',
+        'Мобильная баня',
     ];
 
     public function handle(): int
     {
         $apply = (bool) $this->option('apply');
         $archive = (bool) $this->option('archive-linked-missing');
+        $archiveLegacyUnlinked = (bool) $this->option('archive-legacy-unlinked');
         $staleHours = max(1, (int) $this->option('stale-hours'));
         $limit = $this->option('limit') !== null ? max(0, (int) $this->option('limit')) : null;
         $cutoff = now()->subHours($staleHours);
@@ -71,6 +92,7 @@ class AuditBaniaCatalogCommand extends Command
         $linked = $this->baniaLinkedProducts($supplierId);
         $linkedMissing = $this->linkedMissingCandidates($supplierId, $cutoff, $limit);
         $legacy = $this->legacyCandidates($supplierId, $categoryIds);
+        $legacyUnlinked = $this->legacyUnlinkedCandidates($categoryIds, $limit);
 
         $reportDir = storage_path('app/reports/bania');
         if (! is_dir($reportDir)) {
@@ -80,9 +102,11 @@ class AuditBaniaCatalogCommand extends Command
         $stamp = now()->format('Y-m-d-H-i');
         $linkedMissingPath = $reportDir . "/bania-linked-missing-{$stamp}.csv";
         $legacyPath = $reportDir . "/bania-legacy-archive-candidates-{$stamp}.csv";
+        $legacyUnlinkedPath = $reportDir . "/bania-legacy-unlinked-archive-candidates-{$stamp}.csv";
 
         $this->writeCsv($linkedMissingPath, $this->linkedMissingRows($linkedMissing, $supplierId));
         $this->writeCsv($legacyPath, $this->legacyRows($legacy));
+        $this->writeCsv($legacyUnlinkedPath, $this->legacyRows($legacyUnlinked));
 
         $archived = 0;
         if ($apply && $archive && $linkedMissing->isNotEmpty()) {
@@ -110,6 +134,29 @@ class AuditBaniaCatalogCommand extends Command
             }
         }
 
+        if ($apply && $archiveLegacyUnlinked && $legacyUnlinked->isNotEmpty()) {
+            $ids = $legacyUnlinked
+                ->pluck('id')
+                ->filter()
+                ->unique()
+                ->values()
+                ->all();
+
+            if ($ids !== []) {
+                $payload = [
+                    'is_archived' => true,
+                    'is_active' => false,
+                    'in_stock' => false,
+                    'updated_at' => now(),
+                ];
+                if (Schema::hasColumn('products', 'availability_status')) {
+                    $payload['availability_status'] = 'check';
+                }
+
+                $archived += DB::table('products')->whereIn('id', $ids)->update($payload);
+            }
+        }
+
         $this->table(
             ['metric', 'count'],
             [
@@ -118,15 +165,17 @@ class AuditBaniaCatalogCommand extends Command
                 ['linked_candidates_safe_to_archive', $linkedMissing->where('has_other_supplier_stock', false)->where('is_archived', false)->count()],
                 ['linked_candidates_with_other_supplier_stock', $linkedMissing->where('has_other_supplier_stock', true)->count()],
                 ['legacy_unlinked_products_in_bania_categories', $legacy->count()],
+                ['legacy_without_any_supplier_link', $legacyUnlinked->count()],
                 ['archived', $archived],
             ]
         );
 
         $this->line('Linked missing report: ' . $linkedMissingPath);
         $this->line('Legacy candidates report: ' . $legacyPath);
+        $this->line('Legacy unlinked report: ' . $legacyUnlinkedPath);
 
         if (! $apply) {
-            $this->line('Run with --apply --archive-linked-missing only after full BANIA section scans are complete.');
+            $this->line('Run with --apply --archive-linked-missing and/or --archive-legacy-unlinked after review.');
         }
 
         return self::SUCCESS;
@@ -135,15 +184,17 @@ class AuditBaniaCatalogCommand extends Command
     private function categoryIds(bool $includeChildren): array
     {
         $categories = DB::table('categories')
-            ->get(['id', 'parent_id', 'slug'])
+            ->get(['id', 'parent_id', 'slug', 'name'])
             ->map(fn ($category) => [
                 'id' => (int) $category->id,
                 'parent_id' => (int) $category->parent_id,
                 'slug' => (string) $category->slug,
+                'name' => (string) $category->name,
             ]);
 
         $ids = $categories
-            ->whereIn('slug', self::CATEGORY_SLUGS)
+            ->filter(fn (array $category) => in_array($category['slug'], self::CATEGORY_SLUGS, true)
+                || in_array($category['name'], self::CATEGORY_NAMES, true))
             ->pluck('id')
             ->all();
 
@@ -243,6 +294,37 @@ class AuditBaniaCatalogCommand extends Command
             ->orderBy('b.name')
             ->orderBy('p.name')
             ->get();
+    }
+
+    private function legacyUnlinkedCandidates(array $categoryIds, ?int $limit): Collection
+    {
+        $query = DB::table('products as p')
+            ->leftJoin('brands as b', 'b.id', '=', 'p.brand_id')
+            ->leftJoin('categories as c', 'c.id', '=', 'p.category_id')
+            ->leftJoin('supplier_products as sp', 'sp.product_id', '=', 'p.id')
+            ->whereIn('p.category_id', $categoryIds)
+            ->whereNull('sp.id')
+            ->where('p.is_archived', false)
+            ->select([
+                'p.id',
+                'p.sku',
+                'p.name',
+                'p.price',
+                'p.in_stock',
+                'p.is_active',
+                'b.name as brand',
+                'c.name as category',
+                'c.slug as category_slug',
+            ])
+            ->orderBy('c.name')
+            ->orderBy('b.name')
+            ->orderBy('p.name');
+
+        if ($limit) {
+            $query->limit($limit);
+        }
+
+        return $query->get();
     }
 
     private function otherSupplierStockMap(int $supplierId, array $productIds): array
