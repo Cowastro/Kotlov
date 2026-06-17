@@ -6,6 +6,7 @@ use App\Models\Brand;
 use App\Models\Category;
 use App\Models\Supplier;
 use App\Models\User;
+use App\Services\ProductSourceEnricher;
 use Filament\Actions\ActionGroup;
 use Filament\Actions\BulkAction;
 use Filament\Actions\BulkActionGroup;
@@ -13,6 +14,9 @@ use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Actions\ViewAction;
 use Filament\Forms\Components\Select as FormSelect;
+use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Toggle;
+use Filament\Notifications\Notification;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\ImageColumn;
 use Filament\Tables\Columns\TextColumn;
@@ -430,6 +434,66 @@ class ProductsTable
                         ->action(fn(Collection $records, array $data) => $records->each->update([
                             'category_id' => $data['category_id'],
                         ]))
+                        ->deselectRecordsAfterCompletion(),
+
+                    BulkAction::make('enrich_from_source_url')
+                        ->label('Обновить из ссылки')
+                        ->icon('heroicon-o-link')
+                        ->color('success')
+                        ->form([
+                            TextInput::make('source_url')
+                                ->label('Ссылка на карточку товара')
+                                ->url()
+                                ->required()
+                                ->placeholder('https://example.com/product/...'),
+                            Toggle::make('update_images')
+                                ->label('Загрузить фотографии')
+                                ->default(true),
+                            Toggle::make('replace_images')
+                                ->label('Заменить текущие фото')
+                                ->default(true),
+                            Toggle::make('update_specs')
+                                ->label('Обновить характеристики')
+                                ->default(true),
+                            Toggle::make('update_content')
+                                ->label('Обновить описание')
+                                ->default(true),
+                        ])
+                        ->requiresConfirmation()
+                        ->modalHeading('Обновить выбранные товары из ссылки')
+                        ->modalDescription('Система попробует взять с указанной страницы фото, характеристики и описание. Лучше применять к одному товару или к одинаковым дублям.')
+                        ->action(function (Collection $records, array $data): void {
+                            $enricher = app(ProductSourceEnricher::class);
+                            $updated = 0;
+                            $errors = [];
+
+                            foreach ($records as $record) {
+                                try {
+                                    $enricher->enrich($record, (string) $data['source_url'], [
+                                        'update_images' => (bool) ($data['update_images'] ?? true),
+                                        'replace_images' => (bool) ($data['replace_images'] ?? true),
+                                        'update_specs' => (bool) ($data['update_specs'] ?? true),
+                                        'update_content' => (bool) ($data['update_content'] ?? true),
+                                    ]);
+                                    $updated++;
+                                } catch (\Throwable $e) {
+                                    $errors[] = ($record->sku ?: $record->id) . ': ' . $e->getMessage();
+                                }
+                            }
+
+                            $notification = Notification::make()
+                                ->title('Обновлено товаров: ' . $updated);
+
+                            if ($errors === []) {
+                                $notification->success();
+                            } else {
+                                $notification
+                                    ->warning()
+                                    ->body(implode("\n", array_slice($errors, 0, 5)));
+                            }
+
+                            $notification->send();
+                        })
                         ->deselectRecordsAfterCompletion(),
 
                     BulkAction::make('update_supplier')
