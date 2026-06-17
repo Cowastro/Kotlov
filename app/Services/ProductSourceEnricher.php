@@ -534,13 +534,104 @@ class ProductSourceEnricher
             }
         }
 
-        if (preg_match_all('~<img[^>]+(?:src|data-src|data-large|data-original)=["\']([^"\']+)["\']~iu', $html, $matches)) {
-            foreach ($matches[1] as $src) {
-                $images[] = $this->absoluteUrl($src, $pageUrl);
+        foreach (['img', 'source'] as $tag) {
+            if (! preg_match_all('~<' . $tag . '\b[^>]*>~iu', $html, $tagMatches)) {
+                continue;
+            }
+
+            foreach ($tagMatches[0] as $tagHtml) {
+                foreach ($this->imageUrlsFromTag($tagHtml, $pageUrl) as $url) {
+                    $images[] = $url;
+                }
             }
         }
 
-        return array_values(array_slice(array_filter(array_unique($images), fn ($url) => $this->isProductImage($url)), 0, 4));
+        foreach ($this->imageUrlsFromEmbeddedData($html, $pageUrl) as $url) {
+            $images[] = $url;
+        }
+
+        $images = array_values(array_filter(array_unique($images), fn ($url) => $this->isProductImage($url)));
+        usort($images, fn (string $left, string $right): int => $this->imageQualityScore($right) <=> $this->imageQualityScore($left));
+
+        return array_values(array_slice($images, 0, 4));
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    private function imageUrlsFromTag(string $tagHtml, string $pageUrl): array
+    {
+        $urls = [];
+        $attributes = [
+            'data-full',
+            'data-full-image',
+            'data-zoom-image',
+            'data-large',
+            'data-original',
+            'data-image',
+            'data-src',
+            'src',
+        ];
+
+        foreach ($attributes as $attribute) {
+            if (preg_match('~\b' . preg_quote($attribute, '~') . '\s*=\s*["\']([^"\']+)["\']~iu', $tagHtml, $match)) {
+                $urls[] = $this->absoluteUrl($match[1], $pageUrl);
+            }
+        }
+
+        foreach (['srcset', 'data-srcset'] as $attribute) {
+            if (! preg_match('~\b' . preg_quote($attribute, '~') . '\s*=\s*["\']([^"\']+)["\']~iu', $tagHtml, $match)) {
+                continue;
+            }
+
+            foreach ($this->imageUrlsFromSrcset($match[1], $pageUrl) as $url) {
+                $urls[] = $url;
+            }
+        }
+
+        return array_values(array_filter(array_unique($urls)));
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    private function imageUrlsFromSrcset(string $srcset, string $pageUrl): array
+    {
+        $urls = [];
+        foreach (explode(',', html_entity_decode($srcset, ENT_QUOTES | ENT_HTML5, 'UTF-8')) as $candidate) {
+            $parts = preg_split('/\s+/', trim($candidate));
+            $url = $parts[0] ?? '';
+            if ($url !== '') {
+                $urls[] = $this->absoluteUrl($url, $pageUrl);
+            }
+        }
+
+        usort($urls, fn (string $left, string $right): int => $this->imageQualityScore($right) <=> $this->imageQualityScore($left));
+
+        return $urls;
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    private function imageUrlsFromEmbeddedData(string $html, string $pageUrl): array
+    {
+        $urls = [];
+        $decoded = html_entity_decode(str_replace('\/', '/', $html), ENT_QUOTES | ENT_HTML5, 'UTF-8');
+
+        if (preg_match_all('~https?://[^"\'\s<>\\\\]+?\.(?:jpe?g|png|webp|gif)(?:\?[^"\'\s<>\\\\]*)?~iu', $decoded, $matches)) {
+            foreach ($matches[0] as $url) {
+                $urls[] = $url;
+            }
+        }
+
+        if (preg_match_all('~/(?:media|storage|img|images|upload|uploads|catalog|product)[^"\'\s<>\\\\]+?\.(?:jpe?g|png|webp|gif)(?:\?[^"\'\s<>\\\\]*)?~iu', $decoded, $matches)) {
+            foreach ($matches[0] as $url) {
+                $urls[] = $this->absoluteUrl($url, $pageUrl);
+            }
+        }
+
+        return array_values(array_filter(array_unique($urls)));
     }
 
     private function downloadImages(array $urls, Product $product): array
@@ -607,6 +698,43 @@ class ProductSourceEnricher
         }
 
         return true;
+    }
+
+    private function imageQualityScore(string $url): int
+    {
+        $path = strtolower((string) parse_url($url, PHP_URL_PATH));
+        $score = 0;
+
+        if (preg_match('~/(?:media|catalog|product|products|upload|uploads)/~', $path)) {
+            $score += 80;
+        }
+
+        if (preg_match('~(?:logo|icon|sprite|placeholder|noimage|nophoto|payment|social|banner|watermark|telegram|viber|whatsapp)~i', $path)) {
+            $score -= 500;
+        }
+
+        if (str_contains($path, '/thumbnail/')) {
+            $score -= 20;
+        }
+
+        if (preg_match_all('~(?:^|[/_-])(\d{2,4})x(\d{2,4})(?:[/_\.-]|$)~', $path, $matches, PREG_SET_ORDER)) {
+            foreach ($matches as $match) {
+                $width = (int) $match[1];
+                $height = (int) $match[2];
+                $score += min(500, (int) floor(($width * $height) / 2500));
+                if ($width >= 800 && $height >= 800) {
+                    $score += 180;
+                } elseif ($width < 250 || $height < 250) {
+                    $score -= 120;
+                }
+            }
+        }
+
+        if (preg_match('~(?:/image/|/cache/|/resize/|/large/|/original/)~', $path)) {
+            $score += 40;
+        }
+
+        return $score;
     }
 
     private function absoluteUrl(string $url, string $baseUrl): string
