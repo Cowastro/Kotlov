@@ -2,12 +2,12 @@
 
 namespace App\Filament\Resources\Products\Tables;
 
+use App\Jobs\RunProductSourceEnrichment;
 use App\Models\Brand;
 use App\Models\Category;
 use App\Models\Product;
 use App\Models\Supplier;
 use App\Models\User;
-use App\Services\ProductSourceEnricher;
 use Filament\Actions\Action;
 use Filament\Actions\ActionGroup;
 use Filament\Actions\BulkAction;
@@ -28,7 +28,6 @@ use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
-use Illuminate\Support\Str;
 
 class ProductsTable
 {
@@ -314,7 +313,7 @@ class ProductsTable
                         ->modalHeading('Проверить данные из ссылки')
                         ->modalDescription('База не изменится. Результат сохранится в уведомлениях.')
                         ->action(function (Product $record, array $data): void {
-                            self::runSourceEnrichment(collect([$record]), $data, previewOnly: true);
+                            self::queueSourceEnrichment(collect([$record]), $data, previewOnly: true);
                         }),
                     Action::make('apply_source_enrichment')
                         ->label('Обновить из ссылки')
@@ -325,7 +324,7 @@ class ProductsTable
                         ->modalHeading('Обновить товар из ссылки')
                         ->modalDescription('Фото, описание и характеристики будут записаны в выбранный товар.')
                         ->action(function (Product $record, array $data): void {
-                            self::runSourceEnrichment(collect([$record]), $data, previewOnly: false);
+                            self::queueSourceEnrichment(collect([$record]), $data, previewOnly: false);
                         }),
                     ViewAction::make(),
                     EditAction::make(),
@@ -469,7 +468,7 @@ class ProductsTable
                         ->modalHeading('Обновить выбранные товары из ссылки')
                         ->modalDescription('Система попробует взять с указанной страницы фото, характеристики и описание. Лучше применять к одному товару или к одинаковым дублям.')
                         ->action(function (Collection $records, array $data): void {
-                            self::runSourceEnrichment($records, $data, previewOnly: (bool) ($data['preview_only'] ?? true));
+                            self::queueSourceEnrichment($records, $data, previewOnly: (bool) ($data['preview_only'] ?? true));
                         })
                         ->deselectRecordsAfterCompletion(),
 
@@ -591,23 +590,19 @@ class ProductsTable
         ];
     }
 
-    private static function runSourceEnrichment(iterable $records, array $data, bool $previewOnly): void
+    private static function queueSourceEnrichment(iterable $records, array $data, bool $previewOnly): void
     {
-        $enricher = app(ProductSourceEnricher::class);
-        $processed = 0;
-        $errors = [];
-        $preview = null;
-        $totals = [
-            'images_found' => 0,
-            'images_saved' => 0,
-            'specs_found' => 0,
-            'attribute_values_saved' => 0,
-            'service_found' => 0,
-            'content_found' => 0,
-            'short_description_found' => 0,
-        ];
+        $productIds = collect($records)->pluck('id')->filter()->values()->all();
+        if ($productIds === []) {
+            self::sendAdminNotification(Notification::make()
+                ->warning()
+                ->title('Товары не выбраны')
+                ->body('Выберите товар и повторите действие.'));
+
+            return;
+        }
+
         $options = [
-            'preview_only' => $previewOnly,
             'update_images' => (bool) ($data['update_images'] ?? true),
             'replace_images' => (bool) ($data['replace_images'] ?? true),
             'update_specs' => (bool) ($data['update_specs'] ?? true),
@@ -615,81 +610,18 @@ class ProductsTable
             'update_service' => (bool) ($data['update_service'] ?? false),
         ];
 
-        foreach ($records as $product) {
-            try {
-                $result = $enricher->enrich($product, (string) $data['source_url'], $options);
+        RunProductSourceEnrichment::dispatch(
+            $productIds,
+            (int) auth()->id(),
+            (string) $data['source_url'],
+            $options,
+            $previewOnly,
+        );
 
-                foreach ($totals as $key => $value) {
-                    $totals[$key] += (int) ($result[$key] ?? 0);
-                }
-
-                $preview ??= $result['preview'] ?? null;
-                foreach (($result['errors'] ?? []) as $error) {
-                    $errors[] = ($product->sku ?: $product->id) . ': ' . $error;
-                }
-
-                $processed++;
-            } catch (\Throwable $e) {
-                $errors[] = ($product->sku ?: $product->id) . ': ' . $e->getMessage();
-            }
-        }
-
-        $summary = self::sourceEnrichmentSummary($totals, $previewOnly, $preview);
-
-        if ($errors !== []) {
-            $summary[] = '';
-            $summary[] = 'Ошибки:';
-            array_push($summary, ...array_slice($errors, 0, 5));
-        }
-
-        $fullBody = implode("\n", $summary);
-        $toastBody = $previewOnly
-            ? implode("\n", array_slice($summary, 0, 5)) . "\nПодробности сохранены в уведомлениях."
-            : $fullBody;
-
-        $notification = Notification::make()
-            ->title(($previewOnly ? 'Проверка завершена: ' : 'Обновлено товаров: ') . $processed)
-            ->body($toastBody)
-            ->persistent();
-
-        $errors === [] ? $notification->success() : $notification->warning();
-        self::sendAdminNotification($notification, $fullBody);
-    }
-
-    private static function sourceEnrichmentSummary(array $totals, bool $previewOnly, ?array $preview): array
-    {
-        if (! $previewOnly) {
-            return [
-                'Фото: найдено ' . $totals['images_found'] . ', сохранено ' . $totals['images_saved'],
-                'Описание: полное ' . $totals['content_found'] . ', короткое ' . $totals['short_description_found'],
-                'Характеристики: найдено ' . $totals['specs_found'] . ', записано в атрибуты ' . $totals['attribute_values_saved'],
-                'Сервис: найдено строк ' . $totals['service_found'],
-            ];
-        }
-
-        $summary = [
-            'Режим проверки: база не изменялась.',
-            'Фото найдено: ' . $totals['images_found'],
-            'Описание найдено: полное ' . $totals['content_found'] . ', короткое ' . $totals['short_description_found'],
-            'Характеристики найдены: ' . $totals['specs_found'],
-            'Сервис найдено строк: ' . $totals['service_found'],
-        ];
-
-        if (is_array($preview) && filled($preview['description'] ?? '')) {
-            $summary[] = '';
-            $summary[] = 'Фрагмент описания:';
-            $summary[] = Str::limit((string) $preview['description'], 700);
-        }
-
-        if (is_array($preview) && ($preview['specs'] ?? []) !== []) {
-            $summary[] = '';
-            $summary[] = 'Первые характеристики:';
-            foreach (array_slice($preview['specs'], 0, 8) as $spec) {
-                $summary[] = '- ' . ($spec['key'] ?? '') . ': ' . ($spec['value'] ?? '');
-            }
-        }
-
-        return $summary;
+        self::sendAdminNotification(Notification::make()
+            ->success()
+            ->title($previewOnly ? 'Проверка поставлена в очередь' : 'Обновление поставлено в очередь')
+            ->body('Товаров в задаче: ' . count($productIds) . ".\nРезультат появится в уведомлениях после выполнения очереди."));
     }
 
     private static function hasProductImages(Product $record): bool
