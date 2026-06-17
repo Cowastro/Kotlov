@@ -556,7 +556,7 @@ class ProductsTable
                                 $applyOptions = $options;
                                 $applyOptions['preview_only'] = false;
 
-                                Cache::put('product-source-enrichment:' . $token, [
+                                Cache::store('file')->put('product-source-enrichment:' . $token, [
                                     'user_id' => auth()->id(),
                                     'product_ids' => $records->pluck('id')->values()->all(),
                                     'source_url' => (string) $data['source_url'],

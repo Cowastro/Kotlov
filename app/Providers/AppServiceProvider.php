@@ -12,6 +12,10 @@ class AppServiceProvider extends ServiceProvider
 {
     public function boot(): void
     {
+        if (app()->runningInConsole() || request()->is('admin*') || str_starts_with((string) request()->getHost(), 'admin.')) {
+            return;
+        }
+
         View::share('navCategories', $this->getNavCategories());
         View::share('navBrands', $this->getNavBrands());
 

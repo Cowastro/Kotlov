@@ -15,7 +15,7 @@ class ProductSourceEnrichmentController extends Controller
     public function apply(string $token, Request $request, ProductSourceEnricher $enricher): RedirectResponse
     {
         $key = $this->cacheKey($token);
-        $payload = Cache::get($key);
+        $payload = Cache::store('file')->get($key);
 
         if (! is_array($payload)) {
             Notification::make()
@@ -28,7 +28,7 @@ class ProductSourceEnrichmentController extends Controller
         }
 
         $this->ensureCurrentAdminOwnsPreview($payload, $request);
-        Cache::forget($key);
+        Cache::store('file')->forget($key);
 
         $products = Product::query()
             ->whereKey($payload['product_ids'] ?? [])
@@ -91,11 +91,11 @@ class ProductSourceEnrichmentController extends Controller
     public function cancel(string $token, Request $request): RedirectResponse
     {
         $key = $this->cacheKey($token);
-        $payload = Cache::get($key);
+        $payload = Cache::store('file')->get($key);
 
         if (is_array($payload)) {
             $this->ensureCurrentAdminOwnsPreview($payload, $request);
-            Cache::forget($key);
+            Cache::store('file')->forget($key);
         }
 
         Notification::make()
