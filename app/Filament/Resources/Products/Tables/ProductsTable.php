@@ -577,7 +577,7 @@ class ProductsTable
                                 $notification->warning();
                             }
 
-                            $notification->send();
+                            self::sendAdminNotification($notification);
                         })
                         ->deselectRecordsAfterCompletion(),
 
@@ -691,11 +691,10 @@ class ProductsTable
         $payload = Cache::store('file')->get(self::sourceEnrichmentPreviewCacheKey());
 
         if (! is_array($payload) || (int) ($payload['user_id'] ?? 0) !== (int) auth()->id()) {
-            Notification::make()
+            self::sendAdminNotification(Notification::make()
                 ->danger()
                 ->title('Проверка не найдена')
-                ->body('Сначала запустите "Обновить из ссылки" в режиме проверки.')
-                ->send();
+                ->body('Сначала запустите "Обновить из ссылки" в режиме проверки.'));
 
             return;
         }
@@ -758,23 +757,32 @@ class ProductsTable
             ->persistent();
 
         $errors === [] ? $notification->success() : $notification->warning();
-        $notification->send();
+        self::sendAdminNotification($notification);
     }
 
     private static function cancelSourceEnrichmentPreview(): void
     {
         Cache::store('file')->forget(self::sourceEnrichmentPreviewCacheKey());
 
-        Notification::make()
+        self::sendAdminNotification(Notification::make()
             ->info()
             ->title('Проверка сброшена')
-            ->body('Товары не изменялись.')
-            ->send();
+            ->body('Товары не изменялись.'));
     }
 
     private static function sourceEnrichmentPreviewCacheKey(): string
     {
         return 'product-source-enrichment-user:' . (auth()->id() ?: 'guest');
+    }
+
+    private static function sendAdminNotification(Notification $notification): void
+    {
+        $notification->send();
+
+        $user = auth()->user();
+        if ($user) {
+            $notification->sendToDatabase($user);
+        }
     }
 
     private static function productUrl(object $record): ?string
