@@ -67,7 +67,7 @@ class Enrich100KaminovCommand extends Command
         'БЕЛАЯ','БЕЛЫЙ','БЕЛОЕ','БЕЖЕВАЯ','БЕЖЕВЫЙ','КРАСНАЯ','КРАСНЫЙ',
         'КОРИЧНЕВАЯ','КОРИЧНЕВЫЙ','ПАТИНА','АНТРАЦИТ','ГРАФИТ','КРЕМОВАЯ','КРЕМОВЫЙ',
         // English color/finish variants (100kaminov.by naming)
-        'GREY','GRAY','SATIN','CERAMIC','ECODESIGN',
+        'GREY','GRAY','BLACK','WHITE','SATIN','CERAMIC','ECODESIGN',
         // site-specific noise
         'КУПИТЬ','МИНСКЕ','ДОСТАВКОЙ','ЦЕНА','ОПИСАНИЕ','ХАРАКТЕРИСТИКИ',
     ];
@@ -95,10 +95,25 @@ class Enrich100KaminovCommand extends Command
             count($this->catalogIndex),
             array_sum(array_map('count', $this->catalogIndex))));
 
+        // In dry-run, show sample of model keys so mismatches are diagnosable.
+        if (! $this->apply) {
+            $brandFilter = $this->option('brand') ? mb_strtolower((string) $this->option('brand')) : null;
+            foreach ($this->catalogIndex as $bKey => $entries) {
+                if ($brandFilter && $bKey !== $brandFilter) {
+                    continue;
+                }
+                $keys = array_slice(array_keys($entries), 0, 30);
+                $this->line(sprintf('  [%s] sample model keys: %s%s',
+                    $bKey, implode(', ', $keys), count($entries) > 30 ? ' …' : ''));
+            }
+        }
+
         $brandFilter = $this->option('brand') ? mb_strtolower((string) $this->option('brand')) : null;
         $limit       = $this->option('limit') ? (int) $this->option('limit') : PHP_INT_MAX;
         $maxPages    = (int) $this->option('pages');
         $enriched    = 0;
+
+        $seenProductUrls = [];
 
         foreach (self::CATEGORIES as $path => $catHint) {
             if ($enriched >= $limit) {
@@ -116,7 +131,16 @@ class Enrich100KaminovCommand extends Command
                     break;
                 }
 
-                foreach ($links as $productUrl) {
+                // Stop paginating when page brings no new URLs (last page repeats first).
+                $newLinks = array_filter($links, fn ($l) => ! isset($seenProductUrls[$l]));
+                if (empty($newLinks)) {
+                    break;
+                }
+                foreach ($newLinks as $l) {
+                    $seenProductUrls[$l] = true;
+                }
+
+                foreach ($newLinks as $productUrl) {
                     if ($enriched >= $limit) {
                         break 2;
                     }
@@ -365,15 +389,18 @@ class Enrich100KaminovCommand extends Command
         }
         $images = array_values(array_unique(array_filter($images)));
 
-        // Specs from b-product-info__cell pairs.
+        // Specs: parse row-by-row so header cells (colspan) are naturally skipped.
+        // Each <tr> with exactly 2 b-product-info__cell cells is a key→value pair.
         $specs = [];
-        if (preg_match_all('#b-product-info__cell">\s*([^<]+?)\s*</td>#', $html, $sm)) {
-            $cells = $sm[1];
-            for ($i = 0; $i + 1 < count($cells); $i += 2) {
-                $key = trim(html_entity_decode($cells[$i], ENT_QUOTES, 'UTF-8'));
-                $val = trim(html_entity_decode($cells[$i + 1], ENT_QUOTES, 'UTF-8'));
-                if ($key !== '' && $val !== '' && $key !== $val) {
-                    $specs[$key] = $val;
+        if (preg_match_all('#<tr[^>]*>(.*?)</tr>#s', $html, $trm)) {
+            foreach ($trm[1] as $rowHtml) {
+                preg_match_all('#<td[^>]*b-product-info__cell[^>]*>\s*([^<]+?)\s*</td>#i', $rowHtml, $cm);
+                if (count($cm[1]) === 2) {
+                    $key = trim(html_entity_decode($cm[1][0], ENT_QUOTES, 'UTF-8'));
+                    $val = trim(html_entity_decode($cm[1][1], ENT_QUOTES, 'UTF-8'));
+                    if ($key !== '' && $val !== '' && $key !== $val) {
+                        $specs[$key] = $val;
+                    }
                 }
             }
         }
@@ -533,19 +560,20 @@ class Enrich100KaminovCommand extends Command
         $catName = (string) DB::table('categories')->where('id', $existing->category_id)->value('name');
         $updates = [];
 
-        if (empty($existing->short_description) && $card['specs'] !== []) {
-            $short = $enricher->shortDescription((string) $existing->name, $brand, $card['specs']);
-            if ($short) {
-                $updates['short_description'] = mb_substr($short, 0, 500);
-            }
-        }
-
-        if ((empty($existing->meta_title) || str_contains((string) $existing->meta_title, '%city%'))
-            && $card['specs'] !== []) {
-            $seo = $enricher->generateSeo((string) $existing->name, $brand, $catName, $card['specs']);
-            if ($seo) {
-                $updates['meta_title']       = $seo['title'] ?? $existing->meta_title;
-                $updates['meta_description'] = $seo['description'] ?? $existing->meta_description;
+        // Generate content + short_description via generateSeo (one AI call, structured output).
+        if ($card['specs'] !== []) {
+            $needShort   = empty($existing->short_description);
+            $needContent = empty($existing->content ?? '');
+            if ($needShort || $needContent) {
+                $seo = $enricher->generateSeo((string) $existing->name, $brand, $catName, $card['specs']);
+                if ($seo) {
+                    if ($needShort && ! empty($seo['short'])) {
+                        $updates['short_description'] = mb_substr($seo['short'], 0, 500);
+                    }
+                    if ($needContent && ! empty($seo['content'])) {
+                        $updates['content'] = $seo['content'];
+                    }
+                }
             }
         }
 
