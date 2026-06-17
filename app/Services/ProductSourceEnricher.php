@@ -34,8 +34,15 @@ class ProductSourceEnricher
             'errors' => [],
         ];
 
+        $preview = [
+            'images' => array_slice($parsed['images'], 0, 3),
+            'description' => Str::limit(trim(strip_tags($parsed['description'] ?: $parsed['short_description'])), 700),
+            'specs' => array_slice($parsed['specs'], 0, 8),
+            'service_info' => array_slice($parsed['service_info'], 0, 5),
+        ];
+
         if (($options['preview_only'] ?? false) === true) {
-            return $stats + ['updated_fields' => [], 'preview_only' => true];
+            return $stats + ['updated_fields' => [], 'preview_only' => true, 'preview' => $preview];
         }
 
         try {

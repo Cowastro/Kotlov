@@ -15,6 +15,7 @@ use App\Http\Controllers\TelegramWebhookController;
 use App\Http\Controllers\CompareController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\AccountController;
+use App\Http\Controllers\Admin\ProductSourceEnrichmentController;
 use App\Http\Controllers\SearchController;
 use App\Http\Controllers\PartnerApplicationController;
 use App\Http\Controllers\ReviewController;
@@ -37,6 +38,11 @@ Route::get('/robots.txt', function (Request $request) {
 
     return response(file_get_contents(public_path('robots.txt')), 200)
         ->header('Content-Type', 'text/plain; charset=UTF-8');
+});
+
+Route::middleware('auth')->prefix('admin/product-source-enrichment')->name('admin.product-source-enrichment.')->group(function () {
+    Route::get('{token}/apply', [ProductSourceEnrichmentController::class, 'apply'])->name('apply');
+    Route::get('{token}/cancel', [ProductSourceEnrichmentController::class, 'cancel'])->name('cancel');
 });
 
 // ===== Главная =====

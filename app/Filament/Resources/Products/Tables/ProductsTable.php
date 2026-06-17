@@ -7,6 +7,7 @@ use App\Models\Category;
 use App\Models\Supplier;
 use App\Models\User;
 use App\Services\ProductSourceEnricher;
+use Filament\Actions\Action;
 use Filament\Actions\ActionGroup;
 use Filament\Actions\BulkAction;
 use Filament\Actions\BulkActionGroup;
@@ -26,6 +27,8 @@ use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Str;
 
 class ProductsTable
 {
@@ -472,8 +475,17 @@ class ProductsTable
                         ->action(function (Collection $records, array $data): void {
                             $enricher = app(ProductSourceEnricher::class);
                             $previewOnly = (bool) ($data['preview_only'] ?? true);
+                            $options = [
+                                'preview_only' => $previewOnly,
+                                'update_images' => (bool) ($data['update_images'] ?? true),
+                                'replace_images' => (bool) ($data['replace_images'] ?? true),
+                                'update_specs' => (bool) ($data['update_specs'] ?? true),
+                                'update_content' => (bool) ($data['update_content'] ?? true),
+                                'update_service' => (bool) ($data['update_service'] ?? false),
+                            ];
                             $processed = 0;
                             $errors = [];
+                            $preview = null;
                             $totals = [
                                 'images_found' => 0,
                                 'images_saved' => 0,
@@ -486,17 +498,11 @@ class ProductsTable
 
                             foreach ($records as $record) {
                                 try {
-                                    $result = $enricher->enrich($record, (string) $data['source_url'], [
-                                        'preview_only' => $previewOnly,
-                                        'update_images' => (bool) ($data['update_images'] ?? true),
-                                        'replace_images' => (bool) ($data['replace_images'] ?? true),
-                                        'update_specs' => (bool) ($data['update_specs'] ?? true),
-                                        'update_content' => (bool) ($data['update_content'] ?? true),
-                                        'update_service' => (bool) ($data['update_service'] ?? false),
-                                    ]);
+                                    $result = $enricher->enrich($record, (string) $data['source_url'], $options);
                                     foreach ($totals as $key => $value) {
                                         $totals[$key] += (int) ($result[$key] ?? 0);
                                     }
+                                    $preview ??= $result['preview'] ?? null;
                                     foreach (($result['errors'] ?? []) as $error) {
                                         $errors[] = ($record->sku ?: $record->id) . ': ' . $error;
                                     }
@@ -514,6 +520,18 @@ class ProductsTable
                                     'Характеристики найдены: ' . $totals['specs_found'],
                                     'Сервис найдено строк: ' . $totals['service_found'],
                                 ];
+                                if (is_array($preview) && filled($preview['description'] ?? '')) {
+                                    $summary[] = '';
+                                    $summary[] = 'Фрагмент описания:';
+                                    $summary[] = Str::limit((string) $preview['description'], 500);
+                                }
+                                if (is_array($preview) && ($preview['specs'] ?? []) !== []) {
+                                    $summary[] = '';
+                                    $summary[] = 'Первые характеристики:';
+                                    foreach (array_slice($preview['specs'], 0, 5) as $spec) {
+                                        $summary[] = '- ' . ($spec['key'] ?? '') . ': ' . ($spec['value'] ?? '');
+                                    }
+                                }
                             } else {
                                 $summary = [
                                     'Фото: найдено ' . $totals['images_found'] . ', сохранено ' . $totals['images_saved'],
@@ -532,6 +550,33 @@ class ProductsTable
                             $notification = Notification::make()
                                 ->title(($previewOnly ? 'Проверка завершена: ' : 'Обновлено товаров: ') . $processed)
                                 ->body(implode("\n", $summary));
+
+                            if ($previewOnly && $errors === [] && $processed > 0) {
+                                $token = Str::random(48);
+                                $applyOptions = $options;
+                                $applyOptions['preview_only'] = false;
+
+                                Cache::put('product-source-enrichment:' . $token, [
+                                    'user_id' => auth()->id(),
+                                    'product_ids' => $records->pluck('id')->values()->all(),
+                                    'source_url' => (string) $data['source_url'],
+                                    'options' => $applyOptions,
+                                ], now()->addMinutes(30));
+
+                                $notification
+                                    ->persistent()
+                                    ->actions([
+                                        Action::make('apply')
+                                            ->label('Обновить')
+                                            ->button()
+                                            ->color('success')
+                                            ->url(route('admin.product-source-enrichment.apply', ['token' => $token])),
+                                        Action::make('cancel')
+                                            ->label('Не обновлять')
+                                            ->color('gray')
+                                            ->url(route('admin.product-source-enrichment.cancel', ['token' => $token])),
+                                    ]);
+                            }
 
                             if ($errors === []) {
                                 $notification->success();
