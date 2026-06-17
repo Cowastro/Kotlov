@@ -491,6 +491,9 @@ class ProductsTable
                                     foreach ($totals as $key => $value) {
                                         $totals[$key] += (int) ($result[$key] ?? 0);
                                     }
+                                    foreach (($result['errors'] ?? []) as $error) {
+                                        $errors[] = ($record->sku ?: $record->id) . ': ' . $error;
+                                    }
                                     $updated++;
                                 } catch (\Throwable $e) {
                                     $errors[] = ($record->sku ?: $record->id) . ': ' . $e->getMessage();

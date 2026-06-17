@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Product;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 
 class ProductSourceEnricher
@@ -30,37 +31,58 @@ class ProductSourceEnricher
             'service_found' => count($parsed['service_info']),
             'content_found' => $parsed['description'] !== '' ? 1 : 0,
             'short_description_found' => $parsed['short_description'] !== '' ? 1 : 0,
+            'errors' => [],
         ];
 
-        if (($options['update_images'] ?? true) === true && $parsed['images'] !== []) {
-            $downloaded = $this->downloadImages($parsed['images'], $product);
-            $stats['images_saved'] = count($downloaded);
+        try {
+            if (($options['update_images'] ?? true) === true && $parsed['images'] !== []) {
+                $downloaded = $this->downloadImages($parsed['images'], $product);
+                $stats['images_saved'] = count($downloaded);
 
-            if ($downloaded !== []) {
-                $existing = $this->decodeArray($product->images);
-                $updates['images'] = ($options['replace_images'] ?? true)
-                    ? $downloaded
-                    : array_values(array_unique(array_merge($existing, $downloaded)));
+                if ($downloaded !== []) {
+                    $existing = $this->decodeArray($product->images);
+                    $updates['images'] = ($options['replace_images'] ?? true)
+                        ? $downloaded
+                        : array_values(array_unique(array_merge($existing, $downloaded)));
+                }
             }
+        } catch (\Throwable $e) {
+            $stats['errors'][] = 'images: ' . $e->getMessage();
+            Log::warning('Product source image enrichment failed', ['product_id' => $product->id, 'error' => $e->getMessage()]);
         }
 
-        if (($options['update_specs'] ?? true) === true && $parsed['specs'] !== []) {
-            $updates['specs'] = $parsed['specs'];
-            $stats['attribute_values_saved'] = $this->syncAttributeValues($product, $parsed['specs']);
+        try {
+            if (($options['update_specs'] ?? true) === true && $parsed['specs'] !== []) {
+                $updates['specs'] = $parsed['specs'];
+                $stats['attribute_values_saved'] = $this->syncAttributeValues($product, $parsed['specs']);
+            }
+        } catch (\Throwable $e) {
+            $stats['errors'][] = 'attributes: ' . $e->getMessage();
+            Log::warning('Product source attribute enrichment failed', ['product_id' => $product->id, 'error' => $e->getMessage()]);
         }
 
-        if (($options['update_service'] ?? false) === true && $parsed['service_info'] !== []) {
-            $updates['service_info'] = $parsed['service_info'];
+        try {
+            if (($options['update_service'] ?? false) === true && $parsed['service_info'] !== []) {
+                $updates['service_info'] = $parsed['service_info'];
+            }
+        } catch (\Throwable $e) {
+            $stats['errors'][] = 'service: ' . $e->getMessage();
+            Log::warning('Product source service enrichment failed', ['product_id' => $product->id, 'error' => $e->getMessage()]);
         }
 
-        if (($options['update_content'] ?? true) === true && $parsed['description'] !== '') {
-            $description = Str::limit(trim(strip_tags($parsed['description'])), 1800, '');
-            $updates['content'] = '<p>' . e($description) . '</p>';
-            $updates['short_description'] = Str::limit($parsed['short_description'] ?: $description, 240, '');
-            $updates['meta_description'] = Str::limit($description, 250, '');
-        } elseif (($options['update_content'] ?? true) === true && $parsed['short_description'] !== '') {
-            $updates['short_description'] = Str::limit($parsed['short_description'], 240, '');
-            $updates['meta_description'] = Str::limit($parsed['short_description'], 250, '');
+        try {
+            if (($options['update_content'] ?? true) === true && $parsed['description'] !== '') {
+                $description = Str::limit(trim(strip_tags($parsed['description'])), 1800, '');
+                $updates['content'] = '<p>' . e($description) . '</p>';
+                $updates['short_description'] = Str::limit($parsed['short_description'] ?: $description, 240, '');
+                $updates['meta_description'] = Str::limit($description, 250, '');
+            } elseif (($options['update_content'] ?? true) === true && $parsed['short_description'] !== '') {
+                $updates['short_description'] = Str::limit($parsed['short_description'], 240, '');
+                $updates['meta_description'] = Str::limit($parsed['short_description'], 250, '');
+            }
+        } catch (\Throwable $e) {
+            $stats['errors'][] = 'content: ' . $e->getMessage();
+            Log::warning('Product source content enrichment failed', ['product_id' => $product->id, 'error' => $e->getMessage()]);
         }
 
         if ($updates !== []) {
@@ -166,7 +188,7 @@ class ProductSourceEnricher
         $response = Http::withHeaders([
             'User-Agent' => 'Mozilla/5.0 (compatible; KOTLOV source enrichment)',
             'Accept' => 'text/html,application/xhtml+xml',
-        ])->timeout(25)->get($url);
+        ])->timeout(15)->get($url);
 
         if (! $response->successful()) {
             throw new \RuntimeException('Source page returned HTTP ' . $response->status());
@@ -342,7 +364,7 @@ class ProductSourceEnricher
             }
         }
 
-        return array_values(array_slice(array_filter(array_unique($images), fn ($url) => $this->isProductImage($url)), 0, 12));
+        return array_values(array_slice(array_filter(array_unique($images), fn ($url) => $this->isProductImage($url)), 0, 6));
     }
 
     private function downloadImages(array $urls, Product $product): array
@@ -356,7 +378,7 @@ class ProductSourceEnricher
         foreach ($urls as $index => $url) {
             try {
                 $response = Http::withHeaders(['User-Agent' => 'Mozilla/5.0'])
-                    ->timeout(25)
+                    ->timeout(10)
                     ->get($url);
 
                 if (! $response->successful()) {
