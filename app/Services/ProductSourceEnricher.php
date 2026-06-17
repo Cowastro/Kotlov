@@ -64,7 +64,7 @@ class ProductSourceEnricher
 
         try {
             if (($options['update_specs'] ?? true) === true && $parsed['specs'] !== []) {
-                $updates['specs'] = $parsed['specs'];
+                $updates['specs'] = $this->sanitizeJsonArray($parsed['specs']);
                 $stats['attribute_values_saved'] = $this->syncAttributeValues($product, $parsed['specs']);
             }
         } catch (\Throwable $e) {
@@ -74,7 +74,7 @@ class ProductSourceEnricher
 
         try {
             if (($options['update_service'] ?? false) === true && $parsed['service_info'] !== []) {
-                $updates['service_info'] = $parsed['service_info'];
+                $updates['service_info'] = $this->sanitizeJsonArray($parsed['service_info']);
             }
         } catch (\Throwable $e) {
             $stats['errors'][] = 'service: ' . $e->getMessage();
@@ -475,10 +475,55 @@ class ProductSourceEnricher
 
     private function cleanText(string $text): string
     {
+        $text = $this->sanitizeUtf8($text);
         $text = html_entity_decode($text, ENT_QUOTES | ENT_HTML5, 'UTF-8');
         $text = preg_replace('/\s+/u', ' ', $text) ?? $text;
 
         return trim($text);
+    }
+
+    private function sanitizeJsonArray(array $value): array
+    {
+        $clean = $this->sanitizeUtf8Recursive($value);
+
+        if (json_encode($clean, JSON_UNESCAPED_UNICODE) === false) {
+            $clean = json_decode(json_encode($clean, JSON_INVALID_UTF8_SUBSTITUTE | JSON_UNESCAPED_UNICODE), true) ?: [];
+        }
+
+        return is_array($clean) ? $clean : [];
+    }
+
+    private function sanitizeUtf8Recursive(mixed $value): mixed
+    {
+        if (is_string($value)) {
+            return $this->sanitizeUtf8($value);
+        }
+
+        if (! is_array($value)) {
+            return $value;
+        }
+
+        $clean = [];
+        foreach ($value as $key => $item) {
+            $cleanKey = is_string($key) ? $this->sanitizeUtf8($key) : $key;
+            $clean[$cleanKey] = $this->sanitizeUtf8Recursive($item);
+        }
+
+        return $clean;
+    }
+
+    private function sanitizeUtf8(string $value): string
+    {
+        if (mb_check_encoding($value, 'UTF-8')) {
+            return $value;
+        }
+
+        $converted = @mb_convert_encoding($value, 'UTF-8', 'UTF-8, Windows-1251, CP1251, ISO-8859-1');
+        if (is_string($converted) && mb_check_encoding($converted, 'UTF-8')) {
+            return $converted;
+        }
+
+        return iconv('UTF-8', 'UTF-8//IGNORE', $value) ?: '';
     }
 
     private function cleanAttributeName(string $name): string
