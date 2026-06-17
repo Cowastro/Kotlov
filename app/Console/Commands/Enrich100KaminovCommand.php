@@ -69,6 +69,12 @@ class Enrich100KaminovCommand extends Command
         'КОРИЧНЕВАЯ','КОРИЧНЕВЫЙ','ПАТИНА','АНТРАЦИТ','ГРАФИТ','КРЕМОВАЯ','КРЕМОВЫЙ',
         // English color/finish variants (100kaminov.by naming)
         'GREY','GRAY','BLACK','WHITE','SATIN','CERAMIC','ECODESIGN',
+        // Invicta product-type prefixes (Лигмет column D starts with STOVE/FIREPLACE)
+        'STOVE','FIREPLACE',
+        // Nordflam eco-design suffix; Invicta finish variant
+        'EKO','PATINE',
+        // Russian qualifiers that 100kaminov appends: "с духовкой", "с камнем", "с крышкой"
+        'С','ДУХОВКОЙ','КАМНЕМ','КРЫШКОЙ','ВОДЯНЫМ','ВЕНТИЛЯТОРОМ',
         // site-specific noise
         'КУПИТЬ','МИНСКЕ','ДОСТАВКОЙ','ЦЕНА','ОПИСАНИЕ','ХАРАКТЕРИСТИКИ',
     ];
@@ -457,7 +463,8 @@ class Enrich100KaminovCommand extends Command
         $n = preg_replace('/[^А-ЯЁA-Z0-9\-]/u', ' ', $n) ?? $n;
         $toks = array_filter(
             preg_split('/\s+/u', trim($n)) ?: [],
-            fn ($t) => $t !== '' && ! in_array($t, self::STOPWORDS, true)
+            // Also strip Invicta-style product reference codes: P615644, P927475, etc.
+            fn ($t) => $t !== '' && ! in_array($t, self::STOPWORDS, true) && ! preg_match('/^P\d{5,}$/', $t)
         );
         return implode(' ', $toks);
     }
