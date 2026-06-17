@@ -372,33 +372,112 @@ class ProductSourceEnricher
         $dom = $this->dom($html);
         $xpath = new \DOMXPath($dom);
         $specs = [];
+        $containers = $this->specContainers($xpath);
 
-        foreach ($xpath->query('//tr') ?: [] as $row) {
-            $cells = [];
-            foreach ($xpath->query('.//th|.//td', $row) ?: [] as $cell) {
-                $cells[] = $this->cleanText($cell->textContent);
+        foreach ($containers as $container) {
+            foreach ($xpath->query('.//tr', $container) ?: [] as $row) {
+                $this->addSpecFromTableRow($xpath, $specs, $row);
             }
-            if (count($cells) >= 2) {
-                $this->addSpec($specs, $cells[0], $cells[1]);
-            }
-        }
 
-        foreach ($xpath->query('//dl') ?: [] as $dl) {
-            $children = iterator_to_array($dl->childNodes);
-            for ($i = 0; $i < count($children) - 1; $i++) {
-                if (mb_strtolower($children[$i]->nodeName) !== 'dt') {
-                    continue;
-                }
-                for ($j = $i + 1; $j < count($children); $j++) {
-                    if (mb_strtolower($children[$j]->nodeName) === 'dd') {
-                        $this->addSpec($specs, $children[$i]->textContent, $children[$j]->textContent);
-                        break;
-                    }
-                }
+            foreach ($xpath->query('.//dl', $container) ?: [] as $dl) {
+                $this->addSpecsFromDefinitionList($specs, $dl);
             }
         }
 
         return array_slice(array_values($specs), 0, 80);
+    }
+
+    /**
+     * @return array<int, \DOMNode>
+     */
+    private function specContainers(\DOMXPath $xpath): array
+    {
+        $containers = [];
+        foreach ($xpath->query('//*[self::div or self::section or self::article or self::table]') ?: [] as $node) {
+            $marker = mb_strtolower(trim(implode(' ', [
+                $node->attributes?->getNamedItem('class')?->nodeValue ?? '',
+                $node->attributes?->getNamedItem('id')?->nodeValue ?? '',
+                $node->attributes?->getNamedItem('aria-labelledby')?->nodeValue ?? '',
+                $node->attributes?->getNamedItem('data-tab')?->nodeValue ?? '',
+                $node->attributes?->getNamedItem('data-target')?->nodeValue ?? '',
+            ])));
+
+            if (! preg_match('/character|spec|param|property|feature|harakter|kharakter|характер|параметр|свойств/iu', $marker)) {
+                continue;
+            }
+
+            $rowsOrLists = $xpath->query('.//tr|.//dl', $node);
+            if ($rowsOrLists !== false && $rowsOrLists->length > 0) {
+                $containers[] = $node;
+            }
+        }
+
+        if ($containers !== []) {
+            return $this->removeNestedContainers($containers);
+        }
+
+        $document = $xpath->document;
+
+        return $document ? [$document] : [];
+    }
+
+    /**
+     * @param array<int, \DOMNode> $containers
+     * @return array<int, \DOMNode>
+     */
+    private function removeNestedContainers(array $containers): array
+    {
+        return array_values(array_filter($containers, function (\DOMNode $candidate) use ($containers): bool {
+            foreach ($containers as $container) {
+                if ($container === $candidate) {
+                    continue;
+                }
+
+                if ($this->containsDomNode($container, $candidate)) {
+                    return false;
+                }
+            }
+
+            return true;
+        }));
+    }
+
+    private function containsDomNode(\DOMNode $parent, \DOMNode $child): bool
+    {
+        for ($node = $child->parentNode; $node !== null; $node = $node->parentNode) {
+            if ($node === $parent) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private function addSpecFromTableRow(\DOMXPath $xpath, array &$specs, \DOMNode $row): void
+    {
+        $cells = [];
+        foreach ($xpath->query('.//th|.//td', $row) ?: [] as $cell) {
+            $cells[] = $this->cleanText($cell->textContent);
+        }
+        if (count($cells) >= 2) {
+            $this->addSpec($specs, $cells[0], $cells[1]);
+        }
+    }
+
+    private function addSpecsFromDefinitionList(array &$specs, \DOMNode $dl): void
+    {
+        $children = iterator_to_array($dl->childNodes);
+        for ($i = 0; $i < count($children) - 1; $i++) {
+            if (mb_strtolower($children[$i]->nodeName) !== 'dt') {
+                continue;
+            }
+            for ($j = $i + 1; $j < count($children); $j++) {
+                if (mb_strtolower($children[$j]->nodeName) === 'dd') {
+                    $this->addSpec($specs, $children[$i]->textContent, $children[$j]->textContent);
+                    break;
+                }
+            }
+        }
     }
 
     private function extractServiceInfo(string $html): array
