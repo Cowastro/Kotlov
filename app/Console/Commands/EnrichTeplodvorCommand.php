@@ -83,6 +83,10 @@ class EnrichTeplodvorCommand extends Command
         // Brand names as safety-net stopwords (handles Cyrillic/Latin mismatch like ERMAK≠ЕРМАК)
         'KRATKI','INVICTA','BLIST','FIREWAY','NORDFLAM','FERGUSS','MBS','PANADERO',
         'ERMAK','ЕРМАК',
+        // Mojibake variants of "Ермак" from Лигмет price (mixed Cyrillic+Latin encoding)
+        'ЕRMAK','ЕRМАК','ERМАК','ЕRМАК',
+        // Russian "для бани" / "банно-отопительная" prefixes in product names
+        'ДЛЯ','БАНИ','БАННО',
     ];
 
     private bool $apply;
@@ -358,20 +362,8 @@ class EnrichTeplodvorCommand extends Command
             $this->stats['specs'] += $this->writeSpecs($pid, $card['specs']);
         }
 
-        // Description (raw text from teplodvor, stored if product has none).
-        $existing = DB::table('products')->where('id', $pid)->first(['content', 'short_description']);
-        if ($existing && empty($existing->content) && $card['desc'] !== '') {
-            $shortText = mb_substr(strip_tags($card['desc']), 0, 300);
-            DB::table('products')->where('id', $pid)->update([
-                'content'           => '<p>' . nl2br(e($card['desc'])) . '</p>',
-                'short_description' => $shortText,
-                'updated_at'        => $now,
-            ]);
-            $changed = true;
-        }
-
-        // AI enrichment.
-        if (! $this->option('skip-ai') && $card['specs'] !== []) {
+        // AI enrichment: always generate unique SEO content (never copy supplier text verbatim).
+        if (! $this->option('skip-ai')) {
             $this->generateAiContent($pid, $card, $brandName, $now);
         }
 
@@ -464,7 +456,7 @@ class EnrichTeplodvorCommand extends Command
         if ($brand !== '') {
             $n = preg_replace('/' . preg_quote(mb_strtoupper($brand), '/') . '/u', '', $n) ?? $n;
         }
-        $n    = preg_replace('/[^А-ЯЁA-Z0-9\-]/u', ' ', $n) ?? $n;
+        $n    = preg_replace('/[^А-ЯЁA-Z0-9]/u', ' ', $n) ?? $n;
         $toks = array_filter(
             preg_split('/\s+/u', trim($n)) ?: [],
             fn ($t) => $t !== ''
@@ -581,20 +573,16 @@ class EnrichTeplodvorCommand extends Command
             return;
         }
 
-        $catName  = (string) DB::table('categories')->where('id', $existing->category_id)->value('name');
-        $updates  = [];
-        $needShort   = empty($existing->short_description);
-        $needContent = empty($existing->content);
+        $catName = (string) DB::table('categories')->where('id', $existing->category_id)->value('name');
+        $updates = [];
 
-        if ($needShort || $needContent) {
-            $seo = $enricher->generateSeo((string) $existing->name, $brand, $catName, $card['specs']);
-            if ($seo) {
-                if ($needShort && ! empty($seo['short'])) {
-                    $updates['short_description'] = mb_substr($seo['short'], 0, 500);
-                }
-                if ($needContent && ! empty($seo['content'])) {
-                    $updates['content'] = $seo['content'];
-                }
+        $seo = $enricher->generateSeo((string) $existing->name, $brand, $catName, $card['specs']);
+        if ($seo) {
+            if (! empty($seo['short'])) {
+                $updates['short_description'] = mb_substr($seo['short'], 0, 500);
+            }
+            if (! empty($seo['content'])) {
+                $updates['content'] = $seo['content'];
             }
         }
 

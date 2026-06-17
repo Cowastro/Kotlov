@@ -357,19 +357,8 @@ class Enrich100KaminovCommand extends Command
             $this->stats['specs'] += $written;
         }
 
-        // Description (raw HTML from 100kaminov.by description tab) — store as content if empty.
-        $existing = DB::table('products')->where('id', $pid)->value('content');
-        if (empty($existing) && $card['desc'] !== '') {
-            DB::table('products')->where('id', $pid)->update([
-                'content'           => $card['desc'],
-                'short_description' => mb_substr(strip_tags($card['desc']), 0, 300),
-                'updated_at'        => $now,
-            ]);
-            $changed = true;
-        }
-
-        // AI enrichment: short_description + SEO.
-        if (! $this->option('skip-ai') && $card['specs'] !== []) {
+        // AI enrichment: always generate unique SEO content (never copy supplier text verbatim).
+        if (! $this->option('skip-ai')) {
             $this->generateAiContent($pid, $card, $brandName, $now);
         }
 
@@ -579,20 +568,13 @@ class Enrich100KaminovCommand extends Command
         $catName = (string) DB::table('categories')->where('id', $existing->category_id)->value('name');
         $updates = [];
 
-        // Generate content + short_description via generateSeo (one AI call, structured output).
-        if ($card['specs'] !== []) {
-            $needShort   = empty($existing->short_description);
-            $needContent = empty($existing->content ?? '');
-            if ($needShort || $needContent) {
-                $seo = $enricher->generateSeo((string) $existing->name, $brand, $catName, $card['specs']);
-                if ($seo) {
-                    if ($needShort && ! empty($seo['short'])) {
-                        $updates['short_description'] = mb_substr($seo['short'], 0, 500);
-                    }
-                    if ($needContent && ! empty($seo['content'])) {
-                        $updates['content'] = $seo['content'];
-                    }
-                }
+        $seo = $enricher->generateSeo((string) $existing->name, $brand, $catName, $card['specs']);
+        if ($seo) {
+            if (! empty($seo['short'])) {
+                $updates['short_description'] = mb_substr($seo['short'], 0, 500);
+            }
+            if (! empty($seo['content'])) {
+                $updates['content'] = $seo['content'];
             }
         }
 
