@@ -2,8 +2,13 @@
 
 namespace App\Filament\Resources\Products\Tables;
 
+use App\Jobs\RunProductSourceEnrichment;
+use App\Models\Brand;
+use App\Models\Category;
+use App\Models\Product;
 use App\Models\Supplier;
 use App\Models\User;
+use Filament\Actions\Action;
 use Filament\Actions\ActionGroup;
 use Filament\Actions\BulkAction;
 use Filament\Actions\BulkActionGroup;
@@ -11,6 +16,9 @@ use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Actions\ViewAction;
 use Filament\Forms\Components\Select as FormSelect;
+use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Toggle;
+use Filament\Notifications\Notification;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\ImageColumn;
 use Filament\Tables\Columns\TextColumn;
@@ -297,6 +305,27 @@ class ProductsTable
             ])
             ->recordActions([
                 ActionGroup::make([
+                    Action::make('preview_source_enrichment')
+                        ->label('Проверить из ссылки')
+                        ->icon('heroicon-o-magnifying-glass')
+                        ->color(fn (Product $record): string => self::hasProductImages($record) ? 'gray' : 'warning')
+                        ->form(self::sourceEnrichmentForm(includePreviewToggle: false))
+                        ->modalHeading('Проверить данные из ссылки')
+                        ->modalDescription('База не изменится. Результат сохранится в уведомлениях.')
+                        ->action(function (Product $record, array $data): void {
+                            self::queueSourceEnrichment(collect([$record]), $data, previewOnly: true);
+                        }),
+                    Action::make('apply_source_enrichment')
+                        ->label('Обновить из ссылки')
+                        ->icon('heroicon-o-arrow-path')
+                        ->color(fn (Product $record): string => self::hasProductImages($record) ? 'success' : 'warning')
+                        ->form(self::sourceEnrichmentForm(includePreviewToggle: false))
+                        ->requiresConfirmation()
+                        ->modalHeading('Обновить товар из ссылки')
+                        ->modalDescription('Фото, описание и характеристики будут записаны в выбранный товар.')
+                        ->action(function (Product $record, array $data): void {
+                            self::queueSourceEnrichment(collect([$record]), $data, previewOnly: false);
+                        }),
                     ViewAction::make(),
                     EditAction::make(),
                 ]),
@@ -387,6 +416,62 @@ class ProductsTable
                         ->action(fn(Collection $records) => $records->each->update(['is_archived' => false]))
                         ->deselectRecordsAfterCompletion(),
 
+                    BulkAction::make('change_brand')
+                        ->label('Сменить бренд')
+                        ->icon('heroicon-o-building-storefront')
+                        ->color('info')
+                        ->form([
+                            FormSelect::make('brand_id')
+                                ->label('Бренд')
+                                ->options(fn () => Brand::query()
+                                    ->orderBy('name')
+                                    ->pluck('name', 'id'))
+                                ->searchable()
+                                ->preload()
+                                ->nullable()
+                                ->helperText('Можно оставить пустым, чтобы снять бренд.'),
+                        ])
+                        ->requiresConfirmation()
+                        ->modalHeading('Сменить бренд у выбранных товаров')
+                        ->action(fn(Collection $records, array $data) => $records->each->update([
+                            'brand_id' => $data['brand_id'] ?? null,
+                        ]))
+                        ->deselectRecordsAfterCompletion(),
+
+                    BulkAction::make('change_category')
+                        ->label('Сменить категорию')
+                        ->icon('heroicon-o-folder')
+                        ->color('info')
+                        ->form([
+                            FormSelect::make('category_id')
+                                ->label('Категория')
+                                ->options(fn () => Category::query()
+                                    ->orderBy('name')
+                                    ->pluck('name', 'id'))
+                                ->searchable()
+                                ->preload()
+                                ->required(),
+                        ])
+                        ->requiresConfirmation()
+                        ->modalHeading('Сменить категорию у выбранных товаров')
+                        ->action(fn(Collection $records, array $data) => $records->each->update([
+                            'category_id' => $data['category_id'],
+                        ]))
+                        ->deselectRecordsAfterCompletion(),
+
+                    BulkAction::make('enrich_from_source_url')
+                        ->label('Обновить из ссылки')
+                        ->icon('heroicon-o-link')
+                        ->color('success')
+                        ->form(self::sourceEnrichmentForm(includePreviewToggle: true))
+                        ->requiresConfirmation()
+                        ->modalHeading('Обновить выбранные товары из ссылки')
+                        ->modalDescription('Система попробует взять с указанной страницы фото, характеристики и описание. Лучше применять к одному товару или к одинаковым дублям.')
+                        ->action(function (Collection $records, array $data): void {
+                            self::queueSourceEnrichment($records, $data, previewOnly: (bool) ($data['preview_only'] ?? true));
+                        })
+                        ->deselectRecordsAfterCompletion(),
+
                     BulkAction::make('update_supplier')
                         ->label('Обновить поставщика')
                         ->icon('heroicon-o-building-storefront')
@@ -466,6 +551,97 @@ class ProductsTable
                     DeleteBulkAction::make(),
                 ]),
             ]);
+    }
+
+    private static function sourceEnrichmentForm(bool $includePreviewToggle): array
+    {
+        $form = [
+            TextInput::make('source_url')
+                ->label('Ссылка на карточку товара')
+                ->url()
+                ->required()
+                ->placeholder('https://example.com/product/...'),
+        ];
+
+        if ($includePreviewToggle) {
+            $form[] = Toggle::make('preview_only')
+                ->label('Только проверить, без записи')
+                ->helperText('Покажет, что найдено. Для обновления товара снимите этот переключатель.')
+                ->default(true);
+        }
+
+        return [
+            ...$form,
+            Toggle::make('update_images')
+                ->label('Загрузить фотографии')
+                ->default(true),
+            Toggle::make('replace_images')
+                ->label('Заменить текущие фото')
+                ->default(true),
+            Toggle::make('update_specs')
+                ->label('Обновить характеристики')
+                ->default(true),
+            Toggle::make('update_content')
+                ->label('SEO-описание через ИИ')
+                ->helperText('Сырой текст поставщика не сохраняется. Если ИИ не настроен, описание не изменится.')
+                ->default(true),
+            Toggle::make('update_service')
+                ->label('Обновить сервис')
+                ->default(false),
+        ];
+    }
+
+    private static function queueSourceEnrichment(iterable $records, array $data, bool $previewOnly): void
+    {
+        $productIds = collect($records)->pluck('id')->filter()->values()->all();
+        if ($productIds === []) {
+            self::sendAdminNotification(Notification::make()
+                ->warning()
+                ->title('Товары не выбраны')
+                ->body('Выберите товар и повторите действие.'));
+
+            return;
+        }
+
+        $options = [
+            'update_images' => (bool) ($data['update_images'] ?? true),
+            'replace_images' => (bool) ($data['replace_images'] ?? true),
+            'update_specs' => (bool) ($data['update_specs'] ?? true),
+            'update_content' => (bool) ($data['update_content'] ?? true),
+            'update_service' => (bool) ($data['update_service'] ?? false),
+        ];
+
+        RunProductSourceEnrichment::dispatch(
+            $productIds,
+            (int) auth()->id(),
+            (string) $data['source_url'],
+            $options,
+            $previewOnly,
+        );
+
+        self::sendAdminNotification(Notification::make()
+            ->success()
+            ->title($previewOnly ? 'Проверка поставлена в очередь' : 'Обновление поставлено в очередь')
+            ->body('Товаров в задаче: ' . count($productIds) . ".\nРезультат появится в уведомлениях после выполнения очереди."));
+    }
+
+    private static function hasProductImages(Product $record): bool
+    {
+        return array_values(array_filter((array) $record->images)) !== [];
+    }
+
+    private static function sendAdminNotification(Notification $notification, ?string $databaseBody = null): void
+    {
+        $notification->send();
+
+        $user = auth()->user();
+        if ($user) {
+            $databaseNotification = clone $notification;
+            if ($databaseBody !== null) {
+                $databaseNotification->body($databaseBody);
+            }
+            $databaseNotification->sendToDatabase($user);
+        }
     }
 
     private static function productUrl(object $record): ?string

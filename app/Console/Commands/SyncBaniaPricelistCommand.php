@@ -19,7 +19,7 @@ class SyncBaniaPricelistCommand extends Command
         {--retail-price-file= : Path to a local BANIA retail XLSX/CSV file}
         {--retail-sheet-url= : Google Sheets URL with BANIA retail prices}
         {--sync-retail-prices : Update products.price from the retail price list when a confident row is found}
-        {--create-missing-products : Create BANIA products from wholesale price-list rows that have no supplier_products link}
+        {--create-missing-products : Disabled for BANIA; unmatched price rows are reported without creating catalog products}
         {--limit= : Process only the first N price rows}
         {--mark-missing-out-of-stock : Mark linked BANIA rows missing from the price list as out_of_stock}
         {--archive-missing-products : Archive products whose BANIA wholesale rows disappeared and which have no other supplier links}';
@@ -169,6 +169,7 @@ class SyncBaniaPricelistCommand extends Command
             'create_missing_skipped_empty_price' => 0,
             'create_missing_skipped_no_retail' => 0,
             'create_missing_skipped_duplicate_article' => 0,
+            'create_missing_skipped_auto_disabled' => 0,
         ];
 
         foreach ($rows as $row) {
@@ -1132,6 +1133,9 @@ class SyncBaniaPricelistCommand extends Command
 
     private function createMissingProductFromPriceRow(array $row, array $retailIndexes, int $supplierId, bool $dryRun, $now): array
     {
+        $this->addPriceListCreateRow($row, null, 'create_missing_skipped_auto_disabled', '', '', 'BANIA automatic product creation is disabled; review manually.');
+        return ['stat' => 'create_missing_skipped_auto_disabled'];
+
         if ($row['price'] === null || (float) $row['price'] <= 0) {
             $this->addPriceListCreateRow($row, null, 'create_missing_skipped_empty_price', '', '', 'Wholesale price is empty.');
             return ['stat' => 'create_missing_skipped_empty_price'];
