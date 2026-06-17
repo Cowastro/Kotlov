@@ -34,6 +34,10 @@ class ProductSourceEnricher
             'errors' => [],
         ];
 
+        if (($options['preview_only'] ?? false) === true) {
+            return $stats + ['updated_fields' => [], 'preview_only' => true];
+        }
+
         try {
             if (($options['update_images'] ?? true) === true && $parsed['images'] !== []) {
                 $downloaded = $this->downloadImages($parsed['images'], $product);

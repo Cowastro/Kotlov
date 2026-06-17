@@ -446,6 +446,10 @@ class ProductsTable
                                 ->url()
                                 ->required()
                                 ->placeholder('https://example.com/product/...'),
+                            Toggle::make('preview_only')
+                                ->label('Только проверить, без записи')
+                                ->helperText('Покажет, что найдено. Для обновления товара снимите этот переключатель.')
+                                ->default(true),
                             Toggle::make('update_images')
                                 ->label('Загрузить фотографии')
                                 ->default(true),
@@ -467,7 +471,8 @@ class ProductsTable
                         ->modalDescription('Система попробует взять с указанной страницы фото, характеристики и описание. Лучше применять к одному товару или к одинаковым дублям.')
                         ->action(function (Collection $records, array $data): void {
                             $enricher = app(ProductSourceEnricher::class);
-                            $updated = 0;
+                            $previewOnly = (bool) ($data['preview_only'] ?? true);
+                            $processed = 0;
                             $errors = [];
                             $totals = [
                                 'images_found' => 0,
@@ -482,6 +487,7 @@ class ProductsTable
                             foreach ($records as $record) {
                                 try {
                                     $result = $enricher->enrich($record, (string) $data['source_url'], [
+                                        'preview_only' => $previewOnly,
                                         'update_images' => (bool) ($data['update_images'] ?? true),
                                         'replace_images' => (bool) ($data['replace_images'] ?? true),
                                         'update_specs' => (bool) ($data['update_specs'] ?? true),
@@ -494,18 +500,28 @@ class ProductsTable
                                     foreach (($result['errors'] ?? []) as $error) {
                                         $errors[] = ($record->sku ?: $record->id) . ': ' . $error;
                                     }
-                                    $updated++;
+                                    $processed++;
                                 } catch (\Throwable $e) {
                                     $errors[] = ($record->sku ?: $record->id) . ': ' . $e->getMessage();
                                 }
                             }
 
-                            $summary = [
-                                'Фото: найдено ' . $totals['images_found'] . ', сохранено ' . $totals['images_saved'],
-                                'Описание: полное ' . $totals['content_found'] . ', короткое ' . $totals['short_description_found'],
-                                'Характеристики: найдено ' . $totals['specs_found'] . ', записано в атрибуты ' . $totals['attribute_values_saved'],
-                                'Сервис: найдено строк ' . $totals['service_found'],
-                            ];
+                            if ($previewOnly) {
+                                $summary = [
+                                    'Режим проверки: база не изменялась.',
+                                    'Фото найдено: ' . $totals['images_found'],
+                                    'Описание найдено: полное ' . $totals['content_found'] . ', короткое ' . $totals['short_description_found'],
+                                    'Характеристики найдены: ' . $totals['specs_found'],
+                                    'Сервис найдено строк: ' . $totals['service_found'],
+                                ];
+                            } else {
+                                $summary = [
+                                    'Фото: найдено ' . $totals['images_found'] . ', сохранено ' . $totals['images_saved'],
+                                    'Описание: полное ' . $totals['content_found'] . ', короткое ' . $totals['short_description_found'],
+                                    'Характеристики: найдено ' . $totals['specs_found'] . ', записано в атрибуты ' . $totals['attribute_values_saved'],
+                                    'Сервис: найдено строк ' . $totals['service_found'],
+                                ];
+                            }
 
                             if ($errors !== []) {
                                 $summary[] = '';
@@ -514,7 +530,7 @@ class ProductsTable
                             }
 
                             $notification = Notification::make()
-                                ->title('Обновлено товаров: ' . $updated)
+                                ->title(($previewOnly ? 'Проверка завершена: ' : 'Обновлено товаров: ') . $processed)
                                 ->body(implode("\n", $summary));
 
                             if ($errors === []) {
