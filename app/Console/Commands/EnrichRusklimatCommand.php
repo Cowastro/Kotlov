@@ -38,6 +38,10 @@ class EnrichRusklimatCommand extends Command
         {--skip-content      : Do not generate AI description}
         {--skip-specs        : Do not update specs}
         {--ai-only           : Skip web scraping, use AI for description only}
+        {--no-scrape         : Do not touch the web at all (build from existing DB data only)}
+        {--build-content     : Compose content from short_description + specs (no AI, supplier data)}
+        {--build-short       : Compose short_description from content/specs (no AI, supplier data)}
+        {--include-archived  : Also process archived products (default: active only)}
         {--dry-run           : Preview only, no DB writes}';
 
     protected $description = 'Enrich Rusklimat products: scrape specs/images from rusklimat.by + AI description';
@@ -56,6 +60,8 @@ class EnrichRusklimatCommand extends Command
         'ai_used'   => 0,
         'images'    => 0,
         'specs'     => 0,
+        'built_content' => 0,
+        'built_short'   => 0,
         'skipped'   => 0,
         'errors'    => 0,
     ];
@@ -84,49 +90,64 @@ class EnrichRusklimatCommand extends Command
         }
 
         // ── Load products to enrich ───────────────────────────────────────────────
-        $limit  = (int) $this->option('limit');
-        $offset = (int) $this->option('offset');
-        $force  = (bool) $this->option('force');
+        $limit           = (int) $this->option('limit');
+        $offset          = (int) $this->option('offset');
+        $force           = (bool) $this->option('force');
+        $includeArchived = (bool) $this->option('include-archived');
+        $brandFilter     = $this->option('brand');
+        $categoryFilter  = $this->option('category');
 
-        $query = DB::table('products as p')
+        // "Needs enrichment" — any enrichable field is empty. JSON-safe: the column
+        // may be a JSON type or TEXT, and a string compare to "[]" is unreliable
+        // (it silently misses real empty arrays). JSON_LENGTH(images)=0 catches [].
+        $missingWhere = function ($q) {
+            $q->whereNull('p.content')->orWhere('p.content', '')
+              ->orWhereNull('p.short_description')->orWhere('p.short_description', '')
+              ->orWhereNull('p.specs')->orWhere('p.specs', '')
+              ->orWhere('p.specs', '[]')->orWhere('p.specs', '{}')->orWhere('p.specs', 'null')
+              ->orWhereNull('p.images')->orWhere('p.images', '')->orWhere('p.images', '[]')
+              ->orWhereRaw('(JSON_VALID(p.images) AND JSON_LENGTH(p.images) = 0)');
+        };
+
+        $base = DB::table('products as p')
             ->join('supplier_products as sp', 'p.id', '=', 'sp.product_id')
             ->where('sp.supplier_id', $supplierId)
-            ->where('p.is_archived', false)
+            ->when($brandFilter, fn ($q) => $q
+                ->join('brands as br', 'p.brand_id', '=', 'br.id')
+                ->where('br.name', 'like', '%' . $brandFilter . '%'))
+            ->when($categoryFilter, fn ($q) => $q->where('p.category_id', (int) $categoryFilter))
+            ->when(! $force, fn ($q) => $q->where($missingWhere));
+
+        // Diagnostics: how the active/archived split looks for the current filter.
+        $activeMatch   = (clone $base)->where('p.is_archived', false)->distinct('p.id')->count('p.id');
+        $archivedMatch = (clone $base)->where('p.is_archived', true)->distinct('p.id')->count('p.id');
+
+        $query = (clone $base)
+            ->when(! $includeArchived, fn ($q) => $q->where('p.is_archived', false))
             ->select('p.id', 'p.name', 'p.slug', 'p.content', 'p.specs',
                      'p.images', 'p.short_description', 'sp.supplier_article', 'sp.raw');
 
-        if ($brandFilter = $this->option('brand')) {
-            $query->join('brands as br', 'p.brand_id', '=', 'br.id')
-                  ->where('br.name', 'like', '%' . $brandFilter . '%');
-        }
-
-        if ($categoryFilter = $this->option('category')) {
-            $query->where('p.category_id', (int) $categoryFilter);
-        }
-
-        if (! $force) {
-            $query->where(function ($q) {
-                $q->whereNull('p.content')->orWhere('p.content', '')
-                  ->orWhereNull('p.specs')->orWhere('p.specs', '[]')
-                  ->orWhere('p.specs', '{}')->orWhere('p.specs', 'null')
-                  ->orWhereNull('p.images')->orWhere('p.images', '[]');
-            });
-        }
-
-        $total    = (clone $query)->count();
+        $total    = (clone $query)->distinct('p.id')->count('p.id');
         $products = $query->orderBy('p.id')->offset($offset)->limit($limit)->get();
 
         $this->newLine();
         $this->info(sprintf(
-            'Products to enrich: %d (processing %d, offset %d%s%s%s)',
+            'Products to enrich: %d (processing %d, offset %d%s%s%s%s)',
             $total, $products->count(), $offset,
             $force ? ', --force' : '',
             $brandFilter ? ', brand=' . $brandFilter : '',
-            $categoryFilter ? ', category=' . $categoryFilter : ''
+            $categoryFilter ? ', category=' . $categoryFilter : '',
+            $includeArchived ? ', incl. archived' : ''
+        ));
+        $this->line(sprintf(
+            '  match split: <fg=green>%d active</> + <fg=yellow>%d archived</> (default skips archived; pass --include-archived to enrich them)',
+            $activeMatch, $archivedMatch
         ));
 
         if ($products->isEmpty()) {
-            $this->info('Nothing to do — all products already enriched.');
+            $this->info($archivedMatch > 0 && ! $includeArchived
+                ? sprintf('No ACTIVE products to enrich, but %d ARCHIVED match — re-run with --include-archived to process them.', $archivedMatch)
+                : 'Nothing to do — all products already enriched.');
             return self::SUCCESS;
         }
 
@@ -154,10 +175,18 @@ class EnrichRusklimatCommand extends Command
                 mb_substr($product->name, 0, 60)
             ));
 
+            // Why was this product selected? (missing fields)
+            $reasons = [];
+            if ($this->imagesMissing($product->images))             { $reasons[] = 'missing_photo'; }
+            if (trim((string) $product->content) === '')            { $reasons[] = 'missing_content'; }
+            if (trim((string) $product->short_description) === '')  { $reasons[] = 'missing_short_description'; }
+            if ($this->specsEmpty($product->specs))                 { $reasons[] = 'missing_specs'; }
+            $this->line('  <fg=gray>selected: ' . ($reasons === [] ? '(--force)' : implode(', ', $reasons)) . '</>');
+
             $scraped = null;
 
             // ── Step 1: Scrape rusklimat.by ───────────────────────────────────────
-            if (! $this->option('ai-only')) {
+            if (! $this->option('ai-only') && ! $this->option('no-scrape')) {
                 $pageUrl = $this->findProductUrl($product->name, $article);
                 if ($pageUrl) {
                     $html = $this->fetchPage($pageUrl);
@@ -181,8 +210,7 @@ class EnrichRusklimatCommand extends Command
 
             // ── Step 2: Specs ─────────────────────────────────────────────────────
             if (! $this->option('skip-specs') && ! empty($scraped['specs'])) {
-                $existing = json_decode($product->specs ?? '[]', true);
-                if ($force || empty($existing)) {
+                if ($force || $this->specsEmpty($product->specs)) {
                     $updates['specs'] = json_encode($scraped['specs'], JSON_UNESCAPED_UNICODE);
                     $this->stats['specs']++;
                 }
@@ -198,8 +226,7 @@ class EnrichRusklimatCommand extends Command
 
             // ── Step 4: Image ─────────────────────────────────────────────────────
             if (! $this->option('skip-images') && ! empty($scraped['image_url'])) {
-                $existing = json_decode($product->images ?? '[]', true);
-                if ($force || empty($existing)) {
+                if ($force || $this->imagesMissing($product->images)) {
                     $localPath = $this->downloadImage($scraped['image_url'], $product->slug, $imgDir);
                     if ($localPath) {
                         $updates['images'] = json_encode(
@@ -219,7 +246,10 @@ class EnrichRusklimatCommand extends Command
                 $scrapadSpecs = $scraped['specs'] ?? [];
                 $rawShort     = $scraped['short_description'] ?? null;
 
-                if ($needsAi && $this->ai->isAvailable()) {
+                if ($needsAi && $this->ai->isAvailable() && $this->dryRun) {
+                    // Dry-run must NOT spend money on the AI API — just report intent.
+                    $this->line('  <fg=blue>[dry-run] would generate AI description (' . $this->ai->providerName() . ')</>');
+                } elseif ($needsAi && $this->ai->isAvailable()) {
                     $aiText = $this->ai->enrich($product->name, $brand, $rawShort, $scrapadSpecs);
                     if ($aiText) {
                         $updates['content'] = $aiText;
@@ -228,6 +258,40 @@ class EnrichRusklimatCommand extends Command
                     }
                 } elseif ($needsAi && ! $this->ai->isAvailable()) {
                     $this->line('  <fg=yellow>— AI not configured (set ANTHROPIC_API_KEY or AI_API_KEY)</>');
+                }
+            }
+
+            // ── Step 6: Build long content from supplier data (no AI) ────────────
+            if ($this->option('build-content')) {
+                $haveContent = isset($updates['content']) || trim((string) $product->content) !== '';
+                if ($force || ! $haveContent) {
+                    $built = $this->buildContentFromData(
+                        $product->name, $brand,
+                        $updates['short_description'] ?? $product->short_description,
+                        $updates['specs'] ?? $product->specs
+                    );
+                    if ($built !== '') {
+                        $updates['content'] = $built;
+                        $this->stats['built_content']++;
+                        $this->line('  <fg=green>✓ content built:</> ' . mb_substr(trim(preg_replace('/\s+/u', ' ', strip_tags($built)) ?? ''), 0, 90));
+                    }
+                }
+            }
+
+            // ── Step 7: Build short_description from supplier data (no AI) ────────
+            if ($this->option('build-short')) {
+                $haveShort = isset($updates['short_description']) || trim((string) $product->short_description) !== '';
+                if ($force || ! $haveShort) {
+                    $built = $this->buildShortFromData(
+                        $product->name, $brand,
+                        $updates['content'] ?? $product->content,
+                        $updates['specs'] ?? $product->specs
+                    );
+                    if ($built !== '') {
+                        $updates['short_description'] = $built;
+                        $this->stats['built_short']++;
+                        $this->line('  <fg=green>✓ short built:</> ' . mb_substr($built, 0, 90));
+                    }
                 }
             }
 
@@ -546,5 +610,107 @@ class EnrichRusklimatCommand extends Command
         ];
 
         return strtr($text, $map);
+    }
+
+    // ── Deterministic content builders (no AI, supplier data only) ───────────────
+
+    /** Decode a specs JSON value into a clean [key => scalar] map. */
+    private function decodeSpecs(?string $specsJson): array
+    {
+        $specs = json_decode((string) ($specsJson ?: '[]'), true);
+        if (! is_array($specs)) {
+            return [];
+        }
+        return array_filter($specs, fn ($v) => is_scalar($v) && trim((string) $v) !== '');
+    }
+
+    /** Compose HTML content from short_description + specs. Returns '' if no real data. */
+    private function buildContentFromData(string $name, string $brand, ?string $short, ?string $specsJson): string
+    {
+        $short = trim(strip_tags((string) $short));
+        $specs = $this->decodeSpecs($specsJson);
+
+        if ($short === '' && empty($specs)) {
+            return ''; // no supplier data — don't fabricate
+        }
+
+        // PROSE ONLY — specs belong in the structured «Характеристики» tab,
+        // never inside content.
+        if ($short !== '') {
+            return '<p>' . e($short) . '</p>';
+        }
+        if (trim($name) !== '') {
+            return '<p>' . e(trim($brand . ' ' . $name)) . '.</p>';
+        }
+        return '';
+    }
+
+    /** Compose a short description from existing content, else from name + key specs. */
+    private function buildShortFromData(string $name, string $brand, ?string $content, ?string $specsJson): string
+    {
+        $text = trim(preg_replace('/\s+/u', ' ', strip_tags((string) $content)) ?? '');
+        if ($text !== '') {
+            if (mb_strlen($text) > 200) {
+                $cut = mb_substr($text, 0, 200);
+                $dot = mb_strrpos($cut, '.');
+                $text = ($dot !== false && $dot > 80) ? mb_substr($cut, 0, $dot + 1) : rtrim($cut) . '…';
+            }
+            return $text;
+        }
+
+        $specs = $this->decodeSpecs($specsJson);
+        if (empty($specs)) {
+            return '';
+        }
+        $pairs = [];
+        foreach (array_slice($specs, 0, 3, true) as $k => $v) {
+            $pairs[] = $k . ': ' . $v;
+        }
+        return trim($brand . ' ' . $name) . '. ' . implode('; ', $pairs) . '.';
+    }
+
+    // ── Emptiness helpers (JSON-safe) ─────────────────────────────────────────────
+
+    /**
+     * True when images holds no usable photo: null, "", [], or junk entries
+     * like [""], [null], ["[]"]. A real path (even one whose file is missing)
+     * counts as "present" — we never overwrite an existing image reference.
+     */
+    private function imagesMissing(?string $raw): bool
+    {
+        if ($raw === null || trim($raw) === '') {
+            return true;
+        }
+
+        $decoded = json_decode($raw, true);
+        if (! is_array($decoded)) {
+            return trim($raw) === '[]';
+        }
+
+        foreach ($decoded as $entry) {
+            if (! is_string($entry)) {
+                continue;
+            }
+            $e = trim($entry);
+            if ($e !== '' && $e !== '[]' && $e !== 'null' && $e !== '""') {
+                return false; // found a usable path
+            }
+        }
+
+        return true;
+    }
+
+    /** True when specs is null, "", [], {} or "null". */
+    private function specsEmpty(?string $raw): bool
+    {
+        if ($raw === null) {
+            return true;
+        }
+        $t = trim($raw);
+        if (in_array($t, ['', '[]', '{}', 'null'], true)) {
+            return true;
+        }
+        $decoded = json_decode($raw, true);
+        return is_array($decoded) && count($decoded) === 0;
     }
 }

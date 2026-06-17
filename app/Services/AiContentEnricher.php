@@ -221,6 +221,111 @@ PROMPT;
         }
     }
 
+    /**
+     * Generate SEO short_description + content in one call, strictly from supplier
+     * data (name/brand/category/specs). Returns ['short' => string, 'content' => string]
+     * or null on failure. No price/availability/delivery/warranty claims, no Markdown.
+     */
+    public function generateSeo(string $name, string $brand, string $category, array $specs = []): ?array
+    {
+        if ($this->mode === 'none') {
+            return null;
+        }
+
+        $flat = $this->flattenSpecs($specs);
+        $specsText = $flat === []
+            ? '(характеристики не предоставлены)'
+            : implode("\n", array_map(fn ($v, $k) => "- {$k}: {$v}", $flat, array_keys($flat)));
+        $cat = $category !== '' ? $category : 'оборудование';
+
+        $prompt = <<<PROMPT
+Ты SEO-копирайтер интернет-магазина отопительного и климатического оборудования.
+Сгенерируй описание товара на русском языке СТРОГО на основе данных ниже.
+
+Название: {$name}
+Бренд: {$brand}
+Категория: {$cat}
+Характеристики:
+{$specsText}
+
+Требования:
+- Пиши только на основе названия, бренда, категории и характеристик. НИЧЕГО не выдумывай.
+- НЕ указывай числовые характеристики, которых нет в списке (мощность, размеры, объём, КПД и т.п.).
+- КРИТИЧНО: НИКОГДА не пиши единицу измерения (Вт, кВт, В, А, м², м³/час, м³/ч, мм, см, м, дБ, об/мин, кг, ч, л, °C) без конкретного числа НЕПОСРЕДСТВЕННО перед ней.
+- Если числового значения характеристики нет в списке — полностью ОПУСТИ упоминание этой характеристики. Лучше короче, но без пропусков значений.
+- ЗАПРЕЩЕНЫ любые заглушки и плейсхолдеры: «[Вт]», «(укажите …)», «вписать значение», «указанное значение», «определённого значения», «уточните», символы * и [ ].
+- Естественно упомяни бренд, модель и тип товара.
+- Без воды и штампов. НЕ пиши «купить дёшево», «лучшая цена», «выгодно».
+- НЕ обещай наличие, доставку, гарантию, скидки, сроки.
+- Язык — русский. Markdown ЗАПРЕЩЁН.
+- content — это СВЯЗНОЕ ТЕКСТОВОЕ ОПИСАНИЕ (проза), 2–4 абзаца <p>. НЕ вставляй таблицу или список характеристик — характеристики на сайте выводятся ОТДЕЛЬНЫМ блоком.
+- В поле content разрешены теги: <p>, <h2>, <h3>. Список <ul><li> допустим ТОЛЬКО для преимуществ/назначения, но НЕ для перечисления технических характеристик со значениями.
+
+Верни СТРОГО валидный JSON без пояснений и без обрамления в код:
+{"short_description": "1–2 предложения, обычный текст без HTML", "content": "HTML-проза: 2–4 абзаца <p>, без списка/таблицы характеристик"}
+PROMPT;
+
+        try {
+            $raw = match ($this->mode) {
+                'anthropic'     => $this->callAnthropic($prompt),
+                'openai_compat' => $this->callOpenAiCompat($prompt),
+                default         => null,
+            };
+        } catch (\Throwable) {
+            return null;
+        }
+
+        return $raw ? $this->parseSeoJson($raw) : null;
+    }
+
+    /** Flatten specs ({k:v} or [{key,value,unit}]) into a clean [k => v] map. */
+    private function flattenSpecs(array $specs): array
+    {
+        $flat = [];
+        foreach ($specs as $k => $v) {
+            if (is_array($v)) {
+                $key  = $v['key'] ?? $k;
+                $val  = (string) ($v['value'] ?? '');
+                $unit = (string) ($v['unit'] ?? '');
+                if ($key !== '' && trim($val) !== '') {
+                    $flat[$key] = $val . ($unit !== '' ? ' ' . $unit : '');
+                }
+            } elseif (is_scalar($v) && trim((string) $v) !== '') {
+                $flat[$k] = (string) $v;
+            }
+        }
+        return $flat;
+    }
+
+    /** Parse the model's JSON reply, sanitising HTML to the allowed tag set. */
+    private function parseSeoJson(string $raw): ?array
+    {
+        $s = trim($raw);
+        $s = preg_replace('/```(?:json)?/i', '', $s) ?? $s;
+        $start = strpos($s, '{');
+        $end   = strrpos($s, '}');
+        if ($start === false || $end === false || $end <= $start) {
+            return null;
+        }
+
+        $data = json_decode(substr($s, $start, $end - $start + 1), true);
+        if (! is_array($data)) {
+            return null;
+        }
+
+        $short   = trim(strip_tags((string) ($data['short_description'] ?? '')));
+        $content = trim((string) ($data['content'] ?? ''));
+        if ($content !== '') {
+            $content = trim(strip_tags($content, '<p><ul><li><h2><h3><strong>'));
+        }
+
+        if ($short === '' && $content === '') {
+            return null;
+        }
+
+        return ['short' => $short, 'content' => $content];
+    }
+
     // ── Providers ─────────────────────────────────────────────────────────────────
 
     private function callAnthropic(string $prompt, int $maxTokens = 1024): ?string
