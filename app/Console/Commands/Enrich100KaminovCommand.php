@@ -565,17 +565,19 @@ class Enrich100KaminovCommand extends Command
             return;
         }
 
-        $catName = (string) DB::table('categories')->where('id', $existing->category_id)->value('name');
         $updates = [];
+        $rawDesc = $card['desc'] ?? '';
 
-        $seo = $enricher->generateSeo((string) $existing->name, $brand, $catName, $card['specs']);
-        if ($seo) {
-            if (! empty($seo['short'])) {
-                $updates['short_description'] = mb_substr($seo['short'], 0, 500);
-            }
-            if (! empty($seo['content'])) {
-                $updates['content'] = $seo['content'];
-            }
+        // Same approach as admin "Обновить из ссылки": raw supplier text is context only,
+        // AI generates unique SEO HTML; raw text is never stored.
+        $aiContent = $enricher->enrich((string) $existing->name, $brand, $rawDesc, $card['specs']);
+        if ($aiContent !== null && trim(strip_tags($aiContent)) !== '') {
+            $updates['content'] = strip_tags($aiContent, '<p><ul><li><strong>');
+
+            $short = $enricher->shortDescription((string) $existing->name, $brand, $card['specs'])
+                ?: mb_substr(trim(strip_tags($aiContent)), 0, 240);
+            $updates['short_description'] = mb_substr(trim($short), 0, 240);
+            $updates['meta_description']  = mb_substr(trim($short), 0, 250);
         }
 
         if ($updates !== []) {
