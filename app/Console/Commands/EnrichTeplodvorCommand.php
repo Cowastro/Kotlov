@@ -25,6 +25,7 @@ class EnrichTeplodvorCommand extends Command
         {--sleep=700   : Delay between HTTP requests, ms}
         {--overwrite-images : Replace existing images}
         {--skip-ai     : Skip AI description/SEO generation}
+        {--only-ai     : Only regenerate AI texts, skip images and specs}
         {--only-missing : Restrict catalog index to products without images}
         {--apply       : Write to DB (default: dry-run)}
         {--dry-run     : Preview only (default)}';
@@ -350,15 +351,19 @@ class EnrichTeplodvorCommand extends Command
         $now     = now();
         $changed = false;
 
+        $onlyAi = (bool) $this->option('only-ai');
+
         // Images.
-        $written = $this->downloadImages($pid, $card['images'], $entry['has_images']);
-        if ($written > 0) {
-            $this->stats['images'] += $written;
-            $changed = true;
+        if (! $onlyAi) {
+            $written = $this->downloadImages($pid, $card['images'], $entry['has_images']);
+            if ($written > 0) {
+                $this->stats['images'] += $written;
+                $changed = true;
+            }
         }
 
         // Specs.
-        if ($card['specs'] !== []) {
+        if (! $onlyAi && $card['specs'] !== []) {
             $this->stats['specs'] += $this->writeSpecs($pid, $card['specs']);
         }
 

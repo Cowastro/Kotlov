@@ -26,6 +26,7 @@ class Enrich100KaminovCommand extends Command
         {--sleep=800   : Delay between HTTP requests, ms}
         {--overwrite-images : Replace existing images}
         {--skip-ai     : Skip AI description/SEO generation}
+        {--only-ai     : Only regenerate AI texts, skip images and specs}
         {--only-missing : Skip products that already have images}
         {--apply       : Write to DB (default: dry-run)}
         {--dry-run     : Preview only (default)}';
@@ -344,15 +345,19 @@ class Enrich100KaminovCommand extends Command
         $now     = now();
         $changed = false;
 
+        $onlyAi = (bool) $this->option('only-ai');
+
         // Images.
-        $imagesWritten = $this->downloadImages($pid, $card['images'], $entry['has_images']);
-        if ($imagesWritten > 0) {
-            $this->stats['images'] += $imagesWritten;
-            $changed = true;
+        if (! $onlyAi) {
+            $imagesWritten = $this->downloadImages($pid, $card['images'], $entry['has_images']);
+            if ($imagesWritten > 0) {
+                $this->stats['images'] += $imagesWritten;
+                $changed = true;
+            }
         }
 
         // Specs → product_attribute_values.
-        if ($card['specs'] !== []) {
+        if (! $onlyAi && $card['specs'] !== []) {
             $written = $this->writeSpecs($pid, $card['specs']);
             $this->stats['specs'] += $written;
         }
