@@ -36,6 +36,7 @@ class EnrichTskNasosyCommand extends Command
         {--in-stock-only : Only products currently in stock}
         {--only-missing : Only products missing a photo or description}
         {--overwrite-images : Replace existing photos (default: keep)}
+        {--only-ai : Regenerate AI texts only, skip images and specs}
         {--apply : Write changes (default: preview)}
         {--dry-run : Preview only (default)}';
 
@@ -140,19 +141,25 @@ class EnrichTskNasosyCommand extends Command
         $pid = (int) $r->product_id;
         $catId = (int) $r->category_id;
 
-        // Photos — skip if already present unless --overwrite-images.
-        $this->stats['images'] += $this->downloadCardImages(
-            $pid, $d['images'], self::IMAGE_DIR, (bool) $this->option('overwrite-images')
-        );
+        $onlyAi = (bool) $this->option('only-ai');
 
-        // Characteristics — skip if product already has any attribute values.
-        $hasSpecs = DB::table('product_attribute_values')->where('product_id', $pid)->exists();
-        if (! $hasSpecs && $d['specs'] !== []) {
-            $this->stats['attrs'] += $this->writeCardSpecs($pid, $catId, $d['specs']);
+        // Photos — skip if already present unless --overwrite-images.
+        if (! $onlyAi) {
+            $this->stats['images'] += $this->downloadCardImages(
+                $pid, $d['images'], self::IMAGE_DIR, (bool) $this->option('overwrite-images')
+            );
         }
 
-        // AI description — only when content is empty; use AI (never store raw supplier text).
-        if (trim((string) $r->content) === '') {
+        // Characteristics — skip if product already has any attribute values.
+        if (! $onlyAi) {
+            $hasSpecs = DB::table('product_attribute_values')->where('product_id', $pid)->exists();
+            if (! $hasSpecs && $d['specs'] !== []) {
+                $this->stats['attrs'] += $this->writeCardSpecs($pid, $catId, $d['specs']);
+            }
+        }
+
+        // AI description: with --only-ai always regenerate; otherwise only when empty.
+        if ($onlyAi || trim((string) $r->content) === '') {
             $this->generateAiContent($pid, (string) $r->name, $d['desc'], $d['specs'], $now);
         }
 
