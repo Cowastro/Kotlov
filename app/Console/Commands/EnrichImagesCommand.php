@@ -77,8 +77,9 @@ class EnrichImagesCommand extends Command
         'kratki.com', 'kratki.pl', 'invicta-feu.com', 'blist.pl',
         'nordflam.com.pl', 'panadero.es', 'mbs-stoves.com',
         'ligmet.by', 'kamin.by', 'tsk.by', 'lazurit.by',
-        // Ермак
-        'ermak-pech.ru', 'ermak-termo.com',
+        // Ермак + BY bath stove retailers
+        'ermak-pech.ru', 'ermak-termo.com', 'na-kostre.ru',
+        'pechibani.by', '100kotlov.by', 'mir-para.by',
     ];
 
     /** Hard-rejected sources: marketplaces / fashion / auto / irrelevant.
