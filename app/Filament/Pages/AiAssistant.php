@@ -2,10 +2,16 @@
 
 namespace App\Filament\Pages;
 
+use App\Jobs\RunProductCatalogAiReview;
 use App\Models\Product;
 use App\Models\SupplierReviewDecision;
 use App\Models\SupplierSync;
+use App\Services\AiContentEnricher;
 use BackedEnum;
+use Filament\Actions\Action;
+use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Toggle;
+use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Filament\Support\Enums\Width;
 use Filament\Support\Icons\Heroicon;
@@ -26,6 +32,33 @@ class AiAssistant extends Page
     public function getMaxContentWidth(): Width|string|null
     {
         return Width::Full;
+    }
+
+    protected function getHeaderActions(): array
+    {
+        return [
+            Action::make('audit_missing_brand')
+                ->label('AI-аудит без бренда')
+                ->icon('heroicon-o-sparkles')
+                ->color('warning')
+                ->form([
+                    TextInput::make('limit')
+                        ->label('Сколько товаров проверить')
+                        ->numeric()
+                        ->minValue(1)
+                        ->maxValue(100)
+                        ->default(20)
+                        ->required(),
+                    Toggle::make('use_ai')
+                        ->label('Использовать DeepSeek/AI')
+                        ->helperText('Если выключить, будут использованы только локальные правила.')
+                        ->default(true),
+                ])
+                ->requiresConfirmation()
+                ->modalHeading('Запустить AI-аудит товаров без бренда')
+                ->modalDescription('Товары не изменятся. Будут созданы pending-решения для проверки.')
+                ->action(fn (array $data) => $this->queueMissingBrandAudit($data)),
+        ];
     }
 
     public function metrics(): array
@@ -167,6 +200,53 @@ class AiAssistant extends Page
                 ->where(fn ($query) => $query->whereNull('last_run_at')->orWhere('last_status', 'never'))
                 ->count(),
         ];
+    }
+
+    private function queueMissingBrandAudit(array $data): void
+    {
+        $limit = max(1, min(100, (int) ($data['limit'] ?? 20)));
+        $useAi = (bool) ($data['use_ai'] ?? true);
+
+        if ($useAi && ! app(AiContentEnricher::class)->isAvailable()) {
+            Notification::make()
+                ->danger()
+                ->title('AI-провайдер не настроен')
+                ->body('Добавьте ANTHROPIC_API_KEY или AI_API_KEY + AI_API_URL + AI_MODEL, либо запустите аудит без AI.')
+                ->send();
+
+            return;
+        }
+
+        $productIds = Product::query()
+            ->where('is_archived', false)
+            ->whereNull('brand_id')
+            ->orderBy('id')
+            ->limit($limit)
+            ->pluck('id')
+            ->all();
+
+        if ($productIds === []) {
+            Notification::make()
+                ->warning()
+                ->title('Товары без бренда не найдены')
+                ->body('Очередь для этого сценария сейчас пустая.')
+                ->send();
+
+            return;
+        }
+
+        RunProductCatalogAiReview::dispatch(
+            $productIds,
+            (int) auth()->id(),
+            $useAi,
+        );
+
+        Notification::make()
+            ->success()
+            ->title('AI-аудит поставлен в очередь')
+            ->body('Товаров в задаче: ' . count($productIds) . '. Результат появится в pending-решениях.')
+            ->persistent()
+            ->send();
     }
 
     private function productsWithoutContent(): int
