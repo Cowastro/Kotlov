@@ -39,7 +39,7 @@ class EnrichImagesCommand extends Command
         {--active-only      : Only active (non-archived) products — recommended}
         {--include-archived : Also process archived products (default: skip them)}
         {--brand=           : Filter by brand name (partial match, e.g. --brand=Ballu)}
-        {--supplier=rusklimat : Supplier code whose products to enrich}
+        {--supplier=          : Supplier code whose products to enrich (required)}
         {--limit=20         : Max products to process per run}
         {--offset=0         : Skip first N products (batching)}
         {--min-kb=30        : Minimum image size in KB}
@@ -101,7 +101,12 @@ class EnrichImagesCommand extends Command
         $this->dryRun   = (bool) $this->option('dry-run');
         $this->minBytes = max(1, (int) $this->option('min-kb')) * 1024;
         $this->minWidth = max(1, (int) $this->option('min-width'));
-        $this->imageDir = 'img/products/' . ((string) $this->option('supplier') ?: 'rusklimat');
+        $supplierOpt = trim((string) $this->option('supplier'));
+        if ($supplierOpt === '') {
+            $this->error('--supplier is required. Example: --supplier=ligmet');
+            return self::FAILURE;
+        }
+        $this->imageDir = 'img/products/' . $supplierOpt;
 
         $provider = $this->detectProvider();
 
@@ -122,7 +127,7 @@ class EnrichImagesCommand extends Command
             $this->info('Image-search provider: ' . $provider);
         }
 
-        $supplierCode = (string) $this->option('supplier');
+        $supplierCode = $supplierOpt;
         $supplierId   = DB::table('suppliers')->where('code', $supplierCode)->value('id');
         if (! $supplierId) {
             $this->error('Supplier "' . $supplierCode . '" not found.');
