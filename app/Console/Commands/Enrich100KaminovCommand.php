@@ -356,14 +356,17 @@ class Enrich100KaminovCommand extends Command
             }
         }
 
-        // Specs → product_attribute_values.
+        // Specs — skip if product already has any values.
         if (! $onlyAi && $card['specs'] !== []) {
-            $written = $this->writeSpecs($pid, $card['specs']);
-            $this->stats['specs'] += $written;
+            $hasSpecs = DB::table('product_attribute_values')->where('product_id', $pid)->exists();
+            if (! $hasSpecs) {
+                $this->stats['specs'] += $this->writeSpecs($pid, $card['specs']);
+            }
         }
 
-        // AI enrichment: always generate unique SEO content (never copy supplier text verbatim).
-        if (! $this->option('skip-ai')) {
+        // AI enrichment: only when content is empty (or --only-ai forces regeneration).
+        $existingContent = (string) DB::table('products')->where('id', $pid)->value('content');
+        if (! $this->option('skip-ai') && ($onlyAi || trim($existingContent) === '')) {
             $this->generateAiContent($pid, $card, $brandName, $now);
         }
 
@@ -486,7 +489,7 @@ class Enrich100KaminovCommand extends Command
                 continue;
             }
             $size = @getimagesizefromstring($body);
-            if (! $size || $size[0] < 200 || $size[1] < 200) {
+            if (! $size || $size[0] < 300 || $size[1] < 300) {
                 continue;
             }
             $md5 = md5($body);
@@ -546,10 +549,13 @@ class Enrich100KaminovCommand extends Command
                 ]);
             }
 
-            DB::table('product_attribute_values')->updateOrInsert(
-                ['product_id' => $pid, 'attribute_id' => $attrId],
-                ['value' => (string) $val, 'updated_at' => $now, 'created_at' => $now]
-            );
+            if (DB::table('product_attribute_values')->where('product_id', $pid)->where('attribute_id', $attrId)->exists()) {
+                continue;
+            }
+            DB::table('product_attribute_values')->insert([
+                'product_id' => $pid, 'attribute_id' => $attrId,
+                'value' => (string) $val, 'updated_at' => $now, 'created_at' => $now,
+            ]);
             $written++;
         }
 
