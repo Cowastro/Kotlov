@@ -112,49 +112,57 @@ class EnrichLigmetExtraCommand extends Command
         $limit    = $this->option('limit') ? (int) $this->option('limit') : PHP_INT_MAX;
         $maxPages = (int) $this->option('pages');
         $enriched = 0;
-        $seen     = [];
+
+        // Sitemap index — parsed once, reused for all source paths.
+        $sitemapUrls = $this->fetchSitemapIndex();
+        $this->line('Sitemaps found: ' . count($sitemapUrls));
 
         foreach ($paths as $path) {
             if ($enriched >= $limit) {
                 break;
             }
             $path = str_starts_with($path, 'http') ? (parse_url($path, PHP_URL_PATH) ?? $path) : $path;
+            $prefix = $this->base . rtrim($path, '/') . '/';
             $this->newLine();
-            $this->info("Crawling: {$path}");
+            $this->info("Collecting: {$path}");
 
-            for ($page = 1; $page <= $maxPages; $page++) {
-                $pageUrl = $this->listingUrl($path, $page);
-                $links   = $this->collectLinks($pageUrl);
+            // 1. Try sitemap (works even on JS-rendered sites).
+            $links = $this->collectLinksFromSitemaps($sitemapUrls, $prefix);
 
-                if ($links === []) {
-                    $this->line("  page {$page}: no links, stopping.");
-                    break;
-                }
-
-                $newLinks = array_filter($links, fn ($l) => ! isset($seen[$l]));
-                if (empty($newLinks)) {
-                    $this->line("  page {$page}: no new links, stopping.");
-                    break;
-                }
-                foreach ($newLinks as $l) {
-                    $seen[$l] = true;
-                }
-                $this->line("  page {$page}: " . count($newLinks) . ' products');
-
-                foreach ($newLinks as $productUrl) {
-                    if ($enriched >= $limit) {
-                        break 2;
+            // 2. Fallback: paginated HTML scraping.
+            if ($links === []) {
+                $this->line('  sitemap: no links — falling back to HTML crawl');
+                $seen = [];
+                for ($page = 1; $page <= $maxPages; $page++) {
+                    $pageUrl  = $this->listingUrl($path, $page);
+                    $newLinks = array_filter(
+                        $this->collectLinks($pageUrl),
+                        fn ($l) => ! isset($seen[$l]) && str_starts_with($l, $prefix)
+                    );
+                    if ($newLinks === []) {
+                        $this->line("  HTML page {$page}: no new links, stopping.");
+                        break;
                     }
-                    try {
-                        if ($this->processProduct($productUrl)) {
-                            $enriched++;
-                        }
-                    } catch (\Throwable $e) {
-                        $this->stats['errors']++;
-                        $this->warn("  error [{$productUrl}]: " . $e->getMessage());
+                    foreach ($newLinks as $l) {
+                        $seen[$l] = true;
+                        $links[]  = $l;
                     }
-                    usleep((int) $this->option('sleep') * 1000);
+                    $this->line("  HTML page {$page}: " . count($newLinks) . ' links');
                 }
+            } else {
+                $this->line('  sitemap: ' . count($links) . ' links');
+            }
+
+            foreach (array_slice($links, 0, $limit - $enriched) as $productUrl) {
+                try {
+                    if ($this->processProduct($productUrl)) {
+                        $enriched++;
+                    }
+                } catch (\Throwable $e) {
+                    $this->stats['errors']++;
+                    $this->warn("  error [{$productUrl}]: " . $e->getMessage());
+                }
+                usleep((int) $this->option('sleep') * 1000);
             }
         }
 
@@ -273,6 +281,46 @@ class EnrichLigmetExtraCommand extends Command
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────────
+
+    // ── Sitemap discovery ─────────────────────────────────────────────────────────
+
+    /** Fetch sitemap index and return list of sub-sitemap URLs. Falls back to main sitemap. */
+    private function fetchSitemapIndex(): array
+    {
+        $index = $this->fetchCard($this->base . '/sitemap.xml');
+        if ($index === null) {
+            return [];
+        }
+        preg_match_all('/<loc>([^<]+)<\/loc>/i', $index, $m);
+        $locs = array_map('trim', $m[1] ?? []);
+        // If these are sub-sitemaps (contain "sitemap"), return them; otherwise treat main sitemap as the only one.
+        $subs = array_filter($locs, fn ($u) => str_contains($u, 'sitemap'));
+        return $subs !== [] ? array_values($subs) : [$this->base . '/sitemap.xml'];
+    }
+
+    /** Search sub-sitemaps for URLs starting with $prefix. Stops early once first match found in a sitemap. */
+    private function collectLinksFromSitemaps(array $sitemapUrls, string $prefix): array
+    {
+        $links = [];
+        foreach ($sitemapUrls as $smUrl) {
+            $xml = $this->fetchCard($smUrl);
+            if ($xml === null) {
+                continue;
+            }
+            preg_match_all('/<loc>([^<]+)<\/loc>/i', $xml, $m);
+            foreach ($m[1] ?? [] as $loc) {
+                $loc = trim($loc);
+                if (str_starts_with($loc, $prefix) && $loc !== $prefix) {
+                    $links[] = rtrim($loc, '/') . '/';
+                }
+            }
+            if ($links !== []) {
+                // Found the right sitemap — no need to scan others.
+                break;
+            }
+        }
+        return array_values(array_unique($links));
+    }
 
     private function listingUrl(string $path, int $page): string
     {
