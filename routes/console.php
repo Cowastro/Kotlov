@@ -41,3 +41,18 @@ Schedule::command('supplier:sync-bania-pricelist --apply')
     ->withoutOverlapping()
     ->runInBackground()
     ->appendOutputTo(storage_path('logs/bania-pricelist-sync.log'));
+
+// Лигмет: ежедневно обновляем цены и наличие печей/каминов/топок.
+// Новые товары не создаются автоматически — только обновление уже связанных.
+Schedule::command('supplier:sync-ligmet --apply')
+    ->dailyAt('07:00')
+    ->withoutOverlapping()
+    ->runInBackground()
+    ->appendOutputTo(storage_path('logs/ligmet-sync.log'));
+
+// ТСК Насосы: ежедневно обновляем цены и наличие насосного оборудования.
+Schedule::command('supplier:sync-tsk-nasosy --apply')
+    ->dailyAt('07:30')
+    ->withoutOverlapping()
+    ->runInBackground()
+    ->appendOutputTo(storage_path('logs/tsk-nasosy-sync.log'));
