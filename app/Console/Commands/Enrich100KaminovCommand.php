@@ -78,6 +78,8 @@ class Enrich100KaminovCommand extends Command
         'С','ДУХОВКОЙ','КАМНЕМ','КРЫШКОЙ','ВОДЯНЫМ','ВЕНТИЛЯТОРОМ',
         // site-specific noise
         'КУПИТЬ','МИНСКЕ','ДОСТАВКОЙ','ЦЕНА','ОПИСАНИЕ','ХАРАКТЕРИСТИКИ',
+        // MBS product-type prefixes ("Плита на дровах MBS ...")
+        'ПЛИТА','НА','ДРОВАХ',
     ];
 
     private bool $apply;
