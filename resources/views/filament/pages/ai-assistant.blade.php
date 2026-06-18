@@ -3,7 +3,7 @@
         $metrics = $this->metrics();
         $workstreams = $this->workstreams();
         $issueGroups = $this->issueGroups();
-        $recentDecisions = $this->recentDecisions();
+        $pendingDecisions = $this->pendingDecisions();
         $supplierSync = $this->supplierSyncSummary();
     @endphp
 
@@ -228,6 +228,51 @@
             border-bottom: 0;
         }
 
+        .ai-assistant-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            justify-content: flex-end;
+            min-width: 210px;
+        }
+
+        .ai-assistant-action {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 30px;
+            padding: 5px 9px;
+            border: 1px solid rgba(148, 163, 184, .25);
+            border-radius: 6px;
+            background: rgba(15, 23, 42, .28);
+            color: rgb(226, 232, 240);
+            font-size: 12px;
+            font-weight: 700;
+            line-height: 1;
+            text-decoration: none;
+            cursor: pointer;
+        }
+
+        .ai-assistant-action:hover {
+            border-color: rgba(251, 191, 36, .7);
+            color: rgb(251, 191, 36);
+        }
+
+        .ai-assistant-action[data-tone="success"] {
+            border-color: rgba(34, 197, 94, .32);
+            color: rgb(134, 239, 172);
+        }
+
+        .ai-assistant-action[data-tone="danger"] {
+            border-color: rgba(248, 113, 113, .34);
+            color: rgb(252, 165, 165);
+        }
+
+        .ai-assistant-pagination {
+            padding: 12px 16px 14px;
+            border-top: 1px solid rgba(148, 163, 184, .14);
+        }
+
         .ai-assistant-sync {
             display: grid;
             grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -375,20 +420,53 @@
                             <th>Поставщик</th>
                             <th>Товар</th>
                             <th>Причина</th>
+                            <th></th>
                         </tr>
                     </thead>
                     <tbody>
-                        @forelse ($recentDecisions as $decision)
+                        @forelse ($pendingDecisions as $decision)
                             <tr>
                                 <td>{{ $decision['id'] }}</td>
                                 <td>{{ $decision['decision'] }}</td>
                                 <td>{{ $decision['supplier'] }}</td>
                                 <td>{{ $decision['title'] }}</td>
                                 <td>{{ $decision['reason'] }}</td>
+                                <td>
+                                    <div class="ai-assistant-actions">
+                                        @if ($decision['product_url'])
+                                            <a
+                                                class="ai-assistant-action"
+                                                href="{{ $decision['product_url'] }}"
+                                            >
+                                                Открыть
+                                            </a>
+                                        @endif
+
+                                        <button
+                                            type="button"
+                                            class="ai-assistant-action"
+                                            data-tone="success"
+                                            wire:click="applyPendingDecision({{ $decision['id'] }})"
+                                            wire:confirm="Применить pending-решение ID {{ $decision['id'] }}?"
+                                        >
+                                            Применить
+                                        </button>
+
+                                        <button
+                                            type="button"
+                                            class="ai-assistant-action"
+                                            data-tone="danger"
+                                            wire:click="deletePendingDecision({{ $decision['id'] }})"
+                                            wire:confirm="Удалить pending-решение ID {{ $decision['id'] }} без применения?"
+                                        >
+                                            Удалить
+                                        </button>
+                                    </div>
+                                </td>
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="5">
+                                <td colspan="6">
                                     <span class="ai-assistant-muted">Pending-решений нет. После AI-разбора каталога они появятся здесь.</span>
                                 </td>
                             </tr>
@@ -396,6 +474,12 @@
                     </tbody>
                 </table>
             </div>
+
+            @if ($pendingDecisions->hasPages())
+                <div class="ai-assistant-pagination">
+                    {{ $pendingDecisions->links() }}
+                </div>
+            @endif
         </div>
     </div>
 </x-filament-panels::page>

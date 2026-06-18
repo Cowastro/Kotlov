@@ -15,9 +15,14 @@ use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Filament\Support\Enums\Width;
 use Filament\Support\Icons\Heroicon;
+use Illuminate\Support\Facades\Artisan;
+use Livewire\WithPagination;
+use Throwable;
 
 class AiAssistant extends Page
 {
+    use WithPagination;
+
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedSparkles;
     protected static ?string $navigationLabel = 'ИИ-помощник';
     protected static ?string $title = 'ИИ-помощник';
@@ -174,21 +179,89 @@ class AiAssistant extends Page
         ];
     }
 
-    public function recentDecisions(): array
+    public function pendingDecisions()
     {
         return SupplierReviewDecision::query()
             ->where('status', SupplierReviewDecision::STATUS_PENDING)
             ->latest('id')
-            ->limit(8)
-            ->get()
-            ->map(fn (SupplierReviewDecision $decision): array => [
+            ->paginate(10, ['*'], 'decisionsPage')
+            ->through(fn (SupplierReviewDecision $decision): array => [
                 'id' => $decision->id,
                 'decision' => $this->decisionLabel($decision->decision),
                 'supplier' => $decision->supplier_code ?: '-',
                 'title' => $decision->supplier_title ?: ('product_id ' . ($decision->product_id ?: '-')),
+                'product_id' => $decision->product_id,
+                'product_url' => $decision->product_id ? url('/admin/products/' . $decision->product_id) : null,
                 'reason' => $decision->reason ?: '-',
-            ])
-            ->all();
+            ]);
+    }
+
+    public function applyPendingDecision(int $decisionId): void
+    {
+        $decision = $this->findPendingDecision($decisionId);
+
+        if (! $decision) {
+            $this->notifyDecisionNotFound();
+            return;
+        }
+
+        try {
+            $exitCode = Artisan::call('supplier:apply-review-decisions', [
+                '--apply' => true,
+                '--id' => [$decision->id],
+            ]);
+
+            if ($exitCode !== 0) {
+                throw new \RuntimeException(trim(Artisan::output()) ?: 'Команда применения вернула ошибку.');
+            }
+
+            Notification::make()
+                ->success()
+                ->title('Решение применено')
+                ->body('ID ' . $decision->id . ': ' . $this->decisionLabel($decision->decision))
+                ->send();
+        } catch (Throwable $exception) {
+            Notification::make()
+                ->danger()
+                ->title('Не удалось применить решение')
+                ->body($exception->getMessage())
+                ->persistent()
+                ->send();
+        }
+    }
+
+    public function deletePendingDecision(int $decisionId): void
+    {
+        $decision = $this->findPendingDecision($decisionId);
+
+        if (! $decision) {
+            $this->notifyDecisionNotFound();
+            return;
+        }
+
+        try {
+            $exitCode = Artisan::call('supplier:apply-review-decisions', [
+                '--apply' => true,
+                '--delete' => [$decision->id],
+            ]);
+
+            if ($exitCode !== 0) {
+                throw new \RuntimeException(trim(Artisan::output()) ?: 'Команда удаления вернула ошибку.');
+            }
+
+            Notification::make()
+                ->success()
+                ->title('Pending-решение удалено')
+                ->body('ID ' . $decision->id . ' больше не будет применяться.')
+                ->send();
+        } catch (Throwable $exception) {
+            Notification::make()
+                ->danger()
+                ->title('Не удалось удалить решение')
+                ->body($exception->getMessage())
+                ->persistent()
+                ->send();
+        }
     }
 
     public function supplierSyncSummary(): array
@@ -277,6 +350,23 @@ class AiAssistant extends Page
         return SupplierReviewDecision::query()
             ->where('status', SupplierReviewDecision::STATUS_PENDING)
             ->count();
+    }
+
+    private function findPendingDecision(int $decisionId): ?SupplierReviewDecision
+    {
+        return SupplierReviewDecision::query()
+            ->whereKey($decisionId)
+            ->where('status', SupplierReviewDecision::STATUS_PENDING)
+            ->first();
+    }
+
+    private function notifyDecisionNotFound(): void
+    {
+        Notification::make()
+            ->warning()
+            ->title('Pending-решение не найдено')
+            ->body('Возможно, его уже применили или удалили.')
+            ->send();
     }
 
     private function decisionLabel(?string $decision): string
