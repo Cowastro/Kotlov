@@ -31,19 +31,19 @@ class AiContentEnricher
 
     public function __construct()
     {
-        $anthropicKey = env('ANTHROPIC_API_KEY', '');
-        $genericKey   = env('AI_API_KEY', '');
+        $anthropicKey = config('services.ai.anthropic_key', '');
+        $genericKey   = config('services.ai.api_key', '');
 
         if ($anthropicKey) {
             $this->mode   = 'anthropic';
             $this->apiKey = $anthropicKey;
             $this->apiUrl = 'https://api.anthropic.com/v1/messages';
             $this->model  = 'claude-haiku-4-5-20251001';
-        } elseif ($genericKey && env('AI_API_URL')) {
+        } elseif ($genericKey && config('services.ai.api_url')) {
             $this->mode   = 'openai_compat';
             $this->apiKey = $genericKey;
-            $this->apiUrl = env('AI_API_URL');
-            $this->model  = env('AI_MODEL', 'deepseek-chat');
+            $this->apiUrl = config('services.ai.api_url');
+            $this->model  = config('services.ai.model', 'deepseek-chat');
         } else {
             $this->mode   = 'none';
             $this->apiKey = '';

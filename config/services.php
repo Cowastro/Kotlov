@@ -46,4 +46,11 @@ return [
         'orders_chat_id' => env('TELEGRAM_ORDERS_CHAT_ID'),
     ],
 
+    'ai' => [
+        'anthropic_key' => env('ANTHROPIC_API_KEY', ''),
+        'api_key'       => env('AI_API_KEY', ''),
+        'api_url'       => env('AI_API_URL', ''),
+        'model'         => env('AI_MODEL', 'deepseek-chat'),
+    ],
+
 ];
