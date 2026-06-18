@@ -33,7 +33,8 @@ class ProductCatalogAiAdvisor
         'kotly' => ['котел', 'котёл', 'куппер'],
         'topki' => ['топка'],
         'pechi-kaminy' => ['печь-камин', 'печь камин', 'аот'],
-        'aksessuary-dlya-bani' => ['шапк', 'мочал', 'коврик', 'ведро', 'обруч', 'средств', 'камень', 'жадеит', 'нефрит', 'талько'],
+        'aksessuary-dlya-bani' => ['шапк', 'мочал', 'коврик', 'ведро', 'обруч', 'средств'],
+        'kamni-dlya-bani' => ['камень', 'камни', 'жадеит', 'нефрит', 'талько', 'кварцит', 'габбро', 'диабаз'],
         'drovyanye-pechi-dlya-bani' => ['печ.*бан', 'банн.*печ', 'aston', 'астон', 'былина', 'сибирь'],
     ];
 
@@ -139,7 +140,7 @@ class ProductCatalogAiAdvisor
         foreach (self::CATEGORY_RULES as $slug => $patterns) {
             foreach ($patterns as $pattern) {
                 if ($this->matches($haystack, $pattern)) {
-                    $categorySlug = $slug;
+                    $categorySlug = $this->resolveCategoryRuleSlug($slug);
                     $reasons[] = 'категория по "' . $pattern . '"';
                     break 2;
                 }
@@ -188,6 +189,10 @@ class ProductCatalogAiAdvisor
         $aiSlug = filled($aiAdvice['category_slug'] ?? null) ? (string) $aiAdvice['category_slug'] : null;
         $aiConfidence = (float) ($aiAdvice['confidence'] ?? 0.0);
 
+        if ($ruleSlug && $this->isProtectedCategoryRuleSlug($ruleSlug)) {
+            return $ruleSlug;
+        }
+
         if ($ruleSlug && $aiSlug && $ruleSlug !== $aiSlug) {
             return $aiConfidence >= 0.90 ? $aiSlug : $ruleSlug;
         }
@@ -229,7 +234,6 @@ class ProductCatalogAiAdvisor
         $categories = Category::query()
             ->where('is_active', true)
             ->orderBy('name')
-            ->limit(220)
             ->get(['name', 'slug'])
             ->map(fn (Category $category): string => $category->name . ' [' . $category->slug . ']')
             ->implode("\n");
@@ -301,6 +305,38 @@ PROMPT;
         }
 
         return Category::query()->where('slug', $slug)->first();
+    }
+
+    private function resolveCategoryRuleSlug(string $slug): string
+    {
+        if ($slug !== 'kamni-dlya-bani') {
+            return $slug;
+        }
+
+        $existingSlug = Category::query()
+            ->where('is_active', true)
+            ->whereIn('slug', [
+                'kamni-dlya-bani',
+                'kamni-dlya-ban-i-saun',
+                'kamni-dlya-sauny',
+                'kamni-dlya-pechi',
+                'bannye-kamni',
+            ])
+            ->orderByRaw("FIELD(slug, 'kamni-dlya-bani', 'kamni-dlya-ban-i-saun', 'kamni-dlya-sauny', 'kamni-dlya-pechi', 'bannye-kamni')")
+            ->value('slug');
+
+        return $existingSlug ?: 'aksessuary-dlya-bani';
+    }
+
+    private function isProtectedCategoryRuleSlug(string $slug): bool
+    {
+        return in_array($slug, [
+            'kamni-dlya-bani',
+            'kamni-dlya-ban-i-saun',
+            'kamni-dlya-sauny',
+            'kamni-dlya-pechi',
+            'bannye-kamni',
+        ], true);
     }
 
     private function findDuplicate(Product $product): ?Product
