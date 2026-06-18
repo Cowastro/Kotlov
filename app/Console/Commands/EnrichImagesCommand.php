@@ -226,12 +226,13 @@ class EnrichImagesCommand extends Command
                         continue;
                     }
 
-                    $check  = $this->validateImage($c['image_url']);
-                    $tier   = $this->domainTier($c['domain'] ?? '', $c['image_url']);
+                    $tier = $this->domainTier($c['domain'] ?? '', $c['image_url']);
                     // --site: treat the requested domain as preferred so it always wins.
                     if ($site !== '' && str_contains(mb_strtolower(($c['domain'] ?? '') . ' ' . $c['image_url']), mb_strtolower($site))) {
                         $tier = 'preferred';
                     }
+                    // Trusted/preferred domains may use /thumbs/ in URL for full-size files — skip URL-marker check.
+                    $check = $this->validateImage($c['image_url'], skipUrlMarkers: $tier !== 'untrusted');
                     $apiDim = ($c['width'] && $c['height']) ? sprintf('%dx%d', $c['width'], $c['height']) : '—';
                     $verdict = $check['ok']
                         ? '<fg=green>ACCEPTED</> [' . $tier . ']'
@@ -491,14 +492,16 @@ class EnrichImagesCommand extends Command
     /**
      * @return array{ok:bool,reason:string,width:int,height:int,bytes:int,body:string}
      */
-    private function validateImage(string $url): array
+    private function validateImage(string $url, bool $skipUrlMarkers = false): array
     {
         $fail = fn ($reason) => ['ok' => false, 'reason' => $reason, 'width' => 0, 'height' => 0, 'bytes' => 0, 'body' => ''];
 
-        $lower = mb_strtolower($url);
-        foreach (self::BAD_URL_MARKERS as $marker) {
-            if (str_contains($lower, $marker)) {
-                return $fail('bad-marker:' . $marker);
+        if (! $skipUrlMarkers) {
+            $lower = mb_strtolower($url);
+            foreach (self::BAD_URL_MARKERS as $marker) {
+                if (str_contains($lower, $marker)) {
+                    return $fail('bad-marker:' . $marker);
+                }
             }
         }
 
