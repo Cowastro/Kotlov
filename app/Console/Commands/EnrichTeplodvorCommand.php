@@ -48,7 +48,9 @@ class EnrichTeplodvorCommand extends Command
         ],
         'Nordflam' => ['/shop/pechi-kaminy/nordflam/'],
         'Invicta'  => ['/shop/pechi-kaminy/invicta/'],
-        // Add more as discovered: Blist, FireWay, Ferguss, MBS, Panadero
+        'FireWay'  => ['/shop/pechi-kaminy/fireway/'],
+        'Ferguss'  => ['/shop/pechi-kaminy/ferguss/'],
+        // Add more as discovered: Blist, MBS, Panadero
     ];
 
     /** Catalog brand names (used for brand detection in product titles). */
