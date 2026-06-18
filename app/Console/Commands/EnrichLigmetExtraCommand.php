@@ -52,16 +52,19 @@ class EnrichLigmetExtraCommand extends Command
 
     private const STOPWORDS = [
         'ПЕЧЬ','КАМИН','КАМИННАЯ','КАМИННЫЙ','ТОПКА','ПЕЧНОЙ',
-        'ДРОВЯНАЯ','ДРОВЯНОЙ','БАННАЯ','ОТОПИТЕЛЬНАЯ','ВАРОЧНАЯ',
+        'ДРОВЯНАЯ','ДРОВЯНОЙ','БАННАЯ','ОТОПИТЕЛЬНАЯ','ВАРОЧНАЯ','ОТОПИТЕЛЬНО','ВАРОЧНО',
+        'ДЛЯ','ОТОПЛЕНИЯ','ВАРКИ',
         'СТАЛЬНАЯ','СТАЛЬНОЙ','ЧУГУННАЯ','ЧУГУННЫЙ','ПЛИТА','НА','ДРОВАХ',
         'СЕРАЯ','СЕРЫЙ','ЧЁРНАЯ','ЧЁРНЫЙ','ЧЕРНАЯ','ЧЕРНЫЙ',
         'БЕЛАЯ','БЕЛЫЙ','БЕЖЕВАЯ','БЕЖЕВЫЙ','КРАСНАЯ','КРАСНЫЙ',
         'КОРИЧНЕВАЯ','КОРИЧНЕВЫЙ','ПАТИНА','АНТРАЦИТ','ГРАФИТ','КРЕМОВАЯ','КРЕМОВЫЙ',
         'GREY','GRAY','BLACK','WHITE','SATIN','CERAMIC','ECODESIGN',
-        'STOVE','FIREPLACE','EKO','PATINE',
+        'STOVE','FIREPLACE','EKO','PATINE','PATINA',
         'С','ДУХОВКОЙ','КАМНЕМ','КРЫШКОЙ','ВОДЯНЫМ','ВЕНТИЛЯТОРОМ','КОНТУРОМ',
+        'КОНФОРКИ','КОНФОРКА','КОНФОРКАМИ','КОНФОРОК',
         'КУПИТЬ','МИНСКЕ','ДОСТАВКОЙ','ЦЕНА',
         'УЦЕНКА','АКЦИЯ','РАСПРОДАЖА',
+        'QUOT',
         'KRATKI','INVICTA','BLIST','FIREWAY','NORDFLAM','FERGUSS','MBS','PANADERO','ЕРМАК',
     ];
 
@@ -380,16 +383,18 @@ class EnrichLigmetExtraCommand extends Command
 
     private function extractNameFallback(string $html): string
     {
+        $decode = fn (string $s): string => html_entity_decode(trim(strip_tags($s)), ENT_QUOTES | ENT_HTML5, 'UTF-8');
+
         // Try <h1> first — usually the clean product name on Bitrix/Aspro pages.
         if (preg_match('/<h1[^>]*>\s*(.*?)\s*<\/h1>/isu', $html, $m)) {
-            $n = trim(strip_tags($m[1]));
+            $n = $decode($m[1]);
             if (mb_strlen($n) >= 4) {
                 return $n;
             }
         }
         // Try <title> — strip "Купить " prefix and " | city, city" suffix.
         if (preg_match('/<title[^>]*>\s*(.*?)\s*<\/title>/isu', $html, $m)) {
-            $n = trim(strip_tags($m[1]));
+            $n = $decode($m[1]);
             $n = preg_replace('/^купить\s+/iu', '', $n) ?? $n;
             $n = trim(preg_replace('/\s*[|—–]\s*.+$/u', '', $n) ?? $n);
             if (mb_strlen($n) >= 4) {
@@ -421,7 +426,7 @@ class EnrichLigmetExtraCommand extends Command
             preg_split('/\s+/u', trim($n)) ?: [],
             fn ($t) => $t !== ''
                 && ! in_array($t, self::STOPWORDS, true)
-                && ! preg_match('/^\d{3,}$/', $t)
+                && ! preg_match('/^\d+$/', $t)
         );
         return implode(' ', $toks);
     }
