@@ -34,9 +34,9 @@ Schedule::command('supplier:sync-rusklimat --apply --only-existing --no-images')
     ->runInBackground()
     ->appendOutputTo(storage_path('logs/rusklimat-price-stock-sync.log'));
 
-// BANIA: регулярно обновляет только закупку поставщика и наличие по уже связанным товарам.
-// products.price не меняется, новые товары не создаются, сомнительные совпадения уходят в CSV-отчёт.
-Schedule::command('supplier:sync-bania-pricelist --apply')
+// BANIA: регулярно обновляет закупку, наличие и розничные цены по уже связанным товарам.
+// Новые товары не создаются, сомнительные совпадения уходят в CSV-отчёт.
+Schedule::command('supplier:sync-bania-pricelist --apply --sync-retail-prices')
     ->hourly()
     ->withoutOverlapping()
     ->runInBackground()
