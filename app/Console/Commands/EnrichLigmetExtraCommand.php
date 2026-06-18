@@ -61,6 +61,7 @@ class EnrichLigmetExtraCommand extends Command
         'STOVE','FIREPLACE','EKO','PATINE',
         'С','ДУХОВКОЙ','КАМНЕМ','КРЫШКОЙ','ВОДЯНЫМ','ВЕНТИЛЯТОРОМ','КОНТУРОМ',
         'КУПИТЬ','МИНСКЕ','ДОСТАВКОЙ','ЦЕНА',
+        'УЦЕНКА','АКЦИЯ','РАСПРОДАЖА',
         'KRATKI','INVICTA','BLIST','FIREWAY','NORDFLAM','FERGUSS','MBS','PANADERO','ЕРМАК',
     ];
 
@@ -284,26 +285,41 @@ class EnrichLigmetExtraCommand extends Command
         return $this->base . $clean . '/page' . $page . '/' . ($q ? '?' . $q : '');
     }
 
-    private function collectLinks(string $url): array
+    private function collectLinks(string $pageUrl): array
     {
-        $html = $this->fetchCard($url);
+        $html = $this->fetchCard($pageUrl);
         if ($html === null) {
             return [];
         }
-        $base  = $this->base;
-        $links = [];
 
-        // Generic: any <a href> that points to a product-looking URL on the same domain.
-        preg_match_all('/<a\s[^>]*href=["\'](' . preg_quote($base, '/') . '[^"\']+)["\'][^>]*>/i', $html, $m);
+        // Extract all hrefs — both absolute (https://domain/...) and relative (/path/...)
+        preg_match_all('/href=["\']([^"\']+)["\']/', $html, $m);
+        $links = [];
         foreach (array_unique($m[1] ?? []) as $href) {
-            // Filter out listing/category/pagination links: product URLs typically have 2+ path segments
-            $path = parse_url($href, PHP_URL_PATH) ?? '';
-            $segs = array_filter(explode('/', trim($path, '/')));
-            if (count($segs) >= 2 && ! str_ends_with($path, '/') === false) {
-                // Must be a leaf page (ends with slug, no trailing filters)
-                if (preg_match('/\/([\w\-]{3,})\/[\w\-]{5,}\/?$/', $path)) {
-                    $links[] = $href;
+            // Normalise to absolute URL
+            if (str_starts_with($href, 'http')) {
+                // Must belong to same domain
+                if (! str_starts_with($href, $this->base)) {
+                    continue;
                 }
+                $abs = $href;
+            } elseif (str_starts_with($href, '/')) {
+                $abs = $this->base . $href;
+            } else {
+                continue; // relative or anchor — skip
+            }
+
+            $path = parse_url($abs, PHP_URL_PATH) ?? '';
+
+            // Skip pagination, basket, search, account, etc.
+            if (preg_match('#/(page\d+|cart|basket|search|login|register|compare|wishlist|favorites|checkout|account)/?$#i', $path)) {
+                continue;
+            }
+
+            // Product URL: 2+ path segments, last segment is a meaningful slug (≥5 chars, not purely numeric)
+            $segs = array_values(array_filter(explode('/', trim($path, '/'))));
+            if (count($segs) >= 2 && mb_strlen(end($segs)) >= 5 && ! is_numeric(end($segs))) {
+                $links[] = rtrim($abs, '/') . '/';
             }
         }
         return array_values(array_unique($links));
