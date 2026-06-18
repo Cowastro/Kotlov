@@ -37,6 +37,7 @@ class ProductSourceEnricher
         $stats = [
             'images_found' => count($parsed['images']),
             'images_saved' => 0,
+            'images_replaced' => 0,
             'specs_found' => count($parsed['specs']),
             'attribute_values_saved' => 0,
             'service_found' => count($parsed['service_info']),
@@ -67,10 +68,15 @@ class ProductSourceEnricher
                 $stats['images_saved'] = count($downloaded);
 
                 if ($downloaded !== []) {
-                    $existing = $this->decodeArray($product->images);
-                    $updates['images'] = ($options['replace_images'] ?? true)
-                        ? $downloaded
-                        : array_values(array_unique(array_merge($existing, $downloaded)));
+                    $replaceImages = (bool) ($options['replace_images'] ?? true);
+
+                    if ($replaceImages) {
+                        $updates['images'] = array_values($downloaded);
+                        $stats['images_replaced'] = 1;
+                    } else {
+                        $existing = $this->decodeArray($product->images);
+                        $updates['images'] = array_values(array_unique(array_merge($existing, $downloaded)));
+                    }
                 }
             }
         } catch (\Throwable $e) {
@@ -153,6 +159,19 @@ class ProductSourceEnricher
             return 0;
         }
 
+        $targetAttributeNames = [];
+        foreach ($specs as $spec) {
+            $name = $this->cleanAttributeName((string) ($spec['key'] ?? ''));
+            $value = $this->cleanAttributeValue((string) ($spec['value'] ?? ''));
+            if ($name === '' || $value === '' || $this->isTechnicalOrJunkAttribute($name, $value)) {
+                continue;
+            }
+
+            $targetAttributeNames[] = $this->normalizeAttributeName($name);
+        }
+
+        $this->deleteExistingAttributeValuesForNames($product, $categoryId, array_values(array_unique(array_filter($targetAttributeNames))));
+
         $saved = 0;
         foreach ($specs as $spec) {
             $name = $this->cleanAttributeName((string) ($spec['key'] ?? ''));
@@ -184,6 +203,35 @@ class ProductSourceEnricher
         }
 
         return $saved;
+    }
+
+    /**
+     * Re-importing source specs must replace previous values, not append near-duplicates
+     * like "Диаметр дымохода, мм" beside "Диаметр дымохода".
+     *
+     * @param array<int, string> $normalizedNames
+     */
+    private function deleteExistingAttributeValuesForNames(Product $product, int $categoryId, array $normalizedNames): void
+    {
+        if ($normalizedNames === []) {
+            return;
+        }
+
+        $attributeIds = DB::table('attributes')
+            ->where('category_id', $categoryId)
+            ->get(['id', 'name'])
+            ->filter(fn ($attribute): bool => in_array($this->normalizeAttributeName((string) $attribute->name), $normalizedNames, true))
+            ->pluck('id')
+            ->all();
+
+        if ($attributeIds === []) {
+            return;
+        }
+
+        DB::table('product_attribute_values')
+            ->where('product_id', $product->id)
+            ->whereIn('attribute_id', $attributeIds)
+            ->delete();
     }
 
     private function ensureAttribute(int $categoryId, string $name, string $unit): int
@@ -330,33 +378,112 @@ class ProductSourceEnricher
         $dom = $this->dom($html);
         $xpath = new \DOMXPath($dom);
         $specs = [];
+        $containers = $this->specContainers($xpath);
 
-        foreach ($xpath->query('//tr') ?: [] as $row) {
-            $cells = [];
-            foreach ($xpath->query('.//th|.//td', $row) ?: [] as $cell) {
-                $cells[] = $this->cleanText($cell->textContent);
+        foreach ($containers as $container) {
+            foreach ($xpath->query('.//tr', $container) ?: [] as $row) {
+                $this->addSpecFromTableRow($xpath, $specs, $row);
             }
-            if (count($cells) >= 2) {
-                $this->addSpec($specs, $cells[0], $cells[1]);
-            }
-        }
 
-        foreach ($xpath->query('//dl') ?: [] as $dl) {
-            $children = iterator_to_array($dl->childNodes);
-            for ($i = 0; $i < count($children) - 1; $i++) {
-                if (mb_strtolower($children[$i]->nodeName) !== 'dt') {
-                    continue;
-                }
-                for ($j = $i + 1; $j < count($children); $j++) {
-                    if (mb_strtolower($children[$j]->nodeName) === 'dd') {
-                        $this->addSpec($specs, $children[$i]->textContent, $children[$j]->textContent);
-                        break;
-                    }
-                }
+            foreach ($xpath->query('.//dl', $container) ?: [] as $dl) {
+                $this->addSpecsFromDefinitionList($specs, $dl);
             }
         }
 
         return array_slice(array_values($specs), 0, 80);
+    }
+
+    /**
+     * @return array<int, \DOMNode>
+     */
+    private function specContainers(\DOMXPath $xpath): array
+    {
+        $containers = [];
+        foreach ($xpath->query('//*[self::div or self::section or self::article or self::table]') ?: [] as $node) {
+            $marker = mb_strtolower(trim(implode(' ', [
+                $node->attributes?->getNamedItem('class')?->nodeValue ?? '',
+                $node->attributes?->getNamedItem('id')?->nodeValue ?? '',
+                $node->attributes?->getNamedItem('aria-labelledby')?->nodeValue ?? '',
+                $node->attributes?->getNamedItem('data-tab')?->nodeValue ?? '',
+                $node->attributes?->getNamedItem('data-target')?->nodeValue ?? '',
+            ])));
+
+            if (! preg_match('/character|spec|param|property|feature|harakter|kharakter|характер|параметр|свойств/iu', $marker)) {
+                continue;
+            }
+
+            $rowsOrLists = $xpath->query('.//tr|.//dl', $node);
+            if ($rowsOrLists !== false && $rowsOrLists->length > 0) {
+                $containers[] = $node;
+            }
+        }
+
+        if ($containers !== []) {
+            return $this->removeNestedContainers($containers);
+        }
+
+        $document = $xpath->document;
+
+        return $document ? [$document] : [];
+    }
+
+    /**
+     * @param array<int, \DOMNode> $containers
+     * @return array<int, \DOMNode>
+     */
+    private function removeNestedContainers(array $containers): array
+    {
+        return array_values(array_filter($containers, function (\DOMNode $candidate) use ($containers): bool {
+            foreach ($containers as $container) {
+                if ($container === $candidate) {
+                    continue;
+                }
+
+                if ($this->containsDomNode($container, $candidate)) {
+                    return false;
+                }
+            }
+
+            return true;
+        }));
+    }
+
+    private function containsDomNode(\DOMNode $parent, \DOMNode $child): bool
+    {
+        for ($node = $child->parentNode; $node !== null; $node = $node->parentNode) {
+            if ($node === $parent) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private function addSpecFromTableRow(\DOMXPath $xpath, array &$specs, \DOMNode $row): void
+    {
+        $cells = [];
+        foreach ($xpath->query('.//th|.//td', $row) ?: [] as $cell) {
+            $cells[] = $this->cleanText($cell->textContent);
+        }
+        if (count($cells) >= 2) {
+            $this->addSpec($specs, $cells[0], $cells[1]);
+        }
+    }
+
+    private function addSpecsFromDefinitionList(array &$specs, \DOMNode $dl): void
+    {
+        $children = iterator_to_array($dl->childNodes);
+        for ($i = 0; $i < count($children) - 1; $i++) {
+            if (mb_strtolower($children[$i]->nodeName) !== 'dt') {
+                continue;
+            }
+            for ($j = $i + 1; $j < count($children); $j++) {
+                if (mb_strtolower($children[$j]->nodeName) === 'dd') {
+                    $this->addSpec($specs, $children[$i]->textContent, $children[$j]->textContent);
+                    break;
+                }
+            }
+        }
     }
 
     private function extractServiceInfo(string $html): array
@@ -413,13 +540,144 @@ class ProductSourceEnricher
             }
         }
 
-        if (preg_match_all('~<img[^>]+(?:src|data-src|data-large|data-original)=["\']([^"\']+)["\']~iu', $html, $matches)) {
-            foreach ($matches[1] as $src) {
-                $images[] = $this->absoluteUrl($src, $pageUrl);
+        foreach (['img', 'source'] as $tag) {
+            if (! preg_match_all('~<' . $tag . '\b[^>]*>~iu', $html, $tagMatches)) {
+                continue;
+            }
+
+            foreach ($tagMatches[0] as $tagHtml) {
+                foreach ($this->imageUrlsFromTag($tagHtml, $pageUrl) as $url) {
+                    $images[] = $url;
+                }
             }
         }
 
-        return array_values(array_slice(array_filter(array_unique($images), fn ($url) => $this->isProductImage($url)), 0, 4));
+        foreach ($this->imageUrlsFromEmbeddedData($html, $pageUrl) as $url) {
+            $images[] = $url;
+        }
+
+        $images = $this->expandedImageCandidates($images);
+        usort($images, fn (string $left, string $right): int => $this->imageQualityScore($right) <=> $this->imageQualityScore($left));
+
+        return array_values(array_slice($images, 0, 12));
+    }
+
+    /**
+     * @param array<int, string> $urls
+     * @return array<int, string>
+     */
+    private function expandedImageCandidates(array $urls): array
+    {
+        $expanded = [];
+
+        foreach ($urls as $url) {
+            $expanded[] = $url;
+
+            foreach ($this->highResolutionImageVariants($url) as $variant) {
+                $expanded[] = $variant;
+            }
+        }
+
+        return array_values(array_filter(array_unique($expanded), fn ($url) => $this->isProductImage($url)));
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    private function highResolutionImageVariants(string $url): array
+    {
+        $variants = [];
+        $path = (string) parse_url($url, PHP_URL_PATH);
+
+        if (str_contains($path, '/media/catalog/product/thumbnail/')) {
+            $variants[] = preg_replace('~/image/(\d+)/\d{2,4}x\d{2,4}/~', '/image/$1/1000x1000/', $url) ?? $url;
+            $variants[] = preg_replace('~/image/(\d+)/\d{2,4}x\d{2,4}/~', '/image/$1/1600x1600/', $url) ?? $url;
+        }
+
+        if (preg_match('~(?:^|[/_-])\d{2,4}x\d{2,4}(?:[/_\.-]|$)~', $path)) {
+            $variants[] = preg_replace('~(?<=/)\d{2,4}x\d{2,4}(?=/)~', '1000x1000', $url) ?? $url;
+            $variants[] = preg_replace('~(?<=[_-])\d{2,4}x\d{2,4}(?=[_\.-])~', '1000x1000', $url) ?? $url;
+        }
+
+        return array_values(array_filter(array_unique($variants), fn ($variant) => $variant !== $url));
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    private function imageUrlsFromTag(string $tagHtml, string $pageUrl): array
+    {
+        $urls = [];
+        $attributes = [
+            'data-full',
+            'data-full-image',
+            'data-zoom-image',
+            'data-large',
+            'data-original',
+            'data-image',
+            'data-src',
+            'src',
+        ];
+
+        foreach ($attributes as $attribute) {
+            if (preg_match('~\b' . preg_quote($attribute, '~') . '\s*=\s*["\']([^"\']+)["\']~iu', $tagHtml, $match)) {
+                $urls[] = $this->absoluteUrl($match[1], $pageUrl);
+            }
+        }
+
+        foreach (['srcset', 'data-srcset'] as $attribute) {
+            if (! preg_match('~\b' . preg_quote($attribute, '~') . '\s*=\s*["\']([^"\']+)["\']~iu', $tagHtml, $match)) {
+                continue;
+            }
+
+            foreach ($this->imageUrlsFromSrcset($match[1], $pageUrl) as $url) {
+                $urls[] = $url;
+            }
+        }
+
+        return array_values(array_filter(array_unique($urls)));
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    private function imageUrlsFromSrcset(string $srcset, string $pageUrl): array
+    {
+        $urls = [];
+        foreach (explode(',', html_entity_decode($srcset, ENT_QUOTES | ENT_HTML5, 'UTF-8')) as $candidate) {
+            $parts = preg_split('/\s+/', trim($candidate));
+            $url = $parts[0] ?? '';
+            if ($url !== '') {
+                $urls[] = $this->absoluteUrl($url, $pageUrl);
+            }
+        }
+
+        usort($urls, fn (string $left, string $right): int => $this->imageQualityScore($right) <=> $this->imageQualityScore($left));
+
+        return $urls;
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    private function imageUrlsFromEmbeddedData(string $html, string $pageUrl): array
+    {
+        $urls = [];
+        $decoded = html_entity_decode(str_replace('\/', '/', $html), ENT_QUOTES | ENT_HTML5, 'UTF-8');
+
+        if (preg_match_all('~https?://[^"\'\s<>\\\\]+?\.(?:jpe?g|png|webp|gif)(?:\?[^"\'\s<>\\\\]*)?~iu', $decoded, $matches)) {
+            foreach ($matches[0] as $url) {
+                $urls[] = $url;
+            }
+        }
+
+        if (preg_match_all('~/(?:media|storage|img|images|upload|uploads|catalog|product)[^"\'\s<>\\\\]+?\.(?:jpe?g|png|webp|gif)(?:\?[^"\'\s<>\\\\]*)?~iu', $decoded, $matches)) {
+            foreach ($matches[0] as $url) {
+                $urls[] = $this->absoluteUrl($url, $pageUrl);
+            }
+        }
+
+        return array_values(array_filter(array_unique($urls)));
     }
 
     private function downloadImages(array $urls, Product $product): array
@@ -430,7 +688,10 @@ class ProductSourceEnricher
         }
 
         $saved = [];
-        foreach ($urls as $index => $url) {
+        $candidateUrls = $this->expandedImageCandidates($urls);
+        usort($candidateUrls, fn (string $left, string $right): int => $this->imageQualityScore($right) <=> $this->imageQualityScore($left));
+
+        foreach ($candidateUrls as $url) {
             try {
                 $response = Http::withHeaders(['User-Agent' => 'Mozilla/5.0'])
                     ->timeout(5)
@@ -445,10 +706,19 @@ class ProductSourceEnricher
                     continue;
                 }
 
+                $body = $response->body();
+                if (! $this->isLargeEnoughImage($body)) {
+                    continue;
+                }
+
                 $extension = $this->imageExtension($contentType, $url);
-                $filename = Str::slug($product->sku ?: $product->slug ?: 'product') . '-' . ($index + 1) . '-' . substr(md5($url), 0, 8) . '.' . $extension;
-                file_put_contents($dir . DIRECTORY_SEPARATOR . $filename, $response->body());
+                $filename = Str::slug($product->sku ?: $product->slug ?: 'product') . '-' . (count($saved) + 1) . '-' . substr(md5($url), 0, 8) . '.' . $extension;
+                file_put_contents($dir . DIRECTORY_SEPARATOR . $filename, $body);
                 $saved[] = self::IMAGE_DIR . '/' . $filename;
+
+                if (count($saved) >= 4) {
+                    break;
+                }
             } catch (\Throwable) {
                 continue;
             }
@@ -469,6 +739,19 @@ class ProductSourceEnricher
         };
     }
 
+    private function isLargeEnoughImage(string $body): bool
+    {
+        $info = @getimagesizefromstring($body);
+        if (! is_array($info)) {
+            return false;
+        }
+
+        $width = (int) ($info[0] ?? 0);
+        $height = (int) ($info[1] ?? 0);
+
+        return $width >= 420 && $height >= 420;
+    }
+
     private function isProductImage(string $url): bool
     {
         $path = strtolower((string) parse_url($url, PHP_URL_PATH));
@@ -477,15 +760,52 @@ class ProductSourceEnricher
             return false;
         }
 
-        if (preg_match('~(?:logo|icon|sprite|placeholder|noimage|nophoto|payment|social|banner|watermark|telegram|viber|whatsapp)~i', $path)) {
+        if (preg_match('~(?:logo|icon|sprite|placeholder|noimage|nophoto|payment|social|banner|watermark|telegram|viber|whatsapp|star|rating|loader|loading|close|cart|wishlist|compare|flag|flags|avatar)~i', $path)) {
             return false;
         }
 
         if (preg_match('~[-_](\d{1,3})x(\d{1,3})(?:\.|$)~', $path, $size)) {
-            return (int) $size[1] >= 120 && (int) $size[2] >= 120;
+            return (int) $size[1] >= 420 && (int) $size[2] >= 420;
         }
 
         return true;
+    }
+
+    private function imageQualityScore(string $url): int
+    {
+        $path = strtolower((string) parse_url($url, PHP_URL_PATH));
+        $score = 0;
+
+        if (preg_match('~/(?:media|catalog|product|products|upload|uploads)/~', $path)) {
+            $score += 80;
+        }
+
+        if (preg_match('~(?:logo|icon|sprite|placeholder|noimage|nophoto|payment|social|banner|watermark|telegram|viber|whatsapp|star|rating|loader|loading|close|cart|wishlist|compare|flag|flags|avatar)~i', $path)) {
+            $score -= 500;
+        }
+
+        if (str_contains($path, '/thumbnail/')) {
+            $score -= 20;
+        }
+
+        if (preg_match_all('~(?:^|[/_-])(\d{2,4})x(\d{2,4})(?:[/_\.-]|$)~', $path, $matches, PREG_SET_ORDER)) {
+            foreach ($matches as $match) {
+                $width = (int) $match[1];
+                $height = (int) $match[2];
+                $score += min(500, (int) floor(($width * $height) / 2500));
+                if ($width >= 800 && $height >= 800) {
+                    $score += 180;
+                } elseif ($width < 250 || $height < 250) {
+                    $score -= 120;
+                }
+            }
+        }
+
+        if (preg_match('~(?:/image/|/cache/|/resize/|/large/|/original/)~', $path)) {
+            $score += 40;
+        }
+
+        return $score;
     }
 
     private function absoluteUrl(string $url, string $baseUrl): string
@@ -610,9 +930,63 @@ class ProductSourceEnricher
     private function cleanAttributeValue(string $value): string
     {
         $value = $this->cleanText($value);
+        $value = $this->normalizeBooleanGlyphValue($value);
         $value = trim($value, " \t\n\r\0\x0B:;•—-");
 
         return trim(preg_replace('/\s+/u', ' ', $value) ?? $value);
+    }
+
+    private function normalizeBooleanGlyphValue(string $value): string
+    {
+        $normalized = trim($value);
+        $compact = preg_replace('/\s+/u', '', $normalized) ?? $normalized;
+
+        $yesValues = [
+            '✔',
+            '✔️',
+            '✓',
+            '✅',
+            '☑',
+            'âœ”',
+            'âœ”ï¸',
+            'âœ“',
+            'âœ…',
+            'ђ”',
+            'ђ”пёџ',
+            'ђ”пёЦ',
+        ];
+
+        $noValues = [
+            '❌',
+            '✘',
+            '✕',
+            '✖',
+            '×',
+            '☒',
+            'âŒ',
+            'âœ˜',
+            'âœ•',
+            'âœ–',
+            'ќњ',
+        ];
+
+        if (in_array($compact, $yesValues, true)) {
+            return 'да';
+        }
+
+        if (in_array($compact, $noValues, true)) {
+            return 'нет';
+        }
+
+        if (preg_match('/^(?:[^\p{L}\p{N}]*)?(?:✔|✓|✅|☑)(?:[^\p{L}\p{N}]*)?$/u', $compact)) {
+            return 'да';
+        }
+
+        if (preg_match('/^(?:[^\p{L}\p{N}]*)?(?:❌|✘|✕|✖|×|☒)(?:[^\p{L}\p{N}]*)?$/u', $compact)) {
+            return 'нет';
+        }
+
+        return $value;
     }
 
     private function normalizeAttributeName(string $name): string
@@ -620,6 +994,7 @@ class ProductSourceEnricher
         $name = mb_strtolower($this->cleanAttributeName($name));
         $name = str_replace('ё', 'е', $name);
         $name = preg_replace('/[^a-zа-я0-9]+/u', ' ', $name) ?? $name;
+        $name = preg_replace('/\b(?:мм|см|м|м2|м3|м²|м³|мкв|мкуб|квт|вт|кг|г|л|литр|литров|час|часов|мес|месяц|месяцев|проц|percent)\b\s*$/u', '', $name) ?? $name;
 
         return trim(preg_replace('/\s+/u', ' ', $name) ?? $name);
     }

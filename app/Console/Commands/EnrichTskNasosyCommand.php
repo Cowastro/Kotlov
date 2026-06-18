@@ -3,6 +3,7 @@
 namespace App\Console\Commands;
 
 use App\Console\Commands\Concerns\ScrapesAqualiderCard;
+use App\Services\AiContentEnricher;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 
@@ -35,6 +36,7 @@ class EnrichTskNasosyCommand extends Command
         {--in-stock-only : Only products currently in stock}
         {--only-missing : Only products missing a photo or description}
         {--overwrite-images : Replace existing photos (default: keep)}
+        {--only-ai : Regenerate AI texts only, skip images and specs}
         {--apply : Write changes (default: preview)}
         {--dry-run : Preview only (default)}';
 
@@ -139,24 +141,27 @@ class EnrichTskNasosyCommand extends Command
         $pid = (int) $r->product_id;
         $catId = (int) $r->category_id;
 
-        // Photos — full gallery, thumbnails/placeholders filtered out
-        // (skip if already present unless --overwrite-images).
-        $this->stats['images'] += $this->downloadCardImages(
-            $pid, $d['images'], self::IMAGE_DIR, (bool) $this->option('overwrite-images')
-        );
+        $onlyAi = (bool) $this->option('only-ai');
 
-        // Description — only fill when empty (never clobber curated text).
-        if ($d['desc'] !== '' && trim((string) $r->content) === '') {
-            DB::table('products')->where('id', $pid)->update([
-                'content' => '<p>' . e($d['desc']) . '</p>',
-                'short_description' => mb_substr($d['desc'], 0, 250),
-                'updated_at' => $now,
-            ]);
-            $this->stats['content']++;
+        // Photos — skip if already present unless --overwrite-images.
+        if (! $onlyAi) {
+            $this->stats['images'] += $this->downloadCardImages(
+                $pid, $d['images'], self::IMAGE_DIR, (bool) $this->option('overwrite-images')
+            );
         }
 
-        // Characteristics → product_attribute_values for the product's category.
-        $this->stats['attrs'] += $this->writeCardSpecs($pid, $catId, $d['specs']);
+        // Characteristics — skip if product already has any attribute values.
+        if (! $onlyAi) {
+            $hasSpecs = DB::table('product_attribute_values')->where('product_id', $pid)->exists();
+            if (! $hasSpecs && $d['specs'] !== []) {
+                $this->stats['attrs'] += $this->writeCardSpecs($pid, $catId, $d['specs']);
+            }
+        }
+
+        // AI description: with --only-ai always regenerate; otherwise only when empty.
+        if ($onlyAi || trim((string) $r->content) === '') {
+            $this->generateAiContent($pid, (string) $r->name, $d['desc'], $d['specs'], $now);
+        }
 
         // Pin the exact card URL on the supplier link (was the generic homepage).
         if ($r->source_url !== $r->card_url) {
@@ -168,6 +173,38 @@ class EnrichTskNasosyCommand extends Command
         $this->line(sprintf('<fg=cyan>%s</> #%d %s | фото:%d specs:%d',
             $r->supplier_article, $pid, mb_substr((string) $r->name, 0, 40),
             count($d['images']), count($d['specs'])));
+    }
+
+    private function generateAiContent(int $pid, string $name, string $rawDesc, array $specs, $now): void
+    {
+        $enricher = app(AiContentEnricher::class);
+        if (! $enricher->isAvailable()) {
+            $this->warn("[ai] NOT available (pid={$pid})");
+            return;
+        }
+
+        $this->line("[ai] {$enricher->providerName()} → pid={$pid} " . mb_substr($name, 0, 40));
+
+        $brand = (string) DB::table('products as p')
+            ->join('brands as b', 'b.id', '=', 'p.brand_id')
+            ->where('p.id', $pid)->value('b.name');
+
+        $aiContent = $enricher->enrich($name, $brand, $rawDesc, $specs);
+        if ($aiContent === null || trim(strip_tags($aiContent)) === '') {
+            $this->warn("[ai] enrich() returned null/empty (pid={$pid})");
+            return;
+        }
+
+        $short = $enricher->shortDescription($name, $brand, $specs)
+            ?: mb_substr(trim(strip_tags($aiContent)), 0, 240);
+
+        DB::table('products')->where('id', $pid)->update([
+            'content'           => strip_tags($aiContent, '<p><ul><li><strong>'),
+            'short_description' => mb_substr(trim($short), 0, 240),
+            'meta_description'  => mb_substr(trim($short), 0, 250),
+            'updated_at'        => $now,
+        ]);
+        $this->stats['content']++;
     }
 
     private function needsContent(object $r): bool

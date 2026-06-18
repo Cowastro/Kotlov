@@ -216,7 +216,8 @@ PROMPT;
                 'openai_compat' => $this->callOpenAiCompat($prompt),
                 default        => null,
             };
-        } catch (\Throwable) {
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning('AiContentEnricher::enrich failed: ' . $e->getMessage());
             return null;
         }
     }
@@ -357,8 +358,11 @@ PROMPT;
                 'messages'   => [['role' => 'user', 'content' => $prompt]],
             ]);
 
-        return $response->successful()
-            ? (trim($response->json('choices.0.message.content') ?? '') ?: null)
-            : null;
+        if (! $response->successful()) {
+            \Illuminate\Support\Facades\Log::warning('AiContentEnricher HTTP ' . $response->status() . ': ' . mb_substr($response->body(), 0, 200));
+            return null;
+        }
+
+        return trim($response->json('choices.0.message.content') ?? '') ?: null;
     }
 }
