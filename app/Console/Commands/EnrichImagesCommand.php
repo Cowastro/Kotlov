@@ -48,6 +48,7 @@ class EnrichImagesCommand extends Command
         {--site=            : Restrict search to one domain (site:) and trust it — targeted backfill, e.g. --site=hommet-shop.ru}
         {--skip-known-failures : Skip products that recently failed image search (TTL 30 days)}
         {--sleep=600        : Delay between products in milliseconds}
+        {--max-images=1     : Max images to download per product (deduplicated by domain)}
         {--dry-run          : Preview queries + candidate URLs, write nothing}';
 
     protected $description = 'Find & download photos for products with no real photo (web image search, no AI).';
@@ -207,9 +208,9 @@ class EnrichImagesCommand extends Command
 
             $queries        = $this->buildQueries($product);
             $allowUntrusted = (bool) $this->option('allow-untrusted');
-            $pickPreferred  = null;
-            $pickTrusted    = null;
-            $pickUntrusted  = null;
+            $maxImages      = max(1, (int) $this->option('max-images'));
+            $pool           = [];   // all accepted candidates, keyed by domain (one per domain)
+            $poolUntrusted  = [];   // untrusted backlog — added only when allowed
 
             foreach ($queries as $q) {
                 if ($provider === null) {
@@ -250,31 +251,42 @@ class EnrichImagesCommand extends Command
                         continue;
                     }
 
-                    $entry = $c + ['query' => $q, 'tier' => $tier, 'meta' => $check];
-                    if ($tier === 'preferred' && $pickPreferred === null) {
-                        $pickPreferred = $entry;
-                    } elseif ($tier === 'trusted' && $pickTrusted === null) {
-                        $pickTrusted = $entry;
-                    } elseif ($tier === 'untrusted' && $pickUntrusted === null) {
-                        $pickUntrusted = $entry;
-                    }
-
-                    if ($pickPreferred !== null && ! $this->dryRun) {
-                        break; // supplier-owned image found — best possible
+                    $entry  = $c + ['query' => $q, 'tier' => $tier, 'meta' => $check];
+                    $domain = $c['domain'] ?? 'unknown';
+                    if ($tier !== 'untrusted') {
+                        // One image per domain — highest-tier wins (preferred > trusted).
+                        if (! isset($pool[$domain])) {
+                            $pool[$domain] = $entry;
+                        } elseif ($tier === 'preferred' && $pool[$domain]['tier'] !== 'preferred') {
+                            $pool[$domain] = $entry;
+                        }
+                    } elseif ($allowUntrusted && ! isset($poolUntrusted[$domain])) {
+                        $poolUntrusted[$domain] = $entry;
                     }
                 }
 
                 usleep(max(0, (int) $this->option('sleep')) * 1000);
-                if (($pickPreferred ?? $pickTrusted) !== null && ! $this->dryRun) {
-                    break; // good enough — stop querying
+
+                // Stop querying early if we already have enough trusted/preferred images.
+                $tierOrder = fn ($e) => match ($e['tier']) { 'preferred' => 0, 'trusted' => 1, default => 2 };
+                $poolSorted = array_values($pool);
+                usort($poolSorted, fn ($a, $b) => $tierOrder($a) <=> $tierOrder($b));
+                if (count($poolSorted) >= $maxImages && ! $this->dryRun) {
+                    break;
                 }
             }
 
-            $picked = $pickPreferred ?? $pickTrusted ?? ($allowUntrusted ? $pickUntrusted : null);
+            // Merge untrusted as fallback and sort: preferred > trusted > untrusted.
+            $tierOrder = fn ($e) => match ($e['tier']) { 'preferred' => 0, 'trusted' => 1, default => 2 };
+            $allCandidates = array_values(array_merge($pool, array_diff_key($poolUntrusted, $pool)));
+            usort($allCandidates, fn ($a, $b) => $tierOrder($a) <=> $tierOrder($b));
+            $picks = array_slice($allCandidates, 0, $maxImages);
 
-            if ($picked === null) {
+            $hasOnlyUntrusted = count($pool) === 0 && count($poolUntrusted) > 0 && ! $allowUntrusted;
+
+            if (empty($picks)) {
                 $this->stats['no_candidate']++;
-                $reason = ($pickUntrusted !== null && ! $allowUntrusted)
+                $reason = $hasOnlyUntrusted
                     ? 'NO TRUSTED IMAGE (only untrusted found — re-run with --allow-untrusted to accept)'
                     : 'NO USABLE IMAGE';
                 $this->line('  <fg=yellow>result: ' . $reason . '</>');
@@ -289,46 +301,52 @@ class EnrichImagesCommand extends Command
             }
 
             if ($this->dryRun) {
-                $this->stats['would_download']++;
-                $this->line(sprintf('  <fg=green>result: WOULD DOWNLOAD</> [%s] %s  (%dx%d, %dKB) @ %s',
-                    $picked['tier'],
-                    mb_substr($picked['image_url'], 0, 60),
-                    $picked['meta']['width'], $picked['meta']['height'],
-                    (int) ($picked['meta']['bytes'] / 1024), $picked['domain'] ?: '?'));
-                $this->logResult($product, $picked['query'], (string) $provider, $picked['image_url'], 'would_download');
+                $this->stats['would_download'] += count($picks);
+                foreach ($picks as $idx => $picked) {
+                    $this->line(sprintf('  <fg=green>result: WOULD DOWNLOAD #%d</> [%s] %s  (%dx%d, %dKB) @ %s',
+                        $idx + 1, $picked['tier'],
+                        mb_substr($picked['image_url'], 0, 60),
+                        $picked['meta']['width'], $picked['meta']['height'],
+                        (int) ($picked['meta']['bytes'] / 1024), $picked['domain'] ?: '?'));
+                }
+                $this->logResult($product, $picks[0]['query'], (string) $provider, $picks[0]['image_url'], 'would_download');
                 continue;
             }
 
             try {
-                $saved = $this->saveImage($picked['meta']['body'], $picked['image_url'], $product->slug, $dir);
+                $savedPaths = [];
+                foreach ($picks as $picked) {
+                    $saved        = $this->saveImage($picked['meta']['body'], $picked['image_url'], $product->slug, $dir);
+                    $savedPaths[] = $this->imageDir . '/' . $saved;
+                    $this->line('  <fg=green>result: SAVED ' . $saved . '</>');
+                    $this->logResult($product, $picked['query'], (string) $provider, $picked['image_url'], 'saved:' . $saved);
+                    if (Schema::hasTable('image_enrichment_logs')) {
+                        DB::table('image_enrichment_logs')->insert([
+                            'product_id'    => $product->id,
+                            'supplier_id'   => $supplierId,
+                            'image_path'    => $this->imageDir . '/' . $saved,
+                            'image_url'     => $picked['image_url'],
+                            'source_url'    => $picked['source_url'] ?? null,
+                            'provider'      => (string) $provider,
+                            'trusted_level' => $picked['tier'] ?? null,
+                            'created_at'    => now(),
+                            'updated_at'    => now(),
+                        ]);
+                    }
+                }
                 DB::table('products')->where('id', $product->id)->update([
-                    'images'     => json_encode([$this->imageDir . '/' . $saved], JSON_UNESCAPED_UNICODE),
+                    'images'     => json_encode($savedPaths, JSON_UNESCAPED_UNICODE),
                     'updated_at' => now(),
                 ]);
                 $this->stats['downloaded']++;
-                $this->line('  <fg=green>result: SAVED ' . $saved . '</>');
-                $this->logResult($product, $picked['query'], (string) $provider, $picked['image_url'], 'saved:' . $saved);
                 if ($failuresTable) {
                     DB::table('image_search_failures')
                         ->where('product_id', $product->id)->where('supplier_id', $supplierId)->delete();
                 }
-                if (Schema::hasTable('image_enrichment_logs')) {
-                    DB::table('image_enrichment_logs')->insert([
-                        'product_id'    => $product->id,
-                        'supplier_id'   => $supplierId,
-                        'image_path'    => $this->imageDir . '/' . $saved,
-                        'image_url'     => $picked['image_url'],
-                        'source_url'    => $picked['source_url'] ?? null,
-                        'provider'      => (string) $provider,
-                        'trusted_level' => $picked['tier'] ?? null,
-                        'created_at'    => now(),
-                        'updated_at'    => now(),
-                    ]);
-                }
             } catch (\Throwable $e) {
                 $this->stats['errors']++;
                 $this->line('  <fg=red>result: ERROR ' . $e->getMessage() . '</>');
-                $this->logResult($product, $picked['query'], (string) $provider, $picked['image_url'], 'error:' . $e->getMessage());
+                $this->logResult($product, $picks[0]['query'] ?? '', (string) $provider, $picks[0]['image_url'] ?? '', 'error:' . $e->getMessage());
             }
         }
 
