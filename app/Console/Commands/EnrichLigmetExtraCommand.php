@@ -1,0 +1,362 @@
+<?php
+
+namespace App\Console\Commands;
+
+use App\Console\Commands\Concerns\ScrapesAqualiderCard;
+use App\Services\AiContentEnricher;
+use Illuminate\Console\Command;
+use Illuminate\Support\Facades\DB;
+
+/**
+ * Enrich Лигмет brand products from additional Bitrix-based sources
+ * (kaminbel.by, ochag.by, etc.) that aren't covered by teplodvor/100kaminov.
+ *
+ * Uses the generic ScrapesAqualiderCard trait (og:title/og:image/properties-group).
+ *
+ *   php artisan supplier:enrich-ligmet-extra --base-url=https://kaminbel.by --source-url=/product/pechi-kaminy/fireway/ --brand=FireWay --dry-run
+ *   php artisan supplier:enrich-ligmet-extra --base-url=https://ochag.by --source-url=/kaminy/pechi-kaminy/pechi-ferguss/ --brand=Ferguss --apply
+ */
+class EnrichLigmetExtraCommand extends Command
+{
+    use ScrapesAqualiderCard;
+
+    protected $signature = 'supplier:enrich-ligmet-extra
+        {--base-url=        : Base domain of source site (e.g. https://kaminbel.by)}
+        {--source-url=      : Listing page path(s), comma-separated}
+        {--brand=           : Limit to one catalog brand}
+        {--pages=15         : Max pages per listing URL}
+        {--limit=           : Max products to process}
+        {--sleep=800        : Delay between requests, ms}
+        {--overwrite-images : Replace existing images}
+        {--only-ai          : Regenerate AI texts only, skip images and specs}
+        {--apply            : Write changes (default: dry-run)}
+        {--dry-run          : Preview only (default)}';
+
+    protected $description = 'Enrich Лигмет brand products from additional Bitrix sites (kaminbel.by, ochag.by, etc.)';
+
+    private const SUPPLIER_CODE = 'ligmet';
+    private const IMAGE_DIR     = 'img/products/ligmet';
+
+    private const BRAND_SLUGS = [
+        'kratki'   => 'Kratki',
+        'invicta'  => 'Invicta',
+        'blist'    => 'Blist',
+        'fireway'  => 'FireWay',
+        'nordflam' => 'Nordflam',
+        'panadero' => 'Panadero',
+        'ferguss'  => 'Ferguss',
+        'mbs'      => 'MBS',
+        'ermak'    => 'Ермак',
+        'кпд'      => 'КПД',
+    ];
+
+    private const STOPWORDS = [
+        'ПЕЧЬ','КАМИН','КАМИННАЯ','КАМИННЫЙ','ТОПКА','ПЕЧНОЙ',
+        'ДРОВЯНАЯ','ДРОВЯНОЙ','БАННАЯ','ОТОПИТЕЛЬНАЯ','ВАРОЧНАЯ',
+        'СТАЛЬНАЯ','СТАЛЬНОЙ','ЧУГУННАЯ','ЧУГУННЫЙ','ПЛИТА','НА','ДРОВАХ',
+        'СЕРАЯ','СЕРЫЙ','ЧЁРНАЯ','ЧЁРНЫЙ','ЧЕРНАЯ','ЧЕРНЫЙ',
+        'БЕЛАЯ','БЕЛЫЙ','БЕЖЕВАЯ','БЕЖЕВЫЙ','КРАСНАЯ','КРАСНЫЙ',
+        'КОРИЧНЕВАЯ','КОРИЧНЕВЫЙ','ПАТИНА','АНТРАЦИТ','ГРАФИТ','КРЕМОВАЯ','КРЕМОВЫЙ',
+        'GREY','GRAY','BLACK','WHITE','SATIN','CERAMIC','ECODESIGN',
+        'STOVE','FIREPLACE','EKO','PATINE',
+        'С','ДУХОВКОЙ','КАМНЕМ','КРЫШКОЙ','ВОДЯНЫМ','ВЕНТИЛЯТОРОМ','КОНТУРОМ',
+        'КУПИТЬ','МИНСКЕ','ДОСТАВКОЙ','ЦЕНА',
+        'KRATKI','INVICTA','BLIST','FIREWAY','NORDFLAM','FERGUSS','MBS','PANADERO','ЕРМАК',
+    ];
+
+    private bool  $apply;
+    private string $base;
+    private array  $catalogIndex = [];
+    private array  $stats = [
+        'crawled' => 0, 'matched' => 0, 'enriched' => 0,
+        'images'  => 0, 'specs'   => 0, 'ai_done'  => 0,
+        'skipped' => 0, 'errors'  => 0,
+    ];
+
+    public function handle(): int
+    {
+        $this->apply = (bool) $this->option('apply') && ! $this->option('dry-run');
+        $this->base  = rtrim((string) $this->option('base-url'), '/');
+
+        if ($this->base === '') {
+            $this->error('--base-url is required (e.g. https://kaminbel.by)');
+            return self::FAILURE;
+        }
+
+        $sourceOpt = (string) $this->option('source-url');
+        if ($sourceOpt === '') {
+            $this->error('--source-url is required (e.g. /product/pechi-kaminy/fireway/)');
+            return self::FAILURE;
+        }
+
+        $this->line($this->apply ? '<fg=red;options=bold>APPLY</>' : '<fg=yellow;options=bold>DRY RUN</>');
+        $this->line("Source: {$this->base}");
+
+        $this->buildCatalogIndex();
+        $this->info(sprintf('Catalog: %d brands, %d products', count($this->catalogIndex),
+            array_sum(array_map('count', $this->catalogIndex))));
+
+        if (! $this->apply) {
+            $bf = $this->option('brand') ? mb_strtolower((string) $this->option('brand')) : null;
+            foreach ($this->catalogIndex as $bKey => $entries) {
+                if ($bf && $bKey !== $bf) {
+                    continue;
+                }
+                $keys = array_slice(array_keys($entries), 0, 25);
+                $this->line("  [{$bKey}] keys: " . implode(', ', $keys));
+            }
+        }
+
+        $paths    = array_map('trim', explode(',', $sourceOpt));
+        $limit    = $this->option('limit') ? (int) $this->option('limit') : PHP_INT_MAX;
+        $maxPages = (int) $this->option('pages');
+        $enriched = 0;
+        $seen     = [];
+
+        foreach ($paths as $path) {
+            if ($enriched >= $limit) {
+                break;
+            }
+            $path = str_starts_with($path, 'http') ? (parse_url($path, PHP_URL_PATH) ?? $path) : $path;
+            $this->newLine();
+            $this->info("Crawling: {$path}");
+
+            for ($page = 1; $page <= $maxPages; $page++) {
+                $pageUrl = $this->listingUrl($path, $page);
+                $links   = $this->collectLinks($pageUrl);
+
+                if ($links === []) {
+                    $this->line("  page {$page}: no links, stopping.");
+                    break;
+                }
+
+                $newLinks = array_filter($links, fn ($l) => ! isset($seen[$l]));
+                if (empty($newLinks)) {
+                    $this->line("  page {$page}: no new links, stopping.");
+                    break;
+                }
+                foreach ($newLinks as $l) {
+                    $seen[$l] = true;
+                }
+                $this->line("  page {$page}: " . count($newLinks) . ' products');
+
+                foreach ($newLinks as $productUrl) {
+                    if ($enriched >= $limit) {
+                        break 2;
+                    }
+                    try {
+                        if ($this->processProduct($productUrl)) {
+                            $enriched++;
+                        }
+                    } catch (\Throwable $e) {
+                        $this->stats['errors']++;
+                        $this->warn("  error [{$productUrl}]: " . $e->getMessage());
+                    }
+                    usleep((int) $this->option('sleep') * 1000);
+                }
+            }
+        }
+
+        $this->newLine();
+        $this->table(['metric', 'count'],
+            array_map(fn ($k, $v) => [$k, $v], array_keys($this->stats), array_values($this->stats)));
+
+        return $this->stats['errors'] > 0 ? self::FAILURE : self::SUCCESS;
+    }
+
+    // ── Catalog index ─────────────────────────────────────────────────────────────
+
+    private function buildCatalogIndex(): void
+    {
+        $bf = $this->option('brand') ? mb_strtolower((string) $this->option('brand')) : null;
+
+        $sid = (int) (DB::table('suppliers')->where('code', self::SUPPLIER_CODE)->value('id') ?? 0);
+
+        $brandsQ = DB::table('brands')->whereIn('name', array_values(self::BRAND_SLUGS));
+        if ($bf) {
+            $brandsQ->whereRaw('LOWER(name) = ?', [$bf]);
+        }
+
+        foreach ($brandsQ->get(['id', 'name']) as $b) {
+            $key   = mb_strtolower($b->name);
+            $query = DB::table('products')->where('brand_id', $b->id)->where('is_archived', false);
+            if ($sid > 0) {
+                $pids = DB::table('supplier_products')->where('supplier_id', $sid)
+                    ->whereNotNull('product_id')->pluck('product_id');
+                $query->whereIn('id', $pids);
+            }
+            $this->catalogIndex[$key] = [];
+            $query->get(['id', 'name', 'images', 'content', 'category_id'])->each(function ($p) use ($key, $b) {
+                $modelKey = $this->modelKey((string) $p->name, $b->name);
+                if ($modelKey !== '') {
+                    $this->catalogIndex[$key][$modelKey] = [
+                        'id'         => (int) $p->id,
+                        'name'       => $p->name,
+                        'category_id' => (int) $p->category_id,
+                        'has_images' => ! empty(json_decode((string) ($p->images ?? '[]'), true)),
+                        'content'    => (string) $p->content,
+                    ];
+                }
+            });
+        }
+    }
+
+    // ── Processing ────────────────────────────────────────────────────────────────
+
+    private function processProduct(string $url): bool
+    {
+        $html = $this->fetchCard($url);
+        if ($html === null) {
+            $this->stats['errors']++;
+            return false;
+        }
+
+        $card     = $this->parseCard($html, $url);
+        $name     = $card['name'];
+        if ($name === '') {
+            return false;
+        }
+
+        $brandKey = $this->detectBrand($name);
+        if ($brandKey === null) {
+            return false;
+        }
+        $brandName = self::BRAND_SLUGS[$brandKey];
+        $modelKey  = $this->modelKey($name, $brandName);
+        $entry     = $this->catalogIndex[mb_strtolower($brandName)][$modelKey] ?? null;
+
+        $this->line(sprintf('  [%s] %s → %s → %s',
+            $brandName, mb_substr($name, 0, 40), $modelKey,
+            $entry ? "pid={$entry['id']}" : 'NO MATCH'));
+
+        if ($entry === null) {
+            $this->stats['skipped']++;
+            $this->stats['crawled']++;
+            return false;
+        }
+
+        $this->stats['crawled']++;
+        $this->stats['matched']++;
+
+        if (! $this->apply) {
+            return true;
+        }
+
+        $pid    = $entry['id'];
+        $catId  = $entry['category_id'];
+        $now    = now();
+        $onlyAi = (bool) $this->option('only-ai');
+
+        // Photos.
+        if (! $onlyAi) {
+            $this->stats['images'] += $this->downloadCardImages(
+                $pid, $card['images'], self::IMAGE_DIR, (bool) $this->option('overwrite-images')
+            );
+        }
+
+        // Specs — skip if product already has any.
+        if (! $onlyAi && $card['specs'] !== []) {
+            $hasSpecs = DB::table('product_attribute_values')->where('product_id', $pid)->exists();
+            if (! $hasSpecs) {
+                $this->stats['specs'] += $this->writeCardSpecs($pid, $catId, $card['specs']);
+            }
+        }
+
+        // AI — only when content is empty (or --only-ai).
+        if ($onlyAi || trim($entry['content']) === '') {
+            $this->generateAiContent($pid, $name, $card['desc'], $card['specs'], $brandName, $now);
+        }
+
+        $this->stats['enriched']++;
+        return true;
+    }
+
+    // ── Helpers ───────────────────────────────────────────────────────────────────
+
+    private function listingUrl(string $path, int $page): string
+    {
+        if ($page <= 1) {
+            return $this->base . $path;
+        }
+        // Try Bitrix SEF page pattern: /path/page{n}/
+        $clean = rtrim(parse_url($path, PHP_URL_PATH) ?? $path, '/');
+        $q     = parse_url($path, PHP_URL_QUERY);
+        return $this->base . $clean . '/page' . $page . '/' . ($q ? '?' . $q : '');
+    }
+
+    private function collectLinks(string $url): array
+    {
+        $html = $this->fetchCard($url);
+        if ($html === null) {
+            return [];
+        }
+        $base  = $this->base;
+        $links = [];
+
+        // Generic: any <a href> that points to a product-looking URL on the same domain.
+        preg_match_all('/<a\s[^>]*href=["\'](' . preg_quote($base, '/') . '[^"\']+)["\'][^>]*>/i', $html, $m);
+        foreach (array_unique($m[1] ?? []) as $href) {
+            // Filter out listing/category/pagination links: product URLs typically have 2+ path segments
+            $path = parse_url($href, PHP_URL_PATH) ?? '';
+            $segs = array_filter(explode('/', trim($path, '/')));
+            if (count($segs) >= 2 && ! str_ends_with($path, '/') === false) {
+                // Must be a leaf page (ends with slug, no trailing filters)
+                if (preg_match('/\/([\w\-]{3,})\/[\w\-]{5,}\/?$/', $path)) {
+                    $links[] = $href;
+                }
+            }
+        }
+        return array_values(array_unique($links));
+    }
+
+    private function detectBrand(string $name): ?string
+    {
+        $upper = mb_strtoupper($name);
+        foreach (self::BRAND_SLUGS as $slug => $canonical) {
+            if (mb_stripos($upper, mb_strtoupper($canonical)) !== false) {
+                return $slug;
+            }
+        }
+        return null;
+    }
+
+    private function modelKey(string $name, string $brand): string
+    {
+        $n = mb_strtoupper($name);
+        if ($brand !== '') {
+            $n = preg_replace('/' . preg_quote(mb_strtoupper($brand), '/') . '/u', '', $n) ?? $n;
+        }
+        $n    = preg_replace('/[^А-ЯЁA-Z0-9]/u', ' ', $n) ?? $n;
+        $toks = array_filter(
+            preg_split('/\s+/u', trim($n)) ?: [],
+            fn ($t) => $t !== ''
+                && ! in_array($t, self::STOPWORDS, true)
+                && ! preg_match('/^\d{3,}$/', $t)
+        );
+        return implode(' ', $toks);
+    }
+
+    private function generateAiContent(int $pid, string $name, string $desc, array $specs, string $brand, $now): void
+    {
+        $enricher = app(AiContentEnricher::class);
+        if (! $enricher->isAvailable()) {
+            return;
+        }
+
+        $aiContent = $enricher->enrich($name, $brand, $desc, $specs);
+        if ($aiContent === null || trim(strip_tags($aiContent)) === '') {
+            return;
+        }
+
+        $short = $enricher->shortDescription($name, $brand, $specs)
+            ?: mb_substr(trim(strip_tags($aiContent)), 0, 240);
+
+        DB::table('products')->where('id', $pid)->update([
+            'content'           => strip_tags($aiContent, '<p><ul><li><strong>'),
+            'short_description' => mb_substr(trim($short), 0, 240),
+            'meta_description'  => mb_substr(trim($short), 0, 250),
+            'updated_at'        => $now,
+        ]);
+        $this->stats['ai_done']++;
+    }
+}
