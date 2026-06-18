@@ -179,8 +179,11 @@ class EnrichTskNasosyCommand extends Command
     {
         $enricher = app(AiContentEnricher::class);
         if (! $enricher->isAvailable()) {
+            $this->warn("[ai] NOT available (pid={$pid})");
             return;
         }
+
+        $this->line("[ai] {$enricher->providerName()} → pid={$pid} " . mb_substr($name, 0, 40));
 
         $brand = (string) DB::table('products as p')
             ->join('brands as b', 'b.id', '=', 'p.brand_id')
@@ -188,6 +191,7 @@ class EnrichTskNasosyCommand extends Command
 
         $aiContent = $enricher->enrich($name, $brand, $rawDesc, $specs);
         if ($aiContent === null || trim(strip_tags($aiContent)) === '') {
+            $this->warn("[ai] enrich() returned null/empty (pid={$pid})");
             return;
         }
 
