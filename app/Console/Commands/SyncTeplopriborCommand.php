@@ -103,12 +103,14 @@ class SyncTeplopriborCommand extends Command
                 $isNew   = ! $product;
 
                 if ($enrichContent) {
-                    $aiText = $enricher->enrich($item['name'], 'Теплоприбор', $merged['content'] ?? null, $merged['attributes'] ?? []);
-                    if ($aiText) {
-                        $merged['content'] = $aiText;
+                    $seo = $enricher->generateSeo($item['name'], 'Теплоприбор', 'твердотопливные котлы', $merged['attributes'] ?? []);
+                    if ($seo) {
+                        $merged['content']           = $seo['content'];
+                        $merged['short_description'] = $seo['short'];
                         $this->line('  <fg=cyan>AI content generated.</>');
-                    } elseif ($product && ! empty($product->content)) {
-                        $merged['content'] = $product->content;
+                    } elseif ($product) {
+                        if (! empty($product->content))           { $merged['content']           = $product->content; }
+                        if (! empty($product->short_description)) { $merged['short_description'] = $product->short_description; }
                     }
                 }
 
@@ -378,7 +380,7 @@ class SyncTeplopriborCommand extends Command
             'price_old'         => null,
             'currency'          => 'BYN',
             'content'           => $item['content'] ?? null,
-            'short_description' => null,
+            'short_description' => $item['short_description'] ?? null,
             'images'            => json_encode($images, JSON_UNESCAPED_UNICODE),
             'specs'             => json_encode($attrs, JSON_UNESCAPED_UNICODE),
             'unit'              => 'шт',
