@@ -19,8 +19,6 @@ class SyncTeplodarCommand extends Command
 
     protected $description = 'Scrape Теплодар solid fuel boilers from teplodvor.by and sync prices, cards, photos and attributes.';
 
-    private const SUPPLIER_CODE   = 'teplodar';
-    private const SYNC_KEY        = 'teplodar_teplodvor';
     private const SOURCE_URL      = 'https://www.teplodvor.by/shop/kotly/tverdotoplivnye/teplodar/';
     private const BASE_URL        = 'https://www.teplodvor.by';
     private const IMAGE_DISK_PATH = 'img/products/teplodar';
@@ -64,15 +62,11 @@ class SyncTeplodarCommand extends Command
             return $this->dryRun($items);
         }
 
-        $now        = now();
-        $brandId    = $this->ensureBrand($now);
-        $supplierId = $this->ensureSupplier($now);
-        $syncId     = $this->ensureSupplierSync($now);
+        $now     = now();
+        $brandId = $this->ensureBrand($now);
 
         $stats = [
-            'created'    => 0,
-            'updated'    => 0,
-            'no_change'  => 0,
+            'enriched'   => 0,
             'images'     => 0,
             'attributes' => 0,
             'skipped'    => 0,
@@ -99,8 +93,7 @@ class SyncTeplodarCommand extends Command
                     $stats['images'] += count($images);
                 }
 
-                $product = $this->findProduct($merged, $supplierId, $brandId);
-                $isNew   = ! $product;
+                $product = $this->findProduct($merged, $brandId);
 
                 if ($enrichContent) {
                     $seo = $enricher->generateSeo($item['name'], 'Теплодар', 'твердотопливные котлы', $merged['attributes'] ?? []);
@@ -114,14 +107,10 @@ class SyncTeplodarCommand extends Command
                     }
                 }
 
-                $productId  = $this->upsertProduct($merged, $product, $images, $brandId, $now);
-                $productSku = (string) DB::table('products')->where('id', $productId)->value('sku');
-
-                $this->upsertSupplierProduct($merged, $productId, $productSku, $supplierId, $syncId, $now);
-                $attrs = $this->syncAttributes($productId, $merged['attributes'] ?? [], $now);
+                $productId = $this->upsertProduct($merged, $product, $images, $brandId, $now);
+                $attrs     = $this->syncAttributes($productId, $merged['attributes'] ?? [], $now);
                 $stats['attributes'] += $attrs;
-
-                $stats[$isNew ? 'created' : (abs((float)($product->price ?? 0) - $merged['price_byn']) > 0.01 ? 'updated' : 'no_change')]++;
+                $stats['enriched']++;
 
                 usleep($sleepMs * 1000);
             } catch (\Throwable $e) {
@@ -142,27 +131,21 @@ class SyncTeplodarCommand extends Command
 
     private function dryRun(array $items): int
     {
-        $supplierId = (int) (DB::table('suppliers')->where('code', self::SUPPLIER_CODE)->value('id') ?? 0);
-        $brandId    = (int) (DB::table('brands')->where('slug', self::BRAND_SLUG)->value('id') ?? 0);
-        $rows       = [];
+        $brandId = (int) (DB::table('brands')->where('slug', self::BRAND_SLUG)->value('id') ?? 0);
+        $rows    = [];
 
         foreach ($items as $item) {
-            $product = $this->findProduct($item, $supplierId, $brandId);
-            $action  = ! $product
-                ? 'create'
-                : (abs((float)($product->price ?? 0) - $item['price_byn']) > 0.01
-                    ? sprintf('update_price %.2f→%.2f', (float)$product->price, $item['price_byn'])
-                    : 'no_change');
+            $product = $this->findProduct($item, $brandId);
+            $action  = $product ? 'enrich' : 'create';
 
             $rows[] = [
                 $action,
-                number_format($item['price_byn'], 2),
                 $product->sku ?? '—',
-                mb_substr($item['name'], 0, 52),
+                mb_substr($item['name'], 0, 60),
             ];
         }
 
-        $this->table(['action', 'price_byn', 'sku', 'name'], $rows);
+        $this->table(['action', 'sku', 'name'], $rows);
         $this->line('Run with --apply to update the database.');
 
         return self::SUCCESS;
@@ -321,20 +304,8 @@ class SyncTeplodarCommand extends Command
 
     // ── Matching ──────────────────────────────────────────────────────────────────
 
-    private function findProduct(array $item, int $supplierId, int $brandId): ?object
+    private function findProduct(array $item, int $brandId): ?object
     {
-        if ($supplierId > 0) {
-            $sp = DB::table('supplier_products')
-                ->where('supplier_id', $supplierId)
-                ->where('source_wp_id', $item['good_id'])
-                ->whereNotNull('product_id')
-                ->first();
-
-            if ($sp) {
-                return DB::table('products')->where('id', $sp->product_id)->first();
-            }
-        }
-
         if ($brandId > 0) {
             $norm       = $this->normalizeName($item['name']);
             $candidates = DB::table('products')
@@ -376,8 +347,6 @@ class SyncTeplodarCommand extends Command
             'supplier_id'       => null,
             'name'              => $item['name'],
             'h1'                => ($item['h1'] ?? '') ?: $item['name'],
-            'price'             => $item['price_byn'],
-            'price_old'         => null,
             'currency'          => 'BYN',
             'content'           => $item['content'] ?? null,
             'short_description' => $item['short_description'] ?? null,
@@ -488,38 +457,7 @@ class SyncTeplodarCommand extends Command
         ]);
     }
 
-    private function upsertSupplierProduct(array $item, int $productId, string $productSku, int $supplierId, ?int $syncId, $now): void
-    {
-        DB::table('supplier_products')->updateOrInsert(
-            ['supplier_id' => $supplierId, 'source_wp_id' => $item['good_id']],
-            [
-                'supplier_article'            => $item['good_id'],
-                'supplier_article_normalized' => $item['good_id'],
-                'supplier_sync_id'            => $syncId,
-                'product_id'                  => $productId,
-                'product_sku'                 => $productSku,
-                'supplier_name'               => $item['name'],
-                'source_url'                  => $item['url'],
-                'source_wp_id'                => $item['good_id'],
-                'price'                       => $item['price_byn'],
-                'currency'                    => 'BYN',
-                'currency_rate'               => 1.0,
-                'price_byn'                   => $item['price_byn'],
-                'in_stock'                    => true,
-                'match_status'                => 'matched',
-                'match_confidence'            => 'auto_name',
-                'raw'                         => json_encode([
-                    'good_id' => $item['good_id'],
-                    'thumb'   => $item['thumb'] ?? null,
-                ], JSON_UNESCAPED_UNICODE),
-                'last_synced_at' => $now,
-                'created_at'     => $now,
-                'updated_at'     => $now,
-            ]
-        );
-    }
-
-    // ── Brand / supplier / sync registration ──────────────────────────────────────
+    // ── Brand registration ────────────────────────────────────────────────────────
 
     private function ensureBrand($now): int
     {
@@ -538,54 +476,6 @@ class SyncTeplodarCommand extends Command
             'created_at' => $now,
             'updated_at' => $now,
         ]);
-    }
-
-    private function ensureSupplier($now): int
-    {
-        $existing = DB::table('suppliers')->where('code', self::SUPPLIER_CODE)->first();
-
-        if ($existing) {
-            DB::table('suppliers')->where('id', $existing->id)->update([
-                'name'       => 'Теплодар (teplodvor.by)',
-                'contact'    => self::SOURCE_URL,
-                'is_active'  => true,
-                'updated_at' => $now,
-            ]);
-            return (int) $existing->id;
-        }
-
-        return (int) DB::table('suppliers')->insertGetId([
-            'code'          => self::SUPPLIER_CODE,
-            'name'          => 'Теплодар (teplodvor.by)',
-            'currency'      => 'BYN',
-            'currency_rate' => 1,
-            'contact'       => self::SOURCE_URL,
-            'notes'         => 'Твердотопливные котлы Теплодар. Цены с teplodvor.by (BYN).',
-            'is_active'     => true,
-            'created_at'    => $now,
-            'updated_at'    => $now,
-        ]);
-    }
-
-    private function ensureSupplierSync($now): ?int
-    {
-        DB::table('supplier_syncs')->updateOrInsert(
-            ['key' => self::SYNC_KEY],
-            [
-                'name'            => 'Теплодар',
-                'code'            => self::SUPPLIER_CODE,
-                'title'           => 'Теплодар: твердотопливные котлы (teplodvor.by)',
-                'description'     => 'Скрапит твердотопливные котлы Теплодар с teplodvor.by: цены BYN, описания, фото, характеристики.',
-                'command'         => 'supplier:sync-teplodar',
-                'source_url'      => self::SOURCE_URL,
-                'image_disk_path' => self::IMAGE_DISK_PATH,
-                'is_active'       => true,
-                'created_at'      => $now,
-                'updated_at'      => $now,
-            ]
-        );
-
-        return DB::table('supplier_syncs')->where('key', self::SYNC_KEY)->value('id');
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────────
