@@ -220,8 +220,13 @@ class EnrichLigmetExtraCommand extends Command
             return false;
         }
 
-        $card     = $this->parseCard($html, $url);
-        $name     = $card['name'];
+        $card = $this->parseCard($html, $url);
+        $name = $card['name'];
+
+        // Fallback: og:title absent on some Bitrix themes — extract from <title> or <h1>.
+        if ($name === '') {
+            $name = $this->extractNameFallback($html);
+        }
         if ($name === '') {
             return false;
         }
@@ -371,6 +376,27 @@ class EnrichLigmetExtraCommand extends Command
             }
         }
         return array_values(array_unique($links));
+    }
+
+    private function extractNameFallback(string $html): string
+    {
+        // Try <h1> first — usually the clean product name on Bitrix/Aspro pages.
+        if (preg_match('/<h1[^>]*>\s*(.*?)\s*<\/h1>/isu', $html, $m)) {
+            $n = trim(strip_tags($m[1]));
+            if (mb_strlen($n) >= 4) {
+                return $n;
+            }
+        }
+        // Try <title> — strip "Купить " prefix and " | city, city" suffix.
+        if (preg_match('/<title[^>]*>\s*(.*?)\s*<\/title>/isu', $html, $m)) {
+            $n = trim(strip_tags($m[1]));
+            $n = preg_replace('/^купить\s+/iu', '', $n) ?? $n;
+            $n = trim(preg_replace('/\s*[|—–]\s*.+$/u', '', $n) ?? $n);
+            if (mb_strlen($n) >= 4) {
+                return $n;
+            }
+        }
+        return '';
     }
 
     private function detectBrand(string $name): ?string
