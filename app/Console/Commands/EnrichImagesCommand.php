@@ -52,10 +52,10 @@ class EnrichImagesCommand extends Command
 
     protected $description = 'Find & download photos for products with no real photo (web image search, no AI).';
 
-    private const IMAGE_DIR = 'img/products/rusklimat';
-
     /** Re-try a previously failed product only after this many days. */
     private const FAILURE_TTL_DAYS = 30;
+
+    private string $imageDir = 'img/products/rusklimat';
 
     /** Reject obvious non-product images by URL/filename. */
     private const BAD_URL_MARKERS = [
@@ -69,8 +69,14 @@ class EnrichImagesCommand extends Command
 
     /** Reputable HVAC retailers/catalogs — accepted when no preferred source. */
     private const TRUSTED_DOMAINS = [
+        // HVAC / climate
         'satro-paladin.com', '7-kvt.ru', 'dc-electro.ru', 'pro-komfort.com',
         'ksk.by', 'btsprom.by', 'ridan.ru',
+        // Fireplaces / stoves (Лигмет brands)
+        'kaminbel.by', 'ochag.by', '100kaminov.by', 'teplodvor.by',
+        'kratki.com', 'kratki.pl', 'invicta-feu.com', 'blist.pl',
+        'nordflam.com.pl', 'panadero.es', 'mbs-stoves.com',
+        'ligmet.by', 'kamin.by', 'tsk.by', 'lazurit.by',
     ];
 
     /** Hard-rejected sources: marketplaces / fashion / auto / irrelevant.
@@ -95,6 +101,7 @@ class EnrichImagesCommand extends Command
         $this->dryRun   = (bool) $this->option('dry-run');
         $this->minBytes = max(1, (int) $this->option('min-kb')) * 1024;
         $this->minWidth = max(1, (int) $this->option('min-width'));
+        $this->imageDir = 'img/products/' . ((string) $this->option('supplier') ?: 'rusklimat');
 
         $provider = $this->detectProvider();
 
@@ -171,7 +178,7 @@ class EnrichImagesCommand extends Command
             return self::SUCCESS;
         }
 
-        $dir = public_path(self::IMAGE_DIR);
+        $dir = public_path($this->imageDir);
         if (! $this->dryRun && ! is_dir($dir)) {
             mkdir($dir, 0755, true);
         }
@@ -286,7 +293,7 @@ class EnrichImagesCommand extends Command
             try {
                 $saved = $this->saveImage($picked['meta']['body'], $picked['image_url'], $product->slug, $dir);
                 DB::table('products')->where('id', $product->id)->update([
-                    'images'     => json_encode([self::IMAGE_DIR . '/' . $saved], JSON_UNESCAPED_UNICODE),
+                    'images'     => json_encode([$this->imageDir . '/' . $saved], JSON_UNESCAPED_UNICODE),
                     'updated_at' => now(),
                 ]);
                 $this->stats['downloaded']++;
@@ -300,7 +307,7 @@ class EnrichImagesCommand extends Command
                     DB::table('image_enrichment_logs')->insert([
                         'product_id'    => $product->id,
                         'supplier_id'   => $supplierId,
-                        'image_path'    => self::IMAGE_DIR . '/' . $saved,
+                        'image_path'    => $this->imageDir . '/' . $saved,
                         'image_url'     => $picked['image_url'],
                         'source_url'    => $picked['source_url'] ?? null,
                         'provider'      => (string) $provider,
