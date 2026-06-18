@@ -135,12 +135,18 @@ class EnrichLigmetExtraCommand extends Command
             // 2. Fallback: paginated HTML scraping.
             if ($links === []) {
                 $this->line('  sitemap: no links — falling back to HTML crawl');
+                // Product URLs may be siblings of the listing page (same parent dir), not children.
+                // Filter by parent path to include e.g. /cat/pech-brand-model/ from listing /cat/brand/
+                $parentPath = $this->base . '/' . implode('/', array_slice(
+                    array_filter(explode('/', trim($path, '/'))),
+                    0, -1
+                )) . '/';
                 $seen = [];
                 for ($page = 1; $page <= $maxPages; $page++) {
                     $pageUrl  = $this->listingUrl($path, $page);
                     $newLinks = array_filter(
                         $this->collectLinks($pageUrl),
-                        fn ($l) => ! isset($seen[$l]) && str_starts_with($l, $prefix)
+                        fn ($l) => ! isset($seen[$l]) && str_starts_with($l, $parentPath) && $l !== $prefix
                     );
                     if ($newLinks === []) {
                         $this->line("  HTML page {$page}: no new links, stopping.");
