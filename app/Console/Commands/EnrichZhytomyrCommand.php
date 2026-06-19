@@ -70,8 +70,8 @@ class EnrichZhytomyrCommand extends Command
 
         if (! $this->apply) {
             $sample = array_slice($this->articleIndex, 0, 10, true);
-            foreach ($sample as $article => $pid) {
-                $this->line("  {$article} → pid={$pid}");
+            foreach ($sample as $article => $entry) {
+                $this->line("  {$article} → pid={$entry['id']}");
             }
         }
 
