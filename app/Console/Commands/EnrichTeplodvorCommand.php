@@ -28,7 +28,10 @@ class EnrichTeplodvorCommand extends Command
         {--product=        : Process single product by ID}
         {--limit=          : Max products to enrich in this run}
         {--min-score=0.75  : Minimum token match score (0–1)}
-        {--sleep=800       : Delay between HTTP requests (ms)}';
+        {--sleep=800       : Delay between HTTP requests (ms)}
+        {--brand=          : Filter by brand name (e.g. "Kermi", "Grundfos")}
+        {--preview         : In dry-run, fetch page and show specs (slow)}';
+
 
     protected $description = 'Enrich any product with photos, specs and AI from teplodvor.by';
 
@@ -86,6 +89,18 @@ class EnrichTeplodvorCommand extends Command
             ->whereNotNull('slug')
             ->where('slug', '!=', '');
 
+        if ($this->option('brand')) {
+            $brandId = DB::table('brands')
+                ->where('name', 'like', '%' . $this->option('brand') . '%')
+                ->value('id');
+            if (! $brandId) {
+                $this->error('Brand not found: ' . $this->option('brand'));
+                return self::FAILURE;
+            }
+            $query->where('brand_id', $brandId);
+            $this->info('Brand filter: ' . $this->option('brand') . " (id={$brandId})");
+        }
+
         if ($this->option('product')) {
             $query->where('id', (int) $this->option('product'));
         } elseif ($onlyAi) {
@@ -127,6 +142,12 @@ class EnrichTeplodvorCommand extends Command
             $this->stats['matched']++;
             $this->line(sprintf('  [MATCH] %s', mb_substr($product->name, 0, 60)));
             $this->line('    → ' . $url);
+
+            // In dry-run without --preview: just show the matched URL, no HTTP fetch
+            if (! $this->apply && ! $this->option('preview')) {
+                $this->stats['enriched']++;
+                continue;
+            }
 
             try {
                 $brandName = (string) ($brandNames[$product->brand_id] ?? '');
@@ -191,36 +212,68 @@ class EnrichTeplodvorCommand extends Command
 
     // ── Matching ──────────────────────────────────────────────────────────────────
 
+    // Function words and generic category words that inflate match scores without adding specificity.
+    private const SLUG_STOPWORDS = [
+        // Russian prepositions / conjunctions
+        'bez', 'dlya', 'so', 'na', 'po', 'iz', 'ot', 'ob', 'pri', 'ili', 'ne', 'do', 'ko',
+        // Generic product category nouns (pump, station, valve, etc.)
+        'nasos', 'nasosnaya', 'stantsiya', 'klapan', 'schetchik',
+    ];
+
     private function findMatch(string $ourSlug, array $index, float $minScore): ?string
     {
-        // Include single-digit numbers (e.g. "3" in "zhitomir-3") — critical for model disambiguation.
-        // Skip single non-digit letters ("g", "v", etc.) — too common and cause false positives.
+        // Tokenise: include single-digit numbers; drop single non-digit letters and stopwords.
         $ourTokens = array_values(array_filter(
             explode('-', strtolower($ourSlug)),
-            fn ($t) => strlen($t) >= 2 || ctype_digit($t)
+            fn ($t) => (strlen($t) >= 2 || ctype_digit($t))
+                && ! in_array($t, self::SLUG_STOPWORDS, true)
         ));
 
         if (count($ourTokens) < 3) {
             return null;
         }
 
+        // Weighted scoring: token weight = character length.
+        // Long tokens (model codes, brand names) matter more than short ones.
+        $totalWeight = (int) array_sum(array_map('strlen', $ourTokens));
+        if ($totalWeight === 0) {
+            return null;
+        }
+
         $bestUrl   = null;
         $bestScore = 0.0;
 
+        // Collect multi-digit numeric tokens (e.g. "25", "300") — these must ALL match exactly.
+        $requiredNumerics = array_filter($ourTokens, fn ($t) => strlen($t) >= 2 && ctype_digit($t));
+
         foreach ($index as $tSlug => $url) {
-            // Single-digit numbers need boundary-safe match (so "3" ≠ "030").
-            // Multi-char tokens use str_contains (handles concatenation like "012sn").
             $tTokens = explode('-', $tSlug);
-            $matched = 0;
-            foreach ($ourTokens as $token) {
-                $hit = (strlen($token) === 1 && ctype_digit($token))
-                    ? in_array($token, $tTokens, true)  // exact boundary
-                    : str_contains($tSlug, $token);     // substring ok
-                if ($hit) {
-                    $matched++;
+
+            // Hard pre-filter: every multi-digit number must be an exact segment.
+            // Prevents "ups-25-70" from matching "ups-25-55" because both share brand+25.
+            $numericOk = true;
+            foreach ($requiredNumerics as $num) {
+                if (! in_array($num, $tTokens, true)) {
+                    $numericOk = false;
+                    break;
                 }
             }
-            $score = $matched / count($ourTokens);
+            if (! $numericOk) {
+                continue;
+            }
+
+            $matchedWeight = 0;
+            foreach ($ourTokens as $token) {
+                // Numeric tokens: exact boundary match — "35" must not match inside "6035".
+                // Alpha tokens: substring match handles transliteration variants ("012sn" ⊇ "012").
+                $hit = ctype_digit($token)
+                    ? in_array($token, $tTokens, true)
+                    : str_contains($tSlug, $token);
+                if ($hit) {
+                    $matchedWeight += strlen($token);
+                }
+            }
+            $score = $matchedWeight / $totalWeight;
             if ($score > $bestScore) {
                 $bestScore = $score;
                 $bestUrl   = $url;
