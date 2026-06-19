@@ -58,8 +58,8 @@ Schedule::command('supplier:sync-tsk-nasosy --apply')
     ->appendOutputTo(storage_path('logs/tsk-nasosy-sync.log'));
 
 // ГазКотелБел (ЖИТОМИР / GKB): ежедневно обновляем цены, остатки и РРЦ.
-// Курс RUB→BYN уточнять при изменении: --rub-byn-rate=X
-Schedule::command('supplier:sync-gazkotelbel --apply --rub-byn-rate=0.036')
+// Прайс в BYN — конвертация не нужна.
+Schedule::command('supplier:sync-gazkotelbel --apply')
     ->dailyAt('08:00')
     ->withoutOverlapping()
     ->runInBackground()

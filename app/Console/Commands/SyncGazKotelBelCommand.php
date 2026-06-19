@@ -15,15 +15,15 @@ use Illuminate\Support\Str;
  *   1: Ед. изм.            ("шт" for product rows, empty for section headers)
  *   2: Кол-во верхн. дым   (stock — top-flue variant)
  *   3: Кол-во горизонт.    (stock — horizontal-flue variant)
- *   4: Цена оптовая (RUB)  (supplier purchase cost)
- *   5: РРЦ (RUB)           (recommended retail price)
+ *   4: Цена оптовая (BYN)  (supplier purchase cost, Belarusian rubles)
+ *   5: РРЦ (BYN)           (recommended retail price, Belarusian rubles)
  *
  * Section headers are rows where col[1] is empty and col[0] is not "ИТОГО".
- * Prices are in Russian Rubles; pass --rub-byn-rate to convert to BYN.
+ * Prices are in Belarusian Rubles (BYN) — no conversion needed.
  *
  *   php artisan supplier:sync-gazkotelbel --dry-run
- *   php artisan supplier:sync-gazkotelbel --apply --rub-byn-rate=0.036
- *   php artisan supplier:sync-gazkotelbel --apply --create-new --rub-byn-rate=0.036
+ *   php artisan supplier:sync-gazkotelbel --apply
+ *   php artisan supplier:sync-gazkotelbel --apply --create-new
  */
 class SyncGazKotelBelCommand extends Command
 {
@@ -31,7 +31,6 @@ class SyncGazKotelBelCommand extends Command
         {--dry-run : Preview changes without writing}
         {--apply : Write changes to the database}
         {--create-new : Create catalog products for unmatched price-list rows}
-        {--rub-byn-rate=0.036 : RUB→BYN conversion rate (e.g. 0.036)}
         {--sheet-url= : Override the default Google Sheets URL}
         {--price-file= : Path to a local CSV file (skips download)}
         {--limit= : Process only the first N product rows}';
@@ -77,7 +76,6 @@ class SyncGazKotelBelCommand extends Command
 
     private int $supplierId  = 0;
     private int $syncId      = 0;
-    private float $rubBynRate = 0.036;
 
     // brand name → id cache
     private array $brandCache = [];
@@ -89,13 +87,12 @@ class SyncGazKotelBelCommand extends Command
         $apply     = (bool) $this->option('apply') && ! $this->option('dry-run');
         $dryRun    = ! $apply;
         $createNew = (bool) $this->option('create-new');
-        $this->rubBynRate = (float) ($this->option('rub-byn-rate') ?: 0.036);
         $limit     = $this->option('limit') !== null ? (int) $this->option('limit') : null;
 
         $this->line($dryRun
             ? '<fg=yellow;options=bold>DRY RUN — database will not be changed.</>'
             : '<fg=red;options=bold>APPLY — database will be updated.</>');
-        $this->line(sprintf('RUB→BYN rate: %.4f', $this->rubBynRate));
+        $this->line('Prices are in BYN (no conversion needed).');
 
         // Load / download price file
         try {
@@ -137,8 +134,8 @@ class SyncGazKotelBelCommand extends Command
                         $stats['updated']++;
                         $this->updateProductPrice($product->id, $row, $now);
                     }
-                    $this->line(sprintf('  <fg=green>matched</> [%s] %s qty=%d cost=%.0f RUB',
-                        $row['article'], $row['name'], $row['qty'], $row['cost_rub']));
+                    $this->line(sprintf('  <fg=green>matched</> [%s] %s qty=%d cost=%.2f BYN',
+                        $row['article'], $row['name'], $row['qty'], $row['cost_byn']));
                 } elseif ($createNew) {
                     $id = $this->createProduct($row, $brandId, $categoryId, $now);
                     $this->upsertSupplierProduct($id, $row, $now);
@@ -266,10 +263,10 @@ class SyncGazKotelBelCommand extends Command
                 continue;
             }
 
-            $costRub   = $this->parseMoney($col4);
-            $retailRub = $this->parseMoney($col5);
+            $costByn   = $this->parseMoney($col4);
+            $retailByn = $this->parseMoney($col5);
 
-            if ($costRub === null || $costRub <= 0) {
+            if ($costByn === null || $costByn <= 0) {
                 continue;
             }
 
@@ -279,8 +276,8 @@ class SyncGazKotelBelCommand extends Command
                 'name'             => $col0,
                 'article'          => $this->extractArticle($col0, $currentSection),
                 'qty'              => $qty,
-                'cost_rub'         => $costRub,
-                'retail_rub'       => $retailRub,
+                'cost_byn'         => $costByn,
+                'retail_byn'       => $retailByn,
                 'brand'            => $currentBrand,
                 'section'          => $currentSection,
                 'section_category' => $currentCat,
@@ -396,14 +393,14 @@ class SyncGazKotelBelCommand extends Command
                 $brand,
                 $catId,
                 $r['qty'],
-                number_format($r['cost_rub'], 0, '.', ''),
-                number_format(($r['retail_rub'] ?? 0) * $this->rubBynRate, 2, '.', ''),
+                number_format($r['cost_byn'], 2, '.', ''),
+                number_format($r['retail_byn'] ?? 0, 2, '.', ''),
                 $product ? "#{$product->id} {$product->sku}" : '—',
             ];
         }
 
         $this->table(
-            ['Article', 'Name', 'Brand', 'Cat', 'Qty', 'Cost RUB', 'Retail BYN', 'Match'],
+            ['Article', 'Name', 'Brand', 'Cat', 'Qty', 'Cost BYN', 'Retail BYN', 'Match'],
             $table
         );
 
@@ -513,7 +510,7 @@ class SyncGazKotelBelCommand extends Command
             ->where('product_id', $productId)
             ->first();
 
-        $costByn  = round($row['cost_rub'] * $this->rubBynRate, 2);
+        $costByn  = $row['cost_byn'];
         $inStock  = $row['qty'] > 0;
         $stockQty = $row['qty'];
 
@@ -523,9 +520,9 @@ class SyncGazKotelBelCommand extends Command
                 || (bool) $existing->in_stock !== $inStock;
 
             DB::table('supplier_products')->where('id', $existing->id)->update([
-                'price'             => $row['cost_rub'],
-                'currency'          => 'RUB',
-                'currency_rate'     => $this->rubBynRate,
+                'price'             => $costByn,
+                'currency'          => 'BYN',
+                'currency_rate'     => 1.0,
                 'price_byn'         => $costByn,
                 'in_stock'          => $inStock,
                 'stock_quantity'    => $stockQty,
@@ -548,9 +545,9 @@ class SyncGazKotelBelCommand extends Command
             'supplier_article'     => $row['article'],
             'supplier_name'        => $row['name'],
             'source_url'           => self::SOURCE_URL,
-            'price'                => $row['cost_rub'],
-            'currency'             => 'RUB',
-            'currency_rate'        => $this->rubBynRate,
+            'price'                => $costByn,
+            'currency'             => 'BYN',
+            'currency_rate'        => 1.0,
             'price_byn'            => $costByn,
             'in_stock'             => $inStock,
             'stock_quantity'       => $stockQty,
@@ -568,11 +565,11 @@ class SyncGazKotelBelCommand extends Command
 
     private function updateProductPrice(int $productId, array $row, $now): void
     {
-        if (($row['retail_rub'] ?? null) === null || $row['retail_rub'] <= 0) {
+        if (($row['retail_byn'] ?? null) === null || $row['retail_byn'] <= 0) {
             return;
         }
 
-        $retailByn = round($row['retail_rub'] * $this->rubBynRate, 2);
+        $retailByn = $row['retail_byn'];
 
         DB::table('products')->where('id', $productId)->update([
             'price'      => $retailByn,
@@ -583,8 +580,8 @@ class SyncGazKotelBelCommand extends Command
 
     private function createProduct(array $row, int $brandId, int $categoryId, $now): int
     {
-        $retailByn = $row['retail_rub'] ? round($row['retail_rub'] * $this->rubBynRate, 2) : 0;
-        $costByn   = round($row['cost_rub'] * $this->rubBynRate, 2);
+        $retailByn = $row['retail_byn'] ?? 0;
+        $costByn   = $row['cost_byn'];
         $name      = $this->buildProductName($row);
         $sku       = $this->nextKotlovSku();
         $inStock   = $row['qty'] > 0;
