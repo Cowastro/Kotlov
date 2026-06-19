@@ -152,11 +152,13 @@ class SyncGazKotelBelCommand extends Command
         }
 
         // Mark sync completed
-        DB::table('supplier_syncs')->where('id', $this->syncId)->update([
-            'last_status'    => 'success',
-            'last_synced_at' => $now,
-            'updated_at'     => $now,
-        ]);
+        if ($this->syncId > 0) {
+            DB::table('supplier_syncs')->where('id', $this->syncId)->update([
+                'last_status'  => 'success',
+                'last_run_at'  => $now,
+                'updated_at'   => $now,
+            ]);
+        }
 
         $this->table(['metric', 'count'], array_map(
             fn ($k, $v) => [$k, $v],
