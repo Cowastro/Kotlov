@@ -217,10 +217,10 @@ class ImportTeplodvorCatalogCommand extends Command
             $this->warn('Archiving ' . count($unmatched) . ' obsolete products...');
             foreach ($unmatched as $p) {
                 // Free the slug so a newly imported product can claim the clean URL
-                DB::table('products')->where('id', $p['id'])->update([
+                DB::table('products')->where('id', $p->id)->update([
                     'is_archived'         => true,
                     'availability_status' => 'check',
-                    'slug'                => $p['slug'] . '-archived-' . $p['id'],
+                    'slug'                => $p->slug . '-archived-' . $p->id,
                     'updated_at'          => now(),
                 ]);
             }
