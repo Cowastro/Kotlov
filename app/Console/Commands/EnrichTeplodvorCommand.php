@@ -27,7 +27,7 @@ class EnrichTeplodvorCommand extends Command
         {--overwrite       : Replace images even if product already has photos}
         {--product=        : Process single product by ID}
         {--limit=          : Max products to enrich in this run}
-        {--min-score=0.85  : Minimum token match score (0–1)}
+        {--min-score=0.75  : Minimum token match score (0–1)}
         {--sleep=800       : Delay between HTTP requests (ms)}';
 
     protected $description = 'Enrich any product with photos, specs and AI from teplodvor.by';
