@@ -75,12 +75,12 @@ class PriceSyncTeplodvorCommand extends Command
         $this->info(sprintf('Slug index: %d teplodvor.by product URLs', count($index)));
 
         // ── Products without any supplier link ────────────────────────────────────
-        $linkedIds = DB::table('supplier_products')->pluck('product_id')->unique()->toArray();
-
         $query = DB::table('products')
             ->where('is_archived', false)
             ->whereNotNull('slug')->where('slug', '!=', '')
-            ->whereNotIn('id', $linkedIds);
+            ->whereNotIn('id', function ($sub) {
+                $sub->select('product_id')->from('supplier_products');
+            });
 
         if ($this->option('with-specs')) {
             $query->whereNotNull('specs')->where('specs', '!=', '')->where('specs', '!=', '{}');
