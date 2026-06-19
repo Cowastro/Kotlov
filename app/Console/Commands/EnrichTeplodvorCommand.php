@@ -31,6 +31,7 @@ class EnrichTeplodvorCommand extends Command
         {--min-score=0.75  : Minimum token match score (0–1)}
         {--sleep=800       : Delay between HTTP requests (ms)}
         {--brand=          : Filter by brand name (e.g. "Kermi", "Grundfos")}
+        {--no-teplodvor   : Skip teplodvor matching entirely — AI from DB specs only}
         {--preview         : In dry-run, fetch page and show specs (slow)}';
 
 
@@ -141,7 +142,9 @@ class EnrichTeplodvorCommand extends Command
             }
             $this->stats['scanned']++;
 
-            $url = $this->findMatch((string) $product->slug, $index, $minScore, $brandSlugTokens ?? []);
+            $url = $this->option('no-teplodvor')
+                ? null
+                : $this->findMatch((string) $product->slug, $index, $minScore, $brandSlugTokens ?? []);
 
             if ($url === null) {
                 if ($onlyAi && $this->apply) {
