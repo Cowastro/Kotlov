@@ -440,11 +440,18 @@ class EnrichGazKotelBelCommand extends Command
             $key = $m[1];
         }
 
-        if ($key === null || ! isset($specsTable[$key])) {
+        if ($key === null) {
             return [];
         }
 
-        return $this->translateSpecs($specsTable[$key]);
+        // Try exact key, then zero-padded 3-digit, then stripped leading zeros
+        foreach (array_unique([$key, str_pad($key, 3, '0', STR_PAD_LEFT), ltrim($key, '0') ?: $key]) as $candidate) {
+            if (isset($specsTable[$candidate])) {
+                return $this->translateSpecs($specsTable[$candidate]);
+            }
+        }
+
+        return [];
     }
 
     private function translateSpecs(array $raw): array
