@@ -352,7 +352,8 @@ class SyncGazKotelBelCommand extends Command
         }
 
         // "Котел Житомир-14М ТРИ ДВЕРИ" → "ЖИТОМИР-14М"
-        if (preg_match('/Житомир-(\d+[А-Яа-яA-Za-z]*)/iu', $name, $m)) {
+        // Only match at start (after "Котел "/"котел ") — not inside long descriptions.
+        if (preg_match('/^(?:котел\s+|котёл\s+)?житомир-(\d+[а-яa-z]*)/iu', trim($name), $m)) {
             return 'ЖИТОМИР-' . mb_strtoupper($m[1]);
         }
 
