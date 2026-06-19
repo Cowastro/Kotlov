@@ -29,6 +29,8 @@ class AiAssistant extends Page
     protected static ?int $navigationSort = 6;
     protected string $view = 'filament.pages.ai-assistant';
 
+    public int $decisionsPerPage = 10;
+
     public static function getNavigationGroup(): ?string
     {
         return 'Каталог';
@@ -181,10 +183,14 @@ class AiAssistant extends Page
 
     public function pendingDecisions()
     {
+        $perPage = in_array($this->decisionsPerPage, [5, 10, 25, 50, 100], true)
+            ? $this->decisionsPerPage
+            : 10;
+
         return SupplierReviewDecision::query()
             ->where('status', SupplierReviewDecision::STATUS_PENDING)
             ->latest('id')
-            ->paginate(10, ['*'], 'decisionsPage')
+            ->paginate($perPage, ['*'], 'decisionsPage')
             ->through(fn (SupplierReviewDecision $decision): array => [
                 'id' => $decision->id,
                 'decision' => $this->decisionLabel($decision->decision),
@@ -194,6 +200,11 @@ class AiAssistant extends Page
                 'product_url' => $decision->product_id ? url('/admin/products/' . $decision->product_id) : null,
                 'reason' => $decision->reason ?: '-',
             ]);
+    }
+
+    public function updatedDecisionsPerPage(): void
+    {
+        $this->resetPage('decisionsPage');
     }
 
     public function applyPendingDecision(int $decisionId): void

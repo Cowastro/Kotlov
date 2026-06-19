@@ -198,6 +198,9 @@
         .ai-assistant-table-wrap {
             overflow: auto;
             max-width: 100%;
+            max-height: min(58vh, 720px);
+            border-top: 1px solid rgba(148, 163, 184, .12);
+            border-bottom: 1px solid rgba(148, 163, 184, .12);
         }
 
         .ai-assistant-table {
@@ -208,6 +211,9 @@
         }
 
         .ai-assistant-table th {
+            position: sticky;
+            top: 0;
+            z-index: 1;
             background: rgba(15, 23, 42, .26);
             color: rgb(203, 213, 225);
             padding: 9px 10px;
@@ -268,8 +274,37 @@
             color: rgb(252, 165, 165);
         }
 
+        .ai-assistant-table-tools {
+            display: flex;
+            justify-content: space-between;
+            gap: 14px;
+            align-items: center;
+            padding: 10px 16px;
+            border-top: 1px solid rgba(148, 163, 184, .14);
+        }
+
+        .ai-assistant-per-page {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            color: rgb(148, 163, 184);
+            font-size: 12px;
+            white-space: nowrap;
+        }
+
+        .ai-assistant-select {
+            min-height: 30px;
+            padding: 4px 28px 4px 9px;
+            border: 1px solid rgba(148, 163, 184, .25);
+            border-radius: 6px;
+            background: rgba(15, 23, 42, .28);
+            color: rgb(226, 232, 240);
+            font-size: 12px;
+            font-weight: 700;
+        }
+
         .ai-assistant-pagination {
-            padding: 12px 16px 14px;
+            padding: 0 16px 14px;
             border-top: 1px solid rgba(148, 163, 184, .14);
         }
 
@@ -411,6 +446,27 @@
                 <a class="ai-assistant-link" href="{{ url('/admin/import-reports') }}">Отчёты импорта</a>
             </div>
 
+            <div class="ai-assistant-table-tools">
+                <div class="ai-assistant-muted">
+                    @if ($pendingDecisions->total() > 0)
+                        Показано {{ $pendingDecisions->firstItem() }}-{{ $pendingDecisions->lastItem() }} из {{ $pendingDecisions->total() }}
+                    @else
+                        Pending-решений нет
+                    @endif
+                </div>
+
+                <label class="ai-assistant-per-page">
+                    Строк
+                    <select class="ai-assistant-select" wire:model.live="decisionsPerPage">
+                        <option value="5">5</option>
+                        <option value="10">10</option>
+                        <option value="25">25</option>
+                        <option value="50">50</option>
+                        <option value="100">100</option>
+                    </select>
+                </label>
+            </div>
+
             <div class="ai-assistant-table-wrap">
                 <table class="ai-assistant-table">
                     <thead>
@@ -475,11 +531,13 @@
                 </table>
             </div>
 
-            @if ($pendingDecisions->hasPages())
-                <div class="ai-assistant-pagination">
+            <div class="ai-assistant-pagination">
+                @if ($pendingDecisions->hasPages())
                     {{ $pendingDecisions->links() }}
-                </div>
-            @endif
+                @else
+                    <span class="ai-assistant-muted">Все найденные решения уже на этой странице.</span>
+                @endif
+            </div>
         </div>
     </div>
 </x-filament-panels::page>
