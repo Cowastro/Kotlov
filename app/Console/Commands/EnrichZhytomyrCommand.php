@@ -260,6 +260,17 @@ class EnrichZhytomyrCommand extends Command
             $this->stats['images'] += $written;
         }
 
+        // Merge specs: teplodvor as base, existing (gazkotelbel) takes priority
+        if (! empty($card['specs']) && ! $onlyAi) {
+            $row      = DB::table('products')->where('id', $pid)->value('specs');
+            $existing = is_string($row) ? (json_decode($row, true) ?? []) : [];
+            $merged   = array_merge($card['specs'], $existing);
+            DB::table('products')->where('id', $pid)->update([
+                'specs' => json_encode($merged, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
+            ]);
+            $this->line('    specs saved: ' . count($merged));
+        }
+
         if (! $this->option('skip-ai')) {
             $existingContent = (string) DB::table('products')->where('id', $pid)->value('content');
             if ($onlyAi || trim($existingContent) === '') {
