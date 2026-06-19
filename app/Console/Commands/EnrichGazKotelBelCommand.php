@@ -171,7 +171,7 @@ class EnrichGazKotelBelCommand extends Command
             foreach ($products as $product) {
                 $this->stats['products']++;
 
-                if ($onlyMissing && ! empty($product->description)) {
+                if ($onlyMissing && ! empty($product->content)) {
                     $this->line("  skip (has desc): [{$product->supplier_article}]");
                     $this->stats['skipped']++;
                     continue;
@@ -290,18 +290,43 @@ class EnrichGazKotelBelCommand extends Command
             return [];
         }
 
-        // Use the first table with ≥ 2 columns (skip tiny tables)
+        // Find the specs table: prefer table with ≥3 columns AND numeric model headers
         $targetTable = null;
         foreach ($tables as $tbl) {
             $firstRow = $tbl->getElementsByTagName('tr')->item(0);
             if ($firstRow === null) {
                 continue;
             }
-            $cellCount = $firstRow->getElementsByTagName('th')->length
-                       + $firstRow->getElementsByTagName('td')->length;
-            if ($cellCount >= 2) {
+            $cells = [];
+            foreach ($firstRow->childNodes as $node) {
+                if ($node->nodeType === XML_ELEMENT_NODE && in_array(strtolower($node->nodeName), ['th','td'])) {
+                    $cells[] = trim($node->textContent);
+                }
+            }
+            if (count($cells) < 3) {
+                continue;
+            }
+            // Check that at least one header (skip col[0]) contains a digit
+            $hasNumeric = false;
+            foreach (array_slice($cells, 1) as $h) {
+                if (preg_match('/\d/', $h)) {
+                    $hasNumeric = true;
+                    break;
+                }
+            }
+            if ($hasNumeric) {
                 $targetTable = $tbl;
                 break;
+            }
+        }
+        // Fallback: first table with ≥ 2 columns
+        if ($targetTable === null) {
+            foreach ($tables as $tbl) {
+                $firstRow = $tbl->getElementsByTagName('tr')->item(0);
+                if ($firstRow === null) continue;
+                $cellCount = $firstRow->getElementsByTagName('th')->length
+                           + $firstRow->getElementsByTagName('td')->length;
+                if ($cellCount >= 2) { $targetTable = $tbl; break; }
             }
         }
 
@@ -384,7 +409,7 @@ class EnrichGazKotelBelCommand extends Command
             ->join('products as p', 'p.id', '=', 'sp.product_id')
             ->where('sp.supplier_id', $this->supplierId)
             ->whereNotNull('sp.product_id')
-            ->select('p.id', 'p.name', 'p.description', 'p.specs', 'sp.supplier_article');
+            ->select('p.id', 'p.name', 'p.content', 'p.specs', 'sp.supplier_article');
 
         if (! empty($config['articles'])) {
             $q->whereIn('sp.supplier_article', $config['articles']);
@@ -448,7 +473,7 @@ class EnrichGazKotelBelCommand extends Command
         $mergedSpecs = array_merge($existing, $modelSpecs);
 
         DB::table('products')->where('id', $product->id)->update([
-            'description'       => $description,
+            'content'           => $description,
             'short_description' => $this->makeShortDesc($description),
             'specs'             => $mergedSpecs !== [] ? json_encode($mergedSpecs, JSON_UNESCAPED_UNICODE) : $product->specs,
             'updated_at'        => now(),
