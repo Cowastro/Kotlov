@@ -533,7 +533,7 @@
                 {{-- Характеристики --}}
                 @php
                     $rawSpecs = $attributeValues->count() === 0 && !empty($product->specs)
-                        ? collect(json_decode($product->specs, true) ?? [])
+                        ? collect(is_array($product->specs) ? $product->specs : (json_decode($product->specs, true) ?? []))
                               ->filter(fn($s) => !empty($s['key']) && !empty($s['value']))
                         : collect();
                 @endphp
