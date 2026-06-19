@@ -44,6 +44,7 @@ class EnrichZhytomyrCommand extends Command
         '/shop/kotly/gazovye/gazovye_atem/',
         '/shop/vodonagrevateli/gazovye kolonki/',
         '/shop/konvektory/gazovye/',
+        '/shop/kotly/tverdotoplivnye/',
     ];
 
     private bool  $apply;
@@ -319,6 +320,16 @@ class EnrichZhytomyrCommand extends Command
         // КНС-5 / КНС-8 (газовые конвекторы)
         if (preg_match('/КНС-(\d+)/iu', $n, $m)) {
             return 'КНС-' . $m[1];
+        }
+
+        // АОТВ-14 / АКТВ-14 (твердотопливные котлы)
+        if (preg_match('/А[ОК]ТВ-(\d+)/iu', $n, $m0)) {
+            return mb_strtoupper($m0[0]);
+        }
+
+        // Житомир-14М / ЖИТОМИР-18М (твёрдотопливные с тремя дверями)
+        if (preg_match('/ЖИТОМИР-(\d+М)/iu', $n, $m)) {
+            return 'ЖИТОМИР-' . mb_strtoupper($m[1]);
         }
 
         return null;
