@@ -266,7 +266,7 @@ class EnrichTeplodvorCommand extends Command
                 explode('-', strtolower($ourSlug)),
                 fn ($t) => (strlen($t) >= 2 || ctype_digit($t))
                     && ! in_array($t, self::SLUG_STOPWORDS, true)
-                    && ! in_array($t, $brandTokens, true)
+                    && ! array_filter($brandTokens, fn ($bt) => levenshtein($t, $bt) <= 1)
             )
         ));
 
