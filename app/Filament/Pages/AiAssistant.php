@@ -65,6 +65,27 @@ class AiAssistant extends Page
                 ->modalHeading('Запустить AI-аудит товаров без бренда')
                 ->modalDescription('Товары не изменятся. Будут созданы pending-решения для проверки.')
                 ->action(fn (array $data) => $this->queueMissingBrandAudit($data)),
+            Action::make('recalculate_pending')
+                ->label('Пересчитать pending')
+                ->icon('heroicon-o-arrow-path')
+                ->color('gray')
+                ->form([
+                    TextInput::make('limit')
+                        ->label('Сколько решений пересчитать')
+                        ->numeric()
+                        ->minValue(1)
+                        ->maxValue(200)
+                        ->default(50)
+                        ->required(),
+                    Toggle::make('use_ai')
+                        ->label('Использовать DeepSeek/AI')
+                        ->helperText('Если выключить, будут использованы только локальные правила.')
+                        ->default(true),
+                ])
+                ->requiresConfirmation()
+                ->modalHeading('Пересчитать pending-решения')
+                ->modalDescription('Товары не изменятся. Будут заново рассчитаны AI-подсказки для текущих pending-решений каталога.')
+                ->action(fn (array $data) => $this->queuePendingRecalculation($data)),
         ];
     }
 
@@ -329,6 +350,58 @@ class AiAssistant extends Page
             ->success()
             ->title('AI-аудит поставлен в очередь')
             ->body('Товаров в задаче: ' . count($productIds) . '. Результат появится в pending-решениях.')
+            ->persistent()
+            ->send();
+    }
+
+    private function queuePendingRecalculation(array $data): void
+    {
+        $limit = max(1, min(200, (int) ($data['limit'] ?? 50)));
+        $useAi = (bool) ($data['use_ai'] ?? true);
+
+        if ($useAi && ! app(AiContentEnricher::class)->isAvailable()) {
+            Notification::make()
+                ->danger()
+                ->title('AI-провайдер не настроен')
+                ->body('Добавьте ANTHROPIC_API_KEY или AI_API_KEY + AI_API_URL + AI_MODEL, либо пересчитайте без AI.')
+                ->send();
+
+            return;
+        }
+
+        $productIds = SupplierReviewDecision::query()
+            ->where('status', SupplierReviewDecision::STATUS_PENDING)
+            ->where('decision', SupplierReviewDecision::DECISION_UPDATE_PRODUCT_CATALOG)
+            ->whereNotNull('product_id')
+            ->latest('id')
+            ->limit($limit)
+            ->pluck('product_id')
+            ->map(fn ($productId): int => (int) $productId)
+            ->filter()
+            ->unique()
+            ->values()
+            ->all();
+
+        if ($productIds === []) {
+            Notification::make()
+                ->warning()
+                ->title('Нет pending-решений для пересчёта')
+                ->body('Очередь решений по бренду/категории сейчас пустая.')
+                ->send();
+
+            return;
+        }
+
+        RunProductCatalogAiReview::dispatch(
+            $productIds,
+            (int) auth()->id(),
+            $useAi,
+        );
+
+        Notification::make()
+            ->success()
+            ->title('Пересчёт поставлен в очередь')
+            ->body('Решений к пересчёту: ' . count($productIds) . '. Старые подсказки будут обновлены.')
             ->persistent()
             ->send();
     }

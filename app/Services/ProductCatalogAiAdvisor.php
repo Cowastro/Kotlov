@@ -33,7 +33,10 @@ class ProductCatalogAiAdvisor
         'kotly' => ['котел', 'котёл', 'куппер'],
         'topki' => ['топка'],
         'pechi-kaminy' => ['печь-камин', 'печь камин', 'аот'],
-        'aksessuary-dlya-bani' => ['шапк', 'мочал', 'коврик', 'ведро', 'обруч', 'средств'],
+        'shajki-dlya-bani' => ['шайк', 'бадья'],
+        'oblivnye-ustrojstva' => ['обливн', 'ведро'],
+        'zaparniki' => ['запарник'],
+        'aksessuary-dlya-bani' => ['шапк', 'мочал', 'коврик', 'обруч', 'средств'],
         'kamni-dlya-bani' => ['камень', 'камни', 'жадеит', 'нефрит', 'талько', 'кварцит', 'габбро', 'диабаз'],
         'drovyanye-pechi-dlya-bani' => ['печ.*бан', 'банн.*печ', 'aston', 'астон', 'былина', 'сибирь'],
     ];
@@ -231,12 +234,7 @@ class ProductCatalogAiAdvisor
             ->map(fn (Brand $brand): string => $brand->name . ' [' . $brand->slug . ']')
             ->implode("\n");
 
-        $categories = Category::query()
-            ->where('is_active', true)
-            ->orderBy('name')
-            ->get(['name', 'slug'])
-            ->map(fn (Category $category): string => $category->name . ' [' . $category->slug . ']')
-            ->implode("\n");
+        $categories = $this->categoryPromptList();
 
         $prompt = <<<PROMPT
 Ты помогаешь разобрать товары интернет-магазина kotlov.by после импорта поставщика.
@@ -309,23 +307,50 @@ PROMPT;
 
     private function resolveCategoryRuleSlug(string $slug): string
     {
-        if ($slug !== 'kamni-dlya-bani') {
-            return $slug;
-        }
-
-        $existingSlug = Category::query()
-            ->where('is_active', true)
-            ->whereIn('slug', [
+        $preferredSlugs = match ($slug) {
+            'kamni-dlya-bani' => [
                 'kamni-dlya-bani',
                 'kamni-dlya-ban-i-saun',
                 'kamni-dlya-sauny',
                 'kamni-dlya-pechi',
                 'bannye-kamni',
-            ])
-            ->orderByRaw("FIELD(slug, 'kamni-dlya-bani', 'kamni-dlya-ban-i-saun', 'kamni-dlya-sauny', 'kamni-dlya-pechi', 'bannye-kamni')")
-            ->value('slug');
+            ],
+            'shajki-dlya-bani' => [
+                'shajki-dlya-bani',
+                'shayki-dlya-bani',
+                'shajki-i-vedra-dlya-bani',
+                'shayki-i-vedra-dlya-bani',
+                'bondarnye-izdeliya',
+            ],
+            'oblivnye-ustrojstva' => [
+                'oblivnye-ustrojstva',
+                'oblivnye-vedra',
+                'vedra-oblivnye',
+                'vedro-oblivnoe',
+            ],
+            'zaparniki' => [
+                'zaparniki',
+                'zaparniki-dlya-bani',
+            ],
+            default => [],
+        };
+
+        if ($preferredSlugs === []) {
+            return $slug;
+        }
+
+        $existingSlug = $this->firstActiveCategorySlug($preferredSlugs);
 
         return $existingSlug ?: 'aksessuary-dlya-bani';
+    }
+
+    private function firstActiveCategorySlug(array $slugs): ?string
+    {
+        return Category::query()
+            ->where('is_active', true)
+            ->whereIn('slug', $slugs)
+            ->orderByRaw("FIELD(slug, '" . implode("', '", array_map('addslashes', $slugs)) . "')")
+            ->value('slug');
     }
 
     private function isProtectedCategoryRuleSlug(string $slug): bool
@@ -336,7 +361,37 @@ PROMPT;
             'kamni-dlya-sauny',
             'kamni-dlya-pechi',
             'bannye-kamni',
+            'shajki-dlya-bani',
+            'shayki-dlya-bani',
+            'shajki-i-vedra-dlya-bani',
+            'shayki-i-vedra-dlya-bani',
+            'oblivnye-ustrojstva',
+            'oblivnye-vedra',
+            'vedra-oblivnye',
+            'vedro-oblivnoe',
+            'zaparniki',
+            'zaparniki-dlya-bani',
         ], true);
+    }
+
+    private function categoryPromptList(): string
+    {
+        $categories = Category::query()
+            ->where('is_active', true)
+            ->orderBy('parent_id')
+            ->orderBy('name')
+            ->get(['id', 'name', 'slug', 'parent_id']);
+
+        $namesById = $categories->pluck('name', 'id');
+
+        return $categories
+            ->map(function (Category $category) use ($namesById): string {
+                $parentName = $category->parent_id ? $namesById->get($category->parent_id) : null;
+                $path = $parentName ? $parentName . ' > ' . $category->name : $category->name;
+
+                return $path . ' [' . $category->slug . ']';
+            })
+            ->implode("\n");
     }
 
     private function findDuplicate(Product $product): ?Product
