@@ -421,13 +421,20 @@ class SyncGazKotelBelCommand extends Command
     {
         $article = $row['article'];
 
+        // АТЕМ = Житомир (same manufacturer). Search both brand IDs together.
+        $brandIds = [$brandId];
+        $atemId = (int) DB::table('brands')->whereRaw('LOWER(name) = ?', ['атем'])->value('id');
+        if ($atemId > 0 && ! in_array($atemId, $brandIds)) {
+            $brandIds[] = $atemId;
+        }
+
         // 1. Match by existing supplier_products article for this supplier
         if ($this->supplierId > 0) {
             $sp = DB::table('supplier_products as sp')
                 ->join('products as p', 'p.id', '=', 'sp.product_id')
                 ->where('sp.supplier_id', $this->supplierId)
                 ->where('sp.supplier_article', $article)
-                ->where('p.brand_id', $brandId)
+                ->whereIn('p.brand_id', $brandIds)
                 ->select('p.*')
                 ->first();
             if ($sp) {
@@ -437,7 +444,7 @@ class SyncGazKotelBelCommand extends Command
 
         // 2. Match by specs["Артикул"] in products of this brand
         $bySpec = DB::table('products')
-            ->where('brand_id', $brandId)
+            ->whereIn('brand_id', $brandIds)
             ->where('is_archived', false)
             ->whereRaw("JSON_UNQUOTE(JSON_EXTRACT(specs, '$.\"Артикул\"')) = ?", [$article])
             ->first();
@@ -448,7 +455,7 @@ class SyncGazKotelBelCommand extends Command
         // 3. Fuzzy name match — strip common prefixes and compare
         $needle = $this->normalizeModel($row['name']);
         $products = DB::table('products')
-            ->where('brand_id', $brandId)
+            ->whereIn('brand_id', $brandIds)
             ->where(fn ($q) => $q->where('is_archived', false)->orWhereNull('is_archived'))
             ->get(['id', 'sku', 'name', 'specs', 'price']);
 
