@@ -222,24 +222,45 @@ class EnrichTeplodvorCommand extends Command
 
     // ── Matching ──────────────────────────────────────────────────────────────────
 
+    // Transliteration corrections: our CMS slugifies differently from teplodvor.by.
+    private const SLUG_NORM = [
+        'eco' => 'eko',  // TIS EKO/ECO, EcoKamin, etc.
+    ];
+
     // Function words and generic category words that inflate match scores without adding specificity.
     private const SLUG_STOPWORDS = [
         // Russian prepositions / conjunctions
         'bez', 'dlya', 'so', 'na', 'po', 'iz', 'ot', 'ob', 'pri', 'ili', 'ne', 'do', 'ko',
-        // Generic product category nouns (pump, station, valve, etc.)
+        // Generic product category nouns
         'nasos', 'nasosnaya', 'stantsiya', 'klapan', 'schetchik',
+        // Generic product type prefixes — very long, dominate scores across all brands
+        'kotel', 'pech', 'otopitelnaya', 'otopitelnyj',
+        'tverdotoplivnyj', 'tverdotoplivnyy',
+        'elektricheskij', 'elektricheskiy', 'elektricheskaya',
+        'gazovyj', 'gazovaya', 'gazovyy',
+        // Product variant descriptors (color, door type, finish) — differ across pages
+        'antratsit', 'antracit', 'antrocit',  // anthracite transliterations
+        'belyj', 'chernyj', 'seryj', 'serebristyj', 'metallik',
+        'terrakota', 'bronza', 'vitra',
+        'layt', 'lajt',  // "light" versions
+        // Door type / configuration codes common in slugs
+        'chd', 'sk', 'tv', 'tz', 'sd', 'zg', 'nv', 'ds', 'dch',
     ];
 
     private function findMatch(string $ourSlug, array $index, float $minScore): ?string
     {
         // Tokenise: include single-digit numbers; drop single non-digit letters and stopwords.
-        $ourTokens = array_values(array_filter(
-            explode('-', strtolower($ourSlug)),
-            fn ($t) => (strlen($t) >= 2 || ctype_digit($t))
-                && ! in_array($t, self::SLUG_STOPWORDS, true)
+        // Then normalise known transliteration differences (eco→eko, etc.).
+        $ourTokens = array_values(array_map(
+            fn ($t) => self::SLUG_NORM[$t] ?? $t,
+            array_filter(
+                explode('-', strtolower($ourSlug)),
+                fn ($t) => (strlen($t) >= 2 || ctype_digit($t))
+                    && ! in_array($t, self::SLUG_STOPWORDS, true)
+            )
         ));
 
-        if (count($ourTokens) < 3) {
+        if (count($ourTokens) < 2) {
             return null;
         }
 
@@ -253,8 +274,9 @@ class EnrichTeplodvorCommand extends Command
         $bestUrl   = null;
         $bestScore = 0.0;
 
-        // Collect multi-digit numeric tokens (e.g. "25", "300") — these must ALL match exactly.
-        $requiredNumerics = array_filter($ourTokens, fn ($t) => strlen($t) >= 2 && ctype_digit($t));
+        // ALL numeric tokens must match exactly (including single digits like "6", "9").
+        // Prevents "sputnik-6" from matching "sputnik-15" (same model family, different power).
+        $requiredNumerics = array_filter($ourTokens, fn ($t) => ctype_digit($t));
 
         foreach ($index as $tSlug => $url) {
             $tTokens = explode('-', $tSlug);
