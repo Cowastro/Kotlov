@@ -425,7 +425,7 @@ class EnrichTeplodvorCommand extends Command
             $k = $this->cleanText($row[1]);
             $v = $this->cleanText($row[2]);
             if ($k !== '' && $v !== '' && $k !== $v) {
-                if (preg_match('/производитель|импортер|импортёр|сервисный|страна происхождения/ui', $k)) {
+                if (preg_match('/^(производитель(?!\p{L})|импортер(?!\p{L})|импортёр(?!\p{L})|сервисный\s+центр|страна\s+происхождения)/ui', $k)) {
                     $serviceInfo[$k] = $v;
                 } else {
                     $specs[$k] = $v;
@@ -441,7 +441,7 @@ class EnrichTeplodvorCommand extends Command
                 $k = $this->cleanText($row[1]);
                 $v = $this->cleanText($row[2]);
                 if ($k !== '' && $v !== '' && $k !== $v && mb_strlen($k) <= 80) {
-                    if (preg_match('/производитель|импортер|импортёр|сервисный|страна происхождения/ui', $k)) {
+                    if (preg_match('/^(производитель(?!\p{L})|импортер(?!\p{L})|импортёр(?!\p{L})|сервисный\s+центр|страна\s+происхождения)/ui', $k)) {
                         $serviceInfo[$k] = $v;
                     } else {
                         $specs[$k] = $v;

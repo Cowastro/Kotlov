@@ -464,7 +464,7 @@ class ImportTeplodvorCatalogCommand extends Command
                 if (! $key || ! $val) {
                     continue;
                 }
-                if (preg_match('/производитель|импортер|импортёр|сервисный|страна происхождения/ui', $key)) {
+                if (preg_match('/^(производитель(?!\p{L})|импортер(?!\p{L})|импортёр(?!\p{L})|сервисный\s+центр|страна\s+происхождения)/ui', $key)) {
                     $serviceInfo[$key] = $val;
                 } else {
                     $specs[] = ['key' => $key, 'value' => $val, 'unit' => ''];
