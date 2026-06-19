@@ -317,15 +317,36 @@ class PriceSyncTeplodvorCommand extends Command
         $bestUrl   = null;
 
         foreach ($index as $tepSlug => $url) {
+            // Brand must appear in the teplodvor slug — prevents cross-brand false matches
+            // (e.g. BAXI ECO Compact → Royal Thermo radiator, BAXI Slim → Rexant cable)
+            if (! empty($brandTokens)) {
+                $hasBrand = false;
+                foreach ($brandTokens as $bt) {
+                    if (strlen($bt) >= 3 && str_contains($tepSlug, $bt)) {
+                        $hasBrand = true;
+                        break;
+                    }
+                }
+                if (! $hasBrand) {
+                    continue;
+                }
+            }
+
+            // Normalize teplodvor slug the same way as our tokens (eco→eko etc.)
+            $normTepSlug = str_replace(array_keys(self::SLUG_NORM), array_values(self::SLUG_NORM), $tepSlug);
+
+            // Required numerics must appear as whole hyphen-delimited words
+            // Prevents "300" matching inside "2300", "24" inside "240" etc.
             foreach ($requiredNumerics as $num) {
-                if (! str_contains($tepSlug, $num)) {
+                if (! preg_match('/(?:^|-)' . preg_quote($num, '/') . '(?:-|$)/', $normTepSlug)) {
                     continue 2;
                 }
             }
 
+            // Score by whole-word token matches only (prevents "rs" matching in "rsd")
             $matchedWeight = 0;
             foreach ($ourTokens as $t) {
-                if (str_contains($tepSlug, $t)) {
+                if (preg_match('/(?:^|-)' . preg_quote($t, '/') . '(?:-|$)/', $normTepSlug)) {
                     $matchedWeight += strlen($t);
                 }
             }
