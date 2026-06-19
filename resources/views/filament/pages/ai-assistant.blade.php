@@ -339,6 +339,130 @@
             background: rgba(15, 23, 42, .16);
         }
 
+        .ai-assistant-page {
+            --aa-card-bg: rgb(255, 255, 255);
+            --aa-panel-bg: rgb(249, 250, 251);
+            --aa-table-head-bg: rgb(243, 244, 246);
+            --aa-border: rgba(15, 23, 42, .1);
+            --aa-border-strong: rgba(15, 23, 42, .16);
+            --aa-text: rgb(15, 23, 42);
+            --aa-muted: rgb(100, 116, 139);
+            --aa-soft-muted: rgb(71, 85, 105);
+            --aa-action-bg: rgb(255, 255, 255);
+            --aa-select-bg: rgb(255, 255, 255);
+            --aa-select-option-bg: rgb(255, 255, 255);
+            --aa-select-option-selected-bg: rgb(254, 243, 199);
+            --aa-accent: rgb(217, 119, 6);
+        }
+
+        .dark .ai-assistant-page {
+            --aa-card-bg: rgba(255, 255, 255, .025);
+            --aa-panel-bg: rgba(15, 23, 42, .16);
+            --aa-table-head-bg: rgba(15, 23, 42, .78);
+            --aa-border: rgba(148, 163, 184, .14);
+            --aa-border-strong: rgba(148, 163, 184, .22);
+            --aa-text: rgb(226, 232, 240);
+            --aa-muted: rgb(148, 163, 184);
+            --aa-soft-muted: rgb(203, 213, 225);
+            --aa-action-bg: rgba(15, 23, 42, .28);
+            --aa-select-bg: rgb(15, 23, 42);
+            --aa-select-option-bg: rgb(15, 23, 42);
+            --aa-select-option-selected-bg: rgb(30, 41, 59);
+            --aa-accent: rgb(251, 191, 36);
+        }
+
+        .ai-assistant-card {
+            border-color: var(--aa-border-strong);
+            background: var(--aa-card-bg);
+        }
+
+        .ai-assistant-card-header,
+        .ai-assistant-row,
+        .ai-assistant-table td,
+        .ai-assistant-table-wrap,
+        .ai-assistant-table-tools,
+        .ai-assistant-pagination {
+            border-color: var(--aa-border);
+        }
+
+        .ai-assistant-title,
+        .ai-assistant-row-label,
+        .ai-assistant-row-count,
+        .ai-assistant-table td {
+            color: var(--aa-text);
+        }
+
+        .ai-assistant-muted,
+        .ai-assistant-metric-label,
+        .ai-assistant-row-hint,
+        .ai-assistant-per-page {
+            color: var(--aa-muted);
+        }
+
+        .ai-assistant-workstream,
+        .ai-assistant-sync-item {
+            border-color: var(--aa-border);
+            background: var(--aa-panel-bg);
+        }
+
+        .ai-assistant-list li {
+            color: var(--aa-soft-muted);
+        }
+
+        .ai-assistant-link,
+        .ai-assistant-badge {
+            color: var(--aa-accent);
+        }
+
+        .ai-assistant-table th {
+            background: var(--aa-table-head-bg);
+            color: var(--aa-muted);
+            border-color: var(--aa-border-strong);
+        }
+
+        .ai-assistant-action {
+            background: var(--aa-action-bg);
+            color: var(--aa-text);
+        }
+
+        .ai-assistant-action[data-tone="success"] {
+            background: rgba(34, 197, 94, .08);
+            color: rgb(22, 101, 52);
+        }
+
+        .dark .ai-assistant-action[data-tone="success"] {
+            color: rgb(134, 239, 172);
+        }
+
+        .ai-assistant-action[data-tone="danger"] {
+            background: rgba(248, 113, 113, .1);
+            color: rgb(153, 27, 27);
+        }
+
+        .dark .ai-assistant-action[data-tone="danger"] {
+            color: rgb(252, 165, 165);
+        }
+
+        .ai-assistant-select {
+            color-scheme: light;
+            background-color: var(--aa-select-bg);
+            color: var(--aa-text);
+        }
+
+        .dark .ai-assistant-select {
+            color-scheme: dark;
+        }
+
+        .ai-assistant-select option {
+            background-color: var(--aa-select-option-bg);
+            color: var(--aa-text);
+        }
+
+        .ai-assistant-select option:checked {
+            background-color: var(--aa-select-option-selected-bg);
+            color: var(--aa-accent);
+        }
+
         @media (max-width: 1100px) {
             .ai-assistant-grid,
             .ai-assistant-workstreams {
