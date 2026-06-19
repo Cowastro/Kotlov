@@ -90,15 +90,17 @@ class EnrichTeplodvorCommand extends Command
             ->where('slug', '!=', '');
 
         if ($this->option('brand')) {
-            $brandId = DB::table('brands')
-                ->where('name', 'like', '%' . $this->option('brand') . '%')
-                ->value('id');
+            // Exact match first, then prefix, then substring — avoids "TIS1" beating "TIS".
+            $brandId = DB::table('brands')->where('name', $this->option('brand'))->value('id')
+                ?? DB::table('brands')->where('name', 'like', $this->option('brand') . '%')->value('id')
+                ?? DB::table('brands')->where('name', 'like', '%' . $this->option('brand') . '%')->value('id');
             if (! $brandId) {
                 $this->error('Brand not found: ' . $this->option('brand'));
                 return self::FAILURE;
             }
+            $brandName = DB::table('brands')->where('id', $brandId)->value('name');
             $query->where('brand_id', $brandId);
-            $this->info('Brand filter: ' . $this->option('brand') . " (id={$brandId})");
+            $this->info("Brand filter: {$brandName} (id={$brandId})");
         }
 
         if ($this->option('product')) {
@@ -134,8 +136,16 @@ class EnrichTeplodvorCommand extends Command
             $url = $this->findMatch((string) $product->slug, $index, $minScore);
 
             if ($url === null) {
-                $this->line(sprintf('  [NO MATCH] %s', mb_substr($product->name, 0, 70)));
-                $this->stats['no_match']++;
+                if ($onlyAi && $this->apply) {
+                    // No teplodvor page — generate AI from existing DB specs (no HTTP fetch).
+                    $brandName = (string) ($brandNames[$product->brand_id] ?? '');
+                    $this->line(sprintf('  [AI/DB] %s', mb_substr($product->name, 0, 60)));
+                    $this->generateAiContent((int) $product->id, ['specs' => [], 'desc' => ''], $brandName, now());
+                    usleep($this->sleep * 1000);
+                } else {
+                    $this->line(sprintf('  [NO MATCH] %s', mb_substr($product->name, 0, 70)));
+                    $this->stats['no_match']++;
+                }
                 continue;
             }
 
