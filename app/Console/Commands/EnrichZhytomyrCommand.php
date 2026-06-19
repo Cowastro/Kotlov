@@ -43,6 +43,7 @@ class EnrichZhytomyrCommand extends Command
     private const SOURCES = [
         '/shop/kotly/gazovye/gazovye_atem/',
         '/shop/vodonagrevateli/gazovye kolonki/',
+        '/shop/konvektory/gazovye/',
     ];
 
     private bool  $apply;
@@ -315,6 +316,11 @@ class EnrichZhytomyrCommand extends Command
             return $m[1];
         }
 
+        // КНС-5 / КНС-8 (газовые конвекторы)
+        if (preg_match('/КНС-(\d+)/iu', $n, $m)) {
+            return 'КНС-' . $m[1];
+        }
+
         return null;
     }
 
@@ -325,6 +331,14 @@ class EnrichZhytomyrCommand extends Command
 
         // "Ж3-КС-Г-10СН" ↔ "Ж3-КС-Г-010СН" (zero-padding)
         if (preg_match('/^(Ж\d+-КС-Г[В]?-)(\d+)(СН)$/iu', $article, $m)) {
+            $padded   = $m[1] . str_pad($m[2], 3, '0', STR_PAD_LEFT) . $m[3];
+            $unpadded = $m[1] . ltrim($m[2], '0') . $m[3];
+            $variants[] = $padded;
+            $variants[] = $unpadded;
+        }
+
+        // "ТУРБО-КС-Г-010СН" ↔ "ТУРБО-КС-Г-10СН" (zero-padding)
+        if (preg_match('/^(ТУРБО-КС-Г[В]?-)(\d+)(СН)$/iu', $article, $m)) {
             $padded   = $m[1] . str_pad($m[2], 3, '0', STR_PAD_LEFT) . $m[3];
             $unpadded = $m[1] . ltrim($m[2], '0') . $m[3];
             $variants[] = $padded;
