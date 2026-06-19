@@ -659,6 +659,7 @@ class SyncGazKotelBelCommand extends Command
             ['key' => self::SYNC_KEY],
             ['name' => self::SUPPLIER_NAME, 'code' => self::SUPPLIER_CODE,
              'title' => 'ГазКотелБел: цены и наличие',
+             'command' => 'supplier:sync-gazkotelbel',
              'last_run_at' => $now, 'updated_at' => $now, 'created_at' => $now]
         );
         return (int) DB::table('supplier_syncs')->where('key', self::SYNC_KEY)->value('id');
