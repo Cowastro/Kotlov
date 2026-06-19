@@ -5,6 +5,7 @@ namespace App\Console\Commands;
 use App\Services\AiContentEnricher;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 /**
  * Universal teplodvor.by enrichment — photos + specs + AI for ANY product.
@@ -101,6 +102,13 @@ class EnrichTeplodvorCommand extends Command
             $brandName = DB::table('brands')->where('id', $brandId)->value('name');
             $query->where('brand_id', $brandId);
             $this->info("Brand filter: {$brandName} (id={$brandId})");
+            // Brand slug tokens are excluded from matching: we already filter by brand in the DB
+            // query, so brand tokens in our slug are redundant and inflate scores against any
+            // teplodvor URL that mentions the brand (e.g. "vezuvij" in a sauna ladle URL).
+            $brandSlugTokens = array_values(array_filter(
+                explode('-', strtolower(Str::slug((string) $brandName))),
+                fn ($t) => strlen($t) >= 2
+            ));
         }
 
         if ($this->option('product')) {
@@ -133,7 +141,7 @@ class EnrichTeplodvorCommand extends Command
             }
             $this->stats['scanned']++;
 
-            $url = $this->findMatch((string) $product->slug, $index, $minScore);
+            $url = $this->findMatch((string) $product->slug, $index, $minScore, $brandSlugTokens ?? []);
 
             if ($url === null) {
                 if ($onlyAi && $this->apply) {
@@ -247,16 +255,18 @@ class EnrichTeplodvorCommand extends Command
         'chd', 'sk', 'tv', 'tz', 'sd', 'zg', 'nv', 'ds', 'dch',
     ];
 
-    private function findMatch(string $ourSlug, array $index, float $minScore): ?string
+    private function findMatch(string $ourSlug, array $index, float $minScore, array $brandTokens = []): ?string
     {
         // Tokenise: include single-digit numbers; drop single non-digit letters and stopwords.
-        // Then normalise known transliteration differences (eco→eko, etc.).
+        // Brand tokens are also excluded: the DB query already filters by brand, so brand
+        // tokens are redundant and inflate scores against any teplodvor URL mentioning the brand.
         $ourTokens = array_values(array_map(
             fn ($t) => self::SLUG_NORM[$t] ?? $t,
             array_filter(
                 explode('-', strtolower($ourSlug)),
                 fn ($t) => (strlen($t) >= 2 || ctype_digit($t))
                     && ! in_array($t, self::SLUG_STOPWORDS, true)
+                    && ! in_array($t, $brandTokens, true)
             )
         ));
 
