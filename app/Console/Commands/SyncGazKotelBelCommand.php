@@ -651,24 +651,17 @@ class SyncGazKotelBelCommand extends Command
 
     private function ensureSync(): int
     {
-        $existing = DB::table('supplier_syncs')
-            ->where('supplier_id', $this->supplierId)
-            ->where('code', self::SYNC_KEY)
-            ->first();
-        if ($existing) {
-            return (int) $existing->id;
+        if (! \Illuminate\Support\Facades\Schema::hasTable('supplier_syncs')) {
+            return 0;
         }
-
         $now = now();
-        return (int) DB::table('supplier_syncs')->insertGetId([
-            'supplier_id' => $this->supplierId,
-            'code'        => self::SYNC_KEY,
-            'label'       => self::SUPPLIER_NAME . ' price list',
-            'source_url'  => self::DEFAULT_SHEET_URL,
-            'last_status' => 'pending',
-            'created_at'  => $now,
-            'updated_at'  => $now,
-        ]);
+        DB::table('supplier_syncs')->updateOrInsert(
+            ['key' => self::SYNC_KEY],
+            ['name' => self::SUPPLIER_NAME, 'code' => self::SUPPLIER_CODE,
+             'title' => 'ГазКотелБел: цены и наличие',
+             'last_run_at' => $now, 'updated_at' => $now, 'created_at' => $now]
+        );
+        return (int) DB::table('supplier_syncs')->where('key', self::SYNC_KEY)->value('id');
     }
 
     private function ensureBrand(string $name): int
