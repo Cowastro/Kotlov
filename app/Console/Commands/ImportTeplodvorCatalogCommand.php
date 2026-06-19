@@ -30,7 +30,8 @@ class ImportTeplodvorCatalogCommand extends Command
         {--limit-new=       : Max new products to create}
         {--skip-archive     : Do not archive unmatched existing products}
         {--skip-new         : Do not create new products}
-        {--min-score=0.70   : Minimum match score to consider existing product matched}';
+        {--min-score=0.70   : Minimum match score to consider existing product matched}
+        {--fix-empty        : Re-scrape specs/images for brand products that are missing them}';
 
     protected $description = 'Archive obsolete products and import new catalog from teplodvor.by for a brand';
 
@@ -78,6 +79,7 @@ class ImportTeplodvorCatalogCommand extends Command
         $limitNew   = $this->option('limit-new') ? (int) $this->option('limit-new') : PHP_INT_MAX;
         $skipArchive = (bool)  $this->option('skip-archive');
         $skipNew    = (bool)   $this->option('skip-new');
+        $fixEmpty   = (bool)   $this->option('fix-empty');
 
         if (! $brandName) {
             $this->error('--brand is required');
@@ -96,6 +98,11 @@ class ImportTeplodvorCatalogCommand extends Command
 
         $slugFilter = strtolower((string) ($this->option('slug-filter') ?: Str::slug($brand->name)));
         $this->info("Brand: {$brand->name} (id={$brand->id}), teplodvor slug filter: \"{$slugFilter}\"");
+
+        if ($fixEmpty) {
+            return $this->runFixEmpty($brand, $slugFilter, $apply, $withAi, $sleep);
+        }
+
         $this->line($apply ? '<fg=red;options=bold>APPLY MODE</>' : '<fg=yellow>DRY-RUN MODE</>');
 
         // ── Load index ────────────────────────────────────────────────────────────
@@ -295,6 +302,112 @@ class ImportTeplodvorCatalogCommand extends Command
             $this->info("Created: {$created} new products");
         }
 
+        return self::SUCCESS;
+    }
+
+    // ── Fix-empty mode ────────────────────────────────────────────────────────────
+
+    private function runFixEmpty(object $brand, string $slugFilter, bool $apply, bool $withAi, int $sleep): int
+    {
+        $this->line($apply ? '<fg=red;options=bold>APPLY MODE — fix empty specs/images</>' : '<fg=yellow>DRY-RUN MODE</>');
+
+        $indexPath = storage_path(self::INDEX_FILE);
+        if (! file_exists($indexPath)) {
+            $this->error('Index not found. Run supplier:enrich-teplodvor --build-index');
+            return self::FAILURE;
+        }
+        $fullIndex = json_decode((string) file_get_contents($indexPath), true) ?? [];
+
+        // All teplodvor URLs for this brand (product pages only)
+        $brandUrls = array_filter($fullIndex, function ($url, $slug) use ($slugFilter) {
+            if (! str_contains($slug, $slugFilter)) return false;
+            $path = parse_url($url, PHP_URL_PATH) ?? '';
+            $segs = array_values(array_filter(explode('/', trim($path, '/'))));
+            return count($segs) === 4 && $segs[0] === 'shop' && count(explode('-', $segs[3])) >= 5;
+        }, ARRAY_FILTER_USE_BOTH);
+
+        // DB products missing specs or images
+        $dbProducts = DB::table('products')
+            ->where('brand_id', $brand->id)
+            ->where('is_archived', false)
+            ->where(function ($q) {
+                $q->whereNull('specs')->orWhere('specs', '')->orWhere('specs', '[]')
+                  ->orWhereNull('images')->orWhere('images', '')->orWhere('images', '[]');
+            })
+            ->get(['id', 'name', 'slug', 'specs', 'images', 'short_description', 'content'])
+            ->keyBy('slug');
+
+        $this->info(sprintf('%d teplodvor URLs, %d products missing specs/images', count($brandUrls), count($dbProducts)));
+
+        $ai = $withAi ? new \App\Services\AiContentEnricher() : null;
+        $fixed   = 0;
+        $seen    = [];  // avoid processing same product twice
+
+        foreach ($brandUrls as $tSlug => $url) {
+            // Find our product whose slug starts with or equals the teplodvor slug
+            $matched = null;
+            foreach ($dbProducts as $ourSlug => $product) {
+                // Our slug is teplodvor slug OR teplodvor slug + "-{id}" suffix
+                if ($ourSlug === $tSlug || str_starts_with($ourSlug, $tSlug)) {
+                    $matched = $product;
+                    break;
+                }
+            }
+
+            if (! $matched) continue;
+            if (isset($seen[$matched->id])) continue;
+            $seen[$matched->id] = true;
+
+            $hasSpecs  = ! empty($matched->specs) && $matched->specs !== '[]';
+            $hasImages = ! empty($matched->images) && $matched->images !== '[]';
+            if ($hasSpecs && $hasImages) continue;
+
+            $fixed++;
+            $this->line(sprintf('  [id=%d] %s', $matched->id, mb_substr($matched->name, 0, 60)));
+            $this->line(sprintf('    → %s', $url));
+
+            if (! $apply) continue;
+
+            $card = $this->scrapePage($url);
+            if (! $card || (empty($card['specs']) && empty($card['images']))) {
+                $this->line('    <fg=yellow>SKIP</> — nothing scraped');
+                usleep($sleep * 1000);
+                continue;
+            }
+
+            $update = ['updated_at' => now()];
+
+            if (! $hasSpecs && ! empty($card['specs'])) {
+                $update['specs'] = json_encode($card['specs'], JSON_UNESCAPED_UNICODE);
+                $this->line(sprintf('    specs: %d rows', count($card['specs'])));
+            }
+            if (! $hasImages && ! empty($card['images'])) {
+                $this->downloadImage($matched->id, $card['images'][0]);
+                $this->line('    image: downloaded');
+            }
+
+            // AI content if missing
+            if ($withAi && $ai && $ai->isAvailable()
+                && (empty($matched->short_description) || empty($matched->content))
+                && ! empty($card['specs'])
+            ) {
+                $seo = $ai->generateSeo($matched->name, $brand->name, $card['category_hint'] ?? '', $card['specs']);
+                if ($seo) {
+                    if (empty($matched->short_description)) $update['short_description'] = $seo['short'] ?? null;
+                    if (empty($matched->content))           $update['content'] = $seo['content'] ?? null;
+                    $this->line('    ai: generated');
+                }
+            }
+
+            if (count($update) > 1) {
+                DB::table('products')->where('id', $matched->id)->update($update);
+            }
+
+            $fixed++;
+            usleep($sleep * 1000);
+        }
+
+        $this->info($apply ? "Fixed: {$fixed}" : "Would fix: {$fixed} (re-run with --apply)");
         return self::SUCCESS;
     }
 

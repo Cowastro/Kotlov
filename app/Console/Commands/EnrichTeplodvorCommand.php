@@ -260,9 +260,6 @@ class EnrichTeplodvorCommand extends Command
 
     private function findMatch(string $ourSlug, array $index, float $minScore, array $brandTokens = []): ?string
     {
-        // Tokenise: include single-digit numbers; drop single non-digit letters and stopwords.
-        // Brand tokens are also excluded: the DB query already filters by brand, so brand
-        // tokens are redundant and inflate scores against any teplodvor URL mentioning the brand.
         $ourTokens = array_values(array_map(
             fn ($t) => self::SLUG_NORM[$t] ?? $t,
             array_filter(
@@ -270,6 +267,8 @@ class EnrichTeplodvorCommand extends Command
                 fn ($t) => (strlen($t) >= 2 || ctype_digit($t))
                     && ! in_array($t, self::SLUG_STOPWORDS, true)
                     && ! array_filter($brandTokens, fn ($bt) => levenshtein($t, $bt) <= 1)
+                    // Skip article-number tokens (e.g. "khg714101410") — never appear in teplodvor slugs
+                    && ! (strlen($t) >= 8 && preg_match('/[a-z]/', $t) && preg_match('/\d/', $t))
             )
         ));
 
@@ -277,9 +276,11 @@ class EnrichTeplodvorCommand extends Command
             return null;
         }
 
-        // Weighted scoring: token weight = character length.
-        // Long tokens (model codes, brand names) matter more than short ones.
-        $totalWeight = (int) array_sum(array_map('strlen', $ourTokens));
+        $requiredNumerics = array_values(array_filter($ourTokens, 'ctype_digit'));
+        $totalWeight      = (int) array_sum(array_map('strlen', $ourTokens));
+        // Numeric concat fallback: "60"+"100" → "60100" (pipe diameter notation on teplodvor)
+        $numConcat = count($requiredNumerics) >= 2 ? implode('', $requiredNumerics) : null;
+
         if ($totalWeight === 0) {
             return null;
         }
@@ -287,21 +288,23 @@ class EnrichTeplodvorCommand extends Command
         $bestUrl   = null;
         $bestScore = 0.0;
 
-        // ALL numeric tokens must match exactly (including single digits like "6", "9").
-        // Prevents "sputnik-6" from matching "sputnik-15" (same model family, different power).
-        $requiredNumerics = array_filter($ourTokens, fn ($t) => ctype_digit($t));
-
         foreach ($index as $tSlug => $url) {
-            $tTokens = explode('-', $tSlug);
+            $normTSlug = str_replace(array_keys(self::SLUG_NORM), array_values(self::SLUG_NORM), $tSlug);
 
-            // Hard pre-filter: every multi-digit number must be an exact segment.
-            // Prevents "ups-25-70" from matching "ups-25-55" because both share brand+25.
+            // Hard pre-filter: every required numeric must appear as a whole-word segment,
+            // OR all numerics together must appear concatenated (e.g. 60100 for 60/100 pipe).
+            $numericConcatUsed = false;
             $numericOk = true;
             foreach ($requiredNumerics as $num) {
-                if (! in_array($num, $tTokens, true)) {
-                    $numericOk = false;
-                    break;
+                if (preg_match('/(?:^|-)' . preg_quote($num, '/') . '(?:-|$)/', $normTSlug)) {
+                    continue;
                 }
+                if ($numConcat !== null && preg_match('/(?:^|-)' . preg_quote($numConcat, '/') . '(?:-|$)/', $normTSlug)) {
+                    $numericConcatUsed = true;
+                    continue;
+                }
+                $numericOk = false;
+                break;
             }
             if (! $numericOk) {
                 continue;
@@ -309,15 +312,13 @@ class EnrichTeplodvorCommand extends Command
 
             $matchedWeight = 0;
             foreach ($ourTokens as $token) {
-                // Numeric tokens: exact boundary match — "35" must not match inside "6035".
-                // Alpha tokens: substring match handles transliteration variants ("012sn" ⊇ "012").
-                $hit = ctype_digit($token)
-                    ? in_array($token, $tTokens, true)
-                    : str_contains($tSlug, $token);
+                $hit = (ctype_digit($token) && $numericConcatUsed)
+                    || (bool) preg_match('/(?:^|-)' . preg_quote($token, '/') . '(?:-|$)/', $normTSlug);
                 if ($hit) {
                     $matchedWeight += strlen($token);
                 }
             }
+
             $score = $matchedWeight / $totalWeight;
             if ($score > $bestScore) {
                 $bestScore = $score;
