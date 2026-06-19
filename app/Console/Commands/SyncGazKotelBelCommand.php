@@ -487,12 +487,15 @@ class SyncGazKotelBelCommand extends Command
         }
         // Normalise letters AFTER word removal so й→и doesn't break matches above
         $name = str_replace(['ё', 'й', '(в)'], ['е', 'и', ''], $name);
+        // Strip brand prefix — both Cyrillic "атем" and Latin "atem" (same manufacturer)
+        $name = preg_replace('/^атем\s+/iu', '', $name) ?? $name;
+        $name = preg_replace('/^atem\s+/iu', '', $name) ?? $name;
         // Strip series prefix "ж-3 ", "ж-10 "
         $name = preg_replace('/ж-\d+\s+/u', '', $name) ?? $name;
         // Strip brand
         $name = preg_replace('/житомир[-–\s]?\S*\s*/iu', '', $name) ?? $name;
-        // Strip trailing descriptors
-        $name = preg_replace('/\s+(одноконтурный|двухконтурный|три двери|две двери|дымоходная|без батареек|турбированная|закрытая камера|в комплекте).*$/iu', '', $name) ?? $name;
+        // Strip trailing descriptors (including parenthesised variants like "(с дымоходом)")
+        $name = preg_replace('/\s+[\(]?(одноконтурный|двухконтурный|три двери|две двери|дымоходная|без батареек|турбированная|закрытая камера|в комплекте|с дымоходом).*$/iu', '', $name) ?? $name;
         // Normalize separators
         $name = preg_replace('/[\s\/]+/u', ' ', $name);
         return trim($name);
