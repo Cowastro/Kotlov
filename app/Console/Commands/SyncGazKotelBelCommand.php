@@ -469,7 +469,23 @@ class SyncGazKotelBelCommand extends Command
             }
         }
 
-        return $bestScore >= 85 ? $best : null;
+        if ($bestScore < 85 || $best === null) {
+            return null;
+        }
+
+        // Don't steal a product already linked to a different article from this supplier.
+        // This prevents fuzzy matches from overwriting manually-set or strategy-1 articles.
+        if ($this->supplierId > 0) {
+            $existingArticle = DB::table('supplier_products')
+                ->where('supplier_id', $this->supplierId)
+                ->where('product_id', $best->id)
+                ->value('supplier_article');
+            if ($existingArticle !== null && $existingArticle !== $article) {
+                return null;
+            }
+        }
+
+        return $best;
     }
 
     private function normalizeModel(string $name): string
