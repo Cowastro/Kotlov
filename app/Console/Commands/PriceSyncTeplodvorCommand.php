@@ -299,6 +299,10 @@ class PriceSyncTeplodvorCommand extends Command
                 fn ($t) => (strlen($t) >= 2 || ctype_digit($t))
                     && ! in_array($t, self::SLUG_STOPWORDS, true)
                     && ! array_filter($brandTokens, fn ($bt) => levenshtein($t, $bt) <= 1)
+                    // Skip article-number tokens (e.g. "khg714101410"): long mixed alphanumeric
+                    // from parenthesised part codes never appear in teplodvor URLs and inflate
+                    // total weight, causing accessories to score below the threshold.
+                    && ! (strlen($t) >= 8 && preg_match('/[a-z]/', $t) && preg_match('/\d/', $t))
             )
         ));
 
@@ -308,56 +312,85 @@ class PriceSyncTeplodvorCommand extends Command
 
         $requiredNumerics = array_values(array_filter($ourTokens, 'ctype_digit'));
         $totalWeight      = array_sum(array_map('strlen', $ourTokens));
+        // Concat of all numeric tokens: handles slash-notation like 60/100 → "60100" on teplodvor
+        $numConcat = count($requiredNumerics) >= 2 ? implode('', $requiredNumerics) : null;
 
         if ($totalWeight === 0) {
             return null;
         }
 
-        $bestScore = 0.0;
-        $bestUrl   = null;
+        // Two buckets: teplodvor URLs that contain the brand vs those that don't.
+        // Pass 1 (brand match) wins at normal minScore.
+        // Pass 2 (cross-brand fallback) requires minScore+0.10 — handles accessories that
+        // teplodvor lists only under a sister brand (e.g. coaxial elbow 60/100 under Ariston).
+        $bestWithBrand = ['score' => 0.0, 'url' => null];
+        $bestNoBrand   = ['score' => 0.0, 'url' => null];
 
         foreach ($index as $tepSlug => $url) {
-            // Brand must appear in the teplodvor slug — prevents cross-brand false matches
-            // (e.g. BAXI ECO Compact → Royal Thermo radiator, BAXI Slim → Rexant cable)
-            if (! empty($brandTokens)) {
-                $hasBrand = false;
+            // Determine whether the brand token appears in this teplodvor URL
+            $hasBrand = empty($brandTokens);
+            if (! $hasBrand) {
                 foreach ($brandTokens as $bt) {
                     if (strlen($bt) >= 3 && str_contains($tepSlug, $bt)) {
                         $hasBrand = true;
                         break;
                     }
                 }
-                if (! $hasBrand) {
-                    continue;
-                }
             }
 
-            // Normalize teplodvor slug the same way as our tokens (eco→eko etc.)
+            // Normalize teplodvor slug (eco→eko etc.)
             $normTepSlug = str_replace(array_keys(self::SLUG_NORM), array_values(self::SLUG_NORM), $tepSlug);
 
-            // Required numerics must appear as whole hyphen-delimited words
-            // Prevents "300" matching inside "2300", "24" inside "240" etc.
+            // Required numerics: whole-word first; concat fallback for pipe-size notation
+            // (e.g. "60"+"100" → "60100"). Prevents "300" matching inside "2300".
+            $numericConcatUsed = false;
             foreach ($requiredNumerics as $num) {
-                if (! preg_match('/(?:^|-)' . preg_quote($num, '/') . '(?:-|$)/', $normTepSlug)) {
-                    continue 2;
+                if (preg_match('/(?:^|-)' . preg_quote($num, '/') . '(?:-|$)/', $normTepSlug)) {
+                    continue;
                 }
+                if ($numConcat !== null
+                    && preg_match('/(?:^|-)' . preg_quote($numConcat, '/') . '(?:-|$)/', $normTepSlug)
+                ) {
+                    $numericConcatUsed = true;
+                    continue;
+                }
+                continue 2; // numeric not satisfied — skip candidate
             }
 
-            // Score by whole-word token matches only (prevents "rs" matching in "rsd")
+            // Score by whole-word token matches (credit numeric tokens when concat was used)
             $matchedWeight = 0;
             foreach ($ourTokens as $t) {
-                if (preg_match('/(?:^|-)' . preg_quote($t, '/') . '(?:-|$)/', $normTepSlug)) {
+                $matched = (ctype_digit($t) && $numericConcatUsed)
+                    || (bool) preg_match('/(?:^|-)' . preg_quote($t, '/') . '(?:-|$)/', $normTepSlug);
+                if ($matched) {
                     $matchedWeight += strlen($t);
                 }
             }
 
             $score = $matchedWeight / $totalWeight;
-            if ($score > $bestScore) {
-                $bestScore = $score;
-                $bestUrl   = $url;
+
+            if ($hasBrand) {
+                if ($score > $bestWithBrand['score']) {
+                    $bestWithBrand = ['score' => $score, 'url' => $url];
+                }
+            } else {
+                if ($score > $bestNoBrand['score']) {
+                    $bestNoBrand = ['score' => $score, 'url' => $url];
+                }
             }
         }
 
-        return ($bestScore >= $minScore) ? $bestUrl : null;
+        // Pass 1: brand-required candidate at normal threshold
+        if ($bestWithBrand['score'] >= $minScore) {
+            return $bestWithBrand['url'];
+        }
+
+        // Pass 2: cross-brand fallback with +0.10 stricter threshold
+        $crossBrandThreshold = min(0.95, $minScore + 0.10);
+        if ($bestNoBrand['score'] >= $crossBrandThreshold) {
+            return $bestNoBrand['url'];
+        }
+
+        return null;
     }
 }
