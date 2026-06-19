@@ -79,7 +79,7 @@ class PriceSyncTeplodvorCommand extends Command
             ->where('is_archived', false)
             ->whereNotNull('slug')->where('slug', '!=', '')
             ->whereNotIn('id', function ($sub) {
-                $sub->select('product_id')->from('supplier_products');
+                $sub->select('product_id')->from('supplier_products')->whereNotNull('product_id');
             });
 
         if ($this->option('with-specs')) {
