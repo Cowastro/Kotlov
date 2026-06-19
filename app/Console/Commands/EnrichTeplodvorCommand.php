@@ -7,438 +7,334 @@ use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 
 /**
- * Enrich Лигмет brand products with photos, specs and AI content
- * scraped from teplodvor.by (covers Kratki, Ермак, Nordflam, Invicta, etc.)
+ * Universal teplodvor.by enrichment — photos + specs + AI for ANY product.
  *
- *   php artisan supplier:enrich-teplodvor --dry-run
- *   php artisan supplier:enrich-teplodvor --brand=Kratki --apply
- *   php artisan supplier:enrich-teplodvor --brand=Ермак --apply --overwrite-images
- *   php artisan supplier:enrich-teplodvor --source-url=/shop/pechi-kaminy/invicta/ --apply
+ * Step 1 (once):  build slug index from teplodvor.by sitemaps:
+ *   php artisan supplier:enrich-teplodvor --build-index
+ *
+ * Step 2 (regularly):  enrich products that are missing photos or specs:
+ *   php artisan supplier:enrich-teplodvor --apply
+ *   php artisan supplier:enrich-teplodvor --apply --only-ai
+ *   php artisan supplier:enrich-teplodvor --apply --product=1234
  */
 class EnrichTeplodvorCommand extends Command
 {
     protected $signature = 'supplier:enrich-teplodvor
-        {--brand=      : Limit to one brand (e.g. Kratki)}
-        {--source-url= : Category URL(s) comma-separated; overrides per-brand defaults}
-        {--pages=10    : Max pages to crawl per URL}
-        {--limit=      : Max products to process}
-        {--sleep=700   : Delay between HTTP requests, ms}
-        {--overwrite-images : Replace existing images}
-        {--skip-ai     : Skip AI description/SEO generation}
-        {--only-ai     : Only regenerate AI texts, skip images and specs}
-        {--only-missing : Restrict catalog index to products without images}
-        {--apply       : Write to DB (default: dry-run)}
-        {--dry-run     : Preview only (default)}';
+        {--build-index     : Re-crawl sitemaps and rebuild slug index}
+        {--apply           : Write changes to DB (default: dry-run)}
+        {--skip-ai         : Skip AI description generation}
+        {--only-ai         : Only (re)generate AI texts, skip photos and specs}
+        {--overwrite       : Replace images even if product already has photos}
+        {--product=        : Process single product by ID}
+        {--limit=          : Max products to enrich in this run}
+        {--min-score=0.85  : Minimum token match score (0–1)}
+        {--sleep=800       : Delay between HTTP requests (ms)}';
 
-    protected $description = 'Enrich Лигмет brand products with photos/specs/AI from teplodvor.by';
+    protected $description = 'Enrich any product with photos, specs and AI from teplodvor.by';
 
-    private const BASE = 'https://www.teplodvor.by';
-    private const IMAGE_DIR = 'img/products/ligmet';
-    private const SUPPLIER_CODE = 'ligmet';
-
-    /**
-     * Known brand listing pages on teplodvor.by.
-     * Value = array of paths; all are crawled when --brand= targets this brand.
-     */
-    private const BRAND_SOURCES = [
-        'Kratki'   => ['/shop/pechi-kaminy/kratki/'],
-        'Ермак'    => [
-            '/shop/pech-dlya-bani/ermak/',   // банные КЛАССИКА/СТАНДАРТ/ПРЕМИУМ
-            '/shop/pechi-kaminy/ermak/',      // каминные STOKER
-        ],
-        'Nordflam' => ['/shop/pechi-kaminy/nordflam/'],
-        'Invicta'  => ['/shop/pechi-kaminy/invicta/'],
-        'FireWay'  => ['/shop/pechi-kaminy/fireway/'],
-        'Ferguss'  => ['/shop/pechi-kaminy/ferguss/'],
-        // Add more as discovered: Blist, MBS, Panadero
-    ];
-
-    /** Catalog brand names (used for brand detection in product titles). */
-    private const BRAND_SLUGS = [
-        'kratki'   => 'Kratki',
-        'invicta'  => 'Invicta',
-        'blist'    => 'Blist',
-        'fireway'  => 'FireWay',
-        'ferguss'  => 'Ferguss',
-        'mbs'      => 'MBS',
-        'nordflam' => 'Nordflam',
-        'panadero' => 'Panadero',
-        'ermak'    => 'Ермак',
-        'кпд'      => 'КПД',
-    ];
-
-    /** Same stopwords as enrich-100kaminov for consistent model() normalisation. */
-    private const STOPWORDS = [
-        'ПЕЧЬ','ПЕЧЬ-КАМИН','ПЕЧЬ-КАМИНЫ','КАМИН','КАМИННАЯ','КАМИННЫЙ','ТОПКА',
-        'ПЕЧНОЙ','ДРОВЯНАЯ','ДРОВЯНОЙ','БАННАЯ','ОТОПИТЕЛЬНАЯ','ВАРОЧНАЯ',
-        'СТАЛЬНАЯ','СТАЛЬНОЙ','ЧУГУННАЯ','ЧУГУННЫЙ',
-        'СЕРАЯ','СЕРЫЙ','СЕРОЕ','СЕРЫЕ','ЧЁРНАЯ','ЧЁРНЫЙ','ЧЁРНОЕ','ЧЕРНАЯ','ЧЕРНЫЙ','ЧЕРНОЕ',
-        'БЕЛАЯ','БЕЛЫЙ','БЕЛОЕ','БЕЖЕВАЯ','БЕЖЕВЫЙ','КРАСНАЯ','КРАСНЫЙ',
-        'КОРИЧНЕВАЯ','КОРИЧНЕВЫЙ','ПАТИНА','АНТРАЦИТ','ГРАФИТ','КРЕМОВАЯ','КРЕМОВЫЙ',
-        'GREY','GRAY','BLACK','WHITE','SATIN','CERAMIC','ECODESIGN',
-        'STOVE','FIREPLACE',
-        'EKO','PATINE',
-        'С','ДУХОВКОЙ','КАМНЕМ','КРЫШКОЙ','ВОДЯНЫМ','ВЕНТИЛЯТОРОМ',
-        'КУПИТЬ','МИНСКЕ','ДОСТАВКОЙ','ЦЕНА','ОПИСАНИЕ','ХАРАКТЕРИСТИКИ',
-        // teplodvor.by spec suffixes in product names
-        'КВТ','ОБШИВКА','THERMOTEC','КОНТУРОМ','KAFEL','КАФЕЛЬНАЯ','САДОВЫЙ','САДОВАЯ',
-        'ЧУГУН','ЧУГУННОЙ','PREMIUM','AQUA','АКВА','STOKER',
-        // Brand names as safety-net stopwords (handles Cyrillic/Latin mismatch like ERMAK≠ЕРМАК)
-        'KRATKI','INVICTA','BLIST','FIREWAY','NORDFLAM','FERGUSS','MBS','PANADERO',
-        'ERMAK','ЕРМАК',
-        // Mojibake variants of "Ермак" from Лигмет price (mixed Cyrillic+Latin encoding)
-        'ЕRMAK','ЕRМАК','ERМАК','ЕRМАК',
-        // Russian "для бани" / "банно-отопительная" prefixes in product names
-        'ДЛЯ','БАНИ','БАННО',
-    ];
+    private const BASE       = 'https://www.teplodvor.by';
+    private const INDEX_FILE = 'teplodvor_index.json';
+    private const IMAGE_DIR  = 'img/products/teplodvor';
 
     private bool $apply;
     private int  $sleep;
-    private array $catalogIndex = [];
     private array $stats = [
-        'crawled' => 0, 'matched' => 0, 'enriched' => 0,
-        'images'  => 0, 'specs'   => 0, 'ai_done'  => 0,
-        'skipped' => 0, 'errors'  => 0,
+        'scanned'  => 0,
+        'matched'  => 0,
+        'enriched' => 0,
+        'images'   => 0,
+        'specs'    => 0,
+        'ai_done'  => 0,
+        'no_match' => 0,
+        'errors'   => 0,
     ];
+
+    // ── Entry point ───────────────────────────────────────────────────────────────
 
     public function handle(): int
     {
-        $this->apply = (bool) $this->option('apply') && ! $this->option('dry-run');
-        $this->sleep = max(200, (int) $this->option('sleep'));
+        $this->apply = (bool) $this->option('apply');
+        $this->sleep = max(300, (int) $this->option('sleep'));
 
         $this->line($this->apply
-            ? '<fg=red;options=bold>APPLY</>'
-            : '<fg=yellow;options=bold>DRY RUN</>');
+            ? '<fg=red;options=bold>APPLY — database will be updated.</>'
+            : '<fg=yellow;options=bold>DRY RUN — no changes will be written.</>');
 
-        $this->buildCatalogIndex();
-        $this->info(sprintf('Catalog index: %d brands, %d products total',
-            count($this->catalogIndex),
-            array_sum(array_map('count', $this->catalogIndex))));
+        // ── Phase 1: index ──────────────────────────────────────────────────────
+        $indexPath = storage_path(self::INDEX_FILE);
 
-        if (! $this->apply) {
-            $brandFilter = $this->option('brand') ? mb_strtolower((string) $this->option('brand')) : null;
-            foreach ($this->catalogIndex as $bKey => $entries) {
-                if ($brandFilter && $bKey !== $brandFilter) {
-                    continue;
-                }
-                $keys = array_slice(array_keys($entries), 0, 30);
-                $this->line(sprintf('  [%s] model keys: %s%s',
-                    $bKey, implode(', ', $keys), count($entries) > 30 ? ' …' : ''));
-            }
+        if ($this->option('build-index') || ! file_exists($indexPath)) {
+            $this->buildIndex($indexPath);
         }
 
-        $brandFilter = $this->option('brand') ? mb_strtolower((string) $this->option('brand')) : null;
-        $limit       = $this->option('limit') ? (int) $this->option('limit') : PHP_INT_MAX;
-        $maxPages    = (int) $this->option('pages');
-        $enriched    = 0;
+        $index = json_decode((string) file_get_contents($indexPath), true) ?? [];
+        $this->info(sprintf('Slug index: %d teplodvor.by product URLs', count($index)));
 
-        // Determine which URLs to crawl.
-        if ($this->option('source-url')) {
-            $paths = array_map('trim', explode(',', (string) $this->option('source-url')));
-            $crawlPaths = [];
-            foreach ($paths as $p) {
-                $crawlPaths[] = str_starts_with($p, 'http') ? (parse_url($p, PHP_URL_PATH) ?? $p) : $p;
-            }
-        } elseif ($brandFilter) {
-            $canonBrand = null;
-            foreach (self::BRAND_SLUGS as $slug => $name) {
-                if (mb_strtolower($name) === $brandFilter || $slug === $brandFilter) {
-                    $canonBrand = $name;
-                    break;
-                }
-            }
-            if ($canonBrand && isset(self::BRAND_SOURCES[$canonBrand])) {
-                $crawlPaths = self::BRAND_SOURCES[$canonBrand]; // already an array
-            } else {
-                $this->error("No default teplodvor.by URL for brand '{$brandFilter}'. Use --source-url=");
-                return self::FAILURE;
-            }
-        } else {
-            // Flatten: [brand => [path, ...], ...] → [path, ...]
-            $crawlPaths = array_merge(...array_values(self::BRAND_SOURCES));
+        if (empty($index)) {
+            $this->error('Index is empty. Run with --build-index first.');
+            return self::FAILURE;
         }
 
-        $seenUrls = [];
+        // ── Phase 2: products ───────────────────────────────────────────────────
+        $onlyAi   = (bool) $this->option('only-ai');
+        $overwrite = (bool) $this->option('overwrite');
+        $minScore  = (float) $this->option('min-score');
+        $limit     = $this->option('limit') ? (int) $this->option('limit') : PHP_INT_MAX;
 
-        foreach ($crawlPaths as $basePath) {
-            if ($enriched >= $limit) {
+        $query = DB::table('products')
+            ->where('is_archived', false)
+            ->whereNotNull('slug')
+            ->where('slug', '!=', '');
+
+        if ($this->option('product')) {
+            $query->where('id', (int) $this->option('product'));
+        } elseif ($onlyAi) {
+            $query->where(function ($q) {
+                $q->whereNull('content')->orWhere('content', '');
+            });
+        } elseif (! $overwrite) {
+            // Default: products missing photos OR specs
+            $query->where(function ($q) {
+                $q->whereNull('images')
+                    ->orWhere('images', '')
+                    ->orWhere('images', '[]')
+                    ->orWhere(function ($q2) {
+                        $q2->whereNull('specs')->orWhere('specs', '')->orWhere('specs', '{}');
+                    });
+            });
+        }
+
+        $products = $query->get(['id', 'name', 'slug', 'brand_id', 'images', 'specs', 'content']);
+        $this->info(sprintf('Products to process: %d', count($products)));
+
+        $brandNames = DB::table('brands')->pluck('name', 'id')->toArray();
+
+        $processed = 0;
+        foreach ($products as $product) {
+            if ($this->stats['scanned'] >= $limit) {
                 break;
             }
-            $this->newLine();
-            $this->info("Crawling: {$basePath}");
+            $this->stats['scanned']++;
 
-            for ($page = 1; $page <= $maxPages; $page++) {
-                $pageUrl = $this->pageUrl($basePath, $page);
-                $links   = $this->collectLinks($pageUrl);
+            $url = $this->findMatch((string) $product->slug, $index, $minScore);
 
-                if ($links === []) {
-                    $this->line("  page {$page}: no links, stopping.");
-                    break;
-                }
-
-                $newLinks = array_filter($links, fn ($l) => ! isset($seenUrls[$l]));
-                if (empty($newLinks)) {
-                    $this->line("  page {$page}: no new links, stopping.");
-                    break;
-                }
-                foreach ($newLinks as $l) {
-                    $seenUrls[$l] = true;
-                }
-
-                $this->line("  page {$page}: " . count($newLinks) . ' products');
-
-                foreach ($newLinks as $productUrl) {
-                    if ($enriched >= $limit) {
-                        break 2;
-                    }
-                    try {
-                        if ($this->processProduct($productUrl)) {
-                            $enriched++;
-                        }
-                    } catch (\Throwable $e) {
-                        $this->stats['errors']++;
-                        $this->warn("  error [{$productUrl}]: " . $e->getMessage());
-                    }
-                    usleep($this->sleep * 1000);
-                }
-                usleep($this->sleep * 1000);
+            if ($url === null) {
+                $this->line(sprintf('  [NO MATCH] %s', mb_substr($product->name, 0, 70)));
+                $this->stats['no_match']++;
+                continue;
             }
+
+            $this->stats['matched']++;
+            $this->line(sprintf('  [MATCH] %s', mb_substr($product->name, 0, 60)));
+            $this->line('    → ' . $url);
+
+            try {
+                $brandName = (string) ($brandNames[$product->brand_id] ?? '');
+                $hasImages = ! empty(json_decode((string) ($product->images ?? '[]'), true));
+                $this->enrichProduct((int) $product->id, $url, $brandName, $hasImages, $onlyAi, $overwrite);
+            } catch (\Throwable $e) {
+                $this->stats['errors']++;
+                $this->warn('    ERROR: ' . $e->getMessage());
+            }
+
+            usleep($this->sleep * 1000);
         }
 
         $this->newLine();
-        $this->table(['metric', 'count'],
-            array_map(fn ($k, $v) => [$k, $v], array_keys($this->stats), array_values($this->stats)));
+        $this->table(
+            ['metric', 'count'],
+            array_map(fn ($k, $v) => [$k, $v], array_keys($this->stats), array_values($this->stats))
+        );
 
         return $this->stats['errors'] > 0 ? self::FAILURE : self::SUCCESS;
     }
 
-    // ── Catalog index ─────────────────────────────────────────────────────────────
+    // ── Index building ────────────────────────────────────────────────────────────
 
-    private function buildCatalogIndex(): void
+    private function buildIndex(string $path): void
     {
-        $brandFilter = $this->option('brand') ? mb_strtolower((string) $this->option('brand')) : null;
+        $this->info('Building teplodvor.by slug index from sitemaps…');
+        $index = [];
 
-        $sid = (int) (DB::table('suppliers')->where('code', self::SUPPLIER_CODE)->value('id') ?? 0);
-        if ($sid === 0) {
-            $this->warn('Supplier "ligmet" not found — indexing all products of these brands.');
-        }
+        for ($n = 1; $n <= 6; $n++) {
+            $sitemapUrl = self::BASE . "/map/sitemap/{$n}/";
+            $this->line("  sitemap {$n}: {$sitemapUrl}");
 
-        $brandsQ = DB::table('brands')->whereIn('name', array_values(self::BRAND_SLUGS));
-        if ($brandFilter) {
-            $brandsQ->whereRaw('LOWER(name) = ?', [$brandFilter]);
-        }
-        $brands = $brandsQ->pluck('id', 'name');
-
-        foreach ($brands as $brandName => $brandId) {
-            $key = mb_strtolower($brandName);
-            $this->catalogIndex[$key] = [];
-
-            $query = DB::table('products')
-                ->where('brand_id', $brandId)
-                ->where('is_archived', false);
-
-            if ($sid > 0) {
-                $pids = DB::table('supplier_products')
-                    ->where('supplier_id', $sid)
-                    ->whereNotNull('product_id')
-                    ->pluck('product_id');
-                $query->whereIn('id', $pids);
+            $xml = $this->fetch($sitemapUrl);
+            if ($xml === null) {
+                $this->warn("  sitemap {$n}: failed to fetch");
+                continue;
             }
 
-            if ($this->option('only-missing')) {
-                $query->where(function ($q) {
-                    $q->whereNull('images')->orWhere('images', '')->orWhere('images', '[]');
-                });
-            }
+            // 3+ nested path segments under /shop/ = product page (not a category)
+            preg_match_all(
+                '|<loc>(https://www\.teplodvor\.by(/shop/[^/]+/[^/]+/[^/]+/[^<]*/?))</loc>|',
+                $xml, $m, PREG_SET_ORDER
+            );
 
-            $query->get(['id', 'name', 'images'])->each(function ($p) use ($key, $brandName) {
-                $model = $this->model((string) $p->name, $brandName);
-                if ($model !== '') {
-                    $hasImages = ! empty(json_decode((string) ($p->images ?? '[]'), true));
-                    $this->catalogIndex[$key][$model] = [
-                        'id'         => (int) $p->id,
-                        'name'       => $p->name,
-                        'has_images' => $hasImages,
-                    ];
+            $added = 0;
+            foreach ($m as $row) {
+                $url  = rtrim($row[1], '/');
+                $slug = basename(rtrim($row[2], '/'));
+                if ($slug !== '' && ! isset($index[$slug])) {
+                    $index[$slug] = $url;
+                    $added++;
                 }
-            });
+            }
+            $this->line("  sitemap {$n}: {$added} product URLs added");
+            usleep(600_000);
         }
+
+        file_put_contents($path, json_encode($index, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT));
+        $this->info(sprintf('Index saved: %d URLs → %s', count($index), $path));
     }
 
-    // ── Crawl ─────────────────────────────────────────────────────────────────────
+    // ── Matching ──────────────────────────────────────────────────────────────────
 
-    /** Build paginated URL using Bitrix SEF pattern: /path/page{n}/?query */
-    private function pageUrl(string $path, int $page): string
+    private function findMatch(string $ourSlug, array $index, float $minScore): ?string
     {
-        if ($page <= 1) {
-            return self::BASE . $path;
+        // Include single-digit numbers (e.g. "3" in "zhitomir-3") — critical for model disambiguation.
+        // Skip single non-digit letters ("g", "v", etc.) — too common and cause false positives.
+        $ourTokens = array_values(array_filter(
+            explode('-', strtolower($ourSlug)),
+            fn ($t) => strlen($t) >= 2 || ctype_digit($t)
+        ));
+
+        if (count($ourTokens) < 3) {
+            return null;
         }
-        $q     = parse_url($path, PHP_URL_QUERY);
-        $clean = rtrim(parse_url($path, PHP_URL_PATH) ?? $path, '/');
-        return self::BASE . $clean . '/page' . $page . '/' . ($q ? '?' . $q : '');
+
+        $bestUrl   = null;
+        $bestScore = 0.0;
+
+        foreach ($index as $tSlug => $url) {
+            // Single-digit numbers need boundary-safe match (so "3" ≠ "030").
+            // Multi-char tokens use str_contains (handles concatenation like "012sn").
+            $tTokens = explode('-', $tSlug);
+            $matched = 0;
+            foreach ($ourTokens as $token) {
+                $hit = (strlen($token) === 1 && ctype_digit($token))
+                    ? in_array($token, $tTokens, true)  // exact boundary
+                    : str_contains($tSlug, $token);     // substring ok
+                if ($hit) {
+                    $matched++;
+                }
+            }
+            $score = $matched / count($ourTokens);
+            if ($score > $bestScore) {
+                $bestScore = $score;
+                $bestUrl   = $url;
+            }
+        }
+
+        return $bestScore >= $minScore ? $bestUrl : null;
     }
 
-    /** Extract product page URLs from a teplodvor.by listing page. */
-    private function collectLinks(string $url): array
-    {
+    // ── Enrichment ────────────────────────────────────────────────────────────────
+
+    private function enrichProduct(
+        int $pid, string $url, string $brandName, bool $hasImages,
+        bool $onlyAi, bool $overwrite
+    ): void {
         $html = $this->fetch($url);
         if ($html === null) {
-            return [];
-        }
-
-        $links = [];
-
-        // Each product block contains a hidden good_id field (Bitrix product ID).
-        // The link to the product page uses class="shop-item-link".
-        preg_match_all('/name="good_id"\s+value="(\d+)"/', $html, $idMatches);
-        preg_match_all('/href="(https?:\/\/www\.teplodvor\.by\/[^"]+)"\s[^>]*class="shop-item-link"/', $html, $linkMatches);
-        // Also try reversed attribute order.
-        preg_match_all('/class="shop-item-link"\s[^>]*href="(https?:\/\/www\.teplodvor\.by\/[^"]+)"/', $html, $linkMatches2);
-
-        foreach (array_unique(array_merge($linkMatches[1] ?? [], $linkMatches2[1] ?? [])) as $href) {
-            $links[] = $href;
-        }
-
-        $unique = array_values(array_unique($links));
-        $this->stats['crawled'] += count($unique);
-        return $unique;
-    }
-
-    // ── Product processing ────────────────────────────────────────────────────────
-
-    private function processProduct(string $url): bool
-    {
-        $html = $this->fetch($url);
-        if ($html === null) {
+            $this->warn('    Failed to fetch page');
             $this->stats['errors']++;
-            return false;
+            return;
         }
 
         $card = $this->parsePage($html);
-        if ($card['name'] === '') {
-            return false;
-        }
-
-        $brandKey  = $this->detectBrand($card['name']);
-        if ($brandKey === null) {
-            return false;
-        }
-        $brandName = self::BRAND_SLUGS[$brandKey];
-        $modelKey  = $this->model($card['name'], $brandName);
-
-        $entry = $this->catalogIndex[mb_strtolower($brandName)][$modelKey] ?? null;
-
-        $this->line(sprintf('  [%s] %s → %s → %s',
-            $brandName,
-            mb_substr($card['name'], 0, 40),
-            $modelKey,
-            $entry ? "pid={$entry['id']}" : 'NO MATCH'));
-
-        if ($entry === null) {
-            $this->stats['skipped']++;
-            return false;
-        }
-
-        $this->stats['matched']++;
 
         if (! $this->apply) {
-            foreach (array_slice($card['specs'], 0, 4, true) as $k => $v) {
+            $this->line(sprintf('    name on page: %s', mb_substr($card['name'], 0, 60)));
+            $this->line(sprintf('    images: %d, specs: %d', count($card['images']), count($card['specs'])));
+            foreach (array_slice($card['specs'], 0, 5, true) as $k => $v) {
                 $this->line("    · {$k}: {$v}");
             }
-            $this->line('    · images: ' . count($card['images']));
-            return true;
+            return;
         }
 
-        $pid     = $entry['id'];
-        $now     = now();
-        $changed = false;
+        $now = now();
 
-        $onlyAi = (bool) $this->option('only-ai');
-
-        // Images.
         if (! $onlyAi) {
-            $written = $this->downloadImages($pid, $card['images'], $entry['has_images']);
-            if ($written > 0) {
-                $this->stats['images'] += $written;
-                $changed = true;
+            $written = $this->downloadImages($pid, $card['images'], $hasImages, $overwrite);
+            $this->stats['images'] += $written;
+
+            if (! empty($card['specs'])) {
+                $row      = DB::table('products')->where('id', $pid)->value('specs');
+                $existing = is_string($row) ? (json_decode($row, true) ?? []) : [];
+                $merged   = array_merge($card['specs'], $existing); // existing wins on conflict
+                DB::table('products')->where('id', $pid)->update([
+                    'specs' => json_encode($merged, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
+                ]);
+                $this->stats['specs']++;
+                $this->line('    specs saved: ' . count($merged));
             }
         }
 
-        // Specs — skip if product already has any values.
-        if (! $onlyAi && $card['specs'] !== []) {
-            $hasSpecs = DB::table('product_attribute_values')->where('product_id', $pid)->exists();
-            if (! $hasSpecs) {
-                $this->stats['specs'] += $this->writeSpecs($pid, $card['specs']);
+        if (! $this->option('skip-ai')) {
+            $existing = (string) DB::table('products')->where('id', $pid)->value('content');
+            if ($onlyAi || trim($existing) === '') {
+                $this->generateAiContent($pid, $card, $brandName, $now);
             }
         }
 
-        // AI enrichment: only when content is empty (or --only-ai forces regeneration).
-        $existingContent = (string) DB::table('products')->where('id', $pid)->value('content');
-        if (! $this->option('skip-ai') && ($onlyAi || trim($existingContent) === '')) {
-            $this->generateAiContent($pid, $card, $brandName, $now);
-        }
-
-        if ($changed) {
-            DB::table('products')->where('id', $pid)->update(['updated_at' => $now]);
-        }
-
-        // Record source URL.
-        $sid = (int) (DB::table('suppliers')->where('code', self::SUPPLIER_CODE)->value('id') ?? 0);
-        if ($sid > 0) {
-            DB::table('supplier_products')
-                ->where('supplier_id', $sid)->where('product_id', $pid)
-                ->update(['source_url' => $url, 'updated_at' => $now]);
-        }
-
+        DB::table('products')->where('id', $pid)->update(['updated_at' => $now]);
         $this->stats['enriched']++;
-        return true;
     }
 
-    // ── Parsing ───────────────────────────────────────────────────────────────────
+    // ── Page parsing ──────────────────────────────────────────────────────────────
 
     private function parsePage(string $html): array
     {
-        // Name: <h1> tag.
         $name = $this->cleanText(preg_match('/<h1[^>]*>([\s\S]*?)<\/h1>/u', $html, $m) ? $m[1] : '');
 
-        // Images: full-size in /userfls/shop/large/ (same pattern as SyncTeplodarCommand).
-        preg_match_all('/userfls\/shop\/large\/([\d]+\/[^"\']+\.(?:jpg|jpeg|png|webp))/iu', $html, $m);
+        // Full-size images: prefer /large/, fall back to /product/
+        preg_match_all('/userfls\/shop\/large\/([\d\/]+[^"\']+\.(?:jpg|jpeg|png|webp))/iu', $html, $m);
         $images = [];
         foreach (array_unique($m[1] ?? []) as $path) {
             $images[] = self::BASE . '/userfls/shop/large/' . $path;
         }
+        if (empty($images)) {
+            preg_match_all('/userfls\/shop\/product\/([\d\/]+[^"\']+\.(?:jpg|jpeg|png|webp))/iu', $html, $m);
+            foreach (array_unique($m[1] ?? []) as $path) {
+                $images[] = self::BASE . '/userfls/shop/product/' . $path;
+            }
+        }
 
         // Specs: <td class="parametr"><span>name</span></td><td>value</td>
-        // (same structure as SyncTeplodarCommand confirmed in production)
         $specs = [];
         preg_match_all(
             '/<td[^>]*class="parametr"[^>]*>\s*<span[^>]*>([\s\S]*?)<\/span>\s*<\/td>\s*<td[^>]*>([\s\S]*?)<\/td>/u',
             $html, $m, PREG_SET_ORDER
         );
         foreach ($m as $row) {
-            $key = $this->cleanText($row[1]);
-            $val = $this->cleanText($row[2]);
-            if ($key !== '' && $val !== '' && $key !== $val && mb_strlen($key) <= 120) {
-                $specs[$key] = $val;
+            $k = $this->cleanText($row[1]);
+            $v = $this->cleanText($row[2]);
+            if ($k !== '' && $v !== '' && $k !== $v) {
+                $specs[$k] = $v;
             }
         }
-        // Fallback: plain <tr><td>name</td><td>value</td></tr> table rows.
-        if ($specs === []) {
-            preg_match_all('/<tr[^>]*>\s*<td[^>]*>([\s\S]*?)<\/td>\s*<td[^>]*>([\s\S]*?)<\/td>\s*<\/tr>/u', $html, $m, PREG_SET_ORDER);
+        if (empty($specs)) {
+            preg_match_all(
+                '/<tr[^>]*>\s*<td[^>]*>([\s\S]*?)<\/td>\s*<td[^>]*>([\s\S]*?)<\/td>/u',
+                $html, $m, PREG_SET_ORDER
+            );
             foreach ($m as $row) {
-                $key = $this->cleanText($row[1]);
-                $val = $this->cleanText($row[2]);
-                if ($key !== '' && $val !== '' && $key !== $val && mb_strlen($key) <= 120) {
-                    $specs[$key] = $val;
+                $k = $this->cleanText($row[1]);
+                $v = $this->cleanText($row[2]);
+                if ($k !== '' && $v !== '' && $k !== $v && mb_strlen($k) <= 80) {
+                    $specs[$k] = $v;
                 }
             }
         }
 
-        // Description: <section id="description"> (confirmed by SyncTeplodarCommand).
+        // Description
         $desc = '';
-        if (preg_match('/<section[^>]*id=["\']description["\'][^>]*>([\s\S]*?)<\/section>/u', $html, $m)) {
-            $raw = preg_replace('/<(script|style)\b[\s\S]*?<\/\1>/iu', '', $m[1]) ?? $m[1];
+        if (preg_match('/<(?:section|div)[^>]*id=["\']description["\'][^>]*>([\s\S]*?)<\/(?:section|div)>/u', $html, $m)) {
+            $raw  = (string) preg_replace('/<(script|style)\b[\s\S]*?<\/\1>/iu', '', $m[1]);
             $desc = trim(strip_tags(html_entity_decode($raw, ENT_QUOTES | ENT_HTML5, 'UTF-8')));
+            $desc = (string) preg_replace('/\s{2,}/u', ' ', $desc);
         }
 
         return compact('name', 'images', 'specs', 'desc');
@@ -447,43 +343,19 @@ class EnrichTeplodvorCommand extends Command
     private function cleanText(string $value): string
     {
         $value = html_entity_decode(strip_tags($value), ENT_QUOTES | ENT_HTML5, 'UTF-8');
-        return trim(preg_replace('/\s+/u', ' ', $value) ?? $value);
-    }
-
-    private function detectBrand(string $name): ?string
-    {
-        $upper = mb_strtoupper($name);
-        foreach (self::BRAND_SLUGS as $slug => $canonical) {
-            if (mb_stripos($upper, mb_strtoupper($canonical)) !== false) {
-                return $slug;
-            }
-        }
-        return null;
-    }
-
-    private function model(string $name, string $brand): string
-    {
-        $n = mb_strtoupper($name);
-        if ($brand !== '') {
-            $n = preg_replace('/' . preg_quote(mb_strtoupper($brand), '/') . '/u', '', $n) ?? $n;
-        }
-        $n    = preg_replace('/[^А-ЯЁA-Z0-9]/u', ' ', $n) ?? $n;
-        $toks = array_filter(
-            preg_split('/\s+/u', trim($n)) ?: [],
-            fn ($t) => $t !== ''
-                && ! in_array($t, self::STOPWORDS, true)
-                && ! preg_match('/^P\d{5,}$/', $t)          // Invicta product codes
-                && ! preg_match('/^\d+КВТ$/u', $t)           // power suffix: 8КВТ, 7КВТ
-                && ! preg_match('/^\d{3,}$/', $t)            // 3+ digit specs: Ø150, 2025
-        );
-        return implode(' ', $toks);
+        return trim((string) preg_replace('/\s+/u', ' ', $value));
     }
 
     // ── Images ────────────────────────────────────────────────────────────────────
 
-    private function downloadImages(int $pid, array $urls, bool $hasImages): int
+    private function downloadImages(int $pid, array $urls, bool $hasImages, bool $overwrite): int
     {
-        if ($hasImages && ! $this->option('overwrite-images')) {
+        if ($hasImages && ! $overwrite) {
+            $this->line('    skip images (already has photos)');
+            return 0;
+        }
+        if (empty($urls)) {
+            $this->line('    no images found on page');
             return 0;
         }
 
@@ -496,76 +368,39 @@ class EnrichTeplodvorCommand extends Command
         $hashes  = [];
         $written = 0;
 
-        foreach (array_slice($urls, 0, 8) as $imgUrl) {
+        foreach (array_slice($urls, 0, 6) as $imgUrl) {
             $body = $this->fetch($imgUrl, true);
-            if ($body === null || strlen($body) < 2000) {
+            if ($body === null || strlen($body) < 3000) {
                 continue;
             }
             $size = @getimagesizefromstring($body);
-            if (! $size || $size[0] < 300 || $size[1] < 300) {
+            if (! $size || $size[0] < 200 || $size[1] < 200) {
                 continue;
             }
-            $md5 = md5($body);
-            if (isset($hashes[$md5])) {
+            $hash = md5($body);
+            if (isset($hashes[$hash])) {
                 continue;
             }
-            $hashes[$md5] = true;
+            $hashes[$hash] = true;
 
-            $ext  = match ($size['mime']) {
-                'image/png' => 'png', 'image/webp' => 'webp', default => 'jpg',
+            $ext  = match ($size['mime'] ?? '') {
+                'image/png'  => 'png',
+                'image/webp' => 'webp',
+                default      => 'jpg',
             };
             $file = $pid . '_' . $written . '.' . $ext;
-            file_put_contents($dir . '/' . $file, $body);
+            file_put_contents("{$dir}/{$file}", $body);
             $saved[] = self::IMAGE_DIR . '/' . $file;
             $written++;
             usleep(200_000);
         }
 
-        if ($saved !== []) {
+        if (! empty($saved)) {
             DB::table('products')->where('id', $pid)->update([
-                'images' => json_encode(array_values($saved)),
+                'images'     => json_encode(array_values($saved), JSON_UNESCAPED_UNICODE),
+                'updated_at' => now(),
             ]);
-        }
-
-        return $written;
-    }
-
-    // ── Specs ─────────────────────────────────────────────────────────────────────
-
-    private function writeSpecs(int $pid, array $specs): int
-    {
-        $catId   = (int) DB::table('products')->where('id', $pid)->value('category_id');
-        $written = 0;
-        $now     = now();
-
-        foreach ($specs as $key => $val) {
-            $attrId = DB::table('attributes')
-                ->where('category_id', $catId)
-                ->whereRaw('LOWER(name) = ?', [mb_strtolower($key)])
-                ->value('id');
-
-            if (! $attrId) {
-                $attrId = DB::table('attributes')->insertGetId([
-                    'category_id' => $catId,
-                    'name'        => $key,
-                    'type'        => 'value',
-                    'in_filter'   => false,
-                    'in_product'  => true,
-                    'in_brief'    => false,
-                    'sort_order'  => 0,
-                    'created_at'  => $now,
-                    'updated_at'  => $now,
-                ]);
-            }
-
-            if (DB::table('product_attribute_values')->where('product_id', $pid)->where('attribute_id', $attrId)->exists()) {
-                continue;
-            }
-            DB::table('product_attribute_values')->insert([
-                'product_id' => $pid, 'attribute_id' => $attrId,
-                'value' => (string) $val, 'updated_at' => $now, 'created_at' => $now,
-            ]);
-            $written++;
+            $this->line("    saved {$written} image(s)");
         }
 
         return $written;
@@ -573,39 +408,44 @@ class EnrichTeplodvorCommand extends Command
 
     // ── AI content ────────────────────────────────────────────────────────────────
 
-    private function generateAiContent(int $pid, array $card, string $brand, $now): void
+    private function generateAiContent(int $pid, array $card, string $brandName, $now): void
     {
         $enricher = app(AiContentEnricher::class);
         if (! $enricher->isAvailable()) {
+            $this->warn('    AI enricher not available');
             return;
         }
 
-        $existing = DB::table('products')
-            ->where('id', $pid)
-            ->first(['short_description', 'content', 'name', 'category_id']);
-        if (! $existing) {
+        $product = DB::table('products')->where('id', $pid)->first(['name', 'specs']);
+        if (! $product) {
             return;
         }
 
-        $updates  = [];
-        $rawDesc  = $card['desc'] ?? '';
+        $existingSpecs = json_decode((string) ($product->specs ?? '{}'), true) ?: [];
+        $mergedSpecs   = array_merge($existingSpecs, $card['specs']);
 
-        // Same approach as admin "Обновить из ссылки": raw supplier text is context only,
-        // AI generates unique SEO HTML; raw text is never stored.
-        $aiContent = $enricher->enrich((string) $existing->name, $brand, $rawDesc, $card['specs']);
+        $aiContent = $enricher->enrich(
+            (string) $product->name,
+            $brandName,
+            $card['desc'] ?: null,
+            $mergedSpecs
+        );
+
         if ($aiContent !== null && trim(strip_tags($aiContent)) !== '') {
-            $updates['content'] = strip_tags($aiContent, '<p><ul><li><strong>');
+            $short = $enricher->shortDescription(
+                (string) $product->name,
+                $brandName,
+                $mergedSpecs
+            ) ?: mb_substr(trim(strip_tags($aiContent)), 0, 240);
 
-            $short = $enricher->shortDescription((string) $existing->name, $brand, $card['specs'])
-                ?: mb_substr(trim(strip_tags($aiContent)), 0, 240);
-            $updates['short_description'] = mb_substr(trim($short), 0, 240);
-            $updates['meta_description']  = mb_substr(trim($short), 0, 250);
-        }
-
-        if ($updates !== []) {
-            $updates['updated_at'] = $now;
-            DB::table('products')->where('id', $pid)->update($updates);
+            DB::table('products')->where('id', $pid)->update([
+                'content'           => strip_tags($aiContent, '<p><ul><li><strong>'),
+                'short_description' => mb_substr(trim($short), 0, 240),
+                'meta_description'  => mb_substr(trim($short), 0, 250),
+                'updated_at'        => $now,
+            ]);
             $this->stats['ai_done']++;
+            $this->line('    AI content generated');
         }
     }
 
@@ -622,12 +462,13 @@ class EnrichTeplodvorCommand extends Command
                 'header'          => implode("\r\n", [
                     'User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
                     'Accept: text/html,application/xhtml+xml,*/*;q=0.9',
-                    'Accept-Language: ru-RU,ru;q=0.9,en;q=0.8',
+                    'Accept-Language: ru-RU,ru;q=0.9',
                     'Referer: https://www.teplodvor.by/',
                 ]),
             ],
             'ssl' => ['verify_peer' => false, 'verify_peer_name' => false],
         ]);
+
         $body = @file_get_contents($url, false, $ctx);
         if ($body === false || (! $binary && strlen($body) < 500)) {
             return null;
