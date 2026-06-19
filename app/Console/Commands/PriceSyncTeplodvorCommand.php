@@ -109,7 +109,7 @@ class PriceSyncTeplodvorCommand extends Command
         $this->info(sprintf('Products to process: %d (no supplier)', $products->count()));
 
         // ── Process ───────────────────────────────────────────────────────────────
-        $stats = ['scanned' => 0, 'matched' => 0, 'price_found' => 0, 'updated' => 0, 'no_match' => 0, 'no_price' => 0];
+        $stats = ['scanned' => 0, 'matched' => 0, 'price_found' => 0, 'updated' => 0, 'no_match' => 0, 'no_price' => 0, 'skipped_drop' => 0];
         $rows  = [];
 
         foreach ($products as $product) {
@@ -140,18 +140,31 @@ class PriceSyncTeplodvorCommand extends Command
             }
 
             $stats['price_found']++;
-            $oldPrice   = $product->price;
+            $oldPrice   = (float) $product->price;
             $finalPrice = round($price * $ratio, 2);
+
+            // Safety: skip if new price is less than 50% of existing price (likely false match)
+            if ($oldPrice > 0 && $finalPrice < $oldPrice * 0.5) {
+                $this->line(sprintf(
+                    '    <fg=red>SKIPPED (price drop >50%%): %.2f → %.2f BYN — possible false match</>',
+                    $oldPrice,
+                    $finalPrice
+                ));
+                $stats['skipped_drop']++;
+                usleep($sleep * 1000);
+                continue;
+            }
+
             $this->line(sprintf(
                 '    teplodvor: %.2f BYN → <fg=green>final: %.2f BYN</> (was: %s)',
                 $price,
                 $finalPrice,
-                $oldPrice > 0 ? number_format((float) $oldPrice, 2) . ' BYN' : 'not set'
+                $oldPrice > 0 ? number_format($oldPrice, 2) . ' BYN' : 'not set'
             ));
 
             $rows[] = [
                 mb_substr($product->name, 0, 55),
-                $oldPrice > 0 ? number_format((float) $oldPrice, 2) : '—',
+                $oldPrice > 0 ? number_format($oldPrice, 2) : '—',
                 number_format($finalPrice, 2),
                 $url,
             ];
