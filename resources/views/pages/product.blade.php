@@ -531,47 +531,61 @@
                 </div>
 
                 {{-- Характеристики --}}
-                @if ($attributeValues->count() > 0)
+                @php
+                    $rawSpecs = $attributeValues->count() === 0 && !empty($product->specs)
+                        ? collect(json_decode($product->specs, true) ?? [])
+                              ->filter(fn($s) => !empty($s['key']) && !empty($s['value']))
+                        : collect();
+                @endphp
+                @if ($attributeValues->count() > 0 || $rawSpecs->count() > 0)
                     <div class="tab-pane" id="specifications" role="tabpanel">
                         <div class="tab-content_desc">
                             <table class="table table-bordered table-striped">
                                 <tbody>
-                                    @foreach ($attributeValues as $val)
-                                        @php
-                                            // Пропускаем пустые значения
-                                            $isEmpty = match($val->attribute->type) {
-                                                'select' => empty($val->option?->name),
-                                                'check'  => $val->is_checked === null,
-                                                default  => empty($val->value) || $val->value === '—',
-                                            };
-                                        @endphp
-                                        @if (!$isEmpty)
+                                    @if ($attributeValues->count() > 0)
+                                        @foreach ($attributeValues as $val)
+                                            @php
+                                                $isEmpty = match($val->attribute->type) {
+                                                    'select' => empty($val->option?->name),
+                                                    'check'  => $val->is_checked === null,
+                                                    default  => empty($val->value) || $val->value === '—',
+                                                };
+                                            @endphp
+                                            @if (!$isEmpty)
+                                                <tr>
+                                                    <td class="fw-medium" style="width:45%">
+                                                        {{ $val->attribute->name }}
+                                                        @if ($val->attribute->suffix)
+                                                            <span class="cl-text-2 fw-normal">, {{ $val->attribute->suffix }}</span>
+                                                        @endif
+                                                    </td>
+                                                    <td>
+                                                        @switch($val->attribute->type)
+                                                            @case('select')
+                                                                {{ $val->option->name }}
+                                                                @break
+                                                            @case('check')
+                                                                @if ($val->is_checked)
+                                                                    <i class="icon icon-CheckCircle text-success"></i> Да
+                                                                @else
+                                                                    <i class="icon icon-XCircle text-danger"></i> Нет
+                                                                @endif
+                                                                @break
+                                                            @default
+                                                                {{ $val->value }} {{ $val->attribute->suffix }}
+                                                        @endswitch
+                                                    </td>
+                                                </tr>
+                                            @endif
+                                        @endforeach
+                                    @else
+                                        @foreach ($rawSpecs as $spec)
                                             <tr>
-                                                <td class="fw-medium" style="width:45%">
-                                                    {{ $val->attribute->name }}
-                                                    @if ($val->attribute->suffix)
-                                                        <span class="cl-text-2 fw-normal">, {{ $val->attribute->suffix }}</span>
-                                                    @endif
-                                                </td>
-                                                <td>
-                                                    @switch($val->attribute->type)
-                                                        @case('select')
-                                                            {{ $val->option->name }}
-                                                            @break
-                                                        @case('check')
-                                                            @if ($val->is_checked)
-                                                                <i class="icon icon-CheckCircle text-success"></i> Да
-                                                            @else
-                                                                <i class="icon icon-XCircle text-danger"></i> Нет
-                                                            @endif
-                                                            @break
-                                                        @default
-                                                            {{ $val->value }} {{ $val->attribute->suffix }}
-                                                    @endswitch
-                                                </td>
+                                                <td class="fw-medium" style="width:45%">{{ $spec['key'] }}</td>
+                                                <td>{{ $spec['value'] }}{{ !empty($spec['unit']) ? ' ' . $spec['unit'] : '' }}</td>
                                             </tr>
-                                        @endif
-                                    @endforeach
+                                        @endforeach
+                                    @endif
                                 </tbody>
                             </table>
                         </div>
