@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\DB;
 
 /**
  * Populate product_attribute_values from products.specs JSON
- * for products imported from teplodvor (specs JSON, no attribute rows yet).
+ * for products imported from teplodvor (specs filled, attribute_values empty).
  *
  * Dry-run:  php artisan supplier:import-attributes-teplodvor --brand="Ariston"
  * Apply:    php artisan supplier:import-attributes-teplodvor --brand="Ariston" --apply
@@ -15,31 +15,86 @@ use Illuminate\Support\Facades\DB;
 class ImportAttributesTeplodvorCommand extends Command
 {
     protected $signature = 'supplier:import-attributes-teplodvor
-        {--brand=     : Brand name (required)}
-        {--apply      : Write to DB (default: dry-run)}
-        {--overwrite  : Replace existing attribute_values rows}';
+        {--brand=    : Brand name (required)}
+        {--apply     : Write to DB (default: dry-run)}
+        {--limit=    : Max products to process}';
 
     protected $description = 'Populate product_attribute_values from products.specs JSON (teplodvor imports)';
 
-    // Spec keys to skip entirely — not useful as attributes
-    private const SKIP_KEYS = [
-        'Производитель', 'Производитель:', 'EAN', 'Страна',
+    /**
+     * Curated mapping: category_id → teplodvor spec key → attribute config.
+     *
+     * 'attr_id' — use existing attribute row with this id.
+     * 'raw'     — store full text value without digit extraction (for text-only fields).
+     *
+     * Only value/check types are mapped here.
+     * select types require option_id lookup — excluded intentionally.
+     */
+    private const MAP = [
+        // ── Электрические водонагреватели ─────────────────────────────────────────
+        98 => [
+            'Объем'                                 => ['attr_id' => 493],        // value л
+            'Максимальная температура нагрева воды' => ['attr_id' => 499],        // value °C
+            'Максимальное давление воды'            => ['attr_id' => 505],        // value бар
+            'Дисплей'                               => ['attr_id' => 506],        // check
+            'Термостат безопасности'                => ['attr_id' => 509],        // check
+            'Вес'                                   => ['attr_id' => 512],        // value кг
+            'Гарантия на внутренний бак'            => ['attr_id' => 513],        // value (text)
+            'Гарантия на водонагреватель'           => ['attr_id' => 514],        // value (text)
+            'Теплоизоляция'                         => ['attr_id' => 517],        // check
+            'Материал теплоизоляции'                => ['attr_id' => 518, 'raw' => true],  // value (text, no digits)
+            'Антибактериальная защита'              => ['attr_id' => 587],        // check
+            'Высота'                                => ['attr_id' => 563],        // value мм
+            'Ширина'                                => ['attr_id' => 564],        // value мм
+            'Глубина'                               => ['attr_id' => 565],        // value мм
+            'Покрытие внутреннего бака'             => ['attr_id' => 503, 'raw' => true],  // value (text, no digits)
+        ],
+
+        // ── Газовые котлы ─────────────────────────────────────────────────────────
+        53 => [
+            'Площадь обогрева'                      => ['attr_id' => 90],         // value кв.м
+            'Мощность'                              => ['attr_id' => 92],         // value кВт
+            'Объем расширительного бака'            => ['attr_id' => 93],         // value л
+            'Расширительный бак'                    => ['attr_id' => 93],         // value л (alt key)
+            'Производительность ГВС'                => ['attr_id' => 97],         // value л/мин
+            'КПД'                                   => ['attr_id' => 101],        // value %
+            'Расход газа (природный/сжиженный)'     => ['attr_id' => 198],        // value куб.м/час
+            'Диаметр дымохода (коаксиальный/раздельный)' => ['attr_id' => 224, 'raw' => true],
+            'Потребление электроэнергии'             => ['attr_id' => 261],        // value Вт
+            'Вес'                                   => ['attr_id' => 110],        // value кг
+            'КПД в режиме 75/60°С'                 => ['attr_id' => 101],        // value %
+        ],
+
+        // ── Газовые колонки ───────────────────────────────────────────────────────
+        298 => [
+            'Производительность'                    => ['attr_id' => 97],         // value л/мин (reuse)
+            'Вес'                                   => ['create' => ['name' => 'Вес', 'type' => 'value', 'suffix' => 'кг']],
+        ],
+
+        // ── Коаксиальные дымоходы/фитинги ────────────────────────────────────────
+        57 => [
+            'Длина'                                 => ['attr_id' => 378],        // value мм
+            'Вес'                                   => ['attr_id' => 910],        // value г
+        ],
+
+        // ── Термостаты/автоматика ─────────────────────────────────────────────────
+        58 => [
+            'Вес'                                   => ['create' => ['name' => 'Вес', 'type' => 'value', 'suffix' => 'кг']],
+        ],
+
+        // ── Прочие аксессуары (fallback) ─────────────────────────────────────────
+        195 => [
+            'Вес'                                   => ['create' => ['name' => 'Вес', 'type' => 'value', 'suffix' => 'кг']],
+        ],
     ];
 
-    // Check-type attributes: value "да"/"нет"/"yes"/"no" → is_checked bool
-    private const CHECK_KEYS = [
-        'Теплоизоляция', 'Антибактериальная защита', 'Термостат безопасности',
-        'Термостат', 'Дисплей', 'Удаленное управление', 'Сухой ТЭН',
-        'Линия рециркуляции', 'Отображение температуры нагрева',
-        'Защита от включения без воды', 'Защита от замерзания',
-        'Регулировка температуры',
-    ];
+    /** @var array<int,object> */
+    private array $attrCache = [];
 
     public function handle(): int
     {
         $brandName = (string) $this->option('brand');
         $apply     = (bool)  $this->option('apply');
-        $overwrite = (bool)  $this->option('overwrite');
 
         if (! $brandName) {
             $this->error('--brand is required');
@@ -56,86 +111,107 @@ class ImportAttributesTeplodvorCommand extends Command
             return self::FAILURE;
         }
 
-        $this->line($apply ? '<fg=red;options=bold>APPLY MODE</>' : '<fg=yellow>DRY-RUN MODE</>');
+        $this->line($apply
+            ? '<fg=red;options=bold>APPLY: attribute values will be written.</>'
+            : '<fg=yellow;options=bold>DRY RUN: nothing will be written.</>');
 
-        // Products with specs JSON, optionally filter those without attribute_values yet
-        $query = DB::table('products')
+        $q = DB::table('products')
             ->where('brand_id', $brand->id)
             ->where('is_archived', false)
             ->whereNotNull('specs')
             ->where('specs', '!=', '')
-            ->where('specs', '!=', '[]');
+            ->where('specs', '!=', '[]')
+            ->whereNotExists(fn ($w) => $w
+                ->from('product_attribute_values')
+                ->whereColumn('product_attribute_values.product_id', 'products.id'))
+            ->orderBy('id');
 
-        if (! $overwrite) {
-            $withAttrs = DB::table('product_attribute_values')
-                ->select('product_id')
-                ->distinct()
-                ->pluck('product_id')
-                ->toArray();
-            $query->whereNotIn('id', $withAttrs);
+        if ($this->option('limit')) {
+            $q->limit((int) $this->option('limit'));
         }
 
-        $products = $query->get(['id', 'name', 'category_id', 'specs']);
+        $products = $q->get(['id', 'name', 'category_id', 'specs']);
         $this->info(sprintf('Products to process: %d', $products->count()));
 
-        $now   = now();
-        $total = 0;
+        $stats = ['products' => 0, 'values_created' => 0, 'attrs_created' => 0,
+                  'skipped_no_map' => 0, 'skipped_no_value' => 0];
 
         foreach ($products as $product) {
             $specs = json_decode($product->specs, true);
-            if (! is_array($specs) || empty($specs)) {
+            if (! is_array($specs) || $specs === []) {
                 continue;
             }
 
-            $rows = 0;
-            foreach ($specs as $spec) {
-                $key   = trim((string) ($spec['key']   ?? ''));
-                $val   = trim((string) ($spec['value'] ?? ''));
-                $unit  = trim((string) ($spec['unit']  ?? ''));
+            // Convert [{key,value,unit}] array → flat dict key => 'value unit'
+            $data = [];
+            foreach ($specs as $row) {
+                $key = trim((string) ($row['key'] ?? ''));
+                $val = trim((string) ($row['value'] ?? ''));
+                $unit = trim((string) ($row['unit'] ?? ''));
+                if ($key !== '' && $val !== '') {
+                    $data[$key] = $val . ($unit !== '' ? ' ' . $unit : '');
+                }
+            }
 
-                if ($key === '' || $val === '') continue;
-                if (in_array($key, self::SKIP_KEYS, true)) continue;
+            $catId = (int) $product->category_id;
+            $map   = self::MAP[$catId] ?? null;
 
-                $fullVal = $val . ($unit !== '' ? ' ' . $unit : '');
+            if (! $map) {
+                $stats['skipped_no_map']++;
+                $this->line(sprintf('  <fg=yellow>NO MAP</> cat=%d [id=%d] %s', $catId, $product->id, mb_substr($product->name, 0, 50)));
+                continue;
+            }
 
-                if (! $apply) {
-                    $rows++;
+            $stats['products']++;
+            $printedHeader = false;
+
+            foreach ($map as $specKey => $mapping) {
+                if (! array_key_exists($specKey, $data)) {
                     continue;
                 }
 
-                $attrId = $this->ensureAttribute($key, (int) $product->category_id, $now);
-
-                $isCheck = in_array($key, self::CHECK_KEYS, true);
-                $checked = null;
-                $stored  = $fullVal;
-
-                if ($isCheck) {
-                    $lower   = mb_strtolower($val);
-                    $checked = in_array($lower, ['да', 'yes', '1', 'true'], true) ? 1 : 0;
-                    $stored  = null;
+                $attr = $this->resolveAttribute($catId, $mapping, $apply, $stats);
+                if ($attr === null) {
+                    continue;
                 }
 
-                DB::table('product_attribute_values')->updateOrInsert(
-                    ['product_id' => $product->id, 'attribute_id' => $attrId],
-                    [
-                        'option_id'  => null,
-                        'is_checked' => $checked,
-                        'value'      => $stored,
-                        'created_at' => $now,
-                        'updated_at' => $now,
-                    ]
-                );
-                $rows++;
-            }
+                $raw = (string) $data[$specKey];
+                $useRaw = ! empty($mapping['raw']);
+                $parsed = $useRaw ? ($raw !== '' ? $raw : null) : $this->parseValue($raw, $attr->type, (string) ($attr->suffix ?? ''));
 
-            $this->line(sprintf('  [id=%d] %s → %d attrs', $product->id, mb_substr($product->name, 0, 55), $rows));
-            $total += $rows;
+                if ($parsed === null) {
+                    $stats['skipped_no_value']++;
+                    continue;
+                }
+
+                if (! $printedHeader) {
+                    $this->newLine();
+                    $this->line(sprintf('<fg=cyan>id=%d</> %s', $product->id, mb_substr($product->name, 0, 56)));
+                    $printedHeader = true;
+                }
+
+                $display = $attr->type === 'check'
+                    ? ($parsed === '1' ? 'Да' : 'Нет')
+                    : $parsed . ($attr->suffix ? ' ' . $attr->suffix : '');
+                $this->line(sprintf('    %s = %s', $attr->name, $display));
+
+                if ($apply && $attr->id) {
+                    DB::table('product_attribute_values')->insert([
+                        'product_id'   => $product->id,
+                        'attribute_id' => $attr->id,
+                        'option_id'    => null,
+                        'is_checked'   => $attr->type === 'check' ? ($parsed === '1' ? 1 : 0) : null,
+                        'value'        => $attr->type === 'check' ? null : $parsed,
+                        'created_at'   => now(),
+                        'updated_at'   => now(),
+                    ]);
+                }
+                $stats['values_created']++;
+            }
         }
 
-        $this->info(sprintf('%s: %d attribute rows for %d products',
-            $apply ? 'Written' : 'Would write',
-            $total, $products->count()
-        ));
+        $this->newLine();
+        $this->table(['metric', 'count'], array_map(fn ($k, $v) => [$k, $v], array_keys($stats), array_values($stats)));
 
         if (! $apply) {
             $this->line('Re-run with --apply to write changes.');
@@ -144,40 +220,70 @@ class ImportAttributesTeplodvorCommand extends Command
         return self::SUCCESS;
     }
 
-    private function ensureAttribute(string $name, int $categoryId, $now): int
+    private function resolveAttribute(int $catId, array $mapping, bool $apply, array &$stats): ?object
     {
-        $existing = DB::table('attributes')
-            ->where('name', $name)
-            ->where('category_id', $categoryId)
-            ->value('id');
-
-        if ($existing) {
-            return (int) $existing;
+        if (isset($mapping['attr_id'])) {
+            $id = (int) $mapping['attr_id'];
+            $this->attrCache[$id] ??= DB::table('attributes')->where('id', $id)->first(['id', 'name', 'type', 'suffix']);
+            return $this->attrCache[$id] ?: null;
         }
 
-        // Try any category as fallback (attributes are often shared)
-        $existing = DB::table('attributes')
-            ->where('name', $name)
-            ->value('id');
-
-        if ($existing) {
-            return (int) $existing;
+        if (isset($mapping['create'])) {
+            $def = $mapping['create'];
+            $existing = DB::table('attributes')
+                ->where('category_id', $catId)
+                ->where('name', $def['name'])
+                ->first(['id', 'name', 'type', 'suffix']);
+            if ($existing) {
+                return $existing;
+            }
+            if (! $apply) {
+                return (object) ['id' => null, 'name' => $def['name'], 'type' => $def['type'], 'suffix' => $def['suffix'] ?? ''];
+            }
+            $sort = (int) DB::table('attributes')->where('category_id', $catId)->max('sort_order') + 1;
+            $id = DB::table('attributes')->insertGetId([
+                'category_id'   => $catId,
+                'type'          => $def['type'],
+                'name'          => $def['name'],
+                'suffix'        => $def['suffix'] ?? null,
+                'in_product'    => true,
+                'in_filter'     => false,
+                'in_brief'      => false,
+                'in_sort'       => false,
+                'is_comparable' => false,
+                'sort_order'    => $sort,
+                'created_at'    => now(),
+                'updated_at'    => now(),
+            ]);
+            $stats['attrs_created']++;
+            $this->line("  <fg=green>+ атрибут «{$def['name']}» создан</>");
+            return (object) ['id' => $id, 'name' => $def['name'], 'type' => $def['type'], 'suffix' => $def['suffix'] ?? ''];
         }
 
-        return (int) DB::table('attributes')->insertGetId([
-            'category_id'    => $categoryId,
-            'group_id'       => 0,
-            'sort_order'     => 500,
-            'type'           => in_array($name, self::CHECK_KEYS, true) ? 'check' : 'value',
-            'name'           => $name,
-            'suffix'         => null,
-            'in_filter'      => false,
-            'in_sort'        => false,
-            'in_product'     => true,
-            'in_brief'       => false,
-            'is_comparable'  => true,
-            'created_at'     => $now,
-            'updated_at'     => $now,
-        ]);
+        return null;
+    }
+
+    private function parseValue(string $raw, string $type, string $suffix): ?string
+    {
+        $raw = trim(preg_replace('/\s+/u', ' ', strip_tags($raw)) ?? '');
+        if ($raw === '' || $raw === '—') {
+            return null;
+        }
+        if ($type === 'check') {
+            $low = mb_strtolower($raw);
+            if (in_array($low, ['да', 'yes', 'есть', '+', 'true', '1'], true)) return '1';
+            if (in_array($low, ['нет', 'no', '-', 'false', '0'], true)) return '0';
+            return null;
+        }
+        if ($suffix !== '') {
+            if (preg_match('/-?\d+(?:[.,]\d+)?/u', $raw, $m)) {
+                return str_replace(',', '.', $m[0]);
+            }
+            return null;
+        }
+        if (! preg_match('/\d/u', $raw)) {
+            return null;
+        }
+        return mb_substr(trim($raw, " \t\u{00A0}:;"), 0, 60);
     }
 }

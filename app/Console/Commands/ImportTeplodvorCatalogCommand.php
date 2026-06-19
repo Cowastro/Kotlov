@@ -215,13 +215,16 @@ class ImportTeplodvorCatalogCommand extends Command
         if (! $skipArchive && ! empty($unmatched)) {
             $this->newLine();
             $this->warn('Archiving ' . count($unmatched) . ' obsolete products...');
-            $ids = array_column($unmatched, 'id');
-            DB::table('products')->whereIn('id', $ids)->update([
-                'is_archived'         => true,
-                'availability_status' => 'check',
-                'updated_at'          => now(),
-            ]);
-            $this->info('  Archived: ' . count($ids));
+            foreach ($unmatched as $p) {
+                // Free the slug so a newly imported product can claim the clean URL
+                DB::table('products')->where('id', $p['id'])->update([
+                    'is_archived'         => true,
+                    'availability_status' => 'check',
+                    'slug'                => $p['slug'] . '-archived-' . $p['id'],
+                    'updated_at'          => now(),
+                ]);
+            }
+            $this->info('  Archived: ' . count($unmatched));
         }
 
         // ── APPLY: import new products ────────────────────────────────────────────
@@ -276,6 +279,7 @@ class ImportTeplodvorCatalogCommand extends Command
                     'category_id'         => $categoryId,
                     'images'              => '[]',
                     'specs'               => $card['specs'] ? json_encode($card['specs'], JSON_UNESCAPED_UNICODE) : null,
+                    'service_info'        => !empty($card['service_info']) ? json_encode($card['service_info'], JSON_UNESCAPED_UNICODE) : null,
                     'short_description'   => $shortDesc,
                     'content'             => $content,
                     'availability_status' => $card['price'] > 0 ? 'in_stock' : 'check',
@@ -288,9 +292,9 @@ class ImportTeplodvorCatalogCommand extends Command
                 // Update SKU with real ID
                 DB::table('products')->where('id', $newId)->update(['sku' => sprintf('PS-000.%d', $newId)]);
 
-                // Download image
+                // Download images (all, up to 6)
                 if (! empty($card['images'])) {
-                    $this->downloadImage($newId, $card['images'][0]);
+                    $this->downloadImage($newId, $card['images']);
                 }
 
                 $this->line(sprintf('    <fg=green>CREATED</> id=%d  %s  %.2f BYN',
@@ -326,15 +330,16 @@ class ImportTeplodvorCatalogCommand extends Command
             return count($segs) === 4 && $segs[0] === 'shop' && count(explode('-', $segs[3])) >= 5;
         }, ARRAY_FILTER_USE_BOTH);
 
-        // DB products missing specs or images
+        // DB products missing specs, images, or service_info
         $dbProducts = DB::table('products')
             ->where('brand_id', $brand->id)
             ->where('is_archived', false)
             ->where(function ($q) {
                 $q->whereNull('specs')->orWhere('specs', '')->orWhere('specs', '[]')
-                  ->orWhereNull('images')->orWhere('images', '')->orWhere('images', '[]');
+                  ->orWhereNull('images')->orWhere('images', '')->orWhere('images', '[]')
+                  ->orWhereNull('service_info')->orWhere('service_info', '')->orWhere('service_info', '[]')->orWhere('service_info', '{}');
             })
-            ->get(['id', 'name', 'slug', 'specs', 'images', 'short_description', 'content'])
+            ->get(['id', 'name', 'slug', 'specs', 'images', 'service_info', 'short_description', 'content'])
             ->keyBy('slug');
 
         $this->info(sprintf('%d teplodvor URLs, %d products missing specs/images', count($brandUrls), count($dbProducts)));
@@ -358,9 +363,10 @@ class ImportTeplodvorCatalogCommand extends Command
             if (isset($seen[$matched->id])) continue;
             $seen[$matched->id] = true;
 
-            $hasSpecs  = ! empty($matched->specs) && $matched->specs !== '[]';
-            $hasImages = ! empty($matched->images) && $matched->images !== '[]';
-            if ($hasSpecs && $hasImages) continue;
+            $hasSpecs   = ! empty($matched->specs) && $matched->specs !== '[]';
+            $hasImages  = ! empty($matched->images) && $matched->images !== '[]';
+            $hasService = ! empty($matched->service_info) && $matched->service_info !== '[]' && $matched->service_info !== '{}';
+            if ($hasSpecs && $hasImages && $hasService) continue;
 
             $fixed++;
             $this->line(sprintf('  [id=%d] %s', $matched->id, mb_substr($matched->name, 0, 60)));
@@ -369,7 +375,7 @@ class ImportTeplodvorCatalogCommand extends Command
             if (! $apply) continue;
 
             $card = $this->scrapePage($url);
-            if (! $card || (empty($card['specs']) && empty($card['images']))) {
+            if (! $card || (empty($card['specs']) && empty($card['images']) && empty($card['service_info']))) {
                 $this->line('    <fg=yellow>SKIP</> — nothing scraped');
                 usleep($sleep * 1000);
                 continue;
@@ -382,8 +388,12 @@ class ImportTeplodvorCatalogCommand extends Command
                 $this->line(sprintf('    specs: %d rows', count($card['specs'])));
             }
             if (! $hasImages && ! empty($card['images'])) {
-                $this->downloadImage($matched->id, $card['images'][0]);
-                $this->line('    image: downloaded');
+                $this->downloadImage($matched->id, $card['images']);
+                $this->line(sprintf('    images: downloaded %d', count($card['images'])));
+            }
+            if (! $hasService && ! empty($card['service_info'])) {
+                $update['service_info'] = json_encode($card['service_info'], JSON_UNESCAPED_UNICODE);
+                $this->line(sprintf('    service_info: %d fields', count($card['service_info'])));
             }
 
             // AI content if missing
@@ -442,15 +452,21 @@ class ImportTeplodvorCatalogCommand extends Command
             }
         }
 
-        // Specs (td/td table)
-        $specs = [];
-        preg_match('/<table>(.*?)<\/table>/si', $html, $tbl);
-        if ($tbl) {
-            preg_match_all('/<tr[^>]*>\s*<td[^>]*>(.*?)<\/td>\s*<td[^>]*>(.*?)<\/td>/si', $tbl[1], $rows);
+        // Specs & service info from ALL tables
+        $specs       = [];
+        $serviceInfo = [];
+        preg_match_all('/<table[^>]*>([\s\S]*?)<\/table>/si', $html, $tables);
+        foreach ($tables[1] as $tblHtml) {
+            preg_match_all('/<tr[^>]*>\s*<td[^>]*>(.*?)<\/td>\s*<td[^>]*>(.*?)<\/td>/si', $tblHtml, $rows);
             foreach ($rows[1] as $i => $k) {
                 $key = trim(strip_tags(html_entity_decode($k)));
                 $val = trim(strip_tags(html_entity_decode($rows[2][$i])));
-                if ($key && $val && $key !== 'Производитель') {
+                if (! $key || ! $val) {
+                    continue;
+                }
+                if (preg_match('/производитель|импортер|импортёр|сервисный|страна происхождения/ui', $key)) {
+                    $serviceInfo[$key] = $val;
+                } else {
                     $specs[] = ['key' => $key, 'value' => $val, 'unit' => ''];
                 }
             }
@@ -477,41 +493,61 @@ class ImportTeplodvorCatalogCommand extends Command
             'name'          => $name,
             'price'         => $price,
             'specs'         => $specs,
+            'service_info'  => $serviceInfo,
             'images'        => array_values($images),
             'category_hint' => $categoryHint,
         ];
     }
 
-    private function downloadImage(int $pid, string $imgUrl): void
+    private function downloadImage(int $pid, array $imgUrls): void
     {
         try {
             $dir = public_path(self::IMAGE_DIR);
             if (! is_dir($dir)) {
                 mkdir($dir, 0755, true);
             }
-            $body = Http::timeout(15)
-                ->withHeaders(['User-Agent' => 'Mozilla/5.0'])
-                ->get($imgUrl)
-                ->body();
 
-            if (strlen($body) < 3000) {
-                return;
+            $saved   = [];
+            $hashes  = [];
+            $written = 0;
+
+            foreach (array_slice($imgUrls, 0, 6) as $imgUrl) {
+                $body = Http::timeout(15)
+                    ->withHeaders(['User-Agent' => 'Mozilla/5.0'])
+                    ->get($imgUrl)
+                    ->body();
+
+                if (strlen($body) < 3000) {
+                    continue;
+                }
+                $size = @getimagesizefromstring($body);
+                if (! $size || $size[0] < 150 || $size[1] < 150) {
+                    continue;
+                }
+                $hash = md5($body);
+                if (isset($hashes[$hash])) {
+                    continue;
+                }
+                $hashes[$hash] = true;
+
+                $ext  = match ($size['mime'] ?? '') {
+                    'image/png'  => 'png',
+                    'image/webp' => 'webp',
+                    default      => 'jpg',
+                };
+                $file = "{$pid}_{$written}.{$ext}";
+                file_put_contents("{$dir}/{$file}", $body);
+                $saved[] = self::IMAGE_DIR . '/' . $file;
+                $written++;
+                usleep(200_000);
             }
-            $size = @getimagesizefromstring($body);
-            if (! $size || $size[0] < 150 || $size[1] < 150) {
-                return;
+
+            if (! empty($saved)) {
+                DB::table('products')->where('id', $pid)->update([
+                    'images'     => json_encode(array_values($saved), JSON_UNESCAPED_UNICODE),
+                    'updated_at' => now(),
+                ]);
             }
-            $ext  = match ($size['mime'] ?? '') {
-                'image/png'  => 'png',
-                'image/webp' => 'webp',
-                default      => 'jpg',
-            };
-            $file = "{$pid}_0.{$ext}";
-            file_put_contents("{$dir}/{$file}", $body);
-            DB::table('products')->where('id', $pid)->update([
-                'images'     => json_encode([self::IMAGE_DIR . '/' . $file], JSON_UNESCAPED_UNICODE),
-                'updated_at' => now(),
-            ]);
         } catch (\Throwable) {
         }
     }
@@ -607,7 +643,8 @@ class ImportTeplodvorCatalogCommand extends Command
         $base = Str::slug($name);
         $slug = $base;
         $n    = 1;
-        while (DB::table('products')->where('slug', $slug)->exists()) {
+        // Only check active (non-archived) products — archived slugs are renamed to slug-archived-{id}
+        while (DB::table('products')->where('slug', $slug)->where('is_archived', false)->exists()) {
             $slug = $base . '-' . $n++;
         }
         return $slug;

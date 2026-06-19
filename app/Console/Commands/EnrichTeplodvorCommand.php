@@ -126,11 +126,14 @@ class EnrichTeplodvorCommand extends Command
                     ->orWhere('images', '[]')
                     ->orWhere(function ($q2) {
                         $q2->whereNull('specs')->orWhere('specs', '')->orWhere('specs', '{}');
+                    })
+                    ->orWhere(function ($q2) {
+                        $q2->whereNull('service_info')->orWhere('service_info', '')->orWhere('service_info', '[]')->orWhere('service_info', '{}');
                     });
             });
         }
 
-        $products = $query->get(['id', 'name', 'slug', 'brand_id', 'images', 'specs', 'content']);
+        $products = $query->get(['id', 'name', 'slug', 'brand_id', 'images', 'specs', 'service_info', 'content']);
         $this->info(sprintf('Products to process: %d', count($products)));
 
         $brandNames = DB::table('brands')->pluck('name', 'id')->toArray();
@@ -369,6 +372,16 @@ class EnrichTeplodvorCommand extends Command
                 $this->stats['specs']++;
                 $this->line('    specs saved: ' . count($merged));
             }
+
+            if (! empty($card['serviceInfo'])) {
+                $existingService = DB::table('products')->where('id', $pid)->value('service_info');
+                if (empty($existingService) || $existingService === '[]' || $existingService === '{}') {
+                    DB::table('products')->where('id', $pid)->update([
+                        'service_info' => json_encode($card['serviceInfo'], JSON_UNESCAPED_UNICODE),
+                    ]);
+                    $this->line('    service_info: ' . count($card['serviceInfo']) . ' fields');
+                }
+            }
         }
 
         if (! $this->option('skip-ai')) {
@@ -401,8 +414,9 @@ class EnrichTeplodvorCommand extends Command
             }
         }
 
-        // Specs: <td class="parametr"><span>name</span></td><td>value</td>
-        $specs = [];
+        // Specs & service info
+        $specs       = [];
+        $serviceInfo = [];
         preg_match_all(
             '/<td[^>]*class="parametr"[^>]*>\s*<span[^>]*>([\s\S]*?)<\/span>\s*<\/td>\s*<td[^>]*>([\s\S]*?)<\/td>/u',
             $html, $m, PREG_SET_ORDER
@@ -411,7 +425,11 @@ class EnrichTeplodvorCommand extends Command
             $k = $this->cleanText($row[1]);
             $v = $this->cleanText($row[2]);
             if ($k !== '' && $v !== '' && $k !== $v) {
-                $specs[$k] = $v;
+                if (preg_match('/производитель|импортер|импортёр|сервисный|страна происхождения/ui', $k)) {
+                    $serviceInfo[$k] = $v;
+                } else {
+                    $specs[$k] = $v;
+                }
             }
         }
         if (empty($specs)) {
@@ -423,7 +441,11 @@ class EnrichTeplodvorCommand extends Command
                 $k = $this->cleanText($row[1]);
                 $v = $this->cleanText($row[2]);
                 if ($k !== '' && $v !== '' && $k !== $v && mb_strlen($k) <= 80) {
-                    $specs[$k] = $v;
+                    if (preg_match('/производитель|импортер|импортёр|сервисный|страна происхождения/ui', $k)) {
+                        $serviceInfo[$k] = $v;
+                    } else {
+                        $specs[$k] = $v;
+                    }
                 }
             }
         }
@@ -436,7 +458,7 @@ class EnrichTeplodvorCommand extends Command
             $desc = (string) preg_replace('/\s{2,}/u', ' ', $desc);
         }
 
-        return compact('name', 'images', 'specs', 'desc');
+        return compact('name', 'images', 'specs', 'serviceInfo', 'desc');
     }
 
     private function cleanText(string $value): string
