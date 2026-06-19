@@ -293,14 +293,31 @@
         }
 
         .ai-assistant-select {
+            color-scheme: dark;
             min-height: 30px;
             padding: 4px 28px 4px 9px;
             border: 1px solid rgba(148, 163, 184, .25);
             border-radius: 6px;
-            background: rgba(15, 23, 42, .28);
+            background-color: rgb(15, 23, 42);
             color: rgb(226, 232, 240);
             font-size: 12px;
             font-weight: 700;
+        }
+
+        .ai-assistant-select:focus {
+            outline: 2px solid rgba(251, 191, 36, .28);
+            outline-offset: 2px;
+            border-color: rgba(251, 191, 36, .68);
+        }
+
+        .ai-assistant-select option {
+            background-color: rgb(15, 23, 42);
+            color: rgb(226, 232, 240);
+        }
+
+        .ai-assistant-select option:checked {
+            background-color: rgb(30, 41, 59);
+            color: rgb(251, 191, 36);
         }
 
         .ai-assistant-pagination {
