@@ -129,7 +129,9 @@ class EnrichTeplodvorCommand extends Command
                     })
                     ->orWhere(function ($q2) {
                         $q2->whereNull('service_info')->orWhere('service_info', '')->orWhere('service_info', '[]')->orWhere('service_info', '{}')
-                           ->orWhereRaw('JSON_LENGTH(service_info) < 2');
+                           ->orWhereRaw('JSON_LENGTH(service_info) < 2')
+                           // Catch garbage: old parser captured full-page content — values > 600 chars
+                           ->orWhereRaw('JSON_LENGTH(service_info) >= 2 AND CHAR_LENGTH(service_info) > 1500');
                     });
             });
         }
@@ -383,7 +385,7 @@ class EnrichTeplodvorCommand extends Command
                         // Re-scrape if fewer than 2 keys (e.g. only "Производитель" without Импортер/Сервисный центр)
                         // or if all values are very short (just brand name like "Ariston")
                         $maxLen = ! empty($decoded) ? max(array_map(fn ($v) => strlen((string) $v), array_values($decoded))) : 0;
-                        $needsUpdate = count($decoded) < 2 || $maxLen < 50;
+                        $needsUpdate = count($decoded) < 2 || $maxLen < 50 || $maxLen > 600;
                     }
                 }
                 if ($needsUpdate) {
