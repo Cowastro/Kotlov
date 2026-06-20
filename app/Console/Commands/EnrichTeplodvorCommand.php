@@ -444,36 +444,29 @@ class EnrichTeplodvorCommand extends Command
             }
         }
 
-        // Service info: find the specific table that contains "импортер" or "сервисный центр"
-        // (the legal section at the bottom — not the specs table, not the sidebar).
-        // Same principle as extractDynamicBlocks: narrow to the RIGHT container first.
+        // Service info: <div class="info-spec"> contains "Label: value" lines separated by <br>.
+        // Same principle as extractDynamicBlocks: find the specific container, split into blocks,
+        // match each block against known labels with simple str_starts_with.
         $serviceInfo = [];
-        preg_match_all('/<table[^>]*>([\s\S]*?)<\/table>/ui', $html, $tables);
-        foreach ($tables[0] ?? [] as $tbl) {
-            $plain = mb_strtolower(strip_tags($tbl));
-            if (! str_contains($plain, 'импортер') && ! str_contains($plain, 'сервисный центр')) {
-                continue;
-            }
-            // Found the legal table — extract each 2-column row
-            preg_match_all('/<tr[^>]*>([\s\S]*?)<\/tr>/ui', $tbl, $rows);
-            foreach ($rows[1] ?? [] as $rowHtml) {
-                preg_match_all('/<td[^>]*>([\s\S]*?)<\/td>/ui', $rowHtml, $cells);
-                $cellTexts = array_map(fn ($c) => $this->cleanText($c), $cells[1] ?? []);
-                if (count($cellTexts) >= 2) {
-                    $k = $cellTexts[0];
-                    $v = $cellTexts[1];
-                    if ($k !== '' && $v !== '' && mb_strlen($k) <= 80 && mb_strlen($v) >= 10) {
-                        $serviceInfo[$k] = $v;
-                    }
-                } elseif (count($cellTexts) === 1) {
-                    // Single-cell row: "Label: value" format
-                    $text = $cellTexts[0];
-                    if (preg_match('/^(производитель|импортер|импортёр|сервисный\s+центр|страна\s+происхождения)[^:]{0,50}:\s*(.{10,600})$/ui', $text, $sm)) {
-                        $serviceInfo[trim($sm[1])] = trim($sm[2]);
+        $serviceLabels = ['Производитель', 'Импортер в РБ', 'Импортёр в РБ', 'Импортер', 'Сервисный центр', 'Страна происхождения'];
+        if (preg_match('/<div[^>]*class="info-spec"[^>]*>([\s\S]*?)<\/div>/ui', $html, $m)) {
+            $blocks = preg_split('/<br\s*\/?>/ui', $m[1]);
+            foreach ($blocks as $block) {
+                $text = $this->cleanText($block);
+                if ($text === '') {
+                    continue;
+                }
+                foreach ($serviceLabels as $label) {
+                    $prefix = $label . ':';
+                    if (mb_stripos($text, $prefix) === 0) {
+                        $value = trim(mb_substr($text, mb_strlen($prefix)));
+                        if (mb_strlen($value) >= 10) {
+                            $serviceInfo[$label] = $value;
+                        }
+                        break;
                     }
                 }
             }
-            break; // only the first matching table
         }
 
         // Description
