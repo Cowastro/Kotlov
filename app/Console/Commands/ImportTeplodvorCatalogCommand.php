@@ -472,19 +472,17 @@ class ImportTeplodvorCatalogCommand extends Command
             }
         }
 
-        // Pass 3: catch full-address service info in free-text / single-cell format
-        // e.g. "Производитель: Аристоне Термо, Виале Аристиде Мерлони 45, Фабриано 60044, Италия"
+        // Pass 3: extract service fields from inline text (may all be on one line)
+        // "Производитель: [value]Импортер в РБ: [value]Сервисный центр: [value]"
         $stripped = (string) preg_replace('/<(script|style|noscript)\b[\s\S]*?<\/\1>/iu', '', $html);
-        $stripped = html_entity_decode(strip_tags($stripped), ENT_QUOTES | ENT_HTML5, 'UTF-8');
-        foreach (preg_split('/[\r\n]+/', $stripped) ?: [] as $line) {
-            $line = trim((string) preg_replace('/\s+/', ' ', $line));
-            if (preg_match(
-                '/^(производитель\b[^:]{0,30}|импортер[ъ]?\b(?:\s+в\s+(?:рб|беларуси|белоруссии))?[^:]{0,20}|импортёр\b(?:\s+в\s+(?:рб|беларуси|белоруссии))?[^:]{0,20}|сервисный\s+центр[^:]{0,20}|страна\s+происхождения[^:]{0,20})\s*:\s*(.{20,})/ui',
-                $line, $parts
-            )) {
-                $label = trim($parts[1]);
-                $value = trim($parts[2]);
-                if ($label && $value && (! isset($serviceInfo[$label]) || strlen($value) > strlen($serviceInfo[$label]))) {
+        $stripped = (string) preg_replace('/\s+/', ' ', html_entity_decode(strip_tags($stripped), ENT_QUOTES | ENT_HTML5, 'UTF-8'));
+        $labelPat = 'производитель\b[^:]{0,40}|импортер[ъ]?\b[^:]{0,35}|импортёр\b[^:]{0,35}|сервисный\s+центр[^:]{0,30}|страна\s+происхождения[^:]{0,30}';
+        $stopPat  = 'производитель\b|импортер[ъ]?\b|импортёр\b|сервисный\s+центр\b|страна\s+происхождения\b';
+        if (preg_match_all('/(' . $labelPat . ')\s*:\s*([\s\S]*?)(?=' . $stopPat . '|\z)/ui', $stripped, $sm, PREG_SET_ORDER)) {
+            foreach ($sm as $match) {
+                $label = trim($match[1]);
+                $value = trim($match[2]);
+                if ($label && strlen($value) >= 10 && (! isset($serviceInfo[$label]) || strlen($value) > strlen($serviceInfo[$label]))) {
                     $serviceInfo[$label] = $value;
                 }
             }
