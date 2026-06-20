@@ -472,6 +472,24 @@ class ImportTeplodvorCatalogCommand extends Command
             }
         }
 
+        // Pass 3: catch full-address service info in free-text / single-cell format
+        // e.g. "Производитель: Аристоне Термо, Виале Аристиде Мерлони 45, Фабриано 60044, Италия"
+        $stripped = (string) preg_replace('/<(script|style|noscript)\b[\s\S]*?<\/\1>/iu', '', $html);
+        $stripped = html_entity_decode(strip_tags($stripped), ENT_QUOTES | ENT_HTML5, 'UTF-8');
+        foreach (preg_split('/[\r\n]+/', $stripped) ?: [] as $line) {
+            $line = trim((string) preg_replace('/\s+/', ' ', $line));
+            if (preg_match(
+                '/^(производитель\b[^:]{0,30}|импортер[ъ]?\b(?:\s+в\s+(?:рб|беларуси|белоруссии))?[^:]{0,20}|импортёр\b(?:\s+в\s+(?:рб|беларуси|белоруссии))?[^:]{0,20}|сервисный\s+центр[^:]{0,20}|страна\s+происхождения[^:]{0,20})\s*:\s*(.{20,})/ui',
+                $line, $parts
+            )) {
+                $label = trim($parts[1]);
+                $value = trim($parts[2]);
+                if ($label && $value && (! isset($serviceInfo[$label]) || strlen($value) > strlen($serviceInfo[$label]))) {
+                    $serviceInfo[$label] = $value;
+                }
+            }
+        }
+
         // Images (large)
         preg_match_all('/userfls\/shop\/large\/[^\'"]+\.(jpg|jpeg|png)/i', $html, $imgs);
         $images = array_unique(array_map(

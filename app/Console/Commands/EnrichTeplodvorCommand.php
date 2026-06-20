@@ -128,7 +128,8 @@ class EnrichTeplodvorCommand extends Command
                         $q2->whereNull('specs')->orWhere('specs', '')->orWhere('specs', '{}');
                     })
                     ->orWhere(function ($q2) {
-                        $q2->whereNull('service_info')->orWhere('service_info', '')->orWhere('service_info', '[]')->orWhere('service_info', '{}');
+                        $q2->whereNull('service_info')->orWhere('service_info', '')->orWhere('service_info', '[]')->orWhere('service_info', '{}')
+                           ->orWhereRaw('CHAR_LENGTH(service_info) < 80');
                     });
             });
         }
@@ -375,7 +376,15 @@ class EnrichTeplodvorCommand extends Command
 
             if (! empty($card['serviceInfo'])) {
                 $existingService = DB::table('products')->where('id', $pid)->value('service_info');
-                if (empty($existingService) || $existingService === '[]' || $existingService === '{}') {
+                $needsUpdate = empty($existingService) || $existingService === '[]' || $existingService === '{}';
+                if (! $needsUpdate) {
+                    $decoded = json_decode($existingService, true);
+                    if (is_array($decoded) && ! empty($decoded)) {
+                        $maxLen = max(array_map(fn ($v) => strlen((string) $v), array_values($decoded)));
+                        $needsUpdate = $maxLen < 50;
+                    }
+                }
+                if ($needsUpdate) {
                     DB::table('products')->where('id', $pid)->update([
                         'service_info' => json_encode($card['serviceInfo'], JSON_UNESCAPED_UNICODE),
                     ]);
@@ -446,6 +455,25 @@ class EnrichTeplodvorCommand extends Command
                     } else {
                         $specs[$k] = $v;
                     }
+                }
+            }
+        }
+
+        // Pass 3: catch full-address service info in paragraph/free-text format
+        // e.g. "<p>Производитель: Аристоне Термо, Виале Аристиде Мерлони 45...</p>"
+        // or single-cell table rows — longer value always wins over shorter one
+        $stripped = (string) preg_replace('/<(script|style|noscript)\b[\s\S]*?<\/\1>/iu', '', $html);
+        $stripped = html_entity_decode(strip_tags($stripped), ENT_QUOTES | ENT_HTML5, 'UTF-8');
+        foreach (preg_split('/[\r\n]+/', $stripped) ?: [] as $line) {
+            $line = trim((string) preg_replace('/\s+/', ' ', $line));
+            if (preg_match(
+                '/^(производитель\b[^:]{0,30}|импортер[ъ]?\b(?:\s+в\s+(?:рб|беларуси|белоруссии))?[^:]{0,20}|импортёр\b(?:\s+в\s+(?:рб|беларуси|белоруссии))?[^:]{0,20}|сервисный\s+центр[^:]{0,20}|страна\s+происхождения[^:]{0,20})\s*:\s*(.{20,})/ui',
+                $line, $parts
+            )) {
+                $label = trim($parts[1]);
+                $value = trim($parts[2]);
+                if ($label && $value && (! isset($serviceInfo[$label]) || strlen($value) > strlen($serviceInfo[$label]))) {
+                    $serviceInfo[$label] = $value;
                 }
             }
         }
