@@ -461,19 +461,31 @@ class EnrichTeplodvorCommand extends Command
             }
         }
 
-        // Pass 3: extract service fields from inline text (all on one line / no HTML structure)
-        // Pattern: "Производитель: [value]Импортер в РБ: [value]Сервисный центр: [value]"
-        // Lookahead stops value at the next keyword, so each field is captured separately.
-        $stripped = (string) preg_replace('/<(script|style|noscript)\b[\s\S]*?<\/\1>/iu', '', $html);
-        $stripped = (string) preg_replace('/\s+/', ' ', html_entity_decode(strip_tags($stripped), ENT_QUOTES | ENT_HTML5, 'UTF-8'));
-        $labelPat = 'производитель\b[^:]{0,40}|импортер[ъ]?\b[^:]{0,35}|импортёр\b[^:]{0,35}|сервисный\s+центр[^:]{0,30}|страна\s+происхождения[^:]{0,30}';
+        // Pass 3: extract service info from bounded <td>/<p>/<li> elements.
+        // Uses tempered greedy token (?:[^<]|<(?!\/tag>))+ to prevent crossing closing tags,
+        // so parsing is isolated per-element and can't bleed across the page.
+        $labelPat = 'производитель\b[^:]{0,50}|импортер[ъ]?\b[^:]{0,40}|импортёр\b[^:]{0,40}|сервисный\s+центр[^:]{0,35}|страна\s+происхождения[^:]{0,35}';
         $stopPat  = 'производитель\b|импортер[ъ]?\b|импортёр\b|сервисный\s+центр\b|страна\s+происхождения\b';
-        if (preg_match_all('/(' . $labelPat . ')\s*:\s*([\s\S]*?)(?=' . $stopPat . '|\z)/ui', $stripped, $sm, PREG_SET_ORDER)) {
-            foreach ($sm as $match) {
-                $label = trim($match[1]);
-                $value = trim($match[2]);
-                if ($label && strlen($value) >= 10 && (! isset($serviceInfo[$label]) || strlen($value) > strlen($serviceInfo[$label]))) {
-                    $serviceInfo[$label] = $value;
+        $elemPats = [
+            '/<td[^>]{0,200}>((?:[^<]|<(?!\/td>))+)<\/td>/ui',
+            '/<(p|li|dd)[^>]{0,100}>((?:[^<]|<(?!\/(?:p|li|dd)>))+)<\/(?:p|li|dd)>/ui',
+        ];
+        foreach ($elemPats as $elemPat) {
+            preg_match_all($elemPat, $html, $elems);
+            $contents = isset($elems[2]) ? $elems[2] : $elems[1];
+            foreach ($contents as $el) {
+                $text = trim((string) preg_replace('/\s+/', ' ', html_entity_decode(strip_tags($el), ENT_QUOTES | ENT_HTML5, 'UTF-8')));
+                if (strlen($text) < 10 || ! preg_match('/^(производитель|импортер|импортёр|сервисный\s+центр|страна\s+происхождения)/ui', $text)) {
+                    continue;
+                }
+                preg_match_all('/(' . $labelPat . ')\s*:\s*([\s\S]*?)(?=' . $stopPat . '|\z)/ui', $text, $sm, PREG_SET_ORDER);
+                foreach ($sm as $match) {
+                    $label = trim($match[1]);
+                    $value = trim($match[2]);
+                    if ($label && strlen($value) >= 10 && strlen($value) <= 600
+                        && (! isset($serviceInfo[$label]) || strlen($value) > strlen($serviceInfo[$label]))) {
+                        $serviceInfo[$label] = $value;
+                    }
                 }
             }
         }
