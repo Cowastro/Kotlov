@@ -427,9 +427,8 @@ class EnrichTeplodvorCommand extends Command
             }
         }
 
-        // Specs & service info
-        $specs       = [];
-        $serviceInfo = [];
+        // Specs: two-column table with class="parametr" on the key cell
+        $specs = [];
         preg_match_all(
             '/<td[^>]*class="parametr"[^>]*>\s*<span[^>]*>([\s\S]*?)<\/span>\s*<\/td>\s*<td[^>]*>([\s\S]*?)<\/td>/u',
             $html, $m, PREG_SET_ORDER
@@ -438,58 +437,40 @@ class EnrichTeplodvorCommand extends Command
             $k = $this->cleanText($row[1]);
             $v = $this->cleanText($row[2]);
             if ($k !== '' && $v !== '' && $k !== $v) {
-                if (preg_match('/^(производитель(?!\p{L})|импортер(?!\p{L})|импортёр(?!\p{L})|сервисный\s+центр|страна\s+происхождения)/ui', $k)) {
-                    $serviceInfo[$k] = $v;
-                } else {
-                    $specs[$k] = $v;
-                }
-            }
-        }
-        if (empty($specs)) {
-            preg_match_all(
-                '/<tr[^>]*>\s*<td[^>]*>([\s\S]*?)<\/td>\s*<td[^>]*>([\s\S]*?)<\/td>/u',
-                $html, $m, PREG_SET_ORDER
-            );
-            foreach ($m as $row) {
-                $k = $this->cleanText($row[1]);
-                $v = $this->cleanText($row[2]);
-                if ($k !== '' && $v !== '' && $k !== $v && mb_strlen($k) <= 80) {
-                    if (preg_match('/^(производитель(?!\p{L})|импортер(?!\p{L})|импортёр(?!\p{L})|сервисный\s+центр|страна\s+происхождения)/ui', $k)) {
-                        $serviceInfo[$k] = $v;
-                    } else {
-                        $specs[$k] = $v;
-                    }
-                }
+                $specs[$k] = $v;
             }
         }
 
-        // Pass 3: extract service info from bounded <td>/<p>/<li> elements.
-        // Uses tempered greedy token (?:[^<]|<(?!\/tag>))+ to prevent crossing closing tags,
-        // so parsing is isolated per-element and can't bleed across the page.
-        $labelPat = 'производитель\b[^:]{0,50}|импортер[ъ]?\b[^:]{0,40}|импортёр\b[^:]{0,40}|сервисный\s+центр[^:]{0,35}|страна\s+происхождения[^:]{0,35}';
-        $stopPat  = 'производитель\b|импортер[ъ]?\b|импортёр\b|сервисный\s+центр\b|страна\s+происхождения\b';
-        $elemPats = [
-            '/<td[^>]{0,200}>((?:[^<]|<(?!\/td>))+)<\/td>/ui',
-            '/<(p|li|dd)[^>]{0,100}>((?:[^<]|<(?!\/(?:p|li|dd)>))+)<\/(?:p|li|dd)>/ui',
-        ];
-        foreach ($elemPats as $elemPat) {
-            preg_match_all($elemPat, $html, $elems);
-            $contents = isset($elems[2]) ? $elems[2] : $elems[1];
-            foreach ($contents as $el) {
-                $text = trim((string) preg_replace('/\s+/', ' ', html_entity_decode(strip_tags($el), ENT_QUOTES | ENT_HTML5, 'UTF-8')));
-                if (strlen($text) < 10 || ! preg_match('/^(производитель|импортер|импортёр|сервисный\s+центр|страна\s+происхождения)/ui', $text)) {
-                    continue;
-                }
-                preg_match_all('/(' . $labelPat . ')\s*:\s*([\s\S]*?)(?=' . $stopPat . '|\z)/ui', $text, $sm, PREG_SET_ORDER);
-                foreach ($sm as $match) {
-                    $label = trim($match[1]);
-                    $value = trim($match[2]);
-                    if ($label && strlen($value) >= 10 && strlen($value) <= 600
-                        && (! isset($serviceInfo[$label]) || strlen($value) > strlen($serviceInfo[$label]))) {
-                        $serviceInfo[$label] = $value;
+        // Service info: find the specific table that contains "импортер" or "сервисный центр"
+        // (the legal section at the bottom — not the specs table, not the sidebar).
+        // Same principle as extractDynamicBlocks: narrow to the RIGHT container first.
+        $serviceInfo = [];
+        preg_match_all('/<table[^>]*>([\s\S]*?)<\/table>/ui', $html, $tables);
+        foreach ($tables[0] ?? [] as $tbl) {
+            $plain = mb_strtolower(strip_tags($tbl));
+            if (! str_contains($plain, 'импортер') && ! str_contains($plain, 'сервисный центр')) {
+                continue;
+            }
+            // Found the legal table — extract each 2-column row
+            preg_match_all('/<tr[^>]*>([\s\S]*?)<\/tr>/ui', $tbl, $rows);
+            foreach ($rows[1] ?? [] as $rowHtml) {
+                preg_match_all('/<td[^>]*>([\s\S]*?)<\/td>/ui', $rowHtml, $cells);
+                $cellTexts = array_map(fn ($c) => $this->cleanText($c), $cells[1] ?? []);
+                if (count($cellTexts) >= 2) {
+                    $k = $cellTexts[0];
+                    $v = $cellTexts[1];
+                    if ($k !== '' && $v !== '' && mb_strlen($k) <= 80 && mb_strlen($v) >= 10) {
+                        $serviceInfo[$k] = $v;
+                    }
+                } elseif (count($cellTexts) === 1) {
+                    // Single-cell row: "Label: value" format
+                    $text = $cellTexts[0];
+                    if (preg_match('/^(производитель|импортер|импортёр|сервисный\s+центр|страна\s+происхождения)[^:]{0,50}:\s*(.{10,600})$/ui', $text, $sm)) {
+                        $serviceInfo[trim($sm[1])] = trim($sm[2]);
                     }
                 }
             }
+            break; // only the first matching table
         }
 
         // Description
