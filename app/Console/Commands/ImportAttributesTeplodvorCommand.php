@@ -121,9 +121,6 @@ class ImportAttributesTeplodvorCommand extends Command
             ->whereNotNull('specs')
             ->where('specs', '!=', '')
             ->where('specs', '!=', '[]')
-            ->whereNotExists(fn ($w) => $w
-                ->from('product_attribute_values')
-                ->whereColumn('product_attribute_values.product_id', 'products.id'))
             ->orderBy('id');
 
         if ($this->option('limit')) {
@@ -134,7 +131,7 @@ class ImportAttributesTeplodvorCommand extends Command
         $this->info(sprintf('Products to process: %d', $products->count()));
 
         $stats = ['products' => 0, 'values_created' => 0, 'attrs_created' => 0,
-                  'skipped_no_map' => 0, 'skipped_no_value' => 0];
+                  'skipped_no_map' => 0, 'skipped_no_value' => 0, 'skipped_existing' => 0];
 
         foreach ($products as $product) {
             $specs = json_decode($product->specs, true);
@@ -194,6 +191,14 @@ class ImportAttributesTeplodvorCommand extends Command
                     ? ($parsed === '1' ? 'Да' : 'Нет')
                     : $parsed . ($attr->suffix ? ' ' . $attr->suffix : '');
                 $this->line(sprintf('    %s = %s', $attr->name, $display));
+
+                if ($attr->id && DB::table('product_attribute_values')
+                        ->where('product_id', $product->id)
+                        ->where('attribute_id', $attr->id)
+                        ->exists()) {
+                    $stats['skipped_existing'] = ($stats['skipped_existing'] ?? 0) + 1;
+                    continue;
+                }
 
                 if ($apply && $attr->id) {
                     DB::table('product_attribute_values')->insert([
