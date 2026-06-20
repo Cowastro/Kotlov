@@ -266,6 +266,9 @@ class EnrichTeplodvorCommand extends Command
 
     private function findMatch(string $ourSlug, array $index, float $minScore, array $brandTokens = []): ?string
     {
+        // Strip trailing disambiguation suffix (-2, -3 …) added when our slug collides
+        $ourSlug = preg_replace('/-[1-9]$/', '', $ourSlug);
+
         $ourTokens = array_values(array_map(
             fn ($t) => self::SLUG_NORM[$t] ?? $t,
             array_filter(
