@@ -394,6 +394,11 @@ class ProductSourceEnricher
                 continue;
             }
 
+            $attributeSuffix = (string) DB::table('attributes')->where('id', $attributeId)->value('suffix');
+            if ($attributeSuffix !== '') {
+                $value = $this->stripTrailingUnit($value, $attributeSuffix);
+            }
+
             DB::table('product_attribute_values')->updateOrInsert(
                 [
                     'product_id' => $product->id,
@@ -1819,15 +1824,7 @@ class ProductSourceEnricher
         $unit = trim($fallbackUnit);
 
         if ($unit !== '') {
-            $quotedUnit = preg_quote($unit, '/');
-            $withoutDuplicateUnit = preg_replace('/\s+' . $quotedUnit . '\s*$/u', '', trim($value));
-
-            if (is_string($withoutDuplicateUnit)
-                && $withoutDuplicateUnit !== ''
-                && $withoutDuplicateUnit !== trim($value)
-                && ! $this->isUnitOnlyAttributeValue($withoutDuplicateUnit, $unit)) {
-                $value = $withoutDuplicateUnit;
-            }
+            $value = $this->stripTrailingUnit($value, $unit);
         }
 
         if ($unit === '' && preg_match('/^\s*([0-9]+(?:[,.][0-9]+)?)\s*(kw|w|watt|квт|вт|mm|cm|мм|см|м|l|л|kg|кг|g|г|m2|м2|м²|%|°c|c)\s*$/iu', $value, $match)) {
@@ -1836,6 +1833,31 @@ class ProductSourceEnricher
         }
 
         return [$value, $unit];
+    }
+
+    private function stripTrailingUnit(string $value, string $unit): string
+    {
+        $value = trim($this->cleanDatabaseText($this->cleanText($value)));
+        $unit = trim($this->cleanDatabaseText($this->cleanText($unit)));
+
+        if ($value === '' || $unit === '') {
+            return $value;
+        }
+
+        $quotedUnit = preg_quote($unit, '/');
+        $candidate = preg_replace('/(?:^|[\s\x{00A0}])' . $quotedUnit . '\s*$/u', '', $value);
+
+        if (! is_string($candidate)) {
+            return $value;
+        }
+
+        $candidate = trim($candidate);
+
+        if ($candidate === '' || $candidate === $value || $this->isUnitOnlyAttributeValue($candidate, $unit)) {
+            return $value;
+        }
+
+        return $candidate;
     }
 
     private function decodeArray(mixed $value): array
