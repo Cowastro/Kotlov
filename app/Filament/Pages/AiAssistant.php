@@ -9,6 +9,7 @@ use App\Models\SupplierSync;
 use App\Services\AiContentEnricher;
 use BackedEnum;
 use Filament\Actions\Action;
+use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Notifications\Notification;
@@ -30,6 +31,13 @@ class AiAssistant extends Page
     protected string $view = 'filament.pages.ai-assistant';
 
     public int $decisionsPerPage = 10;
+    public string $decisionSearch = '';
+    public string $decisionStatus = SupplierReviewDecision::STATUS_PENDING;
+    public string $decisionType = '';
+    public string $decisionChange = '';
+    public string $decisionSupplier = '';
+    public array $selectedDecisionIds = [];
+    public string $qualityIssue = 'without_content';
 
     public static function getNavigationGroup(): ?string
     {
@@ -44,16 +52,22 @@ class AiAssistant extends Page
     protected function getHeaderActions(): array
     {
         return [
-            Action::make('audit_missing_brand')
-                ->label('AI-аудит без бренда')
+            Action::make('catalog_quality_audit')
+                ->label('AI-аудит каталога')
                 ->icon('heroicon-o-sparkles')
                 ->color('warning')
                 ->form([
+                    Select::make('audit_type')
+                        ->label('Что проверить')
+                        ->options($this->catalogAuditTypeOptions())
+                        ->default('suspicious_category')
+                        ->required()
+                        ->native(false),
                     TextInput::make('limit')
-                        ->label('Сколько товаров проверить')
+                        ->label('Сколько товаров взять')
                         ->numeric()
                         ->minValue(1)
-                        ->maxValue(100)
+                        ->maxValue(200)
                         ->default(20)
                         ->required(),
                     Toggle::make('use_ai')
@@ -62,9 +76,9 @@ class AiAssistant extends Page
                         ->default(true),
                 ])
                 ->requiresConfirmation()
-                ->modalHeading('Запустить AI-аудит товаров без бренда')
-                ->modalDescription('Товары не изменятся. Будут созданы pending-решения для проверки.')
-                ->action(fn (array $data) => $this->queueMissingBrandAudit($data)),
+                ->modalHeading('Запустить AI-аудит каталога')
+                ->modalDescription('Товары не изменятся. AI подготовит pending-решения только там, где видит смену категории, бренда или возможный дубль.')
+                ->action(fn (array $data) => $this->queueCatalogQualityAudit($data)),
             Action::make('recalculate_pending')
                 ->label('Пересчитать pending')
                 ->icon('heroicon-o-arrow-path')
@@ -202,30 +216,312 @@ class AiAssistant extends Page
         ];
     }
 
+    public function qualityIssueOptions(): array
+    {
+        return [
+            'without_content' => 'Без SEO-описания',
+            'without_images' => 'Без фото',
+            'without_brand' => 'Без бренда',
+            'without_category' => 'Без категории',
+            'without_source' => 'Без источника',
+        ];
+    }
+
+    public function updatedQualityIssue(): void
+    {
+        if (! array_key_exists($this->qualityIssue, $this->qualityIssueOptions())) {
+            $this->qualityIssue = 'without_content';
+        }
+    }
+
+    public function qualitySamples(): array
+    {
+        $issue = array_key_exists($this->qualityIssue, $this->qualityIssueOptions())
+            ? $this->qualityIssue
+            : 'without_content';
+
+        return $this->qualityIssueQuery($issue)
+            ->with(['brand', 'category', 'supplierProducts.supplier'])
+            ->orderByDesc('updated_at')
+            ->orderByDesc('id')
+            ->limit(8)
+            ->get()
+            ->map(fn (Product $product): array => [
+                'id' => (int) $product->id,
+                'title' => (string) $product->name,
+                'sku' => $product->sku ?: '-',
+                'brand' => $product->brand?->name ?: '-',
+                'category' => $product->category?->name ?: '-',
+                'source' => $this->productSourceLabel($product),
+                'problems' => $this->productQualityProblems($product),
+                'url' => url('/admin/products/' . $product->id),
+            ])
+            ->all();
+    }
+
     public function pendingDecisions()
     {
         $perPage = in_array($this->decisionsPerPage, [5, 10, 25, 50, 100], true)
             ? $this->decisionsPerPage
             : 10;
 
-        return SupplierReviewDecision::query()
-            ->where('status', SupplierReviewDecision::STATUS_PENDING)
+        return $this->decisionQuery()
             ->latest('id')
             ->paginate($perPage, ['*'], 'decisionsPage')
-            ->through(fn (SupplierReviewDecision $decision): array => [
-                'id' => $decision->id,
-                'decision' => $this->decisionLabel($decision->decision),
-                'supplier' => $decision->supplier_code ?: '-',
-                'title' => $decision->supplier_title ?: ('product_id ' . ($decision->product_id ?: '-')),
-                'product_id' => $decision->product_id,
-                'product_url' => $decision->product_id ? url('/admin/products/' . $decision->product_id) : null,
-                'reason' => $decision->reason ?: '-',
-            ]);
+            ->through(function (SupplierReviewDecision $decision): array {
+                $payload = is_array($decision->payload) ? $decision->payload : [];
+                $changes = is_array($payload['changes'] ?? null) ? $payload['changes'] : [];
+
+                return [
+                    'id' => $decision->id,
+                    'decision' => $this->decisionLabel($decision->decision),
+                    'decision_code' => $decision->decision,
+                    'status' => $this->decisionStatusLabel($decision->status),
+                    'status_code' => $decision->status,
+                    'supplier' => $decision->supplier_code ?: '-',
+                    'title' => $decision->supplier_title ?: ('product_id ' . ($decision->product_id ?: '-')),
+                    'product_id' => $decision->product_id,
+                    'product_url' => $decision->product_id ? url('/admin/products/' . $decision->product_id) : null,
+                    'category_change' => $this->formatDecisionChange(
+                        $payload['current_category'] ?? null,
+                        $payload['suggested_category'] ?? null,
+                        array_key_exists('category_id', $changes),
+                    ),
+                    'brand_change' => $this->formatDecisionChange(
+                        $payload['current_brand'] ?? null,
+                        $payload['suggested_brand'] ?? null,
+                        array_key_exists('brand_id', $changes),
+                    ),
+                    'duplicate' => $this->formatDuplicate($decision, $payload),
+                    'reason' => $decision->reason ?: '-',
+                ];
+            });
     }
 
     public function updatedDecisionsPerPage(): void
     {
+        $this->selectedDecisionIds = [];
         $this->resetPage('decisionsPage');
+    }
+
+    public function updatedDecisionSearch(): void
+    {
+        $this->selectedDecisionIds = [];
+        $this->resetPage('decisionsPage');
+    }
+
+    public function updatedDecisionStatus(): void
+    {
+        $this->selectedDecisionIds = [];
+        $this->resetPage('decisionsPage');
+    }
+
+    public function updatedDecisionType(): void
+    {
+        $this->selectedDecisionIds = [];
+        $this->resetPage('decisionsPage');
+    }
+
+    public function updatedDecisionChange(): void
+    {
+        $this->selectedDecisionIds = [];
+        $this->resetPage('decisionsPage');
+    }
+
+    public function updatedDecisionSupplier(): void
+    {
+        $this->selectedDecisionIds = [];
+        $this->resetPage('decisionsPage');
+    }
+
+    public function resetDecisionFilters(): void
+    {
+        $this->decisionSearch = '';
+        $this->decisionStatus = SupplierReviewDecision::STATUS_PENDING;
+        $this->decisionType = '';
+        $this->decisionChange = '';
+        $this->decisionSupplier = '';
+        $this->selectedDecisionIds = [];
+        $this->resetPage('decisionsPage');
+    }
+
+    public function selectVisiblePendingDecisions(): void
+    {
+        $perPage = in_array($this->decisionsPerPage, [5, 10, 25, 50, 100], true)
+            ? $this->decisionsPerPage
+            : 10;
+        $page = (int) \Illuminate\Pagination\Paginator::resolveCurrentPage('decisionsPage');
+
+        $visibleIds = $this->decisionQuery(forcePending: true)
+            ->latest('id')
+            ->forPage($page, $perPage)
+            ->pluck('id')
+            ->map(fn ($id): int => (int) $id)
+            ->all();
+
+        $this->selectedDecisionIds = array_values(array_unique([
+            ...$this->normalizedSelectedDecisionIds(),
+            ...$visibleIds,
+        ]));
+    }
+
+    public function clearSelectedDecisions(): void
+    {
+        $this->selectedDecisionIds = [];
+    }
+
+    public function applySelectedDecisions(): void
+    {
+        $ids = $this->pendingSelectedDecisionIds();
+        if ($ids === []) {
+            $this->notifyNoSelectedPending();
+            return;
+        }
+
+        try {
+            $exitCode = Artisan::call('supplier:apply-review-decisions', [
+                '--apply' => true,
+                '--id' => $ids,
+            ]);
+
+            if ($exitCode !== 0) {
+                throw new \RuntimeException(trim(Artisan::output()) ?: 'Команда применения вернула ошибку.');
+            }
+
+            $this->selectedDecisionIds = [];
+            Notification::make()
+                ->success()
+                ->title('Выбранные решения применены')
+                ->body('Решений: ' . count($ids))
+                ->send();
+        } catch (Throwable $exception) {
+            Notification::make()
+                ->danger()
+                ->title('Не удалось применить выбранные решения')
+                ->body($exception->getMessage())
+                ->persistent()
+                ->send();
+        }
+    }
+
+    public function deleteSelectedDecisions(): void
+    {
+        $ids = $this->pendingSelectedDecisionIds();
+        if ($ids === []) {
+            $this->notifyNoSelectedPending();
+            return;
+        }
+
+        try {
+            $exitCode = Artisan::call('supplier:apply-review-decisions', [
+                '--apply' => true,
+                '--delete' => $ids,
+            ]);
+
+            if ($exitCode !== 0) {
+                throw new \RuntimeException(trim(Artisan::output()) ?: 'Команда удаления вернула ошибку.');
+            }
+
+            $this->selectedDecisionIds = [];
+            Notification::make()
+                ->success()
+                ->title('Выбранные pending-решения удалены')
+                ->body('Решений: ' . count($ids))
+                ->send();
+        } catch (Throwable $exception) {
+            Notification::make()
+                ->danger()
+                ->title('Не удалось удалить выбранные решения')
+                ->body($exception->getMessage())
+                ->persistent()
+                ->send();
+        }
+    }
+
+    public function recalculateSelectedDecisions(): void
+    {
+        $ids = $this->pendingSelectedDecisionIds();
+        if ($ids === []) {
+            $this->notifyNoSelectedPending();
+            return;
+        }
+
+        $productIds = SupplierReviewDecision::query()
+            ->whereIn('id', $ids)
+            ->where('decision', SupplierReviewDecision::DECISION_UPDATE_PRODUCT_CATALOG)
+            ->whereNotNull('product_id')
+            ->pluck('product_id')
+            ->map(fn ($productId): int => (int) $productId)
+            ->filter()
+            ->unique()
+            ->values()
+            ->all();
+
+        if ($productIds === []) {
+            Notification::make()
+                ->warning()
+                ->title('Нет выбранных решений для пересчёта')
+                ->body('Пересчитывать можно pending-решения типа бренд/категория с product_id.')
+                ->send();
+
+            return;
+        }
+
+        RunProductCatalogAiReview::dispatch(
+            $productIds,
+            (int) auth()->id(),
+            true,
+        );
+
+        $this->selectedDecisionIds = [];
+        Notification::make()
+            ->success()
+            ->title('Выбранные решения поставлены на пересчёт')
+            ->body('Товаров: ' . count($productIds))
+            ->persistent()
+            ->send();
+    }
+
+    public function decisionTypeOptions(): array
+    {
+        return [
+            SupplierReviewDecision::DECISION_LINK => $this->decisionLabel(SupplierReviewDecision::DECISION_LINK),
+            SupplierReviewDecision::DECISION_UNLINK => $this->decisionLabel(SupplierReviewDecision::DECISION_UNLINK),
+            SupplierReviewDecision::DECISION_UPDATE_RETAIL_PRICE => $this->decisionLabel(SupplierReviewDecision::DECISION_UPDATE_RETAIL_PRICE),
+            SupplierReviewDecision::DECISION_UPDATE_PRODUCT_CATALOG => $this->decisionLabel(SupplierReviewDecision::DECISION_UPDATE_PRODUCT_CATALOG),
+            SupplierReviewDecision::DECISION_IGNORE => $this->decisionLabel(SupplierReviewDecision::DECISION_IGNORE),
+        ];
+    }
+
+    public function decisionChangeOptions(): array
+    {
+        return [
+            'category' => 'Меняется категория',
+            'brand' => 'Меняется бренд',
+            'brand_missing' => 'Бренд не найден',
+            'duplicate' => 'Есть дубль',
+        ];
+    }
+
+    public function catalogAuditTypeOptions(): array
+    {
+        return [
+            'suspicious_category' => 'Подозрительная категория',
+            'missing_category' => 'Без категории',
+            'duplicates' => 'Возможные дубли',
+            'missing_brand' => 'Без бренда',
+        ];
+    }
+
+    public function supplierFilterOptions(): array
+    {
+        return SupplierReviewDecision::query()
+            ->whereNotNull('supplier_code')
+            ->where('supplier_code', '!=', '')
+            ->distinct()
+            ->orderBy('supplier_code')
+            ->pluck('supplier_code', 'supplier_code')
+            ->all();
     }
 
     public function applyPendingDecision(int $decisionId): void
@@ -307,9 +603,14 @@ class AiAssistant extends Page
         ];
     }
 
-    private function queueMissingBrandAudit(array $data): void
+    private function queueCatalogQualityAudit(array $data): void
     {
-        $limit = max(1, min(100, (int) ($data['limit'] ?? 20)));
+        $auditType = (string) ($data['audit_type'] ?? 'suspicious_category');
+        if (! array_key_exists($auditType, $this->catalogAuditTypeOptions())) {
+            $auditType = 'suspicious_category';
+        }
+
+        $limit = max(1, min(200, (int) ($data['limit'] ?? 20)));
         $useAi = (bool) ($data['use_ai'] ?? true);
 
         if ($useAi && ! app(AiContentEnricher::class)->isAvailable()) {
@@ -322,19 +623,13 @@ class AiAssistant extends Page
             return;
         }
 
-        $productIds = Product::query()
-            ->where('is_archived', false)
-            ->whereNull('brand_id')
-            ->orderBy('id')
-            ->limit($limit)
-            ->pluck('id')
-            ->all();
+        $productIds = $this->catalogAuditProductIds($auditType, $limit);
 
         if ($productIds === []) {
             Notification::make()
                 ->warning()
-                ->title('Товары без бренда не найдены')
-                ->body('Очередь для этого сценария сейчас пустая.')
+                ->title('Кандидаты для аудита не найдены')
+                ->body('Сценарий: ' . $this->catalogAuditTypeOptions()[$auditType])
                 ->send();
 
             return;
@@ -348,8 +643,8 @@ class AiAssistant extends Page
 
         Notification::make()
             ->success()
-            ->title('AI-аудит поставлен в очередь')
-            ->body('Товаров в задаче: ' . count($productIds) . '. Результат появится в pending-решениях.')
+            ->title('AI-аудит каталога поставлен в очередь')
+            ->body($this->catalogAuditTypeOptions()[$auditType] . ': товаров в задаче ' . count($productIds) . '. Результат появится в pending-решениях.')
             ->persistent()
             ->send();
     }
@@ -406,6 +701,125 @@ class AiAssistant extends Page
             ->send();
     }
 
+    private function catalogAuditProductIds(string $auditType, int $limit): array
+    {
+        $query = Product::query()
+            ->where('is_archived', false)
+            ->where('is_active', true);
+
+        match ($auditType) {
+            'missing_category' => $query->whereNull('category_id'),
+            'missing_brand' => $query->whereNull('brand_id'),
+            'duplicates' => $query->where(function ($query): void {
+                $query
+                    ->whereNotNull('sku')
+                    ->where('sku', '!=', '')
+                    ->orWhereHas('supplierProducts', fn ($query) => $query
+                        ->whereNotNull('supplier_article')
+                        ->where('supplier_article', '!=', ''));
+            }),
+            'suspicious_category' => $query
+                ->whereNotNull('category_id')
+                ->where(function ($query): void {
+                    $query
+                        ->whereHas('supplierProducts')
+                        ->orWhereNull('brand_id')
+                        ->orWhere(fn ($query) => $query
+                            ->whereNull('content')
+                            ->orWhere('content', '')
+                            ->orWhereRaw('CHAR_LENGTH(TRIM(content)) < 80'));
+                }),
+            default => null,
+        };
+
+        return $query
+            ->orderByDesc('updated_at')
+            ->orderByDesc('id')
+            ->limit($limit)
+            ->pluck('id')
+            ->map(fn ($id): int => (int) $id)
+            ->all();
+    }
+
+    private function qualityIssueQuery(string $issue)
+    {
+        $query = Product::query()
+            ->where('is_archived', false)
+            ->where('is_active', true);
+
+        match ($issue) {
+            'without_images' => $query->where(fn ($query) => $query
+                ->whereNull('images')
+                ->orWhere('images', '')
+                ->orWhere('images', '[]')
+                ->orWhereRaw('JSON_LENGTH(images) = 0')),
+            'without_brand' => $query->whereNull('brand_id'),
+            'without_category' => $query->whereNull('category_id'),
+            'without_source' => $query->whereDoesntHave('supplierProducts', fn ($query) => $query
+                ->whereNotNull('source_url')
+                ->where('source_url', '!=', '')),
+            default => $query->where(fn ($query) => $query
+                ->whereNull('content')
+                ->orWhere('content', '')
+                ->orWhereRaw('CHAR_LENGTH(TRIM(content)) < 80')),
+        };
+
+        return $query;
+    }
+
+    private function productQualityProblems(Product $product): array
+    {
+        $problems = [];
+
+        if (! filled($product->content) || mb_strlen(trim(strip_tags((string) $product->content))) < 80) {
+            $problems[] = 'SEO';
+        }
+
+        if (! $this->productHasImages($product)) {
+            $problems[] = 'Фото';
+        }
+
+        if (! $product->brand_id) {
+            $problems[] = 'Бренд';
+        }
+
+        if (! $product->category_id) {
+            $problems[] = 'Категория';
+        }
+
+        if ($this->productSourceLabel($product) === '-') {
+            $problems[] = 'Источник';
+        }
+
+        return $problems;
+    }
+
+    private function productHasImages(Product $product): bool
+    {
+        $images = $product->images;
+
+        if (is_array($images)) {
+            return collect($images)->filter(fn ($image): bool => filled($image))->isNotEmpty();
+        }
+
+        return filled($images) && $images !== '[]';
+    }
+
+    private function productSourceLabel(Product $product): string
+    {
+        $supplierProduct = $product->supplierProducts
+            ->first(fn ($supplierProduct): bool => filled($supplierProduct->source_url));
+
+        if (! $supplierProduct) {
+            return '-';
+        }
+
+        return $supplierProduct->supplier?->code
+            ?: $supplierProduct->supplier?->name
+            ?: parse_url((string) $supplierProduct->source_url, PHP_URL_HOST)
+            ?: 'source_url';
+    }
+
     private function productsWithoutContent(): int
     {
         return Product::query()
@@ -436,6 +850,137 @@ class AiAssistant extends Page
             ->count();
     }
 
+    private function decisionQuery(bool $forcePending = false)
+    {
+        $search = trim($this->decisionSearch);
+        $status = $forcePending ? SupplierReviewDecision::STATUS_PENDING : trim($this->decisionStatus);
+        $type = trim($this->decisionType);
+        $change = trim($this->decisionChange);
+        $supplier = trim($this->decisionSupplier);
+
+        return SupplierReviewDecision::query()
+            ->when($status !== '', fn ($query) => $query->where('status', $status))
+            ->when($type !== '', fn ($query) => $query->where('decision', $type))
+            ->when($supplier !== '', fn ($query) => $query->where('supplier_code', $supplier))
+            ->when($change !== '', function ($query) use ($change): void {
+                match ($change) {
+                    'category' => $query->whereRaw("JSON_UNQUOTE(JSON_EXTRACT(payload, '$.changes.category_id')) IS NOT NULL AND JSON_UNQUOTE(JSON_EXTRACT(payload, '$.changes.category_id')) != 'null'"),
+                    'brand' => $query->whereRaw("JSON_UNQUOTE(JSON_EXTRACT(payload, '$.changes.brand_id')) IS NOT NULL AND JSON_UNQUOTE(JSON_EXTRACT(payload, '$.changes.brand_id')) != 'null'"),
+                    'brand_missing' => $query
+                        ->whereRaw("(JSON_UNQUOTE(JSON_EXTRACT(payload, '$.current_brand_id')) IS NULL OR JSON_UNQUOTE(JSON_EXTRACT(payload, '$.current_brand_id')) = 'null')")
+                        ->whereRaw("(JSON_UNQUOTE(JSON_EXTRACT(payload, '$.suggested_brand_id')) IS NULL OR JSON_UNQUOTE(JSON_EXTRACT(payload, '$.suggested_brand_id')) = 'null')"),
+                    'duplicate' => $query->whereRaw("JSON_UNQUOTE(JSON_EXTRACT(payload, '$.duplicate_product_id')) IS NOT NULL AND JSON_UNQUOTE(JSON_EXTRACT(payload, '$.duplicate_product_id')) != 'null'"),
+                    default => null,
+                };
+            })
+            ->when($search !== '', function ($query) use ($search): void {
+                $like = '%' . str_replace(['%', '_'], ['\%', '\_'], $search) . '%';
+
+                $query->where(function ($query) use ($like, $search): void {
+                    $query
+                        ->where('supplier_title', 'like', $like)
+                        ->orWhere('supplier_article', 'like', $like)
+                        ->orWhere('source_url', 'like', $like)
+                        ->orWhere('reason', 'like', $like);
+
+                    if (ctype_digit($search)) {
+                        $query->orWhere('product_id', (int) $search);
+                    }
+                });
+            });
+    }
+
+    private function formatDecisionChange(mixed $current, mixed $suggested, bool $changed): array
+    {
+        $currentText = filled($current) ? (string) $current : '-';
+        $suggestedText = filled($suggested) ? (string) $suggested : '-';
+
+        return [
+            'current' => $currentText,
+            'suggested' => $suggestedText,
+            'suggested_label' => $suggestedText === '-' ? 'Не найдено' : ($changed ? 'Предложено' : 'Без изменения'),
+            'changed' => $changed,
+            'empty' => $suggestedText === '-',
+        ];
+    }
+
+    private function formatDuplicate(SupplierReviewDecision $decision, array $payload): array
+    {
+        if (! filled($payload['duplicate_product_id'] ?? null)) {
+            return [
+                'exists' => false,
+                'id' => null,
+                'current_id' => $decision->product_id,
+                'current_title' => $decision->supplier_title ?: ('product_id ' . ($decision->product_id ?: '-')),
+                'title' => '-',
+                'url' => null,
+                'reason' => null,
+                'pair_label' => null,
+                'is_reciprocal' => false,
+                'action_hint' => null,
+            ];
+        }
+
+        $id = (int) $payload['duplicate_product_id'];
+        $currentId = (int) $decision->product_id;
+        $sku = filled($payload['duplicate_sku'] ?? null) ? (string) $payload['duplicate_sku'] : ('ID ' . $id);
+        $name = filled($payload['duplicate_name'] ?? null) ? (string) $payload['duplicate_name'] : null;
+        $pairIds = [$currentId, $id];
+        sort($pairIds);
+
+        return [
+            'exists' => true,
+            'id' => $id,
+            'current_id' => $currentId,
+            'current_title' => $decision->supplier_title ?: ('product_id ' . ($decision->product_id ?: '-')),
+            'title' => $name ? ($sku . ' - ' . $name) : $sku,
+            'url' => url('/admin/products/' . $id),
+            'pair_label' => $pairIds[0] . ' ↔ ' . $pairIds[1],
+            'is_reciprocal' => $this->hasReciprocalDuplicateDecision($currentId, $id),
+            'reason' => 'Совпало нормализованное название товара.',
+            'action_hint' => 'Это сигнал для ручной сверки: открыть обе карточки, выбрать основную, вторую объединить/архивировать или удалить это решение.',
+        ];
+    }
+
+    private function hasReciprocalDuplicateDecision(int $currentProductId, int $duplicateProductId): bool
+    {
+        if ($currentProductId <= 0 || $duplicateProductId <= 0) {
+            return false;
+        }
+
+        return SupplierReviewDecision::query()
+            ->where('status', SupplierReviewDecision::STATUS_PENDING)
+            ->where('decision', SupplierReviewDecision::DECISION_UPDATE_PRODUCT_CATALOG)
+            ->where('product_id', $duplicateProductId)
+            ->whereRaw("JSON_UNQUOTE(JSON_EXTRACT(payload, '$.duplicate_product_id')) = ?", [(string) $currentProductId])
+            ->exists();
+    }
+
+    private function normalizedSelectedDecisionIds(): array
+    {
+        return collect($this->selectedDecisionIds)
+            ->map(fn ($id): int => (int) $id)
+            ->filter(fn (int $id): bool => $id > 0)
+            ->unique()
+            ->values()
+            ->all();
+    }
+
+    private function pendingSelectedDecisionIds(): array
+    {
+        $ids = $this->normalizedSelectedDecisionIds();
+        if ($ids === []) {
+            return [];
+        }
+
+        return SupplierReviewDecision::query()
+            ->whereIn('id', $ids)
+            ->where('status', SupplierReviewDecision::STATUS_PENDING)
+            ->pluck('id')
+            ->map(fn ($id): int => (int) $id)
+            ->all();
+    }
+
     private function findPendingDecision(int $decisionId): ?SupplierReviewDecision
     {
         return SupplierReviewDecision::query()
@@ -453,6 +998,15 @@ class AiAssistant extends Page
             ->send();
     }
 
+    private function notifyNoSelectedPending(): void
+    {
+        Notification::make()
+            ->warning()
+            ->title('Нет выбранных pending-решений')
+            ->body('Выберите одно или несколько решений со статусом Pending.')
+            ->send();
+    }
+
     private function decisionLabel(?string $decision): string
     {
         return match ($decision) {
@@ -462,6 +1016,16 @@ class AiAssistant extends Page
             SupplierReviewDecision::DECISION_UPDATE_PRODUCT_CATALOG => 'Обновить бренд/категорию',
             SupplierReviewDecision::DECISION_IGNORE => 'Игнорировать',
             default => $decision ?: '-',
+        };
+    }
+
+    private function decisionStatusLabel(?string $status): string
+    {
+        return match ($status) {
+            SupplierReviewDecision::STATUS_PENDING => 'Ожидает',
+            SupplierReviewDecision::STATUS_APPLIED => 'Применено',
+            SupplierReviewDecision::STATUS_FAILED => 'Ошибка',
+            default => $status ?: '-',
         };
     }
 }

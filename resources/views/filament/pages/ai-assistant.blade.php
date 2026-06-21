@@ -3,7 +3,12 @@
         $metrics = $this->metrics();
         $workstreams = $this->workstreams();
         $issueGroups = $this->issueGroups();
+        $qualityOptions = $this->qualityIssueOptions();
+        $qualitySamples = $this->qualitySamples();
         $pendingDecisions = $this->pendingDecisions();
+        $decisionTypes = $this->decisionTypeOptions();
+        $decisionChanges = $this->decisionChangeOptions();
+        $supplierOptions = $this->supplierFilterOptions();
         $supplierSync = $this->supplierSyncSummary();
     @endphp
 
@@ -55,9 +60,9 @@
             color: rgb(96, 165, 250);
         }
 
-        .ai-assistant-section {
+        .ai-assistant-overview {
             display: grid;
-            grid-template-columns: minmax(0, 1.35fr) minmax(320px, .65fr);
+            grid-template-columns: minmax(0, 1fr) minmax(320px, .34fr);
             gap: 18px;
             align-items: start;
         }
@@ -119,33 +124,6 @@
             white-space: nowrap;
         }
 
-        .ai-assistant-list {
-            display: grid;
-            gap: 8px;
-            margin: 0;
-            padding: 0;
-            list-style: none;
-        }
-
-        .ai-assistant-list li {
-            position: relative;
-            padding-left: 14px;
-            color: rgb(203, 213, 225);
-            font-size: 13px;
-            line-height: 1.45;
-        }
-
-        .ai-assistant-list li::before {
-            content: "";
-            position: absolute;
-            top: .65em;
-            left: 0;
-            width: 5px;
-            height: 5px;
-            border-radius: 999px;
-            background: rgb(251, 191, 36);
-        }
-
         .ai-assistant-link {
             width: max-content;
             color: rgb(251, 191, 36);
@@ -154,9 +132,10 @@
             text-decoration: none;
         }
 
-        .ai-assistant-side {
+        .ai-assistant-quality-layout {
             display: grid;
-            gap: 18px;
+            grid-template-columns: minmax(260px, .32fr) minmax(0, 1fr);
+            align-items: stretch;
         }
 
         .ai-assistant-rows {
@@ -193,6 +172,55 @@
             font-size: 16px;
             font-weight: 750;
             white-space: nowrap;
+        }
+
+        .ai-assistant-quality-tools {
+            display: flex;
+            justify-content: space-between;
+            gap: 10px;
+            align-items: center;
+            padding: 12px 16px;
+            border-top: 1px solid rgba(148, 163, 184, .14);
+        }
+
+        .ai-assistant-quality-main {
+            border-left: 1px solid rgba(148, 163, 184, .14);
+        }
+
+        .ai-assistant-quality-list {
+            display: grid;
+            border-top: 1px solid rgba(148, 163, 184, .14);
+        }
+
+        .ai-assistant-quality-item {
+            display: grid;
+            grid-template-columns: 72px minmax(0, 1fr) auto;
+            gap: 10px;
+            padding: 10px 16px;
+            border-bottom: 1px solid rgba(148, 163, 184, .14);
+        }
+
+        .ai-assistant-quality-item:last-child {
+            border-bottom: 0;
+        }
+
+        .ai-assistant-quality-title {
+            font-size: 13px;
+            font-weight: 750;
+            line-height: 1.35;
+        }
+
+        .ai-assistant-quality-meta,
+        .ai-assistant-quality-problems {
+            margin-top: 4px;
+            color: rgb(148, 163, 184);
+            font-size: 12px;
+            line-height: 1.35;
+        }
+
+        .ai-assistant-quality-problems {
+            color: rgb(251, 191, 36);
+            font-weight: 700;
         }
 
         .ai-assistant-table-wrap {
@@ -242,6 +270,91 @@
             min-width: 210px;
         }
 
+        .ai-assistant-change {
+            display: grid;
+            gap: 3px;
+            min-width: 170px;
+            line-height: 1.35;
+        }
+
+        .ai-assistant-change-label {
+            color: rgb(148, 163, 184);
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+
+        .ai-assistant-change-current {
+            color: rgb(148, 163, 184);
+        }
+
+        .ai-assistant-change-suggested {
+            color: rgb(226, 232, 240);
+            font-weight: 750;
+        }
+
+        .ai-assistant-change-suggested[data-empty="true"] {
+            color: rgb(148, 163, 184);
+            font-weight: 650;
+        }
+
+        .ai-assistant-reason {
+            min-width: 360px;
+            max-width: 720px;
+            color: rgb(203, 213, 225);
+            line-height: 1.45;
+        }
+
+        .ai-assistant-duplicate {
+            min-width: 130px;
+            max-width: 220px;
+            color: rgb(148, 163, 184);
+            line-height: 1.35;
+        }
+
+        .ai-assistant-duplicate-title {
+            color: rgb(226, 232, 240);
+            font-weight: 700;
+        }
+
+        .ai-assistant-duplicate-link {
+            display: inline-flex;
+            margin-top: 5px;
+            color: rgb(251, 191, 36);
+            font-size: 12px;
+            font-weight: 700;
+            text-decoration: none;
+        }
+
+        .ai-assistant-duplicate-note {
+            margin-top: 5px;
+            color: rgb(251, 191, 36);
+            font-size: 12px;
+            font-weight: 700;
+            line-height: 1.35;
+        }
+
+        .ai-assistant-duplicate-hint {
+            margin-top: 5px;
+            font-size: 12px;
+            line-height: 1.35;
+        }
+
+        .ai-assistant-bulk-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            align-items: center;
+            padding: 10px 16px;
+            border-top: 1px solid rgba(148, 163, 184, .14);
+        }
+
+        .ai-assistant-checkbox {
+            width: 16px;
+            height: 16px;
+            accent-color: rgb(251, 191, 36);
+        }
+
         .ai-assistant-action {
             display: inline-flex;
             align-items: center;
@@ -264,6 +377,16 @@
             color: rgb(251, 191, 36);
         }
 
+        .ai-assistant-action:disabled {
+            opacity: .45;
+            cursor: not-allowed;
+        }
+
+        .ai-assistant-action:disabled:hover {
+            border-color: rgba(148, 163, 184, .25);
+            color: inherit;
+        }
+
         .ai-assistant-action[data-tone="success"] {
             border-color: rgba(34, 197, 94, .32);
             color: rgb(134, 239, 172);
@@ -283,6 +406,28 @@
             border-top: 1px solid rgba(148, 163, 184, .14);
         }
 
+        .ai-assistant-filters {
+            display: grid;
+            grid-template-columns: minmax(220px, 1.2fr) repeat(4, minmax(150px, .7fr)) auto;
+            gap: 10px;
+            align-items: end;
+            padding: 12px 16px;
+            border-top: 1px solid rgba(148, 163, 184, .14);
+        }
+
+        .ai-assistant-filter {
+            display: grid;
+            gap: 5px;
+        }
+
+        .ai-assistant-filter-label {
+            color: rgb(148, 163, 184);
+            font-size: 11px;
+            font-weight: 700;
+            line-height: 1.2;
+            text-transform: uppercase;
+        }
+
         .ai-assistant-per-page {
             display: inline-flex;
             align-items: center;
@@ -292,6 +437,7 @@
             white-space: nowrap;
         }
 
+        .ai-assistant-input,
         .ai-assistant-select {
             color-scheme: dark;
             min-height: 30px;
@@ -304,6 +450,11 @@
             font-weight: 700;
         }
 
+        .ai-assistant-input {
+            padding-right: 9px;
+        }
+
+        .ai-assistant-input:focus,
         .ai-assistant-select:focus {
             outline: 2px solid rgba(251, 191, 36, .28);
             outline-offset: 2px;
@@ -321,8 +472,18 @@
         }
 
         .ai-assistant-pagination {
-            padding: 0 16px 14px;
+            display: flex;
+            justify-content: space-between;
+            gap: 12px;
+            align-items: center;
+            padding: 12px 16px 14px;
             border-top: 1px solid rgba(148, 163, 184, .14);
+        }
+
+        .ai-assistant-pagination-actions {
+            display: inline-flex;
+            gap: 8px;
+            align-items: center;
         }
 
         .ai-assistant-sync {
@@ -378,8 +539,13 @@
 
         .ai-assistant-card-header,
         .ai-assistant-row,
+        .ai-assistant-quality-tools,
+        .ai-assistant-quality-main,
+        .ai-assistant-quality-list,
+        .ai-assistant-quality-item,
         .ai-assistant-table td,
         .ai-assistant-table-wrap,
+        .ai-assistant-bulk-actions,
         .ai-assistant-table-tools,
         .ai-assistant-pagination {
             border-color: var(--aa-border);
@@ -388,25 +554,40 @@
         .ai-assistant-title,
         .ai-assistant-row-label,
         .ai-assistant-row-count,
-        .ai-assistant-table td {
+        .ai-assistant-quality-title,
+        .ai-assistant-table td,
+        .ai-assistant-change-suggested {
             color: var(--aa-text);
         }
 
         .ai-assistant-muted,
         .ai-assistant-metric-label,
         .ai-assistant-row-hint,
-        .ai-assistant-per-page {
+        .ai-assistant-quality-meta,
+        .ai-assistant-per-page,
+        .ai-assistant-change-label,
+        .ai-assistant-change-current,
+        .ai-assistant-change-suggested[data-empty="true"],
+        .ai-assistant-duplicate {
             color: var(--aa-muted);
+        }
+
+        .ai-assistant-reason {
+            color: var(--aa-soft-muted);
+        }
+
+        .ai-assistant-duplicate-title {
+            color: var(--aa-text);
+        }
+
+        .ai-assistant-duplicate-hint {
+            color: var(--aa-soft-muted);
         }
 
         .ai-assistant-workstream,
         .ai-assistant-sync-item {
             border-color: var(--aa-border);
             background: var(--aa-panel-bg);
-        }
-
-        .ai-assistant-list li {
-            color: var(--aa-soft-muted);
         }
 
         .ai-assistant-link,
@@ -443,12 +624,14 @@
             color: rgb(252, 165, 165);
         }
 
+        .ai-assistant-input,
         .ai-assistant-select {
             color-scheme: light;
             background-color: var(--aa-select-bg);
             color: var(--aa-text);
         }
 
+        .dark .ai-assistant-input,
         .dark .ai-assistant-select {
             color-scheme: dark;
         }
@@ -469,8 +652,14 @@
                 grid-template-columns: repeat(2, minmax(0, 1fr));
             }
 
-            .ai-assistant-section {
+            .ai-assistant-overview,
+            .ai-assistant-quality-layout {
                 grid-template-columns: 1fr;
+            }
+
+            .ai-assistant-quality-main {
+                border-left: 0;
+                border-top: 1px solid rgba(148, 163, 184, .14);
             }
         }
 
@@ -482,8 +671,13 @@
             }
 
             .ai-assistant-card-header,
-            .ai-assistant-workstream-top {
+            .ai-assistant-workstream-top,
+            .ai-assistant-table-tools {
                 display: grid;
+            }
+
+            .ai-assistant-filters {
+                grid-template-columns: 1fr;
             }
         }
     </style>
@@ -498,47 +692,17 @@
             @endforeach
         </div>
 
-        <div class="ai-assistant-section">
-            <div class="ai-assistant-card">
-                <div class="ai-assistant-card-header">
-                    <div>
-                        <div class="ai-assistant-title">Рабочие потоки</div>
-                        <div class="ai-assistant-muted">Границы задач для Codex и Claude, чтобы не пересекаться в поставщиках.</div>
-                    </div>
+        <div class="ai-assistant-card">
+            <div class="ai-assistant-card-header">
+                <div>
+                    <div class="ai-assistant-title">Очередь качества</div>
+                    <div class="ai-assistant-muted">Проблемные карточки для ручной проверки, AI-аудита и следующих массовых действий.</div>
                 </div>
-
-                <div class="ai-assistant-workstreams">
-                    @foreach ($workstreams as $stream)
-                        <div class="ai-assistant-workstream">
-                            <div class="ai-assistant-workstream-top">
-                                <div>
-                                    <div class="ai-assistant-title">{{ $stream['title'] }}</div>
-                                    <div class="ai-assistant-muted">{{ $stream['summary'] }}</div>
-                                </div>
-                                <span class="ai-assistant-badge">{{ $stream['status'] }}</span>
-                            </div>
-
-                            <ul class="ai-assistant-list">
-                                @foreach ($stream['items'] as $item)
-                                    <li>{{ $item }}</li>
-                                @endforeach
-                            </ul>
-
-                            <a class="ai-assistant-link" href="{{ $stream['url'] }}">Открыть раздел</a>
-                        </div>
-                    @endforeach
-                </div>
+                <span class="ai-assistant-muted">Первые 8 карточек</span>
             </div>
 
-            <div class="ai-assistant-side">
-                <div class="ai-assistant-card">
-                    <div class="ai-assistant-card-header">
-                        <div>
-                            <div class="ai-assistant-title">Очередь качества</div>
-                            <div class="ai-assistant-muted">Первые группы для AI-аудита карточек.</div>
-                        </div>
-                    </div>
-
+            <div class="ai-assistant-quality-layout">
+                <div>
                     <div class="ai-assistant-rows">
                         @foreach ($issueGroups as $issue)
                             <div class="ai-assistant-row">
@@ -552,27 +716,86 @@
                     </div>
                 </div>
 
-                <div class="ai-assistant-card">
-                    <div class="ai-assistant-card-header">
-                        <div>
-                            <div class="ai-assistant-title">Синхронизации</div>
-                            <div class="ai-assistant-muted">Состояние supplier_syncs как входа для дальнейшего AI-разбора.</div>
-                        </div>
+                <div class="ai-assistant-quality-main">
+                    <div class="ai-assistant-quality-tools">
+                        <label class="ai-assistant-filter">
+                            <span class="ai-assistant-filter-label">Проблема</span>
+                            <select class="ai-assistant-select" wire:model.live="qualityIssue">
+                                @foreach ($qualityOptions as $value => $label)
+                                    <option value="{{ $value }}">{{ $label }}</option>
+                                @endforeach
+                            </select>
+                        </label>
                     </div>
 
-                    <div class="ai-assistant-sync">
-                        <div class="ai-assistant-sync-item">
-                            <div class="ai-assistant-muted">Активные</div>
-                            <div class="ai-assistant-metric-value">{{ $supplierSync['active'] }}</div>
+                    <div class="ai-assistant-quality-list">
+                        @forelse ($qualitySamples as $product)
+                            <div class="ai-assistant-quality-item">
+                                <div class="ai-assistant-row-count">{{ $product['id'] }}</div>
+                                <div>
+                                    <div class="ai-assistant-quality-title">{{ $product['title'] }}</div>
+                                    <div class="ai-assistant-quality-problems">{{ implode(' / ', $product['problems']) }}</div>
+                                    <div class="ai-assistant-quality-meta">
+                                        SKU {{ $product['sku'] }} · {{ $product['category'] }} · {{ $product['brand'] }} · {{ $product['source'] }}
+                                    </div>
+                                </div>
+                                <a class="ai-assistant-action" href="{{ $product['url'] }}">Открыть</a>
+                            </div>
+                        @empty
+                            <div class="ai-assistant-row">
+                                <div class="ai-assistant-muted">По этому фильтру проблемных карточек нет.</div>
+                            </div>
+                        @endforelse
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="ai-assistant-overview">
+            <div class="ai-assistant-card">
+                <div class="ai-assistant-card-header">
+                    <div>
+                        <div class="ai-assistant-title">Рабочие потоки</div>
+                        <div class="ai-assistant-muted">Короткая карта зон ответственности и следующих задач.</div>
+                    </div>
+                </div>
+
+                <div class="ai-assistant-workstreams">
+                    @foreach ($workstreams as $stream)
+                        <div class="ai-assistant-workstream">
+                            <div class="ai-assistant-workstream-top">
+                                <div>
+                                    <div class="ai-assistant-title">{{ $stream['title'] }}</div>
+                                    <div class="ai-assistant-muted">{{ $stream['summary'] }}</div>
+                                </div>
+                                <span class="ai-assistant-badge">{{ $stream['status'] }}</span>
+                            </div>
+                            <a class="ai-assistant-link" href="{{ $stream['url'] }}">Открыть раздел</a>
                         </div>
-                        <div class="ai-assistant-sync-item">
-                            <div class="ai-assistant-muted">С ошибкой</div>
-                            <div class="ai-assistant-metric-value">{{ $supplierSync['failed'] }}</div>
-                        </div>
-                        <div class="ai-assistant-sync-item">
-                            <div class="ai-assistant-muted">Без запуска</div>
-                            <div class="ai-assistant-metric-value">{{ $supplierSync['never'] }}</div>
-                        </div>
+                    @endforeach
+                </div>
+            </div>
+
+            <div class="ai-assistant-card">
+                <div class="ai-assistant-card-header">
+                    <div>
+                        <div class="ai-assistant-title">Синхронизации</div>
+                        <div class="ai-assistant-muted">Состояние supplier_syncs как входа для дальнейшего AI-разбора.</div>
+                    </div>
+                </div>
+
+                <div class="ai-assistant-sync">
+                    <div class="ai-assistant-sync-item">
+                        <div class="ai-assistant-muted">Активные</div>
+                        <div class="ai-assistant-metric-value">{{ $supplierSync['active'] }}</div>
+                    </div>
+                    <div class="ai-assistant-sync-item">
+                        <div class="ai-assistant-muted">С ошибкой</div>
+                        <div class="ai-assistant-metric-value">{{ $supplierSync['failed'] }}</div>
+                    </div>
+                    <div class="ai-assistant-sync-item">
+                        <div class="ai-assistant-muted">Без запуска</div>
+                        <div class="ai-assistant-metric-value">{{ $supplierSync['never'] }}</div>
                     </div>
                 </div>
             </div>
@@ -585,6 +808,115 @@
                     <div class="ai-assistant-muted">ИИ-помощник будет расширять этот список понятными действиями применения и отклонения.</div>
                 </div>
                 <a class="ai-assistant-link" href="{{ url('/admin/import-reports') }}">Отчёты импорта</a>
+            </div>
+
+            <div class="ai-assistant-filters">
+                <label class="ai-assistant-filter">
+                    <span class="ai-assistant-filter-label">Поиск</span>
+                    <input
+                        class="ai-assistant-input"
+                        type="search"
+                        placeholder="Товар, причина, артикул, ID"
+                        wire:model.live.debounce.400ms="decisionSearch"
+                    >
+                </label>
+
+                <label class="ai-assistant-filter">
+                    <span class="ai-assistant-filter-label">Статус</span>
+                    <select class="ai-assistant-select" wire:model.live="decisionStatus">
+                        <option value="">Все</option>
+                        <option value="pending">Pending</option>
+                        <option value="applied">Применено</option>
+                        <option value="failed">Ошибка</option>
+                    </select>
+                </label>
+
+                <label class="ai-assistant-filter">
+                    <span class="ai-assistant-filter-label">Тип</span>
+                    <select class="ai-assistant-select" wire:model.live="decisionType">
+                        <option value="">Все типы</option>
+                        @foreach ($decisionTypes as $value => $label)
+                            <option value="{{ $value }}">{{ $label }}</option>
+                        @endforeach
+                    </select>
+                </label>
+
+                <label class="ai-assistant-filter">
+                    <span class="ai-assistant-filter-label">Изменение</span>
+                    <select class="ai-assistant-select" wire:model.live="decisionChange">
+                        <option value="">Все изменения</option>
+                        @foreach ($decisionChanges as $value => $label)
+                            <option value="{{ $value }}">{{ $label }}</option>
+                        @endforeach
+                    </select>
+                </label>
+
+                <label class="ai-assistant-filter">
+                    <span class="ai-assistant-filter-label">Поставщик</span>
+                    <select class="ai-assistant-select" wire:model.live="decisionSupplier">
+                        <option value="">Все</option>
+                        @foreach ($supplierOptions as $value => $label)
+                            <option value="{{ $value }}">{{ $label }}</option>
+                        @endforeach
+                    </select>
+                </label>
+
+                <button
+                    type="button"
+                    class="ai-assistant-action"
+                    wire:click="resetDecisionFilters"
+                >
+                    Сбросить
+                </button>
+            </div>
+
+            <div class="ai-assistant-bulk-actions">
+                <span class="ai-assistant-muted">Выбрано: {{ count($this->selectedDecisionIds) }}</span>
+
+                <button
+                    type="button"
+                    class="ai-assistant-action"
+                    wire:click="selectVisiblePendingDecisions"
+                >
+                    Выбрать видимые pending
+                </button>
+
+                <button
+                    type="button"
+                    class="ai-assistant-action"
+                    data-tone="success"
+                    wire:click="applySelectedDecisions"
+                    wire:confirm="Применить выбранные pending-решения?"
+                >
+                    Применить выбранные
+                </button>
+
+                <button
+                    type="button"
+                    class="ai-assistant-action"
+                    wire:click="recalculateSelectedDecisions"
+                    wire:confirm="Пересчитать выбранные pending-решения бренд/категория?"
+                >
+                    Пересчитать выбранные
+                </button>
+
+                <button
+                    type="button"
+                    class="ai-assistant-action"
+                    data-tone="danger"
+                    wire:click="deleteSelectedDecisions"
+                    wire:confirm="Удалить выбранные pending-решения без применения?"
+                >
+                    Удалить выбранные
+                </button>
+
+                <button
+                    type="button"
+                    class="ai-assistant-action"
+                    wire:click="clearSelectedDecisions"
+                >
+                    Очистить выбор
+                </button>
             </div>
 
             <div class="ai-assistant-table-tools">
@@ -612,10 +944,14 @@
                 <table class="ai-assistant-table">
                     <thead>
                         <tr>
+                            <th></th>
                             <th>ID</th>
-                            <th>Тип</th>
-                            <th>Поставщик</th>
+                            <th>Статус</th>
+                            <th>Товар ID</th>
                             <th>Товар</th>
+                            <th>Категория</th>
+                            <th>Бренд</th>
+                            <th>Дубль</th>
                             <th>Причина</th>
                             <th></th>
                         </tr>
@@ -623,11 +959,82 @@
                     <tbody>
                         @forelse ($pendingDecisions as $decision)
                             <tr>
+                                <td>
+                                    @if ($decision['status_code'] === 'pending')
+                                        <input
+                                            class="ai-assistant-checkbox"
+                                            type="checkbox"
+                                            value="{{ $decision['id'] }}"
+                                            wire:model.live="selectedDecisionIds"
+                                        >
+                                    @endif
+                                </td>
                                 <td>{{ $decision['id'] }}</td>
-                                <td>{{ $decision['decision'] }}</td>
-                                <td>{{ $decision['supplier'] }}</td>
-                                <td>{{ $decision['title'] }}</td>
-                                <td>{{ $decision['reason'] }}</td>
+                                <td>{{ $decision['status'] }}</td>
+                                <td>{{ $decision['product_id'] ?: '-' }}</td>
+                                <td>
+                                    <div>{{ $decision['title'] }}</div>
+                                    <div class="ai-assistant-muted">{{ $decision['supplier'] }}</div>
+                                </td>
+                                <td>
+                                    <div class="ai-assistant-change">
+                                        <span class="ai-assistant-change-label">Сейчас</span>
+                                        <span class="ai-assistant-change-current">{{ $decision['category_change']['current'] }}</span>
+                                        <span class="ai-assistant-change-label">{{ $decision['category_change']['suggested_label'] }}</span>
+                                        <span
+                                            class="ai-assistant-change-suggested"
+                                            data-empty="{{ $decision['category_change']['empty'] ? 'true' : 'false' }}"
+                                        >
+                                            {{ $decision['category_change']['suggested'] }}
+                                        </span>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="ai-assistant-change">
+                                        <span class="ai-assistant-change-label">Сейчас</span>
+                                        <span class="ai-assistant-change-current">{{ $decision['brand_change']['current'] }}</span>
+                                        <span class="ai-assistant-change-label">{{ $decision['brand_change']['suggested_label'] }}</span>
+                                        <span
+                                            class="ai-assistant-change-suggested"
+                                            data-empty="{{ $decision['brand_change']['empty'] ? 'true' : 'false' }}"
+                                        >
+                                            {{ $decision['brand_change']['suggested'] }}
+                                        </span>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="ai-assistant-duplicate">
+                                        @if ($decision['duplicate']['exists'])
+                                            <div class="ai-assistant-change-label">Пара дублей {{ $decision['duplicate']['pair_label'] }}</div>
+
+                                            @if ($decision['duplicate']['is_reciprocal'])
+                                                <div class="ai-assistant-duplicate-note">Встречная строка уже есть ниже/выше</div>
+                                            @endif
+
+                                            <div class="ai-assistant-change-label">Этот товар</div>
+                                            <div class="ai-assistant-duplicate-title">
+                                                ID {{ $decision['duplicate']['current_id'] }} - {{ $decision['duplicate']['current_title'] }}
+                                            </div>
+
+                                            <div class="ai-assistant-change-label">Похожий товар</div>
+                                            <div class="ai-assistant-duplicate-title">
+                                                ID {{ $decision['duplicate']['id'] }} - {{ $decision['duplicate']['title'] }}
+                                            </div>
+
+                                            <div>{{ $decision['duplicate']['reason'] }}</div>
+                                            <div class="ai-assistant-duplicate-hint">{{ $decision['duplicate']['action_hint'] }}</div>
+                                            <a
+                                                class="ai-assistant-duplicate-link"
+                                                href="{{ $decision['duplicate']['url'] }}"
+                                            >
+                                                Открыть дубль
+                                            </a>
+                                        @else
+                                            -
+                                        @endif
+                                    </div>
+                                </td>
+                                <td><div class="ai-assistant-reason">{{ $decision['reason'] }}</div></td>
                                 <td>
                                     <div class="ai-assistant-actions">
                                         @if ($decision['product_url'])
@@ -639,31 +1046,33 @@
                                             </a>
                                         @endif
 
-                                        <button
-                                            type="button"
-                                            class="ai-assistant-action"
-                                            data-tone="success"
-                                            wire:click="applyPendingDecision({{ $decision['id'] }})"
-                                            wire:confirm="Применить pending-решение ID {{ $decision['id'] }}?"
-                                        >
-                                            Применить
-                                        </button>
+                                        @if ($decision['status_code'] === 'pending')
+                                            <button
+                                                type="button"
+                                                class="ai-assistant-action"
+                                                data-tone="success"
+                                                wire:click="applyPendingDecision({{ $decision['id'] }})"
+                                                wire:confirm="Применить pending-решение ID {{ $decision['id'] }}?"
+                                            >
+                                                Применить
+                                            </button>
 
-                                        <button
-                                            type="button"
-                                            class="ai-assistant-action"
-                                            data-tone="danger"
-                                            wire:click="deletePendingDecision({{ $decision['id'] }})"
-                                            wire:confirm="Удалить pending-решение ID {{ $decision['id'] }} без применения?"
-                                        >
-                                            Удалить
-                                        </button>
+                                            <button
+                                                type="button"
+                                                class="ai-assistant-action"
+                                                data-tone="danger"
+                                                wire:click="deletePendingDecision({{ $decision['id'] }})"
+                                                wire:confirm="Удалить pending-решение ID {{ $decision['id'] }} без применения?"
+                                            >
+                                                Удалить
+                                            </button>
+                                        @endif
                                     </div>
                                 </td>
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="6">
+                                <td colspan="10">
                                     <span class="ai-assistant-muted">Pending-решений нет. После AI-разбора каталога они появятся здесь.</span>
                                 </td>
                             </tr>
@@ -674,7 +1083,29 @@
 
             <div class="ai-assistant-pagination">
                 @if ($pendingDecisions->hasPages())
-                    {{ $pendingDecisions->links() }}
+                    <div class="ai-assistant-muted">
+                        Страница {{ $pendingDecisions->currentPage() }} из {{ $pendingDecisions->lastPage() }}
+                    </div>
+
+                    <div class="ai-assistant-pagination-actions">
+                        <button
+                            type="button"
+                            class="ai-assistant-action"
+                            wire:click="previousPage('decisionsPage')"
+                            @disabled($pendingDecisions->onFirstPage())
+                        >
+                            Назад
+                        </button>
+
+                        <button
+                            type="button"
+                            class="ai-assistant-action"
+                            wire:click="nextPage('decisionsPage')"
+                            @disabled(! $pendingDecisions->hasMorePages())
+                        >
+                            Вперед
+                        </button>
+                    </div>
                 @else
                     <span class="ai-assistant-muted">Все найденные решения уже на этой странице.</span>
                 @endif
