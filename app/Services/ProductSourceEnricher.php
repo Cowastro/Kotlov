@@ -971,7 +971,10 @@ class ProductSourceEnricher
         $width = (int) ($info[0] ?? 0);
         $height = (int) ($info[1] ?? 0);
 
-        return $width >= 420 && $height >= 420;
+        return $width >= 220
+            && $height >= 220
+            && max($width, $height) >= 420
+            && ($width * $height) >= 90000;
     }
 
     private function isProductImage(string $url): bool
@@ -1138,6 +1141,15 @@ class ProductSourceEnricher
 
     private function repairMojibake(string $value): string
     {
+        if ($this->mojibakeScore($value) > 0) {
+            $candidate = @iconv('UTF-8', 'Windows-1251//IGNORE', $value);
+            if (is_string($candidate)
+                && mb_check_encoding($candidate, 'UTF-8')
+                && $this->mojibakeScore($candidate) < $this->mojibakeScore($value)) {
+                return $candidate;
+            }
+        }
+
         if (! preg_match('/(?:Р[\\x{0400}-\\x{04FF}]|С[\\x{0400}-\\x{04FF}]|Ð.|Ñ.)/u', $value)) {
             return $value;
         }
