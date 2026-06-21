@@ -5,6 +5,7 @@ namespace App\Console\Commands;
 use App\Models\Product;
 use App\Services\ProductSourceEnricher;
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\DB;
 
 class SyncProductSpecsToAttributesCommand extends Command
 {
@@ -12,6 +13,8 @@ class SyncProductSpecsToAttributesCommand extends Command
         {--apply : Write missing product_attribute_values}
         {--limit=0 : Limit products to process}
         {--force : Sync products even when product_attribute_values already exist}
+        {--audit-bad-attributes : Show product attribute rows with empty/unit-only/mojibake values}
+        {--bad-reason=* : Filter audit by reason: empty_value, unit_only_value, value_has_unit_suffix, mojibake_name, mojibake_value}
         {--cleanup-unit-only : Delete already synced rows where value contains only a measurement unit}
         {--cleanup-mojibake : Repair already synced rows with broken UTF-8/Windows-1251 text}
         {--id=* : Process only selected product IDs}';
@@ -27,6 +30,16 @@ class SyncProductSpecsToAttributesCommand extends Command
             ->filter()
             ->values()
             ->all();
+
+        if ((bool) $this->option('audit-bad-attributes')) {
+            $reasons = collect($this->option('bad-reason'))
+                ->map(fn ($reason): string => trim((string) $reason))
+                ->filter()
+                ->values()
+                ->all();
+
+            return $this->auditBadAttributes($limit, $ids, $reasons);
+        }
 
         if ((bool) $this->option('cleanup-unit-only')) {
             return $this->cleanupUnitOnlyValues($enricher, $apply, $limit, $ids);
@@ -166,6 +179,96 @@ class SyncProductSpecsToAttributesCommand extends Command
 
     /**
      * @param array<int, int> $ids
+     * @param array<int, string> $onlyReasons
+     */
+    private function auditBadAttributes(int $limit, array $ids, array $onlyReasons): int
+    {
+        $rows = DB::table('product_attribute_values')
+            ->join('products', 'products.id', '=', 'product_attribute_values.product_id')
+            ->leftJoin('attributes', 'attributes.id', '=', 'product_attribute_values.attribute_id')
+            ->when($ids !== [], fn ($query) => $query->whereIn('products.id', $ids))
+            ->orderBy('products.id')
+            ->orderBy('product_attribute_values.id')
+            ->get([
+                'product_attribute_values.id',
+                'product_attribute_values.product_id',
+                'product_attribute_values.value',
+                'product_attribute_values.option_id',
+                'products.sku',
+                'products.name as product_name',
+                'attributes.name as attribute_name',
+                'attributes.suffix',
+                'attributes.type as attribute_type',
+            ]);
+
+        $checked = 0;
+        $badRows = 0;
+        $badProducts = [];
+        $samples = [];
+        $reasonCounts = [];
+
+        foreach ($rows as $row) {
+            $checked++;
+            $reasons = $this->badAttributeReasons(
+                (string) ($row->attribute_name ?? ''),
+                (string) ($row->value ?? ''),
+                (string) ($row->suffix ?? ''),
+                (string) ($row->attribute_type ?? 'value'),
+                $row->option_id !== null
+            );
+
+            if ($reasons === []) {
+                continue;
+            }
+
+            if ($onlyReasons !== [] && array_intersect($reasons, $onlyReasons) === []) {
+                continue;
+            }
+
+            $badRows++;
+            $badProducts[(int) $row->product_id] = true;
+
+            foreach ($reasons as $reason) {
+                $reasonCounts[$reason] = ($reasonCounts[$reason] ?? 0) + 1;
+            }
+
+            if ($limit === 0 || count($samples) < $limit) {
+                $samples[] = [
+                    $row->product_id,
+                    $row->sku ?: '-',
+                    mb_substr((string) $row->product_name, 0, 46),
+                    mb_substr((string) ($row->attribute_name ?? '-'), 0, 34),
+                    mb_substr((string) ($row->value ?? ''), 0, 34),
+                    (string) ($row->suffix ?? ''),
+                    implode(', ', $reasons),
+                ];
+            }
+        }
+
+        $this->info('Checked attribute rows: ' . $checked);
+        $this->info('Bad attribute rows: ' . $badRows);
+        $this->info('Products with bad attributes: ' . count($badProducts));
+
+        if ($reasonCounts !== []) {
+            $this->table(
+                ['Reason', 'Rows'],
+                collect($reasonCounts)
+                    ->sortDesc()
+                    ->map(fn (int $count, string $reason): array => [$reason, $count])
+                    ->values()
+                    ->all()
+            );
+        }
+
+        if ($samples !== []) {
+            $this->table(['Product ID', 'SKU', 'Product', 'Attribute', 'Value', 'Unit', 'Reason'], $samples);
+        }
+
+        return self::SUCCESS;
+    }
+
+    /**
+     * @param array<int, int> $ids
      */
     private function cleanupMojibakeValues(ProductSourceEnricher $enricher, bool $apply, int $limit, array $ids): int
     {
@@ -249,5 +352,72 @@ class SyncProductSpecsToAttributesCommand extends Command
             ->filter(fn (array $spec): bool => trim($spec['key']) !== '' && trim($spec['value']) !== '')
             ->values()
             ->all();
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    private function badAttributeReasons(string $name, string $value, string $unit, string $type, bool $hasOption): array
+    {
+        $name = trim($name);
+        $value = trim($value);
+        $unit = trim($unit);
+        $reasons = [];
+
+        if ($name === '') {
+            $reasons[] = 'empty_name';
+        } elseif ($this->looksLikeBrokenEncoding($name)) {
+            $reasons[] = 'mojibake_name';
+        }
+
+        if ($value === '' && $type === 'value' && ! $hasOption) {
+            $reasons[] = 'empty_value';
+        } elseif ($value !== '' && $this->looksLikeBrokenEncoding($value)) {
+            $reasons[] = 'mojibake_value';
+        }
+
+        if ($value !== '' && $this->isMeasurementOnly($value)) {
+            $reasons[] = 'unit_only_value';
+        }
+
+        if ($value !== '' && $unit !== '' && $this->valueAlreadyContainsUnit($value, $unit)) {
+            $reasons[] = 'value_has_unit_suffix';
+        }
+
+        return array_values(array_unique($reasons));
+    }
+
+    private function looksLikeBrokenEncoding(string $value): bool
+    {
+        return str_contains($value, '�')
+            || preg_match('/(?:[РС][\x{0400}-\x{04FF}]){2,}/u', $value) === 1
+            || preg_match('/(?:Đ.|Ă.){2,}/u', $value) === 1;
+    }
+
+    private function isMeasurementOnly(string $value): bool
+    {
+        $normalized = mb_strtolower(trim($value));
+        $normalized = str_replace(['.', ','], '', $normalized);
+        $normalized = preg_replace('/\s+/u', ' ', $normalized) ?? $normalized;
+
+        return preg_match('/^(?:вт|квт|мвт|в|а|ма|ом|бар|па|кпа|мпа|л|мл|м3|м³|м2|м²|мм|см|м|кг|г|шт|мин|ч|мес|год|лет|°c|°с|c|с|дюйм)$/u', $normalized) === 1;
+    }
+
+    private function valueAlreadyContainsUnit(string $value, string $unit): bool
+    {
+        $value = mb_strtolower(trim($value));
+        $unit = mb_strtolower(trim($unit));
+
+        if ($value === '' || $unit === '') {
+            return false;
+        }
+
+        if ($this->isMeasurementOnly($value)) {
+            return true;
+        }
+
+        $quotedUnit = preg_quote($unit, '/');
+
+        return preg_match('/(?:^|[\s\d.,])' . $quotedUnit . '$/u', $value) === 1;
     }
 }
