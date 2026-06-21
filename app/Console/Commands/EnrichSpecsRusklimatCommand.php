@@ -20,10 +20,12 @@ class EnrichSpecsRusklimatCommand extends Command
     protected $signature = 'supplier:enrich-specs-rusklimat
         {--active-only      : Only active (non-archived) products}
         {--brand=           : Filter by brand name (partial match)}
+        {--id=*             : Process only selected product IDs}
         {--limit=20         : Max products per run}
         {--offset=0         : Skip first N products}
         {--sleep=500        : Delay between products in ms}
         {--show-keys        : Just print scraped key:value pairs (vocabulary gathering, no writes)}
+        {--force            : Re-scrape products even when specs are already filled}
         {--apply            : Write changes (default is preview)}
         {--dry-run          : Preview only (default)}';
 
@@ -40,8 +42,14 @@ class EnrichSpecsRusklimatCommand extends Command
     public function handle(): int
     {
         $apply  = (bool) $this->option('apply') && ! $this->option('dry-run');
+        $force  = (bool) $this->option('force');
         $limit  = max(1, (int) $this->option('limit'));
         $offset = max(0, (int) $this->option('offset'));
+        $ids = collect($this->option('id'))
+            ->map(fn ($id): int => (int) $id)
+            ->filter()
+            ->values()
+            ->all();
 
         $this->line($apply
             ? '<fg=red;options=bold>APPLY: specs/short will be written.</>'
@@ -64,18 +72,19 @@ class EnrichSpecsRusklimatCommand extends Command
             ->where('sp.supplier_id', $supplierId)
             ->when($this->option('active-only'), fn ($q) => $q->where('p.is_archived', false))
             ->when($this->option('brand'), fn ($q) => $q->where('b.name', 'like', '%' . $this->option('brand') . '%'))
-            ->where(function ($q) {
+            ->when($ids !== [], fn ($q) => $q->whereIn('p.id', $ids))
+            ->when(! $force, fn ($query) => $query->where(function ($q) {
                 $q->whereNull('p.specs')->orWhere('p.specs', '')->orWhere('p.specs', '[]')
                   ->orWhere('p.specs', '{}')->orWhere('p.specs', 'null')
                   ->orWhereRaw('(JSON_VALID(p.specs) AND JSON_LENGTH(p.specs) = 0)');
-            });
+            }));
 
         $total = (clone $query)->distinct('p.id')->count('p.id');
         $products = $query->orderBy('p.id')->offset($offset)->limit($limit)
             ->get(['p.id', 'p.name', 'p.short_description', 'b.name as brand', 'sp.supplier_article']);
 
         $this->newLine();
-        $this->info(sprintf('Products without specs: %d (processing %d, offset %d)', $total, $products->count(), $offset));
+        $this->info(sprintf($force ? 'Products to re-scrape: %d (processing %d, offset %d)' : 'Products without specs: %d (processing %d, offset %d)', $total, $products->count(), $offset));
         if ($products->isEmpty()) {
             $this->info('Nothing to do.');
             return self::SUCCESS;
