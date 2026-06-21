@@ -137,6 +137,13 @@ class ProductSourceEnricher
             $product->forceFill($updates)->save();
         }
 
+        $this->rememberSourceUrl($product, $sourceUrl);
+
+        return $stats + ['updated_fields' => array_keys($updates)];
+    }
+
+    private function rememberSourceUrl(Product $product, string $sourceUrl): void
+    {
         $supplierProductId = DB::table('supplier_products')
             ->where('product_id', $product->id)
             ->orderBy('id')
@@ -147,9 +154,49 @@ class ProductSourceEnricher
                 'source_url' => $sourceUrl,
                 'updated_at' => now(),
             ]);
+
+            return;
         }
 
-        return $stats + ['updated_fields' => array_keys($updates)];
+        $supplierId = $this->manualSourceSupplierId();
+        if ($supplierId <= 0) {
+            return;
+        }
+
+        $article = 'manual-source-' . $product->id;
+
+        DB::table('supplier_products')->insert([
+            'supplier_id' => $supplierId,
+            'product_id' => $product->id,
+            'product_sku' => $product->sku,
+            'supplier_article' => $article,
+            'supplier_article_normalized' => Str::lower($article),
+            'supplier_name' => $product->name,
+            'source_url' => $sourceUrl,
+            'match_status' => 'manual',
+            'match_confidence' => 'source-url-edit',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+    }
+
+    private function manualSourceSupplierId(): int
+    {
+        DB::table('suppliers')->updateOrInsert(
+            ['code' => 'manual-source'],
+            [
+                'name' => 'Manual source URL',
+                'currency' => 'BYN',
+                'currency_rate' => 1,
+                'contact' => null,
+                'notes' => 'Системный поставщик для ссылок, добавленных вручную из карточки товара.',
+                'is_active' => false,
+                'updated_at' => now(),
+                'created_at' => now(),
+            ],
+        );
+
+        return (int) DB::table('suppliers')->where('code', 'manual-source')->value('id');
     }
 
     private function syncAttributeValues(Product $product, array $specs): int

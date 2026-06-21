@@ -3,8 +3,13 @@
 namespace App\Filament\Resources\Products\Pages;
 
 use App\Filament\Resources\Products\ProductResource;
+use App\Jobs\RunProductSourceEnrichment;
+use Filament\Actions\Action;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\ViewAction;
+use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Toggle;
+use Filament\Notifications\Notification;
 use Filament\Resources\Pages\EditRecord;
 
 class EditProduct extends EditRecord
@@ -19,9 +24,82 @@ class EditProduct extends EditRecord
     protected function getHeaderActions(): array
     {
         return [
+            Action::make('enrich_from_source_url')
+                ->label('Обновить из ссылки')
+                ->icon('heroicon-o-link')
+                ->color('success')
+                ->fillForm(fn (): array => [
+                    'source_url' => $this->record->supplierProducts()
+                        ->whereNotNull('source_url')
+                        ->where('source_url', '!=', '')
+                        ->orderBy('id')
+                        ->value('source_url'),
+                    'preview_only' => false,
+                    'update_images' => true,
+                    'replace_images' => true,
+                    'update_specs' => true,
+                    'update_content' => true,
+                    'update_service' => false,
+                ])
+                ->form([
+                    TextInput::make('source_url')
+                        ->label('Ссылка на карточку товара')
+                        ->url()
+                        ->required()
+                        ->placeholder('https://example.com/product/...'),
+                    Toggle::make('preview_only')
+                        ->label('Только проверить, без записи')
+                        ->helperText('Покажет найденные фото, характеристики и описание в уведомлении. Для обновления карточки выключите.')
+                        ->default(false),
+                    Toggle::make('update_images')
+                        ->label('Загрузить фотографии')
+                        ->default(true),
+                    Toggle::make('replace_images')
+                        ->label('Заменить текущие фото')
+                        ->default(true),
+                    Toggle::make('update_specs')
+                        ->label('Обновить характеристики')
+                        ->default(true),
+                    Toggle::make('update_content')
+                        ->label('SEO-описание через ИИ')
+                        ->helperText('Сырой текст поставщика не сохраняется. Если ИИ не настроен, описание не изменится.')
+                        ->default(true),
+                    Toggle::make('update_service')
+                        ->label('Обновить сервисную информацию')
+                        ->default(false),
+                ])
+                ->requiresConfirmation()
+                ->modalHeading('Обновить карточку из ссылки')
+                ->modalDescription('Система попробует взять со страницы фото, характеристики и описание. Результат появится в уведомлениях после выполнения очереди.')
+                ->action(fn (array $data) => $this->queueSourceEnrichment($data)),
             ViewAction::make(),
             DeleteAction::make(),
         ];
+    }
+
+    private function queueSourceEnrichment(array $data): void
+    {
+        $options = [
+            'update_images' => (bool) ($data['update_images'] ?? true),
+            'replace_images' => (bool) ($data['replace_images'] ?? true),
+            'update_specs' => (bool) ($data['update_specs'] ?? true),
+            'update_content' => (bool) ($data['update_content'] ?? true),
+            'update_service' => (bool) ($data['update_service'] ?? false),
+        ];
+
+        RunProductSourceEnrichment::dispatch(
+            [(int) $this->record->id],
+            (int) auth()->id(),
+            (string) $data['source_url'],
+            $options,
+            (bool) ($data['preview_only'] ?? false),
+        );
+
+        Notification::make()
+            ->success()
+            ->title(($data['preview_only'] ?? false) ? 'Проверка поставлена в очередь' : 'Обновление поставлено в очередь')
+            ->body('Товар ID ' . $this->record->id . '. После выполнения очереди результат придет в уведомления.')
+            ->send();
     }
 
     /**
