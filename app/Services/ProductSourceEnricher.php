@@ -207,6 +207,36 @@ class ProductSourceEnricher
             ->delete();
     }
 
+    public function deleteEmptyAttributeValues(Product $product, bool $apply = true): int
+    {
+        $rows = DB::table('product_attribute_values')
+            ->leftJoin('attributes', 'attributes.id', '=', 'product_attribute_values.attribute_id')
+            ->where('product_attribute_values.product_id', $product->id)
+            ->whereNull('product_attribute_values.option_id')
+            ->where('attributes.type', 'value')
+            ->get([
+                'product_attribute_values.id',
+                'product_attribute_values.value',
+            ]);
+
+        $ids = $rows
+            ->filter(fn ($row): bool => trim((string) $row->value) === '')
+            ->pluck('id')
+            ->all();
+
+        if ($ids === []) {
+            return 0;
+        }
+
+        if (! $apply) {
+            return count($ids);
+        }
+
+        return DB::table('product_attribute_values')
+            ->whereIn('id', $ids)
+            ->delete();
+    }
+
     public function repairMojibakeAttributeValues(Product $product, bool $apply = true): int
     {
         $rows = DB::table('product_attribute_values')

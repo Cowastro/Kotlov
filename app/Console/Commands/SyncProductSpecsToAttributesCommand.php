@@ -15,6 +15,7 @@ class SyncProductSpecsToAttributesCommand extends Command
         {--force : Sync products even when product_attribute_values already exist}
         {--audit-bad-attributes : Show product attribute rows with empty/unit-only/mojibake values}
         {--bad-reason=* : Filter audit by reason: empty_value, unit_only_value, value_has_unit_suffix, mojibake_name, mojibake_value}
+        {--cleanup-empty-values : Delete already synced rows where a value attribute has an empty value}
         {--cleanup-unit-only : Delete already synced rows where value contains only a measurement unit}
         {--cleanup-mojibake : Repair already synced rows with broken UTF-8/Windows-1251 text}
         {--id=* : Process only selected product IDs}';
@@ -39,6 +40,10 @@ class SyncProductSpecsToAttributesCommand extends Command
                 ->all();
 
             return $this->auditBadAttributes($limit, $ids, $reasons);
+        }
+
+        if ((bool) $this->option('cleanup-empty-values')) {
+            return $this->cleanupEmptyValues($enricher, $apply, $limit, $ids);
         }
 
         if ((bool) $this->option('cleanup-unit-only')) {
@@ -120,6 +125,61 @@ class SyncProductSpecsToAttributesCommand extends Command
         }
 
         return $errors === [] ? self::SUCCESS : self::FAILURE;
+    }
+
+    /**
+     * @param array<int, int> $ids
+     */
+    private function cleanupEmptyValues(ProductSourceEnricher $enricher, bool $apply, int $limit, array $ids): int
+    {
+        $query = Product::query()
+            ->whereHas('allAttributeValues')
+            ->when($ids !== [], fn ($query) => $query->whereIn('id', $ids))
+            ->orderBy('id');
+
+        $checked = 0;
+        $affectedProducts = 0;
+        $deletedRows = 0;
+        $samples = [];
+
+        $query->chunkById(200, function ($products) use ($enricher, $apply, $limit, &$checked, &$affectedProducts, &$deletedRows, &$samples): bool {
+            foreach ($products as $product) {
+                $checked++;
+
+                if ($limit > 0 && $affectedProducts >= $limit) {
+                    return false;
+                }
+
+                $deleted = $enricher->deleteEmptyAttributeValues($product, $apply);
+                if ($deleted <= 0) {
+                    continue;
+                }
+
+                $affectedProducts++;
+                $deletedRows += $deleted;
+
+                if (count($samples) < 10) {
+                    $samples[] = [$product->id, $product->sku ?: '-', $product->name, $deleted];
+                }
+            }
+
+            return true;
+        });
+
+        $this->info('Checked products: ' . $checked);
+        $this->info('Products with empty values: ' . $affectedProducts);
+
+        if ($samples !== []) {
+            $this->table(['ID', 'SKU', 'Name', 'Rows'], $samples);
+        }
+
+        if ($apply) {
+            $this->info('Deleted empty attribute rows: ' . $deletedRows);
+        } else {
+            $this->warn('Dry run only. Run with --apply --cleanup-empty-values to delete empty rows.');
+        }
+
+        return self::SUCCESS;
     }
 
     /**
