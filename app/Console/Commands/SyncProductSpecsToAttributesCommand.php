@@ -12,6 +12,7 @@ class SyncProductSpecsToAttributesCommand extends Command
     protected $signature = 'products:sync-specs-attributes
         {--apply : Write missing product_attribute_values}
         {--limit=0 : Limit products to process}
+        {--supplier= : Restrict products by supplier code, e.g. rusklimat}
         {--force : Sync products even when product_attribute_values already exist}
         {--audit-bad-attributes : Show product attribute rows with empty/unit-only/mojibake values}
         {--bad-reason=* : Filter audit by reason: empty_value, unit_only_value, value_has_unit_suffix, mojibake_name, mojibake_value}
@@ -31,6 +32,7 @@ class SyncProductSpecsToAttributesCommand extends Command
             ->filter()
             ->values()
             ->all();
+        $supplierCode = trim((string) $this->option('supplier'));
 
         if ((bool) $this->option('audit-bad-attributes')) {
             $reasons = collect($this->option('bad-reason'))
@@ -39,19 +41,19 @@ class SyncProductSpecsToAttributesCommand extends Command
                 ->values()
                 ->all();
 
-            return $this->auditBadAttributes($limit, $ids, $reasons);
+            return $this->auditBadAttributes($limit, $ids, $reasons, $supplierCode);
         }
 
         if ((bool) $this->option('cleanup-empty-values')) {
-            return $this->cleanupEmptyValues($enricher, $apply, $limit, $ids);
+            return $this->cleanupEmptyValues($enricher, $apply, $limit, $ids, $supplierCode);
         }
 
         if ((bool) $this->option('cleanup-unit-only')) {
-            return $this->cleanupUnitOnlyValues($enricher, $apply, $limit, $ids);
+            return $this->cleanupUnitOnlyValues($enricher, $apply, $limit, $ids, $supplierCode);
         }
 
         if ((bool) $this->option('cleanup-mojibake')) {
-            return $this->cleanupMojibakeValues($enricher, $apply, $limit, $ids);
+            return $this->cleanupMojibakeValues($enricher, $apply, $limit, $ids, $supplierCode);
         }
 
         $query = Product::query()
@@ -60,6 +62,10 @@ class SyncProductSpecsToAttributesCommand extends Command
             ->where('specs', '!=', '[]')
             ->when(! (bool) $this->option('force'), fn ($query) => $query->whereDoesntHave('allAttributeValues'))
             ->when($ids !== [], fn ($query) => $query->whereIn('id', $ids))
+            ->when($supplierCode !== '', fn ($query) => $query->whereHas(
+                'supplierProducts.supplier',
+                fn ($query) => $query->where('code', $supplierCode)
+            ))
             ->orderBy('id');
 
         $checked = 0;
@@ -130,11 +136,15 @@ class SyncProductSpecsToAttributesCommand extends Command
     /**
      * @param array<int, int> $ids
      */
-    private function cleanupEmptyValues(ProductSourceEnricher $enricher, bool $apply, int $limit, array $ids): int
+    private function cleanupEmptyValues(ProductSourceEnricher $enricher, bool $apply, int $limit, array $ids, string $supplierCode): int
     {
         $query = Product::query()
             ->whereHas('allAttributeValues')
             ->when($ids !== [], fn ($query) => $query->whereIn('id', $ids))
+            ->when($supplierCode !== '', fn ($query) => $query->whereHas(
+                'supplierProducts.supplier',
+                fn ($query) => $query->where('code', $supplierCode)
+            ))
             ->orderBy('id');
 
         $checked = 0;
@@ -185,11 +195,15 @@ class SyncProductSpecsToAttributesCommand extends Command
     /**
      * @param array<int, int> $ids
      */
-    private function cleanupUnitOnlyValues(ProductSourceEnricher $enricher, bool $apply, int $limit, array $ids): int
+    private function cleanupUnitOnlyValues(ProductSourceEnricher $enricher, bool $apply, int $limit, array $ids, string $supplierCode): int
     {
         $query = Product::query()
             ->whereHas('allAttributeValues')
             ->when($ids !== [], fn ($query) => $query->whereIn('id', $ids))
+            ->when($supplierCode !== '', fn ($query) => $query->whereHas(
+                'supplierProducts.supplier',
+                fn ($query) => $query->where('code', $supplierCode)
+            ))
             ->orderBy('id');
 
         $checked = 0;
@@ -241,12 +255,18 @@ class SyncProductSpecsToAttributesCommand extends Command
      * @param array<int, int> $ids
      * @param array<int, string> $onlyReasons
      */
-    private function auditBadAttributes(int $limit, array $ids, array $onlyReasons): int
+    private function auditBadAttributes(int $limit, array $ids, array $onlyReasons, string $supplierCode): int
     {
         $rows = DB::table('product_attribute_values')
             ->join('products', 'products.id', '=', 'product_attribute_values.product_id')
             ->leftJoin('attributes', 'attributes.id', '=', 'product_attribute_values.attribute_id')
             ->when($ids !== [], fn ($query) => $query->whereIn('products.id', $ids))
+            ->when($supplierCode !== '', fn ($query) => $query->whereExists(function ($query) use ($supplierCode): void {
+                $query->from('supplier_products as supplier_filter')
+                    ->join('suppliers as supplier_filter_suppliers', 'supplier_filter_suppliers.id', '=', 'supplier_filter.supplier_id')
+                    ->whereColumn('supplier_filter.product_id', 'products.id')
+                    ->where('supplier_filter_suppliers.code', $supplierCode);
+            }))
             ->orderBy('products.id')
             ->orderBy('product_attribute_values.id')
             ->get([
@@ -330,11 +350,15 @@ class SyncProductSpecsToAttributesCommand extends Command
     /**
      * @param array<int, int> $ids
      */
-    private function cleanupMojibakeValues(ProductSourceEnricher $enricher, bool $apply, int $limit, array $ids): int
+    private function cleanupMojibakeValues(ProductSourceEnricher $enricher, bool $apply, int $limit, array $ids, string $supplierCode): int
     {
         $query = Product::query()
             ->whereHas('allAttributeValues')
             ->when($ids !== [], fn ($query) => $query->whereIn('id', $ids))
+            ->when($supplierCode !== '', fn ($query) => $query->whereHas(
+                'supplierProducts.supplier',
+                fn ($query) => $query->where('code', $supplierCode)
+            ))
             ->orderBy('id');
 
         $checked = 0;
