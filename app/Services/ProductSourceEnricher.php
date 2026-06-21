@@ -164,6 +164,49 @@ class ProductSourceEnricher
         return $this->syncAttributeValues($product, $specs);
     }
 
+    public function filterUsableSpecs(array $specs): array
+    {
+        return array_values(array_filter($specs, function (array $spec): bool {
+            $name = $this->cleanAttributeName((string) ($spec['key'] ?? ''));
+            $value = $this->cleanAttributeValue((string) ($spec['value'] ?? ''));
+            $unit = (string) ($spec['unit'] ?? '');
+
+            return $name !== ''
+                && $value !== ''
+                && ! $this->isTechnicalOrJunkAttribute($name, $value)
+                && ! $this->isUnitOnlyAttributeValue($value, $unit);
+        }));
+    }
+
+    public function deleteUnitOnlyAttributeValues(Product $product, bool $apply = true): int
+    {
+        $rows = DB::table('product_attribute_values')
+            ->leftJoin('attributes', 'attributes.id', '=', 'product_attribute_values.attribute_id')
+            ->where('product_attribute_values.product_id', $product->id)
+            ->get([
+                'product_attribute_values.id',
+                'product_attribute_values.value',
+                'attributes.suffix',
+            ]);
+
+        $ids = $rows
+            ->filter(fn ($row): bool => $this->isUnitOnlyAttributeValue((string) $row->value, (string) $row->suffix))
+            ->pluck('id')
+            ->all();
+
+        if ($ids === []) {
+            return 0;
+        }
+
+        if (! $apply) {
+            return count($ids);
+        }
+
+        return DB::table('product_attribute_values')
+            ->whereIn('id', $ids)
+            ->delete();
+    }
+
     private function productHasExistingSpecs(Product $product): bool
     {
         return $product->allAttributeValues()->exists();
@@ -237,7 +280,8 @@ class ProductSourceEnricher
         foreach ($specs as $spec) {
             $name = $this->cleanAttributeName((string) ($spec['key'] ?? ''));
             $value = $this->cleanAttributeValue((string) ($spec['value'] ?? ''));
-            if ($name === '' || $value === '' || $this->isTechnicalOrJunkAttribute($name, $value)) {
+            $unit = (string) ($spec['unit'] ?? '');
+            if ($name === '' || $value === '' || $this->isTechnicalOrJunkAttribute($name, $value) || $this->isUnitOnlyAttributeValue($value, $unit)) {
                 continue;
             }
 
@@ -250,11 +294,12 @@ class ProductSourceEnricher
         foreach ($specs as $spec) {
             $name = $this->cleanAttributeName((string) ($spec['key'] ?? ''));
             $value = $this->cleanAttributeValue((string) ($spec['value'] ?? ''));
-            if ($name === '' || $value === '' || $this->isTechnicalOrJunkAttribute($name, $value)) {
+            $unit = (string) ($spec['unit'] ?? '');
+            if ($name === '' || $value === '' || $this->isTechnicalOrJunkAttribute($name, $value) || $this->isUnitOnlyAttributeValue($value, $unit)) {
                 continue;
             }
 
-            [$value, $unit] = $this->splitValueAndUnit($value, (string) ($spec['unit'] ?? ''));
+            [$value, $unit] = $this->splitValueAndUnit($value, $unit);
             $attributeId = $this->ensureAttribute($categoryId, $name, $unit);
             if ($attributeId <= 0) {
                 continue;
@@ -1611,6 +1656,56 @@ class ProductSourceEnricher
         return str_contains($normalizedValue, 'javascript:')
             || str_contains($normalizedValue, 'cookie')
             || mb_strlen($normalizedValue) > 240;
+    }
+
+    private function isUnitOnlyAttributeValue(string $value, string $unit = ''): bool
+    {
+        $value = trim($this->cleanDatabaseText($this->cleanText($value)));
+        $unit = trim($this->cleanDatabaseText($this->cleanText($unit)));
+
+        if ($value === '') {
+            return true;
+        }
+
+        $normalizedValue = $this->normalizeUnitToken($value);
+        $normalizedUnit = $this->normalizeUnitToken($unit);
+
+        if ($normalizedUnit !== '' && $normalizedValue === $normalizedUnit) {
+            return true;
+        }
+
+        $tokens = preg_split('/\s+/u', $normalizedValue, -1, PREG_SPLIT_NO_EMPTY) ?: [];
+        if ($tokens === []) {
+            return true;
+        }
+
+        $knownUnits = [
+            'bar', 'c', 'cm', 'g', 'kg', 'kw', 'kvt', 'l', 'm', 'm2', 'm3', 'mm', 'mpa',
+            'pa', 'pcs', 'percent', 'v', 'w',
+            'бар', 'в', 'вт', 'г', 'дюйм', 'квт', 'кг', 'л', 'литр', 'м', 'м2', 'м3',
+            'мес', 'месяц', 'мин', 'мм', 'мпа', 'па', 'см', 'час', 'шт',
+        ];
+
+        foreach ($tokens as $token) {
+            if ($token === '' || in_array($token, $knownUnits, true)) {
+                continue;
+            }
+
+            return false;
+        }
+
+        return true;
+    }
+
+    private function normalizeUnitToken(string $value): string
+    {
+        $value = mb_strtolower(trim($value));
+        $value = str_replace(['°', '℃', '²', '³', 'кв.', 'кв '], ['', 'c', '2', '3', '', ''], $value);
+        $value = str_replace(['квт', 'кВт', 'kwt', 'watt', 'литров', 'литра', 'месяцев', 'месяца', 'дюйма', 'дюймов', 'штук'], ['квт', 'квт', 'kvt', 'w', 'литр', 'литр', 'месяц', 'месяц', 'дюйм', 'дюйм', 'шт'], $value);
+        $value = preg_replace('/[.,;:(){}\[\]\/\\\\|]+/u', ' ', $value) ?? $value;
+        $value = preg_replace('/\s+/u', ' ', $value) ?? $value;
+
+        return trim($value);
     }
 
     private function splitValueAndUnit(string $value, string $fallbackUnit = ''): array

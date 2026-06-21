@@ -11,6 +11,7 @@ class SyncProductSpecsToAttributesCommand extends Command
     protected $signature = 'products:sync-specs-attributes
         {--apply : Write missing product_attribute_values}
         {--limit=0 : Limit products to process}
+        {--cleanup-unit-only : Delete already synced rows where value contains only a measurement unit}
         {--id=* : Process only selected product IDs}';
 
     protected $description = 'Sync legacy products.specs JSON into product_attribute_values used by the storefront.';
@@ -24,6 +25,10 @@ class SyncProductSpecsToAttributesCommand extends Command
             ->filter()
             ->values()
             ->all();
+
+        if ((bool) $this->option('cleanup-unit-only')) {
+            return $this->cleanupUnitOnlyValues($enricher, $apply, $limit, $ids);
+        }
 
         $query = Product::query()
             ->whereNotNull('specs')
@@ -43,7 +48,7 @@ class SyncProductSpecsToAttributesCommand extends Command
         $query->chunkById(200, function ($products) use ($enricher, $apply, $limit, &$checked, &$candidates, &$syncedProducts, &$syncedRows, &$samples, &$errors): bool {
             foreach ($products as $product) {
                 $checked++;
-                $specs = $this->normalizeSpecs($product->specs);
+                $specs = $enricher->filterUsableSpecs($this->normalizeSpecs($product->specs));
 
                 if ($specs === []) {
                     continue;
@@ -96,6 +101,61 @@ class SyncProductSpecsToAttributesCommand extends Command
         }
 
         return $errors === [] ? self::SUCCESS : self::FAILURE;
+    }
+
+    /**
+     * @param array<int, int> $ids
+     */
+    private function cleanupUnitOnlyValues(ProductSourceEnricher $enricher, bool $apply, int $limit, array $ids): int
+    {
+        $query = Product::query()
+            ->whereHas('allAttributeValues')
+            ->when($ids !== [], fn ($query) => $query->whereIn('id', $ids))
+            ->orderBy('id');
+
+        $checked = 0;
+        $affectedProducts = 0;
+        $deletedRows = 0;
+        $samples = [];
+
+        $query->chunkById(200, function ($products) use ($enricher, $apply, $limit, &$checked, &$affectedProducts, &$deletedRows, &$samples): bool {
+            foreach ($products as $product) {
+                $checked++;
+
+                if ($limit > 0 && $affectedProducts >= $limit) {
+                    return false;
+                }
+
+                $deleted = $enricher->deleteUnitOnlyAttributeValues($product, $apply);
+                if ($deleted <= 0) {
+                    continue;
+                }
+
+                $affectedProducts++;
+                $deletedRows += $deleted;
+
+                if (count($samples) < 10) {
+                    $samples[] = [$product->id, $product->sku ?: '-', $product->name, $deleted];
+                }
+            }
+
+            return true;
+        });
+
+        $this->info('Checked products: ' . $checked);
+        $this->info('Products with unit-only values: ' . $affectedProducts);
+
+        if ($samples !== []) {
+            $this->table(['ID', 'SKU', 'Name', 'Rows'], $samples);
+        }
+
+        if ($apply) {
+            $this->info('Deleted unit-only attribute rows: ' . $deletedRows);
+        } else {
+            $this->warn('Dry run only. Run with --apply --cleanup-unit-only to delete unit-only rows.');
+        }
+
+        return self::SUCCESS;
     }
 
     private function normalizeSpecs(mixed $specs): array
