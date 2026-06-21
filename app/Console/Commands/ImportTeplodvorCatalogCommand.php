@@ -57,7 +57,22 @@ class ImportTeplodvorCatalogCommand extends Command
         'komplektuyuschie-otopleniya/dymokhody'                      => 57,
         'komplektuyuschie-otopleniya/avtomatika-i-termoregulyatory'  => 58,
         'komplektuyuschie-otopleniya/nasosy'                         => 60,
+        'komplektuyuschie-otopleniya/rasshiritelnye-baki'           => 89,
+        'komplektuyuschie-otopleniya/raspredelitelnye-kollektory'   => 93,
+        'komplektuyuschie-otopleniya/gidravlicheskie-strelki'       => 242,
         'komplektuyuschie-otopleniya'                                => 195,
+        'nasosy/tsirkulyatsionnye-nasosy'                           => 60,
+        'nasosy/nasosy-dlya-povysheniya-davleniya'                  => 249,
+        'nasosy/nasosnye-stantsii-gidrofor'                         => 251,
+        'nasosy/drenazhnye-nasosy'                                   => 265,
+        'nasosy/kanalizatsionnye-nasosy'                             => 265,
+        'raditory/stalnye'                                           => 235,
+        'raditory/bimetalicheskie'                                   => 236,
+        'raditory/allyminevye'                                       => 233,
+        'raditory/konvektory'                                        => 281,
+        'raditory/trubchatye'                                        => 235,
+        'raditory/obogrevateli'                                      => 202,
+        'vodonagrevateli/bufernye-emkosti'                           => 91,
     ];
 
     private const SLUG_STOPWORDS = [
