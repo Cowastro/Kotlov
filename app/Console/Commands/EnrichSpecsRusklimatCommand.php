@@ -25,6 +25,7 @@ class EnrichSpecsRusklimatCommand extends Command
         {--offset=0         : Skip first N products}
         {--sleep=500        : Delay between products in ms}
         {--show-keys        : Just print scraped key:value pairs (vocabulary gathering, no writes)}
+        {--debug-source     : Print fetched HTML diagnostics for parser debugging}
         {--force            : Re-scrape products even when specs are already filled}
         {--apply            : Write changes (default is preview)}
         {--dry-run          : Preview only (default)}';
@@ -117,6 +118,13 @@ class EnrichSpecsRusklimatCommand extends Command
                 $this->line('  <fg=red>could not fetch page</>');
                 usleep((int) $this->option('sleep') * 1000);
                 continue;
+            }
+
+            if ($this->option('debug-source')) {
+                $this->line('  html bytes: ' . strlen($html));
+                foreach (['additionalProperty', 'param-name', 'param-value', 'characteristics', 'og:description'] as $marker) {
+                    $this->line('  marker ' . $marker . ': ' . (str_contains($html, $marker) ? 'yes' : 'no'));
+                }
             }
 
             $specs = $this->parseSpecs($html);
@@ -365,6 +373,11 @@ class EnrichSpecsRusklimatCommand extends Command
                 }
             }
         }
+        foreach ($this->additionalPropertiesFromHtml($html) as $k => $v) {
+            if ($k !== '' && $v !== '' && ! isset($specs[$k])) {
+                $specs[$k] = $v;
+            }
+        }
 
         return $specs;
     }
@@ -462,6 +475,47 @@ class EnrichSpecsRusklimatCommand extends Command
         }
 
         return true;
+    }
+
+    /**
+     * Rusklimat sometimes emits Product JSON-LD or Nuxt payload fragments that
+     * are valid enough for regex extraction but not for json_decode as a whole.
+     *
+     * @return array<string, string>
+     */
+    private function additionalPropertiesFromHtml(string $html): array
+    {
+        $specs = [];
+
+        if (! preg_match_all('/"additionalProperty"\s*:\s*\[(.*?)\]/isu', $html, $blocks)) {
+            return [];
+        }
+
+        foreach ($blocks[1] as $block) {
+            if (! preg_match_all('/"name"\s*:\s*"((?:\\\\.|[^"\\\\])*)"\s*,\s*"value"\s*:\s*"((?:\\\\.|[^"\\\\])*)"/isu', $block, $pairs, PREG_SET_ORDER)) {
+                continue;
+            }
+
+            foreach ($pairs as $pair) {
+                $key = $this->decodeJsonStringFragment($pair[1]);
+                $value = $this->decodeJsonStringFragment($pair[2]);
+                if ($key !== '' && $value !== '' && ! $this->isRusklimatUnitOnlyValue($value)) {
+                    $specs[$key] = $value;
+                }
+            }
+        }
+
+        return $specs;
+    }
+
+    private function decodeJsonStringFragment(string $value): string
+    {
+        $decoded = json_decode('"' . $value . '"');
+        if (is_string($decoded)) {
+            return trim($decoded);
+        }
+
+        return trim(stripslashes($value));
     }
 
     private function findAdditionalProperties($data): array
