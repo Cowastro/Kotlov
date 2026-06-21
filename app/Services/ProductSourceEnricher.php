@@ -46,6 +46,7 @@ class ProductSourceEnricher
             'images_saved' => 0,
             'images_replaced' => 0,
             'specs_found' => count($parsed['specs']),
+            'specs_skipped' => 0,
             'attribute_values_saved' => 0,
             'service_found' => count($parsed['service_info']),
             'content_found' => $parsed['description'] !== '' ? 1 : 0,
@@ -93,8 +94,12 @@ class ProductSourceEnricher
 
         try {
             if (($options['update_specs'] ?? true) === true && $parsed['specs'] !== []) {
-                $updates['specs'] = $this->sanitizeJsonArray($parsed['specs']);
-                $stats['attribute_values_saved'] = $this->syncAttributeValues($product, $parsed['specs']);
+                if ($this->productHasExistingSpecs($product)) {
+                    $stats['specs_skipped'] = 1;
+                } else {
+                    $updates['specs'] = $this->sanitizeJsonArray($parsed['specs']);
+                    $stats['attribute_values_saved'] = $this->syncAttributeValues($product, $parsed['specs']);
+                }
             }
         } catch (\Throwable $e) {
             $stats['errors'][] = 'attributes: ' . $e->getMessage();
@@ -147,6 +152,13 @@ class ProductSourceEnricher
         $this->rememberSourceUrl($product, $sourceUrl);
 
         return $stats + ['updated_fields' => array_keys($updates)];
+    }
+
+    private function productHasExistingSpecs(Product $product): bool
+    {
+        $specs = $this->decodeArray($product->specs);
+
+        return $specs !== [] || $product->allAttributeValues()->exists();
     }
 
     private function rememberSourceUrl(Product $product, string $sourceUrl): void
@@ -328,16 +340,45 @@ class ProductSourceEnricher
 
     private function fetchHtml(string $url): string
     {
-        $response = Http::withHeaders([
-            'User-Agent' => 'Mozilla/5.0 (compatible; KOTLOV source enrichment)',
-            'Accept' => 'text/html,application/xhtml+xml',
-        ])->timeout(15)->get($url);
+        $response = Http::withHeaders($this->sourcePageRequestHeaders($url))
+            ->connectTimeout(10)
+            ->timeout(20)
+            ->get($url);
 
         if (! $response->successful()) {
             throw new \RuntimeException('Source page returned HTTP ' . $response->status());
         }
 
         return $this->normalizeHtmlEncoding((string) $response->body(), (string) $response->header('Content-Type'));
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    private function sourcePageRequestHeaders(string $url): array
+    {
+        $host = (string) parse_url($url, PHP_URL_HOST);
+
+        $headers = [
+            'User-Agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Safari/537.36',
+            'Accept' => 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
+            'Accept-Language' => 'ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7',
+            'Cache-Control' => 'no-cache',
+            'Pragma' => 'no-cache',
+            'Upgrade-Insecure-Requests' => '1',
+        ];
+
+        if (str_contains($host, 'ozon.')) {
+            $headers += [
+                'Referer' => 'https://www.ozon.ru/',
+                'Sec-Fetch-Dest' => 'document',
+                'Sec-Fetch-Mode' => 'navigate',
+                'Sec-Fetch-Site' => 'same-origin',
+                'Sec-Fetch-User' => '?1',
+            ];
+        }
+
+        return $headers;
     }
 
     private function normalizeHtmlEncoding(string $html, string $contentType = ''): string
@@ -378,13 +419,23 @@ class ProductSourceEnricher
 
     private function parsePage(string $html, string $url): array
     {
-        return $this->normalizeParsedData([
+        $parsed = [
             'description' => $this->extractDescription($html),
             'short_description' => $this->extractShortDescription($html),
             'specs' => $this->extractSpecs($html),
             'service_info' => $this->extractServiceInfo($html),
             'images' => $this->extractImages($html, $url),
-        ]);
+        ];
+
+        if ($this->isOzonUrl($url)) {
+            $ozon = $this->extractOzonData($html, $url);
+            $parsed['description'] = $parsed['description'] ?: $ozon['description'];
+            $parsed['short_description'] = $parsed['short_description'] ?: $ozon['short_description'];
+            $parsed['specs'] = array_values(array_merge($parsed['specs'], $ozon['specs']));
+            $parsed['images'] = array_values(array_unique(array_merge($parsed['images'], $ozon['images'])));
+        }
+
+        return $this->normalizeParsedData($parsed);
     }
 
     private function normalizeParsedData(array $parsed): array
@@ -399,6 +450,252 @@ class ProductSourceEnricher
                 (array) ($parsed['images'] ?? [])
             )), 0, 4)),
         ];
+    }
+
+    private function isOzonUrl(string $url): bool
+    {
+        return str_contains((string) parse_url($url, PHP_URL_HOST), 'ozon.');
+    }
+
+    /**
+     * @return array{description: string, short_description: string, specs: array<int, array<string, string>>, images: array<int, string>}
+     */
+    private function extractOzonData(string $html, string $pageUrl): array
+    {
+        $data = [
+            'description' => '',
+            'short_description' => '',
+            'specs' => [],
+            'images' => [],
+        ];
+
+        foreach ($this->jsonObjectsFromHtml($html) as $json) {
+            if ($data['description'] === '') {
+                $data['description'] = $this->firstStringByKeys($json, ['description', 'seoDescription', 'annotation']);
+            }
+
+            if ($data['short_description'] === '') {
+                $data['short_description'] = $this->firstStringByKeys($json, ['name', 'title']);
+            }
+
+            $data['specs'] = array_merge($data['specs'], $this->specsFromNestedJson($json));
+            $data['images'] = array_merge($data['images'], $this->imagesFromNestedJson($json, $pageUrl));
+        }
+
+        foreach ($this->ozonImageUrlsFromHtml($html) as $url) {
+            $data['images'][] = $this->absoluteUrl($url, $pageUrl);
+        }
+
+        $data['specs'] = array_slice($this->uniqueSpecs($data['specs']), 0, 80);
+        $data['images'] = array_values(array_unique(array_filter($data['images'])));
+
+        return $data;
+    }
+
+    /**
+     * @return array<int, mixed>
+     */
+    private function jsonObjectsFromHtml(string $html): array
+    {
+        $objects = [];
+
+        if (preg_match_all('~<script[^>]+type=["\']application/ld\+json["\'][^>]*>([\s\S]*?)</script>~iu', $html, $matches)) {
+            foreach ($matches[1] as $json) {
+                $decoded = json_decode(html_entity_decode(trim($json), ENT_QUOTES | ENT_HTML5, 'UTF-8'), true);
+                if (is_array($decoded)) {
+                    $objects[] = $decoded;
+                }
+            }
+        }
+
+        if (preg_match_all('~<script[^>]*>([\s\S]*?)</script>~iu', $html, $matches)) {
+            foreach ($matches[1] as $script) {
+                if (! preg_match('/(?:webCharacteristics|characteristics|attributes|shortCharacteristics|ir\.ozone\.ru|cdn\d*\.ozone\.ru)/iu', $script)) {
+                    continue;
+                }
+
+                $decoded = html_entity_decode(str_replace(['\\"', '\\/'], ['"', '/'], $script), ENT_QUOTES | ENT_HTML5, 'UTF-8');
+                $json = json_decode(trim($decoded), true);
+                if (is_array($json)) {
+                    $objects[] = $json;
+                    continue;
+                }
+
+                foreach ($this->jsonFragmentsFromText($decoded) as $fragment) {
+                    $objects[] = $fragment;
+                }
+            }
+        }
+
+        return $objects;
+    }
+
+    /**
+     * @return array<int, mixed>
+     */
+    private function jsonFragmentsFromText(string $text): array
+    {
+        $fragments = [];
+        if (! preg_match_all('/\{(?=[^{}]*(?:webCharacteristics|characteristics|attributes|shortCharacteristics|description|image))[\s\S]{0,120000}\}/iu', $text, $matches)) {
+            return [];
+        }
+
+        foreach ($matches[0] as $candidate) {
+            $decoded = json_decode($candidate, true);
+            if (is_array($decoded)) {
+                $fragments[] = $decoded;
+            }
+        }
+
+        return $fragments;
+    }
+
+    /**
+     * @param array<int, array<string, string>> $specs
+     * @return array<int, array<string, string>>
+     */
+    private function uniqueSpecs(array $specs): array
+    {
+        $unique = [];
+        foreach ($specs as $spec) {
+            $key = $this->cleanAttributeName((string) ($spec['key'] ?? ''));
+            $value = $this->cleanAttributeValue((string) ($spec['value'] ?? ''));
+            if ($key === '' || $value === '') {
+                continue;
+            }
+
+            $unique[mb_strtolower($key)] = ['key' => $key, 'value' => $value, 'unit' => ''];
+        }
+
+        return array_values($unique);
+    }
+
+    private function firstStringByKeys(mixed $value, array $keys): string
+    {
+        if (! is_array($value)) {
+            return '';
+        }
+
+        foreach ($value as $key => $item) {
+            if (is_string($key) && in_array($key, $keys, true) && is_string($item) && mb_strlen($this->cleanText($item)) >= 10) {
+                return $this->cleanText($item);
+            }
+
+            $nested = $this->firstStringByKeys($item, $keys);
+            if ($nested !== '') {
+                return $nested;
+            }
+        }
+
+        return '';
+    }
+
+    /**
+     * @return array<int, array<string, string>>
+     */
+    private function specsFromNestedJson(mixed $value): array
+    {
+        if (! is_array($value)) {
+            return [];
+        }
+
+        $specs = [];
+        $key = $this->stringFromAny($value['key'] ?? $value['name'] ?? $value['title'] ?? $value['label'] ?? null);
+        $specValue = $this->stringFromAny($value['value'] ?? $value['values'] ?? $value['text'] ?? null);
+
+        if ($key !== '' && $specValue !== '' && $this->looksLikeSpecPair($key, $specValue)) {
+            $specs[] = ['key' => $key, 'value' => $specValue, 'unit' => ''];
+        }
+
+        foreach (['attributes', 'characteristics', 'webCharacteristics', 'shortCharacteristics', 'properties', 'items'] as $listKey) {
+            if (isset($value[$listKey]) && is_array($value[$listKey])) {
+                foreach ($value[$listKey] as $item) {
+                    $specs = array_merge($specs, $this->specsFromNestedJson($item));
+                }
+            }
+        }
+
+        foreach ($value as $item) {
+            if (is_array($item)) {
+                $specs = array_merge($specs, $this->specsFromNestedJson($item));
+            }
+        }
+
+        return $specs;
+    }
+
+    private function stringFromAny(mixed $value): string
+    {
+        if (is_string($value) || is_numeric($value)) {
+            return $this->cleanText((string) $value);
+        }
+
+        if (is_array($value)) {
+            $parts = [];
+            foreach ($value as $item) {
+                $part = $this->stringFromAny($item);
+                if ($part !== '') {
+                    $parts[] = $part;
+                }
+            }
+
+            return $this->cleanText(implode(', ', array_unique($parts)));
+        }
+
+        return '';
+    }
+
+    private function looksLikeSpecPair(string $key, string $value): bool
+    {
+        return mb_strlen($key) >= 2
+            && mb_strlen($key) <= 120
+            && mb_strlen($value) <= 240
+            && ! $this->isTechnicalOrJunkAttribute($key, $value)
+            && ! preg_match('/^(url|link|image|images|name|title|description|sku|id|price)$/iu', $key);
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    private function imagesFromNestedJson(mixed $value, string $pageUrl): array
+    {
+        if (is_string($value)) {
+            return $this->looksLikeOzonImageUrl($value) ? [$this->absoluteUrl($value, $pageUrl)] : [];
+        }
+
+        if (! is_array($value)) {
+            return [];
+        }
+
+        $urls = [];
+        foreach ($value as $item) {
+            $urls = array_merge($urls, $this->imagesFromNestedJson($item, $pageUrl));
+        }
+
+        return array_values(array_unique($urls));
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    private function ozonImageUrlsFromHtml(string $html): array
+    {
+        $decoded = html_entity_decode(str_replace('\/', '/', $html), ENT_QUOTES | ENT_HTML5, 'UTF-8');
+        if (! preg_match_all('~https?://(?:ir|cdn\d*)\.ozone\.ru/s3/[^"\'\s<>\\\\]+~iu', $decoded, $matches)) {
+            return [];
+        }
+
+        return array_values(array_filter(array_unique($matches[0]), fn (string $url): bool => $this->looksLikeOzonImageUrl($url)));
+    }
+
+    private function looksLikeOzonImageUrl(string $url): bool
+    {
+        $host = (string) parse_url($url, PHP_URL_HOST);
+        $path = (string) parse_url($url, PHP_URL_PATH);
+
+        return preg_match('/(?:^|\.)ozone\.ru$/iu', $host)
+            && str_contains($path, '/s3/')
+            && ! preg_match('~/(?:icons?|flags?|sprite|logo)/~iu', $path);
     }
 
     private function extractDescription(string $html): string
@@ -868,6 +1165,10 @@ class ProductSourceEnricher
             }
         }
 
+        foreach ($this->ozonImageUrlsFromHtml($decoded) as $url) {
+            $urls[] = $url;
+        }
+
         return array_values(array_filter(array_unique($urls)));
     }
 
@@ -980,6 +1281,10 @@ class ProductSourceEnricher
     private function isProductImage(string $url): bool
     {
         $path = strtolower((string) parse_url($url, PHP_URL_PATH));
+
+        if ($this->looksLikeOzonImageUrl($url)) {
+            return true;
+        }
 
         if (! preg_match('~\.(?:jpe?g|png|webp|gif|avif)(?:$|\?)~i', $path)) {
             return false;
