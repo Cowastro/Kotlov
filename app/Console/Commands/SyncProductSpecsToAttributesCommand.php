@@ -33,10 +33,6 @@ class SyncProductSpecsToAttributesCommand extends Command
             ->when($ids !== [], fn ($query) => $query->whereIn('id', $ids))
             ->orderBy('id');
 
-        if ($limit > 0) {
-            $query->limit($limit);
-        }
-
         $checked = 0;
         $candidates = 0;
         $syncedProducts = 0;
@@ -44,13 +40,17 @@ class SyncProductSpecsToAttributesCommand extends Command
         $samples = [];
         $errors = [];
 
-        $query->chunkById(200, function ($products) use ($enricher, $apply, &$checked, &$candidates, &$syncedProducts, &$syncedRows, &$samples, &$errors): void {
+        $query->chunkById(200, function ($products) use ($enricher, $apply, $limit, &$checked, &$candidates, &$syncedProducts, &$syncedRows, &$samples, &$errors): bool {
             foreach ($products as $product) {
                 $checked++;
                 $specs = $this->normalizeSpecs($product->specs);
 
                 if ($specs === []) {
                     continue;
+                }
+
+                if ($limit > 0 && $candidates >= $limit) {
+                    return false;
                 }
 
                 $candidates++;
@@ -72,6 +72,8 @@ class SyncProductSpecsToAttributesCommand extends Command
                     $errors[] = [$product->id, $product->sku ?: '-', mb_substr($e->getMessage(), 0, 180)];
                 }
             }
+
+            return true;
         });
 
         $this->info('Checked products: ' . $checked);
