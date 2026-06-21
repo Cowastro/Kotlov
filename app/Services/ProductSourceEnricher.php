@@ -207,6 +207,35 @@ class ProductSourceEnricher
             ->delete();
     }
 
+    public function repairMojibakeAttributeValues(Product $product, bool $apply = true): int
+    {
+        $rows = DB::table('product_attribute_values')
+            ->where('product_id', $product->id)
+            ->get(['id', 'value']);
+
+        $changed = 0;
+        foreach ($rows as $row) {
+            $value = (string) $row->value;
+            $clean = $this->cleanAttributeValue($value);
+
+            if ($clean === '' || $clean === $value) {
+                continue;
+            }
+
+            $changed++;
+            if ($apply) {
+                DB::table('product_attribute_values')
+                    ->where('id', $row->id)
+                    ->update([
+                        'value' => $this->cleanDatabaseText($clean),
+                        'updated_at' => now(),
+                    ]);
+            }
+        }
+
+        return $changed;
+    }
+
     private function productHasExistingSpecs(Product $product): bool
     {
         return $product->allAttributeValues()->exists();
@@ -1522,6 +1551,16 @@ class ProductSourceEnricher
 
     private function repairMojibake(string $value): string
     {
+        if (preg_match('/(?:[РС][\x{0400}-\x{04FF}]){2,}/u', $value)) {
+            $candidate = @iconv('UTF-8', 'Windows-1251//IGNORE', $value);
+            if (is_string($candidate)
+                && $candidate !== ''
+                && mb_check_encoding($candidate, 'UTF-8')
+                && $this->mojibakeScore($candidate) < $this->mojibakeScore($value)) {
+                return $candidate;
+            }
+        }
+
         if ($this->mojibakeScore($value) > 0) {
             $candidate = @iconv('UTF-8', 'Windows-1251//IGNORE', $value);
             if (is_string($candidate)
@@ -1549,6 +1588,7 @@ class ProductSourceEnricher
     private function mojibakeScore(string $value): int
     {
         $score = 0;
+        $score += (int) preg_match_all('/(?:[РС][\x{0400}-\x{04FF}]){2,}/u', $value);
         $score += (int) preg_match_all('/(?:Р[’Ѓ“”•–—˜™љ›њќћџ ЎўЈ¤Ґ¦§Ё©Є«¬®Ї°±Ііґµ¶·ё№є»јЅѕї]|С[Ѓ‚ѓ„…†‡€‰Љ‹ЊЌЋЏђ‘’“”•–—˜™љ›њќћџ])+/u', $value);
         $score += (int) preg_match_all('/(?:Ð.|Ñ.|Đ.|Ă.)/u', $value);
 
@@ -1563,6 +1603,9 @@ class ProductSourceEnricher
     private function cleanAttributeName(string $name): string
     {
         $name = $this->cleanText($name);
+        $name = preg_replace('/^[\s:;•—-]+|[\s:;•—-]+$/u', '', $name) ?? $name;
+
+        return trim(preg_replace('/\s+/u', ' ', $name) ?? $name);
         $name = trim($name, " \t\n\r\0\x0B:;•—-");
 
         return trim(preg_replace('/\s+/u', ' ', $name) ?? $name);
@@ -1572,6 +1615,9 @@ class ProductSourceEnricher
     {
         $value = $this->cleanText($value);
         $value = $this->normalizeBooleanGlyphValue($value);
+        $value = preg_replace('/^[\s:;•—-]+|[\s:;•—-]+$/u', '', $value) ?? $value;
+
+        return trim(preg_replace('/\s+/u', ' ', $value) ?? $value);
         $value = trim($value, " \t\n\r\0\x0B:;•—-");
 
         return trim(preg_replace('/\s+/u', ' ', $value) ?? $value);

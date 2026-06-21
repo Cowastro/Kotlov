@@ -13,6 +13,7 @@ class SyncProductSpecsToAttributesCommand extends Command
         {--limit=0 : Limit products to process}
         {--force : Sync products even when product_attribute_values already exist}
         {--cleanup-unit-only : Delete already synced rows where value contains only a measurement unit}
+        {--cleanup-mojibake : Repair already synced rows with broken UTF-8/Windows-1251 text}
         {--id=* : Process only selected product IDs}';
 
     protected $description = 'Sync legacy products.specs JSON into product_attribute_values used by the storefront.';
@@ -29,6 +30,10 @@ class SyncProductSpecsToAttributesCommand extends Command
 
         if ((bool) $this->option('cleanup-unit-only')) {
             return $this->cleanupUnitOnlyValues($enricher, $apply, $limit, $ids);
+        }
+
+        if ((bool) $this->option('cleanup-mojibake')) {
+            return $this->cleanupMojibakeValues($enricher, $apply, $limit, $ids);
         }
 
         $query = Product::query()
@@ -154,6 +159,61 @@ class SyncProductSpecsToAttributesCommand extends Command
             $this->info('Deleted unit-only attribute rows: ' . $deletedRows);
         } else {
             $this->warn('Dry run only. Run with --apply --cleanup-unit-only to delete unit-only rows.');
+        }
+
+        return self::SUCCESS;
+    }
+
+    /**
+     * @param array<int, int> $ids
+     */
+    private function cleanupMojibakeValues(ProductSourceEnricher $enricher, bool $apply, int $limit, array $ids): int
+    {
+        $query = Product::query()
+            ->whereHas('allAttributeValues')
+            ->when($ids !== [], fn ($query) => $query->whereIn('id', $ids))
+            ->orderBy('id');
+
+        $checked = 0;
+        $affectedProducts = 0;
+        $changedRows = 0;
+        $samples = [];
+
+        $query->chunkById(200, function ($products) use ($enricher, $apply, $limit, &$checked, &$affectedProducts, &$changedRows, &$samples): bool {
+            foreach ($products as $product) {
+                $checked++;
+
+                if ($limit > 0 && $affectedProducts >= $limit) {
+                    return false;
+                }
+
+                $changed = $enricher->repairMojibakeAttributeValues($product, $apply);
+                if ($changed <= 0) {
+                    continue;
+                }
+
+                $affectedProducts++;
+                $changedRows += $changed;
+
+                if (count($samples) < 10) {
+                    $samples[] = [$product->id, $product->sku ?: '-', $product->name, $changed];
+                }
+            }
+
+            return true;
+        });
+
+        $this->info('Checked products: ' . $checked);
+        $this->info('Products with mojibake values: ' . $affectedProducts);
+
+        if ($samples !== []) {
+            $this->table(['ID', 'SKU', 'Name', 'Rows'], $samples);
+        }
+
+        if ($apply) {
+            $this->info('Repaired mojibake attribute rows: ' . $changedRows);
+        } else {
+            $this->warn('Dry run only. Run with --apply --cleanup-mojibake to repair mojibake rows.');
         }
 
         return self::SUCCESS;
