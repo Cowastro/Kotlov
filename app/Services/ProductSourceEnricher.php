@@ -96,6 +96,9 @@ class ProductSourceEnricher
             if (($options['update_specs'] ?? true) === true && $parsed['specs'] !== []) {
                 if ($this->productHasExistingSpecs($product)) {
                     $stats['specs_skipped'] = 1;
+                } elseif ($this->decodeArray($product->specs) !== []) {
+                    $stats['attribute_values_saved'] = $this->syncSpecsToAttributeValues($product);
+                    $stats['specs_skipped'] = 1;
                 } else {
                     $updates['specs'] = $this->sanitizeJsonArray($parsed['specs']);
                     $stats['attribute_values_saved'] = $this->syncAttributeValues($product, $parsed['specs']);
@@ -154,11 +157,16 @@ class ProductSourceEnricher
         return $stats + ['updated_fields' => array_keys($updates)];
     }
 
+    public function syncSpecsToAttributeValues(Product $product, ?array $specs = null): int
+    {
+        $specs ??= $this->decodeArray($product->specs);
+
+        return $this->syncAttributeValues($product, $specs);
+    }
+
     private function productHasExistingSpecs(Product $product): bool
     {
-        $specs = $this->decodeArray($product->specs);
-
-        return $specs !== [] || $product->allAttributeValues()->exists();
+        return $product->allAttributeValues()->exists();
     }
 
     private function rememberSourceUrl(Product $product, string $sourceUrl): void

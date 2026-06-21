@@ -4,6 +4,7 @@ namespace App\Filament\Resources\Products\Pages;
 
 use App\Filament\Resources\Products\ProductResource;
 use App\Jobs\RunProductSourceEnrichment;
+use App\Services\ProductSourceEnricher;
 use Filament\Actions\Action;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\ViewAction;
@@ -118,6 +119,9 @@ class EditProduct extends EditRecord
 
         // ── Specs: normalize both {key:val} and [{key,value,unit}] formats ──────
         $data['specs'] = $this->normalizeSpecs($data['specs'] ?? []);
+        if ($data['specs'] === []) {
+            $data['specs'] = $this->specsFromAttributeValues();
+        }
 
         return $data;
     }
@@ -143,6 +147,14 @@ class EditProduct extends EditRecord
         )));
 
         return $data;
+    }
+
+    protected function afterSave(): void
+    {
+        app(ProductSourceEnricher::class)->syncSpecsToAttributeValues(
+            $this->record,
+            $this->normalizeSpecs($this->record->specs ?? []),
+        );
     }
 
     /**
@@ -180,6 +192,25 @@ class EditProduct extends EditRecord
         }
 
         return $result;
+    }
+
+    private function specsFromAttributeValues(): array
+    {
+        return $this->record
+            ->allAttributeValues()
+            ->with(['attribute', 'option'])
+            ->get()
+            ->sortBy(fn ($value): int => (int) ($value->attribute?->sort_order ?? 0))
+            ->map(function ($value): array {
+                return [
+                    'key' => (string) ($value->attribute?->name ?? ''),
+                    'value' => $value->option?->name ?: (string) ($value->value ?? ''),
+                    'unit' => (string) ($value->attribute?->suffix ?? ''),
+                ];
+            })
+            ->filter(fn (array $spec): bool => $spec['key'] !== '' && $spec['value'] !== '')
+            ->values()
+            ->all();
     }
 
     private function normalizeImages(mixed $images): array
