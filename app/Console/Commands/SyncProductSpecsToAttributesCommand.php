@@ -13,6 +13,8 @@ class SyncProductSpecsToAttributesCommand extends Command
         {--apply : Write missing product_attribute_values}
         {--limit=0 : Limit products to process}
         {--supplier= : Restrict products by supplier code, e.g. rusklimat}
+        {--active-only : Restrict products to active catalog cards}
+        {--not-archived : Exclude archived products}
         {--force : Sync products even when product_attribute_values already exist}
         {--audit-bad-attributes : Show product attribute rows with empty/unit-only/mojibake values}
         {--bad-reason=* : Filter audit by reason: empty_value, unit_only_value, value_has_unit_suffix, mojibake_name, mojibake_value}
@@ -33,6 +35,8 @@ class SyncProductSpecsToAttributesCommand extends Command
             ->values()
             ->all();
         $supplierCode = trim((string) $this->option('supplier'));
+        $activeOnly = (bool) $this->option('active-only');
+        $notArchived = (bool) $this->option('not-archived');
 
         if ((bool) $this->option('audit-bad-attributes')) {
             $reasons = collect($this->option('bad-reason'))
@@ -41,19 +45,19 @@ class SyncProductSpecsToAttributesCommand extends Command
                 ->values()
                 ->all();
 
-            return $this->auditBadAttributes($limit, $ids, $reasons, $supplierCode);
+            return $this->auditBadAttributes($limit, $ids, $reasons, $supplierCode, $activeOnly, $notArchived);
         }
 
         if ((bool) $this->option('cleanup-empty-values')) {
-            return $this->cleanupEmptyValues($enricher, $apply, $limit, $ids, $supplierCode);
+            return $this->cleanupEmptyValues($enricher, $apply, $limit, $ids, $supplierCode, $activeOnly, $notArchived);
         }
 
         if ((bool) $this->option('cleanup-unit-only')) {
-            return $this->cleanupUnitOnlyValues($enricher, $apply, $limit, $ids, $supplierCode);
+            return $this->cleanupUnitOnlyValues($enricher, $apply, $limit, $ids, $supplierCode, $activeOnly, $notArchived);
         }
 
         if ((bool) $this->option('cleanup-mojibake')) {
-            return $this->cleanupMojibakeValues($enricher, $apply, $limit, $ids, $supplierCode);
+            return $this->cleanupMojibakeValues($enricher, $apply, $limit, $ids, $supplierCode, $activeOnly, $notArchived);
         }
 
         $query = Product::query()
@@ -62,6 +66,8 @@ class SyncProductSpecsToAttributesCommand extends Command
             ->where('specs', '!=', '[]')
             ->when(! (bool) $this->option('force'), fn ($query) => $query->whereDoesntHave('allAttributeValues'))
             ->when($ids !== [], fn ($query) => $query->whereIn('id', $ids))
+            ->when($activeOnly, fn ($query) => $query->where('is_active', true))
+            ->when($notArchived, fn ($query) => $query->where('is_archived', false))
             ->when($supplierCode !== '', fn ($query) => $query->whereHas(
                 'supplierProducts.supplier',
                 fn ($query) => $query->where('code', $supplierCode)
@@ -136,11 +142,13 @@ class SyncProductSpecsToAttributesCommand extends Command
     /**
      * @param array<int, int> $ids
      */
-    private function cleanupEmptyValues(ProductSourceEnricher $enricher, bool $apply, int $limit, array $ids, string $supplierCode): int
+    private function cleanupEmptyValues(ProductSourceEnricher $enricher, bool $apply, int $limit, array $ids, string $supplierCode, bool $activeOnly, bool $notArchived): int
     {
         $query = Product::query()
             ->whereHas('allAttributeValues')
             ->when($ids !== [], fn ($query) => $query->whereIn('id', $ids))
+            ->when($activeOnly, fn ($query) => $query->where('is_active', true))
+            ->when($notArchived, fn ($query) => $query->where('is_archived', false))
             ->when($supplierCode !== '', fn ($query) => $query->whereHas(
                 'supplierProducts.supplier',
                 fn ($query) => $query->where('code', $supplierCode)
@@ -195,11 +203,13 @@ class SyncProductSpecsToAttributesCommand extends Command
     /**
      * @param array<int, int> $ids
      */
-    private function cleanupUnitOnlyValues(ProductSourceEnricher $enricher, bool $apply, int $limit, array $ids, string $supplierCode): int
+    private function cleanupUnitOnlyValues(ProductSourceEnricher $enricher, bool $apply, int $limit, array $ids, string $supplierCode, bool $activeOnly, bool $notArchived): int
     {
         $query = Product::query()
             ->whereHas('allAttributeValues')
             ->when($ids !== [], fn ($query) => $query->whereIn('id', $ids))
+            ->when($activeOnly, fn ($query) => $query->where('is_active', true))
+            ->when($notArchived, fn ($query) => $query->where('is_archived', false))
             ->when($supplierCode !== '', fn ($query) => $query->whereHas(
                 'supplierProducts.supplier',
                 fn ($query) => $query->where('code', $supplierCode)
@@ -255,12 +265,14 @@ class SyncProductSpecsToAttributesCommand extends Command
      * @param array<int, int> $ids
      * @param array<int, string> $onlyReasons
      */
-    private function auditBadAttributes(int $limit, array $ids, array $onlyReasons, string $supplierCode): int
+    private function auditBadAttributes(int $limit, array $ids, array $onlyReasons, string $supplierCode, bool $activeOnly, bool $notArchived): int
     {
         $rows = DB::table('product_attribute_values')
             ->join('products', 'products.id', '=', 'product_attribute_values.product_id')
             ->leftJoin('attributes', 'attributes.id', '=', 'product_attribute_values.attribute_id')
             ->when($ids !== [], fn ($query) => $query->whereIn('products.id', $ids))
+            ->when($activeOnly, fn ($query) => $query->where('products.is_active', true))
+            ->when($notArchived, fn ($query) => $query->where('products.is_archived', false))
             ->when($supplierCode !== '', fn ($query) => $query->whereExists(function ($query) use ($supplierCode): void {
                 $query->from('supplier_products as supplier_filter')
                     ->join('suppliers as supplier_filter_suppliers', 'supplier_filter_suppliers.id', '=', 'supplier_filter.supplier_id')
@@ -276,6 +288,8 @@ class SyncProductSpecsToAttributesCommand extends Command
                 'product_attribute_values.option_id',
                 'products.sku',
                 'products.name as product_name',
+                'products.is_active',
+                'products.is_archived',
                 'attributes.name as attribute_name',
                 'attributes.suffix',
                 'attributes.type as attribute_type',
@@ -316,6 +330,8 @@ class SyncProductSpecsToAttributesCommand extends Command
                 $samples[] = [
                     $row->product_id,
                     $row->sku ?: '-',
+                    $this->supplierNamesForProduct((int) $row->product_id),
+                    ((bool) $row->is_active ? 'yes' : 'no') . '/' . ((bool) $row->is_archived ? 'yes' : 'no'),
                     mb_substr((string) $row->product_name, 0, 46),
                     mb_substr((string) ($row->attribute_name ?? '-'), 0, 34),
                     mb_substr((string) ($row->value ?? ''), 0, 34),
@@ -341,7 +357,7 @@ class SyncProductSpecsToAttributesCommand extends Command
         }
 
         if ($samples !== []) {
-            $this->table(['Product ID', 'SKU', 'Product', 'Attribute', 'Value', 'Unit', 'Reason'], $samples);
+            $this->table(['Product ID', 'SKU', 'Suppliers', 'Active/Archived', 'Product', 'Attribute', 'Value', 'Unit', 'Reason'], $samples);
         }
 
         return self::SUCCESS;
@@ -350,11 +366,13 @@ class SyncProductSpecsToAttributesCommand extends Command
     /**
      * @param array<int, int> $ids
      */
-    private function cleanupMojibakeValues(ProductSourceEnricher $enricher, bool $apply, int $limit, array $ids, string $supplierCode): int
+    private function cleanupMojibakeValues(ProductSourceEnricher $enricher, bool $apply, int $limit, array $ids, string $supplierCode, bool $activeOnly, bool $notArchived): int
     {
         $query = Product::query()
             ->whereHas('allAttributeValues')
             ->when($ids !== [], fn ($query) => $query->whereIn('id', $ids))
+            ->when($activeOnly, fn ($query) => $query->where('is_active', true))
+            ->when($notArchived, fn ($query) => $query->where('is_archived', false))
             ->when($supplierCode !== '', fn ($query) => $query->whereHas(
                 'supplierProducts.supplier',
                 fn ($query) => $query->where('code', $supplierCode)
@@ -503,5 +521,18 @@ class SyncProductSpecsToAttributesCommand extends Command
         $quotedUnit = preg_quote($unit, '/');
 
         return preg_match('/(?:^|[\s\d.,])' . $quotedUnit . '$/u', $value) === 1;
+    }
+
+    private function supplierNamesForProduct(int $productId): string
+    {
+        $names = DB::table('supplier_products')
+            ->leftJoin('suppliers', 'suppliers.id', '=', 'supplier_products.supplier_id')
+            ->where('supplier_products.product_id', $productId)
+            ->pluck('suppliers.name')
+            ->filter()
+            ->unique()
+            ->values();
+
+        return $names->isNotEmpty() ? $names->implode(', ') : '-';
     }
 }
