@@ -210,24 +210,54 @@ class ProductSourceEnricher
     public function repairMojibakeAttributeValues(Product $product, bool $apply = true): int
     {
         $rows = DB::table('product_attribute_values')
+            ->leftJoin('attributes', 'attributes.id', '=', 'product_attribute_values.attribute_id')
             ->where('product_id', $product->id)
-            ->get(['id', 'value']);
+            ->get([
+                'product_attribute_values.id',
+                'product_attribute_values.value',
+                'product_attribute_values.attribute_id',
+                'attributes.name as attribute_name',
+            ]);
 
         $changed = 0;
+        $changedAttributeIds = [];
+
         foreach ($rows as $row) {
             $value = (string) $row->value;
             $clean = $this->cleanAttributeValue($value);
 
-            if ($clean === '' || $clean === $value) {
+            if ($clean !== '' && $clean !== $value) {
+                $changed++;
+
+                if ($apply) {
+                    DB::table('product_attribute_values')
+                        ->where('id', $row->id)
+                        ->update([
+                            'value' => $this->cleanDatabaseText($clean),
+                            'updated_at' => now(),
+                        ]);
+                }
+            }
+
+            $attributeId = (int) ($row->attribute_id ?? 0);
+            if ($attributeId <= 0 || isset($changedAttributeIds[$attributeId])) {
                 continue;
             }
 
+            $attributeName = (string) ($row->attribute_name ?? '');
+            $cleanAttributeName = $this->cleanAttributeName($attributeName);
+            if ($cleanAttributeName === '' || $cleanAttributeName === $attributeName) {
+                continue;
+            }
+
+            $changedAttributeIds[$attributeId] = true;
             $changed++;
+
             if ($apply) {
-                DB::table('product_attribute_values')
-                    ->where('id', $row->id)
+                DB::table('attributes')
+                    ->where('id', $attributeId)
                     ->update([
-                        'value' => $this->cleanDatabaseText($clean),
+                        'name' => $this->cleanDatabaseText($cleanAttributeName),
                         'updated_at' => now(),
                     ]);
             }
