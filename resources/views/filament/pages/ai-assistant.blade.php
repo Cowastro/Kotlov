@@ -738,6 +738,9 @@
                                     <div class="ai-assistant-quality-meta">
                                         SKU {{ $product['sku'] }} · {{ $product['category'] }} · {{ $product['brand'] }} · {{ $product['source'] }}
                                     </div>
+                                    @if ($product['supplier_hint'])
+                                        <div class="ai-assistant-quality-meta">{{ $product['supplier_hint'] }}</div>
+                                    @endif
                                 </div>
                                 <a class="ai-assistant-action" href="{{ $product['url'] }}">Открыть</a>
                             </div>

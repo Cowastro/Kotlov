@@ -206,12 +206,21 @@ class AiAssistant extends Page
                 'hint' => 'Кандидаты на AI-разбор категории перед публикацией.',
             ],
             [
+                'label' => 'Без поставщика',
+                'count' => Product::query()
+                    ->where('is_archived', false)
+                    ->whereDoesntHave('supplierProducts')
+                    ->count(),
+                'hint' => 'Нужно найти, к кому привязать товар: поставщик, наличие, склад.',
+            ],
+            [
                 'label' => 'Без источника поставщика',
                 'count' => Product::query()
                     ->where('is_archived', false)
+                    ->whereHas('supplierProducts')
                     ->whereDoesntHave('supplierProducts', fn ($query) => $query->whereNotNull('source_url')->where('source_url', '!=', ''))
                     ->count(),
-                'hint' => 'Для таких карточек сложнее автоматически обогащать фото и характеристики.',
+                'hint' => 'Поставщик уже есть, но нет source_url для фото, характеристик и SEO.',
             ],
         ];
     }
@@ -223,6 +232,7 @@ class AiAssistant extends Page
             'without_images' => 'Без фото',
             'without_brand' => 'Без бренда',
             'without_category' => 'Без категории',
+            'without_supplier' => 'Без поставщика',
             'without_source' => 'Без источника',
         ];
     }
@@ -253,6 +263,7 @@ class AiAssistant extends Page
                 'brand' => $product->brand?->name ?: '-',
                 'category' => $product->category?->name ?: '-',
                 'source' => $this->productSourceLabel($product),
+                'supplier_hint' => $this->productSupplierHint($product),
                 'problems' => $this->productQualityProblems($product),
                 'url' => url('/admin/products/' . $product->id),
             ])
@@ -755,9 +766,12 @@ class AiAssistant extends Page
                 ->orWhereRaw('JSON_LENGTH(images) = 0')),
             'without_brand' => $query->whereNull('brand_id'),
             'without_category' => $query->whereNull('category_id'),
-            'without_source' => $query->whereDoesntHave('supplierProducts', fn ($query) => $query
-                ->whereNotNull('source_url')
-                ->where('source_url', '!=', '')),
+            'without_supplier' => $query->whereDoesntHave('supplierProducts'),
+            'without_source' => $query
+                ->whereHas('supplierProducts')
+                ->whereDoesntHave('supplierProducts', fn ($query) => $query
+                    ->whereNotNull('source_url')
+                    ->where('source_url', '!=', '')),
             default => $query->where(fn ($query) => $query
                 ->whereNull('content')
                 ->orWhere('content', '')
@@ -785,6 +799,10 @@ class AiAssistant extends Page
 
         if (! $product->category_id) {
             $problems[] = 'Категория';
+        }
+
+        if ($product->supplierProducts->isEmpty()) {
+            $problems[] = 'Поставщик';
         }
 
         if ($this->productSourceLabel($product) === '-') {
@@ -818,6 +836,25 @@ class AiAssistant extends Page
             ?: $supplierProduct->supplier?->name
             ?: parse_url((string) $supplierProduct->source_url, PHP_URL_HOST)
             ?: 'source_url';
+    }
+
+    private function productSupplierHint(Product $product): string
+    {
+        if ($product->supplierProducts->isEmpty()) {
+            return 'Нет связи с поставщиком: найти supplier_product, наличие и склад.';
+        }
+
+        $withSource = $product->supplierProducts
+            ->first(fn ($supplierProduct): bool => filled($supplierProduct->source_url));
+
+        if (! $withSource) {
+            $supplier = $product->supplierProducts->first()?->supplier;
+            $name = $supplier?->code ?: $supplier?->name ?: 'поставщик есть';
+
+            return $name . ': добавить source_url для обогащения карточки.';
+        }
+
+        return '';
     }
 
     private function productsWithoutContent(): int

@@ -71,7 +71,7 @@ class ProductSourceEnricher
 
         try {
             if (($options['update_images'] ?? true) === true && $parsed['images'] !== []) {
-                $downloaded = $this->downloadImages($parsed['images'], $product);
+                $downloaded = $this->downloadImages($parsed['images'], $product, $sourceUrl);
                 $stats['images_saved'] = count($downloaded);
 
                 if ($downloaded !== []) {
@@ -726,7 +726,7 @@ class ProductSourceEnricher
             }
         }
 
-        foreach (['img', 'source'] as $tag) {
+        foreach (['img', 'source', 'a'] as $tag) {
             if (! preg_match_all('~<' . $tag . '\b[^>]*>~iu', $html, $tagMatches)) {
                 continue;
             }
@@ -801,6 +801,11 @@ class ProductSourceEnricher
             'data-large',
             'data-original',
             'data-image',
+            'data-lazy-src',
+            'data-src-big',
+            'data-big',
+            'data-fancybox-href',
+            'href',
             'data-src',
             'src',
         ];
@@ -851,13 +856,13 @@ class ProductSourceEnricher
         $urls = [];
         $decoded = html_entity_decode(str_replace('\/', '/', $html), ENT_QUOTES | ENT_HTML5, 'UTF-8');
 
-        if (preg_match_all('~https?://[^"\'\s<>\\\\]+?\.(?:jpe?g|png|webp|gif)(?:\?[^"\'\s<>\\\\]*)?~iu', $decoded, $matches)) {
+        if (preg_match_all('~https?://[^"\'\s<>\\\\]+?\.(?:jpe?g|png|webp|gif|avif)(?:\?[^"\'\s<>\\\\]*)?~iu', $decoded, $matches)) {
             foreach ($matches[0] as $url) {
                 $urls[] = $url;
             }
         }
 
-        if (preg_match_all('~/(?:media|storage|img|images|upload|uploads|catalog|product)[^"\'\s<>\\\\]+?\.(?:jpe?g|png|webp|gif)(?:\?[^"\'\s<>\\\\]*)?~iu', $decoded, $matches)) {
+        if (preg_match_all('~/(?:media|storage|img|images|upload|uploads|catalog|product)[^"\'\s<>\\\\]+?\.(?:jpe?g|png|webp|gif|avif)(?:\?[^"\'\s<>\\\\]*)?~iu', $decoded, $matches)) {
             foreach ($matches[0] as $url) {
                 $urls[] = $this->absoluteUrl($url, $pageUrl);
             }
@@ -866,7 +871,7 @@ class ProductSourceEnricher
         return array_values(array_filter(array_unique($urls)));
     }
 
-    private function downloadImages(array $urls, Product $product): array
+    private function downloadImages(array $urls, Product $product, string $sourceUrl = ''): array
     {
         $dir = public_path(self::IMAGE_DIR);
         if (! is_dir($dir)) {
@@ -879,8 +884,10 @@ class ProductSourceEnricher
 
         foreach ($candidateUrls as $url) {
             try {
-                $response = Http::withHeaders(['User-Agent' => 'Mozilla/5.0'])
-                    ->timeout(5)
+                $response = Http::withHeaders($this->imageRequestHeaders($sourceUrl ?: $url))
+                    ->connectTimeout(8)
+                    ->timeout(20)
+                    ->retry(2, 250)
                     ->get($url);
 
                 if (! $response->successful()) {
@@ -888,16 +895,17 @@ class ProductSourceEnricher
                 }
 
                 $contentType = strtolower((string) $response->header('Content-Type'));
-                if (! str_contains($contentType, 'image/')) {
-                    continue;
-                }
-
                 $body = $response->body();
-                if (! $this->isLargeEnoughImage($body)) {
+                $imageInfo = $this->imageInfo($body);
+                if (! str_contains($contentType, 'image/') && $imageInfo === null) {
                     continue;
                 }
 
-                $extension = $this->imageExtension($contentType, $url);
+                if (! $this->isLargeEnoughImage($body, $imageInfo)) {
+                    continue;
+                }
+
+                $extension = $this->imageExtension($contentType, $url, $imageInfo);
                 $filename = Str::slug($product->sku ?: $product->slug ?: 'product') . '-' . (count($saved) + 1) . '-' . substr(md5($url), 0, 8) . '.' . $extension;
                 file_put_contents($dir . DIRECTORY_SEPARATOR . $filename, $body);
                 $saved[] = self::IMAGE_DIR . '/' . $filename;
@@ -913,22 +921,50 @@ class ProductSourceEnricher
         return $saved;
     }
 
-    private function imageExtension(string $contentType, string $url): string
+    /**
+     * @return array<string, string>
+     */
+    private function imageRequestHeaders(string $referer): array
     {
+        return [
+            'User-Agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Safari/537.36',
+            'Accept' => 'image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8',
+            'Accept-Language' => 'ru-RU,ru;q=0.9,en;q=0.8',
+            'Cache-Control' => 'no-cache',
+            'Pragma' => 'no-cache',
+            'Referer' => $referer,
+        ];
+    }
+
+    private function imageExtension(string $contentType, string $url, ?array $imageInfo = null): string
+    {
+        $mime = strtolower((string) ($imageInfo['mime'] ?? ''));
+
         return match (true) {
-            str_contains($contentType, 'png') => 'png',
-            str_contains($contentType, 'webp') => 'webp',
-            str_contains($contentType, 'gif') => 'gif',
-            default => in_array(strtolower(pathinfo(parse_url($url, PHP_URL_PATH) ?: '', PATHINFO_EXTENSION)), ['jpg', 'jpeg', 'png', 'webp', 'gif'], true)
+            str_contains($contentType, 'png') || str_contains($mime, 'png') => 'png',
+            str_contains($contentType, 'webp') || str_contains($mime, 'webp') => 'webp',
+            str_contains($contentType, 'gif') || str_contains($mime, 'gif') => 'gif',
+            str_contains($contentType, 'avif') || str_contains($mime, 'avif') => 'avif',
+            default => in_array(strtolower(pathinfo(parse_url($url, PHP_URL_PATH) ?: '', PATHINFO_EXTENSION)), ['jpg', 'jpeg', 'png', 'webp', 'gif', 'avif'], true)
                 ? strtolower(pathinfo(parse_url($url, PHP_URL_PATH) ?: '', PATHINFO_EXTENSION))
                 : 'jpg',
         };
     }
 
-    private function isLargeEnoughImage(string $body): bool
+    private function imageInfo(string $body): ?array
     {
         $info = @getimagesizefromstring($body);
         if (! is_array($info)) {
+            return null;
+        }
+
+        return $info;
+    }
+
+    private function isLargeEnoughImage(string $body, ?array $info = null): bool
+    {
+        $info ??= $this->imageInfo($body);
+        if ($info === null) {
             return false;
         }
 
@@ -942,7 +978,7 @@ class ProductSourceEnricher
     {
         $path = strtolower((string) parse_url($url, PHP_URL_PATH));
 
-        if (! preg_match('~\.(?:jpe?g|png|webp|gif)(?:$|\?)~i', $path)) {
+        if (! preg_match('~\.(?:jpe?g|png|webp|gif|avif)(?:$|\?)~i', $path)) {
             return false;
         }
 
@@ -974,6 +1010,14 @@ class ProductSourceEnricher
             $score -= 20;
         }
 
+        if (str_contains($path, '/resize_cache/')) {
+            $score -= 90;
+        }
+
+        if (preg_match('~/upload/iblock/[^/]+/[^/]+\.(?:jpe?g|png|webp|gif|avif)$~i', $path)) {
+            $score += 140;
+        }
+
         if (preg_match_all('~(?:^|[/_-])(\d{2,4})x(\d{2,4})(?:[/_\.-]|$)~', $path, $matches, PREG_SET_ORDER)) {
             foreach ($matches as $match) {
                 $width = (int) $match[1];
@@ -985,6 +1029,10 @@ class ProductSourceEnricher
                     $score -= 120;
                 }
             }
+        }
+
+        if (preg_match('~/(?:\d{1,3})_(?:\d{1,3})(?:_\d+)?/~', $path)) {
+            $score -= 160;
         }
 
         if (preg_match('~(?:/image/|/cache/|/resize/|/large/|/original/)~', $path)) {
