@@ -492,7 +492,6 @@ class SyncProductSpecsToAttributesCommand extends Command
     private function looksLikeBrokenEncoding(string $value): bool
     {
         return str_contains($value, '�')
-            || preg_match('/(?:[РС][\x{0400}-\x{04FF}]){2,}/u', $value) === 1
             || preg_match('/(?:Đ.|Ă.){2,}/u', $value) === 1;
     }
 

@@ -1616,16 +1616,6 @@ class ProductSourceEnricher
 
     private function repairMojibake(string $value): string
     {
-        if (preg_match('/(?:[РС][\x{0400}-\x{04FF}]){2,}/u', $value)) {
-            $candidate = @iconv('UTF-8', 'Windows-1251//IGNORE', $value);
-            if (is_string($candidate)
-                && $candidate !== ''
-                && mb_check_encoding($candidate, 'UTF-8')
-                && $this->mojibakeScore($candidate) < $this->mojibakeScore($value)) {
-                return $candidate;
-            }
-        }
-
         if ($this->mojibakeScore($value) > 0) {
             $candidate = @iconv('UTF-8', 'Windows-1251//IGNORE', $value);
             if (is_string($candidate)
@@ -1635,7 +1625,7 @@ class ProductSourceEnricher
             }
         }
 
-        if (! preg_match('/(?:Р[\\x{0400}-\\x{04FF}]|С[\\x{0400}-\\x{04FF}]|Ð.|Ñ.)/u', $value)) {
+        if (! preg_match('/(?:Ð.|Ñ.|Đ.|Ă.)/u', $value)) {
             return $value;
         }
 
@@ -1644,8 +1634,8 @@ class ProductSourceEnricher
             return $value;
         }
 
-        $badScore = preg_match_all('/(?:Р[\\x{0400}-\\x{04FF}]|С[\\x{0400}-\\x{04FF}]|Ð.|Ñ.)/u', $value);
-        $candidateBadScore = preg_match_all('/(?:Р[\\x{0400}-\\x{04FF}]|С[\\x{0400}-\\x{04FF}]|Ð.|Ñ.)/u', $candidate);
+        $badScore = preg_match_all('/(?:Ð.|Ñ.|Đ.|Ă.)/u', $value);
+        $candidateBadScore = preg_match_all('/(?:Ð.|Ñ.|Đ.|Ă.)/u', $candidate);
 
         return $candidateBadScore < $badScore ? $candidate : $value;
     }
@@ -1653,7 +1643,6 @@ class ProductSourceEnricher
     private function mojibakeScore(string $value): int
     {
         $score = 0;
-        $score += (int) preg_match_all('/(?:[РС][\x{0400}-\x{04FF}]){2,}/u', $value);
         $score += (int) preg_match_all('/(?:Р[’Ѓ“”•–—˜™љ›њќћџ ЎўЈ¤Ґ¦§Ё©Є«¬®Ї°±Ііґµ¶·ё№є»јЅѕї]|С[Ѓ‚ѓ„…†‡€‰Љ‹ЊЌЋЏђ‘’“”•–—˜™љ›њќћџ])+/u', $value);
         $score += (int) preg_match_all('/(?:Ð.|Ñ.|Đ.|Ă.)/u', $value);
 
