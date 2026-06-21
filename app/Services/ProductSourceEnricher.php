@@ -586,6 +586,10 @@ class ProductSourceEnricher
             $value = (string) ($spec['value'] ?? '');
             $label = $this->serviceLabel($key);
 
+            if ($label) {
+                $value = $this->normalizeServiceValue($label, $value);
+            }
+
             if ($label && $this->isUsefulServiceValue($value)) {
                 $info[$label] = $value;
             }
@@ -599,7 +603,11 @@ class ProductSourceEnricher
                         continue;
                     }
 
-                    $value = $this->cleanServiceValue($match[1]);
+                    if (isset($info[$label])) {
+                        continue 3;
+                    }
+
+                    $value = $this->normalizeServiceValue($label, $match[1]);
                     if ($this->isUsefulServiceValue($value)) {
                         $info[$label] = $value;
                     }
@@ -655,6 +663,27 @@ class ProductSourceEnricher
         return trim($value);
     }
 
+    private function normalizeServiceValue(string $label, string $value): string
+    {
+        $value = $this->cleanServiceValue($value);
+
+        if ($label === 'Гарантия') {
+            if (preg_match('/(?:мес\.?|месяц(?:ев|а)?|months?)\s*([0-9]{1,3})/iu', $value, $match)) {
+                return $match[1] . ' мес';
+            }
+
+            if (preg_match('/([0-9]{1,3})\s*(?:мес\.?|месяц(?:ев|а)?|months?)/iu', $value, $match)) {
+                return $match[1] . ' мес';
+            }
+
+            if (preg_match('/^\s*([0-9]{1,3})\s*$/u', $value, $match)) {
+                return $match[1] . ' мес';
+            }
+        }
+
+        return $value;
+    }
+
     private function isUsefulServiceValue(string $value): bool
     {
         $value = trim($value);
@@ -662,6 +691,7 @@ class ProductSourceEnricher
         return $value !== ''
             && mb_strlen($value) >= 2
             && mb_strlen($value) <= 500
+            && $this->serviceLabel($value) === null
             && ! preg_match('/^(да|нет|есть|подробнее|смотреть)$/iu', $value);
     }
 
