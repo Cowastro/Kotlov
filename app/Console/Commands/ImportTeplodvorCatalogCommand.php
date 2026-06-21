@@ -48,6 +48,8 @@ class ImportTeplodvorCatalogCommand extends Command
         'vodonagrevateli/elekricheskie'                              => 98,
         'vodonagrevateli/protochnye'                                 => 98,
         'vodonagrevateli/nakopitelnye'                               => 98,
+        'vodonagrevateli/kosvennye'                                  => 100,
+        'vodonagrevateli/kombinirovannye'                            => 101,
         'vodonagrevateli/gazovye-kolonki'                            => 298,
         'vodonagrevateli/gazovye_kolonki'                            => 298,
         'vodonagrevateli/gazovye kolonki'                            => 298,
