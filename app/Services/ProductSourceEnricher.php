@@ -1818,6 +1818,18 @@ class ProductSourceEnricher
     {
         $unit = trim($fallbackUnit);
 
+        if ($unit !== '') {
+            $quotedUnit = preg_quote($unit, '/');
+            $withoutDuplicateUnit = preg_replace('/\s+' . $quotedUnit . '\s*$/u', '', trim($value));
+
+            if (is_string($withoutDuplicateUnit)
+                && $withoutDuplicateUnit !== ''
+                && $withoutDuplicateUnit !== trim($value)
+                && ! $this->isUnitOnlyAttributeValue($withoutDuplicateUnit, $unit)) {
+                $value = $withoutDuplicateUnit;
+            }
+        }
+
         if ($unit === '' && preg_match('/^\s*([0-9]+(?:[,.][0-9]+)?)\s*(kw|w|watt|квт|вт|mm|cm|мм|см|м|l|л|kg|кг|g|г|m2|м2|м²|%|°c|c)\s*$/iu', $value, $match)) {
             $value = str_replace(',', '.', $match[1]);
             $unit = $match[2];
