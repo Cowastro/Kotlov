@@ -478,7 +478,7 @@ class SyncProductSpecsToAttributesCommand extends Command
             $reasons[] = 'mojibake_value';
         }
 
-        if ($value !== '' && $this->isMeasurementOnly($value)) {
+        if ($value !== '' && $this->isMeasurementOnly($value, $name)) {
             $reasons[] = 'unit_only_value';
         }
 
@@ -496,13 +496,26 @@ class SyncProductSpecsToAttributesCommand extends Command
             || preg_match('/(?:Đ.|Ă.){2,}/u', $value) === 1;
     }
 
-    private function isMeasurementOnly(string $value): bool
+    private function isMeasurementOnly(string $value, ?string $attributeName = null): bool
     {
+        if ($attributeName !== null && $this->isEnergyEfficiencyClassValue($attributeName, $value)) {
+            return false;
+        }
+
         $normalized = mb_strtolower(trim($value));
         $normalized = str_replace(['.', ','], '', $normalized);
         $normalized = preg_replace('/\s+/u', ' ', $normalized) ?? $normalized;
 
         return preg_match('/^(?:вт|квт|мвт|в|а|ма|ом|бар|па|кпа|мпа|л|мл|м3|м³|м2|м²|мм|см|м|кг|г|шт|мин|ч|мес|год|лет|°c|°с|c|с|дюйм)$/u', $normalized) === 1;
+    }
+
+    private function isEnergyEfficiencyClassValue(string $attributeName, string $value): bool
+    {
+        $normalizedName = mb_strtolower(trim($attributeName));
+        $normalizedValue = mb_strtolower(trim($value));
+
+        return str_contains($normalizedName, 'энергоэффектив')
+            && preg_match('/^[a-gа-г](?:\+{1,3})?$/u', $normalizedValue) === 1;
     }
 
     private function valueAlreadyContainsUnit(string $value, string $unit): bool
