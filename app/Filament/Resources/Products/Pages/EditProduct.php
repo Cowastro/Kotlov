@@ -39,7 +39,7 @@ class EditProduct extends EditRecord
                     'replace_images' => true,
                     'update_specs' => true,
                     'update_content' => true,
-                    'update_service' => false,
+                    'update_service' => true,
                 ])
                 ->form([
                     TextInput::make('source_url')
@@ -65,8 +65,9 @@ class EditProduct extends EditRecord
                         ->helperText('Сырой текст поставщика не сохраняется. Если ИИ не настроен, описание не изменится.')
                         ->default(true),
                     Toggle::make('update_service')
-                        ->label('Обновить сервисную информацию')
-                        ->default(false),
+                        ->label('Импортер и сервисный центр')
+                        ->helperText('Забирает структурные поля: производитель, импортер, сервисный центр, страна происхождения, гарантия.')
+                        ->default(true),
                 ])
                 ->requiresConfirmation()
                 ->modalHeading('Обновить карточку из ссылки')

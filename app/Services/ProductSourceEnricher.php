@@ -11,6 +11,13 @@ use Illuminate\Support\Str;
 class ProductSourceEnricher
 {
     private const IMAGE_DIR = 'img/products/source-enrichment';
+    private const SERVICE_LABELS = [
+        'Производитель' => ['производитель', 'manufacturer'],
+        'Импортер' => ['импортер', 'импортёр', 'импортер в рб', 'импортёр в рб', 'importer'],
+        'Сервисный центр' => ['сервисный центр', 'сервисные центры', 'cервисные центры', 'service center'],
+        'Страна происхождения' => ['страна происхождения', 'страна производства', 'страна', 'country of origin'],
+        'Гарантия' => ['гарантия', 'гарантийный срок', 'warranty'],
+    ];
 
     public function enrich(Product $product, string $sourceUrl, array $options = []): array
     {
@@ -330,7 +337,43 @@ class ProductSourceEnricher
             throw new \RuntimeException('Source page returned HTTP ' . $response->status());
         }
 
-        return (string) $response->body();
+        return $this->normalizeHtmlEncoding((string) $response->body(), (string) $response->header('Content-Type'));
+    }
+
+    private function normalizeHtmlEncoding(string $html, string $contentType = ''): string
+    {
+        $encoding = null;
+
+        if (preg_match('/charset=([a-z0-9_\-]+)/iu', $contentType, $match)) {
+            $encoding = strtoupper($match[1]);
+        } elseif (preg_match('/<meta[^>]+charset=["\']?\s*([a-z0-9_\-]+)/iu', $html, $match)) {
+            $encoding = strtoupper($match[1]);
+        } elseif (preg_match('/<meta[^>]+content=["\'][^"\']*charset=([a-z0-9_\-]+)/iu', $html, $match)) {
+            $encoding = strtoupper($match[1]);
+        }
+
+        if ($encoding && ! in_array($encoding, ['UTF-8', 'UTF8'], true)) {
+            $converted = @mb_convert_encoding($html, 'UTF-8', $encoding);
+            if (is_string($converted) && mb_check_encoding($converted, 'UTF-8')) {
+                return $converted;
+            }
+        }
+
+        if (! mb_check_encoding($html, 'UTF-8')) {
+            $converted = @mb_convert_encoding($html, 'UTF-8', 'Windows-1251, CP1251, ISO-8859-1');
+            if (is_string($converted) && mb_check_encoding($converted, 'UTF-8')) {
+                return $converted;
+            }
+        }
+
+        $candidate = @mb_convert_encoding($html, 'UTF-8', 'Windows-1251');
+        if (is_string($candidate)
+            && mb_check_encoding($candidate, 'UTF-8')
+            && $this->mojibakeScore($candidate) < $this->mojibakeScore($html)) {
+            return $candidate;
+        }
+
+        return $this->repairMojibake($html);
     }
 
     private function parsePage(string $html, string $url): array
@@ -541,19 +584,85 @@ class ProductSourceEnricher
         foreach ($specs as $spec) {
             $key = (string) ($spec['key'] ?? '');
             $value = (string) ($spec['value'] ?? '');
-            $normalized = mb_strtolower($key);
+            $label = $this->serviceLabel($key);
 
-            if (preg_match('/гарант|сервис|производител|страна|импортер|импортёр|срок службы|сертификат/u', $normalized)) {
-                $info[$key] = $value;
+            if ($label && $this->isUsefulServiceValue($value)) {
+                $info[$label] = $value;
             }
         }
 
-        $text = $this->cleanText(strip_tags($html));
+        foreach ($this->serviceTextBlocks($html) as $text) {
+            foreach (self::SERVICE_LABELS as $label => $aliases) {
+                foreach ($aliases as $alias) {
+                    $pattern = '/^' . preg_quote($alias, '/') . '(?:\s*(?:в\s*рб|рб))?\s*[:\-]?\s+(.+)$/iu';
+                    if (! preg_match($pattern, $text, $match)) {
+                        continue;
+                    }
+
+                    $value = $this->cleanServiceValue($match[1]);
+                    if ($this->isUsefulServiceValue($value)) {
+                        $info[$label] = $value;
+                    }
+
+                    continue 3;
+                }
+            }
+        }
+
+        $text = $this->cleanText($html);
         if (! isset($info['Гарантия']) && preg_match('/гаранти[яи]\s*[:\-]?\s*([0-9]+\s*(?:мес|месяц|год|года|лет))/iu', $text, $match)) {
             $info['Гарантия'] = $this->cleanText($match[1]);
         }
 
-        return array_slice($info, 0, 20, true);
+        return array_intersect_key($info, self::SERVICE_LABELS);
+    }
+
+    private function serviceLabel(string $key): ?string
+    {
+        $normalized = mb_strtolower($this->cleanText($key));
+
+        foreach (self::SERVICE_LABELS as $label => $aliases) {
+            foreach ($aliases as $alias) {
+                if ($normalized === $alias || str_starts_with($normalized, $alias . ' ')) {
+                    return $label;
+                }
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    private function serviceTextBlocks(string $html): array
+    {
+        $html = preg_replace('~<(br|/p|/div|/li|/tr)\b[^>]*>~iu', "\n", $html) ?? $html;
+        $text = html_entity_decode(strip_tags($html), ENT_QUOTES | ENT_HTML5, 'UTF-8');
+
+        return collect(preg_split('/\R+/u', $text) ?: [])
+            ->map(fn (string $line): string => $this->cleanText($line))
+            ->filter(fn (string $line): bool => $line !== '' && mb_strlen($line) <= 700)
+            ->values()
+            ->all();
+    }
+
+    private function cleanServiceValue(string $value): string
+    {
+        $value = $this->cleanText($value);
+        $value = preg_replace('/\s*(Производитель|Импортер|Импортёр|Сервисный центр|Сервисные центры|Страна происхождения|Гарантия)\s*[:\-].*$/iu', '', $value) ?? $value;
+
+        return trim($value);
+    }
+
+    private function isUsefulServiceValue(string $value): bool
+    {
+        $value = trim($value);
+
+        return $value !== ''
+            && mb_strlen($value) >= 2
+            && mb_strlen($value) <= 500
+            && ! preg_match('/^(да|нет|есть|подробнее|смотреть)$/iu', $value);
     }
 
     private function addSpec(array &$specs, string $key, string $value): void
@@ -561,7 +670,7 @@ class ProductSourceEnricher
         $key = $this->cleanAttributeName($key);
         $value = $this->cleanAttributeValue($value);
 
-        if ($key === '' || $value === '' || mb_strlen($key) > 120 || mb_strlen($value) > 240 || $this->isTechnicalOrJunkAttribute($key, $value)) {
+        if ($key === '' || $value === '' || mb_strlen($key) > 120 || mb_strlen($value) > 240 || $this->looksLikeMojibake($key) || $this->isTechnicalOrJunkAttribute($key, $value)) {
             return;
         }
 
@@ -964,6 +1073,20 @@ class ProductSourceEnricher
         $candidateBadScore = preg_match_all('/(?:Р[\\x{0400}-\\x{04FF}]|С[\\x{0400}-\\x{04FF}]|Ð.|Ñ.)/u', $candidate);
 
         return $candidateBadScore < $badScore ? $candidate : $value;
+    }
+
+    private function mojibakeScore(string $value): int
+    {
+        $score = 0;
+        $score += (int) preg_match_all('/(?:Р[’Ѓ“”•–—˜™љ›њќћџ ЎўЈ¤Ґ¦§Ё©Є«¬®Ї°±Ііґµ¶·ё№є»јЅѕї]|С[Ѓ‚ѓ„…†‡€‰Љ‹ЊЌЋЏђ‘’“”•–—˜™љ›њќћџ])+/u', $value);
+        $score += (int) preg_match_all('/(?:Ð.|Ñ.|Đ.|Ă.)/u', $value);
+
+        return $score;
+    }
+
+    private function looksLikeMojibake(string $value): bool
+    {
+        return $this->mojibakeScore($value) > 0;
     }
 
     private function cleanAttributeName(string $name): string
