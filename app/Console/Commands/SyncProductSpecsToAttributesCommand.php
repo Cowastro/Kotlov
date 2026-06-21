@@ -42,8 +42,9 @@ class SyncProductSpecsToAttributesCommand extends Command
         $syncedProducts = 0;
         $syncedRows = 0;
         $samples = [];
+        $errors = [];
 
-        $query->chunkById(200, function ($products) use ($enricher, $apply, &$checked, &$candidates, &$syncedProducts, &$syncedRows, &$samples): void {
+        $query->chunkById(200, function ($products) use ($enricher, $apply, &$checked, &$candidates, &$syncedProducts, &$syncedRows, &$samples, &$errors): void {
             foreach ($products as $product) {
                 $checked++;
                 $specs = $this->normalizeSpecs($product->specs);
@@ -61,10 +62,14 @@ class SyncProductSpecsToAttributesCommand extends Command
                     continue;
                 }
 
-                $saved = $enricher->syncSpecsToAttributeValues($product, $specs);
-                if ($saved > 0) {
-                    $syncedProducts++;
-                    $syncedRows += $saved;
+                try {
+                    $saved = $enricher->syncSpecsToAttributeValues($product, $specs);
+                    if ($saved > 0) {
+                        $syncedProducts++;
+                        $syncedRows += $saved;
+                    }
+                } catch (\Throwable $e) {
+                    $errors[] = [$product->id, $product->sku ?: '-', mb_substr($e->getMessage(), 0, 180)];
                 }
             }
         });
@@ -83,7 +88,12 @@ class SyncProductSpecsToAttributesCommand extends Command
             $this->warn('Dry run only. Run with --apply to write product_attribute_values.');
         }
 
-        return self::SUCCESS;
+        if ($errors !== []) {
+            $this->warn('Skipped with errors: ' . count($errors));
+            $this->table(['ID', 'SKU', 'Error'], array_slice($errors, 0, 10));
+        }
+
+        return $errors === [] ? self::SUCCESS : self::FAILURE;
     }
 
     private function normalizeSpecs(mixed $specs): array

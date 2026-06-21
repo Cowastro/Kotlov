@@ -268,7 +268,7 @@ class ProductSourceEnricher
                 [
                     'option_id' => null,
                     'is_checked' => null,
-                    'value' => $value,
+                    'value' => $this->cleanDatabaseText($value),
                     'updated_at' => now(),
                     'created_at' => now(),
                 ]
@@ -310,6 +310,13 @@ class ProductSourceEnricher
 
     private function ensureAttribute(int $categoryId, string $name, string $unit): int
     {
+        $name = $this->cleanDatabaseText($name);
+        $unit = $this->cleanDatabaseText($unit);
+
+        if ($name === '') {
+            return 0;
+        }
+
         $normalized = $this->normalizeAttributeName($name);
         $existing = DB::table('attributes')
             ->where('category_id', $categoryId)
@@ -1440,16 +1447,32 @@ class ProductSourceEnricher
 
     private function sanitizeUtf8(string $value): string
     {
-        if (mb_check_encoding($value, 'UTF-8')) {
-            return $value;
+        if (! mb_check_encoding($value, 'UTF-8')) {
+            $converted = @mb_convert_encoding($value, 'UTF-8', 'UTF-8, Windows-1251, CP1251, ISO-8859-1');
+            if (is_string($converted) && mb_check_encoding($converted, 'UTF-8')) {
+                $value = $converted;
+            }
         }
 
-        $converted = @mb_convert_encoding($value, 'UTF-8', 'UTF-8, Windows-1251, CP1251, ISO-8859-1');
-        if (is_string($converted) && mb_check_encoding($converted, 'UTF-8')) {
-            return $converted;
+        return $this->cleanDatabaseText($value);
+    }
+
+    private function cleanDatabaseText(string $value): string
+    {
+        if (! mb_check_encoding($value, 'UTF-8')) {
+            $converted = @mb_convert_encoding($value, 'UTF-8', 'Windows-1251, CP1251, ISO-8859-1, UTF-8');
+            $value = is_string($converted) ? $converted : '';
         }
 
-        return iconv('UTF-8', 'UTF-8//IGNORE', $value) ?: '';
+        $cleaned = @iconv('UTF-8', 'UTF-8//IGNORE', $value);
+        if (is_string($cleaned)) {
+            $value = $cleaned;
+        }
+
+        $value = str_replace("\u{FFFD}", '', $value);
+        $value = preg_replace('/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/u', '', $value) ?? $value;
+
+        return trim($value);
     }
 
     private function repairMojibake(string $value): string
