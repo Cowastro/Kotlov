@@ -14,7 +14,7 @@ trait ScrapesRusklimatSpecs
 {
     /** Pages we trust for real specs. Order = preference. */
     private array $specDomains = [
-        'rusklimat.ru', 'b2b.rusklimat.com', 'rusklimat.by',
+        'teplodvor.by', 'rusklimat.ru', 'b2b.rusklimat.com', 'rusklimat.by',
         'satro-paladin.com', '7-kvt.ru', 'dc-electro.ru',
     ];
 
@@ -43,6 +43,8 @@ trait ScrapesRusklimatSpecs
         $match = fn ($l) => $this->pageMatchesProduct($l, $brand, $name);
 
         $primary = array_values(array_filter([
+            $name !== '' ? "{$name} site:teplodvor.by/shop" : '',
+            $brand !== '' && $name !== '' ? "{$brand} {$name} site:teplodvor.by/shop" : '',
             $article !== '' ? "{$article} site:rusklimat.ru" : '',
             $name !== '' ? "{$name} site:rusklimat.ru" : '',
         ]));
@@ -119,10 +121,11 @@ trait ScrapesRusklimatSpecs
     private function pageRank(string $link): int
     {
         $host    = mb_strtolower(parse_url($link, PHP_URL_HOST) ?: '');
-        $product = str_contains($link, '/product/');
+        $product = str_contains($link, '/product/') || str_contains($link, '/shop/');
         return match (true) {
-            str_contains($host, 'rusklimat.ru') && $product => 0,
-            str_contains($host, 'rusklimat.by') && $product => 1,
+            str_contains($host, 'teplodvor.by') && $product => 0,
+            str_contains($host, 'rusklimat.ru') && $product => 1,
+            str_contains($host, 'rusklimat.by') && $product => 2,
             $product                                        => 2,
             str_contains($host, 'rusklimat.ru')             => 3,
             default                                         => 5,

@@ -36,7 +36,7 @@ class EnrichSpecsRusklimatCommand extends Command
 
     /** Pages we trust for real specs. Order = preference. */
     private const SPEC_DOMAINS = [
-        'rusklimat.ru', 'b2b.rusklimat.com', 'rusklimat.by',
+        'teplodvor.by', 'rusklimat.ru', 'b2b.rusklimat.com', 'rusklimat.by',
         'satro-paladin.com', '7-kvt.ru', 'dc-electro.ru',
     ];
 
@@ -207,6 +207,8 @@ class EnrichSpecsRusklimatCommand extends Command
 
         // 1) Force the retail site rusklimat.ru — its /product/ pages expose specs.
         $primary = array_values(array_filter([
+            $name !== '' ? "{$name} site:teplodvor.by/shop" : '',
+            $brand !== '' && $name !== '' ? "{$brand} {$name} site:teplodvor.by/shop" : '',
             $article !== '' ? "{$article} site:rusklimat.ru" : '',
             $name !== '' ? "{$name} site:rusklimat.ru" : '',
         ]));
@@ -289,10 +291,11 @@ class EnrichSpecsRusklimatCommand extends Command
     private function pageRank(string $link): int
     {
         $host    = mb_strtolower(parse_url($link, PHP_URL_HOST) ?: '');
-        $product = str_contains($link, '/product/');
+        $product = str_contains($link, '/product/') || str_contains($link, '/shop/');
         return match (true) {
-            str_contains($host, 'rusklimat.ru') && $product => 0,
-            str_contains($host, 'rusklimat.by') && $product => 1,
+            str_contains($host, 'teplodvor.by') && $product => 0,
+            str_contains($host, 'rusklimat.ru') && $product => 1,
+            str_contains($host, 'rusklimat.by') && $product => 2,
             $product                                        => 2,
             str_contains($host, 'rusklimat.ru')             => 3,
             default                                         => 5,
@@ -322,7 +325,7 @@ class EnrichSpecsRusklimatCommand extends Command
         try {
             $r = Http::timeout(25)
                 ->withHeaders([
-                    'User-Agent'      => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/124.0 Safari/537.36',
+                    'User-Agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/124.0 Safari/537.36',
                     'Accept-Language' => 'ru-RU,ru;q=0.9',
                 ])
                 ->withOptions(['verify' => false])
