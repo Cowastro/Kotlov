@@ -11,6 +11,7 @@ class SyncProductSpecsToAttributesCommand extends Command
     protected $signature = 'products:sync-specs-attributes
         {--apply : Write missing product_attribute_values}
         {--limit=0 : Limit products to process}
+        {--force : Sync products even when product_attribute_values already exist}
         {--cleanup-unit-only : Delete already synced rows where value contains only a measurement unit}
         {--id=* : Process only selected product IDs}';
 
@@ -34,7 +35,7 @@ class SyncProductSpecsToAttributesCommand extends Command
             ->whereNotNull('specs')
             ->where('specs', '!=', '')
             ->where('specs', '!=', '[]')
-            ->whereDoesntHave('allAttributeValues')
+            ->when(! (bool) $this->option('force'), fn ($query) => $query->whereDoesntHave('allAttributeValues'))
             ->when($ids !== [], fn ($query) => $query->whereIn('id', $ids))
             ->orderBy('id');
 

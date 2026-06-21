@@ -168,6 +168,13 @@ trait ScrapesRusklimatSpecs
         if (preg_match_all('/<span[^>]+class="[^"]*param-name[^"]*"[^>]*>\s*(.*?)\s*<\/span>.*?<span[^>]+class="[^"]*param-value[^"]*"[^>]*>\s*(.*?)\s*<\/span>/isu', $html, $m)) {
             $this->collectSpecs($specs, $m[1], $m[2]);
         }
+        if (preg_match_all('/<tr[^>]*>(.*?)<\/tr>/isu', $html, $rows)) {
+            foreach ($rows[1] as $rowHtml) {
+                if (preg_match_all('/<t[dh][^>]*>(.*?)<\/t[dh]>/isu', $rowHtml, $cells) && count($cells[1]) >= 2) {
+                    $this->collectSpecCells($specs, $cells[1]);
+                }
+            }
+        }
         if (preg_match_all('/<tr[^>]*>\s*<t[dh][^>]*>(.*?)<\/t[dh]>\s*<t[dh][^>]*>(.*?)<\/t[dh]>\s*<\/tr>/isu', $html, $m)) {
             $this->collectSpecs($specs, $m[1], $m[2]);
         }
@@ -210,6 +217,73 @@ trait ScrapesRusklimatSpecs
                 $specs[$k] = $v;
             }
         }
+    }
+
+    private function collectSpecCells(array &$specs, array $cells): void
+    {
+        $texts = array_values(array_filter(array_map(
+            fn ($cell): string => trim(preg_replace('/\s+/u', ' ', html_entity_decode(strip_tags((string) $cell), ENT_QUOTES | ENT_HTML5, 'UTF-8')) ?? ''),
+            $cells
+        ), fn (string $text): bool => $text !== ''));
+
+        if (count($texts) < 2) {
+            return;
+        }
+
+        $value = $this->bestRusklimatSpecValue(array_slice($texts, 1));
+        if ($value === null) {
+            return;
+        }
+
+        $this->collectSpecs($specs, [$texts[0]], [$value]);
+    }
+
+    private function bestRusklimatSpecValue(array $candidates): ?string
+    {
+        $best = null;
+        $bestScore = -1;
+
+        foreach ($candidates as $candidate) {
+            $candidate = trim((string) $candidate);
+            if ($candidate === '' || $candidate === 'â€”') {
+                continue;
+            }
+
+            $unitOnly = $this->isRusklimatUnitOnlyValue($candidate);
+            $score = 0;
+            $score += preg_match('/\d/u', $candidate) ? 100 : 0;
+            $score += $unitOnly ? -100 : 25;
+            $score += mb_strlen($candidate) > 2 ? 5 : 0;
+
+            if ($score > $bestScore) {
+                $best = $candidate;
+                $bestScore = $score;
+            }
+        }
+
+        return $best !== null && ! $this->isRusklimatUnitOnlyValue($best) ? $best : null;
+    }
+
+    private function isRusklimatUnitOnlyValue(string $value): bool
+    {
+        $value = mb_strtolower(trim(html_entity_decode(strip_tags($value), ENT_QUOTES | ENT_HTML5, 'UTF-8')));
+        $value = str_replace(['°', '℃', '²', '³', 'кв.', 'кв '], ['', 'c', '2', '3', '', ''], $value);
+        $value = preg_replace('/[.,;:(){}\[\]\/\\\\|]+/u', ' ', $value) ?? $value;
+        $tokens = preg_split('/\s+/u', trim($value), -1, PREG_SPLIT_NO_EMPTY) ?: [];
+
+        if ($tokens === []) {
+            return true;
+        }
+
+        $units = ['bar', 'c', 'cm', 'g', 'kg', 'kw', 'kvt', 'l', 'm', 'm2', 'm3', 'mm', 'mpa', 'pa', 'v', 'w', 'бар', 'в', 'вт', 'г', 'дюйм', 'квт', 'кг', 'л', 'литр', 'м', 'м2', 'м3', 'мес', 'месяц', 'мин', 'мм', 'мпа', 'па', 'см', 'час', 'шт'];
+
+        foreach ($tokens as $token) {
+            if (! in_array($token, $units, true)) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     private function findAdditionalProperties($data): array
