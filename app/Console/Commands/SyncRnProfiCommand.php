@@ -49,6 +49,7 @@ class SyncRnProfiCommand extends Command
         {--ai-output= : Output path for AI JSON decisions; defaults to storage/app/reports/rn-profi}
         {--apply-ai-decisions= : Read local AI decisions JSON and apply safe link/create actions without calling AI}
         {--enrich-created : After creating products from AI decisions, parse source URL for photos/specs/content}
+        {--update-existing-categories : With --apply-ai-decisions, update categories for already linked supplier products from source URL mapping}
         {--sync-retail-prices : Update products.price from detected retail price column}
         {--mark-missing-out-of-stock : Mark existing RN-Profi links absent from the sheet as out_of_stock}';
 
@@ -90,6 +91,26 @@ class SyncRnProfiCommand extends Command
 
     private const TEPLODVOR_SLUG_NORM = [
         'eco' => 'eko',
+    ];
+
+    private const VARMEGA_CATEGORY_MAP = [
+        'truby-i-fitingi/metalloplastikovye-pex-i-pert-truby' => 331,
+        'truby-i-fitingi/aksialnye-fitingi' => 338,
+        'truby-i-fitingi/rezbozazhimnye-fitingi-kontsovki' => 338,
+        'truby-i-fitingi/bronzovye-i-latunnye-fitingi-rezba' => 340,
+        'truby-i-fitingi/truboprovodnye-sistemy-press-obzhim-i-payka' => 340,
+        'truby-i-fitingi/aksessuary-dlya-trub' => 193,
+        'radiatornaya-armatura/termogolovki' => 58,
+        'radiatornaya-armatura/uzly-nizhnego-podklyucheniya' => 85,
+        'radiatornaya-armatura/komplektuyushchie-dlya-radiatornoy-armatury' => 85,
+        'radiatornaya-armatura' => 195,
+        'predokhranitelnaya-i-reguliruyushchaya-armatura/gruppy-bezopasnosti-kotla' => 196,
+        'predokhranitelnaya-i-reguliruyushchaya-armatura/predokhranitelnaya-armatura-dlya-boylerov' => 195,
+        'predokhranitelnaya-i-reguliruyushchaya-armatura/predokhranitelnaya-armatura-dlya-bakov' => 195,
+        'predokhranitelnaya-i-reguliruyushchaya-armatura' => 195,
+        'smesitelnaya-armatura/nasosno-smesitelnye-uzly' => 283,
+        'smesitelnaya-armatura' => 195,
+        'instrument' => 195,
     ];
 
     private array $sheetReports = [];
@@ -2301,7 +2322,7 @@ PROMPT;
         $this->buildIndex();
         $stats = array_fill_keys([
             'safe_decisions', 'linked_existing', 'created_products', 'source_previews', 'enriched_created',
-            'skipped_manual_review', 'skipped_low_confidence', 'skipped_duplicate', 'errors',
+            'category_updated', 'skipped_manual_review', 'skipped_low_confidence', 'skipped_duplicate', 'errors',
         ], 0);
         $previewRows = [];
 
@@ -2348,6 +2369,13 @@ PROMPT;
                 }
 
                 if (DB::table('supplier_products')->where('supplier_id', $supplierId)->where('supplier_article_normalized', $article)->exists()) {
+                    $productId = (int) DB::table('supplier_products')
+                        ->where('supplier_id', $supplierId)
+                        ->where('supplier_article_normalized', $article)
+                        ->value('product_id');
+                    if ($this->option('update-existing-categories') && $productId > 0 && $this->updateProductCategoryFromDecision($productId, $decision, $apply, $now)) {
+                        $stats['category_updated']++;
+                    }
                     $stats['skipped_duplicate']++;
                     $previewRows[] = [$decision['article'] ?? '-', $aiDecision, '-', '-', 'skip_duplicate_supplier_article'];
                     continue;
@@ -2424,7 +2452,7 @@ PROMPT;
             ]);
         }
 
-        $categoryId = (int) ($decision['teplodvor_category_id'] ?? 0);
+        $categoryId = $this->categoryIdFromDecision($decision);
         if ($categoryId <= 0 || ! DB::table('categories')->where('id', $categoryId)->exists()) {
             $categoryId = $this->fallbackCategoryId();
         }
@@ -2537,6 +2565,50 @@ PROMPT;
         }
 
         return '';
+    }
+
+    private function categoryIdFromDecision(array $decision): int
+    {
+        $categoryId = (int) ($decision['teplodvor_category_id'] ?? 0);
+        if ($categoryId > 0) {
+            return $categoryId;
+        }
+
+        $varmegaUrl = trim((string) ($decision['varmega_url'] ?? ''));
+        if ($varmegaUrl === '') {
+            return 0;
+        }
+
+        $path = $this->varmegaCategoryPath($varmegaUrl);
+        foreach (self::VARMEGA_CATEGORY_MAP as $prefix => $mappedCategoryId) {
+            if ($path === $prefix || str_starts_with($path, $prefix . '/')) {
+                return (int) $mappedCategoryId;
+            }
+        }
+
+        return 0;
+    }
+
+    private function updateProductCategoryFromDecision(int $productId, array $decision, bool $apply, $now): bool
+    {
+        $categoryId = $this->categoryIdFromDecision($decision);
+        if ($categoryId <= 0 || ! DB::table('categories')->where('id', $categoryId)->exists()) {
+            return false;
+        }
+
+        $currentCategoryId = (int) DB::table('products')->where('id', $productId)->value('category_id');
+        if ($currentCategoryId === $categoryId) {
+            return false;
+        }
+
+        if ($apply) {
+            DB::table('products')->where('id', $productId)->update([
+                'category_id' => $categoryId,
+                'updated_at' => $now,
+            ]);
+        }
+
+        return true;
     }
 
     private function fallbackCategoryId(): int
