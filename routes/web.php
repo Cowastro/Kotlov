@@ -71,7 +71,7 @@ Route::get('/', function () {
         ->whereIn('slug', [
             'kotly', 'teplovyie-nasosyi', 'kaminy', 'pechki',
             'dymohody', 'bani-i-sauny', 'vodonagrevateli',
-            'pelletnye-gorelki', 'otoplenie', 'nasosy',
+            'pelletnye-gorelki', 'komplektuyushhie-dlya-otopleniya', 'vodosnabzhenie',
         ])
         ->orderBy('sort_order')
         ->limit(10)
@@ -209,6 +209,10 @@ Route::get('/search/suggest', [SearchController::class, 'suggest'])->name('searc
 Route::get('/pechi-dlya-bani/pechi-drovyanye', fn() => redirect('/drovyanye-pechi-dlya-bani', 301));
 Route::get('/pechi-dlya-bani/{any}',           fn() => redirect('/bani-i-sauny', 301))->where('any', '.*');
 Route::get('/brands/{brand}/{category}',        fn() => redirect('/brands', 301))->where('brand', '[a-z0-9\-]+')->where('category', '[a-z0-9\-]+');
+
+// Категория "Отопление" расформирована — редиректим на Комплектующие
+Route::get('/otoplenie',       fn() => redirect('/komplektuyushhie-dlya-otopleniya', 301));
+Route::get('/otoplenie/{any}', fn() => redirect('/komplektuyushhie-dlya-otopleniya', 301))->where('any', '.*');
 
 // ===== Каталог =====
 Route::get('/catalog', [CatalogIndexController::class, 'index'])->name('catalog');
