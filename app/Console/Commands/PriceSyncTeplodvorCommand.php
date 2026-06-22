@@ -147,6 +147,14 @@ class PriceSyncTeplodvorCommand extends Command
                 continue;
             }
 
+            // Sanity check: skip obviously wrong scraped values (max ~50 000 BYN for any equipment)
+            if ($price > 50000) {
+                $this->line(sprintf('    <fg=red>SKIPPED (insane price: %.2f BYN — scrape error)</>', $price));
+                $stats['no_price']++;
+                usleep($sleep * 1000);
+                continue;
+            }
+
             $stats['price_found']++;
             $oldPrice   = (float) $product->price;
             $finalPrice = round($price * $ratio, 2);
