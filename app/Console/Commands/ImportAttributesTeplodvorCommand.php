@@ -259,7 +259,7 @@ class ImportAttributesTeplodvorCommand extends Command
         $this->info(sprintf('Products to process: %d', $products->count()));
 
         $stats = ['products' => 0, 'values_created' => 0, 'attrs_created' => 0,
-                  'skipped_no_map' => 0, 'skipped_no_value' => 0, 'skipped_existing' => 0];
+                  'skipped_no_map' => 0, 'skipped_no_value' => 0];
 
         foreach ($products as $product) {
             $specs = json_decode($product->specs, true);
@@ -290,6 +290,9 @@ class ImportAttributesTeplodvorCommand extends Command
             $stats['products']++;
             $printedHeader = false;
 
+            // Collect rows to write first, then delete+insert atomically
+            $toWrite = [];
+
             foreach ($map as $specKey => $mapping) {
                 if (! array_key_exists($specKey, $data)) {
                     continue;
@@ -309,24 +312,44 @@ class ImportAttributesTeplodvorCommand extends Command
                     continue;
                 }
 
-                if (! $printedHeader) {
-                    $this->newLine();
-                    $this->line(sprintf('<fg=cyan>id=%d</> %s', $product->id, mb_substr($product->name, 0, 56)));
-                    $printedHeader = true;
+                // Skip duplicate attr_id within same product (multiple spec keys → same attr)
+                if (isset($toWrite[$attr->id ?? $attr->name])) {
+                    continue;
                 }
+
+                $toWrite[$attr->id ?? $attr->name] = [
+                    'attr'   => $attr,
+                    'parsed' => $parsed,
+                ];
+            }
+
+            if (empty($toWrite)) {
+                continue;
+            }
+
+            if (! $printedHeader) {
+                $this->newLine();
+                $this->line(sprintf('<fg=cyan>id=%d</> %s', $product->id, mb_substr($product->name, 0, 56)));
+                $printedHeader = true;
+            }
+
+            // Delete existing values for this product's mapped attr ids, then re-insert
+            $attrIds = array_filter(array_map(fn ($k) => is_int($k) ? $k : null, array_keys($toWrite)));
+            if ($apply && ! empty($attrIds)) {
+                DB::table('product_attribute_values')
+                    ->where('product_id', $product->id)
+                    ->whereIn('attribute_id', $attrIds)
+                    ->delete();
+            }
+
+            foreach ($toWrite as $attrKey => $row) {
+                $attr   = $row['attr'];
+                $parsed = $row['parsed'];
 
                 $display = $attr->type === 'check'
                     ? ($parsed === '1' ? 'Да' : 'Нет')
                     : $parsed . ($attr->suffix ? ' ' . $attr->suffix : '');
                 $this->line(sprintf('    %s = %s', $attr->name, $display));
-
-                if ($attr->id && DB::table('product_attribute_values')
-                        ->where('product_id', $product->id)
-                        ->where('attribute_id', $attr->id)
-                        ->exists()) {
-                    $stats['skipped_existing'] = ($stats['skipped_existing'] ?? 0) + 1;
-                    continue;
-                }
 
                 if ($apply && $attr->id) {
                     DB::table('product_attribute_values')->insert([
