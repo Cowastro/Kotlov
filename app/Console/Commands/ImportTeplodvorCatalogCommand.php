@@ -455,7 +455,7 @@ class ImportTeplodvorCatalogCommand extends Command
         preg_match('/<h1[^>]*>(.*?)<\/h1>/si', $html, $m);
         $name = trim(strip_tags($m[1] ?? ''));
 
-        // Price
+        // Price (capped at 999999 BYN — absurd values indicate parsing artifacts)
         $price = 0.0;
         if (preg_match('/itemprop=["\']price["\'][^>]+content=["\']([0-9.,]+)["\']/', $html, $m)) {
             $price = (float) str_replace(',', '.', $m[1]);
@@ -467,6 +467,9 @@ class ImportTeplodvorCatalogCommand extends Command
                     break;
                 }
             }
+        }
+        if ($price > 999999) {
+            $price = 0.0;
         }
 
         // Specs & service info from ALL tables
