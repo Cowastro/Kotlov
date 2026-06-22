@@ -930,7 +930,8 @@ class SyncRnProfiCommand extends Command
 
     private function extractSupplierArticleTokens(string $text): array
     {
-        $plain = html_entity_decode(strip_tags($text), ENT_QUOTES | ENT_HTML5, 'UTF-8');
+        $decoded = html_entity_decode($text, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+        $plain = strip_tags($decoded) . ' ' . $decoded;
         $tokens = [];
 
         preg_match_all('/\b(?:VM|VMDV|VMCP|VMC|VMP|VMS|VT|PS|KOTLOV)[A-ZА-Я0-9\-\/\.]{2,}\b/iu', $plain, $matches);
