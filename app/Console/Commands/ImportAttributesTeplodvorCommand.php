@@ -153,6 +153,7 @@ class ImportAttributesTeplodvorCommand extends Command
         // ── Стальные радиаторы (включая трубчатые Zehnder) ───────────────────────
         235 => [
             'Тепловая мощность'                     => ['create' => ['name' => 'Тепловая мощность', 'type' => 'value', 'suffix' => 'Вт']],
+            'Тепловая мощность, Вт'                 => ['create' => ['name' => 'Тепловая мощность', 'type' => 'value', 'suffix' => 'Вт']],
             'Мощность'                              => ['create' => ['name' => 'Тепловая мощность', 'type' => 'value', 'suffix' => 'Вт']],
             'Теплоотдача при Δt = 70°C, Вт'        => ['create' => ['name' => 'Тепловая мощность', 'type' => 'value', 'suffix' => 'Вт']],
             'Рабочее давление'                      => ['create' => ['name' => 'Рабочее давление', 'type' => 'value', 'suffix' => 'бар']],
@@ -163,7 +164,11 @@ class ImportAttributesTeplodvorCommand extends Command
             'Высота'                                => ['create' => ['name' => 'Высота', 'type' => 'value', 'suffix' => 'мм']],
             'Высота, мм'                            => ['create' => ['name' => 'Высота', 'type' => 'value', 'suffix' => 'мм']],
             'Высота радиатора, мм'                  => ['create' => ['name' => 'Высота', 'type' => 'value', 'suffix' => 'мм']],
+            'Ширина'                                => ['create' => ['name' => 'Ширина', 'type' => 'value', 'suffix' => 'мм']],
+            'Ширина, мм'                            => ['create' => ['name' => 'Ширина', 'type' => 'value', 'suffix' => 'мм']],
             'Длина'                                 => ['create' => ['name' => 'Длина', 'type' => 'value', 'suffix' => 'мм']],
+            'Объем воды'                            => ['create' => ['name' => 'Объём воды', 'type' => 'value', 'suffix' => 'л']],
+            'Объем воды, л'                         => ['create' => ['name' => 'Объём воды', 'type' => 'value', 'suffix' => 'л']],
             'Вес'                                   => ['create' => ['name' => 'Вес', 'type' => 'value', 'suffix' => 'кг']],
             'Вес одной секции, кг'                  => ['create' => ['name' => 'Вес', 'type' => 'value', 'suffix' => 'кг']],
         ],
@@ -171,11 +176,17 @@ class ImportAttributesTeplodvorCommand extends Command
         // ── Стальные радиаторы (старая категория) ────────────────────────────────
         87 => [
             'Тепловая мощность'                     => ['create' => ['name' => 'Тепловая мощность', 'type' => 'value', 'suffix' => 'Вт']],
+            'Тепловая мощность, Вт'                 => ['create' => ['name' => 'Тепловая мощность', 'type' => 'value', 'suffix' => 'Вт']],
             'Мощность'                              => ['create' => ['name' => 'Тепловая мощность', 'type' => 'value', 'suffix' => 'Вт']],
             'Рабочее давление'                      => ['create' => ['name' => 'Рабочее давление', 'type' => 'value', 'suffix' => 'бар']],
             'Максимальная температура теплоносителя' => ['create' => ['name' => 'Макс. температура', 'type' => 'value', 'suffix' => '°C']],
             'Высота'                                => ['create' => ['name' => 'Высота', 'type' => 'value', 'suffix' => 'мм']],
+            'Высота, мм'                            => ['create' => ['name' => 'Высота', 'type' => 'value', 'suffix' => 'мм']],
+            'Ширина'                                => ['create' => ['name' => 'Ширина', 'type' => 'value', 'suffix' => 'мм']],
+            'Ширина, мм'                            => ['create' => ['name' => 'Ширина', 'type' => 'value', 'suffix' => 'мм']],
             'Длина'                                 => ['create' => ['name' => 'Длина', 'type' => 'value', 'suffix' => 'мм']],
+            'Объем воды'                            => ['create' => ['name' => 'Объём воды', 'type' => 'value', 'suffix' => 'л']],
+            'Объем воды, л'                         => ['create' => ['name' => 'Объём воды', 'type' => 'value', 'suffix' => 'л']],
             'Вес'                                   => ['create' => ['name' => 'Вес', 'type' => 'value', 'suffix' => 'кг']],
         ],
 
