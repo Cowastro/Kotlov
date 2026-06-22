@@ -2,7 +2,9 @@
 
 namespace App\Console\Commands;
 
+use App\Models\Product;
 use App\Services\AiContentEnricher;
+use App\Services\ProductSourceEnricher;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -378,12 +380,48 @@ class EnrichTeplodvorCommand extends Command
             $this->stats['images'] += $written;
 
             if (! empty($card['specs'])) {
+                // Convert flat dict {key: value} to [{key, value, unit}] — unified format for display & attribute sync
+                $newSpecs = [];
+                foreach ($card['specs'] as $k => $v) {
+                    $newSpecs[] = ['key' => (string) $k, 'value' => (string) $v, 'unit' => ''];
+                }
+
                 $row      = DB::table('products')->where('id', $pid)->value('specs');
                 $existing = is_string($row) ? (json_decode($row, true) ?? []) : [];
-                $merged   = array_merge($card['specs'], $existing); // existing wins on conflict
+
+                // Normalize existing flat dict to [{key,value,unit}] if needed
+                if (! empty($existing) && ! is_array($existing[0] ?? null)) {
+                    $conv = [];
+                    foreach ($existing as $k => $v) {
+                        if (is_string($k)) {
+                            $conv[] = ['key' => (string) $k, 'value' => (string) $v, 'unit' => ''];
+                        }
+                    }
+                    $existing = $conv;
+                }
+
+                // Merge: existing wins on conflict (preserve curated data)
+                $byKey = [];
+                foreach ($existing as $s) {
+                    $byKey[(string) ($s['key'] ?? '')] = $s;
+                }
+                foreach ($newSpecs as $s) {
+                    $byKey[(string) ($s['key'] ?? '')] ??= $s;
+                }
+                $merged = array_values($byKey);
+
                 DB::table('products')->where('id', $pid)->update([
                     'specs' => json_encode($merged, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
                 ]);
+
+                // Sync directly to product_attribute_values — unified method
+                if ($this->apply) {
+                    $productModel = Product::find($pid);
+                    if ($productModel) {
+                        app(ProductSourceEnricher::class)->syncSpecsToAttributeValues($productModel, $merged);
+                    }
+                }
+
                 $this->stats['specs']++;
                 $this->line('    specs saved: ' . count($merged));
             }
@@ -570,8 +608,9 @@ class EnrichTeplodvorCommand extends Command
             return;
         }
 
-        $existingSpecs = json_decode((string) ($product->specs ?? '{}'), true) ?: [];
-        $mergedSpecs   = array_merge($existingSpecs, $card['specs']);
+        // DB specs are now in [{key,value,unit}] format; AI enricher handles it natively
+        $existingSpecs = json_decode((string) ($product->specs ?? '[]'), true) ?: [];
+        $mergedSpecs   = ! empty($existingSpecs) ? $existingSpecs : $card['specs'];
 
         $aiContent = $enricher->enrich(
             (string) $product->name,
