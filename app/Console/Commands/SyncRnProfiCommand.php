@@ -147,7 +147,23 @@ class SyncRnProfiCommand extends Command
             return $this->normaliseSheetRows('csv', $raw);
         }
 
-        $spreadsheet = IOFactory::load($path);
+        $content = (string) file_get_contents($path);
+        $this->assertXlsxContent($content, $path);
+
+        try {
+            $spreadsheet = IOFactory::load($path);
+        } catch (\Throwable $e) {
+            $debugPath = preg_replace('/\.xlsx$/i', '.load-debug.txt', $path) ?: ($path . '.load-debug.txt');
+            file_put_contents($debugPath, substr($content, 0, 4096));
+
+            throw new \RuntimeException(
+                'Downloaded RN-Profi file exists but PhpSpreadsheet cannot read it. '
+                . 'Size: ' . filesize($path) . ' bytes. '
+                . 'First bytes saved to ' . $debugPath . '. '
+                . 'Original error: ' . $e->getMessage()
+            );
+        }
+
         $all = [];
         foreach ($spreadsheet->getWorksheetIterator() as $sheet) {
             $rows = $sheet->toArray(null, true, true, false);
