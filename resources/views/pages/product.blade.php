@@ -549,7 +549,7 @@
                                                 $isEmpty = match($val->attribute->type) {
                                                     'select' => empty($val->option?->name),
                                                     'check'  => $val->is_checked === null,
-                                                    default  => empty($val->value) || $val->value === '—',
+                                                    default  => empty($val->value) || $val->value === '—' || (string) $val->value === '0' || (string) $val->value === '0.00' || (string) $val->value === '0.0',
                                                 };
                                             @endphp
                                             @if (!$isEmpty)

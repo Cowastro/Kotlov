@@ -184,29 +184,30 @@ class SyncGorodkotlovVaillantCommand extends SyncThermostudioAristonCommand
         return null;
     }
 
+    // gorodkotlov.by is a competitor, not a real supplier — we use it only as a data source
+    // (specs, documents, service_info). Do not link products to it as a supplier.
+    protected function upsertSupplierProduct(array $item, int $productId, string $productSku, int $supplierId, ?int $syncId, $now): void
+    {
+        // intentionally empty — no supplier_products entries for competitor sources
+    }
+
     protected function ensureSupplier($now): int
     {
         $existing = DB::table('suppliers')->where('code', static::SUPPLIER_CODE)->first();
         if ($existing) {
-            DB::table('suppliers')->where('id', $existing->id)->update([
-                'name' => 'Город Котлов',
-                'contact' => static::SOURCE_URL,
-                'is_active' => true,
-                'updated_at' => $now,
-            ]);
             return (int) $existing->id;
         }
 
         return (int) DB::table('suppliers')->insertGetId([
-            'code' => static::SUPPLIER_CODE,
-            'name' => 'Город Котлов',
-            'currency' => 'BYN',
+            'code'         => static::SUPPLIER_CODE,
+            'name'         => 'Город Котлов (источник данных)',
+            'currency'     => 'BYN',
             'currency_rate' => 1,
-            'contact' => static::SOURCE_URL,
-            'notes' => 'Газовые котлы Vaillant с gorodkotlov.by. Цены BYN.',
-            'is_active' => true,
-            'created_at' => $now,
-            'updated_at' => $now,
+            'contact'      => static::SOURCE_URL,
+            'notes'        => 'Конкурент gorodkotlov.by — используется только как источник характеристик/документов. Не является поставщиком.',
+            'is_active'    => false,
+            'created_at'   => $now,
+            'updated_at'   => $now,
         ]);
     }
 
