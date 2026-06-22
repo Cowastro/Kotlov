@@ -456,6 +456,12 @@ class SyncRnProfiCommand extends Command
         $this->info('Stock statuses:');
         $this->table(['stock_status', 'rows'], $this->mapCounts($stocks));
 
+        $this->info('Actions by sheet:');
+        $this->table(
+            ['sheet', 'matched', 'unmatched', 'brand_missing', 'price_missing', 'rows'],
+            $this->sheetActionRows($rows)
+        );
+
         $brandRows = [];
         foreach ($rows as $row) {
             $brand = $row['resolved_brand'] ?: ($row['brand'] ?: 'NO BRAND');
@@ -470,22 +476,17 @@ class SyncRnProfiCommand extends Command
             array_values(array_slice($brandRows, 0, 60, true))
         ));
 
-        $this->info('Examples:');
-        $this->table(
-            ['sheet', 'row', 'article', 'brand', 'name', 'wholesale', 'retail', 'stock', 'action', 'matched_sku'],
-            array_map(fn (array $row): array => [
-                mb_substr($row['sheet'], 0, 16),
-                $row['row_number'],
-                mb_substr($row['article'], 0, 18),
-                mb_substr($row['resolved_brand'] ?: $row['brand'], 0, 16),
-                mb_substr($row['name'], 0, 38),
-                $row['price'] !== null ? number_format($row['price'], 2, '.', '') : '-',
-                $row['retail_price'] !== null ? number_format($row['retail_price'], 2, '.', '') : '-',
-                $row['stock']['status'],
-                $row['action'],
-                $row['matched_sku'] ?? '-',
-            ], array_slice($rows, 0, 20))
-        );
+        $matched = array_values(array_filter($rows, fn (array $row): bool => $row['action'] === 'matched'));
+        if ($matched !== []) {
+            $this->info('Matched examples:');
+            $this->table($this->exampleHeaders(), $this->exampleRows(array_slice($matched, 0, 15)));
+        }
+
+        $unmatched = array_values(array_filter($rows, fn (array $row): bool => $row['action'] !== 'matched'));
+        if ($unmatched !== []) {
+            $this->info('Unmatched examples:');
+            $this->table($this->exampleHeaders(), $this->exampleRows(array_slice($unmatched, 0, 20)));
+        }
 
         $this->newLine();
         $this->line('Next: run with <fg=green>--apply</> only after checking detected columns and matches.');
@@ -870,6 +871,55 @@ class SyncRnProfiCommand extends Command
     private function mapCounts(array $counts): array
     {
         return array_map(fn ($key, $value): array => [$key, $value], array_keys($counts), array_values($counts));
+    }
+
+    private function sheetActionRows(array $rows): array
+    {
+        $stats = [];
+        foreach ($rows as $row) {
+            $sheet = $row['sheet'];
+            $stats[$sheet] ??= ['matched' => 0, 'unmatched' => 0, 'brand_missing' => 0, 'price_missing' => 0, 'rows' => 0];
+            $action = $row['action'];
+            if (isset($stats[$sheet][$action])) {
+                $stats[$sheet][$action]++;
+            }
+            $stats[$sheet]['rows']++;
+        }
+
+        return array_map(
+            fn (string $sheet, array $row): array => [
+                mb_substr($sheet, 0, 32),
+                $row['matched'],
+                $row['unmatched'],
+                $row['brand_missing'],
+                $row['price_missing'],
+                $row['rows'],
+            ],
+            array_keys($stats),
+            array_values($stats)
+        );
+    }
+
+    private function exampleHeaders(): array
+    {
+        return ['sheet', 'row', 'article', 'brand', 'name', 'wholesale', 'retail', 'stock', 'action', 'matched_sku', 'confidence'];
+    }
+
+    private function exampleRows(array $rows): array
+    {
+        return array_map(fn (array $row): array => [
+            mb_substr($row['sheet'], 0, 16),
+            $row['row_number'],
+            mb_substr($row['article'], 0, 18),
+            mb_substr($row['resolved_brand'] ?: $row['brand'], 0, 16),
+            mb_substr($row['name'], 0, 38),
+            $row['price'] !== null ? number_format($row['price'], 2, '.', '') : '-',
+            $row['retail_price'] !== null ? number_format($row['retail_price'], 2, '.', '') : '-',
+            $row['stock']['status'],
+            $row['action'],
+            $row['matched_sku'] ?? '-',
+            $row['confidence'] ?? '-',
+        ], $rows);
     }
 
     private function sku(int $productId): string
