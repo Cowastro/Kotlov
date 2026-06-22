@@ -101,7 +101,7 @@ class ImportTeplodvorCatalogCommand extends Command
         'teplyy-pol/termoregulyatory-datchiki'                       => 58,
         'teplyy-pol/plenochnyy-pol'                                  => 109,
         'teplyy-pol/obogrev-truboprovoda'                            => 109,
-        'teplyy-pol/teplye-vodyanye-poly'                            => 109,
+        'teplyy-pol/teplye-vodyanye-poly'                            => 325,
         'teplyy-pol/aksessuary'                                      => 109,
         'teplyy-pol/infrakrasnye-lentochnye-maty'                    => 109,
         'teplyy-pol/nagrevalnye-kovriki'                             => 109,
