@@ -25,6 +25,7 @@ class SyncRnProfiCommand extends Command
         {--teplodvor-slug-filter= : Limit Teplodvor candidates by slug substring, defaults to resolved brand slug}
         {--teplodvor-brand-page= : Teplodvor brand listing URL to crawl for article matches}
         {--teplodvor-crawl-pages=40 : Maximum Teplodvor brand/listing pages to crawl}
+        {--teplodvor-debug : Print Teplodvor crawl URL and article-token samples}
         {--rn-profi-cards : Match price rows to rn-profi.by product cards by article}
         {--refresh-rn-profi-cards : Ignore cached RN-Profi card matches and re-check the site}
         {--rn-profi-crawl-pages=160 : Maximum RN-Profi site pages to crawl for card/article index}
@@ -1017,6 +1018,10 @@ class SyncRnProfiCommand extends Command
         $visited = [];
         $matches = [];
         $pages = 0;
+        $debug = (bool) $this->option('teplodvor-debug');
+        $debugPages = [];
+        $debugUrls = [];
+        $debugTokens = [];
 
         while ($queue !== [] && $pages < $maxPages && count($matches) < count($targetArticles)) {
             $url = array_shift($queue);
@@ -1031,8 +1036,20 @@ class SyncRnProfiCommand extends Command
                 continue;
             }
             $pages++;
+            if ($debug && count($debugPages) < 12) {
+                $debugPages[] = $url;
+            }
 
-            $tokens = array_flip($this->extractSupplierArticleTokens($html . ' ' . $url));
+            $pageTokens = $this->extractSupplierArticleTokens($html . ' ' . $url);
+            if ($debug && count($debugTokens) < 40) {
+                foreach ($pageTokens as $token) {
+                    $debugTokens[$token] = true;
+                    if (count($debugTokens) >= 40) {
+                        break;
+                    }
+                }
+            }
+            $tokens = array_flip($pageTokens);
             foreach (array_keys($targetArticles) as $article) {
                 if (! isset($tokens[$article])) {
                     continue;
@@ -1044,7 +1061,16 @@ class SyncRnProfiCommand extends Command
                 ];
             }
 
-            foreach ($this->extractTeplodvorInternalUrls($html) as $nextUrl) {
+            $nextUrls = $this->extractTeplodvorInternalUrls($html);
+            if ($debug && count($debugUrls) < 24) {
+                foreach ($nextUrls as $nextUrl) {
+                    $debugUrls[] = $nextUrl;
+                    if (count($debugUrls) >= 24) {
+                        break;
+                    }
+                }
+            }
+            foreach ($nextUrls as $nextUrl) {
                 if (! isset($visited[$nextUrl]) && count($queue) < ($maxPages * 5)) {
                     $queue[] = $nextUrl;
                 }
@@ -1054,18 +1080,27 @@ class SyncRnProfiCommand extends Command
         if ($pages > 0) {
             $this->line(sprintf('Teplodvor brand crawl: %d pages from %s.', $pages, $brandPage));
         }
+        if ($debug) {
+            $this->line('Teplodvor debug target articles: ' . implode(', ', array_slice(array_keys($targetArticles), 0, 20)));
+            $this->line('Teplodvor debug pages: ' . implode(' | ', $debugPages));
+            $this->line('Teplodvor debug urls: ' . implode(' | ', array_slice(array_values(array_unique($debugUrls)), 0, 24)));
+            $this->line('Teplodvor debug article tokens: ' . implode(', ', array_slice(array_keys($debugTokens), 0, 40)));
+        }
 
         return $matches;
     }
 
     private function extractTeplodvorInternalUrls(string $html): array
     {
-        preg_match_all('/href=["\']([^"\']+)["\']/i', $html, $matches);
+        preg_match_all('/(?:href|data-href|data-url)=["\']([^"\']+)["\']/i', $html, $matches);
         $urls = [];
         foreach ($matches[1] ?? [] as $href) {
             $url = html_entity_decode((string) $href, ENT_QUOTES | ENT_HTML5, 'UTF-8');
             if ($url === '' || str_starts_with($url, '#') || str_starts_with($url, 'javascript:')) {
                 continue;
+            }
+            if (str_starts_with($url, '//')) {
+                $url = 'https:' . $url;
             }
             if (str_starts_with($url, '/')) {
                 $url = 'https://www.teplodvor.by' . $url;
