@@ -29,19 +29,24 @@
 
                     @php
                         $popularImages = [
-                            'kotly'              => 'boiler_img.jpg',
-                            'teplovyie-nasosyi'  => 'heatpump.jpg',
-                            'kaminy'             => 'fireplace.jpg',
-                            'pechki'             => 'pech.jpg',
-                            'pechi-dlya-bani'    => 'pech.jpg',
-                            'dymohody'           => 'chimney.jpg',
-                            'bani-i-sauny'       => 'sauna.jpg',
-                            'vodonagrevateli'    => 'droplet.jpg',
-                            'pelletnye-gorelki'  => 'pellet_burner.jpg',
-                            'pelletnyie-gorelki' => 'pellet_burner.jpg',
-                            'otoplenie'          => 'heater.jpg',
-                            'vodosnabzhenie'     => 'nasosy.jpg',
-                            'klimat'             => 'air.jpg',
+                            'kotly'                              => 'boiler_img.jpg',
+                            'teplovyie-nasosyi'                  => 'heatpump.jpg',
+                            'kaminy'                             => 'fireplace.jpg',
+                            'pechki'                             => 'pech.jpg',
+                            'pechi-dlya-bani'                    => 'pech.jpg',
+                            'dymohody'                           => 'chimney.jpg',
+                            'bani-i-sauny'                       => 'sauna.jpg',
+                            'vodonagrevateli'                    => 'droplet.jpg',
+                            'pelletnye-gorelki'                  => 'pellet_burner.jpg',
+                            'otoplenie'                          => 'heater.jpg',
+                            'vodosnabzhenie'                     => 'nasosy.jpg',
+                            'klimat'                             => 'air.jpg',
+                            'radiatory'                          => 'radiatory.jpg',
+                            'truby-i-fitingi'                    => 'truby-i-fitingi.jpg',
+                            'teplyj-pol'                         => 'teplyj-pol.jpg',
+                            'elektricheskie-konvektoryi'         => 'elektricheskie-konvektoryi.jpg',
+                            'komplektuyushhie-dlya-otopleniya'   => 'komplektuyushhie-dlya-otopleniya.jpg',
+                            'filtry'                             => 'filtry.jpg',
                         ];
                     @endphp
 
