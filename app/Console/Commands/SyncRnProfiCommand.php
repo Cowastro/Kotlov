@@ -14,6 +14,7 @@ class SyncRnProfiCommand extends Command
         {--dry-run : Preview, write nothing}
         {--apply : Update matched RN-Profi supplier_products}
         {--limit= : Process only the first N parsed rows}
+        {--offset=0 : Skip N parsed rows after brand/availability filters}
         {--price-file= : Local XLSX/CSV file, skips Google Sheet download}
         {--sheet-url= : Google Sheets URL}
         {--brand=* : Process only these resolved brands, repeatable or comma-separated}
@@ -87,6 +88,7 @@ class SyncRnProfiCommand extends Command
     {
         $apply = (bool) $this->option('apply') && ! $this->option('dry-run');
         $limit = $this->option('limit') !== null ? max(0, (int) $this->option('limit')) : null;
+        $offset = max(0, (int) $this->option('offset'));
 
         $this->line($apply
             ? '<fg=red;options=bold>APPLY: matched RN-Profi supplier links will be updated.</>'
@@ -105,8 +107,13 @@ class SyncRnProfiCommand extends Command
         $classified = $this->filterByBrandOptions($classified);
         $classified = $this->filterByAvailabilityOptions($classified);
 
-        if ($limit !== null && $limit > 0) {
-            $classified = array_slice($classified, 0, $limit);
+        if ($offset > 0 || ($limit !== null && $limit > 0)) {
+            $classified = array_slice($classified, $offset, $limit !== null && $limit > 0 ? $limit : null);
+            $this->line(sprintf(
+                'Row window: offset=%d%s.',
+                $offset,
+                $limit !== null && $limit > 0 ? " limit={$limit}" : ''
+            ));
         }
 
         if ($this->option('teplodvor')) {
