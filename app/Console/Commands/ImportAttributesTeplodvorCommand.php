@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 
 namespace App\Console\Commands;
 
@@ -109,16 +109,7 @@ class ImportAttributesTeplodvorCommand extends Command
             'Вес'                                   => ['create' => ['name' => 'Вес', 'type' => 'value', 'suffix' => 'кг']],
         ],
 
-        // ── Циркуляционные насосы ─────────────────────────────────────────────────
-        60 => [
-            'Мощность'                              => ['create' => ['name' => 'Мощность', 'type' => 'value', 'suffix' => 'Вт']],
-            'Потребляемая мощность'                 => ['create' => ['name' => 'Мощность', 'type' => 'value', 'suffix' => 'Вт']],
-            'Подача'                                => ['create' => ['name' => 'Подача', 'type' => 'value', 'suffix' => 'м³/ч']],
-            'Максимальная подача'                   => ['create' => ['name' => 'Подача', 'type' => 'value', 'suffix' => 'м³/ч']],
-            'Напор'                                 => ['create' => ['name' => 'Напор', 'type' => 'value', 'suffix' => 'м']],
-            'Максимальный напор'                    => ['create' => ['name' => 'Напор', 'type' => 'value', 'suffix' => 'м']],
-            'Вес'                                   => ['create' => ['name' => 'Вес', 'type' => 'value', 'suffix' => 'кг']],
-        ],
+
 
         // ── Насосы для повышения давления ─────────────────────────────────────────
         249 => [
@@ -268,19 +259,37 @@ class ImportAttributesTeplodvorCommand extends Command
         60 => [
             'Тип насоса'                            => ['create' => ['name' => 'Тип насоса', 'type' => 'value', 'suffix' => ''], 'raw' => true],
             'Тип ротора'                            => ['create' => ['name' => 'Тип ротора', 'type' => 'value', 'suffix' => ''], 'raw' => true],
+            // Мощность — оба формата: с единицами в ключе и без
             'Мощность, Вт'                          => ['create' => ['name' => 'Мощность', 'type' => 'value', 'suffix' => 'Вт']],
+            'Мощность'                              => ['create' => ['name' => 'Мощность', 'type' => 'value', 'suffix' => 'Вт']],
+            'Потребляемая мощность, Вт'             => ['create' => ['name' => 'Мощность', 'type' => 'value', 'suffix' => 'Вт']],
+            'Потребляемая мощность'                 => ['create' => ['name' => 'Мощность', 'type' => 'value', 'suffix' => 'Вт']],
+            // Напряжение
             'Напряжение, В'                         => ['create' => ['name' => 'Напряжение', 'type' => 'value', 'suffix' => 'В']],
             'Напряжение в сети, В'                  => ['create' => ['name' => 'Напряжение', 'type' => 'value', 'suffix' => 'В']],
+            // Напор — оба формата
             'Максимальный напор, м'                 => ['create' => ['name' => 'Максимальный напор', 'type' => 'value', 'suffix' => 'м']],
+            'Максимальный напор'                    => ['create' => ['name' => 'Максимальный напор', 'type' => 'value', 'suffix' => 'м']],
+            'Напор'                                 => ['create' => ['name' => 'Максимальный напор', 'type' => 'value', 'suffix' => 'м']],
+            // Производительность — все варианты
             'Производительность л/мин'              => ['create' => ['name' => 'Производительность', 'type' => 'value', 'suffix' => 'л/мин']],
+            'Производительность, max (л/мин)'       => ['create' => ['name' => 'Производительность', 'type' => 'value', 'suffix' => 'л/мин']],
+            'Производительность'                    => ['create' => ['name' => 'Производительность', 'type' => 'value', 'suffix' => 'л/мин']],
+            // Монтажная длина / присоединение
             'Монтажная длина, мм'                   => ['create' => ['name' => 'Монтажная длина', 'type' => 'value', 'suffix' => 'мм']],
             'Присоединение'                         => ['create' => ['name' => 'Присоединение', 'type' => 'value', 'suffix' => ''], 'raw' => true],
             'Присоединительный размер, мм/дюйм'    => ['create' => ['name' => 'Присоединительный размер', 'type' => 'value', 'suffix' => ''], 'raw' => true],
+            'Присоединительный размер, мм (дюймов)' => ['create' => ['name' => 'Присоединительный размер', 'type' => 'value', 'suffix' => ''], 'raw' => true],
+            // Конструкция
             'Материал корпуса'                      => ['create' => ['name' => 'Материал корпуса', 'type' => 'value', 'suffix' => ''], 'raw' => true],
+            'Материал корпуса насоса'               => ['create' => ['name' => 'Материал корпуса', 'type' => 'value', 'suffix' => ''], 'raw' => true],
             'Тип установки'                         => ['create' => ['name' => 'Тип установки', 'type' => 'value', 'suffix' => ''], 'raw' => true],
             'Класс защиты'                          => ['create' => ['name' => 'Класс защиты', 'type' => 'value', 'suffix' => ''], 'raw' => true],
+            // Страна / гарантия / вес
             'Страна'                                => ['create' => ['name' => 'Страна производства', 'type' => 'value', 'suffix' => ''], 'raw' => true],
+            'Страна производства'                   => ['create' => ['name' => 'Страна производства', 'type' => 'value', 'suffix' => ''], 'raw' => true],
             'Гарантия мес'                          => ['create' => ['name' => 'Гарантия', 'type' => 'value', 'suffix' => 'мес']],
+            'Гарантия, мес'                         => ['create' => ['name' => 'Гарантия', 'type' => 'value', 'suffix' => 'мес']],
             'Вес'                                   => ['create' => ['name' => 'Вес', 'type' => 'value', 'suffix' => 'кг']],
         ],
 
@@ -289,18 +298,29 @@ class ImportAttributesTeplodvorCommand extends Command
             'Тип насоса'                            => ['create' => ['name' => 'Тип насоса', 'type' => 'value', 'suffix' => ''], 'raw' => true],
             'Тип ротора'                            => ['create' => ['name' => 'Тип ротора', 'type' => 'value', 'suffix' => ''], 'raw' => true],
             'Мощность, Вт'                          => ['create' => ['name' => 'Мощность', 'type' => 'value', 'suffix' => 'Вт']],
+            'Мощность'                              => ['create' => ['name' => 'Мощность', 'type' => 'value', 'suffix' => 'Вт']],
+            'Потребляемая мощность, Вт'             => ['create' => ['name' => 'Мощность', 'type' => 'value', 'suffix' => 'Вт']],
+            'Потребляемая мощность'                 => ['create' => ['name' => 'Мощность', 'type' => 'value', 'suffix' => 'Вт']],
             'Напряжение, В'                         => ['create' => ['name' => 'Напряжение', 'type' => 'value', 'suffix' => 'В']],
             'Напряжение в сети, В'                  => ['create' => ['name' => 'Напряжение', 'type' => 'value', 'suffix' => 'В']],
             'Максимальный напор, м'                 => ['create' => ['name' => 'Максимальный напор', 'type' => 'value', 'suffix' => 'м']],
+            'Максимальный напор'                    => ['create' => ['name' => 'Максимальный напор', 'type' => 'value', 'suffix' => 'м']],
+            'Напор'                                 => ['create' => ['name' => 'Максимальный напор', 'type' => 'value', 'suffix' => 'м']],
             'Производительность л/мин'              => ['create' => ['name' => 'Производительность', 'type' => 'value', 'suffix' => 'л/мин']],
+            'Производительность, max (л/мин)'       => ['create' => ['name' => 'Производительность', 'type' => 'value', 'suffix' => 'л/мин']],
+            'Производительность'                    => ['create' => ['name' => 'Производительность', 'type' => 'value', 'suffix' => 'л/мин']],
             'Монтажная длина, мм'                   => ['create' => ['name' => 'Монтажная длина', 'type' => 'value', 'suffix' => 'мм']],
             'Присоединение'                         => ['create' => ['name' => 'Присоединение', 'type' => 'value', 'suffix' => ''], 'raw' => true],
             'Присоединительный размер, мм/дюйм'    => ['create' => ['name' => 'Присоединительный размер', 'type' => 'value', 'suffix' => ''], 'raw' => true],
+            'Присоединительный размер, мм (дюймов)' => ['create' => ['name' => 'Присоединительный размер', 'type' => 'value', 'suffix' => ''], 'raw' => true],
             'Материал корпуса'                      => ['create' => ['name' => 'Материал корпуса', 'type' => 'value', 'suffix' => ''], 'raw' => true],
+            'Материал корпуса насоса'               => ['create' => ['name' => 'Материал корпуса', 'type' => 'value', 'suffix' => ''], 'raw' => true],
             'Тип установки'                         => ['create' => ['name' => 'Тип установки', 'type' => 'value', 'suffix' => ''], 'raw' => true],
             'Класс защиты'                          => ['create' => ['name' => 'Класс защиты', 'type' => 'value', 'suffix' => ''], 'raw' => true],
             'Страна'                                => ['create' => ['name' => 'Страна производства', 'type' => 'value', 'suffix' => ''], 'raw' => true],
+            'Страна производства'                   => ['create' => ['name' => 'Страна производства', 'type' => 'value', 'suffix' => ''], 'raw' => true],
             'Гарантия мес'                          => ['create' => ['name' => 'Гарантия', 'type' => 'value', 'suffix' => 'мес']],
+            'Гарантия, мес'                         => ['create' => ['name' => 'Гарантия', 'type' => 'value', 'suffix' => 'мес']],
             'Вес'                                   => ['create' => ['name' => 'Вес', 'type' => 'value', 'suffix' => 'кг']],
         ],
 
