@@ -48,7 +48,9 @@ class ProductsTable
                     ->searchable()
                     ->sortable()
                     ->weight('bold')
-                    ->limit(40)
+                    ->limit(60)
+                    ->tooltip(fn($record) => $record->name)
+                    ->wrap()
                     ->description(fn($record) => $record->sku ? 'SKU: ' . $record->sku : null),
 
                 TextColumn::make('frontend_url')
