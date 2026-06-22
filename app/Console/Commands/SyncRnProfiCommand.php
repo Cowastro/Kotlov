@@ -18,9 +18,15 @@ class SyncRnProfiCommand extends Command
         {--sheet-url= : Google Sheets URL}
         {--brand=* : Process only these resolved brands, repeatable or comma-separated}
         {--exclude-brand=* : Skip these resolved brands, repeatable or comma-separated}
+        {--available-only : Keep only rows that are in stock or have short delivery}
+        {--max-delivery-days= : Maximum delivery days for --available-only short-delivery rows}
         {--teplodvor : Match price rows to storage/teplodvor_index.json product cards}
         {--teplodvor-min-score=0.70 : Minimum slug score for Teplodvor matching}
         {--teplodvor-slug-filter= : Limit Teplodvor candidates by slug substring, defaults to resolved brand slug}
+        {--rn-profi-cards : Match price rows to rn-profi.by product cards by article}
+        {--refresh-rn-profi-cards : Ignore cached RN-Profi card matches and re-check the site}
+        {--rn-profi-crawl-pages=160 : Maximum RN-Profi site pages to crawl for card/article index}
+        {--rn-profi-card-limit=100 : Maximum uncached RN-Profi articles to check per run, 0 means no limit}
         {--sync-retail-prices : Update products.price from detected retail price column}
         {--mark-missing-out-of-stock : Mark existing RN-Profi links absent from the sheet as out_of_stock}';
 
@@ -32,6 +38,7 @@ class SyncRnProfiCommand extends Command
     private const SOURCE_URL = 'https://rn-profi.by/';
     private const DEFAULT_SHEET_URL = 'https://docs.google.com/spreadsheets/d/1g9C8C7JMO0zQGXdQRCWVQoldSOW6Fyljnd-QJYpTvnQ/edit?gid=1126489059#gid=1126489059';
     private const CACHE_PATH = 'supplier-cache/rn-profi-pricelist.xlsx';
+    private const RN_PROFI_CARD_CACHE = 'supplier-cache/rn-profi-card-index.json';
     private const TEPLODVOR_INDEX_FILE = 'teplodvor_index.json';
 
     private const TEPLODVOR_CATEGORY_MAP = [
@@ -69,6 +76,8 @@ class SyncRnProfiCommand extends Command
     private array $indexBySupplierArticle = [];
     private array $indexBySku = [];
     private array $indexByBrandModel = [];
+    private array $availabilityFilterStats = [];
+    private ?array $rnProfiCardCache = null;
     private ?array $teplodvorIndex = null;
 
     public function handle(): int
@@ -91,6 +100,7 @@ class SyncRnProfiCommand extends Command
         $this->buildIndex();
         $classified = array_map(fn (array $row): array => $this->classify($row), $rows);
         $classified = $this->filterByBrandOptions($classified);
+        $classified = $this->filterByAvailabilityOptions($classified);
 
         if ($limit !== null && $limit > 0) {
             $classified = array_slice($classified, 0, $limit);
@@ -98,6 +108,9 @@ class SyncRnProfiCommand extends Command
 
         if ($this->option('teplodvor')) {
             $classified = $this->attachTeplodvorMatches($classified);
+        }
+        if ($this->option('rn-profi-cards')) {
+            $classified = $this->attachRnProfiCardMatches($classified);
         }
 
         return $apply ? $this->applyChanges($classified) : $this->showDryRun($classified);
@@ -525,6 +538,44 @@ class SyncRnProfiCommand extends Command
         return array_values(array_unique($keys));
     }
 
+    private function filterByAvailabilityOptions(array $rows): array
+    {
+        $availableOnly = (bool) $this->option('available-only');
+        $maxDelivery = $this->option('max-delivery-days');
+        $maxDelivery = $maxDelivery !== null && $maxDelivery !== ''
+            ? max(0, (int) $maxDelivery)
+            : null;
+
+        if (! $availableOnly && $maxDelivery === null) {
+            return $rows;
+        }
+
+        $filtered = array_values(array_filter($rows, function (array $row) use ($maxDelivery): bool {
+            $stock = $row['stock'] ?? [];
+            if (($stock['in_stock'] ?? false) === true) {
+                return true;
+            }
+
+            $days = $stock['delivery_days'] ?? null;
+            return $maxDelivery !== null && $days !== null && $days <= $maxDelivery;
+        }));
+
+        $this->availabilityFilterStats = [
+            'before' => count($rows),
+            'after' => count($filtered),
+            'max_delivery_days' => $maxDelivery,
+        ];
+
+        $this->line(sprintf(
+            'Availability filter: %d of %d rows selected%s.',
+            count($filtered),
+            count($rows),
+            $maxDelivery !== null ? " max_delivery_days={$maxDelivery}" : ''
+        ));
+
+        return $filtered;
+    }
+
     private function match(array $row, ?int $brandId): ?array
     {
         if ($row['norm_article'] !== '' && isset($this->indexBySupplierArticle[$row['norm_article']])) {
@@ -546,6 +597,349 @@ class SyncRnProfiCommand extends Command
         }
 
         return null;
+    }
+
+    private function attachRnProfiCardMatches(array $rows): array
+    {
+        $cache = $this->loadRnProfiCardCache();
+        $refresh = (bool) $this->option('refresh-rn-profi-cards');
+        $limit = max(0, (int) $this->option('rn-profi-card-limit'));
+        $checked = 0;
+        $changed = false;
+
+        if ($refresh) {
+            $cache = [];
+        }
+
+        [$cache, $crawlChanged, $pagesCrawled] = $this->crawlRnProfiCardsForRows($rows, $cache);
+        $changed = $changed || $crawlChanged;
+
+        foreach ($rows as $index => $row) {
+            $article = $this->normArticle((string) ($row['article'] ?? ''));
+            if ($article === '') {
+                $rows[$index] += $this->emptyRnProfiCardFields();
+                continue;
+            }
+
+            if (! $refresh && array_key_exists($article, $cache)) {
+                $rows[$index] += $this->rnProfiCardFields($cache[$article]);
+                continue;
+            }
+
+            if ($limit > 0 && $checked >= $limit) {
+                $rows[$index] += $this->emptyRnProfiCardFields();
+                continue;
+            }
+
+            $checked++;
+            $card = $this->findRnProfiCardForArticle((string) ($row['article'] ?: $article));
+            $cache[$article] = $card;
+            $changed = true;
+            $rows[$index] += $this->rnProfiCardFields($card);
+        }
+
+        if ($changed) {
+            $this->saveRnProfiCardCache($cache);
+        }
+
+        $this->line(sprintf(
+            'RN-Profi cards: cache=%d, crawled_pages=%d, checked_live=%d%s.',
+            count($cache),
+            $pagesCrawled,
+            $checked,
+            $limit > 0 ? ", live_limit={$limit}" : ''
+        ));
+
+        return $rows;
+    }
+
+    private function crawlRnProfiCardsForRows(array $rows, array $cache): array
+    {
+        $targetArticles = [];
+        foreach ($rows as $row) {
+            $article = $this->normArticle((string) ($row['article'] ?? ''));
+            if ($article !== '' && ! array_key_exists($article, $cache)) {
+                $targetArticles[$article] = true;
+            }
+        }
+
+        if ($targetArticles === []) {
+            return [$cache, false, 0];
+        }
+
+        $maxPages = max(0, (int) $this->option('rn-profi-crawl-pages'));
+        if ($maxPages === 0) {
+            return [$cache, false, 0];
+        }
+
+        $queue = [
+            self::SOURCE_URL,
+            self::SOURCE_URL . 'index.php?route=information/sitemap',
+        ];
+        $visited = [];
+        $changed = false;
+        $pages = 0;
+
+        while ($queue !== [] && $pages < $maxPages && $targetArticles !== []) {
+            $url = array_shift($queue);
+            $url = strtok((string) $url, '#') ?: (string) $url;
+            if (isset($visited[$url])) {
+                continue;
+            }
+            $visited[$url] = true;
+
+            $html = $this->fetchRnProfiPage($url);
+            if ($html === null) {
+                continue;
+            }
+            $pages++;
+
+            if ($this->looksLikeRnProfiProductPage($html)) {
+                $card = $this->parseRnProfiCard($url, $html, 'site_crawl');
+                $cardTokens = array_flip($card['article_tokens'] ?? []);
+                foreach (array_keys($targetArticles) as $article) {
+                    if (! isset($cardTokens[$article]) && ! $this->pageContainsArticle($html, $article)) {
+                        continue;
+                    }
+                    $cache[$article] = $card;
+                    unset($targetArticles[$article]);
+                    $changed = true;
+                }
+            }
+
+            foreach ($this->extractRnProfiInternalUrls($html) as $nextUrl) {
+                if (! isset($visited[$nextUrl]) && count($queue) < ($maxPages * 4)) {
+                    $queue[] = $nextUrl;
+                }
+            }
+        }
+
+        return [$cache, $changed, $pages];
+    }
+
+    private function emptyRnProfiCardFields(): array
+    {
+        return [
+            'rn_profi_url' => null,
+            'rn_profi_title' => null,
+            'rn_profi_brand' => null,
+            'rn_profi_image' => null,
+            'rn_profi_confidence' => null,
+        ];
+    }
+
+    private function rnProfiCardFields(?array $card): array
+    {
+        if ($card === null) {
+            return $this->emptyRnProfiCardFields();
+        }
+
+        return [
+            'rn_profi_url' => $card['url'] ?? null,
+            'rn_profi_title' => $card['title'] ?? null,
+            'rn_profi_brand' => $card['brand'] ?? null,
+            'rn_profi_image' => $card['image'] ?? null,
+            'rn_profi_confidence' => $card['confidence'] ?? null,
+        ];
+    }
+
+    private function loadRnProfiCardCache(): array
+    {
+        if ($this->rnProfiCardCache !== null) {
+            return $this->rnProfiCardCache;
+        }
+
+        $path = storage_path('app/' . self::RN_PROFI_CARD_CACHE);
+        if (! is_file($path)) {
+            return $this->rnProfiCardCache = [];
+        }
+
+        $data = json_decode((string) file_get_contents($path), true);
+        return $this->rnProfiCardCache = is_array($data) ? $data : [];
+    }
+
+    private function saveRnProfiCardCache(array $cache): void
+    {
+        $path = storage_path('app/' . self::RN_PROFI_CARD_CACHE);
+        $dir = dirname($path);
+        if (! is_dir($dir)) {
+            mkdir($dir, 0755, true);
+        }
+
+        ksort($cache);
+        file_put_contents($path, json_encode($cache, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT));
+        $this->rnProfiCardCache = $cache;
+    }
+
+    private function findRnProfiCardForArticle(string $article): ?array
+    {
+        $normArticle = $this->normArticle($article);
+        $searchUrl = self::SOURCE_URL . 'index.php?route=product/search&search=' . rawurlencode($article);
+        $html = $this->fetchRnProfiPage($searchUrl);
+        if ($html === null) {
+            return null;
+        }
+
+        $candidateUrls = $this->extractRnProfiProductUrls($html);
+        if ($this->pageContainsArticle($html, $normArticle) && $this->looksLikeRnProfiProductPage($html)) {
+            array_unshift($candidateUrls, $searchUrl);
+        }
+
+        foreach (array_slice(array_values(array_unique($candidateUrls)), 0, 8) as $url) {
+            $cardHtml = $url === $searchUrl ? $html : $this->fetchRnProfiPage($url);
+            if ($cardHtml === null) {
+                continue;
+            }
+
+            $card = $this->parseRnProfiCard($url, $cardHtml, 'article_search');
+            if (in_array($normArticle, $card['article_tokens'] ?? [], true) || $this->pageContainsArticle($cardHtml, $normArticle)) {
+                return $card;
+            }
+        }
+
+        return null;
+    }
+
+    private function fetchRnProfiPage(string $url): ?string
+    {
+        $context = stream_context_create([
+            'http' => [
+                'method' => 'GET',
+                'timeout' => 25,
+                'follow_location' => 1,
+                'max_redirects' => 5,
+                'header' => "User-Agent: Mozilla/5.0 (compatible; KotlovBot/1.0)\r\nAccept: text/html,*/*\r\n",
+            ],
+            'ssl' => ['verify_peer' => false, 'verify_peer_name' => false],
+        ]);
+
+        $html = @file_get_contents($url, false, $context);
+        if (! is_string($html) || strlen($html) < 300) {
+            return null;
+        }
+
+        return $html;
+    }
+
+    private function extractRnProfiProductUrls(string $html): array
+    {
+        return array_values(array_filter(
+            $this->extractRnProfiInternalUrls($html),
+            fn (string $url): bool => $this->rnProfiUrlLooksLikeProduct($url)
+        ));
+    }
+
+    private function extractRnProfiInternalUrls(string $html): array
+    {
+        preg_match_all('/href=["\']([^"\']+)["\']/i', $html, $matches);
+        $urls = [];
+        foreach ($matches[1] ?? [] as $href) {
+            $url = html_entity_decode((string) $href, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+            if ($url === '' || str_starts_with($url, '#') || str_starts_with($url, 'javascript:')) {
+                continue;
+            }
+            if (str_starts_with($url, '/')) {
+                $url = rtrim(self::SOURCE_URL, '/') . $url;
+            }
+            if (! str_starts_with($url, self::SOURCE_URL)) {
+                continue;
+            }
+            if (str_contains($url, 'route=account')
+                || str_contains($url, 'route=checkout')
+                || str_contains($url, 'route=common')
+                || str_contains($url, 'route=affiliate')
+                || str_contains($url, 'route=product/compare')
+            ) {
+                continue;
+            }
+            $urls[] = strtok($url, '#') ?: $url;
+        }
+
+        return array_values(array_unique($urls));
+    }
+
+    private function rnProfiUrlLooksLikeProduct(string $url): bool
+    {
+        if (str_contains($url, 'route=product/product')) {
+            return true;
+        }
+
+        $path = trim((string) (parse_url($url, PHP_URL_PATH) ?: ''), '/');
+        return $path !== ''
+            && ! str_contains($path, '/')
+            && ! in_array($path, ['about_us', 'payment', 'delivery', 'contact-us', 'brands'], true);
+    }
+
+    private function looksLikeRnProfiProductPage(string $html): bool
+    {
+        return (bool) preg_match('/<h1[^>]*>.*?<\/h1>/is', $html)
+            && (str_contains($html, 'Код товара') || str_contains($html, 'В корзину'));
+    }
+
+    private function pageContainsArticle(string $html, string $normArticle): bool
+    {
+        if ($normArticle === '') {
+            return false;
+        }
+
+        return str_contains($this->normArticle(strip_tags($html)), $normArticle);
+    }
+
+    private function parseRnProfiCard(string $url, string $html, string $confidence): array
+    {
+        $title = null;
+        if (preg_match('/<h1[^>]*>(.*?)<\/h1>/is', $html, $m)) {
+            $title = $this->clean(html_entity_decode(strip_tags($m[1]), ENT_QUOTES | ENT_HTML5, 'UTF-8'));
+        }
+        if ($title === null && preg_match('/<title[^>]*>(.*?)<\/title>/is', $html, $m)) {
+            $title = $this->clean(html_entity_decode(strip_tags($m[1]), ENT_QUOTES | ENT_HTML5, 'UTF-8'));
+        }
+
+        $image = null;
+        if (preg_match('/<meta[^>]+property=["\']og:image["\'][^>]+content=["\']([^"\']+)["\']/i', $html, $m)) {
+            $image = html_entity_decode($m[1], ENT_QUOTES | ENT_HTML5, 'UTF-8');
+        } elseif (preg_match('/<img[^>]+src=["\']([^"\']+)["\'][^>]+alt=["\'][^"\']*' . preg_quote((string) $title, '/') . '/iu', $html, $m)) {
+            $image = html_entity_decode($m[1], ENT_QUOTES | ENT_HTML5, 'UTF-8');
+        }
+        if (is_string($image) && str_starts_with($image, '/')) {
+            $image = rtrim(self::SOURCE_URL, '/') . $image;
+        }
+
+        $text = $this->clean(html_entity_decode(strip_tags($html), ENT_QUOTES | ENT_HTML5, 'UTF-8'));
+        $brand = null;
+        if (preg_match('/Бренд:\s*([^\s].*?)(?:\s+Код товара:|\s+Производитель:|\s+Импортер:|$)/u', $text, $m)) {
+            $brand = $this->clean($m[1]);
+        }
+
+        return [
+            'url' => strtok($url, '#') ?: $url,
+            'title' => $title,
+            'brand' => $brand,
+            'image' => $image,
+            'article_tokens' => $this->extractSupplierArticleTokens($html . ' ' . $url),
+            'confidence' => $confidence,
+        ];
+    }
+
+    private function extractSupplierArticleTokens(string $text): array
+    {
+        $plain = html_entity_decode(strip_tags($text), ENT_QUOTES | ENT_HTML5, 'UTF-8');
+        $tokens = [];
+
+        preg_match_all('/\b(?:VM|VMDV|VMCP|VMC|VMP|VMS|VT|PS|KOTLOV)[A-ZА-Я0-9\-\/\.]{2,}\b/iu', $plain, $matches);
+        foreach ($matches[0] ?? [] as $token) {
+            $norm = $this->normArticle($token);
+            if (mb_strlen($norm) >= 4) {
+                $tokens[$norm] = true;
+            }
+        }
+
+        preg_match_all('/\b\d{5,8}\b/u', $plain, $matches);
+        foreach ($matches[0] ?? [] as $token) {
+            $tokens[$this->normArticle($token)] = true;
+        }
+
+        return array_values(array_keys($tokens));
     }
 
     private function attachTeplodvorMatches(array $rows): array
@@ -727,7 +1121,8 @@ class SyncRnProfiCommand extends Command
             return null;
         }
 
-        $path = trim(preg_replace('#^/shop/#', '', trim($path, '/')) ?? '', '/');
+        $path = preg_replace('#^/?shop/#', '', trim($path, '/')) ?? '';
+        $path = trim($path, '/');
         foreach (self::TEPLODVOR_CATEGORY_MAP as $prefix => $categoryId) {
             if (str_starts_with($path, $prefix . '/') || $path === $prefix) {
                 return $categoryId;
@@ -765,6 +1160,27 @@ class SyncRnProfiCommand extends Command
 
         $this->info('Stock statuses:');
         $this->table(['stock_status', 'rows'], $this->mapCounts($stocks));
+
+        if ($this->availabilityFilterStats !== []) {
+            $this->info('Availability filter:');
+            $this->table(['metric', 'count'], [
+                ['before filter', $this->availabilityFilterStats['before'] ?? 0],
+                ['after filter', $this->availabilityFilterStats['after'] ?? 0],
+                ['max delivery days', $this->availabilityFilterStats['max_delivery_days'] ?? '-'],
+            ]);
+        }
+
+        if ($this->option('rn-profi-cards')) {
+            $this->info('RN-Profi card matches:');
+            $matchedRnProfi = array_values(array_filter($rows, fn (array $row): bool => ! empty($row['rn_profi_url'])));
+            $this->table(['metric', 'count'], [
+                ['matched card URLs', count($matchedRnProfi)],
+                ['missing card URLs', count($rows) - count($matchedRnProfi)],
+            ]);
+
+            $this->info('RN-Profi matches by sheet:');
+            $this->table(['sheet', 'matched', 'missing', 'rows'], $this->rnProfiSheetRows($rows));
+        }
 
         if ($this->option('teplodvor')) {
             $this->info('Teplodvor card matches:');
@@ -811,6 +1227,14 @@ class SyncRnProfiCommand extends Command
             if ($teplodvorMatched !== []) {
                 $this->info('Teplodvor card examples:');
                 $this->table($this->exampleHeaders(), $this->exampleRows(array_slice($teplodvorMatched, 0, 20)));
+            }
+        }
+
+        if ($this->option('rn-profi-cards')) {
+            $rnProfiMatched = array_values(array_filter($rows, fn (array $row): bool => ! empty($row['rn_profi_url'])));
+            if ($rnProfiMatched !== []) {
+                $this->info('RN-Profi card examples:');
+                $this->table($this->exampleHeaders(), $this->exampleRows(array_slice($rnProfiMatched, 0, 20)));
             }
         }
 
@@ -1258,9 +1682,39 @@ class SyncRnProfiCommand extends Command
         );
     }
 
+    private function rnProfiSheetRows(array $rows): array
+    {
+        $stats = [];
+        foreach ($rows as $row) {
+            $sheet = $row['sheet'];
+            $stats[$sheet] ??= ['matched' => 0, 'missing' => 0, 'rows' => 0];
+            if (! empty($row['rn_profi_url'])) {
+                $stats[$sheet]['matched']++;
+            } else {
+                $stats[$sheet]['missing']++;
+            }
+            $stats[$sheet]['rows']++;
+        }
+
+        return array_map(
+            fn (string $sheet, array $row): array => [
+                mb_substr($sheet, 0, 32),
+                $row['matched'],
+                $row['missing'],
+                $row['rows'],
+            ],
+            array_keys($stats),
+            array_values($stats)
+        );
+    }
+
     private function exampleHeaders(): array
     {
         $headers = ['sheet', 'row', 'article', 'brand', 'name', 'wholesale', 'retail', 'stock', 'action', 'matched_sku', 'confidence'];
+        if ($this->option('rn-profi-cards')) {
+            $headers[] = 'rn_profi';
+            $headers[] = 'rn_title';
+        }
         if ($this->option('teplodvor')) {
             $headers[] = 'teplodvor';
             $headers[] = 'td_score';
@@ -1286,6 +1740,11 @@ class SyncRnProfiCommand extends Command
                 $row['matched_sku'] ?? '-',
                 $row['confidence'] ?? '-',
             ];
+
+            if ($this->option('rn-profi-cards')) {
+                $data[] = $row['rn_profi_url'] ? mb_substr((string) $row['rn_profi_url'], 0, 56) : '-';
+                $data[] = $row['rn_profi_title'] ? mb_substr((string) $row['rn_profi_title'], 0, 34) : '-';
+            }
 
             if ($this->option('teplodvor')) {
                 $data[] = $row['teplodvor_url'] ? mb_substr((string) $row['teplodvor_url'], 0, 56) : '-';
