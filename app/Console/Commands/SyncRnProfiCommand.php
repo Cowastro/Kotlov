@@ -16,6 +16,8 @@ class SyncRnProfiCommand extends Command
         {--limit= : Process only the first N parsed rows}
         {--price-file= : Local XLSX/CSV file, skips Google Sheet download}
         {--sheet-url= : Google Sheets URL}
+        {--brand=* : Process only these resolved brands, repeatable or comma-separated}
+        {--exclude-brand=* : Skip these resolved brands, repeatable or comma-separated}
         {--sync-retail-prices : Update products.price from detected retail price column}
         {--mark-missing-out-of-stock : Mark existing RN-Profi links absent from the sheet as out_of_stock}';
 
@@ -53,12 +55,13 @@ class SyncRnProfiCommand extends Command
             return self::FAILURE;
         }
 
-        if ($limit !== null && $limit > 0) {
-            $rows = array_slice($rows, 0, $limit);
-        }
-
         $this->buildIndex();
         $classified = array_map(fn (array $row): array => $this->classify($row), $rows);
+        $classified = $this->filterByBrandOptions($classified);
+
+        if ($limit !== null && $limit > 0) {
+            $classified = array_slice($classified, 0, $limit);
+        }
 
         return $apply ? $this->applyChanges($classified) : $this->showDryRun($classified);
     }
@@ -438,6 +441,51 @@ class SyncRnProfiCommand extends Command
             'stock' => $stock,
             'action' => $action,
         ];
+    }
+
+    private function filterByBrandOptions(array $rows): array
+    {
+        $only = $this->brandOptionKeys((array) $this->option('brand'));
+        $exclude = $this->brandOptionKeys((array) $this->option('exclude-brand'));
+
+        if ($only === [] && $exclude === []) {
+            return $rows;
+        }
+
+        $filtered = array_values(array_filter($rows, function (array $row) use ($only, $exclude): bool {
+            $brand = $this->brandKey((string) ($row['resolved_brand'] ?: $row['brand'] ?: 'NO BRAND'));
+
+            if ($only !== [] && ! in_array($brand, $only, true)) {
+                return false;
+            }
+
+            return ! in_array($brand, $exclude, true);
+        }));
+
+        $this->line(sprintf(
+            'Brand filter: %d of %d rows selected%s%s.',
+            count($filtered),
+            count($rows),
+            $only !== [] ? ' only=' . implode(',', $only) : '',
+            $exclude !== [] ? ' exclude=' . implode(',', $exclude) : ''
+        ));
+
+        return $filtered;
+    }
+
+    private function brandOptionKeys(array $values): array
+    {
+        $keys = [];
+        foreach ($values as $value) {
+            foreach (explode(',', (string) $value) as $part) {
+                $key = $this->brandKey($part);
+                if ($key !== '') {
+                    $keys[] = $key;
+                }
+            }
+        }
+
+        return array_values(array_unique($keys));
     }
 
     private function match(array $row, ?int $brandId): ?array
