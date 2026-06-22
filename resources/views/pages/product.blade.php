@@ -473,6 +473,11 @@
             @php
                 $serviceInfo = is_array($product->service_info) ? array_filter($product->service_info) : [];
                 $documents = is_array($product->documents) ? array_filter($product->documents) : [];
+                $rawSpecs = $attributeValues->count() === 0 && !empty($product->specs)
+                    ? collect(is_array($product->specs) ? $product->specs : (json_decode($product->specs, true) ?? []))
+                          ->filter(fn($s) => !empty($s['key']) && !empty($s['value']))
+                    : collect();
+                $hasSpecs = $attributeValues->count() > 0 || $rawSpecs->count() > 0;
             @endphp
             <ul class="tab-btn-wrap-v1" role="tablist">
                 <li class="nav-tab-item" role="presentation">
@@ -480,7 +485,7 @@
                         <span class="h5 fw-medium">Описание</span>
                     </a>
                 </li>
-                @if ($attributeValues->count() > 0)
+                @if ($hasSpecs)
                     <li class="nav-tab-item" role="presentation">
                         <a href="#specifications" data-bs-toggle="tab" class="tf-btn-tab" role="tab">
                             <span class="h5 fw-medium">Технические характеристики</span>
@@ -531,13 +536,7 @@
                 </div>
 
                 {{-- Характеристики --}}
-                @php
-                    $rawSpecs = $attributeValues->count() === 0 && !empty($product->specs)
-                        ? collect(is_array($product->specs) ? $product->specs : (json_decode($product->specs, true) ?? []))
-                              ->filter(fn($s) => !empty($s['key']) && !empty($s['value']))
-                        : collect();
-                @endphp
-                @if ($attributeValues->count() > 0 || $rawSpecs->count() > 0)
+                @if ($hasSpecs)
                     <div class="tab-pane" id="specifications" role="tabpanel">
                         <div class="tab-content_desc">
                             <table class="table table-bordered table-striped">
