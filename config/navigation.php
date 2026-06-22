@@ -25,17 +25,22 @@ return [
 
     // Маппинг slug категории → иконка
     'icons' => [
-        'kotly'            => 'heater--b.svg',
-        'teplovyie-nasosyi' => 'hvac.svg',
-        'pelletnyie-gorelki' => 'fire_p.svg',
-        'vodonagrevateli'   => 'temperature--water.svg',
-        'otoplenie'         => 'heater.svg',
-        'pechki'            => 'campfire.svg',
-        'bani-i-sauny'      => 'sauna.svg',
-        'kaminy'            => 'fireplace.svg',
-        'dymohody'          => 'chimney.svg',
-        'vodosnabzhenie'    => 'droplet.svg',
-        'klimat'            => 'air.svg',
+        'kotly'                              => 'heater.svg',
+        'teplovyie-nasosyi'                  => 'hvac.svg',
+        'pelletnyie-gorelki'                 => 'fire_p.svg',
+        'vodonagrevateli'                    => 'temperature--water.svg',
+        'pechki'                             => 'campfire.svg',
+        'bani-i-sauny'                       => 'sauna.svg',
+        'kaminy'                             => 'fireplace.svg',
+        'dymohody'                           => 'chimney.svg',
+        'vodosnabzhenie'                     => 'droplet.svg',
+        'klimat'                             => 'air.svg',
+        'radiatory'                          => 'radiator.svg',
+        'truby-i-fitingi'                    => 'pipe.svg',
+        'teplyj-pol'                         => 'floor-heating.svg',
+        'elektricheskie-konvektoryi'         => 'convector.svg',
+        'filtry'                             => 'filter.svg',
+        'komplektuyushhie-dlya-otopleniya'   => 'wrench.svg',
     ],
 
     // Редакционные блоки мегаменю по slug корневой категории
