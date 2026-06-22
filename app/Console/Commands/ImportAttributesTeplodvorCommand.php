@@ -264,6 +264,46 @@ class ImportAttributesTeplodvorCommand extends Command
             'Гарантия, мес'                         => ['create' => ['name' => 'Гарантия', 'type' => 'value', 'suffix' => 'мес']],
         ],
 
+        // ── Циркуляционные насосы ────────────────────────────────────────────────
+        60 => [
+            'Тип насоса'                            => ['create' => ['name' => 'Тип насоса', 'type' => 'value', 'suffix' => ''], 'raw' => true],
+            'Тип ротора'                            => ['create' => ['name' => 'Тип ротора', 'type' => 'value', 'suffix' => ''], 'raw' => true],
+            'Мощность, Вт'                          => ['create' => ['name' => 'Мощность', 'type' => 'value', 'suffix' => 'Вт']],
+            'Напряжение, В'                         => ['create' => ['name' => 'Напряжение', 'type' => 'value', 'suffix' => 'В']],
+            'Напряжение в сети, В'                  => ['create' => ['name' => 'Напряжение', 'type' => 'value', 'suffix' => 'В']],
+            'Максимальный напор, м'                 => ['create' => ['name' => 'Максимальный напор', 'type' => 'value', 'suffix' => 'м']],
+            'Производительность л/мин'              => ['create' => ['name' => 'Производительность', 'type' => 'value', 'suffix' => 'л/мин']],
+            'Монтажная длина, мм'                   => ['create' => ['name' => 'Монтажная длина', 'type' => 'value', 'suffix' => 'мм']],
+            'Присоединение'                         => ['create' => ['name' => 'Присоединение', 'type' => 'value', 'suffix' => ''], 'raw' => true],
+            'Присоединительный размер, мм/дюйм'    => ['create' => ['name' => 'Присоединительный размер', 'type' => 'value', 'suffix' => ''], 'raw' => true],
+            'Материал корпуса'                      => ['create' => ['name' => 'Материал корпуса', 'type' => 'value', 'suffix' => ''], 'raw' => true],
+            'Тип установки'                         => ['create' => ['name' => 'Тип установки', 'type' => 'value', 'suffix' => ''], 'raw' => true],
+            'Класс защиты'                          => ['create' => ['name' => 'Класс защиты', 'type' => 'value', 'suffix' => ''], 'raw' => true],
+            'Страна'                                => ['create' => ['name' => 'Страна производства', 'type' => 'value', 'suffix' => ''], 'raw' => true],
+            'Гарантия мес'                          => ['create' => ['name' => 'Гарантия', 'type' => 'value', 'suffix' => 'мес']],
+            'Вес'                                   => ['create' => ['name' => 'Вес', 'type' => 'value', 'suffix' => 'кг']],
+        ],
+
+        // ── Циркуляционные (подкатегория) ────────────────────────────────────────
+        248 => [
+            'Тип насоса'                            => ['create' => ['name' => 'Тип насоса', 'type' => 'value', 'suffix' => ''], 'raw' => true],
+            'Тип ротора'                            => ['create' => ['name' => 'Тип ротора', 'type' => 'value', 'suffix' => ''], 'raw' => true],
+            'Мощность, Вт'                          => ['create' => ['name' => 'Мощность', 'type' => 'value', 'suffix' => 'Вт']],
+            'Напряжение, В'                         => ['create' => ['name' => 'Напряжение', 'type' => 'value', 'suffix' => 'В']],
+            'Напряжение в сети, В'                  => ['create' => ['name' => 'Напряжение', 'type' => 'value', 'suffix' => 'В']],
+            'Максимальный напор, м'                 => ['create' => ['name' => 'Максимальный напор', 'type' => 'value', 'suffix' => 'м']],
+            'Производительность л/мин'              => ['create' => ['name' => 'Производительность', 'type' => 'value', 'suffix' => 'л/мин']],
+            'Монтажная длина, мм'                   => ['create' => ['name' => 'Монтажная длина', 'type' => 'value', 'suffix' => 'мм']],
+            'Присоединение'                         => ['create' => ['name' => 'Присоединение', 'type' => 'value', 'suffix' => ''], 'raw' => true],
+            'Присоединительный размер, мм/дюйм'    => ['create' => ['name' => 'Присоединительный размер', 'type' => 'value', 'suffix' => ''], 'raw' => true],
+            'Материал корпуса'                      => ['create' => ['name' => 'Материал корпуса', 'type' => 'value', 'suffix' => ''], 'raw' => true],
+            'Тип установки'                         => ['create' => ['name' => 'Тип установки', 'type' => 'value', 'suffix' => ''], 'raw' => true],
+            'Класс защиты'                          => ['create' => ['name' => 'Класс защиты', 'type' => 'value', 'suffix' => ''], 'raw' => true],
+            'Страна'                                => ['create' => ['name' => 'Страна производства', 'type' => 'value', 'suffix' => ''], 'raw' => true],
+            'Гарантия мес'                          => ['create' => ['name' => 'Гарантия', 'type' => 'value', 'suffix' => 'мес']],
+            'Вес'                                   => ['create' => ['name' => 'Вес', 'type' => 'value', 'suffix' => 'кг']],
+        ],
+
         // ── Прочие аксессуары (fallback) ─────────────────────────────────────────
         195 => [
             'Вес'                                   => ['create' => ['name' => 'Вес', 'type' => 'value', 'suffix' => 'кг']],
@@ -321,12 +361,18 @@ class ImportAttributesTeplodvorCommand extends Command
                 continue;
             }
 
-            // Convert [{key,value,unit}] array → flat dict key => 'value unit'
+            // Supports both [{key,value,unit}] array and {"key":"value"} flat object formats
             $data = [];
-            foreach ($specs as $row) {
-                $key = trim((string) ($row['key'] ?? ''));
-                $val = trim((string) ($row['value'] ?? ''));
-                $unit = trim((string) ($row['unit'] ?? ''));
+            foreach ($specs as $rowKey => $row) {
+                if (is_array($row)) {
+                    $key  = trim((string) ($row['key'] ?? ''));
+                    $val  = trim((string) ($row['value'] ?? ''));
+                    $unit = trim((string) ($row['unit'] ?? ''));
+                } else {
+                    $key  = trim((string) $rowKey);
+                    $val  = trim((string) $row);
+                    $unit = '';
+                }
                 if ($key !== '' && $val !== '') {
                     $data[$key] = $val . ($unit !== '' ? ' ' . $unit : '');
                 }
