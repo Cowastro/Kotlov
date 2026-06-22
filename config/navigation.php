@@ -27,7 +27,7 @@ return [
     'icons' => [
         'kotly'                              => 'heater.svg',
         'teplovyie-nasosyi'                  => 'hvac.svg',
-        'pelletnyie-gorelki'                 => 'fire_p.svg',
+        'pelletnye-gorelki'                 => 'fire_p.svg',
         'vodonagrevateli'                    => 'temperature--water.svg',
         'pechki'                             => 'campfire.svg',
         'bani-i-sauny'                       => 'sauna.svg',
@@ -83,19 +83,19 @@ return [
                 'links' => [
                     ['name' => 'Монтаж насосов',     'url' => '/installers'],
                     ['name' => 'Подбор оборудования','url' => '/installers'],
-                    ['name' => 'Пеллетные горелки',  'url' => '/pelletnyie-gorelki'],
+                    ['name' => 'Пеллетные горелки',  'url' => '/pelletnye-gorelki'],
                 ],
             ],
         ],
 
-        'pelletnyie-gorelki' => [
+        'pelletnye-gorelki' => [
             [
                 'title' => 'По мощности',
                 'links' => [
-                    ['name' => 'До 25 кВт',      'url' => '/pelletnyie-gorelki?filter=25kvt'],
-                    ['name' => 'До 50 кВт',       'url' => '/pelletnyie-gorelki?filter=50kvt'],
-                    ['name' => 'До 100 кВт',      'url' => '/pelletnyie-gorelki?filter=100kvt'],
-                    ['name' => 'Промышленные',    'url' => '/pelletnyie-gorelki?filter=prom'],
+                    ['name' => 'До 25 кВт',      'url' => '/pelletnye-gorelki?filter=25kvt'],
+                    ['name' => 'До 50 кВт',       'url' => '/pelletnye-gorelki?filter=50kvt'],
+                    ['name' => 'До 100 кВт',      'url' => '/pelletnye-gorelki?filter=100kvt'],
+                    ['name' => 'Промышленные',    'url' => '/pelletnye-gorelki?filter=prom'],
                 ],
             ],
             [
@@ -104,8 +104,8 @@ return [
                     ['name' => 'Монтаж горелок',      'url' => '/installers'],
                     ['name' => 'Сервис и ТО',         'url' => '/installers'],
                     ['name' => 'Подбор горелки',      'url' => '/installers'],
-                    ['name' => 'Автоматика',          'url' => '/pelletnyie-gorelki?filter=auto'],
-                    ['name' => 'Комплектующие',       'url' => '/pelletnyie-gorelki?filter=controller'],
+                    ['name' => 'Автоматика',          'url' => '/pelletnye-gorelki?filter=auto'],
+                    ['name' => 'Комплектующие',       'url' => '/pelletnye-gorelki?filter=controller'],
                 ],
             ],
         ],
@@ -239,12 +239,12 @@ return [
             ],
         ],
 
-        'pelletnyie-gorelki' => [
+        'pelletnye-gorelki' => [
             'brands' => ['Hargassner', 'BioTec', 'Eko-Vimar', 'Пеллетрон'],
             'banner' => ['img' => 'banners/banner-sale.jpg', 'url' => '/akcii', 'title' => 'Акции и спецпредложения'],
             'cta' => [
                 ['name' => 'Монтаж горелок →', 'url' => '/installers'],
-                ['name' => 'Все горелки →',    'url' => '/pelletnyie-gorelki'],
+                ['name' => 'Все горелки →',    'url' => '/pelletnye-gorelki'],
             ],
         ],
 
