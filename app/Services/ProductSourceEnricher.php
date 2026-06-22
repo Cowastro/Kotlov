@@ -1647,6 +1647,30 @@ class ProductSourceEnricher
 
     private function repairMojibake(string $value): string
     {
+        $best = $value;
+        $bestScore = $this->mojibakeScore($value);
+
+        foreach (['Windows-1252', 'CP1250', 'ISO-8859-1'] as $wrongEncoding) {
+            try {
+                $candidate = @mb_convert_encoding($value, $wrongEncoding, 'UTF-8');
+            } catch (\Throwable) {
+                continue;
+            }
+            if (! is_string($candidate) || ! mb_check_encoding($candidate, 'UTF-8')) {
+                continue;
+            }
+
+            $score = $this->mojibakeScore($candidate);
+            if ($score < $bestScore) {
+                $best = $candidate;
+                $bestScore = $score;
+            }
+        }
+
+        if ($bestScore < $this->mojibakeScore($value)) {
+            return $best;
+        }
+
         if ($this->mojibakeScore($value) > 0) {
             $candidate = @iconv('UTF-8', 'Windows-1251//IGNORE', $value);
             if (is_string($candidate)
