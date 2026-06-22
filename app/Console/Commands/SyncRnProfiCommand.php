@@ -35,6 +35,7 @@ class SyncRnProfiCommand extends Command
         {--rn-profi-card-limit=100 : Maximum uncached RN-Profi articles to check per run, 0 means no limit}
         {--ai-match : Ask configured AI provider to prepare safe match/create decisions without database writes}
         {--ai-match-limit=20 : Maximum rows to send to AI in this run, 0 means all current rows}
+        {--ai-batch-size=1 : Send this many rows in one AI request for faster local audits}
         {--ai-min-confidence=85 : Confidence threshold for can_apply_after_review recommendations}
         {--ai-provider= : AI provider override for matching: openai or configured}
         {--ai-model= : Override AI model for matching; defaults to AI_MATCH_MODEL or current AI_MODEL}
@@ -1396,6 +1397,53 @@ class SyncRnProfiCommand extends Command
         ));
 
         $decisions = [];
+        $batchSize = max(1, min(25, (int) $this->option('ai-batch-size')));
+        $candidateMap = [];
+
+        if ($batchSize > 1) {
+            foreach (array_chunk($processableIndexes, $batchSize) as $chunkOffset => $chunk) {
+                $this->line(sprintf(
+                    '[AI batch %d/%d] rows %d-%d',
+                    $chunkOffset + 1,
+                    (int) ceil(count($processableIndexes) / $batchSize),
+                    $chunkOffset * $batchSize + 1,
+                    min(count($processableIndexes), ($chunkOffset + 1) * $batchSize)
+                ));
+
+                $items = [];
+                foreach ($chunk as $rowIndex) {
+                    $candidates = $this->aiProductCandidates($rows[$rowIndex], 6);
+                    $candidateMap[$rowIndex] = $candidates;
+                    $items[] = [
+                        'row_index' => $rowIndex,
+                        'data' => $this->aiDecisionPayload($rows[$rowIndex], $candidates),
+                    ];
+                }
+
+                $batchDecisions = $this->aiDecisionsForBatch($ai, $items);
+                foreach ($chunk as $rowIndex) {
+                    $decision = $this->normalizeAiDecision($batchDecisions[$rowIndex] ?? [], $candidateMap[$rowIndex] ?? []);
+                    $confidence = max(0, min(100, (int) ($decision['confidence'] ?? 0)));
+                    $decisionName = (string) ($decision['decision'] ?? 'manual_review');
+                    $recommendedAction = in_array($decisionName, ['link_existing', 'create_new'], true) && $confidence >= $minConfidence
+                        ? 'can_apply_after_review'
+                        : 'keep_manual_review';
+
+                    $rows[$rowIndex]['ai_decision'] = $decisionName;
+                    $rows[$rowIndex]['ai_confidence'] = $confidence;
+                    $rows[$rowIndex]['ai_reason'] = trim((string) ($decision['reason'] ?? ''));
+                    $rows[$rowIndex]['ai_target_product_id'] = $decision['target_product_id'] ?? null;
+                    $rows[$rowIndex]['ai_recommended_action'] = $recommendedAction;
+
+                    $decisions[] = $this->aiDecisionReportRow($rows[$rowIndex], $candidateMap[$rowIndex] ?? []);
+                }
+            }
+
+            $this->writeAiDecisionReports($decisions);
+
+            return $rows;
+        }
+
         foreach ($processableIndexes as $runIndex => $rowIndex) {
             $row = $rows[$rowIndex];
             $this->line(sprintf(
@@ -1453,34 +1501,7 @@ class SyncRnProfiCommand extends Command
 
     private function aiDecisionForRow(AiContentEnricher $ai, array $row, array $candidates): array
     {
-        $payload = [
-            'price_row' => [
-                'sheet' => $row['sheet'] ?? '',
-                'row_number' => $row['row_number'] ?? null,
-                'article' => $row['article'] ?? '',
-                'brand' => $row['resolved_brand'] ?: ($row['brand'] ?? ''),
-                'name' => $row['name'] ?? '',
-                'category_text' => $row['category_text'] ?? '',
-                'wholesale_price_byn' => $row['price'] ?? null,
-                'retail_price_byn' => $row['retail_price'] ?? null,
-                'stock_status' => $row['stock']['status'] ?? null,
-                'stock_text' => $row['stock_text'] ?? '',
-            ],
-            'found_cards' => [
-                'teplodvor_url' => $row['teplodvor_url'] ?? null,
-                'teplodvor_score' => $row['teplodvor_score'] ?? null,
-                'teplodvor_category_id' => $row['teplodvor_category_id'] ?? null,
-                'rn_profi_url' => $row['rn_profi_url'] ?? null,
-                'rn_profi_title' => $row['rn_profi_title'] ?? null,
-            ],
-            'current_math_match' => [
-                'action' => $row['action'] ?? '',
-                'product_id' => $row['matched_product_id'] ?? null,
-                'sku' => $row['matched_sku'] ?? null,
-                'confidence' => $row['confidence'] ?? null,
-            ],
-            'existing_catalog_candidates' => $candidates,
-        ];
+        $payload = $this->aiDecisionPayload($row, $candidates);
 
         $json = json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT);
         $prompt = <<<PROMPT
@@ -1526,6 +1547,93 @@ PROMPT;
             ];
         }
 
+        return $this->normalizeAiDecision($data, $candidates);
+    }
+
+    private function aiDecisionPayload(array $row, array $candidates): array
+    {
+        return [
+            'price_row' => [
+                'sheet' => $row['sheet'] ?? '',
+                'row_number' => $row['row_number'] ?? null,
+                'article' => $row['article'] ?? '',
+                'brand' => $row['resolved_brand'] ?: ($row['brand'] ?? ''),
+                'name' => $row['name'] ?? '',
+                'category_text' => $row['category_text'] ?? '',
+                'wholesale_price_byn' => $row['price'] ?? null,
+                'retail_price_byn' => $row['retail_price'] ?? null,
+                'stock_status' => $row['stock']['status'] ?? null,
+                'stock_text' => $row['stock_text'] ?? '',
+            ],
+            'found_cards' => [
+                'teplodvor_url' => $row['teplodvor_url'] ?? null,
+                'teplodvor_score' => $row['teplodvor_score'] ?? null,
+                'teplodvor_category_id' => $row['teplodvor_category_id'] ?? null,
+                'rn_profi_url' => $row['rn_profi_url'] ?? null,
+                'rn_profi_title' => $row['rn_profi_title'] ?? null,
+            ],
+            'current_math_match' => [
+                'action' => $row['action'] ?? '',
+                'product_id' => $row['matched_product_id'] ?? null,
+                'sku' => $row['matched_sku'] ?? null,
+                'confidence' => $row['confidence'] ?? null,
+            ],
+            'existing_catalog_candidates' => $candidates,
+        ];
+    }
+
+    private function aiDecisionsForBatch(AiContentEnricher $ai, array $items): array
+    {
+        $json = json_encode(['items' => $items], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT);
+        $prompt = <<<PROMPT
+You are an ecommerce catalog matching assistant for kotlov.by.
+
+Task: decide what to do with multiple RN-Profi supplier price-list rows.
+Return ONLY valid JSON with key "decisions": an array of objects with keys:
+row_index: copy input row_index
+decision: one of "link_existing", "create_new", "manual_review", "skip"
+confidence: integer 0-100
+target_product_id: integer product id when decision is "link_existing", otherwise null
+reason: short Russian explanation for a manager
+
+Rules:
+- Supplier article is the strongest signal when it clearly appears in an existing product, Teplodvor card or RN-Profi card.
+- Brand, model, size, diameter, thread, color, left/right, straight/angle, section count and suffixes are important.
+- Do not link products that differ by size/modification.
+- If an exact existing product is not present but a reliable Teplodvor/RN-Profi card is found, prefer "create_new".
+- If price-list name is too short and there is no reliable card, use "manual_review".
+- Use "skip" only for rows that are not real products or have insufficient supplier data.
+- Never invent IDs. target_product_id must be one of that row's existing_catalog_candidates ids or null.
+- Return one decision for every input item.
+
+Data:
+{$json}
+PROMPT;
+
+        $response = $ai->complete($prompt, max(1800, count($items) * 260));
+        if (! $response) {
+            return [];
+        }
+
+        $data = json_decode($this->extractJson($response), true);
+        if (! is_array($data)) {
+            return [];
+        }
+
+        $rows = is_array($data['decisions'] ?? null) ? $data['decisions'] : $data;
+        $byIndex = [];
+        foreach ($rows as $decision) {
+            if (! is_array($decision) || ! isset($decision['row_index'])) {
+                continue;
+            }
+            $byIndex[(int) $decision['row_index']] = $decision;
+        }
+
+        return $byIndex;
+    }
+
+    private function normalizeAiDecision(array $data, array $candidates): array
+    {
         $allowed = ['link_existing', 'create_new', 'manual_review', 'skip'];
         $decision = in_array(($data['decision'] ?? ''), $allowed, true)
             ? (string) $data['decision']
