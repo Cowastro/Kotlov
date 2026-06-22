@@ -252,9 +252,18 @@ class EnrichTeplodvorCommand extends Command
         'nasos', 'nasosnaya', 'stantsiya', 'klapan', 'schetchik',
         // Generic product type prefixes — very long, dominate scores across all brands
         'kotel', 'pech', 'otopitelnaya', 'otopitelnyj',
-        'tverdotoplivnyj', 'tverdotoplivnyy',
-        'elektricheskij', 'elektricheskiy', 'elektricheskaya',
-        'gazovyj', 'gazovaya', 'gazovyy',
+        'tverdotoplivnyj', 'tverdotoplivnyy', 'tverdotoplivnyi',
+        'elektricheskij', 'elektricheskiy', 'elektricheskaya', 'elektriceskii', 'elektriceskiy',
+        'gazovyj', 'gazovaya', 'gazovyy', 'gazovyi',
+        // CMS transliteration variants (differ from teplodvor slugs)
+        'kondensacionnyi', 'kondensatsionnyj', 'kondensatsionnyy',
+        'tradicionnyi', 'tradicionnyj', 'traditsionnyj', 'traditsionnyy',
+        'cirkulyacionnyi', 'tsirkulyatsionnyj', 'tsirkulyatsionnyy',
+        'skvazinnyi', 'skvazhinnyj', 'skvazhinnyi',
+        'alyuminievyi', 'alyuminievyj', 'alyuminievyy',
+        'bimetallicheskii', 'bimetallicheskij', 'bimetallicheskiy',
+        'stalnoj', 'stalnyj', 'stalnyy', 'stalnoi',
+        'trubchatyi', 'trubchatyj', 'trubchatyy',
         // Product variant descriptors (color, door type, finish) — differ across pages
         'antratsit', 'antracit', 'antrocit',  // anthracite transliterations
         'belyj', 'chernyj', 'seryj', 'serebristyj', 'metallik',
