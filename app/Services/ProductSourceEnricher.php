@@ -32,6 +32,16 @@ class ProductSourceEnricher
         return $this->enrichFromParsed($product, $sourceUrl, $parsed, $options);
     }
 
+    public function preview(string $sourceUrl): array
+    {
+        $sourceUrl = trim($sourceUrl);
+        if (! filter_var($sourceUrl, FILTER_VALIDATE_URL) || ! in_array(parse_url($sourceUrl, PHP_URL_SCHEME), ['http', 'https'], true)) {
+            throw new \InvalidArgumentException('Invalid source URL.');
+        }
+
+        return $this->parsePage($this->fetchHtml($sourceUrl), $sourceUrl);
+    }
+
     public function enrichFromParsed(Product $product, string $sourceUrl, array $parsed, array $options = []): array
     {
         $sourceUrl = trim($sourceUrl);
@@ -574,6 +584,7 @@ class ProductSourceEnricher
     private function parsePage(string $html, string $url): array
     {
         $parsed = [
+            'title' => $this->extractTitle($html),
             'description' => $this->extractDescription($html),
             'short_description' => $this->extractShortDescription($html),
             'specs' => $this->extractSpecs($html),
@@ -595,6 +606,7 @@ class ProductSourceEnricher
     private function normalizeParsedData(array $parsed): array
     {
         return [
+            'title' => $this->cleanText((string) ($parsed['title'] ?? '')),
             'description' => $this->cleanText((string) ($parsed['description'] ?? '')),
             'short_description' => $this->cleanText((string) ($parsed['short_description'] ?? '')),
             'specs' => $this->sanitizeJsonArray((array) ($parsed['specs'] ?? [])),
@@ -871,6 +883,25 @@ class ProductSourceEnricher
         }
 
         return $this->extractLongestDescriptionBlock($html);
+    }
+
+    private function extractTitle(string $html): string
+    {
+        foreach ([
+            '~<h1[^>]*>([\s\S]*?)</h1>~iu',
+            '~<meta[^>]+property=["\']og:title["\'][^>]+content=["\'](.*?)["\'][^>]*>~iu',
+            '~<title[^>]*>([\s\S]*?)</title>~iu',
+        ] as $pattern) {
+            if (preg_match($pattern, $html, $match)) {
+                $title = $this->cleanText(html_entity_decode(strip_tags($match[1]), ENT_QUOTES | ENT_HTML5, 'UTF-8'));
+                $title = preg_replace('/\s*[|–-]\s*(?:teplodvor\.by|RN-Profi|РН-Профи).*$/iu', '', $title) ?? $title;
+                if (mb_strlen($title) >= 3) {
+                    return trim($title);
+                }
+            }
+        }
+
+        return '';
     }
 
     private function extractShortDescription(string $html): string

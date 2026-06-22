@@ -3,6 +3,7 @@
 namespace App\Console\Commands;
 
 use App\Services\AiContentEnricher;
+use App\Services\ProductSourceEnricher;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
@@ -38,6 +39,8 @@ class SyncRnProfiCommand extends Command
         {--ai-provider= : AI provider override for matching: openai or configured}
         {--ai-model= : Override AI model for matching; defaults to AI_MATCH_MODEL or current AI_MODEL}
         {--ai-output= : Output path for AI JSON decisions; defaults to storage/app/reports/rn-profi}
+        {--apply-ai-decisions= : Read local AI decisions JSON and apply safe link/create actions without calling AI}
+        {--enrich-created : After creating products from AI decisions, parse source URL for photos/specs/content}
         {--sync-retail-prices : Update products.price from detected retail price column}
         {--mark-missing-out-of-stock : Mark existing RN-Profi links absent from the sheet as out_of_stock}';
 
@@ -93,6 +96,11 @@ class SyncRnProfiCommand extends Command
 
     public function handle(): int
     {
+        $decisionsPath = trim((string) $this->option('apply-ai-decisions'));
+        if ($decisionsPath !== '') {
+            return $this->applyAiDecisions($decisionsPath, (bool) $this->option('apply'));
+        }
+
         $apply = (bool) $this->option('apply') && ! $this->option('dry-run');
         $limit = $this->option('limit') !== null ? max(0, (int) $this->option('limit')) : null;
         $offset = max(0, (int) $this->option('offset'));
@@ -1886,6 +1894,327 @@ PROMPT;
         return $stats['errors'] > 0 ? self::FAILURE : self::SUCCESS;
     }
 
+    private function applyAiDecisions(string $path, bool $apply): int
+    {
+        $path = $this->resolveLocalPath($path);
+        if (! is_file($path)) {
+            $this->error('AI decisions file not found: ' . $path);
+            return self::FAILURE;
+        }
+
+        $data = json_decode((string) file_get_contents($path), true);
+        $decisions = is_array($data) ? ($data['decisions'] ?? []) : [];
+        if (! is_array($decisions) || $decisions === []) {
+            $this->error('AI decisions file has no decisions.');
+            return self::FAILURE;
+        }
+
+        $this->line($apply
+            ? '<fg=red;options=bold>APPLY: safe AI decisions will be written.</>'
+            : '<fg=yellow;options=bold>DRY RUN: AI decisions will be previewed only.</>');
+        $this->info('AI decisions file: ' . $path);
+
+        $now = now();
+        $supplierId = $this->ensureSupplier($now);
+        $syncId = $this->ensureSync($now);
+        $this->buildIndex();
+        $stats = array_fill_keys([
+            'safe_decisions', 'linked_existing', 'created_products', 'source_previews', 'enriched_created',
+            'skipped_manual_review', 'skipped_low_confidence', 'skipped_duplicate', 'errors',
+        ], 0);
+        $previewRows = [];
+
+        foreach ($decisions as $decision) {
+            if (! is_array($decision)) {
+                continue;
+            }
+
+            $aiDecision = (string) ($decision['ai_decision'] ?? '');
+            $recommended = (string) ($decision['ai_recommended_action'] ?? '');
+            $confidence = (int) ($decision['ai_confidence'] ?? 0);
+            $article = $this->normArticle((string) ($decision['article'] ?? ''));
+
+            if (! in_array($aiDecision, ['link_existing', 'create_new'], true) || $recommended !== 'can_apply_after_review') {
+                $stats['skipped_manual_review']++;
+                continue;
+            }
+            if ($confidence < max(1, min(100, (int) $this->option('ai-min-confidence')))) {
+                $stats['skipped_low_confidence']++;
+                continue;
+            }
+            if ($article === '') {
+                $stats['errors']++;
+                $previewRows[] = [$decision['article'] ?? '-', $aiDecision, '-', '-', 'error_empty_article'];
+                continue;
+            }
+
+            $stats['safe_decisions']++;
+            try {
+                if ($aiDecision === 'link_existing') {
+                    $productId = (int) ($decision['ai_target_product_id'] ?? 0);
+                    if ($productId <= 0 || ! DB::table('products')->where('id', $productId)->exists()) {
+                        $stats['errors']++;
+                        $previewRows[] = [$decision['article'] ?? '-', $aiDecision, '-', '-', 'error_missing_target_product'];
+                        continue;
+                    }
+
+                    if ($apply) {
+                        $this->upsertSupplierProduct($this->decisionToSupplierRow($decision, $productId), $supplierId, $syncId, $now);
+                    }
+                    $stats['linked_existing']++;
+                    $previewRows[] = [$decision['article'] ?? '-', $aiDecision, $productId, $this->sku($productId), $apply ? 'linked' : 'would_link'];
+                    continue;
+                }
+
+                if (DB::table('supplier_products')->where('supplier_id', $supplierId)->where('supplier_article_normalized', $article)->exists()) {
+                    $stats['skipped_duplicate']++;
+                    $previewRows[] = [$decision['article'] ?? '-', $aiDecision, '-', '-', 'skip_duplicate_supplier_article'];
+                    continue;
+                }
+
+                $sourcePreview = [];
+                if ($aiDecision === 'create_new') {
+                    $sourceUrl = $this->decisionSourceUrl($decision);
+                    if ($sourceUrl !== '') {
+                        try {
+                            $sourcePreview = app(ProductSourceEnricher::class)->preview($sourceUrl);
+                            $stats['source_previews']++;
+                        } catch (\Throwable $e) {
+                            $this->warn('[source preview] ' . ($decision['article'] ?? '-') . ': ' . $e->getMessage());
+                        }
+                    }
+                }
+
+                if (! $apply) {
+                    $previewRows[] = [$decision['article'] ?? '-', $aiDecision, '-', $this->nextKotlovSku(), 'would_create: ' . mb_substr($this->productNameFromDecision($decision, $sourcePreview), 0, 48)];
+                    $stats['created_products']++;
+                    continue;
+                }
+
+                $productId = $this->createProductFromAiDecision($decision, $now, $sourcePreview);
+                $sku = $this->sku($productId);
+                $this->upsertSupplierProduct($this->decisionToSupplierRow($decision, $productId, $sourcePreview), $supplierId, $syncId, $now);
+                $stats['created_products']++;
+
+                if ((bool) $this->option('enrich-created')) {
+                    $sourceUrl = $this->decisionSourceUrl($decision);
+                    if ($sourceUrl !== '') {
+                        $product = \App\Models\Product::findOrFail($productId);
+                        $options = [
+                            'update_images' => true,
+                            'replace_images' => true,
+                            'update_specs' => true,
+                            'update_service' => true,
+                            'update_content' => true,
+                        ];
+
+                        if ($sourcePreview !== []) {
+                            app(ProductSourceEnricher::class)->enrichFromParsed($product, $sourceUrl, $sourcePreview, $options);
+                        } else {
+                            app(ProductSourceEnricher::class)->enrich($product, $sourceUrl, $options);
+                        }
+                        $stats['enriched_created']++;
+                    }
+                }
+
+                $previewRows[] = [$decision['article'] ?? '-', $aiDecision, $productId, $sku, 'created'];
+            } catch (\Throwable $e) {
+                $stats['errors']++;
+                $previewRows[] = [$decision['article'] ?? '-', $aiDecision, '-', '-', 'error: ' . mb_substr($e->getMessage(), 0, 80)];
+            }
+        }
+
+        $this->table(['metric', 'count'], $this->mapCounts($stats));
+        $this->table(['article', 'decision', 'product_id', 'sku', 'result'], array_slice($previewRows, 0, 50));
+
+        return $stats['errors'] > 0 ? self::FAILURE : self::SUCCESS;
+    }
+
+    private function createProductFromAiDecision(array $decision, $now, array $sourcePreview = []): int
+    {
+        $brandName = trim((string) ($decision['brand'] ?? ''));
+        $brandId = $this->brandByName[$this->brandKey($brandName)] ?? null;
+        if ($brandId === null && $brandName !== '') {
+            $brandId = (int) DB::table('brands')->insertGetId([
+                'name' => $brandName,
+                'slug' => $this->uniqueBrandSlug($brandName),
+                'created_at' => $now,
+                'updated_at' => $now,
+            ]);
+        }
+
+        $categoryId = (int) ($decision['teplodvor_category_id'] ?? 0);
+        if ($categoryId <= 0 || ! DB::table('categories')->where('id', $categoryId)->exists()) {
+            $categoryId = $this->fallbackCategoryId();
+        }
+
+        $article = trim((string) ($decision['article'] ?? ''));
+        $name = $this->productNameFromDecision($decision, $sourcePreview);
+        $sku = $this->nextKotlovSku();
+        $short = trim($name . ($article !== '' ? ' (' . $article . ')' : ''));
+
+        return (int) DB::table('products')->insertGetId([
+            'category_id' => $categoryId,
+            'brand_id' => $brandId,
+            'supplier_id' => null,
+            'name' => $name,
+            'slug' => $this->uniqueSlug($name),
+            'h1' => $name,
+            'sku' => $sku,
+            'price' => (float) ($decision['retail_price_byn'] ?? 0),
+            'price_old' => null,
+            'currency' => 'BYN',
+            'content' => null,
+            'short_description' => $short,
+            'images' => json_encode([], JSON_UNESCAPED_UNICODE),
+            'specs' => json_encode([], JSON_UNESCAPED_UNICODE),
+            'unit' => 'шт',
+            'warranty' => null,
+            'is_active' => true,
+            'is_archived' => false,
+            'in_stock' => ($decision['stock_status'] ?? '') === 'in_stock',
+            'availability_status' => ($decision['stock_status'] ?? '') === 'in_stock'
+                ? \App\Models\Product::AVAILABILITY_IN_STOCK
+                : \App\Models\Product::AVAILABILITY_CHECK,
+            'stock_qty' => null,
+            'is_featured' => false,
+            'is_new' => true,
+            'is_sale' => false,
+            'sort_order' => 0,
+            'meta_title' => $name . ' купить в %city%',
+            'meta_keywords' => trim($brandName . ', ' . $name . ', ' . $article, ', '),
+            'meta_description' => Str::limit($short . ' — купить с доставкой по Беларуси.', 250, ''),
+            'rating' => 0,
+            'reviews_count' => 0,
+            'views_count' => 0,
+            'created_at' => $now,
+            'updated_at' => $now,
+        ]);
+    }
+
+    private function decisionToSupplierRow(array $decision, int $productId, array $sourcePreview = []): array
+    {
+        $stockStatus = (string) ($decision['stock_status'] ?? 'in_stock');
+        return [
+            'article' => (string) ($decision['article'] ?? ''),
+            'norm_article' => $this->normArticle((string) ($decision['article'] ?? '')),
+            'brand' => (string) ($decision['brand'] ?? ''),
+            'resolved_brand' => (string) ($decision['brand'] ?? ''),
+            'name' => $this->productNameFromDecision($decision, $sourcePreview),
+            'category_text' => (string) ($decision['category_text'] ?? ''),
+            'price' => isset($decision['wholesale_price_byn']) ? (float) $decision['wholesale_price_byn'] : null,
+            'retail_price' => isset($decision['retail_price_byn']) ? (float) $decision['retail_price_byn'] : null,
+            'stock_text' => (string) ($decision['stock_status'] ?? ''),
+            'qty' => null,
+            'stock' => [
+                'status' => $stockStatus,
+                'in_stock' => $stockStatus === 'in_stock',
+                'delivery_days' => null,
+            ],
+            'matched_product_id' => $productId,
+            'matched_sku' => $this->sku($productId),
+            'confidence' => 'ai_' . ($decision['ai_confidence'] ?? ''),
+            'sheet' => (string) ($decision['sheet'] ?? ''),
+            'row_number' => (int) ($decision['row_number'] ?? 0),
+            'source_url' => $this->decisionSourceUrl($decision) ?: self::SOURCE_URL,
+            'raw_source' => [
+                'teplodvor_url' => $decision['teplodvor_url'] ?? null,
+                'rn_profi_url' => $decision['rn_profi_url'] ?? null,
+                'ai_decision' => $decision['ai_decision'] ?? null,
+                'ai_confidence' => $decision['ai_confidence'] ?? null,
+                'ai_reason' => $decision['ai_reason'] ?? null,
+            ],
+        ];
+    }
+
+    private function productNameFromDecision(array $decision, array $sourcePreview = []): string
+    {
+        $brand = trim((string) ($decision['brand'] ?? ''));
+        $article = trim((string) ($decision['article'] ?? ''));
+        $sourceTitle = trim((string) ($sourcePreview['title'] ?? ''));
+        if (mb_strlen($sourceTitle) >= 5) {
+            return preg_replace('/\s+/u', ' ', $sourceTitle) ?: $sourceTitle;
+        }
+
+        $rawName = trim((string) ($decision['name'] ?? ''));
+
+        if (mb_strlen($rawName) < 5 || ! preg_match('/[А-Яа-яA-Za-z]{3,}/u', $rawName)) {
+            $rawName = trim(($decision['category_text'] ?? '') . ' ' . $article . ' ' . $rawName);
+        }
+        $name = trim($brand . ' ' . $rawName);
+        return preg_replace('/\s+/u', ' ', $name) ?: trim($brand . ' ' . $article);
+    }
+
+    private function decisionSourceUrl(array $decision): string
+    {
+        foreach (['teplodvor_url', 'rn_profi_url'] as $field) {
+            $url = trim((string) ($decision[$field] ?? ''));
+            if ($url !== '' && filter_var($url, FILTER_VALIDATE_URL)) {
+                return $url;
+            }
+        }
+
+        return '';
+    }
+
+    private function fallbackCategoryId(): int
+    {
+        return (int) (DB::table('categories')->where('slug', 'raznoe')->value('id')
+            ?? DB::table('categories')->orderBy('id')->value('id')
+            ?? 1);
+    }
+
+    private function uniqueBrandSlug(string $name): string
+    {
+        $base = Str::slug($name) ?: 'brand';
+        $slug = $base;
+        $i = 2;
+        while (DB::table('brands')->where('slug', $slug)->exists()) {
+            $slug = $base . '-' . $i++;
+        }
+
+        return $slug;
+    }
+
+    private function uniqueSlug(string $name): string
+    {
+        $base = Str::slug($name) ?: 'rn-profi-product';
+        $slug = $base;
+        $i = 2;
+
+        while (DB::table('products')->where('slug', $slug)->exists()) {
+            $slug = $base . '-' . $i++;
+        }
+
+        return $slug;
+    }
+
+    private function nextKotlovSku(): string
+    {
+        $max = DB::table('products')
+            ->where('sku', 'like', 'KOTLOV-%')
+            ->pluck('sku')
+            ->map(fn ($sku) => preg_match('/^KOTLOV-(\d+)$/', (string) $sku, $match) ? (int) $match[1] : 0)
+            ->max() ?? 0;
+
+        $next = max(0, (int) $max) + 1;
+        do {
+            $sku = sprintf('KOTLOV-%06d', $next++);
+        } while (DB::table('products')->where('sku', $sku)->exists());
+
+        return $sku;
+    }
+
+    private function resolveLocalPath(string $path): string
+    {
+        $path = trim($path);
+        if ($path !== '' && ! str_starts_with($path, DIRECTORY_SEPARATOR) && ! preg_match('/^[A-Z]:\\\\/i', $path)) {
+            return base_path($path);
+        }
+
+        return $path;
+    }
+
     private function upsertSupplierProduct(array $row, int $supplierId, ?int $syncId, $now): void
     {
         $payload = [
@@ -1893,7 +2222,7 @@ PROMPT;
             'product_id' => (int) $row['matched_product_id'],
             'product_sku' => $row['matched_sku'],
             'supplier_name' => trim(($row['resolved_brand'] ?: $row['brand']) . ' ' . $row['name']),
-            'source_url' => self::SOURCE_URL,
+            'source_url' => $row['source_url'] ?? self::SOURCE_URL,
             'price' => $row['price'],
             'currency' => 'BYN',
             'currency_rate' => 1.0,
@@ -1912,6 +2241,7 @@ PROMPT;
                 'brand' => $row['brand'],
                 'category' => $row['category_text'],
                 'retail_price' => $row['retail_price'],
+                'source' => $row['raw_source'] ?? [],
             ], JSON_UNESCAPED_UNICODE),
             'last_synced_at' => $now,
             'last_stock_synced_at' => $now,
