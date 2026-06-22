@@ -105,6 +105,31 @@ class ImportTeplodvorCatalogCommand extends Command
         'teplyy-pol/aksessuary'                                      => 109,
         'teplyy-pol/infrakrasnye-lentochnye-maty'                    => 109,
         'teplyy-pol/nagrevalnye-kovriki'                             => 109,
+
+        // ── Кондиционеры и климат ─────────────────────────────────────────────
+        'konditsionery/split-sistemy'                                => 304,
+        'konditsionery/mobilnye-konditsionery'                       => 304,
+        'konditsionery/kassetnye-konditsionery'                      => 304,
+        'konditsionery/kanalnye-konditsionery'                       => 304,
+        'konditsionery/napolno-potolochnye-konditsionery'            => 304,
+        'konditsionery/vnutrennie-bloki'                             => 304,
+        'konditsionery/vneshnie-bloki'                               => 304,
+        'konditsionery/multisplit-sistemy'                           => 304,
+        'konditsionery/promyshlennye-konditsionery'                  => 304,
+        'konditsionery'                                              => 304,
+
+        // ── Воздух (климатическая техника) ───────────────────────────────────
+        'uvlazhniteli-vozduha'                                       => 304,
+        'osushiteli-vozduha'                                         => 304,
+        'ochistitel-vozduha'                                         => 304,
+        'moyki-vozduha'                                              => 304,
+
+        // ── Вентиляция ────────────────────────────────────────────────────────
+        'ventilyatsiya'                                              => 304,
+        'ventilyatory'                                               => 304,
+
+        // ── Электрокамины ─────────────────────────────────────────────────────
+        'elektrokaminy'                                              => 104,
     ];
 
     private const SLUG_STOPWORDS = [
