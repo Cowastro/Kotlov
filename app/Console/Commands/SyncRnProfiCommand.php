@@ -98,13 +98,33 @@ class SyncRnProfiCommand extends Command
         if ($content === false || strlen($content) < 1024) {
             throw new \RuntimeException('Google Sheet download failed or returned an empty file.');
         }
-        if (str_starts_with(ltrim($content), '<')) {
-            throw new \RuntimeException('Google Sheet returned HTML instead of XLSX. Check sheet sharing/export access.');
-        }
+
+        $this->assertXlsxContent($content, $path);
 
         file_put_contents($path, $content);
 
         return $path;
+    }
+
+    private function assertXlsxContent(string $content, string $targetPath): void
+    {
+        if (str_starts_with($content, "PK\x03\x04")) {
+            return;
+        }
+
+        $debugPath = preg_replace('/\.xlsx$/i', '.download-debug.txt', $targetPath) ?: ($targetPath . '.download-debug.txt');
+        file_put_contents($debugPath, substr($content, 0, 4096));
+
+        $preview = trim(preg_replace('/\s+/u', ' ', substr($content, 0, 220)) ?? '');
+        if ($preview === '') {
+            $preview = bin2hex(substr($content, 0, 32));
+        }
+
+        throw new \RuntimeException(
+            'Google Sheet returned non-XLSX content. '
+            . 'Saved first bytes to ' . $debugPath . '. '
+            . 'Preview: ' . mb_substr($preview, 0, 180)
+        );
     }
 
     private function toExportUrl(string $url): string
