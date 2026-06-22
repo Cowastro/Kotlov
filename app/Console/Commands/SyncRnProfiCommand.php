@@ -18,6 +18,9 @@ class SyncRnProfiCommand extends Command
         {--sheet-url= : Google Sheets URL}
         {--brand=* : Process only these resolved brands, repeatable or comma-separated}
         {--exclude-brand=* : Skip these resolved brands, repeatable or comma-separated}
+        {--teplodvor : Match price rows to storage/teplodvor_index.json product cards}
+        {--teplodvor-min-score=0.70 : Minimum slug score for Teplodvor matching}
+        {--teplodvor-slug-filter= : Limit Teplodvor candidates by slug substring, defaults to resolved brand slug}
         {--sync-retail-prices : Update products.price from detected retail price column}
         {--mark-missing-out-of-stock : Mark existing RN-Profi links absent from the sheet as out_of_stock}';
 
@@ -29,6 +32,35 @@ class SyncRnProfiCommand extends Command
     private const SOURCE_URL = 'https://rn-profi.by/';
     private const DEFAULT_SHEET_URL = 'https://docs.google.com/spreadsheets/d/1g9C8C7JMO0zQGXdQRCWVQoldSOW6Fyljnd-QJYpTvnQ/edit?gid=1126489059#gid=1126489059';
     private const CACHE_PATH = 'supplier-cache/rn-profi-pricelist.xlsx';
+    private const TEPLODVOR_INDEX_FILE = 'teplodvor_index.json';
+
+    private const TEPLODVOR_CATEGORY_MAP = [
+        'teplyy-pol/teplye-vodyanye-poly' => 325,
+        'teplyy-pol/termoregulyatory-datchiki' => 58,
+        'teplyy-pol' => 109,
+        'raditory/komplektuyuschie-k-radiatoram' => 195,
+        'raditory/konvektory' => 324,
+        'raditory/stalnye' => 235,
+        'raditory/bimetalicheskie' => 236,
+        'raditory/allyminevye' => 233,
+        'komplektuyuschie-otopleniya/golovki-termostaticheskie' => 58,
+        'komplektuyuschie-otopleniya/nasosy' => 60,
+        'komplektuyuschie-otopleniya/raspredelitelnye-kollektory' => 93,
+        'komplektuyuschie-otopleniya/shkafy-kollektornye' => 195,
+        'komplektuyuschie-otopleniya/nasosno-smesitelnye-uzly' => 195,
+        'komplektuyuschie-otopleniya' => 195,
+        'nasosy/tsirkulyatsionnye-nasosy' => 60,
+        'nasosy' => 265,
+    ];
+
+    private const TEPLODVOR_STOPWORDS = [
+        'bez', 'dlya', 'so', 'na', 'po', 'iz', 'ot', 'ob', 'pri', 'ili', 'ne', 'do',
+        'komplekt', 'sht', 'mm', 'm', 'sm', 'dn', 'ek', 'nr', 'vr',
+    ];
+
+    private const TEPLODVOR_SLUG_NORM = [
+        'eco' => 'eko',
+    ];
 
     private array $sheetReports = [];
     private array $brandById = [];
@@ -37,6 +69,7 @@ class SyncRnProfiCommand extends Command
     private array $indexBySupplierArticle = [];
     private array $indexBySku = [];
     private array $indexByBrandModel = [];
+    private ?array $teplodvorIndex = null;
 
     public function handle(): int
     {
@@ -61,6 +94,10 @@ class SyncRnProfiCommand extends Command
 
         if ($limit !== null && $limit > 0) {
             $classified = array_slice($classified, 0, $limit);
+        }
+
+        if ($this->option('teplodvor')) {
+            $classified = $this->attachTeplodvorMatches($classified);
         }
 
         return $apply ? $this->applyChanges($classified) : $this->showDryRun($classified);
@@ -511,6 +548,195 @@ class SyncRnProfiCommand extends Command
         return null;
     }
 
+    private function attachTeplodvorMatches(array $rows): array
+    {
+        $index = $this->loadTeplodvorIndex();
+        if ($index === []) {
+            $this->warn('Teplodvor index is empty. Run: php artisan supplier:enrich-teplodvor --build-index');
+            return $rows;
+        }
+
+        $this->line(sprintf('Teplodvor index: %d product URLs.', count($index)));
+
+        return array_map(function (array $row) use ($index): array {
+            $match = $this->findTeplodvorMatch($row, $index);
+
+            return $row + [
+                'teplodvor_url' => $match['url'] ?? null,
+                'teplodvor_score' => $match['score'] ?? null,
+                'teplodvor_confidence' => $match['confidence'] ?? null,
+                'teplodvor_category_id' => isset($match['url']) ? $this->detectTeplodvorCategory((string) $match['url']) : null,
+            ];
+        }, $rows);
+    }
+
+    private function loadTeplodvorIndex(): array
+    {
+        if ($this->teplodvorIndex !== null) {
+            return $this->teplodvorIndex;
+        }
+
+        $path = storage_path(self::TEPLODVOR_INDEX_FILE);
+        if (! is_file($path)) {
+            $path = storage_path('app/' . self::TEPLODVOR_INDEX_FILE);
+        }
+        if (! is_file($path)) {
+            return $this->teplodvorIndex = [];
+        }
+
+        $data = json_decode((string) file_get_contents($path), true);
+        if (! is_array($data)) {
+            return $this->teplodvorIndex = [];
+        }
+
+        return $this->teplodvorIndex = array_filter($data, fn ($url, $slug): bool => is_string($slug) && is_string($url), ARRAY_FILTER_USE_BOTH);
+    }
+
+    private function findTeplodvorMatch(array $row, array $index): ?array
+    {
+        $article = $this->articleSlug((string) ($row['article'] ?? ''));
+        if ($article !== '' && strlen($article) >= 4) {
+            foreach ($index as $slug => $url) {
+                if (str_contains($this->compactSlug($slug), $article)) {
+                    return ['url' => $url, 'score' => 1.0, 'confidence' => 'article_slug'];
+                }
+            }
+        }
+
+        $brand = (string) ($row['resolved_brand'] ?: $row['brand'] ?: '');
+        $brandSlug = Str::slug($brand);
+        $slugFilter = trim((string) $this->option('teplodvor-slug-filter'));
+        if ($slugFilter === '' && $brandSlug !== '') {
+            $slugFilter = $brandSlug;
+        }
+        $slugFilter = Str::slug($slugFilter);
+
+        $candidates = $index;
+        if ($slugFilter !== '') {
+            $candidates = array_filter(
+                $index,
+                fn ($url, $slug): bool => str_contains((string) $slug, $slugFilter) || str_contains((string) $url, $slugFilter),
+                ARRAY_FILTER_USE_BOTH
+            );
+        }
+
+        if ($candidates === []) {
+            $candidates = $index;
+        }
+
+        $query = trim(implode(' ', array_filter([
+            $brand,
+            $row['category_text'] ?? '',
+            $row['name'] ?? '',
+            $row['article'] ?? '',
+        ])));
+        $querySlug = $this->normaliseTeplodvorSlug(Str::slug($query));
+        $brandTokens = $this->teplodvorTokens($brandSlug, []);
+        $tokens = $this->teplodvorTokens($querySlug, $brandTokens);
+        if (count($tokens) < 2) {
+            return null;
+        }
+
+        $best = ['score' => 0.0, 'url' => null];
+        foreach ($candidates as $slug => $url) {
+            $score = $this->scoreTeplodvorSlug($tokens, (string) $slug);
+            if ($score > $best['score']) {
+                $best = ['score' => $score, 'url' => $url];
+            }
+        }
+
+        $minScore = max(0.1, min(1.0, (float) $this->option('teplodvor-min-score')));
+        if ($best['url'] !== null && $best['score'] >= $minScore) {
+            return ['url' => $best['url'], 'score' => $best['score'], 'confidence' => 'slug_score'];
+        }
+
+        return null;
+    }
+
+    private function teplodvorTokens(string $slug, array $brandTokens): array
+    {
+        $slug = $this->normaliseTeplodvorSlug($slug);
+
+        return array_values(array_unique(array_filter(
+            explode('-', strtolower($slug)),
+            fn (string $token): bool => (strlen($token) >= 2 || ctype_digit($token))
+                && ! in_array($token, self::TEPLODVOR_STOPWORDS, true)
+                && ! array_filter($brandTokens, fn (string $brandToken): bool => levenshtein($token, $brandToken) <= 1)
+                && ! (strlen($token) >= 10 && preg_match('/[a-z]/', $token) && preg_match('/\d/', $token))
+        )));
+    }
+
+    private function scoreTeplodvorSlug(array $tokens, string $slug): float
+    {
+        $slug = $this->normaliseTeplodvorSlug($slug);
+        $numerics = array_values(array_filter($tokens, 'ctype_digit'));
+        $numConcat = count($numerics) >= 2 ? implode('', $numerics) : null;
+        $numConcatUsed = false;
+
+        foreach ($numerics as $number) {
+            if (preg_match('/(?:^|-)' . preg_quote($number, '/') . '(?:-|$)/', $slug)) {
+                continue;
+            }
+            if ($numConcat !== null && preg_match('/(?:^|-)' . preg_quote($numConcat, '/') . '(?:-|$)/', $slug)) {
+                $numConcatUsed = true;
+                continue;
+            }
+
+            return 0.0;
+        }
+
+        $total = array_sum(array_map('strlen', $tokens));
+        if ($total <= 0) {
+            return 0.0;
+        }
+
+        $matched = 0;
+        foreach ($tokens as $token) {
+            $hit = (ctype_digit($token) && $numConcatUsed)
+                || (bool) preg_match('/(?:^|-)' . preg_quote($token, '/') . '(?:-|$)/', $slug);
+            if ($hit) {
+                $matched += strlen($token);
+            }
+        }
+
+        return $matched / $total;
+    }
+
+    private function normaliseTeplodvorSlug(string $slug): string
+    {
+        $slug = strtolower($slug);
+        $slug = str_replace(array_keys(self::TEPLODVOR_SLUG_NORM), array_values(self::TEPLODVOR_SLUG_NORM), $slug);
+
+        return preg_replace('/-+/', '-', $slug) ?? $slug;
+    }
+
+    private function articleSlug(string $article): string
+    {
+        return $this->compactSlug(Str::slug($article));
+    }
+
+    private function compactSlug(string $slug): string
+    {
+        return preg_replace('/[^a-z0-9]+/', '', strtolower($slug)) ?? '';
+    }
+
+    private function detectTeplodvorCategory(string $url): ?int
+    {
+        $path = parse_url($url, PHP_URL_PATH);
+        if (! is_string($path)) {
+            return null;
+        }
+
+        $path = trim(preg_replace('#^/shop/#', '', trim($path, '/')) ?? '', '/');
+        foreach (self::TEPLODVOR_CATEGORY_MAP as $prefix => $categoryId) {
+            if (str_starts_with($path, $prefix . '/') || $path === $prefix) {
+                return $categoryId;
+            }
+        }
+
+        return null;
+    }
+
     private function showDryRun(array $rows): int
     {
         $this->newLine();
@@ -540,6 +766,20 @@ class SyncRnProfiCommand extends Command
         $this->info('Stock statuses:');
         $this->table(['stock_status', 'rows'], $this->mapCounts($stocks));
 
+        if ($this->option('teplodvor')) {
+            $this->info('Teplodvor card matches:');
+            $matchedTeplodvor = array_values(array_filter($rows, fn (array $row): bool => ! empty($row['teplodvor_url'])));
+            $this->table(['metric', 'count'], [
+                ['matched card URLs', count($matchedTeplodvor)],
+                ['missing card URLs', count($rows) - count($matchedTeplodvor)],
+                ['matched by article in slug', count(array_filter($matchedTeplodvor, fn (array $row): bool => ($row['teplodvor_confidence'] ?? '') === 'article_slug'))],
+                ['matched by slug score', count(array_filter($matchedTeplodvor, fn (array $row): bool => ($row['teplodvor_confidence'] ?? '') === 'slug_score'))],
+            ]);
+
+            $this->info('Teplodvor matches by sheet:');
+            $this->table(['sheet', 'matched', 'missing', 'rows'], $this->teplodvorSheetRows($rows));
+        }
+
         $this->info('Actions by sheet:');
         $this->table(
             ['sheet', 'matched', 'unmatched', 'brand_missing', 'price_missing', 'rows'],
@@ -564,6 +804,14 @@ class SyncRnProfiCommand extends Command
         if ($matched !== []) {
             $this->info('Matched examples:');
             $this->table($this->exampleHeaders(), $this->exampleRows(array_slice($matched, 0, 15)));
+        }
+
+        if ($this->option('teplodvor')) {
+            $teplodvorMatched = array_values(array_filter($rows, fn (array $row): bool => ! empty($row['teplodvor_url'])));
+            if ($teplodvorMatched !== []) {
+                $this->info('Teplodvor card examples:');
+                $this->table($this->exampleHeaders(), $this->exampleRows(array_slice($teplodvorMatched, 0, 20)));
+            }
         }
 
         $unmatched = array_values(array_filter($rows, fn (array $row): bool => $row['action'] !== 'matched'));
@@ -984,26 +1232,69 @@ class SyncRnProfiCommand extends Command
         );
     }
 
+    private function teplodvorSheetRows(array $rows): array
+    {
+        $stats = [];
+        foreach ($rows as $row) {
+            $sheet = $row['sheet'];
+            $stats[$sheet] ??= ['matched' => 0, 'missing' => 0, 'rows' => 0];
+            if (! empty($row['teplodvor_url'])) {
+                $stats[$sheet]['matched']++;
+            } else {
+                $stats[$sheet]['missing']++;
+            }
+            $stats[$sheet]['rows']++;
+        }
+
+        return array_map(
+            fn (string $sheet, array $row): array => [
+                mb_substr($sheet, 0, 32),
+                $row['matched'],
+                $row['missing'],
+                $row['rows'],
+            ],
+            array_keys($stats),
+            array_values($stats)
+        );
+    }
+
     private function exampleHeaders(): array
     {
-        return ['sheet', 'row', 'article', 'brand', 'name', 'wholesale', 'retail', 'stock', 'action', 'matched_sku', 'confidence'];
+        $headers = ['sheet', 'row', 'article', 'brand', 'name', 'wholesale', 'retail', 'stock', 'action', 'matched_sku', 'confidence'];
+        if ($this->option('teplodvor')) {
+            $headers[] = 'teplodvor';
+            $headers[] = 'td_score';
+            $headers[] = 'cat_id';
+        }
+
+        return $headers;
     }
 
     private function exampleRows(array $rows): array
     {
-        return array_map(fn (array $row): array => [
-            mb_substr($row['sheet'], 0, 16),
-            $row['row_number'],
-            mb_substr($row['article'], 0, 18),
-            mb_substr($row['resolved_brand'] ?: $row['brand'], 0, 16),
-            mb_substr($row['name'], 0, 38),
-            $row['price'] !== null ? number_format($row['price'], 2, '.', '') : '-',
-            $row['retail_price'] !== null ? number_format($row['retail_price'], 2, '.', '') : '-',
-            $row['stock']['status'],
-            $row['action'],
-            $row['matched_sku'] ?? '-',
-            $row['confidence'] ?? '-',
-        ], $rows);
+        return array_map(function (array $row): array {
+            $data = [
+                mb_substr($row['sheet'], 0, 16),
+                $row['row_number'],
+                mb_substr($row['article'], 0, 18),
+                mb_substr($row['resolved_brand'] ?: $row['brand'], 0, 16),
+                mb_substr($row['name'], 0, 38),
+                $row['price'] !== null ? number_format($row['price'], 2, '.', '') : '-',
+                $row['retail_price'] !== null ? number_format($row['retail_price'], 2, '.', '') : '-',
+                $row['stock']['status'],
+                $row['action'],
+                $row['matched_sku'] ?? '-',
+                $row['confidence'] ?? '-',
+            ];
+
+            if ($this->option('teplodvor')) {
+                $data[] = $row['teplodvor_url'] ? mb_substr((string) $row['teplodvor_url'], 0, 56) : '-';
+                $data[] = $row['teplodvor_score'] !== null ? number_format((float) $row['teplodvor_score'], 2, '.', '') : '-';
+                $data[] = $row['teplodvor_category_id'] ?? '-';
+            }
+
+            return $data;
+        }, $rows);
     }
 
     private function sku(int $productId): string
