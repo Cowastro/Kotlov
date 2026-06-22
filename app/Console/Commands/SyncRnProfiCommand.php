@@ -950,6 +950,14 @@ class SyncRnProfiCommand extends Command
             }
         }
 
+        preg_match_all('/\b[A-Z0-9][A-Z0-9\-\/\.]{3,}\b/iu', $plain, $matches);
+        foreach ($matches[0] ?? [] as $token) {
+            $norm = $this->normArticle($token);
+            if (mb_strlen($norm) >= 4 && preg_match('/[A-Z]/i', $norm) && preg_match('/\d/', $norm)) {
+                $tokens[$norm] = true;
+            }
+        }
+
         preg_match_all('/\b\d{5,8}\b/u', $plain, $matches);
         foreach ($matches[0] ?? [] as $token) {
             $tokens[$this->normArticle($token)] = true;
@@ -1048,7 +1056,8 @@ class SyncRnProfiCommand extends Command
                 $debugPages[] = $url;
             }
 
-            $pageTokens = $this->extractSupplierArticleTokens($html . ' ' . $url);
+            $pageText = $html . ' ' . $url;
+            $pageTokens = $this->extractSupplierArticleTokens($pageText);
             if ($debug && count($debugTokens) < 40) {
                 foreach ($pageTokens as $token) {
                     $debugTokens[$token] = true;
@@ -1058,8 +1067,9 @@ class SyncRnProfiCommand extends Command
                 }
             }
             $tokens = array_flip($pageTokens);
+            $normalisedPage = $this->normArticle(html_entity_decode(strip_tags($pageText) . ' ' . $pageText, ENT_QUOTES | ENT_HTML5, 'UTF-8'));
             foreach (array_keys($targetArticles) as $article) {
-                if (! isset($tokens[$article])) {
+                if (! isset($tokens[$article]) && ! str_contains($normalisedPage, $article)) {
                     continue;
                 }
                 $matches[$article] = [
