@@ -146,7 +146,7 @@ return [
                 'links' => [
                     ['name' => 'Камины',    'url' => '/kaminy'],
                     ['name' => 'Дымоходы', 'url' => '/dymohody'],
-                    ['name' => 'Для бани',  'url' => '/dlya-bani'],
+                    ['name' => 'Для бани',  'url' => '/pechi-dlya-bani'],
                 ],
             ],
         ],
@@ -165,7 +165,7 @@ return [
                 'title' => 'Дополнительно',
                 'links' => [
                     ['name' => 'Аксессуары',           'url' => '/aksessuary-kaminy'],
-                    ['name' => 'Материалы для монтажа', 'url' => '/otoplenie'],
+                    ['name' => 'Комплектующие',         'url' => '/komplektuyushhie-dlya-otopleniya'],
                     ['name' => 'Дымоходы',             'url' => '/dymohody'],
                 ],
             ],
@@ -196,7 +196,7 @@ return [
                 'title' => 'По назначению',
                 'links' => [
                     ['name' => 'Для дома и дачи',   'url' => '/poverhnostnyie'],
-                    ['name' => 'Скважинные',         'url' => '/nasosy-pogruzhnye-skvazhinnye'],
+                    ['name' => 'Скважинные',         'url' => '/skvajinnye-nasosy'],
                     ['name' => 'Для отопления',      'url' => '/tsirkulyatsionnyie'],
                     ['name' => 'Насосные станции',   'url' => '/nasosnyie-stantsii'],
                 ],
@@ -262,9 +262,9 @@ return [
             'brands' => ['Gefest', 'Термофор', 'TMF', 'Везувий'],
             'banner' => ['img' => 'banners/banner-fireplace1.jpg', 'url' => '/pechki', 'title' => 'Печи и камины'],
             'cta' => [
-                ['name' => 'Камины',          'url' => '/kaminy'],
-                ['name' => 'Дымоходы',        'url' => '/dymohody'],
-                ['name' => 'Для бани',        'url' => '/dlya-bani'],
+                ['name' => 'Камины →',        'url' => '/kaminy'],
+                ['name' => 'Дымоходы →',      'url' => '/dymohody'],
+                ['name' => 'Для бани →',      'url' => '/pechi-dlya-bani'],
             ],
         ],
 
@@ -272,9 +272,9 @@ return [
             'brands' => ['Spartherm', 'Romotop', 'Heta', 'Keddy'],
             'banner' => ['img' => 'banners/banner-fireplace1.jpg', 'url' => '/kaminy', 'title' => 'Каминные топки и вставки'],
             'cta' => [
-                ['name' => 'Аксессуары',      'url' => '/aksessuary-kaminy'],
-                ['name' => 'Дымоходы',        'url' => '/dymohody'],
-                ['name' => 'Монтаж',          'url' => '/installers'],
+                ['name' => 'Аксессуары →',    'url' => '/aksessuary-kaminy'],
+                ['name' => 'Дымоходы →',      'url' => '/dymohody'],
+                ['name' => 'Монтаж →',        'url' => '/installers'],
             ],
         ],
 
@@ -288,15 +288,6 @@ return [
             ],
         ],
 
-        'dlya-bani' => [
-            'brands' => ['TMF', 'Термофор', 'Везувий', 'Русич'],
-            'banner' => ['img' => 'banners/banner-sale.jpg', 'url' => '/akcii', 'title' => 'Акции на банные товары'],
-            'cta' => [
-                ['name' => 'Дымоходы для бани →', 'url' => '/dymohody'],
-                ['name' => 'Монтаж →',            'url' => '/installers'],
-            ],
-        ],
-
         'bani-i-sauny' => [
             'brands' => ['TMF', 'Термофор', 'Везувий', 'Русич'],
             'banner' => ['img' => 'banners/banner-sale.jpg', 'url' => '/akcii', 'title' => 'Акции на банные товары'],
@@ -304,16 +295,6 @@ return [
                 ['name' => 'Дымоходы для бани →', 'url' => '/dymohody'],
                 ['name' => 'Монтаж →',            'url' => '/installers'],
                 ['name' => 'Все товары →',        'url' => '/bani-i-sauny'],
-            ],
-        ],
-
-        'otoplenie' => [
-            'brands' => ['Purmo', 'Kermi', 'ROMMER', 'Global'],
-            'banner' => ['img' => 'banners/baner_boiler.jpg', 'url' => '/otoplenie', 'title' => 'Системы отопления'],
-            'cta' => [
-                ['name' => 'Монтаж',          'url' => '/installers'],
-                ['name' => 'Акции',           'url' => '/akcii'],
-                ['name' => 'Все товары',      'url' => '/otoplenie'],
             ],
         ],
 
