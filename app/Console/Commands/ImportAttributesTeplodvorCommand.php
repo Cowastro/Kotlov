@@ -359,12 +359,14 @@ class ImportAttributesTeplodvorCommand extends Command
                     continue;
                 }
 
-                // Skip duplicate attr_id within same product (multiple spec keys → same attr)
-                if (isset($toWrite[$attr->id ?? $attr->name])) {
+                // Dedup: same attr may match multiple spec keys — keep first only.
+                // Cast id to int to avoid PHP treating int(501) and string("501") as different keys.
+                $attrKey = $attr->id !== null ? (int) $attr->id : 'name:' . $attr->name;
+                if (isset($toWrite[$attrKey])) {
                     continue;
                 }
 
-                $toWrite[$attr->id ?? $attr->name] = [
+                $toWrite[$attrKey] = [
                     'attr'   => $attr,
                     'parsed' => $parsed,
                 ];
@@ -381,7 +383,7 @@ class ImportAttributesTeplodvorCommand extends Command
             }
 
             // Delete existing values for this product's mapped attr ids, then re-insert
-            $attrIds = array_filter(array_map(fn ($k) => is_int($k) ? $k : null, array_keys($toWrite)));
+            $attrIds = array_filter(array_map(fn ($k) => is_numeric($k) ? (int) $k : null, array_keys($toWrite)));
             if ($apply && ! empty($attrIds)) {
                 DB::table('product_attribute_values')
                     ->where('product_id', $product->id)
