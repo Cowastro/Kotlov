@@ -118,7 +118,15 @@ class PriceSyncTeplodvorCommand extends Command
             }
             $stats['scanned']++;
 
+            // Try stored slug first; fall back to name-derived slug (old products often have
+            // truncated slugs like "kermi-fko-110504" instead of "radiator-kermi-fko-11500400")
             $url = $this->findMatch((string) $product->slug, $index, $minScore, $brandSlugTokens);
+            if (! $url) {
+                $nameSlug = \Illuminate\Support\Str::slug((string) $product->name);
+                if ($nameSlug !== (string) $product->slug) {
+                    $url = $this->findMatch($nameSlug, $index, $minScore, $brandSlugTokens);
+                }
+            }
 
             if (! $url) {
                 $this->line(sprintf('  [NO MATCH] %s', mb_substr($product->name, 0, 70)));
