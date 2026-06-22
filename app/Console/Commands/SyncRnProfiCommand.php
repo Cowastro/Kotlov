@@ -23,6 +23,8 @@ class SyncRnProfiCommand extends Command
         {--teplodvor : Match price rows to storage/teplodvor_index.json product cards}
         {--teplodvor-min-score=0.70 : Minimum slug score for Teplodvor matching}
         {--teplodvor-slug-filter= : Limit Teplodvor candidates by slug substring, defaults to resolved brand slug}
+        {--teplodvor-brand-page= : Teplodvor brand listing URL to crawl for article matches}
+        {--teplodvor-crawl-pages=40 : Maximum Teplodvor brand/listing pages to crawl}
         {--rn-profi-cards : Match price rows to rn-profi.by product cards by article}
         {--refresh-rn-profi-cards : Ignore cached RN-Profi card matches and re-check the site}
         {--rn-profi-crawl-pages=160 : Maximum RN-Profi site pages to crawl for card/article index}
@@ -802,6 +804,11 @@ class SyncRnProfiCommand extends Command
 
     private function fetchRnProfiPage(string $url): ?string
     {
+        return $this->fetchHttpPage($url);
+    }
+
+    private function fetchHttpPage(string $url): ?string
+    {
         $context = stream_context_create([
             'http' => [
                 'method' => 'GET',
@@ -945,15 +952,22 @@ class SyncRnProfiCommand extends Command
     private function attachTeplodvorMatches(array $rows): array
     {
         $index = $this->loadTeplodvorIndex();
+        $brandPageMatches = $this->crawlTeplodvorBrandPageMatches($rows);
         if ($index === []) {
             $this->warn('Teplodvor index is empty. Run: php artisan supplier:enrich-teplodvor --build-index');
-            return $rows;
+        } else {
+            $this->line(sprintf('Teplodvor index: %d product URLs.', count($index)));
         }
 
-        $this->line(sprintf('Teplodvor index: %d product URLs.', count($index)));
+        if ($brandPageMatches !== []) {
+            $this->line(sprintf('Teplodvor brand page article matches: %d.', count($brandPageMatches)));
+        }
 
-        return array_map(function (array $row) use ($index): array {
-            $match = $this->findTeplodvorMatch($row, $index);
+        return array_map(function (array $row) use ($index, $brandPageMatches): array {
+            $article = $this->normArticle((string) ($row['article'] ?? ''));
+            $match = $article !== '' && isset($brandPageMatches[$article])
+                ? $brandPageMatches[$article]
+                : $this->findTeplodvorMatch($row, $index);
 
             return $row + [
                 'teplodvor_url' => $match['url'] ?? null,
@@ -962,6 +976,109 @@ class SyncRnProfiCommand extends Command
                 'teplodvor_category_id' => isset($match['url']) ? $this->detectTeplodvorCategory((string) $match['url']) : null,
             ];
         }, $rows);
+    }
+
+    private function crawlTeplodvorBrandPageMatches(array $rows): array
+    {
+        $targetArticles = [];
+        foreach ($rows as $row) {
+            $article = $this->normArticle((string) ($row['article'] ?? ''));
+            if ($article !== '') {
+                $targetArticles[$article] = true;
+            }
+        }
+
+        if ($targetArticles === []) {
+            return [];
+        }
+
+        $brandPage = trim((string) $this->option('teplodvor-brand-page'));
+        if ($brandPage === '') {
+            $brand = '';
+            foreach ($rows as $row) {
+                $brand = (string) ($row['resolved_brand'] ?: $row['brand'] ?: '');
+                if ($brand !== '') {
+                    break;
+                }
+            }
+            if ($brand === '') {
+                return [];
+            }
+            $brandPage = 'https://www.teplodvor.by/shop/' . Str::slug($brand) . '/';
+        }
+
+        $maxPages = max(0, (int) $this->option('teplodvor-crawl-pages'));
+        if ($maxPages === 0) {
+            return [];
+        }
+
+        $queue = [$brandPage];
+        $visited = [];
+        $matches = [];
+        $pages = 0;
+
+        while ($queue !== [] && $pages < $maxPages && count($matches) < count($targetArticles)) {
+            $url = array_shift($queue);
+            $url = strtok((string) $url, '#') ?: (string) $url;
+            if (isset($visited[$url])) {
+                continue;
+            }
+            $visited[$url] = true;
+
+            $html = $this->fetchHttpPage($url);
+            if ($html === null) {
+                continue;
+            }
+            $pages++;
+
+            $tokens = array_flip($this->extractSupplierArticleTokens($html . ' ' . $url));
+            foreach (array_keys($targetArticles) as $article) {
+                if (! isset($tokens[$article])) {
+                    continue;
+                }
+                $matches[$article] = [
+                    'url' => $url,
+                    'score' => 1.0,
+                    'confidence' => 'brand_page_article',
+                ];
+            }
+
+            foreach ($this->extractTeplodvorInternalUrls($html) as $nextUrl) {
+                if (! isset($visited[$nextUrl]) && count($queue) < ($maxPages * 5)) {
+                    $queue[] = $nextUrl;
+                }
+            }
+        }
+
+        if ($pages > 0) {
+            $this->line(sprintf('Teplodvor brand crawl: %d pages from %s.', $pages, $brandPage));
+        }
+
+        return $matches;
+    }
+
+    private function extractTeplodvorInternalUrls(string $html): array
+    {
+        preg_match_all('/href=["\']([^"\']+)["\']/i', $html, $matches);
+        $urls = [];
+        foreach ($matches[1] ?? [] as $href) {
+            $url = html_entity_decode((string) $href, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+            if ($url === '' || str_starts_with($url, '#') || str_starts_with($url, 'javascript:')) {
+                continue;
+            }
+            if (str_starts_with($url, '/')) {
+                $url = 'https://www.teplodvor.by' . $url;
+            }
+            if (! str_starts_with($url, 'https://www.teplodvor.by/shop/')) {
+                continue;
+            }
+            if (str_contains($url, '/cart') || str_contains($url, '/compare') || str_contains($url, '/wishlist')) {
+                continue;
+            }
+            $urls[] = strtok($url, '#') ?: $url;
+        }
+
+        return array_values(array_unique($urls));
     }
 
     private function loadTeplodvorIndex(): array
@@ -1189,6 +1306,7 @@ class SyncRnProfiCommand extends Command
                 ['matched card URLs', count($matchedTeplodvor)],
                 ['missing card URLs', count($rows) - count($matchedTeplodvor)],
                 ['matched by article in slug', count(array_filter($matchedTeplodvor, fn (array $row): bool => ($row['teplodvor_confidence'] ?? '') === 'article_slug'))],
+                ['matched by brand page article', count(array_filter($matchedTeplodvor, fn (array $row): bool => ($row['teplodvor_confidence'] ?? '') === 'brand_page_article'))],
                 ['matched by slug score', count(array_filter($matchedTeplodvor, fn (array $row): bool => ($row['teplodvor_confidence'] ?? '') === 'slug_score'))],
             ]);
 
