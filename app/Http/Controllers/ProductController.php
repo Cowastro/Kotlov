@@ -61,7 +61,9 @@ class ProductController extends Controller
                 ->where('in_product', true)
                 ->whereNotIn('name', Product::supplierTechnicalAttributeNames()))
             ->orderBy('attribute_id')
-            ->get();
+            ->get()
+            ->unique(fn($val) => mb_strtolower(trim($val->attribute->name ?? '')))
+            ->values();
 
         // Похожие товары
         $relatedProducts = Product::where('category_id', $product->category_id)
