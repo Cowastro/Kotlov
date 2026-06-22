@@ -56,7 +56,8 @@ class DeduplicateProductsCommand extends Command
             foreach ($allIds as $id) {
                 $p = DB::table('products')->where('id', $id)->first();
                 $attrCount = DB::table('product_attribute_values')->where('product_id', $id)->count();
-                $imgCount  = DB::table('product_images')->where('product_id', $id)->count();
+                $imgs      = json_decode($p->images ?? '[]', true);
+                $imgCount  = is_array($imgs) ? count($imgs) : 0;
                 $scores[$id] =
                     ($attrCount * 2)
                     + ($imgCount * 3)
