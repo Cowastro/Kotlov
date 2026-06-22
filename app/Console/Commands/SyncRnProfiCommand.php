@@ -1029,6 +1029,7 @@ class SyncRnProfiCommand extends Command
         $debugPages = [];
         $debugUrls = [];
         $debugTokens = [];
+        $brandScope = $this->teplodvorBrandScope($brandPage, $rows);
 
         while ($queue !== [] && $pages < $maxPages && count($matches) < count($targetArticles)) {
             $url = array_shift($queue);
@@ -1068,7 +1069,10 @@ class SyncRnProfiCommand extends Command
                 ];
             }
 
-            $nextUrls = $this->extractTeplodvorInternalUrls($html);
+            $nextUrls = array_values(array_filter(
+                $this->extractTeplodvorInternalUrls($html),
+                fn (string $nextUrl): bool => $this->teplodvorUrlInBrandScope($nextUrl, $brandPage, $brandScope)
+            ));
             if ($debug && count($debugUrls) < 24) {
                 foreach ($nextUrls as $nextUrl) {
                     $debugUrls[] = $nextUrl;
@@ -1095,6 +1099,36 @@ class SyncRnProfiCommand extends Command
         }
 
         return $matches;
+    }
+
+    private function teplodvorBrandScope(string $brandPage, array $rows): string
+    {
+        $path = trim((string) (parse_url($brandPage, PHP_URL_PATH) ?: ''), '/');
+        $parts = array_values(array_filter(explode('/', $path)));
+        $last = end($parts);
+        if (is_string($last) && $last !== '' && $last !== 'shop') {
+            return Str::slug($last);
+        }
+
+        foreach ($rows as $row) {
+            $brand = (string) ($row['resolved_brand'] ?: $row['brand'] ?: '');
+            if ($brand !== '') {
+                return Str::slug($brand);
+            }
+        }
+
+        return '';
+    }
+
+    private function teplodvorUrlInBrandScope(string $url, string $brandPage, string $brandScope): bool
+    {
+        $url = strtok($url, '#') ?: $url;
+        $brandPage = strtok($brandPage, '#') ?: $brandPage;
+        if (rtrim($url, '/') === rtrim($brandPage, '/')) {
+            return true;
+        }
+
+        return $brandScope !== '' && str_contains(Str::slug($url), $brandScope);
     }
 
     private function extractTeplodvorInternalUrls(string $html): array
