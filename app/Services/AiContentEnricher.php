@@ -66,6 +66,37 @@ class AiContentEnricher
         };
     }
 
+    public function withModel(?string $model): self
+    {
+        $model = trim((string) $model);
+        if ($model === '' || $this->mode !== 'openai_compat') {
+            return $this;
+        }
+
+        $clone = clone $this;
+        $clone->model = $model;
+
+        return $clone;
+    }
+
+    public function withOpenAi(?string $model = null): self
+    {
+        $key = (string) env('OPENAI_API_KEY', '');
+        if ($key === '') {
+            return $this;
+        }
+
+        $clone = clone $this;
+        $clone->mode = 'openai_compat';
+        $clone->apiKey = $key;
+        $clone->apiUrl = (string) env('OPENAI_API_URL', 'https://api.openai.com/v1/chat/completions');
+        $clone->model = trim((string) $model) !== ''
+            ? trim((string) $model)
+            : (string) env('OPENAI_MATCH_MODEL', env('OPENAI_MODEL', 'gpt-5.5'));
+
+        return $clone;
+    }
+
     public function complete(string $prompt, int $maxTokens = 700): ?string
     {
         if ($this->mode === 'none') {
@@ -354,13 +385,19 @@ PROMPT;
 
     private function callOpenAiCompat(string $prompt, int $maxTokens = 1024): ?string
     {
+        $payload = [
+            'model'    => $this->model,
+            'messages' => [['role' => 'user', 'content' => $prompt]],
+        ];
+        if ($this->usesMaxCompletionTokens()) {
+            $payload['max_completion_tokens'] = $maxTokens;
+        } else {
+            $payload['max_tokens'] = $maxTokens;
+        }
+
         $response = Http::timeout(45)
             ->withToken($this->apiKey)
-            ->post($this->apiUrl, [
-                'model'      => $this->model,
-                'max_tokens' => $maxTokens,
-                'messages'   => [['role' => 'user', 'content' => $prompt]],
-            ]);
+            ->post($this->apiUrl, $payload);
 
         if (! $response->successful()) {
             \Illuminate\Support\Facades\Log::warning('AiContentEnricher HTTP ' . $response->status() . ': ' . mb_substr($response->body(), 0, 200));
@@ -368,5 +405,14 @@ PROMPT;
         }
 
         return trim($response->json('choices.0.message.content') ?? '') ?: null;
+    }
+
+    private function usesMaxCompletionTokens(): bool
+    {
+        $host = strtolower((string) parse_url($this->apiUrl, PHP_URL_HOST));
+        $model = strtolower($this->model);
+
+        return str_contains($host, 'api.openai.com')
+            && (str_starts_with($model, 'gpt-5') || str_starts_with($model, 'o1') || str_starts_with($model, 'o3') || str_starts_with($model, 'o4'));
     }
 }

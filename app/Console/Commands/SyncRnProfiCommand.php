@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Services\AiContentEnricher;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
@@ -31,6 +32,12 @@ class SyncRnProfiCommand extends Command
         {--refresh-rn-profi-cards : Ignore cached RN-Profi card matches and re-check the site}
         {--rn-profi-crawl-pages=160 : Maximum RN-Profi site pages to crawl for card/article index}
         {--rn-profi-card-limit=100 : Maximum uncached RN-Profi articles to check per run, 0 means no limit}
+        {--ai-match : Ask configured AI provider to prepare safe match/create decisions without database writes}
+        {--ai-match-limit=20 : Maximum rows to send to AI in this run, 0 means all current rows}
+        {--ai-min-confidence=85 : Confidence threshold for can_apply_after_review recommendations}
+        {--ai-provider= : AI provider override for matching: openai or configured}
+        {--ai-model= : Override AI model for matching; defaults to AI_MATCH_MODEL or current AI_MODEL}
+        {--ai-output= : Output path for AI JSON decisions; defaults to storage/app/reports/rn-profi}
         {--sync-retail-prices : Update products.price from detected retail price column}
         {--mark-missing-out-of-stock : Mark existing RN-Profi links absent from the sheet as out_of_stock}';
 
@@ -121,6 +128,9 @@ class SyncRnProfiCommand extends Command
         }
         if ($this->option('rn-profi-cards')) {
             $classified = $this->attachRnProfiCardMatches($classified);
+        }
+        if ($this->option('ai-match')) {
+            $classified = $this->attachAiMatchDecisions($classified);
         }
 
         return $apply ? $this->applyChanges($classified) : $this->showDryRun($classified);
@@ -1068,15 +1078,21 @@ class SyncRnProfiCommand extends Command
             }
             $tokens = array_flip($pageTokens);
             $normalisedPage = $this->normArticle(html_entity_decode(strip_tags($pageText) . ' ' . $pageText, ENT_QUOTES | ENT_HTML5, 'UTF-8'));
-            foreach (array_keys($targetArticles) as $article) {
-                if (! isset($tokens[$article]) && ! str_contains($normalisedPage, $article)) {
-                    continue;
+            if (! $this->looksLikeTeplodvorListingUrl($url, $brandPage)) {
+                $urlTokens = array_flip($this->extractSupplierArticleTokens($url));
+                foreach (array_keys($targetArticles) as $article) {
+                    if ($urlTokens !== [] && ! isset($urlTokens[$article])) {
+                        continue;
+                    }
+                    if ($urlTokens === [] && ! isset($tokens[$article]) && ! str_contains($normalisedPage, $article)) {
+                        continue;
+                    }
+                    $matches[$article] = [
+                        'url' => $url,
+                        'score' => 1.0,
+                        'confidence' => 'brand_page_article',
+                    ];
                 }
-                $matches[$article] = [
-                    'url' => $url,
-                    'score' => 1.0,
-                    'confidence' => 'brand_page_article',
-                ];
             }
 
             $nextUrls = array_values(array_filter(
@@ -1109,6 +1125,19 @@ class SyncRnProfiCommand extends Command
         }
 
         return $matches;
+    }
+
+    private function looksLikeTeplodvorListingUrl(string $url, string $brandPage): bool
+    {
+        $urlPath = trim((string) (parse_url($url, PHP_URL_PATH) ?: ''), '/');
+        $brandPath = trim((string) (parse_url($brandPage, PHP_URL_PATH) ?: ''), '/');
+
+        if (rtrim($urlPath, '/') === rtrim($brandPath, '/')) {
+            return true;
+        }
+
+        return $brandPath !== ''
+            && preg_match('#^' . preg_quote(rtrim($brandPath, '/'), '#') . '/page\d+/?$#i', $urlPath) === 1;
     }
 
     private function teplodvorBrandScope(string $brandPage, array $rows): string
@@ -1334,6 +1363,364 @@ class SyncRnProfiCommand extends Command
         }
 
         return null;
+    }
+
+    private function attachAiMatchDecisions(array $rows): array
+    {
+        $ai = $this->aiMatchProvider();
+        if (! $ai->isAvailable()) {
+            $this->error('No AI provider configured. Set ANTHROPIC_API_KEY or AI_API_KEY + AI_API_URL + AI_MODEL.');
+            return $rows;
+        }
+
+        $limit = max(0, (int) $this->option('ai-match-limit'));
+        $minConfidence = max(1, min(100, (int) $this->option('ai-min-confidence')));
+        $processableIndexes = array_keys($rows);
+        if ($limit > 0) {
+            $processableIndexes = array_slice($processableIndexes, 0, $limit);
+        }
+
+        $this->info(sprintf(
+            'AI match provider: %s. Sending %d of %d current rows.',
+            $ai->providerName(),
+            count($processableIndexes),
+            count($rows)
+        ));
+
+        $decisions = [];
+        foreach ($processableIndexes as $runIndex => $rowIndex) {
+            $row = $rows[$rowIndex];
+            $this->line(sprintf(
+                '[AI %d/%d] %s %s',
+                $runIndex + 1,
+                count($processableIndexes),
+                (string) ($row['article'] ?: '-'),
+                mb_substr((string) $row['name'], 0, 70)
+            ));
+
+            $candidates = $this->aiProductCandidates($row, 6);
+            $decision = $this->aiDecisionForRow($ai, $row, $candidates);
+            $confidence = max(0, min(100, (int) ($decision['confidence'] ?? 0)));
+            $decisionName = (string) ($decision['decision'] ?? 'manual_review');
+            $recommendedAction = in_array($decisionName, ['link_existing', 'create_new'], true) && $confidence >= $minConfidence
+                ? 'can_apply_after_review'
+                : 'keep_manual_review';
+
+            $rows[$rowIndex]['ai_decision'] = $decisionName;
+            $rows[$rowIndex]['ai_confidence'] = $confidence;
+            $rows[$rowIndex]['ai_reason'] = trim((string) ($decision['reason'] ?? ''));
+            $rows[$rowIndex]['ai_target_product_id'] = $decision['target_product_id'] ?? null;
+            $rows[$rowIndex]['ai_recommended_action'] = $recommendedAction;
+
+            $decisions[] = $this->aiDecisionReportRow($rows[$rowIndex], $candidates);
+        }
+
+        $this->writeAiDecisionReports($decisions);
+
+        return $rows;
+    }
+
+    private function aiMatchModel(): ?string
+    {
+        $option = trim((string) $this->option('ai-model'));
+        if ($option !== '') {
+            return $option;
+        }
+
+        $config = trim((string) config('services.ai.match_model', ''));
+        return $config !== '' ? $config : null;
+    }
+
+    private function aiMatchProvider(): AiContentEnricher
+    {
+        $provider = strtolower(trim((string) $this->option('ai-provider')));
+        $model = $this->aiMatchModel();
+        $ai = new AiContentEnricher();
+
+        return match ($provider) {
+            'openai' => $ai->withOpenAi($model),
+            default => $ai->withModel($model),
+        };
+    }
+
+    private function aiDecisionForRow(AiContentEnricher $ai, array $row, array $candidates): array
+    {
+        $payload = [
+            'price_row' => [
+                'sheet' => $row['sheet'] ?? '',
+                'row_number' => $row['row_number'] ?? null,
+                'article' => $row['article'] ?? '',
+                'brand' => $row['resolved_brand'] ?: ($row['brand'] ?? ''),
+                'name' => $row['name'] ?? '',
+                'category_text' => $row['category_text'] ?? '',
+                'wholesale_price_byn' => $row['price'] ?? null,
+                'retail_price_byn' => $row['retail_price'] ?? null,
+                'stock_status' => $row['stock']['status'] ?? null,
+                'stock_text' => $row['stock_text'] ?? '',
+            ],
+            'found_cards' => [
+                'teplodvor_url' => $row['teplodvor_url'] ?? null,
+                'teplodvor_score' => $row['teplodvor_score'] ?? null,
+                'teplodvor_category_id' => $row['teplodvor_category_id'] ?? null,
+                'rn_profi_url' => $row['rn_profi_url'] ?? null,
+                'rn_profi_title' => $row['rn_profi_title'] ?? null,
+            ],
+            'current_math_match' => [
+                'action' => $row['action'] ?? '',
+                'product_id' => $row['matched_product_id'] ?? null,
+                'sku' => $row['matched_sku'] ?? null,
+                'confidence' => $row['confidence'] ?? null,
+            ],
+            'existing_catalog_candidates' => $candidates,
+        ];
+
+        $json = json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT);
+        $prompt = <<<PROMPT
+You are an ecommerce catalog matching assistant for kotlov.by.
+
+Task: decide what to do with one RN-Profi supplier price-list row.
+Return ONLY valid JSON with keys:
+decision: one of "link_existing", "create_new", "manual_review", "skip"
+confidence: integer 0-100
+target_product_id: integer product id when decision is "link_existing", otherwise null
+reason: short Russian explanation for a manager
+
+Rules:
+- Supplier article is the strongest signal when it clearly appears in an existing product, Teplodvor card or RN-Profi card.
+- Brand, model, size, diameter, thread, color, left/right, straight/angle, section count and suffixes are important.
+- Do not link products that differ by size/modification.
+- If an exact existing product is not present but a reliable Teplodvor/RN-Profi card is found, prefer "create_new".
+- If price-list name is too short and there is no reliable card, use "manual_review".
+- Use "skip" only for rows that are not real products or have insufficient supplier data.
+- Never invent IDs. target_product_id must be one of existing_catalog_candidates ids or null.
+
+Data:
+{$json}
+PROMPT;
+
+        $response = $ai->complete($prompt, 900);
+        if (! $response) {
+            return [
+                'decision' => 'manual_review',
+                'confidence' => 0,
+                'target_product_id' => null,
+                'reason' => 'AI did not return a response',
+            ];
+        }
+
+        $data = json_decode($this->extractJson($response), true);
+        if (! is_array($data)) {
+            return [
+                'decision' => 'manual_review',
+                'confidence' => 0,
+                'target_product_id' => null,
+                'reason' => 'AI returned invalid JSON: ' . mb_substr($response, 0, 180),
+            ];
+        }
+
+        $allowed = ['link_existing', 'create_new', 'manual_review', 'skip'];
+        $decision = in_array(($data['decision'] ?? ''), $allowed, true)
+            ? (string) $data['decision']
+            : 'manual_review';
+        $targetProductId = isset($data['target_product_id']) && (int) $data['target_product_id'] > 0
+            ? (int) $data['target_product_id']
+            : null;
+        $candidateIds = array_map(fn (array $candidate): int => (int) $candidate['id'], $candidates);
+
+        if ($decision === 'link_existing' && ($targetProductId === null || ! in_array($targetProductId, $candidateIds, true))) {
+            $decision = 'manual_review';
+            $targetProductId = null;
+        }
+
+        return [
+            'decision' => $decision,
+            'confidence' => max(0, min(100, (int) ($data['confidence'] ?? 0))),
+            'target_product_id' => $targetProductId,
+            'reason' => trim((string) ($data['reason'] ?? '')),
+        ];
+    }
+
+    private function aiProductCandidates(array $row, int $limit): array
+    {
+        $brandId = (int) ($row['resolved_brand_id'] ?? 0);
+        $query = trim(implode(' ', array_filter([
+            $row['resolved_brand'] ?? '',
+            $row['article'] ?? '',
+            $row['name'] ?? '',
+            $row['category_text'] ?? '',
+            $row['rn_profi_title'] ?? '',
+            basename((string) ($row['teplodvor_url'] ?? '')),
+        ])));
+        $tokens = $this->aiMatchTokens($query);
+
+        $dbRows = DB::table('products as p')
+            ->leftJoin('brands as b', 'b.id', '=', 'p.brand_id')
+            ->leftJoin('categories as c', 'c.id', '=', 'p.category_id')
+            ->where('p.is_archived', false)
+            ->when($brandId > 0, fn ($q) => $q->where('p.brand_id', $brandId))
+            ->select([
+                'p.id',
+                'p.sku',
+                'p.name',
+                'p.price',
+                'p.category_id',
+                'b.name as brand',
+                'c.name as category',
+            ])
+            ->orderByDesc('p.id')
+            ->limit(600)
+            ->get();
+
+        $scored = [];
+        foreach ($dbRows as $product) {
+            $productText = trim(($product->sku ?? '') . ' ' . ($product->name ?? '') . ' ' . ($product->brand ?? '') . ' ' . ($product->category ?? ''));
+            $score = $this->aiCandidateScore($tokens, $productText);
+            if ($score <= 0 && ! str_contains($this->normArticle($productText), $this->normArticle((string) ($row['article'] ?? '')))) {
+                continue;
+            }
+
+            $scored[] = [
+                'id' => (int) $product->id,
+                'sku' => (string) $product->sku,
+                'name' => (string) $product->name,
+                'brand' => (string) ($product->brand ?? ''),
+                'category' => (string) ($product->category ?? ''),
+                'category_id' => $product->category_id !== null ? (int) $product->category_id : null,
+                'retail_price_byn' => $product->price !== null ? (float) $product->price : null,
+                'candidate_score' => $score,
+            ];
+        }
+
+        usort($scored, fn (array $left, array $right): int => $right['candidate_score'] <=> $left['candidate_score']);
+
+        return array_slice($scored, 0, $limit);
+    }
+
+    private function aiMatchTokens(string $text): array
+    {
+        $slug = Str::slug($text);
+        $parts = preg_split('/[^a-z0-9]+/i', $slug) ?: [];
+        return array_values(array_unique(array_filter(
+            $parts,
+            fn (string $token): bool => strlen($token) >= 2 && ! in_array($token, self::TEPLODVOR_STOPWORDS, true)
+        )));
+    }
+
+    private function aiCandidateScore(array $queryTokens, string $productText): int
+    {
+        if ($queryTokens === []) {
+            return 0;
+        }
+
+        $productTokens = array_flip($this->aiMatchTokens($productText));
+        $score = 0;
+        foreach ($queryTokens as $token) {
+            if (isset($productTokens[$token])) {
+                $score += ctype_digit($token) ? 6 : strlen($token);
+            }
+        }
+
+        return $score;
+    }
+
+    private function aiDecisionReportRow(array $row, array $candidates): array
+    {
+        return [
+            'sheet' => $row['sheet'] ?? '',
+            'row_number' => $row['row_number'] ?? null,
+            'article' => $row['article'] ?? '',
+            'brand' => $row['resolved_brand'] ?: ($row['brand'] ?? ''),
+            'name' => $row['name'] ?? '',
+            'category_text' => $row['category_text'] ?? '',
+            'wholesale_price_byn' => $row['price'] ?? null,
+            'retail_price_byn' => $row['retail_price'] ?? null,
+            'stock_status' => $row['stock']['status'] ?? null,
+            'teplodvor_url' => $row['teplodvor_url'] ?? null,
+            'rn_profi_url' => $row['rn_profi_url'] ?? null,
+            'math_action' => $row['action'] ?? '',
+            'math_product_id' => $row['matched_product_id'] ?? null,
+            'math_sku' => $row['matched_sku'] ?? null,
+            'ai_decision' => $row['ai_decision'] ?? null,
+            'ai_confidence' => $row['ai_confidence'] ?? null,
+            'ai_target_product_id' => $row['ai_target_product_id'] ?? null,
+            'ai_recommended_action' => $row['ai_recommended_action'] ?? null,
+            'ai_reason' => $row['ai_reason'] ?? null,
+            'candidate_ids' => implode(',', array_map(fn (array $candidate): int => (int) $candidate['id'], $candidates)),
+            'candidates' => $candidates,
+        ];
+    }
+
+    private function writeAiDecisionReports(array $decisions): void
+    {
+        $jsonPath = $this->aiOutputPath();
+        $dir = dirname($jsonPath);
+        if (! is_dir($dir)) {
+            mkdir($dir, 0755, true);
+        }
+
+        file_put_contents($jsonPath, json_encode([
+            'generated_at' => now()->toDateTimeString(),
+            'supplier' => self::SUPPLIER_CODE,
+            'decisions' => $decisions,
+        ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT));
+
+        $csvPath = preg_replace('/\.json$/i', '.csv', $jsonPath) ?: ($jsonPath . '.csv');
+        $this->writeAiDecisionCsv($csvPath, $decisions);
+
+        $counts = $this->counts($decisions, 'ai_decision');
+        $this->info('AI match decisions:');
+        $this->table(['decision', 'count'], $this->mapCounts($counts));
+        $this->info('AI JSON written: ' . $jsonPath);
+        $this->info('AI CSV written: ' . $csvPath);
+    }
+
+    private function aiOutputPath(): string
+    {
+        $path = trim((string) $this->option('ai-output'));
+        if ($path === '') {
+            return storage_path('app/reports/rn-profi/ai-match-rn-profi-' . now()->format('Ymd-His') . '.json');
+        }
+
+        if (! str_starts_with($path, DIRECTORY_SEPARATOR) && ! preg_match('/^[A-Z]:\\\\/i', $path)) {
+            $path = base_path($path);
+        }
+
+        return $path;
+    }
+
+    private function writeAiDecisionCsv(string $path, array $rows): void
+    {
+        $handle = fopen($path, 'wb');
+        if ($handle === false) {
+            return;
+        }
+
+        $headers = [
+            'sheet', 'row_number', 'article', 'brand', 'name', 'category_text',
+            'wholesale_price_byn', 'retail_price_byn', 'stock_status',
+            'teplodvor_url', 'rn_profi_url', 'math_action', 'math_product_id', 'math_sku',
+            'ai_decision', 'ai_confidence', 'ai_target_product_id', 'ai_recommended_action',
+            'ai_reason', 'candidate_ids',
+        ];
+        fputcsv($handle, $headers);
+        foreach ($rows as $row) {
+            fputcsv($handle, array_map(fn (string $header): mixed => $row[$header] ?? '', $headers));
+        }
+        fclose($handle);
+    }
+
+    private function extractJson(string $response): string
+    {
+        $response = trim($response);
+        $response = preg_replace('/```(?:json)?/i', '', $response) ?? $response;
+        $response = str_replace('```', '', $response);
+        $start = strpos($response, '{');
+        $end = strrpos($response, '}');
+        if ($start === false || $end === false || $end <= $start) {
+            return $response;
+        }
+
+        return substr($response, $start, $end - $start + 1);
     }
 
     private function showDryRun(array $rows): int
@@ -1925,6 +2312,12 @@ class SyncRnProfiCommand extends Command
             $headers[] = 'td_score';
             $headers[] = 'cat_id';
         }
+        if ($this->option('ai-match')) {
+            $headers[] = 'ai_decision';
+            $headers[] = 'ai_conf';
+            $headers[] = 'ai_target';
+            $headers[] = 'ai_action';
+        }
 
         return $headers;
     }
@@ -1955,6 +2348,13 @@ class SyncRnProfiCommand extends Command
                 $data[] = $row['teplodvor_url'] ? mb_substr((string) $row['teplodvor_url'], 0, 56) : '-';
                 $data[] = $row['teplodvor_score'] !== null ? number_format((float) $row['teplodvor_score'], 2, '.', '') : '-';
                 $data[] = $row['teplodvor_category_id'] ?? '-';
+            }
+
+            if ($this->option('ai-match')) {
+                $data[] = $row['ai_decision'] ?? '-';
+                $data[] = $row['ai_confidence'] ?? '-';
+                $data[] = $row['ai_target_product_id'] ?? '-';
+                $data[] = $row['ai_recommended_action'] ?? '-';
             }
 
             return $data;
