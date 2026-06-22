@@ -395,9 +395,12 @@ body {
  */
 .has-sub-nav-category .sub-nav-category {
     white-space: normal !important;
-    width: 700px !important;
-    max-width: min(700px, calc(100vw - 260px)) !important;
+    width: 920px !important;
+    max-width: min(920px, calc(100vw - 260px)) !important;
     box-sizing: border-box !important;
+    border-radius: 12px !important;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.12) !important;
+    border: 1px solid #f0f0f0 !important;
 }
 
 /* Flex-обёртка: ссылки слева, promo справа */
@@ -425,8 +428,8 @@ body {
 
 /* Правая promo-колонка */
 .mega-promo {
-    width: 200px;
-    min-width: 180px;
+    width: 230px;
+    min-width: 210px;
     flex-shrink: 0;
     border-left: 1px solid #f0f0f0;
     padding-left: 20px;

@@ -1226,7 +1226,7 @@
             var $customSelect = $this.next("div.tf-select-custom");
             $customSelect.text($this.children("option").eq(0).text());
             var $optionlist = $(
-                '<ul class="select-options" /><div class="header-select-option"><span>Select Categories</span><span class="close-option"><i class="icon-X2"></i></div>'
+                '<ul class="select-options" /><div class="header-select-option"><span>Все категории</span><span class="close-option"><i class="icon-X2"></i></div>'
             ).insertAfter($customSelect);
             for (var i = 0; i < selectOptions; i++) {
                 var value = $this.children("option").eq(i).val();
