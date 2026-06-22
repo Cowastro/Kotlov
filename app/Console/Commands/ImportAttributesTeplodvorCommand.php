@@ -243,6 +243,20 @@ class ImportAttributesTeplodvorCommand extends Command
             'Регулировка мощности'                  => ['create' => ['name' => 'Регулировка мощности', 'type' => 'check', 'suffix' => '']],
         ],
 
+        // ── Водяные конвекторы (внутрипольные) ───────────────────────────────────
+        324 => [
+            'Длина'                                 => ['create' => ['name' => 'Длина', 'type' => 'value', 'suffix' => 'мм']],
+            'Длина, мм'                             => ['create' => ['name' => 'Длина', 'type' => 'value', 'suffix' => 'мм']],
+            'Высота'                                => ['create' => ['name' => 'Высота', 'type' => 'value', 'suffix' => 'мм']],
+            'Высота, мм'                            => ['create' => ['name' => 'Высота', 'type' => 'value', 'suffix' => 'мм']],
+            'Ширина'                                => ['create' => ['name' => 'Ширина', 'type' => 'value', 'suffix' => 'мм']],
+            'Ширина, мм'                            => ['create' => ['name' => 'Ширина', 'type' => 'value', 'suffix' => 'мм']],
+            'Рабочее давление'                      => ['create' => ['name' => 'Рабочее давление', 'type' => 'value', 'suffix' => 'бар']],
+            'Тепловая мощность'                     => ['create' => ['name' => 'Тепловая мощность', 'type' => 'value', 'suffix' => 'Вт']],
+            'Тепловая мощность, Вт'                 => ['create' => ['name' => 'Тепловая мощность', 'type' => 'value', 'suffix' => 'Вт']],
+            'Вес'                                   => ['create' => ['name' => 'Вес', 'type' => 'value', 'suffix' => 'кг']],
+        ],
+
         // ── Прочие аксессуары (fallback) ─────────────────────────────────────────
         195 => [
             'Вес'                                   => ['create' => ['name' => 'Вес', 'type' => 'value', 'suffix' => 'кг']],
