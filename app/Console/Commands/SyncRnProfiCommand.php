@@ -33,6 +33,13 @@ class SyncRnProfiCommand extends Command
         {--refresh-rn-profi-cards : Ignore cached RN-Profi card matches and re-check the site}
         {--rn-profi-crawl-pages=160 : Maximum RN-Profi site pages to crawl for card/article index}
         {--rn-profi-card-limit=100 : Maximum uncached RN-Profi articles to check per run, 0 means no limit}
+        {--varmega-official : Match Varmega rows to official varmega.ru product cards by supplier article}
+        {--varmega-sitemap=https://varmega.ru/sitemap-iblock-43.xml : Official Varmega product sitemap URL}
+        {--varmega-refresh-index : Rebuild cached official Varmega sitemap index}
+        {--varmega-deep-index : Fetch official Varmega product pages and extract articles from page HTML}
+        {--varmega-deep-pages=0 : Maximum official Varmega pages to fetch for deep index, 0 means all}
+        {--varmega-auto-create : Mark exact official Varmega card matches as safe create_new decisions without AI}
+        {--varmega-auto-only : With --varmega-auto-create, write only official Varmega auto decisions and skip AI for remaining rows}
         {--ai-match : Ask configured AI provider to prepare safe match/create decisions without database writes}
         {--ai-match-limit=20 : Maximum rows to send to AI in this run, 0 means all current rows}
         {--ai-batch-size=1 : Send this many rows in one AI request for faster local audits}
@@ -54,6 +61,7 @@ class SyncRnProfiCommand extends Command
     private const DEFAULT_SHEET_URL = 'https://docs.google.com/spreadsheets/d/1g9C8C7JMO0zQGXdQRCWVQoldSOW6Fyljnd-QJYpTvnQ/edit?gid=1126489059#gid=1126489059';
     private const CACHE_PATH = 'supplier-cache/rn-profi-pricelist.xlsx';
     private const RN_PROFI_CARD_CACHE = 'supplier-cache/rn-profi-card-index.json';
+    private const VARMEGA_OFFICIAL_INDEX_CACHE = 'supplier-cache/varmega-official-index.json';
     private const TEPLODVOR_INDEX_FILE = 'teplodvor_index.json';
 
     private const TEPLODVOR_CATEGORY_MAP = [
@@ -93,6 +101,8 @@ class SyncRnProfiCommand extends Command
     private array $indexByBrandModel = [];
     private array $availabilityFilterStats = [];
     private ?array $rnProfiCardCache = null;
+    private ?array $varmegaOfficialIndex = null;
+    private array $varmegaOfficialUrls = [];
     private ?array $teplodvorIndex = null;
 
     public function handle(): int
@@ -137,6 +147,9 @@ class SyncRnProfiCommand extends Command
         }
         if ($this->option('rn-profi-cards')) {
             $classified = $this->attachRnProfiCardMatches($classified);
+        }
+        if ($this->option('varmega-official')) {
+            $classified = $this->attachVarmegaOfficialMatches($classified);
         }
         if ($this->option('ai-match')) {
             $classified = $this->attachAiMatchDecisions($classified);
@@ -834,12 +847,12 @@ class SyncRnProfiCommand extends Command
         return $this->fetchHttpPage($url);
     }
 
-    private function fetchHttpPage(string $url): ?string
+    private function fetchHttpPage(string $url, int $timeout = 25): ?string
     {
         $context = stream_context_create([
             'http' => [
                 'method' => 'GET',
-                'timeout' => 25,
+                'timeout' => max(3, $timeout),
                 'follow_location' => 1,
                 'max_redirects' => 5,
                 'header' => "User-Agent: Mozilla/5.0 (compatible; KotlovBot/1.0)\r\nAccept: text/html,*/*\r\n",
@@ -983,6 +996,203 @@ class SyncRnProfiCommand extends Command
         }
 
         return array_values(array_keys($tokens));
+    }
+
+    private function attachVarmegaOfficialMatches(array $rows): array
+    {
+        $index = $this->loadVarmegaOfficialIndex();
+        if ($this->option('varmega-deep-index')) {
+            $index = $this->deepenVarmegaOfficialIndex($index, $rows);
+        }
+        if ($index === []) {
+            $this->warn('Official Varmega index is empty. Check sitemap URL or run with --varmega-refresh-index.');
+        } else {
+            $this->line(sprintf('Official Varmega index: %d article URLs.', count($index)));
+        }
+
+        return array_map(function (array $row) use ($index): array {
+            $article = $this->normArticle((string) ($row['article'] ?? ''));
+            $brand = $this->brandKey((string) ($row['resolved_brand'] ?: ($row['brand'] ?? '')));
+            $match = $article !== '' && $brand === $this->brandKey('Varmega') && isset($index[$article])
+                ? $index[$article]
+                : null;
+
+            return $row + [
+                'varmega_url' => $match['url'] ?? null,
+                'varmega_score' => $match ? 1.0 : null,
+                'varmega_confidence' => $match ? 'article_sitemap' : null,
+                'varmega_category_path' => $match['category_path'] ?? null,
+            ];
+        }, $rows);
+    }
+
+    private function loadVarmegaOfficialIndex(): array
+    {
+        if ($this->varmegaOfficialIndex !== null && ! $this->option('varmega-refresh-index')) {
+            return $this->varmegaOfficialIndex;
+        }
+
+        $path = storage_path('app/' . self::VARMEGA_OFFICIAL_INDEX_CACHE);
+        if (! $this->option('varmega-refresh-index') && is_file($path)) {
+            $data = json_decode((string) file_get_contents($path), true);
+            $items = is_array($data) ? ($data['items'] ?? $data) : [];
+            $this->varmegaOfficialUrls = is_array($data) && is_array($data['urls'] ?? null) ? $data['urls'] : [];
+            if (is_array($items)) {
+                return $this->varmegaOfficialIndex = array_filter($items, fn ($item): bool => is_array($item) && ! empty($item['url']));
+            }
+        }
+
+        $sitemapUrl = trim((string) $this->option('varmega-sitemap'));
+        $xml = $this->fetchHttpPage($sitemapUrl);
+        if ($xml === null) {
+            return $this->varmegaOfficialIndex = [];
+        }
+
+        preg_match_all('#<loc>\s*([^<]+)\s*</loc>#i', $xml, $matches);
+        $index = [];
+        $urls = [];
+        foreach ($matches[1] ?? [] as $rawUrl) {
+            $url = html_entity_decode(trim((string) $rawUrl), ENT_QUOTES | ENT_HTML5, 'UTF-8');
+            if (! str_starts_with($url, 'https://varmega.ru/product/')) {
+                continue;
+            }
+            if ($this->looksLikeVarmegaProductUrl($url)) {
+                $urls[] = $url;
+            }
+
+            $tokens = $this->extractSupplierArticleTokens($url);
+            foreach ($tokens as $token) {
+                if (! str_starts_with($token, 'VM') || mb_strlen($token) < 5) {
+                    continue;
+                }
+
+                $candidate = [
+                    'url' => $url,
+                    'category_path' => $this->varmegaCategoryPath($url),
+                ];
+
+                if (! isset($index[$token]) || strlen((string) $candidate['url']) > strlen((string) ($index[$token]['url'] ?? ''))) {
+                    $index[$token] = $candidate;
+                }
+            }
+        }
+
+        ksort($index);
+        $this->varmegaOfficialUrls = array_values(array_unique($urls));
+        $dir = dirname($path);
+        if (! is_dir($dir)) {
+            mkdir($dir, 0755, true);
+        }
+        file_put_contents($path, json_encode([
+            'generated_at' => now()->toDateTimeString(),
+            'source' => $sitemapUrl,
+            'urls' => $this->varmegaOfficialUrls,
+            'items' => $index,
+        ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT));
+
+        return $this->varmegaOfficialIndex = $index;
+    }
+
+    private function deepenVarmegaOfficialIndex(array $index, array $rows): array
+    {
+        $targetArticles = [];
+        foreach ($rows as $row) {
+            $brand = $this->brandKey((string) ($row['resolved_brand'] ?: ($row['brand'] ?? '')));
+            $article = $this->normArticle((string) ($row['article'] ?? ''));
+            if ($brand === $this->brandKey('Varmega') && $article !== '' && ! isset($index[$article])) {
+                $targetArticles[$article] = true;
+            }
+        }
+
+        if ($targetArticles === [] || $this->varmegaOfficialUrls === []) {
+            return $index;
+        }
+
+        $maxPages = max(0, (int) $this->option('varmega-deep-pages'));
+        $pages = 0;
+        $matches = 0;
+
+        foreach ($this->varmegaOfficialUrls as $url) {
+            if ($maxPages > 0 && $pages >= $maxPages) {
+                break;
+            }
+            if ($targetArticles === []) {
+                break;
+            }
+
+            $html = $this->fetchHttpPage((string) $url, 8);
+            if ($html === null) {
+                continue;
+            }
+
+            $pages++;
+            $tokens = array_flip($this->extractSupplierArticleTokens($url . ' ' . $html));
+            foreach (array_keys($targetArticles) as $article) {
+                if (! isset($tokens[$article])) {
+                    continue;
+                }
+
+                $index[$article] = [
+                    'url' => (string) $url,
+                    'category_path' => $this->varmegaCategoryPath((string) $url),
+                ];
+                unset($targetArticles[$article]);
+                $matches++;
+            }
+
+            if ($pages % 50 === 0) {
+                $this->line(sprintf('Official Varmega deep index progress: fetched=%d, new_matches=%d, still_missing=%d.', $pages, $matches, count($targetArticles)));
+                $this->saveVarmegaOfficialIndex($index);
+            }
+        }
+
+        if ($pages > 0) {
+            $this->line(sprintf('Official Varmega deep index: fetched=%d, new_matches=%d, still_missing=%d.', $pages, $matches, count($targetArticles)));
+            $this->saveVarmegaOfficialIndex($index);
+        }
+
+        return $this->varmegaOfficialIndex = $index;
+    }
+
+    private function saveVarmegaOfficialIndex(array $index): void
+    {
+        $path = storage_path('app/' . self::VARMEGA_OFFICIAL_INDEX_CACHE);
+        $dir = dirname($path);
+        if (! is_dir($dir)) {
+            mkdir($dir, 0755, true);
+        }
+        ksort($index);
+        file_put_contents($path, json_encode([
+            'generated_at' => now()->toDateTimeString(),
+            'source' => trim((string) $this->option('varmega-sitemap')),
+            'urls' => $this->varmegaOfficialUrls,
+            'items' => $index,
+        ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT));
+    }
+
+    private function varmegaCategoryPath(string $url): string
+    {
+        $path = trim((string) (parse_url($url, PHP_URL_PATH) ?: ''), '/');
+        $parts = array_values(array_filter(explode('/', $path)));
+        if (($parts[0] ?? '') === 'product') {
+            array_shift($parts);
+        }
+        if (count($parts) > 1) {
+            array_pop($parts);
+        }
+
+        return implode('/', $parts);
+    }
+
+    private function looksLikeVarmegaProductUrl(string $url): bool
+    {
+        $path = trim((string) (parse_url($url, PHP_URL_PATH) ?: ''), '/');
+        $parts = array_values(array_filter(explode('/', $path)));
+        if (($parts[0] ?? '') === 'product') {
+            array_shift($parts);
+        }
+
+        return count($parts) >= 3;
     }
 
     private function attachTeplodvorMatches(array $rows): array
@@ -1376,27 +1586,64 @@ class SyncRnProfiCommand extends Command
 
     private function attachAiMatchDecisions(array $rows): array
     {
-        $ai = $this->aiMatchProvider();
-        if (! $ai->isAvailable()) {
-            $this->error('No AI provider configured. Set ANTHROPIC_API_KEY or AI_API_KEY + AI_API_URL + AI_MODEL.');
-            return $rows;
-        }
-
         $limit = max(0, (int) $this->option('ai-match-limit'));
         $minConfidence = max(1, min(100, (int) $this->option('ai-min-confidence')));
         $processableIndexes = array_keys($rows);
+        $decisions = [];
+
+        if ($this->option('varmega-auto-create')) {
+            foreach ($rows as $rowIndex => $row) {
+                if (empty($row['varmega_url']) || ($row['action'] ?? '') === 'matched') {
+                    continue;
+                }
+
+                $rows[$rowIndex]['ai_decision'] = 'create_new';
+                $rows[$rowIndex]['ai_confidence'] = 95;
+                $rows[$rowIndex]['ai_reason'] = 'Официальная карточка Varmega найдена по артикулу поставщика.';
+                $rows[$rowIndex]['ai_target_product_id'] = null;
+                $rows[$rowIndex]['ai_recommended_action'] = 'can_apply_after_review';
+                $decisions[] = $this->aiDecisionReportRow($rows[$rowIndex], []);
+            }
+
+            $processableIndexes = array_values(array_filter(
+                $processableIndexes,
+                fn (int $rowIndex): bool => empty($rows[$rowIndex]['ai_decision'])
+            ));
+
+            if ($this->option('varmega-auto-only')) {
+                $processableIndexes = [];
+            }
+        }
+
         if ($limit > 0) {
             $processableIndexes = array_slice($processableIndexes, 0, $limit);
         }
 
+        if ($processableIndexes === []) {
+            $this->info(sprintf('AI match provider was not needed. Auto decisions: %d.', count($decisions)));
+            $this->writeAiDecisionReports($decisions);
+
+            return $rows;
+        }
+
+        $ai = $this->aiMatchProvider();
+        if (! $ai->isAvailable()) {
+            $this->error('No AI provider configured. Set ANTHROPIC_API_KEY or AI_API_KEY + AI_API_URL + AI_MODEL.');
+            if ($decisions !== []) {
+                $this->writeAiDecisionReports($decisions);
+            }
+
+            return $rows;
+        }
+
         $this->info(sprintf(
-            'AI match provider: %s. Sending %d of %d current rows.',
+            'AI match provider: %s. Sending %d of %d current rows%s.',
             $ai->providerName(),
             count($processableIndexes),
-            count($rows)
+            count($rows),
+            $decisions !== [] ? sprintf(' (%d auto decisions already prepared)', count($decisions)) : ''
         ));
 
-        $decisions = [];
         $batchSize = max(1, min(25, (int) $this->option('ai-batch-size')));
         $candidateMap = [];
 
@@ -1515,10 +1762,10 @@ target_product_id: integer product id when decision is "link_existing", otherwis
 reason: short Russian explanation for a manager
 
 Rules:
-- Supplier article is the strongest signal when it clearly appears in an existing product, Teplodvor card or RN-Profi card.
+- Supplier article is the strongest signal when it clearly appears in an existing product, official Varmega card, Teplodvor card or RN-Profi card.
 - Brand, model, size, diameter, thread, color, left/right, straight/angle, section count and suffixes are important.
 - Do not link products that differ by size/modification.
-- If an exact existing product is not present but a reliable Teplodvor/RN-Profi card is found, prefer "create_new".
+- If an exact existing product is not present but a reliable official Varmega/Teplodvor/RN-Profi card is found, prefer "create_new".
 - If price-list name is too short and there is no reliable card, use "manual_review".
 - Use "skip" only for rows that are not real products or have insufficient supplier data.
 - Never invent IDs. target_product_id must be one of existing_catalog_candidates ids or null.
@@ -1566,6 +1813,9 @@ PROMPT;
                 'stock_text' => $row['stock_text'] ?? '',
             ],
             'found_cards' => [
+                'varmega_url' => $row['varmega_url'] ?? null,
+                'varmega_score' => $row['varmega_score'] ?? null,
+                'varmega_category_path' => $row['varmega_category_path'] ?? null,
                 'teplodvor_url' => $row['teplodvor_url'] ?? null,
                 'teplodvor_score' => $row['teplodvor_score'] ?? null,
                 'teplodvor_category_id' => $row['teplodvor_category_id'] ?? null,
@@ -1597,10 +1847,10 @@ target_product_id: integer product id when decision is "link_existing", otherwis
 reason: short Russian explanation for a manager
 
 Rules:
-- Supplier article is the strongest signal when it clearly appears in an existing product, Teplodvor card or RN-Profi card.
+- Supplier article is the strongest signal when it clearly appears in an existing product, official Varmega card, Teplodvor card or RN-Profi card.
 - Brand, model, size, diameter, thread, color, left/right, straight/angle, section count and suffixes are important.
 - Do not link products that differ by size/modification.
-- If an exact existing product is not present but a reliable Teplodvor/RN-Profi card is found, prefer "create_new".
+- If an exact existing product is not present but a reliable official Varmega/Teplodvor/RN-Profi card is found, prefer "create_new".
 - If price-list name is too short and there is no reliable card, use "manual_review".
 - Use "skip" only for rows that are not real products or have insufficient supplier data.
 - Never invent IDs. target_product_id must be one of that row's existing_catalog_candidates ids or null.
@@ -1665,6 +1915,7 @@ PROMPT;
             $row['name'] ?? '',
             $row['category_text'] ?? '',
             $row['rn_profi_title'] ?? '',
+            basename((string) ($row['varmega_url'] ?? '')),
             basename((string) ($row['teplodvor_url'] ?? '')),
         ])));
         $tokens = $this->aiMatchTokens($query);
@@ -1751,6 +2002,7 @@ PROMPT;
             'wholesale_price_byn' => $row['price'] ?? null,
             'retail_price_byn' => $row['retail_price'] ?? null,
             'stock_status' => $row['stock']['status'] ?? null,
+            'varmega_url' => $row['varmega_url'] ?? null,
             'teplodvor_url' => $row['teplodvor_url'] ?? null,
             'rn_profi_url' => $row['rn_profi_url'] ?? null,
             'math_action' => $row['action'] ?? '',
@@ -1814,7 +2066,7 @@ PROMPT;
         $headers = [
             'sheet', 'row_number', 'article', 'brand', 'name', 'category_text',
             'wholesale_price_byn', 'retail_price_byn', 'stock_status',
-            'teplodvor_url', 'rn_profi_url', 'math_action', 'math_product_id', 'math_sku',
+            'varmega_url', 'teplodvor_url', 'rn_profi_url', 'math_action', 'math_product_id', 'math_sku',
             'ai_decision', 'ai_confidence', 'ai_target_product_id', 'ai_recommended_action',
             'ai_reason', 'candidate_ids',
         ];
@@ -1889,6 +2141,19 @@ PROMPT;
             $this->table(['sheet', 'matched', 'missing', 'rows'], $this->rnProfiSheetRows($rows));
         }
 
+        if ($this->option('varmega-official')) {
+            $this->info('Official Varmega card matches:');
+            $matchedVarmega = array_values(array_filter($rows, fn (array $row): bool => ! empty($row['varmega_url'])));
+            $this->table(['metric', 'count'], [
+                ['matched card URLs', count($matchedVarmega)],
+                ['missing card URLs', count($rows) - count($matchedVarmega)],
+                ['matched by article sitemap', count(array_filter($matchedVarmega, fn (array $row): bool => ($row['varmega_confidence'] ?? '') === 'article_sitemap'))],
+            ]);
+
+            $this->info('Official Varmega matches by sheet:');
+            $this->table(['sheet', 'matched', 'missing', 'rows'], $this->varmegaOfficialSheetRows($rows));
+        }
+
         if ($this->option('teplodvor')) {
             $this->info('Teplodvor card matches:');
             $matchedTeplodvor = array_values(array_filter($rows, fn (array $row): bool => ! empty($row['teplodvor_url'])));
@@ -1935,6 +2200,14 @@ PROMPT;
             if ($teplodvorMatched !== []) {
                 $this->info('Teplodvor card examples:');
                 $this->table($this->exampleHeaders(), $this->exampleRows(array_slice($teplodvorMatched, 0, 20)));
+            }
+        }
+
+        if ($this->option('varmega-official')) {
+            $varmegaMatched = array_values(array_filter($rows, fn (array $row): bool => ! empty($row['varmega_url'])));
+            if ($varmegaMatched !== []) {
+                $this->info('Official Varmega card examples:');
+                $this->table($this->exampleHeaders(), $this->exampleRows(array_slice($varmegaMatched, 0, 20)));
             }
         }
 
@@ -2226,6 +2499,7 @@ PROMPT;
             'row_number' => (int) ($decision['row_number'] ?? 0),
             'source_url' => $this->decisionSourceUrl($decision) ?: self::SOURCE_URL,
             'raw_source' => [
+                'varmega_url' => $decision['varmega_url'] ?? null,
                 'teplodvor_url' => $decision['teplodvor_url'] ?? null,
                 'rn_profi_url' => $decision['rn_profi_url'] ?? null,
                 'ai_decision' => $decision['ai_decision'] ?? null,
@@ -2255,7 +2529,7 @@ PROMPT;
 
     private function decisionSourceUrl(array $decision): string
     {
-        foreach (['teplodvor_url', 'rn_profi_url'] as $field) {
+        foreach (['varmega_url', 'teplodvor_url', 'rn_profi_url'] as $field) {
             $url = trim((string) ($decision[$field] ?? ''));
             if ($url !== '' && filter_var($url, FILTER_VALIDATE_URL)) {
                 return $url;
@@ -2738,12 +3012,42 @@ PROMPT;
         );
     }
 
+    private function varmegaOfficialSheetRows(array $rows): array
+    {
+        $stats = [];
+        foreach ($rows as $row) {
+            $sheet = $row['sheet'];
+            $stats[$sheet] ??= ['matched' => 0, 'missing' => 0, 'rows' => 0];
+            if (! empty($row['varmega_url'])) {
+                $stats[$sheet]['matched']++;
+            } else {
+                $stats[$sheet]['missing']++;
+            }
+            $stats[$sheet]['rows']++;
+        }
+
+        return array_map(
+            fn (string $sheet, array $row): array => [
+                mb_substr($sheet, 0, 32),
+                $row['matched'],
+                $row['missing'],
+                $row['rows'],
+            ],
+            array_keys($stats),
+            array_values($stats)
+        );
+    }
+
     private function exampleHeaders(): array
     {
         $headers = ['sheet', 'row', 'article', 'brand', 'name', 'wholesale', 'retail', 'stock', 'action', 'matched_sku', 'confidence'];
         if ($this->option('rn-profi-cards')) {
             $headers[] = 'rn_profi';
             $headers[] = 'rn_title';
+        }
+        if ($this->option('varmega-official')) {
+            $headers[] = 'varmega';
+            $headers[] = 'vm_cat';
         }
         if ($this->option('teplodvor')) {
             $headers[] = 'teplodvor';
@@ -2780,6 +3084,11 @@ PROMPT;
             if ($this->option('rn-profi-cards')) {
                 $data[] = $row['rn_profi_url'] ? mb_substr((string) $row['rn_profi_url'], 0, 56) : '-';
                 $data[] = $row['rn_profi_title'] ? mb_substr((string) $row['rn_profi_title'], 0, 34) : '-';
+            }
+
+            if ($this->option('varmega-official')) {
+                $data[] = $row['varmega_url'] ? mb_substr((string) $row['varmega_url'], 0, 56) : '-';
+                $data[] = $row['varmega_category_path'] ? mb_substr((string) $row['varmega_category_path'], 0, 32) : '-';
             }
 
             if ($this->option('teplodvor')) {

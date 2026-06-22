@@ -59,6 +59,8 @@ class ProductSourceEnricher
             'specs_skipped' => 0,
             'attribute_values_saved' => 0,
             'service_found' => count($parsed['service_info']),
+            'documents_found' => count($parsed['documents']),
+            'video_found' => $parsed['video_url'] !== '' ? 1 : 0,
             'content_found' => $parsed['description'] !== '' ? 1 : 0,
             'short_description_found' => $parsed['short_description'] !== '' ? 1 : 0,
             'errors' => [],
@@ -69,6 +71,8 @@ class ProductSourceEnricher
             'description' => Str::limit(trim(strip_tags($parsed['description'] ?: $parsed['short_description'])), 700),
             'specs' => array_slice($parsed['specs'], 0, 8),
             'service_info' => array_slice($parsed['service_info'], 0, 5),
+            'documents' => array_slice($parsed['documents'], 0, 5),
+            'video_url' => $parsed['video_url'],
         ];
 
         if (($options['preview_only'] ?? false) === true) {
@@ -126,6 +130,19 @@ class ProductSourceEnricher
         } catch (\Throwable $e) {
             $stats['errors'][] = 'service: ' . $e->getMessage();
             Log::warning('Product source service enrichment failed', ['product_id' => $product->id, 'error' => $e->getMessage()]);
+        }
+
+        try {
+            if (($options['update_documents'] ?? true) === true && $parsed['documents'] !== []) {
+                $updates['documents'] = $this->sanitizeJsonArray($parsed['documents']);
+            }
+
+            if (($options['update_video'] ?? true) === true && $parsed['video_url'] !== '') {
+                $updates['video_url'] = $parsed['video_url'];
+            }
+        } catch (\Throwable $e) {
+            $stats['errors'][] = 'media: ' . $e->getMessage();
+            Log::warning('Product source media enrichment failed', ['product_id' => $product->id, 'error' => $e->getMessage()]);
         }
 
         try {
@@ -590,6 +607,8 @@ class ProductSourceEnricher
             'specs' => $this->extractSpecs($html),
             'service_info' => $this->extractServiceInfo($html),
             'images' => $this->extractImages($html, $url),
+            'documents' => $this->extractDocuments($html, $url),
+            'video_url' => $this->extractVideoUrl($html, $url),
         ];
 
         if ($this->isOzonUrl($url)) {
@@ -611,6 +630,14 @@ class ProductSourceEnricher
             'short_description' => $this->cleanText((string) ($parsed['short_description'] ?? '')),
             'specs' => $this->sanitizeJsonArray((array) ($parsed['specs'] ?? [])),
             'service_info' => $this->sanitizeJsonArray((array) ($parsed['service_info'] ?? [])),
+            'documents' => array_values(array_slice(array_filter(array_map(function ($document): array {
+                $document = is_array($document) ? $document : [];
+                $url = filter_var((string) ($document['url'] ?? ''), FILTER_VALIDATE_URL) ? (string) $document['url'] : '';
+                $label = $this->cleanText((string) ($document['label'] ?? ''));
+
+                return $url !== '' ? ['label' => $label !== '' ? $label : basename((string) parse_url($url, PHP_URL_PATH)), 'url' => $url] : [];
+            }, (array) ($parsed['documents'] ?? []))), 0, 12)),
+            'video_url' => filter_var((string) ($parsed['video_url'] ?? ''), FILTER_VALIDATE_URL) ? (string) $parsed['video_url'] : '',
             'images' => array_values(array_slice(array_filter(array_map(
                 fn ($url) => filter_var($url, FILTER_VALIDATE_URL) ? (string) $url : '',
                 (array) ($parsed['images'] ?? [])
@@ -962,6 +989,8 @@ class ProductSourceEnricher
             }
         }
 
+        $this->addSpecsFromAsproProperties($xpath, $specs);
+
         return array_slice(array_values($specs), 0, 80);
     }
 
@@ -1056,6 +1085,76 @@ class ProductSourceEnricher
                 }
             }
         }
+    }
+
+    private function addSpecsFromAsproProperties(\DOMXPath $xpath, array &$specs): void
+    {
+        $items = $xpath->query('//*[contains(concat(" ", normalize-space(@class), " "), " properties__item ")]');
+        if ($items === false) {
+            return;
+        }
+
+        foreach ($items as $item) {
+            $titleNode = $xpath->query('.//*[contains(concat(" ", normalize-space(@class), " "), " js-prop-title ")]', $item)?->item(0);
+            $valueNode = $xpath->query('.//*[contains(concat(" ", normalize-space(@class), " "), " js-prop-value ")]', $item)?->item(0);
+
+            if (! $titleNode || ! $valueNode) {
+                continue;
+            }
+
+            $this->addSpec($specs, $titleNode->textContent, $valueNode->textContent);
+        }
+    }
+
+    private function extractDocuments(string $html, string $pageUrl): array
+    {
+        $documents = [];
+
+        if (! preg_match_all('~<a\b[^>]*href=["\']([^"\']+\.(?:pdf|docx?|xlsx?|pptx?|zip|rar))(?:\?[^"\']*)?["\'][^>]*>([\s\S]*?)</a>~iu', $html, $matches, PREG_SET_ORDER)) {
+            return [];
+        }
+
+        foreach ($matches as $match) {
+            $url = $this->absoluteUrl($match[1], $pageUrl);
+            $path = (string) parse_url($url, PHP_URL_PATH);
+            if ($url === '' || str_contains($path, '/bitrix/') || str_contains($path, '/upload/resize_cache/')) {
+                continue;
+            }
+
+            $label = $this->cleanText(strip_tags($match[2]));
+            if ($label === '' || mb_strlen($label) < 2) {
+                $label = basename($path);
+            }
+
+            $documents[$url] = ['label' => Str::limit($label, 120, ''), 'url' => $url];
+        }
+
+        return array_values(array_slice($documents, 0, 12));
+    }
+
+    private function extractVideoUrl(string $html, string $pageUrl): string
+    {
+        $decoded = html_entity_decode(str_replace('\/', '/', $html), ENT_QUOTES | ENT_HTML5, 'UTF-8');
+
+        foreach ([
+            '~<iframe\b[^>]*src=["\']([^"\']+)["\']~iu',
+            '~<video\b[^>]*src=["\']([^"\']+)["\']~iu',
+            '~<source\b[^>]*src=["\']([^"\']+\.(?:mp4|webm|mov)(?:\?[^"\']*)?)["\']~iu',
+            '~https?://(?:www\.)?(?:youtube\.com|youtu\.be|rutube\.ru|vk\.com|vimeo\.com)/[^"\'\s<>]+~iu',
+        ] as $pattern) {
+            if (! preg_match_all($pattern, $decoded, $matches)) {
+                continue;
+            }
+
+            foreach ($matches[1] ?? $matches[0] as $url) {
+                $url = $this->absoluteUrl((string) $url, $pageUrl);
+                if (filter_var($url, FILTER_VALIDATE_URL) && ! str_contains($url, '/bitrix/')) {
+                    return $url;
+                }
+            }
+        }
+
+        return '';
     }
 
     private function extractServiceInfo(string $html): array
@@ -1265,6 +1364,14 @@ class ProductSourceEnricher
         if (preg_match('~(?:^|[/_-])\d{2,4}x\d{2,4}(?:[/_\.-]|$)~', $path)) {
             $variants[] = preg_replace('~(?<=/)\d{2,4}x\d{2,4}(?=/)~', '1000x1000', $url) ?? $url;
             $variants[] = preg_replace('~(?<=[_-])\d{2,4}x\d{2,4}(?=[_\.-])~', '1000x1000', $url) ?? $url;
+        }
+
+        if (preg_match('~/upload/resize_cache/iblock/([^/]+)/[^/]+/(.+)$~i', $path, $match)) {
+            $scheme = parse_url($url, PHP_URL_SCHEME) ?: 'https';
+            $host = parse_url($url, PHP_URL_HOST);
+            if (is_string($host) && $host !== '') {
+                $variants[] = $scheme . '://' . $host . '/upload/iblock/' . $match[1] . '/' . $match[2];
+            }
         }
 
         return array_values(array_filter(array_unique($variants), fn ($variant) => $variant !== $url));
