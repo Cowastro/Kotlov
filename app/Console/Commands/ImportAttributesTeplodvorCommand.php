@@ -245,6 +245,9 @@ class ImportAttributesTeplodvorCommand extends Command
 
         // ── Водяные конвекторы (внутрипольные) ───────────────────────────────────
         324 => [
+            'Тип'                                   => ['create' => ['name' => 'Тип', 'type' => 'value', 'suffix' => ''], 'raw' => true],
+            'Тип обогрева'                          => ['create' => ['name' => 'Тип обогрева', 'type' => 'value', 'suffix' => ''], 'raw' => true],
+            'Тип конвекции'                         => ['create' => ['name' => 'Тип конвекции', 'type' => 'value', 'suffix' => ''], 'raw' => true],
             'Длина'                                 => ['create' => ['name' => 'Длина', 'type' => 'value', 'suffix' => 'мм']],
             'Длина, мм'                             => ['create' => ['name' => 'Длина', 'type' => 'value', 'suffix' => 'мм']],
             'Высота'                                => ['create' => ['name' => 'Высота', 'type' => 'value', 'suffix' => 'мм']],
@@ -255,6 +258,10 @@ class ImportAttributesTeplodvorCommand extends Command
             'Тепловая мощность'                     => ['create' => ['name' => 'Тепловая мощность', 'type' => 'value', 'suffix' => 'Вт']],
             'Тепловая мощность, Вт'                 => ['create' => ['name' => 'Тепловая мощность', 'type' => 'value', 'suffix' => 'Вт']],
             'Вес'                                   => ['create' => ['name' => 'Вес', 'type' => 'value', 'suffix' => 'кг']],
+            'Страна'                                => ['create' => ['name' => 'Страна производства', 'type' => 'value', 'suffix' => ''], 'raw' => true],
+            'Страна производства'                   => ['create' => ['name' => 'Страна производства', 'type' => 'value', 'suffix' => ''], 'raw' => true],
+            'Гарантия мес'                          => ['create' => ['name' => 'Гарантия', 'type' => 'value', 'suffix' => 'мес']],
+            'Гарантия, мес'                         => ['create' => ['name' => 'Гарантия', 'type' => 'value', 'suffix' => 'мес']],
         ],
 
         // ── Прочие аксессуары (fallback) ─────────────────────────────────────────
