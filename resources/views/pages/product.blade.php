@@ -476,6 +476,8 @@
                 $rawSpecs = $attributeValues->count() === 0 && !empty($product->specs)
                     ? collect(is_array($product->specs) ? $product->specs : (json_decode($product->specs, true) ?? []))
                           ->filter(fn($s) => !empty($s['key']) && !empty($s['value']))
+                          ->unique(fn($s) => mb_strtolower(trim($s['key'])))
+                          ->values()
                     : collect();
                 $hasSpecs = $attributeValues->count() > 0 || $rawSpecs->count() > 0;
             @endphp
