@@ -33,21 +33,28 @@ class ImportAttributesTeplodvorCommand extends Command
     private const MAP = [
         // ── Электрические водонагреватели ─────────────────────────────────────────
         98 => [
-            'Объем'                                 => ['attr_id' => 493],        // value л
-            'Максимальная температура нагрева воды' => ['attr_id' => 499],        // value °C
-            'Максимальное давление воды'            => ['attr_id' => 505],        // value бар
-            'Дисплей'                               => ['attr_id' => 506],        // check
-            'Термостат безопасности'                => ['attr_id' => 509],        // check
-            'Вес'                                   => ['attr_id' => 512],        // value кг
-            'Гарантия на внутренний бак'            => ['attr_id' => 513],        // value (text)
-            'Гарантия на водонагреватель'           => ['attr_id' => 514],        // value (text)
-            'Теплоизоляция'                         => ['attr_id' => 517],        // check
-            'Материал теплоизоляции'                => ['attr_id' => 518, 'raw' => true],  // value (text, no digits)
-            'Антибактериальная защита'              => ['attr_id' => 587],        // check
-            'Высота'                                => ['attr_id' => 563],        // value мм
-            'Ширина'                                => ['attr_id' => 564],        // value мм
-            'Глубина'                               => ['attr_id' => 565],        // value мм
-            'Покрытие внутреннего бака'             => ['attr_id' => 503, 'raw' => true],  // value (text, no digits)
+            // teplodvor uses "Объем бака, л" — different from rusklimat "Объем"
+            'Объем'                                 => ['attr_id' => 493],
+            'Объем бака, л'                         => ['attr_id' => 493],
+            'Максимальная температура нагрева воды' => ['attr_id' => 499],
+            'Максимальное давление воды'            => ['attr_id' => 505],
+            'Дисплей'                               => ['attr_id' => 506],
+            'Термостат безопасности'                => ['attr_id' => 509],
+            'Вес'                                   => ['attr_id' => 512],
+            'Гарантия на внутренний бак'            => ['attr_id' => 513],
+            'Гарантия на водонагреватель'           => ['attr_id' => 514],
+            'Теплоизоляция'                         => ['attr_id' => 517],
+            'Материал теплоизоляции'                => ['attr_id' => 518, 'raw' => true],
+            'Антибактериальная защита'              => ['attr_id' => 587],
+            // teplodvor stores dimensions in CM, not MM — map to separate attrs with suffix "см"
+            'Высота'                                => ['attr_id' => 563],
+            'Ширина'                                => ['attr_id' => 564],
+            'Глубина'                               => ['attr_id' => 565],
+            'Высота, см'                            => ['create' => ['name' => 'Высота', 'type' => 'value', 'suffix' => 'см']],
+            'Ширина, см'                            => ['create' => ['name' => 'Ширина', 'type' => 'value', 'suffix' => 'см']],
+            'Глубина, см'                           => ['create' => ['name' => 'Глубина', 'type' => 'value', 'suffix' => 'см']],
+            'Покрытие внутреннего бака'             => ['attr_id' => 503, 'raw' => true],
+            'Ступени мощности нагрева, кВт'         => ['create' => ['name' => 'Мощность нагрева', 'type' => 'value', 'suffix' => 'кВт']],
         ],
 
         // ── Газовые котлы ─────────────────────────────────────────────────────────
@@ -102,17 +109,6 @@ class ImportAttributesTeplodvorCommand extends Command
             'Вес'                                   => ['create' => ['name' => 'Вес', 'type' => 'value', 'suffix' => 'кг']],
         ],
 
-        // ── Циркуляционные насосы ─────────────────────────────────────────────────
-        60 => [
-            'Мощность'                              => ['create' => ['name' => 'Мощность', 'type' => 'value', 'suffix' => 'Вт']],
-            'Потребляемая мощность'                 => ['create' => ['name' => 'Мощность', 'type' => 'value', 'suffix' => 'Вт']],
-            'Подача'                                => ['create' => ['name' => 'Подача', 'type' => 'value', 'suffix' => 'м³/ч']],
-            'Максимальная подача'                   => ['create' => ['name' => 'Подача', 'type' => 'value', 'suffix' => 'м³/ч']],
-            'Напор'                                 => ['create' => ['name' => 'Напор', 'type' => 'value', 'suffix' => 'м']],
-            'Максимальный напор'                    => ['create' => ['name' => 'Напор', 'type' => 'value', 'suffix' => 'м']],
-            'Вес'                                   => ['create' => ['name' => 'Вес', 'type' => 'value', 'suffix' => 'кг']],
-        ],
-
         // ── Насосы для повышения давления ─────────────────────────────────────────
         249 => [
             'Мощность'                              => ['create' => ['name' => 'Мощность', 'type' => 'value', 'suffix' => 'Вт']],
@@ -153,30 +149,57 @@ class ImportAttributesTeplodvorCommand extends Command
         // ── Стальные радиаторы (включая трубчатые Zehnder) ───────────────────────
         235 => [
             'Тепловая мощность'                     => ['create' => ['name' => 'Тепловая мощность', 'type' => 'value', 'suffix' => 'Вт']],
+            'Тепловая мощность, Вт'                 => ['create' => ['name' => 'Тепловая мощность', 'type' => 'value', 'suffix' => 'Вт']],
             'Мощность'                              => ['create' => ['name' => 'Тепловая мощность', 'type' => 'value', 'suffix' => 'Вт']],
+            'Макс. мощность'                        => ['create' => ['name' => 'Тепловая мощность', 'type' => 'value', 'suffix' => 'Вт']],
             'Теплоотдача при Δt = 70°C, Вт'        => ['create' => ['name' => 'Тепловая мощность', 'type' => 'value', 'suffix' => 'Вт']],
             'Рабочее давление'                      => ['create' => ['name' => 'Рабочее давление', 'type' => 'value', 'suffix' => 'бар']],
+            'Рабочее давление, атм'                 => ['create' => ['name' => 'Рабочее давление', 'type' => 'value', 'suffix' => 'бар']],
+            'Макс. рабочее давление'                => ['create' => ['name' => 'Рабочее давление', 'type' => 'value', 'suffix' => 'бар']],
             'Максимальное рабочее давление, бар'    => ['create' => ['name' => 'Рабочее давление', 'type' => 'value', 'suffix' => 'бар']],
             'Максимальная температура теплоносителя' => ['create' => ['name' => 'Макс. температура', 'type' => 'value', 'suffix' => '°C']],
             'Максимальная рабочая температура, °C'  => ['create' => ['name' => 'Макс. температура', 'type' => 'value', 'suffix' => '°C']],
+            'Макс. рабочая температура'             => ['create' => ['name' => 'Макс. температура', 'type' => 'value', 'suffix' => '°C']],
             'Межосевое расстояние, мм'              => ['create' => ['name' => 'Межосевое расстояние', 'type' => 'value', 'suffix' => 'мм']],
             'Высота'                                => ['create' => ['name' => 'Высота', 'type' => 'value', 'suffix' => 'мм']],
             'Высота, мм'                            => ['create' => ['name' => 'Высота', 'type' => 'value', 'suffix' => 'мм']],
             'Высота радиатора, мм'                  => ['create' => ['name' => 'Высота', 'type' => 'value', 'suffix' => 'мм']],
+            'Ширина'                                => ['create' => ['name' => 'Ширина', 'type' => 'value', 'suffix' => 'мм']],
+            'Ширина, мм'                            => ['create' => ['name' => 'Ширина', 'type' => 'value', 'suffix' => 'мм']],
             'Длина'                                 => ['create' => ['name' => 'Длина', 'type' => 'value', 'suffix' => 'мм']],
+            'Глубина'                               => ['create' => ['name' => 'Глубина', 'type' => 'value', 'suffix' => 'мм']],
+            'Толщина, мм'                           => ['create' => ['name' => 'Глубина', 'type' => 'value', 'suffix' => 'мм']],
+            'Толщина стали, мм'                     => ['create' => ['name' => 'Толщина стали', 'type' => 'value', 'suffix' => 'мм']],
+            'Объем воды'                            => ['create' => ['name' => 'Объём воды', 'type' => 'value', 'suffix' => 'л']],
+            'Объем воды, л'                         => ['create' => ['name' => 'Объём воды', 'type' => 'value', 'suffix' => 'л']],
             'Вес'                                   => ['create' => ['name' => 'Вес', 'type' => 'value', 'suffix' => 'кг']],
+            'Вес, кг'                               => ['create' => ['name' => 'Вес', 'type' => 'value', 'suffix' => 'кг']],
             'Вес одной секции, кг'                  => ['create' => ['name' => 'Вес', 'type' => 'value', 'suffix' => 'кг']],
+            'Диаметр подключения'                   => ['create' => ['name' => 'Диаметр подключения', 'type' => 'value', 'suffix' => 'дюйм']],
+            'Диаметр подключения, дюйм'             => ['create' => ['name' => 'Диаметр подключения', 'type' => 'value', 'suffix' => 'дюйм']],
         ],
 
         // ── Стальные радиаторы (старая категория) ────────────────────────────────
         87 => [
             'Тепловая мощность'                     => ['create' => ['name' => 'Тепловая мощность', 'type' => 'value', 'suffix' => 'Вт']],
+            'Тепловая мощность, Вт'                 => ['create' => ['name' => 'Тепловая мощность', 'type' => 'value', 'suffix' => 'Вт']],
             'Мощность'                              => ['create' => ['name' => 'Тепловая мощность', 'type' => 'value', 'suffix' => 'Вт']],
+            'Макс. мощность'                        => ['create' => ['name' => 'Тепловая мощность', 'type' => 'value', 'suffix' => 'Вт']],
             'Рабочее давление'                      => ['create' => ['name' => 'Рабочее давление', 'type' => 'value', 'suffix' => 'бар']],
+            'Рабочее давление, атм'                 => ['create' => ['name' => 'Рабочее давление', 'type' => 'value', 'suffix' => 'бар']],
+            'Макс. рабочее давление'                => ['create' => ['name' => 'Рабочее давление', 'type' => 'value', 'suffix' => 'бар']],
             'Максимальная температура теплоносителя' => ['create' => ['name' => 'Макс. температура', 'type' => 'value', 'suffix' => '°C']],
+            'Макс. рабочая температура'             => ['create' => ['name' => 'Макс. температура', 'type' => 'value', 'suffix' => '°C']],
             'Высота'                                => ['create' => ['name' => 'Высота', 'type' => 'value', 'suffix' => 'мм']],
+            'Высота, мм'                            => ['create' => ['name' => 'Высота', 'type' => 'value', 'suffix' => 'мм']],
+            'Ширина'                                => ['create' => ['name' => 'Ширина', 'type' => 'value', 'suffix' => 'мм']],
+            'Ширина, мм'                            => ['create' => ['name' => 'Ширина', 'type' => 'value', 'suffix' => 'мм']],
             'Длина'                                 => ['create' => ['name' => 'Длина', 'type' => 'value', 'suffix' => 'мм']],
+            'Глубина'                               => ['create' => ['name' => 'Глубина', 'type' => 'value', 'suffix' => 'мм']],
+            'Объем воды'                            => ['create' => ['name' => 'Объём воды', 'type' => 'value', 'suffix' => 'л']],
+            'Объем воды, л'                         => ['create' => ['name' => 'Объём воды', 'type' => 'value', 'suffix' => 'л']],
             'Вес'                                   => ['create' => ['name' => 'Вес', 'type' => 'value', 'suffix' => 'кг']],
+            'Вес, кг'                               => ['create' => ['name' => 'Вес', 'type' => 'value', 'suffix' => 'кг']],
         ],
 
         // ── Биметаллические радиаторы ─────────────────────────────────────────────
@@ -190,13 +213,106 @@ class ImportAttributesTeplodvorCommand extends Command
             'Объем секции'                          => ['create' => ['name' => 'Объём секции', 'type' => 'value', 'suffix' => 'л']],
         ],
 
-        // ── Конвекторы ────────────────────────────────────────────────────────────
+        // ── Конвекторы / электрические обогреватели ──────────────────────────────
         281 => [
             'Мощность'                              => ['create' => ['name' => 'Мощность', 'type' => 'value', 'suffix' => 'Вт']],
+            'Мощность, Вт'                          => ['create' => ['name' => 'Мощность', 'type' => 'value', 'suffix' => 'Вт']],
             'Тепловая мощность'                     => ['create' => ['name' => 'Мощность', 'type' => 'value', 'suffix' => 'Вт']],
+            'Площадь обогрева, м2'                  => ['create' => ['name' => 'Площадь обогрева', 'type' => 'value', 'suffix' => 'м²']],
+            'Площадь обогрева'                      => ['create' => ['name' => 'Площадь обогрева', 'type' => 'value', 'suffix' => 'м²']],
             'Высота'                                => ['create' => ['name' => 'Высота', 'type' => 'value', 'suffix' => 'мм']],
+            'Высота, мм'                            => ['create' => ['name' => 'Высота', 'type' => 'value', 'suffix' => 'мм']],
+            'Ширина'                                => ['create' => ['name' => 'Ширина', 'type' => 'value', 'suffix' => 'мм']],
+            'Ширина, мм'                            => ['create' => ['name' => 'Ширина', 'type' => 'value', 'suffix' => 'мм']],
             'Длина'                                 => ['create' => ['name' => 'Длина', 'type' => 'value', 'suffix' => 'мм']],
             'Вес'                                   => ['create' => ['name' => 'Вес', 'type' => 'value', 'suffix' => 'кг']],
+            'Термостат'                             => ['create' => ['name' => 'Термостат', 'type' => 'check', 'suffix' => '']],
+            'Таймер'                                => ['create' => ['name' => 'Таймер', 'type' => 'check', 'suffix' => '']],
+            'Регулировка температуры'               => ['create' => ['name' => 'Регулировка температуры', 'type' => 'check', 'suffix' => '']],
+            'Регулировка мощности'                  => ['create' => ['name' => 'Регулировка мощности', 'type' => 'check', 'suffix' => '']],
+        ],
+
+        // ── Водяные конвекторы (внутрипольные) ───────────────────────────────────
+        324 => [
+            'Тип'                                   => ['create' => ['name' => 'Тип', 'type' => 'value', 'suffix' => ''], 'raw' => true],
+            'Тип обогрева'                          => ['create' => ['name' => 'Тип обогрева', 'type' => 'value', 'suffix' => ''], 'raw' => true],
+            'Тип конвекции'                         => ['create' => ['name' => 'Тип конвекции', 'type' => 'value', 'suffix' => ''], 'raw' => true],
+            'Длина'                                 => ['create' => ['name' => 'Длина', 'type' => 'value', 'suffix' => 'мм']],
+            'Длина, мм'                             => ['create' => ['name' => 'Длина', 'type' => 'value', 'suffix' => 'мм']],
+            'Высота'                                => ['create' => ['name' => 'Высота', 'type' => 'value', 'suffix' => 'мм']],
+            'Высота, мм'                            => ['create' => ['name' => 'Высота', 'type' => 'value', 'suffix' => 'мм']],
+            'Ширина'                                => ['create' => ['name' => 'Ширина', 'type' => 'value', 'suffix' => 'мм']],
+            'Ширина, мм'                            => ['create' => ['name' => 'Ширина', 'type' => 'value', 'suffix' => 'мм']],
+            'Рабочее давление'                      => ['create' => ['name' => 'Рабочее давление', 'type' => 'value', 'suffix' => 'бар']],
+            'Тепловая мощность'                     => ['create' => ['name' => 'Тепловая мощность', 'type' => 'value', 'suffix' => 'Вт']],
+            'Тепловая мощность, Вт'                 => ['create' => ['name' => 'Тепловая мощность', 'type' => 'value', 'suffix' => 'Вт']],
+            'Вес'                                   => ['create' => ['name' => 'Вес', 'type' => 'value', 'suffix' => 'кг']],
+            'Страна'                                => ['create' => ['name' => 'Страна производства', 'type' => 'value', 'suffix' => ''], 'raw' => true],
+            'Страна производства'                   => ['create' => ['name' => 'Страна производства', 'type' => 'value', 'suffix' => ''], 'raw' => true],
+            'Гарантия мес'                          => ['create' => ['name' => 'Гарантия', 'type' => 'value', 'suffix' => 'мес']],
+            'Гарантия, мес'                         => ['create' => ['name' => 'Гарантия', 'type' => 'value', 'suffix' => 'мес']],
+        ],
+
+        // ── Циркуляционные насосы (cat=60 и подкатегория cat=248) ────────────────
+        60 => [
+            'Тип насоса'                             => ['create' => ['name' => 'Тип насоса', 'type' => 'value', 'suffix' => ''], 'raw' => true],
+            'Тип ротора'                             => ['create' => ['name' => 'Тип ротора', 'type' => 'value', 'suffix' => ''], 'raw' => true],
+            'Мощность, Вт'                           => ['create' => ['name' => 'Мощность', 'type' => 'value', 'suffix' => 'Вт']],
+            'Мощность'                               => ['create' => ['name' => 'Мощность', 'type' => 'value', 'suffix' => 'Вт']],
+            'Потребляемая мощность, Вт'              => ['create' => ['name' => 'Мощность', 'type' => 'value', 'suffix' => 'Вт']],
+            'Потребляемая мощность'                  => ['create' => ['name' => 'Мощность', 'type' => 'value', 'suffix' => 'Вт']],
+            'Напряжение, В'                          => ['create' => ['name' => 'Напряжение', 'type' => 'value', 'suffix' => 'В']],
+            'Напряжение в сети, В'                   => ['create' => ['name' => 'Напряжение', 'type' => 'value', 'suffix' => 'В']],
+            'Максимальный напор, м'                  => ['create' => ['name' => 'Максимальный напор', 'type' => 'value', 'suffix' => 'м']],
+            'Максимальный напор'                     => ['create' => ['name' => 'Максимальный напор', 'type' => 'value', 'suffix' => 'м']],
+            'Напор'                                  => ['create' => ['name' => 'Максимальный напор', 'type' => 'value', 'suffix' => 'м']],
+            'Производительность л/мин'               => ['create' => ['name' => 'Производительность', 'type' => 'value', 'suffix' => 'л/мин']],
+            'Производительность, max (л/мин)'        => ['create' => ['name' => 'Производительность', 'type' => 'value', 'suffix' => 'л/мин']],
+            'Производительность'                     => ['create' => ['name' => 'Производительность', 'type' => 'value', 'suffix' => 'л/мин']],
+            'Монтажная длина, мм'                    => ['create' => ['name' => 'Монтажная длина', 'type' => 'value', 'suffix' => 'мм']],
+            'Присоединение'                          => ['create' => ['name' => 'Присоединение', 'type' => 'value', 'suffix' => ''], 'raw' => true],
+            'Присоединительный размер, мм/дюйм'     => ['create' => ['name' => 'Присоединительный размер', 'type' => 'value', 'suffix' => ''], 'raw' => true],
+            'Присоединительный размер, мм (дюймов)' => ['create' => ['name' => 'Присоединительный размер', 'type' => 'value', 'suffix' => ''], 'raw' => true],
+            'Материал корпуса'                       => ['create' => ['name' => 'Материал корпуса', 'type' => 'value', 'suffix' => ''], 'raw' => true],
+            'Материал корпуса насоса'                => ['create' => ['name' => 'Материал корпуса', 'type' => 'value', 'suffix' => ''], 'raw' => true],
+            'Тип установки'                          => ['create' => ['name' => 'Тип установки', 'type' => 'value', 'suffix' => ''], 'raw' => true],
+            'Класс защиты'                           => ['create' => ['name' => 'Класс защиты', 'type' => 'value', 'suffix' => ''], 'raw' => true],
+            'Страна'                                 => ['create' => ['name' => 'Страна производства', 'type' => 'value', 'suffix' => ''], 'raw' => true],
+            'Страна производства'                    => ['create' => ['name' => 'Страна производства', 'type' => 'value', 'suffix' => ''], 'raw' => true],
+            'Гарантия мес'                           => ['create' => ['name' => 'Гарантия', 'type' => 'value', 'suffix' => 'мес']],
+            'Гарантия, мес'                          => ['create' => ['name' => 'Гарантия', 'type' => 'value', 'suffix' => 'мес']],
+            'Вес'                                    => ['create' => ['name' => 'Вес', 'type' => 'value', 'suffix' => 'кг']],
+        ],
+
+        // ── Циркуляционные (подкатегория) ────────────────────────────────────────
+        248 => [
+            'Тип насоса'                             => ['create' => ['name' => 'Тип насоса', 'type' => 'value', 'suffix' => ''], 'raw' => true],
+            'Тип ротора'                             => ['create' => ['name' => 'Тип ротора', 'type' => 'value', 'suffix' => ''], 'raw' => true],
+            'Мощность, Вт'                           => ['create' => ['name' => 'Мощность', 'type' => 'value', 'suffix' => 'Вт']],
+            'Мощность'                               => ['create' => ['name' => 'Мощность', 'type' => 'value', 'suffix' => 'Вт']],
+            'Потребляемая мощность, Вт'              => ['create' => ['name' => 'Мощность', 'type' => 'value', 'suffix' => 'Вт']],
+            'Потребляемая мощность'                  => ['create' => ['name' => 'Мощность', 'type' => 'value', 'suffix' => 'Вт']],
+            'Напряжение, В'                          => ['create' => ['name' => 'Напряжение', 'type' => 'value', 'suffix' => 'В']],
+            'Напряжение в сети, В'                   => ['create' => ['name' => 'Напряжение', 'type' => 'value', 'suffix' => 'В']],
+            'Максимальный напор, м'                  => ['create' => ['name' => 'Максимальный напор', 'type' => 'value', 'suffix' => 'м']],
+            'Максимальный напор'                     => ['create' => ['name' => 'Максимальный напор', 'type' => 'value', 'suffix' => 'м']],
+            'Напор'                                  => ['create' => ['name' => 'Максимальный напор', 'type' => 'value', 'suffix' => 'м']],
+            'Производительность л/мин'               => ['create' => ['name' => 'Производительность', 'type' => 'value', 'suffix' => 'л/мин']],
+            'Производительность, max (л/мин)'        => ['create' => ['name' => 'Производительность', 'type' => 'value', 'suffix' => 'л/мин']],
+            'Производительность'                     => ['create' => ['name' => 'Производительность', 'type' => 'value', 'suffix' => 'л/мин']],
+            'Монтажная длина, мм'                    => ['create' => ['name' => 'Монтажная длина', 'type' => 'value', 'suffix' => 'мм']],
+            'Присоединение'                          => ['create' => ['name' => 'Присоединение', 'type' => 'value', 'suffix' => ''], 'raw' => true],
+            'Присоединительный размер, мм/дюйм'     => ['create' => ['name' => 'Присоединительный размер', 'type' => 'value', 'suffix' => ''], 'raw' => true],
+            'Присоединительный размер, мм (дюймов)' => ['create' => ['name' => 'Присоединительный размер', 'type' => 'value', 'suffix' => ''], 'raw' => true],
+            'Материал корпуса'                       => ['create' => ['name' => 'Материал корпуса', 'type' => 'value', 'suffix' => ''], 'raw' => true],
+            'Материал корпуса насоса'                => ['create' => ['name' => 'Материал корпуса', 'type' => 'value', 'suffix' => ''], 'raw' => true],
+            'Тип установки'                          => ['create' => ['name' => 'Тип установки', 'type' => 'value', 'suffix' => ''], 'raw' => true],
+            'Класс защиты'                           => ['create' => ['name' => 'Класс защиты', 'type' => 'value', 'suffix' => ''], 'raw' => true],
+            'Страна'                                 => ['create' => ['name' => 'Страна производства', 'type' => 'value', 'suffix' => ''], 'raw' => true],
+            'Страна производства'                    => ['create' => ['name' => 'Страна производства', 'type' => 'value', 'suffix' => ''], 'raw' => true],
+            'Гарантия мес'                           => ['create' => ['name' => 'Гарантия', 'type' => 'value', 'suffix' => 'мес']],
+            'Гарантия, мес'                          => ['create' => ['name' => 'Гарантия', 'type' => 'value', 'suffix' => 'мес']],
+            'Вес'                                    => ['create' => ['name' => 'Вес', 'type' => 'value', 'suffix' => 'кг']],
         ],
 
         // ── Прочие аксессуары (fallback) ─────────────────────────────────────────
@@ -248,7 +364,7 @@ class ImportAttributesTeplodvorCommand extends Command
         $this->info(sprintf('Products to process: %d', $products->count()));
 
         $stats = ['products' => 0, 'values_created' => 0, 'attrs_created' => 0,
-                  'skipped_no_map' => 0, 'skipped_no_value' => 0, 'skipped_existing' => 0];
+                  'skipped_no_map' => 0, 'skipped_no_value' => 0];
 
         foreach ($products as $product) {
             $specs = json_decode($product->specs, true);
@@ -256,12 +372,18 @@ class ImportAttributesTeplodvorCommand extends Command
                 continue;
             }
 
-            // Convert [{key,value,unit}] array → flat dict key => 'value unit'
+            // Supports both [{key,value,unit}] array and {"key":"value"} flat object formats
             $data = [];
-            foreach ($specs as $row) {
-                $key = trim((string) ($row['key'] ?? ''));
-                $val = trim((string) ($row['value'] ?? ''));
-                $unit = trim((string) ($row['unit'] ?? ''));
+            foreach ($specs as $rowKey => $row) {
+                if (is_array($row)) {
+                    $key  = trim((string) ($row['key'] ?? ''));
+                    $val  = trim((string) ($row['value'] ?? ''));
+                    $unit = trim((string) ($row['unit'] ?? ''));
+                } else {
+                    $key  = trim((string) $rowKey);
+                    $val  = trim((string) $row);
+                    $unit = '';
+                }
                 if ($key !== '' && $val !== '') {
                     $data[$key] = $val . ($unit !== '' ? ' ' . $unit : '');
                 }
@@ -278,6 +400,9 @@ class ImportAttributesTeplodvorCommand extends Command
 
             $stats['products']++;
             $printedHeader = false;
+
+            // Collect rows to write first, then delete+insert atomically
+            $toWrite = [];
 
             foreach ($map as $specKey => $mapping) {
                 if (! array_key_exists($specKey, $data)) {
@@ -298,24 +423,46 @@ class ImportAttributesTeplodvorCommand extends Command
                     continue;
                 }
 
-                if (! $printedHeader) {
-                    $this->newLine();
-                    $this->line(sprintf('<fg=cyan>id=%d</> %s', $product->id, mb_substr($product->name, 0, 56)));
-                    $printedHeader = true;
+                // Dedup: same attr may match multiple spec keys — keep first only.
+                // Cast id to int to avoid PHP treating int(501) and string("501") as different keys.
+                $attrKey = $attr->id !== null ? (int) $attr->id : 'name:' . $attr->name;
+                if (isset($toWrite[$attrKey])) {
+                    continue;
                 }
+
+                $toWrite[$attrKey] = [
+                    'attr'   => $attr,
+                    'parsed' => $parsed,
+                ];
+            }
+
+            if (empty($toWrite)) {
+                continue;
+            }
+
+            if (! $printedHeader) {
+                $this->newLine();
+                $this->line(sprintf('<fg=cyan>id=%d</> %s', $product->id, mb_substr($product->name, 0, 56)));
+                $printedHeader = true;
+            }
+
+            // Delete existing values for this product's mapped attr ids, then re-insert
+            $attrIds = array_filter(array_map(fn ($k) => is_numeric($k) ? (int) $k : null, array_keys($toWrite)));
+            if ($apply && ! empty($attrIds)) {
+                DB::table('product_attribute_values')
+                    ->where('product_id', $product->id)
+                    ->whereIn('attribute_id', $attrIds)
+                    ->delete();
+            }
+
+            foreach ($toWrite as $attrKey => $row) {
+                $attr   = $row['attr'];
+                $parsed = $row['parsed'];
 
                 $display = $attr->type === 'check'
                     ? ($parsed === '1' ? 'Да' : 'Нет')
                     : $parsed . ($attr->suffix ? ' ' . $attr->suffix : '');
                 $this->line(sprintf('    %s = %s', $attr->name, $display));
-
-                if ($attr->id && DB::table('product_attribute_values')
-                        ->where('product_id', $product->id)
-                        ->where('attribute_id', $attr->id)
-                        ->exists()) {
-                    $stats['skipped_existing'] = ($stats['skipped_existing'] ?? 0) + 1;
-                    continue;
-                }
 
                 if ($apply && $attr->id) {
                     DB::table('product_attribute_values')->insert([

@@ -69,10 +69,67 @@ class ImportTeplodvorCatalogCommand extends Command
         'raditory/stalnye'                                           => 235,
         'raditory/bimetalicheskie'                                   => 236,
         'raditory/allyminevye'                                       => 233,
-        'raditory/konvektory'                                        => 281,
+        'raditory/chugunnye-batarei-otopleniya'                      => 234,
+        'raditory/konvektory'                                        => 324,  // водяные конвекторы (не электрические!)
         'raditory/trubchatye'                                        => 235,
         'raditory/obogrevateli'                                      => 202,
+        'raditory/dizaynerskie-radiatory'                            => 235,  // дизайнерские → стальные
+        'raditory/komplektuyuschie-k-radiatoram'                     => 195,
+        'konvektory/elektricheskie-konvektory'                       => 281,  // реальные электрические
+        'konvektory/gazovye'                                         => 195,
         'vodonagrevateli/bufernye-emkosti'                           => 91,
+        'obogrevateli/teplovye-pushki'                               => 280,
+        'obogrevateli/teploventilyatory'                             => 280,
+        'komplektuyuschie-otopleniya/grebenki'                       => 93,
+        'komplektuyuschie-otopleniya/gruppy-bezopasnosti'            => 195,
+        'komplektuyuschie-otopleniya/smesitelnye-klapany'            => 195,
+        'komplektuyuschie-otopleniya/nasosno-smesitelnye-uzly'       => 195,
+        'komplektuyuschie-otopleniya/nasosnye-gruppy'                => 195,
+        'komplektuyuschie-otopleniya/golovki-termostaticheskie'      => 58,
+        'komplektuyuschie-otopleniya/gorelki-dlya-kotlov'            => 195,
+        'komplektuyuschie-otopleniya/predokhranitelnye-klapany'      => 195,
+        'komplektuyuschie-otopleniya/teplonositeli-dlya-otopleniya'  => 296,
+        'komplektuyuschie-otopleniya/shkafy-kollektornye'            => 195,
+        'nasosy/skvazhannye-nasosy'                                  => 265,
+        'nasosy/kolodeznye-nasosy'                                   => 265,
+        'nasosy/fekalnye-nasosy'                                     => 265,
+        'nasosy/poverkhnostnye-nasosy'                               => 265,
+        'nasosy/komplektuyuschie-dlya-nasosov'                       => 195,
+        'teplyy-pol/nagrevatelnye-maty'                              => 109,
+        'teplyy-pol/bytovoy-obogrev'                                 => 109,
+        'teplyy-pol/nagrevatelnyy-kabel'                             => 109,
+        'teplyy-pol/termoregulyatory-datchiki'                       => 58,
+        'teplyy-pol/plenochnyy-pol'                                  => 109,
+        'teplyy-pol/obogrev-truboprovoda'                            => 109,
+        'teplyy-pol/teplye-vodyanye-poly'                            => 325,
+        'teplyy-pol/aksessuary'                                      => 109,
+        'teplyy-pol/infrakrasnye-lentochnye-maty'                    => 109,
+        'teplyy-pol/nagrevalnye-kovriki'                             => 109,
+
+        // ── Кондиционеры и климат ─────────────────────────────────────────────
+        'konditsionery/split-sistemy'                                => 304,
+        'konditsionery/mobilnye-konditsionery'                       => 304,
+        'konditsionery/kassetnye-konditsionery'                      => 304,
+        'konditsionery/kanalnye-konditsionery'                       => 304,
+        'konditsionery/napolno-potolochnye-konditsionery'            => 304,
+        'konditsionery/vnutrennie-bloki'                             => 304,
+        'konditsionery/vneshnie-bloki'                               => 304,
+        'konditsionery/multisplit-sistemy'                           => 304,
+        'konditsionery/promyshlennye-konditsionery'                  => 304,
+        'konditsionery'                                              => 304,
+
+        // ── Воздух (климатическая техника) ───────────────────────────────────
+        'uvlazhniteli-vozduha'                                       => 304,
+        'osushiteli-vozduha'                                         => 304,
+        'ochistitel-vozduha'                                         => 304,
+        'moyki-vozduha'                                              => 304,
+
+        // ── Вентиляция ────────────────────────────────────────────────────────
+        'ventilyatsiya'                                              => 304,
+        'ventilyatory'                                               => 304,
+
+        // ── Электрокамины ─────────────────────────────────────────────────────
+        'elektrokaminy'                                              => 104,
     ];
 
     private const SLUG_STOPWORDS = [
