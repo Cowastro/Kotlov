@@ -720,6 +720,38 @@ class SyncRnProfiCommand extends Command
             }
         }
 
+        if (! isset($columns['stock'])) {
+            $knownColumns = array_map('intval', array_values($columns));
+            $bestColumn = null;
+            $bestScore = 0;
+            $maxColumns = max(array_map('count', array_slice($rows, $headerIndex, 30)) ?: [0]);
+
+            for ($candidate = 0; $candidate < $maxColumns; $candidate++) {
+                if (in_array($candidate, $knownColumns, true)) {
+                    continue;
+                }
+
+                $score = 0;
+                foreach (array_slice($rows, $headerIndex + 1, 80) as $row) {
+                    $text = $this->clean((string) ($row[$candidate] ?? ''));
+                    if ($this->looksLikeStockText($text)) {
+                        $score += 3;
+                    } elseif ($text !== '' && preg_match('/^(0|1|yes|no|\+|\-)$/iu', $text)) {
+                        $score++;
+                    }
+                }
+
+                if ($score > $bestScore) {
+                    $bestScore = $score;
+                    $bestColumn = $candidate;
+                }
+            }
+
+            if ($bestColumn !== null && $bestScore >= 6) {
+                $columns['stock'] = (int) $bestColumn;
+            }
+        }
+
         return $columns;
     }
 
@@ -1500,7 +1532,8 @@ class SyncRnProfiCommand extends Command
                 ? $brandPageMatches[$article]
                 : $this->findTeplodvorMatch($row, $index);
 
-            if ($match !== null && ! $this->looksLikeSpecificTeplodvorProductUrl((string) ($match['url'] ?? ''), $row)) {
+            $trustedMatch = in_array((string) ($match['confidence'] ?? ''), ['article_slug', 'model_slug'], true);
+            if ($match !== null && ! $trustedMatch && ! $this->looksLikeSpecificTeplodvorProductUrl((string) ($match['url'] ?? ''), $row)) {
                 $match = null;
             }
 
@@ -1738,6 +1771,11 @@ class SyncRnProfiCommand extends Command
             }
         }
 
+        $modelMatch = $this->findTeplodvorModelMatch($row, $index);
+        if ($modelMatch !== null) {
+            return $modelMatch;
+        }
+
         $brand = (string) ($row['resolved_brand'] ?: $row['brand'] ?: '');
         $brandSlug = Str::slug($brand);
         $slugFilter = trim((string) $this->option('teplodvor-slug-filter'));
@@ -1786,6 +1824,41 @@ class SyncRnProfiCommand extends Command
         }
 
         return null;
+    }
+
+    private function findTeplodvorModelMatch(array $row, array $index): ?array
+    {
+        $brand = (string) ($row['resolved_brand'] ?: $row['brand'] ?: '');
+        $brandSlug = Str::slug($brand);
+        $model = $this->teplodvorModelKey($row, $brand);
+
+        if ($brandSlug === '' || strlen($model) < 5) {
+            return null;
+        }
+
+        $brandKey = $this->compactSlug($brandSlug);
+        foreach ($index as $slug => $url) {
+            $compactSlug = $this->compactSlug((string) $slug);
+            $compactUrl = $this->compactSlug((string) $url);
+            if (! str_contains($compactSlug . $compactUrl, $brandKey)) {
+                continue;
+            }
+            if (! str_contains($compactSlug . $compactUrl, $model)) {
+                continue;
+            }
+            return ['url' => $url, 'score' => 1.0, 'confidence' => 'model_slug'];
+        }
+
+        return null;
+    }
+
+    private function teplodvorModelKey(array $row, string $brand): string
+    {
+        $name = $this->clean((string) ($row['name'] ?? ''));
+        $name = preg_replace('/\b' . preg_quote($brand, '/') . '\b/iu', ' ', $name) ?? $name;
+        $name = preg_replace('/\b(model|модель)\b/iu', ' ', $name) ?? $name;
+
+        return $this->compactSlug(Str::slug($name));
     }
 
     private function looksLikeSpecificTeplodvorProductUrl(string $url, array $row): bool
@@ -2510,6 +2583,7 @@ PROMPT;
                 ['missing card URLs', count($rows) - count($matchedTeplodvor)],
                 ['matched by article in slug', count(array_filter($matchedTeplodvor, fn (array $row): bool => ($row['teplodvor_confidence'] ?? '') === 'article_slug'))],
                 ['matched by brand page article', count(array_filter($matchedTeplodvor, fn (array $row): bool => ($row['teplodvor_confidence'] ?? '') === 'brand_page_article'))],
+                ['matched by model in slug', count(array_filter($matchedTeplodvor, fn (array $row): bool => ($row['teplodvor_confidence'] ?? '') === 'model_slug'))],
                 ['matched by slug score', count(array_filter($matchedTeplodvor, fn (array $row): bool => ($row['teplodvor_confidence'] ?? '') === 'slug_score'))],
             ]);
 
@@ -3179,10 +3253,40 @@ PROMPT;
         return null;
     }
 
+    private function looksLikeStockText(string $text): bool
+    {
+        $low = mb_strtolower($this->clean($text));
+
+        return $low !== '' && (
+            str_contains($low, 'в наличии')
+            || str_contains($low, 'налич')
+            || str_contains($low, 'ожидается')
+            || str_contains($low, 'ожид')
+            || str_contains($low, 'поставка')
+            || str_contains($low, 'под заказ')
+            || str_contains($low, 'заказ')
+            || str_contains($low, 'нет')
+            || str_contains($low, 'отсут')
+            || str_contains($low, 'склад')
+        );
+    }
+
     private function stock(string $text, ?float $qty): array
     {
-        $low = mb_strtolower($text);
+        $low = mb_strtolower($this->clean($text));
         if ($qty !== null && $qty > 0) {
+            return ['status' => 'in_stock', 'in_stock' => true, 'delivery_days' => 0];
+        }
+        if (str_contains($low, 'ожидается') || str_contains($low, 'ожид') || str_contains($low, 'скоро')) {
+            return ['status' => 'expected', 'in_stock' => false, 'delivery_days' => 3];
+        }
+        if (str_contains($low, 'под заказ') || str_contains($low, 'заказ')) {
+            return ['status' => 'preorder', 'in_stock' => false, 'delivery_days' => null];
+        }
+        if (str_contains($low, 'нет') || str_contains($low, 'отсут') || str_contains($low, 'снят')) {
+            return ['status' => 'out_of_stock', 'in_stock' => false, 'delivery_days' => null];
+        }
+        if (str_contains($low, 'есть') || str_contains($low, 'налич') || str_contains($low, 'склад')) {
             return ['status' => 'in_stock', 'in_stock' => true, 'delivery_days' => 0];
         }
         if (str_contains($low, 'под заказ') || str_contains($low, 'заказ')) {
