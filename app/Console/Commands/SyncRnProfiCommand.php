@@ -34,6 +34,7 @@ class SyncRnProfiCommand extends Command
         {--teplodvor-auto-create : Mark confident Teplodvor card matches as safe create_new decisions without AI}
         {--teplodvor-auto-min-score=0.92 : Minimum Teplodvor score for --teplodvor-auto-create}
         {--teplodvor-auto-only : With --teplodvor-auto-create, write only Teplodvor auto decisions and skip AI for remaining rows}
+        {--teplodvor-probe-missing : Try likely Teplodvor product URLs for unmatched rows instead of rebuilding the full index}
         {--rn-profi-cards : Match price rows to rn-profi.by product cards by article}
         {--refresh-rn-profi-cards : Ignore cached RN-Profi card matches and re-check the site}
         {--rn-profi-crawl-pages=160 : Maximum RN-Profi site pages to crawl for card/article index}
@@ -1537,6 +1538,10 @@ class SyncRnProfiCommand extends Command
                 $match = null;
             }
 
+            if ($match === null && $this->option('teplodvor-probe-missing')) {
+                $match = $this->probeTeplodvorProductUrl($row);
+            }
+
             return $row + [
                 'teplodvor_url' => $match['url'] ?? null,
                 'teplodvor_score' => $match['score'] ?? null,
@@ -1850,6 +1855,85 @@ class SyncRnProfiCommand extends Command
         }
 
         return null;
+    }
+
+    private function probeTeplodvorProductUrl(array $row): ?array
+    {
+        $brand = (string) ($row['resolved_brand'] ?: $row['brand'] ?: '');
+        if ($this->brandKey($brand) !== $this->brandKey('Thermex')) {
+            return null;
+        }
+
+        $modelSlug = $this->teplodvorModelSlug($row, $brand);
+        if ($modelSlug === '') {
+            return null;
+        }
+
+        foreach ($this->teplodvorThermexUrlCandidates($modelSlug, $row) as $url) {
+            $html = $this->fetchHttpPage($url, 4);
+            if ($html === null || ! $this->teplodvorPageLooksLikeProduct($html, $row, $brand)) {
+                continue;
+            }
+
+            return ['url' => $url, 'score' => 1.0, 'confidence' => 'probed_model_url'];
+        }
+
+        return null;
+    }
+
+    private function teplodvorThermexUrlCandidates(string $modelSlug, array $row): array
+    {
+        $base = 'thermex-' . $modelSlug;
+        $nameKey = $this->compactSlug(Str::slug((string) ($row['name'] ?? '')));
+        $isElectric = str_contains($nameKey, 'quantum') || str_contains($nameKey, 'e9') || str_contains($nameKey, 'elektro');
+        $isWaterHeater = str_contains($nameKey, 'aqua') || str_contains($nameKey, 'boiler') || str_contains($nameKey, 'boiler') || str_contains($nameKey, 'vodonagrev');
+
+        $gasPaths = [
+            'kotly/gazovye/gazovyy-kotyol-' . $base,
+            'kotly/gazovye/gazovyy-kotel-' . $base,
+            'kotly/gazovye/kotel-gazovyy-' . $base,
+            'kotly/gazovye/' . $base,
+        ];
+        $electricPaths = [
+            'kotly/elektricheskie/elektrokotel-' . $base,
+            'kotly/elektricheskie/elektricheskiy-kotel-' . $base,
+            'kotly/elektricheskie/kotel-elektricheskiy-' . $base,
+            'kotly/elektricheskie/' . $base,
+        ];
+        $waterHeaterPaths = [
+            'vodonagrevateli/bojlery/' . $base,
+            'vodonagrevateli/protochnye/' . $base,
+        ];
+
+        $paths = match (true) {
+            $isElectric => $electricPaths,
+            $isWaterHeater => $waterHeaterPaths,
+            default => $gasPaths,
+        };
+
+        return array_map(fn (string $path): string => 'https://www.teplodvor.by/shop/' . $path, array_values(array_unique($paths)));
+    }
+
+    private function teplodvorPageLooksLikeProduct(string $html, array $row, string $brand): bool
+    {
+        $text = $this->compactSlug(Str::slug(html_entity_decode(strip_tags($html), ENT_QUOTES | ENT_HTML5, 'UTF-8')));
+        $model = $this->teplodvorModelKey($row, $brand);
+
+        return $model !== ''
+            && str_contains($text, $this->compactSlug(Str::slug($brand)))
+            && str_contains($text, $model)
+            && ! str_contains($text, 'stranitsanenaydena')
+            && ! str_contains($text, '404');
+    }
+
+    private function teplodvorModelSlug(array $row, string $brand): string
+    {
+        $name = $this->clean((string) ($row['name'] ?? ''));
+        $name = preg_replace('/\b' . preg_quote($brand, '/') . '\b/iu', ' ', $name) ?? $name;
+        $name = preg_replace('/\b(model|модель|ĐĽĐľĐ´ĐµĐ»ŃŚ)\b/iu', ' ', $name) ?? $name;
+        $slug = $this->normaliseTeplodvorSlug(Str::slug($name));
+
+        return trim($slug, '-');
     }
 
     private function teplodvorModelKey(array $row, string $brand): string
@@ -2584,6 +2668,7 @@ PROMPT;
                 ['matched by article in slug', count(array_filter($matchedTeplodvor, fn (array $row): bool => ($row['teplodvor_confidence'] ?? '') === 'article_slug'))],
                 ['matched by brand page article', count(array_filter($matchedTeplodvor, fn (array $row): bool => ($row['teplodvor_confidence'] ?? '') === 'brand_page_article'))],
                 ['matched by model in slug', count(array_filter($matchedTeplodvor, fn (array $row): bool => ($row['teplodvor_confidence'] ?? '') === 'model_slug'))],
+                ['matched by probed URL', count(array_filter($matchedTeplodvor, fn (array $row): bool => ($row['teplodvor_confidence'] ?? '') === 'probed_model_url'))],
                 ['matched by slug score', count(array_filter($matchedTeplodvor, fn (array $row): bool => ($row['teplodvor_confidence'] ?? '') === 'slug_score'))],
             ]);
 
