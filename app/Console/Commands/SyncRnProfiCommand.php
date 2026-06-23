@@ -50,6 +50,7 @@ class SyncRnProfiCommand extends Command
         {--apply-ai-decisions= : Read local AI decisions JSON and apply safe link/create actions without calling AI}
         {--enrich-created : After creating products from AI decisions, parse source URL for photos/specs/content}
         {--update-existing-categories : With --apply-ai-decisions, update categories for already linked supplier products from source URL mapping}
+        {--category-update-only : With --apply-ai-decisions, only create mapped categories and update existing supplier-linked products; do not link or create products}
         {--sync-retail-prices : Update products.price from detected retail price column}
         {--mark-missing-out-of-stock : Mark existing RN-Profi links absent from the sheet as out_of_stock}';
 
@@ -2374,6 +2375,7 @@ PROMPT;
         $supplierId = $this->ensureSupplier($now);
         $syncId = $this->ensureSync($now);
         $this->buildIndex();
+        $categoryUpdateOnly = (bool) $this->option('category-update-only');
         $stats = array_fill_keys([
             'safe_decisions', 'linked_existing', 'created_products', 'source_previews', 'enriched_created',
             'category_updated', 'skipped_manual_review', 'skipped_low_confidence', 'skipped_duplicate', 'errors',
@@ -2406,7 +2408,16 @@ PROMPT;
 
             $stats['safe_decisions']++;
             try {
+                if ($categoryUpdateOnly) {
+                    $this->categoryIdFromDecision($decision, $apply, $now);
+                }
+
                 if ($aiDecision === 'link_existing') {
+                    if ($categoryUpdateOnly) {
+                        $previewRows[] = [$decision['article'] ?? '-', $aiDecision, '-', '-', 'skip_category_update_only'];
+                        continue;
+                    }
+
                     $productId = (int) ($decision['ai_target_product_id'] ?? 0);
                     if ($productId <= 0 || ! DB::table('products')->where('id', $productId)->exists()) {
                         $stats['errors']++;
@@ -2432,6 +2443,11 @@ PROMPT;
                     }
                     $stats['skipped_duplicate']++;
                     $previewRows[] = [$decision['article'] ?? '-', $aiDecision, '-', '-', 'skip_duplicate_supplier_article'];
+                    continue;
+                }
+
+                if ($categoryUpdateOnly) {
+                    $previewRows[] = [$decision['article'] ?? '-', $aiDecision, '-', '-', 'skip_new_category_update_only'];
                     continue;
                 }
 
