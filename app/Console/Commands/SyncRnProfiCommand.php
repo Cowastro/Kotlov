@@ -19,6 +19,7 @@ class SyncRnProfiCommand extends Command
         {--offset=0 : Skip N parsed rows after brand/availability filters}
         {--price-file= : Local XLSX/CSV file, skips Google Sheet download}
         {--sheet-url= : Google Sheets URL}
+        {--google-csv-sheet= : Download only one Google Sheet tab as CSV, useful when full XLSX export is too large}
         {--brand=* : Process only these resolved brands, repeatable or comma-separated}
         {--exclude-brand=* : Skip these resolved brands, repeatable or comma-separated}
         {--available-only : Keep only rows that are in stock or have short delivery}
@@ -262,6 +263,11 @@ class SyncRnProfiCommand extends Command
         }
 
         $url = (string) ($this->option('sheet-url') ?: self::DEFAULT_SHEET_URL);
+        $csvSheet = trim((string) $this->option('google-csv-sheet'));
+        if ($csvSheet !== '') {
+            return $this->downloadGoogleCsvSheet($url, $csvSheet);
+        }
+
         $exportUrl = $this->toExportUrl($url);
         $path = storage_path('app/' . self::CACHE_PATH);
         $dir = dirname($path);
@@ -287,6 +293,55 @@ class SyncRnProfiCommand extends Command
         }
 
         $this->assertXlsxContent($content, $path);
+
+        file_put_contents($path, $content);
+
+        return $path;
+    }
+
+    private function downloadGoogleCsvSheet(string $url, string $sheetName): string
+    {
+        if (! preg_match('#/spreadsheets/d/([a-zA-Z0-9_-]+)#', $url, $m)) {
+            throw new \RuntimeException('Cannot detect Google spreadsheet id for --google-csv-sheet.');
+        }
+
+        $exportUrl = sprintf(
+            'https://docs.google.com/spreadsheets/d/%s/gviz/tq?tqx=out:csv&sheet=%s',
+            $m[1],
+            rawurlencode($sheetName)
+        );
+        $path = storage_path('app/supplier-cache/rn-profi-' . Str::slug($sheetName) . '.csv');
+        $dir = dirname($path);
+        if (! is_dir($dir)) {
+            mkdir($dir, 0755, true);
+        }
+
+        $this->line("Downloading RN-Profi Google CSV sheet '{$sheetName}': {$exportUrl}");
+        $context = stream_context_create([
+            'http' => [
+                'method' => 'GET',
+                'timeout' => 90,
+                'follow_location' => 1,
+                'max_redirects' => 10,
+                'header' => "User-Agent: Mozilla/5.0 (compatible; KotlovBot/1.0)\r\nAccept: text/csv,*/*\r\n",
+            ],
+            'ssl' => ['verify_peer' => false, 'verify_peer_name' => false],
+        ]);
+
+        $content = @file_get_contents($exportUrl, false, $context);
+        if ($content === false || strlen($content) < 32) {
+            throw new \RuntimeException("Google CSV sheet download failed for '{$sheetName}'.");
+        }
+
+        $preview = trim(preg_replace('/\s+/u', ' ', substr($content, 0, 220)) ?? '');
+        if (str_starts_with(ltrim($content), '<')) {
+            $debugPath = preg_replace('/\.csv$/i', '.download-debug.html', $path) ?: ($path . '.download-debug.html');
+            file_put_contents($debugPath, substr($content, 0, 4096));
+            throw new \RuntimeException(
+                "Google CSV returned HTML instead of CSV for '{$sheetName}'. "
+                . "Saved first bytes to {$debugPath}. Preview: " . mb_substr($preview, 0, 180)
+            );
+        }
 
         file_put_contents($path, $content);
 
