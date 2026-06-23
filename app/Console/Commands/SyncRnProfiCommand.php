@@ -29,6 +29,9 @@ class SyncRnProfiCommand extends Command
         {--teplodvor-brand-page= : Teplodvor brand listing URL to crawl for article matches}
         {--teplodvor-crawl-pages=40 : Maximum Teplodvor brand/listing pages to crawl}
         {--teplodvor-debug : Print Teplodvor crawl URL and article-token samples}
+        {--teplodvor-auto-create : Mark confident Teplodvor card matches as safe create_new decisions without AI}
+        {--teplodvor-auto-min-score=0.92 : Minimum Teplodvor score for --teplodvor-auto-create}
+        {--teplodvor-auto-only : With --teplodvor-auto-create, write only Teplodvor auto decisions and skip AI for remaining rows}
         {--rn-profi-cards : Match price rows to rn-profi.by product cards by article}
         {--refresh-rn-profi-cards : Ignore cached RN-Profi card matches and re-check the site}
         {--rn-profi-crawl-pages=160 : Maximum RN-Profi site pages to crawl for card/article index}
@@ -67,6 +70,19 @@ class SyncRnProfiCommand extends Command
     private const TEPLODVOR_INDEX_FILE = 'teplodvor_index.json';
 
     private const TEPLODVOR_CATEGORY_MAP = [
+        'kotly/gazovye' => 53,
+        'kotly/elektricheskie' => 55,
+        'vodonagrevateli/elektricheskie' => 98,
+        'vodonagrevateli/elekricheskie' => 98,
+        'vodonagrevateli/protochnye' => 98,
+        'vodonagrevateli/nakopitelnye' => 98,
+        'vodonagrevateli/kosvennye' => 100,
+        'vodonagrevateli/kombinirovannye' => 101,
+        'vodonagrevateli/gazovye-kolonki' => 298,
+        'vodonagrevateli/gazovye_kolonki' => 298,
+        'vodonagrevateli/gazovye kolonki' => 298,
+        'vodonagrevateli/gazovye' => 298,
+        'vodonagrevateli/bufernye-emkosti' => 91,
         'teplyy-pol/teplye-vodyanye-poly' => 325,
         'teplyy-pol/termoregulyatory-datchiki' => 58,
         'teplyy-pol' => 109,
@@ -590,6 +606,16 @@ class SyncRnProfiCommand extends Command
     private function classify(array $row): array
     {
         $brandId = $this->resolveBrand($row['brand'], trim($row['name'] . ' ' . $row['category_text'] . ' ' . $row['brand_hint'] . ' ' . $row['sheet']));
+        $resolvedBrand = $brandId ? ($this->brandById[$brandId] ?? '') : '';
+
+        if (($row['norm_article'] ?? '') === '') {
+            $syntheticArticle = $this->syntheticSupplierArticle($row, $resolvedBrand);
+            if ($syntheticArticle !== '') {
+                $row['article'] = $syntheticArticle;
+                $row['norm_article'] = $this->normArticle($syntheticArticle);
+            }
+        }
+
         $match = $this->match($row, $brandId);
         $stock = $this->stock($row['stock_text'], $row['qty']);
 
@@ -602,13 +628,31 @@ class SyncRnProfiCommand extends Command
 
         return $row + [
             'resolved_brand_id' => $brandId,
-            'resolved_brand' => $brandId ? ($this->brandById[$brandId] ?? '') : null,
+            'resolved_brand' => $resolvedBrand !== '' ? $resolvedBrand : null,
             'matched_product_id' => $match['product_id'] ?? null,
             'matched_sku' => $match['sku'] ?? null,
             'confidence' => $match['confidence'] ?? null,
             'stock' => $stock,
             'action' => $action,
         ];
+    }
+
+    private function syntheticSupplierArticle(array $row, string $resolvedBrand): string
+    {
+        if ($this->brandKey($resolvedBrand ?: (string) ($row['brand'] ?? '')) !== $this->brandKey('Thermex')) {
+            return '';
+        }
+
+        $name = trim((string) ($row['name'] ?? ''));
+        if ($name === '') {
+            return '';
+        }
+
+        $model = preg_replace('/\bthermex\b/iu', ' ', $name) ?? $name;
+        $model = preg_replace('/\s+/u', ' ', trim($model)) ?? trim($model);
+        $token = $this->normArticle($model);
+
+        return $token !== '' ? 'THERMEX-' . $token : '';
     }
 
     private function filterByBrandOptions(array $rows): array
@@ -1291,6 +1335,10 @@ class SyncRnProfiCommand extends Command
                 ? $brandPageMatches[$article]
                 : $this->findTeplodvorMatch($row, $index);
 
+            if ($match !== null && ! $this->looksLikeSpecificTeplodvorProductUrl((string) ($match['url'] ?? ''), $row)) {
+                $match = null;
+            }
+
             return $row + [
                 'teplodvor_url' => $match['url'] ?? null,
                 'teplodvor_score' => $match['score'] ?? null,
@@ -1575,6 +1623,33 @@ class SyncRnProfiCommand extends Command
         return null;
     }
 
+    private function looksLikeSpecificTeplodvorProductUrl(string $url, array $row): bool
+    {
+        $path = trim((string) (parse_url($url, PHP_URL_PATH) ?: ''), '/');
+        $parts = array_values(array_filter(explode('/', $path)));
+        if (($parts[0] ?? '') === 'shop') {
+            array_shift($parts);
+        }
+
+        $leaf = (string) end($parts);
+        if ($leaf === '') {
+            return false;
+        }
+
+        $brand = (string) ($row['resolved_brand'] ?: $row['brand'] ?: '');
+        if ($brand !== '' && $leaf === Str::slug($brand)) {
+            return false;
+        }
+
+        $nameSlug = $this->normaliseTeplodvorSlug(Str::slug((string) ($row['name'] ?? '')));
+        $brandTokens = $this->teplodvorTokens(Str::slug($brand), []);
+        $nameTokens = $this->teplodvorTokens($nameSlug, $brandTokens);
+        $leafTokens = $this->teplodvorTokens($leaf, []);
+        $overlap = array_values(array_intersect($nameTokens, $leafTokens));
+
+        return count($overlap) >= 2;
+    }
+
     private function teplodvorTokens(string $slug, array $brandTokens): array
     {
         $slug = $this->normaliseTeplodvorSlug($slug);
@@ -1687,6 +1762,37 @@ class SyncRnProfiCommand extends Command
             ));
 
             if ($this->option('varmega-auto-only')) {
+                $processableIndexes = [];
+            }
+        }
+
+        if ($this->option('teplodvor-auto-create')) {
+            $minTeplodvorScore = max(0.1, min(1.0, (float) $this->option('teplodvor-auto-min-score')));
+
+            foreach ($rows as $rowIndex => $row) {
+                if (! empty($row['ai_decision']) || empty($row['teplodvor_url']) || ($row['action'] ?? '') === 'matched') {
+                    continue;
+                }
+
+                $score = (float) ($row['teplodvor_score'] ?? 0);
+                if ($score < $minTeplodvorScore) {
+                    continue;
+                }
+
+                $rows[$rowIndex]['ai_decision'] = 'create_new';
+                $rows[$rowIndex]['ai_confidence'] = 92;
+                $rows[$rowIndex]['ai_reason'] = 'Teplodvor card matched by product name with high score.';
+                $rows[$rowIndex]['ai_target_product_id'] = null;
+                $rows[$rowIndex]['ai_recommended_action'] = 'can_apply_after_review';
+                $decisions[] = $this->aiDecisionReportRow($rows[$rowIndex], []);
+            }
+
+            $processableIndexes = array_values(array_filter(
+                $processableIndexes,
+                fn (int $rowIndex): bool => empty($rows[$rowIndex]['ai_decision'])
+            ));
+
+            if ($this->option('teplodvor-auto-only')) {
                 $processableIndexes = [];
             }
         }
@@ -2080,6 +2186,7 @@ PROMPT;
             'stock_status' => $row['stock']['status'] ?? null,
             'varmega_url' => $row['varmega_url'] ?? null,
             'teplodvor_url' => $row['teplodvor_url'] ?? null,
+            'teplodvor_category_id' => $row['teplodvor_category_id'] ?? null,
             'rn_profi_url' => $row['rn_profi_url'] ?? null,
             'math_action' => $row['action'] ?? '',
             'math_product_id' => $row['matched_product_id'] ?? null,
