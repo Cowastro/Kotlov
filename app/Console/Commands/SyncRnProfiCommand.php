@@ -195,6 +195,7 @@ class SyncRnProfiCommand extends Command
     private array $indexBySupplierArticle = [];
     private array $indexBySku = [];
     private array $indexByBrandModel = [];
+    private array $indexBySourceUrl = [];
     private array $availabilityFilterStats = [];
     private ?array $rnProfiCardCache = null;
     private ?array $varmegaOfficialIndex = null;
@@ -777,11 +778,20 @@ class SyncRnProfiCommand extends Command
             DB::table('supplier_products')
                 ->where('supplier_id', $supplierId)
                 ->whereNotNull('product_id')
-                ->get(['supplier_article', 'product_id'])
+                ->get(['supplier_article', 'product_id', 'source_url', 'raw'])
                 ->each(function (object $row): void {
+                    $productId = (int) $row->product_id;
                     $article = $this->normArticle((string) $row->supplier_article);
                     if ($article !== '') {
-                        $this->indexBySupplierArticle[$article] = (int) $row->product_id;
+                        $this->indexBySupplierArticle[$article] = $productId;
+                    }
+
+                    $this->indexSourceUrl((string) ($row->source_url ?? ''), $productId);
+
+                    $raw = json_decode((string) ($row->raw ?? ''), true);
+                    $source = is_array($raw) && is_array($raw['source'] ?? null) ? $raw['source'] : [];
+                    foreach (['varmega_url', 'teplodvor_url', 'rn_profi_url'] as $field) {
+                        $this->indexSourceUrl((string) ($source[$field] ?? ''), $productId);
                     }
                 });
         }
@@ -803,6 +813,42 @@ class SyncRnProfiCommand extends Command
                     }
                 }
             });
+    }
+
+    private function indexSourceUrl(string $url, int $productId): void
+    {
+        $key = $this->sourceUrlKey($url);
+        if ($key !== '' && $productId > 0) {
+            $this->indexBySourceUrl[$key] = $productId;
+        }
+    }
+
+    private function sourceUrlProductId(?string $url): ?int
+    {
+        $key = $this->sourceUrlKey((string) $url);
+        if ($key === '' || ! isset($this->indexBySourceUrl[$key])) {
+            return null;
+        }
+
+        return (int) $this->indexBySourceUrl[$key];
+    }
+
+    private function sourceUrlKey(string $url): string
+    {
+        $url = trim($url);
+        if ($url === '') {
+            return '';
+        }
+
+        $parts = parse_url($url);
+        if (! is_array($parts) || empty($parts['host'])) {
+            return rtrim(strtolower($url), '/');
+        }
+
+        $host = strtolower((string) $parts['host']);
+        $path = '/' . trim((string) ($parts['path'] ?? ''), '/');
+
+        return rtrim($host . $path, '/');
     }
 
     private function classify(array $row): array
@@ -2121,10 +2167,13 @@ class SyncRnProfiCommand extends Command
                     continue;
                 }
 
-                $rows[$rowIndex]['ai_decision'] = 'create_new';
-                $rows[$rowIndex]['ai_confidence'] = 92;
-                $rows[$rowIndex]['ai_reason'] = 'Teplodvor card matched by product name with high score.';
-                $rows[$rowIndex]['ai_target_product_id'] = null;
+                $existingProductId = $this->sourceUrlProductId((string) ($row['teplodvor_url'] ?? ''));
+                $rows[$rowIndex]['ai_decision'] = $existingProductId !== null ? 'link_existing' : 'create_new';
+                $rows[$rowIndex]['ai_confidence'] = $existingProductId !== null ? 98 : 92;
+                $rows[$rowIndex]['ai_reason'] = $existingProductId !== null
+                    ? 'Teplodvor card already exists in supplier links; link normalized RN-Profi row to existing product.'
+                    : 'Teplodvor card matched by product name with high score.';
+                $rows[$rowIndex]['ai_target_product_id'] = $existingProductId;
                 $rows[$rowIndex]['ai_recommended_action'] = 'can_apply_after_review';
                 $decisions[] = $this->aiDecisionReportRow($rows[$rowIndex], []);
             }
@@ -3021,6 +3070,20 @@ PROMPT;
                     continue;
                 }
 
+                $sourceUrl = $this->decisionSourceUrl($decision);
+                $existingBySourceProductId = $this->sourceUrlProductId($sourceUrl);
+                if ($aiDecision === 'create_new' && $existingBySourceProductId !== null) {
+                    if ($this->option('update-existing-categories') && $this->updateProductCategoryFromDecision($existingBySourceProductId, $decision, $apply, $now)) {
+                        $stats['category_updated']++;
+                    }
+                    if ($apply) {
+                        $this->upsertSupplierProduct($this->decisionToSupplierRow($decision, $existingBySourceProductId), $supplierId, $syncId, $now);
+                    }
+                    $stats['linked_existing']++;
+                    $previewRows[] = [$decision['article'] ?? '-', 'link_existing', $existingBySourceProductId, $this->sku($existingBySourceProductId), $apply ? 'linked_by_source_url' : 'would_link_by_source_url'];
+                    continue;
+                }
+
                 if ($categoryUpdateOnly) {
                     $previewRows[] = [$decision['article'] ?? '-', $aiDecision, '-', '-', 'skip_new_category_update_only'];
                     continue;
@@ -3028,7 +3091,6 @@ PROMPT;
 
                 $sourcePreview = [];
                 if ($aiDecision === 'create_new') {
-                    $sourceUrl = $this->decisionSourceUrl($decision);
                     if ($sourceUrl !== '') {
                         try {
                             $sourcePreview = app(ProductSourceEnricher::class)->preview($sourceUrl);
