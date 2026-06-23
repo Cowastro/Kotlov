@@ -850,11 +850,24 @@ class SyncRnProfiCommand extends Command
             return '';
         }
 
+        $name = $this->normaliseThermexModelText($name);
         $model = preg_replace('/\bthermex\b/iu', ' ', $name) ?? $name;
+        $model = preg_replace('/\b(model|модель|ĐĽĐľĐ´ĐµĐ»ŃŚ|ÄÄ˝ÄÄľÄÂ´ÄÂµÄÂ»ĹĹš)\b/iu', ' ', $model) ?? $model;
         $model = preg_replace('/\s+/u', ' ', trim($model)) ?? trim($model);
         $token = $this->normArticle($model);
 
         return $token !== '' ? 'THERMEX-' . $token : '';
+    }
+
+    private function normaliseThermexModelText(string $value): string
+    {
+        $value = $this->clean($value);
+
+        // RN-Profi sheets sometimes use a Cyrillic/mojibake "Н" in Latin model codes:
+        // FН24 / FĐť24 should be matched as Thermex FH24.
+        $value = preg_replace('/\bF[\s\-_]*(?:H|\x{041D}|\x{043D}|\x{041B}|\x{043B}|\x{0110}\x{0165})[\s\-_]*(\d{1,3})\b/u', 'FH$1', $value) ?? $value;
+
+        return preg_replace('/\s+/u', ' ', trim($value)) ?? trim($value);
     }
 
     private function filterByBrandOptions(array $rows): array
@@ -1932,9 +1945,10 @@ class SyncRnProfiCommand extends Command
 
     private function teplodvorModelSlug(array $row, string $brand): string
     {
-        $name = $this->clean((string) ($row['name'] ?? ''));
+        $name = $this->normaliseThermexModelText((string) ($row['name'] ?? ''));
         $name = preg_replace('/\b' . preg_quote($brand, '/') . '\b/iu', ' ', $name) ?? $name;
         $name = preg_replace('/\b(model|модель|ĐĽĐľĐ´ĐµĐ»ŃŚ)\b/iu', ' ', $name) ?? $name;
+        $name = preg_replace('/\bмодель\b/iu', ' ', $name) ?? $name;
         $slug = $this->normaliseTeplodvorSlug(Str::slug($name));
 
         return trim($slug, '-');
@@ -1942,9 +1956,11 @@ class SyncRnProfiCommand extends Command
 
     private function teplodvorModelKey(array $row, string $brand): string
     {
-        $name = $this->clean((string) ($row['name'] ?? ''));
+        $name = $this->normaliseThermexModelText((string) ($row['name'] ?? ''));
         $name = preg_replace('/\b' . preg_quote($brand, '/') . '\b/iu', ' ', $name) ?? $name;
         $name = preg_replace('/\b(model|модель)\b/iu', ' ', $name) ?? $name;
+
+        $name = preg_replace('/\bмодель\b/iu', ' ', $name) ?? $name;
 
         return $this->compactSlug(Str::slug($name));
     }
@@ -2669,7 +2685,7 @@ PROMPT;
 
     private function unmatchedReason(array $row): string
     {
-        $text = mb_strtolower($this->clean(($row['name'] ?? '') . ' ' . ($row['article'] ?? '') . ' ' . ($row['category_text'] ?? '')));
+        $text = mb_strtolower($this->normaliseThermexModelText(($row['name'] ?? '') . ' ' . ($row['article'] ?? '') . ' ' . ($row['category_text'] ?? '')));
         $slug = $this->compactSlug(Str::slug($text));
 
         if (($row['action'] ?? '') === 'brand_missing') {
