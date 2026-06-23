@@ -20,6 +20,7 @@ class SyncRnProfiCommand extends Command
         {--price-file= : Local XLSX/CSV file, skips Google Sheet download}
         {--sheet-url= : Google Sheets URL}
         {--google-csv-sheet= : Download only one Google Sheet tab as CSV, useful when full XLSX export is too large}
+        {--google-csv-gid= : Download only one Google Sheet tab by gid as CSV}
         {--brand=* : Process only these resolved brands, repeatable or comma-separated}
         {--exclude-brand=* : Skip these resolved brands, repeatable or comma-separated}
         {--available-only : Keep only rows that are in stock or have short delivery}
@@ -263,6 +264,11 @@ class SyncRnProfiCommand extends Command
         }
 
         $url = (string) ($this->option('sheet-url') ?: self::DEFAULT_SHEET_URL);
+        $csvGid = trim((string) $this->option('google-csv-gid'));
+        if ($csvGid !== '') {
+            return $this->downloadGoogleCsvGid($url, $csvGid);
+        }
+
         $csvSheet = trim((string) $this->option('google-csv-sheet'));
         if ($csvSheet !== '') {
             return $this->downloadGoogleCsvSheet($url, $csvSheet);
@@ -299,6 +305,26 @@ class SyncRnProfiCommand extends Command
         return $path;
     }
 
+    private function downloadGoogleCsvGid(string $url, string $gid): string
+    {
+        if (! preg_match('#/spreadsheets/d/([a-zA-Z0-9_-]+)#', $url, $m)) {
+            throw new \RuntimeException('Cannot detect Google spreadsheet id for --google-csv-gid.');
+        }
+
+        if (! preg_match('/^\d+$/', $gid)) {
+            throw new \RuntimeException('--google-csv-gid must be numeric.');
+        }
+
+        $exportUrl = sprintf(
+            'https://docs.google.com/spreadsheets/d/%s/export?format=csv&gid=%s',
+            $m[1],
+            $gid
+        );
+        $path = storage_path('app/supplier-cache/rn-profi-gid-' . $gid . '.csv');
+
+        return $this->downloadGoogleCsv($exportUrl, $path, 'gid ' . $gid);
+    }
+
     private function downloadGoogleCsvSheet(string $url, string $sheetName): string
     {
         if (! preg_match('#/spreadsheets/d/([a-zA-Z0-9_-]+)#', $url, $m)) {
@@ -311,12 +337,18 @@ class SyncRnProfiCommand extends Command
             rawurlencode($sheetName)
         );
         $path = storage_path('app/supplier-cache/rn-profi-' . Str::slug($sheetName) . '.csv');
+
+        return $this->downloadGoogleCsv($exportUrl, $path, "sheet '{$sheetName}'");
+    }
+
+    private function downloadGoogleCsv(string $exportUrl, string $path, string $label): string
+    {
         $dir = dirname($path);
         if (! is_dir($dir)) {
             mkdir($dir, 0755, true);
         }
 
-        $this->line("Downloading RN-Profi Google CSV sheet '{$sheetName}': {$exportUrl}");
+        $this->line("Downloading RN-Profi Google CSV {$label}: {$exportUrl}");
         $context = stream_context_create([
             'http' => [
                 'method' => 'GET',
@@ -330,7 +362,7 @@ class SyncRnProfiCommand extends Command
 
         $content = @file_get_contents($exportUrl, false, $context);
         if ($content === false || strlen($content) < 32) {
-            throw new \RuntimeException("Google CSV sheet download failed for '{$sheetName}'.");
+            throw new \RuntimeException("Google CSV download failed for {$label}.");
         }
 
         $preview = trim(preg_replace('/\s+/u', ' ', substr($content, 0, 220)) ?? '');
@@ -338,7 +370,7 @@ class SyncRnProfiCommand extends Command
             $debugPath = preg_replace('/\.csv$/i', '.download-debug.html', $path) ?: ($path . '.download-debug.html');
             file_put_contents($debugPath, substr($content, 0, 4096));
             throw new \RuntimeException(
-                "Google CSV returned HTML instead of CSV for '{$sheetName}'. "
+                "Google CSV returned HTML instead of CSV for {$label}. "
                 . "Saved first bytes to {$debugPath}. Preview: " . mb_substr($preview, 0, 180)
             );
         }
