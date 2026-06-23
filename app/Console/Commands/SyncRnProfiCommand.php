@@ -53,6 +53,7 @@ class SyncRnProfiCommand extends Command
         {--ai-provider= : AI provider override for matching: openai or configured}
         {--ai-model= : Override AI model for matching; defaults to AI_MATCH_MODEL or current AI_MODEL}
         {--ai-output= : Output path for AI JSON decisions; defaults to storage/app/reports/rn-profi}
+        {--unmatched-report= : Write unmatched rows report as CSV/JSON; defaults to storage/app/reports/rn-profi when value is "auto"}
         {--apply-ai-decisions= : Read local AI decisions JSON and apply safe link/create actions without calling AI}
         {--enrich-created : After creating products from AI decisions, parse source URL for photos/specs/content}
         {--update-existing-categories : With --apply-ai-decisions, update categories for already linked supplier products from source URL mapping}
@@ -248,6 +249,9 @@ class SyncRnProfiCommand extends Command
         }
         if ($this->option('ai-match')) {
             $classified = $this->attachAiMatchDecisions($classified);
+        }
+        if (trim((string) $this->option('unmatched-report')) !== '') {
+            $this->writeUnmatchedReport($classified);
         }
 
         return $apply ? $this->applyChanges($classified) : $this->showDryRun($classified);
@@ -2580,6 +2584,130 @@ PROMPT;
             fputcsv($handle, array_map(fn (string $header): mixed => $row[$header] ?? '', $headers));
         }
         fclose($handle);
+    }
+
+    private function writeUnmatchedReport(array $rows): void
+    {
+        $unmatched = array_values(array_filter($rows, fn (array $row): bool => ($row['action'] ?? '') !== 'matched'));
+        $reportRows = array_map(fn (array $row): array => $this->unmatchedReportRow($row), $unmatched);
+        $path = $this->unmatchedReportPath();
+        $dir = dirname($path);
+        if (! is_dir($dir)) {
+            mkdir($dir, 0755, true);
+        }
+
+        file_put_contents($path, json_encode([
+            'generated_at' => now()->toDateTimeString(),
+            'supplier' => self::SUPPLIER_CODE,
+            'rows_count' => count($reportRows),
+            'rows' => $reportRows,
+        ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT));
+
+        $csvPath = preg_replace('/\.json$/i', '.csv', $path) ?: ($path . '.csv');
+        $this->writeUnmatchedCsv($csvPath, $reportRows);
+
+        $this->info('Unmatched JSON written: ' . $path);
+        $this->info('Unmatched CSV written: ' . $csvPath);
+        $this->table(['reason', 'rows'], $this->mapCounts($this->counts($reportRows, 'reason')));
+    }
+
+    private function unmatchedReportPath(): string
+    {
+        $path = trim((string) $this->option('unmatched-report'));
+        if ($path === '' || $path === 'auto') {
+            return storage_path('app/reports/rn-profi/unmatched-rn-profi-' . now()->format('Ymd-His') . '.json');
+        }
+
+        if (! str_ends_with(strtolower($path), '.json')) {
+            $path .= '.json';
+        }
+        if (! str_starts_with($path, DIRECTORY_SEPARATOR) && ! preg_match('/^[A-Z]:\\\\/i', $path)) {
+            $path = base_path($path);
+        }
+
+        return $path;
+    }
+
+    private function unmatchedReportRow(array $row): array
+    {
+        return [
+            'sheet' => $row['sheet'] ?? '',
+            'row_number' => $row['row_number'] ?? null,
+            'article' => $row['article'] ?? '',
+            'brand' => $row['resolved_brand'] ?: ($row['brand'] ?? ''),
+            'name' => $row['name'] ?? '',
+            'category_text' => $row['category_text'] ?? '',
+            'wholesale_price_byn' => $row['price'] ?? null,
+            'retail_price_byn' => $row['retail_price'] ?? null,
+            'stock_status' => $row['stock']['status'] ?? null,
+            'action' => $row['action'] ?? '',
+            'teplodvor_url' => $row['teplodvor_url'] ?? null,
+            'rn_profi_url' => $row['rn_profi_url'] ?? null,
+            'reason' => $this->unmatchedReason($row),
+            'suggested_action' => $this->unmatchedSuggestedAction($row),
+        ];
+    }
+
+    private function writeUnmatchedCsv(string $path, array $rows): void
+    {
+        $handle = fopen($path, 'wb');
+        if ($handle === false) {
+            return;
+        }
+
+        $headers = [
+            'sheet', 'row_number', 'article', 'brand', 'name', 'category_text',
+            'wholesale_price_byn', 'retail_price_byn', 'stock_status', 'action',
+            'reason', 'suggested_action', 'teplodvor_url', 'rn_profi_url',
+        ];
+        fputcsv($handle, $headers);
+        foreach ($rows as $row) {
+            fputcsv($handle, array_map(fn (string $header): mixed => $row[$header] ?? '', $headers));
+        }
+        fclose($handle);
+    }
+
+    private function unmatchedReason(array $row): string
+    {
+        $text = mb_strtolower($this->clean(($row['name'] ?? '') . ' ' . ($row['article'] ?? '') . ' ' . ($row['category_text'] ?? '')));
+        $slug = $this->compactSlug(Str::slug($text));
+
+        if (($row['action'] ?? '') === 'brand_missing') {
+            return 'brand_missing';
+        }
+        if (($row['action'] ?? '') === 'price_missing') {
+            return 'price_missing';
+        }
+        if (str_contains($text, '*') || str_contains($slug, 'vkomplekt') || str_contains($slug, 'komplektvhodit')) {
+            return 'bundle_note_row';
+        }
+        if (str_contains($text, 'дымоход') || str_contains($slug, 'dymohod')) {
+            return 'accessory_chimney';
+        }
+        if (str_contains($text, 'кабель') || str_contains($slug, 'kabel')) {
+            return 'accessory_cable';
+        }
+        if (str_contains($slug, 'fl') || str_contains($slug, 'fл') || str_contains($text, 'fл')) {
+            return 'model_needs_normalization';
+        }
+        if (($row['teplodvor_url'] ?? null) === null) {
+            return 'source_card_not_found';
+        }
+
+        return 'not_matched';
+    }
+
+    private function unmatchedSuggestedAction(array $row): string
+    {
+        return match ($this->unmatchedReason($row)) {
+            'bundle_note_row' => 'ignore_or_attach_as_note',
+            'accessory_chimney', 'accessory_cable' => 'review_as_accessory',
+            'model_needs_normalization' => 'normalize_model_or_check_official_thermex',
+            'source_card_not_found' => 'check_official_thermex_or_manual_review',
+            'brand_missing' => 'create_or_map_brand',
+            'price_missing' => 'skip_until_price_present',
+            default => 'manual_review',
+        };
     }
 
     private function extractJson(string $response): string
