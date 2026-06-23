@@ -94,23 +94,145 @@ class SyncRnProfiCommand extends Command
     ];
 
     private const VARMEGA_CATEGORY_MAP = [
-        'truby-i-fitingi/metalloplastikovye-pex-i-pert-truby' => 331,
-        'truby-i-fitingi/aksialnye-fitingi' => 338,
-        'truby-i-fitingi/rezbozazhimnye-fitingi-kontsovki' => 338,
-        'truby-i-fitingi/bronzovye-i-latunnye-fitingi-rezba' => 340,
-        'truby-i-fitingi/truboprovodnye-sistemy-press-obzhim-i-payka' => 340,
-        'truby-i-fitingi/aksessuary-dlya-trub' => 193,
-        'radiatornaya-armatura/termogolovki' => 58,
-        'radiatornaya-armatura/uzly-nizhnego-podklyucheniya' => 85,
-        'radiatornaya-armatura/komplektuyushchie-dlya-radiatornoy-armatury' => 85,
-        'radiatornaya-armatura' => 195,
-        'predokhranitelnaya-i-reguliruyushchaya-armatura/gruppy-bezopasnosti-kotla' => 196,
-        'predokhranitelnaya-i-reguliruyushchaya-armatura/predokhranitelnaya-armatura-dlya-boylerov' => 195,
-        'predokhranitelnaya-i-reguliruyushchaya-armatura/predokhranitelnaya-armatura-dlya-bakov' => 195,
-        'predokhranitelnaya-i-reguliruyushchaya-armatura' => 195,
-        'smesitelnaya-armatura/nasosno-smesitelnye-uzly' => 283,
-        'smesitelnaya-armatura' => 195,
-        'instrument' => 195,
+        'truby-i-fitingi/metalloplastikovye-pex-i-pert-truby' => 'truby-iz-sshitogo-polietilena',
+        'truby-i-fitingi/aksialnye-fitingi' => 'aksialnye-fitingi',
+        'truby-i-fitingi/rezbozazhimnye-fitingi-kontsovki' => 'rezbozazhimnye-fitingi',
+        'truby-i-fitingi/bronzovye-i-latunnye-fitingi-rezba' => 'bronzovye-i-latunnye-fitingi',
+        'truby-i-fitingi/truboprovodnye-sistemy-press-obzhim-i-payka/komplektuyushchie-i-aksessuary-press-obzhim-i-payka' => 'aksessuary-press-obzhim-i-payka',
+        'truby-i-fitingi/truboprovodnye-sistemy-press-obzhim-i-payka' => 'press-fitingi-i-obzhimnye-sistemy',
+        'truby-i-fitingi/aksessuary-dlya-trub' => 'aksessuary-dlya-trub',
+        'radiatornaya-armatura/radiatornye-klapany-ruchnoy-regulirovki' => 'radiatornye-klapany-ruchnoy-regulirovki',
+        'radiatornaya-armatura/termostaticheskie-klapany' => 'termostaticheskie-klapany',
+        'radiatornaya-armatura/termogolovki' => 'termogolovki',
+        'radiatornaya-armatura/uzly-nizhnego-podklyucheniya' => 'uzly-nizhnego-podklyucheniya',
+        'radiatornaya-armatura/komplektuyushchie-dlya-radiatornoy-armatury' => 'komplektuyushchie-dlya-radiatornoy-armatury',
+        'radiatornaya-armatura' => 'radiatornaya-armatura',
+        'predokhranitelnaya-i-reguliruyushchaya-armatura/obratnye-klapany' => 'obratnye-klapany',
+        'predokhranitelnaya-i-reguliruyushchaya-armatura/reduktory-davleniya' => 'reduktory-davleniya',
+        'predokhranitelnaya-i-reguliruyushchaya-armatura/predokhranitelnye-klapany' => 'predokhranitelnye-klapany',
+        'predokhranitelnaya-i-reguliruyushchaya-armatura/gruppy-bezopasnosti-kotla' => 'gruppy-bystrogo-montazha-kotelnyx',
+        'predokhranitelnaya-i-reguliruyushchaya-armatura/vozdukhootvodchiki' => 'vozdukhootvodchiki',
+        'predokhranitelnaya-i-reguliruyushchaya-armatura/klapany-podpitki' => 'klapany-podpitki',
+        'predokhranitelnaya-i-reguliruyushchaya-armatura/kompensatory-gidroudara' => 'kompensatory-gidroudara',
+        'predokhranitelnaya-i-reguliruyushchaya-armatura/predokhranitelnaya-armatura-dlya-boylerov' => 'predokhranitelnaya-armatura-dlya-boylerov',
+        'predokhranitelnaya-i-reguliruyushchaya-armatura/predokhranitelnaya-armatura-dlya-bakov' => 'predokhranitelnaya-armatura-dlya-boylerov',
+        'predokhranitelnaya-i-reguliruyushchaya-armatura' => 'predokhranitelnaya-armatura',
+        'smesitelnaya-armatura/nasosno-smesitelnye-uzly' => 'montajnyie-komplektyi',
+        'smesitelnaya-armatura' => 'smesitelnaya-armatura',
+        'instrument' => 'instrumenty-dlya-montazha',
+    ];
+
+    private const VARMEGA_CATEGORY_DEFINITIONS = [
+        'aksialnye-fitingi' => [
+            'name' => 'Аксиальные фитинги',
+            'parent_slug' => 'truby-i-fitingi',
+            'sort_order' => 120,
+        ],
+        'rezbozazhimnye-fitingi' => [
+            'name' => 'Резьбозажимные фитинги',
+            'parent_slug' => 'truby-i-fitingi',
+            'sort_order' => 130,
+        ],
+        'bronzovye-i-latunnye-fitingi' => [
+            'name' => 'Бронзовые и латунные фитинги',
+            'parent_slug' => 'truby-i-fitingi',
+            'sort_order' => 140,
+        ],
+        'press-fitingi-i-obzhimnye-sistemy' => [
+            'name' => 'Пресс-фитинги и обжимные системы',
+            'parent_slug' => 'truby-i-fitingi',
+            'sort_order' => 150,
+        ],
+        'aksessuary-press-obzhim-i-payka' => [
+            'name' => 'Аксессуары для пресс-систем',
+            'parent_slug' => 'truby-i-fitingi',
+            'sort_order' => 160,
+        ],
+        'aksessuary-dlya-trub' => [
+            'name' => 'Аксессуары для труб',
+            'parent_slug' => 'truby-i-fitingi',
+            'sort_order' => 170,
+        ],
+        'radiatornaya-armatura' => [
+            'name' => 'Радиаторная арматура',
+            'parent_slug' => 'komplektuyushhie-dlya-otopleniya',
+            'sort_order' => 120,
+        ],
+        'radiatornye-klapany-ruchnoy-regulirovki' => [
+            'name' => 'Радиаторные клапаны ручной регулировки',
+            'parent_slug' => 'komplektuyushhie-dlya-otopleniya',
+            'sort_order' => 121,
+        ],
+        'termostaticheskie-klapany' => [
+            'name' => 'Термостатические клапаны',
+            'parent_slug' => 'komplektuyushhie-dlya-otopleniya',
+            'sort_order' => 122,
+        ],
+        'termogolovki' => [
+            'name' => 'Термоголовки',
+            'parent_slug' => 'komplektuyushhie-dlya-otopleniya',
+            'sort_order' => 123,
+        ],
+        'uzly-nizhnego-podklyucheniya' => [
+            'name' => 'Узлы нижнего подключения',
+            'parent_slug' => 'komplektuyushhie-dlya-otopleniya',
+            'sort_order' => 124,
+        ],
+        'komplektuyushchie-dlya-radiatornoy-armatury' => [
+            'name' => 'Комплектующие для радиаторной арматуры',
+            'parent_slug' => 'komplektuyushhie-dlya-otopleniya',
+            'sort_order' => 125,
+        ],
+        'obratnye-klapany' => [
+            'name' => 'Обратные клапаны',
+            'parent_slug' => 'komplektuyushhie-dlya-otopleniya',
+            'sort_order' => 130,
+        ],
+        'reduktory-davleniya' => [
+            'name' => 'Редукторы давления',
+            'parent_slug' => 'komplektuyushhie-dlya-otopleniya',
+            'sort_order' => 140,
+        ],
+        'predokhranitelnye-klapany' => [
+            'name' => 'Предохранительные клапаны',
+            'parent_slug' => 'komplektuyushhie-dlya-otopleniya',
+            'sort_order' => 150,
+        ],
+        'vozdukhootvodchiki' => [
+            'name' => 'Воздухоотводчики',
+            'parent_slug' => 'komplektuyushhie-dlya-otopleniya',
+            'sort_order' => 160,
+        ],
+        'klapany-podpitki' => [
+            'name' => 'Клапаны подпитки',
+            'parent_slug' => 'komplektuyushhie-dlya-otopleniya',
+            'sort_order' => 170,
+        ],
+        'kompensatory-gidroudara' => [
+            'name' => 'Компенсаторы гидроудара',
+            'parent_slug' => 'komplektuyushhie-dlya-otopleniya',
+            'sort_order' => 180,
+        ],
+        'predokhranitelnaya-armatura-dlya-boylerov' => [
+            'name' => 'Предохранительная арматура для бойлеров',
+            'parent_slug' => 'komplektuyushhie-dlya-otopleniya',
+            'sort_order' => 190,
+        ],
+        'predokhranitelnaya-armatura' => [
+            'name' => 'Предохранительная арматура',
+            'parent_slug' => 'komplektuyushhie-dlya-otopleniya',
+            'sort_order' => 200,
+        ],
+        'smesitelnaya-armatura' => [
+            'name' => 'Смесительная арматура',
+            'parent_slug' => 'komplektuyushhie-dlya-otopleniya',
+            'sort_order' => 210,
+        ],
+        'instrumenty-dlya-montazha' => [
+            'name' => 'Инструменты для монтажа',
+            'parent_slug' => 'komplektuyushhie-dlya-otopleniya',
+            'sort_order' => 220,
+        ],
     ];
 
     private array $sheetReports = [];
@@ -2452,7 +2574,7 @@ PROMPT;
             ]);
         }
 
-        $categoryId = $this->categoryIdFromDecision($decision);
+        $categoryId = $this->categoryIdFromDecision($decision, true, $now);
         if ($categoryId <= 0 || ! DB::table('categories')->where('id', $categoryId)->exists()) {
             $categoryId = $this->fallbackCategoryId();
         }
@@ -2567,7 +2689,7 @@ PROMPT;
         return '';
     }
 
-    private function categoryIdFromDecision(array $decision): int
+    private function categoryIdFromDecision(array $decision, bool $createMissing = false, $now = null): int
     {
         $categoryId = (int) ($decision['teplodvor_category_id'] ?? 0);
         if ($categoryId > 0) {
@@ -2580,18 +2702,50 @@ PROMPT;
         }
 
         $path = $this->varmegaCategoryPath($varmegaUrl);
-        foreach (self::VARMEGA_CATEGORY_MAP as $prefix => $mappedCategoryId) {
+        foreach (self::VARMEGA_CATEGORY_MAP as $prefix => $categorySlug) {
             if ($path === $prefix || str_starts_with($path, $prefix . '/')) {
-                return (int) $mappedCategoryId;
+                return $this->categoryIdBySlug((string) $categorySlug, $createMissing, $now);
             }
         }
 
         return 0;
     }
 
+    private function categoryIdBySlug(string $slug, bool $createMissing = false, $now = null): int
+    {
+        $slug = trim($slug);
+        if ($slug === '') {
+            return 0;
+        }
+
+        $categoryId = (int) (DB::table('categories')->where('slug', $slug)->value('id') ?? 0);
+        if ($categoryId > 0 || ! $createMissing || ! isset(self::VARMEGA_CATEGORY_DEFINITIONS[$slug])) {
+            return $categoryId;
+        }
+
+        $definition = self::VARMEGA_CATEGORY_DEFINITIONS[$slug];
+        $parentId = 0;
+        $parentSlug = (string) ($definition['parent_slug'] ?? '');
+        if ($parentSlug !== '') {
+            $parentId = $this->categoryIdBySlug($parentSlug, false, $now);
+        }
+
+        return (int) DB::table('categories')->insertGetId([
+            'parent_id' => $parentId,
+            'name' => (string) $definition['name'],
+            'slug' => $slug,
+            'h1' => (string) $definition['name'],
+            'type' => $parentId > 0 ? 'child' : 'main',
+            'sort_order' => (int) ($definition['sort_order'] ?? 0),
+            'is_active' => true,
+            'created_at' => $now,
+            'updated_at' => $now,
+        ]);
+    }
+
     private function updateProductCategoryFromDecision(int $productId, array $decision, bool $apply, $now): bool
     {
-        $categoryId = $this->categoryIdFromDecision($decision);
+        $categoryId = $this->categoryIdFromDecision($decision, $apply, $now);
         if ($categoryId <= 0 || ! DB::table('categories')->where('id', $categoryId)->exists()) {
             return false;
         }
