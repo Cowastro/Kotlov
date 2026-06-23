@@ -282,27 +282,86 @@ class SyncRnProfiCommand extends Command
         }
 
         $this->line("Downloading RN-Profi Google Sheet: {$exportUrl}");
+        $content = $this->downloadBinary($exportUrl, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,*/*');
+        $this->assertXlsxContent($content, $path);
+        file_put_contents($path, $content);
+
+        return $path;
+    }
+
+    private function downloadBinary(string $url, string $accept): string
+    {
+        $lastError = '';
+
+        for ($attempt = 1; $attempt <= 3; $attempt++) {
+            $content = $this->downloadBinaryWithCurl($url, $accept, $lastError);
+            if ($content === null) {
+                $content = $this->downloadBinaryWithStream($url, $accept, $lastError);
+            }
+
+            if ($content !== null && strlen($content) >= 1024) {
+                return $content;
+            }
+
+            $lastError = $lastError !== '' ? $lastError : 'empty or too small response';
+            usleep(250000 * $attempt);
+        }
+
+        throw new \RuntimeException('Google Sheet download failed: ' . $lastError);
+    }
+
+    private function downloadBinaryWithCurl(string $url, string $accept, string &$lastError): ?string
+    {
+        if (! function_exists('curl_init')) {
+            return null;
+        }
+
+        $ch = curl_init($url);
+        curl_setopt_array($ch, [
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_FOLLOWLOCATION => true,
+            CURLOPT_MAXREDIRS => 10,
+            CURLOPT_CONNECTTIMEOUT => 30,
+            CURLOPT_TIMEOUT => 240,
+            CURLOPT_USERAGENT => 'Mozilla/5.0 (compatible; KotlovBot/1.0)',
+            CURLOPT_HTTPHEADER => ['Accept: ' . $accept],
+            CURLOPT_SSL_VERIFYPEER => false,
+            CURLOPT_SSL_VERIFYHOST => false,
+        ]);
+
+        $content = curl_exec($ch);
+        $status = (int) curl_getinfo($ch, CURLINFO_RESPONSE_CODE);
+        $error = curl_error($ch);
+        curl_close($ch);
+
+        if (! is_string($content) || $content === '' || $status >= 400) {
+            $lastError = $error !== '' ? $error : 'HTTP ' . $status;
+            return null;
+        }
+
+        return $content;
+    }
+
+    private function downloadBinaryWithStream(string $url, string $accept, string &$lastError): ?string
+    {
         $context = stream_context_create([
             'http' => [
                 'method' => 'GET',
-                'timeout' => 90,
+                'timeout' => 240,
                 'follow_location' => 1,
                 'max_redirects' => 10,
-                'header' => "User-Agent: Mozilla/5.0 (compatible; KotlovBot/1.0)\r\nAccept: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,*/*\r\n",
+                'header' => "User-Agent: Mozilla/5.0 (compatible; KotlovBot/1.0)\r\nAccept: {$accept}\r\n",
             ],
             'ssl' => ['verify_peer' => false, 'verify_peer_name' => false],
         ]);
 
-        $content = @file_get_contents($exportUrl, false, $context);
-        if ($content === false || strlen($content) < 1024) {
-            throw new \RuntimeException('Google Sheet download failed or returned an empty file.');
+        $content = @file_get_contents($url, false, $context);
+        if (! is_string($content) || $content === '') {
+            $lastError = error_get_last()['message'] ?? 'stream download failed';
+            return null;
         }
 
-        $this->assertXlsxContent($content, $path);
-
-        file_put_contents($path, $content);
-
-        return $path;
+        return $content;
     }
 
     private function downloadGoogleCsvGid(string $url, string $gid): string
@@ -383,7 +442,26 @@ class SyncRnProfiCommand extends Command
     private function assertXlsxContent(string $content, string $targetPath): void
     {
         if (str_starts_with($content, "PK\x03\x04")) {
-            return;
+            $tempPath = tempnam(dirname($targetPath), 'xlsx-check-');
+            if ($tempPath !== false) {
+                file_put_contents($tempPath, $content);
+            }
+
+            $zip = new \ZipArchive();
+            $result = $tempPath !== false ? $zip->open($tempPath) : false;
+            if ($result === true && $zip->locateName('[Content_Types].xml') !== false && $zip->locateName('xl/workbook.xml') !== false) {
+                $zip->close();
+                if ($tempPath !== false && is_file($tempPath)) {
+                    @unlink($tempPath);
+                }
+                return;
+            }
+            if ($result === true) {
+                $zip->close();
+            }
+            if ($tempPath !== false && is_file($tempPath)) {
+                @unlink($tempPath);
+            }
         }
 
         $debugPath = preg_replace('/\.xlsx$/i', '.download-debug.txt', $targetPath) ?: ($targetPath . '.download-debug.txt');
