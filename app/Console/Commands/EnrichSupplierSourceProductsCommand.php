@@ -22,6 +22,7 @@ class EnrichSupplierSourceProductsCommand extends Command
         {--apply : Write changes to DB, default is dry-run}
         {--force : Process even products that already have photos, specs and content}
         {--overwrite-images : Replace existing product images instead of appending}
+        {--replace-specs : Delete existing product attributes and replace specs from source}
         {--skip-ai : Skip AI content generation}
         {--sleep=1200 : Delay between HTTP requests, ms}';
 
@@ -160,6 +161,7 @@ class EnrichSupplierSourceProductsCommand extends Command
                     'replace_images' => (bool) $this->option('overwrite-images'),
                     'update_images' => true,
                     'update_specs' => true,
+                    'replace_specs' => (bool) $this->option('replace-specs') || $force,
                     'update_service' => true,
                     'update_documents' => true,
                     'update_video' => true,

@@ -628,6 +628,7 @@ class ProductsTable
             'update_images' => (bool) ($data['update_images'] ?? true),
             'replace_images' => (bool) ($data['replace_images'] ?? true),
             'update_specs' => (bool) ($data['update_specs'] ?? true),
+            'replace_specs' => true,
             'update_content' => (bool) ($data['update_content'] ?? true),
             'update_service' => (bool) ($data['update_service'] ?? false),
         ];

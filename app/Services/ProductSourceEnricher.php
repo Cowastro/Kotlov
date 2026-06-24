@@ -108,7 +108,17 @@ class ProductSourceEnricher
 
         try {
             if (($options['update_specs'] ?? true) === true && $parsed['specs'] !== []) {
-                if ($this->productHasExistingSpecs($product)) {
+                $replaceSpecs = (bool) ($options['replace_specs'] ?? false);
+
+                if ($replaceSpecs) {
+                    $sanitizedSpecs = $this->sanitizeJsonArray($parsed['specs']);
+                    $stats['attribute_values_saved'] = DB::transaction(function () use ($product, $parsed): int {
+                        $this->deleteExistingAttributeValues($product);
+
+                        return $this->syncAttributeValues($product, $parsed['specs']);
+                    });
+                    $updates['specs'] = $sanitizedSpecs;
+                } elseif ($this->productHasExistingSpecs($product)) {
                     $stats['specs_skipped'] = 1;
                 } elseif ($this->decodeArray($product->specs) !== []) {
                     $stats['attribute_values_saved'] = $this->syncSpecsToAttributeValues($product);
@@ -326,6 +336,13 @@ class ProductSourceEnricher
     private function productHasExistingSpecs(Product $product): bool
     {
         return $product->allAttributeValues()->exists();
+    }
+
+    private function deleteExistingAttributeValues(Product $product): void
+    {
+        DB::table('product_attribute_values')
+            ->where('product_id', $product->id)
+            ->delete();
     }
 
     private function rememberSourceUrl(Product $product, string $sourceUrl): void
@@ -991,6 +1008,8 @@ class ProductSourceEnricher
         }
 
         $this->addSpecsFromAsproProperties($xpath, $specs);
+        $this->addSpecsFromCharacteristicLists($xpath, $specs);
+        $this->addSpecsFromDescriptionText($html, $specs);
 
         return array_slice(array_values($specs), 0, 80);
     }
@@ -1074,6 +1093,17 @@ class ProductSourceEnricher
 
     private function addSpecsFromDefinitionList(array &$specs, \DOMNode $dl): void
     {
+        if ($dl instanceof \DOMElement) {
+            $xpath = new \DOMXPath($dl->ownerDocument);
+            foreach ($xpath->query('.//*[dt and dd]', $dl) ?: [] as $item) {
+                $dt = $xpath->query('./dt', $item)?->item(0);
+                $dd = $xpath->query('./dd', $item)?->item(0);
+                if ($dt && $dd) {
+                    $this->addSpec($specs, $dt->textContent, $dd->textContent);
+                }
+            }
+        }
+
         $children = iterator_to_array($dl->childNodes);
         for ($i = 0; $i < count($children) - 1; $i++) {
             if (mb_strtolower($children[$i]->nodeName) !== 'dt') {
@@ -1104,6 +1134,70 @@ class ProductSourceEnricher
             }
 
             $this->addSpec($specs, $titleNode->textContent, $valueNode->textContent);
+        }
+    }
+
+    private function addSpecsFromCharacteristicLists(\DOMXPath $xpath, array &$specs): void
+    {
+        $lists = $xpath->query('//dl[contains(concat(" ", normalize-space(@class), " "), " characteristics ")]');
+        if ($lists === false) {
+            return;
+        }
+
+        foreach ($lists as $list) {
+            $this->addSpecsFromDefinitionList($specs, $list);
+        }
+    }
+
+    private function addSpecsFromDescriptionText(string $html, array &$specs): void
+    {
+        $text = html_entity_decode(
+            preg_replace('~<br\s*/?>~iu', "\n", $html) ?? $html,
+            ENT_QUOTES | ENT_HTML5,
+            'UTF-8'
+        );
+        $text = strip_tags($text);
+
+        if (! preg_match('/Характеристики\s*:\s*(.+?)(?:\n\s*\n|Документация|Отзывы|С этим товаром|$)/isu', $text, $match)) {
+            $this->addSpecsFromColonParagraphs($html, $specs);
+
+            return;
+        }
+
+        $this->addSpecsFromColonLines($match[1], $specs);
+    }
+
+    private function addSpecsFromColonParagraphs(string $html, array &$specs): void
+    {
+        if (! preg_match_all('~<p\b[^>]*>([\s\S]*?<br\s*/?>[\s\S]*?)</p>~iu', $html, $matches)) {
+            return;
+        }
+
+        foreach ($matches[1] as $block) {
+            if (substr_count($block, ':') < 3 || ! preg_match('/(?:Kvs|PN|DN|VM\d|&deg;|°)/iu', $block)) {
+                continue;
+            }
+
+            $text = html_entity_decode(
+                preg_replace('~<br\s*/?>~iu', "\n", $block) ?? $block,
+                ENT_QUOTES | ENT_HTML5,
+                'UTF-8'
+            );
+
+            $this->addSpecsFromColonLines(strip_tags($text), $specs);
+        }
+    }
+
+    private function addSpecsFromColonLines(string $text, array &$specs): void
+    {
+        $lines = preg_split('/\R+/u', trim($text)) ?: [];
+        foreach (array_slice($lines, 0, 40) as $line) {
+            $line = trim($line);
+            if (! preg_match('/^([^:]{2,90}):\s*(.{1,180})$/u', $line, $parts)) {
+                continue;
+            }
+
+            $this->addSpec($specs, $parts[1], $parts[2]);
         }
     }
 
@@ -1913,6 +2007,10 @@ class ProductSourceEnricher
         }
 
         if (preg_match('/^(buy|price|delivery|payment|cart|sku|code|reviews|description|купить|цена|наличие|доставка|оплата|корзина|артикул|код товара|похожие товары|отзывы|описание)$/u', $normalizedName)) {
+            return true;
+        }
+
+        if (preg_match('/^(?:с|c)\/?п\b/u', $normalizedName) || str_contains($normalizedName, 'айдаровское')) {
             return true;
         }
 
