@@ -17,7 +17,7 @@ class EnrichSupplierSourceProductsCommand extends Command
         {--created-today : Process only products created today}
         {--created-from= : Process only products created from this date/time}
         {--created-to= : Process only products created before this date/time}
-        {--limit=50 : Max products per run}
+        {--limit=50 : Max products per run, 0 means all}
         {--offset=0 : Skip products}
         {--apply : Write changes to DB, default is dry-run}
         {--force : Process even products that already have photos, specs and content}
@@ -30,7 +30,7 @@ class EnrichSupplierSourceProductsCommand extends Command
     public function handle(ProductSourceEnricher $enricher): int
     {
         $apply = (bool) $this->option('apply');
-        $limit = max(1, (int) $this->option('limit'));
+        $limit = max(0, (int) $this->option('limit'));
         $offset = max(0, (int) $this->option('offset'));
         $sleep = max(300, (int) $this->option('sleep'));
         $force = (bool) $this->option('force');
@@ -103,8 +103,13 @@ class EnrichSupplierSourceProductsCommand extends Command
         $total = (clone $query)->distinct('p.id')->count('p.id');
         $rows = $query
             ->orderBy('p.id')
-            ->offset($offset)
-            ->limit($limit)
+            ->offset($offset);
+
+        if ($limit > 0) {
+            $rows->limit($limit);
+        }
+
+        $rows = $rows
             ->get()
             ->unique('id')
             ->values();

@@ -23,6 +23,8 @@ class RepairRnProfiVarmegaCommand extends Command
         {--enrich-created-today : Enrich only products created today}
         {--enrich-created-from= : Enrich only products created from this date/time}
         {--enrich-created-to= : Enrich only products created before this date/time}
+        {--enrich-limit=0 : Max products to enrich, 0 means all}
+        {--enrich-offset=0 : Skip products in enrichment step}
         {--enrich-sleep=1200 : Sleep in milliseconds between source page requests}
         {--create-missing : Create missing Varmega products from the price list; off by default to avoid duplicates}
         {--deduplicate : Run duplicate audit/archive after sync}
@@ -75,6 +77,8 @@ class RepairRnProfiVarmegaCommand extends Command
                 '--supplier' => 'rn-profi',
                 '--brand' => 'Varmega',
                 '--domain' => 'varmega.ru',
+                '--limit' => (string) $this->option('enrich-limit'),
+                '--offset' => (string) $this->option('enrich-offset'),
                 '--force' => (bool) $this->option('enrich-force'),
                 '--created-today' => (bool) $this->option('enrich-created-today'),
                 '--created-from' => trim((string) $this->option('enrich-created-from')) ?: null,
