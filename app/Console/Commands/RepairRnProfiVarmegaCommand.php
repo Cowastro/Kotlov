@@ -17,6 +17,7 @@ class RepairRnProfiVarmegaCommand extends Command
         {--enrich : Enrich products with official varmega.ru source URLs after sync}
         {--enrich-force : Re-enrich already filled products too}
         {--enrich-sleep=1200 : Sleep in milliseconds between source page requests}
+        {--create-missing : Create missing Varmega products from the price list; off by default to avoid duplicates}
         {--deduplicate : Run duplicate audit/archive after sync}
         {--deduplicate-apply : Archive duplicate unbound products, implies --deduplicate}
         {--skip-sync : Skip RN-Profi sync step}
@@ -47,7 +48,7 @@ class RepairRnProfiVarmegaCommand extends Command
                 '--varmega-official' => true,
                 '--varmega-probe-missing' => true,
                 '--varmega-probe-limit' => (string) $this->option('probe-limit'),
-                '--create-unmatched-from-price' => true,
+                '--create-unmatched-from-price' => (bool) $this->option('create-missing'),
                 '--sync-retail-prices' => true,
             ], fn ($value): bool => $value !== false && $value !== null));
 
