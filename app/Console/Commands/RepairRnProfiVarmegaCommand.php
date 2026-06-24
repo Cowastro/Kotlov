@@ -14,6 +14,9 @@ class RepairRnProfiVarmegaCommand extends Command
         {--price-file=storage/app/supplier-cache/rn-profi-pricelist.xlsx : Local RN-Profi XLSX/CSV file}
         {--max-delivery-days=3 : Maximum delivery days accepted as available}
         {--probe-limit=1000 : Maximum missing Varmega rows to probe by guessed official URLs}
+        {--matched-created-today : Sync only RN-Profi rows matched to products created today}
+        {--matched-created-from= : Sync only RN-Profi rows matched to products created from this date/time}
+        {--matched-created-to= : Sync only RN-Profi rows matched to products created before this date/time}
         {--enrich : Enrich products with official varmega.ru source URLs after sync}
         {--enrich-force : Re-enrich already filled products too}
         {--enrich-created-today : Enrich only products created today}
@@ -46,6 +49,9 @@ class RepairRnProfiVarmegaCommand extends Command
                 '--offset' => (string) $this->option('offset'),
                 '--price-file' => (string) $this->option('price-file'),
                 '--brand' => ['Varmega'],
+                '--matched-created-today' => (bool) $this->option('matched-created-today'),
+                '--matched-created-from' => trim((string) $this->option('matched-created-from')) ?: null,
+                '--matched-created-to' => trim((string) $this->option('matched-created-to')) ?: null,
                 '--available-only' => true,
                 '--max-delivery-days' => (string) $this->option('max-delivery-days'),
                 '--varmega-official' => true,

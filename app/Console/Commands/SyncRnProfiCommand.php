@@ -23,6 +23,9 @@ class SyncRnProfiCommand extends Command
         {--google-csv-gid= : Download only one Google Sheet tab by gid as CSV}
         {--brand=* : Process only these resolved brands, repeatable or comma-separated}
         {--exclude-brand=* : Skip these resolved brands, repeatable or comma-separated}
+        {--matched-created-today : Process only rows matched to products created today}
+        {--matched-created-from= : Process only rows matched to products created from this date/time}
+        {--matched-created-to= : Process only rows matched to products created before this date/time}
         {--available-only : Keep only rows that are in stock or have short delivery}
         {--max-delivery-days= : Maximum delivery days for --available-only short-delivery rows}
         {--teplodvor : Match price rows to storage/teplodvor_index.json product cards}
@@ -198,6 +201,7 @@ class SyncRnProfiCommand extends Command
     private array $brandTokens = [];
     private array $indexBySupplierArticle = [];
     private array $sourceUrlBySupplierArticle = [];
+    private array $productCreatedAtById = [];
     private array $indexBySku = [];
     private array $indexByBrandModel = [];
     private array $indexBySourceUrl = [];
@@ -234,6 +238,7 @@ class SyncRnProfiCommand extends Command
         $classified = array_map(fn (array $row): array => $this->classify($row), $rows);
         $classified = $this->filterByBrandOptions($classified);
         $classified = $this->filterByAvailabilityOptions($classified);
+        $classified = $this->filterByMatchedProductCreatedOptions($classified);
 
         if ($offset > 0 || ($limit !== null && $limit > 0)) {
             $classified = array_slice($classified, $offset, $limit !== null && $limit > 0 ? $limit : null);
@@ -815,8 +820,10 @@ class SyncRnProfiCommand extends Command
 
         DB::table('products')
             ->where('is_archived', false)
-            ->get(['id', 'sku', 'name', 'brand_id'])
+            ->get(['id', 'sku', 'name', 'brand_id', 'created_at'])
             ->each(function (object $product): void {
+                $this->productCreatedAtById[(int) $product->id] = (string) ($product->created_at ?? '');
+
                 $sku = mb_strtoupper(trim((string) $product->sku));
                 if ($sku !== '') {
                     $this->indexBySku[$sku] = (int) $product->id;
@@ -897,10 +904,64 @@ class SyncRnProfiCommand extends Command
             'matched_product_id' => $match['product_id'] ?? null,
             'matched_sku' => $match['sku'] ?? null,
             'confidence' => $match['confidence'] ?? null,
+            'matched_product_created_at' => isset($match['product_id'])
+                ? ($this->productCreatedAtById[(int) $match['product_id']] ?? null)
+                : null,
             'current_source_url' => $this->sourceUrlBySupplierArticle[$row['norm_article'] ?? ''] ?? null,
             'stock' => $stock,
             'action' => $action,
         ];
+    }
+
+    private function filterByMatchedProductCreatedOptions(array $rows): array
+    {
+        $todayOnly = (bool) $this->option('matched-created-today');
+        $createdFrom = trim((string) $this->option('matched-created-from'));
+        $createdTo = trim((string) $this->option('matched-created-to'));
+
+        if (! $todayOnly && $createdFrom === '' && $createdTo === '') {
+            return $rows;
+        }
+
+        $from = $todayOnly
+            ? now()->startOfDay()
+            : ($createdFrom !== '' ? \Carbon\Carbon::parse($createdFrom) : null);
+        $to = $todayOnly
+            ? now()->endOfDay()
+            : ($createdTo !== '' ? \Carbon\Carbon::parse($createdTo) : null);
+
+        $filtered = array_values(array_filter($rows, function (array $row) use ($from, $to): bool {
+            if (($row['action'] ?? '') !== 'matched' || empty($row['matched_product_id'])) {
+                return false;
+            }
+
+            $createdAt = trim((string) ($row['matched_product_created_at'] ?? ''));
+            if ($createdAt === '') {
+                return false;
+            }
+
+            $created = \Carbon\Carbon::parse($createdAt);
+
+            if ($from !== null && $created->lt($from)) {
+                return false;
+            }
+
+            if ($to !== null && $created->gt($to)) {
+                return false;
+            }
+
+            return true;
+        }));
+
+        $this->line(sprintf(
+            'Matched product created filter: %d of %d rows selected%s%s.',
+            count($filtered),
+            count($rows),
+            $from !== null ? ' from=' . $from->toDateTimeString() : '',
+            $to !== null ? ' to=' . $to->toDateTimeString() : '',
+        ));
+
+        return $filtered;
     }
 
     private function filterByNewSourceUrlDomain(array $rows): array
