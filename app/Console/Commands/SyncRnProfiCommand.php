@@ -42,6 +42,7 @@ class SyncRnProfiCommand extends Command
         {--refresh-rn-profi-cards : Ignore cached RN-Profi card matches and re-check the site}
         {--rn-profi-crawl-pages=160 : Maximum RN-Profi site pages to crawl for card/article index}
         {--rn-profi-card-limit=100 : Maximum uncached RN-Profi articles to check per run, 0 means no limit}
+        {--rn-profi-fallback-source : Use rn-profi.by card URL as source_url when no better source URL was found}
         {--varmega-official : Match Varmega rows to official varmega.ru product cards by supplier article}
         {--varmega-sitemap=https://varmega.ru/sitemap-iblock-43.xml : Official Varmega product sitemap URL}
         {--varmega-refresh-index : Rebuild cached official Varmega sitemap index}
@@ -257,6 +258,9 @@ class SyncRnProfiCommand extends Command
         }
         if ($this->option('varmega-official')) {
             $classified = $this->attachVarmegaOfficialMatches($classified);
+        }
+        if ($this->option('rn-profi-fallback-source')) {
+            $classified = $this->applyRnProfiFallbackSource($classified);
         }
         $classified = $this->filterByNewSourceUrlDomain($classified);
         if ($this->option('ai-match')) {
@@ -1278,6 +1282,35 @@ class SyncRnProfiCommand extends Command
         ];
     }
 
+    private function applyRnProfiFallbackSource(array $rows): array
+    {
+        $updated = 0;
+
+        foreach ($rows as $index => $row) {
+            $current = trim((string) ($row['source_url'] ?? ''));
+            $rnProfiUrl = trim((string) ($row['rn_profi_url'] ?? ''));
+
+            if ($rnProfiUrl === '') {
+                continue;
+            }
+
+            if ($current !== '' && str_contains(mb_strtolower($current), 'varmega.ru')) {
+                continue;
+            }
+
+            if ($current !== '' && $current !== self::SOURCE_URL) {
+                continue;
+            }
+
+            $rows[$index]['source_url'] = $rnProfiUrl;
+            $updated++;
+        }
+
+        $this->line(sprintf('RN-Profi fallback source URLs: %d rows selected.', $updated));
+
+        return $rows;
+    }
+
     private function loadRnProfiCardCache(): array
     {
         if ($this->rnProfiCardCache !== null) {
@@ -1316,11 +1349,14 @@ class SyncRnProfiCommand extends Command
         }
 
         $candidateUrls = $this->extractRnProfiProductUrls($html);
-        if ($this->pageContainsArticle($html, $normArticle) && $this->looksLikeRnProfiProductPage($html)) {
+        if (! str_contains($searchUrl, 'route=product/search')
+            && $this->pageContainsArticle($html, $normArticle)
+            && $this->looksLikeRnProfiProductPage($html)
+        ) {
             array_unshift($candidateUrls, $searchUrl);
         }
 
-        foreach (array_slice(array_values(array_unique($candidateUrls)), 0, 8) as $url) {
+        foreach (array_slice(array_values(array_unique($candidateUrls)), 0, 30) as $url) {
             $cardHtml = $url === $searchUrl ? $html : $this->fetchRnProfiPage($url);
             if ($cardHtml === null) {
                 continue;
@@ -1429,7 +1465,11 @@ class SyncRnProfiCommand extends Command
         $path = trim((string) (parse_url($url, PHP_URL_PATH) ?: ''), '/');
         return $path !== ''
             && ! str_contains($path, '/')
-            && ! in_array($path, ['about_us', 'payment', 'delivery', 'contact-us', 'brands'], true);
+            && ! in_array($path, [
+                'about_us', 'payment', 'delivery', 'contact-us', 'brands',
+                'search', 'compare-products', 'wishlist', 'my-account', 'cart', 'checkout',
+                'kontakty', 'oplata', 'sitemap', 'proekt', 'servis',
+            ], true);
     }
 
     private function looksLikeRnProfiProductPage(string $html): bool

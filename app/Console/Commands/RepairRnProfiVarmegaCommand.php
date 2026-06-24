@@ -15,10 +15,14 @@ class RepairRnProfiVarmegaCommand extends Command
         {--max-delivery-days=3 : Maximum delivery days accepted as available}
         {--probe-limit=1000 : Maximum missing Varmega rows to probe by guessed official URLs}
         {--varmega-refresh-index : Rebuild cached official Varmega index before matching}
+        {--rn-profi-fallback-source : Use rn-profi.by card URL when official Varmega source URL is missing}
+        {--refresh-rn-profi-cards : Ignore cached RN-Profi card matches and re-check the site}
+        {--rn-profi-card-limit=100 : Maximum uncached RN-Profi articles to check per run, 0 means no limit}
         {--matched-created-today : Sync only RN-Profi rows matched to products created today}
         {--matched-created-from= : Sync only RN-Profi rows matched to products created from this date/time}
         {--matched-created-to= : Sync only RN-Profi rows matched to products created before this date/time}
         {--enrich : Enrich products with official varmega.ru source URLs after sync}
+        {--enrich-domain=varmega.ru : Source URL domain to enrich}
         {--enrich-force : Re-enrich already filled products too}
         {--enrich-created-today : Enrich only products created today}
         {--enrich-created-from= : Enrich only products created from this date/time}
@@ -57,6 +61,10 @@ class RepairRnProfiVarmegaCommand extends Command
                 '--matched-created-to' => trim((string) $this->option('matched-created-to')) ?: null,
                 '--available-only' => true,
                 '--max-delivery-days' => (string) $this->option('max-delivery-days'),
+                '--rn-profi-cards' => (bool) $this->option('rn-profi-fallback-source'),
+                '--refresh-rn-profi-cards' => (bool) $this->option('refresh-rn-profi-cards'),
+                '--rn-profi-card-limit' => (string) $this->option('rn-profi-card-limit'),
+                '--rn-profi-fallback-source' => (bool) $this->option('rn-profi-fallback-source'),
                 '--varmega-official' => true,
                 '--varmega-refresh-index' => (bool) $this->option('varmega-refresh-index'),
                 '--varmega-probe-missing' => true,
@@ -76,7 +84,7 @@ class RepairRnProfiVarmegaCommand extends Command
                 '--apply' => $apply,
                 '--supplier' => 'rn-profi',
                 '--brand' => 'Varmega',
-                '--domain' => 'varmega.ru',
+                '--domain' => (string) $this->option('enrich-domain'),
                 '--limit' => (string) $this->option('enrich-limit'),
                 '--offset' => (string) $this->option('enrich-offset'),
                 '--force' => (bool) $this->option('enrich-force'),
