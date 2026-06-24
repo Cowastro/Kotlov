@@ -16,6 +16,9 @@ class RepairRnProfiVarmegaCommand extends Command
         {--probe-limit=1000 : Maximum missing Varmega rows to probe by guessed official URLs}
         {--enrich : Enrich products with official varmega.ru source URLs after sync}
         {--enrich-force : Re-enrich already filled products too}
+        {--enrich-created-today : Enrich only products created today}
+        {--enrich-created-from= : Enrich only products created from this date/time}
+        {--enrich-created-to= : Enrich only products created before this date/time}
         {--enrich-sleep=1200 : Sleep in milliseconds between source page requests}
         {--create-missing : Create missing Varmega products from the price list; off by default to avoid duplicates}
         {--deduplicate : Run duplicate audit/archive after sync}
@@ -65,6 +68,9 @@ class RepairRnProfiVarmegaCommand extends Command
                 '--brand' => 'Varmega',
                 '--domain' => 'varmega.ru',
                 '--force' => (bool) $this->option('enrich-force'),
+                '--created-today' => (bool) $this->option('enrich-created-today'),
+                '--created-from' => trim((string) $this->option('enrich-created-from')) ?: null,
+                '--created-to' => trim((string) $this->option('enrich-created-to')) ?: null,
                 '--sleep' => (string) $this->option('enrich-sleep'),
             ], fn ($value): bool => $value !== false && $value !== null));
 

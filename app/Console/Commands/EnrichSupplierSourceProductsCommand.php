@@ -14,6 +14,9 @@ class EnrichSupplierSourceProductsCommand extends Command
         {--brand= : Brand name filter}
         {--domain= : Source URL domain filter, for example varmega.ru}
         {--product= : Process one product ID}
+        {--created-today : Process only products created today}
+        {--created-from= : Process only products created from this date/time}
+        {--created-to= : Process only products created before this date/time}
         {--limit=50 : Max products per run}
         {--offset=0 : Skip products}
         {--apply : Write changes to DB, default is dry-run}
@@ -69,6 +72,18 @@ class EnrichSupplierSourceProductsCommand extends Command
 
         if ($productId = (int) $this->option('product')) {
             $query->where('p.id', $productId);
+        }
+
+        if ((bool) $this->option('created-today')) {
+            $query->whereDate('p.created_at', now()->toDateString());
+        }
+
+        if ($createdFrom = trim((string) $this->option('created-from'))) {
+            $query->where('p.created_at', '>=', \Carbon\Carbon::parse($createdFrom));
+        }
+
+        if ($createdTo = trim((string) $this->option('created-to'))) {
+            $query->where('p.created_at', '<=', \Carbon\Carbon::parse($createdTo));
         }
 
         if (! $force) {
