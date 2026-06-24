@@ -40,8 +40,20 @@ jobs:
       - name: Copy environment file
         run: cp .env.example .env
 
+      - name: Prepare SQLite database
+        run: touch database/database.sqlite
+
       - name: Generate app key
         run: php artisan key:generate
 
+      - name: Run migrations
+        run: php artisan migrate --force
+        env:
+          DB_CONNECTION: sqlite
+          DB_DATABASE: database/database.sqlite
+
       - name: Execute tests
         run: php artisan test
+        env:
+          DB_CONNECTION: sqlite
+          DB_DATABASE: database/database.sqlite
