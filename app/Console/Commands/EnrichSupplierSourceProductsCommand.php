@@ -102,11 +102,14 @@ class EnrichSupplierSourceProductsCommand extends Command
 
         $total = (clone $query)->distinct('p.id')->count('p.id');
         $rows = $query
-            ->orderBy('p.id')
-            ->offset($offset);
+            ->orderBy('p.id');
 
         if ($limit > 0) {
             $rows->limit($limit);
+        }
+
+        if ($offset > 0) {
+            $rows->offset($offset);
         }
 
         $rows = $rows
