@@ -523,7 +523,8 @@ class ProductSourceEnricher
     {
         $response = Http::withHeaders($this->sourcePageRequestHeaders($url))
             ->connectTimeout(10)
-            ->timeout(20)
+            ->timeout(45)
+            ->retry(2, 750)
             ->get($url);
 
         if (! $response->successful()) {
