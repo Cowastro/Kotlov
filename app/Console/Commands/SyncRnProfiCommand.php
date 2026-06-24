@@ -1510,6 +1510,49 @@ class SyncRnProfiCommand extends Command
             $tokens[$this->normArticle($token)] = true;
         }
 
+        foreach ($this->extractArticleTokensFromSlugLikeText($decoded) as $token) {
+            $tokens[$token] = true;
+        }
+
+        return array_values(array_keys($tokens));
+    }
+
+    private function extractArticleTokensFromSlugLikeText(string $text): array
+    {
+        $tokens = [];
+        preg_match_all('#(?:https?://[^\s"\']+|/[^\s"\']+)#iu', $text, $urlMatches);
+
+        foreach ($urlMatches[0] ?? [] as $url) {
+            $path = (string) (parse_url(html_entity_decode((string) $url, ENT_QUOTES | ENT_HTML5, 'UTF-8'), PHP_URL_PATH) ?: '');
+            $slug = trim(basename(trim($path, '/')));
+            if ($slug === '') {
+                continue;
+            }
+
+            $parts = array_values(array_filter(preg_split('/[-_]+/u', mb_strtolower($slug)) ?: []));
+            foreach ($parts as $i => $part) {
+                if (! preg_match('/^vm[a-z0-9]*\d[a-z0-9]*$/iu', $part)) {
+                    continue;
+                }
+
+                $combined = $part;
+                $tokens[$this->normArticle($combined)] = true;
+
+                for ($j = $i + 1; $j < min(count($parts), $i + 8); $j++) {
+                    $next = (string) $parts[$j];
+                    if ($next === '' || ! preg_match('/^[a-z0-9]+$/iu', $next)) {
+                        break;
+                    }
+
+                    $combined .= $next;
+                    $norm = $this->normArticle($combined);
+                    if (mb_strlen($norm) >= 5 && preg_match('/\d/', $norm)) {
+                        $tokens[$norm] = true;
+                    }
+                }
+            }
+        }
+
         return array_values(array_keys($tokens));
     }
 
