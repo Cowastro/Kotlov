@@ -41,7 +41,9 @@ jobs:
         run: cp .env.example .env
 
       - name: Prepare SQLite database
-        run: touch database/database.sqlite
+        run: |
+          mkdir -p database
+          touch database/database.sqlite
 
       - name: Generate app key
         run: php artisan key:generate
