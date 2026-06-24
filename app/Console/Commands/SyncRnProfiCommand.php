@@ -46,6 +46,7 @@ class SyncRnProfiCommand extends Command
         {--varmega-deep-pages=0 : Maximum official Varmega pages to fetch for deep index, 0 means all}
         {--varmega-probe-missing : Try likely official Varmega product URLs for rows missing from the sitemap index}
         {--varmega-probe-limit=50 : Maximum missing Varmega rows to probe by guessed official URLs}
+        {--only-new-source-url-domain= : Keep only rows where detected source_url has this domain and current supplier source_url does not}
         {--varmega-auto-create : Mark exact official Varmega card matches as safe create_new decisions without AI}
         {--varmega-auto-only : With --varmega-auto-create, write only official Varmega auto decisions and skip AI for remaining rows}
         {--create-unmatched-from-price : Create safe unmatched rows directly from the price list by supplier article}
@@ -196,6 +197,7 @@ class SyncRnProfiCommand extends Command
     private array $brandByName = [];
     private array $brandTokens = [];
     private array $indexBySupplierArticle = [];
+    private array $sourceUrlBySupplierArticle = [];
     private array $indexBySku = [];
     private array $indexByBrandModel = [];
     private array $indexBySourceUrl = [];
@@ -251,6 +253,7 @@ class SyncRnProfiCommand extends Command
         if ($this->option('varmega-official')) {
             $classified = $this->attachVarmegaOfficialMatches($classified);
         }
+        $classified = $this->filterByNewSourceUrlDomain($classified);
         if ($this->option('ai-match')) {
             $classified = $this->attachAiMatchDecisions($classified);
         }
@@ -797,6 +800,7 @@ class SyncRnProfiCommand extends Command
                     $article = $this->normArticle((string) $row->supplier_article);
                     if ($article !== '') {
                         $this->indexBySupplierArticle[$article] = $productId;
+                        $this->sourceUrlBySupplierArticle[$article] = (string) ($row->source_url ?? '');
                     }
 
                     $this->indexSourceUrl((string) ($row->source_url ?? ''), $productId);
@@ -893,9 +897,43 @@ class SyncRnProfiCommand extends Command
             'matched_product_id' => $match['product_id'] ?? null,
             'matched_sku' => $match['sku'] ?? null,
             'confidence' => $match['confidence'] ?? null,
+            'current_source_url' => $this->sourceUrlBySupplierArticle[$row['norm_article'] ?? ''] ?? null,
             'stock' => $stock,
             'action' => $action,
         ];
+    }
+
+    private function filterByNewSourceUrlDomain(array $rows): array
+    {
+        $domain = mb_strtolower(trim((string) $this->option('only-new-source-url-domain')));
+        if ($domain === '') {
+            return $rows;
+        }
+
+        $before = count($rows);
+        $filtered = array_values(array_filter($rows, function (array $row) use ($domain): bool {
+            if (($row['action'] ?? '') !== 'matched' || empty($row['matched_product_id'])) {
+                return false;
+            }
+
+            $newSourceUrl = mb_strtolower((string) ($row['source_url'] ?? ''));
+            if ($newSourceUrl === '' || ! str_contains($newSourceUrl, $domain)) {
+                return false;
+            }
+
+            $currentSourceUrl = mb_strtolower((string) ($row['current_source_url'] ?? ''));
+
+            return $currentSourceUrl === '' || ! str_contains($currentSourceUrl, $domain);
+        }));
+
+        $this->line(sprintf(
+            'New source URL filter: %d of %d rows selected domain=%s.',
+            count($filtered),
+            $before,
+            $domain,
+        ));
+
+        return $filtered;
     }
 
     private function syntheticSupplierArticle(array $row, string $resolvedBrand): string
