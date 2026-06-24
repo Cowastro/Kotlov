@@ -44,8 +44,11 @@ class SyncRnProfiCommand extends Command
         {--varmega-refresh-index : Rebuild cached official Varmega sitemap index}
         {--varmega-deep-index : Fetch official Varmega product pages and extract articles from page HTML}
         {--varmega-deep-pages=0 : Maximum official Varmega pages to fetch for deep index, 0 means all}
+        {--varmega-probe-missing : Try likely official Varmega product URLs for rows missing from the sitemap index}
+        {--varmega-probe-limit=50 : Maximum missing Varmega rows to probe by guessed official URLs}
         {--varmega-auto-create : Mark exact official Varmega card matches as safe create_new decisions without AI}
         {--varmega-auto-only : With --varmega-auto-create, write only official Varmega auto decisions and skip AI for remaining rows}
+        {--create-unmatched-from-price : Create safe unmatched rows directly from the price list by supplier article}
         {--ai-match : Ask configured AI provider to prepare safe match/create decisions without database writes}
         {--ai-match-limit=20 : Maximum rows to send to AI in this run, 0 means all current rows}
         {--ai-batch-size=1 : Send this many rows in one AI request for faster local audits}
@@ -564,6 +567,7 @@ class SyncRnProfiCommand extends Command
             $retail = $this->money($this->cell($row, $columns, 'retail_price'));
             $stockText = $this->cell($row, $columns, 'stock');
             $qty = $this->quantity($this->cell($row, $columns, 'qty'));
+            $qtyIsPackage = $this->quantityColumnIsPackage($sheetName, $raw[$headerIndex][$columns['qty'] ?? -1] ?? '');
             $brand = $this->cell($row, $columns, 'brand');
             $category = $this->cell($row, $columns, 'category');
 
@@ -593,6 +597,7 @@ class SyncRnProfiCommand extends Command
                 'retail_price' => $retail,
                 'stock_text' => $stockText,
                 'qty' => $qty,
+                'qty_is_package' => $qtyIsPackage,
             ];
         }
 
@@ -637,6 +642,14 @@ class SyncRnProfiCommand extends Command
         }
 
         return [$bestIndex, $this->inferMissingColumns($rows, $bestIndex, $bestColumns)];
+    }
+
+    private function quantityColumnIsPackage(string $sheetName, mixed $headerValue): bool
+    {
+        $text = mb_strtolower($this->clean($sheetName . ' ' . (string) ($headerValue ?? '')));
+
+        return str_contains($text, 'varmega')
+            && (str_contains($text, 'упаков') || str_contains($text, 'kolichestvo v upakovke'));
     }
 
     private function headerKey(string $value): ?string
@@ -1230,6 +1243,28 @@ class SyncRnProfiCommand extends Command
 
     private function fetchHttpPage(string $url, int $timeout = 25): ?string
     {
+        if (function_exists('curl_init')) {
+            $ch = curl_init($url);
+            curl_setopt_array($ch, [
+                CURLOPT_RETURNTRANSFER => true,
+                CURLOPT_FOLLOWLOCATION => true,
+                CURLOPT_MAXREDIRS => 5,
+                CURLOPT_CONNECTTIMEOUT => max(3, min(20, $timeout)),
+                CURLOPT_TIMEOUT => max(3, $timeout),
+                CURLOPT_USERAGENT => 'Mozilla/5.0 (compatible; KotlovBot/1.0)',
+                CURLOPT_HTTPHEADER => ['Accept: text/html,*/*'],
+                CURLOPT_SSL_VERIFYPEER => false,
+                CURLOPT_SSL_VERIFYHOST => false,
+            ]);
+            $html = curl_exec($ch);
+            $status = (int) curl_getinfo($ch, CURLINFO_RESPONSE_CODE);
+            curl_close($ch);
+
+            if (is_string($html) && strlen($html) >= 300 && $status < 400) {
+                return $html;
+            }
+        }
+
         $context = stream_context_create([
             'http' => [
                 'method' => 'GET',
@@ -1391,20 +1426,44 @@ class SyncRnProfiCommand extends Command
             $this->line(sprintf('Official Varmega index: %d article URLs.', count($index)));
         }
 
-        return array_map(function (array $row) use ($index): array {
+        $missingProbes = 0;
+        $probeSkipped = 0;
+        $probeMatches = 0;
+        $probeLimit = max(0, (int) $this->option('varmega-probe-limit'));
+
+        $rows = array_map(function (array $row) use ($index, &$missingProbes, &$probeSkipped, &$probeMatches, $probeLimit): array {
             $article = $this->normArticle((string) ($row['article'] ?? ''));
             $brand = $this->brandKey((string) ($row['resolved_brand'] ?: ($row['brand'] ?? '')));
             $match = $article !== '' && $brand === $this->brandKey('Varmega') && isset($index[$article])
                 ? $index[$article]
                 : null;
 
+            if ($match === null && $article !== '' && $brand === $this->brandKey('Varmega') && $this->option('varmega-probe-missing')) {
+                if ($probeLimit === 0 || $missingProbes < $probeLimit) {
+                    $missingProbes++;
+                    $match = $this->probeVarmegaOfficialMatch($row);
+                    if ($match !== null) {
+                        $probeMatches++;
+                    }
+                } else {
+                    $probeSkipped++;
+                }
+            }
+
             return $row + [
                 'varmega_url' => $match['url'] ?? null,
                 'varmega_score' => $match ? 1.0 : null,
-                'varmega_confidence' => $match ? 'article_sitemap' : null,
+                'varmega_confidence' => $match['confidence'] ?? ($match ? 'article_sitemap' : null),
                 'varmega_category_path' => $match['category_path'] ?? null,
+                'source_url' => $match['url'] ?? ($row['source_url'] ?? null),
             ];
         }, $rows);
+
+        if ($missingProbes > 0) {
+            $this->line(sprintf('Official Varmega URL probes: checked=%d matched=%d skipped=%d.', $missingProbes, $probeMatches, $probeSkipped));
+        }
+
+        return $rows;
     }
 
     private function loadVarmegaOfficialIndex(): array
@@ -1549,6 +1608,111 @@ class SyncRnProfiCommand extends Command
             'urls' => $this->varmegaOfficialUrls,
             'items' => $index,
         ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT));
+    }
+
+    private function probeVarmegaOfficialMatch(array $row): ?array
+    {
+        $article = $this->normArticle((string) ($row['article'] ?? ''));
+        if ($article === '') {
+            return null;
+        }
+
+        foreach ($this->varmegaCandidateUrls($row) as $url) {
+            $html = $this->fetchHttpPage($url, 8);
+            if ($html === null) {
+                continue;
+            }
+
+            $tokens = $this->extractSupplierArticleTokens($url . ' ' . $html);
+            if (! in_array($article, $tokens, true)) {
+                continue;
+            }
+
+            return [
+                'url' => $url,
+                'category_path' => $this->varmegaCategoryPath($url),
+                'confidence' => 'probed_url',
+            ];
+        }
+
+        return null;
+    }
+
+    private function varmegaCandidateUrls(array $row): array
+    {
+        $article = mb_strtolower($this->normArticle((string) ($row['article'] ?? '')));
+        if ($article === '') {
+            return [];
+        }
+
+        $brand = (string) ($row['resolved_brand'] ?: ($row['brand'] ?? 'Varmega'));
+        $category = (string) ($row['category_text'] ?? '');
+        $name = (string) ($row['name'] ?? '');
+        $sheet = (string) ($row['sheet'] ?? '');
+        $baseTitle = trim(preg_replace('/\s+/u', ' ', trim($category . ' ' . $article . ' ' . $name)) ?? '');
+        $slug = $this->varmegaProductSlug($baseTitle);
+
+        $urls = [];
+        $prefixes = [];
+        $categoryKey = mb_strtolower($sheet . ' ' . $category . ' ' . $name);
+        if (str_starts_with($article, 'vm700304')) {
+            $dimension = $this->varmegaDimensionSlug($name);
+            if ($dimension !== '') {
+                $urls[] = 'https://varmega.ru/product/truby-i-fitingi/truba-iz-nerzhaveyushchey-stali-varmega-inox-press-' . $article . '-' . $dimension . '/';
+            }
+        }
+        if (str_contains($categoryKey, 'inox') || str_contains($categoryKey, 'нержав')) {
+            $prefixes[] = 'truby-i-fitingi';
+            if (str_contains($categoryKey, 'труба')) {
+                $dimension = $this->varmegaDimensionSlug($name);
+                if ($dimension !== '') {
+                    $urls[] = 'https://varmega.ru/product/truby-i-fitingi/truba-iz-nerzhaveyushchey-stali-varmega-inox-press-' . $article . '-' . $dimension . '/';
+                }
+            }
+        }
+        if (str_contains($categoryKey, 'насос')) {
+            $prefixes[] = 'nasosnoe-oborudovanie';
+            $prefixes[] = 'nasosy';
+            $prefixes[] = 'smesitelnaya-armatura';
+        }
+        if (str_contains($categoryKey, 'slide')) {
+            $prefixes[] = 'truby-i-fitingi';
+        }
+        if ($prefixes === []) {
+            $path = $this->varmegaCategoryPath((string) ($row['varmega_url'] ?? ''));
+            if ($path !== '') {
+                $prefixes[] = $path;
+            }
+            $prefixes[] = 'truby-i-fitingi';
+        }
+
+        foreach (array_values(array_unique(array_filter($prefixes))) as $prefix) {
+            if ($slug !== '') {
+                $urls[] = 'https://varmega.ru/product/' . trim($prefix, '/') . '/' . $slug . '/';
+            }
+        }
+
+        return array_values(array_unique($urls));
+    }
+
+    private function varmegaDimensionSlug(string $value): string
+    {
+        $value = mb_strtolower(trim($value));
+        $value = str_replace(',', '.', $value);
+        if (preg_match('/(\d+)\s*[xх]\s*(\d+)(?:\.(\d+))?/u', $value, $match)) {
+            return trim($match[1] . '-' . $match[2] . '-' . ($match[3] ?? '0'), '-');
+        }
+
+        return '';
+    }
+
+    private function varmegaProductSlug(string $value): string
+    {
+        $slug = Str::slug($value);
+        $slug = preg_replace('/-(\d+)x(\d+)-(\d+)(?=-|$)/i', '-$1-$2-$3', $slug) ?? $slug;
+        $slug = preg_replace('/-(\d+)kh(\d+)-(\d+)(?=-|$)/i', '-$1-$2-$3', $slug) ?? $slug;
+
+        return trim($slug, '-');
     }
 
     private function varmegaCategoryPath(string $url): string
@@ -2805,7 +2969,7 @@ PROMPT;
         }
 
         $this->info('RN-Profi audit:');
-        $this->table(['metric', 'count'], [
+        $auditRows = [
             ['parsed rows', count($rows)],
             ['rows with wholesale price', count(array_filter($rows, fn ($r) => $r['price'] !== null))],
             ['rows with retail price', count(array_filter($rows, fn ($r) => $r['retail_price'] !== null))],
@@ -2813,7 +2977,11 @@ PROMPT;
             ['new/unmatched candidates', $actions['unmatched'] ?? 0],
             ['missing/unknown brands', $actions['brand_missing'] ?? 0],
             ['missing wholesale price', $actions['price_missing'] ?? 0],
-        ]);
+        ];
+        if ($this->option('create-unmatched-from-price')) {
+            $auditRows[] = ['price-list create candidates', count(array_filter($rows, fn ($row) => $this->canCreateUnmatchedFromPrice($row)))];
+        }
+        $this->table(['metric', 'count'], $auditRows);
 
         $this->info('Stock statuses:');
         $this->table(['stock_status', 'rows'], $this->mapCounts($stocks));
@@ -2936,8 +3104,12 @@ PROMPT;
         $now = now();
         $supplierId = $this->ensureSupplier($now);
         $syncId = $this->ensureSync($now);
-        $stats = array_fill_keys(['matched_updated', 'retail_synced', 'skipped', 'missing_marked_out_of_stock', 'errors'], 0);
+        $stats = array_fill_keys([
+            'matched_updated', 'retail_synced', 'created_from_price', 'enriched_created',
+            'skipped', 'skipped_duplicate_article', 'missing_marked_out_of_stock', 'errors',
+        ], 0);
         $presentArticles = [];
+        $createUnmatched = (bool) $this->option('create-unmatched-from-price');
 
         foreach ($rows as $row) {
             if ($row['norm_article'] !== '') {
@@ -2945,6 +3117,43 @@ PROMPT;
             }
 
             if ($row['action'] !== 'matched' || $row['matched_product_id'] === null || $row['price'] === null) {
+                if ($createUnmatched && $this->canCreateUnmatchedFromPrice($row)) {
+                    try {
+                        $existingProductId = (int) (DB::table('supplier_products')
+                            ->where('supplier_id', $supplierId)
+                            ->where('supplier_article_normalized', $row['norm_article'])
+                            ->value('product_id') ?? 0);
+
+                        if ($existingProductId > 0) {
+                            $stats['skipped_duplicate_article']++;
+                            continue;
+                        }
+
+                        $productId = $this->createProductFromPriceRow($row, $now);
+                        $row['matched_product_id'] = $productId;
+                        $row['matched_sku'] = $this->sku($productId);
+                        $row['confidence'] = 'price_article_create';
+                        $this->upsertSupplierProduct($row, $supplierId, $syncId, $now);
+                        $stats['created_from_price']++;
+
+                        if ((bool) $this->option('enrich-created') && ! empty($row['source_url'])) {
+                            $product = \App\Models\Product::findOrFail($productId);
+                            app(ProductSourceEnricher::class)->enrich($product, (string) $row['source_url'], [
+                                'update_images' => true,
+                                'replace_images' => true,
+                                'update_specs' => true,
+                                'update_service' => true,
+                                'update_content' => true,
+                            ]);
+                            $stats['enriched_created']++;
+                        }
+                    } catch (\Throwable $e) {
+                        $stats['errors']++;
+                        $this->warn("[create error] {$row['article']} {$row['name']}: {$e->getMessage()}");
+                    }
+                    continue;
+                }
+
                 $stats['skipped']++;
                 continue;
             }
@@ -3208,6 +3417,112 @@ PROMPT;
         ]);
     }
 
+    private function canCreateUnmatchedFromPrice(array $row): bool
+    {
+        if (($row['action'] ?? '') === 'matched') {
+            return false;
+        }
+        if (($row['norm_article'] ?? '') === '' || ($row['price'] ?? null) === null) {
+            return false;
+        }
+        if (($row['resolved_brand_id'] ?? null) === null) {
+            return false;
+        }
+
+        return $this->brandKey((string) ($row['resolved_brand'] ?: ($row['brand'] ?? ''))) === $this->brandKey('Varmega');
+    }
+
+    private function createProductFromPriceRow(array $row, $now): int
+    {
+        $brandId = (int) ($row['resolved_brand_id'] ?? 0);
+        $categoryId = $this->categoryIdFromPriceRow($row, $now);
+        if ($categoryId <= 0 || ! DB::table('categories')->where('id', $categoryId)->exists()) {
+            $categoryId = $this->fallbackCategoryId();
+        }
+
+        $name = $this->productNameFromPriceRow($row);
+        $short = trim($name . ' (' . ($row['article'] ?? '') . ')');
+        $sku = $this->nextKotlovSku();
+
+        return (int) DB::table('products')->insertGetId([
+            'category_id' => $categoryId,
+            'brand_id' => $brandId > 0 ? $brandId : null,
+            'supplier_id' => null,
+            'name' => $name,
+            'slug' => $this->uniqueSlug($name),
+            'h1' => $name,
+            'sku' => $sku,
+            'price' => (float) ($row['retail_price'] ?? 0),
+            'price_old' => null,
+            'currency' => 'BYN',
+            'content' => null,
+            'short_description' => $short,
+            'images' => json_encode([], JSON_UNESCAPED_UNICODE),
+            'specs' => json_encode([], JSON_UNESCAPED_UNICODE),
+            'unit' => 'шт',
+            'warranty' => null,
+            'is_active' => true,
+            'is_archived' => false,
+            'in_stock' => (bool) ($row['stock']['in_stock'] ?? false),
+            'availability_status' => ($row['stock']['in_stock'] ?? false)
+                ? \App\Models\Product::AVAILABILITY_IN_STOCK
+                : \App\Models\Product::AVAILABILITY_CHECK,
+            'stock_qty' => null,
+            'is_featured' => false,
+            'is_new' => true,
+            'is_sale' => false,
+            'sort_order' => 0,
+            'meta_title' => $name . ' купить в %city%',
+            'meta_keywords' => trim(($row['resolved_brand'] ?: $row['brand']) . ', ' . $name . ', ' . ($row['article'] ?? ''), ', '),
+            'meta_description' => Str::limit($short . ' - купить с доставкой по Беларуси.', 250, ''),
+            'rating' => 0,
+            'reviews_count' => 0,
+            'views_count' => 0,
+            'created_at' => $now,
+            'updated_at' => $now,
+        ]);
+    }
+
+    private function productNameFromPriceRow(array $row): string
+    {
+        $brand = trim((string) ($row['resolved_brand'] ?: ($row['brand'] ?? '')));
+        $category = trim((string) ($row['category_text'] ?? ''));
+        $article = trim((string) ($row['article'] ?? ''));
+        $name = trim((string) ($row['name'] ?? ''));
+
+        $rawName = trim(preg_replace('/\s+/u', ' ', implode(' ', array_filter([$category, $article, $name]))) ?? '');
+        $fullName = trim($brand . ' ' . $rawName);
+
+        return preg_replace('/\s+/u', ' ', $fullName) ?: trim($brand . ' ' . $article);
+    }
+
+    private function categoryIdFromPriceRow(array $row, $now): int
+    {
+        $decisionCategory = $this->categoryIdFromDecision([
+            'varmega_url' => $row['varmega_url'] ?? $row['source_url'] ?? '',
+            'teplodvor_category_id' => $row['teplodvor_category_id'] ?? null,
+        ], true, $now);
+
+        if ($decisionCategory > 0) {
+            return $decisionCategory;
+        }
+
+        $text = mb_strtolower(trim(($row['sheet'] ?? '') . ' ' . ($row['category_text'] ?? '') . ' ' . ($row['name'] ?? '')));
+        $slug = null;
+
+        if (str_contains($text, 'насос')) {
+            $slug = 'tsirkulyatsionnye-nasosy';
+        } elseif (str_contains($text, 'inox') || str_contains($text, 'нержав')) {
+            $slug = str_contains($text, 'труба') ? 'mednye-i-stalnye-truby' : 'press-fitingi';
+        } elseif (str_contains($text, 'slide')) {
+            $slug = 'press-fitingi';
+        } elseif (str_contains($text, 'радиатор')) {
+            $slug = 'radiatornaya-armatura';
+        }
+
+        return $slug ? $this->categoryIdBySlug($slug, true, $now) : 0;
+    }
+
     private function decisionToSupplierRow(array $decision, int $productId, array $sourcePreview = []): array
     {
         $stockStatus = (string) ($decision['stock_status'] ?? 'in_stock');
@@ -3421,7 +3736,7 @@ PROMPT;
             'currency_rate' => 1.0,
             'price_byn' => $row['price'],
             'in_stock' => $row['stock']['in_stock'],
-            'stock_quantity' => $row['qty'],
+            'stock_quantity' => ($row['qty_is_package'] ?? false) ? null : $row['qty'],
             'stock_status' => $row['stock']['status'],
             'stock_text' => $row['stock_text'] !== '' ? $row['stock_text'] : null,
             'delivery_days' => $row['stock']['delivery_days'],
@@ -3434,6 +3749,8 @@ PROMPT;
                 'brand' => $row['brand'],
                 'category' => $row['category_text'],
                 'retail_price' => $row['retail_price'],
+                'package_quantity' => ($row['qty_is_package'] ?? false) ? $row['qty'] : null,
+                'quantity_is_package' => (bool) ($row['qty_is_package'] ?? false),
                 'source' => $row['raw_source'] ?? [],
             ], JSON_UNESCAPED_UNICODE),
             'last_synced_at' => $now,
