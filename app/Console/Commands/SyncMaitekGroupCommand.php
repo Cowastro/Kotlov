@@ -49,6 +49,9 @@ class SyncMaitekGroupCommand extends Command
     private array $indexByProductName = [];
 
     /** @var array<string,int> */
+    private array $indexByModelSignature = [];
+
+    /** @var array<string,int> */
     private array $indexBySourceUrl = [];
 
     /** @var array<string,int> */
@@ -413,6 +416,11 @@ class SyncMaitekGroupCommand extends Command
                     $this->indexByProductName[$nameKey] = $productId;
                 }
 
+                $signature = $this->modelSignature((string) $product->name);
+                if ($signature !== '') {
+                    $this->indexByModelSignature[$signature] = $productId;
+                }
+
                 $brandId = (int) $product->brand_id;
                 if ($brandId > 0 && isset($this->brandNameById[$brandId])) {
                     $key = $this->brandKey($this->brandNameById[$brandId]) . '|' . $this->modelKey((string) $product->name, $this->brandNameById[$brandId]);
@@ -464,6 +472,16 @@ class SyncMaitekGroupCommand extends Command
         $plainNameKey = $this->nameKey($row['name']);
         if (isset($this->indexByProductName[$plainNameKey])) {
             return ['product_id' => $this->indexByProductName[$plainNameKey], 'confidence' => 'exact_plain_name'];
+        }
+
+        $signature = $this->modelSignature($row['brand'] . ' ' . $row['name']);
+        if ($signature !== '' && isset($this->indexByModelSignature[$signature])) {
+            return ['product_id' => $this->indexByModelSignature[$signature], 'confidence' => 'model_signature'];
+        }
+
+        $plainSignature = $this->modelSignature($row['name']);
+        if ($plainSignature !== '' && isset($this->indexByModelSignature[$plainSignature])) {
+            return ['product_id' => $this->indexByModelSignature[$plainSignature], 'confidence' => 'plain_model_signature'];
         }
 
         if ($brandId !== null) {
@@ -923,6 +941,45 @@ class SyncMaitekGroupCommand extends Command
         }
 
         return trim(preg_replace('/\s+/u', ' ', $name) ?? $name);
+    }
+
+    private function modelSignature(string $value): string
+    {
+        $value = $this->nameKey($value);
+        $words = [
+            'котел',
+            'котёл',
+            'котлы',
+            'электрический',
+            'твердотопливный',
+            'уличный',
+            'печь',
+            'дымоход',
+            'клапан',
+            'заглушка',
+            'переходник',
+            'для',
+            'и',
+            'с',
+            'на',
+            'в',
+            'стэн',
+            'sten',
+            'каракан',
+            'greolit',
+            'греолит',
+            'new',
+        ];
+
+        foreach ($words as $word) {
+            $value = trim(preg_replace('/\b' . preg_quote($word, '/') . '\b/u', ' ', $value) ?? $value);
+        }
+
+        $value = preg_replace('/\bквт\b/u', ' ', $value) ?? $value;
+        $value = preg_replace('/\bkw\b/u', ' ', $value) ?? $value;
+        $value = preg_replace('/\s+/u', ' ', $value) ?? $value;
+
+        return preg_replace('/[^a-zа-яё0-9]+/u', '', $value) ?? '';
     }
 
     private function uniqueSlug(string $name): string
