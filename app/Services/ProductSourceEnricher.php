@@ -637,6 +637,17 @@ class ProductSourceEnricher
             $parsed['images'] = array_values(array_unique(array_merge($parsed['images'], $ozon['images'])));
         }
 
+        if ($this->isSanteh24Url($url)) {
+            $santeh24 = $this->extractSanteh24Data($html, $url);
+            if ($santeh24['description'] !== '') {
+                $parsed['description'] = $santeh24['description'];
+                $parsed['short_description'] = $santeh24['description'];
+            }
+            if ($santeh24['specs'] !== []) {
+                $parsed['specs'] = $santeh24['specs'];
+            }
+        }
+
         return $this->normalizeParsedData($parsed);
     }
 
@@ -666,6 +677,115 @@ class ProductSourceEnricher
     private function isOzonUrl(string $url): bool
     {
         return str_contains((string) parse_url($url, PHP_URL_HOST), 'ozon.');
+    }
+
+    private function isSanteh24Url(string $url): bool
+    {
+        return str_contains((string) parse_url($url, PHP_URL_HOST), 'santeh24.by');
+    }
+
+    private function extractMetaDescription(string $html): string
+    {
+        foreach ([
+            '~<meta[^>]+name=["\']description["\'][^>]+content=["\'](.*?)["\'][^>]*>~iu',
+            '~<meta[^>]+property=["\']og:description["\'][^>]+content=["\'](.*?)["\'][^>]*>~iu',
+        ] as $pattern) {
+            if (preg_match($pattern, $html, $match)) {
+                $text = $this->cleanText(html_entity_decode(strip_tags($match[1]), ENT_QUOTES | ENT_HTML5, 'UTF-8'));
+                if (mb_strlen($text) >= 25) {
+                    return $text;
+                }
+            }
+        }
+
+        return '';
+    }
+
+    /**
+     * @return array{description: string, specs: array<int, array<string, string>>}
+     */
+    private function extractSanteh24Data(string $html, string $url): array
+    {
+        $data = [
+            'description' => $this->extractMetaDescription($html),
+            'specs' => [],
+        ];
+
+        if (preg_match('~<meta[^>]+property=["\']og:description["\'][^>]+content=["\'](.*?)["\'][^>]*>~iu', $html, $match)) {
+            $description = $this->cleanText(html_entity_decode(strip_tags($match[1]), ENT_QUOTES | ENT_HTML5, 'UTF-8'));
+            if (mb_strlen($description) >= 25) {
+                $data['description'] = $description;
+            }
+        }
+
+        $listingHtml = $this->fetchSanteh24ListingHtml($url);
+        if ($listingHtml === '') {
+            return $data;
+        }
+
+        $productId = $this->santeh24ProductId($url);
+        if ($productId === '') {
+            return $data;
+        }
+
+        $block = $this->santeh24ProductBlock($listingHtml, $productId);
+        if ($block === '') {
+            return $data;
+        }
+
+        if (preg_match('~<div[^>]+class=["\'][^"\']*preview_text[^"\']*["\'][^>]*>([\s\S]*?)</div>~iu', $block, $match)) {
+            $description = $this->cleanText(html_entity_decode(strip_tags($match[1]), ENT_QUOTES | ENT_HTML5, 'UTF-8'));
+            if (mb_strlen($description) >= 25) {
+                $data['description'] = $description;
+            }
+        }
+
+        $specs = [];
+        if (preg_match_all('~<tr>\s*<td>\s*<span[^>]+class=["\']char_name["\'][^>]*>\s*(.*?)\s*</span>\s*</td>\s*<td>\s*<span[^>]*>\s*(.*?)\s*</span>~isu', $block, $matches, PREG_SET_ORDER)) {
+            foreach ($matches as $match) {
+                $this->addSpec(
+                    $specs,
+                    html_entity_decode(strip_tags($match[1]), ENT_QUOTES | ENT_HTML5, 'UTF-8'),
+                    html_entity_decode(strip_tags($match[2]), ENT_QUOTES | ENT_HTML5, 'UTF-8')
+                );
+            }
+        }
+
+        $data['specs'] = array_values($specs);
+
+        return $data;
+    }
+
+    private function fetchSanteh24ListingHtml(string $url): string
+    {
+        $path = (string) parse_url($url, PHP_URL_PATH);
+        if (! preg_match('~^(.*/)\d+/?$~', $path, $match)) {
+            return '';
+        }
+
+        $listingUrl = (parse_url($url, PHP_URL_SCHEME) ?: 'https') . '://' . parse_url($url, PHP_URL_HOST) . $match[1];
+
+        try {
+            return $this->fetchHtml($listingUrl);
+        } catch (\Throwable) {
+            return '';
+        }
+    }
+
+    private function santeh24ProductId(string $url): string
+    {
+        $path = (string) parse_url($url, PHP_URL_PATH);
+
+        return preg_match('~/(\d+)/?$~', $path, $match) ? $match[1] : '';
+    }
+
+    private function santeh24ProductBlock(string $html, string $productId): string
+    {
+        if (! preg_match('~id=["\'][^"\']*_' . preg_quote($productId, '~') . '["\'][\s\S]*?(?=<div[^>]+class=["\'][^"\']*list_item_wrapp|\z)~iu', $html, $match)) {
+            return '';
+        }
+
+        return $match[0];
     }
 
     /**

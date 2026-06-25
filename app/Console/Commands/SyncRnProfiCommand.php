@@ -43,6 +43,8 @@ class SyncRnProfiCommand extends Command
         {--rn-profi-crawl-pages=160 : Maximum RN-Profi site pages to crawl for card/article index}
         {--rn-profi-card-limit=100 : Maximum uncached RN-Profi articles to check per run, 0 means no limit}
         {--rn-profi-fallback-source : Use rn-profi.by card URL as source_url when no better source URL was found}
+        {--santeh24-url=* : Candidate santeh24.by product URL to match current price rows by title/model}
+        {--santeh24-min-score=18 : Minimum token score for --santeh24-url matching}
         {--varmega-official : Match Varmega rows to official varmega.ru product cards by supplier article}
         {--varmega-sitemap=https://varmega.ru/sitemap-iblock-43.xml : Official Varmega product sitemap URL}
         {--varmega-refresh-index : Rebuild cached official Varmega sitemap index}
@@ -259,6 +261,9 @@ class SyncRnProfiCommand extends Command
         }
         if ($this->option('varmega-official')) {
             $classified = $this->attachVarmegaOfficialMatches($classified);
+        }
+        if ($this->option('santeh24-url')) {
+            $classified = $this->attachSanteh24SourceUrls($classified);
         }
         if ($this->option('rn-profi-fallback-source')) {
             $classified = $this->applyRnProfiFallbackSource($classified);
@@ -1345,6 +1350,104 @@ class SyncRnProfiCommand extends Command
         $this->line(sprintf('RN-Profi fallback source URLs: %d rows selected.', $updated));
 
         return $rows;
+    }
+
+    private function attachSanteh24SourceUrls(array $rows): array
+    {
+        $urls = array_values(array_filter(array_map(
+            fn ($url): string => trim((string) $url),
+            (array) $this->option('santeh24-url')
+        )));
+        if ($urls === []) {
+            return $rows;
+        }
+
+        $cards = [];
+        foreach ($urls as $url) {
+            if (! filter_var($url, FILTER_VALIDATE_URL) || ! str_contains(mb_strtolower((string) parse_url($url, PHP_URL_HOST)), 'santeh24.by')) {
+                $this->warn('Skipped non-santeh24 URL: ' . $url);
+                continue;
+            }
+
+            try {
+                $preview = app(ProductSourceEnricher::class)->preview($url);
+                $title = trim((string) ($preview['title'] ?? ''));
+                if ($title === '') {
+                    $this->warn('Santeh24 card has empty title: ' . $url);
+                    continue;
+                }
+
+                $cards[] = [
+                    'url' => $url,
+                    'title' => $title,
+                ];
+            } catch (\Throwable $e) {
+                $this->warn('Santeh24 preview failed: ' . $url . ' - ' . $e->getMessage());
+            }
+        }
+
+        if ($cards === []) {
+            return $rows;
+        }
+
+        $minScore = max(1, (int) $this->option('santeh24-min-score'));
+        $matched = 0;
+
+        foreach ($rows as $index => $row) {
+            $queryTokens = $this->aiMatchTokens((string) ($row['name'] ?? ''));
+            if ($queryTokens === []) {
+                continue;
+            }
+
+            $best = null;
+            foreach ($cards as $card) {
+                if (! $this->allNumericTokensPresent($queryTokens, $card['title'])) {
+                    continue;
+                }
+
+                $score = $this->aiCandidateScore($queryTokens, $card['title']);
+                if ($score < $minScore || ($best !== null && $score <= $best['score'])) {
+                    continue;
+                }
+
+                $best = [
+                    'score' => $score,
+                    'url' => $card['url'],
+                    'title' => $card['title'],
+                ];
+            }
+
+            if ($best === null) {
+                continue;
+            }
+
+            $rows[$index]['santeh24_url'] = $best['url'];
+            $rows[$index]['santeh24_title'] = $best['title'];
+            $rows[$index]['santeh24_score'] = $best['score'];
+            $rows[$index]['source_url'] = $best['url'];
+            $rows[$index]['raw_source'] = array_merge($rows[$index]['raw_source'] ?? [], [
+                'santeh24_url' => $best['url'],
+                'santeh24_title' => $best['title'],
+                'santeh24_score' => $best['score'],
+            ]);
+            $matched++;
+        }
+
+        $this->line(sprintf('Santeh24 source matches: %d of %d candidate rows.', $matched, count($rows)));
+
+        return $rows;
+    }
+
+    private function allNumericTokensPresent(array $queryTokens, string $title): bool
+    {
+        $titleTokens = array_flip($this->aiMatchTokens($title));
+        foreach ($queryTokens as $token) {
+            if (ctype_digit($token) && ! isset($titleTokens[$token])) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     private function loadRnProfiCardCache(): array
@@ -4519,6 +4622,10 @@ PROMPT;
             $headers[] = 'td_score';
             $headers[] = 'cat_id';
         }
+        if ($this->option('santeh24-url')) {
+            $headers[] = 'santeh24';
+            $headers[] = 's24_score';
+        }
         if ($this->option('ai-match')) {
             $headers[] = 'ai_decision';
             $headers[] = 'ai_conf';
@@ -4560,6 +4667,11 @@ PROMPT;
                 $data[] = $row['teplodvor_url'] ? mb_substr((string) $row['teplodvor_url'], 0, 56) : '-';
                 $data[] = $row['teplodvor_score'] !== null ? number_format((float) $row['teplodvor_score'], 2, '.', '') : '-';
                 $data[] = $row['teplodvor_category_id'] ?? '-';
+            }
+
+            if ($this->option('santeh24-url')) {
+                $data[] = ($row['santeh24_url'] ?? null) ? mb_substr((string) $row['santeh24_url'], 0, 56) : '-';
+                $data[] = $row['santeh24_score'] ?? '-';
             }
 
             if ($this->option('ai-match')) {
