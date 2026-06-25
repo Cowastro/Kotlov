@@ -48,10 +48,10 @@ return [
 
     'ai' => [
         'anthropic_key' => env('ANTHROPIC_API_KEY', ''),
-        'api_key'       => env('AI_API_KEY', env('OPENAI_API_KEY', '')),
-        'api_url'       => env('AI_API_URL', env('OPENAI_API_URL', env('OPENAI_API_KEY') ? 'https://api.openai.com/v1/chat/completions' : '')),
-        'model'         => env('AI_MODEL', env('OPENAI_MODEL', 'deepseek-chat')),
-        'match_model'   => env('AI_MATCH_MODEL', env('OPENAI_MATCH_MODEL', '')),
+        'api_key'       => env('AI_API_KEY', ''),
+        'api_url'       => env('AI_API_URL', ''),
+        'model'         => env('AI_MODEL', 'deepseek-chat'),
+        'match_model'   => env('AI_MATCH_MODEL', ''),
     ],
 
 ];
