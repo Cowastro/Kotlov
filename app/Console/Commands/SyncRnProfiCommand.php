@@ -67,6 +67,7 @@ class SyncRnProfiCommand extends Command
         {--update-existing-categories : With --apply-ai-decisions, update categories for already linked supplier products from source URL mapping}
         {--category-update-only : With --apply-ai-decisions, only create mapped categories and update existing supplier-linked products; do not link or create products}
         {--sync-retail-prices : Update products.price from detected retail price column}
+        {--only-linked : Update only existing RN-Profi supplier links; do not create new supplier links}
         {--mark-missing-out-of-stock : Mark existing RN-Profi links absent from the sheet as out_of_stock}';
 
     protected $description = 'Audit and sync RN-Profi Google price list: brands, stock, wholesale and retail prices.';
@@ -727,6 +728,41 @@ class SyncRnProfiCommand extends Command
             if ($candidates !== []) {
                 arsort($candidates);
                 $columns['name'] = (int) array_key_first($candidates);
+            }
+        }
+
+        if (! isset($columns['retail_price']) && isset($columns['price'])) {
+            $priceColumn = (int) $columns['price'];
+            $candidates = [];
+
+            foreach (range($priceColumn + 1, $priceColumn + 4) as $candidate) {
+                if (in_array($candidate, [$columns['stock'] ?? -1, $columns['qty'] ?? -1, $columns['name'] ?? -1, $columns['article'] ?? -1], true)) {
+                    continue;
+                }
+
+                $numericRows = 0;
+                $greaterThanWholesale = 0;
+                foreach (array_slice($rows, $headerIndex + 1, 35) as $row) {
+                    $retail = $this->money($this->clean((string) ($row[$candidate] ?? '')));
+                    if ($retail === null) {
+                        continue;
+                    }
+
+                    $numericRows++;
+                    $wholesale = $this->money($this->clean((string) ($row[$priceColumn] ?? '')));
+                    if ($wholesale !== null && $retail >= $wholesale) {
+                        $greaterThanWholesale++;
+                    }
+                }
+
+                if ($numericRows >= 3) {
+                    $candidates[$candidate] = $numericRows + $greaterThanWholesale;
+                }
+            }
+
+            if ($candidates !== []) {
+                arsort($candidates);
+                $columns['retail_price'] = (int) array_key_first($candidates);
             }
         }
 
@@ -3288,10 +3324,12 @@ PROMPT;
         $syncId = $this->ensureSync($now);
         $stats = array_fill_keys([
             'matched_updated', 'retail_synced', 'created_from_price', 'enriched_created',
-            'skipped', 'skipped_duplicate_article', 'missing_marked_out_of_stock', 'errors',
+            'supplier_price_changed', 'supplier_stock_changed', 'retail_price_changed',
+            'skipped', 'skipped_not_linked', 'skipped_duplicate_article', 'missing_marked_out_of_stock', 'errors',
         ], 0);
         $presentArticles = [];
         $createUnmatched = (bool) $this->option('create-unmatched-from-price');
+        $onlyLinked = (bool) $this->option('only-linked');
 
         foreach ($rows as $row) {
             if ($row['norm_article'] !== '') {
@@ -3341,10 +3379,28 @@ PROMPT;
             }
 
             try {
+                $existingSupplierProduct = $this->existingSupplierProduct($supplierId, $row);
+                if ($onlyLinked && ! $existingSupplierProduct) {
+                    $stats['skipped_not_linked']++;
+                    continue;
+                }
+
+                if ($existingSupplierProduct && $this->supplierPriceChanged($existingSupplierProduct, $row)) {
+                    $stats['supplier_price_changed']++;
+                }
+                if ($existingSupplierProduct && $this->supplierStockChanged($existingSupplierProduct, $row)) {
+                    $stats['supplier_stock_changed']++;
+                }
+
                 $this->upsertSupplierProduct($row, $supplierId, $syncId, $now);
                 $stats['matched_updated']++;
 
                 if ($this->option('sync-retail-prices') && $row['retail_price'] !== null) {
+                    $currentRetail = DB::table('products')->where('id', $row['matched_product_id'])->value('price');
+                    if ($this->decimalChanged($currentRetail, $row['retail_price'])) {
+                        $stats['retail_price_changed']++;
+                    }
+
                     DB::table('products')->where('id', $row['matched_product_id'])->update([
                         'price' => $row['retail_price'],
                         'updated_at' => $now,
@@ -3960,6 +4016,75 @@ PROMPT;
                 'created_at' => $now,
             ]
         );
+    }
+
+    private function existingSupplierProduct(int $supplierId, array $row): ?object
+    {
+        $productId = (int) ($row['matched_product_id'] ?? 0);
+        if ($productId > 0) {
+            $existing = DB::table('supplier_products')
+                ->where('supplier_id', $supplierId)
+                ->where('product_id', $productId)
+                ->first();
+
+            if ($existing) {
+                return $existing;
+            }
+        }
+
+        $article = trim((string) (($row['norm_article'] ?? '') ?: ($row['article'] ?? '')));
+        if ($article === '') {
+            return null;
+        }
+
+        return DB::table('supplier_products')
+            ->where('supplier_id', $supplierId)
+            ->where(function ($query) use ($article) {
+                $query->where('supplier_article_normalized', $article)
+                    ->orWhere('supplier_article', $article);
+            })
+            ->first();
+    }
+
+    private function supplierPriceChanged(object $existing, array $row): bool
+    {
+        return $this->decimalChanged($existing->price_byn ?? $existing->price ?? null, $row['price'] ?? null);
+    }
+
+    private function supplierStockChanged(object $existing, array $row): bool
+    {
+        $stockQuantity = ($row['qty_is_package'] ?? false) ? null : ($row['qty'] ?? null);
+        $stockText = ($row['stock_text'] ?? '') !== '' ? $row['stock_text'] : null;
+
+        return (bool) $existing->in_stock !== (bool) ($row['stock']['in_stock'] ?? false)
+            || (string) ($existing->stock_status ?? '') !== (string) ($row['stock']['status'] ?? '')
+            || $this->decimalChanged($existing->stock_quantity ?? null, $stockQuantity)
+            || $this->intChanged($existing->delivery_days ?? null, $row['stock']['delivery_days'] ?? null)
+            || (string) ($existing->stock_text ?? '') !== (string) ($stockText ?? '');
+    }
+
+    private function decimalChanged($old, $new): bool
+    {
+        if ($old === null && $new === null) {
+            return false;
+        }
+        if ($old === null || $new === null) {
+            return true;
+        }
+
+        return abs((float) $old - (float) $new) > 0.009;
+    }
+
+    private function intChanged($old, $new): bool
+    {
+        if ($old === null && $new === null) {
+            return false;
+        }
+        if ($old === null || $new === null) {
+            return true;
+        }
+
+        return (int) $old !== (int) $new;
     }
 
     private function markMissingOutOfStock(int $supplierId, array $presentArticles, $now): int

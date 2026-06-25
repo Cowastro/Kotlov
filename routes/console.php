@@ -42,6 +42,14 @@ Schedule::command('supplier:sync-bania-pricelist --apply --sync-retail-prices')
     ->runInBackground()
     ->appendOutputTo(storage_path('logs/bania-pricelist-sync.log'));
 
+// RN-Profi: обновляем цены и наличие кусками по вкладкам Google Sheet.
+// Только уже связанные товары; создание карточек и обогащение источников запускаем отдельно.
+Schedule::command('supplier:sync-rn-profi-chunks --apply --sync-retail-prices --only-linked')
+    ->cron('17 */3 * * *')
+    ->withoutOverlapping()
+    ->runInBackground()
+    ->appendOutputTo(storage_path('logs/rn-profi-price-stock-sync.log'));
+
 // Лигмет: ежедневно обновляем цены и наличие печей/каминов/топок.
 // Новые товары не создаются автоматически — только обновление уже связанных.
 Schedule::command('supplier:sync-ligmet --apply')
