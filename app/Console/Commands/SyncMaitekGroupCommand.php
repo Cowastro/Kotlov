@@ -626,7 +626,6 @@ class SyncMaitekGroupCommand extends Command
             'product_sku' => $productSku,
             'supplier_article' => $row['supplier_article'],
             'supplier_article_normalized' => $row['norm_article'],
-            'supplier_article_compact' => $this->compactArticle($row['supplier_article']),
             'supplier_name' => trim($row['brand'] . ' ' . $row['name']),
             'source_url' => $row['source_url'] ?: null,
             'price' => $row['price_byn'],
@@ -653,6 +652,10 @@ class SyncMaitekGroupCommand extends Command
             'last_synced_at' => $now,
             'updated_at' => $now,
         ];
+
+        if (Schema::hasColumn('supplier_products', 'supplier_article_compact')) {
+            $payload['supplier_article_compact'] = $this->compactArticle($row['supplier_article']);
+        }
 
         $existingId = DB::table('supplier_products')
             ->where('supplier_id', $supplierId)
