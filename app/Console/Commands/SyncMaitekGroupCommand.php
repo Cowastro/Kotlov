@@ -20,6 +20,7 @@ class SyncMaitekGroupCommand extends Command
         {--create-new : Create products that do not match existing catalog items}
         {--enrich-created : Parse source_url after product creation}
         {--sync-retail-prices : Update products.price from retail BYN}
+        {--candidate-report= : Write create_candidate review CSV to a path}
         {--limit= : Process only N parsed rows after filters}
         {--offset=0 : Skip N parsed rows after filters}';
 
@@ -559,7 +560,154 @@ class SyncMaitekGroupCommand extends Command
 
         $this->line('Next: run with --apply to update matched supplier links; add --create-new only after reviewing create_candidate rows.');
 
+        $reportPath = trim((string) ($this->option('candidate-report') ?? ''));
+        if ($reportPath !== '') {
+            $this->writeCandidateReport($rows, $reportPath);
+        }
+
         return self::SUCCESS;
+    }
+
+    private function writeCandidateReport(array $rows, string $path): void
+    {
+        $candidates = array_values(array_filter($rows, fn ($row) => $row['action'] === 'create_candidate'));
+        if ($candidates === []) {
+            $this->info('Candidate report skipped: no create_candidate rows.');
+            return;
+        }
+
+        if (! preg_match('/^[a-zA-Z]:[\\\\\\/]/', $path) && ! str_starts_with($path, '/') && ! str_starts_with($path, '\\')) {
+            $path = base_path($path);
+        }
+
+        $dir = dirname($path);
+        if (! is_dir($dir)) {
+            mkdir($dir, 0775, true);
+        }
+
+        $handle = fopen($path, 'wb');
+        if ($handle === false) {
+            $this->warn('Candidate report failed: cannot write ' . $path);
+            return;
+        }
+
+        fputcsv($handle, [
+            'gid',
+            'sheet_row',
+            'brand',
+            'name',
+            'supplier_article',
+            'price_byn',
+            'retail_byn',
+            'stock_quantity',
+            'source_url',
+            'signature',
+            'suggestions',
+        ]);
+
+        foreach ($candidates as $row) {
+            fputcsv($handle, [
+                $row['gid'],
+                $row['sheet_row'],
+                $row['brand'],
+                $row['name'],
+                $row['supplier_article'],
+                $row['price_byn'],
+                $row['retail_byn'],
+                $row['stock_quantity'],
+                $row['source_url'],
+                $this->modelSignature($row['brand'] . ' ' . $row['name']),
+                implode(' || ', $this->candidateSuggestions($row)),
+            ]);
+        }
+
+        fclose($handle);
+        $this->info(sprintf('Candidate report written: %s (%d rows)', $path, count($candidates)));
+    }
+
+    /**
+     * @return string[]
+     */
+    private function candidateSuggestions(array $row): array
+    {
+        $tokens = $this->importantTokens($row['brand'] . ' ' . $row['name']);
+        if ($tokens === []) {
+            return [];
+        }
+
+        $query = DB::table('products')
+            ->leftJoin('brands', 'brands.id', '=', 'products.brand_id')
+            ->where('products.is_archived', false)
+            ->select('products.id', 'products.sku', 'products.name', 'brands.name as brand');
+
+        $query->where(function ($q) use ($tokens) {
+            foreach (array_slice($tokens, 0, 5) as $token) {
+                $q->orWhere('products.name', 'like', '%' . $token . '%');
+            }
+        });
+
+        $sourceKey = $this->nameKey($row['brand'] . ' ' . $row['name']);
+        $results = [];
+        foreach ($query->limit(80)->get() as $product) {
+            $candidateKey = $this->nameKey((string) $product->name);
+            similar_text($sourceKey, $candidateKey, $score);
+            if ($score < 35) {
+                continue;
+            }
+
+            $results[] = [
+                'score' => $score,
+                'label' => sprintf(
+                    '%d [%s] %s | %s',
+                    (int) $product->id,
+                    (string) $product->sku,
+                    (string) ($product->brand ?? '-'),
+                    (string) $product->name
+                ),
+            ];
+        }
+
+        usort($results, fn ($a, $b) => $b['score'] <=> $a['score']);
+
+        return array_map(
+            fn ($item) => sprintf('%.0f%% %s', $item['score'], $item['label']),
+            array_slice($results, 0, 5)
+        );
+    }
+
+    /**
+     * @return string[]
+     */
+    private function importantTokens(string $value): array
+    {
+        $key = $this->nameKey($value);
+        $tokens = preg_split('/\s+/u', $key, -1, PREG_SPLIT_NO_EMPTY) ?: [];
+        $stop = array_fill_keys([
+            'котел',
+            'котёл',
+            'котлы',
+            'электрический',
+            'твердотопливный',
+            'для',
+            'и',
+            'с',
+            'на',
+            'в',
+            'стэн',
+            'sten',
+            'каракан',
+            'greolit',
+            'греолит',
+            'new',
+        ], true);
+
+        $tokens = array_values(array_unique(array_filter($tokens, function ($token) use ($stop) {
+            return mb_strlen($token) >= 3 && ! isset($stop[$token]);
+        })));
+
+        usort($tokens, fn ($a, $b) => mb_strlen($b) <=> mb_strlen($a));
+
+        return $tokens;
     }
 
     private function applyRows(array $rows, bool $createNew): int
