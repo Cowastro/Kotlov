@@ -1044,7 +1044,14 @@ class SyncRnProfiCommand extends Command
 
     private function syntheticSupplierArticle(array $row, string $resolvedBrand): string
     {
-        if ($this->brandKey($resolvedBrand ?: (string) ($row['brand'] ?? '')) !== $this->brandKey('Thermex')) {
+        $brand = $resolvedBrand ?: (string) ($row['brand'] ?? '');
+        $brandKey = $this->brandKey($brand);
+        $allowedBrands = [
+            $this->brandKey('Thermex') => 'THERMEX',
+            $this->brandKey('Nova Florida') => 'NOVAFLORIDA',
+        ];
+
+        if (! isset($allowedBrands[$brandKey])) {
             return '';
         }
 
@@ -1053,13 +1060,16 @@ class SyncRnProfiCommand extends Command
             return '';
         }
 
-        $name = $this->normaliseThermexModelText($name);
-        $model = preg_replace('/\bthermex\b/iu', ' ', $name) ?? $name;
+        if ($brandKey === $this->brandKey('Thermex')) {
+            $name = $this->normaliseThermexModelText($name);
+        }
+
+        $model = preg_replace('/\b' . preg_quote($brand, '/') . '\b/iu', ' ', $name) ?? $name;
         $model = preg_replace('/\b(model|модель|ĐĽĐľĐ´ĐµĐ»ŃŚ|ÄÄ˝ÄÄľÄÂ´ÄÂµÄÂ»ĹĹš)\b/iu', ' ', $model) ?? $model;
         $model = preg_replace('/\s+/u', ' ', trim($model)) ?? trim($model);
         $token = $this->normArticle($model);
 
-        return $token !== '' ? 'THERMEX-' . $token : '';
+        return $token !== '' ? $allowedBrands[$brandKey] . '-' . $token : '';
     }
 
     private function normaliseThermexModelText(string $value): string
@@ -3565,6 +3575,18 @@ PROMPT;
             $recommended = (string) ($decision['ai_recommended_action'] ?? '');
             $confidence = (int) ($decision['ai_confidence'] ?? 0);
             $article = $this->normArticle((string) ($decision['article'] ?? ''));
+
+            if ($article === '') {
+                $syntheticArticle = $this->syntheticSupplierArticle([
+                    'brand' => (string) ($decision['brand'] ?? ''),
+                    'name' => (string) ($decision['name'] ?? ''),
+                ], (string) ($decision['brand'] ?? ''));
+
+                if ($syntheticArticle !== '') {
+                    $decision['article'] = $syntheticArticle;
+                    $article = $this->normArticle($syntheticArticle);
+                }
+            }
 
             if (! in_array($aiDecision, ['link_existing', 'create_new'], true) || $recommended !== 'can_apply_after_review') {
                 $stats['skipped_manual_review']++;
