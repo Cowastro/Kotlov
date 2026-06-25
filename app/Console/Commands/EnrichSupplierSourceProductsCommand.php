@@ -47,6 +47,7 @@ class EnrichSupplierSourceProductsCommand extends Command
             ->where('p.is_archived', false)
             ->whereNotNull('sp.source_url')
             ->where('sp.source_url', 'like', 'http%')
+            ->where('sp.source_url', 'not like', '%docs.google.com/spreadsheets%')
             ->select([
                 'p.id',
                 'p.name',
