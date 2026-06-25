@@ -45,7 +45,7 @@ Schedule::command('supplier:sync-bania-pricelist --apply --sync-retail-prices')
 // RN-Profi: обновляем цены и наличие кусками по вкладкам Google Sheet.
 // Только уже связанные товары; создание карточек и обогащение источников запускаем отдельно.
 Schedule::command('supplier:sync-rn-profi-chunks --apply --sync-retail-prices --only-linked')
-    ->cron('17 */3 * * *')
+    ->dailyAt('08:17')
     ->withoutOverlapping()
     ->runInBackground()
     ->appendOutputTo(storage_path('logs/rn-profi-price-stock-sync.log'));
