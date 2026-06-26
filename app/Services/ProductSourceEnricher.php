@@ -110,15 +110,25 @@ class ProductSourceEnricher
         try {
             if (($options['update_specs'] ?? true) === true && $parsed['specs'] !== []) {
                 $replaceSpecs = (bool) ($options['replace_specs'] ?? false);
+                $minSpecsToReplace = max(0, (int) ($options['min_specs_to_replace'] ?? 0));
 
                 if ($replaceSpecs) {
-                    $sanitizedSpecs = $this->sanitizeJsonArray($parsed['specs']);
-                    $stats['attribute_values_saved'] = DB::transaction(function () use ($product, $parsed): int {
-                        $this->deleteExistingAttributeValues($product);
+                    if ($minSpecsToReplace > 0 && count($parsed['specs']) < $minSpecsToReplace) {
+                        $stats['specs_skipped'] = 1;
+                        $stats['errors'][] = sprintf(
+                            'attributes: only %d specs found; replacement skipped, minimum is %d',
+                            count($parsed['specs']),
+                            $minSpecsToReplace
+                        );
+                    } else {
+                        $sanitizedSpecs = $this->sanitizeJsonArray($parsed['specs']);
+                        $stats['attribute_values_saved'] = DB::transaction(function () use ($product, $parsed): int {
+                            $this->deleteExistingAttributeValues($product);
 
-                        return $this->syncAttributeValues($product, $parsed['specs']);
-                    });
-                    $updates['specs'] = $sanitizedSpecs;
+                            return $this->syncAttributeValues($product, $parsed['specs']);
+                        });
+                        $updates['specs'] = $sanitizedSpecs;
+                    }
                 } elseif ($this->productHasExistingSpecs($product)) {
                     $stats['specs_skipped'] = 1;
                 } elseif ($this->decodeArray($product->specs) !== []) {
@@ -1363,6 +1373,7 @@ class ProductSourceEnricher
             }
         }
 
+        $this->addSpecsFromWooCommerceAttributes($xpath, $specs);
         $this->addSpecsFromAsproProperties($xpath, $specs);
         $this->addSpecsFromCharacteristicLists($xpath, $specs);
         $this->addSpecsFromDescriptionText($html, $specs);
@@ -1386,7 +1397,7 @@ class ProductSourceEnricher
                 $node->attributes?->getNamedItem('data-target')?->nodeValue ?? '',
             ])));
 
-            if (! preg_match('/character|spec|param|property|feature|harakter|kharakter|характер|параметр|свойств/iu', $marker)) {
+            if (! preg_match('/attribute|attributes|additional|woocommerce|product-attributes|character|spec|param|property|feature|harakter|kharakter|характер|параметр|свойств/iu', $marker)) {
                 continue;
             }
 
@@ -1472,6 +1483,25 @@ class ProductSourceEnricher
                     break;
                 }
             }
+        }
+    }
+
+    private function addSpecsFromWooCommerceAttributes(\DOMXPath $xpath, array &$specs): void
+    {
+        $rows = $xpath->query('//*[contains(concat(" ", normalize-space(@class), " "), " woocommerce-product-attributes-item ")]');
+        if ($rows === false) {
+            return;
+        }
+
+        foreach ($rows as $row) {
+            $label = $xpath->query('.//*[contains(concat(" ", normalize-space(@class), " "), " woocommerce-product-attributes-item__label ")]', $row)?->item(0);
+            $value = $xpath->query('.//*[contains(concat(" ", normalize-space(@class), " "), " woocommerce-product-attributes-item__value ")]', $row)?->item(0);
+
+            if (! $label || ! $value) {
+                continue;
+            }
+
+            $this->addSpec($specs, $label->textContent, $value->textContent);
         }
     }
 

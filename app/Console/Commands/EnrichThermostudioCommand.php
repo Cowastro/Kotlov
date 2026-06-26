@@ -26,6 +26,7 @@ class EnrichThermostudioCommand extends Command
         {--force-source : Enrich source_url products even if they already have photos/specs/content}
         {--overwrite-images : Replace existing product images during source enrichment}
         {--replace-specs : Replace existing attributes/specs during source enrichment}
+        {--min-specs-to-replace=4 : Skip source spec replacement if fewer specs were found}
         {--skip-ai : Skip AI content generation during source enrichment}
         {--sleep=800 : Delay between source enrichment HTTP requests, ms}';
 
@@ -111,6 +112,7 @@ class EnrichThermostudioCommand extends Command
                 '--limit' => (string) max(0, (int) $this->option('source-limit')),
                 '--offset' => (string) max(0, (int) $this->option('source-offset')),
                 '--sleep' => (string) max(300, (int) $this->option('sleep')),
+                '--min-specs-to-replace' => (string) max(0, (int) $this->option('min-specs-to-replace')),
             ];
 
             if ($apply) {
