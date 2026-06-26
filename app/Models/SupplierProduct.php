@@ -14,6 +14,7 @@ class SupplierProduct extends Model
         'product_sku',
         'supplier_article',
         'supplier_article_normalized',
+        'supplier_article_compact',
         'supplier_name',
         'source_url',
         'source_wp_id',

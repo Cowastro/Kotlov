@@ -1366,6 +1366,7 @@ class ProductSourceEnricher
         $this->addSpecsFromAsproProperties($xpath, $specs);
         $this->addSpecsFromCharacteristicLists($xpath, $specs);
         $this->addSpecsFromDescriptionText($html, $specs);
+        $this->addSpecsFromMetaDescription($html, $specs);
 
         return array_slice(array_values($specs), 0, 80);
     }
@@ -1554,6 +1555,22 @@ class ProductSourceEnricher
             }
 
             $this->addSpec($specs, $parts[1], $parts[2]);
+        }
+    }
+
+    private function addSpecsFromMetaDescription(string $html, array &$specs): void
+    {
+        $description = $this->extractMetaDescription($html);
+        if ($description === '' || substr_count($description, ':') < 2) {
+            return;
+        }
+
+        if (! preg_match_all('/([А-ЯЁA-Z][А-ЯЁа-яёA-Za-z0-9 ()\\-.,\\/]{1,70}):\\s*([^:]{1,120}?)(?=\\s+[А-ЯЁA-Z][А-ЯЁа-яёA-Za-z0-9 ()\\-.,\\/]{1,70}:|$)/u', $description, $matches, PREG_SET_ORDER)) {
+            return;
+        }
+
+        foreach (array_slice($matches, 0, 30) as $match) {
+            $this->addSpec($specs, $match[1], $match[2]);
         }
     }
 

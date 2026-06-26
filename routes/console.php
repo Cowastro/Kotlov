@@ -58,6 +58,13 @@ Schedule::command('supplier:sync-maitek-group --apply --available-only --sync-re
     ->runInBackground()
     ->appendOutputTo(storage_path('logs/maitek-group-price-stock-sync.log'));
 
+// Thermostudio: safe daily price/stock refresh for already linked products only.
+Schedule::command('supplier:sync-thermostudio-pricelist --apply --available-only --only-linked --sync-retail-prices')
+    ->dailyAt('06:47')
+    ->withoutOverlapping()
+    ->runInBackground()
+    ->appendOutputTo(storage_path('logs/thermostudio-pricelist-sync.log'));
+
 // Лигмет: ежедневно обновляем цены и наличие печей/каминов/топок.
 // Новые товары не создаются автоматически — только обновление уже связанных.
 Schedule::command('supplier:sync-ligmet --apply')
