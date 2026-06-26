@@ -16,7 +16,7 @@ class DiscoverThermostudioSourceUrlsCommand extends Command
         {--limit=50 : Max supplier rows to inspect, 0 means all}
         {--offset=0 : Skip supplier rows}
         {--force : Re-check rows that already have source_url}
-        {--source=teplo : Source index to use: teplo or teplodvor}
+        {--source=teplo : Source index to use: teplo, teplodvor, or all}
         {--teplodvor-index=teplodvor_index.json : Local Teplodvor slug index path relative to storage/}
         {--refresh-index : Rebuild cached teplo.by product URL index}';
 
@@ -35,8 +35,8 @@ class DiscoverThermostudioSourceUrlsCommand extends Command
     {
         $apply = (bool) $this->option('apply');
         $source = mb_strtolower(trim((string) $this->option('source')));
-        if (! in_array($source, ['teplo', 'teplodvor'], true)) {
-            $this->error('Unsupported --source. Use teplo or teplodvor.');
+        if (! in_array($source, ['teplo', 'teplodvor', 'all'], true)) {
+            $this->error('Unsupported --source. Use teplo, teplodvor, or all.');
             return self::FAILURE;
         }
 
@@ -44,9 +44,11 @@ class DiscoverThermostudioSourceUrlsCommand extends Command
             ? '<fg=red;options=bold>APPLY: discovered Thermostudio source URLs will be written.</>'
             : '<fg=yellow;options=bold>DRY RUN: Thermostudio source URL discovery preview only.</>');
 
-        $this->sourceIndex = $source === 'teplodvor'
-            ? $this->loadTeplodvorSourceIndex()
-            : $this->loadTeploSourceIndex((bool) $this->option('refresh-index'));
+        $this->sourceIndex = match ($source) {
+            'teplodvor' => $this->loadTeplodvorSourceIndex(),
+            'all' => $this->loadCombinedSourceIndex((bool) $this->option('refresh-index')),
+            default => $this->loadTeploSourceIndex((bool) $this->option('refresh-index')),
+        };
 
         if ($this->sourceIndex === []) {
             $this->warn('Source index is empty.');
@@ -241,6 +243,23 @@ class DiscoverThermostudioSourceUrlsCommand extends Command
         }
 
         return $rows;
+    }
+
+    /**
+     * @return array<int,array{url:string, slug:string, key:string}>
+     */
+    private function loadCombinedSourceIndex(bool $refresh): array
+    {
+        $teplo = $this->loadTeploSourceIndex($refresh);
+        $teplodvor = $this->loadTeplodvorSourceIndex();
+        $this->sourceName = 'teplo.by + teplodvor.by';
+
+        $byUrl = [];
+        foreach (array_merge($teplo, $teplodvor) as $row) {
+            $byUrl[$row['url']] = $row;
+        }
+
+        return array_values($byUrl);
     }
 
     /**

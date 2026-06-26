@@ -19,14 +19,19 @@ class EnrichThermostudioCommand extends Command
         {--skip-source-enrichment : Skip source_url enrichment step}
         {--source-discovery-limit=0 : Max supplier rows for source_url discovery, 0 means all}
         {--source-discovery-offset=0 : Skip N supplier rows during source_url discovery}
+        {--source=teplo : Source index for discovery: teplo, teplodvor, or all}
+        {--force-source-discovery : Re-check supplier rows that already have source_url}
         {--refresh-source-index : Rebuild cached source URL index}
         {--source-limit=0 : Max source_url products to enrich, 0 means all}
         {--source-offset=0 : Skip N source_url products}
         {--source-domain= : Enrich only source URLs from a domain}
+        {--max-current-attrs= : Enrich only products with this many or fewer current attribute rows}
         {--force-source : Enrich source_url products even if they already have photos/specs/content}
         {--overwrite-images : Replace existing product images during source enrichment}
         {--replace-specs : Replace existing attributes/specs during source enrichment}
         {--min-specs-to-replace=4 : Skip source spec replacement if fewer specs were found}
+        {--skip-documents : Do not copy documents/PDFs from source pages}
+        {--clear-documents : Remove existing product documents during source enrichment}
         {--skip-ai : Skip AI content generation during source enrichment}
         {--sleep=800 : Delay between source enrichment HTTP requests, ms}';
 
@@ -84,6 +89,7 @@ class EnrichThermostudioCommand extends Command
             $arguments = [
                 '--limit' => (string) max(0, (int) $this->option('source-discovery-limit')),
                 '--offset' => (string) max(0, (int) $this->option('source-discovery-offset')),
+                '--source' => (string) $this->option('source'),
             ];
 
             if ($apply) {
@@ -97,6 +103,10 @@ class EnrichThermostudioCommand extends Command
 
             if ((bool) $this->option('refresh-source-index')) {
                 $arguments['--refresh-index'] = true;
+            }
+
+            if ((bool) $this->option('force-source-discovery')) {
+                $arguments['--force'] = true;
             }
 
             $code = $this->call('supplier:discover-thermostudio-sources', $arguments);
@@ -128,6 +138,10 @@ class EnrichThermostudioCommand extends Command
                 $arguments['--domain'] = $domain;
             }
 
+            if (($maxCurrentAttrs = trim((string) $this->option('max-current-attrs'))) !== '') {
+                $arguments['--max-current-attrs'] = $maxCurrentAttrs;
+            }
+
             if ((bool) $this->option('force-source')) {
                 $arguments['--force'] = true;
             }
@@ -138,6 +152,14 @@ class EnrichThermostudioCommand extends Command
 
             if ((bool) $this->option('replace-specs')) {
                 $arguments['--replace-specs'] = true;
+            }
+
+            if ((bool) $this->option('skip-documents')) {
+                $arguments['--skip-documents'] = true;
+            }
+
+            if ((bool) $this->option('clear-documents')) {
+                $arguments['--clear-documents'] = true;
             }
 
             if ((bool) $this->option('skip-ai')) {

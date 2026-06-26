@@ -17,6 +17,7 @@ class EnrichSupplierSourceProductsCommand extends Command
         {--created-today : Process only products created today}
         {--created-from= : Process only products created from this date/time}
         {--created-to= : Process only products created before this date/time}
+        {--max-current-attrs= : Process only products with this many or fewer current attribute rows}
         {--limit=50 : Max products per run, 0 means all}
         {--offset=0 : Skip products}
         {--apply : Write changes to DB, default is dry-run}
@@ -43,10 +44,15 @@ class EnrichSupplierSourceProductsCommand extends Command
             ? '<fg=red;options=bold>APPLY: source enrichment will be written.</>'
             : '<fg=yellow;options=bold>DRY RUN: source enrichment preview only.</>');
 
+        $attributeCounts = DB::table('product_attribute_values')
+            ->select('product_id', DB::raw('COUNT(*) as attribute_rows'))
+            ->groupBy('product_id');
+
         $query = DB::table('supplier_products as sp')
             ->join('products as p', 'p.id', '=', 'sp.product_id')
             ->leftJoin('brands as b', 'b.id', '=', 'p.brand_id')
             ->leftJoin('suppliers as s', 's.id', '=', 'sp.supplier_id')
+            ->leftJoinSub($attributeCounts, 'pav', 'pav.product_id', '=', 'p.id')
             ->where('p.is_archived', false)
             ->whereNotNull('sp.source_url')
             ->where('sp.source_url', 'like', 'http%')
@@ -74,6 +80,11 @@ class EnrichSupplierSourceProductsCommand extends Command
 
         if ($productId = (int) $this->option('product')) {
             $query->where('p.id', $productId);
+        }
+
+        $maxCurrentAttrs = trim((string) $this->option('max-current-attrs'));
+        if ($maxCurrentAttrs !== '') {
+            $query->whereRaw('COALESCE(pav.attribute_rows, 0) <= ?', [max(0, (int) $maxCurrentAttrs)]);
         }
 
         if ((bool) $this->option('created-today')) {
