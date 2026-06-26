@@ -12,8 +12,10 @@ class DeduplicateProductsCommand extends Command
         {--apply : Archive duplicates and transfer data (default: dry-run)}
         {--brand= : Filter by brand name or slug}
         {--prefer-supplier= : Prefer products linked to this supplier code/name}
+        {--require-preferred-keep : Skip duplicate groups unless the kept product is linked to --prefer-supplier}
         {--only-unbound : Archive only duplicate products without supplier links}
         {--fix-slugs : Move the cleaner/base slug to the kept product}
+        {--model-family : Group products by normalized model family instead of exact normalized name}
         {--limit= : Limit duplicate groups}';
 
     protected $description = 'Find duplicate products, prefer supplier-linked cards, transfer useful data, and archive duplicates.';
@@ -23,6 +25,7 @@ class DeduplicateProductsCommand extends Command
         $apply           = (bool) $this->option('apply');
         $brandFilter     = $this->option('brand');
         $preferredFilter = $this->option('prefer-supplier');
+        $requirePreferredKeep = (bool) $this->option('require-preferred-keep');
         $onlyUnbound     = (bool) $this->option('only-unbound');
         $fixSlugs        = (bool) $this->option('fix-slugs');
         $limit           = $this->option('limit') ? max(1, (int) $this->option('limit')) : null;
@@ -66,11 +69,18 @@ class DeduplicateProductsCommand extends Command
             'fields_copied'      => 0,
             'slugs_fixed'        => 0,
             'redirects_created'  => 0,
+            'skipped_no_preferred_keep' => 0,
         ];
 
         foreach ($groups as $group) {
             /** @var \stdClass $keep */
             $keep = $this->selectProductToKeep($group, $supplierLinks, $preferredFilter);
+
+            if ($requirePreferredKeep && $preferredFilter && ! $this->hasPreferredSupplierLink((int) $keep->id, $supplierLinks, $preferredFilter)) {
+                $stats['skipped_no_preferred_keep']++;
+                continue;
+            }
+
             $dupes = $group->reject(fn ($product) => (int) $product->id === (int) $keep->id)->values();
 
             if ($onlyUnbound) {
@@ -198,11 +208,50 @@ class DeduplicateProductsCommand extends Command
 
     private function duplicateKey(?string $name): string
     {
+        if ((bool) $this->option('model-family')) {
+            return $this->modelFamilyDuplicateKey($name);
+        }
+
         $name = mb_strtolower((string) $name);
         $name = str_replace(["\xc2\xa0", 'ё'], [' ', 'е'], $name);
         $name = preg_replace('/[^a-zа-я0-9]+/u', ' ', $name) ?? '';
 
         return trim(preg_replace('/\s+/u', ' ', $name) ?? '');
+    }
+
+    private function modelFamilyDuplicateKey(?string $name): string
+    {
+        $name = mb_strtolower((string) $name);
+        $name = str_replace(["\xc2\xa0", '+'], [' ', ' plus '], $name);
+
+        preg_match_all('/[a-z0-9]+/u', $name, $matches);
+
+        $drop = array_fill_keys([
+            'ariston',
+            'buderus',
+            'fondital',
+            'thermex',
+            'viessmann',
+            'vissman',
+            'navien',
+            'kiturami',
+            'kotlov',
+            'system',
+            'new',
+            'ng',
+            'ff',
+            'gas',
+            'boiler',
+            'kotel',
+            'kotyol',
+        ], true);
+
+        $tokens = array_values(array_filter(
+            $matches[0] ?? [],
+            fn (string $token) => ! isset($drop[$token])
+        ));
+
+        return implode('', $tokens);
     }
 
     private function selectProductToKeep(Collection $group, Collection $supplierLinks, ?string $preferredFilter): object
