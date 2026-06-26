@@ -154,6 +154,10 @@ class ProductSourceEnricher
         }
 
         try {
+            if (($options['clear_documents'] ?? false) === true) {
+                $updates['documents'] = [];
+            }
+
             if (($options['update_documents'] ?? true) === true && $parsed['documents'] !== []) {
                 $updates['documents'] = $this->sanitizeJsonArray($parsed['documents']);
             }

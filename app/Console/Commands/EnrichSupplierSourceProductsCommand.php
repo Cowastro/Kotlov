@@ -24,6 +24,8 @@ class EnrichSupplierSourceProductsCommand extends Command
         {--overwrite-images : Replace existing product images instead of appending}
         {--replace-specs : Delete existing product attributes and replace specs from source}
         {--min-specs-to-replace=0 : When replacing specs, skip replacement if fewer specs were found; 0 disables the guard}
+        {--skip-documents : Do not copy documents/PDFs from source pages}
+        {--clear-documents : Remove existing product documents during this enrichment run}
         {--skip-ai : Skip AI content generation}
         {--sleep=1200 : Delay between HTTP requests, ms}';
 
@@ -163,7 +165,8 @@ class EnrichSupplierSourceProductsCommand extends Command
                     'replace_specs' => (bool) $this->option('replace-specs') || $force,
                     'min_specs_to_replace' => max(0, (int) $this->option('min-specs-to-replace')),
                     'update_service' => true,
-                    'update_documents' => true,
+                    'update_documents' => ! (bool) $this->option('skip-documents'),
+                    'clear_documents' => (bool) $this->option('clear-documents'),
                     'update_video' => true,
                     'update_content' => ! (bool) $this->option('skip-ai'),
                 ]);
