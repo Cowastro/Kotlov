@@ -755,6 +755,16 @@ class ProductSourceEnricher
             }
         }
 
+        if ($this->isGreolitUrl($url)) {
+            $greolit = $this->extractGreolitData($html);
+            if ($greolit['specs'] !== []) {
+                $parsed['specs'] = $greolit['specs'];
+            }
+            if ($greolit['images'] !== []) {
+                $parsed['images'] = array_values(array_unique(array_merge($greolit['images'], $parsed['images'])));
+            }
+        }
+
         return $this->normalizeParsedData($parsed);
     }
 
@@ -789,7 +799,7 @@ class ProductSourceEnricher
             [$key, $unit] = $this->cleanAttributeNameAndUnit((string) ($spec['key'] ?? $spec['name'] ?? ''), $unit);
             $value = $this->cleanAttributeValue((string) ($spec['value'] ?? ''));
 
-            if ($key === '' || $value === '') {
+            if ($key === '' || $value === '' || $this->isTechnicalOrJunkAttribute($key, $value)) {
                 return [];
             }
 
@@ -809,6 +819,64 @@ class ProductSourceEnricher
     private function isSanteh24Url(string $url): bool
     {
         return str_contains((string) parse_url($url, PHP_URL_HOST), 'santeh24.by');
+    }
+
+    private function isGreolitUrl(string $url): bool
+    {
+        return str_contains((string) parse_url($url, PHP_URL_HOST), 'greolit.by');
+    }
+
+    /**
+     * @return array{specs: array<int, array<string, string>>, images: array<int, string>}
+     */
+    private function extractGreolitData(string $html): array
+    {
+        $specs = [];
+        $images = [];
+
+        if (! preg_match('/data-product_variations=["\']([^"\']+)["\']/iu', $html, $match)) {
+            return ['specs' => [], 'images' => []];
+        }
+
+        $json = html_entity_decode($match[1], ENT_QUOTES | ENT_HTML5, 'UTF-8');
+        $variations = json_decode($json, true);
+        if (! is_array($variations)) {
+            return ['specs' => [], 'images' => []];
+        }
+
+        $powers = [];
+        foreach ($variations as $variation) {
+            if (! is_array($variation)) {
+                continue;
+            }
+
+            $power = (string) data_get($variation, 'attributes.attribute_pa_moshhnost', '');
+            $power = trim(str_replace(['-kvt', '-'], [' кВт', ' '], $power));
+            if ($power !== '') {
+                $powers[] = $power;
+            }
+
+            foreach (['image.full_src', 'image.url', 'image.src'] as $path) {
+                $image = (string) data_get($variation, $path, '');
+                if (filter_var($image, FILTER_VALIDATE_URL)) {
+                    $images[] = $image;
+                }
+            }
+        }
+
+        $powers = array_values(array_unique($powers));
+        if ($powers !== []) {
+            $specs[] = [
+                'key' => 'Мощность',
+                'value' => implode(', ', $powers),
+                'unit' => '',
+            ];
+        }
+
+        return [
+            'specs' => $specs,
+            'images' => array_values(array_unique($images)),
+        ];
     }
 
     private function extractMetaDescription(string $html): string

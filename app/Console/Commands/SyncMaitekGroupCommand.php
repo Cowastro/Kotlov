@@ -265,6 +265,7 @@ class SyncMaitekGroupCommand extends Command
         $stockText = $this->clean($cells[6] ?? '');
         $stockQuantity = $this->stockQuantity($stockText);
         $article = $this->supplierArticle($brand, $name, $sourceUrl);
+        $sourceUrl = $sourceUrl ?: $this->greolitSourceUrl($brand, $name);
 
         return [
             'gid' => $gid,
@@ -317,6 +318,10 @@ class SyncMaitekGroupCommand extends Command
 
     private function supplierArticle(string $brand, string $name, ?string $sourceUrl): string
     {
+        if ($this->brandKey($brand) === 'greolit') {
+            return $brand . ' ' . $name;
+        }
+
         if ($sourceUrl) {
             $path = trim((string) parse_url($sourceUrl, PHP_URL_PATH), '/');
             $slug = basename($path);
@@ -326,6 +331,53 @@ class SyncMaitekGroupCommand extends Command
         }
 
         return $brand . ' ' . $name;
+    }
+
+    private function greolitSourceUrl(string $brand, string $name): ?string
+    {
+        if ($this->brandKey($brand) !== 'greolit') {
+            return null;
+        }
+
+        $key = $this->nameKey($name);
+
+        if (str_contains($key, 'street')) {
+            return 'https://greolit.by/product/tverdotoplivnyj-kotel-street-naruzhnogo-primenenija/';
+        }
+
+        if (str_contains($key, 'heatair')) {
+            return 'https://greolit.by/product/tverdotoplivnyj-kotel-greolit-heatair-pellet/';
+        }
+
+        if (str_contains($key, 'titan')) {
+            return 'https://greolit.by/product/tverdotoplivnyj-kotel-titan-pellet/';
+        }
+
+        if (str_contains($key, 'gazogenerator') || str_contains($key, 'gazogeneratorom')) {
+            return 'https://greolit.by/product/tverdotoplivnyj-kotel-na-shhepe-opilkah-s-gazogeneratorom/';
+        }
+
+        if (str_contains($key, 'shhepe') || str_contains($key, 'opilkah')) {
+            return 'https://greolit.by/product/tverdotoplivnyj-kotel-profi-na-shhepe-opilkah/';
+        }
+
+        if (str_contains($key, 'profi pellet universal')) {
+            return 'https://greolit.by/product/tverdotoplivnyj-kotel-profi-pellet-universalnyj/';
+        }
+
+        if (str_contains($key, 'profi pellet')) {
+            return 'https://greolit.by/product/tverdotoplivnyj-kotel-profi-pellet-50-250-kvt/';
+        }
+
+        if (str_contains($key, 'profi')) {
+            return 'https://greolit.by/product/tverdotoplivnyj-kotel-profi-50-250-kvt/';
+        }
+
+        if (str_contains($key, 'deep')) {
+            return 'https://greolit.by/product/tverdotoplivnyj-kotel-deep-plus-20-40-kvt/';
+        }
+
+        return null;
     }
 
     private function money(string $value): ?float
