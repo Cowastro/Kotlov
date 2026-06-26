@@ -1792,7 +1792,12 @@ class ProductSourceEnricher
         }
 
         $images = $this->expandedImageCandidates($images);
-        usort($images, fn (string $left, string $right): int => $this->imageQualityScore($right) <=> $this->imageQualityScore($left));
+        $relevantImages = array_values(array_filter($images, fn (string $url): bool => $this->imagePageRelevanceScore($url, $pageUrl) > 0));
+        if ($relevantImages !== []) {
+            $images = $relevantImages;
+        }
+
+        usort($images, fn (string $left, string $right): int => $this->imageScore($right, $pageUrl) <=> $this->imageScore($left, $pageUrl));
 
         return array_values(array_slice($images, 0, 12));
     }
@@ -1806,6 +1811,7 @@ class ProductSourceEnricher
         $expanded = [];
 
         foreach ($urls as $url) {
+            $url = $this->canonicalWordPressImageUrl($url);
             $expanded[] = $url;
 
             foreach ($this->highResolutionImageVariants($url) as $variant) {
@@ -1814,6 +1820,23 @@ class ProductSourceEnricher
         }
 
         return array_values(array_filter(array_unique($expanded), fn ($url) => $this->isProductImage($url)));
+    }
+
+    private function canonicalWordPressImageUrl(string $url): string
+    {
+        $path = (string) parse_url($url, PHP_URL_PATH);
+        $host = (string) parse_url($url, PHP_URL_HOST);
+
+        if ($host === 'teplo.by' && str_starts_with($path, '/uploads/')) {
+            $url = str_replace('://teplo.by/uploads/', '://teplo.by/wp-content/uploads/', $url);
+            $path = (string) parse_url($url, PHP_URL_PATH);
+        }
+
+        if (! str_contains($path, '/wp-content/uploads/')) {
+            return $url;
+        }
+
+        return preg_replace('~-\d{2,4}x\d{2,4}(?=\.(?:jpe?g|png|webp|gif|avif)(?:\.webp)?(?:$|\?))~i', '', $url) ?? $url;
     }
 
     /**
@@ -1830,6 +1853,7 @@ class ProductSourceEnricher
         }
 
         if (preg_match('~(?:^|[/_-])\d{2,4}x\d{2,4}(?:[/_\.-]|$)~', $path)) {
+            $variants[] = preg_replace('~-\d{2,4}x\d{2,4}(?=\.(?:jpe?g|png|webp|gif|avif)(?:\.webp)?(?:$|\?))~i', '', $url) ?? $url;
             $variants[] = preg_replace('~(?<=/)\d{2,4}x\d{2,4}(?=/)~', '1000x1000', $url) ?? $url;
             $variants[] = preg_replace('~(?<=[_-])\d{2,4}x\d{2,4}(?=[_\.-])~', '1000x1000', $url) ?? $url;
         }
@@ -1941,7 +1965,8 @@ class ProductSourceEnricher
 
         $saved = [];
         $candidateUrls = $this->expandedImageCandidates($urls);
-        usort($candidateUrls, fn (string $left, string $right): int => $this->imageQualityScore($right) <=> $this->imageQualityScore($left));
+        $imageContextUrl = $sourceUrl ?: (string) ($candidateUrls[0] ?? '');
+        usort($candidateUrls, fn (string $left, string $right): int => $this->imageScore($right, $imageContextUrl) <=> $this->imageScore($left, $imageContextUrl));
 
         foreach ($candidateUrls as $url) {
             try {
@@ -2050,7 +2075,7 @@ class ProductSourceEnricher
             return false;
         }
 
-        if (preg_match('~(?:logo|icon|sprite|placeholder|noimage|nophoto|payment|social|banner|watermark|telegram|viber|whatsapp|star|rating|loader|loading|close|cart|wishlist|compare|flag|flags|avatar)~i', $path)) {
+        if (preg_match('~(?:logo|icon|sprite|placeholder|noimage|nophoto|payment|social|banner|watermark|telegram|viber|whatsapp|star|rating|loader|loading|close|cart|wishlist|compare|flag|flags|avatar|rass?roch|halva|karta-pokupok)~i', $path)) {
             return false;
         }
 
@@ -2070,7 +2095,7 @@ class ProductSourceEnricher
             $score += 80;
         }
 
-        if (preg_match('~(?:logo|icon|sprite|placeholder|noimage|nophoto|payment|social|banner|watermark|telegram|viber|whatsapp|star|rating|loader|loading|close|cart|wishlist|compare|flag|flags|avatar)~i', $path)) {
+        if (preg_match('~(?:logo|icon|sprite|placeholder|noimage|nophoto|payment|social|banner|watermark|telegram|viber|whatsapp|star|rating|loader|loading|close|cart|wishlist|compare|flag|flags|avatar|rass?roch|halva|karta-pokupok)~i', $path)) {
             $score -= 500;
         }
 
@@ -2105,6 +2130,34 @@ class ProductSourceEnricher
 
         if (preg_match('~(?:/image/|/cache/|/resize/|/large/|/original/)~', $path)) {
             $score += 40;
+        }
+
+        return $score;
+    }
+
+    private function imageScore(string $url, string $pageUrl): int
+    {
+        return $this->imageQualityScore($url) + $this->imagePageRelevanceScore($url, $pageUrl);
+    }
+
+    private function imagePageRelevanceScore(string $url, string $pageUrl): int
+    {
+        $imagePath = Str::slug(pathinfo((string) parse_url($url, PHP_URL_PATH), PATHINFO_FILENAME));
+        $pageSlug = Str::slug(basename(trim((string) parse_url($pageUrl, PHP_URL_PATH), '/')));
+
+        if ($imagePath === '' || $pageSlug === '') {
+            return 0;
+        }
+
+        $score = 0;
+        foreach (array_unique(explode('-', $pageSlug)) as $token) {
+            if (mb_strlen($token) < 4) {
+                continue;
+            }
+
+            if (str_contains($imagePath, $token)) {
+                $score += 1000;
+            }
         }
 
         return $score;
