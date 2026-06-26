@@ -51,9 +51,6 @@ class EnrichSupplierSourceProductsCommand extends Command
             ->select([
                 'p.id',
                 'p.name',
-                'p.images',
-                'p.specs',
-                'p.content',
                 'b.name as brand',
                 's.code as supplier_code',
                 'sp.supplier_article',
