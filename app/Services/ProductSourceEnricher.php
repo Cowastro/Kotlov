@@ -50,6 +50,7 @@ class ProductSourceEnricher
         }
 
         $parsed = $this->normalizeParsedData($parsed);
+        $parsed = $this->adaptParsedDataForProduct($parsed, $product, $sourceUrl);
         $updates = [];
         $stats = [
             'images_found' => count($parsed['images']),
@@ -789,6 +790,46 @@ class ProductSourceEnricher
                 (array) ($parsed['images'] ?? [])
             )), 0, 4)),
         ];
+    }
+
+    private function adaptParsedDataForProduct(array $parsed, Product $product, string $sourceUrl): array
+    {
+        if (! $this->isGreolitUrl($sourceUrl)) {
+            return $parsed;
+        }
+
+        $power = $this->extractPowerFromProductName((string) $product->name);
+        if ($power !== '') {
+            foreach ($parsed['specs'] as &$spec) {
+                $key = mb_strtolower((string) ($spec['key'] ?? ''));
+                if (str_contains($key, 'мощн')) {
+                    $spec['value'] = $power;
+                    $spec['unit'] = '';
+                    break;
+                }
+            }
+            unset($spec);
+        }
+
+        $name = mb_strtolower((string) $product->name);
+        if (str_contains($name, 'с автоматик')) {
+            $parsed['specs'][] = ['key' => 'Автоматика', 'value' => 'есть', 'unit' => ''];
+        } elseif (str_contains($name, 'без автоматик')) {
+            $parsed['specs'][] = ['key' => 'Автоматика', 'value' => 'нет', 'unit' => ''];
+        }
+
+        $parsed['specs'] = $this->normalizeParsedSpecs($parsed['specs']);
+
+        return $parsed;
+    }
+
+    private function extractPowerFromProductName(string $name): string
+    {
+        if (preg_match('/\b(\d{2,3})\s*(?:квт|kw|kvt)\b/iu', $name, $match)) {
+            return (int) $match[1] . ' кВт';
+        }
+
+        return '';
     }
 
     private function normalizeParsedSpecs(array $specs): array

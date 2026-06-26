@@ -50,6 +50,14 @@ Schedule::command('supplier:sync-rn-profi-chunks --apply --sync-retail-prices --
     ->runInBackground()
     ->appendOutputTo(storage_path('logs/rn-profi-price-stock-sync.log'));
 
+// Майтек Групп: ежедневно обновляем цены, наличие и source_url по уже связанным товарам.
+// Новые товары и обогащение карточек запускаются отдельно после проверки.
+Schedule::command('supplier:sync-maitek-group --apply --available-only --sync-retail-prices')
+    ->dailyAt('06:37')
+    ->withoutOverlapping()
+    ->runInBackground()
+    ->appendOutputTo(storage_path('logs/maitek-group-price-stock-sync.log'));
+
 // Лигмет: ежедневно обновляем цены и наличие печей/каминов/топок.
 // Новые товары не создаются автоматически — только обновление уже связанных.
 Schedule::command('supplier:sync-ligmet --apply')
