@@ -2222,8 +2222,13 @@ class ProductSourceEnricher
 
     private function repairMojibake(string $value): string
     {
+        if (strlen($value) > 20000) {
+            return $value;
+        }
+
         $best = $value;
         $bestScore = $this->mojibakeScore($value);
+        $originalScore = $bestScore;
 
         foreach (['Windows-1252', 'CP1250', 'ISO-8859-1'] as $wrongEncoding) {
             try {
@@ -2242,15 +2247,15 @@ class ProductSourceEnricher
             }
         }
 
-        if ($bestScore < $this->mojibakeScore($value)) {
+        if ($bestScore < $originalScore) {
             return $best;
         }
 
-        if ($this->mojibakeScore($value) > 0) {
+        if ($originalScore > 0) {
             $candidate = @iconv('UTF-8', 'Windows-1251//IGNORE', $value);
             if (is_string($candidate)
                 && mb_check_encoding($candidate, 'UTF-8')
-                && $this->mojibakeScore($candidate) < $this->mojibakeScore($value)) {
+                && $this->mojibakeScore($candidate) < $originalScore) {
                 return $candidate;
             }
         }
