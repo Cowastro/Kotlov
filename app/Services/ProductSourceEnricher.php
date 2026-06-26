@@ -294,6 +294,37 @@ class ProductSourceEnricher
             ->delete();
     }
 
+    public function deleteJunkAttributeValues(Product $product, bool $apply = true): int
+    {
+        $rows = DB::table('product_attribute_values')
+            ->leftJoin('attributes', 'attributes.id', '=', 'product_attribute_values.attribute_id')
+            ->where('product_attribute_values.product_id', $product->id)
+            ->whereNull('product_attribute_values.option_id')
+            ->where('attributes.type', 'value')
+            ->get([
+                'product_attribute_values.id',
+                'product_attribute_values.value',
+                'attributes.name',
+            ]);
+
+        $ids = $rows
+            ->filter(fn ($row): bool => $this->isTechnicalOrJunkAttribute((string) $row->name, (string) $row->value))
+            ->pluck('id')
+            ->all();
+
+        if ($ids === []) {
+            return 0;
+        }
+
+        if (! $apply) {
+            return count($ids);
+        }
+
+        return DB::table('product_attribute_values')
+            ->whereIn('id', $ids)
+            ->delete();
+    }
+
     public function repairMojibakeAttributeValues(Product $product, bool $apply = true): int
     {
         $rows = DB::table('product_attribute_values')
@@ -2497,6 +2528,8 @@ class ProductSourceEnricher
     {
         $normalizedName = $this->normalizeAttributeName($name);
         $normalizedValue = mb_strtolower($value);
+        $plainName = mb_strtolower($this->cleanText($name));
+        $plainValue = mb_strtolower($this->cleanText($value));
 
         if ($normalizedName === '' || mb_strlen($normalizedName) < 2) {
             return true;
@@ -2507,6 +2540,16 @@ class ProductSourceEnricher
         }
 
         if (preg_match('/^(?:с|c)\/?п\b/u', $normalizedName) || str_contains($normalizedName, 'айдаровское')) {
+            return true;
+        }
+
+        if (preg_match('/^(?:email|e-mail|mail|phone|contacts|schedule|rating|телефон|контакты|график|режим работы|прием заказов|приём заказов|оценка|рейтинг)$/iu', $plainName)
+            || preg_match('/^(?:пн|сб|вс|пн-пт|сб-вс)(?:\b|\s|-)/iu', $plainName)
+            || preg_match('/(?:достоинства|недостатки|отзыв|прием заказов|приём заказов|teplodvor\.by)/iu', $plainValue)
+            || preg_match('/^[^@\s]+@[^@\s]+\.[^@\s]+$/iu', $plainValue)
+            || preg_match('/\b(?:пн|вт|ср|чт|пт|сб|вс)\s*[-–]\s*(?:пн|вт|ср|чт|пт|сб|вс)\s*\d{1,2}:\d{2}\s*[-–]\s*\d{1,2}:\d{2}/iu', $plainValue)
+            || preg_match('/^\d{1,2}\s*:\s*\d{2}\s*[-–]\s*\d{1,2}\s*:\s*\d{2}$/u', $plainValue)
+            || preg_match('/^\d{2}\s*[-–?]\s*\d{1,2}\s*:\s*\d{2}$/u', $plainValue)) {
             return true;
         }
 

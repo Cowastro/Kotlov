@@ -20,6 +20,7 @@ class SyncProductSpecsToAttributesCommand extends Command
         {--bad-reason=* : Filter audit by reason: empty_value, unit_only_value, value_has_unit_suffix, mojibake_name, mojibake_value}
         {--cleanup-empty-values : Delete already synced rows where a value attribute has an empty value}
         {--cleanup-unit-only : Delete already synced rows where value contains only a measurement unit}
+        {--cleanup-junk-attributes : Delete already synced rows that are storefront/service/review/contact junk, not product specs}
         {--cleanup-leading-unit-names : Repair attribute names like ?ммГабаритные размеры, мм}
         {--cleanup-mojibake : Repair already synced rows with broken UTF-8/Windows-1251 text}
         {--id=* : Process only selected product IDs}';
@@ -55,6 +56,10 @@ class SyncProductSpecsToAttributesCommand extends Command
 
         if ((bool) $this->option('cleanup-unit-only')) {
             return $this->cleanupUnitOnlyValues($enricher, $apply, $limit, $ids, $supplierCode, $activeOnly, $notArchived);
+        }
+
+        if ((bool) $this->option('cleanup-junk-attributes')) {
+            return $this->cleanupJunkAttributeValues($enricher, $apply, $limit, $ids, $supplierCode, $activeOnly, $notArchived);
         }
 
         if ((bool) $this->option('cleanup-leading-unit-names')) {
@@ -261,6 +266,67 @@ class SyncProductSpecsToAttributesCommand extends Command
             $this->info('Deleted unit-only attribute rows: ' . $deletedRows);
         } else {
             $this->warn('Dry run only. Run with --apply --cleanup-unit-only to delete unit-only rows.');
+        }
+
+        return self::SUCCESS;
+    }
+
+    /**
+     * @param array<int, int> $ids
+     */
+    private function cleanupJunkAttributeValues(ProductSourceEnricher $enricher, bool $apply, int $limit, array $ids, string $supplierCode, bool $activeOnly, bool $notArchived): int
+    {
+        $query = Product::query()
+            ->whereHas('allAttributeValues')
+            ->when($ids !== [], fn ($query) => $query->whereIn('id', $ids))
+            ->when($activeOnly, fn ($query) => $query->where('is_active', true))
+            ->when($notArchived, fn ($query) => $query->where('is_archived', false))
+            ->when($supplierCode !== '', fn ($query) => $query->whereHas(
+                'supplierProducts.supplier',
+                fn ($query) => $query->where('code', $supplierCode)
+            ))
+            ->orderBy('id');
+
+        $checked = 0;
+        $affectedProducts = 0;
+        $deletedRows = 0;
+        $samples = [];
+
+        $query->chunkById(200, function ($products) use ($enricher, $apply, $limit, &$checked, &$affectedProducts, &$deletedRows, &$samples): bool {
+            foreach ($products as $product) {
+                $checked++;
+
+                if ($limit > 0 && $affectedProducts >= $limit) {
+                    return false;
+                }
+
+                $deleted = $enricher->deleteJunkAttributeValues($product, $apply);
+                if ($deleted <= 0) {
+                    continue;
+                }
+
+                $affectedProducts++;
+                $deletedRows += $deleted;
+
+                if (count($samples) < 10) {
+                    $samples[] = [$product->id, $product->sku ?: '-', $product->name, $deleted];
+                }
+            }
+
+            return true;
+        });
+
+        $this->info('Checked products: ' . $checked);
+        $this->info('Products with junk attributes: ' . $affectedProducts);
+
+        if ($samples !== []) {
+            $this->table(['ID', 'SKU', 'Name', 'Rows'], $samples);
+        }
+
+        if ($apply) {
+            $this->info('Deleted junk attribute rows: ' . $deletedRows);
+        } else {
+            $this->warn('Dry run only. Run with --apply --cleanup-junk-attributes to delete junk rows.');
         }
 
         return self::SUCCESS;
