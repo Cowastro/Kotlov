@@ -205,7 +205,7 @@ class DiscoverThermostudioSourceUrlsCommand extends Command
         $name = trim((string) $row->product_name . ' ' . (string) $row->supplier_name);
 
         if ($brand !== '' && str_contains(mb_strtolower($brand), 'kermi')) {
-            $kermi = $this->matchKermi($article);
+            $kermi = $this->matchKermi(trim($article . ' ' . $name));
             if ($kermi) {
                 return $kermi;
             }
@@ -232,10 +232,10 @@ class DiscoverThermostudioSourceUrlsCommand extends Command
     /**
      * @return array{url:string, confidence:string}|null
      */
-    private function matchKermi(string $article): ?array
+    private function matchKermi(string $text): ?array
     {
-        $compact = strtoupper(preg_replace('/[^A-Z0-9]+/i', '', $article) ?? '');
-        if (! preg_match('/^F(?:KO|TV)(\d{2})(\d{4})(\d{3,4})/i', $compact, $match)) {
+        $compact = strtoupper(preg_replace('/[^A-Z0-9]+/i', '', $text) ?? '');
+        if (! preg_match('/F(?:KO|TV)(\d{2})(\d{4})(\d{3,4})/i', $compact, $match)) {
             return null;
         }
 
@@ -247,10 +247,17 @@ class DiscoverThermostudioSourceUrlsCommand extends Command
             return null;
         }
 
-        $needle = 'kermi-kompakt-' . $type . '-' . $height . '-' . $length;
-        $matches = $this->findByNeedle($needle, 'Kermi');
-        if (count($matches) === 1) {
-            return ['url' => $matches[0]['url'], 'confidence' => 'kermi_article_dimensions'];
+        $needles = [
+            'kermi-kompakt-' . $type . '-' . $height . '-' . $length,
+            'kermi-kompakt-' . $type . $height . $length,
+            'kermi-kompakt-' . $type . str_pad((string) $height, 3, '0', STR_PAD_LEFT) . str_pad((string) $length, 4, '0', STR_PAD_LEFT),
+        ];
+
+        foreach (array_unique($needles) as $needle) {
+            $matches = $this->findByNeedle($needle, 'Kermi');
+            if (count($matches) === 1) {
+                return ['url' => $matches[0]['url'], 'confidence' => 'kermi_article_dimensions'];
+            }
         }
 
         return null;
