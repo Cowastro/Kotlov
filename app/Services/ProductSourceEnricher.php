@@ -333,6 +333,92 @@ class ProductSourceEnricher
         return $changed;
     }
 
+    public function repairLeadingUnitAttributeNames(Product $product, bool $apply = true): int
+    {
+        $rows = DB::table('product_attribute_values')
+            ->join('attributes', 'attributes.id', '=', 'product_attribute_values.attribute_id')
+            ->where('product_attribute_values.product_id', $product->id)
+            ->where('attributes.name', 'like', '?%')
+            ->get([
+                'product_attribute_values.id',
+                'product_attribute_values.attribute_id',
+                'attributes.category_id',
+                'attributes.name as attribute_name',
+                'attributes.suffix',
+            ]);
+
+        $changed = 0;
+
+        foreach ($rows as $row) {
+            [$cleanName, $cleanUnit] = $this->cleanAttributeNameAndUnit(
+                (string) $row->attribute_name,
+                (string) $row->suffix
+            );
+
+            if ($cleanName === '' || $cleanName === (string) $row->attribute_name) {
+                continue;
+            }
+
+            $changed++;
+
+            if (! $apply) {
+                continue;
+            }
+
+            DB::transaction(function () use ($row, $cleanName, $cleanUnit): void {
+                $targetAttributeId = DB::table('attributes')
+                    ->where('category_id', (int) $row->category_id)
+                    ->where('name', $cleanName)
+                    ->when($cleanUnit !== '', function ($query) use ($cleanUnit): void {
+                        $query->where(function ($query) use ($cleanUnit): void {
+                            $query->where('suffix', $cleanUnit)
+                                ->orWhereNull('suffix')
+                                ->orWhere('suffix', '');
+                        });
+                    })
+                    ->orderByRaw('CASE WHEN suffix = ? THEN 0 WHEN suffix IS NULL OR suffix = "" THEN 1 ELSE 2 END', [$cleanUnit])
+                    ->value('id');
+
+                if ($targetAttributeId) {
+                    DB::table('product_attribute_values')
+                        ->where('id', (int) $row->id)
+                        ->update([
+                            'attribute_id' => (int) $targetAttributeId,
+                            'updated_at' => now(),
+                        ]);
+
+                    if ($cleanUnit !== '') {
+                        DB::table('attributes')
+                            ->where('id', (int) $targetAttributeId)
+                            ->where(function ($query): void {
+                                $query->whereNull('suffix')->orWhere('suffix', '');
+                            })
+                            ->update([
+                                'suffix' => $cleanUnit,
+                                'updated_at' => now(),
+                            ]);
+                    }
+
+                    if (! DB::table('product_attribute_values')->where('attribute_id', (int) $row->attribute_id)->exists()) {
+                        DB::table('attributes')->where('id', (int) $row->attribute_id)->delete();
+                    }
+
+                    return;
+                }
+
+                DB::table('attributes')
+                    ->where('id', (int) $row->attribute_id)
+                    ->update([
+                        'name' => $this->cleanDatabaseText($cleanName),
+                        'suffix' => $cleanUnit !== '' ? $this->cleanDatabaseText($cleanUnit) : (string) $row->suffix,
+                        'updated_at' => now(),
+                    ]);
+            });
+        }
+
+        return $changed;
+    }
+
     private function productHasExistingSpecs(Product $product): bool
     {
         return $product->allAttributeValues()->exists();
