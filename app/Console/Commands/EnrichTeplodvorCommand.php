@@ -249,17 +249,18 @@ class EnrichTeplodvorCommand extends Command
     // Function words and generic category words that inflate match scores without adding specificity.
     private const SLUG_STOPWORDS = [
         // Russian prepositions / conjunctions
-        'bez', 'dlya', 'so', 'na', 'po', 'iz', 'ot', 'ob', 'pri', 'ili', 'ne', 'do', 'ko',
+        'bez', 'dlya', 'so', 'na', 'po', 'iz', 'ot', 'ob', 'pri', 'ili', 'ne', 'do', 'ko', 'v', 's',
         // Generic product category nouns
-        'nasos', 'nasosnaya', 'stantsiya', 'klapan', 'schetchik',
+        'nasos', 'nasosnaya', 'stantsiya', 'klapan', 'schetchik', 'komplekte', 'datchikom', 'datchik',
+        'dyimohodom', 'dymohodom', 'boylera', 'komnatnoy', 'temperaturyi', 'temperatury',
         // Generic product type prefixes — very long, dominate scores across all brands
-        'kotel', 'pech', 'otopitelnaya', 'otopitelnyj',
+        'kotel', 'pech', 'otopitelnaya', 'otopitelnyj', 'napolnyiy', 'napolnyj', 'chugunnyiy', 'chugunnyj',
         'tverdotoplivnyj', 'tverdotoplivnyy', 'tverdotoplivnyi',
-        'elektricheskij', 'elektricheskiy', 'elektricheskaya', 'elektriceskii', 'elektriceskiy',
-        'gazovyj', 'gazovaya', 'gazovyy', 'gazovyi',
+        'elektricheskij', 'elektricheskiy', 'elektricheskaya', 'elektriceskii', 'elektriceskiy', 'elektricheskiyiy',
+        'gazovyj', 'gazovaya', 'gazovyy', 'gazovyi', 'gazovyiy',
         // CMS transliteration variants (differ from teplodvor slugs)
-        'kondensacionnyi', 'kondensatsionnyj', 'kondensatsionnyy',
-        'tradicionnyi', 'tradicionnyj', 'traditsionnyj', 'traditsionnyy',
+        'kondensacionnyi', 'kondensatsionnyj', 'kondensatsionnyy', 'kondensatsionnyiy',
+        'tradicionnyi', 'tradicionnyj', 'traditsionnyj', 'traditsionnyy', 'traditsionnyiy',
         'cirkulyacionnyi', 'tsirkulyatsionnyj', 'tsirkulyatsionnyy',
         'skvazinnyi', 'skvazhinnyj', 'skvazhinnyi',
         'alyuminievyi', 'alyuminievyj', 'alyuminievyy',
