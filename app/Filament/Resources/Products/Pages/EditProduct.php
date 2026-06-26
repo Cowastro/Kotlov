@@ -123,6 +123,7 @@ class EditProduct extends EditRecord
         if ($data['specs'] === []) {
             $data['specs'] = $this->specsFromAttributeValues();
         }
+        $data['specs'] = app(ProductSourceEnricher::class)->normalizeSpecsForStorage($data['specs']);
 
         return $data;
     }
@@ -146,6 +147,10 @@ class EditProduct extends EditRecord
             $this->normalizeImages($existing),
             $newUploads
         )));
+
+        $data['specs'] = app(ProductSourceEnricher::class)->normalizeSpecsForStorage(
+            $this->normalizeSpecs($data['specs'] ?? [])
+        );
 
         return $data;
     }

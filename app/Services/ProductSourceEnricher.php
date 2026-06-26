@@ -215,6 +215,11 @@ class ProductSourceEnricher
         }));
     }
 
+    public function normalizeSpecsForStorage(array $specs): array
+    {
+        return $this->normalizeParsedSpecs($specs);
+    }
+
     public function deleteUnitOnlyAttributeValues(Product $product, bool $apply = true): int
     {
         $rows = DB::table('product_attribute_values')
@@ -587,10 +592,16 @@ class ProductSourceEnricher
         }
 
         $normalized = $this->normalizeAttributeName($name);
-        $existing = DB::table('attributes')
+        $attributes = DB::table('attributes')
             ->where('category_id', $categoryId)
-            ->get(['id', 'name', 'suffix'])
-            ->first(fn ($attribute) => $this->normalizeAttributeName((string) $attribute->name) === $normalized);
+            ->get(['id', 'name', 'suffix']);
+
+        $existing = $attributes->first(fn ($attribute): bool => (string) $attribute->name === $name)
+            ?: $attributes->first(fn ($attribute): bool => $this->normalizeAttributeName((string) $attribute->name) === $normalized
+                && ! str_starts_with(trim((string) $attribute->name), '?'));
+
+        $dirtyExisting = $attributes->first(fn ($attribute): bool => $this->normalizeAttributeName((string) $attribute->name) === $normalized
+            && str_starts_with(trim((string) $attribute->name), '?'));
 
         if ($existing) {
             if ($unit !== '' && trim((string) $existing->suffix) === '') {
@@ -601,6 +612,16 @@ class ProductSourceEnricher
             }
 
             return (int) $existing->id;
+        }
+
+        if ($dirtyExisting) {
+            DB::table('attributes')->where('id', $dirtyExisting->id)->update([
+                'name' => $name,
+                'suffix' => $unit !== '' ? $unit : (string) $dirtyExisting->suffix,
+                'updated_at' => now(),
+            ]);
+
+            return (int) $dirtyExisting->id;
         }
 
         $sortOrder = (int) DB::table('attributes')->where('category_id', $categoryId)->max('sort_order') + 10;
