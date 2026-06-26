@@ -411,9 +411,9 @@ class ProductSourceEnricher
 
         $targetAttributeNames = [];
         foreach ($specs as $spec) {
-            $name = $this->cleanAttributeName((string) ($spec['key'] ?? ''));
-            $value = $this->cleanAttributeValue((string) ($spec['value'] ?? ''));
             $unit = (string) ($spec['unit'] ?? '');
+            [$name, $unit] = $this->cleanAttributeNameAndUnit((string) ($spec['key'] ?? ''), $unit);
+            $value = $this->cleanAttributeValue((string) ($spec['value'] ?? ''));
             if ($name === '' || $value === '' || $this->isTechnicalOrJunkAttribute($name, $value) || $this->isUnitOnlyAttributeValue($value, $unit)) {
                 continue;
             }
@@ -425,9 +425,9 @@ class ProductSourceEnricher
 
         $saved = 0;
         foreach ($specs as $spec) {
-            $name = $this->cleanAttributeName((string) ($spec['key'] ?? ''));
-            $value = $this->cleanAttributeValue((string) ($spec['value'] ?? ''));
             $unit = (string) ($spec['unit'] ?? '');
+            [$name, $unit] = $this->cleanAttributeNameAndUnit((string) ($spec['key'] ?? ''), $unit);
+            $value = $this->cleanAttributeValue((string) ($spec['value'] ?? ''));
             if ($name === '' || $value === '' || $this->isTechnicalOrJunkAttribute($name, $value) || $this->isUnitOnlyAttributeValue($value, $unit)) {
                 continue;
             }
@@ -657,7 +657,7 @@ class ProductSourceEnricher
             'title' => $this->cleanText((string) ($parsed['title'] ?? '')),
             'description' => $this->cleanText((string) ($parsed['description'] ?? '')),
             'short_description' => $this->cleanText((string) ($parsed['short_description'] ?? '')),
-            'specs' => $this->sanitizeJsonArray((array) ($parsed['specs'] ?? [])),
+            'specs' => $this->sanitizeJsonArray($this->normalizeParsedSpecs((array) ($parsed['specs'] ?? []))),
             'service_info' => $this->sanitizeJsonArray((array) ($parsed['service_info'] ?? [])),
             'documents' => array_values(array_slice(array_filter(array_map(function ($document): array {
                 $document = is_array($document) ? $document : [];
@@ -672,6 +672,26 @@ class ProductSourceEnricher
                 (array) ($parsed['images'] ?? [])
             )), 0, 4)),
         ];
+    }
+
+    private function normalizeParsedSpecs(array $specs): array
+    {
+        return array_values(array_filter(array_map(function ($spec): array {
+            $spec = is_array($spec) ? $spec : [];
+            $unit = (string) ($spec['unit'] ?? '');
+            [$key, $unit] = $this->cleanAttributeNameAndUnit((string) ($spec['key'] ?? $spec['name'] ?? ''), $unit);
+            $value = $this->cleanAttributeValue((string) ($spec['value'] ?? ''));
+
+            if ($key === '' || $value === '') {
+                return [];
+            }
+
+            return [
+                'key' => $key,
+                'value' => $value,
+                'unit' => $this->cleanText($unit),
+            ];
+        }, $specs)));
     }
 
     private function isOzonUrl(string $url): bool
@@ -2033,13 +2053,44 @@ class ProductSourceEnricher
 
     private function cleanAttributeName(string $name): string
     {
+        [$name] = $this->cleanAttributeNameAndUnit($name);
+
+        return $name;
+    }
+
+    private function cleanAttributeNameAndUnit(string $name, string $unit = ''): array
+    {
         $name = $this->cleanText($name);
+        $unit = $this->cleanText($unit);
+        [$name, $unit] = $this->stripLeadingUnitPrefixFromAttributeName($name, $unit);
         $name = preg_replace('/^[\s:;•—-]+|[\s:;•—-]+$/u', '', $name) ?? $name;
 
-        return trim(preg_replace('/\s+/u', ' ', $name) ?? $name);
-        $name = trim($name, " \t\n\r\0\x0B:;•—-");
+        return [trim(preg_replace('/\s+/u', ' ', $name) ?? $name), $unit];
+    }
 
-        return trim(preg_replace('/\s+/u', ' ', $name) ?? $name);
+    private function stripLeadingUnitPrefixFromAttributeName(string $name, string $unit = ''): array
+    {
+        $knownUnits = [
+            'кВт', 'Вт', 'В', 'атм', 'бар', 'мм', 'см', 'м', 'кг', 'г', 'л', 'шт',
+            'лет', 'мес', 'мин', 'сек', '°C', '°С', 'C', '%', 'м²', 'м³', 'м2', 'м3',
+            'дюйм', 'дюйма', 'дюймов', 'kw', 'kW', 'w', 'v', 'mm', 'cm', 'm', 'kg', 'g', 'l', 'pcs',
+        ];
+
+        usort($knownUnits, fn (string $a, string $b): int => mb_strlen($b) <=> mb_strlen($a));
+        $pattern = implode('|', array_map(fn (string $value): string => preg_quote($value, '/'), $knownUnits));
+
+        if (preg_match('/^\?+\s*(' . $pattern . ')\s*(?=\p{Lu})/u', $name, $match) === 1) {
+            $detectedUnit = $match[1];
+            $name = preg_replace('/^\?+\s*' . preg_quote($detectedUnit, '/') . '\s*/u', '', $name, 1) ?? $name;
+
+            if (trim($unit) === '') {
+                $unit = $detectedUnit;
+            }
+        } else {
+            $name = preg_replace('/^\?+\s*/u', '', $name) ?? $name;
+        }
+
+        return [$name, $unit];
     }
 
     private function cleanAttributeValue(string $value): string
