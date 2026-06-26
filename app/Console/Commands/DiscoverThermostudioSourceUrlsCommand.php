@@ -260,7 +260,45 @@ class DiscoverThermostudioSourceUrlsCommand extends Command
             }
         }
 
+        foreach ($this->kermiGeneratedUrls($type, $height, $length) as $url) {
+            if ($this->sourceUrlExists($url)) {
+                return ['url' => $url, 'confidence' => 'kermi_generated_verified'];
+            }
+        }
+
         return null;
+    }
+
+    /**
+     * @return array<int,string>
+     */
+    private function kermiGeneratedUrls(int $type, int $height, int $length): array
+    {
+        return [
+            sprintf('https://teplo.by/product/stalnoj-radiator-kermi-kompakt-%d-%d-%d/', $type, $height, $length),
+        ];
+    }
+
+    private function sourceUrlExists(string $url): bool
+    {
+        try {
+            $response = Http::withHeaders(['User-Agent' => 'Mozilla/5.0'])
+                ->timeout(12)
+                ->retry(1, 400)
+                ->get($url);
+        } catch (\Throwable) {
+            return false;
+        }
+
+        if (! $response->ok()) {
+            return false;
+        }
+
+        $body = mb_strtolower(mb_substr($response->body(), 0, 2000));
+
+        return ! str_contains($body, '404')
+            && ! str_contains($body, 'страница не найдена')
+            && ! str_contains($body, 'page not found');
     }
 
     /**
