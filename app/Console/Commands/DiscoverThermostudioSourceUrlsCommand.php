@@ -16,6 +16,8 @@ class DiscoverThermostudioSourceUrlsCommand extends Command
         {--limit=50 : Max supplier rows to inspect, 0 means all}
         {--offset=0 : Skip supplier rows}
         {--force : Re-check rows that already have source_url}
+        {--source=teplo : Source index to use: teplo or teplodvor}
+        {--teplodvor-index=teplodvor_index.json : Local Teplodvor slug index path relative to storage/}
         {--refresh-index : Rebuild cached teplo.by product URL index}';
 
     protected $description = 'Discover safe Thermostudio source URLs from known card sources without creating products.';
@@ -27,15 +29,25 @@ class DiscoverThermostudioSourceUrlsCommand extends Command
      * @var array<int,array{url:string, slug:string, key:string}>
      */
     private array $sourceIndex = [];
+    private string $sourceName = 'teplo.by';
 
     public function handle(): int
     {
         $apply = (bool) $this->option('apply');
+        $source = mb_strtolower(trim((string) $this->option('source')));
+        if (! in_array($source, ['teplo', 'teplodvor'], true)) {
+            $this->error('Unsupported --source. Use teplo or teplodvor.');
+            return self::FAILURE;
+        }
+
         $this->line($apply
             ? '<fg=red;options=bold>APPLY: discovered Thermostudio source URLs will be written.</>'
             : '<fg=yellow;options=bold>DRY RUN: Thermostudio source URL discovery preview only.</>');
 
-        $this->sourceIndex = $this->loadSourceIndex((bool) $this->option('refresh-index'));
+        $this->sourceIndex = $source === 'teplodvor'
+            ? $this->loadTeplodvorSourceIndex()
+            : $this->loadTeploSourceIndex((bool) $this->option('refresh-index'));
+
         if ($this->sourceIndex === []) {
             $this->warn('Source index is empty.');
             return self::FAILURE;
@@ -90,7 +102,7 @@ class DiscoverThermostudioSourceUrlsCommand extends Command
 
         $rows = $query->orderBy('p.id')->get();
         $this->info(sprintf('Thermostudio supplier rows: %d (processing %d, offset %d)', $total, $rows->count(), $offset));
-        $this->info(sprintf('Source index: %d teplo.by product URLs', count($this->sourceIndex)));
+        $this->info(sprintf('Source index: %d %s product URLs', count($this->sourceIndex), $this->sourceName));
 
         $stats = array_fill_keys(['processed', 'matched', 'written', 'skipped', 'ambiguous'], 0);
         $preview = [];
@@ -148,8 +160,10 @@ class DiscoverThermostudioSourceUrlsCommand extends Command
     /**
      * @return array<int,array{url:string, slug:string, key:string}>
      */
-    private function loadSourceIndex(bool $refresh): array
+    private function loadTeploSourceIndex(bool $refresh): array
     {
+        $this->sourceName = 'teplo.by';
+
         if (! $refresh && Storage::exists(self::CACHE_PATH)) {
             $cached = json_decode((string) Storage::get(self::CACHE_PATH), true);
             if (is_array($cached) && $cached !== []) {
@@ -193,6 +207,40 @@ class DiscoverThermostudioSourceUrlsCommand extends Command
         Storage::put(self::CACHE_PATH, json_encode($index, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT));
 
         return $index;
+    }
+
+    /**
+     * @return array<int,array{url:string, slug:string, key:string}>
+     */
+    private function loadTeplodvorSourceIndex(): array
+    {
+        $this->sourceName = 'teplodvor.by';
+
+        $path = storage_path(trim((string) $this->option('teplodvor-index')));
+        if (! is_file($path)) {
+            $this->warn('Teplodvor index not found: ' . $path);
+            return [];
+        }
+
+        $data = json_decode((string) file_get_contents($path), true);
+        if (! is_array($data)) {
+            return [];
+        }
+
+        $rows = [];
+        foreach ($data as $slug => $url) {
+            if (! is_string($slug) || ! is_string($url) || $slug === '' || $url === '') {
+                continue;
+            }
+
+            $rows[] = [
+                'url' => $url,
+                'slug' => $slug,
+                'key' => $this->slugKey($slug),
+            ];
+        }
+
+        return $rows;
     }
 
     /**
@@ -354,7 +402,7 @@ class DiscoverThermostudioSourceUrlsCommand extends Command
         }
 
         $parts = array_values(array_filter(explode('-', $name), function (string $part): bool {
-            return (mb_strlen($part) >= 2 || in_array($part, ['x', 'w', 's'], true))
+            return (mb_strlen($part) >= 2 || in_array($part, ['e', 'x', 'w', 's'], true))
                 && ! in_array($part, ['kotel', 'kotly', 'gazovyj', 'gazovyi', 'gazovyye', 'radiator', 'stalnoj', 'vodonagrevatel', 'bojler', 'konturnyi'], true);
         }));
 
