@@ -259,6 +259,13 @@ class DiscoverThermostudioSourceUrlsCommand extends Command
             }
         }
 
+        if ($brand !== '' && str_contains(mb_strtolower($brand), 'buderus')) {
+            $buderus = $this->matchBuderusRadiator(trim($article . ' ' . $name));
+            if ($buderus) {
+                return $buderus;
+            }
+        }
+
         foreach ($this->articleCandidates($article) as $candidate) {
             $matches = $this->findByNeedle($candidate, $brand);
             if (count($matches) === 1) {
@@ -325,6 +332,59 @@ class DiscoverThermostudioSourceUrlsCommand extends Command
         return [
             sprintf('https://teplo.by/product/stalnoj-radiator-kermi-kompakt-%d-%d-%d/', $type, $height, $length),
         ];
+    }
+
+    /**
+     * @return array{url:string, confidence:string}|null
+     */
+    private function matchBuderusRadiator(string $text): ?array
+    {
+        $normalized = str_replace(['х', 'Х', '×'], 'x', $text);
+        if (! preg_match('/\b(?P<type>\d{2})\s*[\/x]\s*(?P<height>\d{3,4})\s*[\/x]\s*(?P<length>\d{3,4})\b.*?\b(?P<profile>VK|K)\s*[- ]?\s*Profil\b/iu', $normalized, $match)
+            && ! preg_match('/\b(?P<profile>VK|K)\s*[- ]?\s*Profil\b.*?\b(?P<type>\d{2})\s*[\/x]\s*(?P<height>\d{3,4})\s*[\/x]\s*(?P<length>\d{3,4})\b/iu', $normalized, $match)) {
+            return null;
+        }
+
+        $type = (int) $match['type'];
+        $height = (int) $match['height'];
+        $length = (int) $match['length'];
+        $profile = mb_strtolower((string) $match['profile']);
+        if ($type <= 0 || $height <= 0 || $length <= 0 || ! in_array($profile, ['k', 'vk'], true)) {
+            return null;
+        }
+
+        $compact = $type . $height . $length;
+        $needles = [
+            sprintf('buderus-logatrend-%s-profil-%d-%dx%d', $profile, $type, $height, $length),
+            sprintf('buderus-logatrend-%s-profil-%d-%d-%d', $profile, $type, $height, $length),
+            sprintf('buderus-%s-profil-%s', $profile, $compact),
+            sprintf('buderus-%s-profil-%d-%d-%d', $profile, $type, $height, $length),
+            sprintf('buderus-%d-%d-%d-%s-profil', $type, $height, $length, $profile),
+        ];
+
+        foreach (array_unique($needles) as $needle) {
+            $matches = $this->findByNeedle($needle, 'Buderus');
+            if (count($matches) === 1) {
+                return ['url' => $matches[0]['url'], 'confidence' => 'buderus_radiator_dimensions'];
+            }
+        }
+
+        $matches = array_values(array_filter($this->sourceIndex, function (array $row) use ($profile, $compact, $type, $height, $length): bool {
+            $key = (string) $row['key'];
+            if (! str_contains($key, 'buderus') || ! str_contains($key, $profile . '-profil')) {
+                return false;
+            }
+
+            return str_contains($key, $compact)
+                || str_contains($key, sprintf('%d-%dx%d', $type, $height, $length))
+                || str_contains($key, sprintf('%d-%d-%d', $type, $height, $length));
+        }));
+
+        if (count($matches) === 1) {
+            return ['url' => $matches[0]['url'], 'confidence' => 'buderus_radiator_dimensions'];
+        }
+
+        return null;
     }
 
     private function sourceUrlExists(string $url): bool
