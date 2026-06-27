@@ -50,7 +50,7 @@ class ProductController extends Controller
         $canonicalPath = '/' . $productCategory->slug . '/' . $product->slug;
         $currentPath = '/' . trim(request()->path(), '/');
 
-        if ($currentPath !== $canonicalPath) {
+        if ($currentPath !== $canonicalPath && ! request()->attributes->get('allow_single_slug_product')) {
             return redirect($canonicalPath, 301);
         }
 

@@ -27,6 +27,8 @@ class CatalogController extends Controller
                 ->first();
 
             if ($product && $product->category) {
+                request()->attributes->set('allow_single_slug_product', true);
+
                 return app(ProductController::class)->show($product->category->slug, $product->slug);
             }
 
