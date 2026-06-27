@@ -16,6 +16,7 @@ class DiscoverThermostudioSourceUrlsCommand extends Command
         {--limit=50 : Max supplier rows to inspect, 0 means all}
         {--offset=0 : Skip supplier rows}
         {--force : Re-check rows that already have source_url}
+        {--max-current-attrs= : Process only products with this many or fewer current attribute rows}
         {--source=teplo : Source index to use: teplo, teplodvor, or all}
         {--teplodvor-index=teplodvor_index.json : Local Teplodvor slug index path relative to storage/}
         {--refresh-index : Rebuild cached teplo.by product URL index}';
@@ -60,10 +61,15 @@ class DiscoverThermostudioSourceUrlsCommand extends Command
         $offset = max(0, (int) $this->option('offset'));
         $force = (bool) $this->option('force');
 
+        $attributeCounts = DB::table('product_attribute_values')
+            ->select('product_id', DB::raw('COUNT(*) as attribute_rows'))
+            ->groupBy('product_id');
+
         $query = DB::table('supplier_products as sp')
             ->join('suppliers as s', 's.id', '=', 'sp.supplier_id')
             ->join('products as p', 'p.id', '=', 'sp.product_id')
             ->leftJoin('brands as b', 'b.id', '=', 'p.brand_id')
+            ->leftJoinSub($attributeCounts, 'pav', 'pav.product_id', '=', 'p.id')
             ->where('s.code', self::SUPPLIER_CODE)
             ->where('p.is_archived', false)
             ->select([
@@ -76,6 +82,11 @@ class DiscoverThermostudioSourceUrlsCommand extends Command
                 'p.sku',
                 'b.name as brand_name',
             ]);
+
+        $maxCurrentAttrs = trim((string) $this->option('max-current-attrs'));
+        if ($maxCurrentAttrs !== '') {
+            $query->whereRaw('COALESCE(pav.attribute_rows, 0) <= ?', [max(0, (int) $maxCurrentAttrs)]);
+        }
 
         if (! $force) {
             $query->where(function ($q): void {
