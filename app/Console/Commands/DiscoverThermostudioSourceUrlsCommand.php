@@ -456,11 +456,11 @@ class DiscoverThermostudioSourceUrlsCommand extends Command
             return [];
         }
 
-        $brandKey = $this->slugKey($brand);
+        $brandKeys = $this->brandKeys($brand);
 
-        return array_values(array_filter($this->sourceIndex, function (array $row) use ($needle, $brandKey): bool {
+        return array_values(array_filter($this->sourceIndex, function (array $row) use ($needle, $brandKeys): bool {
             $key = (string) $row['key'];
-            if ($brandKey !== '' && ! str_contains($key, $brandKey)) {
+            if ($brandKeys !== [] && ! $this->keyContainsAny($key, $brandKeys)) {
                 return false;
             }
 
@@ -500,15 +500,18 @@ class DiscoverThermostudioSourceUrlsCommand extends Command
 
         $parts = array_values(array_filter(explode('-', $name), function (string $part): bool {
             return (mb_strlen($part) >= 2 || in_array($part, ['e', 'x', 'w', 's'], true))
-                && ! in_array($part, ['kotel', 'kotly', 'gazovyj', 'gazovyi', 'gazovyye', 'radiator', 'stalnoj', 'vodonagrevatel', 'bojler', 'konturnyi'], true);
+                && ! in_array($part, ['kotel', 'kotly', 'gazovyy', 'gazovyj', 'gazovyi', 'gazovyye', 'radiator', 'stalnoj', 'stalnoi', 'vodonagrevatel', 'bojler', 'boyler', 'konturnyi', 'konturnyy'], true);
         }));
 
         $needles = [];
-        for ($size = min(5, count($parts)); $size >= 2; $size--) {
-            $slice = array_slice($parts, 0, $size);
-            $needle = implode('-', $slice);
-            if (mb_strlen($needle) >= 6) {
-                $needles[] = $needle;
+        $maxSize = min(5, count($parts));
+        for ($size = $maxSize; $size >= 2; $size--) {
+            for ($start = 0; $start <= count($parts) - $size; $start++) {
+                $slice = array_slice($parts, $start, $size);
+                $needle = implode('-', $slice);
+                if (mb_strlen($needle) >= 6) {
+                    $needles[] = $needle;
+                }
             }
         }
 
@@ -526,6 +529,40 @@ class DiscoverThermostudioSourceUrlsCommand extends Command
     private function slugKey(string $value): string
     {
         return trim(Str::slug($value));
+    }
+
+    /**
+     * @return array<int,string>
+     */
+    private function brandKeys(string $brand): array
+    {
+        $key = $this->slugKey($brand);
+        if ($key === '') {
+            return [];
+        }
+
+        $aliases = [
+            'ariston' => ['ariston', 'superlux'],
+            'ferroli' => ['ferroli', 'ferolli'],
+            'tec-line' => ['tec-line', 'tecline'],
+            'tecline' => ['tec-line', 'tecline'],
+        ];
+
+        return array_values(array_unique($aliases[$key] ?? [$key]));
+    }
+
+    /**
+     * @param array<int,string> $needles
+     */
+    private function keyContainsAny(string $key, array $needles): bool
+    {
+        foreach ($needles as $needle) {
+            if ($needle !== '' && str_contains($key, $needle)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**
