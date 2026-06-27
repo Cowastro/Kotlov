@@ -298,9 +298,16 @@ class DiscoverThermostudioSourceUrlsCommand extends Command
             }
         }
 
+        if ($brand !== '' && str_contains(mb_strtolower($brand), 'fondital')) {
+            $fondital = $this->matchFonditalRadiator(trim($article . ' ' . $name));
+            if ($fondital) {
+                return $fondital;
+            }
+        }
+
         foreach ($this->articleCandidates($article) as $candidate) {
             $matches = $this->findByNeedle($candidate, $brand);
-            if (count($matches) === 1) {
+            if (count($matches) === 1 && $this->sourceMatchIsUsable($matches[0])) {
                 return ['url' => $matches[0]['url'], 'confidence' => 'article_url'];
             }
         }
@@ -308,7 +315,7 @@ class DiscoverThermostudioSourceUrlsCommand extends Command
         $modelNeedles = $this->modelNeedles($name, $brand);
         foreach ($modelNeedles as $needle) {
             $matches = $this->findByNeedle($needle, $brand);
-            if (count($matches) === 1) {
+            if (count($matches) === 1 && $this->sourceMatchIsUsable($matches[0])) {
                 return ['url' => $matches[0]['url'], 'confidence' => 'model_url'];
             }
         }
@@ -424,6 +431,43 @@ class DiscoverThermostudioSourceUrlsCommand extends Command
         return null;
     }
 
+    /**
+     * @return array{url:string, confidence:string}|null
+     */
+    private function matchFonditalRadiator(string $text): ?array
+    {
+        $key = $this->slugKey($text);
+        if (! str_contains($key, 'radiator') && ! str_contains($key, 'bimetal') && ! str_contains($key, 'alumin')) {
+            return null;
+        }
+
+        $needles = [];
+        if (str_contains($key, 'alustal')) {
+            $needles[] = 'radiator-bimetallicheskiy-fondital-alustal-500100';
+            $needles[] = 'fondital-alustal-500100';
+        }
+
+        if (str_contains($key, 'exclusivo') || preg_match('/\bb4\b/u', $key)) {
+            if (str_contains($key, '350')) {
+                $needles[] = 'alyuminievyy-radiator-fondital-calidor-super-b4-350100';
+                $needles[] = 'radiator-alyuminievyy-fondital-b4';
+            } else {
+                $needles[] = 'alyuminievyy-radiator-fondital-calidor-super-b4-500-100';
+                $needles[] = 'radiator-alyuminievyy-fondital-b4';
+            }
+        }
+
+        foreach (array_unique($needles) as $needle) {
+            $matches = $this->findByNeedle($needle, 'Fondital');
+            $matches = array_values(array_filter($matches, fn (array $row): bool => $this->sourceMatchIsUsable($row)));
+            if (count($matches) === 1) {
+                return ['url' => $matches[0]['url'], 'confidence' => 'fondital_radiator_family'];
+            }
+        }
+
+        return null;
+    }
+
     private function sourceUrlExists(string $url): bool
     {
         try {
@@ -444,6 +488,23 @@ class DiscoverThermostudioSourceUrlsCommand extends Command
         return ! str_contains($body, '404')
             && ! str_contains($body, 'страница не найдена')
             && ! str_contains($body, 'page not found');
+    }
+
+    /**
+     * @param array{url:string, slug:string, key:string} $row
+     */
+    private function sourceMatchIsUsable(array $row): bool
+    {
+        $url = (string) ($row['url'] ?? '');
+        if ($url === '') {
+            return false;
+        }
+
+        if (str_contains($url, 'teplo.by/product/')) {
+            return $this->sourceUrlExists($url);
+        }
+
+        return true;
     }
 
     /**

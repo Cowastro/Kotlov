@@ -156,6 +156,10 @@ class HandleRedirects
             return $legacyProductRedirect;
         }
 
+        if ($singleProductRedirect = $this->redirectSingleSegmentProductPath($request, $path)) {
+            return $singleProductRedirect;
+        }
+
         if ($legacyBrandCategoryRedirect = $this->redirectLegacyBrandCategoryPath($request, $path)) {
             return $legacyBrandCategoryRedirect;
         }
@@ -209,6 +213,33 @@ class HandleRedirects
             return null;
         }
 
+        $query = $request->getQueryString();
+
+        return redirect($targetPath . ($query ? '?' . $query : ''), 301);
+    }
+
+    private function redirectSingleSegmentProductPath(Request $request, string $path): ?Response
+    {
+        $slug = trim($path, '/');
+        if ($slug === '' || str_contains($slug, '/')) {
+            return null;
+        }
+
+        if (Category::where('slug', $slug)->exists()) {
+            return null;
+        }
+
+        $product = Product::query()
+            ->where('slug', $slug)
+            ->where(fn ($query) => $query->where('is_active', true)->orWhere('is_archived', true))
+            ->with('category')
+            ->first();
+
+        if (! $product || ! $product->category) {
+            return null;
+        }
+
+        $targetPath = '/' . $product->category->slug . '/' . $product->slug;
         $query = $request->getQueryString();
 
         return redirect($targetPath . ($query ? '?' . $query : ''), 301);
