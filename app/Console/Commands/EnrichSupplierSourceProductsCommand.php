@@ -119,6 +119,8 @@ class EnrichSupplierSourceProductsCommand extends Command
 
         if ($limit > 0) {
             $rows->limit($limit);
+        } elseif ($offset > 0) {
+            $rows->limit(2147483647);
         }
 
         if ($offset > 0) {

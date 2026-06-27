@@ -108,6 +108,8 @@ class DiscoverThermostudioSourceUrlsCommand extends Command
         $total = (clone $query)->count();
         if ($limit > 0) {
             $query->limit($limit);
+        } elseif ($offset > 0) {
+            $query->limit(2147483647);
         }
         if ($offset > 0) {
             $query->offset($offset);
