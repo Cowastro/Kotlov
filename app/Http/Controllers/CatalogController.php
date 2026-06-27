@@ -17,9 +17,22 @@ class CatalogController extends Controller
         $category = Category::where('slug', $categorySlug)
             ->where('is_active', true)
             ->with('parent')
-            ->firstOrFail();
+            ->first();
 
         // Для "Для дачи" показываем все товары из ветки "Печи"
+        if (! $category) {
+            $product = Product::where('slug', $categorySlug)
+                ->where(fn ($q) => $q->where('is_active', true)->orWhere('is_archived', true))
+                ->with('category')
+                ->first();
+
+            if ($product && $product->category) {
+                return redirect('/' . $product->category->slug . '/' . $product->slug, 301);
+            }
+
+            abort(404);
+        }
+
         if ($category->slug === 'dlya-dachi') {
             $pechki = Category::where('slug', 'pechki')->first();
             if ($pechki) {
