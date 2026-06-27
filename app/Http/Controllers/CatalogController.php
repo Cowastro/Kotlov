@@ -27,7 +27,7 @@ class CatalogController extends Controller
                 ->first();
 
             if ($product && $product->category) {
-                return redirect('/' . $product->category->slug . '/' . $product->slug, 301);
+                return app(ProductController::class)->show($product->category->slug, $product->slug);
             }
 
             abort(404);
