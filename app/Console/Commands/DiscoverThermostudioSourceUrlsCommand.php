@@ -309,14 +309,16 @@ class DiscoverThermostudioSourceUrlsCommand extends Command
     private function matchKermi(string $text): ?array
     {
         $compact = strtoupper(preg_replace('/[^A-Z0-9]+/i', '', $text) ?? '');
-        if (! preg_match('/F(?:KO|TV)(\d{2})(\d{4})(\d{3,4})/i', $compact, $match)) {
+        if (! preg_match('/F(?:KO|TV)(?P<type>\d{2})(?P<height>\d{3})(?P<length>\d{3})\d?/i', $compact, $match)
+            && ! preg_match('/F(?:KO|TV)(?P<type>\d{2})(?P<height>\d{4})(?P<length>\d{3,4})/i', $compact, $match)) {
             return null;
         }
 
-        $type = (int) $match[1];
-        $height = (int) $match[2];
-        $lengthCode = $match[3];
-        $length = (int) substr($lengthCode, 0, -1) * 10;
+        $type = (int) $match['type'];
+        $heightCode = (string) $match['height'];
+        $lengthCode = (string) $match['length'];
+        $height = strlen($heightCode) === 3 ? (int) $heightCode * 10 : (int) $heightCode;
+        $length = strlen($lengthCode) === 3 ? (int) $lengthCode * 10 : (int) substr($lengthCode, 0, -1) * 10;
         if ($type <= 0 || $height <= 0 || $length <= 0) {
             return null;
         }
