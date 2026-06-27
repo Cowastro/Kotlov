@@ -350,8 +350,11 @@ class DiscoverThermostudioSourceUrlsCommand extends Command
      */
     private function kermiGeneratedUrls(int $type, int $height, int $length): array
     {
+        $compact = sprintf('%d%d%d', $type, $height, $length);
+
         return [
             sprintf('https://teplo.by/product/stalnoj-radiator-kermi-kompakt-%d-%d-%d/', $type, $height, $length),
+            sprintf('https://www.teplodvor.by/shop/raditory/stalnye/radiator-stalnoy-kermi-kompakt-%s', $compact),
         ];
     }
 
