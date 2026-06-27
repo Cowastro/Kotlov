@@ -170,6 +170,9 @@ class HandleRedirects
             // Сохраняем query string если есть
             $query = $request->getQueryString();
             $target = $redirect->to_url . ($query ? '?' . $query : '');
+            if ($this->redirectTargetLoopsToProductPath($path, (string) $redirect->to_url)) {
+                return $next($request);
+            }
 
             return redirect($target, $redirect->status_code ?? 301);
         }
@@ -212,6 +215,35 @@ class HandleRedirects
         $query = $request->getQueryString();
 
         return redirect($targetPath . ($query ? '?' . $query : ''), 301);
+    }
+
+    private function redirectTargetLoopsToProductPath(string $path, string $targetPath): bool
+    {
+        $path = '/' . trim($path, '/');
+        $targetPath = '/' . trim(parse_url($targetPath, PHP_URL_PATH) ?: $targetPath, '/');
+
+        if ($path === $targetPath) {
+            return true;
+        }
+
+        $sourceSlug = basename($path);
+        $targetSlug = basename($targetPath);
+        if ($sourceSlug === '' || $sourceSlug !== $targetSlug) {
+            return false;
+        }
+
+        $product = Product::query()
+            ->where('slug', $sourceSlug)
+            ->with('category')
+            ->first();
+
+        if (! $product || ! $product->category) {
+            return false;
+        }
+
+        $canonicalPath = '/' . $product->category->slug . '/' . $product->slug;
+
+        return $path === $canonicalPath || $targetPath === $canonicalPath;
     }
 
     private function redirectCityAlias(Request $request): ?Response
