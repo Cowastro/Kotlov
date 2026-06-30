@@ -65,6 +65,13 @@ Schedule::command('supplier:sync-thermostudio-pricelist --apply --available-only
     ->runInBackground()
     ->appendOutputTo(storage_path('logs/thermostudio-pricelist-sync.log'));
 
+// Akvatermex: safe daily price/stock refresh for already linked Thermex group products only.
+Schedule::command('supplier:sync-akvatermex --apply --available-only --only-linked --sync-retail-prices --prefer-teplodvor-source')
+    ->dailyAt('06:57')
+    ->withoutOverlapping()
+    ->runInBackground()
+    ->appendOutputTo(storage_path('logs/akvatermex-pricelist-sync.log'));
+
 // Лигмет: ежедневно обновляем цены и наличие печей/каминов/топок.
 // Новые товары не создаются автоматически — только обновление уже связанных.
 Schedule::command('supplier:sync-ligmet --apply')
