@@ -816,6 +816,10 @@ class SyncAkvatermexCommand extends Command
         }
 
         foreach ($data as $slug => $url) {
+            if (is_string($url)) {
+                $url = preg_replace('/\s+/u', '-', trim($url)) ?? trim($url);
+            }
+
             if (is_string($slug) && is_string($url) && $this->isHttpUrl($url)) {
                 $this->teplodvorIndex[$slug] = $url;
             }
