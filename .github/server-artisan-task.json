@@ -1,6 +1,6 @@
 {
   "task": "artisan-apply",
-  "artisan_args": "supplier:enrich-source-products --apply --supplier=akvatermex --domain=teplodvor.by --product=21166 --force --replace-specs --min-specs-to-replace=4 --overwrite-images --skip-documents --limit=1",
+  "artisan_args": "supplier:enrich-source-products --apply --supplier=akvatermex --domain=teplodvor.by --product=21167 --force --replace-specs --min-specs-to-replace=4 --overwrite-images --skip-documents --limit=1",
   "log_file": "storage/logs/server-artisan.log",
-  "run_id": "akvatermex-enrich-21166-apply"
+  "run_id": "akvatermex-enrich-21167-apply"
 }
