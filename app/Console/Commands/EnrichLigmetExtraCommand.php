@@ -434,7 +434,12 @@ class EnrichLigmetExtraCommand extends Command
                 && ! $this->isStopword($t, $brand)
                 && ! preg_match('/^\d+$/', $t)
         );
-        return implode(' ', $toks);
+        $key = implode(' ', $toks);
+        if (mb_strtolower($brand) === 'blist') {
+            $key = trim($key . ' ' . $this->blistColorSuffix($n));
+        }
+
+        return $key;
     }
 
     private function isStopword(string $token, string $brand): bool
@@ -463,6 +468,27 @@ class EnrichLigmetExtraCommand extends Command
         ];
 
         return in_array($token, $colors, true);
+    }
+
+    private function blistColorSuffix(string $upperName): string
+    {
+        $map = [
+            'BLIST_BEIGE' => ['БЕЖ', 'Đ±ĐµĐ¶', 'Đ‘Đ•Đ–'],
+            'BLIST_RED' => ['КРАСН', 'ĐşŃ€Đ°ŃĐ˝', 'ĐšĐ ĐĐˇĐť'],
+            'BLIST_BLACK' => ['ЧЕРН', 'ЧЁРН', 'Đ§ĐµŃ€Đ˝', 'Đ§Đ•Đ Đť', 'Đ§ĐĐ Đť'],
+            'BLIST_GREY' => ['СЕР', 'ĐˇĐµŃ€', 'ĐˇĐ•Đ '],
+            'BLIST_WHITE' => ['БЕЛ', 'Đ±ĐµĐ»', 'Đ‘Đ•Đ›'],
+        ];
+
+        foreach ($map as $suffix => $needles) {
+            foreach ($needles as $needle) {
+                if (mb_stripos($upperName, $needle) !== false) {
+                    return $suffix;
+                }
+            }
+        }
+
+        return '';
     }
 
     private function generateAiContent(int $pid, string $name, string $desc, array $specs, string $brand, $now): void
