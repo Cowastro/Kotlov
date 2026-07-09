@@ -35,6 +35,9 @@ class SyncLigmetCommand extends Command
         {--sheet-url= : Override the default spreadsheet URL}
         {--folder-url= : Google Drive folder URL; newest XLS/XLSX file will be used}
         {--candidate-report= : Write create_candidate rows to CSV}
+        {--brand=* : Process only selected brands, repeatable or comma-separated}
+        {--category=* : Process only selected category ids, repeatable or comma-separated}
+        {--stock-status=* : Process only selected stock statuses, repeatable or comma-separated}
         {--all-categories : Import chimneys/doors/accessories too (default: stoves/fireplaces only)}
         {--archive-existing : Archive existing active products of these brands (in scope) before import; excludes them from matching}
         {--redirects : Write an old→new redirect map (archived → recreated, by brand+model)}
@@ -148,6 +151,7 @@ class SyncLigmetCommand extends Command
         }
 
         $this->info(sprintf('Parsed %d product rows for requested brands', count($rows)));
+        $rows = $this->filterRows($rows);
         if ($limit) {
             $rows = array_slice($rows, 0, $limit);
         }
@@ -167,6 +171,7 @@ class SyncLigmetCommand extends Command
 
         $this->buildIndex();
         $classified = array_map(fn ($r) => $this->classify($r), $rows);
+        $classified = $this->filterClassifiedRows($classified);
 
         if (! $apply) {
             return $this->showDryRun($classified);
@@ -177,6 +182,74 @@ class SyncLigmetCommand extends Command
             $this->buildRedirects($archived);
         }
         return $result;
+    }
+
+    /**
+     * @param array<int,array<string,mixed>> $rows
+     * @return array<int,array<string,mixed>>
+     */
+    private function filterRows(array $rows): array
+    {
+        $brandFilter = $this->optionSet('brand');
+        $categoryFilter = $this->optionSet('category');
+
+        if ($brandFilter === [] && $categoryFilter === []) {
+            return $rows;
+        }
+
+        return array_values(array_filter($rows, function (array $row) use ($brandFilter, $categoryFilter): bool {
+            if ($brandFilter !== [] && ! isset($brandFilter[$this->filterKey((string) $row['brand'])])) {
+                return false;
+            }
+
+            if ($categoryFilter !== [] && ! isset($categoryFilter[(string) $row['category_id']])) {
+                return false;
+            }
+
+            return true;
+        }));
+    }
+
+    /**
+     * @param array<int,array<string,mixed>> $rows
+     * @return array<int,array<string,mixed>>
+     */
+    private function filterClassifiedRows(array $rows): array
+    {
+        $stockFilter = $this->optionSet('stock-status');
+        if ($stockFilter === []) {
+            return $rows;
+        }
+
+        return array_values(array_filter($rows, function (array $row) use ($stockFilter): bool {
+            return isset($stockFilter[$this->filterKey((string) ($row['stock']['status'] ?? ''))]);
+        }));
+    }
+
+    /**
+     * @return array<string,true>
+     */
+    private function optionSet(string $name): array
+    {
+        $raw = $this->option($name);
+        $values = is_array($raw) ? $raw : [$raw];
+        $set = [];
+
+        foreach ($values as $value) {
+            foreach (explode(',', (string) $value) as $part) {
+                $key = $this->filterKey($part);
+                if ($key !== '') {
+                    $set[$key] = true;
+                }
+            }
+        }
+
+        return $set;
+    }
+
+    private function filterKey(string $value): string
+    {
+        return mb_strtolower(trim($value));
     }
 
     // ── Archive existing brand products (reversible; CSV report) ───────────────────
