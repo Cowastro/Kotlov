@@ -311,6 +311,8 @@ Additional SEO quality rules:
 - Write in the store voice: "купить на KOTLOV", "заказать на KOTLOV", "интернет-магазин KOTLOV", "подобрать на KOTLOV".
 - For local SEO in content, use the exact placeholder "в %city%" when geography is needed. Do not replace %city% with a real city; the site renders it automatically.
 - Do not put "%city%" in short_description; use neutral Belarus wording there if needed.
+- content must include one natural store paragraph with KOTLOV and the exact phrase "в %city%": selection, order, consultation or комплектующие on KOTLOV.
+- For chimney parts, do not use the generic phrase "климатическое оборудование". Use "дымоходная система", "система дымоудаления", "отопительная система" or "печь/котел" only when supported by the product name/specs.
 PROMPT;
 
         try {
