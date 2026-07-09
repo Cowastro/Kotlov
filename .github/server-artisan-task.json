@@ -1,5 +1,5 @@
 {
-  "task": "tail-log",
-  "artisan_args": "",
+  "task": "kill-pid",
+  "artisan_args": "4063852",
   "log_file": "storage/logs/auto-varmega-low-attrs-fill.log"
 }
