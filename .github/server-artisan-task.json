@@ -1,6 +1,6 @@
 {
-  "task": "artisan-apply",
-  "artisan_args": "supplier:enrich-source-products --apply --supplier=akvatermex --domain=teplodvor.by --products=21205,21244,21272,21301,21306 --force --replace-specs --min-specs-to-replace=4 --overwrite-images --skip-documents --limit=0",
+  "task": "artisan-dry-run",
+  "artisan_args": "products:audit-content-health --supplier=akvatermex --active-only --not-archived --with-source-only --max-attrs=4 --limit=80",
   "log_file": "storage/logs/server-artisan.log",
-  "run_id": "akvatermex-enrich-five-selected-apply"
+  "run_id": "akvatermex-content-health-after-selected-enrich"
 }
