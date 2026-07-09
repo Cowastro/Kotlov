@@ -1,6 +1,6 @@
 {
-  "task": "artisan-dry-run",
-  "artisan_args": "products:sanitize-content-html --with-source-only --extract-media --active-only --not-archived --limit=0",
+  "task": "artisan-apply",
+  "artisan_args": "products:sanitize-content-html --apply --with-source-only --extract-media --active-only --not-archived --limit=0",
   "log_file": "storage/logs/server-artisan.log",
-  "run_id": "safe-source-content-media-dry-run"
+  "run_id": "safe-source-content-media-apply"
 }
