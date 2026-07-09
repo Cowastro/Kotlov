@@ -1,5 +1,5 @@
 {
-  "task": "artisan-dry-run",
-  "artisan_args": "supplier:enrich-ligmet-extra --base-url=https://ochag.by --source-url=/kaminy/pechi-kaminy/kratki/ --brand=Kratki --pages=20 --dry-run",
+  "task": "optimize-clear",
+  "artisan_args": "",
   "log_file": "storage/logs/server-artisan.log"
 }
