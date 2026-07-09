@@ -1,5 +1,6 @@
 {
   "task": "tail-log",
   "artisan_args": "",
-  "log_file": "storage/logs/maitek-greolit-resanitize.log"
+  "log_file": "storage/logs/maitek-greolit-resanitize.log",
+  "run_id": "greolit-resanitize-tail-2"
 }
