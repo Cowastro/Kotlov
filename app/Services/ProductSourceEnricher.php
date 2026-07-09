@@ -2281,10 +2281,37 @@ class ProductSourceEnricher
     private function sanitizeAiHtml(string $html): string
     {
         $html = $this->repairMojibake($this->sanitizeUtf8($html));
-        $html = strip_tags($html, '<p><ul><li><strong>');
-        $html = preg_replace('/<(p|ul|li|strong)\b[^>]*>/iu', '<$1>', $html) ?? $html;
-        $html = preg_replace('/\s+/', ' ', $html) ?? $html;
-        $html = str_replace(['> <', '</p> <p>', '</li> <li>', '</ul> <p>'], ['><', "</p>\n<p>", "</li>\n<li>", "</ul>\n<p>"], $html);
+        $html = html_entity_decode($html, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+
+        $html = preg_replace(
+            '~<(script|style|iframe|object|embed|svg|canvas|picture|video|audio|form|button|input|select|textarea|table)\b[\s\S]*?</\1>~iu',
+            ' ',
+            $html
+        ) ?? $html;
+        $html = preg_replace('~<(img|source|link|meta|base|hr)\b[^>]*>~iu', ' ', $html) ?? $html;
+
+        $html = strip_tags($html, '<p><ul><ol><li><strong><b><em><br>');
+        $html = preg_replace('/<([a-z0-9]+)\b[^>]*>/iu', '<$1>', $html) ?? $html;
+        $html = preg_replace_callback('/<\/?b>/iu', fn ($match) => str_starts_with($match[0], '</') ? '</strong>' : '<strong>', $html) ?? $html;
+        $html = preg_replace('/<br\s*\/?>/iu', "\n", $html) ?? $html;
+
+        if (! preg_match('/<(p|ul|ol|li)\b/iu', $html)) {
+            $paragraphs = array_values(array_filter(array_map(
+                fn (string $line) => $this->cleanText($line),
+                preg_split('/\R{2,}|\R/u', $html) ?: []
+            )));
+
+            return implode("\n", array_map(fn (string $line) => '<p>' . e($line) . '</p>', $paragraphs));
+        }
+
+        $html = preg_replace('/\s+/u', ' ', $html) ?? $html;
+        $html = str_replace(
+            ['> <', '</p> <p>', '</li> <li>', '</ul> <p>', '</ol> <p>'],
+            ['><', "</p>\n<p>", "</li>\n<li>", "</ul>\n<p>", "</ol>\n<p>"],
+            $html
+        );
+        $html = preg_replace('/<(p|li)>\s*<\/\1>/iu', '', $html) ?? $html;
+        $html = preg_replace('/<(ul|ol)>\s*<\/\1>/iu', '', $html) ?? $html;
 
         return trim($html);
     }
