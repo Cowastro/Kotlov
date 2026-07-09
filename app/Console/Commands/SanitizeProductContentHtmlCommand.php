@@ -26,6 +26,7 @@ class SanitizeProductContentHtmlCommand extends Command
         {--extract-media : Move video and document links from content to product fields}
         {--overwrite-media : Replace existing video/documents while extracting media}
         {--restore-teplov-suhov-media : Restore legacy Teplov i Suhov videos/docs from known slug groups}
+        {--missing-media-only : Only products with empty video_url or documents}
         {--rewrite-seo : Regenerate short_description, content and meta_description with AI}
         {--show-samples=0 : Show first N rows with detected media links}
         {--show-content-samples=0 : Show first N source content snippets for audit}
@@ -91,6 +92,16 @@ class SanitizeProductContentHtmlCommand extends Command
                 ->join('supplier_products as sp_source_filter', 'sp_source_filter.product_id', '=', 'p.id')
                 ->whereNotNull('sp_source_filter.source_url')
                 ->where('sp_source_filter.source_url', '<>', '');
+        }
+
+        if ((bool) $this->option('missing-media-only')) {
+            $query->where(function ($q) {
+                $q->whereNull('p.video_url')
+                    ->orWhere('p.video_url', '')
+                    ->orWhereNull('p.documents')
+                    ->orWhere('p.documents', '')
+                    ->orWhere('p.documents', '[]');
+            });
         }
 
         if ($brand = trim((string) $this->option('brand'))) {
@@ -360,6 +371,7 @@ class SanitizeProductContentHtmlCommand extends Command
             || trim((string) $this->option('slug-like')) !== ''
             || trim((string) $this->option('created-from')) !== ''
             || trim((string) $this->option('created-to')) !== ''
+            || (bool) $this->option('missing-media-only')
             || (bool) $this->option('with-source-only')
             || array_values(array_filter((array) $this->option('id'))) !== [];
     }
