@@ -1,6 +1,6 @@
 {
-  "task": "artisan-dry-run",
-  "artisan_args": "products:sanitize-content-html --slug-like=teplov-i-suhov --active-only --not-archived --extract-media --limit=0",
+  "task": "optimize-clear",
+  "artisan_args": "",
   "log_file": "storage/logs/server-artisan.log",
-  "run_id": "teplov-suhov-slug-media-dry-run"
+  "run_id": "deploy-legacy-content-media-cleanup"
 }
