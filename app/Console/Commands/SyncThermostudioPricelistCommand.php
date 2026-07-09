@@ -1065,7 +1065,7 @@ class SyncThermostudioPricelistCommand extends Command
             return ['status' => $quantity > 0 ? 'in_stock' : 'out_of_stock', 'quantity' => $quantity];
         }
 
-        if (str_contains($text, 'ожида') || str_contains($text, 'под заказ')) {
+        if (str_contains($text, 'ожида') || str_contains($text, 'под заказ') || str_contains($text, 'по запрос')) {
             return ['status' => 'preorder', 'quantity' => null];
         }
 
@@ -1173,6 +1173,7 @@ class SyncThermostudioPricelistCommand extends Command
             || str_contains($text, 'отсутств')
             || str_contains($text, 'ожида')
             || str_contains($text, 'под заказ')
+            || str_contains($text, 'по запрос')
             || str_contains($text, 'налич')
             || str_contains($text, 'склад');
     }
