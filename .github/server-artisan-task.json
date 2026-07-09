@@ -1,5 +1,5 @@
 {
-  "task": "artisan-background",
-  "artisan_args": "supplier:enrich-source-products --supplier=maitek-group --brand=Greolit --domain=greolit.by --apply --force --replace-specs --min-specs-to-replace=2 --overwrite-images --clear-documents --skip-documents --limit=0 --sleep=1000",
+  "task": "tail-log",
+  "artisan_args": "",
   "log_file": "storage/logs/maitek-greolit-resanitize.log"
 }
