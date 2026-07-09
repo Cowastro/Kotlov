@@ -1,5 +1,5 @@
 {
   "task": "artisan-dry-run",
-  "artisan_args": "products:audit-content-health --active-only --not-archived --supplier=maitek-group --with-source-only --max-attrs=2 --limit=80 --csv=storage/app/reports/product-content-health/maitek-with-source.csv",
+  "artisan_args": "supplier:enrich-source-products --supplier=maitek-group --brand=Greolit --domain=greolit.by --product=20759 --force --replace-specs --min-specs-to-replace=4 --overwrite-images --clear-documents --skip-documents --limit=1 --sleep=1000",
   "log_file": "storage/logs/server-artisan.log"
 }
