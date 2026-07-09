@@ -1,6 +1,6 @@
 {
-  "task": "tail-log",
+  "task": "ps-artisan",
   "artisan_args": "",
   "log_file": "storage/logs/teplov-suhov-city-seo-rewrite.log",
-  "run_id": "tail-teplov-suhov-city-seo-rewrite"
+  "run_id": "ps-teplov-suhov-city-seo-rewrite"
 }
