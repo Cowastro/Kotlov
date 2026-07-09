@@ -33,6 +33,7 @@ class SyncLigmetCommand extends Command
         {--limit= : Process only the first N data rows}
         {--stock-file= : Local .xlsx path (skips download)}
         {--sheet-url= : Override the default spreadsheet URL}
+        {--folder-url= : Google Drive folder URL; newest XLS/XLSX file will be used}
         {--all-categories : Import chimneys/doors/accessories too (default: stoves/fireplaces only)}
         {--archive-existing : Archive existing active products of these brands (in scope) before import; excludes them from matching}
         {--redirects : Write an old→new redirect map (archived → recreated, by brand+model)}
@@ -44,6 +45,7 @@ class SyncLigmetCommand extends Command
     private const SUPPLIER_NAME = 'Лигмет';
     private const SYNC_KEY      = 'ligmet_stock';
     private const FILE_ID       = '1YA5Aq05X2h3i1bRulkzvrgwlQ8JHdBMn';
+    private const FOLDER_ID     = '1pQQRGMKBEHHEjUF3AYsi_dTvlxxTFxzz';
     private const SOURCE_URL    = 'https://ligmet.by/';
 
     /** Fixed column layout — header row 9: B..H (0-based A=0). */
@@ -259,16 +261,22 @@ class SyncLigmetCommand extends Command
             return $file;
         }
 
-        $url = $this->option('sheet-url');
+        $ctx = $this->httpContext();
+
+        $folderUrl = $this->option('folder-url');
+        if ($folderUrl !== null || $this->option('sheet-url') === null) {
+            $folderId = $this->driveFolderId((string) ($folderUrl ?: '')) ?: self::FOLDER_ID;
+            $url = $this->latestDriveWorkbookUrl($folderId, $ctx);
+            $this->line("Using latest Ligmet workbook from Drive folder: {$url}");
+        } else {
+            $url = $this->option('sheet-url');
+        }
+
         $id  = self::FILE_ID;
         if ($url !== null && preg_match('#/d/([a-zA-Z0-9_-]+)#', $url, $m)) {
             $id = $m[1];
         }
-        $ctx = stream_context_create([
-            'http' => ['method' => 'GET', 'timeout' => 180, 'follow_location' => 1, 'max_redirects' => 10,
-                       'header' => "User-Agent: Mozilla/5.0 (compatible; KotlovBot/1.0)\r\nAccept: */*"],
-            'ssl'  => ['verify_peer' => false, 'verify_peer_name' => false],
-        ]);
+
         foreach ([
             "https://docs.google.com/spreadsheets/d/{$id}/export?format=xlsx",
             "https://drive.google.com/uc?export=download&id={$id}",
@@ -281,6 +289,69 @@ class SyncLigmetCommand extends Command
             }
         }
         throw new \RuntimeException('Failed to download the Лигмет workbook (.xlsx).');
+    }
+
+    private function httpContext()
+    {
+        return stream_context_create([
+            'http' => [
+                'method' => 'GET',
+                'timeout' => 180,
+                'follow_location' => 1,
+                'max_redirects' => 10,
+                'header' => "User-Agent: Mozilla/5.0 (compatible; KotlovBot/1.0)\r\nAccept: */*",
+            ],
+            'ssl' => ['verify_peer' => false, 'verify_peer_name' => false],
+        ]);
+    }
+
+    private function driveFolderId(string $url): ?string
+    {
+        if ($url !== '' && preg_match('#/folders/([a-zA-Z0-9_-]+)#', $url, $m)) {
+            return $m[1];
+        }
+
+        return null;
+    }
+
+    private function latestDriveWorkbookUrl(string $folderId, $ctx): string
+    {
+        $html = @file_get_contents("https://drive.google.com/drive/folders/{$folderId}", false, $ctx);
+        if ($html === false || $html === '') {
+            return "https://docs.google.com/spreadsheets/d/" . self::FILE_ID . "/edit";
+        }
+
+        $payload = $html;
+        if (preg_match("/window\\['_DRIVE_ivd'\\]\\s*=\\s*'([^']+)'/s", $html, $m)) {
+            $payload = stripcslashes($m[1]);
+        }
+
+        $matches = [];
+        preg_match_all(
+            '/\["([a-zA-Z0-9_-]{20,})",\["' . preg_quote($folderId, '/') . '"\],"([^"]+\.(?:xls|xlsx))","application\/(?:vnd\.ms-excel|vnd\.openxmlformats-officedocument\.spreadsheetml\.sheet)"/u',
+            $payload,
+            $matches,
+            PREG_SET_ORDER
+        );
+
+        if ($matches === []) {
+            return "https://docs.google.com/spreadsheets/d/" . self::FILE_ID . "/edit";
+        }
+
+        usort($matches, function (array $a, array $b): int {
+            return strcmp($this->dateKeyFromFileName($b[2]), $this->dateKeyFromFileName($a[2]));
+        });
+
+        return "https://docs.google.com/spreadsheets/d/{$matches[0][1]}/edit?rtpof=true&sd=true";
+    }
+
+    private function dateKeyFromFileName(string $name): string
+    {
+        if (preg_match('/(\d{4})-(\d{2})-(\d{2})-(\d{2})-(\d{2})-(\d{2})/', $name, $m)) {
+            return $m[1] . $m[2] . $m[3] . $m[4] . $m[5] . $m[6];
+        }
+
+        return $name;
     }
 
     /** @return array<int,array<string,mixed>> product rows with derived brand/category */
