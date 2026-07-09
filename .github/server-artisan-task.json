@@ -1,6 +1,6 @@
 {
-  "task": "optimize-clear",
-  "artisan_args": "",
+  "task": "artisan-apply",
+  "artisan_args": "products:sanitize-content-html --apply --slug-like=teplov-i-suhov --active-only --not-archived --extract-media --overwrite-media --restore-teplov-suhov-media --missing-media-only --show-samples=10 --limit=0",
   "log_file": "storage/logs/server-artisan.log",
-  "run_id": "deploy-video-preview-seo-prompt"
+  "run_id": "teplov-suhov-fill-remaining-media"
 }
