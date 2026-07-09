@@ -1,31 +1,35 @@
 # Server Artisan Result
 
-- Time: 2026-07-09 21:29:10 UTC
-- Task: `optimize-clear`
-- Artisan args: ``
+- Time: 2026-07-09 21:31:34 UTC
+- Task: `artisan-dry-run`
+- Artisan args: `products:sanitize-content-html --slug-like=truba-teplov-i-suhov-termo-tt-r-430-08-430-05-200-260-l250 --active-only --not-archived --extract-media --restore-teplov-suhov-media --show-samples=5 --limit=1`
 - Log file: `storage/logs/server-artisan.log`
 - Exit code: `0`
 
 ```text
-From https://github.com/Cowastro/Kotlov
-   be153e0..d282a5f  main       -> origin/main
-Updating be153e0..d282a5f
-Fast-forward
- .github/server-artisan-result.md                   |  9 +++-
- .github/server-artisan-task.json                   |  2 +-
- .../Commands/SanitizeProductContentHtmlCommand.php | 49 ++++++++++++++++++++++
- 3 files changed, 57 insertions(+), 3 deletions(-)
-
-   INFO  Clearing cached bootstrap files.  
-
-  config ......................................................... 0.91ms DONE
-  cache .......................................................... 2.74ms DONE
-  compiled ....................................................... 0.63ms DONE
-  events ......................................................... 0.45ms DONE
-  routes ......................................................... 0.46ms DONE
-  views .......................................................... 1.37ms DONE
-  blade-icons .................................................... 0.17ms DONE
-  filament ....................................................... 0.74ms DONE
-
+DRY RUN: database will not be changed.
++---------------------+-------+
+| metric              | count |
++---------------------+-------+
+| checked             | 1     |
+| changed             | 1     |
+| written             | 0     |
+| images_removed      | 0     |
+| styles_removed      | 0     |
+| bad_blocks_removed  | 0     |
+| videos_extracted    | 1     |
+| documents_extracted | 1     |
+| seo_rewritten       | 0     |
++---------------------+-------+
++------+------------+----------------+-------------------------------------------------------------------+
+| ID   | SKU        | Brand          | Product                                                           |
++------+------------+----------------+-------------------------------------------------------------------+
+| 9044 | PS-009.044 | Теплов и Сухов | Труба Теплов и Сухов термо ТТ-Р 430, 0.8/430, 0.5, Ø 200/260 L250 |
++------+------------+----------------+-------------------------------------------------------------------+
++------+------------+------------------------------------------------------------+-----------------------------------------------------------------------------------+----------------------------------------------------------+-----------+
+| ID   | SKU        | Slug                                                       | Video                                                                             | Documents                                                | Raw links |
++------+------------+------------------------------------------------------------+-----------------------------------------------------------------------------------+----------------------------------------------------------+-----------+
+| 9044 | PS-009.044 | truba-teplov-i-suhov-termo-tt-r-430-08-430-05-200-260-l250 | https://www.youtube.com/embed/pUJ4DDasBw0?list=PLAhMCOyBsBHom4fUsCZqCIEQ9zqZLy2gn | https://admin.kotlov.by/downloads/catalogue_TIS_2025.pdf | -         |
++------+------------+------------------------------------------------------------+-----------------------------------------------------------------------------------+----------------------------------------------------------+-----------+
 
 ```
