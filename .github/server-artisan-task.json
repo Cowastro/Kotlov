@@ -1,5 +1,5 @@
 {
-  "task": "optimize-clear",
-  "artisan_args": "",
+  "task": "artisan-dry-run",
+  "artisan_args": "products:audit-content-health --active-only --not-archived --max-attrs=2 --limit=80 --csv=storage/app/reports/product-content-health/latest.csv",
   "log_file": "storage/logs/server-artisan.log"
 }
