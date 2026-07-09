@@ -26,6 +26,7 @@ class SanitizeProductContentHtmlCommand extends Command
         {--extract-media : Move video and document links from content to product fields}
         {--overwrite-media : Replace existing video/documents while extracting media}
         {--rewrite-seo : Regenerate short_description, content and meta_description with AI}
+        {--show-samples=0 : Show first N rows with detected media links}
         {--sleep=300 : Delay between AI requests, ms}
         {--limit=100 : Rows to process, 0 means all}';
 
@@ -38,6 +39,7 @@ class SanitizeProductContentHtmlCommand extends Command
         $extractMedia = (bool) $this->option('extract-media');
         $overwriteMedia = (bool) $this->option('overwrite-media');
         $rewriteSeo = (bool) $this->option('rewrite-seo');
+        $showSamples = max(0, (int) $this->option('show-samples'));
         $sleep = max(0, (int) $this->option('sleep'));
 
         if ($apply && ! $this->hasScope()) {
@@ -139,6 +141,7 @@ class SanitizeProductContentHtmlCommand extends Command
             'seo_rewritten' => 0,
         ];
         $changedRows = [];
+        $sampleRows = [];
 
         foreach ($rows as $row) {
             $stats['checked']++;
@@ -146,6 +149,16 @@ class SanitizeProductContentHtmlCommand extends Command
             $original = (string) $row->content;
             $sanitized = $enricher->sanitizeDescriptionHtml($original);
             $media = $extractMedia ? $this->extractMediaLinks($original) : ['video_url' => '', 'documents' => []];
+            if ($showSamples > 0 && count($sampleRows) < $showSamples && ($media['video_url'] !== '' || $media['documents'] !== [] || $this->contentLinks($original) !== [])) {
+                $sampleRows[] = [
+                    $row->id,
+                    $row->sku,
+                    $row->slug,
+                    $media['video_url'] ?: '-',
+                    implode(', ', array_slice(array_map(fn (array $document): string => $document['url'], $media['documents']), 0, 3)) ?: '-',
+                    implode(', ', array_slice($this->contentLinks($original), 0, 3)) ?: '-',
+                ];
+            }
             $updates = [];
             $rewroteSeo = false;
 
@@ -225,6 +238,10 @@ class SanitizeProductContentHtmlCommand extends Command
             $this->table(['ID', 'SKU', 'Brand', 'Product'], $changedRows);
         }
 
+        if ($sampleRows !== []) {
+            $this->table(['ID', 'SKU', 'Slug', 'Video', 'Documents', 'Raw links'], $sampleRows);
+        }
+
         return self::SUCCESS;
     }
 
@@ -282,14 +299,20 @@ class SanitizeProductContentHtmlCommand extends Command
             }
         }
 
-        return DB::table('product_attribute_values as pav')
+        $query = DB::table('product_attribute_values as pav')
             ->join('attributes as a', 'a.id', '=', 'pav.attribute_id')
             ->where('pav.product_id', $productId)
             ->whereNotNull('pav.value')
             ->where('pav.value', '<>', '')
-            ->orderBy('pav.sort_order')
-            ->limit(40)
-            ->pluck('pav.value', 'a.name')
+            ->limit(40);
+
+        if (Schema::hasColumn('product_attribute_values', 'sort_order')) {
+            $query->orderBy('pav.sort_order');
+        } else {
+            $query->orderBy('pav.id');
+        }
+
+        return $query->pluck('pav.value', 'a.name')
             ->map(fn ($value): string => trim((string) $value))
             ->filter()
             ->all();
@@ -318,9 +341,9 @@ class SanitizeProductContentHtmlCommand extends Command
     private function extractMediaLinks(string $html): array
     {
         $links = [];
-        if (preg_match_all('~<(?:a|iframe|embed|source|video)\b[^>]*(?:href|src)=["\']([^"\']+)["\'][^>]*>(.*?)</(?:a|iframe|embed|source|video)>~isu', $html, $matches, PREG_SET_ORDER)) {
+        if (preg_match_all('~<(?:a|iframe|embed|source|video)\b[^>]*(?:href|src|data-src)=["\']([^"\']+)["\'][^>]*>(.*?)</(?:a|iframe|embed|source|video)>~isu', $html, $matches, PREG_SET_ORDER)) {
             foreach ($matches as $match) {
-                $url = html_entity_decode(trim($match[1]), ENT_QUOTES | ENT_HTML5, 'UTF-8');
+                $url = $this->normalizeLink(html_entity_decode(trim($match[1]), ENT_QUOTES | ENT_HTML5, 'UTF-8'));
                 if (! filter_var($url, FILTER_VALIDATE_URL)) {
                     continue;
                 }
@@ -330,9 +353,21 @@ class SanitizeProductContentHtmlCommand extends Command
             }
         }
 
+        if (preg_match_all('~<(?:a|iframe|embed|source|video)\b[^>]*(?:href|src|data-src)=["\']([^"\']+)["\'][^>]*\/?>~isu', $html, $matches, PREG_SET_ORDER)) {
+            foreach ($matches as $match) {
+                $url = $this->normalizeLink(html_entity_decode(trim($match[1]), ENT_QUOTES | ENT_HTML5, 'UTF-8'));
+                if (! filter_var($url, FILTER_VALIDATE_URL)) {
+                    continue;
+                }
+
+                $label = trim(strip_tags(html_entity_decode($match[0] ?? '', ENT_QUOTES | ENT_HTML5, 'UTF-8')));
+                $links[] = ['url' => $url, 'label' => $label];
+            }
+        }
+
         if (preg_match_all('~\bhttps?://[^\s"\'<>]+~iu', $html, $matches)) {
             foreach ($matches[0] as $url) {
-                $links[] = ['url' => rtrim($url, '.,);]'), 'label' => ''];
+                $links[] = ['url' => $this->normalizeLink(rtrim($url, '.,);]')), 'label' => ''];
             }
         }
 
@@ -361,6 +396,46 @@ class SanitizeProductContentHtmlCommand extends Command
         ];
     }
 
+    /**
+     * @return string[]
+     */
+    private function contentLinks(string $html): array
+    {
+        $links = [];
+        if (preg_match_all('~(?:href|src|data-src)=["\']([^"\']+)["\']~iu', $html, $matches)) {
+            foreach ($matches[1] as $url) {
+                $url = $this->normalizeLink(html_entity_decode(trim($url), ENT_QUOTES | ENT_HTML5, 'UTF-8'));
+                if (filter_var($url, FILTER_VALIDATE_URL)) {
+                    $links[] = $url;
+                }
+            }
+        }
+        if (preg_match_all('~\bhttps?://[^\s"\'<>]+~iu', $html, $matches)) {
+            foreach ($matches[0] as $url) {
+                $url = $this->normalizeLink(rtrim($url, '.,);]'));
+                if (filter_var($url, FILTER_VALIDATE_URL)) {
+                    $links[] = $url;
+                }
+            }
+        }
+
+        return array_values(array_unique($links));
+    }
+
+    private function normalizeLink(string $url): string
+    {
+        $url = trim($url);
+        if (str_starts_with($url, '//')) {
+            return 'https:' . $url;
+        }
+
+        if (str_starts_with($url, '/')) {
+            return 'https://kotlov.by' . $url;
+        }
+
+        return $url;
+    }
+
     private function isVideoUrl(string $url): bool
     {
         $host = mb_strtolower((string) parse_url($url, PHP_URL_HOST));
@@ -376,6 +451,10 @@ class SanitizeProductContentHtmlCommand extends Command
     private function isDocumentUrl(string $url, string $label): bool
     {
         if (preg_match('/\.(pdf|doc|docx|xls|xlsx|ppt|pptx|zip|rar)(?:\?|$)/iu', $url)) {
+            return true;
+        }
+
+        if (preg_match('/\b(скачать|паспорт|инструкц|сертификат|документ|монтаж|руководство|manual|catalog|catalogue|pdf)\b/iu', $label) === 1) {
             return true;
         }
 
