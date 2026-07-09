@@ -1,19 +1,19 @@
 # Server Artisan Result
 
-- Time: 2026-07-09 17:37:03 UTC
-- Task: `artisan-dry-run`
-- Artisan args: `products:sanitize-content-html --active-only --not-archived --limit=0`
+- Time: 2026-07-09 17:39:04 UTC
+- Task: `artisan-apply`
+- Artisan args: `products:sanitize-content-html --apply --active-only --not-archived --limit=0`
 - Log file: `storage/logs/server-artisan.log`
 - Exit code: `0`
 
 ```text
-DRY RUN: database will not be changed.
+APPLY: sanitized content was written.
 +--------------------+-------+
 | metric             | count |
 +--------------------+-------+
 | checked            | 8498  |
 | changed            | 3714  |
-| written            | 0     |
+| written            | 3714  |
 | images_removed     | 231   |
 | styles_removed     | 24816 |
 | bad_blocks_removed | 746   |
