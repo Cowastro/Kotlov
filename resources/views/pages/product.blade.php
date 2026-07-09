@@ -476,10 +476,16 @@
                 $videoUrl = trim((string) ($product->video_url ?? ''));
                 $videoEmbedUrl = null;
                 $isDirectVideo = $videoUrl && preg_match('~\.(mp4|webm|mov)(?:\?|$)~i', $videoUrl);
-                if ($videoUrl && preg_match('~(?:youtube\.com/watch\?v=|youtu\.be/)([A-Za-z0-9_-]{6,})~i', $videoUrl, $videoMatch)) {
+                if ($videoUrl && preg_match('~youtube\.com/embed/([A-Za-z0-9_-]{6,})~i', $videoUrl, $videoMatch)) {
+                    $videoEmbedUrl = $videoUrl;
+                } elseif ($videoUrl && preg_match('~(?:youtube\.com/watch\?v=|youtu\.be/)([A-Za-z0-9_-]{6,})~i', $videoUrl, $videoMatch)) {
                     $videoEmbedUrl = 'https://www.youtube.com/embed/' . $videoMatch[1];
+                } elseif ($videoUrl && preg_match('~player\.vimeo\.com/video/(\d+)~i', $videoUrl, $videoMatch)) {
+                    $videoEmbedUrl = $videoUrl;
                 } elseif ($videoUrl && preg_match('~vimeo\.com/(\d+)~i', $videoUrl, $videoMatch)) {
                     $videoEmbedUrl = 'https://player.vimeo.com/video/' . $videoMatch[1];
+                } elseif ($videoUrl && preg_match('~rutube\.ru/play/embed/([A-Za-z0-9]+)~i', $videoUrl, $videoMatch)) {
+                    $videoEmbedUrl = $videoUrl;
                 } elseif ($videoUrl && preg_match('~rutube\.ru/video/([A-Za-z0-9]+)/?~i', $videoUrl, $videoMatch)) {
                     $videoEmbedUrl = 'https://rutube.ru/play/embed/' . $videoMatch[1];
                 }

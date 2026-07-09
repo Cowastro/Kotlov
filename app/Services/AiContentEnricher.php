@@ -299,6 +299,13 @@ PROMPT;
 
 Верни СТРОГО валидный JSON без пояснений и без обрамления в код:
 {"short_description": "1–2 предложения, обычный текст без HTML", "content": "HTML-проза: 2–4 абзаца <p>, без списка/таблицы характеристик"}
+
+Additional SEO quality rules:
+- Write a richer commercial description, not a thin paraphrase. Use the product name, brand, category and real specs naturally.
+- Include natural search phrases when relevant: "купить в Беларуси", category name, brand name, product type, compatible use case. Do not stuff keywords and do not repeat the same phrase unnaturally.
+- For chimney parts, mention the smoke exhaust system context, compatibility by diameter/material when present in specs or name, and practical installation purpose.
+- content must contain 3-5 useful paragraphs and may include one <h2> plus one short <ul><li> block for practical advantages or use cases. Do not duplicate the technical characteristics table.
+- short_description must be a concise SEO preview, 160-230 characters when possible.
 PROMPT;
 
         try {
