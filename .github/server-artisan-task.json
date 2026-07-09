@@ -1,5 +1,5 @@
 {
-  "task": "artisan-apply",
-  "artisan_args": "supplier:sync-ligmet --apply --create-new --all-categories --brand=Blist",
-  "log_file": "storage/logs/server-artisan.log"
+  "task": "artisan-background",
+  "artisan_args": "supplier:enrich-100kaminov --apply --brand=Blist --pages=15 --overwrite-images --sleep=1000",
+  "log_file": "storage/logs/ligmet-blist-enrich.log"
 }
