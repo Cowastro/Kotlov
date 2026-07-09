@@ -148,11 +148,24 @@ class EnrichSupplierSourceProductsCommand extends Command
             'specs_found' => 0,
             'attributes_saved' => 0,
             'ai_done' => 0,
+            'skipped' => 0,
             'errors' => 0,
         ];
 
         foreach ($rows as $row) {
             $stats['processed']++;
+            if ($this->isGenericSourceUrl((string) $row->source_url)) {
+                $stats['skipped']++;
+                $this->warn(sprintf(
+                    '[%d/%d] #%d skipped generic source URL: %s',
+                    $stats['processed'],
+                    $rows->count(),
+                    (int) $row->id,
+                    (string) $row->source_url
+                ));
+                continue;
+            }
+
             $product = Product::find((int) $row->id);
             if (! $product) {
                 $stats['errors']++;
@@ -229,5 +242,26 @@ class EnrichSupplierSourceProductsCommand extends Command
         ));
 
         return $stats['errors'] > 0 ? self::FAILURE : self::SUCCESS;
+    }
+
+    private function isGenericSourceUrl(string $url): bool
+    {
+        $url = trim($url);
+        if ($url === '') {
+            return true;
+        }
+
+        $path = trim((string) (parse_url($url, PHP_URL_PATH) ?: ''), '/');
+        if ($path === '') {
+            return true;
+        }
+
+        return in_array(mb_strtolower($path), [
+            'catalog',
+            'katalog',
+            'product',
+            'products',
+            'shop',
+        ], true);
     }
 }
