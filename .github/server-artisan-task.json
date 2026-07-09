@@ -1,5 +1,5 @@
 {
-  "task": "ps-artisan",
-  "artisan_args": "",
+  "task": "artisan-apply",
+  "artisan_args": "supplier:sync-ligmet --apply --create-new --all-categories --brand=Blist",
   "log_file": "storage/logs/server-artisan.log"
 }
