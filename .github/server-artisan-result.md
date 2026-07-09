@@ -1,24 +1,12 @@
 # Server Artisan Result
 
-- Time: 2026-07-09 14:59:31 UTC
-- Task: `artisan-apply`
-- Artisan args: `supplier:sync-ligmet --apply --create-new --all-categories --brand=Blist`
-- Log file: `storage/logs/server-artisan.log`
+- Time: 2026-07-09 15:02:14 UTC
+- Task: `artisan-background`
+- Artisan args: `supplier:enrich-100kaminov --apply --brand=Blist --pages=15 --overwrite-images --sleep=1000`
+- Log file: `storage/logs/ligmet-blist-enrich.log`
 - Exit code: `0`
 
 ```text
-APPLY: database will be updated.
-Using latest Ligmet workbook from Drive folder: https://docs.google.com/spreadsheets/d/1fh-uyNI8Qveok4_Y3aL2zGZQtRpAjpgF/edit?rtpof=true&sd=true
-Parsed 482 product rows for requested brands
-
-+------------+--------+
-| метрика    | кол-во |
-+------------+--------+
-| matched    | 41     |
-| created    | 0      |
-| retail_set | 31     |
-| skipped    | 0      |
-| errors     | 0      |
-+------------+--------+
+started pid=4005360
 
 ```
