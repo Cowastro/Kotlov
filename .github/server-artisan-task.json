@@ -1,5 +1,5 @@
 {
-  "task": "tail-log",
-  "artisan_args": "",
-  "log_file": "storage/logs/auto-akvatermex-teplodvor-fill.log"
+  "task": "artisan-dry-run",
+  "artisan_args": "products:audit-content-health --active-only --not-archived --supplier=maitek-group --with-source-only --max-attrs=2 --limit=80 --csv=storage/app/reports/product-content-health/maitek-with-source.csv",
+  "log_file": "storage/logs/server-artisan.log"
 }
