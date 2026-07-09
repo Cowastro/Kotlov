@@ -1,5 +1,5 @@
 {
-  "task": "tail-log",
-  "artisan_args": "",
-  "log_file": "storage/logs/auto-greolit-fill.log"
+  "task": "artisan-background",
+  "artisan_args": "supplier:enrich-source-products --supplier=maitek-group --brand=СТЭН --apply --force --replace-specs --min-specs-to-replace=4 --overwrite-images --clear-documents --skip-documents --max-current-attrs=2 --limit=0 --sleep=1000",
+  "log_file": "storage/logs/auto-maitek-sten-fill.log"
 }
