@@ -1,6 +1,6 @@
 {
   "task": "artisan-dry-run",
-  "artisan_args": "supplier:enrich-source-products --supplier=akvatermex --domain=thermex.by --force --replace-specs --overwrite-images --skip-documents --limit=5",
+  "artisan_args": "supplier:sync-akvatermex --dry-run --available-only --only-linked --prefer-teplodvor-source --brand=Thermex,Edisson,Eurostar --limit=80",
   "log_file": "storage/logs/server-artisan.log",
-  "run_id": "akvatermex-thermex-source-dry-run"
+  "run_id": "akvatermex-prefer-teplodvor-dry-run"
 }
