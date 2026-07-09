@@ -1,31 +1,34 @@
 # Server Artisan Result
 
-- Time: 2026-07-09 21:09:11 UTC
-- Task: `optimize-clear`
-- Artisan args: ``
+- Time: 2026-07-09 21:12:23 UTC
+- Task: `artisan-apply`
+- Artisan args: `products:sanitize-content-html --apply --slug-like=teplov-i-suhov --active-only --not-archived --extract-media --overwrite-media --rewrite-seo --show-samples=5 --limit=5 --sleep=1000`
 - Log file: `storage/logs/server-artisan.log`
 - Exit code: `0`
 
 ```text
-From https://github.com/Cowastro/Kotlov
-   c5b2fd6..309311e  main       -> origin/main
-Updating c5b2fd6..309311e
-Fast-forward
- .github/server-artisan-result.md                   | 93 +++++++++++++++++++++-
- .github/server-artisan-task.json                   |  2 +-
- .../Commands/SanitizeProductContentHtmlCommand.php | 93 ++++++++++++++++++++--
- 3 files changed, 176 insertions(+), 12 deletions(-)
-
-   INFO  Clearing cached bootstrap files.  
-
-  config ......................................................... 0.89ms DONE
-  cache .......................................................... 3.11ms DONE
-  compiled ....................................................... 0.60ms DONE
-  events ......................................................... 0.43ms DONE
-  routes ......................................................... 0.39ms DONE
-  views .......................................................... 1.72ms DONE
-  blade-icons .................................................... 0.17ms DONE
-  filament ....................................................... 0.72ms DONE
-
+APPLY: sanitized content was written.
++---------------------+-------+
+| metric              | count |
++---------------------+-------+
+| checked             | 5     |
+| changed             | 5     |
+| written             | 5     |
+| images_removed      | 0     |
+| styles_removed      | 0     |
+| bad_blocks_removed  | 0     |
+| videos_extracted    | 0     |
+| documents_extracted | 0     |
+| seo_rewritten       | 5     |
++---------------------+-------+
++------+------------+----------------+------------------------------------------------------+
+| ID   | SKU        | Brand          | Product                                              |
++------+------------+----------------+------------------------------------------------------+
+| 8985 | PS-008.985 | Теплов и Сухов | Адаптер котла Теплов и Сухов моно М-М 430-0.8, Ø 120 |
+| 8986 | PS-008.986 | Теплов и Сухов | Адаптер котла Теплов и Сухов моно М-М 430-0.8, Ø 150 |
+| 8987 | PS-008.987 | Теплов и Сухов | Адаптер котла Теплов и Сухов моно М-М 430-0.8, Ø 180 |
+| 8988 | PS-008.988 | Теплов и Сухов | Адаптер котла Теплов и Сухов моно М-М 430-0.8, Ø 200 |
+| 8989 | PS-008.989 | Теплов и Сухов | Адаптер котла Теплов и Сухов моно М-М 430-0.8, Ø 250 |
++------+------------+----------------+------------------------------------------------------+
 
 ```
