@@ -1,6 +1,6 @@
 {
-  "task": "artisan-apply",
-  "artisan_args": "products:sanitize-content-html --apply --active-only --not-archived --limit=0",
+  "task": "optimize-clear",
+  "artisan_args": "",
   "log_file": "storage/logs/server-artisan.log",
-  "run_id": "sanitize-content-all-apply"
+  "run_id": "safe-sanitizer-deploy"
 }
