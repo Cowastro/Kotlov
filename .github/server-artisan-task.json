@@ -1,5 +1,5 @@
 {
-  "task": "artisan-background",
-  "artisan_args": "supplier:enrich-tsk-nasosy --apply --in-stock-only --only-missing --overwrite-images --sleep=1000",
+  "task": "tail-log",
+  "artisan_args": "",
   "log_file": "storage/logs/auto-tsk-nasosy-missing-fill.log"
 }
