@@ -1,5 +1,5 @@
 {
-  "task": "artisan-dry-run",
-  "artisan_args": "products:audit-content-health --active-only --not-archived --supplier=rn-profi --brand=Varmega --with-source-only --max-attrs=2 --limit=120 --csv=storage/app/reports/product-content-health/varmega-after-official-fill.csv",
-  "log_file": "storage/logs/server-artisan.log"
+  "task": "artisan-background",
+  "artisan_args": "supplier:enrich-tsk-nasosy --apply --in-stock-only --only-missing --overwrite-images --sleep=1000",
+  "log_file": "storage/logs/auto-tsk-nasosy-missing-fill.log"
 }
