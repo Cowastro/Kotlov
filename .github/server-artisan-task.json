@@ -1,6 +1,6 @@
 {
   "task": "artisan-dry-run",
-  "artisan_args": "products:audit-content-health --supplier=akvatermex --active-only --not-archived --with-source-only --max-attrs=4 --limit=80",
+  "artisan_args": "products:sanitize-content-html --brand=Теплов и Сухов --active-only --not-archived --extract-media --limit=80",
   "log_file": "storage/logs/server-artisan.log",
-  "run_id": "akvatermex-content-health-after-selected-enrich"
+  "run_id": "teplov-suhov-sanitize-media-dry-run"
 }
