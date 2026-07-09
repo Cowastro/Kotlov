@@ -1,0 +1,135 @@
+name: Server Artisan
+
+on:
+  workflow_dispatch:
+    inputs:
+      task:
+        description: Remote task to run
+        required: true
+        type: choice
+        options:
+          - optimize-clear
+          - artisan-dry-run
+          - artisan-apply
+          - artisan-background
+          - tail-log
+          - ps-artisan
+      artisan_args:
+        description: Artisan arguments, for example supplier:sync-ligmet --dry-run --brand=Blist
+        required: false
+        type: string
+      log_file:
+        description: Log file for background/tail tasks
+        required: false
+        default: storage/logs/server-artisan.log
+        type: string
+
+jobs:
+  run:
+    name: Run Server Artisan Task
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Validate inputs
+        env:
+          TASK: ${{ inputs.task }}
+          ARTISAN_ARGS: ${{ inputs.artisan_args }}
+          LOG_FILE: ${{ inputs.log_file }}
+        run: |
+          set -euo pipefail
+
+          case "$TASK" in
+            optimize-clear|artisan-dry-run|artisan-apply|artisan-background|tail-log|ps-artisan) ;;
+            *) echo "::error::Unsupported task: $TASK"; exit 1 ;;
+          esac
+
+          if [[ "$ARTISAN_ARGS" == *$'\n'* || "$LOG_FILE" == *$'\n'* ]]; then
+            echo "::error::Inputs must be single-line."
+            exit 1
+          fi
+
+          if [[ "$ARTISAN_ARGS" =~ [\'\"\`\;\|\&\<\>\\] || "$LOG_FILE" =~ [\'\"\`\;\|\&\<\>\\] ]]; then
+            echo "::error::Shell control characters are not allowed in inputs."
+            exit 1
+          fi
+
+          if [[ "$TASK" == "artisan-dry-run" && "$ARTISAN_ARGS" == *"--apply"* ]]; then
+            echo "::error::artisan-dry-run cannot contain --apply."
+            exit 1
+          fi
+
+          if [[ "$TASK" == artisan-* && -z "${ARTISAN_ARGS// }" ]]; then
+            echo "::error::artisan_args is required for artisan tasks."
+            exit 1
+          fi
+
+          if [[ "$TASK" == "tail-log" && "$LOG_FILE" != storage/logs/* ]]; then
+            echo "::error::tail-log is limited to storage/logs/*."
+            exit 1
+          fi
+
+      - name: Configure SSH
+        env:
+          SERVER_HOST: ${{ secrets.SERVER_HOST }}
+          SERVER_PORT: ${{ secrets.SERVER_PORT }}
+          SERVER_SSH_KEY: ${{ secrets.SERVER_SSH_KEY }}
+        run: |
+          set -euo pipefail
+          test -n "$SERVER_HOST"
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+          printf '%s\n' "$SERVER_SSH_KEY" > ~/.ssh/server_key
+          chmod 600 ~/.ssh/server_key
+          ssh-keyscan -p "${SERVER_PORT:-22}" "$SERVER_HOST" >> ~/.ssh/known_hosts
+
+      - name: Run remote task
+        env:
+          TASK: ${{ inputs.task }}
+          ARTISAN_ARGS: ${{ inputs.artisan_args }}
+          LOG_FILE: ${{ inputs.log_file }}
+          SERVER_HOST: ${{ secrets.SERVER_HOST }}
+          SERVER_PORT: ${{ secrets.SERVER_PORT }}
+          SERVER_USER: ${{ secrets.SERVER_USER }}
+          SERVER_PATH: ${{ secrets.SERVER_PATH }}
+          PHP_BIN: ${{ secrets.SERVER_PHP_BIN }}
+        run: |
+          set -euo pipefail
+
+          port="${SERVER_PORT:-22}"
+          php_bin="${PHP_BIN:-/opt/alt/php83/usr/bin/php}"
+          server_path="${SERVER_PATH:-/var/www/h209767/data/www/new.kotlov.by}"
+
+          remote_script=$(cat <<'SCRIPT'
+          set -euo pipefail
+          cd "$SERVER_PATH"
+
+          case "$TASK" in
+            optimize-clear)
+              git pull
+              "$PHP_BIN" artisan optimize:clear
+              ;;
+            artisan-dry-run)
+              "$PHP_BIN" artisan $ARTISAN_ARGS
+              ;;
+            artisan-apply)
+              "$PHP_BIN" artisan $ARTISAN_ARGS
+              ;;
+            artisan-background)
+              mkdir -p "$(dirname "$LOG_FILE")"
+              nohup "$PHP_BIN" artisan $ARTISAN_ARGS > "$LOG_FILE" 2>&1 &
+              echo "started pid=$!"
+              ;;
+            tail-log)
+              tail -n 120 "$LOG_FILE"
+              ;;
+            ps-artisan)
+              ps -ef | grep artisan | grep -v grep || true
+              ;;
+          esac
+          SCRIPT
+          )
+
+          ssh -i ~/.ssh/server_key -p "$port" "$SERVER_USER@$SERVER_HOST" \
+            "TASK='$TASK' ARTISAN_ARGS='$ARTISAN_ARGS' LOG_FILE='$LOG_FILE' SERVER_PATH='$server_path' PHP_BIN='$php_bin' bash -s" \
+            <<< "$remote_script"
