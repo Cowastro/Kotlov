@@ -34,6 +34,7 @@ class SyncLigmetCommand extends Command
         {--stock-file= : Local .xlsx path (skips download)}
         {--sheet-url= : Override the default spreadsheet URL}
         {--folder-url= : Google Drive folder URL; newest XLS/XLSX file will be used}
+        {--candidate-report= : Write create_candidate rows to CSV}
         {--all-categories : Import chimneys/doors/accessories too (default: stoves/fireplaces only)}
         {--archive-existing : Archive existing active products of these brands (in scope) before import; excludes them from matching}
         {--redirects : Write an old→new redirect map (archived → recreated, by brand+model)}
@@ -658,9 +659,63 @@ class SyncLigmetCommand extends Command
             ], array_slice($rows, 0, 12))
         );
 
+        $reportPath = trim((string) ($this->option('candidate-report') ?? ''));
+        if ($reportPath !== '') {
+            $this->writeCandidateReport($rows, $reportPath);
+        }
+
         $this->newLine();
         $this->line('Запусти с <fg=green>--apply</> (и <fg=green>--create-new</> для новых).');
         return self::SUCCESS;
+    }
+
+    private function writeCandidateReport(array $rows, string $reportPath): void
+    {
+        $candidates = array_values(array_filter($rows, fn (array $row): bool => $row['action'] === 'create_candidate'));
+        if ($candidates === []) {
+            $this->info('Candidate report skipped: no create_candidate rows.');
+            return;
+        }
+
+        $path = $this->absoluteReportPath($reportPath);
+        $dir = dirname($path);
+        if (! is_dir($dir)) {
+            mkdir($dir, 0775, true);
+        }
+
+        $handle = fopen($path, 'w');
+        if ($handle === false) {
+            $this->warn('Candidate report failed: cannot write ' . $path);
+            return;
+        }
+
+        fputcsv($handle, ['article', 'brand', 'category_id', 'section', 'name', 'opt_byn', 'retail_byn', 'stock_status', 'stock_text']);
+        foreach ($candidates as $row) {
+            fputcsv($handle, [
+                $row['article'],
+                $row['brand'],
+                $row['resolved_category_id'],
+                $row['section'],
+                $row['name'],
+                $row['price'],
+                $row['retail_price'],
+                $row['stock']['status'] ?? '',
+                $row['status_text'],
+            ]);
+        }
+        fclose($handle);
+
+        $this->info(sprintf('Candidate report written: %s (%d rows)', $path, count($candidates)));
+    }
+
+    private function absoluteReportPath(string $path): string
+    {
+        $path = str_replace('\\', '/', $path);
+        if (preg_match('#^[A-Za-z]:/#', $path) || str_starts_with($path, '/')) {
+            return $path;
+        }
+
+        return base_path($path);
     }
 
     // ── Apply ─────────────────────────────────────────────────────────────────────
