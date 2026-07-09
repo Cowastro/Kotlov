@@ -1,5 +1,5 @@
 {
-  "task": "tail-log",
+  "task": "ps-artisan",
   "artisan_args": "",
-  "log_file": "storage/logs/ligmet-blist-enrich.log"
+  "log_file": "storage/logs/server-artisan.log"
 }
