@@ -1,34 +1,30 @@
 # Server Artisan Result
 
-- Time: 2026-07-09 21:12:23 UTC
-- Task: `artisan-apply`
-- Artisan args: `products:sanitize-content-html --apply --slug-like=teplov-i-suhov --active-only --not-archived --extract-media --overwrite-media --rewrite-seo --show-samples=5 --limit=5 --sleep=1000`
+- Time: 2026-07-09 21:15:42 UTC
+- Task: `artisan-dry-run`
+- Artisan args: `products:sanitize-content-html --slug-like=truba-teplov-i-suhov-termo-tt-r-430-08-430-05-200-260-l250 --active-only --not-archived --extract-media --show-samples=5 --limit=1`
 - Log file: `storage/logs/server-artisan.log`
 - Exit code: `0`
 
 ```text
-APPLY: sanitized content was written.
+DRY RUN: database will not be changed.
 +---------------------+-------+
 | metric              | count |
 +---------------------+-------+
-| checked             | 5     |
-| changed             | 5     |
-| written             | 5     |
+| checked             | 1     |
+| changed             | 1     |
+| written             | 0     |
 | images_removed      | 0     |
 | styles_removed      | 0     |
 | bad_blocks_removed  | 0     |
 | videos_extracted    | 0     |
 | documents_extracted | 0     |
-| seo_rewritten       | 5     |
+| seo_rewritten       | 0     |
 +---------------------+-------+
-+------+------------+----------------+------------------------------------------------------+
-| ID   | SKU        | Brand          | Product                                              |
-+------+------------+----------------+------------------------------------------------------+
-| 8985 | PS-008.985 | Теплов и Сухов | Адаптер котла Теплов и Сухов моно М-М 430-0.8, Ø 120 |
-| 8986 | PS-008.986 | Теплов и Сухов | Адаптер котла Теплов и Сухов моно М-М 430-0.8, Ø 150 |
-| 8987 | PS-008.987 | Теплов и Сухов | Адаптер котла Теплов и Сухов моно М-М 430-0.8, Ø 180 |
-| 8988 | PS-008.988 | Теплов и Сухов | Адаптер котла Теплов и Сухов моно М-М 430-0.8, Ø 200 |
-| 8989 | PS-008.989 | Теплов и Сухов | Адаптер котла Теплов и Сухов моно М-М 430-0.8, Ø 250 |
-+------+------------+----------------+------------------------------------------------------+
++------+------------+----------------+-------------------------------------------------------------------+
+| ID   | SKU        | Brand          | Product                                                           |
++------+------------+----------------+-------------------------------------------------------------------+
+| 9044 | PS-009.044 | Теплов и Сухов | Труба Теплов и Сухов термо ТТ-Р 430, 0.8/430, 0.5, Ø 200/260 L250 |
++------+------------+----------------+-------------------------------------------------------------------+
 
 ```
