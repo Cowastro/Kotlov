@@ -463,12 +463,35 @@ class Enrich100KaminovCommand extends Command
         $toks = array_filter(
             preg_split('/\s+/u', trim($n)) ?: [],
             // Also strip Invicta-style product reference codes: P615644, P927475, etc.
-            fn ($t) => $t !== '' && ! in_array($t, self::STOPWORDS, true) && ! preg_match('/^P\d{5,}$/', $t)
+            fn ($t) => $t !== '' && ! $this->isStopword($t, $brand) && ! preg_match('/^P\d{5,}$/', $t)
         );
         return implode(' ', $toks);
     }
 
     // ── Images ────────────────────────────────────────────────────────────────────
+
+    private function isStopword(string $token, string $brand): bool
+    {
+        if (mb_strtolower($brand) === 'blist' && $this->isColorToken($token)) {
+            return false;
+        }
+
+        return in_array($token, self::STOPWORDS, true);
+    }
+
+    private function isColorToken(string $token): bool
+    {
+        static $colors = [
+            'БЕЖЕВАЯ', 'БЕЖЕВЫЙ', 'БЕЖЕВОЕ', 'БЕЖЕВЫЕ',
+            'КРАСНАЯ', 'КРАСНЫЙ', 'КРАСНОЕ', 'КРАСНЫЕ',
+            'ЧЕРНАЯ', 'ЧЕРНЫЙ', 'ЧЕРНОЕ', 'ЧЕРНЫЕ',
+            'ЧЁРНАЯ', 'ЧЁРНЫЙ', 'ЧЁРНОЕ', 'ЧЁРНЫЕ',
+            'СЕРАЯ', 'СЕРЫЙ', 'СЕРОЕ', 'СЕРЫЕ',
+            'БЕЛАЯ', 'БЕЛЫЙ', 'БЕЛОЕ', 'БЕЛЫЕ',
+        ];
+
+        return in_array($token, $colors, true);
+    }
 
     private function downloadImages(int $pid, array $urls, bool $hasImages): int
     {

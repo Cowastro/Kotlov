@@ -431,10 +431,33 @@ class EnrichLigmetExtraCommand extends Command
         $toks = array_filter(
             preg_split('/\s+/u', trim($n)) ?: [],
             fn ($t) => $t !== ''
-                && ! in_array($t, self::STOPWORDS, true)
+                && ! $this->isStopword($t, $brand)
                 && ! preg_match('/^\d+$/', $t)
         );
         return implode(' ', $toks);
+    }
+
+    private function isStopword(string $token, string $brand): bool
+    {
+        if (mb_strtolower($brand) === 'blist' && $this->isColorToken($token)) {
+            return false;
+        }
+
+        return in_array($token, self::STOPWORDS, true);
+    }
+
+    private function isColorToken(string $token): bool
+    {
+        static $colors = [
+            'БЕЖЕВАЯ', 'БЕЖЕВЫЙ', 'БЕЖЕВОЕ', 'БЕЖЕВЫЕ',
+            'КРАСНАЯ', 'КРАСНЫЙ', 'КРАСНОЕ', 'КРАСНЫЕ',
+            'ЧЕРНАЯ', 'ЧЕРНЫЙ', 'ЧЕРНОЕ', 'ЧЕРНЫЕ',
+            'ЧЁРНАЯ', 'ЧЁРНЫЙ', 'ЧЁРНОЕ', 'ЧЁРНЫЕ',
+            'СЕРАЯ', 'СЕРЫЙ', 'СЕРОЕ', 'СЕРЫЕ',
+            'БЕЛАЯ', 'БЕЛЫЙ', 'БЕЛОЕ', 'БЕЛЫЕ',
+        ];
+
+        return in_array($token, $colors, true);
     }
 
     private function generateAiContent(int $pid, string $name, string $desc, array $specs, string $brand, $now): void
