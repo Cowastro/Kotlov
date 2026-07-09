@@ -27,6 +27,7 @@ class SanitizeProductContentHtmlCommand extends Command
         {--overwrite-media : Replace existing video/documents while extracting media}
         {--rewrite-seo : Regenerate short_description, content and meta_description with AI}
         {--show-samples=0 : Show first N rows with detected media links}
+        {--show-content-samples=0 : Show first N source content snippets for audit}
         {--sleep=300 : Delay between AI requests, ms}
         {--limit=100 : Rows to process, 0 means all}';
 
@@ -40,6 +41,7 @@ class SanitizeProductContentHtmlCommand extends Command
         $overwriteMedia = (bool) $this->option('overwrite-media');
         $rewriteSeo = (bool) $this->option('rewrite-seo');
         $showSamples = max(0, (int) $this->option('show-samples'));
+        $showContentSamples = max(0, (int) $this->option('show-content-samples'));
         $sleep = max(0, (int) $this->option('sleep'));
 
         if ($apply && ! $this->hasScope()) {
@@ -142,6 +144,7 @@ class SanitizeProductContentHtmlCommand extends Command
         ];
         $changedRows = [];
         $sampleRows = [];
+        $contentSampleRows = [];
 
         foreach ($rows as $row) {
             $stats['checked']++;
@@ -149,6 +152,23 @@ class SanitizeProductContentHtmlCommand extends Command
             $original = (string) $row->content;
             $sanitized = $enricher->sanitizeDescriptionHtml($original);
             $media = $extractMedia ? $this->extractMediaLinks($original) : ['video_url' => '', 'documents' => []];
+
+            if ($showContentSamples > 0 && count($contentSampleRows) < $showContentSamples) {
+                $plain = trim((string) preg_replace('/\s+/u', ' ', strip_tags($original)));
+                $html = trim((string) preg_replace('/\s+/u', ' ', $original));
+                $contentSampleRows[] = [
+                    $row->id,
+                    $row->sku,
+                    $row->slug,
+                    $this->countMatches('/<img\b/iu', $original),
+                    $this->countMatches('/<a\b/iu', $original),
+                    $this->countMatches('/<iframe\b/iu', $original),
+                    $this->countMatches('/\sstyle\s*=/iu', $original),
+                    Str::limit($plain, 320, ''),
+                    Str::limit($html, 320, ''),
+                ];
+            }
+
             if ($showSamples > 0 && count($sampleRows) < $showSamples && ($media['video_url'] !== '' || $media['documents'] !== [] || $this->contentLinks($original) !== [])) {
                 $sampleRows[] = [
                     $row->id,
@@ -240,6 +260,10 @@ class SanitizeProductContentHtmlCommand extends Command
 
         if ($sampleRows !== []) {
             $this->table(['ID', 'SKU', 'Slug', 'Video', 'Documents', 'Raw links'], $sampleRows);
+        }
+
+        if ($contentSampleRows !== []) {
+            $this->table(['ID', 'SKU', 'Slug', 'img', 'a', 'iframe', 'style', 'Plain snippet', 'HTML snippet'], $contentSampleRows);
         }
 
         return self::SUCCESS;
