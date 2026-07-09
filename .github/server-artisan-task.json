@@ -1,6 +1,6 @@
 {
   "task": "artisan-dry-run",
-  "artisan_args": "supplier:enrich-source-products --supplier=akvatermex --domain=teplodvor.by --force --replace-specs --overwrite-images --skip-documents --limit=10",
+  "artisan_args": "supplier:enrich-source-products --supplier=akvatermex --domain=teplodvor.by --max-current-attrs=2 --replace-specs --min-specs-to-replace=4 --overwrite-images --skip-documents --limit=20",
   "log_file": "storage/logs/server-artisan.log",
-  "run_id": "akvatermex-teplodvor-enrich-dry-run"
+  "run_id": "akvatermex-teplodvor-low-attrs-dry-run"
 }
