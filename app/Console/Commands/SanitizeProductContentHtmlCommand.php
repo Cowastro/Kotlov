@@ -25,6 +25,7 @@ class SanitizeProductContentHtmlCommand extends Command
         {--created-to= : Only products created at or before this date}
         {--extract-media : Move video and document links from content to product fields}
         {--overwrite-media : Replace existing video/documents while extracting media}
+        {--restore-teplov-suhov-media : Restore legacy Teplov i Suhov videos/docs from known slug groups}
         {--rewrite-seo : Regenerate short_description, content and meta_description with AI}
         {--show-samples=0 : Show first N rows with detected media links}
         {--show-content-samples=0 : Show first N source content snippets for audit}
@@ -39,6 +40,7 @@ class SanitizeProductContentHtmlCommand extends Command
         $limit = max(0, (int) $this->option('limit'));
         $extractMedia = (bool) $this->option('extract-media');
         $overwriteMedia = (bool) $this->option('overwrite-media');
+        $restoreTeplovSuhovMedia = (bool) $this->option('restore-teplov-suhov-media');
         $rewriteSeo = (bool) $this->option('rewrite-seo');
         $showSamples = max(0, (int) $this->option('show-samples'));
         $showContentSamples = max(0, (int) $this->option('show-content-samples'));
@@ -152,6 +154,9 @@ class SanitizeProductContentHtmlCommand extends Command
             $original = (string) $row->content;
             $sanitized = $enricher->sanitizeDescriptionHtml($original);
             $media = $extractMedia ? $this->extractMediaLinks($original) : ['video_url' => '', 'documents' => []];
+            if ($extractMedia && $restoreTeplovSuhovMedia) {
+                $media = $this->mergeMedia($media, $this->legacyTeplovSuhovMedia((string) $row->slug));
+            }
 
             if ($showContentSamples > 0 && count($contentSampleRows) < $showContentSamples) {
                 $plain = trim((string) preg_replace('/\s+/u', ' ', strip_tags($original)));
@@ -417,6 +422,50 @@ class SanitizeProductContentHtmlCommand extends Command
         return [
             'video_url' => $videoUrl,
             'documents' => $this->mergeDocuments([], $documents),
+        ];
+    }
+
+    /**
+     * @param array{video_url: string, documents: array<int, array{label: string, url: string}>} $base
+     * @param array{video_url: string, documents: array<int, array{label: string, url: string}>} $extra
+     * @return array{video_url: string, documents: array<int, array{label: string, url: string}>}
+     */
+    private function mergeMedia(array $base, array $extra): array
+    {
+        return [
+            'video_url' => $base['video_url'] !== '' ? $base['video_url'] : $extra['video_url'],
+            'documents' => $this->mergeDocuments($base['documents'], $extra['documents']),
+        ];
+    }
+
+    /**
+     * @return array{video_url: string, documents: array<int, array{label: string, url: string}>}
+     */
+    private function legacyTeplovSuhovMedia(string $slug): array
+    {
+        if (! str_contains($slug, 'teplov-i-suhov')) {
+            return ['video_url' => '', 'documents' => []];
+        }
+
+        $videoUrl = match (true) {
+            str_contains($slug, 'bak-navesnoy') => 'https://www.youtube.com/embed/ZD39gorU4_I',
+            str_contains($slug, 'adapter-kotla') || str_contains($slug, 'adapter-perehod') => 'https://www.youtube.com/embed/ctxgc0yoy8o?list=PLAhMCOyBsBHom4fUsCZqCIEQ9zqZLy2gn',
+            str_contains($slug, 'prohod-perekryitiya') => 'https://www.youtube.com/embed/tp8xSBtbhIE',
+            str_contains($slug, 'shiber-zadvijka') => 'https://www.youtube.com/embed/vJnlMUcmHTA?list=PLAhMCOyBsBHom4fUsCZqCIEQ9zqZLy2gn',
+            str_contains($slug, 'shiber-mono') => 'https://www.youtube.com/embed/9JKwAuw8IU0?list=PLAhMCOyBsBHom4fUsCZqCIEQ9zqZLy2gn',
+            str_contains($slug, 'konus-teplov-i-suhov') || str_contains($slug, 'perehod-mono-termo') => 'https://www.youtube.com/embed/c9Ed8rruNWQ?list=PLAhMCOyBsBHom4fUsCZqCIEQ9zqZLy2gn',
+            str_contains($slug, 'truba-teplov-i-suhov-termo') || str_contains($slug, 'otvod-teplov-i-suhov-ot-r') || str_contains($slug, 'troynik-teplov-i-suhov-trt-r') => 'https://www.youtube.com/embed/pUJ4DDasBw0?list=PLAhMCOyBsBHom4fUsCZqCIEQ9zqZLy2gn',
+            str_contains($slug, 'troynik-mono-teplov-i-suhov-trm-m-r-45') || str_contains($slug, 'troynik-teplov-i-suhov-45-trmm') => 'https://www.youtube.com/embed/STBcQIDJuc4?list=PLAhMCOyBsBHom4fUsCZqCIEQ9zqZLy2gn',
+            str_contains($slug, 'troynik-mono-teplov-i-suhov-trm-r-87') => 'https://www.youtube.com/embed/EZ4JkTU_7sU',
+            default => 'https://rutube.ru/play/embed/2ac8ccb7f2001cbf956e229ba89852d1',
+        };
+
+        return [
+            'video_url' => $videoUrl,
+            'documents' => [[
+                'label' => 'Каталог Теплов и Сухов 2025',
+                'url' => 'https://admin.kotlov.by/downloads/catalogue_TIS_2025.pdf',
+            ]],
         ];
     }
 
