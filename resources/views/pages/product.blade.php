@@ -473,6 +473,16 @@
             @php
                 $serviceInfo = is_array($product->service_info) ? array_filter($product->service_info) : [];
                 $documents = is_array($product->documents) ? array_filter($product->documents) : [];
+                $videoUrl = trim((string) ($product->video_url ?? ''));
+                $videoEmbedUrl = null;
+                $isDirectVideo = $videoUrl && preg_match('~\.(mp4|webm|mov)(?:\?|$)~i', $videoUrl);
+                if ($videoUrl && preg_match('~(?:youtube\.com/watch\?v=|youtu\.be/)([A-Za-z0-9_-]{6,})~i', $videoUrl, $videoMatch)) {
+                    $videoEmbedUrl = 'https://www.youtube.com/embed/' . $videoMatch[1];
+                } elseif ($videoUrl && preg_match('~vimeo\.com/(\d+)~i', $videoUrl, $videoMatch)) {
+                    $videoEmbedUrl = 'https://player.vimeo.com/video/' . $videoMatch[1];
+                } elseif ($videoUrl && preg_match('~rutube\.ru/video/([A-Za-z0-9]+)/?~i', $videoUrl, $videoMatch)) {
+                    $videoEmbedUrl = 'https://rutube.ru/play/embed/' . $videoMatch[1];
+                }
                 $rawSpecs = $attributeValues->count() === 0 && !empty($product->specs)
                     ? collect(is_array($product->specs) ? $product->specs : (json_decode($product->specs, true) ?? []))
                           ->filter(fn($s) => !empty($s['key']) && !empty($s['value']))
@@ -505,6 +515,13 @@
                     <li class="nav-tab-item" role="presentation">
                         <a href="#documents" data-bs-toggle="tab" class="tf-btn-tab" role="tab">
                             <span class="h5 fw-medium">Документы</span>
+                        </a>
+                    </li>
+                @endif
+                @if ($videoUrl)
+                    <li class="nav-tab-item" role="presentation">
+                        <a href="#video" data-bs-toggle="tab" class="tf-btn-tab" role="tab">
+                            <span class="h5 fw-medium">Видео</span>
                         </a>
                     </li>
                 @endif
@@ -635,6 +652,29 @@
                 @endif
 
                 {{-- Отзывы --}}
+                @if ($videoUrl)
+                    <div class="tab-pane" id="video" role="tabpanel">
+                        <div class="tab-content_desc">
+                            <div class="product-video-wrap">
+                                @if ($videoEmbedUrl)
+                                    <iframe
+                                        src="{{ $videoEmbedUrl }}"
+                                        title="{{ $product->name }}"
+                                        loading="lazy"
+                                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                                        allowfullscreen></iframe>
+                                @elseif ($isDirectVideo)
+                                    <video src="{{ $videoUrl }}" controls preload="metadata"></video>
+                                @else
+                                    <a href="{{ $videoUrl }}" class="link fw-medium" target="_blank" rel="nofollow noopener">
+                                        Смотреть видео
+                                    </a>
+                                @endif
+                            </div>
+                        </div>
+                    </div>
+                @endif
+
                 <div class="tab-pane" id="customer-reviews" role="tabpanel">
                     <div class="product-desc_review">
 

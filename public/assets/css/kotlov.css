@@ -1022,3 +1022,26 @@ a.category-v05.subcat-tile:hover .cate-icon {
     color: #c62828;
     background: #fff;
 }
+
+.product-video-wrap {
+    width: min(100%, 960px);
+    aspect-ratio: 16 / 9;
+    border-radius: 8px;
+    overflow: hidden;
+    background: #f6f6f6;
+}
+
+.product-video-wrap iframe,
+.product-video-wrap video {
+    width: 100%;
+    height: 100%;
+    display: block;
+    border: 0;
+    object-fit: contain;
+}
+
+.product-video-wrap .link {
+    display: inline-flex;
+    align-items: center;
+    min-height: 48px;
+}
