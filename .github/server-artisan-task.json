@@ -1,5 +1,5 @@
 {
-  "task": "tail-log",
-  "artisan_args": "",
-  "log_file": "storage/logs/auto-varmega-official-fill.log"
+  "task": "artisan-dry-run",
+  "artisan_args": "products:audit-content-health --active-only --not-archived --supplier=rn-profi --brand=Varmega --with-source-only --max-attrs=2 --limit=120 --csv=storage/app/reports/product-content-health/varmega-after-official-fill.csv",
+  "log_file": "storage/logs/server-artisan.log"
 }
