@@ -1,90 +1,72 @@
 # Server Artisan Result
 
-- Time: 2026-07-09 20:21:10 UTC
+- Time: 2026-07-09 20:24:15 UTC
 - Task: `artisan-dry-run`
-- Artisan args: `products:audit-content-health --supplier=akvatermex --active-only --not-archived --with-source-only --max-attrs=4 --limit=80`
+- Artisan args: `supplier:sync-akvatermex --available-only --only-linked --prefer-teplodvor-source --brand=Thermex,Edisson,Eurostar --limit=0`
 - Log file: `storage/logs/server-artisan.log`
 - Exit code: `0`
 
 ```text
-Products with content-health issues: 41
-Showing rows: 41 (limit 80)
-
-By issue
-+------------+----------+
-| Issue      | Products |
-+------------+----------+
-| no_photo   | 41       |
-| no_content | 0        |
-| no_short   | 0        |
-| low_attrs  | 41       |
-| no_source  | 0        |
-+------------+----------+
-By supplier
-+------------+----------+----------+------------+-----------+
-| Name       | Products | No photo | No content | Low attrs |
-+------------+----------+----------+------------+-----------+
-| akvatermex | 41       | 41       | 0          | 41        |
-+------------+----------+----------+------------+-----------+
-By brand
-+----------+----------+----------+------------+-----------+
-| Name     | Products | No photo | No content | Low attrs |
-+----------+----------+----------+------------+-----------+
-| Thermex  | 36       | 36       | 0          | 36        |
-| Edisson  | 4        | 4        | 0          | 4         |
-| Eurostar | 1        | 1        | 0          | 1         |
-+----------+----------+----------+------------+-----------+
-By category
-+---------------+----------+----------+------------+-----------+
-| Name          | Products | No photo | No content | Low attrs |
-+---------------+----------+----------+------------+-----------+
-| Электрические | 41       | 41       | 0          | 41        |
-+---------------+----------+----------+------------+-----------+
-
-+-------+---------------+----------+---------------+------------+-------+--------------------+------------------+----------------------------------+
-| ID    | SKU           | Brand    | Category      | Suppliers  | Attrs | Issues             | Source domains   | Product                          |
-+-------+---------------+----------+---------------+------------+-------+--------------------+------------------+----------------------------------+
-| 21244 | KOTLOV-006410 | Edisson  | Электрические | akvatermex | 0     | no_photo,low_attrs | thermex.by       | Edisson ER 80                    |
-| 21290 | KOTLOV-006456 | Edisson  | Электрические | akvatermex | 0     | no_photo,low_attrs | www.teplodvor.by | EDISSON H 20 D                   |
-| 21295 | KOTLOV-006461 | Edisson  | Электрические | akvatermex | 0     | no_photo,low_attrs | thermex.by       | EDISSON E 20 GD (Каннская ветвь) |
-| 21297 | KOTLOV-006463 | Edisson  | Электрические | akvatermex | 0     | no_photo,low_attrs | thermex.by       | EDISSON E 20 GD (Подсолнухи)     |
-| 21301 | KOTLOV-006467 | Eurostar | Электрические | akvatermex | 0     | no_photo,low_attrs | thermex.by       | EUROSTAR E 906                   |
-| 21179 | KOTLOV-006345 | Thermex  | Электрические | akvatermex | 0     | no_photo,low_attrs | thermex.by       | Thermex ER 50 V                  |
-| 21180 | KOTLOV-006346 | Thermex  | Электрические | akvatermex | 0     | no_photo,low_attrs | thermex.by       | Thermex ER 80 V                  |
-| 21181 | KOTLOV-006347 | Thermex  | Электрические | akvatermex | 0     | no_photo,low_attrs | thermex.by       | Thermex ER 100 V                 |
-| 21182 | KOTLOV-006348 | Thermex  | Электрические | akvatermex | 0     | no_photo,low_attrs | thermex.by       | Thermex Thermo 30V Slim          |
-| 21183 | KOTLOV-006349 | Thermex  | Электрические | akvatermex | 0     | no_photo,low_attrs | thermex.by       | Thermex Thermo 50V Slim          |
-| 21205 | KOTLOV-006371 | Thermex  | Электрические | akvatermex | 0     | no_photo,low_attrs | thermex.by       | THERMEX IF 100 (smart)           |
-| 21247 | KOTLOV-006413 | Thermex  | Электрические | akvatermex | 0     | no_photo,low_attrs | thermex.by       | THERMEX Amber 3000               |
-| 21248 | KOTLOV-006414 | Thermex  | Электрические | akvatermex | 0     | no_photo,low_attrs | thermex.by       | THERMEX Nix 3000                 |
-| 21249 | KOTLOV-006415 | Thermex  | Электрические | akvatermex | 0     | no_photo,low_attrs | thermex.by       | Thermex Runa 3000                |
-| 21255 | KOTLOV-006421 | Thermex  | Электрические | akvatermex | 0     | no_photo,low_attrs | thermex.by       | THERMEX Vetro 6500 combi         |
-| 21256 | KOTLOV-006422 | Thermex  | Электрические | akvatermex | 0     | no_photo,low_attrs | thermex.by       | THERMEX Rind 5500 combi          |
-| 21257 | KOTLOV-006423 | Thermex  | Электрические | akvatermex | 0     | no_photo,low_attrs | hermex.by        | THERMEX Rind 6500 combi          |
-| 21272 | KOTLOV-006438 | Thermex  | Электрические | akvatermex | 0     | no_photo,low_attrs | thermex.by       | THERMEX Frame 1500E              |
-| 21283 | KOTLOV-006449 | Thermex  | Электрические | akvatermex | 0     | no_photo,low_attrs | thermex.by       | THERMEX Greta 1200               |
-| 21288 | KOTLOV-006454 | Thermex  | Электрические | akvatermex | 0     | no_photo,low_attrs | thermex.by       | THERMEX V 1.5                    |
-| 21306 | KOTLOV-006472 | Thermex  | Электрические | akvatermex | 0     | no_photo,low_attrs | thermex.by       | THERMEX Stern 9                  |
-| 21307 | KOTLOV-006473 | Thermex  | Электрические | akvatermex | 0     | no_photo,low_attrs | thermex.by       | THERMEX Libert 9                 |
-| 21312 | KOTLOV-006478 | Thermex  | Электрические | akvatermex | 0     | no_photo,low_attrs | thermex.by       | Термос THERMEX 2Go 480I          |
-| 21313 | KOTLOV-006479 | Thermex  | Электрические | akvatermex | 0     | no_photo,low_attrs | thermex.by       | THERMEX Herz                     |
-| 21316 | KOTLOV-006482 | Thermex  | Электрические | akvatermex | 0     | no_photo,low_attrs | thermex.by       | THERMEX Youth                    |
-| 21321 | KOTLOV-006487 | Thermex  | Электрические | akvatermex | 0     | no_photo,low_attrs | thermex.by       | THERMEX Mira                     |
-| 21322 | KOTLOV-006488 | Thermex  | Электрические | akvatermex | 0     | no_photo,low_attrs | thermex.by       | Фильтр THERMEX ION SL 5"         |
-| 21323 | KOTLOV-006489 | Thermex  | Электрические | akvatermex | 0     | no_photo,low_attrs | thermex.by       | Фильтр THERMEX ION SL 10"        |
-| 21324 | KOTLOV-006490 | Thermex  | Электрические | akvatermex | 0     | no_photo,low_attrs | thermex.by       | THERMEX Parma 12                 |
-| 21325 | KOTLOV-006491 | Thermex  | Электрические | akvatermex | 0     | no_photo,low_attrs | thermex.by       | THERMEX Parma 18                 |
-| 21326 | KOTLOV-006492 | Thermex  | Электрические | akvatermex | 0     | no_photo,low_attrs | thermex.by       | THERMEX Parma 24                 |
-| 21327 | KOTLOV-006493 | Thermex  | Электрические | akvatermex | 0     | no_photo,low_attrs | thermex.by       | THERMEX Finch 9                  |
-| 21328 | KOTLOV-006494 | Thermex  | Электрические | akvatermex | 0     | no_photo,low_attrs | thermex.by       | THERMEX Finch 12                 |
-| 21329 | KOTLOV-006495 | Thermex  | Электрические | akvatermex | 0     | no_photo,low_attrs | thermex.by       | THERMEX Finch 18                 |
-| 21330 | KOTLOV-006496 | Thermex  | Электрические | akvatermex | 0     | no_photo,low_attrs | thermex.by       | THERMEX Garda 7                  |
-| 21331 | KOTLOV-006497 | Thermex  | Электрические | akvatermex | 0     | no_photo,low_attrs | thermex.by       | THERMEX Garda 9                  |
-| 21332 | KOTLOV-006498 | Thermex  | Электрические | akvatermex | 0     | no_photo,low_attrs | thermex.by       | THERMEX Garda 12                 |
-| 21333 | KOTLOV-006499 | Thermex  | Электрические | akvatermex | 0     | no_photo,low_attrs | thermex.by       | THERMEX Sesto 7                  |
-| 21334 | KOTLOV-006500 | Thermex  | Электрические | akvatermex | 0     | no_photo,low_attrs | thermex.by       | THERMEX Sesto 9                  |
-| 21335 | KOTLOV-006501 | Thermex  | Электрические | akvatermex | 0     | no_photo,low_attrs | thermex.by       | THERMEX Sesto 12                 |
-| 21336 | KOTLOV-006502 | Thermex  | Электрические | akvatermex | 0     | no_photo,low_attrs | thermex.by       | THERMEX Sesto 18                 |
-+-------+---------------+----------+---------------+------------+-------+--------------------+------------------+----------------------------------+
+DRY RUN: Akvatermex price list will preview only.
+Downloading Akvatermex Google Sheet: https://docs.google.com/spreadsheets/d/19G0Mei9zkr8iFzTJeYKFHd4IYeIfJwH_7dDAYhTp5jk/export?format=xlsx
++-----------------+-------+
+| metric          | count |
++-----------------+-------+
+| parsed rows     | 236   |
+| in stock        | 236   |
+| with source url | 231   |
+| with EAN        | 216   |
++-----------------+-------+
+Actions:
++---------------+-------+
+| action        | count |
++---------------+-------+
+| matched       | 217   |
+| skip_unlinked | 19    |
++---------------+-------+
+Brands:
++----------+-------+
+| brand    | count |
++----------+-------+
+| Thermex  | 216   |
+| Edisson  | 13    |
+| Eurostar | 7     |
++----------+-------+
+Match confidence:
++------------------+-------+
+| confidence       | count |
++------------------+-------+
+| supplier_article | 217   |
++------------------+-------+
+Examples:
++------------------------+-----+---------+---------------+---------------+----------------------+--------+--------+----------+--------+---------------+-------+
+| sheet                  | row | brand   | category      | article       | name                 | opt    | retail | stock    | source | action        | match |
++------------------------+-----+---------+---------------+---------------+----------------------+--------+--------+----------+--------+---------------+-------+
+| Full_pricelist ОСНОВНО | 6   | Thermex | Электрические | 4670007715830 | THERMEX IC 10 U      | 244.8  | 306    | in_stock | yes    | matched       | 17697 |
+| Full_pricelist ОСНОВНО | 7   | Thermex | Электрические | 4670007715847 | THERMEX IC 10 O      | 244.8  | 306    | in_stock | yes    | skip_unlinked | -     |
+| Full_pricelist ОСНОВНО | 8   | Thermex | Электрические | 4670007715854 | THERMEX IC 15 O      | 268.8  | 336    | in_stock | yes    | matched       | 17698 |
+| Full_pricelist ОСНОВНО | 9   | Thermex | Электрические | 4670007715861 | THERMEX IC 15 U      | 268.8  | 336    | in_stock | yes    | matched       | 17696 |
+| Full_pricelist ОСНОВНО | 11  | Thermex | Электрические | 4670007712006 | Thermex IBL 10 O     | 288    | 360    | in_stock | yes    | matched       | 17865 |
+| Full_pricelist ОСНОВНО | 12  | Thermex | Электрические | 4670007718084 | Thermex IBL 10 U     | 288    | 360    | in_stock | yes    | matched       | 17862 |
+| Full_pricelist ОСНОВНО | 13  | Thermex | Электрические | 4670007718091 | Thermex IBL 15 U     | 307.2  | 384    | in_stock | yes    | matched       | 17864 |
+| Full_pricelist ОСНОВНО | 16  | Thermex | Электрические | 4670033315875 | Thermex Н 5 O (pro)  | 217.92 | 272.4  | in_stock | yes    | skip_unlinked | -     |
+| Full_pricelist ОСНОВНО | 17  | Thermex | Электрические | 4670033315882 | Thermex Н 5 U (pro)  | 217.92 | 272.4  | in_stock | yes    | skip_unlinked | -     |
+| Full_pricelist ОСНОВНО | 18  | Thermex | Электрические | 4670007714680 | Thermex Н 10 O (pro) | 230.4  | 288    | in_stock | yes    | skip_unlinked | -     |
+| Full_pricelist ОСНОВНО | 19  | Thermex | Электрические | 4670007714697 | Thermex Н 10 U (pro) | 230.4  | 288    | in_stock | yes    | skip_unlinked | -     |
+| Full_pricelist ОСНОВНО | 20  | Thermex | Электрические | 4670007714703 | Thermex Н 15 O (pro) | 259.2  | 324    | in_stock | yes    | skip_unlinked | -     |
+| Full_pricelist ОСНОВНО | 21  | Thermex | Электрические | 4670007714710 | Thermex Н 15 U (pro) | 259.2  | 324    | in_stock | yes    | skip_unlinked | -     |
+| Full_pricelist ОСНОВНО | 22  | Thermex | Электрические | 4670007714727 | Thermex Н 30 O (pro) | 345.6  | 432    | in_stock | yes    | matched       | 17749 |
+| Full_pricelist ОСНОВНО | 25  | Thermex | Электрические | 4670007717674 | THERMEX N 10 O       | 230.4  | 288    | in_stock | yes    | matched       | 21165 |
+| Full_pricelist ОСНОВНО | 26  | Thermex | Электрические | 4670007719555 | THERMEX N 10 U       | 230.4  | 288    | in_stock | yes    | matched       | 21166 |
+| Full_pricelist ОСНОВНО | 27  | Thermex | Электрические | 4670007717681 | THERMEX N 15 O       | 259.2  | 324    | in_stock | yes    | matched       | 21167 |
+| Full_pricelist ОСНОВНО | 28  | Thermex | Электрические | 4670007719562 | THERMEX N 15 U       | 259.2  | 324    | in_stock | yes    | matched       | 21168 |
+| Full_pricelist ОСНОВНО | 30  | Thermex | Электрические | 151 241       | THERMEX Mera 7 O     | 240    | 300    | in_stock | yes    | matched       | 17714 |
+| Full_pricelist ОСНОВНО | 31  | Thermex | Электрические | 151 242       | THERMEX Mera 7 U     | 240    | 300    | in_stock | yes    | matched       | 17884 |
+| Full_pricelist ОСНОВНО | 32  | Thermex | Электрические | 151 243       | THERMEX Mera 10 O    | 259.2  | 324    | in_stock | yes    | matched       | 17719 |
+| Full_pricelist ОСНОВНО | 33  | Thermex | Электрические | 151 244       | THERMEX Mera 10 U    | 259.2  | 324    | in_stock | yes    | matched       | 17718 |
+| Full_pricelist ОСНОВНО | 34  | Thermex | Электрические | 151 245       | THERMEX Mera 15 O    | 278.4  | 348    | in_stock | yes    | matched       | 17717 |
+| Full_pricelist ОСНОВНО | 37  | Thermex | Электрические | 4670033316032 | THERMEX Day 7 O      | 220.8  | 276    | in_stock | yes    | matched       | 21169 |
++------------------------+-----+---------+---------------+---------------+----------------------+--------+--------+----------+--------+---------------+-------+
+Next: run with --apply to update matched rows. Add --create-new only after reviewing create_candidate rows.
 
 ```
