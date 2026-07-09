@@ -306,6 +306,11 @@ Additional SEO quality rules:
 - For chimney parts, mention the smoke exhaust system context, compatibility by diameter/material when present in specs or name, and practical installation purpose.
 - content must contain 3-5 useful paragraphs and may include one <h2> plus one short <ul><li> block for practical advantages or use cases. Do not duplicate the technical characteristics table.
 - short_description must be a concise SEO preview, 160-230 characters when possible.
+- KOTLOV is the seller and marketplace. Never send the customer to suppliers, dealers, other sellers, showrooms or distributors.
+- Never write phrases like "обращайтесь к поставщикам", "у поставщиков", "у дилеров", "у продавцов", "поставщикам климатического оборудования".
+- Write in the store voice: "купить на KOTLOV", "заказать на KOTLOV", "интернет-магазин KOTLOV", "подобрать на KOTLOV".
+- For local SEO in content, use the exact placeholder "в %city%" when geography is needed. Do not replace %city% with a real city; the site renders it automatically.
+- Do not put "%city%" in short_description; use neutral Belarus wording there if needed.
 PROMPT;
 
         try {
@@ -357,9 +362,11 @@ PROMPT;
         }
 
         $short   = trim(strip_tags((string) ($data['short_description'] ?? '')));
+        $short   = $this->cleanupStoreVoice($short, false);
         $content = trim((string) ($data['content'] ?? ''));
         if ($content !== '') {
             $content = trim(strip_tags($content, '<p><ul><li><h2><h3><strong>'));
+            $content = $this->cleanupStoreVoice($content, true);
         }
 
         if ($short === '' && $content === '') {
@@ -370,6 +377,45 @@ PROMPT;
     }
 
     // ── Providers ─────────────────────────────────────────────────────────────────
+
+    /**
+     * Keep generated copy in KOTLOV's own store voice.
+     *
+     * Product pages must not redirect users to third-party suppliers. City SEO
+     * text is rendered later from ProductController's %city% placeholder.
+     */
+    private function cleanupStoreVoice(string $text, bool $allowCityPlaceholder): string
+    {
+        if ($text === '') {
+            return '';
+        }
+
+        $orderSentence = $allowCityPlaceholder
+            ? 'Заказать товар можно на KOTLOV в %city%.'
+            : 'Заказать товар можно на KOTLOV.';
+
+        $patterns = [
+            '~(?:для\s+)?приобретения\s+([^.!?]{0,120})\s+обращайтесь\s+к\s+поставщикам[^.!?]*[.!?]?~iu' => $orderSentence,
+            '~обращайтесь\s+к\s+(?:поставщикам|дилерам|продавцам|дистрибьюторам)[^.!?]*[.!?]?~iu' => $orderSentence,
+            '~у\s+поставщиков\s+климатического\s+оборудования~iu' => 'на KOTLOV',
+            '~у\s+(?:поставщиков|дилеров|продавцов|дистрибьюторов)~iu' => 'на KOTLOV',
+            '~через\s+(?:поставщиков|дилеров|продавцов|дистрибьюторов)~iu' => 'на KOTLOV',
+            '~поставщикам\s+климатического\s+оборудования~iu' => 'KOTLOV',
+        ];
+
+        foreach ($patterns as $pattern => $replacement) {
+            $text = preg_replace($pattern, $replacement, $text) ?? $text;
+        }
+
+        if (! $allowCityPlaceholder) {
+            $text = str_replace(['в %city%', '%city%'], 'в Беларуси', $text);
+        }
+
+        $text = preg_replace('/\s+([,.!?;:])/u', '$1', $text) ?? $text;
+        $text = preg_replace('/[ \t]{2,}/u', ' ', $text) ?? $text;
+
+        return trim($text);
+    }
 
     private function callAnthropic(string $prompt, int $maxTokens = 1024): ?string
     {
