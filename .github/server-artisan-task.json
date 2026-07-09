@@ -1,5 +1,5 @@
 {
-  "task": "ps-artisan",
-  "artisan_args": "",
+  "task": "artisan-dry-run",
+  "artisan_args": "supplier:enrich-ligmet-extra --base-url=https://kaminbel.by --source-url=/product/pechi-kaminy/kratki/,/product/kaminnye-topki/kratki/ --brand=Kratki --pages=20 --dry-run",
   "log_file": "storage/logs/server-artisan.log"
 }
