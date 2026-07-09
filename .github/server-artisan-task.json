@@ -1,5 +1,5 @@
 {
-  "task": "optimize-clear",
-  "artisan_args": "",
-  "log_file": "storage/logs/auto-varmega-low-attrs-fill.log"
+  "task": "artisan-background",
+  "artisan_args": "supplier:sync-rn-profi --apply --price-file=storage/app/supplier-cache/rn-profi-pricelist.xlsx --brand=Varmega --available-only --max-delivery-days=3 --varmega-official --varmega-probe-missing --varmega-probe-limit=0 --only-new-source-url-domain=varmega.ru --sync-retail-prices",
+  "log_file": "storage/logs/auto-varmega-source-url-repair.log"
 }
