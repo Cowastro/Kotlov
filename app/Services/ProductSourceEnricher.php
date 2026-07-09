@@ -2280,6 +2280,11 @@ class ProductSourceEnricher
 
     private function sanitizeAiHtml(string $html): string
     {
+        return $this->sanitizeDescriptionHtml($html);
+    }
+
+    public function sanitizeDescriptionHtml(string $html): string
+    {
         $html = $this->repairMojibake($this->sanitizeUtf8($html));
         $html = html_entity_decode($html, ENT_QUOTES | ENT_HTML5, 'UTF-8');
 
