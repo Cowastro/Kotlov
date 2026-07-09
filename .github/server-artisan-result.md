@@ -1,22 +1,27 @@
 # Server Artisan Result
 
-- Time: 2026-07-09 19:42:03 UTC
-- Task: `artisan-apply`
-- Artisan args: `supplier:sync-akvatermex --apply --available-only --only-linked --prefer-teplodvor-source --brand=Thermex,Edisson,Eurostar --limit=80`
+- Time: 2026-07-09 19:44:07 UTC
+- Task: `artisan-dry-run`
+- Artisan args: `supplier:enrich-source-products --supplier=akvatermex --domain=teplodvor.by --max-current-attrs=2 --replace-specs --min-specs-to-replace=4 --overwrite-images --skip-documents --limit=20`
 - Log file: `storage/logs/server-artisan.log`
 - Exit code: `0`
 
 ```text
-APPLY: Akvatermex price list will write changes.
-Downloading Akvatermex Google Sheet: https://docs.google.com/spreadsheets/d/19G0Mei9zkr8iFzTJeYKFHd4IYeIfJwH_7dDAYhTp5jk/export?format=xlsx
-+----------------+-------+
-| metric         | count |
-+----------------+-------+
-| matched        | 63    |
-| created        | 0     |
-| updated_retail | 0     |
-| skipped        | 17    |
-| errors         | 0     |
-+----------------+-------+
+DRY RUN: source enrichment preview only.
+Products with source URLs: 0 (processing 0, offset 0)
+
++------------------+-------+
+| metric           | count |
++------------------+-------+
+| processed        | 0     |
+| enriched         | 0     |
+| images_found     | 0     |
+| images_saved     | 0     |
+| specs_found      | 0     |
+| attributes_saved | 0     |
+| ai_done          | 0     |
+| skipped          | 0     |
+| errors           | 0     |
++------------------+-------+
 
 ```
