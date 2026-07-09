@@ -783,18 +783,29 @@ class SyncAkvatermexCommand extends Command
             return '';
         }
 
-        $matches = [];
+        $brandModelMatches = [];
         foreach ($index as $slug => $url) {
-            if (str_ends_with($slug, '-' . $modelSlug) || str_contains($slug, '-' . $brandModelSlug)) {
-                $matches[$slug] = $url;
-                if (count($matches) > 1) {
+            if (str_ends_with($slug, '-' . $brandModelSlug) || str_contains($slug, '-' . $brandModelSlug . '-')) {
+                $brandModelMatches[$slug] = $url;
+            }
+        }
+
+        if (count($brandModelMatches) === 1) {
+            return (string) reset($brandModelMatches);
+        }
+
+        $modelMatches = [];
+        foreach ($index as $slug => $url) {
+            if (str_ends_with($slug, '-' . $modelSlug)) {
+                $modelMatches[$slug] = $url;
+                if (count($modelMatches) > 1) {
                     return '';
                 }
             }
         }
 
-        if ($matches) {
-            return (string) reset($matches);
+        if ($modelMatches) {
+            return (string) reset($modelMatches);
         }
 
         return $this->findTeplodvorTokenMatch($index, $brandModelSlug);
