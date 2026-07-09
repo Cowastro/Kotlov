@@ -1,35 +1,12 @@
 # Server Artisan Result
 
-- Time: 2026-07-09 21:31:34 UTC
-- Task: `artisan-dry-run`
-- Artisan args: `products:sanitize-content-html --slug-like=truba-teplov-i-suhov-termo-tt-r-430-08-430-05-200-260-l250 --active-only --not-archived --extract-media --restore-teplov-suhov-media --show-samples=5 --limit=1`
+- Time: 2026-07-09 21:39:21 UTC
+- Task: `artisan-apply`
+- Artisan args: `products:sanitize-content-html --apply --slug-like=teplov-i-suhov --active-only --not-archived --extract-media --overwrite-media --restore-teplov-suhov-media --rewrite-seo --show-samples=10 --limit=0 --sleep=1000`
 - Log file: `storage/logs/server-artisan.log`
-- Exit code: `0`
+- Exit code: `255`
 
 ```text
-DRY RUN: database will not be changed.
-+---------------------+-------+
-| metric              | count |
-+---------------------+-------+
-| checked             | 1     |
-| changed             | 1     |
-| written             | 0     |
-| images_removed      | 0     |
-| styles_removed      | 0     |
-| bad_blocks_removed  | 0     |
-| videos_extracted    | 1     |
-| documents_extracted | 1     |
-| seo_rewritten       | 0     |
-+---------------------+-------+
-+------+------------+----------------+-------------------------------------------------------------------+
-| ID   | SKU        | Brand          | Product                                                           |
-+------+------------+----------------+-------------------------------------------------------------------+
-| 9044 | PS-009.044 | Теплов и Сухов | Труба Теплов и Сухов термо ТТ-Р 430, 0.8/430, 0.5, Ø 200/260 L250 |
-+------+------------+----------------+-------------------------------------------------------------------+
-+------+------------+------------------------------------------------------------+-----------------------------------------------------------------------------------+----------------------------------------------------------+-----------+
-| ID   | SKU        | Slug                                                       | Video                                                                             | Documents                                                | Raw links |
-+------+------------+------------------------------------------------------------+-----------------------------------------------------------------------------------+----------------------------------------------------------+-----------+
-| 9044 | PS-009.044 | truba-teplov-i-suhov-termo-tt-r-430-08-430-05-200-260-l250 | https://www.youtube.com/embed/pUJ4DDasBw0?list=PLAhMCOyBsBHom4fUsCZqCIEQ9zqZLy2gn | https://admin.kotlov.by/downloads/catalogue_TIS_2025.pdf | -         |
-+------+------------+------------------------------------------------------------+-----------------------------------------------------------------------------------+----------------------------------------------------------+-----------+
+client_loop: send disconnect: Broken pipe
 
 ```
