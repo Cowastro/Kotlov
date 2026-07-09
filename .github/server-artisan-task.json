@@ -1,6 +1,6 @@
 {
-  "task": "optimize-clear",
-  "artisan_args": "",
+  "task": "artisan-apply",
+  "artisan_args": "products:sanitize-content-html --apply --brand=Greolit --active-only --not-archived --limit=0",
   "log_file": "storage/logs/server-artisan.log",
-  "run_id": "sanitize-content-optimize-clear"
+  "run_id": "sanitize-content-greolit-apply"
 }
