@@ -30,6 +30,7 @@ class SanitizeProductContentHtmlCommand extends Command
         {--rewrite-seo : Regenerate short_description, content and meta_description with AI}
         {--show-samples=0 : Show first N rows with detected media links}
         {--show-content-samples=0 : Show first N source content snippets for audit}
+        {--offset=0 : Rows to skip after filters}
         {--sleep=300 : Delay between AI requests, ms}
         {--limit=100 : Rows to process, 0 means all}';
 
@@ -45,6 +46,7 @@ class SanitizeProductContentHtmlCommand extends Command
         $rewriteSeo = (bool) $this->option('rewrite-seo');
         $showSamples = max(0, (int) $this->option('show-samples'));
         $showContentSamples = max(0, (int) $this->option('show-content-samples'));
+        $offset = max(0, (int) $this->option('offset'));
         $sleep = max(0, (int) $this->option('sleep'));
 
         if ($apply && ! $this->hasScope()) {
@@ -137,6 +139,10 @@ class SanitizeProductContentHtmlCommand extends Command
 
         if ($createdTo = trim((string) $this->option('created-to'))) {
             $query->where('p.created_at', '<=', $createdTo);
+        }
+
+        if ($offset > 0) {
+            $query->offset($offset);
         }
 
         if ($limit > 0) {
