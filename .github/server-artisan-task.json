@@ -1,0 +1,5 @@
+{
+  "task": "ps-artisan",
+  "artisan_args": "",
+  "log_file": "storage/logs/server-artisan.log"
+}

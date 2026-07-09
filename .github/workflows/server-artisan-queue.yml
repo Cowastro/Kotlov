@@ -1,0 +1,166 @@
+name: Server Artisan Queue
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - .github/server-artisan-task.json
+
+permissions:
+  contents: write
+
+concurrency:
+  group: server-artisan-queue
+  cancel-in-progress: false
+
+jobs:
+  run:
+    name: Run Queued Server Artisan Task
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Resolve task
+        id: task
+        run: |
+          set -euo pipefail
+
+          task="$(jq -r '.task // ""' .github/server-artisan-task.json)"
+          artisan_args="$(jq -r '.artisan_args // ""' .github/server-artisan-task.json)"
+          log_file="$(jq -r '.log_file // "storage/logs/server-artisan.log"' .github/server-artisan-task.json)"
+
+          case "$task" in
+            optimize-clear|artisan-dry-run|artisan-apply|artisan-background|tail-log|ps-artisan) ;;
+            *) echo "::error::Unsupported task: $task"; exit 1 ;;
+          esac
+
+          if [[ "$artisan_args" == *$'\n'* || "$log_file" == *$'\n'* ]]; then
+            echo "::error::Inputs must be single-line."
+            exit 1
+          fi
+
+          if [[ "$artisan_args" =~ [\'\"\`\;\|\&\<\>\\] || "$log_file" =~ [\'\"\`\;\|\&\<\>\\] ]]; then
+            echo "::error::Shell control characters are not allowed in inputs."
+            exit 1
+          fi
+
+          if [[ "$task" == "artisan-dry-run" && "$artisan_args" == *"--apply"* ]]; then
+            echo "::error::artisan-dry-run cannot contain --apply."
+            exit 1
+          fi
+
+          if [[ "$task" == artisan-* && -z "${artisan_args// }" ]]; then
+            echo "::error::artisan_args is required for artisan tasks."
+            exit 1
+          fi
+
+          if [[ "$task" == "tail-log" && "$log_file" != storage/logs/* ]]; then
+            echo "::error::tail-log is limited to storage/logs/*."
+            exit 1
+          fi
+
+          {
+            echo "TASK=$task"
+            echo "ARTISAN_ARGS=$artisan_args"
+            echo "LOG_FILE=$log_file"
+          } >> "$GITHUB_ENV"
+
+      - name: Configure SSH
+        env:
+          SERVER_HOST: ${{ secrets.SERVER_HOST }}
+          SERVER_PORT: ${{ secrets.SERVER_PORT }}
+          SERVER_SSH_KEY: ${{ secrets.SERVER_SSH_KEY }}
+        run: |
+          set -euo pipefail
+          test -n "$SERVER_HOST"
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+          printf '%s\n' "$SERVER_SSH_KEY" > ~/.ssh/server_key
+          chmod 600 ~/.ssh/server_key
+          ssh-keyscan -p "${SERVER_PORT:-22}" "$SERVER_HOST" >> ~/.ssh/known_hosts
+
+      - name: Run remote task
+        id: remote
+        env:
+          SERVER_HOST: ${{ secrets.SERVER_HOST }}
+          SERVER_PORT: ${{ secrets.SERVER_PORT }}
+          SERVER_USER: ${{ secrets.SERVER_USER }}
+          SERVER_PATH: ${{ secrets.SERVER_PATH }}
+          PHP_BIN: ${{ secrets.SERVER_PHP_BIN }}
+        run: |
+          set -euo pipefail
+
+          port="${SERVER_PORT:-22}"
+          php_bin="${PHP_BIN:-/opt/alt/php83/usr/bin/php}"
+          server_path="${SERVER_PATH:-/var/www/h209767/data/www/new.kotlov.by}"
+          output_file="$RUNNER_TEMP/server-artisan-output.txt"
+
+          remote_script=$(cat <<'SCRIPT'
+          set -euo pipefail
+          cd "$SERVER_PATH"
+
+          case "$TASK" in
+            optimize-clear)
+              git pull
+              "$PHP_BIN" artisan optimize:clear
+              ;;
+            artisan-dry-run)
+              "$PHP_BIN" artisan $ARTISAN_ARGS
+              ;;
+            artisan-apply)
+              "$PHP_BIN" artisan $ARTISAN_ARGS
+              ;;
+            artisan-background)
+              mkdir -p "$(dirname "$LOG_FILE")"
+              nohup "$PHP_BIN" artisan $ARTISAN_ARGS > "$LOG_FILE" 2>&1 &
+              echo "started pid=$!"
+              ;;
+            tail-log)
+              tail -n 160 "$LOG_FILE"
+              ;;
+            ps-artisan)
+              ps -ef | grep artisan | grep -v grep || true
+              ;;
+          esac
+          SCRIPT
+          )
+
+          set +e
+          ssh -i ~/.ssh/server_key -p "$port" "$SERVER_USER@$SERVER_HOST" \
+            "TASK='$TASK' ARTISAN_ARGS='$ARTISAN_ARGS' LOG_FILE='$LOG_FILE' SERVER_PATH='$server_path' PHP_BIN='$php_bin' bash -s" \
+            <<< "$remote_script" 2>&1 | tee "$output_file"
+          status=${PIPESTATUS[0]}
+          set -e
+
+          {
+            echo "# Server Artisan Result"
+            echo
+            echo "- Time: $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
+            echo "- Task: \`$TASK\`"
+            echo "- Artisan args: \`$ARTISAN_ARGS\`"
+            echo "- Log file: \`$LOG_FILE\`"
+            echo "- Exit code: \`$status\`"
+            echo
+            echo '```text'
+            tail -c 60000 "$output_file"
+            echo
+            echo '```'
+          } > .github/server-artisan-result.md
+
+          exit "$status"
+
+      - name: Commit result
+        if: always()
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add .github/server-artisan-result.md
+          git commit -m "Update server artisan result [skip ci]" || exit 0
+          git push
