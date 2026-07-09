@@ -1,6 +1,6 @@
 {
-  "task": "artisan-dry-run",
-  "artisan_args": "products:audit-content-health --supplier=akvatermex --active-only --not-archived --with-source-only --max-attrs=2 --limit=80",
+  "task": "optimize-clear",
+  "artisan_args": "optimize:clear",
   "log_file": "storage/logs/server-artisan.log",
-  "run_id": "akvatermex-post-source-sync-health-audit"
+  "run_id": "deploy-akvatermex-teplodvor-token-match"
 }

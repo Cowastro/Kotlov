@@ -793,7 +793,57 @@ class SyncAkvatermexCommand extends Command
             }
         }
 
+        if ($matches) {
+            return (string) reset($matches);
+        }
+
+        return $this->findTeplodvorTokenMatch($index, $brandModelSlug);
+    }
+
+    private function findTeplodvorTokenMatch(array $index, string $brandModelSlug): string
+    {
+        $tokens = $this->slugTokens($brandModelSlug);
+        if (count($tokens) < 3) {
+            return '';
+        }
+
+        $brandToken = $tokens[0] ?? '';
+        if ($brandToken === '') {
+            return '';
+        }
+
+        $matches = [];
+        foreach ($index as $slug => $url) {
+            $slugTokens = array_fill_keys($this->slugTokens((string) $slug), true);
+            if (! isset($slugTokens[$brandToken])) {
+                continue;
+            }
+
+            $missing = array_values(array_filter($tokens, fn (string $token): bool => ! isset($slugTokens[$token])));
+            if ($missing !== []) {
+                continue;
+            }
+
+            $matches[(string) $slug] = (string) $url;
+            if (count($matches) > 1) {
+                return '';
+            }
+        }
+
         return $matches ? (string) reset($matches) : '';
+    }
+
+    /**
+     * @return string[]
+     */
+    private function slugTokens(string $slug): array
+    {
+        $tokens = preg_split('/-+/u', trim(mb_strtolower($slug), '-')) ?: [];
+
+        return array_values(array_unique(array_filter(
+            $tokens,
+            fn (string $token): bool => $token !== '' && ! in_array($token, ['vodonagrevatel', 'konvektor', 'gazovyy', 'elektricheskiy', 'kotel'], true)
+        )));
     }
 
     /**
