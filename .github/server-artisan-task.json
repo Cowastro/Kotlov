@@ -1,6 +1,6 @@
 {
   "task": "artisan-dry-run",
-  "artisan_args": "products:audit-content-health --supplier=akvatermex --active-only --not-archived --with-source-only --max-attrs=2 --limit=80",
+  "artisan_args": "supplier:enrich-source-products --supplier=akvatermex --domain=thermex.by --force --replace-specs --overwrite-images --skip-documents --limit=5",
   "log_file": "storage/logs/server-artisan.log",
-  "run_id": "akvatermex-health-audit"
+  "run_id": "akvatermex-thermex-source-dry-run"
 }
