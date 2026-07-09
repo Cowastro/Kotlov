@@ -1,5 +1,5 @@
 {
-  "task": "ps-artisan",
+  "task": "tail-log",
   "artisan_args": "",
   "log_file": "storage/logs/auto-varmega-low-attrs-fill.log"
 }
