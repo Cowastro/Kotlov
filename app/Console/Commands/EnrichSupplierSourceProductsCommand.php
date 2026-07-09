@@ -14,6 +14,7 @@ class EnrichSupplierSourceProductsCommand extends Command
         {--brand= : Brand name filter}
         {--domain= : Source URL domain filter, for example varmega.ru}
         {--product= : Process one product ID}
+        {--products= : Process comma-separated product IDs}
         {--created-today : Process only products created today}
         {--created-from= : Process only products created from this date/time}
         {--created-to= : Process only products created before this date/time}
@@ -80,6 +81,11 @@ class EnrichSupplierSourceProductsCommand extends Command
 
         if ($productId = (int) $this->option('product')) {
             $query->where('p.id', $productId);
+        }
+
+        $productIds = $this->productIds((string) $this->option('products'));
+        if ($productIds !== []) {
+            $query->whereIn('p.id', $productIds);
         }
 
         $maxCurrentAttrs = trim((string) $this->option('max-current-attrs'));
@@ -263,5 +269,25 @@ class EnrichSupplierSourceProductsCommand extends Command
             'products',
             'shop',
         ], true);
+    }
+
+    /**
+     * @return int[]
+     */
+    private function productIds(string $value): array
+    {
+        if (trim($value) === '') {
+            return [];
+        }
+
+        $ids = [];
+        foreach (explode(',', $value) as $part) {
+            $id = (int) trim($part);
+            if ($id > 0) {
+                $ids[] = $id;
+            }
+        }
+
+        return array_values(array_unique($ids));
     }
 }
