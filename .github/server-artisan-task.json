@@ -2,5 +2,5 @@
   "task": "optimize-clear",
   "artisan_args": "",
   "log_file": "storage/logs/server-artisan.log",
-  "run_id": "deploy-missing-media-filter"
+  "run_id": "deploy-video-preview-seo-prompt"
 }
