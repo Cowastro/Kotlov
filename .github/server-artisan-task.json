@@ -1,6 +1,6 @@
 {
-  "task": "optimize-clear",
-  "artisan_args": "",
+  "task": "artisan-apply",
+  "artisan_args": "products:sanitize-content-html --apply --slug-like=teplov-i-suhov --active-only --not-archived --extract-media --overwrite-media --rewrite-seo --show-samples=5 --limit=5 --sleep=1000",
   "log_file": "storage/logs/server-artisan.log",
-  "run_id": "deploy-legacy-content-media-cleanup"
+  "run_id": "teplov-suhov-cleanup-apply-smoke"
 }
