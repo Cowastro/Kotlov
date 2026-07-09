@@ -1,33 +1,33 @@
 # Server Artisan Result
 
-- Time: 2026-07-09 18:06:12 UTC
-- Task: `optimize-clear`
-- Artisan args: ``
+- Time: 2026-07-09 18:07:47 UTC
+- Task: `artisan-dry-run`
+- Artisan args: `products:sanitize-content-html --with-source-only --extract-media --active-only --not-archived --limit=0`
 - Log file: `storage/logs/server-artisan.log`
 - Exit code: `0`
 
 ```text
-From https://github.com/Cowastro/Kotlov
-   9933a36..b23e04d  main       -> origin/main
-Updating 9933a36..b23e04d
-Fast-forward
- .github/server-artisan-result.md                   | 174 +++++++++--------
- .github/server-artisan-task.json                   |   2 +-
- .../Commands/SanitizeProductContentHtmlCommand.php | 206 ++++++++++++++++++++-
- public/assets/css/kotlov.css                       |  23 +++
- resources/views/pages/product.blade.php            |  40 ++++
- 5 files changed, 363 insertions(+), 82 deletions(-)
-
-   INFO  Clearing cached bootstrap files.  
-
-  config ......................................................... 0.89ms DONE
-  cache .......................................................... 3.22ms DONE
-  compiled ....................................................... 0.59ms DONE
-  events ......................................................... 0.43ms DONE
-  routes ......................................................... 0.40ms DONE
-  views .......................................................... 3.31ms DONE
-  blade-icons .................................................... 0.18ms DONE
-  filament ....................................................... 0.73ms DONE
-
+DRY RUN: database will not be changed.
++---------------------+-------+
+| metric              | count |
++---------------------+-------+
+| checked             | 3136  |
+| changed             | 5     |
+| written             | 0     |
+| images_removed      | 0     |
+| styles_removed      | 0     |
+| bad_blocks_removed  | 0     |
+| videos_extracted    | 0     |
+| documents_extracted | 0     |
++---------------------+-------+
++-------+---------------+----------+------------------------------------------------+
+| ID    | SKU           | Brand    | Product                                        |
++-------+---------------+----------+------------------------------------------------+
+| 17041 | KOTLOV-004763 | Panadero | Panadero Камин 101-S Ecodesign                 |
+| 20754 | KOTLOV-005920 | СТЭН     | СТЭН Заглушка свободного патрубка обратки G 1¼ |
+| 20755 | KOTLOV-005921 | СТЭН     | СТЭН Заглушка свободного патрубка обратки G 1½ |
+| 21322 | KOTLOV-006488 | Thermex  | Фильтр THERMEX ION SL 5"                       |
+| 21323 | KOTLOV-006489 | Thermex  | Фильтр THERMEX ION SL 10"                      |
++-------+---------------+----------+------------------------------------------------+
 
 ```
