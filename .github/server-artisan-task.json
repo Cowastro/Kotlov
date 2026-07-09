@@ -1,5 +1,5 @@
 {
-  "task": "artisan-dry-run",
-  "artisan_args": "products:audit-content-health --active-only --not-archived --with-source-only --max-attrs=2 --limit=120 --csv=storage/app/reports/product-content-health/with-source.csv",
-  "log_file": "storage/logs/server-artisan.log"
+  "task": "artisan-background",
+  "artisan_args": "supplier:enrich-source-products --supplier=rn-profi --brand=Varmega --apply --force --replace-specs --min-specs-to-replace=3 --overwrite-images --clear-documents --skip-documents --max-current-attrs=2 --limit=0 --sleep=1000",
+  "log_file": "storage/logs/auto-varmega-low-attrs-fill.log"
 }
