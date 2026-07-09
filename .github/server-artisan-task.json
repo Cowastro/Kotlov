@@ -1,6 +1,6 @@
 {
-  "task": "artisan-dry-run",
-  "artisan_args": "products:sanitize-content-html --slug-like=truba-teplov-i-suhov-termo-tt-r-430-08-430-05-200-260-l250 --active-only --not-archived --extract-media --restore-teplov-suhov-media --show-samples=5 --limit=1",
+  "task": "artisan-apply",
+  "artisan_args": "products:sanitize-content-html --apply --slug-like=teplov-i-suhov --active-only --not-archived --extract-media --overwrite-media --restore-teplov-suhov-media --rewrite-seo --show-samples=10 --limit=0 --sleep=1000",
   "log_file": "storage/logs/server-artisan.log",
-  "run_id": "teplov-suhov-example-restore-dry-run"
+  "run_id": "teplov-suhov-full-media-seo-cleanup"
 }
