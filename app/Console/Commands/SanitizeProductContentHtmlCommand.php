@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Services\AiContentEnricher;
 use App\Services\ProductSourceEnricher;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
@@ -15,6 +16,7 @@ class SanitizeProductContentHtmlCommand extends Command
         {--brand= : Brand name or slug}
         {--supplier= : Supplier code filter}
         {--sku= : Single product SKU}
+        {--slug-like= : Product slug substring filter}
         {--id=* : Product ID filter, can be repeated}
         {--active-only : Only active products}
         {--not-archived : Only not archived products}
@@ -23,26 +25,50 @@ class SanitizeProductContentHtmlCommand extends Command
         {--created-to= : Only products created at or before this date}
         {--extract-media : Move video and document links from content to product fields}
         {--overwrite-media : Replace existing video/documents while extracting media}
+        {--rewrite-seo : Regenerate short_description, content and meta_description with AI}
+        {--sleep=300 : Delay between AI requests, ms}
         {--limit=100 : Rows to process, 0 means all}';
 
     protected $description = 'Sanitize stored product HTML descriptions and remove foreign markup, images and inline styles.';
 
-    public function handle(ProductSourceEnricher $enricher): int
+    public function handle(ProductSourceEnricher $enricher, AiContentEnricher $ai): int
     {
         $apply = (bool) $this->option('apply');
         $limit = max(0, (int) $this->option('limit'));
         $extractMedia = (bool) $this->option('extract-media');
         $overwriteMedia = (bool) $this->option('overwrite-media');
+        $rewriteSeo = (bool) $this->option('rewrite-seo');
+        $sleep = max(0, (int) $this->option('sleep'));
 
         if ($apply && ! $this->hasScope()) {
-            $this->error('Refusing broad apply. Add --brand, --supplier, --sku, --id, --with-source-only, --created-from or --created-to.');
+            $this->error('Refusing broad apply. Add --brand, --supplier, --sku, --slug-like, --id, --with-source-only, --created-from or --created-to.');
+
+            return self::FAILURE;
+        }
+
+        if ($rewriteSeo && ! $ai->isAvailable()) {
+            $this->error('No AI provider configured for --rewrite-seo.');
 
             return self::FAILURE;
         }
 
         $query = DB::table('products as p')
             ->leftJoin('brands as b', 'b.id', '=', 'p.brand_id')
-            ->select('p.id', 'p.sku', 'p.name', 'p.content', 'p.video_url', 'p.documents', 'b.name as brand')
+            ->leftJoin('categories as c', 'c.id', '=', 'p.category_id')
+            ->select(
+                'p.id',
+                'p.sku',
+                'p.slug',
+                'p.name',
+                'p.content',
+                'p.short_description',
+                'p.meta_description',
+                'p.specs',
+                'p.video_url',
+                'p.documents',
+                'b.name as brand',
+                'c.name as category'
+            )
             ->whereNotNull('p.content')
             ->where('p.content', '<>', '')
             ->orderBy('p.id');
@@ -69,6 +95,10 @@ class SanitizeProductContentHtmlCommand extends Command
 
         if ($sku = trim((string) $this->option('sku'))) {
             $query->where('p.sku', $sku);
+        }
+
+        if ($slugLike = trim((string) $this->option('slug-like'))) {
+            $query->where('p.slug', 'like', '%' . $slugLike . '%');
         }
 
         $ids = array_values(array_filter(array_map('intval', (array) $this->option('id'))));
@@ -106,6 +136,7 @@ class SanitizeProductContentHtmlCommand extends Command
             'bad_blocks_removed' => 0,
             'videos_extracted' => 0,
             'documents_extracted' => 0,
+            'seo_rewritten' => 0,
         ];
         $changedRows = [];
 
@@ -116,6 +147,7 @@ class SanitizeProductContentHtmlCommand extends Command
             $sanitized = $enricher->sanitizeDescriptionHtml($original);
             $media = $extractMedia ? $this->extractMediaLinks($original) : ['video_url' => '', 'documents' => []];
             $updates = [];
+            $rewroteSeo = false;
 
             if (trim($original) !== trim($sanitized)) {
                 $updates['content'] = $sanitized;
@@ -137,7 +169,32 @@ class SanitizeProductContentHtmlCommand extends Command
             }
 
             if ($updates === []) {
+                if ($rewriteSeo) {
+                    $updates = $this->seoUpdates($ai, $row);
+                    $rewroteSeo = $updates !== [];
+                    if ($updates !== [] && $sleep > 0) {
+                        usleep($sleep * 1000);
+                    }
+                }
+
+                if ($updates === []) {
+                    continue;
+                }
+            } elseif ($rewriteSeo) {
+                $seoUpdates = $this->seoUpdates($ai, $row);
+                $updates = array_merge($updates, $seoUpdates);
+                $rewroteSeo = $seoUpdates !== [];
+                if ($sleep > 0) {
+                    usleep($sleep * 1000);
+                }
+            }
+
+            if ($updates === []) {
                 continue;
+            }
+
+            if ($rewroteSeo) {
+                $stats['seo_rewritten']++;
             }
 
             $stats['changed']++;
@@ -171,6 +228,73 @@ class SanitizeProductContentHtmlCommand extends Command
         return self::SUCCESS;
     }
 
+    /**
+     * @return array<string,mixed>
+     */
+    private function seoUpdates(AiContentEnricher $ai, object $row): array
+    {
+        $seo = $ai->generateSeo(
+            (string) $row->name,
+            (string) ($row->brand ?? ''),
+            (string) ($row->category ?? ''),
+            $this->specsForProduct((int) $row->id, $row->specs)
+        );
+
+        if (! $seo) {
+            return [];
+        }
+
+        $updates = [];
+        if (trim((string) ($seo['content'] ?? '')) !== '') {
+            $updates['content'] = (string) $seo['content'];
+        }
+        if (trim((string) ($seo['short'] ?? '')) !== '') {
+            $updates['short_description'] = (string) $seo['short'];
+            $updates['meta_description'] = Str::limit(strip_tags((string) $seo['short']), 250, '');
+        }
+
+        return $updates;
+    }
+
+    /**
+     * @return array<string,string>
+     */
+    private function specsForProduct(int $productId, mixed $productSpecs): array
+    {
+        $decoded = is_string($productSpecs) ? json_decode($productSpecs, true) : $productSpecs;
+        if (is_array($decoded) && $decoded !== []) {
+            $flat = [];
+            foreach ($decoded as $key => $value) {
+                if (is_array($value)) {
+                    $name = trim((string) ($value['name'] ?? $value['key'] ?? $key));
+                    $val = trim((string) ($value['value'] ?? ''));
+                    $unit = trim((string) ($value['unit'] ?? ''));
+                    if ($name !== '' && $val !== '') {
+                        $flat[$name] = trim($val . ' ' . $unit);
+                    }
+                } elseif (is_scalar($value) && trim((string) $value) !== '') {
+                    $flat[(string) $key] = (string) $value;
+                }
+            }
+
+            if ($flat !== []) {
+                return $flat;
+            }
+        }
+
+        return DB::table('product_attribute_values as pav')
+            ->join('attributes as a', 'a.id', '=', 'pav.attribute_id')
+            ->where('pav.product_id', $productId)
+            ->whereNotNull('pav.value')
+            ->where('pav.value', '<>', '')
+            ->orderBy('pav.sort_order')
+            ->limit(40)
+            ->pluck('pav.value', 'a.name')
+            ->map(fn ($value): string => trim((string) $value))
+            ->filter()
+            ->all();
+    }
+
     private function countMatches(string $pattern, string $value): int
     {
         return preg_match_all($pattern, $value) ?: 0;
@@ -181,6 +305,7 @@ class SanitizeProductContentHtmlCommand extends Command
         return trim((string) $this->option('brand')) !== ''
             || trim((string) $this->option('supplier')) !== ''
             || trim((string) $this->option('sku')) !== ''
+            || trim((string) $this->option('slug-like')) !== ''
             || trim((string) $this->option('created-from')) !== ''
             || trim((string) $this->option('created-to')) !== ''
             || (bool) $this->option('with-source-only')
