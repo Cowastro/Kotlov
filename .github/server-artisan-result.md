@@ -1,6 +1,6 @@
 # Server Artisan Result
 
-- Time: 2026-07-09 17:16:23 UTC
+- Time: 2026-07-09 17:18:13 UTC
 - Task: `tail-log`
 - Artisan args: ``
 - Log file: `storage/logs/maitek-greolit-resanitize.log`
@@ -47,5 +47,36 @@ Products with source URLs: 18 (processing 18, offset 0, --force)
   found: images=4 specs=2 service=1 docs=1 video=0 updated=images,specs,service_info,documents,content,short_description,meta_description,updated_at
 [13/18] #20771 Greolit Котел Greolit PROFI 60 кВт с автоматикой Greolit Котел Greolit PROFI 60 кВт с автоматикой
   source: https://greolit.by/product/tverdotoplivnyj-kotel-profi-50-250-kvt/
+  found: images=4 specs=2 service=1 docs=1 video=0 updated=images,specs,service_info,documents,content,short_description,meta_description,updated_at
+[14/18] #20772 Greolit Котел Greolit PROFI 70 кВт с автоматикой Greolit Котел Greolit PROFI 70 кВт с автоматикой
+  source: https://greolit.by/product/tverdotoplivnyj-kotel-profi-50-250-kvt/
+  found: images=4 specs=2 service=1 docs=1 video=0 updated=images,specs,service_info,documents,content,short_description,meta_description,updated_at
+[15/18] #20773 Greolit Котел Greolit PROFI 95 кВт с автоматикой Greolit Котел Greolit PROFI 95 кВт с автоматикой
+  source: https://greolit.by/product/tverdotoplivnyj-kotel-profi-50-250-kvt/
+  found: images=4 specs=2 service=1 docs=1 video=0 updated=images,specs,service_info,documents,content,short_description,meta_description,updated_at
+[16/18] #20774 Greolit Котел Greolit PROFI 99 кВт с автоматикой Greolit Котел Greolit PROFI 99 кВт с автоматикой
+  source: https://greolit.by/product/tverdotoplivnyj-kotel-profi-50-250-kvt/
+  found: images=4 specs=2 service=1 docs=1 video=0 updated=images,specs,service_info,documents,content,short_description,meta_description,updated_at
+[17/18] #20775 Greolit Котел Greolit PROFI 250 кВт без автоматики Greolit Котел Greolit PROFI 250 кВт без автоматики
+  source: https://greolit.by/product/tverdotoplivnyj-kotel-profi-50-250-kvt/
+  found: images=4 specs=2 service=1 docs=1 video=0 updated=images,specs,service_info,documents,content,short_description,meta_description,updated_at
+[18/18] #20776 Greolit Котел Greolit PROFI 250 кВт Greolit Котел Greolit PROFI 250 кВт
+  source: https://greolit.by/product/tverdotoplivnyj-kotel-profi-50-250-kvt/
+  found: images=4 specs=1 service=1 docs=1 video=0 updated=images,service_info,documents,content,short_description,meta_description,updated_at
+  warning: attributes: only 1 specs found; replacement skipped, minimum is 2
+
++------------------+-------+
+| metric           | count |
++------------------+-------+
+| processed        | 18    |
+| enriched         | 18    |
+| images_found     | 72    |
+| images_saved     | 54    |
+| specs_found      | 35    |
+| attributes_saved | 34    |
+| ai_done          | 18    |
+| skipped          | 0     |
+| errors           | 0     |
++------------------+-------+
 
 ```
