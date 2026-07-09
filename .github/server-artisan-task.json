@@ -1,6 +1,6 @@
 {
   "task": "artisan-apply",
-  "artisan_args": "products:sanitize-content-html --apply --slug-like=teplov-i-suhov --active-only --not-archived --rewrite-seo --offset=50 --limit=50 --sleep=500",
+  "artisan_args": "products:sanitize-content-html --apply --slug-like=teplov-i-suhov --active-only --not-archived --rewrite-seo --offset=100 --limit=50 --sleep=500",
   "log_file": "storage/logs/server-artisan.log",
-  "run_id": "teplov-suhov-rich-seo-050-099"
+  "run_id": "teplov-suhov-rich-seo-100-149"
 }
