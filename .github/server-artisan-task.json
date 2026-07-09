@@ -1,6 +1,6 @@
 {
-  "task": "artisan-apply",
-  "artisan_args": "products:sanitize-content-html --apply --slug-like=teplov-i-suhov --active-only --not-archived --rewrite-seo --offset=100 --limit=50 --sleep=500",
+  "task": "optimize-clear",
+  "artisan_args": "",
   "log_file": "storage/logs/server-artisan.log",
-  "run_id": "teplov-suhov-rich-seo-100-149"
+  "run_id": "deploy-store-voice-ai-filter"
 }
