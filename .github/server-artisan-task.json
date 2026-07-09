@@ -1,6 +1,6 @@
 {
-  "task": "artisan-dry-run",
-  "artisan_args": "supplier:enrich-100kaminov --brand=Blist --source-url=/g768157-pechi-kaminy --pages=3 --limit=30 --dry-run",
+  "task": "artisan-apply",
+  "artisan_args": "supplier:enrich-100kaminov --brand=Blist --source-url=/g768157-pechi-kaminy --pages=3 --limit=30 --apply",
   "log_file": "storage/logs/server-artisan.log",
-  "run_id": "ligmet-blist-pechi-kaminy-after-deploy-dry-run"
+  "run_id": "ligmet-blist-pechi-kaminy-safe-apply"
 }
