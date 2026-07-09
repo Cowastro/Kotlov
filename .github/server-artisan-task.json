@@ -1,6 +1,6 @@
 {
-  "task": "artisan-apply",
-  "artisan_args": "products:sanitize-content-html --apply --slug-like=teplov-i-suhov --active-only --not-archived --extract-media --overwrite-media --restore-teplov-suhov-media --missing-media-only --show-samples=10 --limit=0",
+  "task": "optimize-clear",
+  "artisan_args": "",
   "log_file": "storage/logs/server-artisan.log",
-  "run_id": "teplov-suhov-fill-remaining-media"
+  "run_id": "deploy-sanitize-offset"
 }
