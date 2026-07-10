@@ -1,6 +1,6 @@
 # Server Artisan Result
 
-- Time: 2026-07-10 21:40:18 UTC
+- Time: 2026-07-10 21:45:41 UTC
 - Task: `optimize-clear`
 - Artisan args: ``
 - Log file: `storage/logs/server-artisan-deploy.log`
@@ -8,24 +8,24 @@
 
 ```text
 From https://github.com/Cowastro/Kotlov
-   2d7918b..ec4643f  main       -> origin/main
-Updating 2d7918b..ec4643f
+   ec4643f..4ff1b04  main       -> origin/main
+Updating ec4643f..4ff1b04
 Fast-forward
- .github/server-artisan-result.md         | 30 ++++++++++++++++--------------
- .github/server-artisan-task.json         |  2 +-
- app/Http/Controllers/BrandController.php | 26 ++++++++++++++++++--------
- 3 files changed, 35 insertions(+), 23 deletions(-)
+ .github/server-artisan-result.md | 32 +++++++++++++++-----------------
+ .github/server-artisan-task.json |  2 +-
+ public/assets/css/kotlov.css     | 31 +++++++++++++++++++++++--------
+ 3 files changed, 39 insertions(+), 26 deletions(-)
 
    INFO  Clearing cached bootstrap files.  
 
-  config ......................................................... 0.87ms DONE
-  cache .......................................................... 2.82ms DONE
-  compiled ....................................................... 0.58ms DONE
+  config ......................................................... 0.96ms DONE
+  cache .......................................................... 3.24ms DONE
+  compiled ....................................................... 0.63ms DONE
   events ......................................................... 0.44ms DONE
-  routes ......................................................... 0.40ms DONE
-  views .......................................................... 1.48ms DONE
+  routes ......................................................... 0.39ms DONE
+  views .......................................................... 1.43ms DONE
   blade-icons .................................................... 0.17ms DONE
-  filament ....................................................... 0.72ms DONE
+  filament ....................................................... 0.73ms DONE
 
 
 ```
