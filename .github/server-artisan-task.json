@@ -2,5 +2,5 @@
   "task": "tail-log",
   "artisan_args": "",
   "log_file": "storage/logs/thermex-city-seo-standard.log",
-  "run_id": "tail-thermex-city-seo-standard-4"
+  "run_id": "tail-thermex-city-seo-standard-5"
 }
