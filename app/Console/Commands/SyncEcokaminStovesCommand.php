@@ -505,6 +505,10 @@ class SyncEcokaminStovesCommand extends Command
             ? (is_string($product->short_description) ? trim($product->short_description) : null)
             : null;
 
+        $existingVideoUrl = $product
+            ? (is_string($product->video_url) ? trim($product->video_url) : null)
+            : null;
+
         $existingSpecs = $product
             ? (is_string($product->specs) ? json_decode($product->specs, true) : null)
             : null;
@@ -532,7 +536,7 @@ class SyncEcokaminStovesCommand extends Command
                                         ? json_encode($existingSpecs, JSON_UNESCAPED_UNICODE)
                                         : json_encode($attrs, JSON_UNESCAPED_UNICODE),
             'service_info'      => json_encode(self::SERVICE_INFO, JSON_UNESCAPED_UNICODE),
-            'video_url'         => null,
+            'video_url'         => ($existingVideoUrl !== null && $existingVideoUrl !== '') ? $existingVideoUrl : null,
             'weight'            => $this->parseNumber($attrs['Вес'] ?? $attrs['Масса'] ?? null),
             'unit'              => 'шт',
             'warranty'          => $attrs['Гарантия'] ?? null,

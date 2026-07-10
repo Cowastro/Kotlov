@@ -445,6 +445,10 @@ class SyncEcokaminFireboxesCommand extends Command
             ? (is_string($product->short_description) ? trim($product->short_description) : null)
             : null;
 
+        $existingVideoUrl = $product
+            ? (is_string($product->video_url) ? trim($product->video_url) : null)
+            : null;
+
         $existingSpecs = $product
             ? (is_string($product->specs) ? json_decode($product->specs, true) : null)
             : null;
@@ -469,7 +473,7 @@ class SyncEcokaminFireboxesCommand extends Command
             'specs' => $hasSpecs
                            ? json_encode($existingSpecs, JSON_UNESCAPED_UNICODE)
                            : json_encode($attrs, JSON_UNESCAPED_UNICODE),
-            'video_url' => null,
+            'video_url' => ($existingVideoUrl !== null && $existingVideoUrl !== '') ? $existingVideoUrl : null,
             'weight' => $this->parseNumber($attrs['Вес'] ?? $attrs['Масса'] ?? null),
             'unit' => 'шт',
             'warranty' => $attrs['Гарантия'] ?? null,
