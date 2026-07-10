@@ -1,6 +1,6 @@
 {
-  "task": "optimize-clear",
-  "artisan_args": "",
-  "log_file": "storage/logs/ecokamin-city-seo-rewrite-1.log",
-  "run_id": "deploy-sanitize-progress-log"
+  "task": "artisan-apply",
+  "artisan_args": "products:sanitize-content-html --apply --brand=Ecokamin --active-only --not-archived --rewrite-seo --limit=1 --sleep=500",
+  "log_file": "storage/logs/server-artisan.log",
+  "run_id": "ecokamin-seo-rewrite-smoke-1"
 }
