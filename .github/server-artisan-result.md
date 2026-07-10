@@ -1,114 +1,17 @@
 # Server Artisan Result
 
-- Time: 2026-07-10 16:59:16 UTC
-- Task: `tail-log`
-- Artisan args: ``
-- Log file: `storage/logs/gardana-city-seo-standard.log`
+- Time: 2026-07-10 17:02:35 UTC
+- Task: `artisan-dry-run`
+- Artisan args: `products:audit-content-quality --brand=GARDANA --active-only --not-archived --limit=120`
+- Log file: `storage/logs/server-artisan.log`
 - Exit code: `0`
 
 ```text
-[1/43] #16254 KOTLOV-003976 GARDANA CMI2-2
-[2/43] #16255 KOTLOV-003977 GARDANA CMI2-4
-[3/43] #16256 KOTLOV-003978 GARDANA CMI2-5
-[4/43] #16261 KOTLOV-003983 GARDANA CMI4-2
-[5/43] #16262 KOTLOV-003984 GARDANA CMI4-4
-[6/43] #16263 KOTLOV-003985 GARDANA CMI4-5
-[7/43] #16264 KOTLOV-003986 GARDANA CMI4-6
-[8/43] #16267 KOTLOV-003989 GARDANA CMI2-3T
-[9/43] #16268 KOTLOV-003990 GARDANA CMI2-4T
-[10/43] #16269 KOTLOV-003991 GARDANA CMI2-5T
-[11/43] #16270 KOTLOV-003992 GARDANA CMI2-6T
-[12/43] #16310 KOTLOV-004032 GARDANA CM32-160B
-[13/43] #16311 KOTLOV-004033 GARDANA CM32-160A
-[14/43] #16312 KOTLOV-004034 GARDANA CM32-200C
-[15/43] #16313 KOTLOV-004035 GARDANA CM40-125B
-[16/43] #16314 KOTLOV-004036 GARDANA CM50-160B
-[17/43] #16315 KOTLOV-004037 GARDANA CM65-125A
-[18/43] #16317 KOTLOV-004039 GARDANA 50GNWQD10-10-0.75
-[19/43] #16318 KOTLOV-004040 GARDANA 80GNWQ45-17-4
-[20/43] #16319 KOTLOV-004041 GARDANA 100GNWQ65-15-5.5
-[21/43] #16320 KOTLOV-004042 GARDANA 100GNWQ100-15-7.5
-[22/43] #16346 KOTLOV-004068 GARDANA Шланг ПВХ к дренажному насосу (синий) 1 1/2"(38мм) 10м
-[23/43] #16347 KOTLOV-004069 GARDANA Шланг ПВХ к дренажному насосу (синий) 1 1/2"(38мм) 25м
-[24/43] #16348 KOTLOV-004070 GARDANA Шланг ПВХ к дренажному насосу (синий) 1 1/2"(38мм) 50м
-[25/43] #16349 KOTLOV-004071 GARDANA Шланг ПВХ к дренажному насосу (синий) 1 1/2"(38мм) 100м
-[26/43] #16350 KOTLOV-004072 GARDANA Шланг ПВХ к дренажному насосу (синий) 2"(50мм) 10м
-[27/43] #16351 KOTLOV-004073 GARDANA Шланг ПВХ к дренажному насосу (синий) 2"(50мм) 25м
-[28/43] #16352 KOTLOV-004074 GARDANA Шланг ПВХ к дренажному насосу (синий) 2"(50мм) 50м
-[29/43] #16353 KOTLOV-004075 GARDANA Шланг ПВХ к дренажному насосу (синий) 2"(50мм) 100м
-[30/43] #16354 KOTLOV-004076 GARDANA Шланг ПВХ к дренажному насосу (синий) 3"(75мм) 50м
-[31/43] #16355 KOTLOV-004077 GARDANA Шланг ПВХ к дренажному насосу (синий) 3"(75мм) 100м
-[32/43] #16356 KOTLOV-004078 GARDANA Шланг текстильный к дренажному насосу (белый) 1 1/2"(38мм) 20м
-[33/43] #16357 KOTLOV-004079 GARDANA Шланг текстильный к дренажному насосу (белый) 1 1/2"(38мм) 30м
-[34/43] #16358 KOTLOV-004080 GARDANA Шланг текстильный к дренажному насосу (белый) 2"(50мм) 20м
-[35/43] #16359 KOTLOV-004081 GARDANA Шланг текстильный к дренажному насосу (белый) 2"(50мм) 30м
-[36/43] #16360 KOTLOV-004082 GARDANA Шланг текстильный к дренажному насосу (белый) 3"(75мм) 20м
-[37/43] #16367 KOTLOV-004089 GARDANA Соединитель КАМЛОК тип C ("мама"), штуцер под рукав 2" (50мм)
-[38/43] #16368 KOTLOV-004090 GARDANA Соединитель КАМЛОК тип E ("папа"), штуцер под рукав 2" (50мм)
-[39/43] #16369 KOTLOV-004091 GARDANA Соединительная муфта для шланга ПВХ 2”(пластик)
-[40/43] #16370 KOTLOV-004092 GARDANA Соединительная муфта для шланга ПВХ 3”(пластик)
-[41/43] #16371 KOTLOV-004093 GARDANA Хомут для Шланга ПВХ 2” (нерж.сталь)
-[42/43] #16375 KOTLOV-004097 GARDANA CMI2-7
-[43/43] #16378 KOTLOV-004100 GARDANA CMI10-3
-APPLY: sanitized content was written.
-+---------------------+-------+
-| metric              | count |
-+---------------------+-------+
-| checked             | 43    |
-| changed             | 42    |
-| written             | 42    |
-| images_removed      | 0     |
-| styles_removed      | 0     |
-| bad_blocks_removed  | 0     |
-| videos_extracted    | 0     |
-| documents_extracted | 0     |
-| seo_rewritten       | 42    |
-+---------------------+-------+
-+-------+---------------+---------+------------------------------------------------------------------------+
-| ID    | SKU           | Brand   | Product                                                                |
-+-------+---------------+---------+------------------------------------------------------------------------+
-| 16254 | KOTLOV-003976 | GARDANA | GARDANA CMI2-2                                                         |
-| 16255 | KOTLOV-003977 | GARDANA | GARDANA CMI2-4                                                         |
-| 16256 | KOTLOV-003978 | GARDANA | GARDANA CMI2-5                                                         |
-| 16261 | KOTLOV-003983 | GARDANA | GARDANA CMI4-2                                                         |
-| 16262 | KOTLOV-003984 | GARDANA | GARDANA CMI4-4                                                         |
-| 16263 | KOTLOV-003985 | GARDANA | GARDANA CMI4-5                                                         |
-| 16264 | KOTLOV-003986 | GARDANA | GARDANA CMI4-6                                                         |
-| 16267 | KOTLOV-003989 | GARDANA | GARDANA CMI2-3T                                                        |
-| 16268 | KOTLOV-003990 | GARDANA | GARDANA CMI2-4T                                                        |
-| 16269 | KOTLOV-003991 | GARDANA | GARDANA CMI2-5T                                                        |
-| 16270 | KOTLOV-003992 | GARDANA | GARDANA CMI2-6T                                                        |
-| 16310 | KOTLOV-004032 | GARDANA | GARDANA CM32-160B                                                      |
-| 16311 | KOTLOV-004033 | GARDANA | GARDANA CM32-160A                                                      |
-| 16312 | KOTLOV-004034 | GARDANA | GARDANA CM32-200C                                                      |
-| 16313 | KOTLOV-004035 | GARDANA | GARDANA CM40-125B                                                      |
-| 16314 | KOTLOV-004036 | GARDANA | GARDANA CM50-160B                                                      |
-| 16315 | KOTLOV-004037 | GARDANA | GARDANA CM65-125A                                                      |
-| 16317 | KOTLOV-004039 | GARDANA | GARDANA 50GNWQD10-10-0.75                                              |
-| 16318 | KOTLOV-004040 | GARDANA | GARDANA 80GNWQ45-17-4                                                  |
-| 16319 | KOTLOV-004041 | GARDANA | GARDANA 100GNWQ65-15-5.5                                               |
-| 16320 | KOTLOV-004042 | GARDANA | GARDANA 100GNWQ100-15-7.5                                              |
-| 16346 | KOTLOV-004068 | GARDANA | GARDANA Шланг ПВХ к дренажному насосу (синий) 1 1/2"(38мм) 10м         |
-| 16347 | KOTLOV-004069 | GARDANA | GARDANA Шланг ПВХ к дренажному насосу (синий) 1 1/2"(38мм) 25м         |
-| 16348 | KOTLOV-004070 | GARDANA | GARDANA Шланг ПВХ к дренажному насосу (синий) 1 1/2"(38мм) 50м         |
-| 16349 | KOTLOV-004071 | GARDANA | GARDANA Шланг ПВХ к дренажному насосу (синий) 1 1/2"(38мм) 100м        |
-| 16350 | KOTLOV-004072 | GARDANA | GARDANA Шланг ПВХ к дренажному насосу (синий) 2"(50мм) 10м             |
-| 16351 | KOTLOV-004073 | GARDANA | GARDANA Шланг ПВХ к дренажному насосу (синий) 2"(50мм) 25м             |
-| 16352 | KOTLOV-004074 | GARDANA | GARDANA Шланг ПВХ к дренажному насосу (синий) 2"(50мм) 50м             |
-| 16353 | KOTLOV-004075 | GARDANA | GARDANA Шланг ПВХ к дренажному насосу (синий) 2"(50мм) 100м            |
-| 16354 | KOTLOV-004076 | GARDANA | GARDANA Шланг ПВХ к дренажному насосу (синий) 3"(75мм) 50м             |
-| 16355 | KOTLOV-004077 | GARDANA | GARDANA Шланг ПВХ к дренажному насосу (синий) 3"(75мм) 100м            |
-| 16356 | KOTLOV-004078 | GARDANA | GARDANA Шланг текстильный к дренажному насосу (белый) 1 1/2"(38мм) 20м |
-| 16357 | KOTLOV-004079 | GARDANA | GARDANA Шланг текстильный к дренажному насосу (белый) 1 1/2"(38мм) 30м |
-| 16358 | KOTLOV-004080 | GARDANA | GARDANA Шланг текстильный к дренажному насосу (белый) 2"(50мм) 20м     |
-| 16359 | KOTLOV-004081 | GARDANA | GARDANA Шланг текстильный к дренажному насосу (белый) 2"(50мм) 30м     |
-| 16360 | KOTLOV-004082 | GARDANA | GARDANA Шланг текстильный к дренажному насосу (белый) 3"(75мм) 20м     |
-| 16367 | KOTLOV-004089 | GARDANA | GARDANA Соединитель КАМЛОК тип C ("мама"), штуцер под рукав 2" (50мм)  |
-| 16368 | KOTLOV-004090 | GARDANA | GARDANA Соединитель КАМЛОК тип E ("папа"), штуцер под рукав 2" (50мм)  |
-| 16369 | KOTLOV-004091 | GARDANA | GARDANA Соединительная муфта для шланга ПВХ 2”(пластик)                |
-| 16370 | KOTLOV-004092 | GARDANA | GARDANA Соединительная муфта для шланга ПВХ 3”(пластик)                |
-| 16375 | KOTLOV-004097 | GARDANA | GARDANA CMI2-7                                                         |
-| 16378 | KOTLOV-004100 | GARDANA | GARDANA CMI10-3                                                        |
-+-------+---------------+---------+------------------------------------------------------------------------+
++----------------------+-------+
+| metric               | count |
++----------------------+-------+
+| checked              | 43    |
+| products_with_issues | 0     |
++----------------------+-------+
 
 ```
