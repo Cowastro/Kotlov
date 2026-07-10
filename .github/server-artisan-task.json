@@ -1,6 +1,6 @@
 {
-  "task": "artisan-background",
-  "artisan_args": "brands:enrich-pages --apply --limit=0",
+  "task": "tail-log",
+  "artisan_args": "",
   "log_file": "storage/logs/brands-enrich-pages.log",
-  "run_id": "brand-pages-empty-fill-20260710-1"
+  "run_id": "brand-pages-tail-20260710-1"
 }
