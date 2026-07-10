@@ -1,6 +1,6 @@
 {
-  "task": "ps-artisan",
+  "task": "optimize-clear",
   "artisan_args": "",
   "log_file": "storage/logs/ecokamin-city-seo-rewrite-1.log",
-  "run_id": "ps-ecokamin-city-seo-rewrite-1b"
+  "run_id": "deploy-sanitize-progress-log"
 }
