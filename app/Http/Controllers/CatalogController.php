@@ -14,6 +14,8 @@ class CatalogController extends Controller
 {
     public function show(string $categorySlug)
     {
+        $selectedBrandId = request('brand') ? (int) request('brand') : null;
+
         $category = Category::where('slug', $categorySlug)
             ->where('is_active', true)
             ->with('parent')
@@ -51,11 +53,12 @@ class CatalogController extends Controller
             ->where('is_active', true)
             ->orderBy('sort_order')
             ->get()
-            ->each(function ($subcategory) {
+            ->each(function ($subcategory) use ($selectedBrandId) {
                 $ids = $this->collectCategoryAndDescendantIds($subcategory->id);
                 $subcategory->products_count = Product::query()
                     ->orderable()
                     ->whereIn('category_id', $ids)
+                    ->when($selectedBrandId, fn ($query) => $query->where('brand_id', $selectedBrandId))
                     ->count();
             })
             ->filter(fn($subcategory) => $subcategory->products_count > 0)
@@ -118,6 +121,7 @@ class CatalogController extends Controller
             ->whereHas('product', fn($q) => $q
                 ->orderable()
                 ->whereIn('category_id', $activeCategoryIds)
+                ->when($selectedBrandId, fn ($query) => $query->where('brand_id', $selectedBrandId))
             )
             ->groupBy('attribute_id', 'option_id')
             ->selectRaw('attribute_id, option_id, count(*) as cnt')
@@ -198,6 +202,7 @@ class CatalogController extends Controller
         $priceRange = Product::query()
             ->orderable()
             ->whereIn('category_id', $activeCategoryIds)
+            ->when($selectedBrandId, fn ($query) => $query->where('brand_id', $selectedBrandId))
             ->selectRaw('MIN(price) as min_price, MAX(price) as max_price')
             ->first();
 
@@ -207,6 +212,7 @@ class CatalogController extends Controller
         $allProductsCount = Product::query()
             ->orderable()
             ->whereIn('category_id', $allCategoryIds)
+            ->when($selectedBrandId, fn ($query) => $query->where('brand_id', $selectedBrandId))
             ->count();
 
         // Запрос товаров

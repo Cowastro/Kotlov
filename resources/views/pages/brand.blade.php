@@ -74,7 +74,7 @@
 
                 <div class="brand-category-grid">
                     @foreach ($brandCategories as $category)
-                        <a href="/{{ $category->slug }}" class="brand-category-chip">
+                        <a href="/{{ $category->slug }}?brand={{ $brand->id }}" class="brand-category-chip">
                             <span>{{ $category->name }}</span>
                             <small>{{ $category->products_count }} товаров</small>
                         </a>
