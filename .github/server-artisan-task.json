@@ -1,6 +1,6 @@
 {
-  "task": "tail-log",
+  "task": "optimize-clear",
   "artisan_args": "",
-  "log_file": "storage/logs/teplov-suhov-media-seo-standard.log",
-  "run_id": "tail-teplov-suhov-media-seo-standard-4"
+  "log_file": "storage/logs/server-artisan.log",
+  "run_id": "deploy-audit-slug-like-filter"
 }
