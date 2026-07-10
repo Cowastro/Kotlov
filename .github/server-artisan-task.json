@@ -1,6 +1,6 @@
 {
-  "task": "artisan-apply",
-  "artisan_args": "products:sanitize-content-html --apply --sku=PS-004.907 --active-only --not-archived --rewrite-seo --limit=1 --sleep=500",
+  "task": "artisan-dry-run",
+  "artisan_args": "products:audit-content-quality --brand=Kermi --active-only --not-archived --limit=40",
   "log_file": "storage/logs/server-artisan.log",
-  "run_id": "fix-kermi-ps-004-907-seo"
+  "run_id": "audit-kermi-after-single-fix"
 }
