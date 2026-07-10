@@ -1,80 +1,12 @@
 # Server Artisan Result
 
-- Time: 2026-07-10 11:22:06 UTC
+- Time: 2026-07-10 11:33:03 UTC
 - Task: `tail-log`
 - Artisan args: ``
 - Log file: `storage/logs/thermex-city-seo-standard.log`
 - Exit code: `0`
 
 ```text
-[1/299] #17561 PS-000.17561 Фильтр защиты от накипи Thermex ION SL10&quot;
-[2/299] #17563 PS-000.17563 Фильтр защиты от накипи Thermex ION SL5&quot;
-[3/299] #17564 PS-000.17564 Панель управления THERMEX в сборе с тэном 6 кВт
-[4/299] #17568 PS-000.17568 Комплект дымохода для конденсационного котла Thermex Sirius 60/100 (1000мм)
-[5/299] #17569 PS-000.17569 Комплект дымохода для конденсационного котла Thermex Vega 60/100 (750мм)
-[6/299] #17573 PS-000.17573 Трехходовой клапан THERMEX dLine Т с электроприводом (комплект) для котлов Th...
-[7/299] #17574 PS-000.17574 Комплект для подключения бойлера к одноконтурному котлу Thermex
-[8/299] #17584 PS-000.17584 Конденсационный газовый котел Thermex Coloss S 69
-[9/299] #17590 PS-000.17590 Электрический котел Thermex Eurostar E 904 без Wi-Fi
-[10/299] #17591 PS-000.17591 Электрический котел Thermex Eurostar E 915 с Wi-Fi
-[11/299] #17595 PS-000.17595 Электрический котел Thermex Eurostar E 918 с Wi-Fi
-[12/299] #17603 PS-000.17603 Электрический котел Thermex Eurostar E 912 с Wi-Fi
-[13/299] #17604 PS-000.17604 Электрический котел Thermex Boss 12 Wi-Fi (White)
-[14/299] #17607 PS-000.17607 Электрический котел Thermex Boss 12 Wi-Fi (Black)
-[15/299] #17619 PS-000.17619 Конденсационный газовый котел Thermex VEGA PS 28
-[16/299] #17624 PS-000.17624 Конденсационный газовый котел Thermex Coloss SW 100
-[17/299] #17625 PS-000.17625 Конденсационный газовый котел Thermex Coloss SW 69
-[18/299] #17632 PS-000.17632 Конденсационный газовый котёл Thermex Sirius PS 24
-[19/299] #17633 PS-000.17633 Конденсационный газовый котел Thermex VEGA PS 24
-[20/299] #17636 PS-000.17636 Газовый котел Thermex Blaze FH18
-[21/299] #17638 PS-000.17638 Газовая колонка Thermex B 20 D
-[22/299] #17639 PS-000.17639 Газовая колонка Thermex S 20 MD
-[23/299] #17640 PS-000.17640 Газовая колонка Thermex S 20 MD (Art Black)
-[24/299] #17642 PS-000.17642 Электрический котел Thermex Eurostar E 906 с Wi-Fi
-[25/299] #17643 PS-000.17643 Газовая колонка Thermex T 26 D
-[26/299] #17644 PS-000.17644 Газовая колонка Thermex T 20 D (Black)
-[27/299] #17645 PS-000.17645 Газовая колонка Thermex E 22 MD
-[28/299] #17647 PS-000.17647 Газовый котел Thermex Blaze F32
-[29/299] #17648 PS-000.17648 Газовый котел Thermex Blaze F35
-[30/299] #17650 PS-000.17650 Электрический котел Thermex Stern 4-12 (тип B) 9 кВт
-[31/299] #17651 PS-000.17651 Водонагреватель Thermex Ceramik 50 V
-[32/299] #17652 PS-000.17652 Водонагреватель Thermex Ceramik 80 H
-[33/299] #17653 PS-000.17653 Водонагреватель Thermex Ceramik 80 V
-[34/299] #17654 PS-000.17654 Водонагреватель Thermex Ceramik 30 V
-[35/299] #17655 PS-000.17655 Водонагреватель Thermex Ceramik 100 V
-[36/299] #17656 PS-000.17656 Водонагреватель Thermex Ceramik 50 H
-[37/299] #17659 PS-000.17659 Водонагреватель Thermex Bravo 80 Wi-Fi
-[38/299] #17661 PS-000.17661 Водонагреватель Thermex Bono 80 Wi-Fi
-[39/299] #17662 PS-000.17662 Водонагреватель Thermex Bono 50 Wi-Fi
-[40/299] #17663 PS-000.17663 Водонагреватель Thermex Bono 30 Wi-Fi
-[41/299] #17665 PS-000.17665 Водонагреватель Thermex Decido 30 Wi-Fi
-[42/299] #17666 PS-000.17666 Водонагреватель Thermex Decido 50 Wi-Fi
-[43/299] #17667 PS-000.17667 Водонагреватель Thermex Decido 100 Wi-Fi
-[44/299] #17668 PS-000.17668 Водонагреватель Thermex Day 15 U
-[45/299] #17669 PS-000.17669 Водонагреватель Thermex Day 15 O
-[46/299] #17670 PS-000.17670 Водонагреватель Thermex Day 10 O
-[47/299] #17672 PS-000.17672 Водонагреватель Thermex ES 30 V
-[48/299] #17673 PS-000.17673 Водонагреватель Thermex ES 50 V
-[49/299] #17678 PS-000.17678 Водонагреватель Thermex Fora 30 (pro) Wi-Fi
-[50/299] #17683 PS-000.17683 Водонагреватель THERMEX IF 50 V (pro) Wi-Fi
-[51/299] #17684 PS-000.17684 Водонагреватель Thermex IF 50 V (eco)
-[52/299] #17685 PS-000.17685 Водонагреватель THERMEX IF 50 H (pro) Wi-Fi
-[53/299] #17686 PS-000.17686 Водонагреватель Thermex IF 30 V (pro)
-[54/299] #17687 PS-000.17687 Водонагреватель THERMEX IF 30 V (pro) Wi-Fi
-[55/299] #17689 PS-000.17689 Водонагреватель Thermex IF 30 V (eco)
-[56/299] #17690 PS-000.17690 Водонагреватель Thermex IF 100 V (smart)
-[57/299] #17691 PS-000.17691 Водонагреватель THERMEX IF 100 V (pro) Wi-Fi
-[58/299] #17693 PS-000.17693 Водонагреватель Thermex IF 100 V (pro)
-[59/299] #17696 PS-000.17696 Водонагреватель Thermex IC 15 U
-[60/299] #17697 PS-000.17697 Водонагреватель Thermex IC 10 U
-[61/299] #17698 PS-000.17698 Водонагреватель Thermex IC 15 O
-[62/299] #17699 PS-000.17699 Водонагреватель Thermex Harmony 80 Pro
-[63/299] #17701 PS-000.17701 Водонагреватель Thermex Harmony 100 Pro
-[64/299] #17703 PS-000.17703 Водонагреватель Thermex Mara 100 Pro
-[65/299] #17706 PS-000.17706 Водонагреватель Thermex IF 80 V (pro)
-[66/299] #17707 PS-000.17707 Водонагреватель THERMEX IF 80 V (pro) Wi-Fi
-[67/299] #17709 PS-000.17709 Водонагреватель Thermex IF 80 V (eco)
-[68/299] #17710 PS-000.17710 Водонагреватель THERMEX IF 80 H (pro) Wi-Fi
 [69/299] #17714 PS-000.17714 Водонагреватель Thermex Mera 7 O
 [70/299] #17716 PS-000.17716 Водонагреватель Thermex Mera 15 U
 [71/299] #17717 PS-000.17717 Водонагреватель Thermex Mera 15 O
@@ -124,5 +56,116 @@
 [115/299] #17872 PS-000.17872 Электрический водонагреватель THERMEX Fusion 80 V
 [116/299] #17873 PS-000.17873 Водонагреватель Thermex IF 100 V (eco)
 [117/299] #17874 PS-000.17874 Водонагреватель Thermex TitaniumHeat 50 V Slim
+[118/299] #17877 PS-000.17877 Водонагреватель Thermex Mara 80 Pro
+[119/299] #17878 PS-000.17878 Водонагреватель Thermex Liga 30 V (pro)
+[120/299] #17882 PS-000.17882 Водонагреватель накопительный Thermex Ksanto 100 V
+[121/299] #17883 PS-000.17883 Водонагреватель Thermex Fora 80 (pro) Wi-Fi
+[122/299] #17884 PS-000.17884 Водонагреватель Thermex Mera 7 U
+[123/299] #17885 PS-000.17885 Электрический котел Thermex Eurostar E 909 с Wi-Fi
+[124/299] #17886 PS-000.17886 Электрический водонагреватель THERMEX Fusion 50 V
+[125/299] #17887 PS-000.17887 Электрический водонагреватель THERMEX Tango 50 V
+[126/299] #17888 PS-000.17888 Водонагреватель Thermex Decido 80 Wi-Fi
+[127/299] #17889 PS-000.17889 Водонагреватель Thermex Orbit 100 V
+[128/299] #17890 PS-000.17890 Водонагреватель Thermex Praktik 150 V
+[129/299] #17891 PS-000.17891 Газовая колонка Thermex T 20 D
+[130/299] #17892 PS-000.17892 Электрический водонагреватель Thermex Nobel N 15 O
+[131/299] #17893 PS-000.17893 Электрический водонагреватель THERMEX Tango 80 V
+[132/299] #20252 KOTLOV-005418 Газовый котёл Thermex EuroElite F10
+[133/299] #20253 KOTLOV-005419 Газовый котёл Thermex EuroElite F16
+[134/299] #20254 KOTLOV-005420 Газовый котёл Thermex EuroElite F28
+[135/299] #20255 KOTLOV-005421 Газовый котёл Thermex EuroElite F32
+[136/299] #20256 KOTLOV-005422 Газовый котёл Thermex EuroElite F35
+[137/299] #20257 KOTLOV-005423 Газовый котёл Thermex EuroElite FH24
+[138/299] #20258 KOTLOV-005424 Газовый котёл Thermex EuroElite FH28
+[139/299] #20259 KOTLOV-005425 Газовый котел Thermex EuroElite FH32
+[140/299] #20260 KOTLOV-005426 Газовый котёл Thermex EuroElite FH35
+[141/299] #20261 KOTLOV-005427 Газовый котёл Thermex Hydra HM24
+[142/299] #20262 KOTLOV-005428 Газовый котел Thermex HYDRA HS 28
+[143/299] #20263 KOTLOV-005429 Газовый котел Thermex HYDRA HS 30
+[144/299] #20264 KOTLOV-005430 Электрокотел Thermex Quantum E904 OTWF
+[145/299] #20265 KOTLOV-005431 Электрокотел Thermex Quantum E906 OTWF
+[146/299] #20266 KOTLOV-005432 Электрокотел Thermex Quantum E908 OTWF
+[147/299] #20267 KOTLOV-005433 Электрокотел Thermex Quantum E909 OTWF
+[148/299] #20268 KOTLOV-005434 Электрокотел Thermex Quantum E912 OTWF
+[149/299] #20269 KOTLOV-005435 Электрокотел Thermex Quantum E915 OTWF
+[150/299] #20270 KOTLOV-005436 Электрокотел Thermex Quantum E918 OTWF
+[151/299] #20271 KOTLOV-005437 Электрокотел Thermex Quantum E921 OTWF
+[152/299] #20272 KOTLOV-005438 Электрокотел Thermex Quantum E924 OTWF
+[153/299] #20273 KOTLOV-005439 Газовый котёл Thermex Hydra HM24
+[154/299] #20274 KOTLOV-005440 Газовый котёл Thermex Eurostyle F24
+[155/299] #20275 KOTLOV-005441 Газовый котёл Thermex EuroElite F13
+[156/299] #20276 KOTLOV-005442 Газовый котёл Thermex EuroElite F18
+[157/299] #20277 KOTLOV-005443 Газовый котёл Thermex EuroElite F24
+[158/299] #20278 KOTLOV-005444 Газовый котел Thermex Blaze F24
+[159/299] #20279 KOTLOV-005445 Газовый котел Thermex Antares F24
+[160/299] #20280 KOTLOV-005446 Газовый котёл Thermex Blaze FH24
+[161/299] #20281 KOTLOV-005447 Газовый котёл Thermex Blaze FH28
+[162/299] #20282 KOTLOV-005448 Газовый котёл Thermex Blaze FH32
+[163/299] #20283 KOTLOV-005449 Газовый котёл Thermex Blaze FH35
+[164/299] #20284 KOTLOV-005450 Газовый котел Thermex Blaze FH40
+[165/299] #20285 KOTLOV-005451 Газовый котел Thermex Antares FH24
+[166/299] #20286 KOTLOV-005452 Газовый котел Thermex Antares FH32
+[167/299] #21165 KOTLOV-006331 THERMEX N 10 O
+[168/299] #21166 KOTLOV-006332 THERMEX N 10 U
+[169/299] #21167 KOTLOV-006333 THERMEX N 15 O
+[170/299] #21168 KOTLOV-006334 THERMEX N 15 U
+[171/299] #21169 KOTLOV-006335 THERMEX Day 7 O
+[172/299] #21170 KOTLOV-006336 THERMEX Day 7 U
+[173/299] #21171 KOTLOV-006337 THERMEX Day 10 U
+[174/299] #21172 KOTLOV-006338 THERMEX Rif 7 O
+[175/299] #21173 KOTLOV-006339 THERMEX Rif 7 U
+[176/299] #21174 KOTLOV-006340 THERMEX Sierra 80 V
+[177/299] #21175 KOTLOV-006341 THERMEX Sierra 100 V
+[178/299] #21176 KOTLOV-006342 THERMEX GIRO 50
+[179/299] #21177 KOTLOV-006343 THERMEX GIRO 80
+[180/299] #21178 KOTLOV-006344 THERMEX GIRO 100
+[181/299] #21179 KOTLOV-006345 Thermex ER 50 V
+[182/299] #21180 KOTLOV-006346 Thermex ER 80 V
+[183/299] #21181 KOTLOV-006347 Thermex ER 100 V
+[184/299] #21182 KOTLOV-006348 Thermex Thermo 30V Slim
+[185/299] #21183 KOTLOV-006349 Thermex Thermo 50V Slim
+[186/299] #21184 KOTLOV-006350 Thermex Thermo 100V
+[187/299] #21185 KOTLOV-006351 THERMEX Nova 50 V Slim
+[188/299] #21186 KOTLOV-006352 THERMEX Nova 80 V
+[189/299] #21187 KOTLOV-006353 THERMEX PRAKTIK 50 V Slim
+[190/299] #21188 KOTLOV-006354 THERMEX PRAKTIK 80V
+[191/299] #21189 KOTLOV-006355 Thermex IU 50 V
+[192/299] #21190 KOTLOV-006356 THERMEX Como 30 V
+[193/299] #21191 KOTLOV-006357 THERMEX Como 50 V
+[194/299] #21192 KOTLOV-006358 THERMEX Como 80 V
+[195/299] #21193 KOTLOV-006359 THERMEX Como 100 V
+[196/299] #21194 KOTLOV-006360 THERMEX Nika 50 V
+[197/299] #21195 KOTLOV-006361 THERMEX IRP 300 V (combi)
+[198/299] #21196 KOTLOV-006362 THERMEX IRP 200 V (combi) PRO
+[199/299] #21197 KOTLOV-006363 THERMEX IRP 300 V (combi) PRO
+[200/299] #21198 KOTLOV-006364 THERMEX Flat 80 V Combi
+[201/299] #21199 KOTLOV-006365 THERMEX Nixen 200 F (Combi)
+[202/299] #21200 KOTLOV-006366 THERMEX Nixen 250 F (Combi)
+[203/299] #21201 KOTLOV-006367 THERMEX Nixen 300 F (Combi)
+[204/299] #21202 KOTLOV-006368 THERMEX Aris 100
+[205/299] #21203 KOTLOV-006369 THERMEX Aris 30
+[206/299] #21204 KOTLOV-006370 THERMEX Aris 80
+[207/299] #21205 KOTLOV-006371 THERMEX IF 100 (smart)
+[208/299] #21206 KOTLOV-006372 THERMEX Fora 100
+[209/299] #21207 KOTLOV-006373 Thermex IF 50 V (pro)
+[210/299] #21208 KOTLOV-006374 Thermex IF 80 H (pro)
+[211/299] #21209 KOTLOV-006375 THERMEX Mara 30
+[212/299] #21210 KOTLOV-006376 THERMEX Mara 80
+[213/299] #21211 KOTLOV-006377 THERMEX Mara 100
+[214/299] #21212 KOTLOV-006378 THERMEX Harmony 30
+[215/299] #21213 KOTLOV-006379 THERMEX Harmony 80
+[216/299] #21214 KOTLOV-006380 THERMEX Harmony 100
+[217/299] #21215 KOTLOV-006381 THERMEX DREAM 30
+[218/299] #21216 KOTLOV-006382 THERMEX DREAM 50
+[219/299] #21217 KOTLOV-006383 THERMEX DREAM 80
+[220/299] #21218 KOTLOV-006384 THERMEX DREAM 100
+[221/299] #21219 KOTLOV-006385 THERMEX Dogma 30 V
+[222/299] #21220 KOTLOV-006386 THERMEX Dogma 50 V
+[223/299] #21221 KOTLOV-006387 THERMEX Dogma 80 V
+[224/299] #21222 KOTLOV-006388 THERMEX Dogma 100 V
+[225/299] #21247 KOTLOV-006413 THERMEX Amber 3000
+[226/299] #21248 KOTLOV-006414 THERMEX Nix 3000
+[227/299] #21249 KOTLOV-006415 Thermex Runa 3000
+[228/299] #21250 KOTLOV-006416 THERMEX Corunna 3000
 
 ```
