@@ -1,12 +1,53 @@
 # Server Artisan Result
 
-- Time: 2026-07-10 14:51:33 UTC
-- Task: `artisan-background`
-- Artisan args: `products:sanitize-content-html --apply --brand=Buderus --active-only --not-archived --rewrite-seo --limit=0 --sleep=500`
+- Time: 2026-07-10 14:55:34 UTC
+- Task: `tail-log`
+- Artisan args: ``
 - Log file: `storage/logs/buderus-city-seo-standard.log`
 - Exit code: `0`
 
 ```text
-started pid=2654176
+[1/69] #3684 PS-003.684 Газовый котел Buderus Logamax U072-24 (турбо)
+[2/69] #3685 PS-003.685 Газовый котел Buderus Logamax U072-24K (турбо)
+[3/69] #4326 PS-004.326 Датчик температуры горячей воды AS1.6 (Buderus)
+[4/69] #4438 PS-004.438 Газовый котел Buderus Logamax U052-24 (турбо)
+[5/69] #4439 PS-004.439 Газовый котел Buderus Logamax U052-24К (турбо)
+[6/69] #4440 PS-004.440 Газовый котел Buderus Logamax U052-28 (турбо)
+[7/69] #4441 PS-004.441 Газовый котел Buderus Logamax U052-28К (турбо)
+[8/69] #4442 PS-004.442 Газовый котел Buderus Logamax U054-24 (атмосферный)
+[9/69] #4443 PS-004.443 Газовый котел Buderus Logamax U054-24К (атмосферный)
+[10/69] #4444 PS-004.444 Газовый котел Buderus Logano G124WS 20 кВт
+[11/69] #4445 PS-004.445 Газовый котел Buderus Logano G124WS 24 кВт
+[12/69] #4446 PS-004.446 Газовый котел Buderus Logano G124WS 28 кВт
+[13/69] #4447 PS-004.447 Газовый котел Buderus Logano G124WS 32 кВт
+[14/69] #4448 PS-004.448 Автоматика  Buderus Logamatic 2101
+[15/69] #4449 PS-004.449 Автоматика Buderus Logamatic 2107
+[16/69] #4451 PS-004.451 Бойлер Buderus Logalux SU120
+[17/69] #4452 PS-004.452 Пульт управления BFU
+[18/69] #4471 PS-004.471 Конденсационный газовый котел Buderus Logamax Plus GB072 24 кВт (1 контурн.)
+[19/69] #4472 PS-004.472 Конденсационный газовый котел Buderus Logamax Plus GB072 24K кВт (2 контурн.)
+[20/69] #4481 PS-004.481 Датчик температуры бойлера Buderus AS1
+[21/69] #4496 PS-004.496 Коаксиальное удлинение Buderus 1500 мм
+[22/69] #4958 PS-004.958 Гидравлическая стрелка Buderus WHY 80/60 2500 л/ч
+[23/69] #4959 PS-004.959 Коллектор Buderus HKV2 DN25
+[24/69] #4960 PS-004.960 Коллектор Buderus HKV3 DN25
+[25/69] #4961 PS-004.961 Крепление коллектора Buderus WMS3
+[26/69] #5056 PS-005.056 Дымоход Buderus PP с оголовком верт. DN60/100 черн. (7747210024)
+[27/69] #5072 PS-005.072 Конденсационный газовый котел Buderus Logamax Plus GB162 35 кВт 
+[28/69] #5073 PS-005.073 Конденсационный газовый котел Buderus Logamax Plus GB162 25 кВт
+[29/69] #5074 PS-005.074 Конденсационный газовый котел Buderus Logamax Plus GB162 45 кВт
+[30/69] #5667 PS-005.667 Конденсационный газовый котел Buderus Logamax Plus GB172i-30k(B/W)
+[31/69] #5668 PS-005.668 Конденсационный газовый котел Buderus Logamax Plus GB172i-35i(B)
+[32/69] #5669 PS-005.669 Конденсационный газовый котел Buderus Logamax Plus GB172i-42i(B)
+[33/69] #8074 PS-008.074 Конденсационный газовый котел Buderus Logamax Plus GB062-14
+[34/69] #8075 PS-008.075 Конденсационный газовый котел Buderus Logamax Plus GB062-24
+[35/69] #8076 PS-008.076 Конденсационный газовый котел Buderus Logamax Plus GB062-24К
+[36/69] #8077 PS-008.077 Конденсационный газовый котел Buderus Logamax Plus GB172i-14
+[37/69] #8078 PS-008.078 Конденсационный газовый котел Buderus Logamax Plus GB172i-20К
+[38/69] #8079 PS-008.079 Конденсационный газовый котел Buderus Logamax Plus GB172i-24
+[39/69] #8080 PS-008.080 Конденсационный газовый котел Buderus Logamax Plus GB162-70
+[40/69] #8081 PS-008.081 Конденсационный газовый котел Buderus Logamax Plus GB162-85
+[41/69] #8082 PS-008.082 Конденсационный газовый котел Buderus Logamax Plus GB162-100
+[42/69] #18384 PS-000.18384 Гидравлическая стрелка Bosch WHY DN 25
 
 ```
