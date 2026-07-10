@@ -1,17 +1,12 @@
 # Server Artisan Result
 
-- Time: 2026-07-10 16:49:46 UTC
-- Task: `artisan-dry-run`
-- Artisan args: `products:audit-content-quality --brand=Fondital --active-only --not-archived --limit=120`
-- Log file: `storage/logs/server-artisan.log`
+- Time: 2026-07-10 16:52:58 UTC
+- Task: `artisan-background`
+- Artisan args: `products:sanitize-content-html --apply --brand=GARDANA --active-only --not-archived --rewrite-seo --limit=0 --sleep=500`
+- Log file: `storage/logs/gardana-city-seo-standard.log`
 - Exit code: `0`
 
 ```text
-+----------------------+-------+
-| metric               | count |
-+----------------------+-------+
-| checked              | 39    |
-| products_with_issues | 0     |
-+----------------------+-------+
+started pid=2848614
 
 ```
