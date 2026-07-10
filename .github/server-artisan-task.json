@@ -1,6 +1,6 @@
 {
-  "task": "artisan-dry-run",
-  "artisan_args": "products:sanitize-content-html --brand=Ecokamin --active-only --not-archived --extract-media --show-samples=30 --show-content-samples=10 --limit=80",
+  "task": "ps-artisan",
+  "artisan_args": "",
   "log_file": "storage/logs/server-artisan.log",
-  "run_id": "audit-ecokamin-legacy-content-media"
+  "run_id": "ps-before-ecokamin-seo-rewrite"
 }
