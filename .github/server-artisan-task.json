@@ -1,6 +1,6 @@
 {
-  "task": "artisan-background",
-  "artisan_args": "products:sanitize-content-html --apply --brand=Ballu --active-only --not-archived --rewrite-seo --limit=0 --sleep=500",
+  "task": "tail-log",
+  "artisan_args": "",
   "log_file": "storage/logs/ballu-city-seo-standard.log",
-  "run_id": "background-ballu-city-seo-standard"
+  "run_id": "tail-ballu-city-seo-standard-1"
 }
