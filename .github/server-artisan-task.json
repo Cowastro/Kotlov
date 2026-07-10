@@ -1,6 +1,6 @@
 {
-  "task": "artisan-background",
-  "artisan_args": "products:sanitize-content-html --apply --brand=ARDERIA --active-only --not-archived --rewrite-seo --limit=0 --sleep=500",
+  "task": "tail-log",
+  "artisan_args": "",
   "log_file": "storage/logs/arderia-city-seo-standard.log",
-  "run_id": "sanitize-arderia-city-seo-standard"
+  "run_id": "tail-arderia-city-seo-standard-1"
 }
