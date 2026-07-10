@@ -1,12 +1,36 @@
 # Server Artisan Result
 
-- Time: 2026-07-10 12:25:57 UTC
-- Task: `artisan-background`
-- Artisan args: `products:sanitize-content-html --apply --brand=Ballu --active-only --not-archived --rewrite-seo --limit=0 --sleep=500`
+- Time: 2026-07-10 12:28:01 UTC
+- Task: `tail-log`
+- Artisan args: ``
 - Log file: `storage/logs/ballu-city-seo-standard.log`
 - Exit code: `0`
 
 ```text
-started pid=2417381
+[1/111] #12719 KOTLOV-000441 Ballu BSGRI-09HN8_22Y
+[2/111] #12970 KOTLOV-000692 Ballu BGK9 с комплектом воздухоотводов
+[3/111] #13026 KOTLOV-000748 Ballu BEC/HMM-2000
+[4/111] #13056 KOTLOV-000778 Ballu BWH/S 30 Lorica
+[5/111] #13057 KOTLOV-000779 Ballu BWH/S 50 Lorica
+[6/111] #13058 KOTLOV-000780 Ballu BWH/S 80 Lorica
+[7/111] #13059 KOTLOV-000781 Ballu BWH/S 100 Lorica
+[8/111] #13061 KOTLOV-000783 Ballu BWH/S 50 Artendo DH
+[9/111] #13064 KOTLOV-000786 Ballu BWH/S 30 Cetrion Inverter
+[10/111] #13131 KOTLOV-000853 Ballu BEC/EVU-500
+[11/111] #13133 KOTLOV-000855 Ballu BEC/EVU-1500
+[12/111] #13134 KOTLOV-000856 Ballu BEC/EVU-2000
+[13/111] #13135 KOTLOV-000857 Ballu BEC/EVU-2500
+[14/111] #13137 KOTLOV-000859 Ballu BFT/EVUR
+[15/111] #13139 KOTLOV-000861 Ballu BEC/SMT-2000
+[16/111] #13140 KOTLOV-000862 Ballu BEC/SMT-2500
+[17/111] #13141 KOTLOV-000863 Ballu CWM-02
+[18/111] #13145 KOTLOV-000867 Ballu BEC/EZMR-1500 (SC)
+[19/111] #13148 KOTLOV-000870 Ballu BEC/ETMR-1000
+[20/111] #13149 KOTLOV-000871 Ballu BEC/ETMR-1500
+[21/111] #13150 KOTLOV-000872 Ballu BEC/ETMR-2000
+[22/111] #13152 KOTLOV-000874 Ballu BEC/ETER-1500
+[23/111] #13153 KOTLOV-000875 Ballu BEC/ETER-2000
+[24/111] #13154 KOTLOV-000876 Ballu BEC/EMT-1000
+[25/111] #13155 KOTLOV-000877 Ballu BEC/EMT-1500
 
 ```
