@@ -1,6 +1,6 @@
 {
-  "task": "artisan-dry-run",
-  "artisan_args": "products:audit-content-quality --brand=DoorWood --active-only --not-archived --limit=100",
+  "task": "artisan-apply",
+  "artisan_args": "products:sanitize-content-html --apply --id=16403 --active-only --not-archived --rewrite-seo --limit=0 --sleep=500",
   "log_file": "storage/logs/server-artisan.log",
-  "run_id": "audit-doorwood-after-city-seo-standard"
+  "run_id": "sanitize-doorwood-leftover-16403"
 }
