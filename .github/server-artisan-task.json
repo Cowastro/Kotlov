@@ -1,6 +1,6 @@
 {
-  "task": "artisan-dry-run",
-  "artisan_args": "products:audit-content-quality --slug-like=teplov-i-suhov --active-only --not-archived --limit=40",
-  "log_file": "storage/logs/server-artisan.log",
-  "run_id": "audit-teplov-suhov-after-seo-standard"
+  "task": "artisan-background",
+  "artisan_args": "products:sanitize-content-html --apply --brand=Kermi --active-only --not-archived --rewrite-seo --limit=0 --sleep=500",
+  "log_file": "storage/logs/kermi-city-seo-standard.log",
+  "run_id": "kermi-city-seo-standard"
 }
