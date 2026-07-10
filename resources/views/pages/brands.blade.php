@@ -48,9 +48,9 @@
                     @foreach ($brands as $brand)
                         <div class="category-v03 style-2 hover-img4">
                             <a href="/brands/{{ $brand->slug }}" class="cate-image img-style4">
-                                @if ($brand->image)
+                                @if ($brand->logo)
                                     <img loading="lazy" width="330" height="440"
-                                        src="{{ asset('storage/' . $brand->image) }}"
+                                        src="{{ $brand->image_url }}"
                                         alt="{{ $brand->name }}"
                                         onerror="this.src='{{ asset('img/products/product-placeholder.jpg') }}'">
                                 @else

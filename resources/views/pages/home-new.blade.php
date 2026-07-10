@@ -151,7 +151,13 @@
                             'vodonagrevateli'    => 'droplet.jpg',
                             'pelletnye-gorelki'  => 'pellet_burner.jpg',
                             'otoplenie'          => 'heater.jpg',
-                            'nasosy'             => 'heatpump.jpg',
+                            'radiatory'          => 'radiatory.jpg',
+                            'truby-i-fitingi'    => 'truby-i-fitingi.jpg',
+                            'teplyj-pol'         => 'teplyj-pol.jpg',
+                            'elektricheskie-konvektoryi' => 'elektricheskie-konvektoryi.jpg',
+                            'komplektuyushhie-dlya-otopleniya' => 'komplektuyushhie-dlya-otopleniya.jpg',
+                            'filtry'             => 'filtry.jpg',
+                            'nasosy'             => 'nasosy.jpg',
                         ];
                     @endphp
                     <div dir="ltr" class="swiper tf-swiper swiper-cate"

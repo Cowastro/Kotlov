@@ -10,15 +10,15 @@ class BrandController extends Controller
     public function index(Request $request)
     {
         // Все буквы для фильтра — только бренды с товарами
-        $letters = Brand::whereHas('products', fn($q) => $q->where('is_active', true))
+        $letters = Brand::whereHas('products', fn($q) => $q->orderable())
             ->selectRaw('UPPER(LEFT(name, 1)) as letter')
             ->distinct()
             ->orderBy('letter')
             ->pluck('letter');
 
-        $totalCount = Brand::whereHas('products', fn($q) => $q->where('is_active', true))->count();
+        $totalCount = Brand::whereHas('products', fn($q) => $q->orderable())->count();
 
-        $query = Brand::withCount(['products' => fn($q) => $q->where('is_active', true)])
+        $query = Brand::withCount(['products' => fn($q) => $q->orderable()])
             ->having('products_count', '>', 0)
             ->orderBy('name');
 
@@ -41,7 +41,7 @@ class BrandController extends Controller
         $brand = Brand::whereRaw('LOWER(slug) = ?', [strtolower($slug)])->firstOrFail();
 
         $products = $brand->products()
-            ->where('is_active', true)
+            ->orderable()
             ->with(['category'])
             ->orderByDesc('is_featured')
             ->orderByDesc('rating')

@@ -24,6 +24,35 @@ class Brand extends Model
         return $this->hasMany(Product::class);
     }
 
+    public function getImageUrlAttribute(): string
+    {
+        return $this->imageUrl();
+    }
+
+    public function imageUrl(): string
+    {
+        $placeholder = asset('img/products/product-placeholder.jpg');
+        $path = trim((string) $this->logo);
+
+        if ($path === '') {
+            return $placeholder;
+        }
+
+        if (str_starts_with($path, 'http://') || str_starts_with($path, 'https://')) {
+            return $path;
+        }
+
+        if (str_starts_with($path, 'img/') || str_starts_with($path, '/img/')) {
+            return '/' . ltrim($path, '/');
+        }
+
+        if (str_starts_with($path, 'brands/')) {
+            return asset('storage/' . $path);
+        }
+
+        return '/proxy-image/' . ltrim($path, '/');
+    }
+
     public function scopeActive($query)
     {
         return $query->where('is_active', true);

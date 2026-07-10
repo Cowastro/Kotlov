@@ -40,6 +40,7 @@
                             'pelletnye-gorelki'                  => 'pellet_burner.jpg',
                             'otoplenie'                          => 'heater.jpg',
                             'vodosnabzhenie'                     => 'nasosy.jpg',
+                            'nasosy'                             => 'nasosy.jpg',
                             'klimat'                             => 'air.jpg',
                             'radiatory'                          => 'radiatory.jpg',
                             'truby-i-fitingi'                    => 'truby-i-fitingi.jpg',
