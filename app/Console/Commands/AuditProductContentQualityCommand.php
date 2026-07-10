@@ -11,6 +11,7 @@ class AuditProductContentQualityCommand extends Command
 {
     protected $signature = 'products:audit-content-quality
         {--brand= : Brand name or slug}
+        {--slug-like= : Product slug substring filter}
         {--active-only : Only active products}
         {--not-archived : Only not archived products}
         {--reason= : Only show products with this issue reason}
@@ -49,6 +50,10 @@ class AuditProductContentQualityCommand extends Command
             $query->where(function ($q) use ($brand) {
                 $q->where('b.name', $brand)->orWhere('b.slug', $brand);
             });
+        }
+
+        if ($slugLike = trim((string) $this->option('slug-like'))) {
+            $query->where('p.slug', 'like', '%' . $slugLike . '%');
         }
 
         if ((bool) $this->option('not-archived')) {
