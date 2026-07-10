@@ -1,17 +1,12 @@
 # Server Artisan Result
 
-- Time: 2026-07-10 08:35:56 UTC
-- Task: `artisan-dry-run`
-- Artisan args: `products:audit-content-quality --slug-like=teplov-i-suhov --active-only --not-archived --limit=40`
-- Log file: `storage/logs/server-artisan.log`
+- Time: 2026-07-10 08:39:00 UTC
+- Task: `artisan-background`
+- Artisan args: `products:sanitize-content-html --apply --brand=Kermi --active-only --not-archived --rewrite-seo --limit=0 --sleep=500`
+- Log file: `storage/logs/kermi-city-seo-standard.log`
 - Exit code: `0`
 
 ```text
-+----------------------+-------+
-| metric               | count |
-+----------------------+-------+
-| checked              | 205   |
-| products_with_issues | 0     |
-+----------------------+-------+
+started pid=2039621
 
 ```
