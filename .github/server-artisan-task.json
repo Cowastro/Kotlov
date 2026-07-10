@@ -1,6 +1,6 @@
 {
-  "task": "artisan-background",
-  "artisan_args": "products:sanitize-content-html --apply --brand=Ecokamin --active-only --not-archived --rewrite-seo --offset=1 --limit=0 --sleep=500",
+  "task": "tail-log",
+  "artisan_args": "",
   "log_file": "storage/logs/ecokamin-city-seo-rewrite-rest.log",
-  "run_id": "background-ecokamin-city-seo-rewrite-rest"
+  "run_id": "tail-ecokamin-city-seo-rewrite-rest"
 }
