@@ -1,6 +1,6 @@
 {
-  "task": "artisan-dry-run",
-  "artisan_args": "products:audit-content-quality --brand=Fondital --active-only --not-archived --limit=120",
-  "log_file": "storage/logs/server-artisan.log",
-  "run_id": "audit-fondital-after-city-seo-standard"
+  "task": "artisan-background",
+  "artisan_args": "products:sanitize-content-html --apply --brand=GARDANA --active-only --not-archived --rewrite-seo --limit=0 --sleep=500",
+  "log_file": "storage/logs/gardana-city-seo-standard.log",
+  "run_id": "sanitize-gardana-city-seo-standard"
 }
