@@ -1,67 +1,12 @@
 # Server Artisan Result
 
-- Time: 2026-07-10 15:50:27 UTC
+- Time: 2026-07-10 15:56:14 UTC
 - Task: `tail-log`
 - Artisan args: ``
 - Log file: `storage/logs/electrolux-city-seo-standard.log`
 - Exit code: `0`
 
 ```text
-[246/478] #18741 PS-000.18741 Конвектор электрический Electrolux ECH/A2-1000 M
-[247/478] #18742 PS-000.18742 Конвектор электрический Electrolux ECH/A2-1500 M
-[248/478] #18743 PS-000.18743 Конвектор электрический Electrolux ECH/A2-2000 M
-[249/478] #18744 PS-000.18744 Конвектор электрический Electrolux ECH/A2-2500 M
-[250/478] #18745 PS-000.18745 Нагревательный кабель Electrolux ETC 2-17-200
-[251/478] #18746 PS-000.18746 Нагревательный кабель Electrolux ETC 2-17-1200
-[252/478] #18747 PS-000.18747 Нагревательный кабель Electrolux ETC 2-17-2000
-[253/478] #18748 PS-000.18748 Нагревательный кабель Electrolux ETC 2-17-2500
-[254/478] #18749 PS-000.18749 Нагревательный мат Electrolux Eco Mat EEM 2-150-3,5
-[255/478] #18750 PS-000.18750 Конвектор электрический Electrolux ECH/AG2-1000 EF
-[256/478] #18751 PS-000.18751 Конвектор электрический Electrolux Rapid ECH/R-2000 M
-[257/478] #18752 PS-000.18752 Конвектор электрический Electrolux Rapid ECH/R-1000 M
-[258/478] #18753 PS-000.18753 Конвектор электрический Electrolux Rapid ECH/R-1500 M
-[259/478] #18754 PS-000.18754 Конвектор электрический Electrolux ECH/R-1000 T (отопительный модуль)
-[260/478] #18755 PS-000.18755 Электроконвектор плинтусный Electrolux ECH/AG-2000 PI
-[261/478] #18756 PS-000.18756 Конвектор электрический Electrolux ECH/BMI-1500
-[262/478] #18757 PS-000.18757 Каминокомплект Electrolux EFP/P-3020LS N с порталом California 30
-[263/478] #18758 PS-000.18758 Установка приточно-вытяжная Shuft EPVS-200
-[264/478] #18759 PS-000.18759 Электрический камин Electrolux EFP/W-2000S Bronze
-[265/478] #18760 PS-000.18760 Радиатор стальной Electrolux Compact EC22-500-400/9016
-[266/478] #18761 PS-000.18761 Конвектор инфракрасный Electrolux EIH/AG2 1500 E
-[267/478] #18762 PS-000.18762 Комплект шасси Electrolux Rapid Transformer System EFT/RR
-[268/478] #18763 PS-000.18763 Комплект шасси Electrolux Rapid Transformer System EFT/R
-[269/478] #18764 PS-000.18764 Комплект шасси Electrolux Air Gate Transformer EFT/AG2
-[270/478] #18765 PS-000.18765 Комплект шасси Electrolux Air Gate Transformer EFT/AG2R
-[271/478] #18766 PS-000.18766 Конвектор электрический Electrolux ECH/B-1000 E
-[272/478] #18767 PS-000.18767 Конвектор электрический Electrolux ECH/B-2000 E
-[273/478] #18768 PS-000.18768 Конвектор электрический Electrolux ECH/B-1500 E
-[274/478] #18769 PS-000.18769 Конвектор электрический Electrolux ECH/BNE-1000
-[275/478] #18770 PS-000.18770 Конвектор электрический Electrolux ECH/BNE-1500
-[276/478] #18771 PS-000.18771 Сплит-система канальная Electrolux EACD-12H/UP4-DC/N8
-[277/478] #18772 PS-000.18772 Сплит-система канальная Electrolux EACD-18H/UP4-DC/N8
-[278/478] #18773 PS-000.18773 Сплит-система канальная Electrolux EACD-24H/UP4-DC/N8
-[279/478] #18774 PS-000.18774 Сплит-система канальная Electrolux EACD-36H/UP4-DC/N8
-[280/478] #18777 PS-000.18777 Кассетный кондиционер Electrolux EACC-48H/UP3/N3
-[281/478] #18778 PS-000.18778 Сплит-система Electrolux EACC-12H/UP4-DC/N8
-[282/478] #18779 PS-000.18779 Сплит-система Electrolux EACC-36H/UP4-DC/N8
-[283/478] #18780 PS-000.18780 Кассетный кондиционер Electrolux EACC-12H/UP3-DC/N8
-[284/478] #18781 PS-000.18781 Кассетный кондиционер Electrolux EACC-18H/UP3-DC/N8
-[285/478] #18782 PS-000.18782 Напольно-потолочная сплит-система Electrolux EACU-24H/UP3/N3
-[286/478] #18783 PS-000.18783 Напольно-потолочная сплит-система Electrolux EACU-18H/UP3/N3
-[287/478] #18784 PS-000.18784 Внешний блок Electrolux EACO/I-14 FMI-2/N8-ERP
-[288/478] #18785 PS-000.18785 Внешний блок Electrolux EACO/I-42 FMI-5/N8-ERP
-[289/478] #18786 PS-000.18786 Внешний блок Electrolux EACO/I-36 FMI-4/N8-ERP
-[290/478] #18787 PS-000.18787 Внешний блок Electrolux EACO/I-28 FMI-4/N8-ERP
-[291/478] #18788 PS-000.18788 Внешний блок Electrolux EACO/I-24 FMI-3/N8-ERP
-[292/478] #18789 PS-000.18789 Внешний блок Electrolux EACO/I-18 FMI-2/N8-ERP
-[293/478] #18790 PS-000.18790 Внутренний блок Electrolux EACS/I-12 HM FMI/N8-ERP/in
-[294/478] #18791 PS-000.18791 Внутренний блок Electrolux EACS/I-07 HM FMI/N8-ERP/in
-[295/478] #18793 PS-000.18793 Внутренний блок Electrolux EACS/I-24 HM FMI/N8-ERP/in
-[296/478] #18794 PS-000.18794 Внутренний блок Electrolux EACS/I-18HEN FMI/N8-ERP/in
-[297/478] #18795 PS-000.18795 Внутренний блок Electrolux EACS/I-12HEN FMI/N8-ERP/in
-[298/478] #18796 PS-000.18796 Внутренний блок Electrolux EACS/I-12HMВ FMI/N8-ERP/in
-[299/478] #18797 PS-000.18797 Внутренний блок Electrolux EACS/I-18HMВ FMI/N8-ERP/in
-[300/478] #18798 PS-000.18798 Внутренний блок Electrolux EACS/I-07HMВ FMI/N8-ERP/in
 [301/478] #18799 PS-000.18799 Внутренний блок Electrolux EACS/I-09HMВ FMI/N8-ERP/in
 [302/478] #18800 PS-000.18800 Кассетный кондиционер Electrolux EACC-60H/UP4-DC/N8
 [303/478] #18801 PS-000.18801 Сплит-система Electrolux EACS/I-09HAV/N8_22Y
@@ -167,5 +112,60 @@
 [403/478] #18914 PS-000.18914 Водонагреватель Electrolux EWH 100 Centurio IQ 2.0 Silver
 [404/478] #18915 PS-000.18915 Водонагреватель Electrolux EWH 30 Centurio IQ 2.0 Silver
 [405/478] #18916 PS-000.18916 Водонагреватель Electrolux EWH 80 Centurio IQ 2.0 Silver
+[406/478] #18917 PS-000.18917 Водонагреватель Electrolux EWH 50 Centurio IQ 2.0 Silver
+[407/478] #18918 PS-000.18918 Водонагреватель Electrolux Smartfix 2.0 TS (6,5 кВт) кран+душ
+[408/478] #18919 PS-000.18919 Водонагреватель Electrolux EWH 50 Citadel H
+[409/478] #18920 PS-000.18920 Водонагреватель Electrolux EWH 10 Genie ECO O
+[410/478] #18921 PS-000.18921 Водонагреватель Electrolux EWH 50 Interio 3
+[411/478] #18922 PS-000.18922 Водонагреватель Electrolux EWH 10 Genie ECO U
+[412/478] #18923 PS-000.18923 Водонагреватель Electrolux EWH 15 Genie ECO U
+[413/478] #18924 PS-000.18924 Водонагреватель Electrolux EWH 30 Interio 3
+[414/478] #18925 PS-000.18925 Водонагреватель Electrolux EWH 100 Interio 3
+[415/478] #18926 PS-000.18926 Водонагреватель Electrolux EWH 80 Interio 3
+[416/478] #18927 PS-000.18927 Водонагреватель Electrolux EWH 50 SmartInverter PRO
+[417/478] #18928 PS-000.18928 Водонагреватель Electrolux EWH 30 SmartInverter PRO
+[418/478] #18929 PS-000.18929 Водонагреватель Electrolux EWH 15 Genie ECO O
+[419/478] #18930 PS-000.18930 Водонагреватель Electrolux EWH 80 SmartInverter PRO
+[420/478] #18931 PS-000.18931 Водонагреватель Electrolux EWH 100 SmartInverter PRO
+[421/478] #18932 PS-000.18932 Водонагреватель Electrolux EWH 30 Major LZR 3
+[422/478] #18933 PS-000.18933 Водонагреватель Electrolux EWH 80 Major LZR 3
+[423/478] #18934 PS-000.18934 Накопительный водонагреватель Electrolux EWH 50 Quantum Pro
+[424/478] #18935 PS-000.18935 Водонагреватель Electrolux EWH 100 Centurio IQ 3.0
+[425/478] #18936 PS-000.18936 Водонагреватель Electrolux EWH 80 Centurio DL
+[426/478] #18937 PS-000.18937 Водонагреватель Electrolux EWH 100 Centurio DL
+[427/478] #18938 PS-000.18938 Водонагреватель Electrolux EWH 50 Centurio DL H
+[428/478] #18939 PS-000.18939 Водонагреватель Electrolux EWH 80 Centurio DL H
+[429/478] #18940 PS-000.18940 Водонагреватель Electrolux EWH 30 Centurio DL H
+[430/478] #18941 PS-000.18941 Водонагреватель проточный Electrolux NP 6 AQUATRONIC 2.0
+[431/478] #18942 PS-000.18942 Водонагреватель Electrolux EWH 30 Centurio DL
+[432/478] #18943 PS-000.18943 Водонагреватель Electrolux EWH 100 Smart Inverter
+[433/478] #18944 PS-000.18944 Водонагреватель Electrolux EWH 80 Smart Inverter
+[434/478] #18945 PS-000.18945 Водонагреватель Electrolux EWH 50 Centurio DL
+[435/478] #18946 PS-000.18946 Водонагреватель проточный Electrolux NPX 8 Flow Active 2.0
+[436/478] #18947 PS-000.18947 Водонагреватель Electrolux NPX6 Aquatronic Digital 2.0
+[437/478] #18948 PS-000.18948 Водонагреватель Electrolux RWH 30 Citadel H
+[438/478] #18949 PS-000.18949 Водонагреватель Electrolux EWH 30 Regency
+[439/478] #18950 PS-000.18950 Водонагреватель Electrolux EWH 50 Regency
+[440/478] #18951 PS-000.18951 Водонагреватель Electrolux EWH 40 Regency
+[441/478] #18952 PS-000.18952 Водонагреватель Electrolux EWH 50 Inoxis
+[442/478] #18953 PS-000.18953 Водонагреватель Electrolux EWH 50 Centurio IQ 2.0
+[443/478] #18954 PS-000.18954 Водонагреватель Electrolux EWH 80 Centurio IQ 2.0
+[444/478] #18955 PS-000.18955 Водонагреватель Electrolux EWH 150 DRYver
+[445/478] #18956 PS-000.18956 Водонагреватель накопительный Electrolux EWH 100 SmartInverter Grafit
+[446/478] #18957 PS-000.18957 Водонагреватель накопительный Electrolux EWH 80 SmartInverter Grafit
+[447/478] #18958 PS-000.18958 Водонагреватель накопительный Electrolux EWH 50 SmartInverter Grafit
+[448/478] #18959 PS-000.18959 Водонагреватель накопительный Electrolux EWH 80 Citadel H
+[449/478] #18960 PS-000.18960 Водонагреватель накопительный Electrolux EWH 30 SmartInverter Grafit
+[450/478] #18961 PS-000.18961 Водонагреватель Electrolux EWH 100 Pride
+[451/478] #18962 PS-000.18962 Водонагреватель Electrolux EWH 30 Pride
+[452/478] #18963 PS-000.18963 Водонагреватель Electrolux EWH 50 Pride
+[453/478] #18964 PS-000.18964 Водонагреватель Electrolux EWH 80 Centurio IQ Inverter
+[454/478] #18965 PS-000.18965 Водонагреватель Electrolux EWH 50 Centurio IQ Inverter
+[455/478] #18966 PS-000.18966 Водонагреватель Electrolux EWH 30 Centurio IQ Inverter
+[456/478] #18967 PS-000.18967 Водонагреватель Electrolux EWH 100 Centurio IQ Inverter
+[457/478] #18968 PS-000.18968 Водонагреватель Electrolux EWH 80 Pride
+[458/478] #18970 PS-000.18970 Конвектор электрический Electrolux Rapid ECH/R-1000 E
+[459/478] #18971 PS-000.18971 Водонагреватель Electrolux EWH 100 Formax DL
+[460/478] #18972 PS-000.18972 Мобильный кондиционер Electrolux Bliss Art EACM-12 GT/N6
 
 ```
