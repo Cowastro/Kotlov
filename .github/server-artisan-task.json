@@ -1,6 +1,6 @@
 {
   "task": "artisan-dry-run",
-  "artisan_args": "products:audit-content-quality --brand=Ferroli --active-only --not-archived --limit=40",
+  "artisan_args": "products:audit-content-quality --brand=Thermex --active-only --not-archived --limit=60",
   "log_file": "storage/logs/server-artisan.log",
-  "run_id": "audit-ferroli-after-torino-fixes"
+  "run_id": "audit-thermex-content-quality"
 }
