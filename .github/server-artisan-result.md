@@ -1,66 +1,12 @@
 # Server Artisan Result
 
-- Time: 2026-07-10 09:42:49 UTC
+- Time: 2026-07-10 09:52:21 UTC
 - Task: `tail-log`
 - Artisan args: ``
 - Log file: `storage/logs/ariston-city-seo-standard.log`
 - Exit code: `0`
 
 ```text
-[1/260] #375 PS-000.375 Водонагреватель электрический Ariston ABS PRO R 50 V
-[2/260] #376 PS-000.376 Водонагреватель электрический Ariston ABS PRO R 80 V
-[3/260] #379 PS-000.379 Водонагреватель электрический Ariston ABS PRO R 65 V Slim
-[4/260] #380 PS-000.380 Водонагреватель электрический Ariston ABS PRO R 80 V Slim
-[5/260] #381 PS-000.381 Водонагреватель электрический Ariston ABS PRO ECO 80 V
-[6/260] #382 PS-000.382 Водонагреватель электрический Ariston ABS PRO ECO 100 V
-[7/260] #1462 PS-001.462 Водонагреватель электрический Ariston Superlux NTS 30V Slim
-[8/260] #1466 PS-001.466 Водонагреватель электрический Ariston ABS PRO R 100 V
-[9/260] #1467 PS-001.467 Водонагреватель электрический Ariston ABS PRO R 150 V 
-[10/260] #1472 PS-001.472 Водонагреватель электрический Ariston ABS PRO ECO 50 V
-[11/260] #1707 PS-001.707 Газовый котел Ariston CLAS XС System 28 FF NG
-[12/260] #2190 PS-002.190 Газовый котел Ariston GENUS 24 CF NG
-[13/260] #2191 PS-002.191 Газовый котел Ariston GENUS 28 CF NG
-[14/260] #2192 PS-002.192 Газовый котел Ariston GENUS 24 FF NG
-[15/260] #2384 PS-002.384 Водонагреватель электрический Ariston Velis Power 30
-[16/260] #2385 PS-002.385 Водонагреватель электрический Ariston Velis Power 50
-[17/260] #2386 PS-002.386 Водонагреватель электрический Ariston Velis Power 80
-[18/260] #2387 PS-002.387 Водонагреватель электрический Ariston Velis Power 100
-[19/260] #2388 PS-002.388 Водонагреватель электрический Ariston Velis Inox Power 30
-[20/260] #2389 PS-002.389 Водонагреватель электрический Ariston Velis Inox Power 50
-[21/260] #2390 PS-002.390 Водонагреватель электрический Ariston Velis Inox Power 80
-[22/260] #2391 PS-002.391 Водонагреватель электрический Ariston Velis Inox Power 100
-[23/260] #2450 PS-002.450 Газовый котел Ariston Clas EVO System 15 FF
-[24/260] #2451 PS-002.451 Газовый котел Ariston Clas EVO System 15 CF
-[25/260] #2453 PS-002.453 Газовый котел Ariston Clas EVO System 24 CF
-[26/260] #2456 PS-002.456 Газовый котел Ariston Clas EVO System 32 FF
-[27/260] #2463 PS-002.463 Газовый котел Ariston Clas EVO 24 CF
-[28/260] #2464 PS-002.464 Газовый котел Ariston Clas EVO 28 FF
-[29/260] #2465 PS-002.465 Газовый котел Ariston GENUS EVO 24 FF
-[30/260] #2466 PS-002.466 Газовый котел Ariston GENUS EVO 24 CF
-[31/260] #2467 PS-002.467 Газовый котел Ariston GENUS EVO 30 FF
-[32/260] #2468 PS-002.468 Газовый котел Ariston GENUS EVO 30 CF
-[33/260] #2469 PS-002.469 Газовый котел Ariston GENUS EVO 35 FF
-[34/260] #2480 PS-002.480 Водонагреватель электрический Ariston Superlux NTS 10 R PL(SU)
-[35/260] #2482 PS-002.482 Водонагреватель электрический Ariston Superlux NTS 15 R PL(SU)
-[36/260] #3525 PS-003.525 Водонагреватель электрический Ariston Velis QH 30
-[37/260] #3526 PS-003.526 Водонагреватель электрический Ariston Velis Inox QH 30
-[38/260] #3532 PS-003.532 Водонагреватель электрический Ariston Velis Inox QH 50
-[39/260] #3840 PS-003.840 Водонагреватель газовый Ariston / Superlux DGI 10L CF NG
-[40/260] #4021 PS-004.021 Коаксиальное удлинение Ariston (0.5 м) 3318006
-[41/260] #4233 PS-004.233 Водонагреватель газовый Ariston FAST EVO 11 B
-[42/260] #4234 PS-004.234 Водонагреватель газовый Ariston FAST EVO 14 B
-[43/260] #4235 PS-004.235 Водонагреватель газовый Ariston Fast EVO C 11
-[44/260] #4236 PS-004.236 Водонагреватель газовый Ariston Fast EVO C 14
-[45/260] #6312 PS-006.312 Водонагреватель газовый Ariston NEXT EVO SFT 11 NG EXP
-[46/260] #7999 PS-007.999 Конденсационный газовый котёл Ariston Alteas ONE+ NET 35
-[47/260] #8000 PS-008.000 Конденсационный газовый котёл Ariston Alteas ONE+ NET 30
-[48/260] #8003 PS-008.003 Конденсационный газовый котёл Ariston Alteas ONE+ NET 24
-[49/260] #8006 PS-008.006 Конденсационный газовый котёл Ariston Genus ONE System 35
-[50/260] #8738 PS-008.738 Водонагреватель электрический Ariston PRO1 ECO INOX ABS PW 80 V Slim (3700553)
-[51/260] #11564 PS-011.564 Традиционный газовый котёл Ariston Cares XC 18 FF в комплекте с дымоходом
-[52/260] #12079 PS-012.079 Традиционный газовый котёл Ariston Argis C 24 FF в комплекте с дымоходом
-[53/260] #12675 KOTLOV-000397 Традиционный газовый котёл Ariston Clas XC System NET 24 FF + пульт Sensys HD...
-[54/260] #12676 KOTLOV-000398 Традиционный газовый котёл Ariston Cares XC System 24 FF в комплекте с дымоходом
 [55/260] #12677 KOTLOV-000399 Традиционный газовый котёл Ariston Cares XC 24 FF в комплекте с дымоходом
 [56/260] #12678 KOTLOV-000400 Традиционный газовый котёл Ariston Cares XC 10 FF в комплекте с дымоходом
 [57/260] #12679 KOTLOV-000401 Традиционный газовый котёл Ariston Cares XC 15 FF в комплекте с дымоходом
@@ -127,5 +73,99 @@
 [118/260] #17277 PS-000.17277 Водонагреватель электрический Ariston VELIS TECH INOX R ABS 80
 [119/260] #17278 PS-000.17278 Водонагреватель электрический Ariston ABSE VLS PRO PW 80
 [120/260] #17279 PS-000.17279 Водонагреватель электрический Ariston VELIS TECH PW ABSE 50
+[121/260] #17280 PS-000.17280 Водонагреватель электрический Ariston VELIS TECH ABSE DRY 50
+[122/260] #17281 PS-000.17281 Водонагреватель электрический Ariston VELIS TECH INOX R ABS 50
+[123/260] #17282 PS-000.17282 Водонагреватель электрический Ariston VELIS TECH ABSE DRY 100
+[124/260] #17283 PS-000.17283 Водонагреватель электрический Ariston VELIS TECH ABSE DRY 80
+[125/260] #17284 PS-000.17284 Водонагреватель электрический Ariston VELIS TECH R ABS 100
+[126/260] #17285 PS-000.17285 Водонагреватель электрический Ariston VELIS TECH INOX PW ABSE 50
+[127/260] #17286 PS-000.17286 Водонагреватель электрический Ariston ABSE VLS PRO INOX PW 2K 30
+[128/260] #17288 PS-000.17288 Водонагреватель Ariston BLU1 R ABS 40 V SLIM OPTIMA
+[129/260] #17289 PS-000.17289 Водонагреватель Ariston Lydos R ABS 80 V
+[130/260] #17290 PS-000.17290 Водонагреватель Ariston BLU1 R ABS 80 V 1,8K PL
+[131/260] #17292 PS-000.17292 Водонагреватель Ariston BLU1 R 50 V 1,8K PL
+[132/260] #17293 PS-000.17293 Водонагреватель Ariston BLU1 R ABS 40 V Slim 1,8
+[133/260] #17295 PS-000.17295 Водонагреватель Ariston Junior NTS 50V 1,5K (JU)
+[134/260] #17296 PS-000.17296 Водонагреватель Ariston Junior NTS 80V 1,5K (JU)
+[135/260] #17297 PS-000.17297 Водонагреватель электрический Ariston ABS ANDRIS2 PRO 10 U
+[136/260] #17299 PS-000.17299 Водонагреватель электрический Ariston ABS ANDRIS2 R 15 U
+[137/260] #17301 PS-000.17301 Водонагреватель Ariston BLU EVO R 10U RU
+[138/260] #17302 PS-000.17302 Водонагреватель Ariston ARI 300 STAB 570 THER MO VS EU
+[139/260] #17303 PS-000.17303 Водонагреватель Ariston BLU1 ECO ABS PW 50 V
+[140/260] #17304 PS-000.17304 Водонагреватель Ariston BLU1 ECO ABS PW 80 V SLIM
+[141/260] #17306 PS-000.17306 Водонагреватель Ariston LYDOS ECO ABS PW 80 V
+[142/260] #17310 PS-000.17310 Водонагреватель Ariston Lydos R ABS 100 V
+[143/260] #17311 PS-000.17311 Водонагреватель Ariston SUPERLUX 10 O RU
+[144/260] #17312 PS-000.17312 Водонагреватель Ariston BLU1 R ABS 80 V Slim
+[145/260] #17313 PS-000.17313 Водонагреватель Ariston ABS BLU EVO RS 10
+[146/260] #17314 PS-000.17314 Водонагреватель Ariston ABS BLU EVO RS 15U
+[147/260] #17316 PS-000.17316 Водонагреватель Ariston BLU1 R ABS 50 V Slim
+[148/260] #17317 PS-000.17317 Водонагреватель электрический Ariston ABS ANDRIS2 PRO 15 O
+[149/260] #17318 PS-000.17318 Водонагреватель Ariston BLU EVO R 15 RU
+[150/260] #17319 PS-000.17319 Водонагреватель Ariston ATMOR LOTUS 3,5 KW TAP
+[151/260] #17320 PS-000.17320 Электрический водонагреватель Ariston TI 500 STI EU2
+[152/260] #17321 PS-000.17321 Водонагреватель электрический Ariston ABS VLS PRO R 30
+[153/260] #17322 PS-000.17322 Водонагреватель электрический Ariston VELIS TECH R ABS 80
+[154/260] #17323 PS-000.17323 Водонагреватель электрический Ariston ABSE VLS PRO INOX PW 30
+[155/260] #17324 PS-000.17324 Водонагреватель электрический Ariston VELIS TECH PW ABSE 100
+[156/260] #17325 PS-000.17325 Водонагреватель Ariston ABS BLU EVO RS 15
+[157/260] #17326 PS-000.17326 Водонагреватель Ariston ATMOR BASIC 5 KW TAP
+[158/260] #17327 PS-000.17327 Водонагреватель Ariston ABS BLU EVO RS 30
+[159/260] #17329 PS-000.17329 Водонагреватель Ariston SUPERLUX 15 U RU
+[160/260] #17330 PS-000.17330 Водонагреватель Ariston ATMOR BASIC 3.5 KW TAP
+[161/260] #17331 PS-000.17331 Водонагреватель Ariston Junior NTS NTS 30V (JU) SLIM
+[162/260] #17332 PS-000.17332 Водонагреватель Ariston ABS BLU EVO RS 10U
+[163/260] #17333 PS-000.17333 Водонагреватель Ariston SUPERLUX 15 O RU
+[164/260] #17336 PS-000.17336 Водонагреватель Ariston COMFORT R ABS 100 V 1,8K PL
+[165/260] #17337 PS-000.17337 Водонагреватель Ariston ATMOR LOTUS 5K TAP
+[166/260] #17340 PS-000.17340 Водонагреватель Ariston ATMOR BASIC+ 5 KW COMBI
+[167/260] #17341 PS-000.17341 Водонагреватель Ariston ATMOR NEW 7 kW COMBI
+[168/260] #17342 PS-000.17342 Водонагреватель Ariston ATMOR LOTUS 5K Душ
+[169/260] #17344 PS-000.17344 Водонагреватель электрический Ariston DUNE1 R INOX 80 V 1,5K SLIM PL
+[170/260] #17346 PS-000.17346 Водонагреватель Ariston VELIS LUX INOX PW ABSE WIFI 30
+[171/260] #17349 PS-000.17349 Водонагреватель Ariston ABS PRO1 R 80 H
+[172/260] #17350 PS-000.17350 Водонагреватель Ariston VELIS LUX INOX PW ABSE WIFI 100
+[173/260] #17351 PS-000.17351 Водонагреватель электрический Ariston ABS BLU1 R 50 V SLIM
+[174/260] #17352 PS-000.17352 Водонагреватель Ariston BLU1 R 50 V PL
+[175/260] #17353 PS-000.17353 Водонагреватель электрический Ariston ABS ANDRIS2 R 15 O
+[176/260] #17354 PS-000.17354 Водонагреватель электрический Ariston ABS ANDRIS2 R 10 2.5 O
+[177/260] #17355 PS-000.17355 Водонагреватель Ariston BLU1 R 80 V PL
+[178/260] #17356 PS-000.17356 Водонагреватель электрический Ariston ABS ANDRIS2 R 30 O
+[179/260] #17357 PS-000.17357 Водонагреватель Ariston COMFORT R ABS 30 V 1,5K PL SLIM
+[180/260] #17358 PS-000.17358 Водонагреватель Ariston COMFORT R ABS 80 V 1,8K PL
+[181/260] #17359 PS-000.17359 Водонагреватель Ariston PRO1 R ABS 120 V
+[182/260] #17361 PS-000.17361 Водонагреватель Ariston BLU EVO R 10 RU
+[183/260] #17367 PS-000.17367 Водонагреватель Ariston ATMOR IN-LINE 12K
+[184/260] #17369 PS-000.17369 Газовый котел Ariston CARES X 15 FF NG
+[185/260] #17370 PS-000.17370 Газовый котел Ariston CARES X 24 FF NG
+[186/260] #17375 PS-000.17375 Газовая колонка Ariston MARCO POLO M2 10L FF NG
+[187/260] #17379 PS-000.17379 Газовый котел Ariston CARES X 18 FF NG
+[188/260] #17381 PS-000.17381 Водонагреватель Ariston PRO1 R 50 V PL
+[189/260] #17382 PS-000.17382 Водонагреватель электрический Ariston PRO1 R ABS 30 V Slim
+[190/260] #17383 PS-000.17383 Водонагреватель Ariston PRO1 R 100 V PL
+[191/260] #17384 PS-000.17384 Водонагреватель Ariston PRO1 R ABS 50 V
+[192/260] #17385 PS-000.17385 Водонагреватель Ariston PRO1 R ABS 80 V
+[193/260] #17386 PS-000.17386 Водонагреватель Ariston PRO1 R ABS 100 V
+[194/260] #17391 PS-000.17391 Водонагреватель Ariston PRO1 R INOX ABS 100 V
+[195/260] #17392 PS-000.17392 Водонагреватель Ariston PRO1 R ABS 80 V Slim
+[196/260] #17393 PS-000.17393 Водонагреватель Ariston PRO1 R INOX ABS 50 V
+[197/260] #17394 PS-000.17394 Водонагреватель электрический Ariston ABSE VLS PRO INOX PW 80
+[198/260] #17395 PS-000.17395 Водонагреватель Ariston Fais NTS 50V 1,5К (FA)
+[199/260] #17397 PS-000.17397 Водонагреватель электрический Ariston ARI 200 VERT 513 THER MO SF
+[200/260] #17398 PS-000.17398 Водонагреватель электрический Ariston ABSE VLS PRO INOX PW 100
+[201/260] #17402 PS-000.17402 Газовый котел Ariston CLAS XC SYSTEM NET 24 FF
+[202/260] #17403 PS-000.17403 Газовый котел Ariston ALTEAS XC NET 35 FF
+[203/260] #17407 PS-000.17407 Водонагреватель Ariston ARI 200 STAB 570 THER MO VS EU
+[204/260] #17408 PS-000.17408 Водонагреватель электрический Ariston ABSE VLS PRO PW 50
+[205/260] #17412 PS-000.17412 Водонагреватель электрический Ariston ABSE VLS PRO INOX PW 50
+[206/260] #17413 PS-000.17413 Водонагреватель Ariston PRO1 R 80 V PL
+[207/260] #17414 PS-000.17414 Водонагреватель Ariston PRO1 R 100 V 1,5K PL DRY
+[208/260] #17417 PS-000.17417 Водонагреватель Ariston PRO1 R ABS 65 V Slim
+[209/260] #17418 PS-000.17418 Водонагреватель электрический Ariston ABS VLS PRO INOX R 100
+[210/260] #17420 PS-000.17420 Водонагреватель Ariston Fais NTS 80V 1,5К (FA)
+[211/260] #17421 PS-000.17421 Водонагреватель Ariston PRO1 R ABS 50 V Slim
+[212/260] #17469 PS-000.17469 Коаксиальный разделитель Ariston 60/100-80 для конденсационных котлов
+[213/260] #17470 PS-000.17470 Дымоход коаксиальный для колонок Ariston NEXT EVO и Gi7S Ø60/100
+[214/260] #17471 PS-000.17471 Дымоход для конденсационных котлов Ariston 60/100 3318073
 
 ```
