@@ -1,12 +1,31 @@
 # Server Artisan Result
 
-- Time: 2026-07-10 11:11:23 UTC
-- Task: `artisan-background`
-- Artisan args: `products:sanitize-content-html --apply --brand=Thermex --active-only --not-archived --rewrite-seo --limit=0 --sleep=500`
+- Time: 2026-07-10 11:13:05 UTC
+- Task: `tail-log`
+- Artisan args: ``
 - Log file: `storage/logs/thermex-city-seo-standard.log`
 - Exit code: `0`
 
 ```text
-started pid=2296572
+[1/299] #17561 PS-000.17561 Фильтр защиты от накипи Thermex ION SL10&quot;
+[2/299] #17563 PS-000.17563 Фильтр защиты от накипи Thermex ION SL5&quot;
+[3/299] #17564 PS-000.17564 Панель управления THERMEX в сборе с тэном 6 кВт
+[4/299] #17568 PS-000.17568 Комплект дымохода для конденсационного котла Thermex Sirius 60/100 (1000мм)
+[5/299] #17569 PS-000.17569 Комплект дымохода для конденсационного котла Thermex Vega 60/100 (750мм)
+[6/299] #17573 PS-000.17573 Трехходовой клапан THERMEX dLine Т с электроприводом (комплект) для котлов Th...
+[7/299] #17574 PS-000.17574 Комплект для подключения бойлера к одноконтурному котлу Thermex
+[8/299] #17584 PS-000.17584 Конденсационный газовый котел Thermex Coloss S 69
+[9/299] #17590 PS-000.17590 Электрический котел Thermex Eurostar E 904 без Wi-Fi
+[10/299] #17591 PS-000.17591 Электрический котел Thermex Eurostar E 915 с Wi-Fi
+[11/299] #17595 PS-000.17595 Электрический котел Thermex Eurostar E 918 с Wi-Fi
+[12/299] #17603 PS-000.17603 Электрический котел Thermex Eurostar E 912 с Wi-Fi
+[13/299] #17604 PS-000.17604 Электрический котел Thermex Boss 12 Wi-Fi (White)
+[14/299] #17607 PS-000.17607 Электрический котел Thermex Boss 12 Wi-Fi (Black)
+[15/299] #17619 PS-000.17619 Конденсационный газовый котел Thermex VEGA PS 28
+[16/299] #17624 PS-000.17624 Конденсационный газовый котел Thermex Coloss SW 100
+[17/299] #17625 PS-000.17625 Конденсационный газовый котел Thermex Coloss SW 69
+[18/299] #17632 PS-000.17632 Конденсационный газовый котёл Thermex Sirius PS 24
+[19/299] #17633 PS-000.17633 Конденсационный газовый котел Thermex VEGA PS 24
+[20/299] #17636 PS-000.17636 Газовый котел Thermex Blaze FH18
 
 ```
