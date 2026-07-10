@@ -1,6 +1,6 @@
 {
-  "task": "artisan-apply",
-  "artisan_args": "products:sanitize-content-html --apply --brand=Fondital --active-only --not-archived --rewrite-seo --limit=0 --sleep=500",
+  "task": "artisan-dry-run",
+  "artisan_args": "products:audit-content-quality --brand=Fondital --active-only --not-archived --limit=120",
   "log_file": "storage/logs/server-artisan.log",
-  "run_id": "sanitize-fondital-city-seo-standard"
+  "run_id": "audit-fondital-after-city-seo-standard"
 }
