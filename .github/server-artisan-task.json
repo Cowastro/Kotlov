@@ -2,5 +2,5 @@
   "task": "tail-log",
   "artisan_args": "",
   "log_file": "storage/logs/buderus-city-seo-standard.log",
-  "run_id": "tail-buderus-city-seo-standard-1"
+  "run_id": "tail-buderus-city-seo-standard-2"
 }
