@@ -1,6 +1,6 @@
 {
-  "task": "tail-log",
-  "artisan_args": "",
-  "log_file": "storage/logs/dab-city-seo-standard.log",
-  "run_id": "tail-dab-city-seo-standard-4"
+  "task": "artisan-dry-run",
+  "artisan_args": "products:audit-content-quality --brand=DAB --active-only --not-archived --limit=120",
+  "log_file": "storage/logs/server-artisan.log",
+  "run_id": "audit-dab-after-city-seo-standard"
 }
