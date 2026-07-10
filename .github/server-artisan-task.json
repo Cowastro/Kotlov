@@ -2,5 +2,5 @@
   "task": "tail-log",
   "artisan_args": "",
   "log_file": "storage/logs/kermi-city-seo-standard.log",
-  "run_id": "tail-kermi-city-seo-standard"
+  "run_id": "tail-kermi-city-seo-standard-2"
 }
