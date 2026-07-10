@@ -1,6 +1,6 @@
 {
-  "task": "artisan-background",
-  "artisan_args": "products:sanitize-content-html --apply --brand=Kospel --active-only --not-archived --rewrite-seo --limit=0 --sleep=500",
+  "task": "tail-log",
+  "artisan_args": "",
   "log_file": "storage/logs/kospel-city-seo-standard.log",
-  "run_id": "kospel-city-seo-standard"
+  "run_id": "tail-kospel-city-seo-standard"
 }
