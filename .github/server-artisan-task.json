@@ -2,5 +2,5 @@
   "task": "tail-log",
   "artisan_args": "",
   "log_file": "storage/logs/electrolux-city-seo-standard.log",
-  "run_id": "tail-electrolux-city-seo-standard-3"
+  "run_id": "tail-electrolux-city-seo-standard-4"
 }
