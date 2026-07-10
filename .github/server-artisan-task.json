@@ -1,6 +1,6 @@
 {
-  "task": "artisan-dry-run",
-  "artisan_args": "catalog:audit-media --type=all --only-with-products --missing-only --limit=160",
-  "log_file": "storage/logs/server-artisan.log",
-  "run_id": "audit-public-catalog-media-20260710-v2"
+  "task": "optimize-clear",
+  "artisan_args": "",
+  "log_file": "storage/logs/server-artisan-deploy.log",
+  "run_id": "deploy-sync-main-20260710-1"
 }
