@@ -1,6 +1,6 @@
 {
-  "task": "tail-log",
-  "artisan_args": "",
-  "log_file": "storage/logs/kermi-city-seo-standard.log",
-  "run_id": "tail-kermi-city-seo-standard-5"
+  "task": "artisan-dry-run",
+  "artisan_args": "products:audit-content-quality --brand=Kermi --active-only --not-archived --limit=40",
+  "log_file": "storage/logs/server-artisan.log",
+  "run_id": "audit-kermi-after-seo-standard"
 }
