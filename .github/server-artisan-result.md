@@ -1,12 +1,34 @@
 # Server Artisan Result
 
-- Time: 2026-07-10 12:58:22 UTC
-- Task: `artisan-background`
-- Artisan args: `products:sanitize-content-html --apply --brand=Bosch --active-only --not-archived --rewrite-seo --limit=0 --sleep=500`
+- Time: 2026-07-10 13:00:21 UTC
+- Task: `tail-log`
+- Artisan args: ``
 - Log file: `storage/logs/bosch-city-seo-standard.log`
 - Exit code: `0`
 
 ```text
-started pid=2469619
+[1/99] #1776 PS-001.776 Газовый котел Bosch Gaz 3000 W ZW 14-2 DHKE
+[2/99] #1778 PS-001.778 Газовый котел Bosch Gaz 4000 W ZSA 24-2 K
+[3/99] #1797 PS-001.797 Газовый котел Bosch Gaz 4000 W ZWA 24-2 K
+[4/99] #1798 PS-001.798 Газовый котел Bosch Gaz 7000 W ZSC 24-3 MFA
+[5/99] #1799 PS-001.799 Газовый котел Bosch Gaz 7000 W ZSC 24-3 MFK
+[6/99] #1800 PS-001.800 Газовый котел Bosch Gaz 7000 W ZWC 24-3 MFA
+[7/99] #1801 PS-001.801 Газовый котел Bosch Gaz 7000 W ZWC 24-3 MFK
+[8/99] #1802 PS-001.802 Газовый котел Bosch Gaz 7000 W ZSC 28-3 MFA
+[9/99] #1804 PS-001.804 Газовый котел Bosch Gaz 7000 W ZWC 28-3 MFA
+[10/99] #1806 PS-001.806 Газовый котел Bosch Gaz 7000 W ZSC 35-3 MFA
+[11/99] #1807 PS-001.807 Газовый котел Bosch Gaz 7000 W ZWC 35-3 MFA
+[12/99] #1810 PS-001.810 Конденсационный газовый котел Bosch Condens 7000 W ZBR 42-3 A (1 контурн.)
+[13/99] #1811 PS-001.811 Конденсационный газовый котел Bosch Condens 5000 W ZBR 70-3 (1 контурн.)
+[14/99] #1812 PS-001.812 Конденсационный газовый котел Bosch Condens 5000 W ZBR 100-3 (1 контурн.)
+[15/99] #1821 PS-001.821 Водонагреватель газовый Bosch Therm 4000 O WR 10-2 P
+[16/99] #3141 PS-003.141 Газовый котел Bosch Gaz 6000 W WBN 18 C (дымоход в подарок)
+[17/99] #3142 PS-003.142 Газовый котел Bosch WBN 6000-24 CRN 
+[18/99] #3143 PS-003.143 Газовый котел Bosch Gaz WBN 6000-24 HRN (дымоход в подарок)
+[19/99] #3533 PS-003.533 Дымоход коаксиальный Bosch AZ 362
+[20/99] #3638 PS-003.638 Дымоход коаксиальный Bosch AZ 389
+[21/99] #4125 PS-004.125 Датчик температуры SF 4 (BOSCH)
+[22/99] #5120 PS-005.120 Адаптер Bosch AZ370 (для вертикального подключения к котлу)
+[23/99] #5176 PS-005.176 Газовый котел Bosch Gaz 6000 W WBN 35 C (дымоход в подарок)
 
 ```
