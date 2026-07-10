@@ -146,6 +146,7 @@
                             'teplovyie-nasosyi'  => 'heatpump.jpg',
                             'kaminy'             => 'fireplace.jpg',
                             'pechki'             => 'pech.jpg',
+                            'pechi-dlya-bani'    => 'pech.jpg',
                             'dymohody'           => 'chimney.jpg',
                             'bani-i-sauny'       => 'sauna.jpg',
                             'vodonagrevateli'    => 'droplet.jpg',
@@ -158,6 +159,8 @@
                             'komplektuyushhie-dlya-otopleniya' => 'komplektuyushhie-dlya-otopleniya.jpg',
                             'filtry'             => 'filtry.jpg',
                             'nasosy'             => 'nasosy.jpg',
+                            'nasosyi'            => 'nasosy.jpg',
+                            'vodosnabzhenie'     => 'nasosy.jpg',
                         ];
                     @endphp
                     <div dir="ltr" class="swiper tf-swiper swiper-cate"
@@ -172,9 +175,12 @@
                             <a href="/{{ $category->slug }}" class="category-v04 hover-img wow fadeInUp">
                                 <div class="cate-image img-style">
                                     @php
-                                        $img = $category->image
-                                            ? asset('storage/' . $category->image)
-                                            : asset('img/popular/' . ($popularImages[$category->slug] ?? 'catalog.jpg'));
+                                        $fallbackImage = $popularImages[$category->slug] ?? null;
+                                        $img = $fallbackImage
+                                            ? asset('img/popular/' . $fallbackImage)
+                                            : ($category->image
+                                                ? asset('storage/' . $category->image)
+                                                : asset('img/popular/catalog.jpg'));
                                     @endphp
                                     <img loading="lazy" width="240" height="180"
                                         src="{{ $img }}"

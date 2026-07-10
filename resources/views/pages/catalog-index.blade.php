@@ -41,6 +41,7 @@
                             'otoplenie'                          => 'heater.jpg',
                             'vodosnabzhenie'                     => 'nasosy.jpg',
                             'nasosy'                             => 'nasosy.jpg',
+                            'nasosyi'                            => 'nasosy.jpg',
                             'klimat'                             => 'air.jpg',
                             'radiatory'                          => 'radiatory.jpg',
                             'truby-i-fitingi'                    => 'truby-i-fitingi.jpg',
@@ -53,10 +54,11 @@
 
                     @foreach ($rootCategories as $category)
                         @php
-                            $catImg = $category->image
-                                ? asset('storage/' . $category->image)
-                                : (isset($popularImages[$category->slug])
-                                    ? asset('img/popular/' . $popularImages[$category->slug])
+                            $fallbackImage = $popularImages[$category->slug] ?? null;
+                            $catImg = $fallbackImage
+                                ? asset('img/popular/' . $fallbackImage)
+                                : ($category->image
+                                    ? asset('storage/' . $category->image)
                                     : asset('img/categories/placeholder.jpg'));
                         @endphp
                         <div class="category-v03 style-2 hover-img4">
