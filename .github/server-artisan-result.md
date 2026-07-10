@@ -1,17 +1,12 @@
 # Server Artisan Result
 
-- Time: 2026-07-10 13:49:34 UTC
-- Task: `artisan-dry-run`
-- Artisan args: `products:audit-content-quality --brand=ARDERIA --active-only --not-archived --limit=80`
-- Log file: `storage/logs/server-artisan.log`
+- Time: 2026-07-10 13:53:20 UTC
+- Task: `artisan-background`
+- Artisan args: `products:sanitize-content-html --apply --brand=ASTON --active-only --not-archived --rewrite-seo --limit=0 --sleep=500`
+- Log file: `storage/logs/aston-city-seo-standard.log`
 - Exit code: `0`
 
 ```text
-+----------------------+-------+
-| metric               | count |
-+----------------------+-------+
-| checked              | 6     |
-| products_with_issues | 0     |
-+----------------------+-------+
+started pid=2561584
 
 ```
