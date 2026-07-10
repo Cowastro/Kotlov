@@ -1,6 +1,6 @@
 {
-  "task": "tail-log",
+  "task": "optimize-clear",
   "artisan_args": "",
-  "log_file": "storage/logs/brands-enrich-pages.log",
-  "run_id": "brand-pages-tail-20260710-1"
+  "log_file": "storage/logs/server-artisan-deploy.log",
+  "run_id": "deploy-brand-logo-layout-20260710-1"
 }

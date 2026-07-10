@@ -46,17 +46,18 @@
                 <div class="tf-grid-layout ssm-col-2 xl-col-4 gap-lg-30">
 
                     @foreach ($brands as $brand)
-                        <div class="category-v03 style-2 hover-img4">
-                            <a href="/brands/{{ $brand->slug }}" class="cate-image img-style4">
+                        <div class="category-v03 style-2 hover-img4 brand-grid-card">
+                            <a href="/brands/{{ $brand->slug }}" class="cate-image img-style4 brand-logo-frame">
                                 @if ($brand->logo)
                                     <img loading="lazy" width="330" height="440"
+                                        class="brand-logo-image"
                                         src="{{ $brand->image_url }}"
                                         alt="{{ $brand->name }}"
                                         onerror="this.src='{{ asset('img/products/product-placeholder.jpg') }}'">
                                 @else
                                     {{-- Плейсхолдер с инициалами --}}
-                                    <div style="width:100%;height:100%;min-height:220px;display:flex;align-items:center;justify-content:center;background:#f5f5f5;">
-                                        <span style="font-size:56px;font-weight:700;color:#ccc;letter-spacing:-2px;">
+                                    <div class="brand-logo-placeholder">
+                                        <span>
                                             {{ mb_strtoupper(mb_substr($brand->name, 0, 2)) }}
                                         </span>
                                     </div>
