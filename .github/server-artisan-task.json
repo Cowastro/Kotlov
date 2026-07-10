@@ -1,6 +1,6 @@
 {
-  "task": "artisan-dry-run",
-  "artisan_args": "products:audit-content-quality --brand=Ecokamin --active-only --not-archived --limit=40",
+  "task": "optimize-clear",
+  "artisan_args": "",
   "log_file": "storage/logs/server-artisan.log",
-  "run_id": "audit-ecokamin-after-seo-rewrite"
+  "run_id": "deploy-audit-quality-reason-filter"
 }
