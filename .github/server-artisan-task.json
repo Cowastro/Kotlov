@@ -1,6 +1,6 @@
 {
-  "task": "artisan-dry-run",
-  "artisan_args": "products:audit-content-quality --active-only --not-archived --reason=legacy_buy_template --limit=80",
-  "log_file": "storage/logs/server-artisan.log",
-  "run_id": "audit-old-legacy-buy-template"
+  "task": "artisan-background",
+  "artisan_args": "products:sanitize-content-html --apply --slug-like=teplov-i-suhov --active-only --not-archived --extract-media --restore-teplov-suhov-media --rewrite-seo --limit=0 --sleep=500",
+  "log_file": "storage/logs/teplov-suhov-media-seo-standard.log",
+  "run_id": "teplov-suhov-media-seo-standard"
 }
