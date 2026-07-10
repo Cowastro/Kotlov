@@ -150,6 +150,7 @@ class SanitizeProductContentHtmlCommand extends Command
         }
 
         $rows = $query->get();
+        $totalRows = $rows->count();
         $stats = [
             'checked' => 0,
             'changed' => 0,
@@ -167,6 +168,18 @@ class SanitizeProductContentHtmlCommand extends Command
 
         foreach ($rows as $row) {
             $stats['checked']++;
+
+            if ($rewriteSeo) {
+                $this->line(sprintf(
+                    '[%d/%d] #%d %s %s',
+                    $stats['checked'],
+                    $totalRows,
+                    (int) $row->id,
+                    (string) $row->sku,
+                    mb_strimwidth((string) $row->name, 0, 80, '...')
+                ));
+                flush();
+            }
 
             $original = (string) $row->content;
             $sanitized = $enricher->sanitizeDescriptionHtml($original);
