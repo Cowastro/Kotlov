@@ -1,6 +1,6 @@
 {
-  "task": "artisan-background",
-  "artisan_args": "products:sanitize-content-html --apply --brand=ac-electric --active-only --not-archived --rewrite-seo --limit=0 --sleep=500",
+  "task": "tail-log",
+  "artisan_args": "",
   "log_file": "storage/logs/ac-electric-city-seo-standard.log",
-  "run_id": "sanitize-ac-electric-city-seo-standard"
+  "run_id": "tail-ac-electric-city-seo-standard-1"
 }
