@@ -1208,9 +1208,12 @@ a.category-v05.subcat-tile:hover .cate-icon {
     margin-top: 26px;
 }
 
-.brand-detail-categories,
-.brand-detail-content-section {
+.brand-detail-categories {
     padding: 28px 0 0;
+}
+
+.brand-detail-content-section {
+    padding-top: 32px;
 }
 
 .brand-detail-section-head {
@@ -1258,12 +1261,14 @@ a.category-v05.subcat-tile:hover .cate-icon {
     color: #777;
 }
 
+.delivery-card {
+    background: #fff;
+    border: 1px solid #e8e8e8;
+    border-radius: 12px;
+    padding: 20px 24px;
+}
+
 .brand-detail-content {
-    max-width: 980px;
-    margin: 0 auto;
-    padding: 0 0 0 34px;
-    border-left: 2px solid #e84141;
-    background: transparent;
     color: #4f5965;
     font-size: 17px;
     line-height: 1.75;
@@ -1271,23 +1276,19 @@ a.category-v05.subcat-tile:hover .cate-icon {
 
 .brand-detail-content h2,
 .brand-detail-content h3 {
-    max-width: 780px;
-    margin: 0 auto 18px;
+    margin: 0 0 18px;
     color: #111;
     font-size: clamp(24px, 2.5vw, 34px);
     line-height: 1.18;
-    text-align: center;
 }
 
 .brand-detail-content p {
-    max-width: 780px;
-    margin: 0 auto 14px;
+    margin: 0 0 14px;
 }
 
 .brand-detail-content ul,
 .brand-detail-content ol {
-    max-width: 780px;
-    margin: 0 auto 18px;
+    margin: 0 0 18px;
     padding-left: 22px;
 }
 
@@ -1343,7 +1344,6 @@ a.category-v05.subcat-tile:hover .cate-icon {
     }
 
     .brand-detail-content {
-        padding: 0 0 0 18px;
         font-size: 16px;
     }
 
