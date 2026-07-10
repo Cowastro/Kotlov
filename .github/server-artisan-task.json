@@ -1,6 +1,6 @@
 {
-  "task": "artisan-dry-run",
-  "artisan_args": "products:audit-content-quality --active-only --not-archived --limit=160",
-  "log_file": "storage/logs/server-artisan.log",
-  "run_id": "audit-global-after-bosch-city-seo-standard"
+  "task": "artisan-background",
+  "artisan_args": "products:sanitize-content-html --apply --brand=ac-electric --active-only --not-archived --rewrite-seo --limit=0 --sleep=500",
+  "log_file": "storage/logs/ac-electric-city-seo-standard.log",
+  "run_id": "sanitize-ac-electric-city-seo-standard"
 }
