@@ -1,6 +1,6 @@
 {
   "task": "artisan-apply",
-  "artisan_args": "products:sanitize-content-html --apply --sku=PS-000.18213 --active-only --not-archived --rewrite-seo --limit=1 --sleep=500",
-  "log_file": "storage/logs/ferroli-torino-18213-seo-standard.log",
-  "run_id": "sanitize-ferroli-torino-18213"
+  "artisan_args": "products:sanitize-content-html --apply --sku=PS-000.18222 --active-only --not-archived --rewrite-seo --limit=1 --sleep=500",
+  "log_file": "storage/logs/ferroli-torino-18222-seo-standard.log",
+  "run_id": "sanitize-ferroli-torino-18222"
 }
