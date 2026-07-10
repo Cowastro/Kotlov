@@ -1,6 +1,6 @@
 {
-  "task": "artisan-apply",
-  "artisan_args": "products:sanitize-content-html --apply --brand=Ferroli --active-only --not-archived --rewrite-seo --limit=0 --sleep=500",
-  "log_file": "storage/logs/ferroli-city-seo-standard.log",
-  "run_id": "sanitize-ferroli-city-seo-standard"
+  "task": "artisan-dry-run",
+  "artisan_args": "products:audit-content-quality --brand=Ferroli --active-only --not-archived --limit=40",
+  "log_file": "storage/logs/server-artisan.log",
+  "run_id": "audit-ferroli-after-city-seo-standard"
 }
