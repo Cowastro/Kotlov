@@ -1,17 +1,14 @@
 # Server Artisan Result
 
-- Time: 2026-07-10 17:02:35 UTC
+- Time: 2026-07-10 17:24:32 UTC
 - Task: `artisan-dry-run`
-- Artisan args: `products:audit-content-quality --brand=GARDANA --active-only --not-archived --limit=120`
+- Artisan args: `catalog:audit-menu --empty-only --limit=160`
 - Log file: `storage/logs/server-artisan.log`
-- Exit code: `0`
+- Exit code: `1`
 
 ```text
-+----------------------+-------+
-| metric               | count |
-+----------------------+-------+
-| checked              | 43    |
-| products_with_issues | 0     |
-+----------------------+-------+
+
+   ERROR  There are no commands defined in the "catalog" namespace.  
+
 
 ```
