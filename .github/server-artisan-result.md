@@ -1,6 +1,6 @@
 # Server Artisan Result
 
-- Time: 2026-07-10 17:50:03 UTC
+- Time: 2026-07-10 18:06:38 UTC
 - Task: `artisan-dry-run`
 - Artisan args: `catalog:audit-media --type=all --only-with-products --missing-only --limit=160`
 - Log file: `storage/logs/server-artisan.log`
@@ -8,40 +8,29 @@
 
 ```text
 From https://github.com/Cowastro/Kotlov
-   7e65dbe..740304b  main       -> origin/main
-Updating 7e65dbe..740304b
+   740304b..4eb3023  main       -> origin/main
+Updating 740304b..4eb3023
 Fast-forward
- .github/server-artisan-result.md                  | 173 +------------------
- .github/server-artisan-task.json                  |   6 +-
- .github/workflows/server-artisan-queue.yml        |   2 +-
- app/Console/Commands/AuditCatalogMediaCommand.php | 193 ++++++++++++++++++++++
- app/Console/Commands/AuditCatalogMenuCommand.php  | 128 ++++++++++++++
- app/Http/Controllers/BrandController.php          |   8 +-
- app/Http/Controllers/CatalogController.php        |  19 ++-
- app/Models/Brand.php                              |  29 ++++
- app/Providers/AppServiceProvider.php              |  57 ++++++-
- resources/views/pages/brands.blade.php            |   4 +-
- resources/views/pages/catalog-index.blade.php     |   3 +-
- resources/views/pages/home-new.blade.php          |  10 +-
- 12 files changed, 439 insertions(+), 193 deletions(-)
- create mode 100644 app/Console/Commands/AuditCatalogMediaCommand.php
- create mode 100644 app/Console/Commands/AuditCatalogMenuCommand.php
+ .github/server-artisan-result.md                  | 315 +++++++++++++++++++++-
+ .github/server-artisan-task.json                  |   2 +-
+ app/Console/Commands/AuditCatalogMediaCommand.php |  16 +-
+ app/Http/Controllers/CatalogIndexController.php   |  37 ++-
+ resources/views/pages/catalog-index.blade.php     |  10 +-
+ resources/views/pages/home-new.blade.php          |  12 +-
+ 6 files changed, 369 insertions(+), 23 deletions(-)
 Categories
 +----------+-------+
 | metric   | count |
 +----------+-------+
 | checked  | 108   |
-| missing  | 99    |
+| missing  | 95    |
 | broken   | 0     |
-| fallback | 9     |
+| fallback | 13    |
 | ok       | 0     |
 +----------+-------+
 +-----+--------+-------------------------------------------------+-------------------------------------------+----------+---------+------+
 | id  | parent | slug                                            | name                                      | products | media   | path |
 +-----+--------+-------------------------------------------------+-------------------------------------------+----------+---------+------+
-| 49  | 0      | kotly                                           | Котлы отопления                           | 183      | missing | -    |
-| 113 | 0      | pechki                                          | Печи                                      | 14       | missing | -    |
-| 286 | 0      | teplovyie-nasosyi                               | Тепловые насосы                           | 13       | missing | -    |
 | 53  | 49     | gazovye                                         | Газовые                                   | 802      | missing | -    |
 | 54  | 49     | tverdotoplivnye                                 | Твердотопливные                           | 494      | missing | -    |
 | 55  | 49     | elektricheskie                                  | Электрические                             | 579      | missing | -    |
@@ -116,7 +105,6 @@ Categories
 | 249 | 303    | poverhnostnyie                                  | Поверхностные насосы                      | 32       | missing | -    |
 | 251 | 303    | nasosnyie-stantsii                              | Насосные станции (гидрофор)               | 65       | missing | -    |
 | 202 | 304    | obogrevateli                                    | Обогреватели                              | 80       | missing | -    |
-| 52  | 305    | pechi-dlya-bani                                 | Для бани                                  | 2        | missing | -    |
 | 69  | 305    | drovianye-peci-bannye                           | Дровяные печи (банные)                    | 298      | missing | -    |
 | 70  | 305    | elektrokamenki                                  | Электрокаменки                            | 3        | missing | -    |
 | 73  | 305    | aksessuary-dlya-bani                            | Для печей и каминов                       | 162      | missing | -    |
