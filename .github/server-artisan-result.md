@@ -1,6 +1,6 @@
 # Server Artisan Result
 
-- Time: 2026-07-10 21:36:44 UTC
+- Time: 2026-07-10 21:40:18 UTC
 - Task: `optimize-clear`
 - Artisan args: ``
 - Log file: `storage/logs/server-artisan-deploy.log`
@@ -8,26 +8,24 @@
 
 ```text
 From https://github.com/Cowastro/Kotlov
-   ff36d1a..2d7918b  main       -> origin/main
-Updating ff36d1a..2d7918b
+   2d7918b..ec4643f  main       -> origin/main
+Updating 2d7918b..ec4643f
 Fast-forward
- .github/server-artisan-result.md         |  31 +++--
- .github/server-artisan-task.json         |   2 +-
- app/Http/Controllers/BrandController.php |  18 ++-
- public/assets/css/kotlov.css             | 225 +++++++++++++++++++++++++++++++
- resources/views/pages/brand.blade.php    | 120 ++++++++++++-----
- 5 files changed, 343 insertions(+), 53 deletions(-)
+ .github/server-artisan-result.md         | 30 ++++++++++++++++--------------
+ .github/server-artisan-task.json         |  2 +-
+ app/Http/Controllers/BrandController.php | 26 ++++++++++++++++++--------
+ 3 files changed, 35 insertions(+), 23 deletions(-)
 
    INFO  Clearing cached bootstrap files.  
 
-  config ......................................................... 0.88ms DONE
-  cache .......................................................... 3.09ms DONE
-  compiled ....................................................... 0.77ms DONE
-  events ......................................................... 0.43ms DONE
-  routes ......................................................... 0.39ms DONE
-  views .......................................................... 1.51ms DONE
-  blade-icons .................................................... 0.16ms DONE
-  filament ....................................................... 0.85ms DONE
+  config ......................................................... 0.87ms DONE
+  cache .......................................................... 2.82ms DONE
+  compiled ....................................................... 0.58ms DONE
+  events ......................................................... 0.44ms DONE
+  routes ......................................................... 0.40ms DONE
+  views .......................................................... 1.48ms DONE
+  blade-icons .................................................... 0.17ms DONE
+  filament ....................................................... 0.72ms DONE
 
 
 ```
