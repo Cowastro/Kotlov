@@ -1,17 +1,12 @@
 # Server Artisan Result
 
-- Time: 2026-07-10 13:37:38 UTC
-- Task: `artisan-dry-run`
-- Artisan args: `products:audit-content-quality --brand=ac-electric --active-only --not-archived --limit=80`
-- Log file: `storage/logs/server-artisan.log`
+- Time: 2026-07-10 13:41:45 UTC
+- Task: `artisan-background`
+- Artisan args: `products:sanitize-content-html --apply --brand=ARDERIA --active-only --not-archived --rewrite-seo --limit=0 --sleep=500`
+- Log file: `storage/logs/arderia-city-seo-standard.log`
 - Exit code: `0`
 
 ```text
-+----------------------+-------+
-| metric               | count |
-+----------------------+-------+
-| checked              | 8     |
-| products_with_issues | 0     |
-+----------------------+-------+
+started pid=2543528
 
 ```
