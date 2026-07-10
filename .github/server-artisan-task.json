@@ -1,6 +1,6 @@
 {
-  "task": "optimize-clear",
-  "artisan_args": "",
+  "task": "artisan-dry-run",
+  "artisan_args": "products:audit-content-quality --slug-like=teplov-i-suhov --active-only --not-archived --limit=40",
   "log_file": "storage/logs/server-artisan.log",
-  "run_id": "deploy-audit-slug-like-filter"
+  "run_id": "audit-teplov-suhov-after-seo-standard"
 }
