@@ -2,5 +2,5 @@
   "task": "tail-log",
   "artisan_args": "",
   "log_file": "storage/logs/dab-city-seo-standard.log",
-  "run_id": "tail-dab-city-seo-standard-1"
+  "run_id": "tail-dab-city-seo-standard-2"
 }
