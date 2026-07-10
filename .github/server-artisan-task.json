@@ -1,6 +1,6 @@
 {
-  "task": "ps-artisan",
+  "task": "tail-log",
   "artisan_args": "",
   "log_file": "storage/logs/ecokamin-city-seo-rewrite-1.log",
-  "run_id": "ps-ecokamin-city-seo-rewrite-1"
+  "run_id": "tail-ecokamin-city-seo-rewrite-1"
 }
