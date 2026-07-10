@@ -13,6 +13,7 @@ class AuditProductContentQualityCommand extends Command
         {--brand= : Brand name or slug}
         {--active-only : Only active products}
         {--not-archived : Only not archived products}
+        {--reason= : Only show products with this issue reason}
         {--limit=200 : Max sample rows to show, 0 means no samples}
         {--min-issues=1 : Show sample rows with at least this many issues}';
 
@@ -22,6 +23,7 @@ class AuditProductContentQualityCommand extends Command
     {
         $limit = max(0, (int) $this->option('limit'));
         $minIssues = max(1, (int) $this->option('min-issues'));
+        $reasonFilter = trim((string) $this->option('reason'));
 
         $query = DB::table('products as p')
             ->leftJoin('brands as b', 'b.id', '=', 'p.brand_id')
@@ -61,15 +63,24 @@ class AuditProductContentQualityCommand extends Command
         $brandSummary = [];
         $samples = [];
         $checked = 0;
+        $productsWithIssues = 0;
 
         foreach ($query->get() as $row) {
             $checked++;
             $issues = $this->issuesFor((string) $row->content, (string) ($row->short_description ?? ''), $row->documents, (string) ($row->video_url ?? ''));
 
+            if ($reasonFilter !== '' && ! in_array($reasonFilter, $issues, true)) {
+                continue;
+            }
+
             foreach ($issues as $issue) {
                 $summary[$issue] = ($summary[$issue] ?? 0) + 1;
                 $brand = (string) ($row->brand ?: '-');
                 $brandSummary[$brand][$issue] = ($brandSummary[$brand][$issue] ?? 0) + 1;
+            }
+
+            if ($issues !== []) {
+                $productsWithIssues++;
             }
 
             if ($issues !== [] && count($issues) >= $minIssues && ($limit === 0 || count($samples) < $limit)) {
@@ -87,7 +98,7 @@ class AuditProductContentQualityCommand extends Command
 
         $this->table(['metric', 'count'], [
             ['checked', $checked],
-            ['products_with_issues', count($samples)],
+            ['products_with_issues', $productsWithIssues],
         ]);
 
         if ($summary !== []) {
