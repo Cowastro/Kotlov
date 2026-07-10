@@ -1,6 +1,6 @@
 {
-  "task": "artisan-dry-run",
-  "artisan_args": "products:audit-content-quality --active-only --not-archived --limit=180",
+  "task": "artisan-apply",
+  "artisan_args": "products:sanitize-content-html --apply --brand=Candy --active-only --not-archived --rewrite-seo --limit=0 --sleep=500",
   "log_file": "storage/logs/server-artisan.log",
-  "run_id": "audit-global-after-electrolux-city-seo-standard"
+  "run_id": "sanitize-candy-city-seo-standard"
 }
