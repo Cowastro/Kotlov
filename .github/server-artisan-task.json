@@ -1,6 +1,6 @@
 {
-  "task": "artisan-dry-run",
-  "artisan_args": "products:audit-content-quality --brand=Ariston --active-only --not-archived --limit=40",
-  "log_file": "storage/logs/server-artisan.log",
-  "run_id": "audit-ariston-after-seo-standard"
+  "task": "artisan-background",
+  "artisan_args": "products:sanitize-content-html --apply --brand=Kospel --active-only --not-archived --rewrite-seo --limit=0 --sleep=500",
+  "log_file": "storage/logs/kospel-city-seo-standard.log",
+  "run_id": "kospel-city-seo-standard"
 }
