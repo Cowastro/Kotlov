@@ -1,6 +1,6 @@
 {
-  "task": "optimize-clear",
-  "artisan_args": "",
-  "log_file": "storage/logs/teplov-suhov-city-seo-rewrite.log",
-  "run_id": "deploy-ecokamin-video-preserve"
+  "task": "artisan-dry-run",
+  "artisan_args": "products:sanitize-content-html --brand=Ecokamin --active-only --not-archived --extract-media --show-samples=30 --show-content-samples=10 --limit=80",
+  "log_file": "storage/logs/server-artisan.log",
+  "run_id": "audit-ecokamin-legacy-content-media"
 }
