@@ -1,6 +1,6 @@
 {
-  "task": "artisan-dry-run",
-  "artisan_args": "products:audit-content-quality --brand=DAB --active-only --not-archived --limit=120",
+  "task": "artisan-apply",
+  "artisan_args": "products:sanitize-content-html --apply --id=19170 --id=19220 --id=19348 --id=19360 --active-only --not-archived --rewrite-seo --limit=0 --sleep=500",
   "log_file": "storage/logs/server-artisan.log",
-  "run_id": "audit-dab-after-city-seo-standard"
+  "run_id": "fix-dab-leftover-city-seo-standard"
 }
