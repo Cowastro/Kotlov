@@ -4,6 +4,7 @@ namespace App\Providers;
 
 use App\Models\Brand;
 use App\Models\Category;
+use App\Models\Product;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
@@ -181,16 +182,58 @@ private function getNavBrands(): \Illuminate\Support\Collection
 
 private function getNavCategories()
 {
-    return Cache::remember('nav:categories', 3600, function () {
-        return Category::query()
-            ->where('parent_id', 0)
+    return Cache::remember('nav:categories:orderable:v1', 3600, function () {
+        $categories = Category::query()
             ->where('is_active', true)
-            ->with(['children' => function ($q) {
-                $q->where('is_active', true)
-                  ->orderBy('sort_order');
-            }])
             ->orderBy('sort_order')
             ->get();
+
+        $categoriesByParent = $categories->groupBy('parent_id');
+        $directProductCounts = Product::query()
+            ->orderable()
+            ->whereNotNull('category_id')
+            ->selectRaw('category_id, COUNT(*) as aggregate')
+            ->groupBy('category_id')
+            ->pluck('aggregate', 'category_id');
+
+        $branchCounts = [];
+        $countBranchProducts = function (int $categoryId) use (&$countBranchProducts, &$branchCounts, $categoriesByParent, $directProductCounts): int {
+            if (array_key_exists($categoryId, $branchCounts)) {
+                return $branchCounts[$categoryId];
+            }
+
+            $count = (int) ($directProductCounts[$categoryId] ?? 0);
+
+            foreach ($categoriesByParent->get($categoryId, collect()) as $child) {
+                $count += $countBranchProducts((int) $child->id);
+            }
+
+            return $branchCounts[$categoryId] = $count;
+        };
+
+        $decorateTree = function (Category $category) use (&$decorateTree, $categoriesByParent, $countBranchProducts): Category {
+            $category->products_count = $countBranchProducts((int) $category->id);
+
+            $children = $categoriesByParent
+                ->get($category->id, collect())
+                ->sortBy('sort_order')
+                ->values()
+                ->map(fn (Category $child) => $decorateTree($child))
+                ->filter(fn (Category $child) => $child->products_count > 0)
+                ->values();
+
+            $category->setRelation('children', $children);
+
+            return $category;
+        };
+
+        return $categoriesByParent
+            ->get(0, collect())
+            ->sortBy('sort_order')
+            ->values()
+            ->map(fn (Category $category) => $decorateTree($category))
+            ->filter(fn (Category $category) => $category->products_count > 0)
+            ->values();
     });
 }
 }
