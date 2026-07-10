@@ -109,10 +109,10 @@ jobs:
           remote_script=$(cat <<'SCRIPT'
           set -euo pipefail
           cd "$SERVER_PATH"
+          git pull
 
           case "$TASK" in
             optimize-clear)
-              git pull
               "$PHP_BIN" artisan optimize:clear
               ;;
             artisan-dry-run)

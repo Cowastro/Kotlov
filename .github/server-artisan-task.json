@@ -1,6 +1,6 @@
 {
   "task": "artisan-dry-run",
-  "artisan_args": "catalog:audit-menu --empty-only --limit=160",
+  "artisan_args": "catalog:audit-media --type=all --only-with-products --missing-only --limit=160",
   "log_file": "storage/logs/server-artisan.log",
-  "run_id": "audit-empty-public-catalog-categories"
+  "run_id": "audit-public-catalog-media-20260710"
 }

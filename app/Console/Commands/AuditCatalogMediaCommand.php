@@ -10,6 +10,26 @@ use Illuminate\Support\Facades\Storage;
 
 class AuditCatalogMediaCommand extends Command
 {
+    private const CATEGORY_FALLBACK_IMAGES = [
+        'kotly-otopleniya' => 'boiler_img.jpg',
+        'vodonagrevateli' => 'heater.jpg',
+        'pechi' => 'pech.jpg',
+        'dymohody' => 'chimney.jpg',
+        'kaminy' => 'fireplace.jpg',
+        'truby-i-fitingi' => 'truby-i-fitingi.jpg',
+        'radiatory' => 'radiatory.jpg',
+        'teplyj-pol' => 'teplyj-pol.jpg',
+        'klimat' => 'air.jpg',
+        'nasosy' => 'nasosy.jpg',
+        'vodosnabzhenie' => 'nasosy.jpg',
+        'komplektuyushhie-dlya-otopleniya' => 'komplektuyushhie-dlya-otopleniya.jpg',
+        'filtry' => 'filtry.jpg',
+        'bani-i-sauny' => 'sauna.jpg',
+        'elektricheskie-konvektoryi' => 'elektricheskie-konvektoryi.jpg',
+        'teplovye-nasosy' => 'heatpump.jpg',
+        'pelletnye-gorelki' => 'pellet_burner.jpg',
+    ];
+
     protected $signature = 'catalog:audit-media
         {--type=all : all, categories or brands}
         {--only-with-products : Only rows with orderable products}
@@ -43,7 +63,7 @@ class AuditCatalogMediaCommand extends Command
     private function auditCategories(int $limit): void
     {
         $rows = [];
-        $summary = ['checked' => 0, 'missing' => 0, 'broken' => 0, 'ok' => 0];
+        $summary = ['checked' => 0, 'missing' => 0, 'broken' => 0, 'fallback' => 0, 'ok' => 0];
 
         $counts = Product::query()
             ->orderable()
@@ -64,10 +84,10 @@ class AuditCatalogMediaCommand extends Command
             }
 
             $summary['checked']++;
-            [$status, $path] = $this->mediaStatus($category->image);
+            [$status, $path] = $this->categoryMediaStatus($category->slug, $category->image);
             $summary[$status]++;
 
-            if ((bool) $this->option('missing-only') && $status === 'ok') {
+            if ((bool) $this->option('missing-only') && in_array($status, ['ok', 'fallback'], true)) {
                 continue;
             }
 
@@ -94,7 +114,7 @@ class AuditCatalogMediaCommand extends Command
     private function auditBrands(int $limit): void
     {
         $rows = [];
-        $summary = ['checked' => 0, 'missing' => 0, 'broken' => 0, 'ok' => 0];
+        $summary = ['checked' => 0, 'missing' => 0, 'broken' => 0, 'fallback' => 0, 'ok' => 0];
 
         $query = Brand::query()
             ->where('is_active', true)
@@ -154,5 +174,20 @@ class AuditCatalogMediaCommand extends Command
         }
 
         return ['broken', $path];
+    }
+
+    private function categoryMediaStatus(?string $slug, ?string $path): array
+    {
+        [$status, $resolvedPath] = $this->mediaStatus($path);
+        if ($status !== 'missing') {
+            return [$status, $resolvedPath];
+        }
+
+        $fallback = self::CATEGORY_FALLBACK_IMAGES[(string) $slug] ?? null;
+        if ($fallback && file_exists(public_path('img/popular/' . $fallback))) {
+            return ['fallback', 'img/popular/' . $fallback];
+        }
+
+        return [$status, $resolvedPath];
     }
 }
