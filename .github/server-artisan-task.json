@@ -1,6 +1,6 @@
 {
-  "task": "artisan-apply",
-  "artisan_args": "products:sanitize-content-html --apply --brand=Ecokamin --active-only --not-archived --rewrite-seo --limit=1 --sleep=500",
+  "task": "artisan-dry-run",
+  "artisan_args": "products:sanitize-content-html --id=5122 --active-only --not-archived --show-content-samples=1 --limit=1",
   "log_file": "storage/logs/server-artisan.log",
-  "run_id": "ecokamin-seo-rewrite-smoke-1"
+  "run_id": "audit-ecokamin-smoke-content-5122"
 }
