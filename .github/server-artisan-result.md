@@ -1,12 +1,41 @@
 # Server Artisan Result
 
-- Time: 2026-07-10 13:41:45 UTC
-- Task: `artisan-background`
-- Artisan args: `products:sanitize-content-html --apply --brand=ARDERIA --active-only --not-archived --rewrite-seo --limit=0 --sleep=500`
+- Time: 2026-07-10 13:45:38 UTC
+- Task: `tail-log`
+- Artisan args: ``
 - Log file: `storage/logs/arderia-city-seo-standard.log`
 - Exit code: `0`
 
 ```text
-started pid=2543528
+[1/6] #11255 PS-011.255 Котел газовый отопительный водогрейный Arderia D18, v3                       ...
+[2/6] #11778 PS-011.778 Котел газовый отопительный водогрейный Arderia D40, v3                       ...
+[3/6] #11782 PS-011.782 Котел газовый отопительный водогрейный Arderia SB24, v3                      ...
+[4/6] #11783 PS-011.783 Котел газовый отопительный водогрейный Arderia SB28, v3                      ...
+[5/6] #11784 PS-011.784 Котел газовый отопительный водогрейный Arderia SB32, v3                      ...
+[6/6] #11785 PS-011.785 Котел газовый отопительный водогрейный Arderia SB40, v3                      ...
+APPLY: sanitized content was written.
++---------------------+-------+
+| metric              | count |
++---------------------+-------+
+| checked             | 6     |
+| changed             | 6     |
+| written             | 6     |
+| images_removed      | 0     |
+| styles_removed      | 0     |
+| bad_blocks_removed  | 0     |
+| videos_extracted    | 0     |
+| documents_extracted | 0     |
+| seo_rewritten       | 6     |
++---------------------+-------+
++-------+------------+---------+------------------------------------------------------------------------+
+| ID    | SKU        | Brand   | Product                                                                |
++-------+------------+---------+------------------------------------------------------------------------+
+| 11255 | PS-011.255 | ARDERIA | Котел газовый отопительный водогрейный Arderia D18, v3             ... |
+| 11778 | PS-011.778 | ARDERIA | Котел газовый отопительный водогрейный Arderia D40, v3             ... |
+| 11782 | PS-011.782 | ARDERIA | Котел газовый отопительный водогрейный Arderia SB24, v3            ... |
+| 11783 | PS-011.783 | ARDERIA | Котел газовый отопительный водогрейный Arderia SB28, v3            ... |
+| 11784 | PS-011.784 | ARDERIA | Котел газовый отопительный водогрейный Arderia SB32, v3            ... |
+| 11785 | PS-011.785 | ARDERIA | Котел газовый отопительный водогрейный Arderia SB40, v3            ... |
++-------+------------+---------+------------------------------------------------------------------------+
 
 ```
