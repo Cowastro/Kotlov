@@ -1,6 +1,6 @@
 {
-  "task": "artisan-background",
-  "artisan_args": "products:sanitize-content-html --apply --slug-like=teplov-i-suhov --active-only --not-archived --extract-media --restore-teplov-suhov-media --rewrite-seo --limit=0 --sleep=500",
+  "task": "tail-log",
+  "artisan_args": "",
   "log_file": "storage/logs/teplov-suhov-media-seo-standard.log",
-  "run_id": "teplov-suhov-media-seo-standard"
+  "run_id": "tail-teplov-suhov-media-seo-standard"
 }
