@@ -1,6 +1,6 @@
 {
   "task": "artisan-dry-run",
-  "artisan_args": "products:audit-content-quality --brand=GARDANA --active-only --not-archived --limit=120",
+  "artisan_args": "catalog:audit-menu --empty-only --limit=160",
   "log_file": "storage/logs/server-artisan.log",
-  "run_id": "audit-gardana-after-city-seo-standard"
+  "run_id": "audit-empty-public-catalog-categories"
 }
