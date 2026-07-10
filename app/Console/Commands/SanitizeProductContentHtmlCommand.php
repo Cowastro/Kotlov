@@ -141,12 +141,14 @@ class SanitizeProductContentHtmlCommand extends Command
             $query->where('p.created_at', '<=', $createdTo);
         }
 
-        if ($offset > 0) {
-            $query->offset($offset);
-        }
-
         if ($limit > 0) {
             $query->limit($limit);
+        } elseif ($offset > 0) {
+            $query->limit(PHP_INT_MAX);
+        }
+
+        if ($offset > 0) {
+            $query->offset($offset);
         }
 
         $rows = $query->get();
