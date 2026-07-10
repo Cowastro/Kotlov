@@ -1051,6 +1051,12 @@ a.category-v05.subcat-tile:hover .cate-icon {
 }
 
 /* Brand directory cards: logos must be contained, not cropped like category photos. */
+.brand-grid-card {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
 .brand-grid-card .brand-logo-frame {
     display: flex;
     align-items: center;
@@ -1060,6 +1066,13 @@ a.category-v05.subcat-tile:hover .cate-icon {
     padding: 34px;
     background: #fff;
     border: 1px solid #f0f0f0;
+}
+
+.brand-grid-card .cate-content {
+    position: static;
+    left: auto;
+    right: auto;
+    bottom: auto;
 }
 
 .brand-grid-card .brand-logo-image {
