@@ -1,6 +1,6 @@
 {
-  "task": "artisan-background",
-  "artisan_args": "products:sanitize-content-html --apply --brand=BAXI --active-only --not-archived --rewrite-seo --limit=0 --sleep=500",
+  "task": "tail-log",
+  "artisan_args": "",
   "log_file": "storage/logs/baxi-city-seo-standard.log",
-  "run_id": "background-baxi-city-seo-standard"
+  "run_id": "tail-baxi-city-seo-standard-1"
 }
