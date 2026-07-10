@@ -48,18 +48,28 @@ class BrandController extends Controller
             ->orderByDesc('rating')
             ->paginate(24);
 
-        $brandCategories = $brand->products()
-            ->orderable()
-            ->join('categories', 'categories.id', '=', 'products.category_id')
-            ->where('categories.is_active', true)
+        $brandCategories = DB::table('products as p')
+            ->join('categories as c', 'c.id', '=', 'p.category_id')
+            ->where('p.brand_id', $brand->id)
+            ->where('p.is_active', true)
+            ->where('p.is_archived', false)
+            ->where('p.price', '>', 0)
+            ->where(function ($query) {
+                $query->where('p.availability_status', 'check')
+                    ->orWhere(function ($query) {
+                        $query->where('p.availability_status', 'in_stock')
+                            ->where('p.in_stock', true);
+                    });
+            })
+            ->where('c.is_active', true)
             ->select(
-                'categories.name',
-                'categories.slug',
+                'c.name',
+                'c.slug',
                 DB::raw('COUNT(*) as products_count')
             )
-            ->groupBy('categories.id', 'categories.name', 'categories.slug')
+            ->groupBy('c.id', 'c.name', 'c.slug')
             ->orderByDesc('products_count')
-            ->orderBy('categories.name')
+            ->orderBy('c.name')
             ->limit(8)
             ->get();
 

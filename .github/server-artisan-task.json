@@ -2,5 +2,5 @@
   "task": "optimize-clear",
   "artisan_args": "",
   "log_file": "storage/logs/server-artisan-deploy.log",
-  "run_id": "deploy-brand-detail-layout-20260710-1"
+  "run_id": "deploy-brand-detail-query-fix-20260710-1"
 }
