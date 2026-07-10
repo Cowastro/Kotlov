@@ -1,20 +1,12 @@
 # Server Artisan Result
 
-- Time: 2026-07-10 12:10:16 UTC
+- Time: 2026-07-10 12:15:03 UTC
 - Task: `tail-log`
 - Artisan args: ``
 - Log file: `storage/logs/baxi-city-seo-standard.log`
 - Exit code: `0`
 
 ```text
-[1/75] #2052 PS-002.052 Газовый котел BAXI MAIN Four 24
-[2/75] #2058 PS-002.058 Газовый котел BAXI LUNA3 Comfort 1.240 i
-[3/75] #2059 PS-002.059 Газовый котел BAXI LUNA3 Comfort 240 i
-[4/75] #2060 PS-002.060 Газовый котел BAXI LUNA3 Comfort 1.240 Fi
-[5/75] #2061 PS-002.061 Газовый котел BAXI LUNA3 Comfort 1.310 Fi
-[6/75] #2062 PS-002.062 Газовый котел BAXI LUNA3 Comfort 240 Fi
-[7/75] #2063 PS-002.063 Газовый котел BAXI LUNA3 Comfort 310 Fi
-[8/75] #2064 PS-002.064 Газовый котел BAXI Slim 1.230 iN
 [9/75] #2065 PS-002.065 Газовый котел BAXI Slim 1.300 iN
 [10/75] #2066 PS-002.066 Газовый котел BAXI Slim 1.400 iN
 [11/75] #2067 PS-002.067 Газовый котел BAXI Slim 1.490 iN
@@ -66,5 +58,114 @@
 [57/75] #8106 PS-008.106 Конденсационный газовый котел Baxi LUNA PLATINUM + 1.18 GA
 [58/75] #8108 PS-008.108 Конденсационный газовый котел Baxi LUNA PLATINUM + 1.24 GA
 [59/75] #8115 PS-008.115 Конденсационный газовый котел Baxi LUNA PLATINUM + 1.32 GA
+[60/75] #8116 PS-008.116 Конденсационный газовый котел Baxi LUNA PLATINUM + 24 GA
+[61/75] #8117 PS-008.117 Конденсационный газовый котел Baxi LUNA PLATINUM + 33 GA
+[62/75] #8118 PS-008.118 Конденсационный газовый котел Baxi LUNA Duo-tec MP 1.35
+[63/75] #8119 PS-008.119 Конденсационный газовый котел Baxi LUNA Duo-tec MP 1.50
+[64/75] #8120 PS-008.120 Конденсационный газовый котел Baxi LUNA Duo-tec MP 1.60
+[65/75] #8121 PS-008.121 Конденсационный газовый котел Baxi LUNA Duo-tec MP 1.70
+[66/75] #8122 PS-008.122 Конденсационный газовый котел Baxi LUNA Duo-tec MP 1.90
+[67/75] #8123 PS-008.123 Конденсационный газовый котел Baxi LUNA Duo-tec MP 1.99
+[68/75] #8124 PS-008.124 Конденсационный газовый котел Baxi LUNA Duo-tec MP 1.110
+[69/75] #10447 PS-010.447 Электрический котел BAXI Ampera 6
+[70/75] #10448 PS-010.448 Электрический котел BAXI Ampera 9
+[71/75] #10449 PS-010.449 Электрический котел BAXI Ampera 12
+[72/75] #10450 PS-010.450 Электрический котел BAXI Ampera 14
+[73/75] #10451 PS-010.451 Электрический котел BAXI Ampera 18
+[74/75] #10452 PS-010.452 Электрический котел BAXI Ampera 24
+[75/75] #10453 PS-010.453 Электрический котел BAXI Ampera 30
+APPLY: sanitized content was written.
++---------------------+-------+
+| metric              | count |
++---------------------+-------+
+| checked             | 75    |
+| changed             | 75    |
+| written             | 75    |
+| images_removed      | 0     |
+| styles_removed      | 0     |
+| bad_blocks_removed  | 0     |
+| videos_extracted    | 0     |
+| documents_extracted | 0     |
+| seo_rewritten       | 75    |
++---------------------+-------+
++-------+------------+-------+------------------------------------------------------------------------+
+| ID    | SKU        | Brand | Product                                                                |
++-------+------------+-------+------------------------------------------------------------------------+
+| 2052  | PS-002.052 | BAXI  | Газовый котел BAXI MAIN Four 24                                        |
+| 2058  | PS-002.058 | BAXI  | Газовый котел BAXI LUNA3 Comfort 1.240 i                               |
+| 2059  | PS-002.059 | BAXI  | Газовый котел BAXI LUNA3 Comfort 240 i                                 |
+| 2060  | PS-002.060 | BAXI  | Газовый котел BAXI LUNA3 Comfort 1.240 Fi                              |
+| 2061  | PS-002.061 | BAXI  | Газовый котел BAXI LUNA3 Comfort 1.310 Fi                              |
+| 2062  | PS-002.062 | BAXI  | Газовый котел BAXI LUNA3 Comfort 240 Fi                                |
+| 2063  | PS-002.063 | BAXI  | Газовый котел BAXI LUNA3 Comfort 310 Fi                                |
+| 2064  | PS-002.064 | BAXI  | Газовый котел BAXI Slim 1.230 iN                                       |
+| 2065  | PS-002.065 | BAXI  | Газовый котел BAXI Slim 1.300 iN                                       |
+| 2066  | PS-002.066 | BAXI  | Газовый котел BAXI Slim 1.400 iN                                       |
+| 2067  | PS-002.067 | BAXI  | Газовый котел BAXI Slim 1.490 iN                                       |
+| 2068  | PS-002.068 | BAXI  | Газовый котел BAXI Slim 1.620 iN                                       |
+| 2069  | PS-002.069 | BAXI  | Газовый котел BAXI Slim 1.150 i                                        |
+| 2070  | PS-002.070 | BAXI  | Газовый котел BAXI Slim 1.230 i                                        |
+| 2071  | PS-002.071 | BAXI  | Газовый котел BAXI Slim 1.300 i                                        |
+| 2072  | PS-002.072 | BAXI  | Газовый котел BAXI Slim 2.230 i                                        |
+| 2073  | PS-002.073 | BAXI  | Газовый котел BAXI Slim 2.300 i                                        |
+| 2074  | PS-002.074 | BAXI  | Газовый котел BAXI Slim 1.230 Fi                                       |
+| 2075  | PS-002.075 | BAXI  | Газовый котел BAXI Slim 1.300 Fi                                       |
+| 2076  | PS-002.076 | BAXI  | Газовый котел BAXI Slim 1.230 FiN                                      |
+| 2077  | PS-002.077 | BAXI  | Газовый котел BAXI Slim 1.300 FiN                                      |
+| 2078  | PS-002.078 | BAXI  | Газовый котел BAXI Nuvola-3 B40 240 i                                  |
+| 2079  | PS-002.079 | BAXI  | Газовый котел BAXI Nuvola-3 B40 240 Fi                                 |
+| 2080  | PS-002.080 | BAXI  | Газовый котел BAXI Nuvola-3 B40 280 i                                  |
+| 2081  | PS-002.081 | BAXI  | Газовый котел BAXI Nuvola-3 B40 280 Fi                                 |
+| 2082  | PS-002.082 | BAXI  | Газовый котел BAXI Nuvola-3 Comfort 240 i                              |
+| 2083  | PS-002.083 | BAXI  | Газовый котел BAXI Nuvola-3 Comfort 240 Fi                             |
+| 2084  | PS-002.084 | BAXI  | Газовый котел BAXI Nuvola-3 Comfort 280 i                              |
+| 2085  | PS-002.085 | BAXI  | Газовый котел BAXI Nuvola-3 Comfort 280 Fi                             |
+| 2086  | PS-002.086 | BAXI  | Газовый котел BAXI Nuvola-3 Comfort 320 Fi                             |
+| 3521  | PS-003.521 | BAXI  | Газовый котел BAXI MAIN 5 24 F                                         |
+| 3522  | PS-003.522 | BAXI  | Газовый котел BAXI MAIN 5 14 F                                         |
+| 3523  | PS-003.523 | BAXI  | Газовый котел BAXI MAIN 5 18 F                                         |
+| 3524  | PS-003.524 | BAXI  | Газовый котел BAXI DUO-Tec Compact 24 GA                               |
+| 3543  | PS-003.543 | BAXI  | Дымоход коаксиальный BAXI 60/100 (KHG714101810)                        |
+| 3544  | PS-003.544 | BAXI  | Коаксиальное колено BAXI 60/100 (KHG714101410)                         |
+| 4581  | PS-004.581 | BAXI  | Газовый котел BAXI ECO Compact 14 F                                    |
+| 4582  | PS-004.582 | BAXI  | Газовый котел BAXI ECO Compact 18 F                                    |
+| 8011  | PS-008.011 | BAXI  | Газовый котел BAXI ECO 4S 10F (дымоход в подарок)                      |
+| 8015  | PS-008.015 | BAXI  | Газовый котел BAXI ECO 4S 18F (дымоход в подарок)                      |
+| 8016  | PS-008.016 | BAXI  | Газовый котел BAXI ECO 4S 24F (дымоход в подарок)                      |
+| 8017  | PS-008.017 | BAXI  | Газовый котел BAXI ECO 4S 24                                           |
+| 8018  | PS-008.018 | BAXI  | Газовый котел BAXI ECO 4S 1.24F (дымоход в подарок)                    |
+| 8020  | PS-008.020 | BAXI  | Конденсационный газовый котел BAXI DUO-TEC COMPACT 1.24 (одноконтур... |
+| 8021  | PS-008.021 | BAXI  | Конденсационный газовый котел BAXI DUO-TEC COMPACT 24  (двухконтурный) |
+| 8022  | PS-008.022 | BAXI  | Конденсационный газовый котел BAXI DUO-TEC COMPACT 28 (двухконтурный)  |
+| 8084  | PS-008.084 | BAXI  | Конденсационный газовый котел Baxi LUNA DUO-TEC + 1.12 GA              |
+| 8085  | PS-008.085 | BAXI  | Конденсационный газовый котел Baxi LUNA DUO-TEC + 1.24 GA              |
+| 8086  | PS-008.086 | BAXI  |  Конденсационный газовый котел Baxi LUNA DUO-TEC + 1.28 GA             |
+| 8087  | PS-008.087 | BAXI  | Конденсационный газовый котел Baxi LUNA DUO-TEC + 24 GA                |
+| 8088  | PS-008.088 | BAXI  | Конденсационный газовый котел Baxi LUNA DUO-TEC + 28 GA                |
+| 8089  | PS-008.089 | BAXI  | Конденсационный газовый котел Baxi LUNA DUO-TEC + 33 GA                |
+| 8090  | PS-008.090 | BAXI  | Конденсационный газовый котел Baxi LUNA DUO-TEC + 40 GA                |
+| 8091  | PS-008.091 | BAXI  | Конденсационный газовый котел Baxi NUVOLA DUO-TEC + 16 GA              |
+| 8101  | PS-008.101 | BAXI  | Конденсационный газовый котел Baxi NUVOLA DUO-TEC + 24 GA              |
+| 8104  | PS-008.104 | BAXI  | Конденсационный газовый котел Baxi LUNA PLATINUM + 1.12 GA             |
+| 8106  | PS-008.106 | BAXI  | Конденсационный газовый котел Baxi LUNA PLATINUM + 1.18 GA             |
+| 8108  | PS-008.108 | BAXI  | Конденсационный газовый котел Baxi LUNA PLATINUM + 1.24 GA             |
+| 8115  | PS-008.115 | BAXI  | Конденсационный газовый котел Baxi LUNA PLATINUM + 1.32 GA             |
+| 8116  | PS-008.116 | BAXI  | Конденсационный газовый котел Baxi LUNA PLATINUM + 24 GA               |
+| 8117  | PS-008.117 | BAXI  | Конденсационный газовый котел Baxi LUNA PLATINUM + 33 GA               |
+| 8118  | PS-008.118 | BAXI  | Конденсационный газовый котел Baxi LUNA Duo-tec MP 1.35                |
+| 8119  | PS-008.119 | BAXI  | Конденсационный газовый котел Baxi LUNA Duo-tec MP 1.50                |
+| 8120  | PS-008.120 | BAXI  | Конденсационный газовый котел Baxi LUNA Duo-tec MP 1.60                |
+| 8121  | PS-008.121 | BAXI  | Конденсационный газовый котел Baxi LUNA Duo-tec MP 1.70                |
+| 8122  | PS-008.122 | BAXI  | Конденсационный газовый котел Baxi LUNA Duo-tec MP 1.90                |
+| 8123  | PS-008.123 | BAXI  | Конденсационный газовый котел Baxi LUNA Duo-tec MP 1.99                |
+| 8124  | PS-008.124 | BAXI  | Конденсационный газовый котел Baxi LUNA Duo-tec MP 1.110               |
+| 10447 | PS-010.447 | BAXI  | Электрический котел BAXI Ampera 6                                      |
+| 10448 | PS-010.448 | BAXI  | Электрический котел BAXI Ampera 9                                      |
+| 10449 | PS-010.449 | BAXI  | Электрический котел BAXI Ampera 12                                     |
+| 10450 | PS-010.450 | BAXI  | Электрический котел BAXI Ampera 14                                     |
+| 10451 | PS-010.451 | BAXI  | Электрический котел BAXI Ampera 18                                     |
+| 10452 | PS-010.452 | BAXI  | Электрический котел BAXI Ampera 24                                     |
+| 10453 | PS-010.453 | BAXI  | Электрический котел BAXI Ampera 30                                     |
++-------+------------+-------+------------------------------------------------------------------------+
 
 ```
