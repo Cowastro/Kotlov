@@ -1,6 +1,6 @@
 {
-  "task": "ps-artisan",
+  "task": "optimize-clear",
   "artisan_args": "",
   "log_file": "storage/logs/teplov-suhov-city-seo-rewrite.log",
-  "run_id": "ps-teplov-suhov-city-seo-rewrite-2"
+  "run_id": "deploy-ecokamin-video-preserve"
 }
