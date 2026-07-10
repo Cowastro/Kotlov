@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Brand;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class BrandController extends Controller
 {
@@ -47,6 +48,21 @@ class BrandController extends Controller
             ->orderByDesc('rating')
             ->paginate(24);
 
+        $brandCategories = $brand->products()
+            ->orderable()
+            ->join('categories', 'categories.id', '=', 'products.category_id')
+            ->where('categories.is_active', true)
+            ->select(
+                'categories.name',
+                'categories.slug',
+                DB::raw('COUNT(*) as products_count')
+            )
+            ->groupBy('categories.id', 'categories.name', 'categories.slug')
+            ->orderByDesc('products_count')
+            ->orderBy('categories.name')
+            ->limit(8)
+            ->get();
+
         $brandName = trim((string) ($brand->name ?: $brand->slug));
         $h1        = $brand->h1 ?: "Каталог {$brandName}";
         $title     = $brand->meta_title    ?: "{$brandName} — купить в Беларуси | KOTLOV";
@@ -64,6 +80,6 @@ class BrandController extends Controller
             ],
         ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
 
-        return view('pages.brand', compact('brand', 'products', 'h1', 'title', 'description', 'canonical', 'schemaJson'));
+        return view('pages.brand', compact('brand', 'products', 'brandCategories', 'h1', 'title', 'description', 'canonical', 'schemaJson'));
     }
 }

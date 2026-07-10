@@ -2,52 +2,106 @@
 
 @section('content')
 <main id="wrapper">
+    @php
+        $brandName = trim((string) ($brand->name ?: $brand->slug));
+        $brandInitials = mb_strtoupper(mb_substr($brandName, 0, 2));
+        $cleanContent = $brand->content
+            ? preg_replace(['/<h1([^>]*)>/i', '/<\/h1>/i'], ['<h2$1>', '</h2>'], $brand->content)
+            : null;
+    @endphp
 
-    {{-- Заголовок --}}
-    <section class="section-page-title text-center flat-spacing-2 pb-0">
+    <section class="brand-detail-hero flat-spacing-2">
         <div class="container">
-            <div class="main-page-title">
-                <div class="breadcrumbs">
-                    <a href="/" class="text-caption-01 cl-text-3 link">Главная</a>
-                    <i class="icon icon-CaretRightThin cl-text-3"></i>
-                    <a href="/brands" class="text-caption-01 cl-text-3 link">Бренды</a>
-                    <i class="icon icon-CaretRightThin cl-text-3"></i>
-                    <p class="text-caption-01">{{ $brand->name }}</p>
+            <div class="breadcrumbs brand-detail-breadcrumbs">
+                <a href="/" class="text-caption-01 cl-text-3 link">Главная</a>
+                <i class="icon icon-CaretRightThin cl-text-3"></i>
+                <a href="/brands" class="text-caption-01 cl-text-3 link">Бренды</a>
+                <i class="icon icon-CaretRightThin cl-text-3"></i>
+                <p class="text-caption-01">{{ $brandName }}</p>
+            </div>
+
+            <div class="brand-detail-card">
+                <div class="brand-detail-logo-box">
+                    @if ($brand->logo)
+                        <img
+                            class="brand-detail-logo"
+                            src="{{ $brand->image_url }}"
+                            alt="{{ $brandName }}"
+                            loading="lazy"
+                            onerror="this.closest('.brand-detail-logo-box').classList.add('is-placeholder'); this.remove();"
+                        >
+                    @else
+                        <span class="brand-detail-initials">{{ $brandInitials }}</span>
+                    @endif
                 </div>
-                <h1 class="h3">{{ $h1 }}</h1>
-                @if ($brand->country)
-                    <p class="text-body-1 cl-text-2">Страна: {{ $brand->country }}</p>
-                @endif
-                @if ($brand->producer)
-                    <div class="text-body-1 cl-text-2 mt-8">
-                        {!! $brand->producer !!}
+
+                <div class="brand-detail-summary">
+                    <p class="brand-detail-eyebrow">Каталог бренда</p>
+                    <h1>{{ $h1 }}</h1>
+
+                    <div class="brand-detail-meta">
+                        @if ($brand->country)
+                            <span>Страна: {{ $brand->country }}</span>
+                        @endif
+                        <span>{{ $products->total() }} товаров</span>
+                        @if ($brandCategories->isNotEmpty())
+                            <span>{{ $brandCategories->count() }} разделов</span>
+                        @endif
                     </div>
-                @endif
+
+                    @if ($brand->producer)
+                        <div class="brand-detail-producer">
+                            {!! $brand->producer !!}
+                        </div>
+                    @endif
+
+                    <div class="brand-detail-actions">
+                        <a href="#brand-products" class="tf-btn btn-primary radius-3">Смотреть товары</a>
+                        <a href="/brands" class="tf-btn btn-outline radius-3">Все бренды</a>
+                    </div>
+                </div>
             </div>
         </div>
     </section>
 
-    {{-- Описание бренда --}}
-    @if ($brand->content)
-        <div class="flat-spacing-2 pb-0">
+    @if ($brandCategories->isNotEmpty())
+        <section class="brand-detail-categories">
             <div class="container">
-                <div class="row justify-content-center">
-                    <div class="col-lg-8 text-center">
-                        <div class="text-body-1 cl-text-2">
-                            {!! preg_replace(['/<h1([^>]*)>/i', '/<\/h1>/i'], ['<h2$1>', '</h2>'], $brand->content) !!}
-                        </div>
-                    </div>
+                <div class="brand-detail-section-head">
+                    <p class="text-caption-01 cl-text-3">Ассортимент</p>
+                    <h2>Разделы {{ $brandName }}</h2>
+                </div>
+
+                <div class="brand-category-grid">
+                    @foreach ($brandCategories as $category)
+                        <a href="/{{ $category->slug }}" class="brand-category-chip">
+                            <span>{{ $category->name }}</span>
+                            <small>{{ $category->products_count }} товаров</small>
+                        </a>
+                    @endforeach
                 </div>
             </div>
-        </div>
+        </section>
     @endif
 
-    {{-- Товары бренда --}}
-    <section class="flat-spacing">
-        <div class="container">
+    @if ($cleanContent)
+        <section class="brand-detail-content-section">
+            <div class="container">
+                <article class="brand-detail-content">
+                    {!! $cleanContent !!}
+                </article>
+            </div>
+        </section>
+    @endif
 
+    <section id="brand-products" class="flat-spacing">
+        <div class="container">
             @if ($products->count() > 0)
-                <div class="mb-24 d-flex align-items-center justify-content-between">
+                <div class="brand-products-head">
+                    <div>
+                        <p class="text-caption-01 cl-text-3">Товары бренда</p>
+                        <h2>{{ $brandName }} в наличии и под заказ</h2>
+                    </div>
                     <p class="text-body-1 cl-text-2">
                         Найдено товаров: <strong>{{ $products->total() }}</strong>
                     </p>
@@ -59,7 +113,6 @@
                     @endforeach
                 </div>
 
-                {{-- Пагинация --}}
                 @if ($products->hasPages())
                     <div class="tf-page-pagination justify-content-center mt-40">
                         @if ($products->onFirstPage())
@@ -94,7 +147,6 @@
                         @endif
                     </div>
                 @endif
-
             @else
                 <div class="text-center py-60">
                     <i class="icon icon-Package fs-48 cl-text-3 mb-16"></i>
@@ -102,9 +154,7 @@
                     <a href="/brands" class="tf-btn btn-outline mt-24">Все бренды</a>
                 </div>
             @endif
-
         </div>
     </section>
-
 </main>
 @endsection
