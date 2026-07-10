@@ -1259,25 +1259,40 @@ a.category-v05.subcat-tile:hover .cate-icon {
 }
 
 .brand-detail-content {
-    max-width: 900px;
-    padding: 30px 34px;
-    border-radius: 12px;
-    background: #f8f8f8;
-    color: #555;
+    max-width: 980px;
+    margin: 0 auto;
+    padding: 0 0 0 34px;
+    border-left: 2px solid #e84141;
+    background: transparent;
+    color: #4f5965;
     font-size: 17px;
     line-height: 1.75;
 }
 
 .brand-detail-content h2,
 .brand-detail-content h3 {
-    margin: 0 0 16px;
+    max-width: 780px;
+    margin: 0 auto 18px;
     color: #111;
     font-size: clamp(24px, 2.5vw, 34px);
     line-height: 1.18;
+    text-align: center;
 }
 
 .brand-detail-content p {
-    margin-bottom: 14px;
+    max-width: 780px;
+    margin: 0 auto 14px;
+}
+
+.brand-detail-content ul,
+.brand-detail-content ol {
+    max-width: 780px;
+    margin: 0 auto 18px;
+    padding-left: 22px;
+}
+
+.brand-detail-content strong {
+    color: #222;
 }
 
 .brand-products-head {
@@ -1328,7 +1343,7 @@ a.category-v05.subcat-tile:hover .cate-icon {
     }
 
     .brand-detail-content {
-        padding: 22px;
+        padding: 0 0 0 18px;
         font-size: 16px;
     }
 
