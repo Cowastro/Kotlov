@@ -1,6 +1,6 @@
 {
-  "task": "artisan-dry-run",
-  "artisan_args": "brands:enrich-pages --brand=Galmet --include-weak --preview --limit=1",
+  "task": "artisan-apply",
+  "artisan_args": "brands:enrich-pages --brand=Galmet --include-weak --limit=1",
   "log_file": "storage/logs/server-artisan-brand-content.log",
-  "run_id": "dry-run-galmet-brand-content-preview-20260711-1"
+  "run_id": "apply-galmet-brand-content-20260711-1"
 }
