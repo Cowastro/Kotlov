@@ -3,6 +3,7 @@
 namespace App\Console\Commands;
 
 use App\Services\AiContentEnricher;
+use App\Services\ProductSourceEnricher;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
@@ -20,6 +21,7 @@ class EnrichProductContentCommand extends Command
         {--offset=0 : Skip first N products (for batching)}
         {--sleep=300 : Delay between API calls in milliseconds}
         {--min-specs=0 : Skip products with fewer available specs/attributes}
+        {--source-context : Fetch supplier source_url and pass parsed source description/specs to AI}
         {--openai : Use OPENAI_API_KEY/OPENAI_API_URL for this run when configured}
         {--ai-model= : Override AI model for this run}
         {--debug-ai : Print provider error/raw response when AI output cannot be parsed}
@@ -54,6 +56,8 @@ class EnrichProductContentCommand extends Command
         $offset  = max(0, (int) ($this->option('offset') ?? 0));
         $minSpecs = max(0, (int) ($this->option('min-specs') ?? 0));
         $only    = $this->option('only') ?? 'both';
+        $useSourceContext = (bool) $this->option('source-context');
+        $sourceEnricher = $useSourceContext ? new ProductSourceEnricher() : null;
 
         $attributeCounts = DB::table('product_attribute_values')
             ->select('product_id', DB::raw('COUNT(*) as attribute_rows'))
@@ -131,6 +135,27 @@ class EnrichProductContentCommand extends Command
 
             try {
                 $specs = $this->specsForProduct((int) $product->id, $product->specs);
+                $sourceContext = [];
+
+                if ($useSourceContext && $sourceEnricher !== null) {
+                    $source = $this->sourceContextForProduct((int) $product->id, $sourceEnricher);
+                    $sourceContext = $source['context'];
+                    $specs = array_merge($source['specs'], $specs);
+
+                    if (($source['url'] ?? '') !== '') {
+                        $this->line(sprintf(
+                            '  source context: %s%s',
+                            $source['url'],
+                            ($source['description_chars'] ?? 0) > 0
+                                ? sprintf(' (%d chars, %d specs)', $source['description_chars'], count($source['specs']))
+                                : ''
+                        ));
+                    }
+                    if (($source['error'] ?? '') !== '') {
+                        $this->line('  <fg=yellow>source context skipped:</> ' . $source['error']);
+                    }
+                }
+
                 if ($minSpecs > 0 && count($specs) < $minSpecs) {
                     $this->line(sprintf('  skipped: only %d specs, min is %d', count($specs), $minSpecs));
                     $stats['skipped']++;
@@ -142,7 +167,8 @@ class EnrichProductContentCommand extends Command
                     (string) $product->name,
                     (string) ($product->brand_name ?? ''),
                     (string) ($product->category_name ?? ''),
-                    $specs
+                    $specs,
+                    $sourceContext
                 );
 
                 if (! $seo) {
@@ -258,5 +284,75 @@ class EnrichProductContentCommand extends Command
             ->map(fn ($value): string => trim((string) $value))
             ->filter()
             ->all();
+    }
+
+    /**
+     * Use the already-linked supplier source URL as extra factual context for AI.
+     * This is intentionally read-only: content generation still decides what to write.
+     *
+     * @return array{url: string, context: array<string, string>, specs: array<string, string>, description_chars: int, error: string}
+     */
+    private function sourceContextForProduct(int $productId, ProductSourceEnricher $sourceEnricher): array
+    {
+        $empty = [
+            'url' => '',
+            'context' => [],
+            'specs' => [],
+            'description_chars' => 0,
+            'error' => '',
+        ];
+
+        if (! Schema::hasTable('supplier_products')) {
+            return $empty + ['error' => 'supplier_products table is missing'];
+        }
+
+        $url = (string) DB::table('supplier_products')
+            ->where('product_id', $productId)
+            ->whereNotNull('source_url')
+            ->where('source_url', '<>', '')
+            ->orderByDesc('updated_at')
+            ->value('source_url');
+
+        if ($url === '') {
+            return $empty;
+        }
+
+        try {
+            $parsed = $sourceEnricher->preview($url);
+        } catch (\Throwable $e) {
+            return $empty + ['url' => $url, 'error' => $e->getMessage()];
+        }
+
+        $description = trim(strip_tags((string) ($parsed['description'] ?? '')));
+        $short = trim(strip_tags((string) ($parsed['short_description'] ?? '')));
+        $title = trim(strip_tags((string) ($parsed['title'] ?? '')));
+        $sourceSpecs = [];
+
+        foreach ((array) ($parsed['specs'] ?? []) as $spec) {
+            if (! is_array($spec)) {
+                continue;
+            }
+
+            $key = trim((string) ($spec['key'] ?? $spec['name'] ?? ''));
+            $value = trim((string) ($spec['value'] ?? ''));
+            $unit = trim((string) ($spec['unit'] ?? ''));
+
+            if ($key !== '' && $value !== '') {
+                $sourceSpecs[$key] = trim($value . ($unit !== '' ? ' ' . $unit : ''));
+            }
+        }
+
+        return [
+            'url' => $url,
+            'context' => array_filter([
+                'source_url' => $url,
+                'source_title' => $title,
+                'source_short_description' => $short,
+                'source_description' => mb_substr($description, 0, 2200),
+            ], fn ($value): bool => trim((string) $value) !== ''),
+            'specs' => $sourceSpecs,
+            'description_chars' => mb_strlen($description),
+            'error' => '',
+        ];
     }
 }

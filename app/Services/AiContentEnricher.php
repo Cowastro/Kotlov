@@ -276,16 +276,16 @@ PROMPT;
 
     /**
      * Generate SEO short_description + content in one call, strictly from supplier
-     * data (name/brand/category/specs). Returns ['short' => string, 'content' => string]
+     * data (name/brand/category/specs/source context). Returns ['short' => string, 'content' => string]
      * or null on failure. No price/availability/delivery/warranty claims, no Markdown.
      */
-    public function generateSeo(string $name, string $brand, string $category, array $specs = []): ?array
+    public function generateSeo(string $name, string $brand, string $category, array $specs = [], array $sourceContext = []): ?array
     {
         if ($this->mode === 'none') {
             return null;
         }
 
-        return $this->generateSeoClean($name, $brand, $category, $specs);
+        return $this->generateSeoClean($name, $brand, $category, $specs, $sourceContext);
 
         $flat = $this->flattenSpecs($specs);
         $specsText = $flat === []
@@ -347,7 +347,7 @@ PROMPT;
         return $raw ? $this->parseSeoJson($raw) : null;
     }
 
-    private function generateSeoClean(string $name, string $brand, string $category, array $specs = []): ?array
+    private function generateSeoClean(string $name, string $brand, string $category, array $specs = [], array $sourceContext = []): ?array
     {
         $flat = $this->flattenSpecs($specs);
         $specsText = $flat === []
@@ -355,6 +355,10 @@ PROMPT;
             : implode("\n", array_map(fn ($v, $k) => "- {$k}: {$v}", $flat, array_keys($flat)));
         $cat = trim($category) !== '' ? $category : 'оборудование';
         $brandText = trim($brand) !== '' ? $brand : 'бренд не указан';
+        $sourceFacts = $this->formatSourceContext($sourceContext);
+        $sourceBlock = $sourceFacts !== ''
+            ? "\nДанные из карточки источника/производителя:\n{$sourceFacts}\n"
+            : '';
 
         $prompt = <<<PROMPT
 Ты SEO-копирайтер интернет-магазина KOTLOV.BY. Напиши полезное описание товара на русском языке строго по данным ниже.
@@ -364,9 +368,12 @@ PROMPT;
 Категория: {$cat}
 Характеристики:
 {$specsText}
+{$sourceBlock}
 
 Правила фактов:
-- Используй только название, бренд, категорию и характеристики из списка. Не выдумывай цифры, страну производства, комплектацию, гарантию, наличие, скидки, сроки или цены.
+- Используй только название, бренд, категорию, характеристики и данные источника выше. Не выдумывай цифры, страну производства, комплектацию, гарантию, наличие, скидки, сроки или цены.
+- Данные источника можно использовать как факты о назначении, серии, применении, конструкции и преимуществах, но нельзя копировать дословно длинные фразы.
+- Игнорируй из источника телефоны, адреса, email, график работы, отзывы, рейтинги, чужие магазины, условия оплаты/доставки, цены и наличие.
 - Не упоминай материал, покрытие, тип нагревательного элемента, теплообменник, КПД, автоматику, давление, объем, мощность, диаметр, размеры, вес или подключение, если этого нет в названии или характеристиках.
 - Не называй бренд итальянским, немецким, российским, польским или другим по происхождению, если страна не дана в характеристиках.
 - Не обещай "длительный срок службы", "надежную работу", "стабильную работу", "экономию" или "высокую эффективность", если это не следует из характеристик.
@@ -417,6 +424,30 @@ PROMPT;
         }
 
         return $raw ? $this->parseSeoJson($raw) : null;
+    }
+
+    private function formatSourceContext(array $sourceContext): string
+    {
+        $lines = [];
+        $labels = [
+            'source_url' => 'URL',
+            'source_title' => 'Заголовок источника',
+            'source_short_description' => 'Краткое описание источника',
+            'source_description' => 'Описание источника',
+        ];
+
+        foreach ($labels as $key => $label) {
+            $value = trim((string) ($sourceContext[$key] ?? ''));
+            if ($value === '') {
+                continue;
+            }
+
+            $value = preg_replace('/\s+/u', ' ', strip_tags($value)) ?? $value;
+            $max = $key === 'source_description' ? 2200 : 500;
+            $lines[] = "- {$label}: " . mb_substr($value, 0, $max);
+        }
+
+        return implode("\n", $lines);
     }
 
     /** Flatten specs ({k:v} or [{key,value,unit}]) into a clean [k => v] map. */
