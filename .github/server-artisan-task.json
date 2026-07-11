@@ -1,6 +1,6 @@
 {
   "task": "artisan-dry-run",
-  "artisan_args": "products:audit-content-health --active-only --not-archived --with-source-only --issues=no_content,no_short,thin_content --limit=200",
+  "artisan_args": "supplier:enrich-gazkotelbel --only-missing",
   "log_file": "",
-  "run_id": "product-content-health-audit-20260711-4"
+  "run_id": "gazkotelbel-enrich-dry-run-20260711-1"
 }
