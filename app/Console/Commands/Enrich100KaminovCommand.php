@@ -253,7 +253,8 @@ class Enrich100KaminovCommand extends Command
                 continue;
             }
 
-            preg_match_all('#<loc>\s*(https?://[^<]+/p\d[^<]+\.html)\s*</loc>#i', $xml, $urls);
+            preg_match_all('#https?://100kaminov\.by/p\d[^<\s"\']+\.html#i', $xml, $urlMatches);
+            $urls = [1 => $urlMatches[0] ?? []];
             $rawProductUrls += count($urls[1]);
             foreach ($urls[1] as $url) {
                 $url = html_entity_decode((string) $url, ENT_QUOTES | ENT_HTML5, 'UTF-8');
