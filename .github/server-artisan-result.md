@@ -1,6 +1,6 @@
 # Server Artisan Result
 
-- Time: 2026-07-11 18:01:52 UTC
+- Time: 2026-07-11 18:05:59 UTC
 - Task: `artisan-dry-run`
 - Artisan args: `supplier:enrich-100kaminov --brand=Panadero --pages=40 --limit=80 --dry-run`
 - Log file: ``
@@ -8,12 +8,13 @@
 
 ```text
 From https://github.com/Cowastro/Kotlov
-   4a32836..cafa884  main       -> origin/main
-Updating 4a32836..cafa884
+   cafa884..5b51da0  main       -> origin/main
+Updating cafa884..5b51da0
 Fast-forward
- .github/server-artisan-result.md | 70 ++++++----------------------------------
- .github/server-artisan-task.json |  8 ++---
- 2 files changed, 14 insertions(+), 64 deletions(-)
+ .github/server-artisan-result.md                 | 76 ++++++++++++++++++++----
+ .github/server-artisan-task.json                 |  2 +-
+ app/Console/Commands/Enrich100KaminovCommand.php |  2 +-
+ 3 files changed, 68 insertions(+), 12 deletions(-)
 DRY RUN
 Catalog index: 1 brands, 7 products total
   [panadero] sample model keys: AKITA, MAJA-S, ONIX WALL, OSAKA, OVAL, SUERTE, 101-S
@@ -25,7 +26,12 @@ Category: /ps1026-top-pechej-kaminov?sort=position
     · Подключение к дымоходу: Верхнее
     · Вес: 131 кг
     · images: 6
-  [Panadero] Каминная топка Panadero Hogar 101-S → model:HOGAR 101-S → NO MATCH
+  [Panadero] Каминная топка Panadero Hogar 101-S → model:101-S → pid=17041
+    · Страна производитель: Испания
+    · Вес: 164 кг
+    · Водяной контур: Нет
+    · Подключение к дымоходу: Верхнее
+    · images: 10
   [Panadero] Печь-камин Panadero Suerte → model:SUERTE → pid=17029
     · Страна производитель: Испания
     · Водяной контур: Нет
@@ -63,12 +69,12 @@ Category: /g6364208-reshetki-kaminnye-ventilyatsionnye
 | metric   | count |
 +----------+-------+
 | crawled  | 13    |
-| matched  | 5     |
+| matched  | 6     |
 | enriched | 0     |
 | images   | 0     |
 | specs    | 0     |
 | ai_done  | 0     |
-| skipped  | 1     |
+| skipped  | 0     |
 | errors   | 0     |
 +----------+-------+
 
