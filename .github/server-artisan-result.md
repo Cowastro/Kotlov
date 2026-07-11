@@ -1,158 +1,283 @@
 # Server Artisan Result
 
-- Time: 2026-07-11 12:27:42 UTC
-- Task: `artisan-apply`
-- Artisan args: `supplier:enrich-tsk-nasosy --apply --max-current-attrs=2 --skip-ai --limit=0 --sleep=1000`
-- Log file: `storage/logs/server-artisan-tsk-nasosy-low-attrs-apply-rest.log`
+- Time: 2026-07-11 12:29:37 UTC
+- Task: `artisan-dry-run`
+- Artisan args: `products:audit-content-health --not-archived --with-source-only --issues=no_photo,no_content,no_short,low_attrs --max-attrs=2 --limit=180`
+- Log file: `storage/logs/server-artisan-source-content-audit-after-tsk.log`
 - Exit code: `0`
 
 ```text
 From https://github.com/Cowastro/Kotlov
-   3304843..a8d64dd  main       -> origin/main
-Updating 3304843..a8d64dd
+   a8d64dd..10dad0c  main       -> origin/main
+Updating a8d64dd..10dad0c
 Fast-forward
- .github/server-artisan-result.md | 79 ++++++++++++++++++++++------------------
- .github/server-artisan-task.json |  6 +--
- 2 files changed, 46 insertions(+), 39 deletions(-)
-APPLY
-aqualider map: 5836 article → card links
-Linked products: 123  |  to process: 123
-12019985 #16292 WELLMIX TG 40-18/2T, BQQE(3х380В, 2.2кВт | фото:5 specs:26
-12019998 #16289 WELLMIX TG 32-18/2T, BQQE(3х380В, 1.1кВт | фото:5 specs:26
-13514 #16291 UNIPUMP SVH 40-21-1,5/2 | фото:7 specs:26
-14018 #16300 UNIPUMP SVH 80-18-4/2 | фото:7 specs:26
-16018 #16293 UNIPUMP SVH 50-12-1,1/2 | фото:7 specs:26
-16097 #16217 UNIPUMP Насос ЭЦВ 5-20-100 | фото:4 specs:22
-17603 #16272 UNIPUMP CM 2-4 | фото:6 specs:22
-17684 #16278 UNIPUMP CM 4-5 | фото:6 specs:23
-21069954 #16316 WELLMIX NBW 80-65-200-22.0/2-380-G-BQQE | фото:4 specs:26
-21631 #16306 UNIPUMP FS65-40-160-4.0 | фото:5 specs:28
-21883 #16250 UNIPUMP MVH 12-12 | фото:7 specs:25
-22149 #16284 UNIPUMP CM 15-1 | фото:6 specs:22
-22797 #16198 UNIPUMP Насос ЭЦВ 4-4-25 | фото:4 specs:22
-24495 #16338 UNIPUMP WP-40 | фото:2 specs:15
-25019998 #16253 WELLMIX CV 1- 3-0-HQCV (3х380В, 0.37кВт, | фото:3 specs:23
-26429 #16366 UNIPUMP Рукав напорный (80мм; 25м) | фото:3 specs:10
-26769 #16214 UNIPUMP Насос ЭЦВ 5-10-135 | фото:4 specs:22
-27122 #16216 UNIPUMP Насос ЭЦВ 5-20-73 | фото:4 specs:22
-28019962 #16379 WELLMIX CMI 4-20T-BACE (3х380В, 0,37кВт) | фото:3 specs:20
-28019979 #16377 WELLMIX CMI 2-60-BACE (1х220В, 0,75кВт) | фото:3 specs:20
-28019985 #16376 WELLMIX CMI 2-30-BACE (1х220В, 0,37кВт) | фото:3 specs:20
-28074 #16207 UNIPUMP Насос ЭЦВ 4-10-73 | фото:3 specs:21
-28270 #16208 UNIPUMP Насос ЭЦВ 4-10-108 | фото:3 specs:21
-29068 #16309 UNIPUMP FS80-65-125-5.5 | фото:5 specs:27
-29166 #16301 UNIPUMP SVH 80-23-5,5/2 | фото:7 specs:26
-31191 #16288 UNIPUMP SVH 32-26-2,2/2 | фото:7 specs:26
-31701 #16297 UNIPUMP SVH 65-22-4/2 | фото:7 specs:26
-31710 #16372 UNIPUMP PSB 5-40 | фото:7 specs:22
-32430 #16215 UNIPUMP Насос ЭЦВ 5-15-80 | фото:2 specs:20
-32510 #16230 UNIPUMP MVH 1-4 | фото:7 specs:25
-32556 #16238 UNIPUMP MVH 4-12 | фото:7 specs:25
-32754 #16225 UNIPUMP Автоматическая трубная муфта DN5 | фото:3 specs:5
-33471 #16212 UNIPUMP Насос ЭЦВ 5-10-68 | фото:4 specs:23
-35977 #16200 UNIPUMP Насос ЭЦВ 4-4-40 | фото:4 specs:22
-37297 #16196 UNIPUMP Насос ЭЦВ 4-2-70 | фото:4 specs:22
-37684 #16296 UNIPUMP SVH 65-20-3/2 | фото:7 specs:26
-38064 #16237 UNIPUMP MVH 4-8 | фото:7 specs:25
-38612 #16279 UNIPUMP CM 4-6 | фото:6 specs:22
-40022 #16231 UNIPUMP MVH 1-8 | фото:7 specs:25
-41722 #16286 UNIPUMP SVH 32-18-1,1/2 | фото:7 specs:26
-43638 #16362 UNIPUMP Рукав напорный (40мм; 25м) | фото:3 specs:10
-43800 #16203 UNIPUMP Насос ЭЦВ 4-4-90 | фото:4 specs:22
-44433 #16235 UNIPUMP MVH 2-26 | фото:3 specs:25
-46461 #16277 UNIPUMP CM 4-4 | фото:6 specs:22
-48074 #16197 UNIPUMP Насос ЭЦВ 4-3-60 | фото:3 specs:22
-49175 #16234 UNIPUMP MVH 2-22 | фото:7 specs:25
-49952 #16302 UNIPUMP FS50-32-160-1.5 | фото:7 specs:27
-52425 #16206 UNIPUMP Насос ЭЦВ 4-10-54 | фото:3 specs:21
-52737 #16209 UNIPUMP Насос ЭЦВ 5-7-72 | фото:4 specs:22
-53086 #16247 UNIPUMP MVH 12-5 | фото:7 specs:25
-53969 #16204 UNIPUMP Насос ЭЦВ 4-6-87 | фото:3 specs:21
-54268 #16241 UNIPUMP MVH 8-4 | фото:7 specs:25
-56988 #16290 UNIPUMP SVH 40-16-1,1/2 | фото:7 specs:26
-57133 #16271 UNIPUMP CM 2-2 | фото:6 specs:23
-57690 #16361 UNIPUMP Рукав напорный (25мм; 25м) | фото:3 specs:10
-58998 #16303 UNIPUMP FS50-32-160-2.2 | фото:5 specs:28
-59929 #16299 UNIPUMP SVH 80-13-3/2 | фото:7 specs:26
-60423 #16295 UNIPUMP SVH 65-15-2,2/2 | фото:7 specs:26
-61133 #16202 UNIPUMP Насос ЭЦВ 4-4-80 | фото:4 specs:21
-61253 #16205 UNIPUMP Насос ЭЦВ 4-8-75 | фото:3 specs:22
-61344 #16242 UNIPUMP MVH 8-6 | фото:7 specs:25
-61494 #16304 UNIPUMP FS50-32-200-4.0 | фото:5 specs:27
-61656 #16194 UNIPUMP Насос ЭЦВ 4-2-45 | фото:4 specs:22
-61659 #16227 UNIPUMP Автоматическая трубная муфта DN8 | фото:3 specs:5
-63835 #16249 UNIPUMP MVH 12-9 | фото:7 specs:25
-65372 #16307 UNIPUMP FS65-40-200-5.5 | фото:6 specs:27
-65489 #16199 UNIPUMP Насос ЭЦВ 4-4-32 | фото:4 specs:22
-66150 #16248 UNIPUMP MVH 12-8 | фото:7 specs:25
-67193 #16232 UNIPUMP MVH 2-7 | фото:7 specs:25
-67280 #16305 UNIPUMP FS50-32-200-5.5 | фото:5 specs:27
-68183 #16201 UNIPUMP Насос ЭЦВ 4-4-55 | фото:4 specs:21
-68239 #16210 UNIPUMP Насос ЭЦВ 5-7-99 | фото:4 specs:22
-69269 #16213 UNIPUMP Насос ЭЦВ 5-10-85 | фото:4 specs:21
-70291 #16195 UNIPUMP Насос ЭЦВ 4-2-60 | фото:4 specs:22
-72046 #16363 UNIPUMP Рукав напорный (40мм; 50м) | фото:3 specs:10
-74707 #16228 UNIPUMP VM 2-5 | фото:6 specs:24
-74789 #16283 UNIPUMP CM 10-5 | фото:6 specs:23
-77209 #16285 UNIPUMP CM 15-2 | фото:6 specs:23
-77651 #16364 UNIPUMP Рукав напорный (65мм; 25м) | фото:3 specs:10
-78851 #16282 UNIPUMP CM 10-4 | фото:6 specs:23
-79553 #16211 UNIPUMP Насос ЭЦВ 5-7-135 | фото:4 specs:22
-7996140 #16266 IMP PUMPS BWJ4-2R 0,37kW 120°C 1x230V | фото:2 specs:24
-80943 #16229 UNIPUMP VM 2-11 | фото:6 specs:24
-81433 #16287 UNIPUMP SVH 32-21-1,5/2 | фото:7 specs:26
-82776 #16243 UNIPUMP MVH 8-8 | фото:7 specs:25
-84803 #16239 UNIPUMP MVH 4-16 | фото:7 specs:25
-86720 #16236 UNIPUMP MVH 4-4 | фото:7 specs:25
-87367 #16244 UNIPUMP MVH 8-12 | фото:7 specs:25
-87709 #16246 UNIPUMP MVH 8-20 | фото:7 specs:25
-89553 #16373 UNIPUMP PSB 6-30 | фото:7 specs:22
-90849 #16252 UNIPUMP MVH 20-3 | фото:7 specs:25
-90884 #16251 UNIPUMP MVH 12-18 | фото:7 specs:25
-93241 #16276 UNIPUMP CM 4-3 | фото:6 specs:22
-94418 #16308 UNIPUMP FS65-50-125-4.0 | фото:5 specs:27
-95795 #16374 UNIPUMP PSB 10-50 | фото:7 specs:22
-96401 #16233 UNIPUMP MVH 2-11 | фото:6 specs:24
-97829 #16226 UNIPUMP Автоматическая трубная муфта DN6 | фото:3 specs:5
-99081 #16240 UNIPUMP MVH 4-22 | фото:7 specs:25
-99848 #16365 UNIPUMP Рукав напорный (65мм; 50м) | фото:3 specs:10
-UT0085 #16369 GARDANA Соединительная муфта для шланга  | фото:1 specs:6
-UT0086 #16370 GARDANA Соединительная муфта для шланга  | фото:1 specs:6
-UT0089 #16371 GARDANA Хомут для Шланга ПВХ 2” (нерж.ст | фото:2 specs:7
-UT0139 #16367 GARDANA Соединитель КАМЛОК тип C ("мама" | фото:1 specs:5
-UT0142 #16368 GARDANA Соединитель КАМЛОК тип E ("папа" | фото:2 specs:5
-UT0146 #16310 GARDANA CM32-160B | фото:6 specs:25
-UT0147 #16311 GARDANA CM32-160A | фото:6 specs:25
-UT0148 #16312 GARDANA CM32-200C | фото:6 specs:25
-UT0149 #16313 GARDANA CM40-125B | фото:6 specs:26
-UT0151 #16314 GARDANA CM50-160B | фото:6 specs:25
-UT0153 #16315 GARDANA CM65-125A | фото:6 specs:25
-UT0155 #16254 GARDANA CMI2-2 | фото:5 specs:22
-UT0157 #16267 GARDANA CMI2-3T | фото:5 specs:22
-UT0160 #16268 GARDANA CMI2-4T | фото:5 specs:22
-UT0161 #16255 GARDANA CMI2-4 | фото:5 specs:22
-UT0162 #16262 GARDANA CMI4-4 | фото:5 specs:22
-UT0163 #16261 GARDANA CMI4-2 | фото:5 specs:22
-UT0164 #16269 GARDANA CMI2-5T | фото:5 specs:22
-UT0165 #16256 GARDANA CMI2-5 | фото:5 specs:22
-UT0166 #16263 GARDANA CMI4-5 | фото:5 specs:22
-UT0167 #16270 GARDANA CMI2-6T | фото:5 specs:22
-UT0169 #16264 GARDANA CMI4-6 | фото:5 specs:22
-UT0180 #16375 GARDANA CMI2-7 | фото:5 specs:18
-UT0181 #16378 GARDANA CMI10-3 | фото:4 specs:16
+ .github/server-artisan-result.md | 171 +++++++++++++++++++++++++++++++--------
+ .github/server-artisan-task.json |   8 +-
+ 2 files changed, 141 insertions(+), 38 deletions(-)
+Products with content-health issues: 992
+Showing rows: 180 (limit 180)
 
-+--------------+-------+
-| metric       | count |
-+--------------+-------+
-| linked       | 123   |
-| candidates   | 123   |
-| scraped      | 123   |
-| images       | 0     |
-| content      | 0     |
-| attrs        | 2661  |
-| url_updated  | 123   |
-| fetch_failed | 0     |
-| errors       | 0     |
-+--------------+-------+
+By issue
++------------+----------+
+| Issue      | Products |
++------------+----------+
+| no_photo   | 518      |
+| no_content | 93       |
+| no_short   | 347      |
+| low_attrs  | 772      |
+| no_source  | 0        |
++------------+----------+
+By supplier
++---------------------+----------+----------+------------+-----------+
+| Name                | Products | No photo | No content | Low attrs |
++---------------------+----------+----------+------------+-----------+
+| rn-profi            | 268      | 245      | 0          | 266       |
+| ligmet              | 206      | 142      | 72         | 200       |
+| rusklimat           | 181      | 52       | 2          | 134       |
+| bania               | 72       | 0        | 1          | 69        |
+| metabel             | 60       | 9        | 0          | 14        |
+| belkomin            | 59       | 0        | 0          | 0         |
+| elicon              | 47       | 0        | 9          | 0         |
+| akvatermex          | 36       | 36       | 0          | 36        |
+| maitek-group        | 23       | 3        | 1          | 21        |
+| gazkotelbel         | 22       | 15       | 7          | 14        |
+| tsk_nasosy          | 16       | 16       | 1          | 16        |
+| rn-profi, rusklimat | 2        | 0        | 0          | 2         |
++---------------------+----------+----------+------------+-----------+
+By brand
++--------------+----------+----------+------------+-----------+
+| Name         | Products | No photo | No content | Low attrs |
++--------------+----------+----------+------------+-----------+
+| Varmega      | 281      | 245      | 1          | 279       |
+| Kratki       | 110      | 60       | 16         | 108       |
+| Royal Thermo | 69       | 5        | 0          | 64        |
+| Мета-Бел     | 60       | 9        | 0          | 14        |
+| TIS          | 59       | 0        | 0          | 0         |
+| Ballu        | 49       | 34       | 0          | 17        |
+| БелОМО       | 47       | 0        | 9          | 0         |
+| Blist        | 37       | 35       | 31         | 35        |
+| Thermex      | 33       | 33       | 0          | 33        |
+| Ермак        | 32       | 23       | 22         | 32        |
+| Везувий      | 24       | 0        | 0          | 22        |
+| DoorWood     | 22       | 0        | 0          | 22        |
+| ASTON        | 21       | 0        | 0          | 21        |
+| Greolit      | 18       | 0        | 0          | 18        |
+| UNIPUMP      | 15       | 15       | 0          | 15        |
+| Житомир      | 15       | 8        | 0          | 7         |
+| Hommyn       | 11       | 0        | 0          | 11        |
+| НЗС          | 11       | 0        | 0          | 11        |
+| XOMMET       | 10       | 0        | 0          | 10        |
+| GKB          | 7        | 7        | 7          | 7         |
++--------------+----------+----------+------------+-----------+
+By category
++------------------------------------+----------+----------+------------+-----------+
+| Name                               | Products | No photo | No content | Low attrs |
++------------------------------------+----------+----------+------------+-----------+
+| Пресс-фитинги                      | 215      | 213      | 0          | 213       |
+| Каминные решётки                   | 92       | 49       | 5          | 92        |
+| Твердотопливные                    | 87       | 8        | 0          | 18        |
+| Дровницы и каминные принадлежности | 59       | 59       | 59         | 59        |
+| Печи-камины                        | 51       | 21       | 2          | 24        |
+| Котлы отопления                    | 51       | 32       | 0          | 51        |
+| Электрические                      | 49       | 45       | 1          | 41        |
+| Счетчики газа                      | 47       | 0        | 9          | 0         |
+| Печное и каминное литье            | 44       | 10       | 3          | 38        |
+| Дровяные печи (банные)             | 35       | 4        | 2          | 29        |
+| Обогреватели                       | 33       | 18       | 0          | 15        |
+| Стальные радиаторы                 | 33       | 0        | 0          | 33        |
+| Климат                             | 30       | 24       | 0          | 10        |
+| Каминные топки                     | 24       | 7        | 1          | 12        |
+| Двери для бани и сауны             | 22       | 0        | 0          | 22        |
+| Автоматика и терморегуляторы       | 18       | 0        | 0          | 18        |
+| Дренажные насосы                   | 17       | 16       | 1          | 17        |
+| Комплекты подключения              | 15       | 0        | 0          | 15        |
+| Водяной теплый пол                 | 10       | 0        | 0          | 10        |
+| Фильтры                            | 6        | 0        | 0          | 6         |
++------------------------------------+----------+----------+------------+-----------+
+
++-------+---------------+-------------+------------------------------------+--------------+-------+----------------------------------------+------------------+------------------------------------------------------------+
+| ID    | SKU           | Brand       | Category                           | Suppliers    | Attrs | Issues                                 | Source domains   | Product                                                    |
++-------+---------------+-------------+------------------------------------+--------------+-------+----------------------------------------+------------------+------------------------------------------------------------+
+| 12991 | KOTLOV-000713 | AC Electric | Климат                             | rusklimat    | 4     | no_photo                               | rusklimat.by     | AC Electric ACE-07 FH/N6                                   |
+| 16747 | KOTLOV-004469 | ASTON       | Для печей и каминов                | bania        | 2     | low_attrs                              | pech-aston.ru    | Сетка для камней ASTON                                     |
+| 16748 | KOTLOV-004470 | ASTON       | Для печей и каминов                | bania        | 2     | low_attrs                              | pech-aston.ru    | Сетка для камней ASTON (INOX)                              |
+| 16807 | KOTLOV-004529 | ASTON       | Печи-камины                        | bania        | 2     | low_attrs                              | pech-aston.ru    | Печь-Камин ASTON 11кВт (180 м3) пристенно-угловой Ø 150мм  |
+| 16808 | KOTLOV-004530 | ASTON       | Печи-камины                        | bania        | 2     | low_attrs                              | pech-aston.ru    | Печь-Камин ASTON 12 кВт (200 м3) Призматик                 |
+| 16892 | KOTLOV-004614 | ASTON       | Дровяные печи (банные)             | bania        | 2     | low_attrs                              | pech-aston.ru    | Печь для бани ASTON 12                                     |
+| 16893 | KOTLOV-004615 | ASTON       | Дровяные печи (банные)             | bania        | 2     | low_attrs                              | pech-aston.ru    | Печь для бани ASTON 12 INOX                                |
+| 16894 | KOTLOV-004616 | ASTON       | Дровяные печи (банные)             | bania        | 2     | low_attrs                              | pech-aston.ru    | Печь для бани ASTON 12 INOX стекло                         |
+| 16895 | KOTLOV-004617 | ASTON       | Дровяные печи (банные)             | bania        | 2     | low_attrs                              | pech-aston.ru    | Печь для бани ASTON 12 стекло                              |
+| 16896 | KOTLOV-004618 | ASTON       | Дровяные печи (банные)             | bania        | 2     | low_attrs                              | pech-aston.ru    | Печь для бани ASTON 16                                     |
+| 16897 | KOTLOV-004619 | ASTON       | Дровяные печи (банные)             | bania        | 2     | low_attrs                              | pech-aston.ru    | Печь для бани ASTON 16 INOX                                |
+| 16898 | KOTLOV-004620 | ASTON       | Дровяные печи (банные)             | bania        | 2     | low_attrs                              | pech-aston.ru    | Печь для бани ASTON 16 INOX стекло                         |
+| 16899 | KOTLOV-004621 | ASTON       | Дровяные печи (банные)             | bania        | 2     | low_attrs                              | pech-aston.ru    | Печь для бани ASTON 16 стекло                              |
+| 16900 | KOTLOV-004622 | ASTON       | Дровяные печи (банные)             | bania        | 2     | low_attrs                              | pech-aston.ru    | Печь для бани ASTON 20                                     |
+| 16901 | KOTLOV-004623 | ASTON       | Дровяные печи (банные)             | bania        | 2     | low_attrs                              | pech-aston.ru    | Печь для бани ASTON 20 INOX                                |
+| 16902 | KOTLOV-004624 | ASTON       | Дровяные печи (банные)             | bania        | 2     | low_attrs                              | pech-aston.ru    | Печь для бани ASTON 20 INOX стекло                         |
+| 16903 | KOTLOV-004625 | ASTON       | Дровяные печи (банные)             | bania        | 2     | low_attrs                              | pech-aston.ru    | Печь для бани ASTON 20 стекло                              |
+| 16904 | KOTLOV-004626 | ASTON       | Дровяные печи (банные)             | bania        | 2     | low_attrs                              | pech-aston.ru    | Печь для бани ASTON 24 INOX (310) Long                     |
+| 16905 | KOTLOV-004627 | ASTON       | Для печей и каминов                | bania        | 2     | low_attrs                              | vezuviy.su       | Стекло ASTON (0,170*0,220)                                 |
+| 16919 | KOTLOV-004641 | ASTON       | Дровяные печи (банные)             | bania        | 2     | low_attrs                              | pech-aston.ru    | Печь для бани ASTON «Шторм 16» (ДТ-4)                      |
+| 16920 | KOTLOV-004642 | ASTON       | Дровяные печи (банные)             | bania        | 2     | low_attrs                              | aston-pech.ru    | Печь для бани ASTON «Шторм 20» (350)                       |
+| 16921 | KOTLOV-004643 | ASTON       | Дровяные печи (банные)             | bania        | 2     | low_attrs                              | pech-aston.ru    | Печь для бани ASTON «Шторм 20» Long (350)                  |
+| 13056 | KOTLOV-000778 | Ballu       | Электрические                      | rusklimat    | 0     | low_attrs                              | rusklimat.by     | Ballu BWH/S 30 Lorica                                      |
+| 13057 | KOTLOV-000779 | Ballu       | Электрические                      | rusklimat    | 0     | low_attrs                              | rusklimat.by     | Ballu BWH/S 50 Lorica                                      |
+| 13058 | KOTLOV-000780 | Ballu       | Электрические                      | rusklimat    | 6     | no_photo                               | rusklimat.by     | Ballu BWH/S 80 Lorica                                      |
+| 13059 | KOTLOV-000781 | Ballu       | Электрические                      | rusklimat    | 0     | low_attrs                              | rusklimat.by     | Ballu BWH/S 100 Lorica                                     |
+| 13133 | KOTLOV-000855 | Ballu       | Обогреватели                       | rusklimat    | 5     | no_photo                               | rusklimat.by     | Ballu BEC/EVU-1500                                         |
+| 13134 | KOTLOV-000856 | Ballu       | Обогреватели                       | rusklimat    | 5     | no_photo                               | rusklimat.by     | Ballu BEC/EVU-2000                                         |
+| 13135 | KOTLOV-000857 | Ballu       | Обогреватели                       | rusklimat    | 5     | no_photo                               | rusklimat.by     | Ballu BEC/EVU-2500                                         |
+| 13137 | KOTLOV-000859 | Ballu       | Обогреватели                       | rusklimat    | 27    | no_photo                               | rusklimat.by     | Ballu BFT/EVUR                                             |
+| 13140 | KOTLOV-000862 | Ballu       | Обогреватели                       | rusklimat    | 6     | no_photo                               | rusklimat.by     | Ballu BEC/SMT-2500                                         |
+| 13141 | KOTLOV-000863 | Ballu       | Обогреватели                       | rusklimat    | 3     | no_photo                               | rusklimat.by     | Ballu CWM-02                                               |
+| 13145 | KOTLOV-000867 | Ballu       | Обогреватели                       | rusklimat    | 57    | no_photo                               | rusklimat.by     | Ballu BEC/EZMR-1500 (SC)                                   |
+| 13149 | KOTLOV-000871 | Ballu       | Обогреватели                       | rusklimat    | 59    | no_photo                               | rusklimat.by     | Ballu BEC/ETMR-1500                                        |
+| 13152 | KOTLOV-000874 | Ballu       | Обогреватели                       | rusklimat    | 58    | no_photo                               | rusklimat.by     | Ballu BEC/ETER-1500                                        |
+| 13156 | KOTLOV-000878 | Ballu       | Обогреватели                       | rusklimat    | 58    | no_photo                               | rusklimat.by     | Ballu BEC/EMT-2000                                         |
+| 13157 | KOTLOV-000879 | Ballu       | Обогреватели                       | rusklimat    | 5     | no_photo                               | rusklimat.by     | Ballu BEC/EMT-2500                                         |
+| 13180 | KOTLOV-000902 | Ballu       | Обогреватели                       | rusklimat    | 6     | no_photo                               | rusklimat.by     | Ballu BOH/CL-05WRN                                         |
+| 13183 | KOTLOV-000905 | Ballu       | Обогреватели                       | rusklimat    | 6     | no_photo                               | rusklimat.by     | Ballu BOH/CL-11WRN                                         |
+| 13188 | KOTLOV-000910 | Ballu       | Обогреватели                       | rusklimat    | 6     | no_photo                               | rusklimat.by     | Ballu BOH/CB-07W                                           |
+| 13189 | KOTLOV-000911 | Ballu       | Обогреватели                       | rusklimat    | 6     | no_photo                               | rusklimat.by     | Ballu BOH/CB-09W                                           |
+| 13249 | KOTLOV-000971 | Ballu       | Климат                             | rusklimat    | 1     | low_attrs                              | rusklimat.by     | Ballu PTC-1000                                             |
+| 13279 | KOTLOV-001001 | Ballu       | Климат                             | rusklimat    | 0     | no_photo,low_attrs                     | rusklimat.by     | Ballu UHB-340 MT                                           |
+| 13294 | KOTLOV-001016 | Ballu       | Климат                             | rusklimat    | 6     | no_photo                               | rusklimat.by     | Ballu UHB-1100 AURA                                        |
+| 13498 | KOTLOV-001220 | Ballu       | Климат                             | rusklimat    | 5     | no_photo                               | rusklimat.by     | Ballu BPAC-07 EPW/N6 white                                 |
+| 13502 | KOTLOV-001224 | Ballu       | Климат                             | rusklimat    | 4     | no_photo                               | rusklimat.by     | Ballu BPAC-18 CE                                           |
+| 13503 | KOTLOV-001225 | Ballu       | Климат                             | rusklimat    | 6     | no_photo                               | rusklimat.by     | Ballu BPAC-20 CE                                           |
+| 13509 | KOTLOV-001231 | Ballu       | Климат                             | rusklimat    | 0     | low_attrs                              | rusklimat.by     | Ballu UniPort 1.0                                          |
+| 13612 | KOTLOV-001334 | Ballu       | Климат                             | rusklimat    | 6     | no_photo                               | rusklimat.by     | Ballu BAF-FW 120 N                                         |
+| 13650 | KOTLOV-001372 | Ballu       | Климат                             | rusklimat    | 0     | no_photo,low_attrs                     | rusklimat.by     | Ballu BFF-907                                              |
+| 13653 | KOTLOV-001375 | Ballu       | Климат                             | rusklimat    | 3     | no_photo                               | rusklimat.by     | Ballu BFF–802                                              |
+| 13655 | KOTLOV-001377 | Ballu       | Климат                             | rusklimat    | 3     | no_photo                               | rusklimat.by     | Ballu BFT-110R                                             |
+| 13953 | KOTLOV-001675 | Ballu       | Электрические                      | rusklimat    | 6     | no_photo                               | rusklimat.by     | Ballu BWH/S 80 PRIMEX                                      |
+| 13954 | KOTLOV-001676 | Ballu       | Электрические                      | rusklimat    | 6     | no_photo                               | rusklimat.by     | Ballu BWH/S 100 PRIMEX                                     |
+| 14248 | KOTLOV-001970 | Ballu       | Фильтры                            | rusklimat    | 1     | low_attrs                              | rusklimat.by     | Фильтр высокоэффективный Ballu FB-H13-2 для ASP-200*, A... |
+| 14249 | KOTLOV-001971 | Ballu       | Фильтры                            | rusklimat    | 1     | low_attrs                              | rusklimat.by     | Фильтр тонкой очистки Ballu FB-M5-2 для ASP-200*, AIR M... |
+| 14251 | KOTLOV-001973 | Ballu       | Фильтры                            | rusklimat    | 1     | low_attrs                              | rusklimat.by     | Фильтр высокоэффективный Ballu FB-H13-1 для ASP-100/100W   |
+| 14253 | KOTLOV-001975 | Ballu       | Фильтры                            | rusklimat    | 1     | low_attrs                              | rusklimat.by     | Фильтр высокоэффективный Ballu FB-H13-8 для ASP-80         |
+| 14256 | KOTLOV-001978 | Ballu       | Фильтры                            | rusklimat    | 1     | low_attrs                              | rusklimat.by     | Фильтр CARBON для Ballu ASP-200                            |
+| 14259 | KOTLOV-001981 | Ballu       | Климат                             | rusklimat    | 5     | no_photo                               | rusklimat.by     | Приточный очиститель воздуха Ballu ONEAIR ASP-100          |
+| 14265 | KOTLOV-001987 | Ballu       | Обогреватели                       | rusklimat    | 5     | no_photo                               | rusklimat.by     | Ballu BEC/AT-1500                                          |
+| 14269 | KOTLOV-001991 | Ballu       | Обогреватели                       | rusklimat    | 4     | no_photo                               | rusklimat.by     | Ballu BFT/AT                                               |
+| 14370 | KOTLOV-002092 | Ballu       | Фильтры                            | rusklimat    | 0     | low_attrs                              | rusklimat.by     | Ballu Фильтр HEPA-фильтр + угольный фильтр для климатич... |
+| 15317 | KOTLOV-003039 | Ballu       | Обогреватели                       | rusklimat    | 2     | low_attrs                              | rusklimat.by     | Вентилятор промышленный Ballu BIF-4BB                      |
+| 15318 | KOTLOV-003040 | Ballu       | Обогреватели                       | rusklimat    | 2     | low_attrs                              | rusklimat.by     | Вентилятор промышленный Ballu BIF-8BB                      |
+| 15319 | KOTLOV-003041 | Ballu       | Обогреватели                       | rusklimat    | 2     | low_attrs                              | rusklimat.by     | Вентилятор промышленный Ballu BIF-10SB                     |
+| 15321 | KOTLOV-003043 | Ballu       | Обогреватели                       | rusklimat    | 2     | low_attrs                              | rusklimat.by     | Вентилятор промышленный Ballu BIF-20DB                     |
+| 15993 | KOTLOV-003715 | Ballu       | Климат                             | rusklimat    | 6     | no_photo                               | rusklimat.by     | Ballu BAHD-1000AS                                          |
+| 15996 | KOTLOV-003718 | Ballu       | Климат                             | rusklimat    | 6     | no_photo                               | rusklimat.by     | Ballu BAHD-1800                                            |
+| 15997 | KOTLOV-003719 | Ballu       | Климат                             | rusklimat    | 6     | no_photo                               | rusklimat.by     | Ballu BAHD-1010                                            |
+| 15998 | KOTLOV-003720 | Ballu       | Климат                             | rusklimat    | 5     | no_photo                               | rusklimat.by     | Ballu BAHD-1250                                            |
+| 16991 | KOTLOV-004713 | Blist       | Печи-камины                        | ligmet       | 0     | no_photo,no_short,low_attrs            | ligmet.by        | Blist Печь Berna Lux бежевая                               |
+| 16992 | KOTLOV-004714 | Blist       | Печи-камины                        | ligmet       | 11    | no_short                               | 100kaminov.by    | Blist Печь Berna Lux красная                               |
+| 16995 | KOTLOV-004717 | Blist       | Печи-камины                        | ligmet       | 11    | no_short                               | 100kaminov.by    | Blist Печь Modena бежевая                                  |
+| 16998 | KOTLOV-004720 | Blist       | Печи-камины                        | ligmet       | 0     | no_photo,no_short,low_attrs            | ligmet.by        | Blist Печь Napoli                                          |
+| 16999 | KOTLOV-004721 | Blist       | Печи-камины                        | ligmet       | 0     | no_photo,no_short,low_attrs            | ligmet.by        | Blist Печь Padova E                                        |
+| 17000 | KOTLOV-004722 | Blist       | Печи-камины                        | ligmet       | 0     | no_photo,no_short,low_attrs            | ligmet.by        | Blist Печь Roma E бежевая                                  |
+| 21361 | KOTLOV-006527 | Blist       | Дымоходы                           | ligmet       | 0     | no_photo,no_content,no_short,low_attrs | ligmet.by        | Blist Труба 0,5м, Сербия                                   |
+| 21362 | KOTLOV-006528 | Blist       | Печи-камины                        | ligmet       | 0     | no_photo,no_content,no_short,low_attrs | ligmet.by        | Blist Печь Roma G бежевая                                  |
+| 21363 | KOTLOV-006529 | Blist       | Дровницы и каминные принадлежности | ligmet       | 0     | no_photo,no_content,no_short,low_attrs | ligmet.by        | Blist Бакелитовая ручка Blist (код 2943)                   |
+| 21364 | KOTLOV-006530 | Blist       | Дровницы и каминные принадлежности | ligmet       | 0     | no_photo,no_content,no_short,low_attrs | ligmet.by        | Blist Вермикулит на заднюю стенку Blist Polar              |
+| 21365 | KOTLOV-006531 | Blist       | Дровницы и каминные принадлежности | ligmet       | 0     | no_photo,no_content,no_short,low_attrs | ligmet.by        | Blist Зольный ящик Oganj (с круглым регулятором подачи ... |
+| 21366 | KOTLOV-006532 | Blist       | Дровницы и каминные принадлежности | ligmet       | 0     | no_photo,no_content,no_short,low_attrs | ligmet.by        | Blist Колосниковая решетка 160х295 Blist Ekonomik Lux      |
+| 21367 | KOTLOV-006533 | Blist       | Дровницы и каминные принадлежности | ligmet       | 0     | no_photo,no_content,no_short,low_attrs | ligmet.by        | Blist Колосниковая решетка 315x320 Blist (код 2804) (Zar)  |
+| 21368 | KOTLOV-006534 | Blist       | Дровницы и каминные принадлежности | ligmet       | 0     | no_photo,no_content,no_short,low_attrs | ligmet.by        | Blist Колосниковая решетка 320x338 Blist (код 3064)        |
+| 21369 | KOTLOV-006535 | Blist       | Дровницы и каминные принадлежности | ligmet       | 0     | no_photo,no_content,no_short,low_attrs | ligmet.by        | Blist Колосниковая решетка 325х170 Atene (code 1273)       |
+| 21370 | KOTLOV-006536 | Blist       | Дровницы и каминные принадлежности | ligmet       | 0     | no_photo,no_content,no_short,low_attrs | ligmet.by        | Blist Краска Roberlo (для Blist) аэрозоль                  |
+| 21371 | KOTLOV-006537 | Blist       | Дровницы и каминные принадлежности | ligmet       | 0     | no_photo,no_content,no_short,low_attrs | ligmet.by        | Blist Наконечник никелированный Blist (к зольному ящику)   |
+| 21372 | KOTLOV-006538 | Blist       | Дровницы и каминные принадлежности | ligmet       | 0     | no_photo,no_content,no_short,low_attrs | ligmet.by        | Blist Стекло термостойкое Blist 202x172 (код 2983/2965)    |
+| 21373 | KOTLOV-006539 | Blist       | Дровницы и каминные принадлежности | ligmet       | 0     | no_photo,no_content,no_short,low_attrs | ligmet.by        | Blist Стекло термостойкое Blist 240x200 (код 2966)         |
+| 21374 | KOTLOV-006540 | Blist       | Дровницы и каминные принадлежности | ligmet       | 0     | no_photo,no_content,no_short,low_attrs | ligmet.by        | Blist Стекло термостойкое Blist 270x240 (код 0669/0890)    |
+| 21375 | KOTLOV-006541 | Blist       | Дровницы и каминные принадлежности | ligmet       | 0     | no_photo,no_content,no_short,low_attrs | ligmet.by        | Blist Стекло термостойкое Blist 330x160 (код 2862)         |
+| 21376 | KOTLOV-006542 | Blist       | Дровницы и каминные принадлежности | ligmet       | 0     | no_photo,no_content,no_short,low_attrs | ligmet.by        | Blist Стекло термостойкое Blist Polar 350x275              |
+| 21377 | KOTLOV-006543 | Blist       | Дровницы и каминные принадлежности | ligmet       | 0     | no_photo,no_content,no_short,low_attrs | ligmet.by        | Blist Фиксатор стекла Blist                                |
+| 21378 | KOTLOV-006544 | Blist       | Дровницы и каминные принадлежности | ligmet       | 0     | no_photo,no_content,no_short,low_attrs | ligmet.by        | Blist Чугунная крышка Modena (Zar) (код 003584)            |
+| 21379 | KOTLOV-006545 | Blist       | Дровницы и каминные принадлежности | ligmet       | 0     | no_photo,no_content,no_short,low_attrs | ligmet.by        | Blist Шамотный кирпич Blist B1 145х340мм (код 3681/1199)   |
+| 21380 | KOTLOV-006546 | Blist       | Дровницы и каминные принадлежности | ligmet       | 0     | no_photo,no_content,no_short,low_attrs | ligmet.by        | Blist Шамотный кирпич Blist B1N 155х340мм (код 3677/4108)  |
+| 21381 | KOTLOV-006547 | Blist       | Дровницы и каминные принадлежности | ligmet       | 0     | no_photo,no_content,no_short,low_attrs | ligmet.by        | Blist Шамотный кирпич Blist B2 135х370мм (код 2879)        |
+| 21382 | KOTLOV-006548 | Blist       | Дровницы и каминные принадлежности | ligmet       | 0     | no_photo,no_content,no_short,low_attrs | ligmet.by        | Blist Шамотный кирпич Blist Og1 180х398мм (код 3973/4446)  |
+| 21383 | KOTLOV-006549 | Blist       | Дровницы и каминные принадлежности | ligmet       | 0     | no_photo,no_content,no_short,low_attrs | ligmet.by        | Blist Шамотный кирпич Blist Og2 180х370мм (код 3974/4478)  |
+| 21384 | KOTLOV-006550 | Blist       | Дровницы и каминные принадлежности | ligmet       | 0     | no_photo,no_content,no_short,low_attrs | ligmet.by        | Blist Шамотный кирпич Blist Og2 Z (для Zar (Modena), с ... |
+| 21385 | KOTLOV-006551 | Blist       | Дровницы и каминные принадлежности | ligmet       | 0     | no_photo,no_content,no_short,low_attrs | ligmet.by        | Blist Шамотный кирпич Blist Е1 175х292мм (код 2703/2852)   |
+| 21386 | KOTLOV-006552 | Blist       | Дровницы и каминные принадлежности | ligmet       | 0     | no_photo,no_content,no_short,low_attrs | ligmet.by        | Blist Шамотный кирпич Blist Е2/1 113х272мм (код 3680/4447) |
+| 21387 | KOTLOV-006553 | Blist       | Дровницы и каминные принадлежности | ligmet       | 0     | no_photo,no_content,no_short,low_attrs | ligmet.by        | Blist Шамотный кирпич Blist Е2 115х302мм (код 4004/4493)   |
+| 21388 | KOTLOV-006554 | Blist       | Дровницы и каминные принадлежности | ligmet       | 0     | no_photo,no_content,no_short,low_attrs | ligmet.by        | Blist Шамотный кирпич (с отверстием) Blist Е3 170х145мм... |
+| 21389 | KOTLOV-006555 | Blist       | Дровницы и каминные принадлежности | ligmet       | 0     | no_photo,no_content,no_short,low_attrs | ligmet.by        | Blist Шнур белый 8х8мм Blist                               |
+| 21390 | KOTLOV-006556 | Blist       | Дровницы и каминные принадлежности | ligmet       | 0     | no_photo,no_content,no_short,low_attrs | ligmet.by        | Blist Шнур серый 8х8мм Blist                               |
+| 21391 | KOTLOV-006557 | Blist       | Дровницы и каминные принадлежности | ligmet       | 0     | no_photo,no_content,no_short,low_attrs | ligmet.by        | Blist Шнур черный 6х6мм Blist                              |
+| 14336 | KOTLOV-002058 | Boneco      | Климат                             | rusklimat    | 6     | no_photo                               | rusklimat.by     | Boneco P230                                                |
+| 16055 | KOTLOV-003777 | Boneco      | Климат                             | rusklimat    | 5     | no_photo                               | rusklimat.by     | Boneco W200                                                |
+| 16057 | KOTLOV-003779 | Boneco      | Климат                             | rusklimat    | 5     | no_photo                               | rusklimat.by     | Boneco W200A                                               |
+| 16061 | KOTLOV-003783 | Boneco      | Климат                             | rusklimat    | 5     | no_photo                               | rusklimat.by     | Boneco H300                                                |
+| 16062 | KOTLOV-003784 | Boneco      | Климат                             | rusklimat    | 5     | no_photo                               | rusklimat.by     | Boneco H700, белый                                         |
+| 16064 | KOTLOV-003786 | Boneco      | Климат                             | rusklimat    | 5     | no_photo                               | rusklimat.by     | Boneco H400                                                |
+| 3539  | PS-003.539    | DoorWood    | Двери для бани и сауны             | bania        | 1     | low_attrs                              | bania.by         | Дверь DoorWood ТЕПЛАЯ НОЧЬ бронза матоваря 190 х 70        |
+| 16391 | KOTLOV-004113 | DoorWood    | Двери для бани и сауны             | bania        | 1     | low_attrs                              | bania.by         | ДВЕРЬ "ТЕПЛОЕ УТРО" САТИН 190 х 70                         |
+| 16392 | KOTLOV-004114 | DoorWood    | Двери для бани и сауны             | bania        | 1     | low_attrs                              | bania.by         | ДВЕРЬ "ТЕПЛАЯ НОЧЬ" БРОНЗА МАТОВАЯ 190 х 60                |
+| 16393 | KOTLOV-004115 | DoorWood    | Двери для бани и сауны             | bania        | 1     | low_attrs                              | bania.by         | ДВЕРЬ "ТЕПЛОЕ УТРО" САТИН 200 х 80                         |
+| 16394 | KOTLOV-004116 | DoorWood    | Двери для бани и сауны             | bania        | 1     | low_attrs                              | bania.by         | ДВЕРЬ "ТЕПЛЫЙ ДЕНЬ" БРОНЗА 190 х 60                        |
+| 16395 | KOTLOV-004117 | DoorWood    | Двери для бани и сауны             | bania        | 1     | low_attrs                              | bania.by         | ДВЕРЬ "ЗАТМЕНИЕ" ГРАФИТ МАТОВЫЙ 170 х 70                   |
+| 16396 | KOTLOV-004118 | DoorWood    | Двери для бани и сауны             | bania        | 1     | low_attrs                              | bania.by         | ДВЕРЬ "ТЕПЛЫЙ ДЕНЬ" БРОНЗА 170 х 70                        |
+| 16397 | KOTLOV-004119 | DoorWood    | Двери для бани и сауны             | bania        | 1     | low_attrs                              | bania.by         | ДВЕРЬ "ЗАТМЕНИЕ" ГРАФИТ МАТОВЫЙ 180 х 70                   |
+| 16398 | KOTLOV-004120 | DoorWood    | Двери для бани и сауны             | bania        | 1     | low_attrs                              | bania.by         | ДВЕРЬ "ТЕПЛЫЙ ДЕНЬ" БРОНЗА 180 х 70                        |
+| 16399 | KOTLOV-004121 | DoorWood    | Двери для бани и сауны             | bania        | 1     | low_attrs                              | bania.by         | ДВЕРЬ "ТЕПЛЫЙ ДЕНЬ" БРОНЗА 200 х 70                        |
+| 16400 | KOTLOV-004122 | DoorWood    | Двери для бани и сауны             | bania        | 1     | low_attrs                              | bania.by         | ДВЕРЬ "ЗАТМЕНИЕ" ГРАФИТ МАТОВЫЙ 190 х 70                   |
+| 16401 | KOTLOV-004123 | DoorWood    | Двери для бани и сауны             | bania        | 1     | low_attrs                              | bania.by         | ДВЕРЬ "ТЕПЛЫЙ ДЕНЬ" БРОНЗА 190 х 70                        |
+| 16402 | KOTLOV-004124 | DoorWood    | Двери для бани и сауны             | bania        | 1     | low_attrs                              | bania.by         | ДВЕРЬ "БРОНЗА" 1800*700, 6ММ, 2 ПЕТЛИ                      |
+| 16403 | KOTLOV-004125 | DoorWood    | Двери для бани и сауны             | bania        | 1     | low_attrs                              | bania.by         | ДВЕРЬ "БРОНЗА" 1900*700, 6ММ, 2 ПЕТЛИ                      |
+| 16404 | KOTLOV-004126 | DoorWood    | Двери для бани и сауны             | bania        | 1     | low_attrs                              | bania.by         | ДВЕРЬ "СУМЕРКИ" ГРАФИТ 170 х 70                            |
+| 16405 | KOTLOV-004127 | DoorWood    | Двери для бани и сауны             | bania        | 1     | low_attrs                              | bania.by         | ДВЕРЬ ЭТАЛОН БРОНЗА 190 х 70                               |
+| 16406 | KOTLOV-004128 | DoorWood    | Двери для бани и сауны             | bania        | 1     | low_attrs                              | bania.by         | ДВЕРЬ "СУМЕРКИ" ГРАФИТ 180 х 70                            |
+| 16407 | KOTLOV-004129 | DoorWood    | Двери для бани и сауны             | bania        | 1     | low_attrs                              | bania.by         | ДВЕРЬ ЭТАЛОН БРОНЗА МАТОВАЯ 190 х 70                       |
+| 16408 | KOTLOV-004130 | DoorWood    | Двери для бани и сауны             | bania        | 1     | low_attrs                              | bania.by         | ДВЕРЬ "СУМЕРКИ" ГРАФИТ 190 х 70                            |
+| 16409 | KOTLOV-004131 | DoorWood    | Двери для бани и сауны             | bania        | 1     | low_attrs                              | bania.by         | ДВЕРЬ ПРЕСТИЖ БРОНЗА 190 х 70                              |
+| 16410 | KOTLOV-004132 | DoorWood    | Двери для бани и сауны             | bania        | 1     | low_attrs                              | bania.by         | ДВЕРЬ ПРЕСТИЖ БРОНЗА МАТОВАЯ 190 х 70                      |
+| 16411 | KOTLOV-004133 | DoorWood    | Двери для бани и сауны             | bania        | 1     | low_attrs                              | bania.by         | ДВЕРЬ "ТЕПЛЫЙ ДЕНЬ" БРОНЗА 200 х 80                        |
+| 21290 | KOTLOV-006456 | Edisson     | Электрические                      | akvatermex   | 0     | no_photo,low_attrs                     | www.teplodvor.by | EDISSON H 20 D                                             |
+| 21295 | KOTLOV-006461 | Edisson     | Электрические                      | akvatermex   | 0     | no_photo,low_attrs                     | thermex.by       | EDISSON E 20 GD (Каннская ветвь)                           |
+| 21297 | KOTLOV-006463 | Edisson     | Электрические                      | akvatermex   | 0     | no_photo,low_attrs                     | thermex.by       | EDISSON E 20 GD (Подсолнухи)                               |
+| 13639 | KOTLOV-001361 | Electrolux  | Климат                             | rusklimat    | 2     | low_attrs                              | rusklimat.by     | Electrolux ETF-108W                                        |
+| 14216 | KOTLOV-001938 | Electrolux  | Обогреватели                       | rusklimat    | 4     | no_photo                               | rusklimat.by     | Electrolux EFP                                             |
+| 19628 | KOTLOV-004934 | Electrolux  | Бани и сауны                       | rusklimat    | 0     | no_photo,no_content,no_short,low_attrs | rusklimat.by     | Electrolux Модуль EAVS/I-30FA-BLACK                        |
+| 17002 | KOTLOV-004724 | Ferguss     | Печи-камины                        | ligmet       | 0     | no_photo,no_short,low_attrs            | ligmet.by        | Ferguss Печь Ferguss L (8606107095288) /Lawa Cook/ (УЦЕ... |
+| 13322 | KOTLOV-001044 | Firelight   | Электрические камины               | rusklimat    | 2     | low_attrs                              | rusklimat.by     | Firelight BFP/T-2525 Cup                                   |
+| 13327 | KOTLOV-001049 | Firelight   | Электрические камины               | rusklimat    | 2     | low_attrs                              | rusklimat.by     | Firelight BFP/W-110                                        |
+| 13434 | KOTLOV-001156 | Firelight   | Электрические камины               | rusklimat    | 2     | low_attrs                              | rusklimat.by     | Тумба с биокамином Firelight BFP/P-1400V белая             |
+| 13435 | KOTLOV-001157 | Firelight   | Электрические камины               | rusklimat    | 2     | low_attrs                              | rusklimat.by     | Тумба с биокамином Firelight BFP/P-1400V графит            |
+| 17003 | KOTLOV-004725 | FireWay     | Печи-камины                        | ligmet       | 0     | low_attrs                              | ligmet.by        | FireWay Печь отопительно-варочная DACHA II                 |
+| 17004 | KOTLOV-004726 | FireWay     | Печи-камины                        | ligmet       | 0     | no_photo,no_content,no_short,low_attrs | ligmet.by        | FireWay Печь чугунная TANGO                                |
+| 17030 | KOTLOV-004752 | FireWay     | Каминные топки                     | ligmet       | 0     | no_photo,no_content,no_short,low_attrs | ligmet.by        | FireWay Каминная топка DAGMAR                              |
+| 17134 | KOTLOV-004856 | FireWay     | Дровяные печи (банные)             | ligmet       | 0     | no_photo,no_content,no_short,low_attrs | ligmet.by        | FireWay Банная печь ПароВар 24 Ковка (К505)                |
+| 17177 | KOTLOV-004899 | GKB         | Сигнализаторы загазованности       | gazkotelbel  | 0     | no_photo,no_content,no_short,low_attrs | gazkotelbel.com  | Датчик угарного газа GKB CO999 (без батареек)              |
+| 17178 | KOTLOV-004900 | GKB         | Сигнализаторы загазованности       | gazkotelbel  | 0     | no_photo,no_content,no_short,low_attrs | gazkotelbel.com  | Датчик загазованности СО+СН GKB CO888                      |
+| 17179 | KOTLOV-004901 | GKB         | Сигнализаторы загазованности       | gazkotelbel  | 0     | no_photo,no_content,no_short,low_attrs | gazkotelbel.com  | Датчик загазованности дым + СО GKB CO777                   |
+| 17180 | KOTLOV-004902 | GKB         | Циркуляционные насосы              | gazkotelbel  | 0     | no_photo,no_content,no_short,low_attrs | gazkotelbel.com  | Циркуляционный насос GKB GT 25/4-130                       |
+| 17203 | KOTLOV-004925 | GKB         | Циркуляционные насосы              | gazkotelbel  | 0     | no_photo,no_content,no_short,low_attrs | gazkotelbel.com  | Циркуляционный насос GKB GT 25/6-130                       |
+| 17204 | KOTLOV-004926 | GKB         | Циркуляционные насосы              | gazkotelbel  | 0     | no_photo,no_content,no_short,low_attrs | gazkotelbel.com  | Циркуляционный насос GKB GT 25/4-180                       |
+| 17205 | KOTLOV-004927 | GKB         | Циркуляционные насосы              | gazkotelbel  | 0     | no_photo,no_content,no_short,low_attrs | gazkotelbel.com  | Циркуляционный насос GKB GT 25/6-180                       |
+| 20759 | KOTLOV-005925 | Greolit     | Твердотопливные                    | maitek-group | 2     | low_attrs                              | greolit.by       | Greolit Котел Greolit DEEP plus 20 кВт без автоматики      |
+| 20760 | KOTLOV-005926 | Greolit     | Твердотопливные                    | maitek-group | 2     | low_attrs                              | greolit.by       | Greolit Котел Greolit DEEP plus 30 кВт без автоматики      |
+| 20761 | KOTLOV-005927 | Greolit     | Твердотопливные                    | maitek-group | 2     | low_attrs                              | greolit.by       | Greolit Котел Greolit DEEP plus 40 кВт без автоматики      |
+| 20762 | KOTLOV-005928 | Greolit     | Твердотопливные                    | maitek-group | 2     | low_attrs                              | greolit.by       | Greolit Котел Greolit DEEP plus 20 кВт с автоматикой       |
+| 20763 | KOTLOV-005929 | Greolit     | Твердотопливные                    | maitek-group | 2     | low_attrs                              | greolit.by       | Greolit Котел Greolit DEEP plus 30 кВт с автоматикой       |
+| 20764 | KOTLOV-005930 | Greolit     | Твердотопливные                    | maitek-group | 2     | low_attrs                              | greolit.by       | Greolit Котел Greolit DEEP plus 40 кВт с автоматикой       |
+| 20765 | KOTLOV-005931 | Greolit     | Твердотопливные                    | maitek-group | 2     | low_attrs                              | greolit.by       | Greolit Котел Greolit PROFI 50 кВт без автоматики          |
+| 20766 | KOTLOV-005932 | Greolit     | Твердотопливные                    | maitek-group | 2     | low_attrs                              | greolit.by       | Greolit Котел Greolit PROFI 60 кВт без автоматики          |
+| 20767 | KOTLOV-005933 | Greolit     | Твердотопливные                    | maitek-group | 2     | low_attrs                              | greolit.by       | Greolit Котел Greolit PROFI 70 кВт без автоматики          |
+| 20768 | KOTLOV-005934 | Greolit     | Твердотопливные                    | maitek-group | 2     | low_attrs                              | greolit.by       | Greolit Котел Greolit PROFI 95 кВт без автоматики          |
+| 20769 | KOTLOV-005935 | Greolit     | Твердотопливные                    | maitek-group | 2     | low_attrs                              | greolit.by       | Greolit Котел Greolit PROFI 99 кВт без автоматики          |
+| 20770 | KOTLOV-005936 | Greolit     | Твердотопливные                    | maitek-group | 2     | low_attrs                              | greolit.by       | Greolit Котел Greolit PROFI 50 кВт с автоматикой           |
+| 20771 | KOTLOV-005937 | Greolit     | Твердотопливные                    | maitek-group | 2     | low_attrs                              | greolit.by       | Greolit Котел Greolit PROFI 60 кВт с автоматикой           |
+| 20772 | KOTLOV-005938 | Greolit     | Твердотопливные                    | maitek-group | 2     | low_attrs                              | greolit.by       | Greolit Котел Greolit PROFI 70 кВт с автоматикой           |
+| 20773 | KOTLOV-005939 | Greolit     | Твердотопливные                    | maitek-group | 2     | low_attrs                              | greolit.by       | Greolit Котел Greolit PROFI 95 кВт с автоматикой           |
+| 20774 | KOTLOV-005940 | Greolit     | Твердотопливные                    | maitek-group | 2     | low_attrs                              | greolit.by       | Greolit Котел Greolit PROFI 99 кВт с автоматикой           |
+| 20775 | KOTLOV-005941 | Greolit     | Твердотопливные                    | maitek-group | 2     | low_attrs                              | greolit.by       | Greolit Котел Greolit PROFI 250 кВт без автоматики         |
+| 20776 | KOTLOV-005942 | Greolit     | Твердотопливные                    | maitek-group | 1     | low_attrs                              | greolit.by       | Greolit Котел Greolit PROFI 250 кВт                        |
+| 15952 | KOTLOV-003674 | Hommyn      | Автоматика и терморегуляторы       | rusklimat    | 0     | low_attrs                              | rusklimat.by     | Кабель соединительный HOMMYN HCC-GR для модуля управляю... |
+| 15953 | KOTLOV-003675 | Hommyn      | Автоматика и терморегуляторы       | rusklimat    | 0     | low_attrs                              | rusklimat.by     | Кабель соединительный HOMMYN HCC-HI для модуля управляю... |
+| 15954 | KOTLOV-003676 | Hommyn      | Автоматика и терморегуляторы       | rusklimat    | 0     | low_attrs                              | rusklimat.by     | Кабель соединительный HOMMYN HCC-TS-H                      |
+| 15955 | KOTLOV-003677 | Hommyn      | Автоматика и терморегуляторы       | rusklimat    | 0     | low_attrs                              | rusklimat.by     | Кабель соединительный HOMMYN HCC-TS-SH                     |
++-------+---------------+-------------+------------------------------------+--------------+-------+----------------------------------------+------------------+------------------------------------------------------------+
 
 ```
