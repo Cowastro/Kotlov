@@ -1,6 +1,6 @@
 {
-  "task": "artisan",
+  "task": "artisan-dry-run",
   "artisan_args": "products:audit-content-quality --not-archived --limit=80 --min-issues=2",
   "log_file": "storage/logs/server-artisan-content-audit.log",
-  "run_id": "content-audit-after-royal-thermo-20260711-1"
+  "run_id": "content-audit-after-royal-thermo-20260711-2"
 }
