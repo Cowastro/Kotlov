@@ -1,73 +1,113 @@
 # Server Artisan Result
 
-- Time: 2026-07-11 19:36:55 UTC
+- Time: 2026-07-11 19:40:09 UTC
 - Task: `artisan-dry-run`
-- Artisan args: `catalog:audit-menu --empty-only --limit=200`
+- Artisan args: `catalog:audit-media --type=all --only-with-products --missing-only --limit=120`
 - Log file: ``
 - Exit code: `0`
 
 ```text
 From https://github.com/Cowastro/Kotlov
-   4a1c8e5..8f98613  main       -> origin/main
-Updating 4a1c8e5..8f98613
+   8f98613..4883e1e  main       -> origin/main
+Updating 8f98613..4883e1e
 Fast-forward
- .github/server-artisan-result.md | 60 ++++++++++++++--------------------------
- .github/server-artisan-task.json |  6 ++--
- 2 files changed, 24 insertions(+), 42 deletions(-)
-+-----------------------+-------+
-| metric                | count |
-+-----------------------+-------+
-| active_categories     | 160   |
-| empty_active_branches | 45    |
-| shown_rows            | 44    |
-+-----------------------+-------+
-+-------+-----+--------+---------------------------------------+-------------------------------------+--------+--------+----------+
-| depth | id  | parent | slug                                  | name                                | direct | branch | children |
-+-------+-----+--------+---------------------------------------+-------------------------------------+--------+--------+----------+
-| 1     | 213 | 49     | kotly-na-pelletah                     | Котлы на пеллетах                   | 0      | 0      | 0        |
-| 2     | 227 | 98     | protochnye                            | Проточные                           | 0      | 0      | 0        |
-| 1     | 237 | 307    | dymoxody-dlya-pechej                  | Дымоходы для печей                  | 0      | 0      | 0        |
-| 1     | 230 | 307    | dymoxody-dlya-bani                    | Дымоходы для бани                   | 0      | 0      | 0        |
-| 1     | 232 | 307    | dymoxody-dlya-kaminov                 | Дымоходы для каминов                | 0      | 0      | 0        |
-| 1     | 323 | 307    | prochie-dymohod                       | Прочие комплектующие                | 0      | 0      | 0        |
-| 1     | 105 | 51     | bio-kaminy                            | Каминокомплекты                     | 0      | 0      | 0        |
-| 1     | 365 | 51     | biokaminy                             | Биокамины                           | 0      | 0      | 0        |
-| 1     | 338 | 193    | polipropilenovye-truby                | Полипропиленовые трубы              | 0      | 0      | 0        |
-| 1     | 339 | 193    | polietilenovye-truby                  | Полиэтиленовые трубы                | 0      | 0      | 0        |
-| 1     | 341 | 193    | metalloplastikovye-truby              | Металлопластиковые трубы            | 0      | 0      | 0        |
-| 1     | 342 | 193    | kanalizatsionnye-truby                | Канализационные трубы               | 0      | 0      | 0        |
-| 1     | 343 | 193    | gofrirovanye-truby                    | Гофрированные трубы                 | 0      | 0      | 0        |
-| 1     | 344 | 193    | truby-dlya-teplogo-vodyanogo-pola     | Трубы для теплого водяного пола     | 0      | 0      | 0        |
-| 1     | 345 | 193    | napornye-truby-iz-polietilena         | Напорные трубы из полиэтилена       | 0      | 0      | 0        |
-| 1     | 346 | 193    | truby-zashchitnye                     | Трубы защитные                      | 0      | 0      | 0        |
-| 1     | 347 | 193    | fitingi-dlya-metalloplastikovykh-trub | Фитинги для металлопластиковых труб | 0      | 0      | 0        |
-| 1     | 348 | 193    | sharovye-krany                        | Шаровые краны                       | 0      | 0      | 0        |
-| 1     | 234 | 87     | chugunnye-radiatory                   | Чугунные радиаторы                  | 0      | 0      | 0        |
-| 1     | 350 | 109    | nagrevatelnie-maty                    | Нагревательные маты                 | 0      | 0      | 0        |
-| 1     | 351 | 109    | nagrevatelnie-kabeli                  | Нагревательные кабели               | 0      | 0      | 0        |
-| 1     | 352 | 109    | ik-plenochny-pol                      | ИК Пленочный пол                    | 0      | 0      | 0        |
-| 1     | 353 | 109    | podlozhka-pod-teplyy-pol              | Подложка под теплый пол             | 0      | 0      | 0        |
-| 1     | 354 | 109    | teplyy-pol-pod-laminat                | Теплый пол под ламинат              | 0      | 0      | 0        |
-| 1     | 355 | 109    | teplyy-pol-pod-plitku                 | Теплый пол под плитку               | 0      | 0      | 0        |
-| 1     | 356 | 109    | termoregulyatory-dlya-teplogo-pola    | Терморегуляторы для теплого пола    | 0      | 0      | 0        |
-| 1     | 357 | 109    | komplektuyushchie-dlya-teplogo-pola   | Комплектующие для теплого пола      | 0      | 0      | 0        |
-| 1     | 366 | 109    | samoreguliruyushchiesya-kabeli        | Саморегулирующиеся кабели           | 0      | 0      | 0        |
-| 1     | 358 | 304    | ventilyatory                          | Вентиляторы                         | 0      | 0      | 0        |
-| 1     | 359 | 304    | maslyanye-obrevateli                  | Масляные обогреватели               | 0      | 0      | 0        |
-| 1     | 360 | 304    | infrakrasnye-obrevateli               | Инфракрасные обогреватели           | 0      | 0      | 0        |
-| 1     | 361 | 304    | teploventilyatory                     | Тепловентиляторы                    | 0      | 0      | 0        |
-| 1     | 362 | 304    | teplovye-zavesy                       | Тепловые завесы                     | 0      | 0      | 0        |
-| 1     | 363 | 304    | uvlazhniteli-vozdukha                 | Увлажнители воздуха                 | 0      | 0      | 0        |
-| 1     | 364 | 304    | mojki-vozdukha                        | Мойки воздуха                       | 0      | 0      | 0        |
-| 1     | 280 | 304    | teplovye-pushki                       | Тепловые пушки                      | 0      | 0      | 0        |
-| 1     | 306 | 304    | mobilnye-kondicionery                 | Мобильные кондиционеры              | 0      | 0      | 0        |
-| 1     | 334 | 303    | nasosy-povysheniya-davleniya          | Насосы повышения давления           | 0      | 0      | 0        |
-| 1     | 335 | 303    | nasosy-dlya-kolodtsa                  | Насосы для колодца                  | 0      | 0      | 0        |
-| 1     | 336 | 303    | fekalnye-nasosy                       | Фекальные насосы                    | 0      | 0      | 0        |
-| 1     | 337 | 303    | kanalizatsionnye-nasosy               | Канализационные насосы              | 0      | 0      | 0        |
-| 1     | 102 | 195    | akkumuliruyushhie-baki                | Аккумулирующие баки                 | 0      | 0      | 0        |
-| 1     | 367 | 195    | sistema-zashchity-ot-protechek        | Система защиты от протечек          | 0      | 0      | 0        |
-| 2     | 218 | 69     | metall-dlya-bani                      | Металлические                       | 0      | 0      | 0        |
-+-------+-----+--------+---------------------------------------+-------------------------------------+--------+--------+----------+
+ .github/server-artisan-result.md | 85 +++++++++++++++++++++++++++++-----------
+ .github/server-artisan-task.json |  4 +-
+ 2 files changed, 65 insertions(+), 24 deletions(-)
+Categories
++----------+-------+
+| metric   | count |
++----------+-------+
+| checked  | 108   |
+| missing  | 0     |
+| broken   | 0     |
+| fallback | 108   |
+| ok       | 0     |
++----------+-------+
+Brands
++----------+-------+
+| metric   | count |
++----------+-------+
+| checked  | 200   |
+| missing  | 39    |
+| broken   | 32    |
+| fallback | 0     |
+| ok       | 129   |
++----------+-------+
++-----+-----------------------------------------------------+--------------------------------------------+----------+---------+--------------------------------------+
+| id  | slug                                                | name                                       | products | media   | path                                 |
++-----+-----------------------------------------------------+--------------------------------------------+----------+---------+--------------------------------------+
+| 253 | antifrogen                                          | Antifrogen                                 | 2        | missing | -                                    |
+| 219 | brv-modvlvs                                         | BRV-MODVLVS                                | 18       | broken  | 683-brv_logo.jpg                     |
+| 210 | esbe                                                | ESBE                                       | 12       | broken  | 139-index2.jpg                       |
+| 387 | ech                                                 | ESH                                        | 5        | missing | -                                    |
+| 427 | eurostar                                            | Eurostar                                   | 7        | missing | -                                    |
+| 198 | ewt                                                 | EWT                                        | 4        | broken  | 533-ewt_logo.jpg                     |
+| 220 | fireblaze                                           | FireBlaze                                  | 2        | broken  | 583-logo-fireblaze.png               |
+| 354 | gas-spezialisten                                    | Gas Spezialisten                           | 1        | missing | -                                    |
+| 416 | gkb                                                 | GKB                                        | 7        | missing | -                                    |
+| 225 | herz                                                | HERZ                                       | 21       | broken  | 767-herz.jpg                         |
+| 315 | hotta                                               | Hotta                                      | 9        | missing | -                                    |
+| 229 | jotul                                               | JOTUL                                      | 1        | broken  | 191-jotul.jpg                        |
+| 172 | junkers                                             | Junkers                                    | 4        | broken  | 753-junkers.jpg                      |
+| 242 | kan                                                 | KAN                                        | 23       | broken  | 183-system-kan-therm-biale-tlo.png   |
+| 385 | kotlov                                              | KOTLOV                                     | 38       | missing | -                                    |
+| 349 | ltek                                                | LTEK                                       | 9        | missing | -                                    |
+| 324 | maxima                                              | Maxima                                     | 7        | missing | -                                    |
+| 412 | meran                                               | MERAN                                      | 7        | missing | -                                    |
+| 201 | merlin                                              | Merlin                                     | 4        | missing | -                                    |
+| 329 | mr.-tektum-                                         | Mr. Tektum                                 | 2        | missing | -                                    |
+| 113 | nova-florida                                        | Nova Florida                               | 3        | broken  | 217-logonovaflorida.jpg              |
+| 369 | nova-florida-                                       | Nova Florida                               | 6        | missing | -                                    |
+| 363 | ole-pro                                             | Ole-pro                                    | 1        | missing | -                                    |
+| 28  | opop                                                | OPOP                                       | 6        | broken  | 147-opop.png                         |
+| 300 | parkanex                                            | Parkanex                                   | 7        | broken  | parkanex.png                         |
+| 411 | purity                                              | PURITY                                     | 1        | missing | -                                    |
+| 207 | rehau                                               | REHAU                                      | 9        | broken  | 435-rehau.jpg                        |
+| 182 | rihters                                             | Rihters                                    | 6        | broken  | 961-rihters-logo-small.jpg           |
+| 301 | scamol                                              | Scamol                                     | 6        | missing | -                                    |
+| 92  | solpi                                               | Solpi                                      | 30       | broken  | 453-solpi-m.jpg                      |
+| 420 | superlux                                            | Superlux                                   | 9        | missing | -                                    |
+| 34  | teplocom                                            | Teplocom                                   | 1        | broken  | 817-teplocom-logo.png                |
+| 386 | tmf                                                 | TMF                                        | 66       | broken  | logo_385x165.svg                     |
+| 380 | tyfocor                                             | TYFOCOR                                    | 2        | missing | -                                    |
+| 97  | unical                                              | Unical                                     | 20       | broken  | 188-unical_logo.jpg                  |
+| 105 | vvd                                                 | V.V.D.                                     | 2        | broken  | 165-vvd.jpg                          |
+| 355 | venma-                                              | VENMA                                      | 11       | missing | -                                    |
+| 37  | viadrus                                             | Viadrus                                    | 7        | broken  | 288-viadrus.png                      |
+| 227 | victory                                             | VICTORY                                    | 7        | broken  | 152-victory.jpg                      |
+| 234 | watts                                               | Watts                                      | 13       | broken  | 127-watts.jpg                        |
+| 407 | wellmix                                             | WELLMIX                                    | 18       | missing | -                                    |
+| 398 | xommet                                              | XOMMET                                     | 10       | missing | -                                    |
+| 142 | analitpribor                                        | Аналитприбор                               | 1        | broken  | 355-981-analitpribor.jpg             |
+| 42  | atem                                                | АТЕМ                                       | 21       | broken  | 182-logo-atem-min.png                |
+| 413 | bania                                               | Банька                                     | 74       | missing | -                                    |
+| 112 | belomo                                              | БелОМО                                     | 40       | broken  | 441-logo_belomo.jpg                  |
+| 370 | federica-bugatti                                    | Бренд 370                                  | 1        | broken  | wf1roygad2ennnw6e4f66c2b8zt7p546.png |
+| 289 | veles-elektro                                       | Велес Электро                              | 38       | missing | -                                    |
+| 236 | grodnotorgmash                                      | Гродторгмаш                                | 4        | missing | -                                    |
+| 298 | dzenzelevskiy-kotlostroitelnyiy-zavod               | Дзензелевский котлостроительный завод      | 1        | missing | -                                    |
+| 366 | jitomir                                             | Житомир                                    | 42       | missing | -                                    |
+| 264 | konord                                              | Конорд                                     | 2        | missing | -                                    |
+| 340 | kosmos                                              | Космос                                     | 1        | missing | -                                    |
+| 351 | merkuriy                                            | Меркурий                                   | 17       | missing | -                                    |
+| 314 | neus                                                | Неус                                       | 3        | missing | -                                    |
+| 393 | nzs                                                 | НЗС                                        | 11       | missing | -                                    |
+| 414 | nmk                                                 | НМК                                        | 13       | missing | -                                    |
+| 305 | novosibirskaya-metalloobrabatyivayuschaya-kompaniya | Новосибирская металлообрабатывающая ком... | 13       | broken  | 97050b0cd760b29e1b2769b51626cdf8.png |
+| 335 | ooo-                                                | ООО БлицПром                               | 6        | missing | -                                    |
+| 290 | pechkin                                             | Печкин                                     | 1        | broken  | logo_pechkin.png                     |
+| 373 | rubtsovskiy-liteynyiy-kompleks-ldv                  | Рубцовский литейный комплекс ЛДВ           | 1        | missing | -                                    |
+| 239 | svod                                                | СВОД                                       | 3        | missing | -                                    |
+| 138 | smolkom                                             | Смолком                                    | 88       | broken  | 591-smolkom.jpeg                     |
+| 353 | stalsnabdizayn-                                     | СтальСнабДизайн                            | 43       | missing | -                                    |
+| 61  | termopass                                           | ТЕРМОПАСС                                  | 9        | broken  | 530-termopass.jpg                    |
+| 382 | everest                                             | Эверест                                    | 21       | missing | -                                    |
+| 381 | ekohitin                                            | Экохитин                                   | 4        | missing | -                                    |
+| 140 | yelektroteplopribor                                 | Электротеплоприбор                         | 3        | broken  | 380-elektroteplopribor.png           |
+| 261 | yenergiya                                           | Энергия                                    | 8        | broken  | 124-logotip_energiya2.png            |
+| 149 | yergotex                                            | Эрготех                                    | 1        | broken  | 885-ergotech-logo.jpg                |
+| 240 | yunker                                              | ЮНКЕР                                      | 2        | missing | -                                    |
++-----+-----------------------------------------------------+--------------------------------------------+----------+---------+--------------------------------------+
 
 ```
