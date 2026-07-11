@@ -1,22 +1,20 @@
 # Server Artisan Result
 
-- Time: 2026-07-11 20:58:43 UTC
-- Task: `artisan-dry-run`
-- Artisan args: `catalog:deactivate-empty-categories --limit=200`
+- Time: 2026-07-11 21:07:12 UTC
+- Task: `artisan-apply`
+- Artisan args: `catalog:deactivate-empty-categories --apply --limit=200`
 - Log file: ``
 - Exit code: `0`
 
 ```text
 From https://github.com/Cowastro/Kotlov
-   b5f3dac..f8b460b  main       -> origin/main
-Updating b5f3dac..f8b460b
+   f8b460b..de6f39e  main       -> origin/main
+Updating f8b460b..de6f39e
 Fast-forward
- .github/server-artisan-result.md                   | 191 +++++++--------------
- .github/server-artisan-task.json                   |   4 +-
- .../DeactivateEmptyCatalogCategoriesCommand.php    | 139 +++++++++++++++
- 3 files changed, 203 insertions(+), 131 deletions(-)
- create mode 100644 app/Console/Commands/DeactivateEmptyCatalogCategoriesCommand.php
-DRY RUN: database will not be changed.
+ .github/server-artisan-result.md | 32 ++++++++++++++++++--------------
+ .github/server-artisan-task.json |  6 +++---
+ 2 files changed, 21 insertions(+), 17 deletions(-)
+APPLY: empty active catalog categories will be deactivated.
 +-------------------+-------+
 | metric            | count |
 +-------------------+-------+
@@ -72,6 +70,6 @@ DRY RUN: database will not be changed.
 | 1     | 367 | 195    | sistema-zashchity-ot-protechek        | Система защиты от протечек          | 0      | 0      | 0        |
 | 2     | 218 | 69     | metall-dlya-bani                      | Металлические                       | 0      | 0      | 0        |
 +-------+-----+--------+---------------------------------------+-------------------------------------+--------+--------+----------+
-Re-run with --apply to deactivate these empty category branches.
+Deactivated categories: 44
 
 ```
