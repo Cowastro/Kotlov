@@ -315,7 +315,7 @@ class EnrichProductContentCommand extends Command
         ];
 
         if (! Schema::hasTable('supplier_products')) {
-            return $empty + ['error' => 'supplier_products table is missing'];
+            return array_merge($empty, ['error' => 'supplier_products table is missing']);
         }
 
         $url = (string) DB::table('supplier_products')
@@ -332,7 +332,7 @@ class EnrichProductContentCommand extends Command
         try {
             $parsed = $sourceEnricher->preview($url);
         } catch (\Throwable $e) {
-            return $empty + ['url' => $url, 'error' => $e->getMessage()];
+            return array_merge($empty, ['url' => $url, 'error' => $e->getMessage()]);
         }
 
         $description = trim(strip_tags((string) ($parsed['description'] ?? '')));
