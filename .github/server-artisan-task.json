@@ -1,6 +1,6 @@
 {
   "task": "artisan-dry-run",
-  "artisan_args": "supplier:enrich-100kaminov --brand=Blist --sitemap --limit=40 --sleep=300",
-  "log_file": "storage/logs/server-artisan-ligmet-blist-sitemap-dry.log",
-  "run_id": "ligmet-blist-sitemap-dry-20260711-4"
+  "artisan_args": "supplier:enrich-100kaminov --brand=Blist --urls=https://100kaminov.by/p124137348-pech-kamin-blist.html,https://100kaminov.by/p124137364-pech-kamin-blist.html,https://100kaminov.by/p124137382-pech-kamin-blist.html,https://100kaminov.by/p124137478-pech-kamin-blist.html,https://100kaminov.by/p126748755-pech-kamin-blist.html,https://100kaminov.by/p126748774-pech-kamin-blist.html,https://100kaminov.by/p126748832-pech-kamin-blist.html,https://100kaminov.by/p126748852-pech-kamin-blist.html,https://100kaminov.by/p126748894-pech-kamin-blist.html,https://100kaminov.by/p126748918-pech-kamin-blist.html,https://100kaminov.by/p126749660-pech-kamin-blist.html,https://100kaminov.by/p127020214-pech-kamin-blist.html,https://100kaminov.by/p127164480-pech-kamin-blist.html,https://100kaminov.by/p127164619-pech-kamin-blist.html,https://100kaminov.by/p127164648-pech-kamin-blist.html,https://100kaminov.by/p127164662-pech-kamin-blist.html,https://100kaminov.by/p127287685-pech-kamin-blist.html,https://100kaminov.by/p127289906-pech-kamin-blist.html,https://100kaminov.by/p127290325-pech-kamin-blist.html,https://100kaminov.by/p127292448-pech-kamin-blist.html,https://100kaminov.by/p127293349-pech-kamin-blist.html,https://100kaminov.by/p127293382-pech-kamin-blist.html,https://100kaminov.by/p127293417-pech-kamin-blist.html,https://100kaminov.by/p127293792-pech-kamin-blist.html,https://100kaminov.by/p127293846-pech-kamin-blist.html --limit=25 --sleep=300",
+  "log_file": "storage/logs/server-artisan-ligmet-blist-direct-dry.log",
+  "run_id": "ligmet-blist-direct-dry-20260711-1"
 }

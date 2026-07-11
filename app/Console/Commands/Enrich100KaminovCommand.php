@@ -21,6 +21,7 @@ class Enrich100KaminovCommand extends Command
     protected $signature = 'supplier:enrich-100kaminov
         {--brand=      : Limit to one brand (e.g. Kratki)}
         {--source-url= : Brand-specific category URL (e.g. /g768157-pechi-kaminy?csbss6=8334185); skips default CATEGORIES; comma-separated for multiple}
+        {--urls=       : Comma-separated direct 100kaminov product URLs; bypasses sitemap/listing crawl}
         {--pages=10    : Max pages to crawl per category}
         {--limit=      : Max products to enrich}
         {--sleep=800   : Delay between HTTP requests, ms}
@@ -141,6 +142,31 @@ class Enrich100KaminovCommand extends Command
         }
 
         $seenProductUrls = [];
+
+        if ($directUrls = $this->directProductUrls()) {
+            $this->newLine();
+            $this->info('Direct product links: ' . count($directUrls));
+            foreach ($directUrls as $productUrl) {
+                if ($enriched >= $limit) {
+                    break;
+                }
+                try {
+                    if ($this->processProduct($productUrl)) {
+                        $enriched++;
+                    }
+                } catch (\Throwable $e) {
+                    $this->stats['errors']++;
+                    $this->warn("  error [{$productUrl}]: " . $e->getMessage());
+                }
+                usleep($this->sleep * 1000);
+            }
+
+            $this->newLine();
+            $this->table(['metric', 'count'],
+                array_map(fn ($k, $v) => [$k, $v], array_keys($this->stats), array_values($this->stats)));
+
+            return $this->stats['errors'] > 0 ? self::FAILURE : self::SUCCESS;
+        }
 
         if ((bool) $this->option('sitemap')) {
             $links = $this->collectSitemapProductLinks($brandFilter);
@@ -284,6 +310,29 @@ class Enrich100KaminovCommand extends Command
         ));
 
         return $links;
+    }
+
+    private function directProductUrls(): array
+    {
+        $raw = trim((string) $this->option('urls'));
+        if ($raw === '') {
+            return [];
+        }
+
+        $urls = [];
+        foreach (array_map('trim', explode(',', $raw)) as $url) {
+            if ($url === '') {
+                continue;
+            }
+            if (str_starts_with($url, '/')) {
+                $url = self::BASE . $url;
+            }
+            if (preg_match('#^https?://100kaminov\.by/p\d[^,\s]+\.html$#i', $url)) {
+                $urls[] = $url;
+            }
+        }
+
+        return array_values(array_unique($urls));
     }
 
     private function brandSlugsForFilter(?string $brandFilter): array
