@@ -140,29 +140,6 @@
                         </p>
                     </div>
 
-                    @php
-                        $popularImages = [
-                            'kotly'              => 'boiler_img.jpg',
-                            'teplovyie-nasosyi'  => 'heatpump.jpg',
-                            'kaminy'             => 'fireplace.jpg',
-                            'pechki'             => 'pech.jpg',
-                            'pechi-dlya-bani'    => 'pech.jpg',
-                            'dymohody'           => 'chimney.jpg',
-                            'bani-i-sauny'       => 'sauna.jpg',
-                            'vodonagrevateli'    => 'droplet.jpg',
-                            'pelletnye-gorelki'  => 'pellet_burner.jpg',
-                            'otoplenie'          => 'heater.jpg',
-                            'radiatory'          => 'radiatory.jpg',
-                            'truby-i-fitingi'    => 'truby-i-fitingi.jpg',
-                            'teplyj-pol'         => 'teplyj-pol.jpg',
-                            'elektricheskie-konvektoryi' => 'elektricheskie-konvektoryi.jpg',
-                            'komplektuyushhie-dlya-otopleniya' => 'komplektuyushhie-dlya-otopleniya.jpg',
-                            'filtry'             => 'filtry.jpg',
-                            'nasosy'             => 'nasosy.jpg',
-                            'nasosyi'            => 'nasosy.jpg',
-                            'vodosnabzhenie'     => 'nasosy.jpg',
-                        ];
-                    @endphp
                     <div dir="ltr" class="swiper tf-swiper swiper-cate"
                         data-preview="5" data-tablet="4" data-mobile-sm="3" data-mobile="2"
                         data-space-lg="40" data-space-md="20" data-space="10"
@@ -175,12 +152,7 @@
                             <a href="/{{ $category->slug }}" class="category-v04 hover-img wow fadeInUp">
                                 <div class="cate-image img-style">
                                     @php
-                                        $fallbackImage = $popularImages[$category->slug] ?? null;
-                                        $img = $fallbackImage
-                                            ? asset('img/popular/' . $fallbackImage)
-                                            : ($category->image
-                                                ? asset('storage/' . $category->image)
-                                                : asset('img/popular/catalog.jpg'));
+                                        $img = $category->image_url;
                                     @endphp
                                     <img loading="lazy" width="240" height="180"
                                         src="{{ $img }}"

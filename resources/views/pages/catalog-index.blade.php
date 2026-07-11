@@ -27,39 +27,9 @@
             @if ($rootCategories->count() > 0)
                 <div class="tf-grid-layout ssm-col-2 xl-col-4 gap-lg-30">
 
-                    @php
-                        $popularImages = [
-                            'kotly'                              => 'boiler_img.jpg',
-                            'teplovyie-nasosyi'                  => 'heatpump.jpg',
-                            'kaminy'                             => 'fireplace.jpg',
-                            'pechki'                             => 'pech.jpg',
-                            'pechi-dlya-bani'                    => 'pech.jpg',
-                            'dymohody'                           => 'chimney.jpg',
-                            'bani-i-sauny'                       => 'sauna.jpg',
-                            'vodonagrevateli'                    => 'droplet.jpg',
-                            'pelletnye-gorelki'                  => 'pellet_burner.jpg',
-                            'otoplenie'                          => 'heater.jpg',
-                            'vodosnabzhenie'                     => 'nasosy.jpg',
-                            'nasosy'                             => 'nasosy.jpg',
-                            'nasosyi'                            => 'nasosy.jpg',
-                            'klimat'                             => 'air.jpg',
-                            'radiatory'                          => 'radiatory.jpg',
-                            'truby-i-fitingi'                    => 'truby-i-fitingi.jpg',
-                            'teplyj-pol'                         => 'teplyj-pol.jpg',
-                            'elektricheskie-konvektoryi'         => 'elektricheskie-konvektoryi.jpg',
-                            'komplektuyushhie-dlya-otopleniya'   => 'komplektuyushhie-dlya-otopleniya.jpg',
-                            'filtry'                             => 'filtry.jpg',
-                        ];
-                    @endphp
-
                     @foreach ($rootCategories as $category)
                         @php
-                            $fallbackImage = $popularImages[$category->slug] ?? null;
-                            $catImg = $fallbackImage
-                                ? asset('img/popular/' . $fallbackImage)
-                                : ($category->image
-                                    ? asset('storage/' . $category->image)
-                                    : asset('img/categories/placeholder.jpg'));
+                            $catImg = $category->image_url;
                         @endphp
                         <div class="category-v03 style-2 hover-img4">
                             <a href="/{{ $category->slug }}" class="cate-image img-style4">

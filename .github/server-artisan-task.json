@@ -2,5 +2,5 @@
   "task": "optimize-clear",
   "artisan_args": "",
   "log_file": "storage/logs/server-artisan-deploy.log",
-  "run_id": "deploy-brand-category-filter-scope-20260711-1"
+  "run_id": "deploy-category-image-fallbacks-20260711-1"
 }
