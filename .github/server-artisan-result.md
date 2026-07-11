@@ -1,6 +1,6 @@
 # Server Artisan Result
 
-- Time: 2026-07-11 18:50:47 UTC
+- Time: 2026-07-11 18:52:56 UTC
 - Task: `tail-log`
 - Artisan args: ``
 - Log file: `storage/logs/product-content-fill-source-context-20260711-4.log`
@@ -8,103 +8,12 @@
 
 ```text
 From https://github.com/Cowastro/Kotlov
-   f728b9c..173bca3  main       -> origin/main
-Updating f728b9c..173bca3
+   173bca3..612ff93  main       -> origin/main
+Updating 173bca3..612ff93
 Fast-forward
- .github/server-artisan-result.md | 42 ++++++++++------------------------------
- .github/server-artisan-task.json |  6 +++---
- 2 files changed, 13 insertions(+), 35 deletions(-)
-Provider: deepseek-chat (api.deepseek.com)
-Candidates: 176 | processing: 120 (offset=0)
-[1/120] id=5701 Печь-камин Мета-Бел Сена 7 кВт (АОТ-7,0)
-  source context: https://metabel.by/produktsiya (82 chars, 0 specs)
-  skipped: only 0 specs, min is 1
-[2/120] id=6589 Печь-каменка Мета-Бел ПБМ 16 (в модификации ПС)
-  source context: https://metabel.by/produktsiya (82 chars, 0 specs)
-  skipped: only 0 specs, min is 1
-[3/120] id=10790 Дверь каминная Kratki Zuzia 
-  source context: https://ligmet.by/
-  source context skipped: cURL error 6: Could not resolve host: ligmet.by (see https://curl.haxx.se/libcurl/c/libcurl-errors.html) for https://ligmet.by/
-  skipped: source URL points to a bare domain/home page
-[4/120] id=10807 Дверь каминная Kratki Maja 
-  source context: https://ligmet.by/
-  source context skipped: cURL error 6: Could not resolve host: ligmet.by (see https://curl.haxx.se/libcurl/c/libcurl-errors.html) for https://ligmet.by/
-  skipped: source URL points to a bare domain/home page
-[5/120] id=11141 Топка Мета-Бел Эльба 9 кВт ТКТ-9,0-01
-  source context: https://metabel.by/produktsiya (82 chars, 0 specs)
-  specs available: 17
-  ✓ short_description saved
-[6/120] id=11421 Дверь каминная ДК-02
-  source context: https://metabel.by/produktsiya (82 chars, 0 specs)
-  specs available: 4
-  ✓ short_description saved
-[7/120] id=11445 Топка каминная Skadi 11 кВт
-  source context: https://metabel.by/produktsiya (82 chars, 0 specs)
-  specs available: 19
-  ✓ short_description saved
-[8/120] id=11502 Печь-камин Мета-Бел Севан 7В (АОТ 7.0-05)
-  source context: https://metabel.by/produktsiya (82 chars, 0 specs)
-  specs available: 16
-  ✓ short_description saved
-[9/120] id=11503 Печь-камин Мета-Бел Леман (АОТ-6) (без пьедестала) 
-  source context: https://metabel.by/produktsiya (82 chars, 0 specs)
-  specs available: 6
-  ✓ short_description saved
-[10/120] id=11525 Печь-камин Мета-Бел Дунай АОТ-11
-  source context: https://metabel.by/produktsiya (82 chars, 0 specs)
-  specs available: 17
-  ✓ short_description saved
-[11/120] id=11534 Твердотопливный котел Каракан 20ТЭГ 3
-  source context: https://stenbel.by/katalog/kotlyi-tverdotoplivnyie/karakan/kotel-tverdotoplivnyij-karakan-20teg-3.html (104 chars, 36 specs)
-  specs available: 46
-  ✓ short_description saved
-[12/120] id=11560 Топка каминная ТКТ 10.0-05 (в модификации Аврора М)
-  source context: https://metabel.by/produktsiya (82 chars, 0 specs)
-  specs available: 23
-  ✓ short_description saved
-[13/120] id=11628 Каминная топка Мета-Бел Аврора С
-  source context: https://metabel.by/produktsiya (82 chars, 0 specs)
-  specs available: 23
-  ✓ short_description saved
-[14/120] id=11630 Каминная топка Мета-Бел Аврора С2 (туннельная) 
-  source context: https://metabel.by/produktsiya (82 chars, 0 specs)
-  specs available: 23
-  ✓ short_description saved
-[15/120] id=11688 Печь-камин Мета-Бел Севан 7
-  source context: https://metabel.by/produktsiya (82 chars, 0 specs)
-  specs available: 15
-  ✓ short_description saved
-[16/120] id=11773 Банная печь Мета-Бел ПБМ 20 LUX
-  source context: https://metabel.by/produktsiya (82 chars, 0 specs)
-  specs available: 15
-  ✓ short_description saved
-[17/120] id=11836 Печь-камин Мета-Бел Монблан АОТ-10
-  source context: https://metabel.by/produktsiya (82 chars, 0 specs)
-  specs available: 17
-  ✓ short_description saved
-[18/120] id=11837 Печь-камин Мета-Бел Дунай-Аква 
-  source context: https://metabel.by/produktsiya (82 chars, 0 specs)
-  specs available: 6
-  ✓ short_description saved
-[19/120] id=11848 КПД ЧЕРНЫЙ Розета 0,7мм ф150
-  source context: https://ligmet.by/
-  source context skipped: cURL error 6: Could not resolve host: ligmet.by (see https://curl.haxx.se/libcurl/c/libcurl-errors.html) for https://ligmet.by/
-  skipped: source URL points to a bare domain/home page
-[20/120] id=11849 КПД ЧЕРНЫЙ Труба 250мм 2мм ф150
-  source context: https://ligmet.by/
-  source context skipped: cURL error 6: Could not resolve host: ligmet.by (see https://curl.haxx.se/libcurl/c/libcurl-errors.html) for https://ligmet.by/
-  skipped: source URL points to a bare domain/home page
-[21/120] id=11914 Печь-камин Мета-Бел Нарочь АОТ-07
-  source context: https://metabel.by/produktsiya (82 chars, 0 specs)
-  specs available: 18
-  ✓ short_description saved
-[22/120] id=11915 Печь-камин Мета-Бел Нарочь АОТ-07 В
-  source context: https://metabel.by/produktsiya (82 chars, 0 specs)
-  specs available: 18
-  ✓ short_description saved
-[23/120] id=12050 Печь банная Мета-Бел ПБМ 20 ПС
-  source context: https://metabel.by/produktsiya (82 chars, 0 specs)
-  specs available: 4
+ .github/server-artisan-result.md | 124 ++++++++++++++++++++++++++++++++++++---
+ .github/server-artisan-task.json |   2 +-
+ 2 files changed, 116 insertions(+), 10 deletions(-)
   ✓ short_description saved
 [24/120] id=12051 Печь-камин Мета-бел Монблан 2С
   source context: https://metabel.by/produktsiya (82 chars, 0 specs)
@@ -121,5 +30,149 @@ Candidates: 176 | processing: 120 (offset=0)
 [27/120] id=12054 Топка каминная Мета-Бел Fenix 1
   source context: https://metabel.by/produktsiya (82 chars, 0 specs)
   specs available: 25
+  ✓ short_description saved
+[28/120] id=12055 Топка каминная Мета-Бел Fenix 1L
+  source context: https://metabel.by/produktsiya (82 chars, 0 specs)
+  specs available: 21
+  ✓ short_description saved
+[29/120] id=12056 Топка каминная Мета-Бел Fenix 1R
+  source context: https://metabel.by/produktsiya (82 chars, 0 specs)
+  specs available: 16
+  ✓ short_description saved
+[30/120] id=12093 Печь банная Мета-Бел ПБМ 20 (в модификации без стекла)
+  source context: https://metabel.by/produktsiya (82 chars, 0 specs)
+  specs available: 7
+  ✓ short_description saved
+[31/120] id=12094 Печь-камин Мета-Бел АНГАРА 12
+  source context: https://metabel.by/produktsiya (82 chars, 0 specs)
+  specs available: 17
+  ✓ short_description saved
+[32/120] id=12095 Топка каминная Мета-Бел СЕЛЕНА Т
+  source context: https://metabel.by/produktsiya (82 chars, 0 specs)
+  specs available: 14
+  ✓ short_description saved
+[33/120] id=12283 Счетчик газа диафрагменный СГД 4-3-1 G2,5 И L=110 (левый)
+  source context: https://elicon.by/product/sgd-4-3-1-g2-5-l/
+  source context skipped: HTTP request returned status code 404:
+<!DOCTYPE html>
+<html lang="ru-RU">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="wid (truncated...)
+
+  skipped: source context is too short (0 chars, min is 80)
+[34/120] id=12284 Счетчик газа диафрагменный СГД 4-3-1-G4ТИ (левый) L=110 (без
+  source context: https://elicon.by/product/sgd_4-3-1-g4r/
+  source context skipped: HTTP request returned status code 404:
+<!DOCTYPE html>
+<html lang="ru-RU">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="wid (truncated...)
+
+  skipped: source context is too short (0 chars, min is 80)
+[35/120] id=12295 Счетчик газа ультразвуковой “СКАТ”- G10 RP
+  source context: https://elicon.by/product/%d1%81%d1%87%d0%b5%d1%82%d1%87%d0%b8%d0%ba-%d0%b3%d0%b0%d0%b7%d0%b0-%d1%83%d0%bb%d1%8c%d1%82%d1%80%d0%b0%d0%b7%d0%b2%d1%83%d0%ba%d0%be%d0%b2%d0%be%d0%b9-%d1%81%d0%ba%d0%b0%d1%82-g10-rp/
+  source context skipped: HTTP request returned status code 404:
+<!DOCTYPE html>
+<html lang="ru-RU">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="wid (truncated...)
+
+  skipped: source context is too short (0 chars, min is 80)
+[36/120] id=12301 Счетчик газа ультразвуковой ВЕГА G1.6
+  source context: https://elicon.by/product/vega-1-6/
+  source context skipped: HTTP request returned status code 404:
+<!DOCTYPE html>
+<html lang="ru-RU">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="wid (truncated...)
+
+  skipped: source context is too short (0 chars, min is 80)
+[37/120] id=12302 Счетчик газа ультразвуковой ВЕГА G1.6 В
+  source context: https://elicon.by/product/vega-1-6v/
+  source context skipped: HTTP request returned status code 404:
+<!DOCTYPE html>
+<html lang="ru-RU">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="wid (truncated...)
+
+  skipped: source context is too short (0 chars, min is 80)
+[38/120] id=12303 Счетчик газа ультразвуковой ВЕГА G2.5
+  source context: https://elicon.by/product/vega-g2-5/
+  source context skipped: HTTP request returned status code 404:
+<!DOCTYPE html>
+<html lang="ru-RU">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="wid (truncated...)
+
+  skipped: source context is too short (0 chars, min is 80)
+[39/120] id=12309 Счетчик газа ультразвуковой КАТА-G4 В-2
+  source context: https://elicon.by/product/%d1%81%d1%87%d0%b5%d1%82%d1%87%d0%b8%d0%ba-%d0%b3%d0%b0%d0%b7%d0%b0-%d1%83%d0%bb%d1%8c%d1%82%d1%80%d0%b0%d0%b7%d0%b2%d1%83%d0%ba%d0%be%d0%b2%d0%be%d0%b9-%d0%ba%d0%b0%d1%82%d0%b0-g4-%d0%b2-2/
+  source context skipped: HTTP request returned status code 404:
+<!DOCTYPE html>
+<html lang="ru-RU">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="wid (truncated...)
+
+  skipped: source context is too short (0 chars, min is 80)
+[40/120] id=12316 Счетчик газа ультразвуковой КАТА-G6-3
+  source context: https://elicon.by/product/%d1%81%d1%87%d0%b5%d1%82%d1%87%d0%b8%d0%ba-%d0%b3%d0%b0%d0%b7%d0%b0-%d1%83%d0%bb%d1%8c%d1%82%d1%80%d0%b0%d0%b7%d0%b2%d1%83%d0%ba%d0%be%d0%b2%d0%be%d0%b9-%d0%ba%d0%b0%d1%82%d0%b0-g6-3/
+  source context skipped: HTTP request returned status code 404:
+<!DOCTYPE html>
+<html lang="ru-RU">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="wid (truncated...)
+
+  skipped: source context is too short (0 chars, min is 80)
+[41/120] id=12365 TIS HARD BIO 400
+  source context: https://www.belkomin.com/product/tis-hard-bio-400.html (209 chars, 26 specs)
+  specs available: 49
+  ✓ short_description saved
+[42/120] id=12366 TIS HARD BIO 500
+  source context: https://www.belkomin.com/product/tis-hard-bio-500.html (209 chars, 26 specs)
+  specs available: 49
+  ✓ short_description saved
+[43/120] id=12379 Печь банная ПБМ 20_ЗК ULTRA
+  source context: https://metabel.by/produktsiya (82 chars, 0 specs)
+  specs available: 17
+  ✓ short_description saved
+[44/120] id=12380 Печь-камин Мета-Бел Лава
+  source context: https://metabel.by/produktsiya (82 chars, 0 specs)
+  specs available: 12
+  ✓ short_description saved
+[45/120] id=12382 Печь-камин Мета-Бел Свитязь NR
+  source context: https://metabel.by/produktsiya (82 chars, 0 specs)
+  specs available: 14
+  ✓ short_description saved
+[46/120] id=12383 Печь-камин Мета-Бел Москва 9
+  source context: https://metabel.by/produktsiya (82 chars, 0 specs)
+  specs available: 12
+  ✓ short_description saved
+[47/120] id=12384 Печь-камин Мета-Бел Монблан 700
+  source context: https://metabel.by/produktsiya (82 chars, 0 specs)
+  specs available: 13
+  ✓ short_description saved
+[48/120] id=12385 Печь-камин Мета-Бел Амур 12
+  source context: https://metabel.by/produktsiya (82 chars, 0 specs)
+  specs available: 12
+  ✓ short_description saved
+[49/120] id=12386 Печь-камин Мета-Бел Москва 12
+  source context: https://metabel.by/produktsiya (82 chars, 0 specs)
+  specs available: 11
+  ✓ short_description saved
+[50/120] id=12387 Топка каминная Мета-Бел Тахо
+  source context: https://metabel.by/produktsiya (82 chars, 0 specs)
+  specs available: 14
+  ✓ short_description saved
+[51/120] id=12388 Топка каминная Мета-Бел FENIX 1E
+  source context: https://metabel.by/produktsiya (82 chars, 0 specs)
+  specs available: 19
 
 ```
