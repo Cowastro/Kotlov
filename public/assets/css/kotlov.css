@@ -1048,6 +1048,7 @@ a.category-v05.subcat-tile:hover .cate-icon {
     position: relative !important;
     z-index: 2 !important;
     transform: none !important;
+    transition: none !important;
 }
 
 .section-product-description.flat-animate-tab .tab-pane.active iframe,
