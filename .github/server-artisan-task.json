@@ -1,6 +1,6 @@
 {
   "task": "artisan-apply",
-  "artisan_args": "supplier:enrich-tsk-nasosy --apply --max-current-attrs=2 --skip-ai --limit=20 --sleep=1000",
-  "log_file": "storage/logs/server-artisan-tsk-nasosy-low-attrs-apply-20.log",
-  "run_id": "tsk-nasosy-low-attrs-apply-20-20260711-1"
+  "artisan_args": "supplier:enrich-tsk-nasosy --apply --max-current-attrs=2 --skip-ai --limit=0 --sleep=1000",
+  "log_file": "storage/logs/server-artisan-tsk-nasosy-low-attrs-apply-rest.log",
+  "run_id": "tsk-nasosy-low-attrs-apply-rest-20260711-1"
 }
