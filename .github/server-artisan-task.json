@@ -1,6 +1,6 @@
 {
   "task": "artisan-apply",
-  "artisan_args": "product:enrich-content --all --only=content --limit=25 --offset=75 --min-specs=3 --rewrite-thin=350 --source-context --require-source-context --min-source-context-chars=120 --ai-model=deepseek-chat",
-  "log_file": "storage/logs/server-artisan-deepseek-thin-source-apply-25e.log",
-  "run_id": "deepseek-thin-source-apply-20260711-5"
+  "artisan_args": "product:enrich-content --all --only=content --limit=25 --offset=100 --min-specs=3 --rewrite-thin=350 --source-context --require-source-context --min-source-context-chars=100 --ai-model=deepseek-chat",
+  "log_file": "storage/logs/server-artisan-deepseek-thin-source-apply-25f.log",
+  "run_id": "deepseek-thin-source-apply-20260711-6"
 }
