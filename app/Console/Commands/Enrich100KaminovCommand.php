@@ -71,7 +71,7 @@ class Enrich100KaminovCommand extends Command
         'БЕЛАЯ','БЕЛЫЙ','БЕЛОЕ','БЕЖЕВАЯ','БЕЖЕВЫЙ','КРАСНАЯ','КРАСНЫЙ',
         'КОРИЧНЕВАЯ','КОРИЧНЕВЫЙ','ПАТИНА','АНТРАЦИТ','ГРАФИТ','КРЕМОВАЯ','КРЕМОВЫЙ',
         // English color/finish variants (100kaminov.by naming)
-        'GREY','GRAY','BLACK','WHITE','SATIN','CERAMIC','ECODESIGN',
+        'GREY','GRAY','BLACK','WHITE','SATIN','CERAMIC','ECODESIGN','KOZA',
         // Invicta product-type prefixes (Лигмет column D starts with STOVE/FIREPLACE)
         'STOVE','FIREPLACE',
         // Nordflam eco-design suffix; Invicta finish variant
@@ -624,6 +624,8 @@ class Enrich100KaminovCommand extends Command
     {
         $n = mb_strtoupper($name);
         $n = str_replace('AMBASSADOR', 'AMBASADOR', $n);
+        $n = preg_replace('/\bLEFT\b/u', 'L', $n) ?? $n;
+        $n = preg_replace('/\bRIGHT\b/u', 'P', $n) ?? $n;
         if ($brand !== '') {
             $n = preg_replace('/' . preg_quote(mb_strtoupper($brand), '/') . '/u', '', $n) ?? $n;
         }
