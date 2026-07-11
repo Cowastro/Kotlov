@@ -21,6 +21,7 @@ class EnrichProductContentCommand extends Command
         {--offset=0 : Skip first N products (for batching)}
         {--sleep=300 : Delay between API calls in milliseconds}
         {--min-specs=0 : Skip products with fewer available specs/attributes}
+        {--rewrite-thin=0 : Re-generate existing content when stripped text is shorter than this many characters}
         {--source-context : Fetch supplier source_url and pass parsed source description/specs to AI}
         {--require-source-context : Process only products with a linked supplier source_url}
         {--openai : Use OPENAI_API_KEY/OPENAI_API_URL for this run when configured}
@@ -56,6 +57,7 @@ class EnrichProductContentCommand extends Command
         $limit   = $this->option('limit') !== null ? (int) $this->option('limit') : null;
         $offset  = max(0, (int) ($this->option('offset') ?? 0));
         $minSpecs = max(0, (int) ($this->option('min-specs') ?? 0));
+        $rewriteThin = max(0, (int) ($this->option('rewrite-thin') ?? 0));
         $only    = $this->option('only') ?? 'both';
         $useSourceContext = (bool) $this->option('source-context');
         $requireSourceContext = (bool) $this->option('require-source-context');
@@ -90,14 +92,20 @@ class EnrichProductContentCommand extends Command
         }
 
         if (! $force) {
-            $query->where(function ($q) use ($only) {
+            $query->where(function ($q) use ($only, $rewriteThin) {
                 if ($only === 'content') {
                     $q->whereNull('p.content')->orWhere('p.content', '');
+                    if ($rewriteThin > 0) {
+                        $q->orWhereRaw('LENGTH(COALESCE(p.content, "")) <= ?', [$rewriteThin]);
+                    }
                 } elseif ($only === 'short') {
                     $q->whereNull('p.short_description')->orWhere('p.short_description', '');
                 } else {
                     $q->where(fn ($w) => $w->whereNull('p.content')->orWhere('p.content', ''))
                       ->orWhere(fn ($w) => $w->whereNull('p.short_description')->orWhere('p.short_description', ''));
+                    if ($rewriteThin > 0) {
+                        $q->orWhereRaw('LENGTH(COALESCE(p.content, "")) <= ?', [$rewriteThin]);
+                    }
                 }
             });
         }
@@ -215,7 +223,10 @@ class EnrichProductContentCommand extends Command
 
                 $updates = [];
 
-                if ($only !== 'short' && $seo['content'] !== '' && ($force || trim((string) $product->content) === '')) {
+                $contentIsEmpty = trim((string) $product->content) === '';
+                $contentIsThin = $rewriteThin > 0 && $this->plainTextLength((string) $product->content) <= $rewriteThin;
+
+                if ($only !== 'short' && $seo['content'] !== '' && ($force || $contentIsEmpty || $contentIsThin)) {
                     $updates['content'] = $seo['content'];
                 }
                 if ($only !== 'content' && $seo['short'] !== '' && ($force || trim((string) $product->short_description) === '')) {
@@ -296,6 +307,14 @@ class EnrichProductContentCommand extends Command
             ->map(fn ($value): string => trim((string) $value))
             ->filter()
             ->all();
+    }
+
+    private function plainTextLength(string $html): int
+    {
+        $text = html_entity_decode(strip_tags($html), ENT_QUOTES | ENT_HTML5, 'UTF-8');
+        $text = preg_replace('/\s+/u', ' ', $text) ?? $text;
+
+        return mb_strlen(trim($text));
     }
 
     /**
