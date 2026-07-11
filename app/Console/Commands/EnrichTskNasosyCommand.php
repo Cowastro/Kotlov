@@ -36,6 +36,7 @@ class EnrichTskNasosyCommand extends Command
         {--in-stock-only : Only products currently in stock}
         {--only-missing : Only products missing a photo or description}
         {--overwrite-images : Replace existing photos (default: keep)}
+        {--skip-ai : Skip AI description generation}
         {--only-ai : Regenerate AI texts only, skip images and specs}
         {--apply : Write changes (default: preview)}
         {--dry-run : Preview only (default)}';
@@ -159,7 +160,7 @@ class EnrichTskNasosyCommand extends Command
         }
 
         // AI description: with --only-ai always regenerate; otherwise only when empty.
-        if ($onlyAi || trim((string) $r->content) === '') {
+        if (! (bool) $this->option('skip-ai') && ($onlyAi || trim((string) $r->content) === '')) {
             $this->generateAiContent($pid, (string) $r->name, $d['desc'], $d['specs'], $now);
         }
 
