@@ -1,32 +1,37 @@
 # Server Artisan Result
 
-- Time: 2026-07-11 07:45:48 UTC
+- Time: 2026-07-11 07:48:08 UTC
 - Task: `artisan-dry-run`
-- Artisan args: `brands:enrich-pages --audit-only --limit=0`
+- Artisan args: `brands:enrich-pages --audit-only --include-weak --limit=0`
 - Log file: `storage/logs/server-artisan-brand-content.log`
 - Exit code: `0`
 
 ```text
 From https://github.com/Cowastro/Kotlov
-   0314d75..b88c9a1  main       -> origin/main
-Updating 0314d75..b88c9a1
+   b88c9a1..1d2c68c  main       -> origin/main
+Updating b88c9a1..1d2c68c
 Fast-forward
- .github/server-artisan-result.md                 | 115 +++++------------------
- .github/server-artisan-task.json                 |   4 +-
- app/Console/Commands/EnrichBrandPagesCommand.php |  20 ++++
- 3 files changed, 43 insertions(+), 96 deletions(-)
+ .github/server-artisan-result.md | 21 +++++++++++----------
+ .github/server-artisan-task.json |  4 ++--
+ 2 files changed, 13 insertions(+), 12 deletions(-)
 DRY RUN: no brand fields will be changed.
 AI provider: deepseek-chat (api.deepseek.com)
 +------------------------+-------+
 | metric                 | count |
 +------------------------+-------+
 | checked                | 203   |
-| needs_work             | 0     |
+| needs_work             | 2     |
 | generated              | 0     |
 | updated                | 0     |
 | skipped_existing       | 201   |
-| skipped_weak_protected | 2     |
+| skipped_weak_protected | 0     |
 | errors                 | 0     |
 +------------------------+-------+
++----+--------+--------+----+---------+------+-------+----------+
+| id | slug   | brand  | h1 | content | meta | title | keywords |
++----+--------+--------+----+---------+------+-------+----------+
+| 60 | galmet | Galmet | ok | weak    | ok   | ok    | ok       |
+| 43 | sime   | Sime   | ok | weak    | ok   | ok    | ok       |
++----+--------+--------+----+---------+------+-------+----------+
 
 ```
