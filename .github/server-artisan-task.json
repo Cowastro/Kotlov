@@ -1,6 +1,6 @@
 {
-  "task": "artisan-dry-run",
-  "artisan_args": "products:audit-content-health --active-only --not-archived --issues=no_content,no_short --max-attrs=7 --limit=120",
+  "task": "artisan-apply",
+  "artisan_args": "product:enrich-content --all --only=both --min-specs=8 --rewrite-thin=220 --offset=200 --limit=80 --sleep=500",
   "log_file": "",
-  "run_id": "audit-content-candidates-20260712-1"
+  "run_id": "apply-product-seo-content-minspecs-20260712-5"
 }
