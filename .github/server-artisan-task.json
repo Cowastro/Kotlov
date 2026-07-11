@@ -1,6 +1,6 @@
 {
-  "task": "artisan-background",
-  "artisan_args": "supplier:enrich-100kaminov --brand=Panadero --pages=40 --limit=80 --apply --sleep=1000",
-  "log_file": "storage/logs/ligmet-panadero-100kaminov-apply.log",
-  "run_id": "ligmet-panadero-100kaminov-apply-20260711-1"
+  "task": "ps-artisan",
+  "artisan_args": "",
+  "log_file": "",
+  "run_id": "ligmet-enrichment-ps-20260711-1"
 }
