@@ -1,37 +1,32 @@
 # Server Artisan Result
 
-- Time: 2026-07-11 16:04:02 UTC
-- Task: `artisan-apply`
-- Artisan args: `supplier:enrich-100kaminov --apply --brand=Blist --urls=https://100kaminov.by/p132742539-pech-kamin-blist.html,https://100kaminov.by/p141165557-pech-kamin-blist.html --limit=2 --sleep=300`
-- Log file: `storage/logs/server-artisan-ligmet-blist-missed-apply.log`
+- Time: 2026-07-11 16:09:30 UTC
+- Task: `optimize-clear`
+- Artisan args: ``
+- Log file: `storage/logs/server-artisan-deploy-brand-pages.log`
 - Exit code: `0`
 
 ```text
 From https://github.com/Cowastro/Kotlov
-   dba3452..87b8950  main       -> origin/main
-Updating dba3452..87b8950
+   87b8950..e32629d  main       -> origin/main
+Updating 87b8950..e32629d
 Fast-forward
- .github/server-artisan-result.md | 103 ++++++---------------------------------
- .github/server-artisan-task.json |   6 +--
- 2 files changed, 17 insertions(+), 92 deletions(-)
-APPLY
-Catalog index: 1 brands, 44 products total
+ .github/server-artisan-result.md        | 31 +++++++++----------
+ .github/server-artisan-task.json        |  8 ++---
+ public/assets/css/kotlov.css            | 55 +++++++++++++++++----------------
+ resources/views/pages/catalog.blade.php |  2 +-
+ 4 files changed, 47 insertions(+), 49 deletions(-)
 
-Direct product links: 2
-  [Blist] Печь-камин Blist Atene G серая → model:ATENE G СЕРАЯ BLIST_GREY → pid=16989
-  [Blist] Печь-камин Blist Roma S бежевая с духовк → model:ROMA S БЕЖЕВАЯ BLIST_BEIGE → pid=17001
+   INFO  Clearing cached bootstrap files.  
 
-+----------+-------+
-| metric   | count |
-+----------+-------+
-| crawled  | 0     |
-| matched  | 2     |
-| enriched | 2     |
-| images   | 0     |
-| specs    | 0     |
-| ai_done  | 0     |
-| skipped  | 0     |
-| errors   | 0     |
-+----------+-------+
+  config ......................................................... 0.89ms DONE
+  cache .......................................................... 3.06ms DONE
+  compiled ....................................................... 0.58ms DONE
+  events ......................................................... 0.42ms DONE
+  routes ......................................................... 0.41ms DONE
+  views .......................................................... 2.76ms DONE
+  blade-icons .................................................... 0.17ms DONE
+  filament ....................................................... 0.78ms DONE
+
 
 ```
