@@ -1,6 +1,6 @@
 {
-  "task": "artisan-apply",
-  "artisan_args": "supplier:enrich-tsk-nasosy --apply --max-current-attrs=2 --skip-ai --limit=0 --sleep=1000",
-  "log_file": "storage/logs/server-artisan-tsk-nasosy-low-attrs-apply-rest.log",
-  "run_id": "tsk-nasosy-low-attrs-apply-rest-20260711-1"
+  "task": "artisan-dry-run",
+  "artisan_args": "products:audit-content-health --not-archived --with-source-only --issues=no_photo,no_content,no_short,low_attrs --max-attrs=2 --limit=180",
+  "log_file": "storage/logs/server-artisan-source-content-audit-after-tsk.log",
+  "run_id": "source-content-audit-after-tsk-20260711-1"
 }
