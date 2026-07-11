@@ -1,6 +1,6 @@
 {
-  "task": "tail-log",
+  "task": "optimize-clear",
   "artisan_args": "",
-  "log_file": "storage/logs/tsk-nasosy-aqualider-zero-attrs-fill.log",
-  "run_id": "tail-tsk-nasosy-aqualider-zero-attrs-fill-20260711-1-a"
+  "log_file": "",
+  "run_id": "optimize-clear-brand-filter-polish-20260711-1"
 }
