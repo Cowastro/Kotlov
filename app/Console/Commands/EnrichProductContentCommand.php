@@ -19,6 +19,7 @@ class EnrichProductContentCommand extends Command
         {--limit= : Limit number of products}
         {--offset=0 : Skip first N products (for batching)}
         {--sleep=300 : Delay between API calls in milliseconds}
+        {--min-specs=0 : Skip products with fewer available specs/attributes}
         {--openai : Use OPENAI_API_KEY/OPENAI_API_URL for this run when configured}
         {--ai-model= : Override AI model for this run}
         {--dry-run : Preview generated text without writing to database}';
@@ -29,7 +30,7 @@ class EnrichProductContentCommand extends Command
     {
         $enricher = new AiContentEnricher();
         if ((bool) $this->option('openai')) {
-            if (trim((string) env('OPENAI_API_KEY', '')) === '') {
+            if (trim((string) config('services.ai.openai_key', '')) === '') {
                 $this->error('OPENAI_API_KEY is not configured; refusing to fall back to the default AI provider.');
                 return self::FAILURE;
             }
@@ -50,6 +51,7 @@ class EnrichProductContentCommand extends Command
         $sleepMs = max(0, (int) ($this->option('sleep') ?? 300));
         $limit   = $this->option('limit') !== null ? (int) $this->option('limit') : null;
         $offset  = max(0, (int) ($this->option('offset') ?? 0));
+        $minSpecs = max(0, (int) ($this->option('min-specs') ?? 0));
         $only    = $this->option('only') ?? 'both';
 
         $query = DB::table('products as p')
@@ -119,6 +121,12 @@ class EnrichProductContentCommand extends Command
 
             try {
                 $specs = $this->specsForProduct((int) $product->id, $product->specs);
+                if ($minSpecs > 0 && count($specs) < $minSpecs) {
+                    $this->line(sprintf('  skipped: only %d specs, min is %d', count($specs), $minSpecs));
+                    $stats['skipped']++;
+                    continue;
+                }
+                $this->line(sprintf('  specs available: %d', count($specs)));
 
                 $seo = $enricher->generateSeo(
                     (string) $product->name,
