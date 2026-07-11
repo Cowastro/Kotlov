@@ -1,6 +1,6 @@
 {
-  "task": "artisan-apply",
-  "artisan_args": "products:sanitize-content-html --apply --brand=royal-thermo --not-archived --extract-media --show-samples=5 --limit=0",
-  "log_file": "storage/logs/server-artisan-royal-thermo-content-apply.log",
-  "run_id": "royal-thermo-content-apply-20260711-1"
+  "task": "artisan",
+  "artisan_args": "optimize:clear",
+  "log_file": "storage/logs/server-artisan-cache-clear.log",
+  "run_id": "cache-clear-after-royal-thermo-20260711-1"
 }
