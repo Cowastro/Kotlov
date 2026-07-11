@@ -1,6 +1,6 @@
 {
-  "task": "tail-log",
-  "artisan_args": "",
-  "log_file": "storage/logs/product-content-fill-rich-specs-20260711-2.log",
-  "run_id": "tail-product-content-fill-rich-specs-20260711-2-a"
+  "task": "artisan-dry-run",
+  "artisan_args": "products:audit-content-health --active-only --not-archived --with-source-only --issues=no_content,no_short,thin_content --limit=200",
+  "log_file": "",
+  "run_id": "product-content-health-audit-20260711-4"
 }
