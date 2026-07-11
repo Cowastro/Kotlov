@@ -71,7 +71,7 @@ class Enrich100KaminovCommand extends Command
         'БЕЛАЯ','БЕЛЫЙ','БЕЛОЕ','БЕЖЕВАЯ','БЕЖЕВЫЙ','КРАСНАЯ','КРАСНЫЙ',
         'КОРИЧНЕВАЯ','КОРИЧНЕВЫЙ','ПАТИНА','АНТРАЦИТ','ГРАФИТ','КРЕМОВАЯ','КРЕМОВЫЙ',
         // English color/finish variants (100kaminov.by naming)
-        'GREY','GRAY','BLACK','WHITE','SATIN','CERAMIC','ECODESIGN','KOZA',
+        'GREY','GRAY','BLACK','WHITE','SATIN','CERAMIC','ECODESIGN','KOZA','HOGAR',
         // Invicta product-type prefixes (Лигмет column D starts with STOVE/FIREPLACE)
         'STOVE','FIREPLACE',
         // Nordflam eco-design suffix; Invicta finish variant
