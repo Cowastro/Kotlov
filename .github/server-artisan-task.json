@@ -1,6 +1,6 @@
 {
   "task": "artisan-dry-run",
-  "artisan_args": "brands:enrich-pages --audit-only --include-weak --min-content-chars=420 --limit=0",
-  "log_file": "storage/logs/server-artisan-brand-pages-audit.log",
-  "run_id": "brand-pages-audit-all-20260711-1"
+  "artisan_args": "products:audit-content-quality --not-archived --active-only --limit=120 --min-issues=1",
+  "log_file": "storage/logs/server-artisan-product-content-quality.log",
+  "run_id": "product-content-quality-audit-20260711-1"
 }
