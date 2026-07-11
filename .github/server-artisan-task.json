@@ -1,6 +1,6 @@
 {
-  "task": "artisan-dry-run",
-  "artisan_args": "supplier:enrich-100kaminov --brand=Blist --sitemap --skip-ai --overwrite-images --limit=120",
-  "log_file": "storage/logs/server-artisan-blist-100kaminov-dry.log",
-  "run_id": "blist-100kaminov-dry-20260711-1"
+  "task": "artisan-background",
+  "artisan_args": "product:enrich-content --all --source-context --require-source-context --skip-root-source-context --rewrite-thin=180 --min-specs=1 --limit=80 --sleep=700",
+  "log_file": "storage/logs/product-seo-fill-missing-thin.log",
+  "run_id": "product-seo-fill-missing-thin-20260711-1"
 }
