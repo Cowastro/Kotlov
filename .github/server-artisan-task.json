@@ -1,6 +1,6 @@
 {
   "task": "artisan-apply",
-  "artisan_args": "supplier:enrich-100kaminov --apply --brand=Blist --urls=https://100kaminov.by/p132742174-pech-kamin-blist.html,https://100kaminov.by/p132742452-pech-kamin-blist.html,https://100kaminov.by/p132742506-pech-kamin-blist.html,https://100kaminov.by/p132742546-pech-kamin-blist.html,https://100kaminov.by/p142087554-pech-kamin-blist.html --limit=5 --sleep=300",
-  "log_file": "storage/logs/server-artisan-ligmet-blist-tail-apply.log",
-  "run_id": "ligmet-blist-tail-apply-20260711-1"
+  "artisan_args": "supplier:enrich-100kaminov --apply --brand=Blist --urls=https://100kaminov.by/p132742539-pech-kamin-blist.html,https://100kaminov.by/p141165557-pech-kamin-blist.html --limit=2 --sleep=300",
+  "log_file": "storage/logs/server-artisan-ligmet-blist-missed-apply.log",
+  "run_id": "ligmet-blist-missed-apply-20260711-1"
 }
