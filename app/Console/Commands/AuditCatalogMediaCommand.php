@@ -10,32 +10,6 @@ use Illuminate\Support\Facades\Storage;
 
 class AuditCatalogMediaCommand extends Command
 {
-    private const CATEGORY_FALLBACK_IMAGES = [
-        'kotly-otopleniya' => 'boiler_img.jpg',
-        'kotly' => 'boiler_img.jpg',
-        'vodonagrevateli' => 'heater.jpg',
-        'pechi' => 'pech.jpg',
-        'pechki' => 'pech.jpg',
-        'pechi-dlya-bani' => 'pech.jpg',
-        'dymohody' => 'chimney.jpg',
-        'kaminy' => 'fireplace.jpg',
-        'truby-i-fitingi' => 'truby-i-fitingi.jpg',
-        'radiatory' => 'radiatory.jpg',
-        'teplyj-pol' => 'teplyj-pol.jpg',
-        'klimat' => 'air.jpg',
-        'nasosy' => 'nasosy.jpg',
-        'nasosyi' => 'nasosy.jpg',
-        'vodosnabzhenie' => 'nasosy.jpg',
-        'komplektuyushhie-dlya-otopleniya' => 'komplektuyushhie-dlya-otopleniya.jpg',
-        'filtry' => 'filtry.jpg',
-        'bani-i-sauny' => 'sauna.jpg',
-        'elektricheskie-konvektoryi' => 'elektricheskie-konvektoryi.jpg',
-        'teplovye-nasosy' => 'heatpump.jpg',
-        'teplovyie-nasosyi' => 'heatpump.jpg',
-        'pelletnye-gorelki' => 'pellet_burner.jpg',
-        'otoplenie' => 'heater.jpg',
-    ];
-
     protected $signature = 'catalog:audit-media
         {--type=all : all, categories or brands}
         {--only-with-products : Only rows with orderable products}
@@ -184,9 +158,9 @@ class AuditCatalogMediaCommand extends Command
 
     private function categoryMediaStatus(?string $slug, ?string $path): array
     {
-        $fallback = self::CATEGORY_FALLBACK_IMAGES[(string) $slug] ?? null;
-        if ($fallback && file_exists(public_path('img/popular/' . $fallback))) {
-            return ['fallback', 'img/popular/' . $fallback];
+        $fallback = Category::fallbackImagePath((string) $slug);
+        if ($fallback && file_exists(public_path($fallback))) {
+            return ['fallback', $fallback];
         }
 
         [$status, $resolvedPath] = $this->mediaStatus($path);
