@@ -22,6 +22,7 @@ class EnrichProductContentCommand extends Command
         {--sleep=300 : Delay between API calls in milliseconds}
         {--min-specs=0 : Skip products with fewer available specs/attributes}
         {--source-context : Fetch supplier source_url and pass parsed source description/specs to AI}
+        {--require-source-context : Process only products with a linked supplier source_url}
         {--openai : Use OPENAI_API_KEY/OPENAI_API_URL for this run when configured}
         {--ai-model= : Override AI model for this run}
         {--debug-ai : Print provider error/raw response when AI output cannot be parsed}
@@ -57,6 +58,7 @@ class EnrichProductContentCommand extends Command
         $minSpecs = max(0, (int) ($this->option('min-specs') ?? 0));
         $only    = $this->option('only') ?? 'both';
         $useSourceContext = (bool) $this->option('source-context');
+        $requireSourceContext = (bool) $this->option('require-source-context');
         $sourceEnricher = $useSourceContext ? new ProductSourceEnricher() : null;
 
         $attributeCounts = DB::table('product_attribute_values')
@@ -102,6 +104,16 @@ class EnrichProductContentCommand extends Command
 
         if ($minSpecs > 0) {
             $query->whereRaw('COALESCE(pav_count.attribute_rows, 0) >= ?', [$minSpecs]);
+        }
+
+        if ($requireSourceContext) {
+            $query->whereExists(function ($exists) {
+                $exists->selectRaw('1')
+                    ->from('supplier_products as sp_source')
+                    ->whereColumn('sp_source.product_id', 'p.id')
+                    ->whereNotNull('sp_source.source_url')
+                    ->where('sp_source.source_url', '<>', '');
+            });
         }
 
         $query->orderBy('p.id');
