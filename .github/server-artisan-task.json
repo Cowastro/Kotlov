@@ -1,6 +1,6 @@
 {
   "task": "artisan-dry-run",
-  "artisan_args": "supplier:enrich-rusklimat --brand=Ballu --skip-content --limit=20 --dry-run",
-  "log_file": "storage/logs/server-artisan-rusklimat-ballu-preview.log",
-  "run_id": "rusklimat-ballu-preview-20260711-1"
+  "artisan_args": "supplier:enrich-ligmet-extra --base-url=https://kaminbel.by --source-url=/product/pechi-kaminy/fireway/ --brand=FireWay --skip-ai --limit=20 --dry-run",
+  "log_file": "storage/logs/server-artisan-ligmet-fireway-extra-preview.log",
+  "run_id": "ligmet-fireway-extra-preview-20260711-1"
 }

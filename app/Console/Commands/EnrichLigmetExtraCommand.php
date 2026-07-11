@@ -29,6 +29,7 @@ class EnrichLigmetExtraCommand extends Command
         {--sleep=800        : Delay between requests, ms}
         {--overwrite-images : Replace existing images}
         {--only-ai          : Regenerate AI texts only, skip images and specs}
+        {--skip-ai          : Skip AI description/SEO generation}
         {--apply            : Write changes (default: dry-run)}
         {--dry-run          : Preview only (default)}';
 
@@ -286,7 +287,7 @@ class EnrichLigmetExtraCommand extends Command
         }
 
         // AI — only when content is empty (or --only-ai).
-        if ($onlyAi || trim($entry['content']) === '') {
+        if (! (bool) $this->option('skip-ai') && ($onlyAi || trim($entry['content']) === '')) {
             $this->generateAiContent($pid, $name, $card['desc'], $card['specs'], $brandName, $now);
         }
 
