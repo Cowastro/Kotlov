@@ -1,6 +1,6 @@
 {
-  "task": "artisan-apply",
-  "artisan_args": "brands:enrich-pages --apply --brand=Galmet --include-weak --limit=1",
+  "task": "artisan-dry-run",
+  "artisan_args": "brands:enrich-pages --brand=Sime --include-weak --preview --limit=1",
   "log_file": "storage/logs/server-artisan-brand-content.log",
-  "run_id": "apply-galmet-brand-content-20260711-2"
+  "run_id": "dry-run-sime-brand-content-preview-20260711-1"
 }
