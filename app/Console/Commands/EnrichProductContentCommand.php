@@ -29,6 +29,10 @@ class EnrichProductContentCommand extends Command
     {
         $enricher = new AiContentEnricher();
         if ((bool) $this->option('openai')) {
+            if (trim((string) env('OPENAI_API_KEY', '')) === '') {
+                $this->error('OPENAI_API_KEY is not configured; refusing to fall back to the default AI provider.');
+                return self::FAILURE;
+            }
             $enricher = $enricher->withOpenAi((string) $this->option('ai-model'));
         } elseif ($this->option('ai-model')) {
             $enricher = $enricher->withModel((string) $this->option('ai-model'));
