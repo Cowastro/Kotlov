@@ -69,7 +69,7 @@ class DiscoverTeplodvorBrandLogosCommand extends Command
                 continue;
             }
 
-            $source = $index[$this->brandKey($brand->name)] ?? null;
+            $source = $this->findSourceLogo($brand, $index);
             if ($source === null) {
                 $summary['skipped_missing_source']++;
                 continue;
@@ -130,6 +130,7 @@ class DiscoverTeplodvorBrandLogosCommand extends Command
             }
 
             $name = trim(html_entity_decode((string) $img->getAttribute('alt'), ENT_QUOTES | ENT_HTML5, 'UTF-8'));
+            $name = $this->cleanSourceBrandName($name);
             $name = preg_replace('/^(Image:\s*|Производитель\s+)/iu', '', $name) ?? $name;
             $src = trim((string) ($img->getAttribute('data-src') ?: $img->getAttribute('data-original') ?: $img->getAttribute('src')));
 
@@ -142,10 +143,46 @@ class DiscoverTeplodvorBrandLogosCommand extends Command
                 continue;
             }
 
-            $index[$this->brandKey($name)] = $url;
+            $key = $this->brandKey($name);
+            if ($key !== '') {
+                $index[$key] = $url;
+            }
         }
 
         return $index;
+    }
+
+    private function findSourceLogo(Brand $brand, array $index): ?string
+    {
+        $candidates = collect([
+            $brand->name,
+            $brand->slug,
+            preg_replace('/[-_].*$/', '', (string) $brand->slug),
+            preg_replace('/\s+(?:group|групп|modvlvs|модуль).*$/iu', '', (string) $brand->name),
+        ])
+            ->filter()
+            ->map(fn ($value) => $this->brandKey((string) $value))
+            ->filter(fn ($key) => mb_strlen($key) >= 3)
+            ->unique()
+            ->values();
+
+        foreach ($candidates as $key) {
+            if (isset($index[$key])) {
+                return $index[$key];
+            }
+        }
+
+        return null;
+    }
+
+    private function cleanSourceBrandName(string $name): string
+    {
+        $name = trim(html_entity_decode($name, ENT_QUOTES | ENT_HTML5, 'UTF-8'));
+        $name = preg_replace('/^(?:Image:\s*)/iu', '', $name) ?? $name;
+        $name = preg_replace('/^(?:Производитель|Виробник|Manufacturer)\s+/iu', '', $name) ?? $name;
+        $name = preg_replace('/^(?:ĐźŃ€ĐľĐ¸Đ·Đ˛ĐľĐ´Đ¸Ń‚ĐµĐ»ŃŚ)\s+/iu', '', $name) ?? $name;
+
+        return trim($name);
     }
 
     private function downloadLogo(string $url, string $slug): ?string
