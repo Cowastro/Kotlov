@@ -1,6 +1,6 @@
 {
-  "task": "tail-log",
-  "artisan_args": "",
-  "log_file": "storage/logs/product-content-fill-source-context-20260711-5.log",
-  "run_id": "tail-product-content-fill-source-context-20260711-5-a"
+  "task": "artisan-background",
+  "artisan_args": "product:enrich-content --all --source-context --require-source-context --skip-root-source-context --rewrite-thin=180 --min-specs=10 --min-source-context-chars=40 --limit=50 --sleep=700",
+  "log_file": "storage/logs/product-content-fill-rich-specs-20260711-1.log",
+  "run_id": "product-content-fill-rich-specs-20260711-1"
 }
