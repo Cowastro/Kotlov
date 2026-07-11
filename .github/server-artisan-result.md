@@ -1,41 +1,32 @@
 # Server Artisan Result
 
-- Time: 2026-07-11 12:50:25 UTC
+- Time: 2026-07-11 12:55:11 UTC
 - Task: `artisan-dry-run`
-- Artisan args: `supplier:enrich-ligmet-extra --base-url=https://kaminbel.by --source-url=/product/pechi-kaminy/fireway/ --brand=FireWay --skip-ai --limit=20 --dry-run`
-- Log file: `storage/logs/server-artisan-ligmet-fireway-extra-preview.log`
+- Artisan args: `product:enrich-content --all --only=content --limit=1 --min-specs=3 --openai --ai-model=gpt-4.1 --dry-run`
+- Log file: `storage/logs/server-artisan-openai-content-preview.log`
 - Exit code: `0`
 
 ```text
 From https://github.com/Cowastro/Kotlov
-   618258d..11da5d6  main       -> origin/main
-Updating 618258d..11da5d6
+   11da5d6..7789c56  main       -> origin/main
+Updating 11da5d6..7789c56
 Fast-forward
- .github/server-artisan-result.md                  | 148 +++++++++++++++++-----
- .github/server-artisan-task.json                  |   6 +-
- app/Console/Commands/EnrichLigmetExtraCommand.php |   3 +-
- 3 files changed, 119 insertions(+), 38 deletions(-)
-DRY RUN
-Source: https://kaminbel.by
-Catalog: 1 brands, 4 products
-  [fireway] keys: DACHA II, TANGO, DAGMAR, ПАРОВАР КОВКА К505
-Sitemaps found: 1
+ .github/server-artisan-result.md | 144 +++++++++------------------------------
+ .github/server-artisan-task.json |   6 +-
+ 2 files changed, 34 insertions(+), 116 deletions(-)
+Provider: gpt-4.1 ()
+Candidates: 1252 | processing: 1 (offset=0)
+[1/1] id=5218 Шланг для газа ADVIXON Г-Ш 1/2"-1/2" (150см)
+  specs available: 5
+  AI returned empty response, skipped.
++---------+-------+
+| action  | count |
++---------+-------+
+| updated | 0     |
+| skipped | 1     |
+| errors  | 0     |
++---------+-------+
 
-Collecting: /product/pechi-kaminy/fireway/
-  sitemap: no links — falling back to HTML crawl
-  HTML page 1: no new links, stopping.
-
-+----------+-------+
-| metric   | count |
-+----------+-------+
-| crawled  | 0     |
-| matched  | 0     |
-| enriched | 0     |
-| images   | 0     |
-| specs    | 0     |
-| ai_done  | 0     |
-| skipped  | 0     |
-| errors   | 0     |
-+----------+-------+
+1251 more remain. Continue with --offset=1
 
 ```
