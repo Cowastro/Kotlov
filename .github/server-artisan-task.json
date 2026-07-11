@@ -1,6 +1,6 @@
 {
-  "task": "artisan-apply",
-  "artisan_args": "products:sanitize-content-html --apply --brand=vezuvij --not-archived --extract-media --show-samples=5 --limit=0",
-  "log_file": "storage/logs/server-artisan-vezuvij-content-apply.log",
-  "run_id": "vezuvij-content-apply-20260711-1"
+  "task": "artisan-dry-run",
+  "artisan_args": "products:sanitize-content-html --not-archived --rewrite-seo --rewrite-seo-if-thin --show-samples=5 --show-content-samples=5 --min-content-length=120 --limit=5 --sleep=300",
+  "log_file": "storage/logs/server-artisan-ai-content-samples.log",
+  "run_id": "ai-content-samples-20260711-1"
 }
