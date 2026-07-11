@@ -626,6 +626,8 @@ class Enrich100KaminovCommand extends Command
         $n = str_replace('AMBASSADOR', 'AMBASADOR', $n);
         $n = preg_replace('/\bLEFT\b/u', 'L', $n) ?? $n;
         $n = preg_replace('/\bRIGHT\b/u', 'P', $n) ?? $n;
+        $n = preg_replace('/\bЛЕВАЯ\b|\bЛЕВЫЙ\b|\bЛЕВОЕ\b/u', 'L', $n) ?? $n;
+        $n = preg_replace('/\bПРАВАЯ\b|\bПРАВЫЙ\b|\bПРАВОЕ\b/u', 'P', $n) ?? $n;
         if ($brand !== '') {
             $n = preg_replace('/' . preg_quote(mb_strtoupper($brand), '/') . '/u', '', $n) ?? $n;
         }
