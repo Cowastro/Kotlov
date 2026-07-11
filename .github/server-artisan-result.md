@@ -1,19 +1,75 @@
 # Server Artisan Result
 
-- Time: 2026-07-11 17:58:57 UTC
-- Task: `artisan-background`
-- Artisan args: `supplier:enrich-100kaminov --brand=Nordflam --pages=40 --limit=80 --apply --sleep=1000`
-- Log file: `storage/logs/ligmet-nordflam-100kaminov-apply.log`
+- Time: 2026-07-11 18:01:52 UTC
+- Task: `artisan-dry-run`
+- Artisan args: `supplier:enrich-100kaminov --brand=Panadero --pages=40 --limit=80 --dry-run`
+- Log file: ``
 - Exit code: `0`
 
 ```text
 From https://github.com/Cowastro/Kotlov
-   b5eaf43..4a32836  main       -> origin/main
-Updating b5eaf43..4a32836
+   4a32836..cafa884  main       -> origin/main
+Updating 4a32836..cafa884
 Fast-forward
- .github/server-artisan-result.md | 26 ++++++++++++++++----------
- .github/server-artisan-task.json |  8 ++++----
- 2 files changed, 20 insertions(+), 14 deletions(-)
-started pid=1309152
+ .github/server-artisan-result.md | 70 ++++++----------------------------------
+ .github/server-artisan-task.json |  8 ++---
+ 2 files changed, 14 insertions(+), 64 deletions(-)
+DRY RUN
+Catalog index: 1 brands, 7 products total
+  [panadero] sample model keys: AKITA, MAJA-S, ONIX WALL, OSAKA, OVAL, SUERTE, 101-S
+
+Category: /ps1026-top-pechej-kaminov?sort=position
+  [Panadero] Печь-камин Panadero Oval → model:OVAL → pid=17028
+    · Страна производитель: Испания
+    · Водяной контур: Нет
+    · Подключение к дымоходу: Верхнее
+    · Вес: 131 кг
+    · images: 6
+  [Panadero] Каминная топка Panadero Hogar 101-S → model:HOGAR 101-S → NO MATCH
+  [Panadero] Печь-камин Panadero Suerte → model:SUERTE → pid=17029
+    · Страна производитель: Испания
+    · Водяной контур: Нет
+    · Подключение к дымоходу: Верхнее
+    · Вес: 123 кг
+    · images: 10
+  [Panadero] Печь-камин Panadero Osaka → model:OSAKA → pid=17027
+    · Страна производитель: Испания
+    · Вес: 133 кг
+    · Водяной контур: Нет
+    · Подключение к дымоходу: Верхнее
+    · images: 11
+  [Panadero] Печь-камин Panadero Maja-S → model:MAJA-S → pid=17025
+    · Страна производитель: Испания
+    · Водяной контур: Нет
+    · Подключение к дымоходу: Верхнее
+    · Вес: 142 кг
+    · images: 5
+  [Panadero] Печь-камин Panadero Akita → model:AKITA → pid=17024
+    · Страна производитель: Испания
+    · Водяной контур: Нет
+    · Подключение к дымоходу: Верхнее
+    · Вес: 133 кг
+    · images: 4
+
+Category: /ps1025-top-pechej-dlya?sort=position
+
+Category: /ps1024-top-pechej-dlya?sort=position
+
+Category: /g6149558-kaminy
+
+Category: /g6364208-reshetki-kaminnye-ventilyatsionnye
+
++----------+-------+
+| metric   | count |
++----------+-------+
+| crawled  | 13    |
+| matched  | 5     |
+| enriched | 0     |
+| images   | 0     |
+| specs    | 0     |
+| ai_done  | 0     |
+| skipped  | 1     |
+| errors   | 0     |
++----------+-------+
 
 ```
