@@ -1,6 +1,6 @@
 {
   "task": "artisan-dry-run",
-  "artisan_args": "products:sanitize-content-html --brand=\"Royal Thermo\" --not-archived --extract-media --rewrite-seo --rewrite-seo-if-thin --show-samples=5 --limit=50 --sleep=300",
-  "log_file": "storage/logs/server-artisan-royal-thermo-content-dry-run.log",
-  "run_id": "royal-thermo-content-dry-run-20260711-1"
+  "artisan_args": "products:sanitize-content-html --brand=royal-thermo --not-archived --extract-media --rewrite-seo --rewrite-seo-if-thin --show-samples=5 --limit=50 --sleep=300",
+  "log_file": "storage/logs/server-artisan-royal-thermo-content-dry-run-v2.log",
+  "run_id": "royal-thermo-content-dry-run-20260711-2"
 }
