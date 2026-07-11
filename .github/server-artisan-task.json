@@ -1,6 +1,6 @@
 {
-  "task": "artisan-dry-run",
-  "artisan_args": "catalog:audit-media --type=brands --only-with-products --missing-only --limit=120",
+  "task": "optimize-clear",
+  "artisan_args": "",
   "log_file": "",
-  "run_id": "audit-brand-media-after-logo-apply-20260711-1"
+  "run_id": "optimize-clear-after-brand-logo-apply-20260711-1"
 }
