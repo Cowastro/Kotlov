@@ -1,6 +1,6 @@
 {
   "task": "artisan-dry-run",
-  "artisan_args": "products:sanitize-content-html --not-archived --rewrite-seo --rewrite-seo-if-thin --show-samples=5 --show-content-samples=5 --min-content-length=120 --limit=5 --sleep=300",
-  "log_file": "storage/logs/server-artisan-ai-content-samples.log",
-  "run_id": "ai-content-samples-20260711-1"
+  "artisan_args": "product:enrich-content --all --limit=3 --dry-run --openai --ai-model=gpt-4.1 --sleep=0",
+  "log_file": "storage/logs/server-artisan-ai-content-preview.log",
+  "run_id": "ai-content-preview-20260711-2"
 }
