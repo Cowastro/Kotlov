@@ -1,6 +1,6 @@
 {
   "task": "artisan-dry-run",
-  "artisan_args": "products:audit-content-health --active-only --not-archived --with-source-only --issues=no_content,no_short,thin_content --limit=200",
+  "artisan_args": "supplier:enrich-ligmet-extra --base-url=https://kaminbel.by --source-url=/product/pechi-kaminy/fireway/ --brand=FireWay --pages=20 --limit=10 --sleep=800",
   "log_file": "",
-  "run_id": "product-content-health-audit-20260711-3"
+  "run_id": "ligmet-fireway-extra-dry-run-20260711-1"
 }
