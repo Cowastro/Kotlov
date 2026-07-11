@@ -671,14 +671,7 @@ class Enrich100KaminovCommand extends Command
                 continue;
             }
 
-            if (
-                $relaxed !== ''
-                && $candidateRelaxed !== ''
-                && (
-                    str_starts_with($relaxed . ' ', $candidateRelaxed . ' ')
-                    || str_starts_with($candidateRelaxed . ' ', $relaxed . ' ')
-                )
-            ) {
+            if ($this->isSafeBlistPrefixMatch($relaxed, $candidateRelaxed)) {
                 $matches[$entry['id']] = $entry;
             }
         }
@@ -709,6 +702,25 @@ class Enrich100KaminovCommand extends Command
         }
 
         return trim(implode(' ', $tokens));
+    }
+
+    private function isSafeBlistPrefixMatch(string $sourceKey, string $candidateKey): bool
+    {
+        if ($sourceKey === '' || $candidateKey === '' || $sourceKey === $candidateKey) {
+            return $sourceKey === $candidateKey;
+        }
+
+        // Allow "NAPOLI <description>" -> "NAPOLI", but never the opposite
+        // ("PADOVA" must not enrich "PADOVA E").
+        if (! str_starts_with($sourceKey . ' ', $candidateKey . ' ')) {
+            return false;
+        }
+
+        $tail = trim(mb_substr($sourceKey, mb_strlen($candidateKey)));
+        $tailTokens = preg_split('/\s+/u', $tail) ?: [];
+        $firstTail = $tailTokens[0] ?? '';
+
+        return ! in_array($firstTail, ['E', 'S', 'G', 'LM', 'N', '1', '2', 'MAX'], true);
     }
 
     private function isStopword(string $token, string $brand): bool
