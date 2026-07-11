@@ -1040,6 +1040,26 @@ a.category-v05.subcat-tile:hover .cate-icon {
     object-fit: contain;
 }
 
+.section-product-description.flat-animate-tab .tab-pane.active,
+.section-product-description.flat-animate-tab .tab-pane.show {
+    pointer-events: auto;
+    opacity: 1;
+    visibility: visible;
+    position: relative;
+    z-index: 2;
+    transform: none;
+}
+
+.section-product-description.flat-animate-tab .tab-pane.active iframe,
+.section-product-description.flat-animate-tab .tab-pane.show iframe,
+.section-product-description.flat-animate-tab .tab-pane.active video,
+.section-product-description.flat-animate-tab .tab-pane.show video,
+.section-product-description.flat-animate-tab .tab-pane.active .product-video-wrap,
+.section-product-description.flat-animate-tab .tab-pane.show .product-video-wrap {
+    opacity: 1;
+    visibility: visible;
+}
+
 .product-video-link {
     display: flex;
     align-items: center;
