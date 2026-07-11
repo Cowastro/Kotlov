@@ -1,6 +1,6 @@
 {
-  "task": "artisan-background",
-  "artisan_args": "product:enrich-content --all --source-context --require-source-context --skip-root-source-context --rewrite-thin=180 --min-specs=1 --min-source-context-chars=180 --limit=120 --sleep=700",
+  "task": "tail-log",
+  "artisan_args": "",
   "log_file": "storage/logs/product-seo-fill-missing-thin-safe-apply.log",
-  "run_id": "product-seo-fill-missing-thin-safe-apply-20260711-1"
+  "run_id": "product-seo-fill-missing-thin-safe-apply-tail-20260711-1"
 }
