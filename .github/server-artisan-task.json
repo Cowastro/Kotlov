@@ -1,6 +1,6 @@
 {
-  "task": "artisan-dry-run",
-  "artisan_args": "products:sanitize-content-html --brand=ЭкоКамин --not-archived --extract-media --rewrite-seo --rewrite-seo-if-thin --show-samples=5 --limit=20 --sleep=300",
-  "log_file": "storage/logs/server-artisan-ecokamin-content-dry-run.log",
-  "run_id": "ecokamin-content-dry-run-20260711-1"
+  "task": "artisan-apply",
+  "artisan_args": "products:sanitize-content-html --apply --brand=ЭкоКамин --not-archived --extract-media --rewrite-seo --rewrite-seo-if-thin --show-samples=5 --limit=0 --sleep=300",
+  "log_file": "storage/logs/server-artisan-ecokamin-content-apply.log",
+  "run_id": "ecokamin-content-apply-20260711-1"
 }
