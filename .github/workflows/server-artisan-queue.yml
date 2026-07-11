@@ -98,6 +98,9 @@ jobs:
           SERVER_USER: ${{ secrets.SERVER_USER }}
           SERVER_PATH: ${{ secrets.SERVER_PATH }}
           PHP_BIN: ${{ secrets.SERVER_PHP_BIN }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          OPENAI_API_URL: ${{ secrets.OPENAI_API_URL }}
+          OPENAI_MODEL: ${{ secrets.OPENAI_MODEL }}
         run: |
           set -euo pipefail
 
@@ -142,7 +145,7 @@ jobs:
 
           set +e
           ssh -i ~/.ssh/server_key -p "$port" "$SERVER_USER@$SERVER_HOST" \
-            "TASK='$TASK' ARTISAN_ARGS='$ARTISAN_ARGS' LOG_FILE='$LOG_FILE' SERVER_PATH='$server_path' PHP_BIN='$php_bin' bash -s" \
+            "TASK='$TASK' ARTISAN_ARGS='$ARTISAN_ARGS' LOG_FILE='$LOG_FILE' SERVER_PATH='$server_path' PHP_BIN='$php_bin' OPENAI_API_KEY='$OPENAI_API_KEY' OPENAI_API_URL='$OPENAI_API_URL' OPENAI_MODEL='$OPENAI_MODEL' bash -s" \
             <<< "$remote_script" 2>&1 | tee "$output_file"
           status=${PIPESTATUS[0]}
           set -e
