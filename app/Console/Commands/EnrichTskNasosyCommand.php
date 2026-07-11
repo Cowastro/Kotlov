@@ -35,6 +35,7 @@ class EnrichTskNasosyCommand extends Command
         {--sleep=600 : Delay between card requests, ms}
         {--in-stock-only : Only products currently in stock}
         {--only-missing : Only products missing a photo or description}
+        {--max-current-attrs= : Process only products with this many or fewer current attribute rows}
         {--overwrite-images : Replace existing photos (default: keep)}
         {--skip-ai : Skip AI description generation}
         {--only-ai : Regenerate AI texts only, skip images and specs}
@@ -76,13 +77,19 @@ class EnrichTskNasosyCommand extends Command
         }
 
         // ── Our supplier products, joined to the map by article ──────────────────
+        $attributeCounts = DB::table('product_attribute_values')
+            ->select('product_id', DB::raw('COUNT(*) as attribute_rows'))
+            ->groupBy('product_id');
+
         $rows = DB::table('supplier_products as sp')
             ->join('products as p', 'p.id', '=', 'sp.product_id')
+            ->leftJoinSub($attributeCounts, 'pav', 'pav.product_id', '=', 'p.id')
             ->where('sp.supplier_id', $sid)
             ->whereNotNull('sp.product_id')
             ->when((bool) $this->option('in-stock-only'), fn ($q) => $q->where('sp.in_stock', true))
+            ->when(trim((string) $this->option('max-current-attrs')) !== '', fn ($q) => $q->whereRaw('COALESCE(pav.attribute_rows, 0) <= ?', [max(0, (int) $this->option('max-current-attrs'))]))
             ->get(['sp.id as sp_id', 'sp.supplier_article', 'sp.source_url', 'sp.in_stock',
-                   'p.id as product_id', 'p.category_id', 'p.name', 'p.images', 'p.content']);
+                   'p.id as product_id', 'p.category_id', 'p.name', 'p.images', 'p.content', DB::raw('COALESCE(pav.attribute_rows, 0) as attribute_rows')]);
 
         $candidates = [];
         foreach ($rows as $r) {
