@@ -535,10 +535,12 @@ class Enrich100KaminovCommand extends Command
             }
         }
 
-        // AI enrichment: only when content is empty (or --only-ai forces regeneration).
-        $existingContent = (string) DB::table('products')->where('id', $pid)->value('content');
-        if (! $this->option('skip-ai') && ($onlyAi || trim($existingContent) === '')) {
-            $this->generateAiContent($pid, $card, $brandName, $now);
+        // AI enrichment: fill missing short text without overwriting a good existing content body.
+        $existingText = DB::table('products')->where('id', $pid)->first(['content', 'short_description']);
+        $needsContent = ! $existingText || trim(strip_tags((string) $existingText->content)) === '';
+        $needsShort = ! $existingText || trim((string) $existingText->short_description) === '';
+        if (! $this->option('skip-ai') && ($onlyAi || $needsContent || $needsShort)) {
+            $this->generateAiContent($pid, $card, $brandName, $now, $onlyAi || $needsContent);
         }
 
         if ($changed) {
@@ -872,14 +874,14 @@ class Enrich100KaminovCommand extends Command
 
     // ── AI content ────────────────────────────────────────────────────────────────
 
-    private function generateAiContent(int $pid, array $card, string $brand, $now): void
+    private function generateAiContent(int $pid, array $card, string $brand, $now, bool $writeContent = true): void
     {
         $enricher = app(AiContentEnricher::class);
         if (! $enricher->isAvailable()) {
             return;
         }
 
-        $existing = DB::table('products')->where('id', $pid)->first(['short_description', 'meta_title', 'meta_description', 'name', 'category_id']);
+        $existing = DB::table('products')->where('id', $pid)->first(['content', 'short_description', 'meta_title', 'meta_description', 'name', 'category_id']);
         if (! $existing) {
             return;
         }
@@ -891,12 +893,16 @@ class Enrich100KaminovCommand extends Command
         // AI generates unique SEO HTML; raw text is never stored.
         $aiContent = $enricher->enrich((string) $existing->name, $brand, $rawDesc, $card['specs']);
         if ($aiContent !== null && trim(strip_tags($aiContent)) !== '') {
-            $updates['content'] = strip_tags($aiContent, '<p><ul><li><strong>');
+            if ($writeContent) {
+                $updates['content'] = strip_tags($aiContent, '<p><ul><li><strong>');
+            }
 
             $short = $enricher->shortDescription((string) $existing->name, $brand, $card['specs'])
                 ?: mb_substr(trim(strip_tags($aiContent)), 0, 240);
-            $updates['short_description'] = mb_substr(trim($short), 0, 240);
-            $updates['meta_description']  = mb_substr(trim($short), 0, 250);
+            if (trim((string) $existing->short_description) === '' || $writeContent) {
+                $updates['short_description'] = mb_substr(trim($short), 0, 240);
+                $updates['meta_description']  = mb_substr(trim($short), 0, 250);
+            }
         }
 
         if ($updates !== []) {
