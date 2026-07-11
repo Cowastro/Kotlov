@@ -1,6 +1,6 @@
 {
-  "task": "tail-log",
-  "artisan_args": "",
+  "task": "kill-pid",
+  "artisan_args": "1199847",
   "log_file": "storage/logs/product-seo-fill-missing-thin.log",
-  "run_id": "product-seo-fill-missing-thin-tail-20260711-1"
+  "run_id": "product-seo-fill-missing-thin-kill-20260711-1"
 }
