@@ -1,6 +1,6 @@
 {
-  "task": "artisan-dry-run",
-  "artisan_args": "products:sanitize-content-html --slug-like=teplov-i-suhov --active-only --not-archived --extract-media --restore-teplov-suhov-media --missing-media-only --show-samples=30 --show-content-samples=3 --limit=120",
+  "task": "optimize-clear",
+  "artisan_args": "",
   "log_file": "",
-  "run_id": "dry-run-teplov-suhov-media-restore-20260711-1"
+  "run_id": "optimize-clear-after-product-video-tab-fix-20260711-1"
 }
