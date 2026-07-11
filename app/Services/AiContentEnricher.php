@@ -86,10 +86,15 @@ class AiContentEnricher
             return $this;
         }
 
+        $url = trim((string) config('services.ai.openai_url', ''));
+        if ($url === '') {
+            $url = 'https://api.openai.com/v1/chat/completions';
+        }
+
         $clone = clone $this;
         $clone->mode = 'openai_compat';
         $clone->apiKey = $key;
-        $clone->apiUrl = (string) config('services.ai.openai_url', 'https://api.openai.com/v1/chat/completions');
+        $clone->apiUrl = $url;
         $clone->model = trim((string) $model) !== ''
             ? trim((string) $model)
             : (string) config('services.ai.openai_model', 'gpt-4.1');
