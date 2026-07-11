@@ -1,6 +1,6 @@
 {
-  "task": "artisan-apply",
-  "artisan_args": "brands:discover-teplodvor-logos --apply --limit=0",
+  "task": "artisan-dry-run",
+  "artisan_args": "catalog:audit-media --type=brands --only-with-products --missing-only --limit=120",
   "log_file": "",
-  "run_id": "apply-discover-teplodvor-brand-logos-20260711-1"
+  "run_id": "audit-brand-media-after-logo-apply-20260711-1"
 }
