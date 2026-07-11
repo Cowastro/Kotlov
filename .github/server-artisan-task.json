@@ -1,6 +1,6 @@
 {
   "task": "artisan-dry-run",
-  "artisan_args": "products:audit-content-health --active-only --not-archived --with-source-only --issues=no_content,no_short --max-attrs=2 --limit=80",
+  "artisan_args": "product:enrich-content --sku=KOTLOV-004899 --only=both --source-context --require-source-context --skip-root-source-context --min-source-context-chars=80 --rewrite-thin=220 --limit=1 --sleep=300 --dry-run --debug-ai",
   "log_file": "",
-  "run_id": "audit-products-with-source-missing-text-20260711-1"
+  "run_id": "dry-run-gkb-seo-source-context-20260711-1"
 }
