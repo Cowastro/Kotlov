@@ -1,6 +1,6 @@
 {
-  "task": "optimize-clear",
-  "artisan_args": "",
-  "log_file": "storage/logs/server-artisan-menu-cache.log",
-  "run_id": "clear-brand-logo-grid-cache-20260711-1"
+  "task": "products:sanitize-content-html",
+  "artisan_args": "--slug-like=teplov-i-suhov --not-archived --extract-media --restore-teplov-suhov-media --missing-media-only --show-samples=5 --limit=20",
+  "log_file": "storage/logs/server-artisan-teplov-suhov-media-dry-run.log",
+  "run_id": "teplov-suhov-media-dry-run-20260711-1"
 }
