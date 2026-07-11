@@ -1,6 +1,6 @@
 {
-  "task": "artisan-dry-run",
-  "artisan_args": "catalog:audit-media --type=categories --only-with-products --missing-only --limit=120",
-  "log_file": "storage/logs/server-artisan-category-media.log",
-  "run_id": "control-category-media-audit-20260711-2"
+  "task": "optimize-clear",
+  "artisan_args": "",
+  "log_file": "storage/logs/server-artisan-menu-cache.log",
+  "run_id": "clear-menu-cache-20260711-1"
 }

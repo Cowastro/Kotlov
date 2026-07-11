@@ -157,6 +157,34 @@
                             @php
                                 $icons = config('navigation.icons', []);
                                 $editorial = config('navigation.editorial.' . $rootCat->slug, []);
+                                $liveCategoryUrls = $navCategoryUrls ?? [];
+                                $isLiveCategoryUrl = function (?string $url) use ($liveCategoryUrls) {
+                                    $path = parse_url((string) $url, PHP_URL_PATH);
+
+                                    if (! is_string($path) || $path === '') {
+                                        return true;
+                                    }
+
+                                    $servicePaths = ['/akcii', '/brands', '/catalog', '/contacts', '/dostavka', '/installers', '/blog'];
+
+                                    if (in_array($path, $servicePaths, true)) {
+                                        return true;
+                                    }
+
+                                    return isset($liveCategoryUrls[$path]);
+                                };
+                                $editorial = collect($editorial)
+                                    ->map(function ($block) use ($isLiveCategoryUrl) {
+                                        $block['links'] = collect($block['links'] ?? [])
+                                            ->filter(fn ($link) => $isLiveCategoryUrl($link['url'] ?? null))
+                                            ->values()
+                                            ->all();
+
+                                        return $block;
+                                    })
+                                    ->filter(fn ($block) => ! empty($block['links']))
+                                    ->values()
+                                    ->all();
                                 $icon = $icons[$rootCat->slug] ?? null;
                                 $children = $rootCat->children->where('is_active', true);
                                 $hasChildren = $children->count() > 0 || count($editorial) > 0;
@@ -218,6 +246,12 @@
                                             {{-- Правая promo-колонка --}}
                                             <div class="mega-promo">
                                                 @if ($promo)
+                                                    @php
+                                                        $promoCta = collect($promo['cta'] ?? [])
+                                                            ->filter(fn ($link) => $isLiveCategoryUrl($link['url'] ?? null))
+                                                            ->values();
+                                                        $promoBanner = $promo['banner'] ?? null;
+                                                    @endphp
                                                     @if (!empty($promo['brands']))
                                                         @php
                                                             $validBrands = collect($promo['brands'])
@@ -236,7 +270,7 @@
                                                         @endif
                                                     @endif
 
-                                                    @if (!empty($promo['banner']))
+                                                    @if (!empty($promoBanner) && $isLiveCategoryUrl($promoBanner['url'] ?? null))
                                                         <a href="{{ $promo['banner']['url'] }}" class="mega-promo__banner">
                                                             <img src="{{ asset('img/' . $promo['banner']['img']) }}"
                                                                  alt="{{ $promo['banner']['title'] }}"
@@ -245,9 +279,9 @@
                                                         </a>
                                                     @endif
 
-                                                    @if (!empty($promo['cta']))
+                                                    @if ($promoCta->isNotEmpty())
                                                         <div class="mega-promo__cta">
-                                                            @foreach ($promo['cta'] as $link)
+                                                            @foreach ($promoCta as $link)
                                                                 <a href="{{ $link['url'] }}" class="mega-promo__cta-link">
                                                                     {{ $link['name'] }} →
                                                                 </a>

@@ -17,7 +17,10 @@ class AppServiceProvider extends ServiceProvider
             return;
         }
 
-        View::share('navCategories', $this->getNavCategories());
+        $navCategories = $this->getNavCategories();
+
+        View::share('navCategories', $navCategories);
+        View::share('navCategoryUrls', $this->getNavCategoryUrls($navCategories));
         View::share('navBrands', $this->getNavBrands());
 
         // Города по областям для попапа выбора города
@@ -235,5 +238,32 @@ private function getNavCategories()
             ->filter(fn (Category $category) => $category->products_count > 0)
             ->values();
     });
+}
+
+private function getNavCategoryUrls($categories): array
+{
+    $urls = [];
+
+    $walk = function ($items) use (&$walk, &$urls): void {
+        foreach ($items as $category) {
+            $slug = trim((string) $category->slug, '/');
+
+            if ($slug !== '') {
+                $urls['/' . $slug] = true;
+            }
+
+            $children = $category->relationLoaded('children')
+                ? $category->children
+                : collect();
+
+            if ($children->isNotEmpty()) {
+                $walk($children);
+            }
+        }
+    };
+
+    $walk($categories);
+
+    return $urls;
 }
 }
