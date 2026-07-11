@@ -15,6 +15,7 @@ class EnrichBrandPagesCommand extends Command
         {--limit=50 : Maximum brands, 0 means no limit}
         {--include-weak : Also rewrite obviously thin/non-store brand text}
         {--min-content-chars=260 : Content shorter than this can be treated as weak with --include-weak}
+        {--audit-only : Only report brands needing work without calling AI}
         {--preview : Print generated content snippets to the console}
         {--openai : Use OPENAI_API_KEY/OPENAI_API_URL for this run when configured}
         {--model= : Override OpenAI-compatible AI model for this run}';
@@ -58,8 +59,10 @@ class EnrichBrandPagesCommand extends Command
         $this->line('AI provider: ' . $ai->providerName());
 
         $includeWeak = (bool) $this->option('include-weak');
+        $auditOnly = (bool) $this->option('audit-only');
         $preview = (bool) $this->option('preview');
         $minContentChars = max(80, (int) $this->option('min-content-chars'));
+        $auditRows = [];
 
         $summary = [
             'checked' => 0,
@@ -92,6 +95,20 @@ class EnrichBrandPagesCommand extends Command
             }
 
             $summary['needs_work']++;
+            if ($auditOnly) {
+                $auditRows[] = [
+                    $row->id,
+                    $row->slug,
+                    $row->name,
+                    $emptyH1 ? 'empty' : 'ok',
+                    $emptyContent ? 'empty' : ($weakContent ? 'weak' : 'ok'),
+                    $emptyMeta ? 'empty' : ($weakMeta ? 'weak' : 'ok'),
+                    $emptyTitle ? 'empty' : 'ok',
+                    $emptyKeywords ? 'empty' : 'ok',
+                ];
+                continue;
+            }
+
             $data = [];
             if ($emptyH1) {
                 $data['h1'] = 'Бренд ' . $row->name;
@@ -142,6 +159,9 @@ class EnrichBrandPagesCommand extends Command
         }
 
         $this->table(['metric', 'count'], collect($summary)->map(fn ($v, $k) => [$k, $v])->values()->all());
+        if ($auditOnly && $auditRows !== []) {
+            $this->table(['id', 'slug', 'brand', 'h1', 'content', 'meta', 'title', 'keywords'], array_slice($auditRows, 0, 120));
+        }
 
         return self::SUCCESS;
     }

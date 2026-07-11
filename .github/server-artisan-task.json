@@ -1,6 +1,6 @@
 {
   "task": "artisan-dry-run",
-  "artisan_args": "brands:enrich-pages --limit=10 --preview",
+  "artisan_args": "brands:enrich-pages --audit-only --limit=0",
   "log_file": "storage/logs/server-artisan-brand-content.log",
-  "run_id": "dry-run-brand-content-preview-20260711-1"
+  "run_id": "dry-run-brand-content-audit-20260711-1"
 }
