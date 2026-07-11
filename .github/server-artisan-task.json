@@ -1,6 +1,6 @@
 {
   "task": "artisan-dry-run",
-  "artisan_args": "products:audit-content-quality --brand=teplov-i-suhov --not-archived --active-only --limit=120 --min-issues=1",
-  "log_file": "storage/logs/server-artisan-teplov-suhov-quality-after.log",
-  "run_id": "teplov-suhov-quality-after-20260711-1"
+  "artisan_args": "brands:discover-teplodvor-logos --limit=0",
+  "log_file": "storage/logs/server-artisan-brand-logo-audit.log",
+  "run_id": "brand-logo-audit-20260711-1"
 }
