@@ -1,6 +1,6 @@
 {
   "task": "artisan-dry-run",
-  "artisan_args": "products:audit-content-health --active-only --not-archived --with-source-only --limit=120",
-  "log_file": "storage/logs/server-artisan-content-health-source-audit.log",
-  "run_id": "content-health-source-audit-20260711-1"
+  "artisan_args": "supplier:enrich-100kaminov --brand=Blist --sitemap --skip-ai --overwrite-images --limit=120",
+  "log_file": "storage/logs/server-artisan-blist-100kaminov-dry.log",
+  "run_id": "blist-100kaminov-dry-20260711-1"
 }
