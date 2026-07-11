@@ -1,6 +1,6 @@
 {
-  "task": "tail-log",
-  "artisan_args": "",
-  "log_file": "storage/logs/ligmet-panadero-100kaminov-short-fill.log",
-  "run_id": "ligmet-panadero-100kaminov-short-fill-tail-20260711-1"
+  "task": "artisan-background",
+  "artisan_args": "supplier:enrich-100kaminov --brand=MBS --pages=40 --limit=80 --apply --sleep=1000",
+  "log_file": "storage/logs/ligmet-mbs-100kaminov-short-fill.log",
+  "run_id": "ligmet-mbs-100kaminov-short-fill-20260711-1"
 }
