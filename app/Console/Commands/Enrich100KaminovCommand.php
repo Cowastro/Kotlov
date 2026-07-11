@@ -234,25 +234,35 @@ class Enrich100KaminovCommand extends Command
         $allBrandSlugs = array_map('mb_strtolower', array_keys(self::BRAND_SLUGS));
         $links = [];
         $seen = [];
+        $mapCount = 0;
+        $rawProductUrls = 0;
+        $brandMatchedUrls = 0;
 
         foreach ($maps[1] as $mapUrl) {
             $mapUrl = html_entity_decode((string) $mapUrl, ENT_QUOTES | ENT_HTML5, 'UTF-8');
-            if (! str_contains($mapUrl, 'sitemap_prod')) {
+            if (! str_contains($mapUrl, 'sitemap_product')) {
                 continue;
             }
+            $mapCount++;
 
             $xml = $this->fetch($mapUrl);
             if ($xml === null) {
+                $this->warn('Could not fetch sitemap: ' . $mapUrl);
                 continue;
             }
 
             preg_match_all('#<loc>\s*(https?://[^<]+/p\d[^<]+\.html)\s*</loc>#i', $xml, $urls);
+            $rawProductUrls += count($urls[1]);
             foreach ($urls[1] as $url) {
                 $url = html_entity_decode((string) $url, ENT_QUOTES | ENT_HTML5, 'UTF-8');
                 $lowerUrl = mb_strtolower($url);
                 $needles = $brandSlugs !== [] ? $brandSlugs : $allBrandSlugs;
 
-                if (! $this->urlContainsAny($lowerUrl, $needles) || isset($seen[$url])) {
+                if (! $this->urlContainsAny($lowerUrl, $needles)) {
+                    continue;
+                }
+                $brandMatchedUrls++;
+                if (isset($seen[$url])) {
                     continue;
                 }
 
@@ -262,6 +272,13 @@ class Enrich100KaminovCommand extends Command
         }
 
         sort($links);
+        $this->line(sprintf(
+            'Sitemap diagnostics: maps=%d raw_products=%d brand_matched=%d brand_filter=%s',
+            $mapCount,
+            $rawProductUrls,
+            $brandMatchedUrls,
+            $brandFilter ?: '-'
+        ));
 
         return $links;
     }
