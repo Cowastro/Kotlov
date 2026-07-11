@@ -1,6 +1,6 @@
 {
-  "task": "kill-pid",
-  "artisan_args": "1199847",
-  "log_file": "storage/logs/product-seo-fill-missing-thin.log",
-  "run_id": "product-seo-fill-missing-thin-kill-20260711-1"
+  "task": "artisan-dry-run",
+  "artisan_args": "product:enrich-content --all --source-context --require-source-context --skip-root-source-context --rewrite-thin=180 --min-specs=1 --min-source-context-chars=180 --limit=40 --sleep=200 --dry-run",
+  "log_file": "storage/logs/product-seo-fill-missing-thin-safe-dry.log",
+  "run_id": "product-seo-fill-missing-thin-safe-dry-20260711-1"
 }
