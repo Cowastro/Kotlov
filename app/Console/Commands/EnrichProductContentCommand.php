@@ -69,9 +69,15 @@ class EnrichProductContentCommand extends Command
         $allowMojibake = (bool) $this->option('allow-mojibake');
         $sourceEnricher = $useSourceContext ? new ProductSourceEnricher() : null;
 
-        $attributeCounts = DB::table('product_attribute_values')
-            ->select('product_id', DB::raw('COUNT(*) as attribute_rows'))
-            ->groupBy('product_id');
+        $supplierTechnicalAttributeNames = \App\Models\Product::supplierTechnicalAttributeNames();
+
+        $attributeCounts = DB::table('product_attribute_values as pav')
+            ->join('attributes as a', 'a.id', '=', 'pav.attribute_id')
+            ->whereNotNull('pav.value')
+            ->where('pav.value', '<>', '')
+            ->when($supplierTechnicalAttributeNames !== [], fn ($query) => $query->whereNotIn('a.name', $supplierTechnicalAttributeNames))
+            ->select('pav.product_id', DB::raw('COUNT(*) as attribute_rows'))
+            ->groupBy('pav.product_id');
 
         $query = DB::table('products as p')
             ->leftJoinSub($attributeCounts, 'pav_count', 'pav_count.product_id', '=', 'p.id')
@@ -339,6 +345,7 @@ class EnrichProductContentCommand extends Command
             ->where('pav.product_id', $productId)
             ->whereNotNull('pav.value')
             ->where('pav.value', '<>', '')
+            ->whereNotIn('a.name', \App\Models\Product::supplierTechnicalAttributeNames())
             ->limit(40);
 
         if (Schema::hasColumn('product_attribute_values', 'sort_order')) {
