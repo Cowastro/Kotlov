@@ -24,6 +24,7 @@ class EnrichProductContentCommand extends Command
         {--rewrite-thin=0 : Re-generate existing content when stripped text is shorter than this many characters}
         {--source-context : Fetch supplier source_url and pass parsed source description/specs to AI}
         {--require-source-context : Process only products with a linked supplier source_url}
+        {--min-source-context-chars=0 : Skip products when parsed source description is shorter than this many characters}
         {--openai : Use OPENAI_API_KEY/OPENAI_API_URL for this run when configured}
         {--ai-model= : Override AI model for this run}
         {--debug-ai : Print provider error/raw response when AI output cannot be parsed}
@@ -58,6 +59,7 @@ class EnrichProductContentCommand extends Command
         $offset  = max(0, (int) ($this->option('offset') ?? 0));
         $minSpecs = max(0, (int) ($this->option('min-specs') ?? 0));
         $rewriteThin = max(0, (int) ($this->option('rewrite-thin') ?? 0));
+        $minSourceContextChars = max(0, (int) ($this->option('min-source-context-chars') ?? 0));
         $only    = $this->option('only') ?? 'both';
         $useSourceContext = (bool) $this->option('source-context');
         $requireSourceContext = (bool) $this->option('require-source-context');
@@ -173,6 +175,17 @@ class EnrichProductContentCommand extends Command
                     }
                     if (($source['error'] ?? '') !== '') {
                         $this->line('  <fg=yellow>source context skipped:</> ' . $source['error']);
+                    }
+
+                    if ($minSourceContextChars > 0 && (int) ($source['description_chars'] ?? 0) < $minSourceContextChars) {
+                        $this->line(sprintf(
+                            '  skipped: source context is too short (%d chars, min is %d)',
+                            (int) ($source['description_chars'] ?? 0),
+                            $minSourceContextChars
+                        ));
+                        $stats['skipped']++;
+                        usleep($sleepMs * 1000);
+                        continue;
                     }
                 }
 
