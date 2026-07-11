@@ -1,6 +1,6 @@
 {
   "task": "artisan-dry-run",
-  "artisan_args": "product:enrich-content --all --only=content --offset=1 --limit=1 --min-specs=3 --openai --ai-model=gpt-4.1 --dry-run",
-  "log_file": "storage/logs/server-artisan-openai-content-preview-v3.log",
-  "run_id": "openai-content-preview-20260711-3"
+  "artisan_args": "product:enrich-content --all --only=content --offset=1 --limit=1 --min-specs=3 --openai --ai-model=gpt-4.1 --debug-ai --dry-run",
+  "log_file": "storage/logs/server-artisan-openai-content-preview-v4.log",
+  "run_id": "openai-content-preview-20260711-4"
 }

@@ -28,6 +28,8 @@ class AiContentEnricher
     private string $apiKey;
     private string $apiUrl;
     private string $model;
+    private ?string $lastRawResponse = null;
+    private ?string $lastError = null;
 
     public function __construct()
     {
@@ -64,6 +66,16 @@ class AiContentEnricher
             'openai_compat' => $this->model . ' (' . parse_url($this->apiUrl, PHP_URL_HOST) . ')',
             default        => 'none',
         };
+    }
+
+    public function lastRawResponse(): ?string
+    {
+        return $this->lastRawResponse;
+    }
+
+    public function lastError(): ?string
+    {
+        return $this->lastError;
     }
 
     public function withModel(?string $model): self
@@ -545,6 +557,9 @@ PROMPT;
 
     private function callOpenAiCompat(string $prompt, int $maxTokens = 1024): ?string
     {
+        $this->lastRawResponse = null;
+        $this->lastError = null;
+
         $payload = [
             'model'    => $this->model,
             'messages' => [['role' => 'user', 'content' => $prompt]],
@@ -559,12 +574,31 @@ PROMPT;
             ->withToken($this->apiKey)
             ->post($this->apiUrl, $payload);
 
+        $this->lastRawResponse = $response->body();
+
         if (! $response->successful()) {
+            $this->lastError = 'HTTP ' . $response->status();
             \Illuminate\Support\Facades\Log::warning('AiContentEnricher HTTP ' . $response->status() . ': ' . mb_substr($response->body(), 0, 200));
             return null;
         }
 
-        return trim($response->json('choices.0.message.content') ?? '') ?: null;
+        $content = $response->json('choices.0.message.content');
+        if (is_array($content)) {
+            $content = collect($content)
+                ->map(fn ($part): string => is_array($part) ? (string) ($part['text'] ?? '') : (string) $part)
+                ->implode('');
+        }
+
+        if (! is_string($content) || trim($content) === '') {
+            $content = $response->json('output_text');
+        }
+
+        if (! is_string($content) || trim($content) === '') {
+            $this->lastError = 'empty content';
+            return null;
+        }
+
+        return trim($content) ?: null;
     }
 
     private function usesMaxCompletionTokens(): bool

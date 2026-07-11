@@ -22,6 +22,7 @@ class EnrichProductContentCommand extends Command
         {--min-specs=0 : Skip products with fewer available specs/attributes}
         {--openai : Use OPENAI_API_KEY/OPENAI_API_URL for this run when configured}
         {--ai-model= : Override AI model for this run}
+        {--debug-ai : Print provider error/raw response when AI output cannot be parsed}
         {--dry-run : Preview generated text without writing to database}';
 
     protected $description = 'Generate unique SEO descriptions for existing products via AI.';
@@ -146,6 +147,14 @@ class EnrichProductContentCommand extends Command
 
                 if (! $seo) {
                     $this->warn('  AI returned empty response, skipped.');
+                    if ((bool) $this->option('debug-ai')) {
+                        if ($enricher->lastError()) {
+                            $this->warn('  AI debug error: ' . $enricher->lastError());
+                        }
+                        if ($enricher->lastRawResponse()) {
+                            $this->line('  <fg=gray>AI raw:</> ' . mb_substr(preg_replace('/\s+/u', ' ', $enricher->lastRawResponse()) ?? $enricher->lastRawResponse(), 0, 1200));
+                        }
+                    }
                     $stats['skipped']++;
                     usleep($sleepMs * 1000);
                     continue;
