@@ -1,6 +1,6 @@
 {
-  "task": "ps-artisan",
+  "task": "tail-log",
   "artisan_args": "",
-  "log_file": "",
-  "run_id": "product-seo-ps-offset120-20260711-1"
+  "log_file": "storage/logs/product-seo-fill-missing-thin-safe-apply-offset120.log",
+  "run_id": "product-seo-tail-offset120-20260711-1"
 }
