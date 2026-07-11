@@ -1,6 +1,6 @@
 {
-  "task": "artisan-background",
-  "artisan_args": "supplier:enrich-100kaminov --brand=Kratki --pages=40 --limit=100 --apply --sleep=1000",
+  "task": "tail-log",
+  "artisan_args": "",
   "log_file": "storage/logs/ligmet-kratki-100kaminov-safe-apply.log",
-  "run_id": "ligmet-kratki-100kaminov-safe-apply-20260711-1"
+  "run_id": "ligmet-kratki-100kaminov-safe-apply-tail-20260711-1"
 }
