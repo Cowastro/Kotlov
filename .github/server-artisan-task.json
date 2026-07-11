@@ -1,6 +1,6 @@
 {
   "task": "artisan-dry-run",
-  "artisan_args": "supplier:enrich-ligmet-extra --base-url=https://kaminbel.by --source-url=/product/pechi-kaminy/fireway/ --brand=FireWay --pages=20 --limit=10 --sleep=800",
+  "artisan_args": "supplier:enrich-ligmet-extra --base-url=https://ochag.by --source-url=/kaminy/pechi-kaminy/pechi-ferguss/ --brand=Ferguss --pages=20 --limit=10 --sleep=800",
   "log_file": "",
-  "run_id": "ligmet-fireway-extra-dry-run-20260711-1"
+  "run_id": "ligmet-ferguss-extra-dry-run-20260711-1"
 }
