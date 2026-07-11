@@ -1,6 +1,6 @@
 {
-  "task": "artisan-dry-run",
-  "artisan_args": "products:audit-content-quality --not-archived --active-only --limit=120 --min-issues=1",
-  "log_file": "storage/logs/server-artisan-product-content-quality.log",
-  "run_id": "product-content-quality-audit-20260711-1"
+  "task": "artisan-apply",
+  "artisan_args": "products:sanitize-content-html --apply --brand=teplov-i-suhov --not-archived --active-only --extract-media --restore-teplov-suhov-media --missing-media-only --limit=0",
+  "log_file": "storage/logs/server-artisan-teplov-suhov-sanitize.log",
+  "run_id": "teplov-suhov-sanitize-20260711-1"
 }
