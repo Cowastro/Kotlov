@@ -149,6 +149,10 @@ class AuditCatalogMediaCommand extends Command
             return ['ok', $path];
         }
 
+        if (file_exists(public_path(ltrim($path, '/')))) {
+            return ['ok', $path];
+        }
+
         if ($allowLegacyProxy && file_exists(public_path('images/' . ltrim($path, '/')))) {
             return ['ok', 'legacy:' . $path];
         }

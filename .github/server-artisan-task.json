@@ -2,5 +2,5 @@
   "task": "artisan-dry-run",
   "artisan_args": "catalog:audit-media --type=brands --only-with-products --missing-only --limit=120",
   "log_file": "storage/logs/server-artisan-media-audit.log",
-  "run_id": "dry-run-brand-media-audit-20260711-1"
+  "run_id": "dry-run-brand-media-audit-public-path-20260711-1"
 }
