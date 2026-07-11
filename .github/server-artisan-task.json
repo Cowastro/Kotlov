@@ -1,6 +1,6 @@
 {
   "task": "artisan-dry-run",
-  "artisan_args": "supplier:enrich-source-products --supplier=akvatermex --force --skip-ai --limit=10 --sleep=1000",
-  "log_file": "storage/logs/server-artisan-akvatermex-source-force-preview.log",
-  "run_id": "akvatermex-source-force-preview-20260711-1"
+  "artisan_args": "supplier:enrich-source-products --supplier=akvatermex --domain=teplodvor.by --force --skip-ai --skip-documents --max-current-attrs=2 --limit=20 --sleep=1000",
+  "log_file": "storage/logs/server-artisan-akvatermex-teplodvor-preview.log",
+  "run_id": "akvatermex-teplodvor-preview-20260711-1"
 }
