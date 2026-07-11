@@ -1,32 +1,35 @@
 # Server Artisan Result
 
-- Time: 2026-07-11 08:46:45 UTC
-- Task: `optimize-clear`
-- Artisan args: ``
-- Log file: `storage/logs/server-artisan-menu-cache.log`
+- Time: 2026-07-11 09:07:31 UTC
+- Task: `artisan-dry-run`
+- Artisan args: `products:sanitize-content-html --slug-like=teplov-i-suhov --not-archived --extract-media --restore-teplov-suhov-media --missing-media-only --show-samples=5 --limit=20`
+- Log file: `storage/logs/server-artisan-teplov-suhov-media-dry-run.log`
 - Exit code: `0`
 
 ```text
 From https://github.com/Cowastro/Kotlov
-   8eaae97..1522b70  main       -> origin/main
-Updating 8eaae97..1522b70
+   1522b70..0524402  main       -> origin/main
+Updating 1522b70..0524402
 Fast-forward
- .github/server-artisan-result.md       | 30 ++++++++---------
- .github/server-artisan-task.json       |  2 +-
- public/assets/css/kotlov.css           | 61 +++++++++++++++++++++++++++++-----
- resources/views/pages/brands.blade.php |  8 ++---
- 4 files changed, 72 insertions(+), 29 deletions(-)
-
-   INFO  Clearing cached bootstrap files.  
-
-  config ......................................................... 0.90ms DONE
-  cache .......................................................... 3.23ms DONE
-  compiled ....................................................... 0.74ms DONE
-  events ......................................................... 0.43ms DONE
-  routes ......................................................... 0.40ms DONE
-  views .......................................................... 1.54ms DONE
-  blade-icons .................................................... 0.17ms DONE
-  filament ....................................................... 0.75ms DONE
-
+ .github/server-artisan-result.md                   | 32 +++++-----
+ .github/server-artisan-task.json                   |  8 +--
+ .../Commands/SanitizeProductContentHtmlCommand.php | 55 ++++++++++++++++-
+ public/assets/css/kotlov.css                       | 72 ++++++++++++++++++++--
+ resources/views/pages/product.blade.php            |  8 ++-
+ 5 files changed, 148 insertions(+), 27 deletions(-)
+DRY RUN: database will not be changed.
++---------------------+-------+
+| metric              | count |
++---------------------+-------+
+| checked             | 0     |
+| changed             | 0     |
+| written             | 0     |
+| images_removed      | 0     |
+| styles_removed      | 0     |
+| bad_blocks_removed  | 0     |
+| videos_extracted    | 0     |
+| documents_extracted | 0     |
+| seo_rewritten       | 0     |
++---------------------+-------+
 
 ```
