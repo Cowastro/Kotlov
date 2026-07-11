@@ -153,7 +153,7 @@
                                 <div class="br-line"></div>
 
                                 {{-- Бренды --}}
-                                @if ($brands->count() > 0)
+                                @if ($brands->count() > 0 && !request('brand'))
                                     @php
                                         $brandsTop  = $brands->sortByDesc('products_count')->take(10);
                                         $brandsRest = $brands->sortByDesc('products_count')->skip(10);
@@ -258,8 +258,12 @@
                                 @endforeach
 
                                 {{-- Кнопка сброса --}}
-                                @if (request()->except('sort', 'page'))
-                                    <a href="{{ url()->current() }}" class="tf-btn btn-outline w-100 mt-8">
+                                @php
+                                    $hasActiveCatalogFilters = count(request()->except('sort', 'page', 'brand')) > 0;
+                                    $resetCatalogUrl = url()->current() . (request('brand') ? '?' . http_build_query(['brand' => (int) request('brand')]) : '');
+                                @endphp
+                                @if ($hasActiveCatalogFilters)
+                                    <a href="{{ $resetCatalogUrl }}" class="tf-btn btn-outline w-100 mt-8">
                                         <i class="icon icon-X2"></i> Сбросить фильтры
                                     </a>
                                 @endif
@@ -439,10 +443,14 @@
                                 Показано {{ $products->firstItem() }}–{{ $products->lastItem() }}
                                 из {{ $products->total() }} товаров
                             </div>
-                            @if (request()->except('sort', 'page'))
+                            @php
+                                $hasActiveCatalogFilters = $hasActiveCatalogFilters ?? count(request()->except('sort', 'page', 'brand')) > 0;
+                                $resetCatalogUrl = $resetCatalogUrl ?? (url()->current() . (request('brand') ? '?' . http_build_query(['brand' => (int) request('brand')]) : ''));
+                            @endphp
+                            @if ($hasActiveCatalogFilters)
                                 <div class="br-line type-vertical"></div>
                                 <div id="applied-filters"></div>
-                                <a href="{{ url()->current() }}" class="remove-all-filters d-flex align-items-center gap-4 cl-text-2">
+                                <a href="{{ $resetCatalogUrl }}" class="remove-all-filters d-flex align-items-center gap-4 cl-text-2">
                                     <i class="icon icon-X2"></i> Сбросить
                                 </a>
                             @endif
@@ -493,7 +501,7 @@
                                     <i class="icon icon-Package fs-48 cl-text-3 mb-16"></i>
                                     <p class="h5 cl-text-2">Товары не найдены</p>
                                     <p class="text-body-1 cl-text-3 mt-8">Попробуйте изменить параметры фильтра</p>
-                                    <a href="{{ url()->current() }}" class="tf-btn btn-primary mt-16">
+                                    <a href="{{ $resetCatalogUrl ?? url()->current() }}" class="tf-btn btn-primary mt-16">
                                         Сбросить фильтры
                                     </a>
                                 </div>
