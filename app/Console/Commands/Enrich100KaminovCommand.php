@@ -491,7 +491,7 @@ class Enrich100KaminovCommand extends Command
         $brandName  = self::BRAND_SLUGS[$brandKey];
         $modelKey   = $this->model($card['name'], $brandName);
 
-        $entry = $this->catalogIndex[mb_strtolower($brandName)][$modelKey] ?? null;
+        [$entry, $matchMode] = $this->matchCatalogEntry($brandName, $modelKey);
 
         $this->line(sprintf('  [%s] %s → model:%s → %s',
             $brandName, mb_substr($card['name'], 0, 40), $modelKey,
@@ -623,6 +623,7 @@ class Enrich100KaminovCommand extends Command
     private function model(string $name, string $brand): string
     {
         $n = mb_strtoupper($name);
+        $n = str_replace('AMBASSADOR', 'AMBASADOR', $n);
         if ($brand !== '') {
             $n = preg_replace('/' . preg_quote(mb_strtoupper($brand), '/') . '/u', '', $n) ?? $n;
         }
@@ -643,6 +644,72 @@ class Enrich100KaminovCommand extends Command
     }
 
     // ── Images ────────────────────────────────────────────────────────────────────
+
+    private function matchCatalogEntry(string $brandName, string $modelKey): array
+    {
+        $brandKey = mb_strtolower($brandName);
+        $entries = $this->catalogIndex[$brandKey] ?? [];
+
+        if (isset($entries[$modelKey])) {
+            return [$entries[$modelKey], 'exact'];
+        }
+
+        if ($brandKey !== 'blist') {
+            return [null, 'none'];
+        }
+
+        $relaxed = $this->relaxBlistModelKey($modelKey);
+        if ($relaxed !== $modelKey && isset($entries[$relaxed])) {
+            return [$entries[$relaxed], 'relaxed'];
+        }
+
+        $matches = [];
+        foreach ($entries as $candidateKey => $entry) {
+            $candidateRelaxed = $this->relaxBlistModelKey($candidateKey);
+            if ($candidateRelaxed === $relaxed) {
+                $matches[$entry['id']] = $entry;
+                continue;
+            }
+
+            if (
+                $relaxed !== ''
+                && $candidateRelaxed !== ''
+                && (
+                    str_starts_with($relaxed . ' ', $candidateRelaxed . ' ')
+                    || str_starts_with($candidateRelaxed . ' ', $relaxed . ' ')
+                )
+            ) {
+                $matches[$entry['id']] = $entry;
+            }
+        }
+
+        if (count($matches) === 1) {
+            return [array_values($matches)[0], 'unique-relaxed'];
+        }
+
+        return [null, $matches === [] ? 'none' : 'ambiguous'];
+    }
+
+    private function relaxBlistModelKey(string $key): string
+    {
+        $key = str_replace('AMBASSADOR', 'AMBASADOR', $key);
+        $key = preg_replace('/\s+BLIST_(?:BEIGE|RED|BLACK|GREY|GRAY|WHITE)$/', '', $key) ?? $key;
+
+        $tokens = preg_split('/\s+/u', trim($key)) ?: [];
+        $drop = [
+            'DUHOVYM', 'DUHOVKOY', 'DUHOVKOJ', 'KONTUROM', 'TEPLOOBMENNIKOM',
+            'WITH', 'OVEN', 'WATER', 'JACKET',
+        ];
+        while ($tokens !== []) {
+            $last = end($tokens);
+            if (! is_string($last) || ! in_array($last, $drop, true)) {
+                break;
+            }
+            array_pop($tokens);
+        }
+
+        return trim(implode(' ', $tokens));
+    }
 
     private function isStopword(string $token, string $brand): bool
     {
