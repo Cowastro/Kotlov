@@ -1,6 +1,6 @@
 {
-  "task": "artisan-background",
-  "artisan_args": "supplier:enrich-source-products --supplier=tsk_nasosy --domain=aqualider.by --apply --force --replace-specs --overwrite-images --max-current-attrs=0 --limit=40 --sleep=1000",
+  "task": "tail-log",
+  "artisan_args": "",
   "log_file": "storage/logs/tsk-nasosy-aqualider-zero-attrs-fill.log",
-  "run_id": "tsk-nasosy-aqualider-zero-attrs-fill-20260711-1"
+  "run_id": "tail-tsk-nasosy-aqualider-zero-attrs-fill-20260711-1-a"
 }
