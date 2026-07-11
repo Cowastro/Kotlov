@@ -342,7 +342,7 @@
                                     $icon = $subIconMap[$sub->slug] ?? 'icon-Package';
                                 @endphp
                                 <div class="col-6 col-md-4 col-xl-3">
-                                    <a href="/{{ $sub->slug }}"
+                                    <a href="/{{ $sub->slug }}{{ request('brand') ? '?brand=' . (int) request('brand') : '' }}"
                                        class="category-v05 subcat-tile h-100 text-decoration-none">
                                         <span class="cate-icon">
                                             <i class="icon {{ $icon }}"></i>
