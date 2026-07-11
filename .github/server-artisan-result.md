@@ -1,201 +1,125 @@
 # Server Artisan Result
 
-- Time: 2026-07-11 09:59:17 UTC
+- Time: 2026-07-11 10:07:34 UTC
 - Task: `artisan-dry-run`
-- Artisan args: `products:audit-content-quality --not-archived --limit=80 --min-issues=2`
-- Log file: `storage/logs/server-artisan-content-quality-audit-after-haier.log`
+- Artisan args: `products:sanitize-content-html --brand=royal-thermo --not-archived --extract-media --rewrite-seo --rewrite-seo-if-thin --show-samples=5 --limit=50 --sleep=300`
+- Log file: `storage/logs/server-artisan-royal-thermo-content-dry-run-v2.log`
 - Exit code: `0`
 
 ```text
 From https://github.com/Cowastro/Kotlov
-   93af5e5..cc48b1e  main       -> origin/main
-Updating 93af5e5..cc48b1e
+   cc48b1e..c376789  main       -> origin/main
+Updating cc48b1e..c376789
 Fast-forward
- .github/server-artisan-result.md | 322 +++------------------------------------
- .github/server-artisan-task.json |   8 +-
- 2 files changed, 24 insertions(+), 306 deletions(-)
-+----------------------+-------+
-| metric               | count |
-+----------------------+-------+
-| checked              | 8497  |
-| products_with_issues | 2892  |
-+----------------------+-------+
-+-------------------------+----------+
-| reason                  | products |
-+-------------------------+----------+
-| legacy_buy_template     | 2543     |
-| thin_short_description  | 1530     |
-| thin_content            | 269      |
-| manufacturer_disclaimer | 1        |
-| old_promo_text          | 1        |
-+-------------------------+----------+
-+----------------------------------------------+--------+-------------------------------------------------------------------------------------------------+
-| brand                                        | issues | reasons                                                                                         |
-+----------------------------------------------+--------+-------------------------------------------------------------------------------------------------+
-| Royal Thermo                                 | 472    | legacy_buy_template=353; thin_content=119                                                       |
-| Везувий                                      | 446    | legacy_buy_template=219; thin_short_description=173; thin_content=53; manufacturer_disclaimer=1 |
-| Теплодар                                     | 207    | legacy_buy_template=132; thin_short_description=71; thin_content=3; old_promo_text=1            |
-| Kratki                                       | 200    | thin_short_description=94; legacy_buy_template=72; thin_content=34                              |
-| Теплов и Сухов                               | 157    | legacy_buy_template=79; thin_short_description=78                                               |
-| Банька                                       | 148    | legacy_buy_template=74; thin_short_description=74                                               |
-| TIS                                          | 139    | legacy_buy_template=75; thin_short_description=64                                               |
-| Pegas                                        | 134    | thin_short_description=81; legacy_buy_template=53                                               |
-| Мета-Бел                                     | 124    | thin_short_description=63; legacy_buy_template=61                                               |
-| UNIPUMP                                      | 115    | legacy_buy_template=105; thin_content=5; thin_short_description=5                               |
-| Sakovich                                     | 109    | thin_short_description=61; legacy_buy_template=44; thin_content=4                               |
-| ЭВАН                                         | 108    | legacy_buy_template=107; thin_short_description=1                                               |
-| Vaillant                                     | 103    | legacy_buy_template=93; thin_short_description=10                                               |
-| Zehnder                                      | 103    | legacy_buy_template=103                                                                         |
-| WILO                                         | 100    | legacy_buy_template=98; thin_short_description=2                                                |
-| ТехноЛит                                     | 95     | thin_short_description=95                                                                       |
-| Теплоприбор                                  | 86     | thin_short_description=44; legacy_buy_template=42                                               |
-| Timberk                                      | 81     | legacy_buy_template=77; thin_short_description=4                                                |
-| СтальСнабДизайн                              | 79     | legacy_buy_template=38; thin_short_description=38; thin_content=3                               |
-| БелОМО                                       | 78     | legacy_buy_template=40; thin_short_description=38                                               |
-| KOTLOV                                       | 75     | thin_short_description=38; legacy_buy_template=37                                               |
-| Термофор                                     | 73     | legacy_buy_template=37; thin_short_description=36                                               |
-| -                                            | 69     | thin_short_description=37; legacy_buy_template=27; thin_content=5                               |
-| TMF                                          | 68     | legacy_buy_template=61; thin_short_description=7                                                |
-| Сибирь                                       | 49     | thin_short_description=28; legacy_buy_template=21                                               |
-| Житомир                                      | 45     | legacy_buy_template=40; thin_short_description=5                                                |
-| Ермак                                        | 43     | legacy_buy_template=25; thin_short_description=17; thin_content=1                               |
-| Эверест                                      | 41     | legacy_buy_template=20; thin_short_description=20; thin_content=1                               |
-| Лидея                                        | 35     | legacy_buy_template=14; thin_short_description=14; thin_content=7                               |
-| S-TANK                                       | 32     | legacy_buy_template=16; thin_short_description=16                                               |
-| Меркурий                                     | 32     | legacy_buy_template=16; thin_short_description=16                                               |
-| Татра                                        | 32     | legacy_buy_template=16; thin_short_description=16                                               |
-| ЭТНА                                         | 30     | legacy_buy_template=12; thin_short_description=12; thin_content=6                               |
-| Protherm                                     | 28     | legacy_buy_template=28                                                                          |
-| HAIER                                        | 27     | thin_short_description=27                                                                       |
-| Lavoro                                       | 26     | legacy_buy_template=13; thin_short_description=13                                               |
-| НМК                                          | 25     | legacy_buy_template=13; thin_short_description=12                                               |
-| Greolit                                      | 22     | legacy_buy_template=11; thin_short_description=11                                               |
-| Hommyn                                       | 22     | legacy_buy_template=22                                                                          |
-| VENMA                                        | 22     | legacy_buy_template=11; thin_short_description=11                                               |
-| WELLMIX                                      | 20     | legacy_buy_template=16; thin_content=2; thin_short_description=2                                |
-| SHUFT                                        | 19     | legacy_buy_template=14; thin_short_description=5                                                |
-| LTEK                                         | 16     | legacy_buy_template=8; thin_short_description=8                                                 |
-| Nordflam                                     | 16     | legacy_buy_template=10; thin_short_description=6                                                |
-| СТЭН                                         | 16     | thin_short_description=8; legacy_buy_template=6; thin_content=2                                 |
-| Blist                                        | 15     | legacy_buy_template=8; thin_short_description=7                                                 |
-| АТЕМ                                         | 15     | legacy_buy_template=15                                                                          |
-| Elboom                                       | 12     | legacy_buy_template=6; thin_short_description=6                                                 |
-| Lava                                         | 12     | legacy_buy_template=6; thin_short_description=6                                                 |
-| Scamol                                       | 12     | legacy_buy_template=6; thin_short_description=6                                                 |
-| Varmega                                      | 12     | legacy_buy_template=12                                                                          |
-| НЗС                                          | 12     | legacy_buy_template=11; thin_short_description=1                                                |
-| Hotta                                        | 11     | thin_short_description=6; legacy_buy_template=5                                                 |
-| E.C.A.                                       | 10     | legacy_buy_template=5; thin_short_description=5                                                 |
-| XOMMET                                       | 10     | legacy_buy_template=10                                                                          |
-| Termica                                      | 9      | thin_short_description=8; legacy_buy_template=1                                                 |
-| Велес Электро                                | 9      | thin_short_description=5; legacy_buy_template=3; thin_content=1                                 |
-| КПД                                          | 9      | thin_short_description=5; legacy_buy_template=4                                                 |
-| Лемакс                                       | 9      | thin_short_description=5; legacy_buy_template=4                                                 |
-| Смолком                                      | 9      | thin_short_description=8; legacy_buy_template=1                                                 |
-| Феролайф                                     | 9      | thin_short_description=9                                                                        |
-| Edisson                                      | 8      | thin_content=4; thin_short_description=4                                                        |
-| Toshiba                                      | 8      | legacy_buy_template=7; thin_short_description=1                                                 |
-| Термокрафт                                   | 8      | legacy_buy_template=4; thin_short_description=4                                                 |
-| Царь-Печи                                    | 8      | legacy_buy_template=3; thin_short_description=3; thin_content=2                                 |
-| Boneco                                       | 7      | legacy_buy_template=7                                                                           |
-| ESH                                          | 7      | thin_short_description=5; legacy_buy_template=2                                                 |
-| MBS                                          | 7      | thin_short_description=5; legacy_buy_template=2                                                 |
-| Panadero                                     | 7      | legacy_buy_template=5; thin_short_description=2                                                 |
-| Royal Flame                                  | 7      | legacy_buy_template=3; thin_content=2; thin_short_description=2                                 |
-| Новосибирская металлообрабатывающая компания | 7      | legacy_buy_template=3; thin_short_description=3; thin_content=1                                 |
-| Firelight                                    | 6      | legacy_buy_template=5; thin_short_description=1                                                 |
-| Invicta                                      | 6      | legacy_buy_template=3; thin_short_description=3                                                 |
-| Kentatsu                                     | 6      | thin_short_description=4; legacy_buy_template=2                                                 |
-| Mr. Tektum                                   | 6      | legacy_buy_template=2; thin_content=2; thin_short_description=2                                 |
-| Antifrogen                                   | 5      | legacy_buy_template=2; thin_short_description=2; thin_content=1                                 |
-| Energolux                                    | 5      | legacy_buy_template=3; thin_short_description=2                                                 |
-| Электротеплоприбор                           | 5      | legacy_buy_template=2; thin_short_description=2; thin_content=1                                 |
-| KARINA                                       | 4      | legacy_buy_template=2; thin_short_description=2                                                 |
-| MERAN                                        | 4      | legacy_buy_template=4                                                                           |
-+----------------------------------------------+--------+-------------------------------------------------------------------------------------------------+
-+-------+---------------+------------------+------------------------------------+-----------------------------------------------------------+------------------------------------------------------+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
-| ID    | SKU           | Brand            | Category                           | Issues                                                    | Product                                              | Snippet                                                                                                                                                                              |
-+-------+---------------+------------------+------------------------------------+-----------------------------------------------------------+------------------------------------------------------+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
-| 123   | PS-000.123    | -                | Камни для бани                     | legacy_buy_template, thin_short_description               | Камни Габбро-диабаз колотый (20 кг)                  | Камни для бани "Габбро-диабаз" (Gabbro-diabase) – прочная, плотная, темная однородная порода, хорошо аккумулирует и отдает тепло, устойчив к разрушению под воздействием резких пере |
-| 124   | PS-000.124    | -                | Камни для бани                     | legacy_buy_template, thin_short_description               | Камни Малиновый кварцит колотый (20 кг)              | Экологически чистый Карельский камень для саун и бань малиновый кварцит. Отдельное место среди множества видов Карельского природного камня занимает малиновый кварцит — уникальнейш |
-| 1302  | PS-001.302    | -                | Камни для бани                     | legacy_buy_template, thin_short_description               | Камни Белый кварцит (20 кг)                          | Белый кварц – температуростойкий высокопрочный материал. В основе кварца - кремний, насыщенный кислородом, что крайне редко в природе. Разновидностей кварца встречается в природе б |
-| 3807  | PS-003.807    | -                | Камни для бани                     | legacy_buy_template, thin_short_description               | Камни Талькохлорит колотый (20 кг)                   | Талькохлорит – природный камень горного происхождения. Как правило, он серого цвета, но бывает и белым, и коричнево-зеленоватым в зависимости от наличия примесей. Камни для бани “Т |
-| 7059  | PS-007.059    | -                | Счетчики газа                      | legacy_buy_template, thin_content, thin_short_description | Счетчик газа бытовой Элехант СГБ-1,8                 | Вы можете купить данный товар в %city% с доставкой по всей Беларуси.                                                                                                                 |
-| 9864  | PS-009.864    | -                | Для частных домов                  | legacy_buy_template, thin_content, thin_short_description | Комплект ОПТИМАЛЬНЫЙ                                 | Оптимальный комплект для небольшого дома или дачи площадью от 20 до 150 м2.Вы можете купить данный товар в %city% с доставкой по всей Беларуси.                                      |
-| 10740 | PS-010.740    | -                | Конвекторы                         | legacy_buy_template, thin_short_description               | Электроконвектор ELBOOM ЭВ1-НСАТ1-2,0/230 (IP20)     | 1. Корпус с решётками.Изготовлен из легкого металла и имеет две встроенные решетки: внизу и спереди вверху. Через нижнюю решётку в корпус прибора попадает холодный воздух. Через ве |
-| 10744 | PS-010.744    | -                | Конвекторы                         | legacy_buy_template, thin_short_description               | Электроконвектор ELBOOM ЭВ1-УСАТ-1,5/230 (IP20)      | 1. Корпус с решётками.Изготовлен из легкого металла и имеет две встроенные решетки: внизу и спереди вверху. Через нижнюю решётку в корпус прибора попадает холодный воздух. Через ве |
-| 10745 | PS-010.745    | -                | Конвекторы                         | legacy_buy_template, thin_short_description               | Электроконвектор ELBOOM ЭВ1-НБАТ1-0,5/230 Б (IP24)   | 1. Корпус с решётками.Изготовлен из легкого металла и имеет две встроенные решетки: внизу и спереди вверху. Через нижнюю решётку в корпус прибора попадает холодный воздух. Через ве |
-| 10747 | PS-010.747    | -                | Конвекторы                         | legacy_buy_template, thin_short_description               | Электроконвектор ELBOOM ЭВ1-НБАТ1-1,0/230 Б (IP24)   | Особенности брызгозащищённых моделей:Трубчатый нагревательный элемент (ТЭН) с оребрением. Каплебрызгозащищённый корпус - IP24 - для помещений с повыщенной влажностью. Все модели бе |
-| 10748 | PS-010.748    | -                | Конвекторы                         | legacy_buy_template, thin_short_description               | Электроконвектор ELBOOM ЭВ1-НБАТ1-1,5/230 Б (IP24)   | 1. Корпус с решётками.Изготовлен из легкого металла и имеет две встроенные решетки: внизу и спереди вверху. Через нижнюю решётку в корпус прибора попадает холодный воздух. Через ве |
-| 10838 | PS-010.838    | -                | Камни для бани                     | legacy_buy_template, thin_short_description               | Камни Малиновый кварцит обвалованный (20 кг)         | Экологически чистый Карельский камень для саун и бань малиновый кварцит. Отдельное место среди множества видов Карельского природного камня занимает малиновый кварцит — уникальнейш |
-| 10840 | PS-010.840    | -                | Конвекторы                         | legacy_buy_template, thin_content, thin_short_description | Теплый плинтус электрический Mr.Tektum Smart Line... | Комплектация: кабель (1 шт.), крепеж (саморезы 3.5×16, 4 шт.), ножки (2 шт.), коннектор (1 шт.), документация Вы можете купить данный товар в %city% с доставкой по всей Беларуси.   |
-| 11769 | PS-011.769    | -                | Твердотопливные                    | legacy_buy_template, thin_short_description               | Твердотопливный котел Lavoro Eco M-20                | Котел Lavoro Eco серии «М» это современный полуавтоматический стальной котел, работающий в энергонезависимом режиме. Изготавливаются котлы и проходят проверку на заводе изготовител |
-| 11845 | PS-011.845    | -                | Аксессуары для бани                | legacy_buy_template, thin_content, thin_short_description | Зеркало Бочонок малое                                | Зеркало для бани. Материал ольха. Диаметр - 32 см. Вы можете купить данный товар в %city% с доставкой по всей Беларуси.                                                              |
-| 11851 | PS-011.851    | -                | Крепления и монтаж                 | legacy_buy_template, thin_short_description               | Лента для примыкания гофрированная алюминиевая GR... | Для отделки дымоходов, а также различных выступающих элементов и примыканий кровли к стенам, применяется специальная алюминиевая гофрированная лента для примыканий. Она очень удобн |
-| 11858 | PS-011.858    | -                | Аксессуары для бани                | legacy_buy_template, thin_short_description               | Фольга для бани Алукрафт на бумажной основе          | Рулоны 6, 12, 18, 30 м2 Фольга на бумажной основе "Алукрафт" трехслойная: первый слой - крафт-бумага, второй слой - полиэтилен, затем фольга. По своим характеристикам фольга "Алукр |
-| 11862 | PS-011.862    | -                | Дровницы и каминные принадлежности | legacy_buy_template, thin_content, thin_short_description | Дровница ДК-3                                        | Размер 400х400ммВы можете купить данный товар в %city% с доставкой по всей Беларуси.                                                                                                 |
-| 11913 | PS-011.913    | -                | Теплосъёмники                      | legacy_buy_template, thin_short_description               | Теплообменник 6 л D130/130 (304)                     | Теплообменник 6 л D130/130 (304) – Описание и инструкция по эксплуатации Описание продукта Теплообменник 6 л D130/130 (304) предназначен для нагрева воды в банных помещениях за сче |
-| 12276 | PS-012.276    | -                | Автоматика и терморегуляторы       | legacy_buy_template, thin_short_description               | Регулятор тяги UC1501                                | Регулятор тяги UC1501 — автоматический контроль горения для дровяных котловТермостатический цепочный регулятор UC1501 — надежная механическая автоматика для твердотопливных котлов  |
-| 12151 | PS-012.151    | Antifrogen       | Теплоносители (Антифриз)           | legacy_buy_template, thin_short_description               | Теплоноситель Antifrogen N [Антифроген Н] концент... | Антифриз для систем отопления и охлаждения. Обеспечивает защиту от замерзания до -30°C при разбавлении водой (пример: 86 л продукта + 114 л воды на 200 л смеси). Подходит для промы |
-| 12152 | PS-012.152    | Antifrogen       | Теплоносители (Антифриз)           | legacy_buy_template, thin_content, thin_short_description | Теплоноситель Antifrogen L [Антифроген Л] концент... | Вы можете купить данный товар в %city% с доставкой по всей Беларуси.                                                                                                                 |
-| 11491 | PS-011.491    | Aquastic         | Косвенные                          | legacy_buy_template, thin_short_description               | Бойлер косвенного нагрева AQUASTIC AQ 150 SC         | Бойлера торговой марки AQUASTIC производятся в Венгрии и занимают нишу доступных и недорогих бойлеров для создания комфортной системы горячего водоснабжения. Источником нагрева мож |
-| 20975 | KOTLOV-006141 | Auraton          | Электрические                      | thin_content, thin_short_description                      | Auraton Tucana SET Электронный регулятор температуры | Беcпроводной недельный программируемый регулятор температуры                                                                                                                         |
-| 16991 | KOTLOV-004713 | Blist            | Печи-камины                        | legacy_buy_template, thin_short_description               | Blist Печь Berna Lux бежевая                         | Печь Berna Lux бежевая от бренда Blist — это современное отопительное решение для загородных домов, дач и банных комплексов. Модель разработана для эффективного обогрева жилых прос |
-| 16992 | KOTLOV-004714 | Blist            | Печи-камины                        | legacy_buy_template, thin_short_description               | Blist Печь Berna Lux красная                         | Печь Blist Berna Lux красная представляет собой элегантное и функциональное отопительное решение для загородных домов, дач и коттеджей, где ценится не только тепло, но и выразитель |
-| 16996 | KOTLOV-004718 | Blist            | Печи-камины                        | legacy_buy_template, thin_short_description               | Blist Печь Modena красная                            | Печь Modena красная от бренда Blist — это функциональное решение для создания уютной и теплой атмосферы в загородном доме, на даче или в небольшом гостевом домике. Модель ориентиро |
-| 16998 | KOTLOV-004720 | Blist            | Печи-камины                        | legacy_buy_template, thin_short_description               | Blist Печь Napoli                                    | Печь Napoli от польского производителя Blist — это отопительное устройство, предназначенное для эффективного обогрева загородных домов, дач и банных комплексов. Модель ориентирован |
-| 16999 | KOTLOV-004721 | Blist            | Печи-камины                        | legacy_buy_template, thin_short_description               | Blist Печь Padova E                                  | Печь Padova E от польского бренда Blist — это надежное решение для отопления помещений, где требуется эффективный обогрев с атмосферой живого огня. Данная модель идеально подходит  |
-| 12101 | PS-012.101    | E.C.A.           | Электрические                      | legacy_buy_template, thin_short_description               | Электрокотел E.C.A. Arceus HM - 12                   | Электрокотел E.C.A. Arceus HM - 12 – надежный и эффективный котел из Турции.Мощность обогрева 12 кВт, площадь обогрева до 120 м².Имеет горячее водоснабжение, дисплей для удобного к |
-| 12102 | PS-012.102    | E.C.A.           | Электрические                      | legacy_buy_template, thin_short_description               | Электрокотел E.C.A. Arceus HM - 15                   | Электрокотел E.C.A. Arceus HM-15 - надежный обогреватель для вашего дома!Мощность обогрева 15 кВт позволит быстро и эффективно разогреть помещение до 150 кв.м.Современный дизайн с  |
-| 12103 | PS-012.103    | E.C.A.           | Электрические                      | legacy_buy_template, thin_short_description               | Электрокотел E.C.A. Arceus HM - 18                   | Электрокотел E.C.A. Arceus HM - 18 — это надежный обогреватель с мощностью 18 кВт, идеально подходящий для обогрева площадей до 180 м². Высококачественный теплообменник обеспечивае |
-| 12104 | PS-012.104    | E.C.A.           | Электрические                      | legacy_buy_template, thin_short_description               | Электрокотел E.C.A. Arceus HM - 24                   | Новейший электрокотел E.C.A. Arceus HM - 24 из Турции — это идеальное решение для обогрева площади до 240 кв.м. Он обладает мощностью 24 кВт, горячим водоснабжением и интеллектуаль |
-| 12105 | PS-012.105    | E.C.A.           | Электрические                      | legacy_buy_template, thin_short_description               | Электрокотел E.C.A. Arceus HM - 28                   | Надежный турецкий электрокотел E.C.A. Arceus HM - 28 с мощностью обогрева 28 кВт и площадью обогрева до 280 м².Имеет функцию горячего водоснабжения, интуитивно понятный дисплей и к |
-| 21290 | KOTLOV-006456 | Edisson          | Электрические                      | thin_content, thin_short_description                      | EDISSON H 20 D                                       | 10.00; 20.00; 0,025-0,8; 2 года; 11.9                                                                                                                                                |
-| 21291 | KOTLOV-006457 | Edisson          | Электрические                      | thin_content, thin_short_description                      | EDISSON Е 20 D                                       | 10.00; 20.00; 0,025-0,8; 2 года; 7.7                                                                                                                                                 |
-| 21295 | KOTLOV-006461 | Edisson          | Электрические                      | thin_content, thin_short_description                      | EDISSON E 20 GD (Каннская ветвь)                     | 10; 20; 0,025-0,8; 2 года; 7.7                                                                                                                                                       |
-| 21297 | KOTLOV-006463 | Edisson          | Электрические                      | thin_content, thin_short_description                      | EDISSON E 20 GD (Подсолнухи)                         | 10; 20; 0,025-0,8; 2 года; 7.7                                                                                                                                                       |
-| 10738 | PS-010.738    | Elboom           | Конвекторы                         | legacy_buy_template, thin_short_description               | Электроконвектор ELBOOM ЭВ1-УБАТ1-1,0/230 Б (IP24)   | 1. Корпус с решётками.Изготовлен из легкого металла и имеет две встроенные решетки: внизу и спереди вверху. Через нижнюю решётку в корпус прибора попадает холодный воздух. Через ве |
-| 10739 | PS-010.739    | Elboom           | Конвекторы                         | legacy_buy_template, thin_short_description               | Электроконвектор ELBOOM ЭВ1-НБАТ1-1,0/230 (IP20)     | 1. Корпус с решётками.Изготовлен из легкого металла и имеет две встроенные решетки: внизу и спереди вверху. Через нижнюю решётку в корпус прибора попадает холодный воздух. Через ве |
-| 10741 | PS-010.741    | Elboom           | Конвекторы                         | legacy_buy_template, thin_short_description               | Электроконвектор ELBOOM ЭВ1-УБАТ1-1,0/230 (IP20)     | 1. Корпус с решётками.Изготовлен из легкого металла и имеет две встроенные решетки: внизу и спереди вверху. Через нижнюю решётку в корпус прибора попадает холодный воздух. Через ве |
-| 10742 | PS-010.742    | Elboom           | Конвекторы                         | legacy_buy_template, thin_short_description               | Электроконвектор ELBOOM ЭВ1-УСАТ1-1,5/230 (IP20)     | 1. Корпус с решётками.Изготовлен из легкого металла и имеет две встроенные решетки: внизу и спереди вверху. Через нижнюю решётку в корпус прибора попадает холодный воздух. Через ве |
-| 10743 | PS-010.743    | Elboom           | Конвекторы                         | legacy_buy_template, thin_short_description               | Электроконвектор ELBOOM ЭВ1-УСАТ1-2,0/230 (IP20)     | 1. Корпус с решётками.Изготовлен из легкого металла и имеет две встроенные решетки: внизу и спереди вверху. Через нижнюю решётку в корпус прибора попадает холодный воздух. Через ве |
-| 10752 | PS-010.752    | Elboom           | Конвекторы                         | legacy_buy_template, thin_short_description               | Электроконвектор плинтусный ELBOOM ЭВ-П 0,18/230     | Плинтусные электрические конвекторы ELBOOM – это тепловые электрические приборы, предназначенные для прямого обогрева любых помещений в составе единой системы обогрева. Система обо |
-| 14233 | KOTLOV-001955 | Energolux        | Обогреватели                       | legacy_buy_template, thin_short_description               | Конвектор электрический Energolux GCH/VI-25          | Электрический конвектор Energolux GCH/VI-25 относится к категории обогревателей. Модель предназначена для поддержания комфортной температуры в жилых и офисных помещениях.Бренд: Ene |
-| 14235 | KOTLOV-001957 | Energolux        | Обогреватели                       | legacy_buy_template, thin_short_description               | Конвектор электрический Energolux GCH/CE-25          | Конвектор электрический Energolux GCH/CE-25 относится к категории обогревателей. Модель предназначена для поддержания комфортной температуры в жилых и офисных помещениях.Бренд Ener |
-| 12269 | PS-012.269    | ESH              | Электрические ТЭНы                 | legacy_buy_template, thin_short_description               | ТЭН ESH 3,0 кВт для бойлера 1 1/2                    | Нагревательный элемент (ТЭН) ESH мощностью 3,0 кВт — это надежное решение для систем горячего водоснабжения и отопления. Данная модель специально разработана для установки в бойлер |
-| 12271 | PS-012.271    | ESH              | Электрические ТЭНы                 | legacy_buy_template, thin_short_description               | ТЭН ESH 6,0 кВт для бойлера 1 1/2                    | ТЭН ESH 6,0 кВт для бойлера 1 1/2" — Мощное решение для быстрого нагреваЭлектрический нагревательный элемент (ТЭН) серии ESH мощностью 6,0 кВт предназначен для установки в бойлеры  |
-| 17002 | KOTLOV-004724 | Ferguss          | Печи-камины                        | legacy_buy_template, thin_short_description               | Ferguss Печь Ferguss L (8606107095288) /Lawa Cook... | Печь Ferguss L из серии Lawa Cook предлагает надёжное и эффективное решение для отопления помещений, где требуется стабильное поддержание комфортной температуры. Данная модель идеа |
-| 13327 | KOTLOV-001049 | Firelight        | Электрические камины               | legacy_buy_template, thin_short_description               | Firelight BFP/W-110                                  | Электрокамин Firelight BFP/W-110 представляет собой отопительное и декоративное устройство из категории электрокаминов. Модель разработана брендом Firelight, специализирующимся на  |
-| 11625 | PS-011.625    | Gas Spezialisten | Сигнализаторы загазованности       | legacy_buy_template, thin_short_description               | Сигнализатор загазованности комбинированный КМ-81    | Сигнализатор загазованности КМ-81 предназначен исключительно для бытового применения . Прибор обеспечивает автоматический контроль содержания горючих газов (природного, сжиженного  |
-| 11962 | PS-011.962    | Greolit          | Твердотопливные                    | legacy_buy_template, thin_short_description               | Уличный твердотопливный котел GREOLIT STREET 95H     | Уличный котел Street 95 квт предназначен для отопления зданий и помещений дровами, торфобрикетом, углем. Не требует установки в помещении. Монтируется снаружи здания, не требует сд |
-| 11963 | PS-011.963    | Greolit          | Твердотопливные                    | legacy_buy_template, thin_short_description               | Твердотопливный котел Greolit DEEP (15 кВт)          | Котлы типа DEEP – твердотопливные котлы длительного горения. Предназначены для отопления домов и коммунально-бытовых помещений. Диапазон мощности: 15-25 кВт. Конвекционная часть ко |
-| 11964 | PS-011.964    | Greolit          | Твердотопливные                    | legacy_buy_template, thin_short_description               | Твердотопливный котел Greolit DEEP (20 кВт)          | Котлы типа DEEP – твердотопливные котлы длительного горения. Предназначены для отопления домов и коммунально-бытовых помещений. Диапазон мощности: 15-25 кВт. Конвекционная часть ко |
-| 11965 | PS-011.965    | Greolit          | Твердотопливные                    | legacy_buy_template, thin_short_description               | Твердотопливный котел Greolit DEEP (25 кВт)          | Котлы типа DEEP – твердотопливные котлы длительного горения. Предназначены для отопления домов и коммунально-бытовых помещений. Диапазон мощности: 15-25 кВт. Конвекционная часть ко |
-| 11966 | PS-011.966    | Greolit          | Твердотопливные                    | legacy_buy_template, thin_short_description               | Твердотопливный котел Greolit MASTER (20 кВт)        | Котлы типа MASTER- твердотопливные котлы длительного горения: флагманская модель, которая уже много лет пользуется популярностью на рынке. Качество котла проверено более 5000 потре |
-| 11967 | PS-011.967    | Greolit          | Твердотопливные                    | legacy_buy_template, thin_short_description               | Твердотопливный котел Greolit MASTER (25 кВт)        | Котлы типа MASTER- твердотопливные котлы длительного горения: флагманская модель, которая уже много лет пользуется популярностью на рынке. Качество котла проверено более 5000 потре |
-| 11968 | PS-011.968    | Greolit          | Твердотопливные                    | legacy_buy_template, thin_short_description               | Твердотопливный котел Greolit PROFI (50 кВт) NEW!    | Котлы типа PROFI- твердотопливные котлы длительного горения. Предназначены для отопления домов, коммунально-бытовых, производственных помещений. Диапазон мощности: 15-250 кВт. В ба |
-| 11969 | PS-011.969    | Greolit          | Твердотопливные                    | legacy_buy_template, thin_short_description               | Твердотопливный котел Greolit PROFI (70 кВт) NEW!    | Котлы типа PROFI- твердотопливные котлы длительного горения. Предназначены для отопления домов, коммунально-бытовых, производственных помещений. Диапазон мощности: 15-250 кВт. В ба |
-| 11970 | PS-011.970    | Greolit          | Твердотопливные                    | legacy_buy_template, thin_short_description               | Твердотопливный котел Greolit PROFI (80 кВт) NEW!    | Котлы типа PROFI- твердотопливные котлы длительного горения. Предназначены для отопления домов, коммунально-бытовых, производственных помещений. Диапазон мощности: 15-250 кВт. В ба |
-| 11971 | PS-011.971    | Greolit          | Твердотопливные                    | legacy_buy_template, thin_short_description               | Твердотопливный котел Greolit PROFI (95 кВт) NEW!    | Котлы типа PROFI- твердотопливные котлы длительного горения. Предназначены для отопления домов, коммунально-бытовых, производственных помещений. Диапазон мощности: 15-250 кВт. В ба |
-| 11972 | PS-011.972    | Greolit          | Твердотопливные                    | legacy_buy_template, thin_short_description               | Твердотопливный котел Greolit PROFI (99 кВт) NEW!    | Котлы типа PROFI- твердотопливные котлы длительного горения. Предназначены для отопления домов, коммунально-бытовых, производственных помещений. Диапазон мощности: 15-250 кВт. В ба |
-| 10397 | PS-010.397    | Hotta            | Тепловые насосы                    | legacy_buy_template, thin_short_description               | Тепловой насос Hotta Flamingo воздух-вода FLM30-R32  | Одно из лучших и современных предложений на отопительном рынке!!! У нас есть возможность представить на белорусском рынке инновационные тепловые насосы торговой марки Hotta, которы |
-| 10398 | PS-010.398    | Hotta            | Тепловые насосы                    | legacy_buy_template, thin_short_description               | Тепловой насос Hotta Flamingo воздух-вода FLM40-R32  | Одно из лучших и современных предложений на отопительном рынке!!!У нас есть возможность представить на белорусском рынке инновационные тепловые насосы торговой марки Hotta, которые |
-| 11175 | PS-011.175    | Hotta            | Тепловые насосы                    | legacy_buy_template, thin_short_description               | Тепловой насос NL-FLM50-190II/R290                   | Тепловой насос «Flamingo NL-FLM50-190II/R290, 19 кВт» – высокая температура подачи до 80 °C для традиционных радиаторных систем Высокотемпературный тепловой насос воздух–вода «Flam |
-| 11176 | PS-011.176    | Hotta            | Тепловые насосы                    | legacy_buy_template, thin_short_description               | Тепловой насос NL-FLM50-160II/R290                   | Тепловой насос «Flamingo NL-FLM50-160II/R290, 16 кВт» – высокая температура подачи до 80 °C для традиционных радиаторных систем Высокотемпературный тепловой насос воздух–вода «Flam |
-| 11257 | PS-011.257    | Hotta            | Тепловые насосы                    | legacy_buy_template, thin_short_description               | Тепловой насос Hotta Olympus R32 12.5 кВт            | Тепловые насосы - самый современный источник тепла на текущий момент. Благодаря своему устройству они могут преобразовывать тепловую энергию окружающей среды в энергию для отоплени |
-| 17031 | KOTLOV-004753 | Invicta          | Каминные топки                     | legacy_buy_template, thin_short_description               | Invicta Топка каминная FIREPLACE 1100 GUILLOTINE ... | Каминная топка Invicta FIREPLACE 1100 GUILLOTINE (P681144) создана для тех, кто ценит современный дизайн и стремится превратить классический очаг в эффектный элемент интерьера. Эта |
-| 17033 | KOTLOV-004755 | Invicta          | Каминные топки                     | legacy_buy_template, thin_short_description               | Invicta Топка каминная FIREPLACE 700 COMPACT VALV... | Каминная топка Invicta FIREPLACE 700 COMPACT VALVE (P927475) — это решение для создания уютного и респектабельного домашнего очага. Модель предназначена для владельцев загородных д |
-| 16986 | KOTLOV-004708 | KARINA           | Электрокаменки                     | legacy_buy_template, thin_short_description               | Электрическая печь KARINA Nova 6E                    | Товар доступен к заказу. Актуальная цена и наличие указаны на странице; дополнительные параметры можно уточнить у менеджера.Вы можете купить данный товар в %city% с доставкой по вс |
-| 16987 | KOTLOV-004709 | KARINA           | Электрокаменки                     | legacy_buy_template, thin_short_description               | ТЭН для электрокаменки KARINA Optima/Steam 2,5; 7... | Товар доступен к заказу. Актуальная цена и наличие указаны на странице; дополнительные параметры можно уточнить у менеджера.Вы можете купить данный товар в %city% с доставкой по вс |
-| 12148 | PS-012.148    | Kentatsu         | Электрические                      | legacy_buy_template, thin_short_description               | Электрический котел Kentatsu Nobby Electro KBO-07    | Электрический настенный котёл Kentatsu Nobby Electro KBO-07 Kentatsu Nobby Electro KBO-07 – это современный одноконтурный электрический котёл для отопления жилых и коммерческих пом |
-| 12149 | PS-012.149    | Kentatsu         | Электрические                      | legacy_buy_template, thin_short_description               | Электрический котел Kentatsu Nobby Electro KBX‑09    | Электрический настенный котёл Kentatsu NOBBY ELECTRO KBX-09 Kentatsu NOBBY ELECTRO KBX-09 – это современный одноконтурный электрический котёл для отопления жилых и коммерческих пом |
-| 20835 | KOTLOV-006001 | Kiturami         | Газовые                            | thin_content, thin_short_description                      | Kiturami HOMSYS World Alpha E-24 настенный газовы... | 2-контурный, турбо, 24кВт, с выносным пультом и дымоходом                                                                                                                            |
-| 11177 | PS-011.177    | KOTLOV           | Тепловые насосы                    | legacy_buy_template, thin_short_description               | Тепловой насос NL-FLM30-130II/R290                   | Тепловой насос «Flamingo NL-FLM30-130II/R290, 12,8 кВт» – высокая температура подачи до 80 °C для традиционных радиаторных систем Высокотемпературный тепловой насос воздух–вода «Fl |
-| 12184 | PS-012.184    | KOTLOV           | Пеллетные горелки                  | legacy_buy_template, thin_short_description               | Пеллетная горелка KOTLOV XO Mini 10 кВт              | Пеллетная горелка KOTLOV XO MINI 10 кВт – компактное и эффективное решение для отопления Пеллетная горелка KOTLOV XO MINI 10 предназначена для установки в водогрейные пеллетные кот |
-| 12185 | PS-012.185    | KOTLOV           | Пеллетные горелки                  | legacy_buy_template, thin_short_description               | Пеллетная горелка KOTLOV XO Mini 15 кВт              | Пеллетная горелка KOTLOV XO MINI 15 кВт – мощность и надёжность в компактном исполнении Пеллетная горелка KOTLOV XO MINI 15 предназначена для установки в водогрейные пеллетные котл |
-| 12187 | PS-012.187    | KOTLOV           | Пеллетные горелки                  | legacy_buy_template, thin_short_description               | Пеллетная горелка KOTLOV XO  EVO 18 кВт (EA140)      | Пеллетная горелка KOTLOV XO EVO 18 кВт EA140 — компактное, эффективное и интеллектуальное отопление Модель KOTLOV XO EVO 18 кВт EA140 — это автоматическая факельная пеллетная горел |
-| 12188 | PS-012.188    | KOTLOV           | Пеллетные горелки                  | legacy_buy_template, thin_short_description               | Пеллетная горелка KOTLOV XO  EVO 26 кВт (EВ140)      | Пеллетная горелка KOTLOV XO EVO 26 кВт EВ140 — компактное, эффективное и интеллектуальное отопление Модель KOTLOV XO EVO 26 кВт EВ140 — это автоматическая факельная пеллетная горел |
-| 12189 | PS-012.189    | KOTLOV           | Пеллетные горелки                  | legacy_buy_template, thin_short_description               | Пеллетная горелка KOTLOV XO EVO 26 кВт (EВ140) Pl... | Пеллетная горелка KOTLOV XO EVO 26 кВт (EВ140) Plum 860 — современное решение для автоматизированного отопления Модель KOTLOV XO EVO 26 кВт (EВ140) Plum 860 — это усовершенствованн |
-+-------+---------------+------------------+------------------------------------+-----------------------------------------------------------+------------------------------------------------------+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+ .github/server-artisan-result.md | 211 +++++++++++++++++++++++++++++++++++----
+ .github/server-artisan-task.json |   6 +-
+ 2 files changed, 194 insertions(+), 23 deletions(-)
+[1/50] #2546 PS-002.546 Радиатор Royal Thermo Revolution 350
+[2/50] #2547 PS-002.547 Радиатор Royal Thermo Revolution 500
+[3/50] #2548 PS-002.548 Радиатор Royal Thermo BiLiner 500
+[4/50] #2550 PS-002.550 Радиатор Royal Thermo BiLiner Inox 350
+[5/50] #2551 PS-002.551 Радиатор Royal Thermo BiLiner Inox 500
+[6/50] #2552 PS-002.552 Радиатор Royal Thermo DreamLiner 500
+[7/50] #2554 PS-002.554 Радиатор Royal Thermo Revolution Bimetall 500
+[8/50] #2555 PS-002.555 Радиатор Royal Thermo Revolution Bimetall 350
+[9/50] #3818 PS-003.818 Присоединительный набор Royal Thermo (для радиатора) 1/2
+[10/50] #3819 PS-003.819 Крепление для радиатора (кронштейн угловой)
+[11/50] #4106 PS-004.106 Присоединительный набор Royal Thermo (для радиатора) 3/4
+[12/50] #4495 PS-004.495 Напольное крепление Royal Thermo
+[13/50] #4560 PS-004.560 Радиатор Royal Thermo PianoForte 500
+[14/50] #4612 PS-004.612 Крепление для радиатора с дюбелем (пара)
+[15/50] #7049 PS-007.049 Радиатор Royal Thermo PianoForte 500 Silver Satin
+[16/50] #9181 PS-009.181 Радиатор Royal Thermo Piano Forte Tower 500 (18 секций)
+[17/50] #9182 PS-009.182 Радиатор Royal Thermo Piano Forte Tower 500 (22 секции)
+[18/50] #9183 PS-009.183 Радиатор Royal Thermo Indigo 500
+[19/50] #9865 PS-009.865 Радиатор Royal Thermo Monoblock B 100 500
+[20/50] #10220 PS-010.220 Бойлер косвенного нагрева Royal Thermo AQUATEC INOX-F 80 литров
+[21/50] #10221 PS-010.221 Бойлер косвенного нагрева Royal Thermo AQUATEC INOX-F 100 настенный
+[22/50] #10831 PS-010.831 Электрокамин Royal Flame Astra 50 RF
+[23/50] #10889 PS-010.889 Электрокамин Royal Flame Vision 30 EF LED FX
+[24/50] #12272 PS-012.272 Бойлер косвенного нагрева Royal Thermo AQUATEC INOX-F 80 настенный
+[25/50] #12273 PS-012.273 Бойлер косвенного нагрева Royal Thermo AQUATEC INOX RTWX-F 100.1 настенный су...
+[26/50] #12274 PS-012.274 Бойлер косвенного нагрева Royal Thermo AQUATEC INOX RTWX-F 100.1 GRAFIT насте...
+[27/50] #12275 PS-012.275 Бойлер косвенного нагрева Royal Thermo AQUATEC INOX RTWX 100 напольный
+[28/50] #12725 KOTLOV-000447 Royal Thermo RTPI-09HN8
+[29/50] #12729 KOTLOV-000451 Royal Thermo RTSI-07HN8
+[30/50] #12732 KOTLOV-000454 Royal Thermo RTSI-18HN8
+[31/50] #12754 KOTLOV-000476 Royal Thermo RTB-24HN1_V2
+[32/50] #13040 KOTLOV-000762 Royal Thermo RCHC/M-502
+[33/50] #13041 KOTLOV-000763 Royal Thermo RCHC/M-500
+[34/50] #13043 KOTLOV-000765 Royal Thermo RCHC/M-2000
+[35/50] #13045 KOTLOV-000767 Royal Thermo RCHC/M-1500
+[36/50] #13046 KOTLOV-000768 Royal Thermo RCHC/M-1002
+[37/50] #13047 KOTLOV-000769 Royal Thermo RCHC/M-1000
+[38/50] #13050 KOTLOV-000772 Royal Thermo RCHC/E-2002
+[39/50] #13051 KOTLOV-000773 Royal Thermo RCHC/E-2000
+[40/50] #13052 KOTLOV-000774 Royal Thermo RCHC/E-1502
+[41/50] #13053 KOTLOV-000775 Royal Thermo RCHC/E-1500
+[42/50] #13108 KOTLOV-000830 Радиатор биметаллический Royal Thermo Indigo B 500 - 4 секц.
+[43/50] #13109 KOTLOV-000831 Радиатор биметаллический Royal Thermo Indigo B 500 - 6 секц.
+[44/50] #13110 KOTLOV-000832 Радиатор биметаллический Royal Thermo Indigo B 500 - 8 секц.
+[45/50] #13111 KOTLOV-000833 Радиатор биметаллический Royal Thermo Indigo B 500 - 10 секц.
+[46/50] #13337 KOTLOV-001059 Royal Thermo Allira RTFP/W-AL40LS
+[47/50] #13345 KOTLOV-001067 Очаг паровой электрический Royal Thermo RTFP/P1000M 3D Cassette Mystery
+[48/50] #13673 KOTLOV-001395 Радиатор алюминиевый Royal Thermo MONOBLOCK A 500 – 4 секц.
+[49/50] #13676 KOTLOV-001398 Радиатор алюминиевый Royal Thermo MONOBLOCK A 500 – 10 секц.
+[50/50] #13680 KOTLOV-001402 Радиатор алюминиевый Royal Thermo MONOBLOCK A 500 2.0 – 8 секц.
+DRY RUN: database will not be changed.
++------------------------------+-------+
+| metric                       | count |
++------------------------------+-------+
+| checked                      | 50    |
+| changed                      | 38    |
+| written                      | 0     |
+| images_removed               | 0     |
+| styles_removed               | 0     |
+| bad_blocks_removed           | 0     |
+| legacy_buy_templates_removed | 76    |
+| videos_extracted             | 0     |
+| documents_extracted          | 0     |
+| seo_rewritten                | 6     |
++------------------------------+-------+
++-------+---------------+--------------+------------------------------------------------------------------------+
+| ID    | SKU           | Brand        | Product                                                                |
++-------+---------------+--------------+------------------------------------------------------------------------+
+| 2546  | PS-002.546    | Royal Thermo | Радиатор Royal Thermo Revolution 350                                   |
+| 2551  | PS-002.551    | Royal Thermo | Радиатор Royal Thermo BiLiner Inox 500                                 |
+| 2552  | PS-002.552    | Royal Thermo | Радиатор Royal Thermo DreamLiner 500                                   |
+| 2554  | PS-002.554    | Royal Thermo | Радиатор Royal Thermo Revolution Bimetall 500                          |
+| 2555  | PS-002.555    | Royal Thermo | Радиатор Royal Thermo Revolution Bimetall 350                          |
+| 3818  | PS-003.818    | Royal Thermo | Присоединительный набор Royal Thermo (для радиатора) 1/2               |
+| 3819  | PS-003.819    | Royal Thermo | Крепление для радиатора (кронштейн угловой)                            |
+| 4106  | PS-004.106    | Royal Thermo | Присоединительный набор Royal Thermo (для радиатора) 3/4               |
+| 4612  | PS-004.612    | Royal Thermo | Крепление для радиатора с дюбелем (пара)                               |
+| 7049  | PS-007.049    | Royal Thermo | Радиатор Royal Thermo PianoForte 500 Silver Satin                      |
+| 9181  | PS-009.181    | Royal Thermo | Радиатор Royal Thermo Piano Forte Tower 500 (18 секций)                |
+| 9182  | PS-009.182    | Royal Thermo | Радиатор Royal Thermo Piano Forte Tower 500 (22 секции)                |
+| 9183  | PS-009.183    | Royal Thermo | Радиатор Royal Thermo Indigo 500                                       |
+| 9865  | PS-009.865    | Royal Thermo | Радиатор Royal Thermo Monoblock B 100 500                              |
+| 10220 | PS-010.220    | Royal Thermo | Бойлер косвенного нагрева Royal Thermo AQUATEC INOX-F 80 литров        |
+| 10221 | PS-010.221    | Royal Thermo | Бойлер косвенного нагрева Royal Thermo AQUATEC INOX-F 100 настенный    |
+| 10831 | PS-010.831    | Royal Thermo | Электрокамин Royal Flame Astra 50 RF                                   |
+| 10889 | PS-010.889    | Royal Thermo | Электрокамин Royal Flame Vision 30 EF LED FX                           |
+| 12273 | PS-012.273    | Royal Thermo | Бойлер косвенного нагрева Royal Thermo AQUATEC INOX RTWX-F 100.1 на... |
+| 12274 | PS-012.274    | Royal Thermo | Бойлер косвенного нагрева Royal Thermo AQUATEC INOX RTWX-F 100.1 GR... |
+| 12275 | PS-012.275    | Royal Thermo | Бойлер косвенного нагрева Royal Thermo AQUATEC INOX RTWX 100 напольный |
+| 12729 | KOTLOV-000451 | Royal Thermo | Royal Thermo RTSI-07HN8                                                |
+| 12732 | KOTLOV-000454 | Royal Thermo | Royal Thermo RTSI-18HN8                                                |
+| 12754 | KOTLOV-000476 | Royal Thermo | Royal Thermo RTB-24HN1_V2                                              |
+| 13041 | KOTLOV-000763 | Royal Thermo | Royal Thermo RCHC/M-500                                                |
+| 13045 | KOTLOV-000767 | Royal Thermo | Royal Thermo RCHC/M-1500                                               |
+| 13046 | KOTLOV-000768 | Royal Thermo | Royal Thermo RCHC/M-1002                                               |
+| 13047 | KOTLOV-000769 | Royal Thermo | Royal Thermo RCHC/M-1000                                               |
+| 13051 | KOTLOV-000773 | Royal Thermo | Royal Thermo RCHC/E-2000                                               |
+| 13052 | KOTLOV-000774 | Royal Thermo | Royal Thermo RCHC/E-1502                                               |
+| 13053 | KOTLOV-000775 | Royal Thermo | Royal Thermo RCHC/E-1500                                               |
+| 13108 | KOTLOV-000830 | Royal Thermo | Радиатор биметаллический Royal Thermo Indigo B 500 - 4 секц.           |
+| 13110 | KOTLOV-000832 | Royal Thermo | Радиатор биметаллический Royal Thermo Indigo B 500 - 8 секц.           |
+| 13111 | KOTLOV-000833 | Royal Thermo | Радиатор биметаллический Royal Thermo Indigo B 500 - 10 секц.          |
+| 13337 | KOTLOV-001059 | Royal Thermo | Royal Thermo Allira RTFP/W-AL40LS                                      |
+| 13345 | KOTLOV-001067 | Royal Thermo | Очаг паровой электрический Royal Thermo RTFP/P1000M 3D Cassette Mys... |
+| 13673 | KOTLOV-001395 | Royal Thermo | Радиатор алюминиевый Royal Thermo MONOBLOCK A 500 – 4 секц.            |
+| 13676 | KOTLOV-001398 | Royal Thermo | Радиатор алюминиевый Royal Thermo MONOBLOCK A 500 – 10 секц.           |
++-------+---------------+--------------+------------------------------------------------------------------------+
 
 ```
