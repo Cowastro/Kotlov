@@ -2,5 +2,5 @@
   "task": "optimize-clear",
   "artisan_args": "",
   "log_file": "storage/logs/server-artisan-menu-cache.log",
-  "run_id": "clear-menu-cache-20260711-1"
+  "run_id": "clear-brand-page-cache-20260711-1"
 }

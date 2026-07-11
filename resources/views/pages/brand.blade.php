@@ -87,13 +87,9 @@
     @if ($cleanContent)
         <section class="brand-detail-content-section flat-spacing">
             <div class="container">
-                <div class="row justify-content-center">
-                    <div class="col-lg-10">
-                        <article class="brand-detail-content delivery-card tf-rte">
-                            {!! $cleanContent !!}
-                        </article>
-                    </div>
-                </div>
+                <article class="brand-detail-content-panel brand-detail-content tf-rte">
+                    {!! $cleanContent !!}
+                </article>
             </div>
         </section>
     @endif
