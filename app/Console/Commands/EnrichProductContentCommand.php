@@ -26,6 +26,7 @@ class EnrichProductContentCommand extends Command
         {--require-source-context : Process only products with a linked supplier source_url}
         {--min-source-context-chars=0 : Skip products when parsed source description is shorter than this many characters}
         {--skip-root-source-context : Skip source URLs that point to a bare domain/home page}
+        {--allow-mojibake : Allow products with visibly broken text encoding in name/brand/category}
         {--openai : Use OPENAI_API_KEY/OPENAI_API_URL for this run when configured}
         {--ai-model= : Override AI model for this run}
         {--debug-ai : Print provider error/raw response when AI output cannot be parsed}
@@ -65,6 +66,7 @@ class EnrichProductContentCommand extends Command
         $useSourceContext = (bool) $this->option('source-context');
         $requireSourceContext = (bool) $this->option('require-source-context');
         $skipRootSourceContext = (bool) $this->option('skip-root-source-context');
+        $allowMojibake = (bool) $this->option('allow-mojibake');
         $sourceEnricher = $useSourceContext ? new ProductSourceEnricher() : null;
 
         $attributeCounts = DB::table('product_attribute_values')
@@ -158,6 +160,19 @@ class EnrichProductContentCommand extends Command
             $this->line(sprintf('[%d/%d] id=%d %s', $i + 1, $products->count(), $product->id, mb_substr($product->name, 0, 60)));
 
             try {
+                if (! $allowMojibake && $this->looksLikeMojibake(
+                    implode(' ', [
+                        (string) $product->name,
+                        (string) ($product->brand_name ?? ''),
+                        (string) ($product->category_name ?? ''),
+                    ])
+                )) {
+                    $this->line('  skipped: product text looks like broken encoding');
+                    $stats['skipped']++;
+                    usleep($sleepMs * 1000);
+                    continue;
+                }
+
                 $specs = $this->specsForProduct((int) $product->id, $product->specs);
                 $sourceContext = [];
 
@@ -192,6 +207,13 @@ class EnrichProductContentCommand extends Command
                             (int) ($source['description_chars'] ?? 0),
                             $minSourceContextChars
                         ));
+                        $stats['skipped']++;
+                        usleep($sleepMs * 1000);
+                        continue;
+                    }
+
+                    if (! $allowMojibake && $this->looksLikeMojibake(implode(' ', $sourceContext))) {
+                        $this->line('  skipped: source context looks like broken encoding');
                         $stats['skipped']++;
                         usleep($sleepMs * 1000);
                         continue;
@@ -345,6 +367,19 @@ class EnrichProductContentCommand extends Command
         $path = trim($path, '/');
 
         return $path === '';
+    }
+
+    private function looksLikeMojibake(string $value): bool
+    {
+        if ($value === '') {
+            return false;
+        }
+
+        if (preg_match('/(?:Đ|Ń|Â|Ð|Ñ|Рџ|Рђ|Р‘|РІ|Р°|Рµ|РЅ|Рѕ|Рї|Рр|СЃ|С‚)/u', $value)) {
+            return true;
+        }
+
+        return substr_count($value, '?') >= 3;
     }
 
     /**
