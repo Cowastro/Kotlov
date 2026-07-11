@@ -1,26 +1,29 @@
 # Server Artisan Result
 
-- Time: 2026-07-11 20:53:47 UTC
+- Time: 2026-07-11 20:58:43 UTC
 - Task: `artisan-dry-run`
-- Artisan args: `catalog:audit-menu --empty-only --limit=200`
+- Artisan args: `catalog:deactivate-empty-categories --limit=200`
 - Log file: ``
 - Exit code: `0`
 
 ```text
 From https://github.com/Cowastro/Kotlov
-   7097f7c..b5f3dac  main       -> origin/main
-Updating 7097f7c..b5f3dac
+   b5f3dac..f8b460b  main       -> origin/main
+Updating b5f3dac..f8b460b
 Fast-forward
- .github/server-artisan-result.md | 142 +++++++++++++++++++++++++++++++++++----
- .github/server-artisan-task.json |   4 +-
- 2 files changed, 131 insertions(+), 15 deletions(-)
-+-----------------------+-------+
-| metric                | count |
-+-----------------------+-------+
-| active_categories     | 160   |
-| empty_active_branches | 45    |
-| shown_rows            | 44    |
-+-----------------------+-------+
+ .github/server-artisan-result.md                   | 191 +++++++--------------
+ .github/server-artisan-task.json                   |   4 +-
+ .../DeactivateEmptyCatalogCategoriesCommand.php    | 139 +++++++++++++++
+ 3 files changed, 203 insertions(+), 131 deletions(-)
+ create mode 100644 app/Console/Commands/DeactivateEmptyCatalogCategoriesCommand.php
+DRY RUN: database will not be changed.
++-------------------+-------+
+| metric            | count |
++-------------------+-------+
+| active_categories | 160   |
+| empty_branches    | 44    |
+| shown_rows        | 44    |
++-------------------+-------+
 +-------+-----+--------+---------------------------------------+-------------------------------------+--------+--------+----------+
 | depth | id  | parent | slug                                  | name                                | direct | branch | children |
 +-------+-----+--------+---------------------------------------+-------------------------------------+--------+--------+----------+
@@ -69,5 +72,6 @@ Fast-forward
 | 1     | 367 | 195    | sistema-zashchity-ot-protechek        | Система защиты от протечек          | 0      | 0      | 0        |
 | 2     | 218 | 69     | metall-dlya-bani                      | Металлические                       | 0      | 0      | 0        |
 +-------+-----+--------+---------------------------------------+-------------------------------------+--------+--------+----------+
+Re-run with --apply to deactivate these empty category branches.
 
 ```
