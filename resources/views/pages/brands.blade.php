@@ -46,8 +46,8 @@
                 <div class="tf-grid-layout ssm-col-2 xl-col-4 gap-lg-30">
 
                     @foreach ($brands as $brand)
-                        <div class="category-v03 style-2 hover-img4 brand-grid-card">
-                            <a href="/brands/{{ $brand->slug }}" class="cate-image img-style4 brand-logo-frame">
+                        <div class="brand-grid-card">
+                            <a href="/brands/{{ $brand->slug }}" class="brand-logo-frame">
                                 @if ($brand->logo)
                                     <img loading="lazy" width="330" height="440"
                                         class="brand-logo-image"
@@ -63,8 +63,8 @@
                                     </div>
                                 @endif
                             </a>
-                            <div class="cate-content text-center">
-                                <a href="/brands/{{ $brand->slug }}" class="cate_name h5 fw-medium">
+                            <div class="brand-card-content text-center">
+                                <a href="/brands/{{ $brand->slug }}" class="brand-card-name h5 fw-medium">
                                     {{ $brand->name }}
                                     <i class="icon icon-ArrowUpRight1"></i>
                                 </a>

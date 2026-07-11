@@ -1055,6 +1055,7 @@ a.category-v05.subcat-tile:hover .cate-icon {
     display: flex;
     flex-direction: column;
     gap: 14px;
+    min-width: 0;
 }
 
 .brand-grid-card .brand-logo-frame {
@@ -1066,18 +1067,21 @@ a.category-v05.subcat-tile:hover .cate-icon {
     padding: 34px;
     background: #fff;
     border: 1px solid #f0f0f0;
+    border-radius: 12px;
+    overflow: hidden;
+    text-decoration: none;
+    transition: border-color .2s ease, transform .2s ease, box-shadow .2s ease;
 }
 
-.brand-grid-card .cate-content {
-    position: static;
-    left: auto;
-    right: auto;
-    bottom: auto;
+.brand-grid-card .brand-logo-frame:hover {
+    border-color: #dcdcdc;
+    box-shadow: 0 12px 30px rgba(0, 0, 0, .06);
+    transform: translateY(-2px);
 }
 
 .brand-grid-card .brand-logo-image {
-    width: 100% !important;
-    height: 100% !important;
+    width: auto !important;
+    height: auto !important;
     max-width: 82%;
     max-height: 68%;
     object-fit: contain !important;
@@ -1086,6 +1090,32 @@ a.category-v05.subcat-tile:hover .cate-icon {
 
 .brand-grid-card:hover .brand-logo-image {
     transform: none !important;
+}
+
+.brand-grid-card .brand-card-content {
+    min-height: 58px;
+}
+
+.brand-grid-card .brand-card-name {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    color: #111;
+    line-height: 1.25;
+    text-decoration: none;
+}
+
+.brand-grid-card .brand-card-name .icon {
+    font-size: 14px;
+    opacity: 0;
+    transform: translate(0, 2px);
+    transition: opacity .2s ease, transform .2s ease;
+}
+
+.brand-grid-card:hover .brand-card-name .icon {
+    opacity: 1;
+    transform: translate(2px, -1px);
 }
 
 .brand-grid-card .brand-logo-placeholder {
@@ -1107,8 +1137,21 @@ a.category-v05.subcat-tile:hover .cate-icon {
 
 @media (max-width: 575px) {
     .brand-grid-card .brand-logo-frame {
-        min-height: 170px;
-        padding: 24px;
+        min-height: 150px;
+        padding: 22px;
+    }
+
+    .brand-grid-card .brand-logo-image {
+        max-width: 86%;
+        max-height: 64%;
+    }
+
+    .brand-grid-card .brand-logo-placeholder {
+        min-height: 150px;
+    }
+
+    .brand-grid-card .brand-logo-placeholder span {
+        font-size: 42px;
     }
 }
 
