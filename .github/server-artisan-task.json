@@ -1,6 +1,6 @@
 {
-  "task": "artisan-dry-run",
-  "artisan_args": "products:sanitize-content-html --slug-like=teplov-i-suhov --not-archived --extract-media --restore-teplov-suhov-media --show-samples=5 --limit=20",
-  "log_file": "storage/logs/server-artisan-teplov-suhov-media-dry-run.log",
-  "run_id": "teplov-suhov-media-dry-run-20260711-2"
+  "task": "artisan-apply",
+  "artisan_args": "products:sanitize-content-html --apply --slug-like=teplov-i-suhov --not-archived --extract-media --restore-teplov-suhov-media --show-samples=5 --limit=0",
+  "log_file": "storage/logs/server-artisan-teplov-suhov-media-apply.log",
+  "run_id": "teplov-suhov-media-apply-20260711-1"
 }
