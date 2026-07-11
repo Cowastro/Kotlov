@@ -1,6 +1,6 @@
 # Server Artisan Result
 
-- Time: 2026-07-11 17:03:39 UTC
+- Time: 2026-07-11 17:05:47 UTC
 - Task: `tail-log`
 - Artisan args: ``
 - Log file: `storage/logs/product-seo-fill-missing-thin-safe-apply.log`
@@ -8,110 +8,12 @@
 
 ```text
 From https://github.com/Cowastro/Kotlov
-   8af6f7d..226327c  main       -> origin/main
-Updating 8af6f7d..226327c
+   226327c..f4dda87  main       -> origin/main
+Updating 226327c..f4dda87
 Fast-forward
- .github/server-artisan-result.md | 193 ++-------------------------------------
- .github/server-artisan-task.json |   6 +-
- 2 files changed, 13 insertions(+), 186 deletions(-)
-  source context: https://ligmet.by/
-  source context skipped: cURL error 6: Could not resolve host: ligmet.by (see https://curl.haxx.se/libcurl/c/libcurl-errors.html) for https://ligmet.by/
-  skipped: source URL points to a bare domain/home page
-[4/120] id=10791 Дверка ДП-1(Р) прочистная ДПр-2
-  source context: https://bania.by/kaminnoe-i-pechnoe-lite/chugunnye-dverki/dverka-dpr-r-prochistnaya-dpr-1 (182 chars, 0 specs)
-  specs available: 3
-  ✓ short_description saved
-[5/120] id=10807 Дверь каминная Kratki Maja 
-  source context: https://ligmet.by/
-  source context skipped: cURL error 6: Could not resolve host: ligmet.by (see https://curl.haxx.se/libcurl/c/libcurl-errors.html) for https://ligmet.by/
-  skipped: source URL points to a bare domain/home page
-[6/120] id=11141 Топка Мета-Бел Эльба 9 кВт ТКТ-9,0-01
-  source context: https://metabel.by/produktsiya (82 chars, 0 specs)
-  skipped: source context is too short (82 chars, min is 180)
-[7/120] id=11421 Дверь каминная ДК-02
-  source context: https://metabel.by/produktsiya (82 chars, 0 specs)
-  skipped: source context is too short (82 chars, min is 180)
-[8/120] id=11445 Топка каминная Skadi 11 кВт
-  source context: https://metabel.by/produktsiya (82 chars, 0 specs)
-  skipped: source context is too short (82 chars, min is 180)
-[9/120] id=11502 Печь-камин Мета-Бел Севан 7В (АОТ 7.0-05)
-  source context: https://metabel.by/produktsiya (82 chars, 0 specs)
-  skipped: source context is too short (82 chars, min is 180)
-[10/120] id=11503 Печь-камин Мета-Бел Леман (АОТ-6) (без пьедестала) 
-  source context: https://metabel.by/produktsiya (82 chars, 0 specs)
-  skipped: source context is too short (82 chars, min is 180)
-[11/120] id=11525 Печь-камин Мета-Бел Дунай АОТ-11
-  source context: https://metabel.by/produktsiya (82 chars, 0 specs)
-  skipped: source context is too short (82 chars, min is 180)
-[12/120] id=11534 Твердотопливный котел Каракан 20ТЭГ 3
-  source context: https://stenbel.by/katalog/kotlyi-tverdotoplivnyie/karakan/kotel-tverdotoplivnyij-karakan-20teg-3.html (104 chars, 36 specs)
-  skipped: source context is too short (104 chars, min is 180)
-[13/120] id=11560 Топка каминная ТКТ 10.0-05 (в модификации Аврора М)
-  source context: https://metabel.by/produktsiya (82 chars, 0 specs)
-  skipped: source context is too short (82 chars, min is 180)
-[14/120] id=11628 Каминная топка Мета-Бел Аврора С
-  source context: https://metabel.by/produktsiya (82 chars, 0 specs)
-  skipped: source context is too short (82 chars, min is 180)
-[15/120] id=11630 Каминная топка Мета-Бел Аврора С2 (туннельная) 
-  source context: https://metabel.by/produktsiya (82 chars, 0 specs)
-  skipped: source context is too short (82 chars, min is 180)
-[16/120] id=11688 Печь-камин Мета-Бел Севан 7
-  source context: https://metabel.by/produktsiya (82 chars, 0 specs)
-  skipped: source context is too short (82 chars, min is 180)
-[17/120] id=11773 Банная печь Мета-Бел ПБМ 20 LUX
-  source context: https://metabel.by/produktsiya (82 chars, 0 specs)
-  skipped: source context is too short (82 chars, min is 180)
-[18/120] id=11836 Печь-камин Мета-Бел Монблан АОТ-10
-  source context: https://metabel.by/produktsiya (82 chars, 0 specs)
-  skipped: source context is too short (82 chars, min is 180)
-[19/120] id=11837 Печь-камин Мета-Бел Дунай-Аква 
-  source context: https://metabel.by/produktsiya (82 chars, 0 specs)
-  skipped: source context is too short (82 chars, min is 180)
-[20/120] id=11848 КПД ЧЕРНЫЙ Розета 0,7мм ф150
-  source context: https://ligmet.by/
-  source context skipped: cURL error 6: Could not resolve host: ligmet.by (see https://curl.haxx.se/libcurl/c/libcurl-errors.html) for https://ligmet.by/
-  skipped: source URL points to a bare domain/home page
-[21/120] id=11849 КПД ЧЕРНЫЙ Труба 250мм 2мм ф150
-  source context: https://ligmet.by/
-  source context skipped: cURL error 6: Could not resolve host: ligmet.by (see https://curl.haxx.se/libcurl/c/libcurl-errors.html) for https://ligmet.by/
-  skipped: source URL points to a bare domain/home page
-[22/120] id=11914 Печь-камин Мета-Бел Нарочь АОТ-07
-  source context: https://metabel.by/produktsiya (82 chars, 0 specs)
-  skipped: source context is too short (82 chars, min is 180)
-[23/120] id=11915 Печь-камин Мета-Бел Нарочь АОТ-07 В
-  source context: https://metabel.by/produktsiya (82 chars, 0 specs)
-  skipped: source context is too short (82 chars, min is 180)
-[24/120] id=12005 Котел твердотопливный Каракан 10ТПЭ-3
-  source context: https://stenbel.by/katalog/kotlyi-tverdotoplivnyie/karakan/tverdotoplivnyij-kotel-karakan-10tpe-3.html (3565 chars, 29 specs)
-  specs available: 40
-  ✓ short_description saved
-[25/120] id=12050 Печь банная Мета-Бел ПБМ 20 ПС
-  source context: https://metabel.by/produktsiya (82 chars, 0 specs)
-  skipped: source context is too short (82 chars, min is 180)
-[26/120] id=12051 Печь-камин Мета-бел Монблан 2С
-  source context: https://metabel.by/produktsiya (82 chars, 0 specs)
-  skipped: source context is too short (82 chars, min is 180)
-[27/120] id=12052 Печь-камин Мета-Бел Селена 7
-  source context: https://metabel.by/produktsiya (82 chars, 0 specs)
-  skipped: source context is too short (82 chars, min is 180)
-[28/120] id=12053 Печь-камин БАЙКАЛ Мета-Бел
-  source context: https://metabel.by/produktsiya (82 chars, 0 specs)
-  skipped: source context is too short (82 chars, min is 180)
-[29/120] id=12054 Топка каминная Мета-Бел Fenix 1
-  source context: https://metabel.by/produktsiya (82 chars, 0 specs)
-  skipped: source context is too short (82 chars, min is 180)
-[30/120] id=12055 Топка каминная Мета-Бел Fenix 1L
-  source context: https://metabel.by/produktsiya (82 chars, 0 specs)
-  skipped: source context is too short (82 chars, min is 180)
-[31/120] id=12056 Топка каминная Мета-Бел Fenix 1R
-  source context: https://metabel.by/produktsiya (82 chars, 0 specs)
-  skipped: source context is too short (82 chars, min is 180)
-[32/120] id=12093 Печь банная Мета-Бел ПБМ 20 (в модификации без стекла)
-  source context: https://metabel.by/produktsiya (82 chars, 0 specs)
-  skipped: source context is too short (82 chars, min is 180)
-[33/120] id=12094 Печь-камин Мета-Бел АНГАРА 12
-  source context: https://metabel.by/produktsiya (82 chars, 0 specs)
-  skipped: source context is too short (82 chars, min is 180)
+ .github/server-artisan-result.md | 177 +++++++++++++++++++++++++++++++++++++--
+ .github/server-artisan-task.json |   2 +-
+ 2 files changed, 169 insertions(+), 10 deletions(-)
 [34/120] id=12095 Топка каминная Мета-Бел СЕЛЕНА Т
   source context: https://metabel.by/produktsiya (82 chars, 0 specs)
   skipped: source context is too short (82 chars, min is 180)
@@ -174,5 +76,103 @@ Fast-forward
 [46/120] id=12290 Счетчик газа СГД-1-2-1-G2,5 (правый) L=110
   source context: https://elicon.by/product/sgd-1-2-1-g25r/ (720 chars, 1 specs)
   specs available: 18
+  ✓ short_description saved
+[47/120] id=12291 Счетчик газа СГД-1-2-2-G1,6 (левый) L=110
+  source context: https://elicon.by/product/sgd-1-2-2-g1-6/ (723 chars, 1 specs)
+  specs available: 18
+  ✓ short_description saved
+[48/120] id=12292 Счетчик газа СГД-1-2-2-G2,5 (левый) L=110
+  source context: https://elicon.by/product/sgd-1-2-2-g2-5/ (725 chars, 1 specs)
+  specs available: 18
+  ✓ short_description saved
+[49/120] id=12293 Счетчик газа ультразвуковой “СКАТ”- G10
+  source context: https://elicon.by/product/%d1%81%d1%87%d0%b5%d1%82%d1%87%d0%b8%d0%ba-%d0%b3%d0%b0%d0%b7%d0%b0-%d1%83%d0%bb%d1%8c%d1%82%d1%80%d0%b0%d0%b7%d0%b2%d1%83%d0%ba%d0%be%d0%b2%d0%be%d0%b9-%d1%81%d0%ba%d0%b0%d1%82-g10/ (2553 chars, 13 specs)
+  specs available: 18
+  ✓ short_description saved
+[50/120] id=12294 Счетчик газа ультразвуковой “СКАТ”- G10 R
+  source context: https://elicon.by/product/%d1%81%d1%87%d0%b5%d1%82%d1%87%d0%b8%d0%ba-%d0%b3%d0%b0%d0%b7%d0%b0-%d1%83%d0%bb%d1%8c%d1%82%d1%80%d0%b0%d0%b7%d0%b2%d1%83%d0%ba%d0%be%d0%b2%d0%be%d0%b9-%d1%81%d0%ba%d0%b0%d1%82-g10-r/ (2573 chars, 13 specs)
+  specs available: 19
+  ✓ short_description saved
+[51/120] id=12295 Счетчик газа ультразвуковой “СКАТ”- G10 RP
+  source context: https://elicon.by/product/%d1%81%d1%87%d0%b5%d1%82%d1%87%d0%b8%d0%ba-%d0%b3%d0%b0%d0%b7%d0%b0-%d1%83%d0%bb%d1%8c%d1%82%d1%80%d0%b0%d0%b7%d0%b2%d1%83%d0%ba%d0%be%d0%b2%d0%be%d0%b9-%d1%81%d0%ba%d0%b0%d1%82-g10-rp/
+  source context skipped: HTTP request returned status code 404:
+<!DOCTYPE html>
+<html lang="ru-RU">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="wid (truncated...)
+
+  skipped: source context is too short (0 chars, min is 180)
+[52/120] id=12296 Счетчик газа ультразвуковой “СКАТ”- G10 В
+  source context: https://elicon.by/product/%d1%81%d1%87%d0%b5%d1%82%d1%87%d0%b8%d0%ba-%d0%b3%d0%b0%d0%b7%d0%b0-%d1%83%d0%bb%d1%8c%d1%82%d1%80%d0%b0%d0%b7%d0%b2%d1%83%d0%ba%d0%be%d0%b2%d0%be%d0%b9-%d1%81%d0%ba%d0%b0%d1%82-g10-%d0%b2/ (2553 chars, 13 specs)
+  specs available: 19
+  ✓ short_description saved
+[53/120] id=12297 Счетчик газа ультразвуковой “СКАТ”- G6 B
+  source context: https://elicon.by/product/%d1%81%d1%87%d0%b5%d1%82%d1%87%d0%b8%d0%ba-%d0%b3%d0%b0%d0%b7%d0%b0-%d1%83%d0%bb%d1%8c%d1%82%d1%80%d0%b0%d0%b7%d0%b2%d1%83%d0%ba%d0%be%d0%b2%d0%be%d0%b9-%d1%81%d0%ba%d0%b0%d1%82-g6-b/ (2573 chars, 13 specs)
+  specs available: 19
+  ✓ short_description saved
+[54/120] id=12298 Счетчик газа ультразвуковой “СКАТ”- G6 P
+  source context: https://elicon.by/product/%d1%81%d1%87%d0%b5%d1%82%d1%87%d0%b8%d0%ba-%d0%b3%d0%b0%d0%b7%d0%b0-%d1%83%d0%bb%d1%8c%d1%82%d1%80%d0%b0%d0%b7%d0%b2%d1%83%d0%ba%d0%be%d0%b2%d0%be%d0%b9-%d1%81%d0%ba%d0%b0%d1%82-g6-p/ (2533 chars, 13 specs)
+  specs available: 19
+  ✓ short_description saved
+[55/120] id=12299 Счетчик газа ультразвуковой “СКАТ”- G6 R
+  source context: https://elicon.by/product/%d1%81%d1%87%d0%b5%d1%82%d1%87%d0%b8%d0%ba-%d0%b3%d0%b0%d0%b7%d0%b0-%d1%83%d0%bb%d1%8c%d1%82%d1%80%d0%b0%d0%b7%d0%b2%d1%83%d0%ba%d0%be%d0%b2%d0%be%d0%b9-%d1%81%d0%ba%d0%b0%d1%82-g6-r/ (2598 chars, 13 specs)
+  specs available: 19
+  ✓ short_description saved
+[56/120] id=12300 Счетчик газа ультразвуковой “СКАТ”- G6 RKP
+  source context: https://elicon.by/product/%d1%81%d1%87%d0%b5%d1%82%d1%87%d0%b8%d0%ba-%d0%b3%d0%b0%d0%b7%d0%b0-%d1%83%d0%bb%d1%8c%d1%82%d1%80%d0%b0%d0%b7%d0%b2%d1%83%d0%ba%d0%be%d0%b2%d0%be%d0%b9-%d1%81%d0%ba%d0%b0%d1%82-g6-rkp/ (2598 chars, 13 specs)
+  specs available: 19
+  ✓ short_description saved
+[57/120] id=12301 Счетчик газа ультразвуковой ВЕГА G1.6
+  source context: https://elicon.by/product/vega-1-6/
+  source context skipped: HTTP request returned status code 404:
+<!DOCTYPE html>
+<html lang="ru-RU">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="wid (truncated...)
+
+  skipped: source context is too short (0 chars, min is 180)
+[58/120] id=12302 Счетчик газа ультразвуковой ВЕГА G1.6 В
+  source context: https://elicon.by/product/vega-1-6v/
+  source context skipped: HTTP request returned status code 404:
+<!DOCTYPE html>
+<html lang="ru-RU">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="wid (truncated...)
+
+  skipped: source context is too short (0 chars, min is 180)
+[59/120] id=12303 Счетчик газа ультразвуковой ВЕГА G2.5
+  source context: https://elicon.by/product/vega-g2-5/
+  source context skipped: HTTP request returned status code 404:
+<!DOCTYPE html>
+<html lang="ru-RU">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="wid (truncated...)
+
+  skipped: source context is too short (0 chars, min is 180)
+[60/120] id=12304 Счетчик газа ультразвуковой КАТА – G6 R-3
+  source context: https://elicon.by/product/%d1%81%d1%87%d0%b5%d1%82%d1%87%d0%b8%d0%ba-%d0%b3%d0%b0%d0%b7%d0%b0-%d1%83%d0%bb%d1%8c%d1%82%d1%80%d0%b0%d0%b7%d0%b2%d1%83%d0%ba%d0%be%d0%b2%d0%be%d0%b9-%d0%ba%d0%b0%d1%82%d0%b0-g6-r-3/ (1692 chars, 0 specs)
+  specs available: 6
+  ✓ short_description saved
+[61/120] id=12305 Счетчик газа ультразвуковой КАТА – G6 RК-1
+  source context: https://elicon.by/product/%d1%81%d1%87%d0%b5%d1%82%d1%87%d0%b8%d0%ba%d0%b8-%d0%b3%d0%b0%d0%b7%d0%b0-%d1%83%d0%bb%d1%8c%d1%82%d1%80%d0%b0%d0%b7%d0%b2%d1%83%d0%ba%d0%be%d0%b2%d1%8b%d0%b5-%d0%ba%d0%b0%d1%82%d0%b0-g6-rk-1/ (1332 chars, 19 specs)
+  specs available: 25
+  ✓ short_description saved
+[62/120] id=12306 Счетчик газа ультразвуковой КАТА G4 B-3
+  source context: https://elicon.by/product/%d1%81%d1%87%d0%b5%d1%82%d1%87%d0%b8%d0%ba-%d0%b3%d0%b0%d0%b7%d0%b0-%d1%83%d0%bb%d1%8c%d1%82%d1%80%d0%b0%d0%b7%d0%b2%d1%83%d0%ba%d0%be%d0%b2%d0%be%d0%b9-%d0%ba%d0%b0%d1%82%d0%b0-g4-b-3/ (1587 chars, 20 specs)
+  specs available: 26
+  ✓ short_description saved
+[63/120] id=12307 Счетчик газа ультразвуковой КАТА G4-3
+  source context: https://elicon.by/product/%d1%81%d1%87%d0%b5%d1%82%d1%87%d0%b8%d0%ba-%d0%b3%d0%b0%d0%b7%d0%b0-%d1%83%d0%bb%d1%8c%d1%82%d1%80%d0%b0%d0%b7%d0%b2%d1%83%d0%ba%d0%be%d0%b2%d0%be%d0%b9-%d0%ba%d0%b0%d1%82%d0%b0-g4-3/ (1583 chars, 1 specs)
+  specs available: 6
+  ✓ short_description saved
+[64/120] id=12308 Счетчик газа ультразвуковой КАТА-G4 В-1
+  source context: https://elicon.by/product/%d1%81%d1%87%d0%b5%d1%82%d1%87%d0%b8%d0%ba-%d0%b3%d0%b0%d0%b7%d0%b0-%d1%83%d0%bb%d1%8c%d1%82%d1%80%d0%b0%d0%b7%d0%b2%d1%83%d0%ba%d0%be%d0%b2%d0%be%d0%b9-%d0%ba%d0%b0%d1%82%d0%b0-g4-%d0%b2-1/ (1568 chars, 1 specs)
+  specs available: 7
+  ✓ short_description saved
+[65/120] id=12309 Счетчик газа ультразвуковой КАТА-G4 В-2
 
 ```
