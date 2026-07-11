@@ -28,6 +28,8 @@ class SanitizeProductContentHtmlCommand extends Command
         {--restore-teplov-suhov-media : Restore legacy Teplov i Suhov videos/docs from known slug groups}
         {--missing-media-only : Only products with empty video_url or documents}
         {--rewrite-seo : Regenerate short_description, content and meta_description with AI}
+        {--rewrite-seo-if-thin : With --rewrite-seo, regenerate only thin or legacy promo descriptions}
+        {--min-content-length=180 : Minimum plain-text content length for --rewrite-seo-if-thin}
         {--show-samples=0 : Show first N rows with detected media links}
         {--show-content-samples=0 : Show first N source content snippets for audit}
         {--offset=0 : Rows to skip after filters}
@@ -44,6 +46,8 @@ class SanitizeProductContentHtmlCommand extends Command
         $overwriteMedia = (bool) $this->option('overwrite-media');
         $restoreTeplovSuhovMedia = (bool) $this->option('restore-teplov-suhov-media');
         $rewriteSeo = (bool) $this->option('rewrite-seo');
+        $rewriteSeoIfThin = (bool) $this->option('rewrite-seo-if-thin');
+        $minContentLength = max(40, (int) $this->option('min-content-length'));
         $showSamples = max(0, (int) $this->option('show-samples'));
         $showContentSamples = max(0, (int) $this->option('show-content-samples'));
         $offset = max(0, (int) $this->option('offset'));
@@ -221,6 +225,8 @@ class SanitizeProductContentHtmlCommand extends Command
             }
             $updates = [];
             $rewroteSeo = false;
+            $shouldRewriteSeo = $rewriteSeo
+                && (! $rewriteSeoIfThin || $this->needsSeoRewrite((string) $row->content, $sanitized, $minContentLength));
 
             if (trim($original) !== trim($sanitized)) {
                 $updates['content'] = $sanitized;
@@ -242,7 +248,7 @@ class SanitizeProductContentHtmlCommand extends Command
             }
 
             if ($updates === []) {
-                if ($rewriteSeo) {
+                if ($shouldRewriteSeo) {
                     $updates = $this->seoUpdates($ai, $row);
                     $rewroteSeo = $updates !== [];
                     if ($updates !== [] && $sleep > 0) {
@@ -253,7 +259,7 @@ class SanitizeProductContentHtmlCommand extends Command
                 if ($updates === []) {
                     continue;
                 }
-            } elseif ($rewriteSeo) {
+            } elseif ($shouldRewriteSeo) {
                 $seoUpdates = $this->seoUpdates($ai, $row);
                 $updates = array_merge($updates, $seoUpdates);
                 $rewroteSeo = $seoUpdates !== [];
@@ -385,6 +391,19 @@ class SanitizeProductContentHtmlCommand extends Command
     private function countMatches(string $pattern, string $value): int
     {
         return preg_match_all($pattern, $value) ?: 0;
+    }
+
+    private function needsSeoRewrite(string $originalContent, string $sanitizedContent, int $minContentLength): bool
+    {
+        $plain = trim((string) preg_replace('/\s+/u', ' ', strip_tags($sanitizedContent)));
+        if ($plain === '' || mb_strlen($plain) < $minContentLength) {
+            return true;
+        }
+
+        return preg_match(
+            '/\b(подарок\s+при\s+покупке|наши\s+топки\s+принесут|мы\s+производим|обращайтесь\s+к\s+поставщикам|у\s+поставщиков|у\s+дилеров)\b/iu',
+            strip_tags($originalContent)
+        ) === 1;
     }
 
     private function hasScope(): bool
