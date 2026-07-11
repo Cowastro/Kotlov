@@ -54,7 +54,12 @@ class EnrichProductContentCommand extends Command
         $minSpecs = max(0, (int) ($this->option('min-specs') ?? 0));
         $only    = $this->option('only') ?? 'both';
 
+        $attributeCounts = DB::table('product_attribute_values')
+            ->select('product_id', DB::raw('COUNT(*) as attribute_rows'))
+            ->groupBy('product_id');
+
         $query = DB::table('products as p')
+            ->leftJoinSub($attributeCounts, 'pav_count', 'pav_count.product_id', '=', 'p.id')
             ->leftJoin('brands as b', 'p.brand_id', '=', 'b.id')
             ->leftJoin('categories as c', 'p.category_id', '=', 'c.id')
             ->where('p.is_archived', false);
@@ -88,6 +93,10 @@ class EnrichProductContentCommand extends Command
                       ->orWhere(fn ($w) => $w->whereNull('p.short_description')->orWhere('p.short_description', ''));
                 }
             });
+        }
+
+        if ($minSpecs > 0) {
+            $query->whereRaw('COALESCE(pav_count.attribute_rows, 0) >= ?', [$minSpecs]);
         }
 
         $query->orderBy('p.id');
