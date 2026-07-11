@@ -1,6 +1,6 @@
 {
-  "task": "optimize-clear",
-  "artisan_args": "",
-  "log_file": "storage/logs/server-artisan-haier-cache-clear.log",
-  "run_id": "haier-cache-clear-20260711-1"
+  "task": "artisan-dry-run",
+  "artisan_args": "products:audit-content-quality --not-archived --limit=80 --min-issues=2",
+  "log_file": "storage/logs/server-artisan-content-quality-audit-after-haier.log",
+  "run_id": "content-quality-audit-after-haier-20260711-1"
 }
