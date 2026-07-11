@@ -1,6 +1,6 @@
 # Server Artisan Result
 
-- Time: 2026-07-11 18:55:02 UTC
+- Time: 2026-07-11 18:57:22 UTC
 - Task: `tail-log`
 - Artisan args: ``
 - Log file: `storage/logs/product-content-fill-source-context-20260711-4.log`
@@ -8,50 +8,12 @@
 
 ```text
 From https://github.com/Cowastro/Kotlov
-   612ff93..eab5cb0  main       -> origin/main
-Updating 612ff93..eab5cb0
+   eab5cb0..0de117b  main       -> origin/main
+Updating eab5cb0..0de117b
 Fast-forward
- .github/server-artisan-result.md | 201 +++++++++++++++++++++++++--------------
+ .github/server-artisan-result.md | 330 +++++++++++++++++++--------------------
  .github/server-artisan-task.json |   2 +-
- 2 files changed, 128 insertions(+), 75 deletions(-)
-[58/120] id=13730 Радиатор биметаллический Royal Thermo PianoForte 500 Серебри
-  source context: https://rusklimat.by/ (90 chars, 7 specs)
-  skipped: source URL points to a bare domain/home page
-[59/120] id=13731 Радиатор биметаллический Royal Thermo PianoForte 500 Серебри
-  source context: https://rusklimat.by/ (90 chars, 7 specs)
-  skipped: source URL points to a bare domain/home page
-[60/120] id=13737 Радиатор Royal Thermo PianoForte 500 Bianco Traffico VDR80 -
-  source context: https://rusklimat.by/ (90 chars, 7 specs)
-  skipped: source URL points to a bare domain/home page
-[61/120] id=13765 Радиатор Royal Thermo PianoForte Tower 200 /Noir Sable - 18 
-  source context: https://rusklimat.by/ (90 chars, 7 specs)
-  skipped: source URL points to a bare domain/home page
-[62/120] id=13766 Радиатор Royal Thermo PianoForte Tower 200 /Noir Sable - 22 
-  source context: https://rusklimat.by/ (90 chars, 7 specs)
-  skipped: source URL points to a bare domain/home page
-[63/120] id=13767 Радиатор Royal Thermo PianoForte Tower 200 /Silver Satin - 1
-  source context: https://rusklimat.by/ (90 chars, 7 specs)
-  skipped: source URL points to a bare domain/home page
-[64/120] id=13768 Радиатор Royal Thermo PianoForte Tower 200 /Silver Satin - 2
-  source context: https://rusklimat.by/ (90 chars, 7 specs)
-  skipped: source URL points to a bare domain/home page
-[65/120] id=13769 Радиатор Royal Thermo PianoForte Tower 300 /Bianco Traffico 
-  source context: https://rusklimat.by/ (90 chars, 7 specs)
-  skipped: source URL points to a bare domain/home page
-[66/120] id=13771 Радиатор Royal Thermo PianoForte Tower 300 /Noir Sable - 18 
-  source context: https://rusklimat.by/ (90 chars, 7 specs)
-  skipped: source URL points to a bare domain/home page
-[67/120] id=13772 Радиатор Royal Thermo PianoForte Tower 300 /Noir Sable - 22 
-  source context: https://rusklimat.by/ (90 chars, 7 specs)
-  skipped: source URL points to a bare domain/home page
-[68/120] id=13773 Радиатор Royal Thermo PianoForte Tower 300 /Silver Satin - 1
-  source context: https://rusklimat.by/ (90 chars, 7 specs)
-  skipped: source URL points to a bare domain/home page
-[69/120] id=13775 Радиатор Royal Thermo PianoForte Tower 500 new/Bianco Traffi
-  source context: https://rusklimat.by/ (90 chars, 7 specs)
-  skipped: source URL points to a bare domain/home page
-[70/120] id=13777 Радиатор Royal Thermo PianoForte Tower 500 new/Silver Satin 
-  source context: https://rusklimat.by/ (90 chars, 7 specs)
+ 2 files changed, 166 insertions(+), 166 deletions(-)
   skipped: source URL points to a bare domain/home page
 [71/120] id=13779 Радиатор Royal Thermo PianoForte Tower 500 new/Noir Sable - 
   source context: https://rusklimat.by/ (90 chars, 7 specs)
@@ -174,5 +136,43 @@ Fast-forward
   source context: https://rusklimat.by/ (90 chars, 7 specs)
   skipped: source URL points to a bare domain/home page
 [111/120] id=15149 Радиатор панельный Royal Thermo VENTIL COMPACT VC22-300-400 
+  source context: https://rusklimat.by/ (90 chars, 7 specs)
+  skipped: source URL points to a bare domain/home page
+[112/120] id=15165 Дизайн-радиатор Royal Thermo Shift R22 C2050 - 12 секц. RAL9
+  source context: https://rusklimat.by/ (90 chars, 7 specs)
+  skipped: source URL points to a bare domain/home page
+[113/120] id=15166 Дизайн-радиатор Royal Thermo Shift R22 C2050 - 16 секц. RAL9
+  source context: https://rusklimat.by/ (90 chars, 7 specs)
+  skipped: source URL points to a bare domain/home page
+[114/120] id=15176 Дизайн-радиатор Royal Thermo Shift R22 VC2180 - 04 секц. RAL
+  source context: https://rusklimat.by/ (90 chars, 7 specs)
+  skipped: source URL points to a bare domain/home page
+[115/120] id=15179 Дизайн-радиатор Royal Thermo Shift R22 VC2180 - 06 секц. RAL
+  source context: https://rusklimat.by/ (90 chars, 7 specs)
+  skipped: source URL points to a bare domain/home page
+[116/120] id=15181 Дизайн-радиатор Royal Thermo Shift R22 VC2180 - 08 секц. RAL
+  source context: https://rusklimat.by/ (90 chars, 7 specs)
+  skipped: source URL points to a bare domain/home page
+[117/120] id=15182 Дизайн-радиатор Royal Thermo Shift R22 VC2180 - 10 секц. RAL
+  source context: https://rusklimat.by/ (90 chars, 7 specs)
+  skipped: source URL points to a bare domain/home page
+[118/120] id=15194 Дизайн-радиатор Royal Thermo Shift R22 VC2030 - 18 секц. RAL
+  source context: https://rusklimat.by/ (90 chars, 7 specs)
+  skipped: source URL points to a bare domain/home page
+[119/120] id=15202 Дизайн-радиатор Royal Thermo Shift Q30 C2180 - 06 секц. RAL9
+  source context: https://rusklimat.by/ (90 chars, 7 specs)
+  skipped: source URL points to a bare domain/home page
+[120/120] id=15210 Дизайн-радиатор Royal Thermo Shift Q30 C2180 - 14 секц. RAL9
+  source context: https://rusklimat.by/ (90 chars, 7 specs)
+  skipped: source URL points to a bare domain/home page
++---------+-------+
+| action  | count |
++---------+-------+
+| updated | 42    |
+| skipped | 78    |
+| errors  | 0     |
++---------+-------+
+
+56 more remain. Continue with --offset=120
 
 ```
