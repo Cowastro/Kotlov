@@ -1,31 +1,24 @@
 # Server Artisan Result
 
-- Time: 2026-07-11 20:43:39 UTC
-- Task: `optimize-clear`
-- Artisan args: ``
+- Time: 2026-07-11 20:47:34 UTC
+- Task: `artisan-dry-run`
+- Artisan args: `products:audit-content-quality --slug-like=ecokamin --active-only --not-archived --limit=200`
 - Log file: ``
 - Exit code: `0`
 
 ```text
 From https://github.com/Cowastro/Kotlov
-   161dbf2..5e6f5a9  main       -> origin/main
-Updating 161dbf2..5e6f5a9
+   5e6f5a9..3e5e090  main       -> origin/main
+Updating 5e6f5a9..3e5e090
 Fast-forward
- .github/server-artisan-result.md | 30 +++++++++++++++---------------
- .github/server-artisan-task.json |  2 +-
- public/assets/css/kotlov.css     |  1 +
- 3 files changed, 17 insertions(+), 16 deletions(-)
-
-   INFO  Clearing cached bootstrap files.  
-
-  config ......................................................... 0.92ms DONE
-  cache .......................................................... 3.09ms DONE
-  compiled ....................................................... 0.60ms DONE
-  events ......................................................... 0.42ms DONE
-  routes ......................................................... 0.40ms DONE
-  views .......................................................... 1.65ms DONE
-  blade-icons .................................................... 0.19ms DONE
-  filament ....................................................... 0.78ms DONE
-
+ .github/server-artisan-result.md | 24 ++++++++++++------------
+ .github/server-artisan-task.json |  6 +++---
+ 2 files changed, 15 insertions(+), 15 deletions(-)
++----------------------+-------+
+| metric               | count |
++----------------------+-------+
+| checked              | 50    |
+| products_with_issues | 0     |
++----------------------+-------+
 
 ```
