@@ -1,6 +1,6 @@
 {
-  "task": "artisan-background",
-  "artisan_args": "product:enrich-content --all --source-context --require-source-context --skip-root-source-context --rewrite-thin=180 --min-specs=1 --min-source-context-chars=180 --offset=120 --limit=120 --sleep=700",
-  "log_file": "storage/logs/product-seo-fill-missing-thin-safe-apply-offset120.log",
-  "run_id": "product-seo-fill-missing-thin-safe-apply-offset120-20260711-1"
+  "task": "ps-artisan",
+  "artisan_args": "",
+  "log_file": "",
+  "run_id": "product-seo-ps-offset120-20260711-1"
 }
