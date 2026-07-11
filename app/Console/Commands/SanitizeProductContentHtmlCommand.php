@@ -164,6 +164,7 @@ class SanitizeProductContentHtmlCommand extends Command
             'images_removed' => 0,
             'styles_removed' => 0,
             'bad_blocks_removed' => 0,
+            'legacy_buy_templates_removed' => 0,
             'videos_extracted' => 0,
             'documents_extracted' => 0,
             'seo_rewritten' => 0,
@@ -196,6 +197,9 @@ class SanitizeProductContentHtmlCommand extends Command
                 ? $this->removeExtractedMediaMarkup($original, $media)
                 : $original;
             $sanitized = $enricher->sanitizeDescriptionHtml($contentForSanitize);
+            $legacyBuyTemplatesBefore = $this->countLegacyPhraseOccurrences($sanitized, $this->legacyPhraseNeedles()['legacy_buy_template']);
+            $sanitized = $this->removeLegacyBuyTemplateText($sanitized);
+            $legacyBuyTemplatesAfter = $this->countLegacyPhraseOccurrences($sanitized, $this->legacyPhraseNeedles()['legacy_buy_template']);
 
             if ($showContentSamples > 0 && count($contentSampleRows) < $showContentSamples) {
                 $plain = trim((string) preg_replace('/\s+/u', ' ', strip_tags($original)));
@@ -280,6 +284,7 @@ class SanitizeProductContentHtmlCommand extends Command
             $stats['images_removed'] += max(0, $this->countMatches('/<img\b/iu', $original) - $this->countMatches('/<img\b/iu', $sanitized));
             $stats['styles_removed'] += max(0, $this->countMatches('/\sstyle\s*=/iu', $original) - $this->countMatches('/\sstyle\s*=/iu', $sanitized));
             $stats['bad_blocks_removed'] += max(0, $this->countMatches('/<(script|style|iframe|object|embed|svg|canvas|picture|video|audio|form|button|input|select|textarea|table)\b/iu', $original));
+            $stats['legacy_buy_templates_removed'] += max(0, $legacyBuyTemplatesBefore - $legacyBuyTemplatesAfter);
 
             if ($apply) {
                 $updates['updated_at'] = now();
@@ -400,10 +405,51 @@ class SanitizeProductContentHtmlCommand extends Command
             return true;
         }
 
-        return preg_match(
-            '/\b(подарок\s+при\s+покупке|наши\s+топки\s+принесут|мы\s+производим|обращайтесь\s+к\s+поставщикам|у\s+поставщиков|у\s+дилеров)\b/iu',
-            strip_tags($originalContent)
-        ) === 1;
+        $originalPlain = mb_strtolower(html_entity_decode(strip_tags($originalContent), ENT_QUOTES | ENT_HTML5, 'UTF-8'));
+        foreach ($this->legacyPhraseNeedles()['seo_rewrite'] as $needle) {
+            if (str_contains($originalPlain, $needle)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * @return array{legacy_buy_template: array<int, string>, seo_rewrite: array<int, string>}
+     */
+    private function legacyPhraseNeedles(): array
+    {
+        return [
+            'legacy_buy_template' => json_decode('["\u0432\u044b \u043c\u043e\u0436\u0435\u0442\u0435 \u043a\u0443\u043f\u0438\u0442\u044c \u0434\u0430\u043d\u043d\u044b\u0439 \u0442\u043e\u0432\u0430\u0440","\u043a\u0443\u043f\u0438\u0442\u044c \u0434\u0430\u043d\u043d\u044b\u0439 \u0442\u043e\u0432\u0430\u0440"]', true),
+            'seo_rewrite' => json_decode('["\u043f\u043e\u0434\u0430\u0440\u043e\u043a \u043f\u0440\u0438 \u043f\u043e\u043a\u0443\u043f\u043a\u0435","\u043d\u0430\u0448\u0438 \u0442\u043e\u043f\u043a\u0438 \u043f\u0440\u0438\u043d\u0435\u0441\u0443\u0442","\u043c\u044b \u043f\u0440\u043e\u0438\u0437\u0432\u043e\u0434\u0438\u043c","\u043e\u0431\u0440\u0430\u0449\u0430\u0439\u0442\u0435\u0441\u044c \u043a \u043f\u043e\u0441\u0442\u0430\u0432\u0449\u0438\u043a\u0430\u043c","\u0443 \u043f\u043e\u0441\u0442\u0430\u0432\u0449\u0438\u043a\u043e\u0432","\u0443 \u0434\u0438\u043b\u0435\u0440\u043e\u0432"]', true),
+        ];
+    }
+
+    /**
+     * @param array<int, string> $needles
+     */
+    private function countLegacyPhraseOccurrences(string $html, array $needles): int
+    {
+        $plain = mb_strtolower(html_entity_decode(strip_tags($html), ENT_QUOTES | ENT_HTML5, 'UTF-8'));
+        $count = 0;
+        foreach ($needles as $needle) {
+            $count += substr_count($plain, $needle);
+        }
+
+        return $count;
+    }
+
+    private function removeLegacyBuyTemplateText(string $html): string
+    {
+        foreach ($this->legacyPhraseNeedles()['legacy_buy_template'] as $needle) {
+            $quoted = preg_quote($needle, '~');
+            $html = preg_replace('~<p\b[^>]*>[^<]{0,500}' . $quoted . '[^<]{0,700}</p>~iu', '', $html) ?? $html;
+            $html = preg_replace('~<div\b[^>]*>[^<]{0,500}' . $quoted . '[^<]{0,700}</div>~iu', '', $html) ?? $html;
+            $html = preg_replace('~(?:^|[\r\n])[^<\r\n]{0,500}' . $quoted . '[^<\r\n]{0,700}(?:$|[\r\n])~iu', "\n", $html) ?? $html;
+        }
+
+        return trim($html);
     }
 
     private function hasScope(): bool
