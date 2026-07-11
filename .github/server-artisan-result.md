@@ -1,201 +1,116 @@
 # Server Artisan Result
 
-- Time: 2026-07-11 09:45:21 UTC
+- Time: 2026-07-11 09:51:33 UTC
 - Task: `artisan-dry-run`
-- Artisan args: `products:audit-content-quality --not-archived --limit=80 --min-issues=2`
-- Log file: `storage/logs/server-artisan-content-quality-audit.log`
+- Artisan args: `products:sanitize-content-html --brand=HAIER --not-archived --extract-media --rewrite-seo --rewrite-seo-if-thin --show-samples=5 --limit=40 --sleep=300`
+- Log file: `storage/logs/server-artisan-haier-content-dry-run.log`
 - Exit code: `0`
 
 ```text
 From https://github.com/Cowastro/Kotlov
-   548a658..41b5a19  main       -> origin/main
-Updating 548a658..41b5a19
+   41b5a19..b1061e1  main       -> origin/main
+Updating 41b5a19..b1061e1
 Fast-forward
- .github/server-artisan-result.md | 72 +++++++++++++++++++++++++++++-----------
- .github/server-artisan-task.json |  6 ++--
- 2 files changed, 55 insertions(+), 23 deletions(-)
-+----------------------+-------+
-| metric               | count |
-+----------------------+-------+
-| checked              | 8497  |
-| products_with_issues | 3059  |
-+----------------------+-------+
-+-------------------------+----------+
-| reason                  | products |
-+-------------------------+----------+
-| legacy_buy_template     | 2736     |
-| thin_short_description  | 1530     |
-| thin_content            | 269      |
-| manufacturer_disclaimer | 1        |
-| old_promo_text          | 1        |
-+-------------------------+----------+
-+----------------------------------------------+--------+-------------------------------------------------------------------------------------------------+
-| brand                                        | issues | reasons                                                                                         |
-+----------------------------------------------+--------+-------------------------------------------------------------------------------------------------+
-| Royal Thermo                                 | 472    | legacy_buy_template=353; thin_content=119                                                       |
-| Везувий                                      | 446    | legacy_buy_template=219; thin_short_description=173; thin_content=53; manufacturer_disclaimer=1 |
-| HAIER                                        | 220    | legacy_buy_template=193; thin_short_description=27                                              |
-| Теплодар                                     | 207    | legacy_buy_template=132; thin_short_description=71; thin_content=3; old_promo_text=1            |
-| Kratki                                       | 200    | thin_short_description=94; legacy_buy_template=72; thin_content=34                              |
-| Теплов и Сухов                               | 157    | legacy_buy_template=79; thin_short_description=78                                               |
-| Банька                                       | 148    | legacy_buy_template=74; thin_short_description=74                                               |
-| TIS                                          | 139    | legacy_buy_template=75; thin_short_description=64                                               |
-| Pegas                                        | 134    | thin_short_description=81; legacy_buy_template=53                                               |
-| Мета-Бел                                     | 124    | thin_short_description=63; legacy_buy_template=61                                               |
-| UNIPUMP                                      | 115    | legacy_buy_template=105; thin_content=5; thin_short_description=5                               |
-| Sakovich                                     | 109    | thin_short_description=61; legacy_buy_template=44; thin_content=4                               |
-| ЭВАН                                         | 108    | legacy_buy_template=107; thin_short_description=1                                               |
-| Vaillant                                     | 103    | legacy_buy_template=93; thin_short_description=10                                               |
-| Zehnder                                      | 103    | legacy_buy_template=103                                                                         |
-| WILO                                         | 100    | legacy_buy_template=98; thin_short_description=2                                                |
-| ТехноЛит                                     | 95     | thin_short_description=95                                                                       |
-| Теплоприбор                                  | 86     | thin_short_description=44; legacy_buy_template=42                                               |
-| Timberk                                      | 81     | legacy_buy_template=77; thin_short_description=4                                                |
-| СтальСнабДизайн                              | 79     | legacy_buy_template=38; thin_short_description=38; thin_content=3                               |
-| БелОМО                                       | 78     | legacy_buy_template=40; thin_short_description=38                                               |
-| KOTLOV                                       | 75     | thin_short_description=38; legacy_buy_template=37                                               |
-| Термофор                                     | 73     | legacy_buy_template=37; thin_short_description=36                                               |
-| -                                            | 69     | thin_short_description=37; legacy_buy_template=27; thin_content=5                               |
-| TMF                                          | 68     | legacy_buy_template=61; thin_short_description=7                                                |
-| Сибирь                                       | 49     | thin_short_description=28; legacy_buy_template=21                                               |
-| Житомир                                      | 45     | legacy_buy_template=40; thin_short_description=5                                                |
-| Ермак                                        | 43     | legacy_buy_template=25; thin_short_description=17; thin_content=1                               |
-| Эверест                                      | 41     | legacy_buy_template=20; thin_short_description=20; thin_content=1                               |
-| Лидея                                        | 35     | legacy_buy_template=14; thin_short_description=14; thin_content=7                               |
-| S-TANK                                       | 32     | legacy_buy_template=16; thin_short_description=16                                               |
-| Меркурий                                     | 32     | legacy_buy_template=16; thin_short_description=16                                               |
-| Татра                                        | 32     | legacy_buy_template=16; thin_short_description=16                                               |
-| ЭТНА                                         | 30     | legacy_buy_template=12; thin_short_description=12; thin_content=6                               |
-| Protherm                                     | 28     | legacy_buy_template=28                                                                          |
-| Lavoro                                       | 26     | legacy_buy_template=13; thin_short_description=13                                               |
-| НМК                                          | 25     | legacy_buy_template=13; thin_short_description=12                                               |
-| Greolit                                      | 22     | legacy_buy_template=11; thin_short_description=11                                               |
-| Hommyn                                       | 22     | legacy_buy_template=22                                                                          |
-| VENMA                                        | 22     | legacy_buy_template=11; thin_short_description=11                                               |
-| WELLMIX                                      | 20     | legacy_buy_template=16; thin_content=2; thin_short_description=2                                |
-| SHUFT                                        | 19     | legacy_buy_template=14; thin_short_description=5                                                |
-| LTEK                                         | 16     | legacy_buy_template=8; thin_short_description=8                                                 |
-| Nordflam                                     | 16     | legacy_buy_template=10; thin_short_description=6                                                |
-| СТЭН                                         | 16     | thin_short_description=8; legacy_buy_template=6; thin_content=2                                 |
-| Blist                                        | 15     | legacy_buy_template=8; thin_short_description=7                                                 |
-| АТЕМ                                         | 15     | legacy_buy_template=15                                                                          |
-| Elboom                                       | 12     | legacy_buy_template=6; thin_short_description=6                                                 |
-| Lava                                         | 12     | legacy_buy_template=6; thin_short_description=6                                                 |
-| Scamol                                       | 12     | legacy_buy_template=6; thin_short_description=6                                                 |
-| Varmega                                      | 12     | legacy_buy_template=12                                                                          |
-| НЗС                                          | 12     | legacy_buy_template=11; thin_short_description=1                                                |
-| Hotta                                        | 11     | thin_short_description=6; legacy_buy_template=5                                                 |
-| E.C.A.                                       | 10     | legacy_buy_template=5; thin_short_description=5                                                 |
-| XOMMET                                       | 10     | legacy_buy_template=10                                                                          |
-| Termica                                      | 9      | thin_short_description=8; legacy_buy_template=1                                                 |
-| Велес Электро                                | 9      | thin_short_description=5; legacy_buy_template=3; thin_content=1                                 |
-| КПД                                          | 9      | thin_short_description=5; legacy_buy_template=4                                                 |
-| Лемакс                                       | 9      | thin_short_description=5; legacy_buy_template=4                                                 |
-| Смолком                                      | 9      | thin_short_description=8; legacy_buy_template=1                                                 |
-| Феролайф                                     | 9      | thin_short_description=9                                                                        |
-| Edisson                                      | 8      | thin_content=4; thin_short_description=4                                                        |
-| Toshiba                                      | 8      | legacy_buy_template=7; thin_short_description=1                                                 |
-| Термокрафт                                   | 8      | legacy_buy_template=4; thin_short_description=4                                                 |
-| Царь-Печи                                    | 8      | legacy_buy_template=3; thin_short_description=3; thin_content=2                                 |
-| Boneco                                       | 7      | legacy_buy_template=7                                                                           |
-| ESH                                          | 7      | thin_short_description=5; legacy_buy_template=2                                                 |
-| MBS                                          | 7      | thin_short_description=5; legacy_buy_template=2                                                 |
-| Panadero                                     | 7      | legacy_buy_template=5; thin_short_description=2                                                 |
-| Royal Flame                                  | 7      | legacy_buy_template=3; thin_content=2; thin_short_description=2                                 |
-| Новосибирская металлообрабатывающая компания | 7      | legacy_buy_template=3; thin_short_description=3; thin_content=1                                 |
-| Firelight                                    | 6      | legacy_buy_template=5; thin_short_description=1                                                 |
-| Invicta                                      | 6      | legacy_buy_template=3; thin_short_description=3                                                 |
-| Kentatsu                                     | 6      | thin_short_description=4; legacy_buy_template=2                                                 |
-| Mr. Tektum                                   | 6      | legacy_buy_template=2; thin_content=2; thin_short_description=2                                 |
-| Antifrogen                                   | 5      | legacy_buy_template=2; thin_short_description=2; thin_content=1                                 |
-| Energolux                                    | 5      | legacy_buy_template=3; thin_short_description=2                                                 |
-| Электротеплоприбор                           | 5      | legacy_buy_template=2; thin_short_description=2; thin_content=1                                 |
-| KARINA                                       | 4      | legacy_buy_template=2; thin_short_description=2                                                 |
-| MERAN                                        | 4      | legacy_buy_template=4                                                                           |
-+----------------------------------------------+--------+-------------------------------------------------------------------------------------------------+
-+-------+---------------+------------------+------------------------------------+-----------------------------------------------------------+------------------------------------------------------+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
-| ID    | SKU           | Brand            | Category                           | Issues                                                    | Product                                              | Snippet                                                                                                                                                                              |
-+-------+---------------+------------------+------------------------------------+-----------------------------------------------------------+------------------------------------------------------+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
-| 123   | PS-000.123    | -                | Камни для бани                     | legacy_buy_template, thin_short_description               | Камни Габбро-диабаз колотый (20 кг)                  | Камни для бани "Габбро-диабаз" (Gabbro-diabase) – прочная, плотная, темная однородная порода, хорошо аккумулирует и отдает тепло, устойчив к разрушению под воздействием резких пере |
-| 124   | PS-000.124    | -                | Камни для бани                     | legacy_buy_template, thin_short_description               | Камни Малиновый кварцит колотый (20 кг)              | Экологически чистый Карельский камень для саун и бань малиновый кварцит. Отдельное место среди множества видов Карельского природного камня занимает малиновый кварцит — уникальнейш |
-| 1302  | PS-001.302    | -                | Камни для бани                     | legacy_buy_template, thin_short_description               | Камни Белый кварцит (20 кг)                          | Белый кварц – температуростойкий высокопрочный материал. В основе кварца - кремний, насыщенный кислородом, что крайне редко в природе. Разновидностей кварца встречается в природе б |
-| 3807  | PS-003.807    | -                | Камни для бани                     | legacy_buy_template, thin_short_description               | Камни Талькохлорит колотый (20 кг)                   | Талькохлорит – природный камень горного происхождения. Как правило, он серого цвета, но бывает и белым, и коричнево-зеленоватым в зависимости от наличия примесей. Камни для бани “Т |
-| 7059  | PS-007.059    | -                | Счетчики газа                      | legacy_buy_template, thin_content, thin_short_description | Счетчик газа бытовой Элехант СГБ-1,8                 | Вы можете купить данный товар в %city% с доставкой по всей Беларуси.                                                                                                                 |
-| 9864  | PS-009.864    | -                | Для частных домов                  | legacy_buy_template, thin_content, thin_short_description | Комплект ОПТИМАЛЬНЫЙ                                 | Оптимальный комплект для небольшого дома или дачи площадью от 20 до 150 м2.Вы можете купить данный товар в %city% с доставкой по всей Беларуси.                                      |
-| 10740 | PS-010.740    | -                | Конвекторы                         | legacy_buy_template, thin_short_description               | Электроконвектор ELBOOM ЭВ1-НСАТ1-2,0/230 (IP20)     | 1. Корпус с решётками.Изготовлен из легкого металла и имеет две встроенные решетки: внизу и спереди вверху. Через нижнюю решётку в корпус прибора попадает холодный воздух. Через ве |
-| 10744 | PS-010.744    | -                | Конвекторы                         | legacy_buy_template, thin_short_description               | Электроконвектор ELBOOM ЭВ1-УСАТ-1,5/230 (IP20)      | 1. Корпус с решётками.Изготовлен из легкого металла и имеет две встроенные решетки: внизу и спереди вверху. Через нижнюю решётку в корпус прибора попадает холодный воздух. Через ве |
-| 10745 | PS-010.745    | -                | Конвекторы                         | legacy_buy_template, thin_short_description               | Электроконвектор ELBOOM ЭВ1-НБАТ1-0,5/230 Б (IP24)   | 1. Корпус с решётками.Изготовлен из легкого металла и имеет две встроенные решетки: внизу и спереди вверху. Через нижнюю решётку в корпус прибора попадает холодный воздух. Через ве |
-| 10747 | PS-010.747    | -                | Конвекторы                         | legacy_buy_template, thin_short_description               | Электроконвектор ELBOOM ЭВ1-НБАТ1-1,0/230 Б (IP24)   | Особенности брызгозащищённых моделей:Трубчатый нагревательный элемент (ТЭН) с оребрением. Каплебрызгозащищённый корпус - IP24 - для помещений с повыщенной влажностью. Все модели бе |
-| 10748 | PS-010.748    | -                | Конвекторы                         | legacy_buy_template, thin_short_description               | Электроконвектор ELBOOM ЭВ1-НБАТ1-1,5/230 Б (IP24)   | 1. Корпус с решётками.Изготовлен из легкого металла и имеет две встроенные решетки: внизу и спереди вверху. Через нижнюю решётку в корпус прибора попадает холодный воздух. Через ве |
-| 10838 | PS-010.838    | -                | Камни для бани                     | legacy_buy_template, thin_short_description               | Камни Малиновый кварцит обвалованный (20 кг)         | Экологически чистый Карельский камень для саун и бань малиновый кварцит. Отдельное место среди множества видов Карельского природного камня занимает малиновый кварцит — уникальнейш |
-| 10840 | PS-010.840    | -                | Конвекторы                         | legacy_buy_template, thin_content, thin_short_description | Теплый плинтус электрический Mr.Tektum Smart Line... | Комплектация: кабель (1 шт.), крепеж (саморезы 3.5×16, 4 шт.), ножки (2 шт.), коннектор (1 шт.), документация Вы можете купить данный товар в %city% с доставкой по всей Беларуси.   |
-| 11769 | PS-011.769    | -                | Твердотопливные                    | legacy_buy_template, thin_short_description               | Твердотопливный котел Lavoro Eco M-20                | Котел Lavoro Eco серии «М» это современный полуавтоматический стальной котел, работающий в энергонезависимом режиме. Изготавливаются котлы и проходят проверку на заводе изготовител |
-| 11845 | PS-011.845    | -                | Аксессуары для бани                | legacy_buy_template, thin_content, thin_short_description | Зеркало Бочонок малое                                | Зеркало для бани. Материал ольха. Диаметр - 32 см. Вы можете купить данный товар в %city% с доставкой по всей Беларуси.                                                              |
-| 11851 | PS-011.851    | -                | Крепления и монтаж                 | legacy_buy_template, thin_short_description               | Лента для примыкания гофрированная алюминиевая GR... | Для отделки дымоходов, а также различных выступающих элементов и примыканий кровли к стенам, применяется специальная алюминиевая гофрированная лента для примыканий. Она очень удобн |
-| 11858 | PS-011.858    | -                | Аксессуары для бани                | legacy_buy_template, thin_short_description               | Фольга для бани Алукрафт на бумажной основе          | Рулоны 6, 12, 18, 30 м2 Фольга на бумажной основе "Алукрафт" трехслойная: первый слой - крафт-бумага, второй слой - полиэтилен, затем фольга. По своим характеристикам фольга "Алукр |
-| 11862 | PS-011.862    | -                | Дровницы и каминные принадлежности | legacy_buy_template, thin_content, thin_short_description | Дровница ДК-3                                        | Размер 400х400ммВы можете купить данный товар в %city% с доставкой по всей Беларуси.                                                                                                 |
-| 11913 | PS-011.913    | -                | Теплосъёмники                      | legacy_buy_template, thin_short_description               | Теплообменник 6 л D130/130 (304)                     | Теплообменник 6 л D130/130 (304) – Описание и инструкция по эксплуатации Описание продукта Теплообменник 6 л D130/130 (304) предназначен для нагрева воды в банных помещениях за сче |
-| 12276 | PS-012.276    | -                | Автоматика и терморегуляторы       | legacy_buy_template, thin_short_description               | Регулятор тяги UC1501                                | Регулятор тяги UC1501 — автоматический контроль горения для дровяных котловТермостатический цепочный регулятор UC1501 — надежная механическая автоматика для твердотопливных котлов  |
-| 12151 | PS-012.151    | Antifrogen       | Теплоносители (Антифриз)           | legacy_buy_template, thin_short_description               | Теплоноситель Antifrogen N [Антифроген Н] концент... | Антифриз для систем отопления и охлаждения. Обеспечивает защиту от замерзания до -30°C при разбавлении водой (пример: 86 л продукта + 114 л воды на 200 л смеси). Подходит для промы |
-| 12152 | PS-012.152    | Antifrogen       | Теплоносители (Антифриз)           | legacy_buy_template, thin_content, thin_short_description | Теплоноситель Antifrogen L [Антифроген Л] концент... | Вы можете купить данный товар в %city% с доставкой по всей Беларуси.                                                                                                                 |
-| 11491 | PS-011.491    | Aquastic         | Косвенные                          | legacy_buy_template, thin_short_description               | Бойлер косвенного нагрева AQUASTIC AQ 150 SC         | Бойлера торговой марки AQUASTIC производятся в Венгрии и занимают нишу доступных и недорогих бойлеров для создания комфортной системы горячего водоснабжения. Источником нагрева мож |
-| 20975 | KOTLOV-006141 | Auraton          | Электрические                      | thin_content, thin_short_description                      | Auraton Tucana SET Электронный регулятор температуры | Беcпроводной недельный программируемый регулятор температуры                                                                                                                         |
-| 16991 | KOTLOV-004713 | Blist            | Печи-камины                        | legacy_buy_template, thin_short_description               | Blist Печь Berna Lux бежевая                         | Печь Berna Lux бежевая от бренда Blist — это современное отопительное решение для загородных домов, дач и банных комплексов. Модель разработана для эффективного обогрева жилых прос |
-| 16992 | KOTLOV-004714 | Blist            | Печи-камины                        | legacy_buy_template, thin_short_description               | Blist Печь Berna Lux красная                         | Печь Blist Berna Lux красная представляет собой элегантное и функциональное отопительное решение для загородных домов, дач и коттеджей, где ценится не только тепло, но и выразитель |
-| 16996 | KOTLOV-004718 | Blist            | Печи-камины                        | legacy_buy_template, thin_short_description               | Blist Печь Modena красная                            | Печь Modena красная от бренда Blist — это функциональное решение для создания уютной и теплой атмосферы в загородном доме, на даче или в небольшом гостевом домике. Модель ориентиро |
-| 16998 | KOTLOV-004720 | Blist            | Печи-камины                        | legacy_buy_template, thin_short_description               | Blist Печь Napoli                                    | Печь Napoli от польского производителя Blist — это отопительное устройство, предназначенное для эффективного обогрева загородных домов, дач и банных комплексов. Модель ориентирован |
-| 16999 | KOTLOV-004721 | Blist            | Печи-камины                        | legacy_buy_template, thin_short_description               | Blist Печь Padova E                                  | Печь Padova E от польского бренда Blist — это надежное решение для отопления помещений, где требуется эффективный обогрев с атмосферой живого огня. Данная модель идеально подходит  |
-| 12101 | PS-012.101    | E.C.A.           | Электрические                      | legacy_buy_template, thin_short_description               | Электрокотел E.C.A. Arceus HM - 12                   | Электрокотел E.C.A. Arceus HM - 12 – надежный и эффективный котел из Турции.Мощность обогрева 12 кВт, площадь обогрева до 120 м².Имеет горячее водоснабжение, дисплей для удобного к |
-| 12102 | PS-012.102    | E.C.A.           | Электрические                      | legacy_buy_template, thin_short_description               | Электрокотел E.C.A. Arceus HM - 15                   | Электрокотел E.C.A. Arceus HM-15 - надежный обогреватель для вашего дома!Мощность обогрева 15 кВт позволит быстро и эффективно разогреть помещение до 150 кв.м.Современный дизайн с  |
-| 12103 | PS-012.103    | E.C.A.           | Электрические                      | legacy_buy_template, thin_short_description               | Электрокотел E.C.A. Arceus HM - 18                   | Электрокотел E.C.A. Arceus HM - 18 — это надежный обогреватель с мощностью 18 кВт, идеально подходящий для обогрева площадей до 180 м². Высококачественный теплообменник обеспечивае |
-| 12104 | PS-012.104    | E.C.A.           | Электрические                      | legacy_buy_template, thin_short_description               | Электрокотел E.C.A. Arceus HM - 24                   | Новейший электрокотел E.C.A. Arceus HM - 24 из Турции — это идеальное решение для обогрева площади до 240 кв.м. Он обладает мощностью 24 кВт, горячим водоснабжением и интеллектуаль |
-| 12105 | PS-012.105    | E.C.A.           | Электрические                      | legacy_buy_template, thin_short_description               | Электрокотел E.C.A. Arceus HM - 28                   | Надежный турецкий электрокотел E.C.A. Arceus HM - 28 с мощностью обогрева 28 кВт и площадью обогрева до 280 м².Имеет функцию горячего водоснабжения, интуитивно понятный дисплей и к |
-| 21290 | KOTLOV-006456 | Edisson          | Электрические                      | thin_content, thin_short_description                      | EDISSON H 20 D                                       | 10.00; 20.00; 0,025-0,8; 2 года; 11.9                                                                                                                                                |
-| 21291 | KOTLOV-006457 | Edisson          | Электрические                      | thin_content, thin_short_description                      | EDISSON Е 20 D                                       | 10.00; 20.00; 0,025-0,8; 2 года; 7.7                                                                                                                                                 |
-| 21295 | KOTLOV-006461 | Edisson          | Электрические                      | thin_content, thin_short_description                      | EDISSON E 20 GD (Каннская ветвь)                     | 10; 20; 0,025-0,8; 2 года; 7.7                                                                                                                                                       |
-| 21297 | KOTLOV-006463 | Edisson          | Электрические                      | thin_content, thin_short_description                      | EDISSON E 20 GD (Подсолнухи)                         | 10; 20; 0,025-0,8; 2 года; 7.7                                                                                                                                                       |
-| 10738 | PS-010.738    | Elboom           | Конвекторы                         | legacy_buy_template, thin_short_description               | Электроконвектор ELBOOM ЭВ1-УБАТ1-1,0/230 Б (IP24)   | 1. Корпус с решётками.Изготовлен из легкого металла и имеет две встроенные решетки: внизу и спереди вверху. Через нижнюю решётку в корпус прибора попадает холодный воздух. Через ве |
-| 10739 | PS-010.739    | Elboom           | Конвекторы                         | legacy_buy_template, thin_short_description               | Электроконвектор ELBOOM ЭВ1-НБАТ1-1,0/230 (IP20)     | 1. Корпус с решётками.Изготовлен из легкого металла и имеет две встроенные решетки: внизу и спереди вверху. Через нижнюю решётку в корпус прибора попадает холодный воздух. Через ве |
-| 10741 | PS-010.741    | Elboom           | Конвекторы                         | legacy_buy_template, thin_short_description               | Электроконвектор ELBOOM ЭВ1-УБАТ1-1,0/230 (IP20)     | 1. Корпус с решётками.Изготовлен из легкого металла и имеет две встроенные решетки: внизу и спереди вверху. Через нижнюю решётку в корпус прибора попадает холодный воздух. Через ве |
-| 10742 | PS-010.742    | Elboom           | Конвекторы                         | legacy_buy_template, thin_short_description               | Электроконвектор ELBOOM ЭВ1-УСАТ1-1,5/230 (IP20)     | 1. Корпус с решётками.Изготовлен из легкого металла и имеет две встроенные решетки: внизу и спереди вверху. Через нижнюю решётку в корпус прибора попадает холодный воздух. Через ве |
-| 10743 | PS-010.743    | Elboom           | Конвекторы                         | legacy_buy_template, thin_short_description               | Электроконвектор ELBOOM ЭВ1-УСАТ1-2,0/230 (IP20)     | 1. Корпус с решётками.Изготовлен из легкого металла и имеет две встроенные решетки: внизу и спереди вверху. Через нижнюю решётку в корпус прибора попадает холодный воздух. Через ве |
-| 10752 | PS-010.752    | Elboom           | Конвекторы                         | legacy_buy_template, thin_short_description               | Электроконвектор плинтусный ELBOOM ЭВ-П 0,18/230     | Плинтусные электрические конвекторы ELBOOM – это тепловые электрические приборы, предназначенные для прямого обогрева любых помещений в составе единой системы обогрева. Система обо |
-| 14233 | KOTLOV-001955 | Energolux        | Обогреватели                       | legacy_buy_template, thin_short_description               | Конвектор электрический Energolux GCH/VI-25          | Электрический конвектор Energolux GCH/VI-25 относится к категории обогревателей. Модель предназначена для поддержания комфортной температуры в жилых и офисных помещениях.Бренд: Ene |
-| 14235 | KOTLOV-001957 | Energolux        | Обогреватели                       | legacy_buy_template, thin_short_description               | Конвектор электрический Energolux GCH/CE-25          | Конвектор электрический Energolux GCH/CE-25 относится к категории обогревателей. Модель предназначена для поддержания комфортной температуры в жилых и офисных помещениях.Бренд Ener |
-| 12269 | PS-012.269    | ESH              | Электрические ТЭНы                 | legacy_buy_template, thin_short_description               | ТЭН ESH 3,0 кВт для бойлера 1 1/2                    | Нагревательный элемент (ТЭН) ESH мощностью 3,0 кВт — это надежное решение для систем горячего водоснабжения и отопления. Данная модель специально разработана для установки в бойлер |
-| 12271 | PS-012.271    | ESH              | Электрические ТЭНы                 | legacy_buy_template, thin_short_description               | ТЭН ESH 6,0 кВт для бойлера 1 1/2                    | ТЭН ESH 6,0 кВт для бойлера 1 1/2" — Мощное решение для быстрого нагреваЭлектрический нагревательный элемент (ТЭН) серии ESH мощностью 6,0 кВт предназначен для установки в бойлеры  |
-| 17002 | KOTLOV-004724 | Ferguss          | Печи-камины                        | legacy_buy_template, thin_short_description               | Ferguss Печь Ferguss L (8606107095288) /Lawa Cook... | Печь Ferguss L из серии Lawa Cook предлагает надёжное и эффективное решение для отопления помещений, где требуется стабильное поддержание комфортной температуры. Данная модель идеа |
-| 13327 | KOTLOV-001049 | Firelight        | Электрические камины               | legacy_buy_template, thin_short_description               | Firelight BFP/W-110                                  | Электрокамин Firelight BFP/W-110 представляет собой отопительное и декоративное устройство из категории электрокаминов. Модель разработана брендом Firelight, специализирующимся на  |
-| 11625 | PS-011.625    | Gas Spezialisten | Сигнализаторы загазованности       | legacy_buy_template, thin_short_description               | Сигнализатор загазованности комбинированный КМ-81    | Сигнализатор загазованности КМ-81 предназначен исключительно для бытового применения . Прибор обеспечивает автоматический контроль содержания горючих газов (природного, сжиженного  |
-| 11962 | PS-011.962    | Greolit          | Твердотопливные                    | legacy_buy_template, thin_short_description               | Уличный твердотопливный котел GREOLIT STREET 95H     | Уличный котел Street 95 квт предназначен для отопления зданий и помещений дровами, торфобрикетом, углем. Не требует установки в помещении. Монтируется снаружи здания, не требует сд |
-| 11963 | PS-011.963    | Greolit          | Твердотопливные                    | legacy_buy_template, thin_short_description               | Твердотопливный котел Greolit DEEP (15 кВт)          | Котлы типа DEEP – твердотопливные котлы длительного горения. Предназначены для отопления домов и коммунально-бытовых помещений. Диапазон мощности: 15-25 кВт. Конвекционная часть ко |
-| 11964 | PS-011.964    | Greolit          | Твердотопливные                    | legacy_buy_template, thin_short_description               | Твердотопливный котел Greolit DEEP (20 кВт)          | Котлы типа DEEP – твердотопливные котлы длительного горения. Предназначены для отопления домов и коммунально-бытовых помещений. Диапазон мощности: 15-25 кВт. Конвекционная часть ко |
-| 11965 | PS-011.965    | Greolit          | Твердотопливные                    | legacy_buy_template, thin_short_description               | Твердотопливный котел Greolit DEEP (25 кВт)          | Котлы типа DEEP – твердотопливные котлы длительного горения. Предназначены для отопления домов и коммунально-бытовых помещений. Диапазон мощности: 15-25 кВт. Конвекционная часть ко |
-| 11966 | PS-011.966    | Greolit          | Твердотопливные                    | legacy_buy_template, thin_short_description               | Твердотопливный котел Greolit MASTER (20 кВт)        | Котлы типа MASTER- твердотопливные котлы длительного горения: флагманская модель, которая уже много лет пользуется популярностью на рынке. Качество котла проверено более 5000 потре |
-| 11967 | PS-011.967    | Greolit          | Твердотопливные                    | legacy_buy_template, thin_short_description               | Твердотопливный котел Greolit MASTER (25 кВт)        | Котлы типа MASTER- твердотопливные котлы длительного горения: флагманская модель, которая уже много лет пользуется популярностью на рынке. Качество котла проверено более 5000 потре |
-| 11968 | PS-011.968    | Greolit          | Твердотопливные                    | legacy_buy_template, thin_short_description               | Твердотопливный котел Greolit PROFI (50 кВт) NEW!    | Котлы типа PROFI- твердотопливные котлы длительного горения. Предназначены для отопления домов, коммунально-бытовых, производственных помещений. Диапазон мощности: 15-250 кВт. В ба |
-| 11969 | PS-011.969    | Greolit          | Твердотопливные                    | legacy_buy_template, thin_short_description               | Твердотопливный котел Greolit PROFI (70 кВт) NEW!    | Котлы типа PROFI- твердотопливные котлы длительного горения. Предназначены для отопления домов, коммунально-бытовых, производственных помещений. Диапазон мощности: 15-250 кВт. В ба |
-| 11970 | PS-011.970    | Greolit          | Твердотопливные                    | legacy_buy_template, thin_short_description               | Твердотопливный котел Greolit PROFI (80 кВт) NEW!    | Котлы типа PROFI- твердотопливные котлы длительного горения. Предназначены для отопления домов, коммунально-бытовых, производственных помещений. Диапазон мощности: 15-250 кВт. В ба |
-| 11971 | PS-011.971    | Greolit          | Твердотопливные                    | legacy_buy_template, thin_short_description               | Твердотопливный котел Greolit PROFI (95 кВт) NEW!    | Котлы типа PROFI- твердотопливные котлы длительного горения. Предназначены для отопления домов, коммунально-бытовых, производственных помещений. Диапазон мощности: 15-250 кВт. В ба |
-| 11972 | PS-011.972    | Greolit          | Твердотопливные                    | legacy_buy_template, thin_short_description               | Твердотопливный котел Greolit PROFI (99 кВт) NEW!    | Котлы типа PROFI- твердотопливные котлы длительного горения. Предназначены для отопления домов, коммунально-бытовых, производственных помещений. Диапазон мощности: 15-250 кВт. В ба |
-| 11786 | PS-011.786    | HAIER            | Газовые                            | legacy_buy_template, thin_short_description               | Газовая колонка HAIER JSD 20 - 10C                   | Общие спецификацииМаксимальная полезная тепловая мощность, кВт 18.9Номинальное давление природного газа (G20), мбар 20Номинальный расход природного газа (G20), м³/час 2Работа при н |
-| 11787 | PS-011.787    | HAIER            | Газовые                            | legacy_buy_template, thin_short_description               | Газовая колонка HAIER JSD 24 - 12C                   | Общие спецификацииМаксимальная полезная тепловая мощность, кВт 22.5Номинальное давление природного газа (G20), мбар 20Номинальный расход природного газа (G20), м³/час 2.4Работа при |
-| 11788 | PS-011.788    | HAIER            | Газовые                            | legacy_buy_template, thin_short_description               | Газовый котёл Haier L1PB20-18RC1                     | Настенный газовый двухконтурный котел Haier производится с закрытой камерой сгорания, медным первичным теплообменником с увеличенной площадью и вторичным пластинчатым теплообменник |
-| 11790 | PS-011.790    | HAIER            | Газовые                            | legacy_buy_template, thin_short_description               | Газовый котёл Haier L1PB30-28RC1                     | Настенный газовый двухконтурный котел Haier производится с закрытой камерой сгорания, медным первичным теплообменником с увеличенной площадью и вторичным пластинчатым теплообменник |
-| 11791 | PS-011.791    | HAIER            | Газовые                            | legacy_buy_template, thin_short_description               | Настенный газовый котел Haier ProLine 2.24 Ti        | Отопление + ГВС (раздельные теплообменники). Механическое управление, теплообменник "Oxygen-free". Автоадаптация к малым системам отопления, режим «Comfort» ГВС, автоматическая мод |
-| 11793 | PS-011.793    | HAIER            | Электрические                      | legacy_buy_template, thin_short_description               | Электрический водонагреватель HAIER ES30V-A2         | Сверхпрочное стеклокерамическое покрытие бака, ТЭН из нержавеющей стали, система защиты от поражения электрическим током Shock Proof, защита от перегрева. Предохранительный клапан  |
-| 11794 | PS-011.794    | HAIER            | Электрические                      | legacy_buy_template, thin_short_description               | Электрический водонагреватель Haier ES50V-A2         | Сверхпрочное стеклокерамическое покрытие бака, ТЭН из нержавеющей стали, система защиты от поражения электрическим током Shock Proof, защита от перегрева. Предохранительный клапан  |
-| 11795 | PS-011.795    | HAIER            | Электрические                      | legacy_buy_template, thin_short_description               | Электрический водонагреватель Haier ES80V-A2         | Сверхпрочное стеклокерамическое покрытие бака, ТЭН из нержавеющей стали, система защиты от поражения электрическим током Shock Proof, защита от перегрева. Предохранительный клапан  |
-| 11796 | PS-011.796    | HAIER            | Электрические                      | legacy_buy_template, thin_short_description               | Электрический водонагреватель Haier ES100V-A2        | Сверхпрочное стеклокерамическое покрытие бака, ТЭН из нержавеющей стали, система защиты от поражения электрическим током Shock Proof, защита от перегрева. Предохранительный клапан  |
-| 11797 | PS-011.797    | HAIER            | Электрические                      | legacy_buy_template, thin_short_description               | Электрический водонагреватель Haier ES30V-B2 Slim    | Сверхпрочное стеклокерамическое покрытие бака, ТЭН из нержавеющей стали, система защиты от поражения электрическим током Shock Proof, защита от перегрева. Предохранительный клапан  |
-| 11798 | PS-011.798    | HAIER            | Электрические                      | legacy_buy_template, thin_short_description               | Электрический водонагреватель Haier ES50V-B2 Slim    | Сверхпрочное стеклокерамическое покрытие бака, ТЭН из нержавеющей стали, система защиты от поражения электрическим током Shock Proof, защита от перегрева. Предохранительный клапан  |
-| 11799 | PS-011.799    | HAIER            | Электрические                      | legacy_buy_template, thin_short_description               | Электрический водонагреватель Haier ES80V-B2 Slim    | Сверхпрочное стеклокерамическое покрытие бака, ТЭН из нержавеющей стали, система защиты от поражения электрическим током Shock Proof, защита от перегрева. Предохранительный клапан  |
-| 11800 | PS-011.800    | HAIER            | Электрические                      | legacy_buy_template, thin_short_description               | Электрический водонагреватель Haier ES50V-V1 R       | Сверхпрочное стеклокерамическое покрытие бака, ТЭН из нержавеющей стали, система защиты от поражения электрическим током Shock Proof, защита от перегрева. Предохранительный клапан  |
-| 11801 | PS-011.801    | HAIER            | Электрические                      | legacy_buy_template, thin_short_description               | Электрический водонагреватель Haier ES80V-V1 R       | Сверхпрочное стеклокерамическое покрытие бака, ТЭН из нержавеющей стали, система защиты от поражения электрическим током Shock Proof, защита от перегрева. Предохранительный клапан  |
-| 11802 | PS-011.802    | HAIER            | Электрические                      | legacy_buy_template, thin_short_description               | Электрический водонагреватель Haier ES100V-V1 R      | Сверхпрочное стеклокерамическое покрытие бака, ТЭН из нержавеющей стали, система защиты от поражения электрическим током Shock Proof, защита от перегрева. Предохранительный клапан  |
-| 11803 | PS-011.803    | HAIER            | Электрические                      | legacy_buy_template, thin_short_description               | Электрический водонагреватель Haier ES50V-F7         | Сверхпрочное стеклокерамическое покрытие бака, ТЭН из нержавеющей стали, система защиты от поражения электрическим током Shock Proof, защита от перегрева. Предохранительный клапан  |
-| 11804 | PS-011.804    | HAIER            | Электрические                      | legacy_buy_template, thin_short_description               | Электрический водонагреватель Haier ES50V-F1 R       | Защита от бактерий и микроорганизмов Данная функция активирует режим защиты от вредоносных бактерий и микроорганизмов, которые могут появиться в воде в случае продолжительного пере |
-| 11806 | PS-011.806    | HAIER            | Электрические                      | legacy_buy_template, thin_short_description               | Электрический водонагреватель Haier ES 100 V-F1 (R)  | Защита от бактерий и микроорганизмов Данная функция активирует режим защиты от вредоносных бактерий и микроорганизмов, которые могут появиться в воде в случае продолжительного пере |
-+-------+---------------+------------------+------------------------------------+-----------------------------------------------------------+------------------------------------------------------+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+ .github/server-artisan-result.md                   | 243 ++++++++++++++++-----
+ .github/server-artisan-task.json                   |   6 +-
+ .../Commands/SanitizeProductContentHtmlCommand.php |  54 ++++-
+ 3 files changed, 244 insertions(+), 59 deletions(-)
+[1/40] #11786 PS-011.786 Газовая колонка HAIER JSD 20 - 10C
+[2/40] #11787 PS-011.787 Газовая колонка HAIER JSD 24 - 12C
+[3/40] #11788 PS-011.788 Газовый котёл Haier L1PB20-18RC1
+[4/40] #11790 PS-011.790 Газовый котёл Haier L1PB30-28RC1
+[5/40] #11791 PS-011.791 Настенный газовый котел Haier ProLine 2.24 Ti
+[6/40] #11793 PS-011.793 Электрический водонагреватель HAIER ES30V-A2
+[7/40] #11794 PS-011.794 Электрический водонагреватель Haier ES50V-A2
+[8/40] #11795 PS-011.795 Электрический водонагреватель Haier ES80V-A2
+[9/40] #11796 PS-011.796 Электрический водонагреватель Haier ES100V-A2
+[10/40] #11797 PS-011.797 Электрический водонагреватель Haier ES30V-B2 Slim
+[11/40] #11798 PS-011.798 Электрический водонагреватель Haier ES50V-B2 Slim
+[12/40] #11799 PS-011.799 Электрический водонагреватель Haier ES80V-B2 Slim
+[13/40] #11800 PS-011.800 Электрический водонагреватель Haier ES50V-V1 R 
+[14/40] #11801 PS-011.801 Электрический водонагреватель Haier ES80V-V1 R 
+[15/40] #11802 PS-011.802 Электрический водонагреватель Haier ES100V-V1 R
+[16/40] #11803 PS-011.803 Электрический водонагреватель Haier ES50V-F7
+[17/40] #11804 PS-011.804 Электрический водонагреватель Haier ES50V-F1 R
+[18/40] #11805 PS-011.805 Электрический водонагреватель Haier ES80V-F1(R)
+[19/40] #11806 PS-011.806 Электрический водонагреватель Haier ES 100 V-F1 (R)
+[20/40] #11807 PS-011.807 Электрический водонагреватель Haier ES50V-Color
+[21/40] #11808 PS-011.808 Электрический водонагреватель Haier ES80V-Color
+[22/40] #11809 PS-011.809 Электрический водонагреватель Haier FCD-JTHA30-III(ET)
+[23/40] #11810 PS-011.810 Электрический водонагреватель Haier FCD-JTHA50-III(ET)
+[24/40] #11811 PS-011.811 Электрический водонагреватель Haier FCD-JTHA80-III(ET)
+[25/40] #11812 PS-011.812 Электрический водонагреватель Haier ES15V-Q2(R) под раковиной/над раковиной 
+[26/40] #11813 PS-011.813 Электрический водонагреватель Haier ES10V-Q2(R) / Q1(R) под раковиной / над р...
+[27/40] #11814 PS-011.814 Электрический водонагреватель Haier ES8V-Q2(R) / Q1(R) под раковиной/над рако...
+[28/40] #12124 PS-012.124 Водонагреватель Haier ES80V-A1
+[29/40] #18991 PS-000.18991 Сплит-система Haier Lightera HSU-12HNF303/R2-G/HSU-12HUN203/R2
+[30/40] #18992 PS-000.18992 ТЭН для водонагревателей Haier HE-AB200/300 F
+[31/40] #18993 PS-000.18993 Газовый котел Haier ProLine S 2.35 Ti
+[32/40] #18994 PS-000.18994 Газовый котел Haier NeoSLIM 2.24 TI
+[33/40] #18995 PS-000.18995 Газовый котел Haier NeoSLIM 2.18 TI
+[34/40] #18996 PS-000.18996 Газовый котёл Haier ProLine S 2.32 Ti
+[35/40] #18997 PS-000.18997 Газовый котёл Haier ProLine S 2.28 Ti
+[36/40] #18998 PS-000.18998 Газовый котёл Haier ProLine S 2.18 Ti
+[37/40] #18999 PS-000.18999 Газовый котёл Haier EvoLine 2.32 Ti
+[38/40] #19000 PS-000.19000 Газовый котёл Haier ProLine 2.28 Ti
+[39/40] #19001 PS-000.19001 Газовый котёл Haier TechLine 2.28 Ti
+[40/40] #19002 PS-000.19002 Газовый котёл Haier TechLine 2.32 Ti
+DRY RUN: database will not be changed.
++------------------------------+-------+
+| metric                       | count |
++------------------------------+-------+
+| checked                      | 40    |
+| changed                      | 38    |
+| written                      | 0     |
+| images_removed               | 0     |
+| styles_removed               | 0     |
+| bad_blocks_removed           | 0     |
+| legacy_buy_templates_removed | 76    |
+| videos_extracted             | 0     |
+| documents_extracted          | 0     |
+| seo_rewritten                | 0     |
++------------------------------+-------+
++-------+--------------+-------+------------------------------------------------------------------------+
+| ID    | SKU          | Brand | Product                                                                |
++-------+--------------+-------+------------------------------------------------------------------------+
+| 11786 | PS-011.786   | HAIER | Газовая колонка HAIER JSD 20 - 10C                                     |
+| 11787 | PS-011.787   | HAIER | Газовая колонка HAIER JSD 24 - 12C                                     |
+| 11788 | PS-011.788   | HAIER | Газовый котёл Haier L1PB20-18RC1                                       |
+| 11790 | PS-011.790   | HAIER | Газовый котёл Haier L1PB30-28RC1                                       |
+| 11791 | PS-011.791   | HAIER | Настенный газовый котел Haier ProLine 2.24 Ti                          |
+| 11793 | PS-011.793   | HAIER | Электрический водонагреватель HAIER ES30V-A2                           |
+| 11794 | PS-011.794   | HAIER | Электрический водонагреватель Haier ES50V-A2                           |
+| 11795 | PS-011.795   | HAIER | Электрический водонагреватель Haier ES80V-A2                           |
+| 11796 | PS-011.796   | HAIER | Электрический водонагреватель Haier ES100V-A2                          |
+| 11797 | PS-011.797   | HAIER | Электрический водонагреватель Haier ES30V-B2 Slim                      |
+| 11798 | PS-011.798   | HAIER | Электрический водонагреватель Haier ES50V-B2 Slim                      |
+| 11799 | PS-011.799   | HAIER | Электрический водонагреватель Haier ES80V-B2 Slim                      |
+| 11800 | PS-011.800   | HAIER | Электрический водонагреватель Haier ES50V-V1 R                         |
+| 11801 | PS-011.801   | HAIER | Электрический водонагреватель Haier ES80V-V1 R                         |
+| 11802 | PS-011.802   | HAIER | Электрический водонагреватель Haier ES100V-V1 R                        |
+| 11803 | PS-011.803   | HAIER | Электрический водонагреватель Haier ES50V-F7                           |
+| 11804 | PS-011.804   | HAIER | Электрический водонагреватель Haier ES50V-F1 R                         |
+| 11806 | PS-011.806   | HAIER | Электрический водонагреватель Haier ES 100 V-F1 (R)                    |
+| 11807 | PS-011.807   | HAIER | Электрический водонагреватель Haier ES50V-Color                        |
+| 11808 | PS-011.808   | HAIER | Электрический водонагреватель Haier ES80V-Color                        |
+| 11809 | PS-011.809   | HAIER | Электрический водонагреватель Haier FCD-JTHA30-III(ET)                 |
+| 11810 | PS-011.810   | HAIER | Электрический водонагреватель Haier FCD-JTHA50-III(ET)                 |
+| 11811 | PS-011.811   | HAIER | Электрический водонагреватель Haier FCD-JTHA80-III(ET)                 |
+| 11812 | PS-011.812   | HAIER | Электрический водонагреватель Haier ES15V-Q2(R) под раковиной/над р... |
+| 11813 | PS-011.813   | HAIER | Электрический водонагреватель Haier ES10V-Q2(R) / Q1(R) под раковин... |
+| 12124 | PS-012.124   | HAIER | Водонагреватель Haier ES80V-A1                                         |
+| 18991 | PS-000.18991 | HAIER | Сплит-система Haier Lightera HSU-12HNF303/R2-G/HSU-12HUN203/R2         |
+| 18992 | PS-000.18992 | HAIER | ТЭН для водонагревателей Haier HE-AB200/300 F                          |
+| 18993 | PS-000.18993 | HAIER | Газовый котел Haier ProLine S 2.35 Ti                                  |
+| 18994 | PS-000.18994 | HAIER | Газовый котел Haier NeoSLIM 2.24 TI                                    |
+| 18995 | PS-000.18995 | HAIER | Газовый котел Haier NeoSLIM 2.18 TI                                    |
+| 18996 | PS-000.18996 | HAIER | Газовый котёл Haier ProLine S 2.32 Ti                                  |
+| 18997 | PS-000.18997 | HAIER | Газовый котёл Haier ProLine S 2.28 Ti                                  |
+| 18998 | PS-000.18998 | HAIER | Газовый котёл Haier ProLine S 2.18 Ti                                  |
+| 18999 | PS-000.18999 | HAIER | Газовый котёл Haier EvoLine 2.32 Ti                                    |
+| 19000 | PS-000.19000 | HAIER | Газовый котёл Haier ProLine 2.28 Ti                                    |
+| 19001 | PS-000.19001 | HAIER | Газовый котёл Haier TechLine 2.28 Ti                                   |
+| 19002 | PS-000.19002 | HAIER | Газовый котёл Haier TechLine 2.32 Ti                                   |
++-------+--------------+-------+------------------------------------------------------------------------+
 
 ```
