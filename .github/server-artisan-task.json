@@ -2,5 +2,5 @@
   "task": "artisan-dry-run",
   "artisan_args": "supplier:enrich-100kaminov --brand=Nordflam --pages=40 --limit=80 --dry-run",
   "log_file": "",
-  "run_id": "ligmet-nordflam-100kaminov-dry-20260711-1"
+  "run_id": "ligmet-nordflam-100kaminov-dry-20260711-2"
 }
