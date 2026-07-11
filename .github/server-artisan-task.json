@@ -1,6 +1,6 @@
 {
-  "task": "optimize-clear",
-  "artisan_args": "",
+  "task": "artisan-dry-run",
+  "artisan_args": "brands:enrich-pages --audit-only --include-weak --min-content-chars=360 --limit=0",
   "log_file": "",
-  "run_id": "optimize-clear-after-brand-logo-apply-20260711-1"
+  "run_id": "audit-brand-pages-weak-empty-20260711-1"
 }
