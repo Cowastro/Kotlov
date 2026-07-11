@@ -224,11 +224,13 @@ class Enrich100KaminovCommand extends Command
     private function collectSitemapProductLinks(?string $brandFilter): array
     {
         $root = $this->fetch(self::BASE . '/sitemap.xml');
-        if ($root === null) {
-            return [];
+        $mapUrls = [self::BASE . '/sitemap_products-0.xml'];
+        if ($root !== null) {
+            preg_match_all('#<loc>\s*(https?://[^<]+)\s*</loc>#i', $root, $maps);
+            $mapUrls = array_values(array_unique(array_merge($mapUrls, $maps[1])));
+        } else {
+            $this->warn('Could not fetch sitemap index, trying product sitemap directly.');
         }
-
-        preg_match_all('#<loc>\s*(https?://[^<]+)\s*</loc>#i', $root, $maps);
 
         $brandSlugs = $this->brandSlugsForFilter($brandFilter);
         $allBrandSlugs = array_map('mb_strtolower', array_keys(self::BRAND_SLUGS));
@@ -238,7 +240,7 @@ class Enrich100KaminovCommand extends Command
         $rawProductUrls = 0;
         $brandMatchedUrls = 0;
 
-        foreach ($maps[1] as $mapUrl) {
+        foreach ($mapUrls as $mapUrl) {
             $mapUrl = html_entity_decode((string) $mapUrl, ENT_QUOTES | ENT_HTML5, 'UTF-8');
             if (! str_contains($mapUrl, 'sitemap_product')) {
                 continue;
