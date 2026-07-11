@@ -5,6 +5,7 @@ namespace App\Console\Commands;
 use App\Services\AiContentEnricher;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 class EnrichProductContentCommand extends Command
 {
@@ -18,13 +19,20 @@ class EnrichProductContentCommand extends Command
         {--limit= : Limit number of products}
         {--offset=0 : Skip first N products (for batching)}
         {--sleep=300 : Delay between API calls in milliseconds}
-        {--dry-run : Show what would be processed without calling AI}';
+        {--openai : Use OPENAI_API_KEY/OPENAI_API_URL for this run when configured}
+        {--ai-model= : Override AI model for this run}
+        {--dry-run : Preview generated text without writing to database}';
 
     protected $description = 'Generate unique SEO descriptions for existing products via AI.';
 
     public function handle(): int
     {
         $enricher = new AiContentEnricher();
+        if ((bool) $this->option('openai')) {
+            $enricher = $enricher->withOpenAi((string) $this->option('ai-model'));
+        } elseif ($this->option('ai-model')) {
+            $enricher = $enricher->withModel((string) $this->option('ai-model'));
+        }
 
         if (! $enricher->isAvailable()) {
             $this->error('No AI provider configured. Set ANTHROPIC_API_KEY or AI_API_KEY + AI_API_URL + AI_MODEL in .env');
@@ -100,20 +108,13 @@ class EnrichProductContentCommand extends Command
             $force ? ' [--force]' : ''
         ));
 
-        if ($dryRun) {
-            foreach ($products as $p) {
-                $this->line(sprintf('[dry-run] %s — %s', $p->sku ?? $p->id, mb_substr($p->name, 0, 60)));
-            }
-            return self::SUCCESS;
-        }
-
         $stats = ['updated' => 0, 'skipped' => 0, 'errors' => 0];
 
         foreach ($products as $i => $product) {
             $this->line(sprintf('[%d/%d] id=%d %s', $i + 1, $products->count(), $product->id, mb_substr($product->name, 0, 60)));
 
             try {
-                $specs = $product->specs ? (json_decode($product->specs, true) ?: []) : [];
+                $specs = $this->specsForProduct((int) $product->id, $product->specs);
 
                 $seo = $enricher->generateSeo(
                     (string) $product->name,
@@ -125,6 +126,21 @@ class EnrichProductContentCommand extends Command
                 if (! $seo) {
                     $this->warn('  AI returned empty response, skipped.');
                     $stats['skipped']++;
+                    usleep($sleepMs * 1000);
+                    continue;
+                }
+
+                if ($dryRun) {
+                    if (($seo['short'] ?? '') !== '') {
+                        $this->line('  <fg=green>short preview:</> ' . $seo['short']);
+                    }
+                    if (($seo['content'] ?? '') !== '') {
+                        $preview = trim(preg_replace('/\s+/u', ' ', strip_tags($seo['content'])) ?? '');
+                        $this->line('  <fg=green>content preview:</> ' . mb_substr($preview, 0, 700));
+                        $this->line('  <fg=gray>html preview:</> ' . mb_substr($seo['content'], 0, 1200));
+                    }
+                    $this->line('  <fg=blue>[dry-run] database not changed</>');
+                    $stats['updated']++;
                     usleep($sleepMs * 1000);
                     continue;
                 }
@@ -168,5 +184,49 @@ class EnrichProductContentCommand extends Command
         }
 
         return $stats['errors'] > 0 ? self::FAILURE : self::SUCCESS;
+    }
+
+    private function specsForProduct(int $productId, mixed $productSpecs): array
+    {
+        $flat = [];
+        if (is_string($productSpecs) && trim($productSpecs) !== '') {
+            $decoded = json_decode($productSpecs, true);
+            if (is_array($decoded)) {
+                foreach ($decoded as $key => $value) {
+                    if (is_array($value)) {
+                        $name = trim((string) ($value['name'] ?? $value['key'] ?? $key));
+                        $val = trim((string) ($value['value'] ?? ''));
+                        $unit = trim((string) ($value['unit'] ?? ''));
+                        if ($name !== '' && $val !== '') {
+                            $flat[$name] = trim($val . ' ' . $unit);
+                        }
+                    } elseif (is_scalar($value) && trim((string) $value) !== '') {
+                        $flat[(string) $key] = trim((string) $value);
+                    }
+                }
+            }
+        }
+
+        if ($flat !== []) {
+            return $flat;
+        }
+
+        $query = DB::table('product_attribute_values as pav')
+            ->join('attributes as a', 'a.id', '=', 'pav.attribute_id')
+            ->where('pav.product_id', $productId)
+            ->whereNotNull('pav.value')
+            ->where('pav.value', '<>', '')
+            ->limit(40);
+
+        if (Schema::hasColumn('product_attribute_values', 'sort_order')) {
+            $query->orderBy('pav.sort_order');
+        } else {
+            $query->orderBy('pav.id');
+        }
+
+        return $query->pluck('pav.value', 'a.name')
+            ->map(fn ($value): string => trim((string) $value))
+            ->filter()
+            ->all();
     }
 }
