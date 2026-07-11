@@ -1,6 +1,6 @@
 {
-  "task": "optimize-clear",
-  "artisan_args": "",
-  "log_file": "storage/logs/server-artisan-optimize-clear.log",
-  "run_id": "optimize-clear-20260711-ai-content"
+  "task": "artisan-dry-run",
+  "artisan_args": "product:enrich-content --all --limit=3 --dry-run --openai --ai-model=gpt-4.1 --min-specs=3 --sleep=0",
+  "log_file": "storage/logs/server-artisan-ai-content-preview.log",
+  "run_id": "ai-content-preview-20260711-3"
 }
