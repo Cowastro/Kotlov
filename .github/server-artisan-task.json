@@ -1,6 +1,6 @@
 {
-  "task": "artisan-apply",
-  "artisan_args": "product:enrich-content --all --only=content --limit=10 --offset=99 --min-specs=3 --rewrite-thin=350 --source-context --require-source-context --skip-root-source-context --ai-model=deepseek-chat",
-  "log_file": "storage/logs/server-artisan-deepseek-thin-source-apply-gap.log",
-  "run_id": "deepseek-thin-source-apply-20260711-9"
+  "task": "artisan-dry-run",
+  "artisan_args": "products:audit-content-health --not-archived --active-only --with-source-only --issues=no_content,no_short,low_attrs --max-attrs=2 --limit=120",
+  "log_file": "storage/logs/server-artisan-content-health-audit.log",
+  "run_id": "content-health-audit-20260711-1"
 }
