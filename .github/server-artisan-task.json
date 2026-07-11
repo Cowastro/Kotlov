@@ -1,6 +1,6 @@
 {
-  "task": "optimize-clear",
-  "artisan_args": "",
-  "log_file": "storage/logs/server-artisan-deploy-brand-pages.log",
-  "run_id": "deploy-brand-pages-20260711-1"
+  "task": "artisan-dry-run",
+  "artisan_args": "brands:enrich-pages --audit-only --include-weak --min-content-chars=420 --limit=120",
+  "log_file": "storage/logs/server-artisan-brand-pages-audit.log",
+  "run_id": "brand-pages-audit-20260711-1"
 }
