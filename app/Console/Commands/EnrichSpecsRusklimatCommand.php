@@ -409,6 +409,9 @@ class EnrichSpecsRusklimatCommand extends Command
                     continue 2;
                 }
             }
+            if ($this->isDeniedSpecPair($k, $v)) {
+                continue;
+            }
             if (! isset($specs[$k])) {
                 $specs[$k] = $v;
             }
@@ -427,9 +430,63 @@ class EnrichSpecsRusklimatCommand extends Command
         }
 
         $value = $this->bestRusklimatSpecValue(array_slice($texts, 1));
-        if ($value !== null) {
+        if ($value !== null && ! $this->isDeniedSpecPair($texts[0], $value)) {
             $specs[$texts[0]] = $value;
         }
+    }
+
+    private function isDeniedSpecPair(string $key, string $value): bool
+    {
+        $keyPlain = mb_strtolower(trim(preg_replace('/\s+/u', ' ', $key) ?? $key));
+        $valuePlain = mb_strtolower(trim(preg_replace('/\s+/u', ' ', $value) ?? $value));
+        $keyAscii = $this->asciiFold($keyPlain);
+        $valueAscii = $this->asciiFold($valuePlain);
+
+        $badKeys = [
+            'foto',
+            'photo',
+            'image',
+            'naimenovanie',
+            'name',
+            'kod tovara',
+            'artikul',
+            'tsena',
+            'cena',
+            'kol vo',
+            'kolichestvo',
+        ];
+
+        foreach ($badKeys as $badKey) {
+            if ($keyAscii === $badKey || str_starts_with($keyAscii, $badKey . ' ')) {
+                return true;
+            }
+        }
+
+        if (preg_match('/\b(?:ls|lc|лс|лc|лз|л3|ls-|lc-)\s*-?\s*\d{5,}\b/iu', $valuePlain)) {
+            return true;
+        }
+
+        if (in_array($valueAscii, ['foto', 'photo', 'image', 'naimenovanie', 'name'], true)) {
+            return true;
+        }
+
+        return false;
+    }
+
+    private function asciiFold(string $value): string
+    {
+        $map = [
+            'а' => 'a', 'б' => 'b', 'в' => 'v', 'г' => 'g', 'д' => 'd', 'е' => 'e', 'ё' => 'e',
+            'ж' => 'zh', 'з' => 'z', 'и' => 'i', 'й' => 'y', 'к' => 'k', 'л' => 'l', 'м' => 'm',
+            'н' => 'n', 'о' => 'o', 'п' => 'p', 'р' => 'r', 'с' => 's', 'т' => 't', 'у' => 'u',
+            'ф' => 'f', 'х' => 'h', 'ц' => 'ts', 'ч' => 'ch', 'ш' => 'sh', 'щ' => 'sch',
+            'ъ' => '', 'ы' => 'y', 'ь' => '', 'э' => 'e', 'ю' => 'yu', 'я' => 'ya',
+        ];
+
+        $value = strtr($value, $map);
+        $value = preg_replace('/[^a-z0-9]+/u', ' ', $value) ?? $value;
+
+        return trim($value);
     }
 
     private function bestRusklimatSpecValue(array $candidates): ?string
