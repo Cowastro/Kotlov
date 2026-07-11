@@ -1,6 +1,6 @@
 {
-  "task": "artisan-dry-run",
-  "artisan_args": "supplier:enrich-source-products --supplier=tsk_nasosy --domain=aqualider.by --force --replace-specs --overwrite-images --limit=10",
-  "log_file": "",
-  "run_id": "tsk-nasosy-source-enrich-dry-run-20260711-1"
+  "task": "artisan-background",
+  "artisan_args": "supplier:enrich-source-products --supplier=tsk_nasosy --domain=aqualider.by --apply --force --replace-specs --overwrite-images --max-current-attrs=0 --limit=40 --sleep=1000",
+  "log_file": "storage/logs/tsk-nasosy-aqualider-zero-attrs-fill.log",
+  "run_id": "tsk-nasosy-aqualider-zero-attrs-fill-20260711-1"
 }
