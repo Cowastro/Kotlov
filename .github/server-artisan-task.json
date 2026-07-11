@@ -1,6 +1,6 @@
 {
   "task": "artisan-dry-run",
-  "artisan_args": "products:audit-content-health --active-only --not-archived --issues=no_content,no_short --max-attrs=2 --limit=120",
+  "artisan_args": "product:enrich-content --all --only=both --source-context --require-source-context --skip-root-source-context --min-source-context-chars=80 --min-specs=2 --rewrite-thin=220 --limit=5 --sleep=300 --dry-run --debug-ai",
   "log_file": "",
-  "run_id": "audit-products-missing-text-20260711-1"
+  "run_id": "dry-run-product-seo-source-context-20260711-1"
 }
