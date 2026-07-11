@@ -1042,12 +1042,12 @@ a.category-v05.subcat-tile:hover .cate-icon {
 
 .section-product-description.flat-animate-tab .tab-pane.active,
 .section-product-description.flat-animate-tab .tab-pane.show {
-    pointer-events: auto;
-    opacity: 1;
-    visibility: visible;
-    position: relative;
-    z-index: 2;
-    transform: none;
+    pointer-events: auto !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+    position: relative !important;
+    z-index: 2 !important;
+    transform: none !important;
 }
 
 .section-product-description.flat-animate-tab .tab-pane.active iframe,
@@ -1056,8 +1056,8 @@ a.category-v05.subcat-tile:hover .cate-icon {
 .section-product-description.flat-animate-tab .tab-pane.show video,
 .section-product-description.flat-animate-tab .tab-pane.active .product-video-wrap,
 .section-product-description.flat-animate-tab .tab-pane.show .product-video-wrap {
-    opacity: 1;
-    visibility: visible;
+    opacity: 1 !important;
+    visibility: visible !important;
 }
 
 .product-video-link {
