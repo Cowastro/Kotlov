@@ -1,6 +1,6 @@
 # Server Artisan Result
 
-- Time: 2026-07-11 17:52:42 UTC
+- Time: 2026-07-11 17:56:45 UTC
 - Task: `artisan-dry-run`
 - Artisan args: `supplier:enrich-100kaminov --brand=Nordflam --pages=40 --limit=80 --dry-run`
 - Log file: ``
@@ -8,15 +8,16 @@
 
 ```text
 From https://github.com/Cowastro/Kotlov
-   eb5a146..521bd17  main       -> origin/main
-Updating eb5a146..521bd17
+   521bd17..b5eaf43  main       -> origin/main
+Updating 521bd17..b5eaf43
 Fast-forward
- .github/server-artisan-result.md | 57 +++++++++++++++++++++++++++++++++-------
- .github/server-artisan-task.json |  4 +--
- 2 files changed, 49 insertions(+), 12 deletions(-)
+ .github/server-artisan-result.md                 | 53 ++++++++++++++----------
+ .github/server-artisan-task.json                 |  2 +-
+ app/Console/Commands/Enrich100KaminovCommand.php |  2 +
+ 3 files changed, 33 insertions(+), 24 deletions(-)
 DRY RUN
 Catalog index: 1 brands, 10 products total
-  [nordflam] sample model keys: CARINI, FROVI, PALERMO, PALESTRO, TORIA, VERA CAPPUCCINO, ETNA ПРАВАЯ, РЕШЕТКА AERO 90 600 400 ЛЕВАЯ, РЕШЕТКА AERO 90 600, РЕШЕТКА AERO 90 800
+  [nordflam] sample model keys: CARINI, FROVI, PALERMO, PALESTRO, TORIA, VERA CAPPUCCINO, ETNA P, РЕШЕТКА AERO 90 600 400 L, РЕШЕТКА AERO 90 600, РЕШЕТКА AERO 90 800
 
 Category: /ps1026-top-pechej-kaminov?sort=position
   [Nordflam] Печь-камин Nordflam Toria → model:TORIA → pid=17022
@@ -43,7 +44,12 @@ Category: /ps1025-top-pechej-dlya?sort=position
 Category: /ps1024-top-pechej-dlya?sort=position
 
 Category: /g6149558-kaminy
-  [Nordflam] Каминная топка Nordflam Etna Right → model:ETNA P → NO MATCH
+  [Nordflam] Каминная топка Nordflam Etna Right → model:ETNA P → pid=17040
+    · Страна производитель: Польша
+    · Водяной контур: Нет
+    · Вес: 81 кг
+    · Подвод воздуха извне: Опция
+    · images: 7
 
 Category: /g6364208-reshetki-kaminnye-ventilyatsionnye
 
@@ -51,12 +57,12 @@ Category: /g6364208-reshetki-kaminnye-ventilyatsionnye
 | metric   | count |
 +----------+-------+
 | crawled  | 8     |
-| matched  | 3     |
+| matched  | 4     |
 | enriched | 0     |
 | images   | 0     |
 | specs    | 0     |
 | ai_done  | 0     |
-| skipped  | 1     |
+| skipped  | 0     |
 | errors   | 0     |
 +----------+-------+
 
