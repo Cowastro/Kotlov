@@ -24,6 +24,7 @@ class Enrich100KaminovCommand extends Command
         {--pages=10    : Max pages to crawl per category}
         {--limit=      : Max products to enrich}
         {--sleep=800   : Delay between HTTP requests, ms}
+        {--sitemap     : Collect product URLs from 100kaminov sitemap instead of listing pages}
         {--overwrite-images : Replace existing images}
         {--skip-ai     : Skip AI description/SEO generation}
         {--only-ai     : Only regenerate AI texts, skip images and specs}
@@ -141,6 +142,33 @@ class Enrich100KaminovCommand extends Command
 
         $seenProductUrls = [];
 
+        if ((bool) $this->option('sitemap')) {
+            $links = $this->collectSitemapProductLinks($brandFilter);
+            $this->newLine();
+            $this->info('Sitemap product links: ' . count($links));
+
+            foreach ($links as $productUrl) {
+                if ($enriched >= $limit) {
+                    break;
+                }
+                try {
+                    if ($this->processProduct($productUrl)) {
+                        $enriched++;
+                    }
+                } catch (\Throwable $e) {
+                    $this->stats['errors']++;
+                    $this->warn("  error [{$productUrl}]: " . $e->getMessage());
+                }
+                usleep($this->sleep * 1000);
+            }
+
+            $this->newLine();
+            $this->table(['metric', 'count'],
+                array_map(fn ($k, $v) => [$k, $v], array_keys($this->stats), array_values($this->stats)));
+
+            return $this->stats['errors'] > 0 ? self::FAILURE : self::SUCCESS;
+        }
+
         foreach ($categories as $path => $catHint) {
             if ($enriched >= $limit) {
                 break;
@@ -192,6 +220,78 @@ class Enrich100KaminovCommand extends Command
     }
 
     // ── Catalog index ─────────────────────────────────────────────────────────────
+
+    private function collectSitemapProductLinks(?string $brandFilter): array
+    {
+        $root = $this->fetch(self::BASE . '/sitemap.xml');
+        if ($root === null) {
+            return [];
+        }
+
+        preg_match_all('#<loc>\s*(https?://[^<]+)\s*</loc>#i', $root, $maps);
+
+        $brandSlugs = $this->brandSlugsForFilter($brandFilter);
+        $allBrandSlugs = array_map('mb_strtolower', array_keys(self::BRAND_SLUGS));
+        $links = [];
+        $seen = [];
+
+        foreach ($maps[1] as $mapUrl) {
+            $mapUrl = html_entity_decode((string) $mapUrl, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+            if (! str_contains($mapUrl, 'sitemap_prod')) {
+                continue;
+            }
+
+            $xml = $this->fetch($mapUrl);
+            if ($xml === null) {
+                continue;
+            }
+
+            preg_match_all('#<loc>\s*(https?://[^<]+/p\d[^<]+\.html)\s*</loc>#i', $xml, $urls);
+            foreach ($urls[1] as $url) {
+                $url = html_entity_decode((string) $url, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+                $lowerUrl = mb_strtolower($url);
+                $needles = $brandSlugs !== [] ? $brandSlugs : $allBrandSlugs;
+
+                if (! $this->urlContainsAny($lowerUrl, $needles) || isset($seen[$url])) {
+                    continue;
+                }
+
+                $seen[$url] = true;
+                $links[] = $url;
+            }
+        }
+
+        sort($links);
+
+        return $links;
+    }
+
+    private function brandSlugsForFilter(?string $brandFilter): array
+    {
+        if ($brandFilter === null || $brandFilter === '') {
+            return [];
+        }
+
+        $slugs = [];
+        foreach (self::BRAND_SLUGS as $slug => $name) {
+            if (mb_strtolower($name) === $brandFilter || mb_strtolower($slug) === $brandFilter) {
+                $slugs[] = mb_strtolower($slug);
+            }
+        }
+
+        return $slugs;
+    }
+
+    private function urlContainsAny(string $url, array $needles): bool
+    {
+        foreach ($needles as $needle) {
+            if ($needle !== '' && str_contains($url, mb_strtolower((string) $needle))) {
+                return true;
+            }
+        }
+
+        return false;
+    }
 
     private function buildCatalogIndex(): void
     {
