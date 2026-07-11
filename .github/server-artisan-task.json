@@ -1,6 +1,6 @@
 {
-  "task": "optimize-clear",
-  "artisan_args": "",
+  "task": "artisan-dry-run",
+  "artisan_args": "products:audit-content-quality --slug-like=ecokamin --active-only --not-archived --limit=200",
   "log_file": "",
-  "run_id": "optimize-clear-after-product-video-tab-fix-20260711-3"
+  "run_id": "audit-ecokamin-old-content-20260711-1"
 }
