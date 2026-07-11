@@ -1,6 +1,6 @@
 {
-  "task": "artisan-apply",
-  "artisan_args": "catalog:deactivate-empty-categories --apply --limit=200",
+  "task": "optimize-clear",
+  "artisan_args": "",
   "log_file": "",
-  "run_id": "apply-deactivate-empty-categories-20260711-2"
+  "run_id": "optimize-clear-after-empty-category-deactivation-20260711-1"
 }
