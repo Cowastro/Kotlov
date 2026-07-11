@@ -1,29 +1,28 @@
 # Server Artisan Result
 
-- Time: 2026-07-11 19:52:25 UTC
-- Task: `artisan-dry-run`
-- Artisan args: `brands:discover-teplodvor-logos --limit=0`
+- Time: 2026-07-11 19:55:13 UTC
+- Task: `artisan-apply`
+- Artisan args: `brands:discover-teplodvor-logos --apply --limit=0`
 - Log file: ``
 - Exit code: `0`
 
 ```text
 From https://github.com/Cowastro/Kotlov
-   6490f45..465be6f  main       -> origin/main
-Updating 6490f45..465be6f
+   465be6f..8d4bceb  main       -> origin/main
+Updating 465be6f..8d4bceb
 Fast-forward
- .github/server-artisan-result.md                   | 122 ++++-----------------
- .github/server-artisan-task.json                   |   2 +-
- .../DiscoverTeplodvorBrandLogosCommand.php         |  41 ++++++-
- 3 files changed, 60 insertions(+), 105 deletions(-)
-DRY RUN: no brand logos will be changed.
+ .github/server-artisan-result.md | 23 +++++++++++++++--------
+ .github/server-artisan-task.json |  6 +++---
+ 2 files changed, 18 insertions(+), 11 deletions(-)
+APPLY: missing/broken brand logos will be downloaded.
 Source: https://www.teplodvor.by/brands/
 +------------------------+-------+
 | metric                 | count |
 +------------------------+-------+
 | checked                | 200   |
 | matched                | 2     |
-| downloaded             | 0     |
-| updated                | 0     |
+| downloaded             | 2     |
+| updated                | 2     |
 | skipped_existing       | 129   |
 | skipped_missing_source | 69    |
 | errors                 | 0     |
