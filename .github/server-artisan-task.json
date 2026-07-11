@@ -1,6 +1,6 @@
 {
-  "task": "artisan-dry-run",
-  "artisan_args": "supplier:enrich-100kaminov --brand=Kratki --pages=40 --limit=100 --dry-run",
-  "log_file": "",
-  "run_id": "ligmet-kratki-100kaminov-crawl-dry-20260711-2"
+  "task": "artisan-background",
+  "artisan_args": "supplier:enrich-100kaminov --brand=Kratki --pages=40 --limit=100 --apply --sleep=1000",
+  "log_file": "storage/logs/ligmet-kratki-100kaminov-improved-apply.log",
+  "run_id": "ligmet-kratki-100kaminov-improved-apply-20260711-1"
 }
