@@ -184,11 +184,14 @@ class SanitizeProductContentHtmlCommand extends Command
             }
 
             $original = (string) $row->content;
-            $sanitized = $enricher->sanitizeDescriptionHtml($original);
             $media = $extractMedia ? $this->extractMediaLinks($original) : ['video_url' => '', 'documents' => []];
             if ($extractMedia && $restoreTeplovSuhovMedia) {
                 $media = $this->mergeMedia($media, $this->legacyTeplovSuhovMedia((string) $row->slug));
             }
+            $contentForSanitize = $extractMedia
+                ? $this->removeExtractedMediaMarkup($original, $media)
+                : $original;
+            $sanitized = $enricher->sanitizeDescriptionHtml($contentForSanitize);
 
             if ($showContentSamples > 0 && count($contentSampleRows) < $showContentSamples) {
                 $plain = trim((string) preg_replace('/\s+/u', ' ', strip_tags($original)));
@@ -500,6 +503,56 @@ class SanitizeProductContentHtmlCommand extends Command
                 'url' => 'https://admin.kotlov.by/downloads/catalogue_TIS_2025.pdf',
             ]],
         ];
+    }
+
+    /**
+     * @param array{video_url: string, documents: array<int, array{label: string, url: string}>} $media
+     */
+    private function removeExtractedMediaMarkup(string $html, array $media): string
+    {
+        $urls = array_filter([
+            $media['video_url'] ?? '',
+            ...array_map(fn (array $document): string => (string) ($document['url'] ?? ''), $media['documents'] ?? []),
+        ]);
+
+        foreach (array_unique($urls) as $url) {
+            if (! filter_var($url, FILTER_VALIDATE_URL)) {
+                continue;
+            }
+
+            $html = $this->removeMarkupForUrl($html, $url);
+        }
+
+        foreach ($this->contentLinks($html) as $url) {
+            if (preg_match('~^https?://(?:admin\.)?kotlov\.by/(?:order|cart|compare|wishlist)(?:\?|/|$)~iu', $url)) {
+                $html = $this->removeMarkupForUrl($html, $url);
+            }
+        }
+
+        return preg_replace(
+            '~<(p|div|li)\b[^>]*>\s*(?:смотреть\s+видео|скачать|документ|паспорт|инструкция|заказать|купить|добавить\s+в\s+корзину)\s*</\1>~iu',
+            ' ',
+            $html
+        ) ?? $html;
+    }
+
+    private function removeMarkupForUrl(string $html, string $url): string
+    {
+        $variants = array_unique([
+            $url,
+            htmlspecialchars($url, ENT_QUOTES | ENT_HTML5, 'UTF-8'),
+            str_replace('&', '&amp;', $url),
+        ]);
+
+        foreach ($variants as $variant) {
+            $quoted = preg_quote($variant, '~');
+            $html = preg_replace('~<a\b[^>]*href=["\']' . $quoted . '["\'][^>]*>[\s\S]*?</a>~iu', ' ', $html) ?? $html;
+            $html = preg_replace('~<(?:iframe|embed|video|source)\b[^>]*(?:src|data-src)=["\']' . $quoted . '["\'][^>]*>[\s\S]*?</(?:iframe|embed|video|source)>~iu', ' ', $html) ?? $html;
+            $html = preg_replace('~<(?:iframe|embed|video|source)\b[^>]*(?:src|data-src)=["\']' . $quoted . '["\'][^>]*/?>~iu', ' ', $html) ?? $html;
+            $html = str_replace($variant, ' ', $html);
+        }
+
+        return $html;
     }
 
     /**

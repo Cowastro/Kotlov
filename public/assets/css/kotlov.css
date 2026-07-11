@@ -1040,14 +1040,78 @@ a.category-v05.subcat-tile:hover .cate-icon {
     object-fit: contain;
 }
 
-.product-video-wrap .link {
-    display: inline-flex;
+.product-video-link {
+    display: flex;
     align-items: center;
     justify-content: center;
+    gap: 16px;
     width: 100%;
     height: 100%;
-    min-height: 48px;
-    background: #f6f6f6;
+    min-height: 220px;
+    padding: 28px;
+    color: #111;
+    text-align: left;
+    text-decoration: none;
+    background: linear-gradient(135deg, #f8f8f8 0%, #fff 100%);
+    border: 1px solid #ececec;
+}
+
+.product-video-link:hover {
+    color: #111;
+    border-color: #d7d7d7;
+}
+
+.product-video-link-icon {
+    position: relative;
+    flex: 0 0 64px;
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    background: #111;
+    box-shadow: 0 14px 28px rgba(0, 0, 0, .14);
+}
+
+.product-video-link-icon::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 53%;
+    transform: translate(-50%, -50%);
+    width: 0;
+    height: 0;
+    border-top: 12px solid transparent;
+    border-bottom: 12px solid transparent;
+    border-left: 17px solid #fff;
+}
+
+.product-video-link-copy {
+    display: grid;
+    gap: 4px;
+}
+
+.product-video-link-copy strong {
+    font-size: 20px;
+    font-weight: 600;
+}
+
+.product-video-link-copy small {
+    color: #777;
+    font-size: 14px;
+}
+
+@media (max-width: 575.98px) {
+    .product-video-link {
+        min-height: 180px;
+        padding: 22px;
+        flex-direction: column;
+        text-align: center;
+    }
+
+    .product-video-link-icon {
+        flex-basis: 56px;
+        width: 56px;
+        height: 56px;
+    }
 }
 
 /* Brand directory cards: logos must be contained, not cropped like category photos. */

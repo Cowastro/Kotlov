@@ -672,8 +672,12 @@
                                 @elseif ($isDirectVideo)
                                     <video src="{{ $videoUrl }}" controls preload="metadata"></video>
                                 @else
-                                    <a href="{{ $videoUrl }}" class="link fw-medium" target="_blank" rel="nofollow noopener">
-                                        Смотреть видео
+                                    <a href="{{ $videoUrl }}" class="product-video-link" target="_blank" rel="nofollow noopener">
+                                        <span class="product-video-link-icon" aria-hidden="true"></span>
+                                        <span class="product-video-link-copy">
+                                            <strong>Смотреть видео</strong>
+                                            <small>Откроется в новой вкладке</small>
+                                        </span>
                                     </a>
                                 @endif
                             </div>
