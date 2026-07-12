@@ -359,6 +359,7 @@ PROMPT;
         $sourceBlock = $sourceFacts !== ''
             ? "\nДанные из карточки источника/производителя:\n{$sourceFacts}\n"
             : '';
+        $domainRules = $this->productDomainRules($name, $brandText, $cat, $flat, $sourceContext);
 
         $prompt = <<<PROMPT
 Ты SEO-копирайтер интернет-магазина KOTLOV.BY. Напиши полезное описание товара на русском языке строго по данным ниже.
@@ -369,6 +370,7 @@ PROMPT;
 Характеристики:
 {$specsText}
 {$sourceBlock}
+{$domainRules}
 
 Правила фактов:
 - Используй только название, бренд, категорию, характеристики и данные источника выше. Не выдумывай цифры, страну производства, комплектацию, гарантию, наличие, скидки, сроки или цены.
@@ -386,7 +388,7 @@ PROMPT;
 - Спокойный, коммерческий, грамотный. Без воды и без обещаний вроде "лучшая цена".
 - Текст должен помогать выбрать товар: где применяется, на что обратить внимание, почему эта позиция может подойти.
 - Пиши как интернет-маркетплейс отопительного оборудования: помогай купить, сравнить и подобрать товар, но без пустых рекламных обещаний.
-- Естественно используй SEO-фразы, если они подходят к товару: "купить", бренд, тип товара, категория, "в %city%", "с доставкой по Беларуси", "для отопления", "для горячего водоснабжения", "для дымоходной системы". Не вставляй все ключи подряд и не повторяй одну фразу несколько раз.
+- Естественно используй SEO-фразы только если они подходят к профилю товара: "купить", бренд, тип товара, категория, "в %city%", "с доставкой по Беларуси", "для отопления", "для горячего водоснабжения", "для дымоходной системы". Не вставляй все ключи подряд и не повторяй одну фразу несколько раз.
 - Для локального SEO в content используй точный плейсхолдер "в %city%". Не заменяй %city% реальным городом.
 - В short_description не ставь %city%; там можно писать "по Беларуси".
 - Если товар относится к дымоходам, используй "дымоходная система", "система дымоудаления", "печь" или "котел", а не "климатическое оборудование".
@@ -426,7 +428,86 @@ PROMPT;
             return null;
         }
 
-        return $raw ? $this->parseSeoJson($raw) : null;
+        $result = $raw ? $this->parseSeoJson($raw) : null;
+
+        return $result ? $this->cleanupProductDomain($result, $name, $brandText, $cat, $flat, $sourceContext) : null;
+    }
+
+    private function productDomainRules(string $name, string $brand, string $category, array $specs, array $sourceContext = []): string
+    {
+        if ($this->isChimneyProduct($name, $brand, $category, $specs, $sourceContext)) {
+            return <<<'RULES'
+
+Профиль товара: дымоходный элемент / элемент системы дымоудаления.
+Дополнительные правила профиля:
+- Пиши про дымоходную систему, систему дымоудаления, печь, камин или котел только когда это следует из названия/категории.
+- Не пиши про водоснабжение, горячее водоснабжение, ГВС, водопровод, насосы, радиаторы, теплоноситель, сантехнику, воду или отопительный контур.
+- Если в названии есть слово "труба", считай это дымоходной трубой, а не водопроводной трубой.
+- Подходящие SEO-фразы: "дымоход", "дымоходная труба", "элемент дымохода", "для дымоходной системы", "купить дымоходные элементы в %city%".
+RULES;
+        }
+
+        return <<<'RULES'
+
+Профиль товара: определяется по названию, категории и характеристикам. Не смешивай разные области применения: дымоходы не описывай как водоснабжение, радиаторы не описывай как котлы, насосы не описывай как радиаторы.
+RULES;
+    }
+
+    private function cleanupProductDomain(array $result, string $name, string $brand, string $category, array $specs, array $sourceContext = []): ?array
+    {
+        if (! $this->isChimneyProduct($name, $brand, $category, $specs, $sourceContext)) {
+            return $result;
+        }
+
+        foreach (['short', 'content'] as $field) {
+            $text = (string) ($result[$field] ?? '');
+            if ($text === '') {
+                continue;
+            }
+
+            $replacements = [
+                '~для\s+горячего\s+водоснабжения~iu' => 'для дымоходной системы',
+                '~горячего\s+водоснабжения~iu' => 'дымоудаления',
+                '~систем[а-я]*\s+водоснабжения~iu' => 'дымоходной системы',
+                '~водоснабжения~iu' => 'дымоудаления',
+                '~водопровода~iu' => 'дымохода',
+                '~водопроводн(ая|ые|ой|ого|ую|ыми?)~iu' => 'дымоходн$1',
+                '~горячей\s+воды~iu' => 'дымовых газов',
+                '~теплоносителя~iu' => 'дымовых газов',
+            ];
+
+            $text = preg_replace(array_keys($replacements), array_values($replacements), $text) ?? $text;
+            $text = preg_replace('/\s+([,.!?;:])/u', '$1', $text) ?? $text;
+            $result[$field] = trim($text);
+        }
+
+        $combined = mb_strtolower(strip_tags(($result['short'] ?? '') . ' ' . ($result['content'] ?? '')));
+        if (preg_match('/\b(гвс|насос|радиатор|сантехник)/u', $combined)) {
+            return null;
+        }
+
+        return $result;
+    }
+
+    private function isChimneyProduct(string $name, string $brand, string $category, array $specs, array $sourceContext = []): bool
+    {
+        $haystack = mb_strtolower(implode(' ', array_filter([
+            $name,
+            $brand,
+            $category,
+            implode(' ', array_keys($specs)),
+            implode(' ', array_values($specs)),
+            (string) ($sourceContext['source_url'] ?? ''),
+            (string) ($sourceContext['source_title'] ?? ''),
+        ])));
+
+        $hasStrongChimneyContext = (bool) preg_match('/\b(дымоход|дымох|дымоудален|сэндвич|сендвич|трубы?\s+сэндвич|трубы?\s+сендвич|darco|ferrum|теплов|сухов)\b/u', $haystack);
+        if ($hasStrongChimneyContext) {
+            return true;
+        }
+
+        return (bool) preg_match('/\b(зонт|дефлектор|оголовок|фартук|шибер|конденсатоотвод|моно\s?труба)\b/u', $haystack)
+            && (bool) preg_match('/\b(печ|камин|кот[её]л|дымоход)\b/u', $haystack);
     }
 
     private function formatSourceContext(array $sourceContext): string
