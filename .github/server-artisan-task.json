@@ -1,6 +1,6 @@
 {
-  "task": "tail-log",
+  "task": "ps-artisan",
   "artisan_args": "",
   "log_file": "storage/logs/varmega-repair-source-urls.log",
-  "run_id": "varmega-repair-source-urls-tail-20260712-2"
+  "run_id": "varmega-repair-source-urls-ps-20260712-1"
 }
