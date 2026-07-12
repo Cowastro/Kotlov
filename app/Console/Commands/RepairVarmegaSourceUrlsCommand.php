@@ -375,9 +375,8 @@ class RepairVarmegaSourceUrlsCommand extends Command
     {
         $pages = [
             '/^VM700304/u' => 'https://rn-profi.by/truba-iz-nerzhaveyuschej-stali-varmega-inox-press',
-            '/^VM7010/u' => 'https://rn-profi.by/mufta-dvukhrastrubnaya-varmega-inox-press',
-            '/^VM7020/u' => 'https://rn-profi.by/mufta-dvukhrastrubnaya-varmega-inox-press-perekhodnaya',
-            '/^VM7030/u' => 'https://rn-profi.by/mufta-dvukhrastrubnaya-varmega-inox-press-nadvizhnaya',
+            '/^VM7020/u' => 'https://rn-profi.by/index.php?route=product/product&product_id=1452',
+            '/^VM7030/u' => 'https://rn-profi.by/index.php?route=product/product&product_id=1031',
             '/^VM7040/u' => 'https://rn-profi.by/mufta-vstavka-odnorastrubnaya-varmega-inox-press-perekhodnaya',
         ];
 
