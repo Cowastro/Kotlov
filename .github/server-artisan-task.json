@@ -1,6 +1,6 @@
 {
-  "task": "artisan-apply",
-  "artisan_args": "products:audit-content-terms --brand=Varmega --category=Пресс-фитинги --profile=varmega-fittings --not-archived --active-only --limit=80",
-  "log_file": "storage/logs/varmega-press-fitting-content-audit.log",
-  "run_id": "varmega-press-fitting-content-audit-20260712-2"
+  "task": "artisan-dry-run",
+  "artisan_args": "supplier:repair-varmega-source-urls --article-prefix=VM705 --rn-profi-section-index --rn-profi-section-pages=80 --http-timeout=5 --limit=0",
+  "log_file": "storage/logs/varmega-vm705-source-repair.log",
+  "run_id": "varmega-vm705-source-repair-dry-20260712-1"
 }
