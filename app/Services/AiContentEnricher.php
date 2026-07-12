@@ -615,6 +615,9 @@ RULES;
             $text = preg_replace($pattern, $replacement, $text) ?? $text;
         }
 
+        $text = preg_replace('~\bуточняйте\b~iu', 'проверьте', $text) ?? $text;
+        $text = preg_replace('~\bуточните\b~iu', 'проверьте', $text) ?? $text;
+        $text = preg_replace('~\bуточнять\b~iu', 'проверять', $text) ?? $text;
         $text = preg_replace('~\b(?:итальянского|немецкого|российского|польского|литовского|китайского)\s+бренда\b~iu', 'бренда', $text) ?? $text;
         $text = preg_replace('~\s*(?:Модель|Товар|Оборудование)\s+[^.!?]{0,80}?(?:рассчитан[ао]?|создан[ао]?)\s+на\s+(?:длительный\s+срок\s+службы|стабильную\s+работу)[^.!?]*[.!?]?~iu', '', $text) ?? $text;
         $text = preg_replace('~\b(?:длительный\s+срок\s+службы|стабильная\s+работа|надежная\s+работа|высокая\s+эффективность)\b~iu', '', $text) ?? $text;
@@ -639,6 +642,10 @@ RULES;
         foreach ($patterns as $pattern => $replacement) {
             $text = preg_replace($pattern, $replacement, $text) ?? $text;
         }
+
+        $text = preg_replace('~\bуточняйте\b~iu', 'проверьте', $text) ?? $text;
+        $text = preg_replace('~\bуточните\b~iu', 'проверьте', $text) ?? $text;
+        $text = preg_replace('~\bуточнять\b~iu', 'проверять', $text) ?? $text;
 
         if (! $allowCityPlaceholder) {
             $text = str_replace(['в %city%', '%city%'], 'по Беларуси', $text);
