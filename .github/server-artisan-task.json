@@ -1,6 +1,6 @@
 {
-  "task": "tail-log",
-  "artisan_args": "",
+  "task": "kill-pid",
+  "artisan_args": "3328491",
   "log_file": "storage/logs/varmega-repair-source-urls.log",
-  "run_id": "varmega-repair-source-urls-tail-20260712-4"
+  "run_id": "varmega-repair-source-urls-kill-20260712-1"
 }
