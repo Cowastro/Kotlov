@@ -1,6 +1,6 @@
 {
   "task": "artisan-dry-run",
-  "artisan_args": "products:audit-content-health --active-only --not-archived --missing-source-only --max-attrs=2 --limit=80 --csv=storage/app/reports/content-health/content-health-missing-source.csv",
+  "artisan_args": "products:audit-content-health --active-only --not-archived --brand=Varmega --max-attrs=5 --limit=120 --csv=storage/app/reports/content-health/content-health-varmega.csv",
   "log_file": "",
-  "run_id": "audit-content-health-missing-source-20260712-1"
+  "run_id": "audit-content-health-varmega-20260712-1"
 }
