@@ -134,9 +134,10 @@ class RepairVarmegaSourceUrlsCommand extends Command
 
             $article = $this->normArticle((string) $row->supplier_article);
             $match = $article !== ''
-                ? $this->knownRnProfiVarmegaSourceForArticle($article)
+                ? $this->knownOfficialVarmegaSourceForArticle($article)
                 : null;
 
+            $match ??= $article !== '' ? $this->knownRnProfiVarmegaSourceForArticle($article) : null;
             $match ??= $article !== '' ? ($index[$article] ?? null) : null;
 
             if ($match === null
@@ -389,6 +390,45 @@ class RepairVarmegaSourceUrlsCommand extends Command
             if ($html !== null && $this->pageContainsArticle($html, $normArticle)) {
                 return ['url' => $url];
             }
+        }
+
+        return null;
+    }
+
+    private function knownOfficialVarmegaSourceForArticle(string $normArticle): ?array
+    {
+        $url = null;
+
+        if (preg_match('/^VM70100(\d{2})(\d{2})$/u', $normArticle, $m)) {
+            $size = ltrim($m[1], '0') . '-' . ltrim($m[2], '0') . '-mm';
+            $url = 'https://varmega.ru/product/truby-i-fitingi/mufta-dvukhrastrubnaya-varmega-inox-press-'
+                . mb_strtolower($normArticle) . '-' . $size . '/';
+        }
+
+        if (preg_match('/^VM70500(\d{2})(\d{2})$/u', $normArticle, $m)) {
+            $thread = [
+                '04' => '1-2',
+                '05' => '3-4',
+                '06' => '1',
+                '07' => '1-1-4',
+                '08' => '1-1-2',
+                '09' => '2',
+            ][$m[2]] ?? null;
+
+            if ($thread !== null) {
+                $size = ltrim($m[1], '0') . '-' . $thread;
+                $url = 'https://varmega.ru/product/truby-i-fitingi/mufta-rastrubnaya-varmega-inox-press-s-vnutrenney-rezboy-'
+                    . mb_strtolower($normArticle) . '-' . $size . '/';
+            }
+        }
+
+        if ($url === null) {
+            return null;
+        }
+
+        $html = $this->fetch($url);
+        if ($html !== null && $this->pageContainsArticle($html, $normArticle)) {
+            return ['url' => $url];
         }
 
         return null;
