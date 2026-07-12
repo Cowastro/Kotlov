@@ -1,6 +1,6 @@
 # Server Artisan Result
 
-- Time: 2026-07-11 23:50:41 UTC
+- Time: 2026-07-12 00:05:34 UTC
 - Task: `artisan-apply`
 - Artisan args: `product:enrich-content --all --only=both --min-specs=8 --rewrite-thin=220 --limit=120 --sleep=500`
 - Log file: ``
@@ -8,372 +8,372 @@
 
 ```text
 From https://github.com/Cowastro/Kotlov
-   68409de..8ddbd8c  main       -> origin/main
-Updating 68409de..8ddbd8c
+   8ddbd8c..9958e82  main       -> origin/main
+Updating 8ddbd8c..9958e82
 Fast-forward
- .github/server-artisan-result.md | 484 +++++++++++++++++++--------------------
+ .github/server-artisan-result.md | 590 +++++++++++++++++++--------------------
  .github/server-artisan-task.json |   2 +-
- 2 files changed, 243 insertions(+), 243 deletions(-)
+ 2 files changed, 296 insertions(+), 296 deletions(-)
 Provider: deepseek-chat (api.deepseek.com)
-Candidates: 523 | processing: 120 (offset=0)
-[1/120] id=11553 Газогенераторный котел КСТБ-75 с терморегулятором и теплообм
+Candidates: 403 | processing: 120 (offset=0)
+[1/120] id=12097 Газовый котел E.C.A. Gerda 24 HM NG
+  specs available: 26
+  ✓ content+short_description saved
+[2/120] id=12098 Газовый котел E.C.A. Gerda 28 HM NG
+  specs available: 27
+  ✓ content+short_description saved
+[3/120] id=12099 Газовый котел E.C.A. Gerda 33 HM NG
+  specs available: 27
+  ✓ content+short_description saved
+[4/120] id=12100 Газовый котел E.C.A. Gerda 37 HM NG
+  specs available: 26
+  ✓ content+short_description saved
+[5/120] id=12184 Пеллетная горелка KOTLOV XO Mini 10 кВт
+  specs available: 11
+  ✓ short_description saved
+[6/120] id=12185 Пеллетная горелка KOTLOV XO Mini 15 кВт 
+  specs available: 11
+  ✓ short_description saved
+[7/120] id=12186 Пеллетная горелка KOTLOV XO Mini 20 кВт 
+  specs available: 11
+  ✓ short_description saved
+[8/120] id=12187 Пеллетная горелка KOTLOV XO  EVO 18 кВт (EA140)
+  specs available: 11
+  ✓ short_description saved
+[9/120] id=12188 Пеллетная горелка KOTLOV XO  EVO 26 кВт (EВ140) 
+  specs available: 11
+  ✓ short_description saved
+[10/120] id=12189 Пеллетная горелка KOTLOV XO EVO 26 кВт (EВ140) Plum 860
+  specs available: 11
+  ✓ short_description saved
+[11/120] id=12190 Пеллетная горелка KOTLOV XO EVO 18 кВт EA140 Plum 860
+  specs available: 11
+  ✓ short_description saved
+[12/120] id=12191 Пеллетная горелка KOTLOV XO EVO 18 кВт EAC140 (шамот)
+  specs available: 11
+  ✓ short_description saved
+[13/120] id=12192 Пеллетная горелка KOTLOV XO EVO 18 кВт EAC140 (шамот) Plum 8
+  specs available: 11
+  ✓ short_description saved
+[14/120] id=12193 Пеллетная горелка KOTLOV XO EVO 37 кВт (EA160)
+  specs available: 11
+  ✓ short_description saved
+[15/120] id=12194 Пеллетная горелка KOTLOV XO EVO 37 кВт (EA160) Plum 860
+  specs available: 11
+  ✓ short_description saved
+[16/120] id=12195 Пеллетная горелка KOTLOV XO EVO 37 кВт EAC160 (шамот)
+  specs available: 11
+  ✓ short_description saved
+[17/120] id=12196 Пеллетная горелка KOTLOV XO EVO 37 кВт EAC160 (шамот) Plum 8
+  specs available: 11
+  ✓ short_description saved
+[18/120] id=12197 Пеллетная горелка KOTLOV XO EVO 52 кВт EB160
+  specs available: 11
+  ✓ short_description saved
+[19/120] id=12198 Пеллетная горелка KOTLOV XO EVO 52 кВт EB160 Plum860
+  specs available: 11
+  ✓ short_description saved
+[20/120] id=12199 Пеллетная горелка KOTLOV XO EVO 52 кВт EBC160 (шамот)
+  specs available: 11
+  ✓ short_description saved
+[21/120] id=12200 Пеллетная горелка KOTLOV XO EVO 52 кВт EBC160 (шамот) Plum 8
+  specs available: 11
+  ✓ short_description saved
+[22/120] id=12201 Пеллетная горелка KOTLOV XO EVO 67 кВт EAC180 (шамот)
+  specs available: 11
+  ✓ short_description saved
+[23/120] id=12202 Пеллетная горелка KOTLOV XO EVO 82 кВт EBC180 (шамот)
+  specs available: 11
+  ✓ short_description saved
+[24/120] id=12203 Пеллетная горелка KOTLOV XO Ceramic PRO 100 кВт
+  specs available: 10
+  ✓ short_description saved
+[25/120] id=12204 Пеллетная горелка KOTLOV XO ECO 20 кВт
+  specs available: 11
+  ✓ short_description saved
+[26/120] id=12205 Пеллетная горелка KOTLOV XO Ceramic PRO 150 кВт
+  specs available: 10
+  ✓ short_description saved
+[27/120] id=12206 Пеллетная горелка KOTLOV XO Ceramic PRO 200 кВт
+  specs available: 10
+  ✓ short_description saved
+[28/120] id=12207 Пеллетная горелка KOTLOV XO Ceramic PRO 250 кВт
+  specs available: 10
+  ✓ short_description saved
+[29/120] id=12208 Пеллетная горелка KOTLOV XO Ceramic PRO 300 кВт
+  specs available: 11
+  ✓ short_description saved
+[30/120] id=12209 Пеллетная горелка KOTLOV XO Ceramic PRO 400 кВт
+  specs available: 11
+  ✓ short_description saved
+[31/120] id=12210 Пеллетная горелка KOTLOV XO Ceramic PRO 500 кВт
+  specs available: 11
+  ✓ short_description saved
+[32/120] id=12211 Пеллетная горелка KOTLOV XO Ceramic PRO 600 кВт
+  specs available: 11
+  ✓ short_description saved
+[33/120] id=12212 Пеллетная горелка KOTLOV XO Ceramic PRO 700 кВт
+  specs available: 11
+  ✓ short_description saved
+[34/120] id=12213 Пеллетная горелка KOTLOV XO Ceramic PRO 800 кВт
+  specs available: 11
+  ✓ short_description saved
+[35/120] id=12214 Пеллетная горелка KOTLOV XO Ceramic PRO 1000 кВт
+  specs available: 11
+  ✓ short_description saved
+[36/120] id=12215 Пеллетная горелка KOTLOV XO Ceramic PRO 1200 кВт
+  specs available: 11
+  ✓ short_description saved
+[37/120] id=12216 Пеллетная горелка KOTLOV XO Ceramic PRO 1500 кВт
+  specs available: 11
+  ✓ short_description saved
+[38/120] id=12268 ТЭН ESH 2,0 кВт для бойлера 1 1/2
   specs available: 9
   ✓ short_description saved
-[2/120] id=11554 Газогенераторный котел КСТБ-95 с терморегулятором
+[39/120] id=12269 ТЭН ESH 3,0 кВт для бойлера 1 1/2
   specs available: 9
   ✓ short_description saved
-[3/120] id=11556 Газогенераторный котел КСТБ-95 с терморегулятором, теплообме
+[40/120] id=12270 ТЭН ESH 4,5 кВт для бойлера 1 1/2
   specs available: 9
   ✓ short_description saved
-[4/120] id=11619 Бойлер косвенного нагрева TERMICA AMET 120 INOX
+[41/120] id=12271 ТЭН ESH 6,0 кВт для бойлера 1 1/2
+  specs available: 9
+  ✓ short_description saved
+[42/120] id=12283 Счетчик газа диафрагменный СГД 4-3-1 G2,5 И L=110 (левый)
   specs available: 8
   ✓ short_description saved
-[5/120] id=11689 Твердотопливный котел SAKOVICH MAX 99 кВт
+[43/120] id=12284 Счетчик газа диафрагменный СГД 4-3-1-G4ТИ (левый) L=110 (без
+  specs available: 8
+  ✓ short_description saved
+[44/120] id=12302 Счетчик газа ультразвуковой ВЕГА G1.6 В
+  specs available: 15
+  ✓ short_description saved
+[45/120] id=12303 Счетчик газа ультразвуковой ВЕГА G2.5
+  specs available: 15
+  ✓ short_description saved
+[46/120] id=12316 Счетчик газа ультразвуковой КАТА-G6-3
   specs available: 13
   ✓ short_description saved
-[6/120] id=11708 Печь для бани Пегас Легион 16 чугун ДТ 4 стекло
-  specs available: 19
-  ✓ short_description saved
-[7/120] id=11709 Печь для бани Пегас Легион 16 чугун ДТ 4
-  specs available: 19
-  ✓ short_description saved
-[8/120] id=11713 Печь для бани Пегас Легион 22 чугун ДТ 4 стекло
+[47/120] id=12404 Печь для бани GFS Гефест Гроза 18 (М) чугун
   specs available: 17
   ✓ short_description saved
-[9/120] id=11714 Печь для бани Пегас Легион 22 чугун ДТ 4
-  specs available: 17
-  ✓ short_description saved
-[10/120] id=11715 Печь для бани Пегас 16 NEXT ДТ4 стекло сетка премиум
-  specs available: 17
-  ✓ short_description saved
-[11/120] id=11716 Печь для бани Пегас 16 панорама в камне змеевик
-  specs available: 17
-  ✓ short_description saved
-[12/120] id=11717 Печь для бани Пегас 26 NEXT ДТ4 стекло сетка премиум
-  specs available: 17
-  ✓ short_description saved
-[13/120] id=11718 Печь для бани Пегас Легион 22 чугун панорамная дверь
-  specs available: 19
-  ✓ short_description saved
-[14/120] id=11719 Печь для бани Пегас 16 чугун панорама в камне змеевик
-  specs available: 17
-  ✓ short_description saved
-[15/120] id=11720 Печь банная Пегас 16 нерж в камне змеевик
-  specs available: 17
-  ✓ short_description saved
-[16/120] id=11721 Печь для бани Пегас 16 NEXT панорама сетка премиум
-  specs available: 17
-  ✓ short_description saved
-[17/120] id=11722 Печь для бани Пегас 16 NEXT ДТ4 сетка премиум
-  specs available: 17
-  ✓ short_description saved
-[18/120] id=11723 Печь для бани Пегас 26 NEXT ДТ4 сетка премиум
-  specs available: 17
-  ✓ short_description saved
-[19/120] id=11733 Печь для бани Пегас 26 нерж панорама в камне змеевик
-  specs available: 17
-  ✓ short_description saved
-[20/120] id=11735 Печь для бани Пегас 22 чугун в камне змеевик
-  specs available: 17
-  ✓ short_description saved
-[21/120] id=11748 Печь для бани Пегас 16 нерж со стеклом сетка премиум
-  specs available: 17
-  ✓ short_description saved
-[22/120] id=11749 Печь для бани Пегас 16 нерж панорама сетка премиум
-  specs available: 17
-  ✓ short_description saved
-[23/120] id=11750 Печь для бани Пегас 26 нерж сетка премиум
-  specs available: 17
-  ✓ short_description saved
-[24/120] id=11752 Печь для бани Пегас 16 NEXT ДТ4 в камне змеевик
-  specs available: 17
-  ✓ short_description saved
-[25/120] id=11753 Печь для бани Пегас 16 NEXT ДТ4 со стеклом в камне змеевик
-  specs available: 17
-  ✓ short_description saved
-[26/120] id=11755 Печь для бани Пегас 26 NEXT ДТ4 в камне змеевик
-  specs available: 17
-  ✓ short_description saved
-[27/120] id=11756 Печь для бани Пегас 26 NEXT ДТ4 со стеклом в камне змеевик
-  specs available: 17
-  ✓ short_description saved
-[28/120] id=11758 Твердотопливный котел Lavoro Eco L-12 (без автоматики)
-  specs available: 10
-  ✓ short_description saved
-[29/120] id=11759 Твердотопливный котел Lavoro Eco L-16 (без автоматики)
-  specs available: 10
-  ✓ short_description saved
-[30/120] id=11760 Твердотопливный котел Lavoro Eco L-22 (без автоматики)
-  specs available: 11
-  ✓ short_description saved
-[31/120] id=11761 Твердотопливный котел Lavoro Eco L-32 (без автоматики)
-  specs available: 10
-  ✓ short_description saved
-[32/120] id=11762 Твердотопливный котел Lavoro Eco L-42 (без автоматики)
-  specs available: 10
-  ✓ short_description saved
-[33/120] id=11763 Твердотопливный котел Lavoro Eco XL-12 (без автоматики)
-  specs available: 10
-  ✓ short_description saved
-[34/120] id=11764 Твердотопливный котел Lavoro Eco XL-16 (без автоматики)
-  specs available: 10
-  ✓ short_description saved
-[35/120] id=11765 Твердотопливный котел Lavoro Eco XL-22 (без автоматики)
-  specs available: 10
-  ✓ short_description saved
-[36/120] id=11766 Твердотопливный котел Lavoro Eco XL-32 (без автоматики)
-  specs available: 10
-  ✓ short_description saved
-[37/120] id=11767 Твердотопливный котел Lavoro Eco M-10
-  specs available: 10
-  ✓ short_description saved
-[38/120] id=11768 Твердотопливный котел Lavoro Eco M-15
-  specs available: 9
-  ✓ short_description saved
-[39/120] id=11769 Твердотопливный котел Lavoro Eco M-20
-  specs available: 11
-  ✓ short_description saved
-[40/120] id=11770 Твердотопливный котел Lavoro Eco M-25
-  specs available: 9
-  ✓ short_description saved
-[41/120] id=11771 Твердотопливный котел Lavoro Eco M-30
-  specs available: 10
-  ✓ short_description saved
-[42/120] id=11776 Котел газовый отопительный водогрейный Arderia D28, v3      
-  specs available: 8
-  ✓ content+short_description saved
-[43/120] id=11793 Электрический водонагреватель HAIER ES30V-A2
-  specs available: 19
-  ✓ short_description saved
-[44/120] id=11794 Электрический водонагреватель Haier ES50V-A2
-  specs available: 19
-  ✓ short_description saved
-[45/120] id=11795 Электрический водонагреватель Haier ES80V-A2
-  specs available: 19
-  ✓ short_description saved
-[46/120] id=11796 Электрический водонагреватель Haier ES100V-A2
-  specs available: 19
-  ✓ short_description saved
-[47/120] id=11797 Электрический водонагреватель Haier ES30V-B2 Slim
-  specs available: 20
-  ✓ short_description saved
-[48/120] id=11798 Электрический водонагреватель Haier ES50V-B2 Slim
-  specs available: 20
-  ✓ short_description saved
-[49/120] id=11799 Электрический водонагреватель Haier ES80V-B2 Slim
-  specs available: 20
-  ✓ short_description saved
-[50/120] id=11800 Электрический водонагреватель Haier ES50V-V1 R 
-  specs available: 21
-  ✓ short_description saved
-[51/120] id=11801 Электрический водонагреватель Haier ES80V-V1 R 
-  specs available: 21
-  ✓ short_description saved
-[52/120] id=11802 Электрический водонагреватель Haier ES100V-V1 R
-  specs available: 21
-  ✓ short_description saved
-[53/120] id=11803 Электрический водонагреватель Haier ES50V-F7
-  specs available: 21
-  ✓ short_description saved
-[54/120] id=11804 Электрический водонагреватель Haier ES50V-F1 R
-  specs available: 21
-  ✓ short_description saved
-[55/120] id=11806 Электрический водонагреватель Haier ES 100 V-F1 (R)
-  specs available: 21
-  ✓ short_description saved
-[56/120] id=11807 Электрический водонагреватель Haier ES50V-Color
-  specs available: 19
-  ✓ short_description saved
-[57/120] id=11808 Электрический водонагреватель Haier ES80V-Color
-  specs available: 19
-  ✓ short_description saved
-[58/120] id=11809 Электрический водонагреватель Haier FCD-JTHA30-III(ET)
-  specs available: 19
-  ✓ short_description saved
-[59/120] id=11810 Электрический водонагреватель Haier FCD-JTHA50-III(ET)
-  specs available: 19
-  ✓ short_description saved
-[60/120] id=11811 Электрический водонагреватель Haier FCD-JTHA80-III(ET)
-  specs available: 19
-  ✓ short_description saved
-[61/120] id=11812 Электрический водонагреватель Haier ES15V-Q2(R) под раковино
-  specs available: 19
-  ✓ short_description saved
-[62/120] id=11814 Электрический водонагреватель Haier ES8V-Q2(R) / Q1(R) под р
-  specs available: 19
-  ✓ short_description saved
-[63/120] id=11835 Твердотопливный котел SAKOVICH MAX 65кВт
-  specs available: 10
-  ✓ short_description saved
-[64/120] id=11933 Пиролизный котел длительного горения SVAH 15
-  specs available: 9
-  ✓ short_description saved
-[65/120] id=11934 Пиролизный котел длительного горения SVAH 30
-  specs available: 9
-  ✓ short_description saved
-[66/120] id=11935 Пиролизный котел длительного горения SVAH 40
-  specs available: 9
-  ✓ short_description saved
-[67/120] id=11936 Пиролизный котел длительного горения SVAH 50
-  specs available: 8
-  ✓ short_description saved
-[68/120] id=11937 Котел отопительный Татра К40тр
-  specs available: 8
-  ✓ short_description saved
-[69/120] id=11938 Котел отопительный Татра К50тр
-  specs available: 8
-  ✓ short_description saved
-[70/120] id=11939 Котел длительного горения Татра КТ40-Н
-  specs available: 8
-  ✓ short_description saved
-[71/120] id=11941 Котел длительного горения Татра КТ70-Н
-  specs available: 8
-  ✓ short_description saved
-[72/120] id=11942 Котел твердотопливный Татра КТ95-Н
-  specs available: 9
-  ✓ short_description saved
-[73/120] id=11956 Электрический котел Эван EXPERT PLUS 27
-  specs available: 17
-  ✓ short_description saved
-[74/120] id=11962 Уличный твердотопливный котел GREOLIT STREET 95H
-  specs available: 10
-  ✓ short_description saved
-[75/120] id=11963 Твердотопливный котел Greolit DEEP (15 кВт)
-  specs available: 8
-  ✓ short_description saved
-[76/120] id=11964 Твердотопливный котел Greolit DEEP (20 кВт)
-  specs available: 9
-  ✓ short_description saved
-[77/120] id=11965 Твердотопливный котел Greolit DEEP (25 кВт)
-  specs available: 10
-  ✓ short_description saved
-[78/120] id=11966 Твердотопливный котел Greolit MASTER (20 кВт)
-  specs available: 10
-  ✓ short_description saved
-[79/120] id=11967 Твердотопливный котел Greolit MASTER (25 кВт)
-  specs available: 10
-  ✓ short_description saved
-[80/120] id=11983 Электрокотёл+Бак горячей воды+теплоаккумулятор FRESH 200 S-T
-  specs available: 11
-  ✓ short_description saved
-[81/120] id=11984 Бак косвенного нагрева S-Tank Solar SS-150
-  specs available: 16
-  ✓ short_description saved
-[82/120] id=11985 Бак косвенного нагрева S-Tank Solar SS-200
-  specs available: 16
-  ✓ short_description saved
-[83/120] id=11986 Бак косвенного нагрева S-Tank Solar SS-300
-  specs available: 16
-  ✓ short_description saved
-[84/120] id=11987 Бак косвенного нагрева S-Tank Solar SS-500
-  specs available: 16
-  ✓ short_description saved
-[85/120] id=11988 Бак косвенного нагрева S-Tank Solar SS-750
-  specs available: 16
-  ✓ short_description saved
-[86/120] id=11989 Бак косвенного нагрева S-Tank Solar SS-1000
-  specs available: 16
-  ✓ short_description saved
-[87/120] id=11990 Бак косвенного нагрева S-Tank Solar SS-1500
-  specs available: 16
-  ✓ short_description saved
-[88/120] id=11991 Бак косвенного нагрева S-Tank Solar SS-1200
-  specs available: 16
-  ✓ short_description saved
-[89/120] id=11992 Бак косвенного нагрева S-Tank BER-150
+[48/120] id=12405 Печь для бани Искандер ЗК 18 (П2) Ураган чугун
   specs available: 15
   ✓ short_description saved
-[90/120] id=11993 Бак косвенного нагрева S-Tank BER-200
+[49/120] id=12406 Печь для бани AVANGARD ЗК 25 (П2) Ураган в сетке Тюльпан
   specs available: 16
   ✓ short_description saved
-[91/120] id=11994 Бак косвенного нагрева S-Tank BER-300
-  specs available: 16
-  ✓ short_description saved
-[92/120] id=11995 Бак косвенного нагрева S-Tank BER-400
+[50/120] id=12407 Печь для бани AVANGARD ЗК 25 (M)
   specs available: 15
   ✓ short_description saved
-[93/120] id=11996 Бак косвенного нагрева S-Tank BER-500
-  specs available: 16
-  ✓ short_description saved
-[94/120] id=11997 Бак косвенного нагрева S-Tank BER-750
-  specs available: 12
-  ✓ short_description saved
-[95/120] id=11998 Бак косвенного нагрева S-Tank BER-1000
-  specs available: 16
-  ✓ short_description saved
-[96/120] id=12023 Котел газовый настенный Federica Bugatti 12 VARME
-  specs available: 16
-  ✓ content+short_description saved
-[97/120] id=12024 Котел газовый настенный Federica Bugatti 18 VARME
-  specs available: 15
-  ✓ content+short_description saved
-[98/120] id=12025 Котел газовый настенный Federica Bugatti 24 VARME
-  specs available: 14
-  ✓ content+short_description saved
-[99/120] id=12026 Котел газовый настенный Federica Bugatti 32 VARME
-  specs available: 13
-  ✓ content+short_description saved
-[100/120] id=12029 Котел газовый настенный Federica Bugatti 24В VARME BLACK
-  specs available: 16
-  ✓ content+short_description saved
-[101/120] id=12030 Котел газовый настенный Federica Bugatti 32В VARME с дисплее
-  specs available: 16
-  ✓ content+short_description saved
-[102/120] id=12031 Котел газовый настенный Federica Bugatti 32В VARME BLACK
-  specs available: 16
-  ✓ content+short_description saved
-[103/120] id=12032 Котел газовый настенный Federica Bugatti 18 VARME с дисплеем
-  specs available: 20
-  ✓ content+short_description saved
-[104/120] id=12033 Котел газовый настенный Federica Bugatti 24 VARME с дисплеем
-  specs available: 20
-  ✓ content+short_description saved
-[105/120] id=12034 Котел газовый настенный Federica Bugatti 32 VARME с дисплеем
-  specs available: 20
-  ✓ content+short_description saved
-[106/120] id=12035 Конденсационный газовый котел Federica Bugatti 25 Cond Varme
-  specs available: 16
-  ✓ content+short_description saved
-[107/120] id=12061 Газовый котёл FONDITAL ANTEA RBTN 24 в комплекте с датчиком 
-  specs available: 14
-  ✓ content+short_description saved
-[108/120] id=12062 Газовый котёл FONDITAL ANTEA CTFS 24
-  specs available: 14
-  ✓ content+short_description saved
-[109/120] id=12063 Газовый котёл FONDITAL ANTEA CTN 24
-  specs available: 15
-  ✓ content+short_description saved
-[110/120] id=12064 Газовый котёл FONDITAL ANTEA RBTFS 24 в комплекте с датчиком
-  specs available: 13
-  ✓ content+short_description saved
-[111/120] id=12065 Газовый котёл FONDITAL ANTEA RBTFS 40 в комплекте с датчиком
-  specs available: 12
-  ✓ content+short_description saved
-[112/120] id=12069 Газовый котёл FONDITAL FORMENTERA RBTN 24 в комплекте с датч
-  specs available: 14
-  ✓ content+short_description saved
-[113/120] id=12070 Газовый котёл FONDITAL FORMENTERA RBTN 28 в комплекте с датч
-  specs available: 14
-  ✓ content+short_description saved
-[114/120] id=12071 Газовый котёл FONDITAL FORMENTERA RBTFS 24 в комплекте с дат
-  specs available: 15
-  ✓ content+short_description saved
-[115/120] id=12072 Напольный чугунный газовый котел BALI RTN E 48
-  specs available: 10
-  ✓ content+short_description saved
-[116/120] id=12073 Напольный чугунный газовый котел BALI RTN E 60
-  specs available: 10
-  ✓ content+short_description saved
-[117/120] id=12075 Напольный чугунный газовый котел BALI RTN E 36
-  specs available: 11
-  ✓ content+short_description saved
-[118/120] id=12076 Конденсационный газовый котёл FONDITAL ANTEA KRB 28
-  specs available: 10
-  ✓ content+short_description saved
-[119/120] id=12077 Конденсационный газовый котёл FONDITAL ANTEA KRB 24
+[51/120] id=12408 Печь для бани Гефест ИСКАНДЕР 25 (П2) в сетке
   specs available: 18
-  ✓ content saved
-[120/120] id=12085 Печь TMF АВОСЬКА антрацит
+  ✓ short_description saved
+[52/120] id=12409 Печь для бани Искандер 25 (M) в сетке чугун
+  specs available: 15
+  ✓ short_description saved
+[53/120] id=12410 Печь для бани GFS Гефест ЗК 25 (М) в сетке из чугуна
+  specs available: 15
+  ✓ short_description saved
+[54/120] id=12411 Печь для бани GFS Гефест ЗК 40 (М) в сетке чугун
+  specs available: 15
+  ✓ short_description saved
+[55/120] id=12412 Печь для бани GFS Гефест Гром 80 (П2) чугун
+  specs available: 15
+  ✓ short_description saved
+[56/120] id=12413 Печь для бани Гефест GFS ЗК 30 (П2)
+  specs available: 18
+  ✓ short_description saved
+[57/120] id=12414 Печь для бани GFS Гефест ЗК 30 в сетке чугун
+  specs available: 15
+  ✓ short_description saved
+[58/120] id=12415 Печь для бани GFS Гефест Гром 30 (П2) Ураган чугун
+  specs available: 15
+  ✓ short_description saved
+[59/120] id=12416 Печь для бани GFS ЗК 18 (П)
+  specs available: 15
+  ✓ short_description saved
+[60/120] id=12417 Печь для бани GFS Гефест ЗК Ураган 18 (П) чугун
+  specs available: 15
+  ✓ short_description saved
+[61/120] id=12418 Печь для бани GFS Гефест ЗК Ураган 30 (М) чугун
+  specs available: 15
+  ✓ short_description saved
+[62/120] id=12419 Печь для бани Гефест GFS ЗК 25 (П2)
+  specs available: 18
+  ✓ short_description saved
+[63/120] id=12420 Печь для бани GFS Гефест Гром 30 (П)2 чугун
+  specs available: 15
+  ✓ short_description saved
+[64/120] id=12421 Печь для бани GFS ЗК 30 (П2) Ураган чугун
+  specs available: 15
+  ✓ short_description saved
+[65/120] id=12422 Печь для бани GFS Гефест ЗК Ураган 18 (М) чугун
+  specs available: 15
+  ✓ short_description saved
+[66/120] id=12423 Печь для бани Гроза 24 (М)
+  specs available: 15
+  ✓ short_description saved
+[67/120] id=12424 Печь для бани GFS Гефест ЗК 40 (П) в сетке чугун
+  specs available: 15
+  ✓ short_description saved
+[68/120] id=12425 Печь для бани Гефест GFS ЗК 40 (М)
+  specs available: 18
+  ✓ short_description saved
+[69/120] id=12426 Печь для бани GFS Гефест ЗК 18 (М) в сетке чугун
+  specs available: 15
+  ✓ short_description saved
+[70/120] id=12427 Печь для бани Гром Ураган 50 (П)2 чугун
+  specs available: 15
+  ✓ short_description saved
+[71/120] id=12428 Печь для бани GFS Гефест ЗК Ураган 40 (М) чугун
+  specs available: 15
+  ✓ short_description saved
+[72/120] id=12429 Печь для бани GFS Гефест ЗК Ураган 25 (М) чугун
+  specs available: 15
+  ✓ short_description saved
+[73/120] id=12430 Печь для бани GFS Гефест ЗК 30 (М) в сетке чугун
+  specs available: 15
+  ✓ short_description saved
+[74/120] id=12431 Печь для бани AVANGARD ЗК 25 (М) Ураган в сетке Тюльпан
+  specs available: 15
+  ✓ short_description saved
+[75/120] id=12432 Печь для бани GFS ЗК 25 (П2) в сетке чугун
+  specs available: 15
+  ✓ short_description saved
+[76/120] id=12433 Печь для бани Гефест GFS ЗК 30 (М)
+  specs available: 18
+  ✓ short_description saved
+[77/120] id=12434 Печь для бани GFS Гефест ЗК 18 (П) в сетке чугун
+  specs available: 15
+  ✓ short_description saved
+[78/120] id=12435 Печь для бани GFS ЗК 25 (П2) Ураган чугун
+  specs available: 15
+  ✓ short_description saved
+[79/120] id=12436 Печь для бани Гефест GFS ЗК 25 (М)
+  specs available: 18
+  ✓ short_description saved
+[80/120] id=12437 Печь для бани GFS ЗК 30 (П2) в сетке чугун
+  specs available: 15
+  ✓ short_description saved
+[81/120] id=12438 Печь для бани Гроза 18 (М)
+  specs available: 14
+  ✓ short_description saved
+[82/120] id=12439 Печь для бани Гефест GFS ЗК 18 (М)
+  specs available: 18
+  ✓ short_description saved
+[83/120] id=12440 Печь для бани Гроза 24 (П)
+  specs available: 15
+  ✓ short_description saved
+[84/120] id=12441 Печь для бани GFS Гефест Гром 50 (П2) чугун
+  specs available: 15
+  ✓ short_description saved
+[85/120] id=12442 Печь для бани GFS Гефест Гроза Ураган 18 (П) чугун
+  specs available: 15
+  ✓ short_description saved
+[86/120] id=12443 Печь для бани GFS Гефест Гроза Ураган 24 (П) чугун
+  specs available: 15
+  ✓ short_description saved
+[87/120] id=12444 Печь для бани GFS Гефест Гроза 24 (П) в сетке чугун
+  specs available: 15
+  ✓ short_description saved
+[88/120] id=12445 Печь для бани GFS Гефест Гроза 18 (П) в сетке чугун
+  specs available: 15
+  ✓ short_description saved
+[89/120] id=12446 Печь для бани GFS Гефест Гроза Ураган 24 (М) чугун
+  specs available: 15
+  ✓ short_description saved
+[90/120] id=12447 Печь для бани GFS Гефест Гроза Ураган 18 (М) чугун
+  specs available: 15
+  ✓ short_description saved
+[91/120] id=12448 Печь для бани GFS Гефест Гроза 18 (М) в сетке чугун
+  specs available: 15
+  ✓ short_description saved
+[92/120] id=12449 Печь для бани GFS Гефест Гроза 24 (М) в сетке чугун
+  specs available: 15
+  ✓ short_description saved
+[93/120] id=12450 Печь для бани GFS Гефест ЗК 25 в сетке из чугуна
+  specs available: 15
+  ✓ short_description saved
+[94/120] id=12451 Печь для бани GFS Гефест ЗК 25 из чугуна
+  specs available: 15
+  ✓ short_description saved
+[95/120] id=12452 Печь для бани GFS Гефест ЗК 40 в сетке чугун
+  specs available: 15
+  ✓ short_description saved
+[96/120] id=12453 Печь для бани GFS Гефест ЗК Ураган 40 чугун
+  specs available: 15
+  ✓ short_description saved
+[97/120] id=12454 Печь для бани GFS Гефест ЗК Ураган 30 чугун
+  specs available: 15
+  ✓ short_description saved
+[98/120] id=12455 Печь для бани GFS Гефест ЗК Ураган 18 чугун
+  specs available: 15
+  ✓ short_description saved
+[99/120] id=12456 Печь для бани GFS Гефест ЗК 18 в сетке чугун
+  specs available: 15
+  ✓ short_description saved
+[100/120] id=12457 Печь для бани AVANGARD ЗК 25 (П2)
+  specs available: 15
+  ✓ short_description saved
+[101/120] id=12458 Печь для бани Гефест GFS ЗК 40
+  specs available: 18
+  ✓ short_description saved
+[102/120] id=12459 Печь для бани Гефест GFS ЗК 30
+  specs available: 18
+  ✓ short_description saved
+[103/120] id=12460 Печь для бани GFS ЗК 25
+  specs available: 15
+  ✓ short_description saved
+[104/120] id=12461 Печь для бани Гефест GFS ЗК 18
+  specs available: 18
+  ✓ short_description saved
+[105/120] id=12462 Печь для бани Гефест Авангард ЗК 35 (П2) Ураган круглая сетк
+  specs available: 18
+  ✓ short_description saved
+[106/120] id=12463 Печь для бани Гефест Авангард ЗК 35 (П2) Ураган в сетке Тюль
+  specs available: 18
+  ✓ short_description saved
+[107/120] id=12464 Печь для бани Гефест Авангард ЗК 25 (П2) Ураган круглая сетк
+  specs available: 18
+  ✓ short_description saved
+[108/120] id=12465 Печь для бани Гефест Авангард ЗК 35 (П2)
+  specs available: 18
+  ✓ short_description saved
+[109/120] id=12466 Печь для бани Гефест Авангард ЗК 40 (П2) Ураган круглая сетк
+  specs available: 18
+  ✓ short_description saved
+[110/120] id=12467 Печь для бани Гефест Авангард ЗК 40 (П2)
+  specs available: 17
+  ✓ short_description saved
+[111/120] id=12468 Печь для бани Гефест ИСКАНДЕР 18 (М) в сетке
+  specs available: 18
+  ✓ short_description saved
+[112/120] id=12469 Банная печь Искандер ЗК 25 (П2) Ураган
+  specs available: 15
+  ✓ short_description saved
+[113/120] id=12470 Печь для бани Гефест ИСКАНДЕР 18 (П2) в сетке
+  specs available: 18
+  ✓ short_description saved
+[114/120] id=12471 Печь для бани Гефест ИСКАНДЕР 18 в сетке
+  specs available: 18
+  ✓ short_description saved
+[115/120] id=12472 Печь для бани Гефест Авангард ЗК 40 (П2) Ураган в сетке Тюль
+  specs available: 18
+  ✓ short_description saved
+[116/120] id=12473 Печь-комплект Гефест Гром 80 (П2)
+  specs available: 18
+  ✓ short_description saved
+[117/120] id=12474 Печь для бани Гефест Гроза 18 (П2)
+  specs available: 18
+  ✓ short_description saved
+[118/120] id=12475 Печь-комплект Гефест Гроза 18 (П2)
+  specs available: 18
+  ✓ short_description saved
+[119/120] id=12476 Печь-комплект Гефест Гроза 24 (М)
+  specs available: 18
+  ✓ short_description saved
+[120/120] id=12477 Печь-комплект Гефест Гроза 24 (П2)
   specs available: 18
   ✓ short_description saved
 +---------+-------+
@@ -384,6 +384,6 @@ Candidates: 523 | processing: 120 (offset=0)
 | errors  | 0     |
 +---------+-------+
 
-403 more remain. Continue with --offset=120
+283 more remain. Continue with --offset=120
 
 ```
