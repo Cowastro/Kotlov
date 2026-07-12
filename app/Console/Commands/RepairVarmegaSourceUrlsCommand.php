@@ -426,12 +426,7 @@ class RepairVarmegaSourceUrlsCommand extends Command
             return null;
         }
 
-        $html = $this->fetch($url);
-        if ($html !== null && $this->pageContainsArticle($html, $normArticle)) {
-            return ['url' => $url];
-        }
-
-        return null;
+        return ['url' => $url];
     }
 
     private function loadRnProfiSectionIndex(): array
