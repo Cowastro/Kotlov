@@ -1,6 +1,6 @@
 {
-  "task": "artisan-dry-run",
-  "artisan_args": "supplier:repair-varmega-source-urls --article-prefix=VM705 --http-timeout=8 --limit=0",
+  "task": "artisan-apply",
+  "artisan_args": "supplier:repair-varmega-source-urls --apply --article-prefix=VM705 --http-timeout=8 --limit=0 --enrich --replace-specs --min-specs-to-replace=1 --overwrite-images --skip-documents",
   "log_file": "storage/logs/varmega-vm705-official-source-repair.log",
-  "run_id": "varmega-vm705-official-source-repair-dry-20260712-1"
+  "run_id": "varmega-vm705-official-source-repair-apply-20260712-1"
 }
