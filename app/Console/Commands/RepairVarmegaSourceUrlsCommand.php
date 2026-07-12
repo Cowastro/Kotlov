@@ -724,6 +724,14 @@ class RepairVarmegaSourceUrlsCommand extends Command
 
     private function normArticle(string $article): string
     {
-        return mb_strtoupper(preg_replace('/[^A-Za-z0-9]+/u', '', $article) ?? '');
+        $normalized = mb_strtoupper(preg_replace('/[^A-Za-z0-9]+/u', '', $article) ?? '');
+
+        // RN-Profi keeps collector cabinet series in the same cell, e.g. VM35504ШРВ4.
+        // For official Varmega matching the real article is the first VM355xx token.
+        if (preg_match('/^(VM355\d{2})/u', $normalized, $m)) {
+            return $m[1];
+        }
+
+        return $normalized;
     }
 }

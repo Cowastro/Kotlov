@@ -2,5 +2,5 @@
   "task": "artisan-apply",
   "artisan_args": "supplier:repair-varmega-source-urls --apply --refresh-index --article-prefix=VM355 --fix-category --enrich --replace-specs --min-specs-to-replace=4 --overwrite-images --skip-documents --limit=0 --sleep=1000",
   "log_file": "storage/logs/repair-varmega-vm355-cabinets.log",
-  "run_id": "repair-varmega-vm355-cabinets-20260712-1"
+  "run_id": "repair-varmega-vm355-cabinets-20260712-2"
 }
