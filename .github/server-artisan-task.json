@@ -1,6 +1,6 @@
 {
-  "task": "artisan-apply",
-  "artisan_args": "supplier:repair-varmega-source-urls --apply --refresh-index --article-prefix=VM355 --fix-category --enrich --replace-specs --min-specs-to-replace=4 --overwrite-images --skip-documents --limit=0 --sleep=1000",
-  "log_file": "storage/logs/repair-varmega-vm355-cabinets.log",
-  "run_id": "repair-varmega-vm355-cabinets-20260712-2"
+  "task": "artisan-dry-run",
+  "artisan_args": "products:audit-content-health --supplier=rn-profi --brand=Varmega --article-prefix=VM355 --active-only --not-archived --issues=no_photo,no_content,no_short,low_attrs,no_source --max-attrs=4 --limit=80",
+  "log_file": "storage/logs/audit-varmega-vm355-cabinets.log",
+  "run_id": "audit-varmega-vm355-cabinets-20260712-1"
 }
