@@ -1,6 +1,6 @@
 {
   "task": "artisan-apply",
-  "artisan_args": "product:enrich-content --brand=ferrum --only=both --min-specs=0 --rewrite-thin=220 --limit=50 --sleep=500",
+  "artisan_args": "product:enrich-content --brand=ferrum --only=both --min-specs=0 --rewrite-thin=220 --limit=40 --sleep=500",
   "log_file": "",
-  "run_id": "apply-ferrum-seo-content-20260712-3"
+  "run_id": "apply-ferrum-seo-content-20260712-4"
 }
