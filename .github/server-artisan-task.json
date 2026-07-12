@@ -1,6 +1,6 @@
 {
-  "task": "artisan-dry-run",
-  "artisan_args": "products:audit-content-health --supplier=rn-profi --brand=Varmega --active-only --not-archived --issues=no_photo,low_attrs --max-attrs=4 --limit=180",
-  "log_file": "storage/logs/audit-varmega-empty-cards-after-vm709.log",
-  "run_id": "audit-varmega-empty-cards-after-vm709-20260712-1"
+  "task": "artisan-apply",
+  "artisan_args": "supplier:repair-varmega-source-urls --apply --article-prefix=VM710 --enrich --replace-specs --min-specs-to-replace=1 --overwrite-images --skip-documents --limit=0 --sleep=1000",
+  "log_file": "storage/logs/repair-varmega-vm710.log",
+  "run_id": "repair-varmega-vm710-20260712-1"
 }
