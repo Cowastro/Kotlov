@@ -1,6 +1,6 @@
 {
   "task": "artisan-dry-run",
-  "artisan_args": "products:audit-content-terms --product=20484 --profile=varmega-fittings --not-archived --active-only --limit=10",
-  "log_file": "storage/logs/varmega-content-audit.log",
-  "run_id": "varmega-content-audit-product-20484-clean-series-20260712-1"
+  "artisan_args": "supplier:repair-varmega-source-urls --article-prefix=VM7040 --http-timeout=5 --limit=0",
+  "log_file": "storage/logs/varmega-vm7040-source-repair.log",
+  "run_id": "varmega-vm7040-source-repair-dry-20260712-1"
 }
