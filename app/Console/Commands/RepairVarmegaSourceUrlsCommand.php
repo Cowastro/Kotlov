@@ -407,6 +407,8 @@ class RepairVarmegaSourceUrlsCommand extends Command
     private function knownRnProfiVarmegaSourceForArticle(string $normArticle): ?array
     {
         $pages = [
+            '/^VM16606$/u' => 'https://rn-profi.by/klapan-predokhranitelnyj',
+            '/^VM166(?:24|27|28|29|44|47|48|49)$/u' => 'https://rn-profi.by/klapan-predokhranitelnyj-',
             '/^VM700304/u' => 'https://rn-profi.by/truba-iz-nerzhaveyuschej-stali-varmega-inox-press',
             '/^VM7020/u' => 'https://rn-profi.by/index.php?route=product/product&product_id=1452',
             '/^VM7030/u' => 'https://rn-profi.by/index.php?route=product/product&product_id=1031',
