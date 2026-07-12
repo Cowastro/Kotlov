@@ -1,6 +1,6 @@
 {
-  "task": "artisan-dry-run",
-  "artisan_args": "supplier:repair-varmega-source-urls --rn-profi-section-index --rn-profi-section-pages=80 --http-timeout=5 --limit=50",
-  "log_file": "storage/logs/varmega-official-source-repair-batch.log",
-  "run_id": "varmega-source-repair-batch-dry-20260712-1"
+  "task": "artisan-apply",
+  "artisan_args": "supplier:repair-varmega-source-urls --apply --product=20484 --http-timeout=5 --limit=1 --enrich --replace-specs --min-specs-to-replace=1 --overwrite-images --skip-documents",
+  "log_file": "storage/logs/varmega-official-source-repair.log",
+  "run_id": "varmega-official-source-repair-product-20484-clean-series-20260712-1"
 }
