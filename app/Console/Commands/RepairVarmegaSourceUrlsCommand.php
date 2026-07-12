@@ -472,6 +472,11 @@ class RepairVarmegaSourceUrlsCommand extends Command
                 . mb_strtolower($normArticle);
         }
 
+        if (preg_match('/^VM70[789]00\d{4}$/u', $normArticle)) {
+            $url = 'https://termogorod.ru/truby-i-fitingi/truby-i-fitingi-iz-nerzhavejki/truby-i-fitingi-iz-nerzhavejki-varmega/varmega-'
+                . mb_strtolower($normArticle);
+        }
+
         if (preg_match('/^VM70100(\d{2})(\d{2})$/u', $normArticle, $m)) {
             $size = ltrim($m[1], '0') . '-' . ltrim($m[2], '0') . '-mm';
             $url = 'https://varmega.ru/product/truby-i-fitingi/mufta-dvukhrastrubnaya-varmega-inox-press-'
