@@ -1,6 +1,6 @@
 # Server Artisan Result
 
-- Time: 2026-07-12 09:36:22 UTC
+- Time: 2026-07-12 09:40:42 UTC
 - Task: `tail-log`
 - Artisan args: ``
 - Log file: `storage/logs/varmega-press-source-repair.log`
@@ -8,171 +8,171 @@
 
 ```text
 From https://github.com/Cowastro/Kotlov
-   df8503a..b3e5c6a  main       -> origin/main
-Updating df8503a..b3e5c6a
+   b3e5c6a..292135b  main       -> origin/main
+Updating b3e5c6a..292135b
 Fast-forward
- .github/server-artisan-result.md | 191 +++++++++++++++++++++++----------------
+ .github/server-artisan-result.md | 292 +++++++++++++++++++--------------------
  .github/server-artisan-task.json |   2 +-
- 2 files changed, 113 insertions(+), 80 deletions(-)
-  found: images=4 specs=16 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
-[84/226] #19915 VM51002 Тройник с наружной резьбой Varmega Slide-fit VM51002, 20х3/4", комбини
-  source: https://varmega.ru/product/truby-i-fitingi/aksialnye-fitingi/troynik-s-naruzhnoy-rezboy-varmega-slide-fit-vm51002-20kh3-4-kombinirovannyy-aksialnyy/
-  found: images=4 specs=16 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
-[85/226] #19916 VM51111 Тройник с внутренней резьбой Varmega Slide-fit VM51111, 16х1/2", латун
-  source: https://varmega.ru/product/truby-i-fitingi/aksialnye-fitingi/troynik-s-vnutrenney-rezboy-varmega-slide-fit-vm51111-16kh1-2-latunnyy-aksialnyy/
+ 2 files changed, 147 insertions(+), 147 deletions(-)
+  found: images=4 specs=11 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
+[173/226] #20008 VM727002218 Угольник 90° переходной двухраструбный Varmega Inox Press VM727002218,
+  source: https://varmega.ru/product/truby-i-fitingi/truboprovodnye-sistemy-press-obzhim-i-payka/ugolnik-90-perekhodnoy-dvukhrastrubnyy-varmega-inox-press-vm727002218-22-18-mm/
+  found: images=4 specs=11 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
+[174/226] #20009 VM727002822 Угольник 90° переходной двухраструбный Varmega Inox Press VM727002822,
+  source: https://varmega.ru/product/truby-i-fitingi/truboprovodnye-sistemy-press-obzhim-i-payka/ugolnik-90-perekhodnoy-dvukhrastrubnyy-varmega-inox-press-vm727002822-28-22-mm/
+  found: images=4 specs=11 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
+[175/226] #20010 VM727003522 Угольник 90° переходной двухраструбный Varmega Inox Press VM727003522,
+  source: https://varmega.ru/product/truby-i-fitingi/truboprovodnye-sistemy-press-obzhim-i-payka/ugolnik-90-perekhodnoy-dvukhrastrubnyy-varmega-inox-press-vm727003522-35-22-mm/
+  found: images=4 specs=11 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
+[176/226] #20011 VM727003528 Угольник 90° переходной двухраструбный Varmega Inox Press VM727003528,
+  source: https://varmega.ru/product/truby-i-fitingi/truboprovodnye-sistemy-press-obzhim-i-payka/ugolnik-90-perekhodnoy-dvukhrastrubnyy-varmega-inox-press-vm727003528-35-28-mm/
+  found: images=4 specs=11 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
+[177/226] #20012 VM790000015 Уплотнительное кольцо из EPDM Varmega Inox Press VM790000015, 15 мм
+  source: https://varmega.ru/product/truby-i-fitingi/truboprovodnye-sistemy-press-obzhim-i-payka/komplektuyushchie-i-aksessuary-press-obzhim-i-payka/uplotnitelnoe-koltso-iz-epdm-varmega-inox-press-vm790000015-15-mm/
+  found: images=4 specs=6 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
+[178/226] #20013 VM790000018 Уплотнительное кольцо из EPDM Varmega Inox Press VM790000018, 18 мм
+  source: https://varmega.ru/product/truby-i-fitingi/truboprovodnye-sistemy-press-obzhim-i-payka/komplektuyushchie-i-aksessuary-press-obzhim-i-payka/uplotnitelnoe-koltso-iz-epdm-varmega-inox-press-vm790000018-18-mm/
+  found: images=4 specs=6 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
+[179/226] #20014 VM790000022 Уплотнительное кольцо из EPDM Varmega Inox Press VM790000022, 22 мм
+  source: https://varmega.ru/product/truby-i-fitingi/truboprovodnye-sistemy-press-obzhim-i-payka/komplektuyushchie-i-aksessuary-press-obzhim-i-payka/uplotnitelnoe-koltso-iz-epdm-varmega-inox-press-vm790000022-22-mm/
+  found: images=4 specs=6 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
+[180/226] #20015 VM790000028 Уплотнительное кольцо из EPDM Varmega Inox Press VM790000028, 28 мм
+  source: https://varmega.ru/product/truby-i-fitingi/truboprovodnye-sistemy-press-obzhim-i-payka/komplektuyushchie-i-aksessuary-press-obzhim-i-payka/uplotnitelnoe-koltso-iz-epdm-varmega-inox-press-vm790000028-28-mm/
+  found: images=4 specs=6 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
+[181/226] #20016 VM790000035 Комплектующие и аксессуары пресс-обжим и пайка
+  source: https://varmega.ru/product/truby-i-fitingi/truboprovodnye-sistemy-press-obzhim-i-payka/komplektuyushchie-i-aksessuary-press-obzhim-i-payka/uplotnitelnoe-koltso-iz-epdm-varmega-inox-press-vm790000035-35-mm/
+  found: images=4 specs=6 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
+[182/226] #20017 VM790000042 Комплектующие и аксессуары пресс-обжим и пайка
+  source: https://varmega.ru/product/truby-i-fitingi/truboprovodnye-sistemy-press-obzhim-i-payka/komplektuyushchie-i-aksessuary-press-obzhim-i-payka/uplotnitelnoe-koltso-iz-epdm-varmega-inox-press-vm790000042-42-mm/
+  found: images=4 specs=6 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
+[183/226] #20018 VM790000054 Комплектующие и аксессуары пресс-обжим и пайка
+  source: https://varmega.ru/product/truby-i-fitingi/truboprovodnye-sistemy-press-obzhim-i-payka/komplektuyushchie-i-aksessuary-press-obzhim-i-payka/uplotnitelnoe-koltso-iz-epdm-varmega-inox-press-vm790000054-54-mm/
+  found: images=4 specs=6 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
+[184/226] #20019 VM791000015 Комплектующие и аксессуары пресс-обжим и пайка
+  source: https://varmega.ru/product/truby-i-fitingi/truboprovodnye-sistemy-press-obzhim-i-payka/komplektuyushchie-i-aksessuary-press-obzhim-i-payka/uplotnitelnoe-koltso-iz-fpm-viton-varmega-inox-press-vm791000015-15-mm/
+  found: images=4 specs=6 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
+[185/226] #20020 VM791000018 Комплектующие и аксессуары пресс-обжим и пайка
+  source: https://varmega.ru/product/truby-i-fitingi/truboprovodnye-sistemy-press-obzhim-i-payka/komplektuyushchie-i-aksessuary-press-obzhim-i-payka/uplotnitelnoe-koltso-iz-fpm-viton-varmega-inox-press-vm791000018-18-mm/
+  found: images=4 specs=6 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
+[186/226] #20021 VM791000022 Комплектующие и аксессуары пресс-обжим и пайка
+  source: https://varmega.ru/product/truby-i-fitingi/truboprovodnye-sistemy-press-obzhim-i-payka/komplektuyushchie-i-aksessuary-press-obzhim-i-payka/uplotnitelnoe-koltso-iz-fpm-viton-varmega-inox-press-vm791000022-22-mm/
+  found: images=4 specs=6 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
+[187/226] #20022 VM791000028 Комплектующие и аксессуары пресс-обжим и пайка
+  source: https://varmega.ru/product/truby-i-fitingi/truboprovodnye-sistemy-press-obzhim-i-payka/komplektuyushchie-i-aksessuary-press-obzhim-i-payka/uplotnitelnoe-koltso-iz-fpm-viton-varmega-inox-press-vm791000028-28-mm/
+  found: images=4 specs=6 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
+[188/226] #20023 VM791000035 Комплектующие и аксессуары пресс-обжим и пайка
+  source: https://varmega.ru/product/truby-i-fitingi/truboprovodnye-sistemy-press-obzhim-i-payka/komplektuyushchie-i-aksessuary-press-obzhim-i-payka/uplotnitelnoe-koltso-iz-fpm-viton-varmega-inox-press-vm791000035-35-mm/
+  found: images=4 specs=6 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
+[189/226] #20024 VM791000042 Комплектующие и аксессуары пресс-обжим и пайка
+  source: https://varmega.ru/product/truby-i-fitingi/truboprovodnye-sistemy-press-obzhim-i-payka/komplektuyushchie-i-aksessuary-press-obzhim-i-payka/uplotnitelnoe-koltso-iz-fpm-viton-varmega-inox-press-vm791000042-42-mm/
+  found: images=4 specs=6 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
+[190/226] #20025 VM791000054 Комплектующие и аксессуары пресс-обжим и пайка
+  source: https://varmega.ru/product/truby-i-fitingi/truboprovodnye-sistemy-press-obzhim-i-payka/komplektuyushchie-i-aksessuary-press-obzhim-i-payka/uplotnitelnoe-koltso-iz-fpm-viton-varmega-inox-press-vm791000054-54-mm/
+  found: images=4 specs=6 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
+[191/226] #20421 VM50101 Varmega VM50101 16x2.2
+  source: https://varmega.ru/product/truby-i-fitingi/metalloplastikovye-pex-i-pert-truby/universalnaya-truba-varmega-flex-pe-xa-evoh-vm50101-16x2-2-bukhta-200-m-seraya-serebristaya-mnogoslo/
   found: images=4 specs=17 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
-[86/226] #19917 VM51113 Тройник с внутренней резьбой Varmega Slide-fit VM51113, 20х1/2", латун
-  source: https://varmega.ru/product/truby-i-fitingi/aksialnye-fitingi/troynik-s-vnutrenney-rezboy-varmega-slide-fit-vm51113-20kh1-2-latunnyy-aksialnyy/
+[192/226] #20422 VM50102 Varmega VM50102 20x2.8
+  source: https://varmega.ru/product/truby-i-fitingi/metalloplastikovye-pex-i-pert-truby/universalnaya-truba-varmega-flex-pe-xa-evoh-vm50102-20x2-8-bukhta-200-m-seraya-serebristaya-mnogoslo/
   found: images=4 specs=17 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
-[87/226] #19918 VM51116 Тройник с внутренней резьбой Varmega Slide-fit VM51116, 25х3/4", латун
-  source: https://varmega.ru/product/truby-i-fitingi/aksialnye-fitingi/troynik-s-vnutrenney-rezboy-varmega-slide-fit-vm51116-25kh3-4-latunnyy-aksialnyy/
+[193/226] #20423 VM50103 Varmega VM50103 25x3.5
+  source: https://varmega.ru/product/truby-i-fitingi/metalloplastikovye-pex-i-pert-truby/universalnaya-truba-varmega-flex-pe-xa-evoh-vm50103-25x3-5-bukhta-50-m-seraya-serebristaya-mnogosloy/
   found: images=4 specs=17 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
-[88/226] #19919 VM51119 Тройник с внутренней резьбой Varmega Slide-fit VM51119, 32х1", латунны
-  source: https://varmega.ru/product/truby-i-fitingi/aksialnye-fitingi/troynik-s-vnutrenney-rezboy-varmega-slide-fit-vm51119-32kh1-latunnyy-aksialnyy/
+[194/226] #20424 VM50104 Varmega VM50104 32x4.4
+  source: https://varmega.ru/product/truby-i-fitingi/metalloplastikovye-pex-i-pert-truby/universalnaya-truba-varmega-flex-pe-xa-evoh-vm50104-32x4-4-bukhta-50-m-seraya-serebristaya-mnogosloy/
   found: images=4 specs=17 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
-[89/226] #19920 VM51201 Муфта переходная (переходник) с наружной резьбой Varmega Slide-fit VM5
-  source: https://varmega.ru/product/truby-i-fitingi/aksialnye-fitingi/mufta-perekhodnaya-perekhodnik-s-naruzhnoy-rezboy-varmega-slide-fit-vm51201-16kh1-2-kombinirovannaya/
-  found: images=4 specs=18 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
-[90/226] #19921 VM51202 Муфта переходная (переходник) с наружной резьбой Varmega Slide-fit VM5
-  source: https://varmega.ru/product/truby-i-fitingi/aksialnye-fitingi/mufta-perekhodnaya-perekhodnik-s-naruzhnoy-rezboy-varmega-slide-fit-vm51202-16kh3-4-kombinirovannaya/
-  found: images=4 specs=18 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
-[91/226] #19922 VM51203 Муфта переходная (переходник) с наружной резьбой Varmega Slide-fit VM5
-  source: https://varmega.ru/product/truby-i-fitingi/aksialnye-fitingi/mufta-perekhodnaya-perekhodnik-s-naruzhnoy-rezboy-varmega-slide-fit-vm51203-20kh1-2-kombinirovannaya/
-  found: images=4 specs=18 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
-[92/226] #19923 VM51204 Муфта переходная (переходник) с наружной резьбой Varmega Slide-fit VM5
-  source: https://varmega.ru/product/truby-i-fitingi/aksialnye-fitingi/mufta-perekhodnaya-perekhodnik-s-naruzhnoy-rezboy-varmega-slide-fit-vm51204-20kh3-4-kombinirovannaya/
-  found: images=4 specs=18 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
-[93/226] #19924 VM51211 Муфта переходная (переходник) с наружной резьбой Varmega Slide-fit VM5
-  source: https://varmega.ru/product/truby-i-fitingi/aksialnye-fitingi/mufta-perekhodnaya-perekhodnik-s-naruzhnoy-rezboy-varmega-slide-fit-vm51211-16kh1-2-latunnaya-aksial/
-  found: images=4 specs=18 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
-[94/226] #19925 VM51212 Муфта переходная (переходник) с наружной резьбой Varmega Slide-fit VM5
-  source: https://varmega.ru/product/truby-i-fitingi/aksialnye-fitingi/mufta-perekhodnaya-perekhodnik-s-naruzhnoy-rezboy-varmega-slide-fit-vm51212-16kh3-4-latunnaya-aksial/
-  found: images=4 specs=18 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
-[95/226] #19926 VM51213 Муфта переходная (переходник) с наружной резьбой Varmega Slide-fit VM5
-  source: https://varmega.ru/product/truby-i-fitingi/aksialnye-fitingi/mufta-perekhodnaya-perekhodnik-s-naruzhnoy-rezboy-varmega-slide-fit-vm51213-20kh1-2-latunnaya-aksial/
-  found: images=4 specs=18 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
-[96/226] #19927 VM51214 Муфта переходная (переходник) с наружной резьбой Varmega Slide-fit VM5
-  source: https://varmega.ru/product/truby-i-fitingi/aksialnye-fitingi/mufta-perekhodnaya-perekhodnik-s-naruzhnoy-rezboy-varmega-slide-fit-vm51214-20kh3-4-latunnaya-aksial/
-  found: images=4 specs=18 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
-[97/226] #19928 VM51215 Муфта переходная (переходник) с наружной резьбой Varmega Slide-fit VM5
-  source: https://varmega.ru/product/truby-i-fitingi/aksialnye-fitingi/mufta-perekhodnaya-perekhodnik-s-naruzhnoy-rezboy-varmega-slide-fit-vm51215-25kh1-2-latunnaya-aksial/
-  found: images=4 specs=18 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
-[98/226] #19929 VM51216 Муфта переходная (переходник) с наружной резьбой Varmega Slide-fit VM5
-  source: https://varmega.ru/product/truby-i-fitingi/aksialnye-fitingi/mufta-perekhodnaya-perekhodnik-s-naruzhnoy-rezboy-varmega-slide-fit-vm51216-25kh3-4-latunnaya-aksial/
-  found: images=4 specs=18 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
-[99/226] #19930 VM51217 Муфта переходная (переходник) с наружной резьбой Varmega Slide-fit VM5
-  source: https://varmega.ru/product/truby-i-fitingi/aksialnye-fitingi/mufta-perekhodnaya-perekhodnik-s-naruzhnoy-rezboy-varmega-slide-fit-vm51217-25kh1-latunnaya-aksialna/
-  found: images=4 specs=18 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
-[100/226] #19931 VM51218 Муфта переходная (переходник) с наружной резьбой Varmega Slide-fit VM5
-  source: https://varmega.ru/product/truby-i-fitingi/aksialnye-fitingi/mufta-perekhodnaya-perekhodnik-s-naruzhnoy-rezboy-varmega-slide-fit-vm51218-32kh3-4-latunnaya-aksial/
-  found: images=4 specs=18 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
-[101/226] #19932 VM51219 Муфта переходная (переходник) с наружной резьбой Varmega Slide-fit VM5
-  source: https://varmega.ru/product/truby-i-fitingi/aksialnye-fitingi/mufta-perekhodnaya-perekhodnik-s-naruzhnoy-rezboy-varmega-slide-fit-vm51219-32kh1-latunnaya-aksialna/
-  found: images=4 specs=18 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
-[102/226] #19933 VM51301 Муфта переходная (переходник) с внутренней резьбой Varmega Slide-fit V
-  source: https://varmega.ru/product/truby-i-fitingi/aksialnye-fitingi/mufta-perekhodnaya-perekhodnik-s-vnutrenney-rezboy-varmega-slide-fit-vm51301-16kh1-2-kombinirovannaya/
-  found: images=4 specs=16 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
-[103/226] #19934 VM51302 Муфта переходная (переходник) с внутренней резьбой Varmega Slide-fit V
-  source: https://varmega.ru/product/truby-i-fitingi/aksialnye-fitingi/mufta-perekhodnaya-perekhodnik-s-vnutrenney-rezboy-varmega-slide-fit-vm51302-16kh3-4-kombinirovannaya/
-  found: images=4 specs=16 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
-[104/226] #19935 VM51303 Муфта переходная (переходник) с внутренней резьбой Varmega Slide-fit V
-  source: https://varmega.ru/product/truby-i-fitingi/aksialnye-fitingi/mufta-perekhodnaya-perekhodnik-s-vnutrenney-rezboy-varmega-slide-fit-vm51303-20kh1-2-kombinirovannaya/
-  found: images=4 specs=16 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
-[105/226] #19936 VM51304 Муфта переходная (переходник) с внутренней резьбой Varmega Slide-fit V
-  source: https://varmega.ru/product/truby-i-fitingi/aksialnye-fitingi/mufta-perekhodnaya-perekhodnik-s-vnutrenney-rezboy-varmega-slide-fit-vm51304-20kh3-4-kombinirovannaya/
-  found: images=4 specs=16 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
-[106/226] #19937 VM51311 Муфта переходная (переходник) с внутренней резьбой Varmega Slide-fit V
-  source: https://varmega.ru/product/truby-i-fitingi/aksialnye-fitingi/mufta-perekhodnaya-perekhodnik-s-vnutrenney-rezboy-varmega-slide-fit-vm51311-16kh1-2-latunnaya-aksia/
-  found: images=4 specs=18 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
-[107/226] #19938 VM51312 Муфта переходная (переходник) с внутренней резьбой Varmega Slide-fit V
-  source: https://varmega.ru/product/truby-i-fitingi/aksialnye-fitingi/mufta-perekhodnaya-perekhodnik-s-vnutrenney-rezboy-varmega-slide-fit-vm51312-16kh3-4-latunnaya-aksia/
-  found: images=4 specs=14 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
-[108/226] #19939 VM51313 Муфта переходная (переходник) с внутренней резьбой Varmega Slide-fit V
-  source: https://varmega.ru/product/truby-i-fitingi/aksialnye-fitingi/mufta-perekhodnaya-perekhodnik-s-vnutrenney-rezboy-varmega-slide-fit-vm51313-20kh1-2-latunnaya-aksia/
-  found: images=4 specs=18 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
-[109/226] #19940 VM51314 Муфта переходная (переходник) с внутренней резьбой Varmega Slide-fit V
-  source: https://varmega.ru/product/truby-i-fitingi/aksialnye-fitingi/mufta-perekhodnaya-perekhodnik-s-vnutrenney-rezboy-varmega-slide-fit-vm51314-20kh3-4-latunnaya-aksia/
-  found: images=4 specs=18 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
-[110/226] #19941 VM51316 Муфта переходная (переходник) с внутренней резьбой Varmega Slide-fit V
-  source: https://varmega.ru/product/truby-i-fitingi/aksialnye-fitingi/mufta-perekhodnaya-perekhodnik-s-vnutrenney-rezboy-varmega-slide-fit-vm51316-25kh3-4-latunnaya-aksia/
-  found: images=4 specs=18 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
-[111/226] #19942 VM51317 Муфта переходная (переходник) с внутренней резьбой Varmega Slide-fit V
-  source: https://varmega.ru/product/truby-i-fitingi/aksialnye-fitingi/mufta-perekhodnaya-perekhodnik-s-vnutrenney-rezboy-varmega-slide-fit-vm51317-25kh1-latunnaya-aksialn/
-  found: images=4 specs=13 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
-[112/226] #19943 VM51318 Муфта переходная (переходник) с внутренней резьбой Varmega Slide-fit V
-  source: https://varmega.ru/product/truby-i-fitingi/aksialnye-fitingi/mufta-perekhodnaya-perekhodnik-s-vnutrenney-rezboy-varmega-slide-fit-vm51318-32kh3-4-latunnaya-aksia/
-  found: images=4 specs=18 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
-[113/226] #19944 VM51319 Муфта переходная (переходник) с внутренней резьбой Varmega Slide-fit V
-  source: https://varmega.ru/product/truby-i-fitingi/aksialnye-fitingi/mufta-perekhodnaya-perekhodnik-s-vnutrenney-rezboy-varmega-slide-fit-vm51319-32kh1-latunnaya-aksialn/
-  found: images=4 specs=18 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
-[114/226] #19945 VM51401 Угольник (угол) 90° с наружной резьбой Varmega Slide-fit VM51401, 16х1
-  source: https://varmega.ru/product/truby-i-fitingi/aksialnye-fitingi/ugolnik-ugol-90-s-naruzhnoy-rezboy-varmega-slide-fit-vm51401-16kh1-2-kombinirovannyy-aksialnyy/
-  found: images=4 specs=17 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
-[115/226] #19946 VM51402 Угольник (угол) 90° с наружной резьбой Varmega Slide-fit VM51402, 16х3
-  source: https://varmega.ru/product/truby-i-fitingi/aksialnye-fitingi/ugolnik-ugol-90-s-naruzhnoy-rezboy-varmega-slide-fit-vm51402-16kh3-4-kombinirovannyy-aksialnyy/
-  found: images=4 specs=17 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
-[116/226] #19947 VM51403 Угольник (угол) 90° с наружной резьбой Varmega Slide-fit VM51403, 20х1
-  source: https://varmega.ru/product/truby-i-fitingi/aksialnye-fitingi/ugolnik-ugol-90-s-naruzhnoy-rezboy-varmega-slide-fit-vm51403-20kh1-2-kombinirovannyy-aksialnyy/
-  found: images=4 specs=17 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
-[117/226] #19948 VM51411 Угольник (угол) 90° с наружной резьбой Varmega Slide-fit VM51411, 16x1
-  source: https://varmega.ru/product/truby-i-fitingi/aksialnye-fitingi/ugolnik-ugol-90-s-naruzhnoy-rezboy-varmega-slide-fit-vm51411-16x1-2-aksialnyy/
-  found: images=4 specs=12 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
-[118/226] #19949 VM51413 Угольник (угол) 90° с наружной резьбой Varmega Slide-fit VM51413, 20x1
-  source: https://varmega.ru/product/truby-i-fitingi/aksialnye-fitingi/ugolnik-ugol-90-s-naruzhnoy-rezboy-varmega-slide-fit-vm51413-20x1-2-aksialnyy/
-  found: images=4 specs=12 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
-[119/226] #19950 VM51414 Угольник (угол) 90° с наружной резьбой Varmega Slide-fit VM51414, 20x3
-  source: https://varmega.ru/product/truby-i-fitingi/aksialnye-fitingi/ugolnik-ugol-90-s-naruzhnoy-rezboy-varmega-slide-fit-vm51414-20x3-4-aksialnyy/
-  found: images=4 specs=12 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
-[120/226] #19951 VM51416 Угольник (угол) 90° с наружной резьбой Varmega Slide-fit VM51416, 25x3
-  source: https://varmega.ru/product/truby-i-fitingi/aksialnye-fitingi/ugolnik-ugol-90-s-naruzhnoy-rezboy-varmega-slide-fit-vm51416-25x3-4-aksialnyy/
-  found: images=4 specs=12 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
-[121/226] #19952 VM51418 Угольник (угол) 90° с наружной резьбой Varmega Slide-fit VM51418, 32x3
-  source: https://varmega.ru/product/truby-i-fitingi/aksialnye-fitingi/ugolnik-ugol-90-s-naruzhnoy-rezboy-varmega-slide-fit-vm51418-32x3-4-aksialnyy/
-  found: images=4 specs=12 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
-[122/226] #19953 VM51419 Угольник (угол) 90° с наружной резьбой Varmega Slide-fit VM51419, 32x1
-  source: https://varmega.ru/product/truby-i-fitingi/aksialnye-fitingi/ugolnik-ugol-90-s-naruzhnoy-rezboy-varmega-slide-fit-vm51419-32x1-aksialnyy/
-  found: images=4 specs=12 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
-[123/226] #19954 VM51501 Угольник (угол) 90° с внутренней резьбой Varmega Slide-fit VM51501, 16
-  source: https://varmega.ru/product/truby-i-fitingi/aksialnye-fitingi/ugolnik-ugol-90-s-vnutrenney-rezboy-varmega-slide-fit-vm51501-16kh1-2-kombinirovannyy-aksialnyy/
-  found: images=4 specs=17 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
-[124/226] #19955 VM51503 Угольник (угол) 90° с внутренней резьбой Varmega Slide-fit VM51503, 20
-  source: https://varmega.ru/product/truby-i-fitingi/aksialnye-fitingi/ugolnik-ugol-90-s-vnutrenney-rezboy-varmega-slide-fit-vm51503-20kh1-2-kombinirovannyy-aksialnyy/
-  found: images=4 specs=17 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
-[125/226] #19956 VM51511 Угольник (угол) 90° с внутренней резьбой Varmega Slide-fit VM51511, 16
-  source: https://varmega.ru/product/truby-i-fitingi/aksialnye-fitingi/ugolnik-ugol-90-s-vnutrenney-rezboy-varmega-slide-fit-vm51511-16x1-2-aksialnyy/
-  found: images=4 specs=12 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
-[126/226] #19957 VM51513 Угольник (угол) 90° с внутренней резьбой Varmega Slide-fit VM51513, 20
-  source: https://varmega.ru/product/truby-i-fitingi/aksialnye-fitingi/ugolnik-ugol-90-s-vnutrenney-rezboy-varmega-slide-fit-vm51513-20x1-2-aksialnyy/
-  found: images=4 specs=12 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
-[127/226] #19958 VM51514 Угольник (угол) 90° с внутренней резьбой Varmega Slide-fit VM51514, 20
-  source: https://varmega.ru/product/truby-i-fitingi/aksialnye-fitingi/ugolnik-ugol-90-s-vnutrenney-rezboy-varmega-slide-fit-vm51514-20x3-4-aksialnyy/
-  found: images=4 specs=12 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
-[128/226] #19959 VM51516 Угольник (угол) 90° с внутренней резьбой Varmega Slide-fit VM51516, 25
-  source: https://varmega.ru/product/truby-i-fitingi/aksialnye-fitingi/ugolnik-ugol-90-s-vnutrenney-rezboy-varmega-slide-fit-vm51516-25x3-4-aksialnyy/
-  found: images=4 specs=12 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
-[129/226] #19960 VM51517 Угольник (угол) 90° с внутренней резьбой Varmega Slide-fit VM51517, 25
-  source: https://varmega.ru/product/truby-i-fitingi/aksialnye-fitingi/ugolnik-ugol-90-s-vnutrenney-rezboy-varmega-slide-fit-vm51517-25x1-aksialnyy/
-  found: images=4 specs=12 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
-[130/226] #19961 VM51519 Угольник (угол) 90° с внутренней резьбой Varmega Slide-fit VM51519, 32
-  source: https://varmega.ru/product/truby-i-fitingi/aksialnye-fitingi/ugolnik-ugol-90-s-vnutrenney-rezboy-varmega-slide-fit-vm51519-32x1-aksialnyy/
-  found: images=4 specs=12 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
-[131/226] #19962 VM51601 Угольник настенный (водорозетка) с внутренней резьбой Varmega Slide-fi
-  source: https://varmega.ru/product/truby-i-fitingi/aksialnye-fitingi/ugolnik-nastennyy-vodorozetka-s-vnutrenney-rezboy-varmega-slide-fit-vm51601-16kh1-2-s-krepleniem-aks/
-  found: images=4 specs=17 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
-[132/226] #19963 VM51602 Угольник настенный (водорозетка) с внутренней резьбой Varmega Slide-fi
-  source: https://varmega.ru/product/truby-i-fitingi/aksialnye-fitingi/ugolnik-nastennyy-vodorozetka-s-vnutrenney-rezboy-varmega-slide-fit-vm51602-20kh1-2-s-krepleniem-aks/
-  found: images=4 specs=17 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
-[133/226] #19964 VM51603 Угольник настенный (водорозетка) с внутренней резьбой Varmega Slide-fi
-  source: https://varmega.ru/product/truby-i-fitingi/aksialnye-fitingi/ugolnik-nastennyy-vodorozetka-s-vnutrenney-rezboy-varmega-slide-fit-vm51603-20kh3-4-s-krepleniem-aks/
-  found: images=4 specs=17 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
-[134/226] #19965 VM51611 Угольник настенный (водорозетка) с внутренней резьбой Varmega Slide-fi
-  source: https://varmega.ru/product/truby-i-fitingi/aksialnye-fitingi/ugolnik-nastennyy-vodorozetka-s-vnutrenney-rezboy-varmega-slide-fit-vm51611-16x1-2-s-krepleniem-aksi/
-  found: images=4 specs=12 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
-[135/226] #19966 VM51612 Угольник настенный (водорозетка) с внутренней резьбой Varmega Slide-fi
-  source: https://varmega.ru/product/truby-i-fitingi/aksialnye-fitingi/ugolnik-nastennyy-vodorozetka-s-vnutrenney-rezboy-varmega-slide-fit-vm51612-20x1-2-s-krepleniem-aksi/
-  found: images=4 specs=12 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
-[136/226] #19967 VM51613 Угольник настенный (водорозетка) с внутренней резьбой Varmega Slide-fi
-  source: https://varmega.ru/product/truby-i-fitingi/aksialnye-fitingi/ugolnik-nastennyy-vodorozetka-s-vnutrenney-rezboy-varmega-slide-fit-vm51613-20x3-4-s-krepleniem-aksi/
-  found: images=4 specs=12 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
+[195/226] #20430 VM59901 Varmega VM59901 16-32
+  source: https://varmega.ru/product/instrument/rasshiritelnaya-nasadka-varmega-vm59941-16kh2-2-20kh2-8-dlya-instrumenta-varmega-vm59901-i-vm59902/
+  found: images=4 specs=11 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
+[196/226] #20431 VM59902 Varmega VM59902 16-32
+  source: https://varmega.ru/product/instrument/komplekt-zapressovochnykh-nasadok-tiskov-varmega-vm59922-25-32-mm-dlya-instrumenta-varmega-vm59902-i/
+  found: images=4 specs=11 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
+[197/226] #20432 VM59903 Varmega VM59903 16-32
+  source: https://varmega.ru/product/instrument/komplekt-zapressovochnykh-nasadok-tiskov-varmega-vm59931-16-20-mm-dlya-instrumenta-varmega-vm59903/
+  found: images=4 specs=11 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
+[198/226] #20433 VM59911 Varmega VM59911 16
+  source: https://varmega.ru/product/instrument/komplekt-zapressovochnykh-nasadok-tiskov-varmega-vm59911-16-mm-dlya-ruchnogo-instrumenta-varmega-vm5/
+  found: images=4 specs=11 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
+[199/226] #20434 VM59912 Varmega VM59912 20
+  source: https://varmega.ru/product/instrument/komplekt-zapressovochnykh-nasadok-tiskov-varmega-vm59912-20-mm-dlya-ruchnogo-instrumenta-varmega-vm5/
+  found: images=4 specs=11 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
+[200/226] #20435 VM59913 Varmega VM59913 25
+  source: https://varmega.ru/product/instrument/komplekt-zapressovochnykh-nasadok-tiskov-varmega-vm59913-25-mm-dlya-ruchnogo-instrumenta-varmega-vm5/
+  found: images=4 specs=11 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
+[201/226] #20436 VM59914 Varmega VM59914 32
+  source: https://varmega.ru/product/instrument/komplekt-zapressovochnykh-nasadok-tiskov-varmega-vm59914-32-mm-dlya-ruchnogo-instrumenta-varmega-vm5/
+  found: images=4 specs=11 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
+[202/226] #20437 VM59931 Varmega VM59931 16/20
+  source: https://varmega.ru/product/instrument/komplekt-zapressovochnykh-nasadok-tiskov-varmega-vm59931-16-20-mm-dlya-instrumenta-varmega-vm59903/
+  found: images=4 specs=11 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
+[203/226] #20438 VM59941 Varmega VM59941 16х2.2/20х2.8
+  source: https://varmega.ru/product/instrument/rasshiritelnaya-nasadka-varmega-vm59941-16kh2-2-20kh2-8-dlya-instrumenta-varmega-vm59901-i-vm59902/
+  found: images=4 specs=11 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
+[204/226] #20439 VM59943 Varmega VM59943 32х4.4
+  source: https://varmega.ru/product/instrument/rasshiritelnaya-nasadka-varmega-vm59943-32kh4-4-dlya-instrumenta-varmega-vm59901-i-vm59902/
+  found: images=4 specs=11 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
+[205/226] #20440 VM59951 Varmega VM59951 16х2.2/20х2.8
+  source: https://varmega.ru/product/instrument/rasshiritelnaya-nasadka-varmega-vm59951-16kh2-2-20kh2-8-dlya-instrumenta-varmega-vm59903/
+  found: images=4 specs=11 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
+[206/226] #20441 VM797016022 Varmega VM797016022 16x2.2
+  source: https://varmega.ru/product/instrument/rasshiritelnaya-nasadka-varmega-flex-vm797016022-16x2-2/
+  found: images=4 specs=6 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
+[207/226] #20442 VM797020028 Varmega VM797020028 20x2.8
+  source: https://varmega.ru/product/instrument/rasshiritelnaya-nasadka-varmega-flex-vm797020028-20x2-8/
+  found: images=4 specs=6 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
+[208/226] #20443 VM797025035 Varmega VM797025035 25x3.5
+  source: https://varmega.ru/product/instrument/rasshiritelnaya-nasadka-varmega-flex-vm797025035-25x3-5/
+  found: images=4 specs=6 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
+[209/226] #20444 VM797032044 Varmega VM797032044 32x4.4
+  source: https://varmega.ru/product/instrument/rasshiritelnaya-nasadka-varmega-flex-vm797032044-32x4-4/
+  found: images=4 specs=6 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
+[210/226] #20445 VM798016226 Varmega VM798016226 16.2x2.6
+  source: https://varmega.ru/product/instrument/rasshiritelnaya-nasadka-varmega-stabil-vm798016226-16-2x2-6-dlya-trub-varmega-stabil/
+  found: images=4 specs=6 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
+[211/226] #20446 VM798020029 Varmega VM798020029 20x2.9
+  source: https://varmega.ru/product/instrument/rasshiritelnaya-nasadka-varmega-stabil-vm798020029-20x2-9-dlya-trub-varmega-stabil/
+  found: images=4 specs=6 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
+[212/226] #20447 VM798025037 Varmega VM798025037 25x3.7
+  source: https://varmega.ru/product/instrument/rasshiritelnaya-nasadka-varmega-stabil-vm798025037-25x3-7-dlya-trub-varmega-stabil/
+  found: images=4 specs=6 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
+[213/226] #20448 VM798032047 Varmega VM798032047 32x4.7
+  source: https://varmega.ru/product/instrument/rasshiritelnaya-nasadka-varmega-stabil-vm798032047-32x4-7-dlya-trub-varmega-stabil/
+  found: images=4 specs=6 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
+[214/226] #20449 VM7003041510 Varmega VM7003041510 15x1,0
+  source: https://varmega.ru/product/truby-i-fitingi/truba-iz-nerzhaveyushchey-stali-varmega-inox-press-vm7003041510-15-1-0/
+  found: images=4 specs=10 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
+[215/226] #20450 VM7003041810 Varmega VM7003041810 18x1,0
+  source: https://varmega.ru/product/truby-i-fitingi/truba-iz-nerzhaveyushchey-stali-varmega-inox-press-vm7003041810-18-1-0/
+  found: images=4 specs=10 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
+[216/226] #20451 VM7003042212 Varmega VM7003042212 22x1,2
+  source: https://varmega.ru/product/truby-i-fitingi/truba-iz-nerzhaveyushchey-stali-varmega-inox-press-vm7003042212-22-1-2/
+  found: images=4 specs=10 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
+[217/226] #20452 VM7003042812 Varmega VM7003042812 28x1,2
+  source: https://varmega.ru/product/truby-i-fitingi/truba-iz-nerzhaveyushchey-stali-varmega-inox-press-vm7003042812-28-1-2/
+  found: images=4 specs=10 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
+[218/226] #20453 VM7003043515 Varmega VM7003043515 35x1,5
+  source: https://varmega.ru/product/truby-i-fitingi/truba-iz-nerzhaveyushchey-stali-varmega-inox-press-vm7003043515-35-1-5/
+  found: images=4 specs=10 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
+[219/226] #20454 VM7003044215 Varmega VM7003044215 42x1,5
+  source: https://varmega.ru/product/truby-i-fitingi/truba-iz-nerzhaveyushchey-stali-varmega-inox-press-vm7003044215-42-1-5/
+  found: images=4 specs=10 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
+[220/226] #20455 VM7003045415 Varmega VM7003045415 54x1,5
+  source: https://varmega.ru/product/truby-i-fitingi/truba-iz-nerzhaveyushchey-stali-varmega-inox-press-vm7003045415-54-1-5/
+  found: images=4 specs=10 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
+[221/226] #20689 VM796000V15 Varmega VM796000V15 15
+  source: https://varmega.ru/product/instrument/press-nasadka-varmega-vm796000v15-profil-v-15-mm/
+  found: images=4 specs=5 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
+[222/226] #20690 VM796000V18 Varmega VM796000V18 18
+  source: https://varmega.ru/product/instrument/press-nasadka-varmega-vm796000v18-profil-v-18-mm/
+  found: images=4 specs=5 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
+[223/226] #20691 VM796000V22 Varmega VM796000V22 22
+  source: https://varmega.ru/product/instrument/press-nasadka-varmega-vm796000v22-profil-v-22-mm/
+  found: images=4 specs=5 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
+[224/226] #20692 VM796000V28 Varmega VM796000V28 28
+  source: https://varmega.ru/product/instrument/press-nasadka-varmega-vm796000v28-profil-v-28-mm/
+  found: images=4 specs=5 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
+[225/226] #20693 VM796000V35 Varmega VM796000V35 35
+  source: https://varmega.ru/product/instrument/press-nasadka-varmega-vm796000v35-profil-v-35-mm/
+  found: images=4 specs=5 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
 
 ```
