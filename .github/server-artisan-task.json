@@ -1,6 +1,6 @@
 {
   "task": "artisan-apply",
-  "artisan_args": "supplier:enrich-source-products --supplier=rn-profi --brand=Varmega --category=Пресс-фитинги --product=20510 --force --replace-specs --min-specs-to-replace=1 --overwrite-images --skip-documents --skip-ai --limit=1",
-  "log_file": "storage/logs/varmega-vm706001804-enrich-preview.log",
-  "run_id": "varmega-vm706001804-enrich-preview-20260712-1"
+  "artisan_args": "supplier:repair-varmega-source-urls --article-prefix=VM706 --http-timeout=8 --limit=0 --enrich --replace-specs --min-specs-to-replace=1 --overwrite-images --skip-documents",
+  "log_file": "storage/logs/varmega-vm706-source-repair-dry.log",
+  "run_id": "varmega-vm706-source-repair-dry-20260712-1"
 }
