@@ -1,6 +1,6 @@
 {
-  "task": "artisan-apply",
-  "artisan_args": "supplier:sync-ligmet --apply --brand=Ferrum --all-categories --link-existing-suggestions --min-suggestion-score=99.9",
+  "task": "artisan-dry-run",
+  "artisan_args": "products:audit-content-health --active-only --not-archived --max-attrs=2 --limit=200 --csv=storage/app/reports/content-health/content-health-active.csv",
   "log_file": "",
-  "run_id": "apply-ligmet-ferrum-link-strict-20260712-1"
+  "run_id": "audit-content-health-active-20260712-1"
 }
