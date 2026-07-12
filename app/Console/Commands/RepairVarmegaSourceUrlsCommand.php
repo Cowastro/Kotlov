@@ -133,12 +133,18 @@ class RepairVarmegaSourceUrlsCommand extends Command
             }
 
             $article = $this->normArticle((string) $row->supplier_article);
-            $match = $article !== ''
+            $match = $article !== '' ? ($index[$article] ?? null) : null;
+            $match ??= $article !== ''
                 ? $this->knownOfficialVarmegaSourceForArticle($article)
                 : null;
 
-            $match ??= $article !== '' ? $this->knownRnProfiVarmegaSourceForArticle($article) : null;
-            $match ??= $article !== '' ? ($index[$article] ?? null) : null;
+            if ($match === null
+                && (bool) $this->option('rn-profi-fallback')
+                && $article !== ''
+                && ($rnProfiSearchLimit === 0 || $rnProfiSearches < $rnProfiSearchLimit)
+            ) {
+                $match = $this->knownRnProfiVarmegaSourceForArticle($article);
+            }
 
             if ($match === null
                 && (bool) $this->option('rn-profi-fallback')
