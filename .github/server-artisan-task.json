@@ -1,6 +1,6 @@
 {
-  "task": "artisan-dry-run",
-  "artisan_args": "products:audit-content-health --supplier=rn-profi --brand=Varmega --active-only --not-archived --issues=no_photo,low_attrs --max-attrs=4 --limit=220",
-  "log_file": "storage/logs/audit-varmega-after-vm166-safety-valves.log",
-  "run_id": "audit-varmega-after-vm166-safety-valves-20260712-1"
+  "task": "artisan-apply",
+  "artisan_args": "supplier:repair-varmega-source-urls --apply --article-prefix=VM04302 --fix-category --category-slug=filtry --enrich --replace-specs --min-specs-to-replace=1 --overwrite-images --skip-documents --limit=0 --sleep=1000",
+  "log_file": "storage/logs/repair-varmega-vm04302-filter.log",
+  "run_id": "repair-varmega-vm04302-filter-20260712-1"
 }

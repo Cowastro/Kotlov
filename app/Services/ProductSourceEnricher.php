@@ -872,6 +872,10 @@ class ProductSourceEnricher
             return $this->adaptRnProfiParsedDataForProduct($parsed, $product, $sourceUrl);
         }
 
+        if ($this->isRusklimatUrl($sourceUrl)) {
+            return $this->adaptRusklimatParsedDataForProduct($parsed, $product, $sourceUrl);
+        }
+
         if (! $this->isGreolitUrl($sourceUrl)) {
             return $parsed;
         }
@@ -1101,6 +1105,44 @@ class ProductSourceEnricher
     private function isGreolitUrl(string $url): bool
     {
         return str_contains((string) parse_url($url, PHP_URL_HOST), 'greolit.by');
+    }
+
+    private function isRusklimatUrl(string $url): bool
+    {
+        return str_contains((string) parse_url($url, PHP_URL_HOST), 'rusklimat.com');
+    }
+
+    private function adaptRusklimatParsedDataForProduct(array $parsed, Product $product, string $sourceUrl): array
+    {
+        $brand = mb_strtolower((string) ($product->brand?->name ?? ''));
+        if ($brand !== 'varmega') {
+            return $parsed;
+        }
+
+        $article = $this->extractVarmegaArticle((string) ($product->supplierProducts()->value('supplier_article') ?: $product->name));
+        if ($article !== 'VM04302') {
+            return $parsed;
+        }
+
+        $title = $this->cleanText((string) ($parsed['title'] ?: 'Фильтр механической очистки VARMEGA В/В 3/4" Т-образный VM04302'));
+        $description = 'Фильтр механической очистки Varmega VM04302, В/В 3/4", Т-образный, устанавливается в трубопроводные системы отопления и водоснабжения для задержания механических примесей. Подбирается по артикулу, присоединительному размеру и типу подключения.';
+
+        $parsed['description'] = $description;
+        $parsed['short_description'] = 'Фильтр механической очистки Varmega VM04302 В/В 3/4", Т-образный.';
+        $parsed['specs'] = $this->normalizeParsedSpecs([
+            ['key' => 'Артикул', 'value' => 'VM04302', 'unit' => ''],
+            ['key' => 'Тип изделия', 'value' => 'Фильтр механической очистки', 'unit' => ''],
+            ['key' => 'Размер подключения', 'value' => '3/4"', 'unit' => ''],
+            ['key' => 'Тип соединения', 'value' => 'В/В', 'unit' => ''],
+            ['key' => 'Исполнение', 'value' => 'Т-образный', 'unit' => ''],
+            ['key' => 'Назначение', 'value' => 'для систем отопления и водоснабжения', 'unit' => ''],
+        ]);
+
+        if ($title !== '') {
+            $parsed['title'] = $title;
+        }
+
+        return $parsed;
     }
 
     /**

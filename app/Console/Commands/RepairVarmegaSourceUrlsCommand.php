@@ -479,6 +479,7 @@ class RepairVarmegaSourceUrlsCommand extends Command
 
         $exactExternalSources = [
             '2172010' => 'https://www.ozon.ru/product/soedinenie-rezbozazhimnoe-varmega-20x2-8-x-3-4-ek-dlya-trub-iz-sshitogo-polietilena-1521783775/?oos_search=false',
+            'VM04302' => 'https://b2b.rusklimat.com/catalog/product/filtr-mekhanicheskoy-ochistki-varmega-v-v-3-4-t-obraznyy-vm04302/',
             'VM52603' => 'https://belsklad.by/varmega-trojnik-s-trubkoj-slide-fit-20-16-250-dlja-podkljuchenija-radiatora-vm52603-2105067',
             'VM52604' => 'https://belsklad.by/varmega-trojnik-s-trubkoj-slide-fit-16-20-250-dlja-podkljuchenija-radiatora-vm52604-2105444',
         ];
