@@ -73,6 +73,7 @@ class SyncLigmetCommand extends Command
         'кпд'      => 'КПД',
         'blist'    => 'Blist',
         'fireway'  => 'FireWay',
+        'ferrum'   => 'Ferrum',
         'fergus'   => 'Ferguss',   // matches «Fergus» and «Ferguss»
         'invicta'  => 'Invicta',
         'kratki'   => 'Kratki',
