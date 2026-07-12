@@ -370,6 +370,9 @@ class RepairVarmegaSourceUrlsCommand extends Command
         }
 
         $path = trim((string) (parse_url($url, PHP_URL_PATH) ?: ''), '/');
+        if (str_starts_with($path, 'varmega/') && mb_strlen($path) > mb_strlen('varmega/')) {
+            return true;
+        }
 
         return $path !== ''
             && ! str_contains($path, '/')
