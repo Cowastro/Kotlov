@@ -14,6 +14,8 @@ class RepairVarmegaSourceUrlsCommand extends Command
         {--category= : Product category name filter}
         {--sitemap=https://varmega.ru/sitemap-iblock-43.xml : Varmega product sitemap URL}
         {--refresh-index : Rebuild cached article URL index}
+        {--rn-profi-fallback : Search rn-profi.by by article when official Varmega URL is missing}
+        {--rn-profi-search-limit=0 : Maximum RN-Profi article searches, 0 means all}
         {--limit=0 : Max supplier links to process, 0 means all}
         {--offset=0 : Skip supplier links}
         {--enrich : Enrich products after source_url repair}
@@ -41,6 +43,8 @@ class RepairVarmegaSourceUrlsCommand extends Command
 
         $index = $this->loadOfficialIndex();
         $this->info(sprintf('Official Varmega article index: %d URLs.', count($index)));
+        $rnProfiSearchLimit = max(0, (int) $this->option('rn-profi-search-limit'));
+        $rnProfiSearches = 0;
 
         $query = DB::table('supplier_products as sp')
             ->join('suppliers as s', 's.id', '=', 'sp.supplier_id')
@@ -100,6 +104,15 @@ class RepairVarmegaSourceUrlsCommand extends Command
             $stats['checked']++;
             $article = $this->normArticle((string) $row->supplier_article);
             $match = $article !== '' ? ($index[$article] ?? null) : null;
+
+            if ($match === null
+                && (bool) $this->option('rn-profi-fallback')
+                && $article !== ''
+                && ($rnProfiSearchLimit === 0 || $rnProfiSearches < $rnProfiSearchLimit)
+            ) {
+                $rnProfiSearches++;
+                $match = $this->findRnProfiSourceByArticle((string) $row->supplier_article, $article);
+            }
 
             if ($match === null) {
                 $stats['missing']++;
@@ -276,6 +289,93 @@ class RepairVarmegaSourceUrlsCommand extends Command
         $body = @file_get_contents($url, false, $context);
 
         return is_string($body) && $body !== '' ? $body : null;
+    }
+
+    private function findRnProfiSourceByArticle(string $article, string $normArticle): ?array
+    {
+        $searchUrl = 'https://rn-profi.by/index.php?route=product/search&search=' . rawurlencode($article);
+        $html = $this->fetch($searchUrl);
+        if ($html === null) {
+            return null;
+        }
+
+        $candidateUrls = $this->extractRnProfiProductUrls($html);
+        if ($this->pageContainsArticle($html, $normArticle) && $this->looksLikeRnProfiProductPage($html)) {
+            array_unshift($candidateUrls, $searchUrl);
+        }
+
+        foreach (array_slice(array_values(array_unique($candidateUrls)), 0, 25) as $url) {
+            $candidateHtml = $url === $searchUrl ? $html : $this->fetch($url);
+            if ($candidateHtml === null) {
+                continue;
+            }
+
+            if (! $this->pageContainsArticle($candidateHtml, $normArticle)) {
+                continue;
+            }
+
+            return ['url' => $url];
+        }
+
+        return null;
+    }
+
+    /**
+     * @return string[]
+     */
+    private function extractRnProfiProductUrls(string $html): array
+    {
+        preg_match_all('/href=["\']([^"\']+)["\']/i', $html, $matches);
+        $urls = [];
+        foreach ($matches[1] ?? [] as $href) {
+            $url = html_entity_decode((string) $href, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+            if ($url === '' || str_starts_with($url, '#') || str_starts_with($url, 'javascript:')) {
+                continue;
+            }
+            if (str_starts_with($url, '/')) {
+                $url = 'https://rn-profi.by' . $url;
+            }
+            if (! str_starts_with($url, 'https://rn-profi.by/')) {
+                continue;
+            }
+            if (! $this->rnProfiUrlLooksLikeProduct($url)) {
+                continue;
+            }
+            $urls[] = strtok($url, '#') ?: $url;
+        }
+
+        return array_values(array_unique($urls));
+    }
+
+    private function rnProfiUrlLooksLikeProduct(string $url): bool
+    {
+        if (str_contains($url, 'route=product/product')) {
+            return true;
+        }
+
+        $path = trim((string) (parse_url($url, PHP_URL_PATH) ?: ''), '/');
+
+        return $path !== ''
+            && ! str_contains($path, '/')
+            && ! in_array($path, [
+                'about_us', 'payment', 'delivery', 'contact-us', 'brands',
+                'search', 'compare-products', 'wishlist', 'my-account', 'cart', 'checkout',
+                'kontakty', 'oplata', 'sitemap', 'proekt', 'servis',
+            ], true);
+    }
+
+    private function looksLikeRnProfiProductPage(string $html): bool
+    {
+        return (bool) preg_match('/<h1[^>]*>.*?<\/h1>/is', $html);
+    }
+
+    private function pageContainsArticle(string $html, string $normArticle): bool
+    {
+        if ($normArticle === '') {
+            return false;
+        }
+
+        return str_contains($this->normArticle(strip_tags($html)), $normArticle);
     }
 
     /**
