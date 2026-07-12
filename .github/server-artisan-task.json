@@ -1,6 +1,6 @@
 {
   "task": "artisan-apply",
-  "artisan_args": "products:audit-content-terms --brand=Varmega --category=Пресс-фитинги --profile=varmega-fittings --not-archived --active-only --limit=120",
-  "log_file": "storage/logs/varmega-press-fitting-content-audit-after-cleanup.log",
-  "run_id": "varmega-press-fitting-content-audit-after-cleanup-20260712-1"
+  "artisan_args": "products:audit-content-health --supplier=rn-profi --brand=Varmega --category=Пресс-фитинги --active-only --not-archived --issues=no_photo,low_attrs,no_source --max-attrs=2 --limit=160",
+  "log_file": "storage/logs/varmega-press-fitting-health-audit.log",
+  "run_id": "varmega-press-fitting-health-audit-20260712-1"
 }
