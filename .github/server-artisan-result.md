@@ -1,6 +1,6 @@
 # Server Artisan Result
 
-- Time: 2026-07-12 09:31:42 UTC
+- Time: 2026-07-12 09:33:26 UTC
 - Task: `tail-log`
 - Artisan args: ``
 - Log file: `storage/logs/varmega-press-source-repair.log`
@@ -8,85 +8,12 @@
 
 ```text
 From https://github.com/Cowastro/Kotlov
-   393121a..c3b834a  main       -> origin/main
-Updating 393121a..c3b834a
+   c3b834a..df8503a  main       -> origin/main
+Updating c3b834a..df8503a
 Fast-forward
- .github/server-artisan-result.md | 181 +++------------------------------------
- .github/server-artisan-task.json |   6 +-
- 2 files changed, 15 insertions(+), 172 deletions(-)
-APPLY: source enrichment will be written.
-Products with source URLs: 226 (processing 226, offset 0, --force)
-[1/226] #19785 VM50650 Муфта ремонтная Varmega VM50650, 16x2.0, в комплекте с гильзами
-  source: https://varmega.ru/product/truby-i-fitingi/aksialnye-fitingi/mufta-remontnaya-varmega-vm50650-16x2-0-v-komplekte-s-gilzami/
-  found: images=4 specs=11 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
-[2/226] #19833 VM50311 Надвижная (монтажная) гильза Varmega Slide-fit VM50311, 16 мм, аксиаль
-  source: https://varmega.ru/product/truby-i-fitingi/aksialnye-fitingi/nadvizhnaya-montazhnaya-gilza-varmega-slide-fit-vm50311-16-mm-aksialnaya/
-  found: images=4 specs=10 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
-[3/226] #19834 VM50312 Надвижная (монтажная) гильза Varmega Slide-fit VM50312, 20 мм, аксиаль
-  source: https://varmega.ru/product/truby-i-fitingi/aksialnye-fitingi/nadvizhnaya-montazhnaya-gilza-varmega-slide-fit-vm50312-20-mm-aksialnaya/
-  found: images=4 specs=10 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
-[4/226] #19835 VM50313 Надвижная (монтажная) гильза Varmega Slide-fit VM50313, 25 мм, аксиаль
-  source: https://varmega.ru/product/truby-i-fitingi/aksialnye-fitingi/nadvizhnaya-montazhnaya-gilza-varmega-slide-fit-vm50313-25-mm-aksialnaya/
-  found: images=4 specs=10 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
-[5/226] #19836 VM50314 Надвижная (монтажная) гильза Varmega Slide-fit VM50314, 32 мм, аксиаль
-  source: https://varmega.ru/product/truby-i-fitingi/aksialnye-fitingi/nadvizhnaya-montazhnaya-gilza-varmega-slide-fit-vm50314-32-mm-aksialnaya/
-  found: images=4 specs=10 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
-[6/226] #19837 VM50401 Тройник равносторонний Varmega Slide-fit VM50401, 16 мм, аксиальный
-  source: https://varmega.ru/product/truby-i-fitingi/aksialnye-fitingi/troynik-ravnostoronniy-varmega-slide-fit-vm50401-16-mm-aksialnyy/
-  found: images=4 specs=16 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
-[7/226] #19838 VM50402 Тройник равносторонний Varmega Slide-fit VM50402, 20 мм, аксиальный
-  source: https://varmega.ru/product/truby-i-fitingi/aksialnye-fitingi/troynik-ravnostoronniy-varmega-slide-fit-vm50402-20-mm-aksialnyy/
-  found: images=4 specs=16 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
-[8/226] #19839 VM50403 Тройник равносторонний Varmega Slide-fit VM50403, 25 мм, аксиальный
-  source: https://varmega.ru/product/truby-i-fitingi/aksialnye-fitingi/troynik-ravnostoronniy-varmega-slide-fit-vm50403-25-mm-aksialnyy/
-  found: images=4 specs=16 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
-[9/226] #19840 VM50404 Тройник равносторонний Varmega Slide-fit VM50404, 32 мм, аксиальный
-  source: https://varmega.ru/product/truby-i-fitingi/aksialnye-fitingi/troynik-ravnostoronniy-varmega-slide-fit-vm50404-32-mm-aksialnyy/
-  found: images=4 specs=16 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
-[10/226] #19841 VM50411 Тройник равносторонний Varmega Slide-fit VM50411, 16, аксиальный
-  source: https://varmega.ru/product/truby-i-fitingi/aksialnye-fitingi/troynik-ravnostoronniy-varmega-slide-fit-vm50411-16-aksialnyy/
-  found: images=4 specs=11 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
-[11/226] #19842 VM50412 Тройник равносторонний Varmega Slide-fit VM50412, 20, аксиальный
-  source: https://varmega.ru/product/truby-i-fitingi/aksialnye-fitingi/troynik-ravnostoronniy-varmega-slide-fit-vm50412-20-aksialnyy/
-  found: images=4 specs=11 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
-[12/226] #19843 VM50413 Тройник равносторонний Varmega Slide-fit VM50413, 25, аксиальный
-  source: https://varmega.ru/product/truby-i-fitingi/aksialnye-fitingi/troynik-ravnostoronniy-varmega-slide-fit-vm50413-25-aksialnyy/
-  found: images=4 specs=11 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
-[13/226] #19844 VM50414 Тройник равносторонний Varmega Slide-fit VM50414, 32, аксиальный
-  source: https://varmega.ru/product/truby-i-fitingi/aksialnye-fitingi/troynik-ravnostoronniy-varmega-slide-fit-vm50414-32-aksialnyy/
-  found: images=4 specs=12 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
-[14/226] #19845 VM50501 Тройник переходной Varmega Slide-fit VM50501, 16×20×16 мм, аксиальный
-  source: https://varmega.ru/product/truby-i-fitingi/aksialnye-fitingi/troynik-perekhodnoy-varmega-slide-fit-vm50501-16-20-16-mm-aksialnyy/
-  found: images=4 specs=16 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
-[15/226] #19846 VM50502 Тройник переходной Varmega Slide-fit VM50502, 16×25×16 мм, аксиальный
-  source: https://varmega.ru/product/truby-i-fitingi/aksialnye-fitingi/troynik-perekhodnoy-varmega-slide-fit-vm50502-16-25-16-mm-aksialnyy/
-  found: images=4 specs=15 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
-[16/226] #19847 VM50503 Тройник переходной Varmega Slide-fit VM50503, 20×16×16 мм, аксиальный
-  source: https://varmega.ru/product/truby-i-fitingi/aksialnye-fitingi/troynik-perekhodnoy-varmega-slide-fit-vm50503-20-16-16-mm-aksialnyy/
-  found: images=4 specs=16 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
-[17/226] #19848 VM50504 Тройник переходной Varmega Slide-fit VM50504, 20×16×20 мм, аксиальный
-  source: https://varmega.ru/product/truby-i-fitingi/aksialnye-fitingi/troynik-perekhodnoy-varmega-slide-fit-vm50504-20-16-20-mm-aksialnyy/
-  found: images=4 specs=16 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
-[18/226] #19849 VM50505 Тройник переходной Varmega Slide-fit VM50505, 20×20×16 мм, аксиальный
-  source: https://varmega.ru/product/truby-i-fitingi/aksialnye-fitingi/troynik-perekhodnoy-varmega-slide-fit-vm50505-20-20-16-mm-aksialnyy/
-  found: images=4 specs=16 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
-[19/226] #19850 VM50506 Тройник переходной Varmega Slide-fit VM50506, 20×25×16 мм, аксиальный
-  source: https://varmega.ru/product/truby-i-fitingi/aksialnye-fitingi/troynik-perekhodnoy-varmega-slide-fit-vm50506-20-25-16-mm-aksialnyy/
-  found: images=4 specs=15 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
-[20/226] #19851 VM50507 Тройник переходной Varmega Slide-fit VM50507, 20×25×20 мм, аксиальный
-  source: https://varmega.ru/product/truby-i-fitingi/aksialnye-fitingi/troynik-perekhodnoy-varmega-slide-fit-vm50507-20-25-20-mm-aksialnyy/
-  found: images=4 specs=15 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
-[21/226] #19852 VM50509 Тройник переходной Varmega Slide-fit VM50509, 25×16×16 мм, аксиальный
-  source: https://varmega.ru/product/truby-i-fitingi/aksialnye-fitingi/troynik-perekhodnoy-varmega-slide-fit-vm50509-25-16-16-mm-aksialnyy/
-  found: images=4 specs=15 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
-[22/226] #19853 VM50510 Тройник переходной Varmega Slide-fit VM50510, 25×16×20 мм, аксиальный
-  source: https://varmega.ru/product/truby-i-fitingi/aksialnye-fitingi/troynik-perekhodnoy-varmega-slide-fit-vm50510-25-16-20-mm-aksialnyy/
-  found: images=4 specs=15 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
-[23/226] #19854 VM50511 Тройник переходной Varmega Slide-fit VM50511, 25×16×25 мм, аксиальный
-  source: https://varmega.ru/product/truby-i-fitingi/aksialnye-fitingi/troynik-perekhodnoy-varmega-slide-fit-vm50511-25-16-25-mm-aksialnyy/
-  found: images=4 specs=16 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
-[24/226] #19855 VM50512 Тройник переходной Varmega Slide-fit VM50512, 25×20×16 мм, аксиальный
-  source: https://varmega.ru/product/truby-i-fitingi/aksialnye-fitingi/troynik-perekhodnoy-varmega-slide-fit-vm50512-25-20-16-mm-aksialnyy/
+ .github/server-artisan-result.md | 146 ++++++++++++++++++++++++++++++++++++---
+ .github/server-artisan-task.json |   2 +-
+ 2 files changed, 136 insertions(+), 12 deletions(-)
   found: images=4 specs=15 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
 [25/226] #19856 VM50513 Тройник переходной Varmega Slide-fit VM50513, 25×20×20 мм, аксиальный
   source: https://varmega.ru/product/truby-i-fitingi/aksialnye-fitingi/troynik-perekhodnoy-varmega-slide-fit-vm50513-25-20-20-mm-aksialnyy/
@@ -141,5 +68,111 @@ Products with source URLs: 226 (processing 226, offset 0, --force)
   found: images=4 specs=11 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
 [42/226] #19873 VM50555 Тройник переходной Varmega Slide-fit VM50555, 20x20x16, аксиальный, ла
   source: https://varmega.ru/product/truby-i-fitingi/aksialnye-fitingi/troynik-perekhodnoy-varmega-slide-fit-vm50555-20x20x16-aksialnyy/
+  found: images=4 specs=12 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
+[43/226] #19874 VM50557 Тройник переходной Varmega Slide-fit VM50557, 20x25x20 мм, аксиальный,
+  source: https://varmega.ru/product/truby-i-fitingi/aksialnye-fitingi/troynik-perekhodnoy-varmega-slide-fit-vm50557-20x25x20-aksialnyy/
+  found: images=4 specs=12 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
+[44/226] #19875 VM50559 Тройник переходной Varmega Slide-fit VM50559, 25x16x16, аксиальный, ла
+  source: https://varmega.ru/product/truby-i-fitingi/aksialnye-fitingi/troynik-perekhodnoy-varmega-slide-fit-vm50559-25x16x16-aksialnyy/
+  found: images=4 specs=11 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
+[45/226] #19876 VM50560 Тройник переходной Varmega Slide-fit VM50560, 25x16x20 мм, аксиальный,
+  source: https://varmega.ru/product/truby-i-fitingi/aksialnye-fitingi/troynik-perekhodnoy-varmega-slide-fit-vm50560-25x16x20-aksialnyy/
+  found: images=4 specs=12 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
+[46/226] #19877 VM50561 Тройник переходной Varmega Slide-fit VM50561, 25x16x25, аксиальный, ла
+  source: https://varmega.ru/product/truby-i-fitingi/aksialnye-fitingi/troynik-perekhodnoy-varmega-slide-fit-vm50561-25x16x25-aksialnyy/
+  found: images=4 specs=11 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
+[47/226] #19878 VM50562 Тройник переходной Varmega Slide-fit VM50562, 25x20x16 мм, аксиальный,
+  source: https://varmega.ru/product/truby-i-fitingi/aksialnye-fitingi/troynik-perekhodnoy-varmega-slide-fit-vm50562-25x20x16-aksialnyy/
+  found: images=4 specs=12 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
+[48/226] #19879 VM50563 Тройник переходной Varmega Slide-fit VM50563, 25x20x20, аксиальный, ла
+  source: https://varmega.ru/product/truby-i-fitingi/aksialnye-fitingi/troynik-perekhodnoy-varmega-slide-fit-vm50563-25x20x20-aksialnyy/
+  found: images=4 specs=11 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
+[49/226] #19880 VM50564 Тройник переходной Varmega Slide-fit VM50564, 25x20x25, аксиальный, ла
+  source: https://varmega.ru/product/truby-i-fitingi/aksialnye-fitingi/troynik-perekhodnoy-varmega-slide-fit-vm50564-25x20x25-aksialnyy/
+  found: images=4 specs=11 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
+[50/226] #19881 VM50565 Тройник переходной Varmega Slide-fit VM50565, 25x25x16 мм, аксиальный,
+  source: https://varmega.ru/product/truby-i-fitingi/aksialnye-fitingi/troynik-perekhodnoy-varmega-slide-fit-vm50565-25x25x16-aksialnyy/
+  found: images=4 specs=12 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
+[51/226] #19882 VM50566 Тройник переходной Varmega Slide-fit VM50566, 25x25x20 мм, аксиальный,
+  source: https://varmega.ru/product/truby-i-fitingi/aksialnye-fitingi/troynik-perekhodnoy-varmega-slide-fit-vm50566-25x25x20-aksialnyy/
+  found: images=4 specs=12 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
+[52/226] #19883 VM50568 Тройник переходной Varmega Slide-fit VM50568, 32x16x32 мм, аксиальный,
+  source: https://varmega.ru/product/truby-i-fitingi/aksialnye-fitingi/troynik-perekhodnoy-varmega-slide-fit-vm50568-32x16x32-aksialnyy/
+  found: images=4 specs=12 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
+[53/226] #19884 VM50570 Тройник переходной Varmega Slide-fit VM50570, 32x20x25 мм, аксиальный,
+  source: https://varmega.ru/product/truby-i-fitingi/aksialnye-fitingi/troynik-perekhodnoy-varmega-slide-fit-vm50570-32x20x25-aksialnyy/
+  found: images=4 specs=12 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
+[54/226] #19885 VM50571 Тройник переходной Varmega Slide-fit VM50571, 32x20x32 мм, аксиальный,
+  source: https://varmega.ru/product/truby-i-fitingi/aksialnye-fitingi/troynik-perekhodnoy-varmega-slide-fit-vm50571-32x20x32-aksialnyy/
+  found: images=4 specs=12 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
+[55/226] #19886 VM50573 Тройник переходной Varmega Slide-fit VM50573, 32x25x25 мм, аксиальный,
+  source: https://varmega.ru/product/truby-i-fitingi/aksialnye-fitingi/troynik-perekhodnoy-varmega-slide-fit-vm50573-32x25x25-aksialnyy/
+  found: images=4 specs=12 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
+[56/226] #19887 VM50574 Тройник переходной Varmega Slide-fit VM50574, 32x25x32 мм, аксиальный,
+  source: https://varmega.ru/product/truby-i-fitingi/aksialnye-fitingi/troynik-perekhodnoy-varmega-slide-fit-vm50574-32x25x32-aksialnyy/
+  found: images=4 specs=12 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
+[57/226] #19888 VM50601 Муфта равносторонняя Varmega Slide-fit VM50601, 16 мм, аксиальная
+  source: https://varmega.ru/product/truby-i-fitingi/aksialnye-fitingi/mufta-ravnostoronnyaya-varmega-slide-fit-vm50601-16-mm-aksialnaya/
+  found: images=4 specs=15 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
+[58/226] #19889 VM50602 Муфта равносторонняя Varmega Slide-fit VM50602, 20 мм, аксиальная
+  source: https://varmega.ru/product/truby-i-fitingi/aksialnye-fitingi/mufta-ravnostoronnyaya-varmega-slide-fit-vm50602-20-mm-aksialnaya/
+  found: images=4 specs=15 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
+[59/226] #19890 VM50603 Муфта равносторонняя Varmega Slide-fit VM50603, 25 мм, аксиальная
+  source: https://varmega.ru/product/truby-i-fitingi/aksialnye-fitingi/mufta-ravnostoronnyaya-varmega-slide-fit-vm50603-25-mm-aksialnaya/
+  found: images=4 specs=15 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
+[60/226] #19891 VM50604 Муфта равносторонняя Varmega Slide-fit VM50604, 32 мм, аксиальная
+  source: https://varmega.ru/product/truby-i-fitingi/aksialnye-fitingi/mufta-ravnostoronnyaya-varmega-slide-fit-vm50604-32-mm-aksialnaya/
+  found: images=4 specs=15 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
+[61/226] #19892 VM50611 Муфта равносторонняя Varmega Slide-fit VM50611, 16, аксиальная, латунь
+  source: https://varmega.ru/product/truby-i-fitingi/aksialnye-fitingi/mufta-ravnostoronnyaya-varmega-slide-fit-vm50611-16-aksialnaya/
+  found: images=4 specs=11 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
+[62/226] #19893 VM50612 Муфта равносторонняя Varmega Slide-fit VM50612, 20, аксиальная, латунь
+  source: https://varmega.ru/product/truby-i-fitingi/aksialnye-fitingi/mufta-ravnostoronnyaya-varmega-slide-fit-vm50612-20-aksialnaya/
+  found: images=4 specs=11 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
+[63/226] #19894 VM50613 Муфта равносторонняя Varmega Slide-fit VM50613, 25, аксиальная, латунь
+  source: https://varmega.ru/product/truby-i-fitingi/aksialnye-fitingi/mufta-ravnostoronnyaya-varmega-slide-fit-vm50613-25-aksialnaya/
+  found: images=4 specs=11 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
+[64/226] #19895 VM50614 Муфта равносторонняя Varmega Slide-fit VM50614, 32, аксиальная, латунь
+  source: https://varmega.ru/product/truby-i-fitingi/aksialnye-fitingi/mufta-ravnostoronnyaya-varmega-slide-fit-vm50613-32-aksialnaya/
+  found: images=4 specs=12 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
+[65/226] #19896 VM50701 Муфта переходная Varmega Slide-fit VM50701, 20×16 мм, аксиальная
+  source: https://varmega.ru/product/truby-i-fitingi/aksialnye-fitingi/mufta-perekhodnaya-varmega-slide-fit-vm50701-20-16-mm-aksialnaya/
+  found: images=4 specs=15 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
+[66/226] #19897 VM50702 Муфта переходная Varmega Slide-fit VM50702, 25×16 мм, аксиальная
+  source: https://varmega.ru/product/truby-i-fitingi/aksialnye-fitingi/mufta-perekhodnaya-varmega-slide-fit-vm50702-25-16-mm-aksialnaya/
+  found: images=4 specs=15 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
+[67/226] #19898 VM50703 Муфта переходная Varmega Slide-fit VM50703, 25×20 мм, аксиальная
+  source: https://varmega.ru/product/truby-i-fitingi/aksialnye-fitingi/mufta-perekhodnaya-varmega-slide-fit-vm50703-25-20-mm-aksialnaya/
+  found: images=4 specs=15 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
+[68/226] #19899 VM50704 Муфта переходная Varmega Slide-fit VM50704, 32×25 мм, аксиальная
+  source: https://varmega.ru/product/truby-i-fitingi/aksialnye-fitingi/mufta-perekhodnaya-varmega-slide-fit-vm50704-32-25-mm-aksialnaya/
+  found: images=4 specs=15 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
+[69/226] #19900 VM50711 Муфта переходная Varmega Slide-fit VM50711, 20x16, аксиальная, латунь
+  source: https://varmega.ru/product/truby-i-fitingi/aksialnye-fitingi/mufta-perekhodnaya-varmega-slide-fit-vm50711-20x16-aksialnaya/
+  found: images=4 specs=11 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
+[70/226] #19901 VM50712 Муфта переходная Varmega Slide-fit VM50712, 25x16, аксиальная, латунь
+  source: https://varmega.ru/product/truby-i-fitingi/aksialnye-fitingi/mufta-perekhodnaya-varmega-slide-fit-vm50712-25x16-aksialnaya/
+  found: images=4 specs=11 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
+[71/226] #19902 VM50713 Муфта переходная Varmega Slide-fit VM50713, 25x20, аксиальная, латунь
+  source: https://varmega.ru/product/truby-i-fitingi/aksialnye-fitingi/mufta-perekhodnaya-varmega-slide-fit-vm50713-25x20-aksialnaya/
+  found: images=4 specs=11 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
+[72/226] #19903 VM50714 Муфта переходная Varmega Slide-fit VM50714, 32x25, аксиальная, латунь
+  source: https://varmega.ru/product/truby-i-fitingi/aksialnye-fitingi/mufta-perekhodnaya-varmega-slide-fit-vm50714-32x25-aksialnaya/
+  found: images=4 specs=12 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
+[73/226] #19904 VM50801 Угольник (угол) 90° равносторонний Varmega Slide-fit VM50801, 16 мм, а
+  source: https://varmega.ru/product/truby-i-fitingi/aksialnye-fitingi/ugolnik-ugol-90-ravnostoronniy-varmega-slide-fit-vm50801-16-mm-aksialnyy/
+  found: images=4 specs=15 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
+[74/226] #19905 VM50802 Угольник (угол) 90° равносторонний Varmega Slide-fit VM50802, 20 мм, а
+  source: https://varmega.ru/product/truby-i-fitingi/aksialnye-fitingi/ugolnik-ugol-90-ravnostoronniy-varmega-slide-fit-vm50802-20-mm-aksialnyy/
+  found: images=4 specs=15 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
+[75/226] #19906 VM50803 Угольник (угол) 90° равносторонний Varmega Slide-fit VM50803, 25 мм, а
+  source: https://varmega.ru/product/truby-i-fitingi/aksialnye-fitingi/ugolnik-ugol-90-ravnostoronniy-varmega-slide-fit-vm50803-25-mm-aksialnyy/
+  found: images=4 specs=15 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
+[76/226] #19907 VM50804 Угольник (угол) 90° равносторонний Varmega Slide-fit VM50804, 32 мм, а
+  source: https://varmega.ru/product/truby-i-fitingi/aksialnye-fitingi/ugolnik-ugol-90-ravnostoronniy-varmega-slide-fit-vm50804-32-mm-aksialnyy/
+  found: images=4 specs=15 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
+[77/226] #19908 VM50811 Угольник (угол) 90° равносторонний Varmega Slide-fit VM50811, 16 мм, а
+  source: https://varmega.ru/product/truby-i-fitingi/aksialnye-fitingi/ugolnik-ugol-90-ravnostoronniy-varmega-slide-fit-vm50811-16-mm-aksialnyy/
+  found: images=4 specs=11 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
 
 ```
