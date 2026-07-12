@@ -1,21 +1,20 @@
 # Server Artisan Result
 
-- Time: 2026-07-12 13:49:16 UTC
-- Task: `artisan-dry-run`
-- Artisan args: `supplier:repair-varmega-source-urls --article-prefix=VM701 --refresh-index --http-timeout=5 --limit=0`
+- Time: 2026-07-12 13:51:55 UTC
+- Task: `artisan-apply`
+- Artisan args: `supplier:repair-varmega-source-urls --apply --article-prefix=VM701 --http-timeout=8 --limit=0 --enrich --replace-specs --min-specs-to-replace=1 --overwrite-images --skip-documents`
 - Log file: `storage/logs/varmega-vm701-official-source-repair.log`
 - Exit code: `0`
 
 ```text
 From https://github.com/Cowastro/Kotlov
-   a4def77..21273ed  main       -> origin/main
-Updating a4def77..21273ed
+   21273ed..a5306f5  main       -> origin/main
+Updating 21273ed..a5306f5
 Fast-forward
- .github/server-artisan-result.md                        | 15 +++++++--------
- .github/server-artisan-task.json                        |  2 +-
- app/Console/Commands/RepairVarmegaSourceUrlsCommand.php |  7 +------
- 3 files changed, 9 insertions(+), 15 deletions(-)
-DRY RUN: Varmega official source URLs will be previewed.
+ .github/server-artisan-result.md | 40 ++++++++++++++++++++--------------------
+ .github/server-artisan-task.json |  6 +++---
+ 2 files changed, 23 insertions(+), 23 deletions(-)
+APPLY: Varmega official source URLs will be written.
 Official Varmega article index: 6810 URLs.
 RN-Profi Varmega links to check: 7.
 Progress: checked=1 matched=0 missing=0 current=VM701001515
@@ -35,12 +34,12 @@ Progress: checked=1 matched=0 missing=0 current=VM701001515
 +------------------+-------+
 | checked          | 7     |
 | matched          | 7     |
-| written          | 0     |
-| enriched         | 0     |
-| images_found     | 0     |
-| images_saved     | 0     |
-| specs_found      | 0     |
-| attributes_saved | 0     |
+| written          | 7     |
+| enriched         | 7     |
+| images_found     | 28    |
+| images_saved     | 28    |
+| specs_found      | 77    |
+| attributes_saved | 77    |
 | missing          | 0     |
 | errors           | 0     |
 +------------------+-------+
