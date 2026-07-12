@@ -1,6 +1,6 @@
 # Server Artisan Result
 
-- Time: 2026-07-12 09:16:22 UTC
+- Time: 2026-07-12 09:18:09 UTC
 - Task: `tail-log`
 - Artisan args: ``
 - Log file: `storage/logs/varmega-official-fill.log`
@@ -8,12 +8,12 @@
 
 ```text
 From https://github.com/Cowastro/Kotlov
-   2aa9d3e..4c20117  main       -> origin/main
-Updating 2aa9d3e..4c20117
+   4c20117..3c65216  main       -> origin/main
+Updating 4c20117..3c65216
 Fast-forward
- .github/server-artisan-result.md | 69 ++++++++++++++++++++++++++++++++++------
+ .github/server-artisan-result.md | 59 ++++++++++++++++++++++++++++++++++++----
  .github/server-artisan-task.json |  2 +-
- 2 files changed, 61 insertions(+), 10 deletions(-)
+ 2 files changed, 54 insertions(+), 7 deletions(-)
 APPLY: source enrichment will be written.
 Products with source URLs: 45 (processing 45, offset 0, --force)
 [1/45] #19812 VM09821 Угол переходной Varmega VM09821, ВР-ВР, 3/4" х 1/2", хромированный
@@ -113,5 +113,47 @@ Products with source URLs: 45 (processing 45, offset 0, --force)
   found: images=4 specs=4 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
 [26/45] #20358 VM19101 Varmega VM19101 8 зон
   source: https://varmega.ru/product/privody-termostaty-i-moduli-upravleniya/modulnyy-blok-upravleniya-varmega-vm19101-provodnoy/
+  found: images=4 specs=5 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
+[27/45] #20359 VM19102 Varmega VM19102 8 зон
+  source: https://varmega.ru/product/privody-termostaty-i-moduli-upravleniya/modulnyy-blok-upravleniya-varmega-vm19102-provodnoy/
+  found: images=4 specs=5 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
+[28/45] #20397 VM09801 Varmega VM09801 3/4" х 1/2"
+  source: https://varmega.ru/product/aksessuary/perekhodnik-varmega-vm09801-nr-vr-3-4-kh-1-2-khromirovannyy/
+  found: images=4 specs=2 service=1 docs=0 video=0 updated=images,service_info,content,short_description,meta_description,updated_at
+  warning: attributes: only 2 specs found; replacement skipped, minimum is 4
+[29/45] #20398 VM09802 Varmega VM09802 1" х 1/2"
+  source: https://varmega.ru/product/aksessuary/perekhodnik-varmega-vm09802-nr-vr-1-kh-1-2-khromirovannyy/
+  found: images=4 specs=2 service=1 docs=0 video=0 updated=images,service_info,content,short_description,meta_description,updated_at
+  warning: attributes: only 2 specs found; replacement skipped, minimum is 4
+[30/45] #20399 VM09811 Varmega VM09811 3/4" х 1/2"
+  source: https://varmega.ru/product/aksessuary/perekhodnik-varmega-vm09811-vr-vr-3-4-kh-1-2-khromirovannyy/
+  found: images=4 specs=2 service=1 docs=0 video=0 updated=images,service_info,content,short_description,meta_description,updated_at
+  warning: attributes: only 2 specs found; replacement skipped, minimum is 4
+[31/45] #20400 VM09812 Varmega VM09812 1" х 1/2"
+  source: https://varmega.ru/product/aksessuary/perekhodnik-varmega-vm09812-vr-vr-1-kh-1-2-khromirovannyy/
+  found: images=4 specs=2 service=1 docs=0 video=0 updated=images,service_info,content,short_description,meta_description,updated_at
+  warning: attributes: only 2 specs found; replacement skipped, minimum is 4
+[32/45] #20401 VM09851 Varmega VM09851 3/4"
+  source: https://varmega.ru/product/kollektory-i-komplektuyushchie/kronshteyn-varmega-vm09851-dlya-reguliruyushchikh-kollektorov-serii-vm146-3-4/
+  found: images=4 specs=1 service=1 docs=0 video=0 updated=images,service_info,content,short_description,meta_description,updated_at
+  warning: attributes: only 1 specs found; replacement skipped, minimum is 4
+[33/45] #20402 VM09852 Varmega VM09852 1"
+  source: https://varmega.ru/product/kollektory-i-komplektuyushchie/kronshteyn-varmega-vm09852-dlya-reguliruyushchikh-kollektorov-serii-vm146-1/
+  found: images=4 specs=1 service=1 docs=0 video=0 updated=images,service_info,content,short_description,meta_description,updated_at
+  warning: attributes: only 1 specs found; replacement skipped, minimum is 4
+[34/45] #20415 VM09901 Varmega VM09901 3/4" х 1/2"
+  source: https://varmega.ru/product/aksessuary/perekhodnik-varmega-vm09901-nr-vr-3-4-kh-1-2/
+  found: images=4 specs=1 service=1 docs=0 video=0 updated=images,service_info,content,short_description,meta_description,updated_at
+  warning: attributes: only 1 specs found; replacement skipped, minimum is 4
+[35/45] #20416 VM09902 Varmega VM09902 1" х 1/2"
+  source: https://varmega.ru/product/aksessuary/perekhodnik-varmega-vm09902-nr-vr-1-kh-1-2/
+  found: images=4 specs=1 service=1 docs=0 video=0 updated=images,service_info,content,short_description,meta_description,updated_at
+  warning: attributes: only 1 specs found; replacement skipped, minimum is 4
+[36/45] #20417 VM09911 Varmega VM09911 3/4" х 1/2"
+  source: https://varmega.ru/product/aksessuary/perekhodnik-varmega-vm09911-vr-vr-3-4-kh-1-2/
+  found: images=4 specs=1 service=1 docs=0 video=0 updated=images,service_info,content,short_description,meta_description,updated_at
+  warning: attributes: only 1 specs found; replacement skipped, minimum is 4
+[37/45] #20418 VM09912 Varmega VM09912 1" х 1/2"
+  source: https://varmega.ru/product/aksessuary/perekhodnik-varmega-vm09912-vr-vr-1-kh-1-2/
 
 ```
