@@ -1,6 +1,6 @@
 {
-  "task": "artisan-background",
-  "artisan_args": "supplier:enrich-source-products --supplier=rn-profi --brand=Varmega --category=Пресс-фитинги --apply --force --source-content --replace-specs --min-specs-to-replace=1 --overwrite-images --skip-documents --limit=0 --sleep=1000",
+  "task": "tail-log",
+  "artisan_args": "",
   "log_file": "storage/logs/varmega-press-source-content-all.log",
-  "run_id": "varmega-press-source-content-all-20260712-1"
+  "run_id": "varmega-press-source-content-all-tail-20260712-1"
 }
