@@ -475,6 +475,16 @@ class RepairVarmegaSourceUrlsCommand extends Command
             $url = 'https://termogorod.ru/truby-i-fitingi/truby-i-fitingi-iz-nerzhavejki/truby-i-fitingi-iz-nerzhavejki-varmega/varmega-vm721350735';
         }
 
+        $exactExternalSources = [
+            '2172010' => 'https://www.ozon.ru/product/soedinenie-rezbozazhimnoe-varmega-20x2-8-x-3-4-ek-dlya-trub-iz-sshitogo-polietilena-1521783775/?oos_search=false',
+            'VM52603' => 'https://belsklad.by/varmega-trojnik-s-trubkoj-slide-fit-20-16-250-dlja-podkljuchenija-radiatora-vm52603-2105067',
+            'VM52604' => 'https://belsklad.by/varmega-trojnik-s-trubkoj-slide-fit-16-20-250-dlja-podkljuchenija-radiatora-vm52604-2105444',
+        ];
+
+        if (isset($exactExternalSources[$normArticle])) {
+            return ['url' => $exactExternalSources[$normArticle]];
+        }
+
         if (preg_match('/^VM70600\d{4}$/u', $normArticle)) {
             $url = 'https://termogorod.ru/truby-i-fitingi/truby-i-fitingi-iz-nerzhavejki/truby-i-fitingi-iz-nerzhavejki-varmega/varmega-'
                 . mb_strtolower($normArticle);
