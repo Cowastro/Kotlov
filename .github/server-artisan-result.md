@@ -1,41 +1,41 @@
 # Server Artisan Result
 
-- Time: 2026-07-12 16:51:32 UTC
+- Time: 2026-07-12 16:55:05 UTC
 - Task: `artisan-apply`
-- Artisan args: `supplier:repair-varmega-source-urls --apply --article-prefix=VM708 --enrich --replace-specs --min-specs-to-replace=1 --overwrite-images --skip-documents --limit=0 --sleep=1000`
-- Log file: `storage/logs/repair-varmega-vm708.log`
+- Artisan args: `supplier:repair-varmega-source-urls --apply --article-prefix=VM709 --enrich --replace-specs --min-specs-to-replace=1 --overwrite-images --skip-documents --limit=0 --sleep=1000`
+- Log file: `storage/logs/repair-varmega-vm709.log`
 - Exit code: `0`
 
 ```text
 From https://github.com/Cowastro/Kotlov
-   f943b0b..0c36ac1  main       -> origin/main
-Updating f943b0b..0c36ac1
+   0c36ac1..ca75287  main       -> origin/main
+Updating 0c36ac1..ca75287
 Fast-forward
- .github/server-artisan-result.md | 76 +++++++++++++++++++---------------------
- .github/server-artisan-task.json |  6 ++--
- 2 files changed, 40 insertions(+), 42 deletions(-)
+ .github/server-artisan-result.md | 51 ++++++++++++++++++++--------------------
+ .github/server-artisan-task.json |  6 ++---
+ 2 files changed, 28 insertions(+), 29 deletions(-)
 APPLY: Varmega official source URLs will be written.
 Official Varmega article index: 6671 URLs.
 RN-Profi Varmega links to check: 13.
-Progress: checked=1 matched=0 missing=0 current=VM708001504
-Progress: checked=10 matched=9 missing=0 current=VM708002806
-+---------+-------------+---------------+--------------------------------+------------------------------------------------------------------------+
-| product | article     | category      | name                           | official_url                                                           |
-+---------+-------------+---------------+--------------------------------+------------------------------------------------------------------------+
-| 20536   | VM708001504 | Пресс-фитинги | Varmega VM708001504 15ax1/2"   | https://termogorod.ru/truby-i-fitingi/truby-i-fitingi-iz-nerzhavejki/t |
-| 20537   | VM708001505 | Пресс-фитинги | Varmega VM708001505 15ax3/4"   | https://termogorod.ru/truby-i-fitingi/truby-i-fitingi-iz-nerzhavejki/t |
-| 20538   | VM708001804 | Пресс-фитинги | Varmega VM708001804 18ax1/2"   | https://termogorod.ru/truby-i-fitingi/truby-i-fitingi-iz-nerzhavejki/t |
-| 20539   | VM708001805 | Пресс-фитинги | Varmega VM708001805 18ax3/4"   | https://termogorod.ru/truby-i-fitingi/truby-i-fitingi-iz-nerzhavejki/t |
-| 20540   | VM708001806 | Пресс-фитинги | Varmega VM708001806 18ax1"     | https://termogorod.ru/truby-i-fitingi/truby-i-fitingi-iz-nerzhavejki/t |
-| 20541   | VM708002204 | Пресс-фитинги | Varmega VM708002204 22ax1/2"   | https://termogorod.ru/truby-i-fitingi/truby-i-fitingi-iz-nerzhavejki/t |
-| 20542   | VM708002205 | Пресс-фитинги | Varmega VM708002205 22ax3/4"   | https://termogorod.ru/truby-i-fitingi/truby-i-fitingi-iz-nerzhavejki/t |
-| 20543   | VM708002206 | Пресс-фитинги | Varmega VM708002206 22ax1"     | https://termogorod.ru/truby-i-fitingi/truby-i-fitingi-iz-nerzhavejki/t |
-| 20544   | VM708002805 | Пресс-фитинги | Varmega VM708002805 28ax3/4"   | https://termogorod.ru/truby-i-fitingi/truby-i-fitingi-iz-nerzhavejki/t |
-| 20545   | VM708002806 | Пресс-фитинги | Varmega VM708002806 28ax1"     | https://termogorod.ru/truby-i-fitingi/truby-i-fitingi-iz-nerzhavejki/t |
-| 20546   | VM708003507 | Пресс-фитинги | Varmega VM708003507 35ax1 1/4" | https://termogorod.ru/truby-i-fitingi/truby-i-fitingi-iz-nerzhavejki/t |
-| 20547   | VM708004208 | Пресс-фитинги | Varmega VM708004208 42ax1 1/2" | https://termogorod.ru/truby-i-fitingi/truby-i-fitingi-iz-nerzhavejki/t |
-| 20548   | VM708005409 | Пресс-фитинги | Varmega VM708005409 54ax2"     | https://termogorod.ru/truby-i-fitingi/truby-i-fitingi-iz-nerzhavejki/t |
-+---------+-------------+---------------+--------------------------------+------------------------------------------------------------------------+
+Progress: checked=1 matched=0 missing=0 current=VM709001504
+Progress: checked=10 matched=9 missing=0 current=VM709003506
++---------+-------------+---------------+-------------------------------+------------------------------------------------------------------------+
+| product | article     | category      | name                          | official_url                                                           |
++---------+-------------+---------------+-------------------------------+------------------------------------------------------------------------+
+| 20549   | VM709001504 | Пресс-фитинги | Varmega VM709001504 15x1/2"   | https://termogorod.ru/truby-i-fitingi/truby-i-fitingi-iz-nerzhavejki/t |
+| 20550   | VM709001505 | Пресс-фитинги | Varmega VM709001505 15x3/4"   | https://termogorod.ru/truby-i-fitingi/truby-i-fitingi-iz-nerzhavejki/t |
+| 20551   | VM709001804 | Пресс-фитинги | Varmega VM709001804 18x1/2"   | https://termogorod.ru/truby-i-fitingi/truby-i-fitingi-iz-nerzhavejki/t |
+| 20552   | VM709001805 | Пресс-фитинги | Varmega VM709001805 18x3/4"   | https://termogorod.ru/truby-i-fitingi/truby-i-fitingi-iz-nerzhavejki/t |
+| 20553   | VM709002204 | Пресс-фитинги | Varmega VM709002204 22x1/2"   | https://termogorod.ru/truby-i-fitingi/truby-i-fitingi-iz-nerzhavejki/t |
+| 20554   | VM709002205 | Пресс-фитинги | Varmega VM709002205 22x3/4"   | https://termogorod.ru/truby-i-fitingi/truby-i-fitingi-iz-nerzhavejki/t |
+| 20555   | VM709002206 | Пресс-фитинги | Varmega VM709002206 22x1"     | https://termogorod.ru/truby-i-fitingi/truby-i-fitingi-iz-nerzhavejki/t |
+| 20556   | VM709002805 | Пресс-фитинги | Varmega VM709002805 28x3/4"   | https://termogorod.ru/truby-i-fitingi/truby-i-fitingi-iz-nerzhavejki/t |
+| 20557   | VM709002806 | Пресс-фитинги | Varmega VM709002806 28x1"     | https://termogorod.ru/truby-i-fitingi/truby-i-fitingi-iz-nerzhavejki/t |
+| 20558   | VM709003506 | Пресс-фитинги | Varmega VM709003506 35x1"     | https://termogorod.ru/truby-i-fitingi/truby-i-fitingi-iz-nerzhavejki/t |
+| 20559   | VM709003507 | Пресс-фитинги | Varmega VM709003507 35x1 1/4" | https://termogorod.ru/truby-i-fitingi/truby-i-fitingi-iz-nerzhavejki/t |
+| 20560   | VM709004208 | Пресс-фитинги | Varmega VM709004208 42x1 1/2" | https://termogorod.ru/truby-i-fitingi/truby-i-fitingi-iz-nerzhavejki/t |
+| 20561   | VM709005409 | Пресс-фитинги | Varmega VM709005409 54x2"     | https://termogorod.ru/truby-i-fitingi/truby-i-fitingi-iz-nerzhavejki/t |
++---------+-------------+---------------+-------------------------------+------------------------------------------------------------------------+
 +------------------+-------+
 | metric           | count |
 +------------------+-------+
