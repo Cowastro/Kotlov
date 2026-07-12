@@ -1,6 +1,6 @@
 {
   "task": "artisan-dry-run",
-  "artisan_args": "products:audit-content-health --active-only --not-archived --issues=no_photo,no_content,no_short,low_attrs --max-attrs=2 --limit=120",
-  "log_file": "storage/logs/content-health-sitewide-audit.log",
-  "run_id": "content-health-sitewide-audit-20260712-1"
+  "artisan_args": "products:audit-content-health --supplier=bania --active-only --not-archived --issues=no_photo,no_content,no_short,low_attrs --max-attrs=2 --limit=160",
+  "log_file": "storage/logs/content-health-bania-audit.log",
+  "run_id": "content-health-bania-audit-20260712-1"
 }
