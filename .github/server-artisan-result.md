@@ -1,6 +1,6 @@
 # Server Artisan Result
 
-- Time: 2026-07-12 09:40:42 UTC
+- Time: 2026-07-12 09:44:38 UTC
 - Task: `tail-log`
 - Artisan args: ``
 - Log file: `storage/logs/varmega-press-source-repair.log`
@@ -8,29 +8,12 @@
 
 ```text
 From https://github.com/Cowastro/Kotlov
-   b3e5c6a..292135b  main       -> origin/main
-Updating b3e5c6a..292135b
+   292135b..927fffc  main       -> origin/main
+Updating 292135b..927fffc
 Fast-forward
- .github/server-artisan-result.md | 292 +++++++++++++++++++--------------------
+ .github/server-artisan-result.md | 322 +++++++++++++++++++--------------------
  .github/server-artisan-task.json |   2 +-
- 2 files changed, 147 insertions(+), 147 deletions(-)
-  found: images=4 specs=11 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
-[173/226] #20008 VM727002218 Угольник 90° переходной двухраструбный Varmega Inox Press VM727002218,
-  source: https://varmega.ru/product/truby-i-fitingi/truboprovodnye-sistemy-press-obzhim-i-payka/ugolnik-90-perekhodnoy-dvukhrastrubnyy-varmega-inox-press-vm727002218-22-18-mm/
-  found: images=4 specs=11 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
-[174/226] #20009 VM727002822 Угольник 90° переходной двухраструбный Varmega Inox Press VM727002822,
-  source: https://varmega.ru/product/truby-i-fitingi/truboprovodnye-sistemy-press-obzhim-i-payka/ugolnik-90-perekhodnoy-dvukhrastrubnyy-varmega-inox-press-vm727002822-28-22-mm/
-  found: images=4 specs=11 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
-[175/226] #20010 VM727003522 Угольник 90° переходной двухраструбный Varmega Inox Press VM727003522,
-  source: https://varmega.ru/product/truby-i-fitingi/truboprovodnye-sistemy-press-obzhim-i-payka/ugolnik-90-perekhodnoy-dvukhrastrubnyy-varmega-inox-press-vm727003522-35-22-mm/
-  found: images=4 specs=11 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
-[176/226] #20011 VM727003528 Угольник 90° переходной двухраструбный Varmega Inox Press VM727003528,
-  source: https://varmega.ru/product/truby-i-fitingi/truboprovodnye-sistemy-press-obzhim-i-payka/ugolnik-90-perekhodnoy-dvukhrastrubnyy-varmega-inox-press-vm727003528-35-28-mm/
-  found: images=4 specs=11 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
-[177/226] #20012 VM790000015 Уплотнительное кольцо из EPDM Varmega Inox Press VM790000015, 15 мм
-  source: https://varmega.ru/product/truby-i-fitingi/truboprovodnye-sistemy-press-obzhim-i-payka/komplektuyushchie-i-aksessuary-press-obzhim-i-payka/uplotnitelnoe-koltso-iz-epdm-varmega-inox-press-vm790000015-15-mm/
-  found: images=4 specs=6 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
-[178/226] #20013 VM790000018 Уплотнительное кольцо из EPDM Varmega Inox Press VM790000018, 18 мм
+ 2 files changed, 162 insertions(+), 162 deletions(-)
   source: https://varmega.ru/product/truby-i-fitingi/truboprovodnye-sistemy-press-obzhim-i-payka/komplektuyushchie-i-aksessuary-press-obzhim-i-payka/uplotnitelnoe-koltso-iz-epdm-varmega-inox-press-vm790000018-18-mm/
   found: images=4 specs=6 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
 [179/226] #20014 VM790000022 Уплотнительное кольцо из EPDM Varmega Inox Press VM790000022, 22 мм
@@ -174,5 +157,22 @@ Fast-forward
 [225/226] #20693 VM796000V35 Varmega VM796000V35 35
   source: https://varmega.ru/product/instrument/press-nasadka-varmega-vm796000v35-profil-v-35-mm/
   found: images=4 specs=5 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
+[226/226] #20695 VM796000V54 Varmega VM796000V54 54
+  source: https://varmega.ru/product/instrument/press-koltso-varmega-vm796000v54-profil-v-54-mm/
+  found: images=4 specs=5 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
+
++------------------+-------+
+| metric           | count |
++------------------+-------+
+| processed        | 226   |
+| enriched         | 226   |
+| images_found     | 904   |
+| images_saved     | 904   |
+| specs_found      | 2891  |
+| attributes_saved | 2891  |
+| ai_done          | 226   |
+| skipped          | 0     |
+| errors           | 0     |
++------------------+-------+
 
 ```
