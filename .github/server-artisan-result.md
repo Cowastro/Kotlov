@@ -1,26 +1,25 @@
 # Server Artisan Result
 
-- Time: 2026-07-12 12:14:51 UTC
+- Time: 2026-07-12 12:18:49 UTC
 - Task: `artisan-dry-run`
-- Artisan args: `supplier:repair-varmega-source-urls --product=20484 --rn-profi-section-index --rn-profi-section-pages=40 --http-timeout=5 --limit=1`
+- Artisan args: `supplier:repair-varmega-source-urls --product=20484 --rn-profi-section-index --rn-profi-section-pages=120 --http-timeout=5 --limit=1`
 - Log file: `storage/logs/varmega-official-source-repair.log`
 - Exit code: `0`
 
 ```text
 From https://github.com/Cowastro/Kotlov
-   31d1d7c..837ddc6  main       -> origin/main
-Updating 31d1d7c..837ddc6
+   837ddc6..08f34f4  main       -> origin/main
+Updating 837ddc6..08f34f4
 Fast-forward
- .github/server-artisan-result.md                   | 43 ++++++-------
- .github/server-artisan-task.json                   |  4 +-
- .../Commands/RepairVarmegaSourceUrlsCommand.php    | 70 ++++++++++++++++++++++
- 3 files changed, 89 insertions(+), 28 deletions(-)
+ .github/server-artisan-result.md | 18 +++++++++++-------
+ .github/server-artisan-task.json |  4 ++--
+ 2 files changed, 13 insertions(+), 9 deletions(-)
 DRY RUN: Varmega official source URLs will be previewed.
 Official Varmega article index: 6810 URLs.
 RN-Profi section index progress: fetched=20 indexed=85.
 RN-Profi section index progress: fetched=40 indexed=135.
-RN-Profi section index fetched=40 pages.
-RN-Profi section article index: 135 URLs.
+RN-Profi section index fetched=51 pages.
+RN-Profi section article index: 157 URLs.
 RN-Profi Varmega links to check: 1.
 Progress: checked=1 matched=0 missing=0 current=VM704003515
 +---------+-------------+---------------+----------------------------+--------------+
