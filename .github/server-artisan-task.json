@@ -1,6 +1,6 @@
 {
   "task": "artisan-apply",
-  "artisan_args": "supplier:repair-varmega-source-urls --article-prefix=VM706 --http-timeout=8 --limit=0 --enrich --replace-specs --min-specs-to-replace=1 --overwrite-images --skip-documents",
-  "log_file": "storage/logs/varmega-vm706-source-repair-dry.log",
-  "run_id": "varmega-vm706-source-repair-dry-20260712-1"
+  "artisan_args": "supplier:repair-varmega-source-urls --apply --article-prefix=VM706 --http-timeout=8 --limit=0 --enrich --replace-specs --min-specs-to-replace=1 --overwrite-images --skip-documents",
+  "log_file": "storage/logs/varmega-vm706-source-repair-apply.log",
+  "run_id": "varmega-vm706-source-repair-apply-20260712-1"
 }
