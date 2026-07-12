@@ -1,6 +1,6 @@
 # Server Artisan Result
 
-- Time: 2026-07-12 13:39:53 UTC
+- Time: 2026-07-12 13:45:39 UTC
 - Task: `artisan-dry-run`
 - Artisan args: `supplier:repair-varmega-source-urls --article-prefix=VM701 --refresh-index --http-timeout=5 --limit=0`
 - Log file: `storage/logs/varmega-vm701-official-source-repair.log`
@@ -8,14 +8,13 @@
 
 ```text
 From https://github.com/Cowastro/Kotlov
-   6387472..0e79fce  main       -> origin/main
-Updating 6387472..0e79fce
+   0e79fce..a4def77  main       -> origin/main
+Updating 0e79fce..a4def77
 Fast-forward
- .github/server-artisan-result.md                   | 167 +++++----------
- .github/server-artisan-task.json                   |   6 +-
- .../RepairVarmegaFittingContentCommand.php         | 235 +++++++++++++++++++++
- 3 files changed, 288 insertions(+), 120 deletions(-)
- create mode 100644 app/Console/Commands/RepairVarmegaFittingContentCommand.php
+ .github/server-artisan-result.md                   | 62 +++++++++-------------
+ .github/server-artisan-task.json                   |  2 +-
+ .../Commands/RepairVarmegaSourceUrlsCommand.php    | 42 ++++++++++++++-
+ 3 files changed, 68 insertions(+), 38 deletions(-)
 DRY RUN: Varmega official source URLs will be previewed.
 Official Varmega article index: 6810 URLs.
 RN-Profi Varmega links to check: 7.
