@@ -2,5 +2,5 @@
   "task": "artisan-dry-run",
   "artisan_args": "product:enrich-content --brand=darco --only=both --min-specs=0 --rewrite-thin=220 --limit=20 --sleep=0 --dry-run",
   "log_file": "",
-  "run_id": "audit-darco-seo-content-20260712-1"
+  "run_id": "audit-darco-seo-content-guarded-20260712-1"
 }
