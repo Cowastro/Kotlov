@@ -1,6 +1,6 @@
 # Server Artisan Result
 
-- Time: 2026-07-12 10:03:44 UTC
+- Time: 2026-07-12 10:08:01 UTC
 - Task: `tail-log`
 - Artisan args: ``
 - Log file: `storage/logs/varmega-press-source-content-all.log`
@@ -8,171 +8,171 @@
 
 ```text
 From https://github.com/Cowastro/Kotlov
-   a001905..99f0495  main       -> origin/main
-Updating a001905..99f0495
+   99f0495..391264f  main       -> origin/main
+Updating 99f0495..391264f
 Fast-forward
- .github/server-artisan-result.md | 253 +++++++++++++++++++++++----------------
+ .github/server-artisan-result.md | 312 +++++++++++++++++++--------------------
  .github/server-artisan-task.json |   2 +-
- 2 files changed, 151 insertions(+), 104 deletions(-)
-  source: https://varmega.ru/product/truby-i-fitingi/aksialnye-fitingi/ugolnik-nastennyy-vodorozetka-s-vnutrenney-rezboy-varmega-slide-fit-vm51601-16kh1-2-s-krepleniem-aks/
-  found: images=4 specs=17 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
-[132/465] #19963 VM51602 Угольник настенный (водорозетка) с внутренней резьбой Varmega Slide-fi
-  source: https://varmega.ru/product/truby-i-fitingi/aksialnye-fitingi/ugolnik-nastennyy-vodorozetka-s-vnutrenney-rezboy-varmega-slide-fit-vm51602-20kh1-2-s-krepleniem-aks/
-  found: images=4 specs=17 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
-[133/465] #19964 VM51603 Угольник настенный (водорозетка) с внутренней резьбой Varmega Slide-fi
-  source: https://varmega.ru/product/truby-i-fitingi/aksialnye-fitingi/ugolnik-nastennyy-vodorozetka-s-vnutrenney-rezboy-varmega-slide-fit-vm51603-20kh3-4-s-krepleniem-aks/
-  found: images=4 specs=17 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
-[134/465] #19965 VM51611 Угольник настенный (водорозетка) с внутренней резьбой Varmega Slide-fi
-  source: https://varmega.ru/product/truby-i-fitingi/aksialnye-fitingi/ugolnik-nastennyy-vodorozetka-s-vnutrenney-rezboy-varmega-slide-fit-vm51611-16x1-2-s-krepleniem-aksi/
-  found: images=4 specs=12 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
-[135/465] #19966 VM51612 Угольник настенный (водорозетка) с внутренней резьбой Varmega Slide-fi
-  source: https://varmega.ru/product/truby-i-fitingi/aksialnye-fitingi/ugolnik-nastennyy-vodorozetka-s-vnutrenney-rezboy-varmega-slide-fit-vm51612-20x1-2-s-krepleniem-aksi/
-  found: images=4 specs=12 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
-[136/465] #19967 VM51613 Угольник настенный (водорозетка) с внутренней резьбой Varmega Slide-fi
-  source: https://varmega.ru/product/truby-i-fitingi/aksialnye-fitingi/ugolnik-nastennyy-vodorozetka-s-vnutrenney-rezboy-varmega-slide-fit-vm51613-20x3-4-s-krepleniem-aksi/
-  found: images=4 specs=12 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
-[137/465] #19968 VM51621 Угольник настенный (водорозетка) с внутренней резьбой Varmega Slide-fi
-  source: https://varmega.ru/product/truby-i-fitingi/aksialnye-fitingi/ugolnik-nastennyy-vodorozetka-s-vnutrenney-rezboy-varmega-slide-fit-vm51621-16x1-2-udlinennyy-s-krep/
-  found: images=4 specs=12 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
-[138/465] #19969 VM52211 Угольник настенный (водорозетка) с наружной резьбой Varmega Slide-fit 
-  source: https://varmega.ru/product/truby-i-fitingi/aksialnye-fitingi/ugolnik-nastennyy-vodorozetka-s-naruzhnoy-rezboy-varmega-slide-fit-vm52211-16-1-2-s-krepleniem-aksia/
-  found: images=4 specs=12 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
-[139/465] #19970 VM51701 Муфта переходная (переходник на евроконус) с накидной гайкой Varmega S
-  source: https://varmega.ru/product/truby-i-fitingi/aksialnye-fitingi/mufta-perekhodnaya-perekhodnik-na-evrokonus-s-nakidnoy-gaykoy-varmega-slide-fit-vm51701-16kh3-4-aksi/
-  found: images=4 specs=17 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
-[140/465] #19971 VM51711 Муфта переходная (переходник на евроконус) с накидной гайкой Varmega S
-  source: https://varmega.ru/product/truby-i-fitingi/aksialnye-fitingi/mufta-perekhodnaya-perekhodnik-na-evrokonus-s-nakidnoy-gaykoy-varmega-slide-fit-vm51711-16x3-4-ek-ak/
-  found: images=4 specs=12 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
-[141/465] #19972 VM51712 Муфта переходная (переходник на евроконус) с накидной гайкой Varmega S
-  source: https://varmega.ru/product/truby-i-fitingi/aksialnye-fitingi/mufta-perekhodnaya-perekhodnik-na-evrokonus-s-nakidnoy-gaykoy-varmega-slide-fit-vm51712-20x3-4-ek-ak/
-  found: images=4 specs=12 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
-[142/465] #19973 VM51750 Муфта евроконус с накидной гайкой Varmega VM51750, 16×2.0 - 3/4"EK, в 
-  source: https://varmega.ru/product/truby-i-fitingi/aksialnye-fitingi/mufta-evrokonus-s-nakidnoy-gaykoy-varmega-vm51750-16-2-0-3-4-ek-v-komplekte-s-gilzoy/
-  found: images=4 specs=12 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
-[143/465] #19974 VM51802 Муфта переходная (переходник) с накидной гайкой Varmega Slide-fit VM51
-  source: https://varmega.ru/product/truby-i-fitingi/aksialnye-fitingi/mufta-perekhodnaya-perekhodnik-s-nakidnoy-gaykoy-varmega-slide-fit-vm51802-16kh3-4-kombinirovannaya-/
-  found: images=4 specs=17 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
-[144/465] #19975 VM51811 Муфта переходная (переходник) с накидной гайкой Varmega Slide-fit VM51
-  source: https://varmega.ru/product/truby-i-fitingi/aksialnye-fitingi/mufta-perekhodnaya-perekhodnik-s-nakidnoy-gaykoy-varmega-slide-fit-vm51811-16kh1-2-latunnaya/
-  found: images=4 specs=17 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
-[145/465] #19976 VM51812 Муфта переходная (переходник) с накидной гайкой Varmega Slide-fit VM51
-  source: https://varmega.ru/product/truby-i-fitingi/aksialnye-fitingi/mufta-perekhodnaya-perekhodnik-s-nakidnoy-gaykoy-varmega-slide-fit-vm51812-16kh3-4-latunnaya/
-  found: images=4 specs=17 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
-[146/465] #19977 VM51813 Муфта переходная (переходник) с накидной гайкой Varmega Slide-fit VM51
-  source: https://varmega.ru/product/truby-i-fitingi/aksialnye-fitingi/mufta-perekhodnaya-perekhodnik-s-nakidnoy-gaykoy-varmega-slide-fit-vm51813-20kh1-2-latunnaya/
-  found: images=4 specs=17 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
-[147/465] #19978 VM51814 Муфта переходная (переходник) с накидной гайкой Varmega Slide-fit VM51
-  source: https://varmega.ru/product/truby-i-fitingi/aksialnye-fitingi/mufta-perekhodnaya-perekhodnik-s-nakidnoy-gaykoy-varmega-slide-fit-vm51814-20kh3-4-latunnaya/
-  found: images=4 specs=17 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
-[148/465] #19979 VM51816 Муфта переходная (переходник) с накидной гайкой Varmega Slide-fit VM51
-  source: https://varmega.ru/product/truby-i-fitingi/aksialnye-fitingi/mufta-perekhodnaya-perekhodnik-s-nakidnoy-gaykoy-varmega-slide-fit-vm51816-25kh3-4-latunnaya/
-  found: images=4 specs=17 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
-[149/465] #19980 VM51817 Муфта переходная (переходник) с накидной гайкой Varmega Slide-fit VM51
-  source: https://varmega.ru/product/truby-i-fitingi/aksialnye-fitingi/mufta-perekhodnaya-perekhodnik-s-nakidnoy-gaykoy-varmega-slide-fit-vm51817-25kh1-latunnaya/
-  found: images=4 specs=17 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
-[150/465] #19981 VM51819 Муфта переходная (переходник) с накидной гайкой Varmega Slide-fit VM51
-  source: https://varmega.ru/product/truby-i-fitingi/aksialnye-fitingi/mufta-perekhodnaya-perekhodnik-s-nakidnoy-gaykoy-varmega-slide-fit-vm51819-32kh1-latunnaya/
-  found: images=4 specs=17 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
-[151/465] #19982 VM51911 Угольник (угол) 90° с внутренней резьбой Varmega Slide-fit VM51911, 16
-  source: https://varmega.ru/product/truby-i-fitingi/aksialnye-fitingi/ugolnik-ugol-90-s-vnutrenney-rezboy-varmega-slide-fit-vm51911-16x1-2-s-nakidnoy-gaykoy-aksialnyy/
-  found: images=4 specs=12 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
-[152/465] #19983 VM51912 Угольник (угол) 90° с внутренней резьбой Varmega Slide-fit VM51912, 16
-  source: https://varmega.ru/product/truby-i-fitingi/aksialnye-fitingi/ugolnik-ugol-90-s-vnutrenney-rezboy-varmega-slide-fit-vm51912-16x3-4-s-nakidnoy-gaykoy-aksialnyy/
-  found: images=4 specs=12 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
-[153/465] #19984 VM51914 Угольник (угол) 90° с внутренней резьбой Varmega Slide-fit VM51914, 20
-  source: https://varmega.ru/product/truby-i-fitingi/aksialnye-fitingi/ugolnik-ugol-90-s-vnutrenney-rezboy-varmega-slide-fit-vm51914-20x3-4-s-nakidnoy-gaykoy-aksialnyy/
-  found: images=4 specs=12 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
-[154/465] #19985 VM51915 Угольник (угол) 90° с внутренней резьбой Varmega Slide-fit VM51915, 20
-  source: https://varmega.ru/product/truby-i-fitingi/aksialnye-fitingi/ugolnik-ugol-90-s-vnutrenney-rezboy-varmega-slide-fit-vm51915-20x1-s-nakidnoy-gaykoy-aksialnyy/
-  found: images=4 specs=12 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
-[155/465] #19986 VM52011 Угольник с внутренней резьбой Varmega Slide-fit VM52011, 16×1/2", с кр
-  source: https://varmega.ru/product/truby-i-fitingi/aksialnye-fitingi/ugolnik-s-vnutrenney-rezboy-varmega-slide-fit-vm52011-16-1-2-s-krepleniem-pod-gipsorkaton-aksialnyy-/
-  found: images=4 specs=12 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
-[156/465] #19987 VM52013 Угольник с внутренней резьбой Varmega Slide-fit VM52013, 20×1/2", с кр
-  source: https://varmega.ru/product/truby-i-fitingi/aksialnye-fitingi/ugolnik-s-vnutrenney-rezboy-varmega-slide-fit-vm52013-20-1-2-s-krepleniem-pod-gipsorkaton-aksialnyy-/
-  found: images=4 specs=12 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
-[157/465] #19988 VM52111 Угольник с внутренней резьбой Varmega Slide-fit VM52111, 16×16×1/2", н
-  source: https://varmega.ru/product/truby-i-fitingi/aksialnye-fitingi/ugolnik-s-vnutrenney-rezboy-varmega-slide-fit-vm52111-16-16-1-2-nastennyy-prokhodnoy-aksialnyy-latun/
-  found: images=4 specs=12 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
-[158/465] #19989 VM52114 Угольник с внутренней резьбой Varmega Slide-fit VM52114, 20×20×1/2", н
-  source: https://varmega.ru/product/truby-i-fitingi/aksialnye-fitingi/ugolnik-s-vnutrenney-rezboy-varmega-slide-fit-vm52114-20-20-1-2-nastennyy-prokhodnoy-aksialnyy-latun/
-  found: images=4 specs=12 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
-[159/465] #19992 VM52502 Трубка для подключения радиатора Varmega Slide-Fit VM52502, Г-образная
-  source: https://varmega.ru/product/truby-i-fitingi/aksialnye-fitingi/trubka-dlya-podklyucheniya-radiatora-varmega-slide-fit-vm52502-g-obraznaya-20-250-15kh1-0-aksialnaya/
-  found: images=4 specs=17 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
-[160/465] #19993 VM52551 Трубка для подключения радиатора Varmega Slide-Fit VM52551, Г-образная
-  source: https://varmega.ru/product/truby-i-fitingi/aksialnye-fitingi/trubka-dlya-podklyucheniya-radiatora-varmega-slide-fit-vm52551-g-obraznaya-16-500-15kh1-0-aksialnaya/
-  found: images=4 specs=12 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
-[161/465] #19994 VM52571 Трубка для подключения радиатора Varmega Slide-Fit VM52571, Г-образная
-  source: https://varmega.ru/product/truby-i-fitingi/aksialnye-fitingi/trubka-dlya-podklyucheniya-radiatora-varmega-slide-fit-vm52571-g-obraznaya-16-750-aksialnaya/
-  found: images=4 specs=10 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
-[162/465] #19995 VM52511 Трубка для подключения радиатора Varmega Slide-Fit VM52511, Г-образная
-  source: https://varmega.ru/product/truby-i-fitingi/aksialnye-fitingi/trubka-dlya-podklyucheniya-radiatora-varmega-slide-fit-vm52511-g-obraznaya-16-250-aksialnaya-sdvoenn/
-  found: images=4 specs=11 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
-[163/465] #19996 VM52601 Трубка для подключения радиатора Varmega Slide-Fit VM52601, Т-образная
-  source: https://varmega.ru/product/truby-i-fitingi/aksialnye-fitingi/trubka-dlya-podklyucheniya-radiatora-varmega-slide-fit-vm52601-t-obraznaya-16-250-15kh1-0-aksialnaya/
-  found: images=4 specs=17 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
-[164/465] #19997 VM52602 Трубка для подключения радиатора Varmega Slide-Fit VM52602, Т-образная
-  source: https://varmega.ru/product/truby-i-fitingi/aksialnye-fitingi/trubka-dlya-podklyucheniya-radiatora-varmega-slide-fit-vm52602-t-obraznaya-20-250-15kh1-0-aksialnaya/
-  found: images=4 specs=17 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
-[165/465] #19998 VM52671 Трубка для подключения радиатора Varmega Slide-Fit VM52671, Т-образная
-  source: https://varmega.ru/product/truby-i-fitingi/aksialnye-fitingi/trubka-dlya-podklyucheniya-radiatora-varmega-slide-fit-vm52671-t-obraznaya-16-16-750-aksialnaya/
-  found: images=4 specs=10 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
-[166/465] #19999 VM52672 Трубка для подключения радиатора Varmega Slide-Fit VM52672, Т-образная
-  source: https://varmega.ru/product/truby-i-fitingi/aksialnye-fitingi/trubka-dlya-podklyucheniya-radiatora-varmega-slide-fit-vm52672-t-obraznaya-20-20-750-aksialnaya/
-  found: images=4 specs=10 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
-[167/465] #20000 VM52673 Трубка для подключения радиатора Varmega Slide-Fit VM52673, Т-образная
-  source: https://varmega.ru/product/truby-i-fitingi/aksialnye-fitingi/trubka-dlya-podklyucheniya-radiatora-varmega-slide-fit-vm52673-t-obraznaya-20-16-750-aksialnaya/
-  found: images=4 specs=10 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
-[168/465] #20001 VM52674 Трубка для подключения радиатора Varmega Slide-Fit VM52674, Т-образная
-  source: https://varmega.ru/product/truby-i-fitingi/aksialnye-fitingi/trubka-dlya-podklyucheniya-radiatora-varmega-slide-fit-vm52674-t-obraznaya-16-20-750-aksialnaya/
-  found: images=4 specs=10 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
-[169/465] #20002 VM53511 Узел распределительный Varmega Slide-fit VM53511, 16 мм, аксиальный
-  source: https://varmega.ru/product/truby-i-fitingi/aksialnye-fitingi/uzel-raspredelitelnyy-varmega-slide-fit-vm53511-16-mm-aksialnyy/
-  found: images=4 specs=11 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
-[170/465] #20003 VM53512 Узел распределительный Varmega Slide-fit VM53512, 20×16×16 мм, аксиаль
-  source: https://varmega.ru/product/truby-i-fitingi/aksialnye-fitingi/uzel-raspredelitelnyy-varmega-slide-fit-vm53512-20-16-16-mm-aksialnyy/
-  found: images=4 specs=11 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
-[171/465] #20004 VM53513 Узел распределительный Varmega Slide-fit VM53513, 20×16×20 мм, аксиаль
-  source: https://varmega.ru/product/truby-i-fitingi/aksialnye-fitingi/uzel-raspredelitelnyy-varmega-slide-fit-vm53513-20-16-20-mm-aksialnyy/
-  found: images=4 specs=11 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
-[172/465] #20005 VM53514 Узел распределительный Varmega Slide-Fit VM53514, 20×20×20, аксиальный
-  source: https://varmega.ru/product/truby-i-fitingi/aksialnye-fitingi/uzel-raspredelitelnyy-varmega-slide-fit-vm53514-20-20-20-aksialnyy/
-  found: images=4 specs=11 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
-[173/465] #20008 VM727002218 Угольник 90° переходной двухраструбный Varmega Inox Press VM727002218,
-  source: https://varmega.ru/product/truby-i-fitingi/truboprovodnye-sistemy-press-obzhim-i-payka/ugolnik-90-perekhodnoy-dvukhrastrubnyy-varmega-inox-press-vm727002218-22-18-mm/
-  found: images=4 specs=11 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
-[174/465] #20009 VM727002822 Угольник 90° переходной двухраструбный Varmega Inox Press VM727002822,
-  source: https://varmega.ru/product/truby-i-fitingi/truboprovodnye-sistemy-press-obzhim-i-payka/ugolnik-90-perekhodnoy-dvukhrastrubnyy-varmega-inox-press-vm727002822-28-22-mm/
-  found: images=4 specs=11 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
-[175/465] #20010 VM727003522 Угольник 90° переходной двухраструбный Varmega Inox Press VM727003522,
-  source: https://varmega.ru/product/truby-i-fitingi/truboprovodnye-sistemy-press-obzhim-i-payka/ugolnik-90-perekhodnoy-dvukhrastrubnyy-varmega-inox-press-vm727003522-35-22-mm/
-  found: images=4 specs=11 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
-[176/465] #20011 VM727003528 Угольник 90° переходной двухраструбный Varmega Inox Press VM727003528,
-  source: https://varmega.ru/product/truby-i-fitingi/truboprovodnye-sistemy-press-obzhim-i-payka/ugolnik-90-perekhodnoy-dvukhrastrubnyy-varmega-inox-press-vm727003528-35-28-mm/
-  found: images=4 specs=11 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
-[177/465] #20012 VM790000015 Уплотнительное кольцо из EPDM Varmega Inox Press VM790000015, 15 мм
-  source: https://varmega.ru/product/truby-i-fitingi/truboprovodnye-sistemy-press-obzhim-i-payka/komplektuyushchie-i-aksessuary-press-obzhim-i-payka/uplotnitelnoe-koltso-iz-epdm-varmega-inox-press-vm790000015-15-mm/
-  found: images=4 specs=6 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
-[178/465] #20013 VM790000018 Уплотнительное кольцо из EPDM Varmega Inox Press VM790000018, 18 мм
-  source: https://varmega.ru/product/truby-i-fitingi/truboprovodnye-sistemy-press-obzhim-i-payka/komplektuyushchie-i-aksessuary-press-obzhim-i-payka/uplotnitelnoe-koltso-iz-epdm-varmega-inox-press-vm790000018-18-mm/
-  found: images=4 specs=6 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
-[179/465] #20014 VM790000022 Уплотнительное кольцо из EPDM Varmega Inox Press VM790000022, 22 мм
-  source: https://varmega.ru/product/truby-i-fitingi/truboprovodnye-sistemy-press-obzhim-i-payka/komplektuyushchie-i-aksessuary-press-obzhim-i-payka/uplotnitelnoe-koltso-iz-epdm-varmega-inox-press-vm790000022-22-mm/
-  found: images=4 specs=6 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
-[180/465] #20015 VM790000028 Уплотнительное кольцо из EPDM Varmega Inox Press VM790000028, 28 мм
-  source: https://varmega.ru/product/truby-i-fitingi/truboprovodnye-sistemy-press-obzhim-i-payka/komplektuyushchie-i-aksessuary-press-obzhim-i-payka/uplotnitelnoe-koltso-iz-epdm-varmega-inox-press-vm790000028-28-mm/
-  found: images=4 specs=6 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
-[181/465] #20016 VM790000035 Комплектующие и аксессуары пресс-обжим и пайка
-  source: https://varmega.ru/product/truby-i-fitingi/truboprovodnye-sistemy-press-obzhim-i-payka/komplektuyushchie-i-aksessuary-press-obzhim-i-payka/uplotnitelnoe-koltso-iz-epdm-varmega-inox-press-vm790000035-35-mm/
-  found: images=4 specs=6 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
-[182/465] #20017 VM790000042 Комплектующие и аксессуары пресс-обжим и пайка
-  source: https://varmega.ru/product/truby-i-fitingi/truboprovodnye-sistemy-press-obzhim-i-payka/komplektuyushchie-i-aksessuary-press-obzhim-i-payka/uplotnitelnoe-koltso-iz-epdm-varmega-inox-press-vm790000042-42-mm/
-  found: images=4 specs=6 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
-[183/465] #20018 VM790000054 Комплектующие и аксессуары пресс-обжим и пайка
-  source: https://varmega.ru/product/truby-i-fitingi/truboprovodnye-sistemy-press-obzhim-i-payka/komplektuyushchie-i-aksessuary-press-obzhim-i-payka/uplotnitelnoe-koltso-iz-epdm-varmega-inox-press-vm790000054-54-mm/
-  found: images=4 specs=6 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
-[184/465] #20019 VM791000015 Комплектующие и аксессуары пресс-обжим и пайка
-  source: https://varmega.ru/product/truby-i-fitingi/truboprovodnye-sistemy-press-obzhim-i-payka/komplektuyushchie-i-aksessuary-press-obzhim-i-payka/uplotnitelnoe-koltso-iz-fpm-viton-varmega-inox-press-vm791000015-15-mm/
+ 2 files changed, 157 insertions(+), 157 deletions(-)
+[332/465] #20562 skipped generic source URL: https://rn-profi.by/
+[333/465] #20563 skipped generic source URL: https://rn-profi.by/
+[334/465] #20564 skipped generic source URL: https://rn-profi.by/
+[335/465] #20565 skipped generic source URL: https://rn-profi.by/
+[336/465] #20566 skipped generic source URL: https://rn-profi.by/
+[337/465] #20567 skipped generic source URL: https://rn-profi.by/
+[338/465] #20568 skipped generic source URL: https://rn-profi.by/
+[339/465] #20569 skipped generic source URL: https://rn-profi.by/
+[340/465] #20570 skipped generic source URL: https://rn-profi.by/
+[341/465] #20571 skipped generic source URL: https://rn-profi.by/
+[342/465] #20572 skipped generic source URL: https://rn-profi.by/
+[343/465] #20573 skipped generic source URL: https://rn-profi.by/
+[344/465] #20574 skipped generic source URL: https://rn-profi.by/
+[345/465] #20575 skipped generic source URL: https://rn-profi.by/
+[346/465] #20576 skipped generic source URL: https://rn-profi.by/
+[347/465] #20577 skipped generic source URL: https://rn-profi.by/
+[348/465] #20578 skipped generic source URL: https://rn-profi.by/
+[349/465] #20579 skipped generic source URL: https://rn-profi.by/
+[350/465] #20580 skipped generic source URL: https://rn-profi.by/
+[351/465] #20581 skipped generic source URL: https://rn-profi.by/
+[352/465] #20582 skipped generic source URL: https://rn-profi.by/
+[353/465] #20583 skipped generic source URL: https://rn-profi.by/
+[354/465] #20584 skipped generic source URL: https://rn-profi.by/
+[355/465] #20585 skipped generic source URL: https://rn-profi.by/
+[356/465] #20586 skipped generic source URL: https://rn-profi.by/
+[357/465] #20587 skipped generic source URL: https://rn-profi.by/
+[358/465] #20588 skipped generic source URL: https://rn-profi.by/
+[359/465] #20589 skipped generic source URL: https://rn-profi.by/
+[360/465] #20590 skipped generic source URL: https://rn-profi.by/
+[361/465] #20591 skipped generic source URL: https://rn-profi.by/
+[362/465] #20592 skipped generic source URL: https://rn-profi.by/
+[363/465] #20593 skipped generic source URL: https://rn-profi.by/
+[364/465] #20594 skipped generic source URL: https://rn-profi.by/
+[365/465] #20595 skipped generic source URL: https://rn-profi.by/
+[366/465] #20596 skipped generic source URL: https://rn-profi.by/
+[367/465] #20597 skipped generic source URL: https://rn-profi.by/
+[368/465] #20598 skipped generic source URL: https://rn-profi.by/
+[369/465] #20599 skipped generic source URL: https://rn-profi.by/
+[370/465] #20600 skipped generic source URL: https://rn-profi.by/
+[371/465] #20601 skipped generic source URL: https://rn-profi.by/
+[372/465] #20602 skipped generic source URL: https://rn-profi.by/
+[373/465] #20603 skipped generic source URL: https://rn-profi.by/
+[374/465] #20604 skipped generic source URL: https://rn-profi.by/
+[375/465] #20605 skipped generic source URL: https://rn-profi.by/
+[376/465] #20606 skipped generic source URL: https://rn-profi.by/
+[377/465] #20607 skipped generic source URL: https://rn-profi.by/
+[378/465] #20608 skipped generic source URL: https://rn-profi.by/
+[379/465] #20609 skipped generic source URL: https://rn-profi.by/
+[380/465] #20610 skipped generic source URL: https://rn-profi.by/
+[381/465] #20611 skipped generic source URL: https://rn-profi.by/
+[382/465] #20612 skipped generic source URL: https://rn-profi.by/
+[383/465] #20613 skipped generic source URL: https://rn-profi.by/
+[384/465] #20614 skipped generic source URL: https://rn-profi.by/
+[385/465] #20615 skipped generic source URL: https://rn-profi.by/
+[386/465] #20616 skipped generic source URL: https://rn-profi.by/
+[387/465] #20617 skipped generic source URL: https://rn-profi.by/
+[388/465] #20618 skipped generic source URL: https://rn-profi.by/
+[389/465] #20619 skipped generic source URL: https://rn-profi.by/
+[390/465] #20620 skipped generic source URL: https://rn-profi.by/
+[391/465] #20621 skipped generic source URL: https://rn-profi.by/
+[392/465] #20622 skipped generic source URL: https://rn-profi.by/
+[393/465] #20623 skipped generic source URL: https://rn-profi.by/
+[394/465] #20624 skipped generic source URL: https://rn-profi.by/
+[395/465] #20625 skipped generic source URL: https://rn-profi.by/
+[396/465] #20626 skipped generic source URL: https://rn-profi.by/
+[397/465] #20627 skipped generic source URL: https://rn-profi.by/
+[398/465] #20628 skipped generic source URL: https://rn-profi.by/
+[399/465] #20629 skipped generic source URL: https://rn-profi.by/
+[400/465] #20630 skipped generic source URL: https://rn-profi.by/
+[401/465] #20631 skipped generic source URL: https://rn-profi.by/
+[402/465] #20632 skipped generic source URL: https://rn-profi.by/
+[403/465] #20633 skipped generic source URL: https://rn-profi.by/
+[404/465] #20634 skipped generic source URL: https://rn-profi.by/
+[405/465] #20635 skipped generic source URL: https://rn-profi.by/
+[406/465] #20636 skipped generic source URL: https://rn-profi.by/
+[407/465] #20637 skipped generic source URL: https://rn-profi.by/
+[408/465] #20638 skipped generic source URL: https://rn-profi.by/
+[409/465] #20639 skipped generic source URL: https://rn-profi.by/
+[410/465] #20640 skipped generic source URL: https://rn-profi.by/
+[411/465] #20641 skipped generic source URL: https://rn-profi.by/
+[412/465] #20642 skipped generic source URL: https://rn-profi.by/
+[413/465] #20643 skipped generic source URL: https://rn-profi.by/
+[414/465] #20644 skipped generic source URL: https://rn-profi.by/
+[415/465] #20645 skipped generic source URL: https://rn-profi.by/
+[416/465] #20646 skipped generic source URL: https://rn-profi.by/
+[417/465] #20647 skipped generic source URL: https://rn-profi.by/
+[418/465] #20648 skipped generic source URL: https://rn-profi.by/
+[419/465] #20649 skipped generic source URL: https://rn-profi.by/
+[420/465] #20650 skipped generic source URL: https://rn-profi.by/
+[421/465] #20651 skipped generic source URL: https://rn-profi.by/
+[422/465] #20652 skipped generic source URL: https://rn-profi.by/
+[423/465] #20653 skipped generic source URL: https://rn-profi.by/
+[424/465] #20654 skipped generic source URL: https://rn-profi.by/
+[425/465] #20655 skipped generic source URL: https://rn-profi.by/
+[426/465] #20656 skipped generic source URL: https://rn-profi.by/
+[427/465] #20657 skipped generic source URL: https://rn-profi.by/
+[428/465] #20658 skipped generic source URL: https://rn-profi.by/
+[429/465] #20659 skipped generic source URL: https://rn-profi.by/
+[430/465] #20660 skipped generic source URL: https://rn-profi.by/
+[431/465] #20661 skipped generic source URL: https://rn-profi.by/
+[432/465] #20662 skipped generic source URL: https://rn-profi.by/
+[433/465] #20663 skipped generic source URL: https://rn-profi.by/
+[434/465] #20664 skipped generic source URL: https://rn-profi.by/
+[435/465] #20665 skipped generic source URL: https://rn-profi.by/
+[436/465] #20666 skipped generic source URL: https://rn-profi.by/
+[437/465] #20667 skipped generic source URL: https://rn-profi.by/
+[438/465] #20668 skipped generic source URL: https://rn-profi.by/
+[439/465] #20669 skipped generic source URL: https://rn-profi.by/
+[440/465] #20670 skipped generic source URL: https://rn-profi.by/
+[441/465] #20671 skipped generic source URL: https://rn-profi.by/
+[442/465] #20672 skipped generic source URL: https://rn-profi.by/
+[443/465] #20673 skipped generic source URL: https://rn-profi.by/
+[444/465] #20674 skipped generic source URL: https://rn-profi.by/
+[445/465] #20675 skipped generic source URL: https://rn-profi.by/
+[446/465] #20676 skipped generic source URL: https://rn-profi.by/
+[447/465] #20677 skipped generic source URL: https://rn-profi.by/
+[448/465] #20678 skipped generic source URL: https://rn-profi.by/
+[449/465] #20679 skipped generic source URL: https://rn-profi.by/
+[450/465] #20680 skipped generic source URL: https://rn-profi.by/
+[451/465] #20681 skipped generic source URL: https://rn-profi.by/
+[452/465] #20682 skipped generic source URL: https://rn-profi.by/
+[453/465] #20683 skipped generic source URL: https://rn-profi.by/
+[454/465] #20684 skipped generic source URL: https://rn-profi.by/
+[455/465] #20685 skipped generic source URL: https://rn-profi.by/
+[456/465] #20686 skipped generic source URL: https://rn-profi.by/
+[457/465] #20687 skipped generic source URL: https://rn-profi.by/
+[458/465] #20688 skipped generic source URL: https://rn-profi.by/
+[459/465] #20689 VM796000V15 Varmega VM796000V15 15
+  source: https://varmega.ru/product/instrument/press-nasadka-varmega-vm796000v15-profil-v-15-mm/
+  found: images=4 specs=5 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
+[460/465] #20690 VM796000V18 Varmega VM796000V18 18
+  source: https://varmega.ru/product/instrument/press-nasadka-varmega-vm796000v18-profil-v-18-mm/
+  found: images=4 specs=5 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
+[461/465] #20691 VM796000V22 Varmega VM796000V22 22
+  source: https://varmega.ru/product/instrument/press-nasadka-varmega-vm796000v22-profil-v-22-mm/
+  found: images=4 specs=5 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
+[462/465] #20692 VM796000V28 Varmega VM796000V28 28
+  source: https://varmega.ru/product/instrument/press-nasadka-varmega-vm796000v28-profil-v-28-mm/
+  found: images=4 specs=5 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
+[463/465] #20693 VM796000V35 Varmega VM796000V35 35
+  source: https://varmega.ru/product/instrument/press-nasadka-varmega-vm796000v35-profil-v-35-mm/
+  found: images=4 specs=5 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
+[464/465] #20694 skipped generic source URL: https://rn-profi.by/
+[465/465] #20695 VM796000V54 Varmega VM796000V54 54
+  source: https://varmega.ru/product/instrument/press-koltso-varmega-vm796000v54-profil-v-54-mm/
+  found: images=4 specs=5 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
+
++------------------+-------+
+| metric           | count |
++------------------+-------+
+| processed        | 465   |
+| enriched         | 226   |
+| images_found     | 904   |
+| images_saved     | 904   |
+| specs_found      | 2891  |
+| attributes_saved | 2891  |
+| ai_done          | 226   |
+| skipped          | 239   |
+| errors           | 0     |
++------------------+-------+
 
 ```
