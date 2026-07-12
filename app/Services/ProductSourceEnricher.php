@@ -866,6 +866,10 @@ class ProductSourceEnricher
 
     private function adaptParsedDataForProduct(array $parsed, Product $product, string $sourceUrl): array
     {
+        if ($this->isRnProfiUrl($sourceUrl)) {
+            return $this->adaptRnProfiParsedDataForProduct($parsed, $product, $sourceUrl);
+        }
+
         if (! $this->isGreolitUrl($sourceUrl)) {
             return $parsed;
         }
@@ -893,6 +897,104 @@ class ProductSourceEnricher
         $parsed['specs'] = $this->normalizeParsedSpecs($parsed['specs']);
 
         return $parsed;
+    }
+
+    private function adaptRnProfiParsedDataForProduct(array $parsed, Product $product, string $sourceUrl): array
+    {
+        $brand = mb_strtolower((string) ($product->brand?->name ?? ''));
+        if ($brand !== 'varmega') {
+            return $parsed;
+        }
+
+        $article = $this->extractVarmegaArticle((string) ($product->supplierProducts()->value('supplier_article') ?: $product->name));
+        if ($article === '') {
+            return $parsed;
+        }
+
+        $rowValue = '';
+        foreach ($parsed['specs'] as $spec) {
+            $key = $this->cleanText((string) ($spec['key'] ?? ''));
+            $value = $this->cleanText((string) ($spec['value'] ?? ''));
+            if (mb_strtoupper($key) === $article) {
+                $rowValue = $value;
+                break;
+            }
+            if (mb_strtoupper($value) === $article) {
+                $rowValue = $key;
+                break;
+            }
+        }
+
+        if ($rowValue === '') {
+            $rowValue = $this->extractVarmegaSize((string) $product->name);
+        }
+
+        $title = $this->cleanRnProfiVarmegaTitle((string) ($parsed['title'] ?: $product->name), $article);
+        $description = $this->varmegaArticleDescription($title, $article, $rowValue);
+
+        $specs = [
+            ['key' => 'Артикул', 'value' => $article, 'unit' => ''],
+        ];
+        if ($rowValue !== '') {
+            $specs[] = ['key' => 'Размер', 'value' => $rowValue, 'unit' => 'мм'];
+        }
+
+        $parsed['description'] = $description;
+        $parsed['short_description'] = $description;
+        $parsed['specs'] = $this->normalizeParsedSpecs($specs);
+
+        return $parsed;
+    }
+
+    private function isRnProfiUrl(string $url): bool
+    {
+        return str_contains((string) parse_url($url, PHP_URL_HOST), 'rn-profi.by');
+    }
+
+    private function extractVarmegaArticle(string $text): string
+    {
+        if (preg_match('/\b(VM[A-Z0-9]{4,})\b/iu', $text, $match)) {
+            return mb_strtoupper($match[1]);
+        }
+
+        return '';
+    }
+
+    private function extractVarmegaSize(string $text): string
+    {
+        if (preg_match('/\b(\d{1,3}\s*[axхx]\s*\d{1,3})\b/iu', $text, $match)) {
+            return str_replace([' ', 'х', 'x'], ['', 'x', 'x'], $match[1]);
+        }
+
+        return '';
+    }
+
+    private function cleanRnProfiVarmegaTitle(string $title, string $article): string
+    {
+        $title = preg_replace('/\s*[|–-]\s*(?:RN-Profi|РН-Профи).*$/iu', '', $title) ?? $title;
+        $title = preg_replace('/\b' . preg_quote($article, '/') . '\b/iu', '', $title) ?? $title;
+        $title = $this->cleanText($title);
+
+        if ($title === '' || preg_match('/поиск|search/iu', $title)) {
+            return 'Фитинг Varmega Inox Press';
+        }
+
+        return $title;
+    }
+
+    private function varmegaArticleDescription(string $title, string $article, string $size): string
+    {
+        $subject = $title;
+        if (! str_contains(mb_strtolower($subject), 'varmega')) {
+            $subject .= ' Varmega';
+        }
+
+        $parts = [$subject, 'артикул ' . $article];
+        if ($size !== '') {
+            $parts[] = 'размер ' . $size;
+        }
+
+        return $this->cleanText(implode(', ', $parts) . '. Элемент относится к системе Varmega Inox Press и используется для соединения трубопроводов из нержавеющей стали. Подбирайте изделие по артикулу и размеру в карточке товара.');
     }
 
     private function extractPowerFromProductName(string $name): string
