@@ -41,6 +41,8 @@ class SyncLigmetCommand extends Command
         {--all-categories : Import chimneys/doors/accessories too (default: stoves/fireplaces only)}
         {--examples=12 : Number of dry-run example rows to show}
         {--suggest-existing=0 : Show closest existing catalogue products for create_candidate rows}
+        {--link-existing-suggestions : Use strict existing-product suggestions as matches instead of creating products}
+        {--min-suggestion-score=99.9 : Minimum score for --link-existing-suggestions}
         {--archive-existing : Archive existing active products of these brands (in scope) before import; excludes them from matching}
         {--redirects : Write an old→new redirect map (archived → recreated, by brand+model)}
         {--create-new : Create products for rows with no match}';
@@ -644,6 +646,17 @@ class SyncLigmetCommand extends Command
         $brandId = $this->resolveBrand($row['brand']);
         $stock   = $this->stock($row['status_text']);
         $match   = $this->match($row, $brandId);
+        if ($match === null && (bool) $this->option('link-existing-suggestions')) {
+            $suggestion = $this->bestExistingSuggestion($row);
+            $minScore = (float) ($this->option('min-suggestion-score') ?? 99.9);
+            if ($suggestion !== null && (float) $suggestion['score'] >= $minScore) {
+                $match = [
+                    'product_id' => (int) $suggestion['id'],
+                    'sku' => (string) $suggestion['sku'],
+                    'confidence' => 'strict_existing_suggestion',
+                ];
+            }
+        }
 
         $action = match (true) {
             $match !== null => 'matched',
