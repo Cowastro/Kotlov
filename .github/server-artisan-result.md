@@ -1,6 +1,6 @@
 # Server Artisan Result
 
-- Time: 2026-07-12 09:18:09 UTC
+- Time: 2026-07-12 09:20:09 UTC
 - Task: `tail-log`
 - Artisan args: ``
 - Log file: `storage/logs/varmega-official-fill.log`
@@ -8,35 +8,12 @@
 
 ```text
 From https://github.com/Cowastro/Kotlov
-   4c20117..3c65216  main       -> origin/main
-Updating 4c20117..3c65216
+   3c65216..783c704  main       -> origin/main
+Updating 3c65216..783c704
 Fast-forward
- .github/server-artisan-result.md | 59 ++++++++++++++++++++++++++++++++++++----
+ .github/server-artisan-result.md | 52 ++++++++++++++++++++++++++++++++++++----
  .github/server-artisan-task.json |  2 +-
- 2 files changed, 54 insertions(+), 7 deletions(-)
-APPLY: source enrichment will be written.
-Products with source URLs: 45 (processing 45, offset 0, --force)
-[1/45] #19812 VM09821 Угол переходной Varmega VM09821, ВР-ВР, 3/4" х 1/2", хромированный
-  source: https://varmega.ru/product/truby-i-fitingi/bronzovye-i-latunnye-fitingi-rezba/ugol-perekhodnoy-varmega-vm09821-vr-vr-3-4-kh-1-2-khromirovannyy/
-  found: images=4 specs=2 service=1 docs=0 video=0 updated=images,service_info,content,short_description,meta_description,updated_at
-  warning: attributes: only 2 specs found; replacement skipped, minimum is 4
-[2/45] #19813 VM09822 Угол переходной Varmega VM09822, ВР-ВР, 1" х 1/2", хромированный
-  source: https://varmega.ru/product/truby-i-fitingi/bronzovye-i-latunnye-fitingi-rezba/ugol-perekhodnoy-varmega-vm09822-vr-vr-1-kh-1-2-khromirovannyy/
-  found: images=4 specs=2 service=1 docs=0 video=0 updated=images,service_info,content,short_description,meta_description,updated_at
-  warning: attributes: only 2 specs found; replacement skipped, minimum is 4
-[3/45] #19814 VM09831 Заглушка с внутренней резьбой Varmega VM09831, ВР, 3/4", хромированная
-  source: https://varmega.ru/product/truby-i-fitingi/bronzovye-i-latunnye-fitingi-rezba/zaglushka-s-vnutrenney-rezboy-varmega-vm09831-vr-3-4-khromirovannaya/
-  found: images=4 specs=2 service=1 docs=0 video=0 updated=images,service_info,content,short_description,meta_description,updated_at
-  warning: attributes: only 2 specs found; replacement skipped, minimum is 4
-[4/45] #19815 VM09832 Заглушка с внутренней резьбой Varmega VM09832, ВР, 1", хромированная
-  source: https://varmega.ru/product/truby-i-fitingi/bronzovye-i-latunnye-fitingi-rezba/zaglushka-s-vnutrenney-rezboy-varmega-vm09832-vr-1-khromirovannaya/
-  found: images=4 specs=2 service=1 docs=0 video=0 updated=images,service_info,content,short_description,meta_description,updated_at
-  warning: attributes: only 2 specs found; replacement skipped, minimum is 4
-[5/45] #19816 VM09841 Заглушка с наружной резьбой Varmega VM09841, НР, 3/4", хромированная
-  source: https://varmega.ru/product/truby-i-fitingi/bronzovye-i-latunnye-fitingi-rezba/zaglushka-s-naruzhnoy-rezboy-varmega-vm09841-nr-3-4-khromirovannaya/
-  found: images=4 specs=2 service=1 docs=0 video=0 updated=images,service_info,content,short_description,meta_description,updated_at
-  warning: attributes: only 2 specs found; replacement skipped, minimum is 4
-[6/45] #19817 VM09842 Заглушка с наружной резьбой Varmega VM09842, НР, 1", хромированная
+ 2 files changed, 48 insertions(+), 6 deletions(-)
   source: https://varmega.ru/product/truby-i-fitingi/bronzovye-i-latunnye-fitingi-rezba/zaglushka-s-naruzhnoy-rezboy-varmega-vm09842-nr-1-khromirovannaya/
   found: images=4 specs=2 service=1 docs=0 video=0 updated=images,service_info,content,short_description,meta_description,updated_at
   warning: attributes: only 2 specs found; replacement skipped, minimum is 4
@@ -155,5 +132,47 @@ Products with source URLs: 45 (processing 45, offset 0, --force)
   warning: attributes: only 1 specs found; replacement skipped, minimum is 4
 [37/45] #20418 VM09912 Varmega VM09912 1" х 1/2"
   source: https://varmega.ru/product/aksessuary/perekhodnik-varmega-vm09912-vr-vr-1-kh-1-2/
+  found: images=4 specs=1 service=1 docs=0 video=0 updated=images,service_info,content,short_description,meta_description,updated_at
+  warning: attributes: only 1 specs found; replacement skipped, minimum is 4
+[38/45] #20419 VM09951 Varmega VM09951 3/4"
+  source: https://varmega.ru/product/kollektory-i-komplektuyushchie/komplekt-kronshteynov-varmega-vm09951-dlya-kollektorov-serii-vm147-3-4-2-sht-kompl/
+  found: images=4 specs=1 service=1 docs=0 video=0 updated=images,service_info,content,short_description,meta_description,updated_at
+  warning: attributes: only 1 specs found; replacement skipped, minimum is 4
+[39/45] #20420 VM09952 Varmega VM09952 1"
+  source: https://varmega.ru/product/kollektory-i-komplektuyushchie/komplekt-kronshteynov-varmega-vm09952-dlya-kollektorov-serii-vm147-1-2-sht-kompl/
+  found: images=4 specs=1 service=1 docs=0 video=0 updated=images,service_info,content,short_description,meta_description,updated_at
+  warning: attributes: only 1 specs found; replacement skipped, minimum is 4
+[40/45] #20689 VM796000V15 Varmega VM796000V15 15
+  source: https://varmega.ru/product/instrument/press-nasadka-varmega-vm796000v15-profil-v-15-mm/
+  found: images=4 specs=5 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
+[41/45] #20690 VM796000V18 Varmega VM796000V18 18
+  source: https://varmega.ru/product/instrument/press-nasadka-varmega-vm796000v18-profil-v-18-mm/
+  found: images=4 specs=5 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
+[42/45] #20691 VM796000V22 Varmega VM796000V22 22
+  source: https://varmega.ru/product/instrument/press-nasadka-varmega-vm796000v22-profil-v-22-mm/
+  found: images=4 specs=5 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
+[43/45] #20692 VM796000V28 Varmega VM796000V28 28
+  source: https://varmega.ru/product/instrument/press-nasadka-varmega-vm796000v28-profil-v-28-mm/
+  found: images=4 specs=5 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
+[44/45] #20693 VM796000V35 Varmega VM796000V35 35
+  source: https://varmega.ru/product/instrument/press-nasadka-varmega-vm796000v35-profil-v-35-mm/
+  found: images=4 specs=5 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
+[45/45] #20695 VM796000V54 Varmega VM796000V54 54
+  source: https://varmega.ru/product/instrument/press-koltso-varmega-vm796000v54-profil-v-54-mm/
+  found: images=4 specs=5 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
+
++------------------+-------+
+| metric           | count |
++------------------+-------+
+| processed        | 45    |
+| enriched         | 45    |
+| images_found     | 180   |
+| images_saved     | 180   |
+| specs_found      | 115   |
+| attributes_saved | 61    |
+| ai_done          | 45    |
+| skipped          | 0     |
+| errors           | 0     |
++------------------+-------+
 
 ```
