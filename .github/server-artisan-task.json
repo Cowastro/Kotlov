@@ -1,6 +1,6 @@
 {
-  "task": "artisan-background",
-  "artisan_args": "supplier:enrich-source-products --supplier=rn-profi --brand=Varmega --domain=varmega.ru --apply --force --replace-specs --min-specs-to-replace=4 --overwrite-images --skip-documents --max-current-attrs=5 --limit=0 --sleep=1000",
+  "task": "tail-log",
+  "artisan_args": "",
   "log_file": "storage/logs/varmega-official-fill.log",
-  "run_id": "varmega-official-fill-20260712-1"
+  "run_id": "varmega-official-fill-tail-20260712-1"
 }
