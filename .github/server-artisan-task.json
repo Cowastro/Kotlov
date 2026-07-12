@@ -1,6 +1,6 @@
 {
-  "task": "artisan-dry-run",
-  "artisan_args": "products:audit-content-terms --brand=Varmega --category=Пресс-фитинги --profile=varmega-fittings --active-only --not-archived --limit=100 --csv=storage/app/reports/content-health/varmega-press-bad-terms.csv",
-  "log_file": "",
-  "run_id": "audit-varmega-press-bad-terms-20260712-1"
+  "task": "artisan-background",
+  "artisan_args": "supplier:enrich-source-products --supplier=rn-profi --brand=Varmega --category=Пресс-фитинги --apply --force --source-content --replace-specs --min-specs-to-replace=1 --overwrite-images --skip-documents --limit=0 --sleep=1000",
+  "log_file": "storage/logs/varmega-press-source-content-all.log",
+  "run_id": "varmega-press-source-content-all-20260712-1"
 }
