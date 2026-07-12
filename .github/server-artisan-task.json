@@ -1,6 +1,6 @@
 {
-  "task": "artisan-dry-run",
-  "artisan_args": "products:audit-content-health --supplier=rn-profi --brand=Varmega --category=Пресс-фитинги --active-only --not-archived --issues=no_photo,low_attrs,no_source --max-attrs=2 --article-prefix=VM706 --limit=80",
-  "log_file": "storage/logs/varmega-vm706-health-audit.log",
-  "run_id": "varmega-vm706-health-audit-20260712-1"
+  "task": "artisan-apply",
+  "artisan_args": "supplier:repair-varmega-source-urls --apply --article-prefix=VM706 --http-timeout=8 --limit=0 --enrich --replace-specs --min-specs-to-replace=1 --overwrite-images --skip-documents",
+  "log_file": "storage/logs/varmega-vm706-source-repair-apply-v2.log",
+  "run_id": "varmega-vm706-source-repair-apply-20260712-2"
 }

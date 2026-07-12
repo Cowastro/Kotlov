@@ -100,6 +100,8 @@ class ProductSourceEnricher
                         $existing = $this->decodeArray($product->images);
                         $updates['images'] = array_values(array_unique(array_merge($existing, $downloaded)));
                     }
+                } else {
+                    $stats['errors'][] = 'images: source images were found but none could be downloaded';
                 }
             }
         } catch (\Throwable $e) {
@@ -939,6 +941,10 @@ class ProductSourceEnricher
             $specs[] = ['key' => 'Размер', 'value' => $rowValue, 'unit' => 'мм'];
         }
 
+        foreach ($this->rnProfiVarmegaDerivedSpecs($title, $sourceUrl) as $spec) {
+            $specs[] = $spec;
+        }
+
         $parsed['description'] = $description;
         $parsed['short_description'] = $description;
         $parsed['specs'] = $this->normalizeParsedSpecs($specs);
@@ -980,6 +986,62 @@ class ProductSourceEnricher
         }
 
         return $title;
+    }
+
+    /**
+     * @return array<int, array{key: string, value: string, unit: string}>
+     */
+    private function rnProfiVarmegaDerivedSpecs(string $title, string $sourceUrl): array
+    {
+        $text = mb_strtolower($this->cleanText($title . ' ' . $sourceUrl));
+        $specs = [];
+
+        if (str_contains($text, 'inox press')) {
+            $specs[] = ['key' => 'Серия', 'value' => 'Varmega Inox Press', 'unit' => ''];
+        }
+
+        if (str_contains($text, 'нержав') || str_contains($text, 'inox')) {
+            $specs[] = ['key' => 'Материал', 'value' => 'нержавеющая сталь', 'unit' => ''];
+        }
+
+        $typeMap = [
+            'муфта-вставка' => 'Муфта-вставка',
+            'муфта раструбная' => 'Муфта раструбная',
+            'муфта двухраструбная' => 'Муфта двухраструбная',
+            'угольник' => 'Угольник',
+            'тройник' => 'Тройник',
+            'крестовина' => 'Крестовина',
+            'водорозетка' => 'Водорозетка',
+            'переходник' => 'Переходник',
+            'труба' => 'Труба',
+        ];
+
+        foreach ($typeMap as $needle => $value) {
+            if (str_contains($text, $needle)) {
+                $specs[] = ['key' => 'Тип изделия', 'value' => $value, 'unit' => ''];
+                break;
+            }
+        }
+
+        $connectionMap = [
+            'наружной резьб' => 'наружная резьба',
+            'внутренней резьб' => 'внутренняя резьба',
+            'накидной гайк' => 'накидная гайка',
+            'двухраструб' => 'двухраструбное',
+            'одноструб' => 'однострубное',
+            'один раструб' => 'один раструб',
+        ];
+
+        foreach ($connectionMap as $needle => $value) {
+            if (str_contains($text, $needle)) {
+                $specs[] = ['key' => 'Исполнение', 'value' => $value, 'unit' => ''];
+                break;
+            }
+        }
+
+        $specs[] = ['key' => 'Назначение', 'value' => 'для трубопроводных систем', 'unit' => ''];
+
+        return $specs;
     }
 
     private function varmegaArticleDescription(string $title, string $article, string $size): string
@@ -2164,7 +2226,8 @@ class ProductSourceEnricher
 
         foreach ($candidateUrls as $url) {
             try {
-                $response = Http::withHeaders($this->imageRequestHeaders($sourceUrl ?: $url))
+                $response = Http::withoutVerifying()
+                    ->withHeaders($this->imageRequestHeaders($sourceUrl ?: $url))
                     ->connectTimeout(8)
                     ->timeout(20)
                     ->retry(2, 250)
