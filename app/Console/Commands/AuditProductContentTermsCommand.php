@@ -13,6 +13,7 @@ class AuditProductContentTermsCommand extends Command
     protected $signature = 'products:audit-content-terms
         {--brand= : Brand name filter}
         {--category= : Category name filter}
+        {--product= : Product id or SKU filter}
         {--supplier= : Supplier code filter}
         {--profile= : Built-in term profile: varmega-fittings}
         {--terms= : Comma-separated terms to flag}
@@ -112,6 +113,16 @@ class AuditProductContentTermsCommand extends Command
 
         if ((bool) $this->option('active-only') && Schema::hasColumn('products', 'is_active')) {
             $query->where('p.is_active', true);
+        }
+
+        if ($product = trim((string) $this->option('product'))) {
+            $query->where(function ($query) use ($product): void {
+                $query->where('p.sku', $product);
+
+                if (ctype_digit($product)) {
+                    $query->orWhere('p.id', (int) $product);
+                }
+            });
         }
 
         if ($brand = trim((string) $this->option('brand'))) {
