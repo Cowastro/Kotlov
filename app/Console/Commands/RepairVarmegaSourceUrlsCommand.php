@@ -17,6 +17,7 @@ class RepairVarmegaSourceUrlsCommand extends Command
         {--rn-profi-fallback : Search rn-profi.by by article when official Varmega URL is missing}
         {--rn-profi-search-limit=0 : Maximum RN-Profi article searches, 0 means all}
         {--rn-profi-candidate-limit=8 : Maximum RN-Profi candidate pages to verify per article}
+        {--http-timeout=8 : HTTP timeout for source discovery requests, seconds}
         {--limit=0 : Max supplier links to process, 0 means all}
         {--offset=0 : Skip supplier links}
         {--enrich : Enrich products after source_url repair}
@@ -103,6 +104,16 @@ class RepairVarmegaSourceUrlsCommand extends Command
 
         foreach ($rows as $row) {
             $stats['checked']++;
+            if ($stats['checked'] === 1 || $stats['checked'] % 10 === 0) {
+                $this->line(sprintf(
+                    'Progress: checked=%d matched=%d missing=%d current=%s',
+                    $stats['checked'],
+                    $stats['matched'],
+                    $stats['missing'],
+                    (string) $row->supplier_article
+                ));
+            }
+
             $article = $this->normArticle((string) $row->supplier_article);
             $match = $article !== '' ? ($index[$article] ?? null) : null;
 
@@ -273,8 +284,8 @@ class RepairVarmegaSourceUrlsCommand extends Command
                 CURLOPT_RETURNTRANSFER => true,
                 CURLOPT_FOLLOWLOCATION => true,
                 CURLOPT_MAXREDIRS => 5,
-                CURLOPT_CONNECTTIMEOUT => 10,
-                CURLOPT_TIMEOUT => 25,
+                CURLOPT_CONNECTTIMEOUT => min(8, max(3, (int) $this->option('http-timeout'))),
+                CURLOPT_TIMEOUT => max(3, (int) $this->option('http-timeout')),
                 CURLOPT_USERAGENT => 'Mozilla/5.0 (compatible; KotlovBot/1.0)',
                 CURLOPT_SSL_VERIFYPEER => false,
                 CURLOPT_SSL_VERIFYHOST => false,
@@ -292,7 +303,7 @@ class RepairVarmegaSourceUrlsCommand extends Command
         $context = stream_context_create([
             'http' => [
                 'method' => 'GET',
-                'timeout' => 25,
+                'timeout' => max(3, (int) $this->option('http-timeout')),
                 'header' => "User-Agent: Mozilla/5.0 (compatible; KotlovBot/1.0)\r\n",
             ],
             'ssl' => ['verify_peer' => false, 'verify_peer_name' => false],
