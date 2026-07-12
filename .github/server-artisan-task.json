@@ -1,6 +1,6 @@
 {
-  "task": "tail-log",
-  "artisan_args": "",
-  "log_file": "storage/logs/varmega-press-source-content-all.log",
-  "run_id": "varmega-press-source-content-all-tail-20260712-4"
+  "task": "artisan-background",
+  "artisan_args": "supplier:sync-rn-profi --apply --brand=Varmega --only-linked --varmega-official --varmega-deep-index --varmega-deep-pages=0 --varmega-probe-missing --varmega-probe-limit=0 --rn-profi-cards --rn-profi-fallback-source --rn-profi-card-limit=0 --sync-retail-prices",
+  "log_file": "storage/logs/varmega-repair-source-urls.log",
+  "run_id": "varmega-repair-source-urls-20260712-1"
 }
