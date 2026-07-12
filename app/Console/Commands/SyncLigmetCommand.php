@@ -39,6 +39,7 @@ class SyncLigmetCommand extends Command
         {--category=* : Process only selected category ids, repeatable or comma-separated}
         {--stock-status=* : Process only selected stock statuses, repeatable or comma-separated}
         {--all-categories : Import chimneys/doors/accessories too (default: stoves/fireplaces only)}
+        {--examples=12 : Number of dry-run example rows to show}
         {--archive-existing : Archive existing active products of these brands (in scope) before import; excludes them from matching}
         {--redirects : Write an old→new redirect map (archived → recreated, by brand+model)}
         {--create-new : Create products for rows with no match}';
@@ -722,7 +723,8 @@ class SyncLigmetCommand extends Command
             $this->table(['confidence', 'кол-во'], array_map(fn ($k, $v) => [$k, $v], array_keys($conf), array_values($conf)));
         }
 
-        $this->info('Примеры (12):');
+        $examples = max(0, (int) ($this->option('examples') ?? 12));
+        $this->info("Примеры ({$examples}):");
         $this->table(
             ['article', 'brand', 'name', 'опт', 'розн', 'наличие', 'action', 'matched_sku'],
             array_map(fn ($r) => [
@@ -730,7 +732,7 @@ class SyncLigmetCommand extends Command
                 number_format($r['price'], 2),
                 $r['retail_price'] !== null ? number_format($r['retail_price'], 2) : '—',
                 $r['stock']['status'], $r['action'], $r['matched_sku'] ?? '—',
-            ], array_slice($rows, 0, 12))
+            ], $examples > 0 ? array_slice($rows, 0, $examples) : [])
         );
 
         $reportPath = trim((string) ($this->option('candidate-report') ?? ''));
