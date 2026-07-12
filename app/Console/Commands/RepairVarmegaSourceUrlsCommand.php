@@ -256,6 +256,16 @@ class RepairVarmegaSourceUrlsCommand extends Command
 
     private function fetch(string $url): ?string
     {
+        return $this->fetchWithEffectiveUrl($url)['body'] ?? null;
+    }
+
+    /**
+     * @return array{body: ?string, url: string}
+     */
+    private function fetchWithEffectiveUrl(string $url): array
+    {
+        $effectiveUrl = $url;
+
         if (function_exists('curl_init')) {
             $ch = curl_init($url);
             curl_setopt_array($ch, [
@@ -270,10 +280,11 @@ class RepairVarmegaSourceUrlsCommand extends Command
             ]);
             $body = curl_exec($ch);
             $status = (int) curl_getinfo($ch, CURLINFO_RESPONSE_CODE);
+            $effectiveUrl = (string) (curl_getinfo($ch, CURLINFO_EFFECTIVE_URL) ?: $url);
             curl_close($ch);
 
             if (is_string($body) && $body !== '' && $status < 400) {
-                return $body;
+                return ['body' => $body, 'url' => $effectiveUrl];
             }
         }
 
@@ -288,20 +299,25 @@ class RepairVarmegaSourceUrlsCommand extends Command
 
         $body = @file_get_contents($url, false, $context);
 
-        return is_string($body) && $body !== '' ? $body : null;
+        return [
+            'body' => is_string($body) && $body !== '' ? $body : null,
+            'url' => $effectiveUrl,
+        ];
     }
 
     private function findRnProfiSourceByArticle(string $article, string $normArticle): ?array
     {
         $searchUrl = 'https://rn-profi.by/index.php?route=product/search&search=' . rawurlencode($article);
-        $html = $this->fetch($searchUrl);
+        $page = $this->fetchWithEffectiveUrl($searchUrl);
+        $html = $page['body'];
         if ($html === null) {
             return null;
         }
 
         $candidateUrls = $this->extractRnProfiProductUrls($html);
-        if ($this->pageContainsArticle($html, $normArticle) && $this->looksLikeRnProfiProductPage($html)) {
-            array_unshift($candidateUrls, $searchUrl);
+        $effectiveUrl = (string) $page['url'];
+        if ($effectiveUrl !== $searchUrl && $this->rnProfiUrlLooksLikeProduct($effectiveUrl)) {
+            array_unshift($candidateUrls, $effectiveUrl);
         }
 
         foreach (array_slice(array_values(array_unique($candidateUrls)), 0, 25) as $url) {
@@ -362,11 +378,6 @@ class RepairVarmegaSourceUrlsCommand extends Command
                 'search', 'compare-products', 'wishlist', 'my-account', 'cart', 'checkout',
                 'kontakty', 'oplata', 'sitemap', 'proekt', 'servis',
             ], true);
-    }
-
-    private function looksLikeRnProfiProductPage(string $html): bool
-    {
-        return (bool) preg_match('/<h1[^>]*>.*?<\/h1>/is', $html);
     }
 
     private function pageContainsArticle(string $html, string $normArticle): bool
