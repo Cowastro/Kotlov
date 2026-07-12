@@ -1,6 +1,6 @@
 {
   "task": "artisan-dry-run",
-  "artisan_args": "supplier:repair-varmega-source-urls --category=Пресс-фитинги --rn-profi-fallback --rn-profi-search-limit=30 --rn-profi-candidate-limit=3 --limit=30",
+  "artisan_args": "supplier:repair-varmega-source-urls --category=Пресс-фитинги --rn-profi-fallback --rn-profi-search-limit=5 --rn-profi-candidate-limit=3 --http-timeout=5 --limit=5",
   "log_file": "storage/logs/varmega-official-source-repair.log",
-  "run_id": "varmega-official-source-repair-rnprofi-dry-20260712-4"
+  "run_id": "varmega-official-source-repair-rnprofi-dry-20260712-5"
 }
