@@ -1,6 +1,6 @@
 # Server Artisan Result
 
-- Time: 2026-07-12 07:47:10 UTC
+- Time: 2026-07-12 07:50:02 UTC
 - Task: `artisan-dry-run`
 - Artisan args: `supplier:sync-ligmet --dry-run --brand=Ferrum --all-categories --examples=40 --link-existing-suggestions --min-suggestion-score=99.9`
 - Log file: ``
@@ -8,13 +8,13 @@
 
 ```text
 From https://github.com/Cowastro/Kotlov
-   c6ddff4..654aec0  main       -> origin/main
-Updating c6ddff4..654aec0
+   654aec0..7132445  main       -> origin/main
+Updating 654aec0..7132445
 Fast-forward
- .github/server-artisan-result.md           | 57 ++++++++++--------------------
- .github/server-artisan-task.json           |  4 +--
- app/Console/Commands/SyncLigmetCommand.php | 13 +++++++
- 3 files changed, 34 insertions(+), 40 deletions(-)
+ .github/server-artisan-result.md           | 30 ++++++++----------------------
+ .github/server-artisan-task.json           |  2 +-
+ app/Console/Commands/SyncLigmetCommand.php |  2 +-
+ 3 files changed, 10 insertions(+), 24 deletions(-)
 DRY RUN: database will not be changed.
 Using latest Ligmet workbook from Drive folder: https://docs.google.com/spreadsheets/d/1KIhK4gt-FoD4HZMDYhDgLLsRnHIhg7kM/edit?rtpof=true&sd=true
 Parsed 511 product rows for requested brands
@@ -23,8 +23,8 @@ Parsed 511 product rows for requested brands
 | метрика          | кол-во |
 +------------------+--------+
 | строк (товары)   | 29     |
-| matched          | 2      |
-| create_candidate | 27     |
+| matched          | 8      |
+| create_candidate | 21     |
 +------------------+--------+
 По брендам:
 +--------+-------+
@@ -39,22 +39,23 @@ Parsed 511 product rows for requested brands
 | 78     | Дымоходы  | 29    |
 +--------+-----------+-------+
 Матчинг по уверенности:
-+------------------------+--------+
-| confidence             | кол-во |
-+------------------------+--------+
-| exact_supplier_article | 2      |
-+------------------------+--------+
++----------------------------+--------+
+| confidence                 | кол-во |
++----------------------------+--------+
+| strict_existing_suggestion | 6      |
+| exact_supplier_article     | 2      |
++----------------------------+--------+
 Примеры (40):
 +---------------+--------+------------------------------------+--------+--------+-----------+------------------+-------------+
 | article       | brand  | name                               | опт    | розн   | наличие   | action           | matched_sku |
 +---------------+--------+------------------------------------+--------+--------+-----------+------------------+-------------+
 | 994553673     | Ferrum | Дымоход 1,0 м (430/0,5 мм) Ф100    | 22.45  | 26.00  | low_stock | create_candidate | —           |
-| 994553397     | Ferrum | Дымоход 1,0 м (430/0,8 мм) Ф115    | 41.62  | 48.00  | low_stock | create_candidate | —           |
-| 994553481     | Ferrum | Дымоход 1,0 м (430/0,8 мм) Ф150    | 54.53  | 63.00  | low_stock | create_candidate | —           |
+| 994553397     | Ferrum | Дымоход 1,0 м (430/0,8 мм) Ф115    | 41.62  | 48.00  | low_stock | matched          | PS-007.805  |
+| 994553481     | Ferrum | Дымоход 1,0 м (430/0,8 мм) Ф150    | 54.53  | 63.00  | low_stock | matched          | PS-007.787  |
 | 994553392     | Ferrum | Дымоход 1,0 м (430/1,0мм) Ф115     | 51.51  | 59.00  | in_stock  | create_candidate | —           |
-| 994553471     | Ferrum | Дымоход 0,25 м (430/0,8 мм) Ф130   | 16.63  | 19.00  | low_stock | create_candidate | —           |
-| 994554586     | Ferrum | Дымоход 0,25 м (430/0,8 мм) Ф180   | 22.47  | 26.00  | low_stock | create_candidate | —           |
-| 994553435     | Ferrum | Тройник-Д 90° (430/0,8мм) Ф120     | 43.71  | 57.00  | low_stock | create_candidate | —           |
+| 994553471     | Ferrum | Дымоход 0,25 м (430/0,8 мм) Ф130   | 16.63  | 19.00  | low_stock | matched          | PS-007.854  |
+| 994554586     | Ferrum | Дымоход 0,25 м (430/0,8 мм) Ф180   | 22.47  | 26.00  | low_stock | matched          | PS-007.904  |
+| 994553435     | Ferrum | Тройник-Д 90° (430/0,8мм) Ф120     | 43.71  | 57.00  | low_stock | matched          | PS-007.838  |
 | 994553678     | Ferrum | Колено угол 90° (430/0,5 мм) Ф100  | 14.36  | 19.00  | in_stock  | create_candidate | —           |
 | 994553679     | Ferrum | Колено угол 135° (430/0,5 мм) Ф100 | 12.61  | 16.00  | in_stock  | create_candidate | —           |
 | 994553622     | Ferrum | Шибер (430/0,5 мм) Ф100            | 22.91  | 30.00  | low_stock | create_candidate | —           |
@@ -62,7 +63,7 @@ Parsed 511 product rows for requested brands
 | 9945559661    | Ferrum | Адаптер ММ (304/0,8 мм) Ф150       | 19.52  | 25.00  | low_stock | create_candidate | —           |
 | 994553988     | Ferrum | Сэндвич 1,0 м (304/0,8мм + нерж.)  | 129.59 | 149.00 | in_stock  | create_candidate | —           |
 | 994553370     | Ferrum | Сэндвич 1,0 м (430/0,8мм + нерж.)  | 176.56 | 202.00 | low_stock | create_candidate | —           |
-| 994553359     | Ferrum | Сэндвич 0,5 м (430/0,8мм + нерж.)  | 70.31  | 81.00  | low_stock | create_candidate | —           |
+| 994553359     | Ferrum | Сэндвич 0,5 м (430/0,8мм + нерж.)  | 70.31  | 81.00  | low_stock | matched          | PS-007.815  |
 | 2002770413246 | Ferrum | Сэндвич-колено 135° (304/0,8мм + н | 132.35 | 172.00 | low_stock | create_candidate | —           |
 | 994553420     | Ferrum | Сэндвич-колено 135° (430/0,8мм + н | 69.59  | 91.00  | low_stock | matched          | PS-007.817  |
 | 994553537     | Ferrum | Адаптер стартовый (430/0,8 мм + не | 40.41  | 53.00  | low_stock | create_candidate | —           |
