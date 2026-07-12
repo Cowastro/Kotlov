@@ -1,6 +1,6 @@
 {
-  "task": "artisan-apply",
-  "artisan_args": "supplier:sync-ligmet --apply --brand=Ferrum --all-categories",
+  "task": "artisan-dry-run",
+  "artisan_args": "supplier:sync-ligmet --dry-run --brand=Ferrum --all-categories --examples=40 --suggest-existing=40",
   "log_file": "",
-  "run_id": "apply-ligmet-ferrum-matched-prices-20260712-1"
+  "run_id": "audit-ligmet-ferrum-existing-suggestions-20260712-1"
 }

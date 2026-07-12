@@ -40,6 +40,7 @@ class SyncLigmetCommand extends Command
         {--stock-status=* : Process only selected stock statuses, repeatable or comma-separated}
         {--all-categories : Import chimneys/doors/accessories too (default: stoves/fireplaces only)}
         {--examples=12 : Number of dry-run example rows to show}
+        {--suggest-existing=0 : Show closest existing catalogue products for create_candidate rows}
         {--archive-existing : Archive existing active products of these brands (in scope) before import; excludes them from matching}
         {--redirects : Write an old→new redirect map (archived → recreated, by brand+model)}
         {--create-new : Create products for rows with no match}';
@@ -127,6 +128,7 @@ class SyncLigmetCommand extends Command
 
     private array $indexBySupplierArticle = [];
     private array $indexByBrandModel = [];
+    private array $activeProductsByBrand = [];
     private array $brandById = [];
     private array $brandByName = [];
     /** product ids excluded from matching because they'll be archived */
@@ -614,7 +616,7 @@ class SyncLigmetCommand extends Command
         }
 
         $exclude = array_flip($this->excludeIds);
-        DB::table('products')->where('is_archived', false)->get(['id', 'name', 'brand_id'])
+        DB::table('products')->where('is_archived', false)->get(['id', 'sku', 'name', 'brand_id', 'category_id', 'price'])
             ->each(function ($p) use ($exclude) {
                 if (isset($exclude[(int) $p->id])) {
                     return; // about to be archived — don't match to it
@@ -622,6 +624,14 @@ class SyncLigmetCommand extends Command
                 $bid = (int) $p->brand_id;
                 if ($bid > 0) {
                     $model = $this->model((string) $p->name, $this->brandById[$bid] ?? '');
+                    $this->activeProductsByBrand[$bid][] = [
+                        'id' => (int) $p->id,
+                        'sku' => (string) $p->sku,
+                        'name' => (string) $p->name,
+                        'category_id' => (int) ($p->category_id ?? 0),
+                        'price' => $p->price !== null ? (float) $p->price : null,
+                        'model' => $model,
+                    ];
                     if ($model !== '') {
                         $this->indexByBrandModel[$bid][$model] = (int) $p->id;
                     }
@@ -740,9 +750,91 @@ class SyncLigmetCommand extends Command
             $this->writeCandidateReport($rows, $reportPath);
         }
 
+        $suggest = max(0, (int) ($this->option('suggest-existing') ?? 0));
+        if ($suggest > 0) {
+            $this->showExistingSuggestions($rows, $suggest);
+        }
+
         $this->newLine();
         $this->line('Запусти с <fg=green>--apply</> (и <fg=green>--create-new</> для новых).');
         return self::SUCCESS;
+    }
+
+    private function showExistingSuggestions(array $rows, int $limit): void
+    {
+        $suggestions = [];
+        foreach ($rows as $row) {
+            if (($row['action'] ?? null) !== 'create_candidate') {
+                continue;
+            }
+            $best = $this->bestExistingSuggestion($row);
+            if ($best === null) {
+                continue;
+            }
+            $suggestions[] = [
+                mb_substr($row['article'], 0, 14),
+                mb_substr($row['name'], 0, 34),
+                $row['retail_price'] !== null ? number_format($row['retail_price'], 2) : '-',
+                $best['sku'],
+                mb_substr($best['name'], 0, 40),
+                $best['price'] !== null ? number_format($best['price'], 2) : '-',
+                number_format($best['score'], 1),
+            ];
+        }
+
+        if ($suggestions === []) {
+            return;
+        }
+
+        usort($suggestions, fn (array $a, array $b): int => (float) $b[6] <=> (float) $a[6]);
+        $this->newLine();
+        $this->info('Closest existing products for create_candidate rows:');
+        $this->table(
+            ['article', 'price_name', 'retail', 'existing_sku', 'existing_name', 'current_price', 'score'],
+            array_slice($suggestions, 0, $limit)
+        );
+    }
+
+    private function bestExistingSuggestion(array $row): ?array
+    {
+        $brandId = (int) ($row['resolved_brand_id'] ?? 0);
+        if ($brandId <= 0 || empty($this->activeProductsByBrand[$brandId])) {
+            return null;
+        }
+
+        $brand = $this->brandById[$brandId] ?? '';
+        $needle = $this->model($row['name'], $brand);
+        if ($needle === '') {
+            return null;
+        }
+
+        $best = null;
+        foreach ($this->activeProductsByBrand[$brandId] as $product) {
+            $score = $this->modelSimilarity($needle, (string) ($product['model'] ?? ''));
+            if (($row['category_id'] ?? null) !== null && (int) $row['category_id'] === (int) ($product['category_id'] ?? 0)) {
+                $score += 5;
+            }
+            if ($best === null || $score > $best['score']) {
+                $best = $product + ['score' => $score];
+            }
+        }
+
+        return $best !== null && $best['score'] >= 35 ? $best : null;
+    }
+
+    private function modelSimilarity(string $left, string $right): float
+    {
+        if ($left === '' || $right === '') {
+            return 0.0;
+        }
+
+        similar_text($left, $right, $pct);
+        $lt = array_values(array_unique(preg_split('/\s+/u', $left) ?: []));
+        $rt = array_values(array_unique(preg_split('/\s+/u', $right) ?: []));
+        $overlap = count(array_intersect($lt, $rt));
+        $denominator = max(1, min(count($lt), count($rt)));
+
+        return min(100.0, (float) $pct + (20.0 * $overlap / $denominator));
     }
 
     private function writeCandidateReport(array $rows, string $reportPath): void
