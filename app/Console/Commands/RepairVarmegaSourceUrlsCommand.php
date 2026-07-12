@@ -18,6 +18,7 @@ class RepairVarmegaSourceUrlsCommand extends Command
         {--rn-profi-search-limit=0 : Maximum RN-Profi article searches, 0 means all}
         {--rn-profi-candidate-limit=8 : Maximum RN-Profi candidate pages to verify per article}
         {--http-timeout=8 : HTTP timeout for source discovery requests, seconds}
+        {--product= : Process one product ID}
         {--limit=0 : Max supplier links to process, 0 means all}
         {--offset=0 : Skip supplier links}
         {--enrich : Enrich products after source_url repair}
@@ -74,6 +75,10 @@ class RepairVarmegaSourceUrlsCommand extends Command
 
         if ($category = trim((string) $this->option('category'))) {
             $query->where('c.name', 'like', '%' . $category . '%');
+        }
+
+        if ($productId = (int) $this->option('product')) {
+            $query->where('p.id', $productId);
         }
 
         if ($offset > 0) {
