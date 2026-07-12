@@ -12,6 +12,7 @@ class EnrichSupplierSourceProductsCommand extends Command
     protected $signature = 'supplier:enrich-source-products
         {--supplier= : Supplier code, for example rn-profi}
         {--brand= : Brand name filter}
+        {--category= : Product category name filter}
         {--domain= : Source URL domain filter, for example varmega.ru}
         {--product= : Process one product ID}
         {--products= : Process comma-separated product IDs}
@@ -29,6 +30,9 @@ class EnrichSupplierSourceProductsCommand extends Command
         {--skip-documents : Do not copy documents/PDFs from source pages}
         {--clear-documents : Remove existing product documents during this enrichment run}
         {--skip-ai : Skip AI content generation}
+        {--source-content : Write cleaned source description instead of AI-generated content}
+        {--min-specs-for-ai=3 : Skip AI content when fewer source specs were found}
+        {--require-images-for-ai : Skip AI content when no source images were found}
         {--sleep=1200 : Delay between HTTP requests, ms}';
 
     protected $description = 'Enrich supplier-linked products from supplier_products.source_url.';
@@ -52,6 +56,7 @@ class EnrichSupplierSourceProductsCommand extends Command
         $query = DB::table('supplier_products as sp')
             ->join('products as p', 'p.id', '=', 'sp.product_id')
             ->leftJoin('brands as b', 'b.id', '=', 'p.brand_id')
+            ->leftJoin('categories as c', 'c.id', '=', 'p.category_id')
             ->leftJoin('suppliers as s', 's.id', '=', 'sp.supplier_id')
             ->leftJoinSub($attributeCounts, 'pav', 'pav.product_id', '=', 'p.id')
             ->where('p.is_archived', false)
@@ -62,6 +67,7 @@ class EnrichSupplierSourceProductsCommand extends Command
                 'p.id',
                 'p.name',
                 'b.name as brand',
+                'c.name as category',
                 's.code as supplier_code',
                 'sp.supplier_article',
                 'sp.source_url',
@@ -73,6 +79,10 @@ class EnrichSupplierSourceProductsCommand extends Command
 
         if ($brand = trim((string) $this->option('brand'))) {
             $query->where('b.name', 'like', '%' . $brand . '%');
+        }
+
+        if ($category = trim((string) $this->option('category'))) {
+            $query->where('c.name', 'like', '%' . $category . '%');
         }
 
         if ($domain = trim((string) $this->option('domain'))) {
@@ -201,6 +211,9 @@ class EnrichSupplierSourceProductsCommand extends Command
                     'clear_documents' => (bool) $this->option('clear-documents'),
                     'update_video' => true,
                     'update_content' => ! (bool) $this->option('skip-ai'),
+                    'source_content' => (bool) $this->option('source-content'),
+                    'min_specs_for_ai' => max(0, (int) $this->option('min-specs-for-ai')),
+                    'require_images_for_ai' => (bool) $this->option('require-images-for-ai'),
                 ]);
 
                 $stats['images_found'] += (int) ($result['images_found'] ?? 0);

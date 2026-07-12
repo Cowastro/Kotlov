@@ -172,26 +172,53 @@ class ProductSourceEnricher
 
         try {
             if (($options['update_content'] ?? true) === true && $parsed['description'] !== '') {
-                $ai = new AiContentEnricher();
+                if (($options['source_content'] ?? false) === true) {
+                    $sourceContent = $this->sourceDescriptionHtml($parsed['description']);
 
-                if ($ai->isAvailable()) {
-                    $brandName = (string) ($product->brand?->name ?? '');
-                    $aiContent = $ai->enrich($product->name, $brandName, $parsed['description'], $parsed['specs']);
-
-                    if ($aiContent !== null && trim(strip_tags($aiContent)) !== '') {
-                        $updates['content'] = $this->sanitizeAiHtml($aiContent);
-
-                        $shortDescription = $ai->shortDescription($product->name, $brandName, $parsed['specs'])
-                            ?: $parsed['short_description']
-                            ?: trim(strip_tags($aiContent));
-
+                    if ($sourceContent !== '') {
+                        $updates['content'] = $sourceContent;
+                        $shortDescription = $parsed['short_description'] ?: $parsed['description'];
                         $updates['short_description'] = Str::limit($this->cleanText($shortDescription), 240, '');
                         $updates['meta_description'] = Str::limit($this->cleanText($shortDescription), 250, '');
                     } else {
-                        $stats['errors'][] = 'content: AI returned empty SEO text';
+                        $stats['errors'][] = 'content: source text is empty after cleanup';
                     }
                 } else {
-                    $stats['errors'][] = 'content: AI provider is not configured; raw supplier text was not saved';
+                    $minSpecsForAi = max(0, (int) ($options['min_specs_for_ai'] ?? 3));
+                    $requireImagesForAi = (bool) ($options['require_images_for_ai'] ?? false);
+                    if ($minSpecsForAi > 0 && count($parsed['specs']) < $minSpecsForAi) {
+                        $stats['errors'][] = 'content: AI skipped; not enough source specs';
+                    } elseif ($requireImagesForAi && $parsed['images'] === []) {
+                        $stats['errors'][] = 'content: AI skipped; no source images';
+                    } else {
+                    $ai = new AiContentEnricher();
+
+                    if ($ai->isAvailable()) {
+                        $brandName = (string) ($product->brand?->name ?? '');
+                        $aiContent = $ai->enrich($product->name, $brandName, $parsed['description'], $parsed['specs']);
+
+                        if (
+                            $aiContent !== null
+                            && trim(strip_tags($aiContent)) !== ''
+                            && $this->isGeneratedContentCompatible($product, $sourceUrl, $aiContent)
+                        ) {
+                            $updates['content'] = $this->sanitizeAiHtml($aiContent);
+
+                            $shortDescription = $ai->shortDescription($product->name, $brandName, $parsed['specs'])
+                                ?: $parsed['short_description']
+                                ?: trim(strip_tags($aiContent));
+
+                            if ($this->isGeneratedContentCompatible($product, $sourceUrl, $shortDescription)) {
+                                $updates['short_description'] = Str::limit($this->cleanText($shortDescription), 240, '');
+                                $updates['meta_description'] = Str::limit($this->cleanText($shortDescription), 250, '');
+                            }
+                        } else {
+                            $stats['errors'][] = 'content: AI returned empty or incompatible SEO text';
+                        }
+                    } else {
+                        $stats['errors'][] = 'content: AI provider is not configured; raw supplier text was not saved';
+                    }
+                    }
                 }
             }
         } catch (\Throwable $e) {
@@ -2255,6 +2282,88 @@ class ProductSourceEnricher
         libxml_clear_errors();
 
         return $dom;
+    }
+
+    private function sourceDescriptionHtml(string $description): string
+    {
+        $text = $this->cleanText($description);
+        if ($text === '') {
+            return '';
+        }
+
+        $sentences = preg_split('/(?<=[.!?])\s+/u', $text) ?: [$text];
+        $paragraphs = [];
+        $buffer = '';
+
+        foreach ($sentences as $sentence) {
+            $sentence = $this->cleanText($sentence);
+            if ($sentence === '') {
+                continue;
+            }
+
+            $candidate = trim($buffer . ' ' . $sentence);
+            if (mb_strlen($candidate) >= 260) {
+                $paragraphs[] = $candidate;
+                $buffer = '';
+            } else {
+                $buffer = $candidate;
+            }
+
+            if (count($paragraphs) >= 4) {
+                break;
+            }
+        }
+
+        if ($buffer !== '' && count($paragraphs) < 4) {
+            $paragraphs[] = $buffer;
+        }
+
+        if ($paragraphs === []) {
+            $paragraphs[] = $text;
+        }
+
+        return implode("\n", array_map(fn (string $line) => '<p>' . e($line) . '</p>', $paragraphs));
+    }
+
+    private function isGeneratedContentCompatible(Product $product, string $sourceUrl, string $content): bool
+    {
+        $brand = mb_strtolower((string) ($product->brand?->name ?? ''));
+        $name = mb_strtolower($this->cleanText((string) $product->name));
+        $category = mb_strtolower($this->cleanText((string) ($product->category?->name ?? '')));
+        $url = mb_strtolower($sourceUrl);
+        $text = mb_strtolower($this->cleanText(strip_tags($content)));
+
+        if ($text === '') {
+            return false;
+        }
+
+        if ($brand === 'varmega' && $this->looksLikeVarmegaFitting($name, $url, $category)) {
+            $allowedByName = $name . ' ' . $category;
+            $forbidden = [
+                'котел', 'котёл', 'котла', 'котлы', 'твердотоплив',
+                'радиатор', 'радиаторы', 'радиаторный', 'радиаторная',
+                'бойлер', 'водонагреватель', 'насос', 'насосный',
+                'горелка', 'печь', 'камин', 'квт', 'мощностью',
+            ];
+
+            foreach ($forbidden as $word) {
+                if (str_contains($text, $word) && ! str_contains($allowedByName, $word)) {
+                    return false;
+                }
+            }
+        }
+
+        return true;
+    }
+
+    private function looksLikeVarmegaFitting(string $name, string $sourceUrl, string $category = ''): bool
+    {
+        $haystack = $name . ' ' . $sourceUrl . ' ' . $category;
+
+        return (bool) preg_match(
+            '~(truby-i-fitingi|press|inox|fiting|fitting|muft|mufte|perekhodnik|zaglus|ugol|troynik|kollektor|aksessuar|instrument|vm7\d{9}|vm09\d{3}|vm159|муфт|фитинг|переходник|заглуш|угол|тройник|коллектор|пресс|трубы и фитинги|резьбовые фитинги|пресс-фитинги)~iu',
+            $haystack
+        );
     }
 
     private function cleanText(string $text): string
