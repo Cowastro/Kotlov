@@ -1,6 +1,6 @@
 {
-  "task": "artisan-apply",
-  "artisan_args": "supplier:repair-varmega-source-urls --apply --rn-profi-fallback --article-prefix=VM16606,VM16624,VM16627,VM16628,VM16629,VM16644,VM16647,VM16648,VM16649 --fix-category --category-slug=predokhranitelnaya-i-reguliruyushchaya-armatura --enrich --replace-specs --min-specs-to-replace=1 --overwrite-images --skip-documents --limit=0 --sleep=1000",
-  "log_file": "storage/logs/repair-varmega-vm166-safety-valves.log",
-  "run_id": "repair-varmega-vm166-safety-valves-20260712-1"
+  "task": "artisan-dry-run",
+  "artisan_args": "products:audit-content-health --supplier=rn-profi --brand=Varmega --active-only --not-archived --issues=no_photo,low_attrs --max-attrs=4 --limit=220",
+  "log_file": "storage/logs/audit-varmega-after-vm166-safety-valves.log",
+  "run_id": "audit-varmega-after-vm166-safety-valves-20260712-1"
 }
