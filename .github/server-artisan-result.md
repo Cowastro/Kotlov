@@ -1,28 +1,27 @@
 # Server Artisan Result
 
-- Time: 2026-07-12 14:24:48 UTC
+- Time: 2026-07-12 14:28:56 UTC
 - Task: `artisan-apply`
-- Artisan args: `products:repair-varmega-fitting-content --category=Пресс-фитинги --limit=0`
-- Log file: `storage/logs/varmega-press-fitting-content-repair-dry-v2.log`
+- Artisan args: `products:repair-varmega-fitting-content --apply --category=Пресс-фитинги --limit=0`
+- Log file: `storage/logs/varmega-press-fitting-content-repair-apply.log`
 - Exit code: `0`
 
 ```text
 From https://github.com/Cowastro/Kotlov
-   9fb8c36..383c47b  main       -> origin/main
-Updating 9fb8c36..383c47b
+   383c47b..9649e75  main       -> origin/main
+Updating 383c47b..9649e75
 Fast-forward
- .github/server-artisan-result.md                   | 168 +++++++--------------
- .github/server-artisan-task.json                   |   4 +-
- .../RepairVarmegaFittingContentCommand.php         |  20 ++-
- 3 files changed, 69 insertions(+), 123 deletions(-)
-DRY RUN: Varmega fitting content repair preview only.
+ .github/server-artisan-result.md | 83 ++++++++++++++++++++--------------------
+ .github/server-artisan-task.json |  6 +--
+ 2 files changed, 45 insertions(+), 44 deletions(-)
+APPLY: Varmega fitting content will be repaired.
 +-----------------+-------+
 | metric          | count |
 +-----------------+-------+
 | total_scope     | 465   |
 | checked         | 465   |
 | dirty_or_forced | 168   |
-| written         | 0     |
+| written         | 168   |
 | skipped_clean   | 297   |
 +-----------------+-------+
 +-------+---------------+-------------+---------+------------------------------------------------------------------------+--------------------------------------------------------------------------------------------+
