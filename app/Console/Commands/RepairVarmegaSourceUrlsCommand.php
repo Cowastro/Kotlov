@@ -16,6 +16,7 @@ class RepairVarmegaSourceUrlsCommand extends Command
         {--refresh-index : Rebuild cached article URL index}
         {--rn-profi-fallback : Search rn-profi.by by article when official Varmega URL is missing}
         {--rn-profi-search-limit=0 : Maximum RN-Profi article searches, 0 means all}
+        {--rn-profi-candidate-limit=8 : Maximum RN-Profi candidate pages to verify per article}
         {--limit=0 : Max supplier links to process, 0 means all}
         {--offset=0 : Skip supplier links}
         {--enrich : Enrich products after source_url repair}
@@ -320,7 +321,8 @@ class RepairVarmegaSourceUrlsCommand extends Command
             array_unshift($candidateUrls, $effectiveUrl);
         }
 
-        foreach (array_slice(array_values(array_unique($candidateUrls)), 0, 25) as $url) {
+        $candidateLimit = max(1, (int) $this->option('rn-profi-candidate-limit'));
+        foreach (array_slice(array_values(array_unique($candidateUrls)), 0, $candidateLimit) as $url) {
             $candidateHtml = $url === $searchUrl ? $html : $this->fetch($url);
             if ($candidateHtml === null) {
                 continue;
@@ -389,7 +391,10 @@ class RepairVarmegaSourceUrlsCommand extends Command
             return false;
         }
 
-        return str_contains($this->normArticle(strip_tags($html)), $normArticle);
+        $body = preg_replace('/<head\b[^>]*>.*?<\/head>/is', ' ', $html) ?? $html;
+        $body = preg_replace('/<(script|style|noscript)\b[^>]*>.*?<\/\1>/is', ' ', $body) ?? $body;
+
+        return str_contains($this->normArticle(strip_tags($body)), $normArticle);
     }
 
     /**
