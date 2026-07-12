@@ -828,6 +828,12 @@ class SyncLigmetCommand extends Command
             return 0.0;
         }
 
+        $leftNumbers = $this->numberTokens($left);
+        $rightNumbers = $this->numberTokens($right);
+        if ($leftNumbers !== [] && $rightNumbers !== [] && $leftNumbers !== $rightNumbers) {
+            return 0.0;
+        }
+
         similar_text($left, $right, $pct);
         $lt = array_values(array_unique(preg_split('/\s+/u', $left) ?: []));
         $rt = array_values(array_unique(preg_split('/\s+/u', $right) ?: []));
@@ -835,6 +841,19 @@ class SyncLigmetCommand extends Command
         $denominator = max(1, min(count($lt), count($rt)));
 
         return min(100.0, (float) $pct + (20.0 * $overlap / $denominator));
+    }
+
+    private function numberTokens(string $text): array
+    {
+        preg_match_all('/\d+(?:[,.]\d+)?/u', $text, $matches);
+        $numbers = array_map(static function (string $number): string {
+            $number = str_replace(',', '.', $number);
+            $number = rtrim(rtrim($number, '0'), '.');
+            return $number === '' ? '0' : $number;
+        }, $matches[0] ?? []);
+        sort($numbers, SORT_NATURAL);
+
+        return $numbers;
     }
 
     private function writeCandidateReport(array $rows, string $reportPath): void
