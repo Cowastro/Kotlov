@@ -1,6 +1,6 @@
 {
   "task": "artisan-apply",
-  "artisan_args": "product:enrich-content --all --only=both --min-specs=6 --rewrite-thin=220 --limit=50 --sleep=500",
+  "artisan_args": "product:enrich-content --all --only=both --min-specs=6 --rewrite-thin=220 --limit=20 --sleep=500",
   "log_file": "",
-  "run_id": "apply-product-seo-content-6spec-tail-20260712-3"
+  "run_id": "apply-product-seo-content-6spec-tail-20260712-4"
 }
