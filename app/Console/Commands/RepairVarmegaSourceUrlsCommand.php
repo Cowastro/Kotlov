@@ -1,0 +1,325 @@
+<?php
+
+namespace App\Console\Commands;
+
+use App\Models\Product;
+use App\Services\ProductSourceEnricher;
+use Illuminate\Console\Command;
+use Illuminate\Support\Facades\DB;
+
+class RepairVarmegaSourceUrlsCommand extends Command
+{
+    protected $signature = 'supplier:repair-varmega-source-urls
+        {--apply : Write source_url changes}
+        {--category= : Product category name filter}
+        {--sitemap=https://varmega.ru/sitemap-iblock-43.xml : Varmega product sitemap URL}
+        {--refresh-index : Rebuild cached article URL index}
+        {--limit=0 : Max supplier links to process, 0 means all}
+        {--offset=0 : Skip supplier links}
+        {--enrich : Enrich products after source_url repair}
+        {--replace-specs : Replace product specs during enrichment}
+        {--min-specs-to-replace=1 : Skip spec replacement when source has fewer specs}
+        {--overwrite-images : Replace existing product images}
+        {--skip-documents : Do not copy documents/PDFs}
+        {--sleep=1000 : Delay between enrichment requests, ms}';
+
+    protected $description = 'Repair existing RN-Profi Varmega source URLs by exact official Varmega supplier article.';
+
+    private const CACHE_PATH = 'supplier-cache/varmega-official-url-index.json';
+
+    public function handle(ProductSourceEnricher $enricher): int
+    {
+        $apply = (bool) $this->option('apply');
+        $enrich = (bool) $this->option('enrich');
+        $limit = max(0, (int) $this->option('limit'));
+        $offset = max(0, (int) $this->option('offset'));
+        $sleep = max(300, (int) $this->option('sleep'));
+
+        $this->line($apply
+            ? '<fg=red;options=bold>APPLY: Varmega official source URLs will be written.</>'
+            : '<fg=yellow;options=bold>DRY RUN: Varmega official source URLs will be previewed.</>');
+
+        $index = $this->loadOfficialIndex();
+        $this->info(sprintf('Official Varmega article index: %d URLs.', count($index)));
+
+        $query = DB::table('supplier_products as sp')
+            ->join('suppliers as s', 's.id', '=', 'sp.supplier_id')
+            ->join('products as p', 'p.id', '=', 'sp.product_id')
+            ->join('brands as b', 'b.id', '=', 'p.brand_id')
+            ->leftJoin('categories as c', 'c.id', '=', 'p.category_id')
+            ->where('s.code', 'rn-profi')
+            ->where('b.name', 'Varmega')
+            ->where('p.is_archived', false)
+            ->whereNotNull('sp.supplier_article')
+            ->where(function ($query): void {
+                $query->whereNull('sp.source_url')
+                    ->orWhere('sp.source_url', '')
+                    ->orWhere('sp.source_url', 'not like', '%varmega.ru/product/%');
+            })
+            ->select([
+                'sp.id as supplier_product_id',
+                'sp.product_id',
+                'sp.supplier_article',
+                'sp.source_url',
+                'p.name as product_name',
+                'c.name as category_name',
+            ])
+            ->orderBy('p.id');
+
+        if ($category = trim((string) $this->option('category'))) {
+            $query->where('c.name', 'like', '%' . $category . '%');
+        }
+
+        if ($offset > 0) {
+            $query->offset($offset);
+        }
+
+        if ($limit > 0) {
+            $query->limit($limit);
+        }
+
+        $rows = $query->get();
+        $this->info(sprintf('RN-Profi Varmega links to check: %d.', $rows->count()));
+
+        $stats = [
+            'checked' => 0,
+            'matched' => 0,
+            'written' => 0,
+            'enriched' => 0,
+            'images_found' => 0,
+            'images_saved' => 0,
+            'specs_found' => 0,
+            'attributes_saved' => 0,
+            'missing' => 0,
+            'errors' => 0,
+        ];
+
+        $examples = [];
+
+        foreach ($rows as $row) {
+            $stats['checked']++;
+            $article = $this->normArticle((string) $row->supplier_article);
+            $match = $article !== '' ? ($index[$article] ?? null) : null;
+
+            if ($match === null) {
+                $stats['missing']++;
+                if (count($examples) < 20) {
+                    $examples[] = [
+                        $row->product_id,
+                        $row->supplier_article,
+                        mb_substr((string) $row->category_name, 0, 22),
+                        mb_substr((string) $row->product_name, 0, 44),
+                        '-',
+                    ];
+                }
+                continue;
+            }
+
+            $stats['matched']++;
+            if (count($examples) < 20) {
+                $examples[] = [
+                    $row->product_id,
+                    $row->supplier_article,
+                    mb_substr((string) $row->category_name, 0, 22),
+                    mb_substr((string) $row->product_name, 0, 44),
+                    mb_substr((string) $match['url'], 0, 70),
+                ];
+            }
+
+            if (! $apply) {
+                continue;
+            }
+
+            DB::table('supplier_products')->where('id', $row->supplier_product_id)->update([
+                'source_url' => $match['url'],
+                'updated_at' => now(),
+            ]);
+            $stats['written']++;
+
+            if (! $enrich) {
+                continue;
+            }
+
+            $product = Product::find((int) $row->product_id);
+            if (! $product) {
+                $stats['errors']++;
+                continue;
+            }
+
+            try {
+                $result = $enricher->enrich($product, (string) $match['url'], [
+                    'preview_only' => false,
+                    'replace_images' => (bool) $this->option('overwrite-images'),
+                    'update_images' => true,
+                    'update_specs' => true,
+                    'replace_specs' => (bool) $this->option('replace-specs'),
+                    'min_specs_to_replace' => max(0, (int) $this->option('min-specs-to-replace')),
+                    'update_service' => true,
+                    'update_documents' => ! (bool) $this->option('skip-documents'),
+                    'clear_documents' => false,
+                    'update_video' => true,
+                    'update_content' => true,
+                    'source_content' => true,
+                    'min_specs_for_ai' => 999,
+                    'require_images_for_ai' => true,
+                ]);
+
+                $stats['images_found'] += (int) ($result['images_found'] ?? 0);
+                $stats['images_saved'] += (int) ($result['images_saved'] ?? 0);
+                $stats['specs_found'] += (int) ($result['specs_found'] ?? 0);
+                $stats['attributes_saved'] += (int) ($result['attribute_values_saved'] ?? 0);
+                if (($result['updated_fields'] ?? []) !== []) {
+                    $stats['enriched']++;
+                }
+            } catch (\Throwable $e) {
+                $stats['errors']++;
+                $this->warn(sprintf('  #%d %s ERROR: %s', $row->product_id, $row->supplier_article, $e->getMessage()));
+            }
+
+            usleep($sleep * 1000);
+        }
+
+        if ($examples !== []) {
+            $this->table(['product', 'article', 'category', 'name', 'official_url'], $examples);
+        }
+
+        $this->table(['metric', 'count'], array_map(
+            fn (string $key, int $value): array => [$key, $value],
+            array_keys($stats),
+            array_values($stats)
+        ));
+
+        return $stats['errors'] > 0 ? self::FAILURE : self::SUCCESS;
+    }
+
+    private function loadOfficialIndex(): array
+    {
+        $path = storage_path('app/' . self::CACHE_PATH);
+
+        if (! (bool) $this->option('refresh-index') && is_file($path)) {
+            $data = json_decode((string) file_get_contents($path), true);
+            if (is_array($data)) {
+                return array_filter($data['items'] ?? $data, fn ($item): bool => is_array($item) && ! empty($item['url']));
+            }
+        }
+
+        $sitemap = $this->fetch((string) $this->option('sitemap'));
+        if ($sitemap === null) {
+            return [];
+        }
+
+        preg_match_all('#<loc>\s*([^<]+)\s*</loc>#i', $sitemap, $matches);
+        $index = [];
+
+        foreach ($matches[1] ?? [] as $rawUrl) {
+            $url = html_entity_decode(trim((string) $rawUrl), ENT_QUOTES | ENT_HTML5, 'UTF-8');
+            if (! str_starts_with($url, 'https://varmega.ru/product/')) {
+                continue;
+            }
+
+            foreach ($this->extractArticleTokensFromUrl($url) as $token) {
+                if (! str_starts_with($token, 'VM') || mb_strlen($token) < 5) {
+                    continue;
+                }
+
+                $index[$token] = ['url' => $url];
+            }
+        }
+
+        ksort($index);
+        $dir = dirname($path);
+        if (! is_dir($dir)) {
+            mkdir($dir, 0755, true);
+        }
+
+        file_put_contents($path, json_encode([
+            'generated_at' => now()->toDateTimeString(),
+            'source' => (string) $this->option('sitemap'),
+            'items' => $index,
+        ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT));
+
+        return $index;
+    }
+
+    private function fetch(string $url): ?string
+    {
+        if (function_exists('curl_init')) {
+            $ch = curl_init($url);
+            curl_setopt_array($ch, [
+                CURLOPT_RETURNTRANSFER => true,
+                CURLOPT_FOLLOWLOCATION => true,
+                CURLOPT_MAXREDIRS => 5,
+                CURLOPT_CONNECTTIMEOUT => 10,
+                CURLOPT_TIMEOUT => 25,
+                CURLOPT_USERAGENT => 'Mozilla/5.0 (compatible; KotlovBot/1.0)',
+                CURLOPT_SSL_VERIFYPEER => false,
+                CURLOPT_SSL_VERIFYHOST => false,
+            ]);
+            $body = curl_exec($ch);
+            $status = (int) curl_getinfo($ch, CURLINFO_RESPONSE_CODE);
+            curl_close($ch);
+
+            if (is_string($body) && $body !== '' && $status < 400) {
+                return $body;
+            }
+        }
+
+        $context = stream_context_create([
+            'http' => [
+                'method' => 'GET',
+                'timeout' => 25,
+                'header' => "User-Agent: Mozilla/5.0 (compatible; KotlovBot/1.0)\r\n",
+            ],
+            'ssl' => ['verify_peer' => false, 'verify_peer_name' => false],
+        ]);
+
+        $body = @file_get_contents($url, false, $context);
+
+        return is_string($body) && $body !== '' ? $body : null;
+    }
+
+    /**
+     * @return string[]
+     */
+    private function extractArticleTokensFromUrl(string $url): array
+    {
+        $path = (string) (parse_url($url, PHP_URL_PATH) ?: '');
+        $slug = mb_strtolower(trim(basename(trim($path, '/'))));
+        $tokens = [];
+
+        preg_match_all('/vm[a-z0-9]*\d[a-z0-9]*/iu', $slug, $matches);
+        foreach ($matches[0] ?? [] as $token) {
+            $norm = $this->normArticle((string) $token);
+            if ($norm !== '') {
+                $tokens[$norm] = true;
+            }
+        }
+
+        $parts = array_values(array_filter(preg_split('/[-_]+/u', $slug) ?: []));
+        foreach ($parts as $i => $part) {
+            if (! preg_match('/^vm[a-z0-9]*\d[a-z0-9]*$/iu', $part)) {
+                continue;
+            }
+
+            $combined = $part;
+            for ($j = $i + 1; $j < min(count($parts), $i + 8); $j++) {
+                $next = (string) $parts[$j];
+                if ($next === '' || ! preg_match('/^[a-z0-9]+$/iu', $next)) {
+                    break;
+                }
+                $combined .= $next;
+                $norm = $this->normArticle($combined);
+                if (mb_strlen($norm) >= 5 && preg_match('/\d/', $norm)) {
+                    $tokens[$norm] = true;
+                }
+            }
+        }
+
+        return array_values(array_keys($tokens));
+    }
+
+    private function normArticle(string $article): string
+    {
+        return mb_strtoupper(preg_replace('/[^A-Za-z0-9]+/u', '', $article) ?? '');
+    }
+}
