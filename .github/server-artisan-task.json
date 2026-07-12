@@ -1,6 +1,6 @@
 {
   "task": "artisan-apply",
-  "artisan_args": "supplier:repair-varmega-source-urls --apply --article-prefix=VM16664 --fix-category --category-slug=predokhranitelnaya-i-reguliruyushchaya-armatura --enrich --replace-specs --min-specs-to-replace=1 --overwrite-images --skip-documents --limit=0 --sleep=1000",
-  "log_file": "storage/logs/repair-varmega-vm16664-safety-valve.log",
-  "run_id": "repair-varmega-vm16664-safety-valve-20260712-1"
+  "artisan_args": "supplier:repair-varmega-source-urls --apply --article-prefix=VM16701 --fix-category --category-slug=predokhranitelnaya-i-reguliruyushchaya-armatura --enrich --replace-specs --min-specs-to-replace=1 --overwrite-images --skip-documents --limit=0 --sleep=1000",
+  "log_file": "storage/logs/repair-varmega-vm16701-safety-valve.log",
+  "run_id": "repair-varmega-vm16701-safety-valve-20260712-1"
 }
