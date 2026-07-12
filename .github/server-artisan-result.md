@@ -1,20 +1,20 @@
 # Server Artisan Result
 
-- Time: 2026-07-12 13:54:13 UTC
-- Task: `artisan-dry-run`
-- Artisan args: `supplier:repair-varmega-source-urls --article-prefix=VM705 --http-timeout=8 --limit=0`
+- Time: 2026-07-12 14:02:05 UTC
+- Task: `artisan-apply`
+- Artisan args: `supplier:repair-varmega-source-urls --apply --article-prefix=VM705 --http-timeout=8 --limit=0 --enrich --replace-specs --min-specs-to-replace=1 --overwrite-images --skip-documents`
 - Log file: `storage/logs/varmega-vm705-official-source-repair.log`
 - Exit code: `0`
 
 ```text
 From https://github.com/Cowastro/Kotlov
-   a5306f5..d9391dd  main       -> origin/main
-Updating a5306f5..d9391dd
+   d9391dd..bf12611  main       -> origin/main
+Updating d9391dd..bf12611
 Fast-forward
- .github/server-artisan-result.md | 31 +++++++++++++++----------------
- .github/server-artisan-task.json |  8 ++++----
- 2 files changed, 19 insertions(+), 20 deletions(-)
-DRY RUN: Varmega official source URLs will be previewed.
+ .github/server-artisan-result.md | 70 ++++++++++++++++++++++------------------
+ .github/server-artisan-task.json |  6 ++--
+ 2 files changed, 42 insertions(+), 34 deletions(-)
+APPLY: Varmega official source URLs will be written.
 Official Varmega article index: 6810 URLs.
 RN-Profi Varmega links to check: 14.
 Progress: checked=1 matched=0 missing=0 current=VM705001504
@@ -42,12 +42,12 @@ Progress: checked=10 matched=9 missing=0 current=VM705003505
 +------------------+-------+
 | checked          | 14    |
 | matched          | 14    |
-| written          | 0     |
-| enriched         | 0     |
-| images_found     | 0     |
-| images_saved     | 0     |
-| specs_found      | 0     |
-| attributes_saved | 0     |
+| written          | 14    |
+| enriched         | 14    |
+| images_found     | 56    |
+| images_saved     | 56    |
+| specs_found      | 165   |
+| attributes_saved | 165   |
 | missing          | 0     |
 | errors           | 0     |
 +------------------+-------+
