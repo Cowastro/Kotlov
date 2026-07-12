@@ -1,21 +1,19 @@
 # Server Artisan Result
 
-- Time: 2026-07-12 10:22:33 UTC
-- Task: `tail-log`
+- Time: 2026-07-12 10:24:51 UTC
+- Task: `ps-artisan`
 - Artisan args: ``
 - Log file: `storage/logs/varmega-repair-source-urls.log`
 - Exit code: `0`
 
 ```text
 From https://github.com/Cowastro/Kotlov
-   ac98773..ffa2803  main       -> origin/main
-Updating ac98773..ffa2803
+   ffa2803..ba5509f  main       -> origin/main
+Updating ffa2803..ba5509f
 Fast-forward
- .github/server-artisan-result.md | 20 +++++++++++---------
- .github/server-artisan-task.json |  2 +-
- 2 files changed, 12 insertions(+), 10 deletions(-)
-APPLY: matched RN-Profi supplier links will be updated.
-Downloading RN-Profi Google Sheet: https://docs.google.com/spreadsheets/d/1g9C8C7JMO0zQGXdQRCWVQoldSOW6Fyljnd-QJYpTvnQ/export?format=xlsx
-Brand filter: 938 of 1941 rows selected only=varmega.
+ .github/server-artisan-result.md | 12 ++++++------
+ .github/server-artisan-task.json |  4 ++--
+ 2 files changed, 8 insertions(+), 8 deletions(-)
+h209767  3328491       1 10 13:16 ?        00:00:54 /opt/alt/php83/usr/bin/php artisan supplier:sync-rn-profi --apply --brand=Varmega --only-linked --varmega-official --varmega-deep-index --varmega-deep-pages=0 --varmega-probe-missing --varmega-probe-limit=0 --rn-profi-cards --rn-profi-fallback-source --rn-profi-card-limit=0 --sync-retail-prices
 
 ```
