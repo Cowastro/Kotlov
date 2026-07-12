@@ -133,11 +133,11 @@ class RepairVarmegaSourceUrlsCommand extends Command
             }
 
             $article = $this->normArticle((string) $row->supplier_article);
-            $match = $article !== '' ? ($index[$article] ?? null) : null;
+            $match = $article !== ''
+                ? $this->knownRnProfiVarmegaSourceForArticle($article)
+                : null;
 
-            if ($match === null && $article !== '') {
-                $match = $this->knownRnProfiVarmegaSourceForArticle($article);
-            }
+            $match ??= $article !== '' ? ($index[$article] ?? null) : null;
 
             if ($match === null
                 && (bool) $this->option('rn-profi-fallback')
@@ -375,6 +375,9 @@ class RepairVarmegaSourceUrlsCommand extends Command
     {
         $pages = [
             '/^VM700304/u' => 'https://rn-profi.by/truba-iz-nerzhaveyuschej-stali-varmega-inox-press',
+            '/^VM7010/u' => 'https://rn-profi.by/mufta-dvukhrastrubnaya-varmega-inox-press',
+            '/^VM7020/u' => 'https://rn-profi.by/mufta-dvukhrastrubnaya-varmega-inox-press-perekhodnaya',
+            '/^VM7030/u' => 'https://rn-profi.by/mufta-dvukhrastrubnaya-varmega-inox-press-nadvizhnaya',
             '/^VM7040/u' => 'https://rn-profi.by/mufta-vstavka-odnorastrubnaya-varmega-inox-press-perekhodnaya',
         ];
 
