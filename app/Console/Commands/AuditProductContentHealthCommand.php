@@ -11,6 +11,7 @@ class AuditProductContentHealthCommand extends Command
 {
     protected $signature = 'products:audit-content-health
         {--supplier= : Supplier code filter}
+        {--article-prefix= : Supplier article prefix filter}
         {--brand= : Brand name filter}
         {--category= : Category name filter}
         {--active-only : Only active products}
@@ -93,6 +94,7 @@ class AuditProductContentHealthCommand extends Command
                 DB::raw("COALESCE(b.name, '-') as brand"),
                 DB::raw("COALESCE(c.name, '-') as category"),
                 DB::raw("COALESCE(GROUP_CONCAT(DISTINCT s.code ORDER BY s.code SEPARATOR ', '), '-') as suppliers"),
+                DB::raw("COALESCE(GROUP_CONCAT(DISTINCT sp.supplier_article ORDER BY sp.supplier_article SEPARATOR ', '), '') as supplier_articles"),
                 DB::raw("COALESCE(GROUP_CONCAT(DISTINCT sp.source_url ORDER BY sp.source_url SEPARATOR ' | '), '') as source_urls"),
             ])
             ->groupBy(
@@ -117,6 +119,10 @@ class AuditProductContentHealthCommand extends Command
 
         if ($supplier = trim((string) $this->option('supplier'))) {
             $query->where('s.code', $supplier);
+        }
+
+        if ($articlePrefix = trim((string) $this->option('article-prefix'))) {
+            $query->where('sp.supplier_article', 'like', $articlePrefix . '%');
         }
 
         if ($brand = trim((string) $this->option('brand'))) {
