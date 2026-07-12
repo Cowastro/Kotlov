@@ -1,21 +1,20 @@
 # Server Artisan Result
 
-- Time: 2026-07-12 13:15:43 UTC
-- Task: `artisan-dry-run`
-- Artisan args: `supplier:repair-varmega-source-urls --article-prefix=VM702 --http-timeout=5 --limit=0`
+- Time: 2026-07-12 13:18:34 UTC
+- Task: `artisan-apply`
+- Artisan args: `supplier:repair-varmega-source-urls --apply --article-prefix=VM702 --http-timeout=5 --limit=0 --enrich --replace-specs --min-specs-to-replace=1 --overwrite-images --skip-documents`
 - Log file: `storage/logs/varmega-vm702-source-repair.log`
 - Exit code: `0`
 
 ```text
 From https://github.com/Cowastro/Kotlov
-   5575f3e..a552534  main       -> origin/main
-Updating 5575f3e..a552534
+   a552534..75e79ca  main       -> origin/main
+Updating a552534..75e79ca
 Fast-forward
- .github/server-artisan-result.md                        | 13 +++++++------
- .github/server-artisan-task.json                        |  6 +++---
- app/Console/Commands/RepairVarmegaSourceUrlsCommand.php |  5 ++---
- 3 files changed, 12 insertions(+), 12 deletions(-)
-DRY RUN: Varmega official source URLs will be previewed.
+ .github/server-artisan-result.md | 55 +++++++++++++++++++---------------------
+ .github/server-artisan-task.json |  6 ++---
+ 2 files changed, 29 insertions(+), 32 deletions(-)
+APPLY: Varmega official source URLs will be written.
 Official Varmega article index: 6810 URLs.
 RN-Profi Varmega links to check: 8.
 Progress: checked=1 matched=0 missing=0 current=VM702001815
@@ -36,12 +35,12 @@ Progress: checked=1 matched=0 missing=0 current=VM702001815
 +------------------+-------+
 | checked          | 8     |
 | matched          | 8     |
-| written          | 0     |
-| enriched         | 0     |
-| images_found     | 0     |
-| images_saved     | 0     |
-| specs_found      | 0     |
-| attributes_saved | 0     |
+| written          | 8     |
+| enriched         | 8     |
+| images_found     | 32    |
+| images_saved     | 8     |
+| specs_found      | 8     |
+| attributes_saved | 8     |
 | missing          | 0     |
 | errors           | 0     |
 +------------------+-------+
