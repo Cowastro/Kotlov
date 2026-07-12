@@ -1,6 +1,6 @@
 {
   "task": "artisan-apply",
   "artisan_args": "products:repair-varmega-fitting-content --category=Пресс-фитинги --limit=0",
-  "log_file": "storage/logs/varmega-press-fitting-content-repair-dry.log",
-  "run_id": "varmega-press-fitting-content-repair-dry-20260712-1"
+  "log_file": "storage/logs/varmega-press-fitting-content-repair-dry-v2.log",
+  "run_id": "varmega-press-fitting-content-repair-dry-20260712-2"
 }

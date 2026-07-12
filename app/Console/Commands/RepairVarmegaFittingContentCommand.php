@@ -198,8 +198,17 @@ class RepairVarmegaFittingContentCommand extends Command
             $name = trim((string) preg_replace('/\b' . preg_quote($article, '/') . '\b/u', ' ', $name));
         }
 
-        if (preg_match('/(\d+(?:[.,]\d+)?\s*(?:x|х|×|a)\s*\d+(?:[.,]\d+)?(?:\s*(?:x|х|×|a)\s*\d+(?:[.,]\d+)?)?|\d+\s*x\s*\d+|\d+\s*\/\s*\d+"?|\d+\s*1\/\d+")/iu', $name, $m)) {
-            return trim(str_replace(['х', '×', 'a'], 'x', $m[1]));
+        $patterns = [
+            '/\d+(?:[.,]\d+)?\s*(?:x|х|×|a)\s*\d+\s*\/\s*\d+"?(?:\s*(?:x|х|×|a)\s*\d+\s*\/\s*\d+"?)?/iu',
+            '/\d+(?:[.,]\d+)?\s*(?:x|х|×|a)\s*\d+(?:[.,]\d+)?(?:\s*(?:x|х|×|a)\s*\d+(?:[.,]\d+)?)?(?:\s*\/\s*\d+)?/iu',
+            '/\d+\s+1\/\d+"?/iu',
+            '/\d+\s*\/\s*\d+"?/iu',
+        ];
+
+        foreach ($patterns as $pattern) {
+            if (preg_match($pattern, $name, $m)) {
+                return trim((string) preg_replace('/\s+/u', ' ', str_replace(['х', '×', 'a'], 'x', $m[0])));
+            }
         }
 
         return '';
@@ -213,7 +222,7 @@ class RepairVarmegaFittingContentCommand extends Command
         }
 
         return Str::limit(
-            $label . ' — пресс-фитинг Varmega Inox Press для трубопроводных систем из нержавеющей стали. Подбирается по артикулу и размеру соединения.',
+            $label . ' - пресс-фитинг Varmega для трубопроводных систем. Карточка очищена от неподтвержденных описаний и привязана к артикулу поставщика; размер подбирается по маркировке изделия.',
             240,
             ''
         );
@@ -224,8 +233,9 @@ class RepairVarmegaFittingContentCommand extends Command
         $label = e($article !== '' ? 'Varmega ' . $article : trim($name));
         $sizeText = $size !== '' ? ' Размер соединения: ' . e($size) . '.' : '';
 
-        return '<p>' . $label . ' — пресс-фитинг Varmega Inox Press для монтажа трубопроводных систем из нержавеющей стали профиля V.' . $sizeText . '</p>'
-            . '<p>Карточка сформирована строго по артикулу поставщика. Перед заказом сверяйте артикул, размер и совместимость с используемой трубой Varmega Inox Press.</p>';
+        return '<p>' . $label . ' - пресс-фитинг Varmega для трубопроводных систем отопления, водоснабжения и инженерной сантехники.' . $sizeText . '</p>'
+            . '<p>Описание сформировано только по проверенным данным карточки: артикулу поставщика, названию и размеру. Для этой позиции не используются неподтвержденные сведения о котлах, радиаторах, насосах или другом оборудовании.</p>'
+            . '<p>Перед заказом сверяйте артикул, размер и совместимость с применяемой трубой Varmega. Если нужна помощь с подбором, специалисты KOTLOV.BY помогут проверить позицию по прайсу и назначению.</p>';
     }
 
     private function plainText(string $value): string
