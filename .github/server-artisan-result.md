@@ -1,21 +1,20 @@
 # Server Artisan Result
 
-- Time: 2026-07-12 14:51:01 UTC
+- Time: 2026-07-12 14:55:11 UTC
 - Task: `artisan-apply`
-- Artisan args: `supplier:repair-varmega-source-urls --article-prefix=VM706 --http-timeout=8 --limit=0 --enrich --replace-specs --min-specs-to-replace=1 --overwrite-images --skip-documents`
-- Log file: `storage/logs/varmega-vm706-source-repair-dry.log`
+- Artisan args: `supplier:repair-varmega-source-urls --apply --article-prefix=VM706 --http-timeout=8 --limit=0 --enrich --replace-specs --min-specs-to-replace=1 --overwrite-images --skip-documents`
+- Log file: `storage/logs/varmega-vm706-source-repair-apply.log`
 - Exit code: `0`
 
 ```text
 From https://github.com/Cowastro/Kotlov
-   fb97184..4a3c0d9  main       -> origin/main
-Updating fb97184..4a3c0d9
+   4a3c0d9..93dff01  main       -> origin/main
+Updating 4a3c0d9..93dff01
 Fast-forward
- .github/server-artisan-result.md                   | 227 +++------------------
- .github/server-artisan-task.json                   |   6 +-
- .../Commands/RepairVarmegaSourceUrlsCommand.php    |  18 ++
- 3 files changed, 45 insertions(+), 206 deletions(-)
-DRY RUN: Varmega official source URLs will be previewed.
+ .github/server-artisan-result.md | 52 ++++++++++++++++++++++++++++------------
+ .github/server-artisan-task.json |  6 ++---
+ 2 files changed, 40 insertions(+), 18 deletions(-)
+APPLY: Varmega official source URLs will be written.
 Official Varmega article index: 6810 URLs.
 RN-Profi Varmega links to check: 15.
 Progress: checked=1 matched=0 missing=0 current=VM706001504
@@ -44,12 +43,12 @@ Progress: checked=10 matched=9 missing=0 current=VM706002806
 +------------------+-------+
 | checked          | 15    |
 | matched          | 15    |
-| written          | 0     |
-| enriched         | 0     |
-| images_found     | 0     |
+| written          | 15    |
+| enriched         | 15    |
+| images_found     | 60    |
 | images_saved     | 0     |
-| specs_found      | 0     |
-| attributes_saved | 0     |
+| specs_found      | 15    |
+| attributes_saved | 15    |
 | missing          | 0     |
 | errors           | 0     |
 +------------------+-------+
