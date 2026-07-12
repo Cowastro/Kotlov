@@ -647,7 +647,7 @@ class SyncLigmetCommand extends Command
         $stock   = $this->stock($row['status_text']);
         $match   = $this->match($row, $brandId);
         if ($match === null && (bool) $this->option('link-existing-suggestions')) {
-            $suggestion = $this->bestExistingSuggestion($row);
+            $suggestion = $this->bestExistingSuggestion($row + ['resolved_brand_id' => $brandId]);
             $minScore = (float) ($this->option('min-suggestion-score') ?? 99.9);
             if ($suggestion !== null && (float) $suggestion['score'] >= $minScore) {
                 $match = [
