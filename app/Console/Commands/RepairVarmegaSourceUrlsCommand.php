@@ -455,6 +455,14 @@ class RepairVarmegaSourceUrlsCommand extends Command
             return ['url' => $collectorCabinets[$normArticle]];
         }
 
+        if (preg_match('/^VM7220000(\d{2})$/u', $normArticle, $m)) {
+            $size = ltrim($m[1], '0');
+            if ($size !== '') {
+                $url = 'https://varmega.ru/product/truby-i-fitingi/zaglushka-rastrubnaya-varmega-inox-press-'
+                    . mb_strtolower($normArticle) . '-' . $size . '-mm/';
+            }
+        }
+
         if (preg_match('/^VM70100(\d{2})(\d{2})$/u', $normArticle, $m)) {
             $size = ltrim($m[1], '0') . '-' . ltrim($m[2], '0') . '-mm';
             $url = 'https://varmega.ru/product/truby-i-fitingi/mufta-dvukhrastrubnaya-varmega-inox-press-'
