@@ -1,6 +1,6 @@
 {
-  "task": "artisan-dry-run",
-  "artisan_args": "supplier:sync-rn-profi --dry-run --price-file=storage/app/supplier-cache/rn-profi-pricelist.xlsx --brand=Varmega --available-only --max-delivery-days=3 --varmega-official --varmega-refresh-index --varmega-deep-index --varmega-deep-pages=0 --varmega-probe-missing --varmega-probe-limit=0 --only-new-source-url-domain=varmega.ru --sync-retail-prices --limit=0",
+  "task": "artisan-apply",
+  "artisan_args": "supplier:sync-rn-profi --apply --price-file=storage/app/supplier-cache/rn-profi-pricelist.xlsx --brand=Varmega --available-only --max-delivery-days=3 --varmega-official --varmega-refresh-index --varmega-deep-index --varmega-deep-pages=0 --varmega-probe-missing --varmega-probe-limit=0 --only-new-source-url-domain=varmega.ru --sync-retail-prices --limit=0",
   "log_file": "",
-  "run_id": "varmega-official-source-dry-run-20260712-1"
+  "run_id": "varmega-official-source-apply-20260712-1"
 }
