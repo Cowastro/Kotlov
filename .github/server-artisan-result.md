@@ -1,6 +1,6 @@
 # Server Artisan Result
 
-- Time: 2026-07-12 04:43:52 UTC
+- Time: 2026-07-12 07:07:31 UTC
 - Task: `artisan-apply`
 - Artisan args: `product:enrich-content --brand=ferrum --only=both --min-specs=0 --rewrite-thin=220 --limit=50 --sleep=500`
 - Log file: ``
@@ -8,162 +8,162 @@
 
 ```text
 From https://github.com/Cowastro/Kotlov
-   0a6e186..653af64  main       -> origin/main
-Updating 0a6e186..653af64
+   653af64..a2e17b8  main       -> origin/main
+Updating 653af64..a2e17b8
 Fast-forward
- .github/server-artisan-result.md | 249 +++++++++++++++++++++++++--------------
+ .github/server-artisan-result.md | 153 +++++++++++++++++++--------------------
  .github/server-artisan-task.json |   2 +-
- 2 files changed, 162 insertions(+), 89 deletions(-)
+ 2 files changed, 77 insertions(+), 78 deletions(-)
 Provider: deepseek-chat (api.deepseek.com)
-Candidates: 136 | processing: 50 (offset=0)
-[1/50] id=7826 Бак для воды Ferrum Комфорт (201/1.0) прямоугольный на трубе
+Candidates: 86 | processing: 50 (offset=0)
+[1/50] id=7877 Сэндвич FERRUM 0,5м (430/0,8мм + нерж.) Ф150х250
+  specs available: 0
+  ✓ content+short_description saved
+[2/50] id=7878 Сэндвич FERRUM 1м (430/0,8мм + нерж.) Ф150х250
+  specs available: 0
+  ✓ content+short_description saved
+[3/50] id=7879 Сэндвич-колено 135 FERRUM (430/0,8мм + нерж.) Ф150х250
   specs available: 1
   ✓ content+short_description saved
-[2/50] id=7827 Бак для воды Ferrum Комфорт (201/1.0) эллиптический с трубой
+[4/50] id=7880 Сэндвич-колено 90 FERRUM (430/0,8мм + нерж.) Ф150х250
   specs available: 1
   ✓ content+short_description saved
-[3/50] id=7828 Бак для воды Ferrum Комфорт (201/1.0) эллиптический с трубой
+[5/50] id=7881 Тройник-сэндвич 90 FERRUM (430/0,8мм + нерж.) Ф150x250
   specs available: 1
   ✓ content+short_description saved
-[4/50] id=7829 Бак для воды Ferrum Комфорт (201/1.0) эллиптический с трубой
+[6/50] id=7882 Адаптер ММ FERRUM (430/0,8мм) Ф160
+  specs available: 0
+  ✓ content+short_description saved
+[7/50] id=7883 Дымоход 0,25м FERRUM (430/0,8 мм) ф160
+  specs available: 0
+  ✓ content+short_description saved
+[8/50] id=7884 Дымоход 0,5м FERRUM (430/0,8 мм) ф160
+  specs available: 0
+  ✓ content+short_description saved
+[9/50] id=7885 Дымоход 1,0м FERRUM (430/0,8 мм) ф160
+  specs available: 0
+  ✓ content+short_description saved
+[10/50] id=7886 Зонт-К FERRUM (430/0,5) Ф160
+  specs available: 0
+  ✓ content+short_description saved
+[11/50] id=7887 Тройник-Д 90 FERRUM (430/0,8 мм) ф160
   specs available: 1
   ✓ content+short_description saved
-[5/50] id=7830 Бак для воды Ferrum Комфорт (201/1.0) вертикальный эллипс 60
+[12/50] id=7888 Тройник-К 135 FERRUM (430/0,8 мм) ф160
   specs available: 1
   ✓ content+short_description saved
-[6/50] id=7832 Бак для воды Ferrum Комфорт (201/1.0) горизонтальный эллипс 
+[13/50] id=7889 Колено угол 135 FERRUM (430/0,8 мм) ф160
   specs available: 1
   ✓ content+short_description saved
-[7/50] id=7833 Адаптер ММ FERRUM (430/0,8мм) Ф120
-  specs available: 0
-  ✓ content+short_description saved
-[8/50] id=7834 Дымоход 0,25м FERRUM (430/0,8 мм) ф120
-  specs available: 0
-  ✓ content+short_description saved
-[9/50] id=7835 Дымоход 0,5м FERRUM (430/0,8 мм) ф120
-  specs available: 0
-  ✓ content+short_description saved
-[10/50] id=7836 Дымоход 1,0м FERRUM (430/0,8 мм) ф120
-  specs available: 0
-  ✓ content+short_description saved
-[11/50] id=7837 Зонт-К FERRUM (430/0,5) Ф120
-  specs available: 0
-  ✓ content+short_description saved
-[12/50] id=7838 Тройник-Д 90 FERRUM (430/0,8 мм) ф120
+[14/50] id=7890 Колено угол 90 FERRUM (430/0,8 мм) ф160
   specs available: 1
   ✓ content+short_description saved
-[13/50] id=7839 Тройник-К 135 FERRUM (430/0,8 мм) ф120
+[15/50] id=7891 Конденсатоотвод FERRUM (430/0,5 мм) Ф160
+  specs available: 0
+  ✓ content+short_description saved
+[16/50] id=7892 Шибер FERRUM (430/0,8мм) Ф160
+  specs available: 0
+  ✓ content+short_description saved
+[17/50] id=7893 Юбка Ferrum Ф160
+  specs available: 0
+  ✓ content+short_description saved
+[18/50] id=7894 Конус FERRUM (430/0,5 мм) Ф160х250
+  specs available: 0
+  ✓ content+short_description saved
+[19/50] id=7895 Площадка монтажная FERRUM (430/0,8мм) Ф160/250
+  specs available: 0
+  ✓ content+short_description saved
+[20/50] id=7896 Старт-сэндвич FERRUM (430/0,8мм + нерж.) Ф160х250
+  specs available: 0
+  ✓ content+short_description saved
+[21/50] id=7897 Сэндвич FERRUM 0,5м (430/0,8мм + нерж.) Ф160х250
+  specs available: 0
+  ✓ content+short_description saved
+[22/50] id=7898 Сэндвич FERRUM 1м (430/0,8мм + нерж.) Ф160х250
+  specs available: 0
+  ✓ content+short_description saved
+[23/50] id=7899 Сэндвич-колено 135 FERRUM (430/0,8мм + нерж.) Ф160х250
   specs available: 1
   ✓ content+short_description saved
-[14/50] id=7840 Колено угол 135 FERRUM (430/0,8 мм) ф120
+[24/50] id=7900 Сэндвич-колено 90 FERRUM (430/0,8мм + нерж.) Ф160х250
   specs available: 1
   ✓ content+short_description saved
-[15/50] id=7841 Колено угол 90 FERRUM (430/0,8 мм) ф120
+[25/50] id=7901 Тройник-сэндвич 90 FERRUM (430/0,8мм + нерж.) Ф160x250
   specs available: 1
   ✓ content+short_description saved
-[16/50] id=7842 Конденсатоотвод FERRUM (430/0,5 мм) Ф120
+[26/50] id=7902 Адаптер ММ FERRUM (430/0,8мм) Ф180
   specs available: 0
   ✓ content+short_description saved
-[17/50] id=7843 Конус FERRUM (430/0,5 мм) Ф120х200
+[27/50] id=7903 test
   specs available: 0
   ✓ content+short_description saved
-[18/50] id=7844 Площадка монтажная FERRUM (430/0,8мм) Ф120/200
+[28/50] id=7904 Дымоход 0,25м FERRUM (430/0,8 мм) ф180
   specs available: 0
   ✓ content+short_description saved
-[19/50] id=7845 Шибер FERRUM (430/0,8мм) Ф120
+[29/50] id=7905 Дымоход 0,5м FERRUM (430/0,8 мм) ф180
   specs available: 0
   ✓ content+short_description saved
-[20/50] id=7846 Юбка Ferrum Ф120
+[30/50] id=7906 Дымоход 1,0м FERRUM (430/0,8 мм) ф180
   specs available: 0
   ✓ content+short_description saved
-[21/50] id=7847 Старт-сэндвич FERRUM (430/0,8мм + нерж.) Ф120х200
+[31/50] id=7907 Зонт-К FERRUM (430/0,5) Ф180
   specs available: 0
   ✓ content+short_description saved
-[22/50] id=7848 Сэндвич FERRUM 0,5м (430/0,8мм + нерж.) Ф120х200
-  specs available: 0
-  ✓ content+short_description saved
-[23/50] id=7849 Сэндвич FERRUM 1м (430/0,8мм + нерж.) Ф120х200
-  specs available: 0
-  ✓ content+short_description saved
-[24/50] id=7850 Сэндвич-колено 135 FERRUM (430/0,8мм + нерж.) Ф120х200
+[32/50] id=7908 Тройник-Д 90 FERRUM (430/0,8 мм) ф180
   specs available: 1
   ✓ content+short_description saved
-[25/50] id=7851 Сэндвич-колено 90 FERRUM (430/0,8мм + нерж.) Ф120х200
+[33/50] id=7909 Тройник-К 135 FERRUM (430/0,8 мм) ф180
   specs available: 1
   ✓ content+short_description saved
-[26/50] id=7852 Тройник-сэндвич 90 FERRUM (430/0,8мм + нерж.) Ф120x200
+[34/50] id=7910 Колено угол 135 FERRUM (430/0,8 мм) ф180
   specs available: 1
   ✓ content+short_description saved
-[27/50] id=7853 Адаптер ММ FERRUM (430/0,8мм) Ф130
-  specs available: 0
-  ✓ content+short_description saved
-[28/50] id=7854 Дымоход 0,25м FERRUM (430/0,8 мм) ф130
-  specs available: 0
-  ✓ content+short_description saved
-[29/50] id=7855 Дымоход 0,5м FERRUM (430/0,8 мм) ф130
-  specs available: 0
-  ✓ content+short_description saved
-[30/50] id=7856 Дымоход 1,0м FERRUM (430/0,8 мм) ф130
-  specs available: 0
-  ✓ content+short_description saved
-[31/50] id=7857 Зонт-К FERRUM (430/0,5) Ф130
-  specs available: 0
-  ✓ content+short_description saved
-[32/50] id=7858 Тройник-Д 90 FERRUM (430/0,8 мм) ф130
+[35/50] id=7911 Колено угол 90 FERRUM (430/0,8 мм) ф180
   specs available: 1
   ✓ content+short_description saved
-[33/50] id=7859 Тройник-К 135 FERRUM (430/0,8 мм) ф130
+[36/50] id=7912 Конденсатоотвод FERRUM (430/0,5 мм) Ф180
+  specs available: 0
+  ✓ content+short_description saved
+[37/50] id=7913 Шибер FERRUM (430/0,8мм) Ф180
+  specs available: 0
+  ✓ content+short_description saved
+[38/50] id=7914 Юбка Ferrum Ф180
+  specs available: 0
+  ✓ content+short_description saved
+[39/50] id=7915 ППУ составной FERRUM (430/0,5) Ф280
+  specs available: 0
+  ✓ content+short_description saved
+[40/50] id=7916 Конус FERRUM (430/0,5 мм) Ф180х280
+  specs available: 0
+  ✓ content+short_description saved
+[41/50] id=7917 Площадка монтажная FERRUM (430/0,8мм) Ф180/280
+  specs available: 0
+  ✓ content+short_description saved
+[42/50] id=7918 Старт-сэндвич FERRUM (430/0,8мм + нерж.) Ф180х280
+  specs available: 0
+  ✓ content+short_description saved
+[43/50] id=7919 Сэндвич FERRUM 0,5м (430/0,8мм + нерж.) Ф180х280
+  specs available: 0
+  ✓ content+short_description saved
+[44/50] id=7920 Сэндвич FERRUM 1м (430/0,8мм + нерж.) Ф180х280
+  specs available: 0
+  ✓ content+short_description saved
+[45/50] id=7921 Сэндвич-колено 135 FERRUM (430/0,8мм + нерж.) Ф180х280
   specs available: 1
   ✓ content+short_description saved
-[34/50] id=7860 Колено угол 135 FERRUM (430/0,8 мм) ф130
+[46/50] id=7922 Сэндвич-колено 90 FERRUM (430/0,8мм + нерж.) Ф180х280
   specs available: 1
   ✓ content+short_description saved
-[35/50] id=7861 Колено угол 90 FERRUM (430/0,8 мм) ф130
+[47/50] id=7923 Тройник-сэндвич 90 FERRUM (430/0,8мм + нерж.) Ф180x280
   specs available: 1
   ✓ content+short_description saved
-[36/50] id=7862 Конденсатоотвод FERRUM (430/0,5 мм) Ф130
+[48/50] id=7924 Адаптер ММ FERRUM (430/0,8мм) Ф200
   specs available: 0
   ✓ content+short_description saved
-[37/50] id=7863 Шибер FERRUM (430/0,8мм) Ф130
+[49/50] id=7925 Дымоход 0,25м FERRUM (430/0,8 мм) ф200
   specs available: 0
   ✓ content+short_description saved
-[38/50] id=7864 Юбка Ferrum Ф130
-  specs available: 0
-  ✓ content+short_description saved
-[39/50] id=7865 Конус FERRUM (430/0,5 мм) Ф130х200
-  specs available: 0
-  ✓ content+short_description saved
-[40/50] id=7866 Площадка монтажная FERRUM (430/0,8мм) Ф130/200
-  specs available: 0
-  ✓ content+short_description saved
-[41/50] id=7867 Старт-сэндвич FERRUM (430/0,8мм + нерж.) Ф130х200
-  specs available: 0
-  ✓ content+short_description saved
-[42/50] id=7868 Сэндвич FERRUM 0,5м (430/0,8мм + нерж.) Ф130х200
-  specs available: 0
-  ✓ content+short_description saved
-[43/50] id=7869 Сэндвич FERRUM 1м (430/0,8мм + нерж.) Ф130х200
-  specs available: 0
-  ✓ content+short_description saved
-[44/50] id=7870 Сэндвич-колено 135 FERRUM (430/0,8мм + нерж.) Ф130х200
-  specs available: 1
-  ✓ content+short_description saved
-[45/50] id=7871 Сэндвич-колено 90 FERRUM (430/0,8мм + нерж.) Ф130х200
-  specs available: 1
-  ✓ content+short_description saved
-[46/50] id=7872 Тройник-сэндвич 90 FERRUM (430/0,8мм + нерж.) Ф130x200
-  specs available: 1
-  ✓ content+short_description saved
-[47/50] id=7873 ППУ составной FERRUM (430/0,5) Ф250
-  specs available: 0
-  ✓ content+short_description saved
-[48/50] id=7874 Конус FERRUM (430/0,5 мм) Ф150х250
-  specs available: 0
-  ✓ content+short_description saved
-[49/50] id=7875 Площадка монтажная FERRUM (430/0,8мм) Ф150/250
-  specs available: 0
-  ✓ content+short_description saved
-[50/50] id=7876 Старт-сэндвич FERRUM (430/0,8мм + нерж.) Ф150х250
+[50/50] id=7926 Дымоход 0,5м FERRUM (430/0,8 мм) ф200
   specs available: 0
   ✓ content+short_description saved
 +---------+-------+
@@ -174,6 +174,6 @@ Candidates: 136 | processing: 50 (offset=0)
 | errors  | 0     |
 +---------+-------+
 
-86 more remain. Continue with --offset=50
+36 more remain. Continue with --offset=50
 
 ```
