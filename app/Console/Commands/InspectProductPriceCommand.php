@@ -4,6 +4,7 @@ namespace App\Console\Commands;
 
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 class InspectProductPriceCommand extends Command
 {
@@ -28,12 +29,27 @@ class InspectProductPriceCommand extends Command
             return self::FAILURE;
         }
 
+        $supplierSelect = [
+            's.code as supplier_code',
+            's.name as supplier_name',
+            'sp.supplier_article',
+            'sp.supplier_name as supplier_product_name',
+            'sp.price as supplier_price',
+            'sp.price_byn',
+            'sp.in_stock as supplier_in_stock',
+            'sp.source_url',
+        ];
+
+        if (Schema::hasColumn('supplier_products', 'quantity')) {
+            $supplierSelect[] = 'sp.quantity';
+        }
+
         $query = DB::table('products as p')
             ->leftJoin('brands as b', 'b.id', '=', 'p.brand_id')
             ->leftJoin('categories as c', 'c.id', '=', 'p.category_id')
             ->leftJoin('supplier_products as sp', 'sp.product_id', '=', 'p.id')
             ->leftJoin('suppliers as s', 's.id', '=', 'sp.supplier_id')
-            ->select([
+            ->select(array_merge([
                 'p.id',
                 'p.sku',
                 'p.name',
@@ -43,16 +59,7 @@ class InspectProductPriceCommand extends Command
                 'p.is_archived',
                 'b.name as brand',
                 'c.name as category',
-                's.code as supplier_code',
-                's.name as supplier_name',
-                'sp.supplier_article',
-                'sp.supplier_name as supplier_product_name',
-                'sp.price as supplier_price',
-                'sp.price_byn',
-                'sp.in_stock as supplier_in_stock',
-                'sp.quantity',
-                'sp.source_url',
-            ])
+            ], $supplierSelect))
             ->orderBy('p.id');
 
         if ($sku !== '') {
