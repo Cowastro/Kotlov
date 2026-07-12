@@ -1,6 +1,6 @@
 # Server Artisan Result
 
-- Time: 2026-07-12 00:19:32 UTC
+- Time: 2026-07-12 00:34:16 UTC
 - Task: `artisan-apply`
 - Artisan args: `product:enrich-content --all --only=both --min-specs=8 --rewrite-thin=220 --limit=120 --sleep=500`
 - Log file: ``
@@ -8,382 +8,379 @@
 
 ```text
 From https://github.com/Cowastro/Kotlov
-   9958e82..fff58ad  main       -> origin/main
-Updating 9958e82..fff58ad
+   fff58ad..865a739  main       -> origin/main
+Updating fff58ad..865a739
 Fast-forward
- .github/server-artisan-result.md | 528 +++++++++++++++++++--------------------
+ .github/server-artisan-result.md | 502 +++++++++++++++++++--------------------
  .github/server-artisan-task.json |   2 +-
- 2 files changed, 265 insertions(+), 265 deletions(-)
+ 2 files changed, 252 insertions(+), 252 deletions(-)
 Provider: deepseek-chat (api.deepseek.com)
-Candidates: 283 | processing: 120 (offset=0)
-[1/120] id=12478 Печь для бани Гефест Авангард ЗК 25 (М) Ураган круглая сетка
-  specs available: 18
-  ✓ short_description saved
-[2/120] id=12479 Печь для бани Гефест GFS ЗК 40 (П2)
-  specs available: 18
-  ✓ short_description saved
-[3/120] id=12481 Печь для бани Гефест GFS ЗК 25 Ураган
-  specs available: 19
-  ✓ short_description saved
-[4/120] id=12482 Печь для бани Гефест GFS ЗК 40 (П2) Ураган
-  specs available: 19
-  ✓ short_description saved
-[5/120] id=12483 Печь-комплект Гефест GFS ЗК 18 (П2)
-  specs available: 18
-  ✓ short_description saved
-[6/120] id=12484 Печь-комплект Гефест GFS ЗК 40 (П2)
-  specs available: 18
-  ✓ short_description saved
-[7/120] id=12485 Печь для бани Гефест Гром 30 (П2)
-  specs available: 18
-  ✓ short_description saved
-[8/120] id=12486 Печь для бани Гефест Гром 40 (П2)
-  specs available: 18
-  ✓ short_description saved
-[9/120] id=12487 Печь для бани Гефест Гром 40 (П2) Ураган
-  specs available: 18
-  ✓ short_description saved
-[10/120] id=12488 Печь-комплект Гефест Гром 50 (П2)
-  specs available: 18
-  ✓ short_description saved
-[11/120] id=12489 Печь-комплект Гефест Гром 40 (П2)
-  specs available: 18
-  ✓ short_description saved
-[12/120] id=12490 Печь для бани Искандер ЗК 18 (M) Ураган чугун
-  specs available: 15
-  ✓ short_description saved
-[13/120] id=12491 Печь для бани Искандер ЗК 25 (M) Ураган чугун
-  specs available: 15
-  ✓ short_description saved
-[14/120] id=12492 Печь-комплект Гефест ИСКАНДЕР ЗК 25 (М)
-  specs available: 17
-  ✓ short_description saved
-[15/120] id=12493 Печь-комплект Гефест ИСКАНДЕР ЗК 18 (П2)
-  specs available: 17
-  ✓ short_description saved
-[16/120] id=12494 Печь для бани Гефест ИСКАНДЕР 25 в сетке
-  specs available: 18
-  ✓ short_description saved
-[17/120] id=12495 Печь-комплект Гефест ИСКАНДЕР ЗК 18 (М)
-  specs available: 17
-  ✓ short_description saved
-[18/120] id=12496 Печь для бани Гефест ИСКАНДЕР ЗК 25 Ураган
-  specs available: 18
-  ✓ short_description saved
-[19/120] id=12497 Печь для бани Гефест ИСКАНДЕР ЗК 18 Ураган
-  specs available: 18
-  ✓ short_description saved
-[20/120] id=12498 Печь-комплект Гефест ИСКАНДЕР ЗК 25 (П2)
-  specs available: 17
-  ✓ short_description saved
-[21/120] id=12499 Печь для бани Пегас 26 NEXT панорама сетка премиум
-  specs available: 17
-  ✓ short_description saved
-[22/120] id=12500 Печь для бани Пегас 22 чугун со стеклом в камне змеевик
-  specs available: 17
-  ✓ short_description saved
-[23/120] id=12501 Печь для бани Пегас 16 эконом с сеткой (короткая топка)
-  specs available: 19
-  ✓ short_description saved
-[24/120] id=12502 Печь для бани Пегас 16 эконом со стеклом и сеткой (короткая 
-  specs available: 19
-  ✓ short_description saved
-[25/120] id=12503 Печь для бани Пегас Тундра Профи 18 со стеклом
-  specs available: 16
-  ✓ short_description saved
-[26/120] id=12504 Печь для бани Пегас Тундра Профи 18
-  specs available: 16
-  ✓ short_description saved
-[27/120] id=12505 Печь для бани Пегас Тундра 16 со стеклом
-  specs available: 16
-  ✓ short_description saved
-[28/120] id=12506 Печь для бани Пегас Тундра 16
-  specs available: 16
-  ✓ short_description saved
-[29/120] id=12507 Печь для бани Пегас Тундра 14 со стеклом
-  specs available: 16
-  ✓ short_description saved
-[30/120] id=12508 Печь для бани Пегас Тундра 14
-  specs available: 16
-  ✓ short_description saved
-[31/120] id=12509 Печь для бани Пегас Тундра 14 Конвекция со стеклом
-  specs available: 16
-  ✓ short_description saved
-[32/120] id=12510 Печь для бани Пегас Тундра 14 Конвекция
-  specs available: 16
-  ✓ short_description saved
-[33/120] id=12511 Печь для бани Пегас Легион 16 чугун панорамная дверь
-  specs available: 19
-  ✓ short_description saved
-[34/120] id=12512 Печь для бани Пегас 16 нерж панорама в камне змеевик
-  specs available: 17
-  ✓ short_description saved
-[35/120] id=12513 Печь для бани Пегас 26 нерж панорама сетка премиум
-  specs available: 17
-  ✓ short_description saved
-[36/120] id=12514 Печь для бани Пегас 26 нерж в камне змеевик
-  specs available: 17
-  ✓ short_description saved
-[37/120] id=12515 Печь для бани Пегас 26 нерж со стеклом в камне змеевик
-  specs available: 17
-  ✓ short_description saved
-[38/120] id=12516 Печь для бани Пегас 16 чугун в камне змеевик
-  specs available: 17
-  ✓ short_description saved
-[39/120] id=12517 Печь для бани Пегас 16 чугун со стеклом в камне змеевик
-  specs available: 17
-  ✓ short_description saved
-[40/120] id=12518 Печь для бани Пегас 22 чугун панорама в камне змеевик
-  specs available: 17
-  ✓ short_description saved
-[41/120] id=12519 Печь для бани Пегас 16 NEXT ДТ4 панорама в камне змеевик
-  specs available: 17
-  ✓ short_description saved
-[42/120] id=12520 Печь для бани Пегас 26 NEXT ДТ4 панорама в камне змеевик
-  specs available: 17
-  ✓ short_description saved
-[43/120] id=12521 Банная печь Пегас Тайга-14 сет.кожух ЗК
-  specs available: 18
-  ✓ short_description saved
-[44/120] id=12522 Печь для бани Пегас Легион 16 чугун ДТ 4 (короткая топка)
-  specs available: 19
-  ✓ short_description saved
-[45/120] id=12523 Банная печь Пегас Тайга-16 со стеклом сет.кожух ЗК
-  specs available: 16
-  ✓ short_description saved
-[46/120] id=12524 Банная печь Пегас Тайга-16 сет.кожух ЗК
-  specs available: 16
-  ✓ short_description saved
-[47/120] id=12525 Банная печь Пегас Тайга-14 со стеклом сет.кожух ЗК
-  specs available: 17
-  ✓ short_description saved
-[48/120] id=12526 Банная печь Пегас 16 эконом короткая топка конвекция
-  specs available: 18
-  ✓ short_description saved
-[49/120] id=12527 Банная печь Пегас 16 стекло нерж конвекция
-  specs available: 18
-  ✓ short_description saved
-[50/120] id=12528 Банная печь Пегас 16 панорама нерж конвекция
-  specs available: 18
-  ✓ short_description saved
-[51/120] id=12529 Котел твердотопливный стальной Сибирь-GEFEST КВО 15 ТЭ
-  specs available: 14
-  ✓ short_description saved
-[52/120] id=12530 Котел твердотопливный стальной Сибирь КВО 15
-  specs available: 14
-  ✓ short_description saved
-[53/120] id=12531 Котел твердотопливный стальной Сибирь КВО 20
-  specs available: 12
-  ✓ short_description saved
-[54/120] id=12532 Котел твердотопливный стальной Сибирь КВО 10
-  specs available: 12
-  ✓ short_description saved
-[55/120] id=12533 Котел твердотопливный стальной Сибирь КВО 8
-  specs available: 11
-  ✓ short_description saved
-[56/120] id=12534 Котел Сибирь "Сириус"-20 с варочной поверхностью
-  specs available: 11
-  ✓ short_description saved
-[57/120] id=12535 Котел Сибирь Сириус 10 с варочной поверхностью
-  specs available: 13
-  ✓ short_description saved
-[58/120] id=12536 Котел Сибирь Сириус-15 с варочной поверхностью
-  specs available: 11
-  ✓ short_description saved
-[59/120] id=12537 Котел твердотопливный стальной Сибирь КВО 12
-  specs available: 12
-  ✓ short_description saved
-[60/120] id=12538 Котел твердотопливный стальной "Сибирь-GEFEST" КВО 30 ТЭ
-  specs available: 10
-  ✓ short_description saved
-[61/120] id=12539 Котёл отопительный стальной "SUNFIRE" кво 75Т
-  specs available: 11
-  ✓ short_description saved
-[62/120] id=12540 Котел твердотопливный стальной "Сибирь-GEFEST" КВО 40 ТЭ
-  specs available: 11
-  ✓ short_description saved
-[63/120] id=12541 Котел отопительный длительного горения «Магнум-20»
-  specs available: 12
-  ✓ short_description saved
-[64/120] id=12542 Котёл отопительный стальной "SUNFIRE" кво 60Т
-  specs available: 10
-  ✓ short_description saved
-[65/120] id=12543 Котёл отопительный стальной "SUNFIRE" кво 45Т
-  specs available: 11
-  ✓ short_description saved
-[66/120] id=12544 Котел отопительный длительного горения «Магнум-30»
-  specs available: 12
-  ✓ short_description saved
-[67/120] id=12545 Котел отопительный длительного горения «Магнум-15»
-  specs available: 12
-  ✓ short_description saved
-[68/120] id=12546 Котел отопительный «Магнум-15» с автоматикой
-  specs available: 13
-  ✓ short_description saved
-[69/120] id=12547 Котел отопительный «Магнум-20» с автоматикой
-  specs available: 13
-  ✓ short_description saved
-[70/120] id=12548 Котел отопительный «Магнум-30» с автоматикой
-  specs available: 13
-  ✓ short_description saved
-[71/120] id=12549 Промышленный котел «Сибирь» КВО-Т-130
-  specs available: 11
-  ✓ short_description saved
-[72/120] id=12550 Промышленный котел «Сибирь» КВО-Т-200
-  specs available: 11
-  ✓ short_description saved
-[73/120] id=12551 Промышленный котел «Сибирь» КВО-Т-300
-  specs available: 11
-  ✓ short_description saved
-[74/120] id=12552 Промышленный котел «Сибирь» КВО-Т-500
-  specs available: 11
-  ✓ short_description saved
-[75/120] id=12553 Автоматический котел длительного горения «АТУМ 55»
-  specs available: 9
-  ✓ short_description saved
-[76/120] id=12554 Котел твердотопливный стальной Сибирь GEFEST КВО 20 ТЭ
-  specs available: 12
-  ✓ short_description saved
-[77/120] id=12555 Твердотопливный котел Sakovich Standart 12
-  specs available: 58
-  ✓ short_description saved
-[78/120] id=12556 Твердотопливный котел Sakovich Standart PRO 14
-  specs available: 27
-  ✓ short_description saved
-[79/120] id=12557 Твердотопливный котел Sakovich Standart PRO 17
-  specs available: 58
-  ✓ short_description saved
-[80/120] id=12558 Твердотопливный котел Sakovich Standart PRO 21
-  specs available: 28
-  ✓ short_description saved
-[81/120] id=12559 Пеллетный котел Sakovich Pellet Universal 16
-  specs available: 70
-  ✓ short_description saved
-[82/120] id=12560 Твердотопливный котел Sakovich Standart 16
-  specs available: 59
-  ✓ short_description saved
-[83/120] id=12561 Твердотопливный котел Sakovich Standart 25
-  specs available: 59
-  ✓ short_description saved
-[84/120] id=12562 Твердотопливный котел Sakovich Standart PRO 26
-  specs available: 28
-  ✓ short_description saved
-[85/120] id=12563 Пеллетный котел Sakovich Pellet Universal 20
-  specs available: 70
-  ✓ short_description saved
-[86/120] id=12564 Твердотопливный котел Sakovich Universal 30
-  specs available: 51
-  ✓ short_description saved
-[87/120] id=12565 Твердотопливный котел Sakovich Standart 20
-  specs available: 59
-  ✓ short_description saved
-[88/120] id=12566 Твердотопливный котел Sakovich Universal 16
-  specs available: 51
-  ✓ short_description saved
-[89/120] id=12567 Пеллетный котел Sakovich Pellet Max 99 с горелкой KIPI Rotar
+Candidates: 164 | processing: 120 (offset=0)
+[1/120] id=12596 Пеллетный котел Sakovich Pellet Max 150 с горелкой KIPI Rota
   specs available: 64
   ✓ short_description saved
-[90/120] id=12568 Твердотопливный котел Sakovich Universal 25
-  specs available: 51
-  ✓ short_description saved
-[91/120] id=12569 Твердотопливный котел Sakovich Max 80
-  specs available: 58
-  ✓ short_description saved
-[92/120] id=12570 Твердотопливный котел Sakovich Universal 20
-  specs available: 51
-  ✓ short_description saved
-[93/120] id=12571 Пеллетный котел Sakovich Pellet Universal 26
-  specs available: 70
-  ✓ short_description saved
-[94/120] id=12572 Пеллетный котел Sakovich Pellet Universal 50
-  specs available: 70
-  ✓ short_description saved
-[95/120] id=12573 Пеллетный котел Sakovich Pellet Max 50
-  specs available: 66
-  ✓ short_description saved
-[96/120] id=12574 Пеллетный котел Sakovich Pellet Universal 36
-  specs available: 70
-  ✓ short_description saved
-[97/120] id=12575 Твердотопливный котел Sakovich Universal 40
-  specs available: 51
-  ✓ short_description saved
-[98/120] id=12576 Твердотопливный котел Sakovich Max 65
-  specs available: 59
-  ✓ short_description saved
-[99/120] id=12577 Пеллетный котел Sakovich Pellet Universal 16 с горелкой KIPI
-  specs available: 70
-  ✓ short_description saved
-[100/120] id=12578 Пеллетный котел Sakovich Pellet Max 75
-  specs available: 66
-  ✓ short_description saved
-[101/120] id=12579 Пеллетный котел Sakovich Pellet Max 50 с горелкой KIPI Rotar
-  specs available: 64
-  ✓ short_description saved
-[102/120] id=12580 Пеллетный котел Sakovich Pellet Max 99
-  specs available: 66
-  ✓ short_description saved
-[103/120] id=12581 Пеллетный котел Sakovich Pellet Max 75 с горелкой KIPI Rotar
+[2/120] id=12599 Пеллетный котел Sakovich Pellet Standart 25 с горелкой KIPI 
   specs available: 65
   ✓ short_description saved
-[104/120] id=12582 Твердотопливный котел Sakovich Universal 35
-  specs available: 51
+[3/120] id=12600 Пеллетный котел Sakovich Pellet Standart 20 с горелкой KIPI 
+  specs available: 66
   ✓ short_description saved
-[105/120] id=12583 Твердотопливный котел Sakovich Max 50
-  specs available: 58
+[4/120] id=12601 Пеллетный котел Sakovich Pellet Standart 15 с горелкой KIPI 
+  specs available: 66
   ✓ short_description saved
-[106/120] id=12584 Твердотопливный котел Sakovich Universal 50
-  specs available: 51
+[5/120] id=12602 Пеллетный котел Sakovich Pellet Standart 25 с горелкой Prakt
+  specs available: 65
   ✓ short_description saved
-[107/120] id=12585 Твердотопливный котел Sakovich Max 125
-  specs available: 57
+[6/120] id=12603 Пеллетный котел Sakovich Pellet Standart 20 с горелкой Prakt
+  specs available: 66
   ✓ short_description saved
-[108/120] id=12586 Твердотопливный котел Sakovich Max 99
-  specs available: 58
+[7/120] id=12604 Пеллетный котел Sakovich Pellet Standart 15 с горелкой Prakt
+  specs available: 66
   ✓ short_description saved
-[109/120] id=12587 Твердотопливный котел Sakovich Max 150
-  specs available: 46
+[8/120] id=12605 Пеллетный котел Sakovich Pellet Standart 10 с горелкой Prakt
+  specs available: 66
   ✓ short_description saved
-[110/120] id=12588 Твердотопливный котел Sakovich Pramen Green 20
-  specs available: 55
+[9/120] id=12606 Твердотопливный котел Sakovich Max 170
+  specs available: 43
   ✓ short_description saved
-[111/120] id=12589 Твердотопливный котел Sakovich Pramen Green 16
-  specs available: 55
+[10/120] id=12635 Твердотопливный котел Теплоприбор КС-Т-20-01
+  specs available: 41
   ✓ short_description saved
-[112/120] id=12590 Твердотопливный котел Sakovich Pramen Green 12,5
-  specs available: 55
+[11/120] id=12636 Твердотопливный котел Теплоприбор Rizon M 16
+  specs available: 36
   ✓ short_description saved
-[113/120] id=12591 Пеллетный котел Sakovich Pellet Universal 20 с горелкой KIPI
-  specs available: 71
+[12/120] id=12637 Твердотопливный котел Теплоприбор Rizon M 25
+  specs available: 41
   ✓ short_description saved
-[114/120] id=12592 Пеллетный котел Sakovich Pellet Universal 50 с горелкой KIPI
-  specs available: 75
+[13/120] id=12638 Твердотопливный котел Теплоприбор КС-Т-16-01
+  specs available: 29
   ✓ short_description saved
-[115/120] id=12593 Пеллетный котел Sakovich Pellet Universal 36 с горелкой KIPI
-  specs available: 75
+[14/120] id=12639 Твердотопливный котел Теплоприбор Rizon M 10 A
+  specs available: 35
   ✓ short_description saved
-[116/120] id=12594 Пеллетный котел Sakovich Pellet Universal 26 с горелкой KIPI
-  specs available: 71
+[15/120] id=12640 Твердотопливный котел Теплоприбор Rizon Prime 20
+  specs available: 26
   ✓ short_description saved
-[117/120] id=12595 Пеллетный котел Sakovich Pellet Max 150
-  specs available: 61
+[16/120] id=12641 Твердотопливный котел Теплоприбор Rizon M 20
+  specs available: 35
   ✓ short_description saved
-[118/120] id=12596 Пеллетный котел Sakovich Pellet Max 150 с горелкой KIPI Rota
-  specs available: 64
-  AI returned empty response, skipped.
-[119/120] id=12597 Твердотопливный котел Sakovich Madera 16
-  specs available: 46
+[17/120] id=12642 Твердотопливный котел Теплоприбор КС-Т-12,5 с РТ
+  specs available: 29
   ✓ short_description saved
-[120/120] id=12598 Пеллетный котел Sakovich Pellet Standart 35 с горелкой KIPI 
-  specs available: 63
+[18/120] id=12643 Твердотопливный котел Теплоприбор КС-Т-20 с РТ
+  specs available: 35
   ✓ short_description saved
+[19/120] id=12644 Твердотопливный котел Теплоприбор КС-Т-16 с РТ
+  specs available: 28
+  ✓ short_description saved
+[20/120] id=12645 Твердотопливный котел Теплоприбор КС-ТМ-20
+  specs available: 43
+  ✓ short_description saved
+[21/120] id=12646 Твердотопливный котел Теплоприбор КС-ТМ-16
+  specs available: 43
+  ✓ short_description saved
+[22/120] id=12647 Твердотопливный котел Теплоприбор Rizon 16 DUO (с бункером и
+  specs available: 18
+  ✓ short_description saved
+[23/120] id=12648 Твердотопливный котел Теплоприбор Rizon 16 DUO (с бункером б
+  specs available: 18
+  ✓ short_description saved
+[24/120] id=12649 Твердотопливный котел Теплоприбор Rizon 20 DUO (с бункером б
+  specs available: 19
+  ✓ short_description saved
+[25/120] id=12650 Твердотопливный котел Теплоприбор Rizon 20 DUO (с бункером и
+  specs available: 19
+  ✓ short_description saved
+[26/120] id=12651 Твердотопливный котел Теплоприбор Rizon 25 DUO (с бункером и
+  specs available: 19
+  ✓ short_description saved
+[27/120] id=12652 Твердотопливный котел Теплоприбор Rizon 25 DUO (с бункером б
+  specs available: 19
+  ✓ short_description saved
+[28/120] id=12653 Твердотопливный котел Теплоприбор КС-Т-12,5-01
+  specs available: 29
+  ✓ short_description saved
+[29/120] id=12654 Твердотопливный котел Теплоприбор КС-ТМ-12,5
+  specs available: 42
+  ✓ short_description saved
+[30/120] id=12655 Твердотопливный котел Теплоприбор КС-Т-16-01 с РТ
+  specs available: 28
+  ✓ short_description saved
+[31/120] id=12656 Твердотопливный котел Теплоприбор КС-Т-12,5-01 с РТ
+  specs available: 28
+  ✓ short_description saved
+[32/120] id=12657 Твердотопливный котел Теплоприбор КС-Т-20-01 с РТ
+  specs available: 28
+  ✓ short_description saved
+[33/120] id=12658 Твердотопливный котел Теплоприбор КС-ТГ-16
+  specs available: 27
+  ✓ short_description saved
+[34/120] id=12659 Твердотопливный котел Теплоприбор КС-ТГ-12,5-01
+  specs available: 27
+  ✓ short_description saved
+[35/120] id=12660 Твердотопливный котел Теплоприбор КС-ТГ-20-01
+  specs available: 27
+  ✓ short_description saved
+[36/120] id=12661 Твёрдотопливный котёл Теплоприбор Rizon EXTRA 10 (5 мм)
+  specs available: 37
+  ✓ short_description saved
+[37/120] id=12662 Твёрдотопливный котёл Теплоприбор Rizon EXTRA 16 (5 мм)
+  specs available: 37
+  ✓ short_description saved
+[38/120] id=12663 Твёрдотопливный котёл Теплоприбор Rizon EXTRA 20 (5 мм)
+  specs available: 37
+  ✓ short_description saved
+[39/120] id=12664 Твёрдотопливный котёл Теплоприбор Rizon EXTRA 25 (5 мм)
+  specs available: 37
+  ✓ short_description saved
+[40/120] id=12665 Твёрдотопливный котёл Теплоприбор Rizon EXTRA 30 (5 мм)
+  specs available: 37
+  ✓ short_description saved
+[41/120] id=12666 Твёрдотопливный котёл Теплоприбор Rizon EXTRA 30A (5 мм)
+  specs available: 37
+  ✓ short_description saved
+[42/120] id=12667 Твёрдотопливный котёл Теплоприбор Rizon EXTRA 10A (5 мм)
+  specs available: 37
+  ✓ short_description saved
+[43/120] id=12668 Твёрдотопливный котёл Теплоприбор Rizon EXTRA 16A (5 мм)
+  specs available: 37
+  ✓ short_description saved
+[44/120] id=12669 Твёрдотопливный котёл Теплоприбор Rizon EXTRA 20A (5 мм)
+  specs available: 37
+  ✓ short_description saved
+[45/120] id=12670 Твёрдотопливный котёл Теплоприбор Rizon EXTRA 25A (5 мм)
+  specs available: 37
+  ✓ short_description saved
+[46/120] id=12671 Твердотопливный котел Теплоприбор Rizon HOT 100 с вентилятор
+  specs available: 34
+  ✓ short_description saved
+[47/120] id=12672 Твердотопливный котел Теплоприбор Rizon HOT 100 с горелкой
+  specs available: 33
+  ✓ short_description saved
+[48/120] id=12673 Твердотопливный котел Теплоприбор Rizon HOT 100
+  specs available: 32
+  ✓ short_description saved
+[49/120] id=12674 Твердотопливный котел Теплоприбор Rizon SL
+  specs available: 36
+  ✓ short_description saved
+[50/120] id=12715 Конденсационный газовый котел Vaillant ecoTEC plus VU 35 CS 
+  specs available: 28
+  ✓ short_description saved
+[51/120] id=12716 Конденсационный газовый котел Vaillant ecoTEC plus VU 30 CS 
+  specs available: 28
+  ✓ short_description saved
+[52/120] id=12717 Конденсационный газовый котел Vaillant ecoTEC plus VU 25 CS 
+  specs available: 28
+  ✓ short_description saved
+[53/120] id=12718 Газовый котел Vaillant turboFIT VUW 242/5-2
+  specs available: 32
+  ✓ short_description saved
+[54/120] id=13728 Радиатор биметаллический Royal Thermo PianoForte 500 Серебри
+  specs available: 28
+  ✓ content saved
+[55/120] id=13730 Радиатор биметаллический Royal Thermo PianoForte 500 Серебри
+  specs available: 25
+  ✓ content saved
+[56/120] id=13731 Радиатор биметаллический Royal Thermo PianoForte 500 Серебри
+  specs available: 28
+  ✓ content saved
+[57/120] id=13737 Радиатор Royal Thermo PianoForte 500 Bianco Traffico VDR80 -
+  specs available: 28
+  ✓ content saved
+[58/120] id=13765 Радиатор Royal Thermo PianoForte Tower 200 /Noir Sable - 18 
+  specs available: 27
+  ✓ content saved
+[59/120] id=13766 Радиатор Royal Thermo PianoForte Tower 200 /Noir Sable - 22 
+  specs available: 44
+  ✓ content saved
+[60/120] id=13767 Радиатор Royal Thermo PianoForte Tower 200 /Silver Satin - 1
+  specs available: 44
+  ✓ content saved
+[61/120] id=13768 Радиатор Royal Thermo PianoForte Tower 200 /Silver Satin - 2
+  specs available: 44
+  ✓ content saved
+[62/120] id=13769 Радиатор Royal Thermo PianoForte Tower 300 /Bianco Traffico 
+  specs available: 44
+  ✓ content saved
+[63/120] id=13771 Радиатор Royal Thermo PianoForte Tower 300 /Noir Sable - 18 
+  specs available: 47
+  ✓ content saved
+[64/120] id=13772 Радиатор Royal Thermo PianoForte Tower 300 /Noir Sable - 22 
+  specs available: 33
+  ✓ content saved
+[65/120] id=13773 Радиатор Royal Thermo PianoForte Tower 300 /Silver Satin - 1
+  specs available: 47
+  ✓ content saved
+[66/120] id=13775 Радиатор Royal Thermo PianoForte Tower 500 new/Bianco Traffi
+  specs available: 26
+  ✓ content saved
+[67/120] id=13777 Радиатор Royal Thermo PianoForte Tower 500 new/Silver Satin 
+  specs available: 26
+  ✓ content saved
+[68/120] id=13779 Радиатор Royal Thermo PianoForte Tower 500 new/Noir Sable - 
+  specs available: 26
+  ✓ content saved
+[69/120] id=13791 Радиатор биметаллический Royal Thermo Infinity 500 Silver Sa
+  specs available: 27
+  ✓ content saved
+[70/120] id=13798 Радиатор биметаллический Royal Thermo Infinity 300 Bianco Tr
+  specs available: 26
+  ✓ content saved
+[71/120] id=13799 Радиатор биметаллический Royal Thermo Infinity 300 Bianco Tr
+  specs available: 26
+  ✓ content saved
+[72/120] id=13805 Радиатор биметаллический Royal Thermo Infinity 300 Noir Sabl
+  specs available: 26
+  ✓ content saved
+[73/120] id=13809 Радиатор биметаллический Royal Thermo Infinity 300 Silver Sa
+  specs available: 26
+  ✓ content saved
+[74/120] id=13810 Радиатор биметаллический Royal Thermo Infinity 300 Silver Sa
+  specs available: 26
+  ✓ content saved
+[75/120] id=13811 Радиатор биметаллический Royal Thermo PianoForte 500 Белый V
+  specs available: 26
+  ✓ content saved
+[76/120] id=13846 Радиатор биметаллический Royal Thermo PianoForte 200 Чёрный 
+  specs available: 44
+  ✓ content saved
+[77/120] id=13901 Комплект настенных регулируемых кронштейнов Royal Thermo Des
+  specs available: 8
+  ✓ content saved
+[78/120] id=13981 Радиатор биметаллический Royal Thermo BILINER B 350 Белый - 
+  specs available: 23
+  ✓ content saved
+[79/120] id=13995 Радиатор биметаллический Royal Thermo BILINER B 500 Белый - 
+  specs available: 28
+  ✓ content saved
+[80/120] id=14000 Радиатор биметаллический Royal Thermo BILINER B 500 Серебрис
+  specs available: 28
+  ✓ content saved
+[81/120] id=14001 Радиатор биметаллический Royal Thermo BILINER B 500 Серебрис
+  specs available: 28
+  ✓ content saved
+[82/120] id=14005 Радиатор биметаллический Royal Thermo BILINER B 500 Чёрный -
+  specs available: 29
+  ✓ content saved
+[83/120] id=14108 Royal Thermo RTO-16
+  specs available: 42
+  ✓ content saved
+[84/120] id=14109 Royal Thermo RTI-16
+  specs available: 44
+  ✓ content saved
+[85/120] id=14116 Royal Thermo RTFM 2-150-3
+  specs available: 35
+  ✓ content saved
+[86/120] id=14292 Набор дизайн-вентилей Royal Thermo PIANO, угловой (белый) 1/
+  specs available: 10
+  ✓ content saved
+[87/120] id=14293 Royal Thermo Набор дизайн-вентилей PIANO, угловой (черный) 1
+  specs available: 10
+  ✓ content saved
+[88/120] id=14296 Royal Thermo Набор дизайн-вентилей PIANO, прямой (черный) 1/
+  specs available: 10
+  ✓ content saved
+[89/120] id=14372 Радиатор биметаллический Royal Thermo PianoForte 300 Белый -
+  specs available: 27
+  ✓ content saved
+[90/120] id=14373 Радиатор биметаллический Royal Thermo PianoForte 300 Белый -
+  specs available: 27
+  ✓ content saved
+[91/120] id=14375 Радиатор биметаллический Royal Thermo PianoForte 300 Белый -
+  specs available: 27
+  ✓ content saved
+[92/120] id=14377 Радиатор биметаллический Royal Thermo PianoForte 300 Чёрный 
+  specs available: 27
+  ✓ content saved
+[93/120] id=14378 Радиатор биметаллический Royal Thermo PianoForte 300 Чёрный 
+  specs available: 27
+  ✓ content saved
+[94/120] id=14380 Радиатор биметаллический Royal Thermo PianoForte 300 Чёрный 
+  specs available: 27
+  ✓ content saved
+[95/120] id=14381 Радиатор биметаллический Royal Thermo PianoForte 300 Чёрный 
+  specs available: 27
+  ✓ content saved
+[96/120] id=14400 Радиатор биметаллический Royal Thermo PianoForte 200 Серебри
+  specs available: 27
+  ✓ content saved
+[97/120] id=14517 Термоголовка жидкостная Royal Thermo Design PRO М30х1,5 (бел
+  specs available: 15
+  ✓ content saved
+[98/120] id=14624 Радиатор панельный Royal Thermo COMPACT C22-500-1800 RAL9016
+  specs available: 23
+  ✓ content saved
+[99/120] id=14774 Радиатор панельный Royal Thermo VENTIL COMPACT VC22-500-700 
+  specs available: 23
+  ✓ content saved
+[100/120] id=15007 Радиатор панельный Royal Thermo VENTIL COMPACT VC11-500-900 
+  specs available: 23
+  ✓ content saved
+[101/120] id=15056 Радиатор панельный Royal Thermo COMPACT C21-500-1400 RAL9016
+  specs available: 48
+  ✓ content saved
+[102/120] id=15141 Радиатор панельный Royal Thermo VENTIL COMPACT VC21-500-800 
+  specs available: 49
+  ✓ content saved
+[103/120] id=15165 Дизайн-радиатор Royal Thermo Shift R22 C2050 - 12 секц. RAL9
+  specs available: 12
+  ✓ content saved
+[104/120] id=15166 Дизайн-радиатор Royal Thermo Shift R22 C2050 - 16 секц. RAL9
+  specs available: 12
+  ✓ content saved
+[105/120] id=15176 Дизайн-радиатор Royal Thermo Shift R22 VC2180 - 04 секц. RAL
+  specs available: 12
+  ✓ content saved
+[106/120] id=15179 Дизайн-радиатор Royal Thermo Shift R22 VC2180 - 06 секц. RAL
+  specs available: 12
+  ✓ content saved
+[107/120] id=15181 Дизайн-радиатор Royal Thermo Shift R22 VC2180 - 08 секц. RAL
+  specs available: 12
+  ✓ content saved
+[108/120] id=15182 Дизайн-радиатор Royal Thermo Shift R22 VC2180 - 10 секц. RAL
+  specs available: 12
+  ✓ content saved
+[109/120] id=15194 Дизайн-радиатор Royal Thermo Shift R22 VC2030 - 18 секц. RAL
+  specs available: 12
+  ✓ content saved
+[110/120] id=15202 Дизайн-радиатор Royal Thermo Shift Q30 C2180 - 06 секц. RAL9
+  specs available: 8
+  ✓ content saved
+[111/120] id=15210 Дизайн-радиатор Royal Thermo Shift Q30 C2180 - 14 секц. RAL9
+  specs available: 8
+  ✓ content saved
+[112/120] id=15216 Дизайн-радиатор Royal Thermo Shift Q30 C2050 - 28 секц. RAL9
+  specs available: 12
+  ✓ content saved
+[113/120] id=15225 Дизайн-радиатор Royal Thermo Shift Q30 VC2180 - 06 секц. RAL
+  specs available: 12
+  ✓ content saved
+[114/120] id=15226 Дизайн-радиатор Royal Thermo Shift Q30 VC2180 - 08 секц. RAL
+  specs available: 12
+  ✓ content saved
+[115/120] id=15236 Дизайн-радиатор Royal Thermo Shift Q30 VC2050 - 16 секц. RAL
+  specs available: 12
+  ✓ content saved
+[116/120] id=15239 Дизайн-радиатор Royal Thermo Shift Q30 VC2050 - 28 секц. RAL
+  specs available: 12
+  ✓ content saved
+[117/120] id=15245 Дизайн-радиатор Royal Thermo Insignia C2180 - 04 секц. RAL90
+  skipped: only 7 specs, min is 8
+[118/120] id=15249 Дизайн-радиатор Royal Thermo Insignia C2180 - 08 секц. RAL90
+  skipped: only 7 specs, min is 8
+[119/120] id=15252 Дизайн-радиатор Royal Thermo Insignia C2180 - 10 секц. RAL90
+  skipped: only 7 specs, min is 8
+[120/120] id=15258 Дизайн-радиатор Royal Thermo Insignia C3050 - 14 секц. RAL90
+  specs available: 10
+  ✓ content saved
 +---------+-------+
 | action  | count |
 +---------+-------+
-| updated | 119   |
-| skipped | 1     |
+| updated | 117   |
+| skipped | 3     |
 | errors  | 0     |
 +---------+-------+
 
-163 more remain. Continue with --offset=120
+44 more remain. Continue with --offset=120
 
 ```
