@@ -482,6 +482,7 @@ class RepairVarmegaSourceUrlsCommand extends Command
             'VM04302' => 'https://b2b.rusklimat.com/catalog/product/filtr-mekhanicheskoy-ochistki-varmega-v-v-3-4-t-obraznyy-vm04302/',
             'VM16664' => 'https://feniks-trade.ru/predohranitelnye-klapany-varmega/predohranitelnyy-klapan-varmega-1-1-4-x-1-1-2-3-vm16664',
             'VM16701' => 'https://bigstore.by/products/klapan-predohranitelnyj-sbrosnoj-varmega-vm16701-12-vr-nr-15-bar-membrannyj-latun',
+            'VM16704' => 'https://bigstore.by/products/klapan-predohranitelnyj-sbrosnoj-varmega-vm16704-12-vr-nr-3-bar-membrannyj-latun',
             'VM796000V42' => 'https://varmega.ru/product/instrument/press-koltso-varmega-vm796000a00-profil-v-42-mm/',
             'VM52603' => 'https://belsklad.by/varmega-trojnik-s-trubkoj-slide-fit-20-16-250-dlja-podkljuchenija-radiatora-vm52603-2105067',
             'VM52604' => 'https://belsklad.by/varmega-trojnik-s-trubkoj-slide-fit-16-20-250-dlja-podkljuchenija-radiatora-vm52604-2105444',
