@@ -1,20 +1,20 @@
 # Server Artisan Result
 
-- Time: 2026-07-12 07:43:48 UTC
+- Time: 2026-07-12 07:47:10 UTC
 - Task: `artisan-dry-run`
-- Artisan args: `supplier:sync-ligmet --dry-run --brand=Ferrum --all-categories --examples=40 --suggest-existing=40`
+- Artisan args: `supplier:sync-ligmet --dry-run --brand=Ferrum --all-categories --examples=40 --link-existing-suggestions --min-suggestion-score=99.9`
 - Log file: ``
 - Exit code: `0`
 
 ```text
 From https://github.com/Cowastro/Kotlov
-   b67fd2f..c6ddff4  main       -> origin/main
-Updating b67fd2f..c6ddff4
+   c6ddff4..654aec0  main       -> origin/main
+Updating c6ddff4..654aec0
 Fast-forward
- .github/server-artisan-result.md           | 122 ++++++++++++++++++++++++-----
- .github/server-artisan-task.json           |   2 +-
- app/Console/Commands/SyncLigmetCommand.php |  19 +++++
- 3 files changed, 124 insertions(+), 19 deletions(-)
+ .github/server-artisan-result.md           | 57 ++++++++++--------------------
+ .github/server-artisan-task.json           |  4 +--
+ app/Console/Commands/SyncLigmetCommand.php | 13 +++++++
+ 3 files changed, 34 insertions(+), 40 deletions(-)
 DRY RUN: database will not be changed.
 Using latest Ligmet workbook from Drive folder: https://docs.google.com/spreadsheets/d/1KIhK4gt-FoD4HZMDYhDgLLsRnHIhg7kM/edit?rtpof=true&sd=true
 Parsed 511 product rows for requested brands
@@ -78,20 +78,6 @@ Parsed 511 product rows for requested brands
 | 994553877     | Ferrum | Экран защитный (430/0,5 мм) 580*58 | 0.00   | 0.00   | low_stock | create_candidate | —           |
 | 994554976     | Ferrum | Экран защитный (430/0,5 мм) 580*58 | 50.42  | 66.00  | low_stock | create_candidate | —           |
 +---------------+--------+------------------------------------+--------+--------+-----------+------------------+-------------+
-
-Closest existing products for create_candidate rows:
-+-----------+------------------------------------+--------+--------------+------------------------------------------+---------------+-------+
-| article   | price_name                         | retail | existing_sku | existing_name                            | current_price | score |
-+-----------+------------------------------------+--------+--------------+------------------------------------------+---------------+-------+
-| 994553397 | Дымоход 1,0 м (430/0,8 мм) Ф115    | 48.00  | PS-007.805   | Дымоход 1,0м FERRUM (430/0,8 мм) ф115    | 70.00         | 100.0 |
-| 994553481 | Дымоход 1,0 м (430/0,8 мм) Ф150    | 63.00  | PS-007.787   | Дымоход 1,0м FERRUM (430/0,8 мм) ф150    | 91.00         | 100.0 |
-| 994553471 | Дымоход 0,25 м (430/0,8 мм) Ф130   | 19.00  | PS-007.854   | Дымоход 0,25м FERRUM (430/0,8 мм) ф130   | 28.00         | 100.0 |
-| 994554586 | Дымоход 0,25 м (430/0,8 мм) Ф180   | 26.00  | PS-007.904   | Дымоход 0,25м FERRUM (430/0,8 мм) ф180   | 37.00         | 100.0 |
-| 994553435 | Тройник-Д 90° (430/0,8мм) Ф120     | 57.00  | PS-007.838   | Тройник-Д 90 FERRUM (430/0,8 мм) ф120    | 66.00         | 100.0 |
-| 994553359 | Сэндвич 0,5 м (430/0,8мм + нерж.)  | 81.00  | PS-007.815   | Сэндвич FERRUM 0,5м (430/0,8мм + нерж.)  | 106.00        | 100.0 |
-| 994553537 | Адаптер стартовый (430/0,8 мм + не | 53.00  | PS-007.847   | Старт-сэндвич FERRUM (430/0,8мм + нерж.) | 59.00         | 88.8  |
-| 994553360 | Оголовок (430/0,5 + нерж.) Ф115х20 | 54.00  | PS-007.812   | Конус FERRUM (430/0,5 мм) Ф115х200       | 57.00         | 80.4  |
-+-----------+------------------------------------+--------+--------------+------------------------------------------+---------------+-------+
 
 Запусти с --apply (и --create-new для новых).
 
