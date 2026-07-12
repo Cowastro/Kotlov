@@ -1,6 +1,6 @@
 {
-  "task": "artisan-apply",
-  "artisan_args": "supplier:repair-varmega-source-urls --apply --product=20484 --http-timeout=5 --limit=1 --enrich --replace-specs --min-specs-to-replace=1 --overwrite-images --skip-documents",
-  "log_file": "storage/logs/varmega-official-source-repair.log",
-  "run_id": "varmega-official-source-repair-product-20484-known-apply-20260712-1"
+  "task": "artisan-dry-run",
+  "artisan_args": "products:audit-content-terms --product=20484 --profile=varmega-fittings --not-archived --active-only --limit=10",
+  "log_file": "storage/logs/varmega-content-audit.log",
+  "run_id": "varmega-content-audit-product-20484-20260712-1"
 }
