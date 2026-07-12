@@ -1,6 +1,6 @@
 {
-  "task": "kill-pid",
-  "artisan_args": "3374168",
-  "log_file": "storage/logs/varmega-repair-source-urls-fast.log",
-  "run_id": "varmega-repair-source-urls-fast-kill-20260712-1"
+  "task": "artisan-dry-run",
+  "artisan_args": "supplier:repair-varmega-source-urls --category=Пресс-фитинги --refresh-index --limit=0",
+  "log_file": "storage/logs/varmega-official-source-repair.log",
+  "run_id": "varmega-official-source-repair-dry-20260712-1"
 }
