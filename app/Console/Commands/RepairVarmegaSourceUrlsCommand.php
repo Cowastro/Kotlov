@@ -15,6 +15,9 @@ class RepairVarmegaSourceUrlsCommand extends Command
         {--sitemap=https://varmega.ru/sitemap-iblock-43.xml : Varmega product sitemap URL}
         {--refresh-index : Rebuild cached article URL index}
         {--rn-profi-fallback : Search rn-profi.by by article when official Varmega URL is missing}
+        {--rn-profi-section-index : Crawl RN-Profi Varmega section pages and index visible article tables}
+        {--rn-profi-section-url=https://rn-profi.by/varmega/truboprovodnye-sistemy-iz-nerzhaveyuschej-stali-sus-304--profil-v/ : RN-Profi Varmega section URL}
+        {--rn-profi-section-pages=80 : Maximum RN-Profi product pages to index from section}
         {--rn-profi-search-limit=0 : Maximum RN-Profi article searches, 0 means all}
         {--rn-profi-candidate-limit=8 : Maximum RN-Profi candidate pages to verify per article}
         {--http-timeout=8 : HTTP timeout for source discovery requests, seconds}
@@ -46,6 +49,11 @@ class RepairVarmegaSourceUrlsCommand extends Command
 
         $index = $this->loadOfficialIndex();
         $this->info(sprintf('Official Varmega article index: %d URLs.', count($index)));
+        if ((bool) $this->option('rn-profi-section-index')) {
+            $rnProfiIndex = $this->loadRnProfiSectionIndex();
+            $this->info(sprintf('RN-Profi section article index: %d URLs.', count($rnProfiIndex)));
+            $index = $index + $rnProfiIndex;
+        }
         $rnProfiSearchLimit = max(0, (int) $this->option('rn-profi-search-limit'));
         $rnProfiSearches = 0;
 
@@ -354,6 +362,47 @@ class RepairVarmegaSourceUrlsCommand extends Command
         return null;
     }
 
+    private function loadRnProfiSectionIndex(): array
+    {
+        $sectionUrl = trim((string) $this->option('rn-profi-section-url'));
+        if ($sectionUrl === '') {
+            return [];
+        }
+
+        $html = $this->fetch($sectionUrl);
+        if ($html === null) {
+            return [];
+        }
+
+        $urls = $this->extractRnProfiProductUrls($html);
+        $maxPages = max(1, (int) $this->option('rn-profi-section-pages'));
+        $index = [];
+        $fetched = 0;
+
+        foreach (array_slice($urls, 0, $maxPages) as $url) {
+            $page = $this->fetch($url);
+            if ($page === null) {
+                continue;
+            }
+
+            $fetched++;
+            foreach ($this->extractVisibleArticleTokens($page) as $token) {
+                if (! str_starts_with($token, 'VM') || mb_strlen($token) < 5) {
+                    continue;
+                }
+                $index[$token] = ['url' => $url];
+            }
+
+            if ($fetched % 20 === 0) {
+                $this->line(sprintf('RN-Profi section index progress: fetched=%d indexed=%d.', $fetched, count($index)));
+            }
+        }
+
+        $this->line(sprintf('RN-Profi section index fetched=%d pages.', $fetched));
+
+        return $index;
+    }
+
     /**
      * @return string[]
      */
@@ -411,6 +460,27 @@ class RepairVarmegaSourceUrlsCommand extends Command
         $body = preg_replace('/<(script|style|noscript)\b[^>]*>.*?<\/\1>/is', ' ', $body) ?? $body;
 
         return str_contains($this->normArticle(strip_tags($body)), $normArticle);
+    }
+
+    /**
+     * @return string[]
+     */
+    private function extractVisibleArticleTokens(string $html): array
+    {
+        $body = preg_replace('/<head\b[^>]*>.*?<\/head>/is', ' ', $html) ?? $html;
+        $body = preg_replace('/<(script|style|noscript)\b[^>]*>.*?<\/\1>/is', ' ', $body) ?? $body;
+        $text = html_entity_decode(strip_tags($body), ENT_QUOTES | ENT_HTML5, 'UTF-8');
+        $tokens = [];
+
+        preg_match_all('/\bVM[A-Z0-9\-\/\.]{3,}\b/iu', $text, $matches);
+        foreach ($matches[0] ?? [] as $token) {
+            $norm = $this->normArticle((string) $token);
+            if (mb_strlen($norm) >= 5) {
+                $tokens[$norm] = true;
+            }
+        }
+
+        return array_values(array_keys($tokens));
     }
 
     /**
