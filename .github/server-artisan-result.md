@@ -1,6 +1,6 @@
 # Server Artisan Result
 
-- Time: 2026-07-12 09:14:16 UTC
+- Time: 2026-07-12 09:16:22 UTC
 - Task: `tail-log`
 - Artisan args: ``
 - Log file: `storage/logs/varmega-official-fill.log`
@@ -8,12 +8,12 @@
 
 ```text
 From https://github.com/Cowastro/Kotlov
-   3acebe4..2aa9d3e  main       -> origin/main
-Updating 3acebe4..2aa9d3e
+   2aa9d3e..4c20117  main       -> origin/main
+Updating 2aa9d3e..4c20117
 Fast-forward
- .github/server-artisan-result.md | 59 +++++++---------------------------------
- .github/server-artisan-task.json |  6 ++--
- 2 files changed, 13 insertions(+), 52 deletions(-)
+ .github/server-artisan-result.md | 69 ++++++++++++++++++++++++++++++++++------
+ .github/server-artisan-task.json |  2 +-
+ 2 files changed, 61 insertions(+), 10 deletions(-)
 APPLY: source enrichment will be written.
 Products with source URLs: 45 (processing 45, offset 0, --force)
 [1/45] #19812 VM09821 Угол переходной Varmega VM09821, ВР-ВР, 3/4" х 1/2", хромированный
@@ -66,5 +66,52 @@ Products with source URLs: 45 (processing 45, offset 0, --force)
   warning: attributes: only 2 specs found; replacement skipped, minimum is 4
 [13/45] #20067 VM15978 Латунный запирающий колпачок Varmega VM15978, для термостатических кла
   source: https://varmega.ru/product/truby-i-fitingi/bronzovye-i-latunnye-fitingi-rezba/latunnyy-zapirayushchiy-kolpachok-varmega-vm15978-dlya-termostaticheskikh-klapanov/
+  found: images=4 specs=2 service=1 docs=0 video=0 updated=images,service_info,content,short_description,meta_description,updated_at
+  warning: attributes: only 2 specs found; replacement skipped, minimum is 4
+[14/45] #20229 VM09601 Соединение быстросъемное Varmega VM09601, 3/4", для расширительного ба
+  source: https://varmega.ru/product/predokhranitelnaya-i-reguliruyushchaya-armatura/predokhranitelnaya-armatura-dlya-bakov/soedinenie-bystrorazemnoe-varmega-vm09601-3-4-dlya-rasshiritelnogo-baka/
+  found: images=4 specs=1 service=0 docs=0 video=0 updated=images,content,short_description,meta_description,updated_at
+  warning: attributes: only 1 specs found; replacement skipped, minimum is 4
+[15/45] #20287 VM30701 Varmega VM30701 16x2.0
+  source: https://varmega.ru/product/truby-i-fitingi/metalloplastikovye-pex-i-pert-truby/truba-varmega-pe-xa-evoh-vm30701-16x2-0-bukhta-200-m-krasnaya-mnogosloynaya/
+  found: images=4 specs=2 service=1 docs=0 video=0 updated=images,service_info,content,short_description,meta_description,updated_at
+  warning: attributes: only 2 specs found; replacement skipped, minimum is 4
+[16/45] #20288 VM30751 Varmega VM30751 16x2.0
+  source: https://varmega.ru/product/truby-i-fitingi/metalloplastikovye-pex-i-pert-truby/truba-varmega-pe-xa-evoh-vm30751-16x2-0-bukhta-500-m-krasnaya-mnogosloynaya/
+  found: images=4 specs=2 service=1 docs=0 video=0 updated=images,service_info,content,short_description,meta_description,updated_at
+  warning: attributes: only 2 specs found; replacement skipped, minimum is 4
+[17/45] #20337 VM15975 Varmega VM15975 24х30
+  source: https://varmega.ru/product/instrument/montazhnyy-klyuch-varmega-vm15975-dlya-soediniteley-s-nakidnymi-gaykami/
+  found: images=4 specs=1 service=1 docs=0 video=0 updated=images,service_info,content,short_description,meta_description,updated_at
+  warning: attributes: only 1 specs found; replacement skipped, minimum is 4
+[18/45] #20341 VM15906 Varmega VM15906 1"
+  source: https://varmega.ru/product/kollektory-i-komplektuyushchie/kontsevaya-gruppa-varmega-vm15906-nr-1-s-drenazhnym-ventilem-i-ruchnym-vozdukhootvodchikom/
+  found: images=4 specs=4 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
+[19/45] #20350 VM15980 Varmega VM15980 1/2"
+  source: https://varmega.ru/product/kollektory-i-komplektuyushchie/raskhodomer-varmega-vm15980-dlya-kollektornykh-grupp/
+  found: images=4 specs=5 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
+[20/45] #20351 VM15981 Varmega VM15981 M18x1.75
+  source: https://varmega.ru/product/kollektory-i-komplektuyushchie/raskhodomer-varmega-vm15981-dlya-kollektornykh-grupp-iz-latuni/
+  found: images=4 specs=2 service=1 docs=0 video=0 updated=images,service_info,content,short_description,meta_description,updated_at
+  warning: attributes: only 2 specs found; replacement skipped, minimum is 4
+[21/45] #20352 VM15985 Varmega VM15985 1/2"
+  source: https://varmega.ru/product/kollektory-i-komplektuyushchie/reguliruyushchiy-klapan-varmega-vm15985-m30kh1-5-dlya-kollektornykh-grupp/
+  found: images=4 specs=4 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
+[22/45] #20353 VM19001 Varmega VM19001 НО, M30х1.5
+  source: https://varmega.ru/product/privody-termostaty-i-moduli-upravleniya/elektrotermicheskiy-servoprivod-varmega-dvukhpozitsionnyy-vm19001-220v-as-normalno-otkrytyy/
+  found: images=4 specs=2 service=1 docs=0 video=0 updated=images,service_info,content,short_description,meta_description,updated_at
+  warning: attributes: only 2 specs found; replacement skipped, minimum is 4
+[23/45] #20354 VM19002 Varmega VM19002 НЗ, M30х1.5
+  source: https://varmega.ru/product/privody-termostaty-i-moduli-upravleniya/elektrotermicheskiy-servoprivod-varmega-dvukhpozitsionnyy-vm19002-220v-as-normalno-zakrytyy/
+  found: images=4 specs=2 service=1 docs=0 video=0 updated=images,service_info,content,short_description,meta_description,updated_at
+  warning: attributes: only 2 specs found; replacement skipped, minimum is 4
+[24/45] #20355 VM19221 Varmega VM19221 230 В
+  source: https://varmega.ru/product/privody-termostaty-i-moduli-upravleniya/komnatnyy-termostat-termoregulyator-varmega-vm19221-5-60-s-230-v-provodnoy-belyy/
+  found: images=4 specs=4 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
+[25/45] #20356 VM19222 Varmega VM19222 230 В
+  source: https://varmega.ru/product/privody-termostaty-i-moduli-upravleniya/komnatnyy-termostat-termoregulyator-varmega-vm19222-5-60-s-230-v-provodnoy-chernyy/
+  found: images=4 specs=4 service=1 docs=0 video=0 updated=images,specs,service_info,content,short_description,meta_description,updated_at
+[26/45] #20358 VM19101 Varmega VM19101 8 зон
+  source: https://varmega.ru/product/privody-termostaty-i-moduli-upravleniya/modulnyy-blok-upravleniya-varmega-vm19101-provodnoy/
 
 ```
