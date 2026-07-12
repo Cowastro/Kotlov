@@ -1,6 +1,6 @@
 {
   "task": "artisan-dry-run",
-  "artisan_args": "product:enrich-content --all --only=both --min-specs=6 --rewrite-thin=220 --limit=20 --sleep=0 --dry-run",
+  "artisan_args": "product:enrich-content --all --only=both --min-specs=5 --rewrite-thin=220 --limit=20 --sleep=0 --dry-run",
   "log_file": "",
-  "run_id": "audit-product-seo-content-6spec-tail-20260712-2"
+  "run_id": "audit-product-seo-content-5spec-tail-20260712-1"
 }
