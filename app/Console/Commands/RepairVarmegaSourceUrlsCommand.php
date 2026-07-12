@@ -22,6 +22,7 @@ class RepairVarmegaSourceUrlsCommand extends Command
         {--rn-profi-candidate-limit=8 : Maximum RN-Profi candidate pages to verify per article}
         {--http-timeout=8 : HTTP timeout for source discovery requests, seconds}
         {--product= : Process one product ID}
+        {--article-prefix= : Process only supplier articles with this prefix, e.g. VM7040}
         {--limit=0 : Max supplier links to process, 0 means all}
         {--offset=0 : Skip supplier links}
         {--enrich : Enrich products after source_url repair}
@@ -87,6 +88,10 @@ class RepairVarmegaSourceUrlsCommand extends Command
 
         if ($productId = (int) $this->option('product')) {
             $query->where('p.id', $productId);
+        }
+
+        if ($articlePrefix = trim((string) $this->option('article-prefix'))) {
+            $query->where('sp.supplier_article', 'like', $articlePrefix . '%');
         }
 
         if ($offset > 0) {
