@@ -1,6 +1,6 @@
 {
   "task": "artisan-apply",
-  "artisan_args": "supplier:repair-varmega-source-urls --apply --article-prefix=VM710 --enrich --replace-specs --min-specs-to-replace=1 --overwrite-images --skip-documents --limit=0 --sleep=1000",
-  "log_file": "storage/logs/repair-varmega-vm710.log",
-  "run_id": "repair-varmega-vm710-20260712-1"
+  "artisan_args": "supplier:repair-varmega-source-urls --apply --article-prefix=VM711,VM712,VM713,VM714,VM715,VM716,VM717,VM718,VM719,VM720,VM721,VM722,VM723,VM724,VM725,VM730,VM731,VM732,VM733 --enrich --replace-specs --min-specs-to-replace=1 --overwrite-images --skip-documents --limit=0 --sleep=1000",
+  "log_file": "storage/logs/repair-varmega-inox-tail.log",
+  "run_id": "repair-varmega-inox-tail-20260712-1"
 }

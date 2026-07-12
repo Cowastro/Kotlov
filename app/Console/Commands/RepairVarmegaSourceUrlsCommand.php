@@ -23,7 +23,7 @@ class RepairVarmegaSourceUrlsCommand extends Command
         {--rn-profi-candidate-limit=8 : Maximum RN-Profi candidate pages to verify per article}
         {--http-timeout=8 : HTTP timeout for source discovery requests, seconds}
         {--product= : Process one product ID}
-        {--article-prefix= : Process only supplier articles with this prefix, e.g. VM7040}
+        {--article-prefix= : Process only supplier articles with this prefix or comma-separated prefixes, e.g. VM7040,VM7050}
         {--limit=0 : Max supplier links to process, 0 means all}
         {--offset=0 : Skip supplier links}
         {--fix-category : Move products to the category resolved from the official Varmega URL}
@@ -93,8 +93,16 @@ class RepairVarmegaSourceUrlsCommand extends Command
             $query->where('p.id', $productId);
         }
 
-        if ($articlePrefix = trim((string) $this->option('article-prefix'))) {
-            $query->where('sp.supplier_article', 'like', $articlePrefix . '%');
+        $articlePrefixes = array_values(array_filter(array_map(
+            static fn (string $prefix): string => trim($prefix),
+            explode(',', (string) $this->option('article-prefix'))
+        )));
+        if ($articlePrefixes !== []) {
+            $query->where(function ($query) use ($articlePrefixes): void {
+                foreach ($articlePrefixes as $prefix) {
+                    $query->orWhere('sp.supplier_article', 'like', $prefix . '%');
+                }
+            });
         }
 
         if ($offset > 0) {
