@@ -6,6 +6,7 @@ use App\Models\Product;
 use App\Services\ProductSourceEnricher;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 class RepairVarmegaSourceUrlsCommand extends Command
 {
@@ -25,6 +26,8 @@ class RepairVarmegaSourceUrlsCommand extends Command
         {--article-prefix= : Process only supplier articles with this prefix, e.g. VM7040}
         {--limit=0 : Max supplier links to process, 0 means all}
         {--offset=0 : Skip supplier links}
+        {--fix-category : Move products to the category resolved from the official Varmega URL}
+        {--category-slug= : Force target category slug when --fix-category is used}
         {--enrich : Enrich products after source_url repair}
         {--replace-specs : Replace product specs during enrichment}
         {--min-specs-to-replace=1 : Skip spec replacement when source has fewer specs}
@@ -114,6 +117,7 @@ class RepairVarmegaSourceUrlsCommand extends Command
             'images_saved' => 0,
             'specs_found' => 0,
             'attributes_saved' => 0,
+            'category_changed' => 0,
             'missing' => 0,
             'errors' => 0,
         ];
@@ -189,6 +193,20 @@ class RepairVarmegaSourceUrlsCommand extends Command
                 'updated_at' => now(),
             ]);
             $stats['written']++;
+
+            if ((bool) $this->option('fix-category')) {
+                $categoryId = $this->categoryIdForOfficialUrl((string) $match['url'], $article);
+                if ($categoryId > 0) {
+                    $currentCategoryId = (int) DB::table('products')->where('id', $row->product_id)->value('category_id');
+                    if ($currentCategoryId !== $categoryId) {
+                        DB::table('products')->where('id', $row->product_id)->update([
+                            'category_id' => $categoryId,
+                            'updated_at' => now(),
+                        ]);
+                        $stats['category_changed']++;
+                    }
+                }
+            }
 
             if (! $enrich) {
                 continue;
@@ -423,6 +441,20 @@ class RepairVarmegaSourceUrlsCommand extends Command
     {
         $url = null;
 
+        $collectorCabinets = [
+            'VM35500' => 'https://varmega.ru/product/kollektory-i-komplektuyushchie/kollektornyy-raspredelitelnyy-shkaf-vstraivaemyy-varmega-vm35500-shrv-0-na-1-3-vykhoda-668kh125kh402/',
+            'VM35501' => 'https://varmega.ru/product/kollektory-i-komplektuyushchie/kollektornyy-raspredelitelnyy-shkaf-vstraivaemyy-varmega-vm35501-shrv-1-na-4-5-vykhodov-668kh125kh49/',
+            'VM35502' => 'https://varmega.ru/product/kollektory-i-komplektuyushchie/kollektornyy-raspredelitelnyy-shkaf-vstraivaemyy-varmega-vm35502-shrv-2-na-6-7-vykhodov-668kh125kh59/',
+            'VM35503' => 'https://varmega.ru/product/kollektory-i-komplektuyushchie/kollektornyy-raspredelitelnyy-shkaf-vstraivaemyy-varmega-vm35503-shrv-3-na-8-10-vykhodov-668kh125kh7/',
+            'VM35504' => 'https://varmega.ru/product/kollektory-i-komplektuyushchie/kollektornyy-raspredelitelnyy-shkaf-vstraivaemyy-varmega-vm35504-shrv-4-na-11-12-vykhodov-668kh125kh/',
+            'VM35505' => 'https://varmega.ru/product/kollektory-i-komplektuyushchie/kollektornyy-raspredelitelnyy-shkaf-vstraivaemyy-varmega-vm35505-shrv-5-na-13-16-vykhodov-668kh125kh/',
+            'VM35506' => 'https://varmega.ru/product/kollektory-i-komplektuyushchie/kollektornyy-raspredelitelnyy-shkaf-vstraivaemyy-varmega-vm35506-shrv-6-na-17-18-vykhodov-668kh125kh/',
+        ];
+
+        if (isset($collectorCabinets[$normArticle])) {
+            return ['url' => $collectorCabinets[$normArticle]];
+        }
+
         if (preg_match('/^VM70100(\d{2})(\d{2})$/u', $normArticle, $m)) {
             $size = ltrim($m[1], '0') . '-' . ltrim($m[2], '0') . '-mm';
             $url = 'https://varmega.ru/product/truby-i-fitingi/mufta-dvukhrastrubnaya-varmega-inox-press-'
@@ -451,6 +483,82 @@ class RepairVarmegaSourceUrlsCommand extends Command
         }
 
         return ['url' => $url];
+    }
+
+    private function categoryIdForOfficialUrl(string $url, string $article): int
+    {
+        $forcedSlug = trim((string) $this->option('category-slug'));
+        $slug = $forcedSlug !== '' ? $forcedSlug : $this->categorySlugForOfficialUrl($url, $article);
+
+        if ($slug === '') {
+            return 0;
+        }
+
+        return $this->ensureCategory($slug);
+    }
+
+    private function categorySlugForOfficialUrl(string $url, string $article): string
+    {
+        if (str_starts_with($article, 'VM355')) {
+            return 'kollektornye-shkafy';
+        }
+
+        $path = parse_url($url, PHP_URL_PATH);
+        $path = is_string($path) ? trim($path, '/') : '';
+
+        if (str_starts_with($path, 'product/kollektory-i-komplektuyushchie')) {
+            return 'raspredelitelnye-kollektory';
+        }
+
+        return '';
+    }
+
+    private function ensureCategory(string $slug): int
+    {
+        $categoryId = (int) (DB::table('categories')->where('slug', $slug)->value('id') ?? 0);
+        if ($categoryId > 0) {
+            return $categoryId;
+        }
+
+        $definitions = [
+            'kollektornye-shkafy' => [
+                'name' => 'Коллекторные шкафы',
+                'parent_slug' => 'komplektuyushhie-dlya-otopleniya',
+                'type' => 'catalog',
+                'sort_order' => 185,
+            ],
+            'raspredelitelnye-kollektory' => [
+                'name' => 'Распределительные коллекторы',
+                'parent_slug' => 'komplektuyushhie-dlya-otopleniya',
+                'type' => 'catalog',
+                'sort_order' => 180,
+            ],
+        ];
+
+        if (! isset($definitions[$slug])) {
+            return 0;
+        }
+
+        $definition = $definitions[$slug];
+        $now = now();
+        $parentId = (int) (DB::table('categories')->where('slug', $definition['parent_slug'])->value('id') ?? 0);
+
+        $data = [
+            'name' => $definition['name'],
+            'slug' => $slug,
+            'parent_id' => $parentId,
+            'sort_order' => $definition['sort_order'],
+            'created_at' => $now,
+            'updated_at' => $now,
+        ];
+
+        foreach (['h1' => $definition['name'], 'type' => $definition['type'], 'is_active' => true] as $column => $value) {
+            if (Schema::hasColumn('categories', $column)) {
+                $data[$column] = $value;
+            }
+        }
+
+        return (int) DB::table('categories')->insertGetId($data);
     }
 
     private function loadRnProfiSectionIndex(): array
