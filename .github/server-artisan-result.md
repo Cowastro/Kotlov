@@ -1,24 +1,23 @@
 # Server Artisan Result
 
-- Time: 2026-07-14 12:13:16 UTC
-- Task: `artisan-apply`
-- Artisan args: `migrate --force --path=database/migrations/2026_07_14_140000_update_prometall_and_plamen_prices.php`
-- Log file: `storage/logs/update-prometall-plamen-prices.log`
+- Time: 2026-07-14 12:14:35 UTC
+- Task: `artisan-dry-run`
+- Artisan args: `products:inspect-price --sku=KOTLOV-004649 --limit=10`
+- Log file: `storage/logs/verify-prometall-price.log`
 - Exit code: `0`
 
 ```text
 From https://github.com/Cowastro/Kotlov
-   310ea32..5dc362d  main       -> origin/main
-Updating 310ea32..5dc362d
+   5dc362d..7926292  main       -> origin/main
+Updating 5dc362d..7926292
 Fast-forward
- .github/server-artisan-result.md                   | 75 +++++++------------
- .github/server-artisan-task.json                   |  8 +-
- ...4_140000_update_prometall_and_plamen_prices.php | 87 +++++++++++++++-------
- 3 files changed, 93 insertions(+), 77 deletions(-)
-
-   INFO  Running migrations.  
-
-  2026_07_14_140000_update_prometall_and_plamen_prices ......... 956.93ms DONE
-
+ .github/server-artisan-result.md | 44 ++++++++++++++--------------------------
+ .github/server-artisan-task.json |  8 ++++----
+ 2 files changed, 19 insertions(+), 33 deletions(-)
++-------+---------------+-----------+------------------------+---------------+----------+---------+----------------+-----------+-----+-------------------------------------------------+--------+-------------------------------------------+
+| id    | sku           | brand     | category               | product_price | supplier | article | supplier_price | price_byn | qty | stock                                           | source | name                                      |
++-------+---------------+-----------+------------------------+---------------+----------+---------+----------------+-----------+-----+-------------------------------------------------+--------+-------------------------------------------+
+| 16927 | KOTLOV-004649 | Prometall | Дровяные печи (банные) | 3770.00       | bania    | p0503   | 2827.50        | 2827.50   | -   | product=yes supplier=yes active=yes archived=no | -      | Печь банная "Атмосфера M" сетка из прутка |
++-------+---------------+-----------+------------------------+---------------+----------+---------+----------------+-----------+-----+-------------------------------------------------+--------+-------------------------------------------+
 
 ```
