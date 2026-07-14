@@ -1,6 +1,6 @@
 {
-  "task": "artisan-dry-run",
-  "artisan_args": "products:inspect-price --brand=Prometall --limit=200",
-  "log_file": "storage/logs/inspect-prometall-prices.log",
-  "run_id": "inspect-prometall-prices-20260714-1"
+  "task": "artisan-apply",
+  "artisan_args": "migrate --force --path=database/migrations/2026_07_14_140000_update_prometall_and_plamen_prices.php",
+  "log_file": "storage/logs/update-prometall-plamen-prices.log",
+  "run_id": "update-prometall-plamen-prices-20260714-1"
 }

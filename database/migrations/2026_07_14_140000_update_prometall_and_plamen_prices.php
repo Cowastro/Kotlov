@@ -47,50 +47,62 @@ return new class extends Migration
         'PS-011.692' => 1152.00, // Тайга ПРО
         'PS-011.693' => 151.00,  // Полки для подогрева
         'PS-012.277' => 3154.00, // Маэстро II
+        'KOTLOV-004649' => 3770.00, // Активная Атмосфера M, сетка пруток (p0503)
     ];
 
     private const OLD_PRICES = [
         'PS-007.448' => 3040.00,
-        'PS-008.736' => 3000.00,
-        'PS-007.449' => 4100.00,
-        'PS-007.453' => 3190.00,
-        'PS-007.454' => 2650.00,
-        'PS-007.568' => 3350.00,
-        'PS-007.455' => 4900.00,
-        'PS-007.569' => 2750.00,
-        'PS-011.774' => 3870.00,
-        'PS-007.462' => 4180.00,
-        'PS-007.458' => 4250.00,
-        'PS-010.067' => 3440.00,
-        'PS-010.066' => 3150.00,
-        'PS-010.547' => 1990.00,
-        'PS-007.571' => 5510.00,
-        'PS-007.572' => 3780.00,
-        'PS-007.573' => 3780.00,
+        'PS-008.736' => 3400.00,
+        'PS-007.449' => 4800.00,
+        'PS-007.453' => 3580.00,
+        'PS-007.454' => 3280.00,
+        'PS-007.568' => 3950.00,
+        'PS-007.455' => 5800.00,
+        'PS-007.569' => 3250.00,
+        'PS-011.774' => 4050.00,
+        'PS-007.462' => 3500.00,
+        'PS-007.458' => 5000.00,
+        'PS-010.067' => 3600.00,
+        'PS-010.066' => 3750.00,
+        'PS-010.547' => 1999.00,
+        'PS-007.571' => 5290.00,
+        'PS-007.572' => 4440.00,
+        'PS-007.573' => 4500.00,
         'PS-011.203' => 3520.00,
-        'PS-011.204' => 3670.00,
+        'PS-011.204' => 3310.00,
         'PS-011.206' => 4060.00,
-        'PS-011.207' => 3900.00,
+        'PS-011.207' => 4130.00,
         'PS-011.208' => 4540.00,
-        'PS-011.209' => 8120.00,
-        'PS-011.210' => 4580.00,
-        'PS-011.221' => 1890.00,
-        'PS-011.246' => 1860.00,
+        'PS-011.209' => 7320.00,
+        'PS-011.210' => 6290.00,
+        'PS-011.221' => 1690.00,
+        'PS-011.246' => 1300.00,
         'PS-011.247' => 0.00,
-        'PS-011.494' => 840.00,
-        'PS-011.692' => 1166.00,
-        'PS-011.693' => 152.00,
+        'PS-011.494' => 1000.00,
+        'PS-011.692' => 975.00,
+        'PS-011.693' => 130.00,
         'PS-012.277' => 2887.00,
+        'KOTLOV-004649' => 3565.00,
+    ];
+
+    private const NEW_SUPPLIER_PRICES = [
+        ['supplier_code' => 'bania', 'article' => 'p0503', 'price' => 2827.50],
+    ];
+
+    private const OLD_SUPPLIER_PRICES = [
+        ['supplier_code' => 'bania', 'article' => 'p0503', 'price' => 2892.36],
     ];
 
     public function up(): void
     {
         $this->updatePrices(self::NEW_PRICES);
+        $this->updateSupplierPrices(self::NEW_SUPPLIER_PRICES);
     }
 
     public function down(): void
     {
         $this->updatePrices(self::OLD_PRICES);
+        $this->updateSupplierPrices(self::OLD_SUPPLIER_PRICES);
     }
 
     private function updatePrices(array $prices): void
@@ -106,5 +118,28 @@ return new class extends Migration
             }
         });
     }
-};
 
+    private function updateSupplierPrices(array $prices): void
+    {
+        DB::transaction(function () use ($prices): void {
+            foreach ($prices as $row) {
+                $supplierId = DB::table('suppliers')
+                    ->where('code', $row['supplier_code'])
+                    ->value('id');
+
+                if (! $supplierId) {
+                    continue;
+                }
+
+                DB::table('supplier_products')
+                    ->where('supplier_id', $supplierId)
+                    ->where('supplier_article', $row['article'])
+                    ->update([
+                        'price' => $row['price'],
+                        'price_byn' => $row['price'],
+                        'updated_at' => now(),
+                    ]);
+            }
+        });
+    }
+};
