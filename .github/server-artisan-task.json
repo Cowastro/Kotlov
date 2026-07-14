@@ -1,6 +1,6 @@
 {
-  "task": "artisan-apply",
-  "artisan_args": "migrate --force --path=database/migrations/2026_07_14_140000_update_prometall_and_plamen_prices.php",
-  "log_file": "storage/logs/update-prometall-plamen-prices.log",
-  "run_id": "update-prometall-plamen-prices-20260714-1"
+  "task": "artisan-dry-run",
+  "artisan_args": "products:inspect-price --sku=KOTLOV-004649 --limit=10",
+  "log_file": "storage/logs/verify-prometall-price.log",
+  "run_id": "verify-prometall-price-20260714-1"
 }
