@@ -13,7 +13,10 @@ class AppServiceProvider extends ServiceProvider
 {
     public function boot(): void
     {
-        if (app()->runningInConsole() || request()->is('admin*') || str_starts_with((string) request()->getHost(), 'admin.')) {
+        // Пропускаем для реальных консольных команд (artisan/queue), но НЕ для
+        // тестов: под `php artisan test` runningInConsole() == true, а вьюхи всё
+        // равно рендерятся HTTP-запросами и требуют navCategories и т.п.
+        if ((app()->runningInConsole() && ! app()->runningUnitTests()) || request()->is('admin*') || str_starts_with((string) request()->getHost(), 'admin.')) {
             return;
         }
 
