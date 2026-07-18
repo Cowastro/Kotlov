@@ -3,6 +3,9 @@
 namespace Tests\Feature;
 
 use App\Models\Category;
+use App\Models\Product;
+use App\Http\Middleware\HandleRedirects;
+use Illuminate\Http\Request;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 use Tests\TestCase;
@@ -33,6 +36,13 @@ class LegacySeoRedirectTest extends TestCase
         });
 
         Schema::create('cities', function (Blueprint $table) {
+            $table->id();
+            $table->string('slug')->unique();
+            $table->boolean('is_active')->default(true);
+            $table->timestamps();
+        });
+
+        Schema::create('brands', function (Blueprint $table) {
             $table->id();
             $table->string('slug')->unique();
             $table->boolean('is_active')->default(true);
@@ -77,6 +87,32 @@ class LegacySeoRedirectTest extends TestCase
 
         $response->assertStatus(301);
         $response->assertRedirect('https://skidel.kotlov.by/pogrujnye');
+    }
+
+    public function test_canonical_product_path_is_not_collapsed_to_its_category(): void
+    {
+        $category = Category::create([
+            'parent_id' => 0,
+            'name' => 'Газовые котлы',
+            'slug' => 'gazovye',
+            'is_active' => true,
+        ]);
+
+        Product::create([
+            'category_id' => $category->id,
+            'slug' => 'gazovyj-kotel-test',
+            'is_active' => true,
+            'is_archived' => false,
+        ]);
+
+        $request = Request::create('/gazovye/gazovyj-kotel-test', 'GET');
+        $response = app(HandleRedirects::class)->handle(
+            $request,
+            fn () => response('', 204),
+        );
+
+        $this->assertSame(204, $response->getStatusCode());
+        $this->assertNull($response->headers->get('Location'));
     }
 
     public function test_old_parts_prefix_is_removed_instead_of_rewritten_to_wrong_section(): void

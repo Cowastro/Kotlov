@@ -350,6 +350,19 @@ class HandleRedirects
             return null;
         }
 
+        // A canonical product URL also contains a category segment. Do not let
+        // the legacy category fallback collapse a valid product page back to
+        // /{category}; the product controller must handle that request.
+        $lastSegment = rawurldecode((string) end($segments));
+        $isProductPath = Product::query()
+            ->where('slug', $lastSegment)
+            ->where(fn ($query) => $query->where('is_active', true)->orWhere('is_archived', true))
+            ->exists();
+
+        if ($isProductPath) {
+            return null;
+        }
+
         $candidateSlugs = array_reverse($segments);
         $categories = Category::query()
             ->whereIn('slug', $candidateSlugs)
