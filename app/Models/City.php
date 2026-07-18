@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Schema;
 
 class City extends Model
 {
@@ -34,7 +35,9 @@ class City extends Model
 
     public static function findBySlug(string $slug): ?self
     {
-        $city = static::where('slug', $slug)->where('is_active', true)->first();
+        $city = Schema::hasTable((new static)->getTable())
+            ? static::where('slug', $slug)->where('is_active', true)->first()
+            : null;
 
         if ($city) {
             return $city;

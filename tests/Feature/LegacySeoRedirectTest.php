@@ -1,0 +1,89 @@
+<?php
+
+namespace Tests\Feature;
+
+use App\Models\Category;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+use Tests\TestCase;
+
+class LegacySeoRedirectTest extends TestCase
+{
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        Schema::create('categories', function (Blueprint $table) {
+            $table->id();
+            $table->unsignedBigInteger('parent_id')->default(0);
+            $table->string('name');
+            $table->string('slug')->unique();
+            $table->boolean('is_active')->default(true);
+            $table->integer('sort_order')->default(0);
+            $table->timestamps();
+        });
+
+        Schema::create('products', function (Blueprint $table) {
+            $table->id();
+            $table->unsignedBigInteger('category_id')->nullable();
+            $table->string('slug')->unique();
+            $table->boolean('is_active')->default(true);
+            $table->boolean('is_archived')->default(false);
+            $table->timestamps();
+        });
+
+        Schema::create('cities', function (Blueprint $table) {
+            $table->id();
+            $table->string('slug')->unique();
+            $table->boolean('is_active')->default(true);
+            $table->timestamps();
+        });
+
+        Schema::create('redirects', function (Blueprint $table) {
+            $table->id();
+            $table->string('from_url')->unique();
+            $table->string('to_url');
+            $table->unsignedSmallInteger('status_code')->default(301);
+            $table->boolean('is_active')->default(true);
+            $table->timestamps();
+        });
+    }
+
+    public function test_nested_legacy_category_redirects_to_current_flat_url(): void
+    {
+        Category::create([
+            'parent_id' => 0,
+            'name' => 'Центробежные насосы',
+            'slug' => 'tsentrobejnye',
+            'is_active' => true,
+        ]);
+
+        $response = $this->get('https://krugloe.kotlov.by/nasosy/poverhnostnyie/tsentrobejnye');
+
+        $response->assertStatus(301);
+        $response->assertRedirect('https://krugloe.kotlov.by/tsentrobejnye');
+    }
+
+    public function test_removed_legacy_product_falls_back_to_nearest_active_category(): void
+    {
+        Category::create([
+            'parent_id' => 0,
+            'name' => 'Погружные насосы',
+            'slug' => 'pogrujnye',
+            'is_active' => true,
+        ]);
+
+        $response = $this->get('https://skidel.kotlov.by/nasosy/pogrujnye/removed-product');
+
+        $response->assertStatus(301);
+        $response->assertRedirect('https://skidel.kotlov.by/pogrujnye');
+    }
+
+    public function test_old_parts_prefix_is_removed_instead_of_rewritten_to_wrong_section(): void
+    {
+        $response = $this->get('https://chechersk.kotlov.by/otoplenie-parts/grebenki');
+
+        $response->assertStatus(301);
+        $response->assertRedirect('https://chechersk.kotlov.by/grebenki');
+    }
+}

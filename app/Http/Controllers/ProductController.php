@@ -128,8 +128,14 @@ class ProductController extends Controller
             'sku'      => $product->sku ?? $product->id,
             'url'      => $canonical,
         ];
-        if ($product->description) {
-            $schema['description'] = strip_tags($product->description);
+
+        $schemaDescription = trim(strip_tags((string) (
+            $product->short_description
+                ?: $product->content
+                ?: $description
+        )));
+        if ($schemaDescription !== '') {
+            $schema['description'] = mb_substr($schemaDescription, 0, 5000);
         }
         if ($firstImage) {
             $schema['image'] = $ogImage;
@@ -150,7 +156,69 @@ class ProductController extends Controller
                 'priceCurrency' => 'BYN',
                 'availability'  => $availability,
                 'url'           => $canonical,
+                'shippingDetails' => [
+                    '@type' => 'OfferShippingDetails',
+                    'shippingDestination' => [
+                        '@type' => 'DefinedRegion',
+                        'addressCountry' => 'BY',
+                    ],
+                    'shippingRate' => [
+                        '@type' => 'MonetaryAmount',
+                        'value' => (string) config('shop.delivery_methods.transport.price', 60),
+                        'currency' => 'BYN',
+                    ],
+                    'deliveryTime' => [
+                        '@type' => 'ShippingDeliveryTime',
+                        'handlingTime' => [
+                            '@type' => 'QuantitativeValue',
+                            'minValue' => 0,
+                            'maxValue' => 1,
+                            'unitCode' => 'DAY',
+                        ],
+                        'transitTime' => [
+                            '@type' => 'QuantitativeValue',
+                            'minValue' => 2,
+                            'maxValue' => 5,
+                            'unitCode' => 'DAY',
+                        ],
+                    ],
+                ],
+                'hasMerchantReturnPolicy' => [
+                    '@type' => 'MerchantReturnPolicy',
+                    'applicableCountry' => 'BY',
+                    'returnPolicyCategory' => 'https://schema.org/MerchantReturnFiniteReturnWindow',
+                    'merchantReturnDays' => 14,
+                    'returnMethod' => 'https://schema.org/ReturnByMail',
+                ],
             ];
+        }
+
+        $approvedReviews = $reviews->filter(fn ($review) => (bool) $review->is_approved);
+        if ($approvedReviews->isNotEmpty()) {
+            $averageRating = round((float) $approvedReviews->avg('rating'), 1);
+            $schema['aggregateRating'] = [
+                '@type' => 'AggregateRating',
+                'ratingValue' => $averageRating,
+                'reviewCount' => $approvedReviews->count(),
+                'bestRating' => 5,
+                'worstRating' => 1,
+            ];
+
+            $schema['review'] = $approvedReviews->take(5)->map(fn ($review) => [
+                '@type' => 'Review',
+                'author' => [
+                    '@type' => 'Person',
+                    'name' => $review->author_name ?: 'Покупатель',
+                ],
+                'datePublished' => optional($review->created_at)->toDateString(),
+                'reviewBody' => $review->text,
+                'reviewRating' => [
+                    '@type' => 'Rating',
+                    'ratingValue' => (int) $review->rating,
+                    'bestRating' => 5,
+                    'worstRating' => 1,
+                ],
+            ])->values()->all();
         }
 
         // BreadcrumbList

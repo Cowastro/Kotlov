@@ -6,6 +6,7 @@ use App\Models\Brand;
 use App\Models\Category;
 use App\Models\Product;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
 
@@ -13,6 +14,12 @@ class AppServiceProvider extends ServiceProvider
 {
     public function boot(): void
     {
+        // During a fresh test database boot the provider runs before
+        // RefreshDatabase has created the catalogue tables.
+        if (app()->runningUnitTests() && ! Schema::hasTable('categories')) {
+            return;
+        }
+
         // Пропускаем для реальных консольных команд (artisan/queue), но НЕ для
         // тестов: под `php artisan test` runningInConsole() == true, а вьюхи всё
         // равно рендерятся HTTP-запросами и требуют navCategories и т.п.

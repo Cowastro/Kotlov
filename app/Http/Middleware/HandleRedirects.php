@@ -79,6 +79,13 @@ class HandleRedirects
             return redirect($target . ($query ? '?' . $query : ''), 301);
         }
 
+        // Resolve a legacy product by its slug before applying broad section
+        // rewrites. Otherwise a valid old product can be sent to a guessed
+        // category path and end in another 404.
+        if ($legacyProductRedirect = $this->redirectLegacyProductPath($request, $path)) {
+            return $legacyProductRedirect;
+        }
+
         // ── Паттерн-редиректы для старого сайта kotlov.by ────────────────────
         //
         // Логика старого сайта (RoutMap.php):
@@ -138,8 +145,8 @@ class HandleRedirects
             '~^/pelletnyie-gorelki$~'                                   => '/pelletnye-gorelki',
 
             // ── /pechi-kaminy-parts, /otoplenie-parts ─────────────────────────
-            '~^/otoplenie-parts/(.+)$~'                                  => '/pechi-kaminy/$1',
-            '~^/pechi-kaminy-parts/(.+)$~'                               => '/pechi-kaminy/$1',
+            '~^/otoplenie-parts/(.+)$~'                                  => '/$1',
+            '~^/pechi-kaminy-parts/(.+)$~'                               => '/$1',
         ];
 
         foreach ($legacyPatterns as $pattern => $replacement) {
@@ -152,8 +159,8 @@ class HandleRedirects
         }
         // ─────────────────────────────────────────────────────────────────────
 
-        if ($legacyProductRedirect = $this->redirectLegacyProductPath($request, $path)) {
-            return $legacyProductRedirect;
+        if ($legacyCategoryRedirect = $this->redirectLegacyCategoryPath($request, $path)) {
+            return $legacyCategoryRedirect;
         }
 
         if ($legacyBrandCategoryRedirect = $this->redirectLegacyBrandCategoryPath($request, $path)) {
@@ -321,6 +328,51 @@ class HandleRedirects
         $query = $request->getQueryString();
 
         return redirect('/' . $categorySlug . ($query ? '?' . $query : ''), 301);
+    }
+
+    /**
+     * Collapse legacy nested catalogue paths to the current flat category URL.
+     *
+     * The old platform exposed categories and products through paths such as
+     * /nasosy/poverhnostnyie/tsentrobejnye and
+     * /nasosy/pogrujnye/removed-product. On the current platform categories
+     * live at /{category}. If an old product no longer exists, redirecting to
+     * its nearest active category is more useful than multiplying 404 pages
+     * across every city subdomain.
+     */
+    private function redirectLegacyCategoryPath(Request $request, string $path): ?Response
+    {
+        $segments = array_values(array_filter(explode('/', trim($path, '/'))));
+
+        if (count($segments) < 2 || in_array($segments[0], [
+            'admin', 'api', 'blog', 'installers', 'storage', 'images', 'proxy-image',
+        ], true)) {
+            return null;
+        }
+
+        $candidateSlugs = array_reverse($segments);
+        $categories = Category::query()
+            ->whereIn('slug', $candidateSlugs)
+            ->where('is_active', true)
+            ->get(['slug'])
+            ->keyBy('slug');
+
+        foreach ($candidateSlugs as $candidateSlug) {
+            if (! $categories->has($candidateSlug)) {
+                continue;
+            }
+
+            $targetPath = '/' . $candidateSlug;
+            if ($targetPath === $path) {
+                return null;
+            }
+
+            $query = $request->getQueryString();
+
+            return redirect($targetPath . ($query ? '?' . $query : ''), 301);
+        }
+
+        return null;
     }
 
     private function redirectLegacyProductPath(Request $request, string $path): ?Response
