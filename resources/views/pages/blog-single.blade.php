@@ -35,7 +35,7 @@
                 <div class="row">
                     <div class="col-lg-12">
                         <div class="blog-image">
-                            <img loading="eager" width="1410" height="600"
+                            <img loading="eager" width="1600" height="900"
                                 src="{{ $post->cover_image_url }}"
                                 alt="{{ $post->title }}"
                                 onerror="this.src='{{ asset('img/blog/blog-boiler.jpg') }}'">
