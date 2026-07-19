@@ -105,7 +105,7 @@ class BlogController extends Controller
         $description = $post->meta_description ?: ($post->excerpt ?: mb_substr(strip_tags($post->content ?? ''), 0, 160));
         $canonicalBase = 'https://' . request()->getHost();
         $canonical = $canonicalBase . '/blog/' . $post->slug;
-        $ogImage = $post->cover_image ? asset('storage/' . $post->cover_image) : asset('img/og-default.jpg');
+        $ogImage = $post->cover_image_url;
 
         return view('pages.blog-single', compact('post', 'related', 'title', 'description', 'canonical', 'ogImage'));
     }

@@ -50,16 +50,14 @@
             <div class="container">
                 <div class="row">
 
-                    @if ($post->cover_image)
-                        <div class="col-lg-12">
-                            <div class="blog-image">
-                                <img loading="lazy" width="1410" height="600"
-                                    src="{{ asset('storage/' . $post->cover_image) }}"
-                                    alt="{{ $post->title }}"
-                                    onerror="this.src='{{ asset('img/blog/placeholder.jpg') }}'">
-                            </div>
+                    <div class="col-lg-12">
+                        <div class="blog-image">
+                            <img loading="lazy" width="1410" height="600"
+                                src="{{ $post->cover_image_url }}"
+                                alt="{{ $post->title }}"
+                                onerror="this.src='{{ asset('img/blog/blog-boiler.jpg') }}'">
                         </div>
-                    @endif
+                    </div>
 
                     <div class="col-lg-8 mx-auto">
                         <div class="blog-content">
@@ -119,9 +117,9 @@
                         <article class="article-blog hover-img">
                             <a href="/blog/{{ $item->slug }}" class="blog-image img-style">
                                 <img loading="lazy" width="450" height="307"
-                                    src="{{ $item->cover_image ? asset('storage/' . $item->cover_image) : asset('img/blog/placeholder.jpg') }}"
+                                    src="{{ $item->cover_image_url }}"
                                     alt="{{ $item->title }}"
-                                    onerror="this.src='{{ asset('img/blog/placeholder.jpg') }}'">
+                                    onerror="this.src='{{ asset('img/blog/blog-boiler.jpg') }}'">
                             </a>
                             <div class="blog-content">
                                 <div class="d-flex align-items-center gap-12 mb-4">

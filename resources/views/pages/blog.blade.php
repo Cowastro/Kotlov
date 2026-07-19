@@ -36,10 +36,10 @@
                         @forelse ($posts as $post)
                             <article class="article-blog hover-img">
                                 <a href="/blog/{{ $post->slug }}" class="blog-image img-style">
-                                    <img loading="lazy" width="450" height="307"
-                                        src="{{ $post->cover_image ? asset('storage/' . $post->cover_image) : asset('img/blog/placeholder.jpg') }}"
+                                    <img loading="lazy" width="900" height="675"
+                                        src="{{ $post->cover_image_url }}"
                                         alt="{{ $post->title }}"
-                                        onerror="this.src='{{ asset('img/blog/placeholder.jpg') }}'">
+                                        onerror="this.src='{{ asset('img/blog/blog-boiler.jpg') }}'">
                                 </a>
                                 <div class="blog-content">
                                     <div class="d-flex align-items-center gap-12 mb-4">
@@ -161,9 +161,9 @@
                                         <li class="recent-item">
                                             <a href="/blog/{{ $recent->slug }}" class="image">
                                                 <img loading="lazy" width="90" height="90"
-                                                    src="{{ $recent->cover_image ? asset('storage/' . $recent->cover_image) : asset('img/blog/placeholder.jpg') }}"
+                                                    src="{{ $recent->cover_image_url }}"
                                                     alt="{{ $recent->title }}"
-                                                    onerror="this.src='{{ asset('img/blog/placeholder.jpg') }}'">
+                                                    onerror="this.src='{{ asset('img/blog/blog-boiler.jpg') }}'">
                                             </a>
                                             <div class="meta">
                                                 <p class="meta-date text-caption-01 cl-text-2">
