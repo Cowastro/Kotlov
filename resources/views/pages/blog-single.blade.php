@@ -3,7 +3,6 @@
 @section('content')
 <main id="wrapper">
 
-    {{-- Заголовок / Breadcrumbs --}}
     <section class="section-page-title text-center flat-spacing-2 pb-0">
         <div class="container">
             <div class="main-page-title">
@@ -46,7 +45,6 @@
         </div>
     </section>
 
-    {{-- Статья --}}
     <section class="section-blog-single">
         <div class="main-blog-single">
             <div class="container">
@@ -83,13 +81,12 @@
                                 {!! $post->content !!}
                             </div>
 
-                            {{-- Теги --}}
                             @if ($post->tags && count($post->tags) > 0)
                                 <div class="box-social-tag">
                                     <div class="tags-right d-flex align-items-center flex-wrap gap-8">
                                         <p>Теги:</p>
                                         @foreach ($post->tags as $tag)
-                                            <a href="/blog?tag={{ $tag }}" class="tag-item text-caption-01">
+                                            <a href="/blog?tag={{ urlencode($tag) }}" class="tag-item text-caption-01">
                                                 {{ $tag }}
                                             </a>
                                         @endforeach
@@ -105,7 +102,6 @@
         </div>
     </section>
 
-    {{-- Похожие статьи --}}
     @if ($related->count() > 0)
         <section class="section-related flat-spacing">
             <div class="container">
@@ -145,7 +141,7 @@
                                     </a>
                                 </h5>
                                 @if ($item->excerpt)
-                                    <p class="entry-desc cl-text-2">{{ Str::limit($item->excerpt, 120) }}</p>
+                                    <p class="entry-desc cl-text-2">{{ Str::limit(strip_tags($item->excerpt), 120) }}</p>
                                 @endif
                             </div>
                         </article>

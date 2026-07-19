@@ -26,18 +26,38 @@ class BlogPostResource extends Resource
     protected static ?string $recordTitleAttribute = 'title';
     protected static ?int $navigationSort = 1;
 
-    public static function getNavigationGroup(): ?string { return 'Контент'; }
-    public static function form(Schema $schema): Schema { return BlogPostForm::configure($schema); }
-    public static function infolist(Schema $schema): Schema { return BlogPostInfolist::configure($schema); }
-    public static function table(Table $table): Table { return BlogPostsTable::configure($table); }
-    public static function getRelations(): array { return []; }
+    public static function getNavigationGroup(): ?string
+    {
+        return 'Контент';
+    }
+
+    public static function form(Schema $schema): Schema
+    {
+        return BlogPostForm::configure($schema);
+    }
+
+    public static function infolist(Schema $schema): Schema
+    {
+        return BlogPostInfolist::configure($schema);
+    }
+
+    public static function table(Table $table): Table
+    {
+        return BlogPostsTable::configure($table);
+    }
+
+    public static function getRelations(): array
+    {
+        return [];
+    }
+
     public static function getPages(): array
     {
         return [
-            'index'  => ListBlogPosts::route('/'),
+            'index' => ListBlogPosts::route('/'),
             'create' => CreateBlogPost::route('/create'),
-            'view'   => ViewBlogPost::route('/{record}'),
-            'edit'   => EditBlogPost::route('/{record}/edit'),
+            'view' => ViewBlogPost::route('/{record}'),
+            'edit' => EditBlogPost::route('/{record}/edit'),
         ];
     }
 }

@@ -52,9 +52,12 @@ class BlogPostForm
                         RichEditor::make('excerpt')
                             ->label('Анонс')
                             ->toolbarButtons([
-                                'bold', 'italic', 'underline',
+                                'bold',
+                                'italic',
+                                'underline',
                                 'link',
-                                'undo', 'redo',
+                                'undo',
+                                'redo',
                             ])
                             ->columnSpanFull(),
                     ]),
@@ -65,12 +68,20 @@ class BlogPostForm
                             ->label('Содержание статьи')
                             ->required()
                             ->toolbarButtons([
-                                'bold', 'italic', 'underline',
-                                'bulletList', 'orderedList',
-                                'h2', 'h3', 'h4',
-                                'link', 'blockquote', 'codeBlock',
+                                'bold',
+                                'italic',
+                                'underline',
+                                'bulletList',
+                                'orderedList',
+                                'h2',
+                                'h3',
+                                'h4',
+                                'link',
+                                'blockquote',
+                                'codeBlock',
                                 'attachFiles',
-                                'undo', 'redo',
+                                'undo',
+                                'redo',
                             ])
                             ->fileAttachmentsDirectory('editor-uploads')
                             ->fileAttachmentsDisk('public')

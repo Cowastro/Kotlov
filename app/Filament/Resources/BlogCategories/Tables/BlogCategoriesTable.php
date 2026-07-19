@@ -17,26 +17,30 @@ class BlogCategoriesTable
         return $table
             ->columns([
                 TextColumn::make('name')
+                    ->label('Название')
                     ->searchable(),
                 TextColumn::make('slug')
+                    ->label('URL (slug)')
                     ->searchable(),
                 TextColumn::make('sort_order')
+                    ->label('Сортировка')
                     ->numeric()
                     ->sortable(),
                 IconColumn::make('is_active')
+                    ->label('Активна')
                     ->boolean(),
                 TextColumn::make('created_at')
+                    ->label('Создано')
                     ->dateTime()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('updated_at')
+                    ->label('Обновлено')
                     ->dateTime()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
-            ->filters([
-                //
-            ])
+            ->filters([])
             ->recordActions([
                 ViewAction::make(),
                 EditAction::make(),

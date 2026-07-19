@@ -3,7 +3,6 @@
 @section('content')
 <main id="wrapper">
 
-    {{-- Заголовок --}}
     <section class="section-page-title text-center flat-spacing-2 pb-0">
         <div class="container">
             <div class="main-page-title">
@@ -27,12 +26,10 @@
         </div>
     </section>
 
-    {{-- Блог --}}
     <section class="section-blog flat-spacing">
         <div class="container">
             <div class="row">
 
-                {{-- Статьи --}}
                 <div class="col-lg-8">
                     <div class="tf-grid-layout sm-col-2">
 
@@ -63,7 +60,7 @@
                                     </h5>
                                     @if ($post->excerpt)
                                         <p class="entry-desc cl-text-2">
-                                            {{ Str::limit($post->excerpt, 120) }}
+                                            {{ Str::limit(strip_tags($post->excerpt), 120) }}
                                         </p>
                                     @endif
                                 </div>
@@ -75,7 +72,6 @@
                             </div>
                         @endforelse
 
-                        {{-- Пагинация --}}
                         @if ($posts->hasPages())
                             <div class="wd-full">
                                 <div class="tf-page-pagination">
@@ -116,11 +112,9 @@
                     </div>
                 </div>
 
-                {{-- Сайдбар --}}
                 <div class="col-lg-4 d-none d-lg-block">
                     <div class="blog-sidebar sidebar-content-wrap sticky-top">
 
-                        {{-- Поиск --}}
                         <div class="sidebar-item">
                             <div class="sb-search">
                                 <form action="/blog" method="GET" class="form-search-blog">
@@ -136,7 +130,6 @@
                             </div>
                         </div>
 
-                        {{-- Категории --}}
                         @if ($categories->count() > 0)
                             <div class="sidebar-item">
                                 <h5 class="sb-title">Категории</h5>
@@ -160,7 +153,6 @@
                             </div>
                         @endif
 
-                        {{-- Последние статьи --}}
                         @if ($recentPosts->count() > 0)
                             <div class="sidebar-item">
                                 <h5 class="sb-title">Последние статьи</h5>
@@ -188,13 +180,12 @@
                             </div>
                         @endif
 
-                        {{-- Теги --}}
                         @if ($tags->count() > 0)
                             <div class="sidebar-item">
                                 <h5 class="sb-title">Теги</h5>
                                 <div class="sb-tags d-flex flex-wrap gap-8">
                                     @foreach ($tags as $tag)
-                                        <a href="/blog?tag={{ $tag }}"
+                                        <a href="/blog?tag={{ urlencode($tag) }}"
                                            class="tf-btn btn-outline small radius-3 {{ request('tag') === $tag ? 'btn-primary' : '' }}">
                                             {{ $tag }}
                                         </a>
