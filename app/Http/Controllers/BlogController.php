@@ -57,8 +57,12 @@ class BlogController extends Controller
             ->pluck('tags')
             ->flatten()
             ->filter()
-            ->unique()
-            ->sort()
+            ->map(fn ($tag) => trim((string) $tag))
+            ->filter(fn ($tag) => $tag !== '' && mb_strlen($tag) <= 28)
+            ->countBy()
+            ->sortDesc()
+            ->keys()
+            ->take(12)
             ->values();
 
         $title = $activeCategory
