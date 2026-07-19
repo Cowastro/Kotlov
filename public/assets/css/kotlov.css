@@ -1636,25 +1636,30 @@ a.category-v05.subcat-tile:hover .cate-icon {
     cursor: pointer;
 }
 
+.section-blog .tf-grid-layout,
 .section-related .tf-grid-layout {
     align-items: stretch;
 }
 
+.section-blog .article-blog,
 .section-related .article-blog {
     height: 100%;
 }
 
+.section-blog .article-blog .blog-image,
 .section-related .article-blog .blog-image {
     width: 100%;
     aspect-ratio: 450 / 307;
 }
 
+.section-blog .article-blog .blog-image img,
 .section-related .article-blog .blog-image img {
     width: 100%;
     height: 100%;
     object-fit: cover;
 }
 
+.section-blog .article-blog .blog-content,
 .section-related .article-blog .blog-content {
     display: flex;
     flex: 1;
