@@ -1603,6 +1603,24 @@ a.category-v05.subcat-tile:hover .cate-icon {
     border-bottom: 0;
 }
 
+.kotlov-blog-content .kotlov-article-note {
+    margin: 28px 0;
+    padding: 22px 24px;
+    border: 1px solid rgba(245, 130, 32, .24);
+    border-left: 4px solid #f58220;
+    border-radius: 16px;
+    background: linear-gradient(135deg, rgba(245, 130, 32, .10), rgba(245, 130, 32, .03));
+    color: var(--text);
+    font-size: 17px;
+    line-height: 1.65;
+}
+
+.kotlov-blog-content .kotlov-article-note strong {
+    display: block;
+    margin-bottom: 6px;
+    font-weight: 700;
+}
+
 .kotlov-blog-content .tf-social-icon-2 a,
 .kotlov-blog-content .tf-social-icon-2 button {
     display: flex;
