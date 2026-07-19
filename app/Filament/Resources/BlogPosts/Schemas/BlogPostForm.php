@@ -2,6 +2,8 @@
 
 namespace App\Filament\Resources\BlogPosts\Schemas;
 
+use Filament\Forms\Components\CodeEditor;
+use Filament\Forms\Components\CodeEditor\Enums\Language;
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Placeholder;
@@ -39,7 +41,7 @@ class BlogPostForm
 
                         TextInput::make('slug')
                             ->label('URL (slug)')
-                            ->helperText('Адрес статьи после /blog/. Например: dymohody-teplov-i-sukhov-v-belarusi')
+                            ->helperText('Адрес статьи после /blog/. Например: teplovye-nasosy-ge-r290-vysokotemperaturnye')
                             ->required()
                             ->unique(ignoreRecord: true),
 
@@ -115,36 +117,35 @@ class BlogPostForm
                                 TagsInput::make('tags')
                                     ->label('Теги')
                                     ->placeholder('Добавить тег')
-                                    ->helperText('Например: дымоход, камин, баня, Теплов и Сухов'),
+                                    ->helperText('Например: тепловые насосы, GE R290, дымоход, камин'),
                             ]),
                     ]),
 
-                Section::make('Контент статьи')
-                    ->description('Основной текст. Для красивого шаблона можно использовать H2/H3, цитаты, списки и изображения.')
+                Section::make('HTML-код статьи')
+                    ->description('Ручной режим для статей. Здесь можно прямо менять фотографии, таблицы, цитаты и HTML-блоки без поломки разметки.')
                     ->columnSpanFull()
                     ->schema([
-                        RichEditor::make('content')
-                            ->label('Содержание статьи')
+                        Placeholder::make('content_html_help')
+                            ->label('Как быстро поменять фото')
+                            ->content(new HtmlString(<<<'HTML'
+<div style="line-height:1.65">
+    <p style="margin:0 0 8px">Найди в коде строку <code>src="/img/..."</code> и замени путь к картинке.</p>
+    <p style="margin:0 0 8px">Для двух фото в статье используй блок:</p>
+    <pre style="white-space:pre-wrap;overflow:auto;padding:12px;border-radius:8px;background:#111827;color:#e5e7eb;font-size:12px">&lt;div class="tf-grid-layout sm-col-2 gap-30"&gt;
+    &lt;div class="blog-image-2"&gt;
+        &lt;img loading="lazy" width="900" height="640" src="/img/blog/works/photo-1.jpg" alt="Описание первого фото"&gt;
+    &lt;/div&gt;
+    &lt;div class="blog-image-2"&gt;
+        &lt;img loading="lazy" width="900" height="640" src="/img/blog/works/photo-2.jpg" alt="Описание второго фото"&gt;
+    &lt;/div&gt;
+&lt;/div&gt;</pre>
+</div>
+HTML)),
+
+                        CodeEditor::make('content')
+                            ->label('Содержание статьи (HTML)')
+                            ->language(Language::Html)
                             ->required()
-                            ->toolbarButtons([
-                                'bold',
-                                'italic',
-                                'underline',
-                                'bulletList',
-                                'orderedList',
-                                'h2',
-                                'h3',
-                                'h4',
-                                'link',
-                                'blockquote',
-                                'codeBlock',
-                                'attachFiles',
-                                'undo',
-                                'redo',
-                            ])
-                            ->fileAttachmentsDirectory('editor-uploads')
-                            ->fileAttachmentsDisk('public')
-                            ->fileAttachmentsVisibility('public')
                             ->columnSpanFull(),
                     ]),
 
