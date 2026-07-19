@@ -1636,6 +1636,31 @@ a.category-v05.subcat-tile:hover .cate-icon {
     cursor: pointer;
 }
 
+.section-related .tf-grid-layout {
+    align-items: stretch;
+}
+
+.section-related .article-blog {
+    height: 100%;
+}
+
+.section-related .article-blog .blog-image {
+    width: 100%;
+    aspect-ratio: 450 / 307;
+}
+
+.section-related .article-blog .blog-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.section-related .article-blog .blog-content {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+}
+
 @media (max-width: 575px) {
     .kotlov-blog-content .box-social-tag {
         align-items: flex-start;
