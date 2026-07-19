@@ -1570,6 +1570,39 @@ a.category-v05.subcat-tile:hover .cate-icon {
     text-align: center;
 }
 
+.kotlov-blog-content .kotlov-article-table {
+    overflow-x: auto;
+    margin: 4px 0;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+}
+
+.kotlov-blog-content .kotlov-article-table table {
+    width: 100%;
+    min-width: 680px;
+    border-collapse: collapse;
+    background: var(--white);
+}
+
+.kotlov-blog-content .kotlov-article-table th,
+.kotlov-blog-content .kotlov-article-table td {
+    padding: 18px 20px;
+    border-bottom: 1px solid var(--line);
+    color: var(--text);
+    font-size: 15px;
+    line-height: 1.55;
+    vertical-align: top;
+}
+
+.kotlov-blog-content .kotlov-article-table th {
+    background: #f8f8f8;
+    font-weight: 600;
+}
+
+.kotlov-blog-content .kotlov-article-table tr:last-child td {
+    border-bottom: 0;
+}
+
 .kotlov-blog-content .tf-social-icon-2 a,
 .kotlov-blog-content .tf-social-icon-2 button {
     display: flex;
