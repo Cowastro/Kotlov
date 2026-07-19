@@ -129,6 +129,10 @@ class ProductController extends Controller
             'url'      => $canonical,
         ];
 
+        if (filled($product->sku)) {
+            $schema['mpn'] = (string) $product->sku;
+        }
+
         $schemaDescription = trim(strip_tags((string) (
             $product->short_description
                 ?: $product->content
@@ -140,7 +144,7 @@ class ProductController extends Controller
         if ($firstImage) {
             $schema['image'] = $ogImage;
         }
-        if ($brandName) {
+        if (mb_strlen(trim($brandName)) >= 2) {
             $schema['brand'] = ['@type' => 'Brand', 'name' => $brandName];
         }
         if ($product->price) {
@@ -189,6 +193,7 @@ class ProductController extends Controller
                     'returnPolicyCategory' => 'https://schema.org/MerchantReturnFiniteReturnWindow',
                     'merchantReturnDays' => 14,
                     'returnMethod' => 'https://schema.org/ReturnByMail',
+                    'returnFees' => 'https://schema.org/ReturnFeesCustomerResponsibility',
                 ],
             ];
         }
