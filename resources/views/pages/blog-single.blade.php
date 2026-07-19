@@ -4,7 +4,8 @@
 @php
     $shareUrl = $canonical ?? url()->current();
     $shareTitle = $post->title;
-    $shareText = trim($shareTitle . '. ' . strip_tags($description ?? $post->excerpt ?? ''));
+    $shareDescription = $post->meta_description ?: strip_tags($post->excerpt ?? $description ?? '');
+    $shareText = trim($shareTitle . ($shareDescription ? ' — ' . Str::limit($shareDescription, 140) : ''));
 @endphp
 
 <main id="wrapper">
