@@ -12,6 +12,7 @@ class BlogPost extends Model
         'pelletnyy-kotel-ili-gazovyy' => 'img/blog/blog-boiler.jpg',
         'dymohod-dlya-kamina' => 'img/blog/blog-chimney.jpg',
         'dymohody-teplov-i-sukhov-v-belarusi' => 'img/blog/blog-chimney.jpg',
+        'teplovye-nasosy-ge-r290-vysokotemperaturnye' => 'img/blog/ge-r290-heat-pumps-cover.jpg',
     ];
 
     protected $fillable = [
