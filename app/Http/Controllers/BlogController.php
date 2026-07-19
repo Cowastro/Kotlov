@@ -103,10 +103,110 @@ class BlogController extends Controller
 
         $title = $post->meta_title ?: ($post->title . ' | KOTLOV');
         $description = $post->meta_description ?: ($post->excerpt ?: mb_substr(strip_tags($post->content ?? ''), 0, 160));
-        $canonicalBase = 'https://' . request()->getHost();
-        $canonical = $canonicalBase . '/blog/' . $post->slug;
+        $canonical = 'https://' . request()->getHost() . '/blog/' . $post->slug;
         $ogImage = $post->cover_image_url;
 
-        return view('pages.blog-single', compact('post', 'related', 'title', 'description', 'canonical', 'ogImage'));
+        $schemaJson = json_encode($this->articleSchema($post, $canonical), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        $breadcrumbJson = json_encode($this->breadcrumbSchema($post, $canonical), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+
+        return view('pages.blog-single', compact(
+            'post',
+            'related',
+            'title',
+            'description',
+            'canonical',
+            'ogImage',
+            'schemaJson',
+            'breadcrumbJson'
+        ));
+    }
+
+    private function articleSchema(BlogPost $post, string $canonical): array
+    {
+        $schema = [
+            '@context' => 'https://schema.org',
+            '@type' => 'Article',
+            'mainEntityOfPage' => [
+                '@type' => 'WebPage',
+                '@id' => $canonical,
+            ],
+            'headline' => $post->title,
+            'description' => $post->meta_description ?: strip_tags($post->excerpt ?? ''),
+            'image' => [$post->cover_image_url],
+            'datePublished' => optional($post->published_at)->toAtomString(),
+            'dateModified' => optional($post->updated_at)->toAtomString(),
+            'author' => [
+                '@type' => 'Organization',
+                'name' => 'KOTLOV',
+                'url' => 'https://' . request()->getHost(),
+            ],
+            'publisher' => [
+                '@type' => 'Organization',
+                'name' => 'KOTLOV',
+                'logo' => [
+                    '@type' => 'ImageObject',
+                    'url' => asset('img/logo.png'),
+                ],
+            ],
+        ];
+
+        if ($post->slug === 'kak-vybrat-teplovoy-nasos') {
+            $schema['mainEntity'] = [
+                [
+                    '@type' => 'Question',
+                    'name' => 'Какой тепловой насос выбрать для частного дома?',
+                    'acceptedAnswer' => [
+                        '@type' => 'Answer',
+                        'text' => 'Для большинства новых домов чаще выбирают воздушный тепловой насос воздух-вода. Он проще по монтажу, дешевле геотермального решения и подходит для низкотемпературного отопления.',
+                    ],
+                ],
+                [
+                    '@type' => 'Question',
+                    'name' => 'Что важнее при выборе: мощность или COP?',
+                    'acceptedAnswer' => [
+                        '@type' => 'Answer',
+                        'text' => 'Важны оба параметра, но сначала считают теплопотери дома и требуемую мощность при низкой температуре. COP помогает сравнить экономичность, но без правильной мощности насос будет работать хуже.',
+                    ],
+                ],
+                [
+                    '@type' => 'Question',
+                    'name' => 'Можно ли ставить тепловой насос со старыми радиаторами?',
+                    'acceptedAnswer' => [
+                        '@type' => 'Answer',
+                        'text' => 'Можно, но систему нужно проверить. Тепловые насосы лучше работают с тёплым полом или увеличенными радиаторами, где нужна более низкая температура подачи.',
+                    ],
+                ],
+            ];
+        }
+
+        return $schema;
+    }
+
+    private function breadcrumbSchema(BlogPost $post, string $canonical): array
+    {
+        return [
+            '@context' => 'https://schema.org',
+            '@type' => 'BreadcrumbList',
+            'itemListElement' => [
+                [
+                    '@type' => 'ListItem',
+                    'position' => 1,
+                    'name' => 'Главная',
+                    'item' => 'https://' . request()->getHost(),
+                ],
+                [
+                    '@type' => 'ListItem',
+                    'position' => 2,
+                    'name' => 'Статьи',
+                    'item' => 'https://' . request()->getHost() . '/blog',
+                ],
+                [
+                    '@type' => 'ListItem',
+                    'position' => 3,
+                    'name' => $post->title,
+                    'item' => $canonical,
+                ],
+            ],
+        ];
     }
 }

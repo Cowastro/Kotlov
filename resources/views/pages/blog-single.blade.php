@@ -1,6 +1,11 @@
 @extends('layouts.amerce')
 
 @section('content')
+@php
+    $shareUrl = $canonical ?? url()->current();
+    $shareTitle = $post->title;
+@endphp
+
 <main id="wrapper">
 
     <section class="section-page-title text-center flat-spacing-2 pb-0">
@@ -31,28 +36,23 @@
                             {{ $post->category->name }}
                         </a>
                     @endif
-                    @if ($post->author)
+                    @if ($post->views_count)
                         <span class="cl-text-3">·</span>
-                        <span class="text-caption-01 cl-text-2">{{ $post->author->name }}</span>
+                        <span class="text-caption-01 cl-text-2">{{ $post->views_count }} просмотров</span>
                     @endif
-                </div>
-                <div class="nav-post-list mt-12">
-                    <a href="/blog" class="link nav-all-post nav-post-link">
-                        <i class="icon icon-SquaresFour"></i>
-                    </a>
                 </div>
             </div>
         </div>
     </section>
 
-    <section class="section-blog-single">
+    <section class="section-blog-single blog-article-section">
         <div class="main-blog-single">
             <div class="container">
                 <div class="row">
 
                     <div class="col-lg-12">
-                        <div class="blog-image">
-                            <img loading="lazy" width="1410" height="600"
+                        <div class="blog-image blog-article-cover">
+                            <img loading="eager" width="1410" height="600"
                                 src="{{ $post->cover_image_url }}"
                                 alt="{{ $post->title }}"
                                 onerror="this.src='{{ asset('img/blog/blog-boiler.jpg') }}'">
@@ -60,23 +60,31 @@
                     </div>
 
                     <div class="col-lg-8 mx-auto">
-                        <div class="blog-content">
-
-                            @if ($post->views_count)
-                                <div class="entry-meta mb-8">
-                                    <div class="meta-item">
-                                        <i class="icon icon-Eye cl-text-3"></i>
-                                        <span class="text-caption-01 cl-text-2">{{ $post->views_count }} просмотров</span>
-                                    </div>
-                                </div>
-                            @endif
+                        <article class="blog-content blog-article-content">
 
                             @if ($post->excerpt)
-                                <div class="text text-body-1 s1 fw-medium">{!! $post->excerpt !!}</div>
+                                <div class="blog-article-lead">{!! $post->excerpt !!}</div>
                             @endif
 
-                            <div class="d-grid gap-12 blog-body">
+                            <div class="blog-share-panel" aria-label="Поделиться статьёй">
+                                <span>Поделиться</span>
+                                <a href="https://t.me/share/url?url={{ rawurlencode($shareUrl) }}&text={{ rawurlencode($shareTitle) }}" target="_blank" rel="noopener">Telegram</a>
+                                <a href="viber://forward?text={{ rawurlencode($shareTitle . ' ' . $shareUrl) }}">Viber</a>
+                                <a href="https://wa.me/?text={{ rawurlencode($shareTitle . ' ' . $shareUrl) }}" target="_blank" rel="noopener">WhatsApp</a>
+                                <a href="https://www.facebook.com/sharer/sharer.php?u={{ rawurlencode($shareUrl) }}" target="_blank" rel="noopener">Facebook</a>
+                                <button type="button" class="blog-copy-link" data-copy-url="{{ $shareUrl }}">Скопировать ссылку</button>
+                            </div>
+
+                            <div class="blog-body">
                                 {!! $post->content !!}
+                            </div>
+
+                            <div class="blog-article-cta">
+                                <div>
+                                    <p class="blog-article-cta-title">Нужен подбор теплового насоса под дом?</p>
+                                    <p>Подскажем по мощности, радиаторам, тёплому полу, резервному котлу и бюджету монтажа.</p>
+                                </div>
+                                <a href="/contacts" class="tf-btn btn-fill radius-4">Получить консультацию</a>
                             </div>
 
                             @if ($post->tags && count($post->tags) > 0)
@@ -92,7 +100,7 @@
                                 </div>
                             @endif
 
-                        </div>
+                        </article>
                     </div>
 
                 </div>
@@ -150,4 +158,19 @@
     @endif
 
 </main>
+
+<script>
+document.addEventListener('click', function (event) {
+    var button = event.target.closest('.blog-copy-link');
+    if (!button) return;
+
+    navigator.clipboard.writeText(button.dataset.copyUrl).then(function () {
+        var oldText = button.textContent;
+        button.textContent = 'Ссылка скопирована';
+        setTimeout(function () {
+            button.textContent = oldText;
+        }, 1800);
+    });
+});
+</script>
 @endsection
