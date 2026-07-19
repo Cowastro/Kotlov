@@ -1541,6 +1541,7 @@ a.category-v05.subcat-tile:hover .cate-icon {
 
 .kotlov-blog-content .mini-title {
     margin: 0;
+    text-transform: none !important;
 }
 
 .kotlov-blog-content .blog-image-2 img {
