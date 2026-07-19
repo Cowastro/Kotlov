@@ -1550,6 +1550,25 @@ a.category-v05.subcat-tile:hover .cate-icon {
     object-fit: cover;
 }
 
+.kotlov-blog-content .kotlov-real-work-photo {
+    margin: 4px 0;
+}
+
+.kotlov-blog-content .kotlov-real-work-photo img {
+    display: block;
+    width: 100%;
+    max-height: 620px;
+    object-fit: cover;
+    border-radius: 10px;
+}
+
+.kotlov-blog-content .kotlov-real-work-photo figcaption {
+    margin-top: 12px;
+    color: var(--text-3);
+    font-size: 14px;
+    line-height: 1.5;
+}
+
 .kotlov-blog-content .tf-social-icon-2 a,
 .kotlov-blog-content .tf-social-icon-2 button {
     display: flex;
