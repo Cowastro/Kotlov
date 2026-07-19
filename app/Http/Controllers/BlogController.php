@@ -105,6 +105,21 @@ class BlogController extends Controller
         $description = $post->meta_description ?: ($post->excerpt ?: mb_substr(strip_tags($post->content ?? ''), 0, 160));
         $canonical = 'https://' . request()->getHost() . '/blog/' . $post->slug;
         $ogImage = $post->cover_image_url;
+        $ogImageSecure = $ogImage;
+        $ogImageWidth = 1600;
+        $ogImageHeight = 900;
+        $ogImageType = 'image/jpeg';
+        $ogType = 'article';
+        $ogUrl = $canonical;
+        $ogTitle = $title;
+        $ogDescription = $description;
+        $twitterTitle = $title;
+        $twitterDescription = $description;
+        $twitterImage = $ogImage;
+        $articlePublishedTime = optional($post->published_at)->toAtomString();
+        $articleModifiedTime = optional($post->updated_at)->toAtomString();
+        $articleSection = optional($post->category)->name;
+        $articleTags = $post->tags ?? [];
 
         $schemaJson = json_encode($this->articleSchema($post, $canonical), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
         $breadcrumbJson = json_encode($this->breadcrumbSchema($post, $canonical), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
@@ -115,7 +130,22 @@ class BlogController extends Controller
             'title',
             'description',
             'canonical',
+            'ogType',
+            'ogUrl',
+            'ogTitle',
+            'ogDescription',
             'ogImage',
+            'ogImageSecure',
+            'ogImageWidth',
+            'ogImageHeight',
+            'ogImageType',
+            'twitterTitle',
+            'twitterDescription',
+            'twitterImage',
+            'articlePublishedTime',
+            'articleModifiedTime',
+            'articleSection',
+            'articleTags',
             'schemaJson',
             'breadcrumbJson'
         ));

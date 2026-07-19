@@ -4,6 +4,7 @@
 @php
     $shareUrl = $canonical ?? url()->current();
     $shareTitle = $post->title;
+    $shareText = trim($shareTitle . '. ' . strip_tags($description ?? $post->excerpt ?? ''));
 @endphp
 
 <main id="wrapper">
@@ -86,7 +87,7 @@
                                     <p>Поделиться:</p>
                                     <ul class="tf-social-icon-2">
                                         <li>
-                                            <a href="https://www.facebook.com/sharer/sharer.php?u={{ rawurlencode($shareUrl) }}" target="_blank" rel="noopener" aria-label="Facebook" title="Facebook">
+                                            <a href="https://www.facebook.com/sharer/sharer.php?u={{ rawurlencode($shareUrl) }}&quote={{ rawurlencode($shareText) }}" target="_blank" rel="noopener" aria-label="Facebook" title="Facebook">
                                                 <i class="icon icon-FacebookLogo"></i>
                                             </a>
                                         </li>

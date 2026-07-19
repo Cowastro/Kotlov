@@ -24,8 +24,34 @@
     <meta property="og:type" content="{{ $ogType ?? 'website' }}">
     <meta property="og:url" content="{{ $ogUrl ?? url()->current() }}">
     <meta property="og:image" content="{{ $ogImage ?? asset('img/og-default.jpg') }}">
+    @if(isset($ogImageSecure))
+    <meta property="og:image:secure_url" content="{{ $ogImageSecure }}">
+    @endif
+    @if(isset($ogImageWidth))
+    <meta property="og:image:width" content="{{ $ogImageWidth }}">
+    @endif
+    @if(isset($ogImageHeight))
+    <meta property="og:image:height" content="{{ $ogImageHeight }}">
+    @endif
+    @if(isset($ogImageType))
+    <meta property="og:image:type" content="{{ $ogImageType }}">
+    @endif
     <meta property="og:site_name" content="kotlov.by">
     <meta property="og:locale" content="ru_RU">
+    @if(isset($articlePublishedTime))
+    <meta property="article:published_time" content="{{ $articlePublishedTime }}">
+    @endif
+    @if(isset($articleModifiedTime))
+    <meta property="article:modified_time" content="{{ $articleModifiedTime }}">
+    @endif
+    @if(isset($articleSection))
+    <meta property="article:section" content="{{ $articleSection }}">
+    @endif
+    @if(isset($articleTags) && is_iterable($articleTags))
+        @foreach($articleTags as $articleTag)
+    <meta property="article:tag" content="{{ $articleTag }}">
+        @endforeach
+    @endif
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="{{ $twitterTitle ?? $ogTitle ?? $metaTitle }}">
     <meta name="twitter:description" content="{{ $twitterDescription ?? $ogDescription ?? $metaDescription }}">
