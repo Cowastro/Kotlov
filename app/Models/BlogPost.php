@@ -11,7 +11,7 @@ class BlogPost extends Model
         'kak-vybrat-teplovoy-nasos' => 'img/blog/blog-heatpump.jpg',
         'pelletnyy-kotel-ili-gazovyy' => 'img/blog/blog-boiler.jpg',
         'dymohod-dlya-kamina' => 'img/blog/blog-chimney.jpg',
-        'dymohody-teplov-i-sukhov-v-belarusi' => 'img/blog/blog-chimney.jpg',
+        'dymohody-teplov-i-sukhov-v-belarusi' => 'img/blog/teplov-sukhov-chimneys-cover-1800x1040.jpg',
         'teplovye-nasosy-ge-r290-vysokotemperaturnye' => 'img/blog/ge-r290-heat-pumps-cover.jpg',
     ];
 
