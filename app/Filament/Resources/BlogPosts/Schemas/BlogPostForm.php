@@ -2,8 +2,6 @@
 
 namespace App\Filament\Resources\BlogPosts\Schemas;
 
-use Filament\Forms\Components\CodeEditor;
-use Filament\Forms\Components\CodeEditor\Enums\Language;
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Placeholder;
@@ -121,30 +119,50 @@ class BlogPostForm
                             ]),
                     ]),
 
-                Section::make('HTML-код статьи')
-                    ->description('Ручной режим для статей. Здесь можно прямо менять фотографии, таблицы, цитаты и HTML-блоки без поломки разметки.')
+                Section::make('Текст статьи')
+                    ->description('Основной визуальный редактор. Можно менять текст, заголовки, цитаты, списки, ссылки и фотографии.')
                     ->columnSpanFull()
                     ->schema([
                         Placeholder::make('content_html_help')
-                            ->label('Как быстро поменять фото')
-                            ->content(new HtmlString(<<<'HTML'
-<div style="line-height:1.65">
-    <p style="margin:0 0 8px">Найди в коде строку <code>src="/img/..."</code> и замени путь к картинке.</p>
-    <p style="margin:0 0 8px">Для двух фото в статье используй блок:</p>
-    <pre style="white-space:pre-wrap;overflow:auto;padding:12px;border-radius:8px;background:#111827;color:#e5e7eb;font-size:12px">&lt;div class="tf-grid-layout sm-col-2 gap-30"&gt;
-    &lt;div class="blog-image-2"&gt;
-        &lt;img loading="lazy" width="900" height="640" src="/img/blog/works/photo-1.jpg" alt="Описание первого фото"&gt;
-    &lt;/div&gt;
-    &lt;div class="blog-image-2"&gt;
-        &lt;img loading="lazy" width="900" height="640" src="/img/blog/works/photo-2.jpg" alt="Описание второго фото"&gt;
-    &lt;/div&gt;
-&lt;/div&gt;</pre>
-</div>
-HTML)),
+                            ->hiddenLabel()
+                            ->content(new HtmlString(
+                                '<div style="line-height:1.6">Редактор сохраняет статью в HTML, но работать можно визуально. '
+                                . 'Для фотографий используй кнопку загрузки в панели редактора.</div>'
+                            )),
 
-                        CodeEditor::make('content')
-                            ->label('Содержание статьи (HTML)')
-                            ->language(Language::Html)
+                        RichEditor::make('content')
+                            ->label('Содержание статьи')
+                            ->helperText('Визуальный редактор статьи. Фото добавляй кнопкой загрузки/скрепкой в панели редактора.')
+                            ->toolbarButtons([
+                                'bold',
+                                'italic',
+                                'underline',
+                                'strike',
+                                'h2',
+                                'h3',
+                                'h4',
+                                'bulletList',
+                                'orderedList',
+                                'blockquote',
+                                'lead',
+                                'small',
+                                'link',
+                                'attachFiles',
+                                'table',
+                                'grid',
+                                'horizontalRule',
+                                'clearFormatting',
+                                'undo',
+                                'redo',
+                            ])
+                            ->fileAttachmentsDirectory('blog/editor')
+                            ->fileAttachmentsDisk('public')
+                            ->fileAttachmentsVisibility('public')
+                            ->fileAttachmentsAcceptedFileTypes(['image/jpeg', 'image/png', 'image/webp'])
+                            ->fileAttachmentsMaxSize(4096)
+                            ->extraInputAttributes([
+                                'style' => 'min-height: 640px;',
+                            ])
                             ->required()
                             ->columnSpanFull(),
                     ]),
