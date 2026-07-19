@@ -8,4 +8,9 @@ use Filament\Resources\Pages\CreateRecord;
 class CreateBlogPost extends CreateRecord
 {
     protected static string $resource = BlogPostResource::class;
+
+    public function getMaxContentWidth(): ?string
+    {
+        return 'full';
+    }
 }

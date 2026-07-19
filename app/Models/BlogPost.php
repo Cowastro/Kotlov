@@ -11,6 +11,7 @@ class BlogPost extends Model
         'kak-vybrat-teplovoy-nasos' => 'img/blog/blog-heatpump.jpg',
         'pelletnyy-kotel-ili-gazovyy' => 'img/blog/blog-boiler.jpg',
         'dymohod-dlya-kamina' => 'img/blog/blog-chimney.jpg',
+        'dymohody-teplov-i-sukhov-v-belarusi' => 'img/blog/blog-chimney.jpg',
     ];
 
     protected $fillable = [
