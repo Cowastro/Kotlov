@@ -1621,6 +1621,46 @@ a.category-v05.subcat-tile:hover .cate-icon {
     font-weight: 700;
 }
 
+.kotlov-blog-content .kotlov-article-event-card {
+    display: flex;
+    min-height: 100%;
+    flex-direction: column;
+    justify-content: center;
+    padding: 34px;
+    border: 1px solid rgba(17, 24, 39, .10);
+    border-radius: 16px;
+    background:
+        radial-gradient(circle at top right, rgba(245, 130, 32, .18), transparent 36%),
+        linear-gradient(135deg, #111827, #1f2937);
+    color: #fff;
+}
+
+.kotlov-blog-content .kotlov-article-event-card .event-eyebrow {
+    margin-bottom: 14px;
+    color: rgba(255, 255, 255, .68);
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+}
+
+.kotlov-blog-content .kotlov-article-event-card strong {
+    margin-bottom: 12px;
+    font-size: 28px;
+    line-height: 1.18;
+}
+
+.kotlov-blog-content .kotlov-article-event-card p {
+    margin: 0;
+    color: rgba(255, 255, 255, .78);
+    font-size: 16px;
+    line-height: 1.6;
+}
+
+.kotlov-blog-content .kotlov-article-event-card p + p {
+    margin-top: 12px;
+}
+
 .kotlov-blog-content .tf-social-icon-2 a,
 .kotlov-blog-content .tf-social-icon-2 button {
     display: flex;
