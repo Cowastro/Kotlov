@@ -4,10 +4,11 @@ namespace App\Filament\Resources\ContactRequests\Tables;
 
 use App\Models\ContactRequest;
 use Filament\Actions\Action;
+use Filament\Actions\ActionGroup;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
-use Filament\Actions\ViewAction;
 use Filament\Actions\EditAction;
+use Filament\Actions\ViewAction;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
@@ -21,41 +22,47 @@ class ContactRequestsTable
                 TextColumn::make('name')
                     ->label('Имя')
                     ->searchable()
-                    ->sortable(),
+                    ->sortable()
+                    ->weight('bold'),
+
                 TextColumn::make('phone')
                     ->label('Телефон')
-                    ->searchable(),
-                TextColumn::make('email')
-                    ->label('Email')
                     ->searchable()
-                    ->placeholder('-')
-                    ->toggleable(isToggledHiddenByDefault: true),
+                    ->copyable()
+                    ->weight('bold'),
+
                 TextColumn::make('message')
                     ->label('Сообщение')
-                    ->limit(60)
+                    ->limit(90)
+                    ->lineClamp(2)
                     ->tooltip(fn ($record) => $record->message),
+
                 TextColumn::make('product_name')
                     ->label('Товар')
-                    ->limit(40)
+                    ->limit(55)
+                    ->lineClamp(2)
                     ->tooltip(fn ($record) => $record->product_name)
-                    ->placeholder('-')
+                    ->placeholder('—')
                     ->searchable()
                     ->toggleable(),
+
                 TextColumn::make('city')
                     ->label('Город')
-                    ->placeholder('-')
+                    ->placeholder('—')
                     ->searchable()
                     ->sortable(),
+
                 TextColumn::make('source')
                     ->label('Источник')
                     ->badge()
                     ->formatStateUsing(fn (?string $state) => match ($state) {
                         'product_page' => 'Карточка товара',
                         'consultation_form' => 'Форма консультации',
-                        default => $state ?: '-',
+                        default => $state ?: '—',
                     })
                     ->color('gray')
                     ->toggleable(),
+
                 TextColumn::make('status')
                     ->label('Статус')
                     ->badge()
@@ -65,13 +72,28 @@ class ContactRequestsTable
                         'done' => 'success',
                         default => 'gray',
                     })
+                    ->icon(fn (?string $state) => match ($state) {
+                        'new' => 'heroicon-o-sparkles',
+                        'read' => 'heroicon-o-eye',
+                        'done' => 'heroicon-o-check-circle',
+                        default => null,
+                    })
                     ->formatStateUsing(fn ($state) => ContactRequest::$statuses[$state] ?? $state)
                     ->sortable(),
+
                 TextColumn::make('created_at')
                     ->label('Дата')
                     ->dateTime('d.m.Y H:i')
                     ->sortable(),
+
+                TextColumn::make('email')
+                    ->label('Email')
+                    ->searchable()
+                    ->copyable()
+                    ->placeholder('—')
+                    ->toggleable(isToggledHiddenByDefault: true),
             ])
+            ->defaultSort('created_at', 'desc')
             ->filters([
                 SelectFilter::make('status')
                     ->label('Статус')
@@ -79,19 +101,28 @@ class ContactRequestsTable
             ])
             ->recordActions([
                 ViewAction::make(),
-                Action::make('done')
-                    ->label('Обработана')
-                    ->icon('heroicon-o-check-circle')
-                    ->color('success')
-                    ->visible(fn ($record) => $record->status !== 'done')
-                    ->action(fn ($record) => $record->update(['status' => 'done'])),
-                EditAction::make(),
+                ActionGroup::make([
+                    Action::make('read')
+                        ->label('Прочитана')
+                        ->icon('heroicon-o-eye')
+                        ->color('warning')
+                        ->visible(fn ($record) => $record->status === 'new')
+                        ->action(fn ($record) => $record->update(['status' => 'read'])),
+
+                    Action::make('done')
+                        ->label('Обработана')
+                        ->icon('heroicon-o-check-circle')
+                        ->color('success')
+                        ->visible(fn ($record) => $record->status !== 'done')
+                        ->action(fn ($record) => $record->update(['status' => 'done'])),
+
+                    EditAction::make(),
+                ]),
             ])
             ->toolbarActions([
                 BulkActionGroup::make([
                     DeleteBulkAction::make(),
                 ]),
-            ])
-            ->defaultSort('created_at', 'desc');
+            ]);
     }
 }

@@ -5,10 +5,16 @@ namespace App\Filament\Resources\ContactRequests\Pages;
 use App\Filament\Resources\ContactRequests\ContactRequestResource;
 use Filament\Actions\EditAction;
 use Filament\Resources\Pages\ViewRecord;
+use Filament\Support\Enums\Width;
 
 class ViewContactRequest extends ViewRecord
 {
     protected static string $resource = ContactRequestResource::class;
+
+    public function getMaxContentWidth(): Width|string|null
+    {
+        return Width::Full;
+    }
 
     protected function getHeaderActions(): array
     {
