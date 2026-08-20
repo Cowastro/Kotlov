@@ -455,6 +455,8 @@ RULES;
 
     private function cleanupProductDomain(array $result, string $name, string $brand, string $category, array $specs, array $sourceContext = []): ?array
     {
+        $result = $this->cleanupPumpPowerUnits($result, $name, $brand, $category, $specs);
+
         if (! $this->isChimneyProduct($name, $brand, $category, $specs, $sourceContext)) {
             return $result;
         }
@@ -484,6 +486,44 @@ RULES;
         $combined = mb_strtolower(strip_tags(($result['short'] ?? '') . ' ' . ($result['content'] ?? '')));
         if (preg_match('/\b(гвс|насос|сантехник)/u', $combined)) {
             return null;
+        }
+
+        return $result;
+    }
+
+    /**
+     * Small sanitary/condensate/circulation pumps often have "power" in watts.
+     * AI sometimes expands short supplier specs like "22" or "400 Вт" into kW,
+     * which creates absurd product text. Keep generated copy technically sane.
+     */
+    private function cleanupPumpPowerUnits(array $result, string $name, string $brand, string $category, array $specs): array
+    {
+        $haystack = mb_strtolower(implode(' ', array_filter([
+            $name,
+            $brand,
+            $category,
+            implode(' ', array_keys($specs)),
+            implode(' ', array_values($specs)),
+        ])));
+
+        $isSmallPump = (bool) preg_match('/\b(sfa|shinhoo|джилекс|насос|помпа|sanicondens|saniaccess|sanipump|sanispeed|sanicubic|sanipro|sanitop|sanivite|sanialarm)\b/iu', $haystack)
+            && ! preg_match('/теплов[а-я\s-]*насос/u', $haystack);
+
+        if (! $isSmallPump) {
+            return $result;
+        }
+
+        foreach (['short', 'content'] as $field) {
+            $text = (string) ($result[$field] ?? '');
+            if ($text === '') {
+                continue;
+            }
+
+            $result[$field] = preg_replace_callback(
+                '~((?:потребляемая\s+)?мощность(?:\s+двигателя)?[^<.]{0,100}?)(\b\d{1,3}(?:[,.]\d+)?)\s*кВт\b~iu',
+                static fn (array $matches): string => $matches[1] . $matches[2] . ' Вт',
+                $text
+            ) ?? $text;
         }
 
         return $result;
