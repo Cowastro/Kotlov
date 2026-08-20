@@ -3,6 +3,7 @@
 namespace App\Console\Commands;
 
 use App\Models\Product;
+use App\Services\AiContentEnricher;
 use App\Services\ProductSourceEnricher;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
@@ -94,20 +95,30 @@ class EnrichTmManagementTmarketCommand extends Command
                     'update_specs' => true,
                     'replace_specs' => true,
                     'min_specs_to_replace' => 2,
-                    'update_content' => (bool) $this->option('content'),
-                    'source_content' => true,
+                    'update_content' => false,
+                    'source_content' => false,
                     'update_documents' => false,
                     'update_video' => false,
                 ]);
-                $model->forceFill([
+
+                $updates = [
                     'short_description' => $this->safeShortDescription($model, (string) $product->brand_name),
                     'meta_description' => $model->name . ' — характеристики, консультация и поставка в %city%.',
                     'updated_at' => now(),
-                ])->save();
+                ];
+
+                if ((bool) $this->option('content')) {
+                    $seo = $this->generateSeoContent($model, (string) $product->brand_name, $match['url'], $parsedForStorage, $enricher);
+                    if ($seo !== null) {
+                        $updates = array_merge($updates, $seo);
+                        $stats['content_found']++;
+                    }
+                }
+
+                $model->forceFill($updates)->save();
 
                 $stats['images_saved'] += (int) ($result['images_saved'] ?? 0);
                 $stats['specs_found'] += (int) ($result['specs_found'] ?? 0);
-                $stats['content_found'] += (int) ($result['content_found'] ?? 0);
             } catch (\Throwable $e) {
                 $stats['errors']++;
                 $this->warn('Error product #' . $product->id . ': ' . $e->getMessage());
@@ -156,6 +167,86 @@ class EnrichTmManagementTmarketCommand extends Command
         $parsed['description'] = trim($cleaned);
 
         return $parsed;
+    }
+
+    /**
+     * Generate the final KOTLOV.BY product copy from TMarket facts.
+     * Source text is used only as context; it is not stored verbatim.
+     *
+     * @param array<string,mixed> $parsed
+     * @return array<string,string>|null
+     */
+    private function generateSeoContent(
+        Product $product,
+        string $brand,
+        string $sourceUrl,
+        array $parsed,
+        ProductSourceEnricher $enricher
+    ): ?array {
+        $ai = app(AiContentEnricher::class);
+        if (! $ai->isAvailable()) {
+            $this->warn('AI content skipped for #' . $product->id . ': provider is not configured.');
+            return null;
+        }
+
+        $seo = $ai->generateSeo(
+            (string) $product->name,
+            $brand,
+            (string) ($product->category?->name ?? ''),
+            (array) ($parsed['specs'] ?? []),
+            [
+                'source_url' => $sourceUrl,
+                'source_title' => (string) ($parsed['title'] ?? ''),
+                'source_short_description' => (string) ($parsed['short_description'] ?? ''),
+                'source_description' => (string) ($parsed['description'] ?? ''),
+            ],
+        );
+
+        $content = trim((string) ($seo['content'] ?? ''));
+        $short = trim(strip_tags((string) ($seo['short'] ?? $seo['short_description'] ?? '')));
+
+        if ($content === '' && $short === '') {
+            $this->warn('AI content skipped for #' . $product->id . ': empty response.');
+            return null;
+        }
+
+        $updates = [];
+
+        if ($content !== '') {
+            $content = $enricher->sanitizeDescriptionHtml($content);
+            if ($content !== '') {
+                $updates['content'] = $content;
+            }
+        }
+
+        if ($short !== '') {
+            $updates['short_description'] = $this->cleanSeoShortDescription($short);
+        }
+
+        $updates['meta_description'] = $this->metaDescription($product, (string) ($updates['short_description'] ?? ''));
+
+        return $updates === ['meta_description' => $updates['meta_description']] ? null : $updates;
+    }
+
+    private function cleanSeoShortDescription(string $text): string
+    {
+        $text = trim(preg_replace('/\s+/u', ' ', strip_tags($text)) ?? $text);
+        $text = str_replace(['в %city%', '%city%'], 'по Беларуси', $text);
+
+        return Str::limit($text, 240, '');
+    }
+
+    private function metaDescription(Product $product, string $shortDescription): string
+    {
+        $base = $shortDescription !== ''
+            ? $shortDescription
+            : $product->name . ' — характеристики и подбор на KOTLOV.BY.';
+
+        if (! str_contains($base, '%city%')) {
+            $base .= ' Купить или заказать в %city% с доставкой по Беларуси.';
+        }
+
+        return Str::limit(trim($base), 250, '');
     }
 
     private function tmProducts(string $onlyBrand, ?int $limit)
