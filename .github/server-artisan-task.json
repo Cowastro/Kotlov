@@ -2,5 +2,5 @@
   "task": "artisan-apply",
   "artisan_args": "supplier:enrich-tm-tmarket --apply --replace-images --content --limit=20 --offset=40",
   "log_file": "storage/logs/tm-tmarket-seo-3.log",
-  "run_id": "apply-tm-tmarket-seo-20260820-5"
+  "run_id": "apply-tm-tmarket-seo-20260820-6"
 }

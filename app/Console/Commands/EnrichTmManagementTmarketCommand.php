@@ -98,7 +98,16 @@ class EnrichTmManagementTmarketCommand extends Command
                 $model = Product::query()->findOrFail($product->id);
                 $displayName = $this->cleanDisplayName($model, (string) $product->brand_name, (string) $match['title']);
                 if ($displayName !== '' && $displayName !== $model->name) {
-                    $model->forceFill(['name' => $displayName])->save();
+                    $model->forceFill([
+                        'name' => $displayName,
+                        'h1' => $displayName,
+                        'meta_title' => $displayName . ' купить в %city%',
+                    ])->save();
+                } elseif ($displayName !== '' && ($model->h1 !== $displayName || blank($model->meta_title))) {
+                    $model->forceFill([
+                        'h1' => $displayName,
+                        'meta_title' => $displayName . ' купить в %city%',
+                    ])->save();
                 }
 
                 $parsedForStorage = $this->cleanParsedForStorage($parsed);
