@@ -799,7 +799,11 @@ HTML;
             $newProductH1 = filled($row->h1) ? $this->cleanName((string) $row->h1) : $row->h1;
             $newSupplierName = $this->cleanName((string) $row->supplier_name);
             $newContent = str_replace('пооским', 'плоским', (string) $row->content);
-            $newShortDescription = str_replace('пооским', 'плоским', (string) $row->short_description);
+            $newShortDescription = str_replace(
+                ['в %city%', '%city%', 'пооским'],
+                ['по Беларуси', 'Беларуси', 'плоским'],
+                (string) $row->short_description
+            );
 
             $needsUpdate = $newSku !== (string) $row->sku
                 || $supplierArticle !== (string) $row->supplier_article
