@@ -537,10 +537,8 @@ class EnrichTmManagementTmarketCommand extends Command
             return true;
         }
 
-        $shorter = mb_strlen($left) <= mb_strlen($right) ? $leftNumbers : $rightNumbers;
-        $longer = mb_strlen($left) <= mb_strlen($right) ? $rightNumbers : $leftNumbers;
-
-        return count(array_diff($shorter, $longer)) === 0;
+        return count(array_diff($leftNumbers, $rightNumbers)) === 0
+            && count(array_diff($rightNumbers, $leftNumbers)) === 0;
     }
 
     private function distinctiveTokensCompatible(string $left, string $right): bool
