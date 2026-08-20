@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Services\AiContentEnricher;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -10,6 +11,7 @@ class SyncTmManagementCommand extends Command
 {
     protected $signature = 'supplier:sync-tm-management
         {--apply : Apply changes to database}
+        {--enrich : Generate SEO descriptions via configured AI provider, e.g. DeepSeek}
         {--limit= : Limit parsed rows}
         {--sheet= : Import only one sheet}
         {--download= : Use local XLSX file instead of Google Sheets export}';
@@ -37,9 +39,20 @@ class SyncTmManagementCommand extends Command
     public function handle(): int
     {
         $apply = (bool) $this->option('apply');
+        $enrich = (bool) $this->option('enrich');
         $limit = $this->option('limit') ? max(1, (int) $this->option('limit')) : null;
 
         $this->info($apply ? 'APPLY: database will be updated.' : 'DRY RUN: no database writes.');
+        $ai = null;
+        if ($enrich) {
+            $ai = app(AiContentEnricher::class);
+            if (! $ai->isAvailable()) {
+                $this->warn('--enrich: AI provider is not configured; SEO will use fallback template.');
+                $ai = null;
+            } else {
+                $this->info('--enrich provider: ' . $ai->providerName());
+            }
+        }
 
         $items = $this->parseWorkbook($this->option('download') ?: null, $this->option('sheet') ?: null, $limit);
 
@@ -86,7 +99,7 @@ class SyncTmManagementCommand extends Command
                 $brandId = $this->ensureBrand($item['brand'], $stats);
                 $categoryId = $this->categoryId($item);
                 $product = $this->findProduct($item);
-                $productId = $this->upsertProduct($item, $product, $brandId, $categoryId);
+                $productId = $this->upsertProduct($item, $product, $brandId, $categoryId, $ai);
                 $this->upsertSupplierProduct($item, $supplierId, $syncId, $productId);
 
                 $stats[$product ? 'updated' : 'created']++;
@@ -105,7 +118,7 @@ class SyncTmManagementCommand extends Command
             'last_run_at' => now(),
             'last_status' => $stats['errors'] > 0 ? 'completed_with_errors' : 'completed',
             'last_exit_code' => $stats['errors'] > 0 ? self::FAILURE : self::SUCCESS,
-            'description' => 'Google Sheets прайс ТМ Менеджмент: ' . json_encode($stats, JSON_UNESCAPED_UNICODE),
+            'description' => 'Google Sheets прайс ТМ Менеджмент' . ($enrich ? ' + AI SEO' : '') . ': ' . json_encode($stats, JSON_UNESCAPED_UNICODE),
             'updated_at' => now(),
         ]);
 
@@ -407,10 +420,11 @@ class SyncTmManagementCommand extends Command
         return null;
     }
 
-    private function upsertProduct(array $item, ?object $product, int $brandId, int $categoryId): int
+    private function upsertProduct(array $item, ?object $product, int $brandId, int $categoryId, ?AiContentEnricher $ai = null): int
     {
         $now = now();
         $price = $item['price_retail'] ?? $item['price_opt'];
+        $seo = $ai ? $this->aiSeo($item, $ai) : null;
         $payload = [
             'category_id' => $categoryId,
             'brand_id' => $brandId,
@@ -420,8 +434,8 @@ class SyncTmManagementCommand extends Command
             'price' => $price,
             'price_old' => null,
             'currency' => 'BYN',
-            'content' => $this->content($item),
-            'short_description' => $this->shortDescription($item),
+            'content' => $seo['content'] ?? $this->content($item),
+            'short_description' => $seo['short_description'] ?? $this->shortDescription($item),
             'specs' => json_encode($this->specs($item), JSON_UNESCAPED_UNICODE),
             'unit' => 'шт',
             'is_active' => true,
@@ -544,6 +558,32 @@ HTML;
     private function shortDescription(array $item): string
     {
         return $item['brand'] . ' — поставка под заказ в %city%. Уточняйте наличие, комплектацию и срок поставки.';
+    }
+
+    private function aiSeo(array $item, AiContentEnricher $ai): ?array
+    {
+        $seo = $ai->generateSeo(
+            $item['name'],
+            $item['brand'],
+            $item['category_name'],
+            $this->specs($item),
+            [
+                'supplier' => self::SUPPLIER_NAME,
+                'price_list_note' => $item['note'] ?? '',
+                'section' => $item['section'] ?? '',
+            ]
+        );
+
+        if (! $seo || trim((string) ($seo['content'] ?? '')) === '' || trim((string) ($seo['short_description'] ?? '')) === '') {
+            $this->warn('AI SEO skipped: ' . $item['article'] . ' ' . Str::limit($item['name'], 60));
+            return null;
+        }
+
+        if (! str_contains($seo['content'], '%city%')) {
+            $seo['content'] .= '<p>На KOTLOV.BY можно подобрать эту позицию и совместимые комплектующие в %city%, чтобы заказ соответствовал вашей системе и условиям монтажа.</p>';
+        }
+
+        return $seo;
     }
 
     private function specs(array $item): array
