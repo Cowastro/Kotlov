@@ -86,7 +86,9 @@ class EnrichTmManagementTmarketCommand extends Command
 
             try {
                 $model = Product::query()->findOrFail($product->id);
-                $result = $enricher->enrichFromParsed($model, $match['url'], $parsed, [
+                $parsedForStorage = $this->cleanParsedForStorage($parsed);
+
+                $result = $enricher->enrichFromParsed($model, $match['url'], $parsedForStorage, [
                     'update_images' => true,
                     'replace_images' => (bool) $this->option('replace-images') || $this->imagesEmpty($model->images),
                     'update_specs' => true,
@@ -123,6 +125,37 @@ class EnrichTmManagementTmarketCommand extends Command
         ));
 
         return $stats['errors'] > 0 ? self::FAILURE : self::SUCCESS;
+    }
+
+    /**
+     * TMarket often stores a full "Технические характеристики: ..." paragraph
+     * inside the description. The storefront has a dedicated specifications tab,
+     * so keep specs as specs and leave the description readable.
+     *
+     * @param array<string,mixed> $parsed
+     * @return array<string,mixed>
+     */
+    private function cleanParsedForStorage(array $parsed): array
+    {
+        $description = trim((string) ($parsed['description'] ?? ''));
+        if ($description === '') {
+            return $parsed;
+        }
+
+        $cleaned = preg_replace(
+            '/^\s*Технические\s+характеристики\s*:\s*.*?(?=(?:Насос|Установка|Станция|Блок|Мембрана|Бак|Кот[её]л|Горелка|Дымоход|Система)\b)/isu',
+            '',
+            $description,
+            1
+        );
+
+        if (! is_string($cleaned) || trim($cleaned) === '') {
+            return $parsed;
+        }
+
+        $parsed['description'] = trim($cleaned);
+
+        return $parsed;
     }
 
     private function tmProducts(string $onlyBrand, ?int $limit)
