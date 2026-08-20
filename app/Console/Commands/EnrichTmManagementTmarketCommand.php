@@ -63,6 +63,13 @@ class EnrichTmManagementTmarketCommand extends Command
         ];
 
         foreach ($products as $product) {
+            if ($apply) {
+                $modelForCategory = Product::query()->find($product->id);
+                if ($modelForCategory) {
+                    $this->fixObviousCategory($modelForCategory, (string) $product->brand_name);
+                }
+            }
+
             $match = $this->matchProduct($product);
 
             if (! $match) {
@@ -497,6 +504,36 @@ class EnrichTmManagementTmarketCommand extends Command
     private function safeShortDescription(Product $product, string $brand): string
     {
         return trim($brand) . ' — поставка под заказ по Беларуси. Уточняйте наличие, комплектацию и срок поставки.';
+    }
+
+    private function fixObviousCategory(Product $product, string $brand): void
+    {
+        $name = mb_strtolower($product->name);
+        $slug = null;
+
+        if (mb_strtolower($brand) === 'sfa') {
+            $slug = match (true) {
+                str_contains($name, 'sanipump') => 'fekalnye-nasosy',
+                str_contains($name, 'sanicondens') || str_contains($name, 'sanialarm') || str_contains($name, 'vanne') => 'komplektuyushhie-dlya-otopleniya',
+                str_contains($name, 'sani') => 'kanalizatsionnye-nasosy',
+                default => null,
+            };
+        }
+
+        if (mb_strtolower($brand) === 'shinhoo') {
+            $slug = 'tsirkulyatsionnyie';
+        }
+
+        if (! $slug) {
+            return;
+        }
+
+        $categoryId = DB::table('categories')->where('slug', $slug)->value('id');
+        if (! $categoryId || (int) $product->category_id === (int) $categoryId) {
+            return;
+        }
+
+        $product->forceFill(['category_id' => (int) $categoryId])->save();
     }
 
     private function fetch(string $url): string
