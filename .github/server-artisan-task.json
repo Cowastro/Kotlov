@@ -1,6 +1,6 @@
 {
-  "task": "kill-pid",
-  "artisan_args": "983279",
-  "log_file": "storage/logs/tm-tmarket-enrich-2.log",
-  "run_id": "kill-tm-tmarket-enrich-20260820-1"
+  "task": "artisan-apply",
+  "artisan_args": "supplier:enrich-tm-tmarket --apply --replace-images",
+  "log_file": "storage/logs/tm-tmarket-enrich-3.log",
+  "run_id": "apply-tm-tmarket-categories-20260820-1"
 }
