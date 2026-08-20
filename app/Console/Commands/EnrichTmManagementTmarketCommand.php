@@ -17,6 +17,7 @@ class EnrichTmManagementTmarketCommand extends Command
         {--limit= : Limit products to process}
         {--offset= : Skip first N products in the supplier list}
         {--brand= : Process only brand name}
+        {--max-candidates= : Limit TMarket source product pages parsed per brand}
         {--content : Update content from cleaned TMarket description}
         {--replace-images : Replace existing images instead of only filling missing images}
         {--fix-articles : Normalize TM Management supplier articles that accidentally contain a slug after "|"}
@@ -44,6 +45,7 @@ class EnrichTmManagementTmarketCommand extends Command
         $limit = $this->option('limit') ? max(1, (int) $this->option('limit')) : null;
         $offset = $this->option('offset') ? max(0, (int) $this->option('offset')) : 0;
         $onlyBrand = trim((string) $this->option('brand'));
+        $maxCandidates = $this->option('max-candidates') ? max(1, (int) $this->option('max-candidates')) : null;
 
         $this->info($apply ? 'APPLY: products will be enriched from TMarket.' : 'DRY RUN: no database writes.');
 
@@ -60,7 +62,7 @@ class EnrichTmManagementTmarketCommand extends Command
         }
 
         $this->info('Products to check: ' . $products->count());
-        $this->buildIndex($onlyBrand);
+        $this->buildIndex($onlyBrand, $maxCandidates);
 
         if ((bool) $this->option('fix-articles')) {
             $this->cleanSupplierArticles($onlyBrand, $apply);
@@ -470,7 +472,7 @@ class EnrichTmManagementTmarketCommand extends Command
         }
 
         return preg_replace_callback(
-            '~((?:потребляемая\s+)?мощность(?:\s+двигателя)?[^<.]{0,80}?)(\b\d{2,3})\s*кВт\b~iu',
+            '~((?:потребляемая\s+)?мощност[ьи](?:\s+двигателя)?[^<.]{0,80}?)(\b\d{2,3})\s*кВт\b~iu',
             static fn (array $matches): string => $matches[1] . $matches[2] . ' Вт',
             $text
         ) ?? $text;
@@ -516,7 +518,7 @@ class EnrichTmManagementTmarketCommand extends Command
         return $query->get();
     }
 
-    private function buildIndex(string $onlyBrand): void
+    private function buildIndex(string $onlyBrand, ?int $maxCandidates = null): void
     {
         $categoryUrls = $this->categoryUrls($onlyBrand);
         $this->info('TMarket categories: ' . count($categoryUrls));
@@ -530,8 +532,14 @@ class EnrichTmManagementTmarketCommand extends Command
         }
 
         foreach ($productUrlsByBrand as $brand => $urls) {
-            $this->line($brand . ': candidate URLs ' . count($urls));
-            foreach (array_keys($urls) as $url) {
+            $urls = array_keys($urls);
+            $totalUrls = count($urls);
+            if ($maxCandidates !== null) {
+                $urls = array_slice($urls, 0, $maxCandidates);
+            }
+
+            $this->line($brand . ': candidate URLs ' . count($urls) . ($totalUrls > count($urls) ? ' / ' . $totalUrls : ''));
+            foreach ($urls as $url) {
                 try {
                     $parsed = app(ProductSourceEnricher::class)->preview($url);
                     $title = trim((string) ($parsed['title'] ?? ''));
@@ -698,7 +706,7 @@ class EnrichTmManagementTmarketCommand extends Command
         $rightNumbers = array_values(array_unique($rightMatches[0] ?? []));
 
         if ($leftNumbers === [] || $rightNumbers === []) {
-            return true;
+            return $leftNumbers === [] && $rightNumbers === [];
         }
 
         return count(array_diff($leftNumbers, $rightNumbers)) === 0

@@ -838,7 +838,7 @@ HTML;
             }
 
             $newSku = (string) $row->sku;
-            if (! str_starts_with($newSku, 'KOTLOV-')) {
+            if (! preg_match('/^KOTLOV-\d{6}$/', $newSku)) {
                 $newSku = $this->nextKotlovSku();
             }
 
