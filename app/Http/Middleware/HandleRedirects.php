@@ -167,6 +167,10 @@ class HandleRedirects
             return $legacyBrandCategoryRedirect;
         }
 
+        if ($this->isCanonicalProductPath($path)) {
+            return $next($request);
+        }
+
         $redirect = DB::table('redirects')
             ->where('from_url', $path)
             ->where('is_active', 1)
@@ -251,6 +255,27 @@ class HandleRedirects
         $canonicalPath = '/' . $product->category->slug . '/' . $product->slug;
 
         return $path === $canonicalPath || $targetPath === $canonicalPath;
+    }
+
+    private function isCanonicalProductPath(string $path): bool
+    {
+        $path = '/' . trim($path, '/');
+        $productSlug = basename($path);
+
+        if ($productSlug === '') {
+            return false;
+        }
+
+        $product = Product::query()
+            ->where('slug', $productSlug)
+            ->with('category')
+            ->first();
+
+        if (! $product || ! $product->category) {
+            return false;
+        }
+
+        return $path === '/' . $product->category->slug . '/' . $product->slug;
     }
 
     private function redirectCityAlias(Request $request): ?Response
