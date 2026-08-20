@@ -641,12 +641,23 @@ HTML;
             return 'Vanne DN 50';
         }
 
+        if (preg_match('/^(sanibox|sanidouche|sanipack|sanitop|sanivite)\(/i', $article, $match)) {
+            return mb_strtoupper($match[1]);
+        }
+
+        if (str_contains($compact, 'sanidoucheflat')) {
+            return 'SANIDOUCHE Flat';
+        }
+
         return $article;
     }
 
     private function cleanName(string $name): string
     {
-        return trim(preg_replace('/\s+/u', ' ', str_replace(["\r", "\n"], ' ', $name)) ?? $name);
+        $name = str_replace(["\r", "\n"], ' ', $name);
+        $name = str_ireplace('пооским', 'плоским', $name);
+
+        return trim(preg_replace('/\s+/u', ' ', $name) ?? $name);
     }
 
     /** @param array<int,mixed> $cells */
@@ -748,9 +759,15 @@ HTML;
             ->get([
                 'sp.id as supplier_product_id',
                 'sp.supplier_article',
+                'sp.supplier_name',
                 'sp.raw',
                 'p.id as product_id',
                 'p.sku',
+                'p.name',
+                'p.h1',
+                'p.slug',
+                'p.content',
+                'p.short_description',
             ]);
 
         $changed = 0;
@@ -778,10 +795,21 @@ HTML;
                 $newSku = $this->nextKotlovSku();
             }
 
+            $newProductName = $this->cleanName((string) $row->name);
+            $newProductH1 = filled($row->h1) ? $this->cleanName((string) $row->h1) : $row->h1;
+            $newSupplierName = $this->cleanName((string) $row->supplier_name);
+            $newContent = str_replace('пооским', 'плоским', (string) $row->content);
+            $newShortDescription = str_replace('пооским', 'плоским', (string) $row->short_description);
+
             $needsUpdate = $newSku !== (string) $row->sku
                 || $supplierArticle !== (string) $row->supplier_article
                 || str_contains((string) $row->supplier_article, '|')
-                || mb_strlen((string) $row->supplier_article) > 60;
+                || mb_strlen((string) $row->supplier_article) > 60
+                || $newProductName !== (string) $row->name
+                || $newProductH1 !== (string) $row->h1
+                || $newSupplierName !== (string) $row->supplier_name
+                || $newContent !== (string) $row->content
+                || $newShortDescription !== (string) $row->short_description;
 
             if (! $needsUpdate || $supplierArticle === '') {
                 continue;
@@ -800,6 +828,10 @@ HTML;
             if ($apply) {
                 DB::table('products')->where('id', $row->product_id)->update([
                     'sku' => $newSku,
+                    'name' => $newProductName,
+                    'h1' => $newProductH1,
+                    'content' => $newContent,
+                    'short_description' => $newShortDescription,
                     'updated_at' => now(),
                 ]);
                 DB::table('supplier_products')->where('id', $row->supplier_product_id)->update([
@@ -807,6 +839,7 @@ HTML;
                     'supplier_article' => $supplierArticle,
                     'supplier_article_normalized' => $this->normalizeArticle($supplierArticle),
                     'supplier_article_compact' => preg_replace('/[^A-Z0-9А-ЯЁ]+/u', '', mb_strtoupper($this->normalizeArticle($supplierArticle))),
+                    'supplier_name' => $newSupplierName,
                     'updated_at' => now(),
                 ]);
             }
