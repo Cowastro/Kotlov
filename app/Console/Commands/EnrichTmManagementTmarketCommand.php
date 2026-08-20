@@ -96,6 +96,11 @@ class EnrichTmManagementTmarketCommand extends Command
 
             try {
                 $model = Product::query()->findOrFail($product->id);
+                $displayName = $this->cleanDisplayName($model, (string) $product->brand_name, (string) $match['title']);
+                if ($displayName !== '' && $displayName !== $model->name) {
+                    $model->forceFill(['name' => $displayName])->save();
+                }
+
                 $parsedForStorage = $this->cleanParsedForStorage($parsed);
 
                 $result = $enricher->enrichFromParsed($model, $match['url'], $parsedForStorage, [
@@ -240,6 +245,18 @@ class EnrichTmManagementTmarketCommand extends Command
         $updates['meta_description'] = $this->metaDescription($product, (string) ($updates['short_description'] ?? ''));
 
         return $updates === ['meta_description' => $updates['meta_description']] ? null : $updates;
+    }
+
+    private function cleanDisplayName(Product $product, string $brand, string $sourceTitle): string
+    {
+        $name = trim((string) $product->name);
+        $sourceTitle = trim($sourceTitle);
+
+        if (mb_strtolower($brand) === 'sfa' && preg_match('/^VANNE\s+DN\s+\d+/iu', $sourceTitle) === 1) {
+            return 'Шиберная задвижка SFA ' . $sourceTitle;
+        }
+
+        return $name;
     }
 
     private function cleanSeoShortDescription(string $text, ?Product $product = null, string $brand = ''): string
