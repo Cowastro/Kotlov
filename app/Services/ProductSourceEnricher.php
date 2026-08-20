@@ -249,7 +249,7 @@ class ProductSourceEnricher
     {
         return array_values(array_filter($specs, function (array $spec): bool {
             $name = $this->cleanAttributeName((string) ($spec['key'] ?? ''));
-            $value = $this->cleanAttributeValue((string) ($spec['value'] ?? ''));
+            $value = $this->cleanAttributeValue((string) ($spec['value'] ?? ''), $name);
             $unit = (string) ($spec['unit'] ?? '');
 
             return $name !== ''
@@ -579,7 +579,7 @@ class ProductSourceEnricher
         foreach ($specs as $spec) {
             $unit = (string) ($spec['unit'] ?? '');
             [$name, $unit] = $this->cleanAttributeNameAndUnit((string) ($spec['key'] ?? ''), $unit);
-            $value = $this->cleanAttributeValue((string) ($spec['value'] ?? ''));
+            $value = $this->cleanAttributeValue((string) ($spec['value'] ?? ''), $name);
             if ($name === '' || $value === '' || $this->isTechnicalOrJunkAttribute($name, $value) || $this->isUnitOnlyAttributeValue($value, $unit)) {
                 continue;
             }
@@ -593,7 +593,7 @@ class ProductSourceEnricher
         foreach ($specs as $spec) {
             $unit = (string) ($spec['unit'] ?? '');
             [$name, $unit] = $this->cleanAttributeNameAndUnit((string) ($spec['key'] ?? ''), $unit);
-            $value = $this->cleanAttributeValue((string) ($spec['value'] ?? ''));
+            $value = $this->cleanAttributeValue((string) ($spec['value'] ?? ''), $name);
             if ($name === '' || $value === '' || $this->isTechnicalOrJunkAttribute($name, $value) || $this->isUnitOnlyAttributeValue($value, $unit)) {
                 continue;
             }
@@ -2867,16 +2867,27 @@ class ProductSourceEnricher
         return [$name, $unit];
     }
 
-    private function cleanAttributeValue(string $value): string
+    private function cleanAttributeValue(string $value, string $attributeName = ''): string
     {
         $value = $this->cleanText($value);
         $value = $this->normalizeBooleanGlyphValue($value);
+        $value = $this->repairUnitReplacementCharacters($value, $attributeName);
         $value = preg_replace('/^[\s:;•—-]+|[\s:;•—-]+$/u', '', $value) ?? $value;
 
         return trim(preg_replace('/\s+/u', ' ', $value) ?? $value);
-        $value = trim($value, " \t\n\r\0\x0B:;•—-");
+    }
 
-        return trim(preg_replace('/\s+/u', ' ', $value) ?? $value);
+    private function repairUnitReplacementCharacters(string $value, string $attributeName = ''): string
+    {
+        $value = preg_replace('/\?\s*([CС])\b/u', '°$1', $value) ?? $value;
+        $value = preg_replace('/([+-]?\d+(?:[,.]\d+)?)\?\s*([CС])\b/u', '$1°$2', $value) ?? $value;
+
+        $normalizedName = mb_strtolower($attributeName);
+        if (preg_match('/(?:дюйм|присоедин|подключ|резьб)/u', $normalizedName) === 1) {
+            $value = preg_replace('/(?<=\d)\?(?=\s|$|[\/,.])/u', '"', $value) ?? $value;
+        }
+
+        return $value;
     }
 
     private function normalizeBooleanGlyphValue(string $value): string
