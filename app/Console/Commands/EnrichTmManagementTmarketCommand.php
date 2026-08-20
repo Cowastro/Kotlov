@@ -18,7 +18,9 @@ class EnrichTmManagementTmarketCommand extends Command
         {--offset= : Skip first N products in the supplier list}
         {--brand= : Process only brand name}
         {--content : Update content from cleaned TMarket description}
-        {--replace-images : Replace existing images instead of only filling missing images}';
+        {--replace-images : Replace existing images instead of only filling missing images}
+        {--fix-articles : Normalize TM Management supplier articles that accidentally contain a slug after "|"}
+        {--fix-articles-only : Only normalize supplier articles and skip product enrichment}';
 
     protected $description = 'Enrich TM Management products with photos, specs and descriptions from tmarket.by.';
 
@@ -45,6 +47,12 @@ class EnrichTmManagementTmarketCommand extends Command
 
         $this->info($apply ? 'APPLY: products will be enriched from TMarket.' : 'DRY RUN: no database writes.');
 
+        if ((bool) $this->option('fix-articles-only')) {
+            $this->cleanSupplierArticles($onlyBrand, $apply);
+
+            return self::SUCCESS;
+        }
+
         $products = $this->tmProducts($onlyBrand, $limit, $offset);
         if ($products->isEmpty()) {
             $this->warn('No TM Management products found.');
@@ -53,6 +61,10 @@ class EnrichTmManagementTmarketCommand extends Command
 
         $this->info('Products to check: ' . $products->count());
         $this->buildIndex($onlyBrand);
+
+        if ((bool) $this->option('fix-articles')) {
+            $this->cleanSupplierArticles($onlyBrand, $apply);
+        }
 
         $rows = [];
         $stats = [
@@ -277,6 +289,80 @@ class EnrichTmManagementTmarketCommand extends Command
         }
 
         return Str::limit($text, 240, '');
+    }
+
+    private function cleanSupplierArticles(string $onlyBrand = '', bool $apply = false): void
+    {
+        $query = DB::table('supplier_products as sp')
+            ->join('suppliers as s', 's.id', '=', 'sp.supplier_id')
+            ->leftJoin('products as p', 'p.id', '=', 'sp.product_id')
+            ->leftJoin('brands as b', 'b.id', '=', 'p.brand_id')
+            ->where('s.code', self::SUPPLIER_CODE)
+            ->where('sp.supplier_article', 'like', '%|%')
+            ->select('sp.id', 'sp.supplier_article');
+
+        if ($onlyBrand !== '') {
+            $query->whereRaw('LOWER(b.name) = ?', [mb_strtolower($onlyBrand)]);
+        }
+
+        $changed = 0;
+        $examples = [];
+
+        $query->orderBy('sp.id')->chunkById(200, function ($rows) use (&$changed, &$examples, $apply): void {
+            foreach ($rows as $row) {
+                $clean = $this->cleanSupplierArticle((string) $row->supplier_article);
+                if ($clean === '' || $clean === (string) $row->supplier_article) {
+                    continue;
+                }
+
+                if (count($examples) < 8) {
+                    $examples[] = [
+                        'id' => $row->id,
+                        'from' => Str::limit((string) $row->supplier_article, 70),
+                        'to' => $clean,
+                    ];
+                }
+
+                if ($apply) {
+                    DB::table('supplier_products')->where('id', $row->id)->update([
+                        'supplier_article' => $clean,
+                        'supplier_article_normalized' => mb_strtolower($clean),
+                        'supplier_article_compact' => $this->compactArticle($clean),
+                        'updated_at' => now(),
+                    ]);
+                }
+
+                $changed++;
+            }
+        }, 'sp.id', 'id');
+
+        if ($changed === 0) {
+            $this->info('Supplier articles to clean: 0');
+            return;
+        }
+
+        $this->info(($apply ? 'Cleaned' : 'Supplier articles to clean') . ': ' . $changed);
+        if ($examples !== []) {
+            $this->table(['id', 'from', 'to'], $examples);
+        }
+    }
+
+    private function cleanSupplierArticle(string $article): string
+    {
+        $article = trim($article);
+        if ($article === '') {
+            return '';
+        }
+
+        return trim(explode('|', $article, 2)[0]);
+    }
+
+    private function compactArticle(?string $article): ?string
+    {
+        $article = mb_strtolower(trim((string) $article));
+        $article = preg_replace('/[^a-zа-я0-9]+/u', '', $article) ?? '';
+
+        return $article !== '' ? $article : null;
     }
 
     private function cleanSeoContent(string $html, Product $product, string $brand): string
