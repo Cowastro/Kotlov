@@ -562,7 +562,8 @@ class EnrichTmManagementTmarketCommand extends Command
 
         if (! $this->numericTokensCompatible($productNorm, $best['normalized'])
             || ! $this->distinctiveTokensCompatible($productNorm, $best['normalized'])
-            || ! $this->modelSuffixCompatible($productNorm, $best['normalized'])) {
+            || ! $this->modelSuffixCompatible($productNorm, $best['normalized'])
+            || ! $this->expansionTankSeriesCompatible($productNorm, $best['normalized'])) {
             return null;
         }
 
@@ -582,6 +583,7 @@ class EnrichTmManagementTmarketCommand extends Command
             && $this->numericTokensCompatible($left, $right)
             && $this->distinctiveTokensCompatible($left, $right)
             && $this->modelSuffixCompatible($left, $right)
+            && $this->expansionTankSeriesCompatible($left, $right)
             && min(mb_strlen($left), mb_strlen($right)) >= 6) {
             return 0.95;
         }
@@ -654,6 +656,58 @@ class EnrichTmManagementTmarketCommand extends Command
 
         return count(array_diff($leftSuffixes, $rightSuffixes)) === 0
             && count(array_diff($rightSuffixes, $leftSuffixes)) === 0;
+    }
+
+    private function expansionTankSeriesCompatible(string $left, string $right): bool
+    {
+        if (! str_contains($left, 'расширительный бак') || ! str_contains($right, 'расширительный бак')) {
+            return true;
+        }
+
+        $leftSeries = $this->extractExpansionTankSeries($left);
+        $rightSeries = $this->extractExpansionTankSeries($right);
+
+        if ($leftSeries === [] || $rightSeries === []) {
+            return true;
+        }
+
+        return count(array_diff($leftSeries, $rightSeries)) === 0
+            && count(array_diff($rightSeries, $leftSeries)) === 0;
+    }
+
+    /** @return array<int,string> */
+    private function extractExpansionTankSeries(string $text): array
+    {
+        $series = [];
+
+        preg_match_all('/\b(\d+)\s*([a-zа-я])\b/u', $text, $numberLetter);
+        foreach ($numberLetter[1] ?? [] as $index => $number) {
+            $letter = $this->normalizeSeriesLetter((string) ($numberLetter[2][$index] ?? ''));
+            if ($letter !== '') {
+                $series[] = $letter . $number;
+            }
+        }
+
+        preg_match_all('/\b([a-zа-я])\s*(\d+)\b/u', $text, $letterNumber);
+        foreach ($letterNumber[1] ?? [] as $index => $letter) {
+            $letter = $this->normalizeSeriesLetter((string) $letter);
+            $number = (string) ($letterNumber[2][$index] ?? '');
+            if ($letter !== '' && $number !== '') {
+                $series[] = $letter . $number;
+            }
+        }
+
+        return array_values(array_unique($series));
+    }
+
+    private function normalizeSeriesLetter(string $letter): string
+    {
+        $letter = mb_strtolower(trim($letter));
+
+        return match ($letter) {
+            'в' => 'v',
+            default => $letter,
+        };
     }
 
     /** @return array<int,string> */
