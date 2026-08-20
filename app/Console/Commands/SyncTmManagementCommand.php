@@ -14,7 +14,8 @@ class SyncTmManagementCommand extends Command
         {--enrich : Generate SEO descriptions via configured AI provider, e.g. DeepSeek}
         {--limit= : Limit parsed rows}
         {--sheet= : Import only one sheet}
-        {--download= : Use local XLSX file instead of Google Sheets export}';
+        {--download= : Use local XLSX file instead of Google Sheets export}
+        {--repair-codes-only : Repair KOTLOV SKU and supplier article fields for already imported TM Management products}';
 
     protected $description = 'Sync TM Management Google Sheets price list.';
 
@@ -39,6 +40,8 @@ class SyncTmManagementCommand extends Command
     /** @var array<string,int> */
     private array $supplierArticleSeen = [];
 
+    private ?int $nextKotlovSkuNumber = null;
+
     public function handle(): int
     {
         $apply = (bool) $this->option('apply');
@@ -46,6 +49,13 @@ class SyncTmManagementCommand extends Command
         $limit = $this->option('limit') ? max(1, (int) $this->option('limit')) : null;
 
         $this->info($apply ? 'APPLY: database will be updated.' : 'DRY RUN: no database writes.');
+
+        if ((bool) $this->option('repair-codes-only')) {
+            $this->repairCodes($apply);
+
+            return self::SUCCESS;
+        }
+
         $ai = null;
         if ($enrich) {
             $ai = app(AiContentEnricher::class);
@@ -620,6 +630,8 @@ HTML;
             $article = (string) (int) $article;
         }
 
+        $article = trim(explode('|', $article, 2)[0]);
+
         return $article;
     }
 
@@ -673,17 +685,16 @@ HTML;
 
     private function publicSku(array $item): string
     {
-        $article = $this->cleanOneLine((string) ($item['article'] ?? ''));
-        if (mb_strlen($article) <= 80) {
-            return $article;
-        }
-
-        return Str::limit($this->cleanOneLine((string) ($item['name'] ?? '')), 72, '') . '-' . substr(md5($this->supplierKey($item)), 0, 6);
+        return $this->nextKotlovSku();
     }
 
     private function publicSupplierArticle(array $item): string
     {
-        $article = mb_substr($this->publicSku($item), 0, 100);
+        $article = mb_substr($this->cleanArticle($this->cleanOneLine((string) ($item['article'] ?? ''))), 0, 100);
+        if ($article === '') {
+            $article = mb_substr($this->cleanOneLine((string) ($item['name'] ?? '')), 0, 100);
+        }
+
         $normalized = $this->normalizeArticle($article);
         $seenKey = self::SUPPLIER_CODE . '|' . $normalized;
 
@@ -696,6 +707,107 @@ HTML;
         $suffix = '-' . substr(md5($this->supplierKey($item)), 0, 8);
 
         return mb_substr($article, 0, 100 - mb_strlen($suffix)) . $suffix;
+    }
+
+    private function nextKotlovSku(): string
+    {
+        if ($this->nextKotlovSkuNumber === null) {
+            $max = DB::table('products')
+                ->where('sku', 'like', 'KOTLOV-%')
+                ->selectRaw("MAX(CAST(SUBSTRING(sku, 8) AS UNSIGNED)) as max_number")
+                ->value('max_number');
+
+            $this->nextKotlovSkuNumber = max((int) $max, 6629) + 1;
+        }
+
+        return sprintf('KOTLOV-%06d', $this->nextKotlovSkuNumber++);
+    }
+
+    private function repairCodes(bool $apply): void
+    {
+        $supplierId = (int) DB::table('suppliers')->where('code', self::SUPPLIER_CODE)->value('id');
+        if (! $supplierId) {
+            $this->warn('TM Management supplier not found.');
+            return;
+        }
+
+        $rows = DB::table('supplier_products as sp')
+            ->join('products as p', 'p.id', '=', 'sp.product_id')
+            ->where('sp.supplier_id', $supplierId)
+            ->whereNotNull('sp.product_id')
+            ->orderBy('p.id')
+            ->get([
+                'sp.id as supplier_product_id',
+                'sp.supplier_article',
+                'sp.raw',
+                'p.id as product_id',
+                'p.sku',
+            ]);
+
+        $changed = 0;
+        $examples = [];
+        $seenArticles = [];
+
+        foreach ($rows as $row) {
+            $raw = json_decode((string) $row->raw, true);
+            $priceArticle = is_array($raw) ? $this->cleanArticle((string) ($raw['article'] ?? '')) : '';
+            $supplierArticle = $priceArticle !== ''
+                ? $priceArticle
+                : $this->cleanArticle((string) $row->supplier_article);
+
+            $articleKey = $this->normalizeArticle($supplierArticle);
+            if ($articleKey !== '') {
+                if (isset($seenArticles[$articleKey])) {
+                    $suffix = '-' . substr(md5((string) $row->product_id . '|' . (string) ($raw['name'] ?? '')), 0, 6);
+                    $supplierArticle = mb_substr($supplierArticle, 0, 100 - mb_strlen($suffix)) . $suffix;
+                }
+                $seenArticles[$articleKey] = true;
+            }
+
+            $newSku = (string) $row->sku;
+            if (! str_starts_with($newSku, 'KOTLOV-')) {
+                $newSku = $this->nextKotlovSku();
+            }
+
+            $needsUpdate = $newSku !== (string) $row->sku
+                || $supplierArticle !== (string) $row->supplier_article
+                || str_contains((string) $row->supplier_article, '|');
+
+            if (! $needsUpdate || $supplierArticle === '') {
+                continue;
+            }
+
+            if (count($examples) < 12) {
+                $examples[] = [
+                    'product_id' => $row->product_id,
+                    'sku_from' => $row->sku,
+                    'sku_to' => $newSku,
+                    'article_from' => Str::limit((string) $row->supplier_article, 44),
+                    'article_to' => $supplierArticle,
+                ];
+            }
+
+            if ($apply) {
+                DB::table('products')->where('id', $row->product_id)->update([
+                    'sku' => $newSku,
+                    'updated_at' => now(),
+                ]);
+                DB::table('supplier_products')->where('id', $row->supplier_product_id)->update([
+                    'product_sku' => $newSku,
+                    'supplier_article' => $supplierArticle,
+                    'supplier_article_normalized' => $this->normalizeArticle($supplierArticle),
+                    'supplier_article_compact' => preg_replace('/[^A-Z0-9А-ЯЁ]+/u', '', mb_strtoupper($this->normalizeArticle($supplierArticle))),
+                    'updated_at' => now(),
+                ]);
+            }
+
+            $changed++;
+        }
+
+        $this->info(($apply ? 'Repaired' : 'Codes to repair') . ': ' . $changed);
+        if ($examples !== []) {
+            $this->table(['product_id', 'sku_from', 'sku_to', 'article_from', 'article_to'], $examples);
+        }
     }
 
     private function cleanOneLine(string $value): string

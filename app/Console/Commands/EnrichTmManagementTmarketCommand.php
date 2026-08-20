@@ -298,8 +298,9 @@ class EnrichTmManagementTmarketCommand extends Command
             ->leftJoin('products as p', 'p.id', '=', 'sp.product_id')
             ->leftJoin('brands as b', 'b.id', '=', 'p.brand_id')
             ->where('s.code', self::SUPPLIER_CODE)
-            ->where('sp.supplier_article', 'like', '%|%')
-            ->select('sp.id', 'sp.supplier_article');
+            ->whereNotNull('sp.supplier_article')
+            ->where('sp.supplier_article', '!=', '')
+            ->select('sp.id', 'sp.supplier_article', 'p.name as product_name', 'b.name as brand_name');
 
         if ($onlyBrand !== '') {
             $query->whereRaw('LOWER(b.name) = ?', [mb_strtolower($onlyBrand)]);
@@ -310,7 +311,11 @@ class EnrichTmManagementTmarketCommand extends Command
 
         $query->orderBy('sp.id')->chunkById(200, function ($rows) use (&$changed, &$examples, $apply): void {
             foreach ($rows as $row) {
-                $clean = $this->cleanSupplierArticle((string) $row->supplier_article);
+                $clean = $this->cleanSupplierArticle(
+                    (string) $row->supplier_article,
+                    (string) ($row->brand_name ?? ''),
+                    (string) ($row->product_name ?? '')
+                );
                 if ($clean === '' || $clean === (string) $row->supplier_article) {
                     continue;
                 }
@@ -347,14 +352,62 @@ class EnrichTmManagementTmarketCommand extends Command
         }
     }
 
-    private function cleanSupplierArticle(string $article): string
+    private function cleanSupplierArticle(string $article, string $brand = '', string $productName = ''): string
     {
         $article = trim($article);
         if ($article === '') {
             return '';
         }
 
-        return trim(explode('|', $article, 2)[0]);
+        $article = trim(explode('|', $article, 2)[0]);
+
+        if (mb_strtolower($brand) === 'sfa') {
+            $model = $this->extractSfaModelArticle($productName);
+            if ($model !== '') {
+                return $model;
+            }
+        }
+
+        return $article;
+    }
+
+    private function extractSfaModelArticle(string $name): string
+    {
+        $normalized = trim(preg_replace('/\s+/u', ' ', $name) ?? $name);
+        if ($normalized === '') {
+            return '';
+        }
+
+        if (preg_match('~\bVANNE\b~iu', $normalized)) {
+            preg_match_all('~DN\s*([0-9]{2,3})~iu', $normalized, $matches);
+            $sizes = array_values(array_unique($matches[1] ?? []));
+
+            return $sizes !== [] ? 'VANNE DN ' . implode('/', $sizes) : 'VANNE';
+        }
+
+        $patterns = [
+            '~\b(SANIPUMP\s+(?:GR|GP|VX))\b~iu',
+            '~\b(SANICUBIC\s+\d+\s*(?:XL|VX|GR|WP|IP\s*67|TRI|Classic|Pro|Smart)*)\b~iu',
+            '~\b(SANIACCESS\s*\d+)\b~iu',
+            '~\b(SANICONDENS\s+(?:Clim\s+mini\s+S|Pro|Best\s+Flat|Best|Eco|Deco|Basic|Plus))\b~iu',
+            '~\b(SANIDOUCHE(?:\s+Flat|\s+\(SOLOLIFT2\s+D-2\))?)\b~iu',
+            '~\b(SANIFLOOR\s+\d+)\b~iu',
+            '~\b(SANIBROYEUR)\b~iu',
+            '~\b(SANIPRO)\b~iu',
+            '~\b(SANIPACK)\b~iu',
+            '~\b(SANITOP)\b~iu',
+            '~\b(SANIBOX)\b~iu',
+            '~\b(SANIALARM)\b~iu',
+            '~\b(SANISPEED)\b~iu',
+        ];
+
+        foreach ($patterns as $pattern) {
+            if (preg_match($pattern, $normalized, $match)) {
+                return trim(preg_replace('/\s+/u', ' ', $match[1]) ?? $match[1]);
+            }
+        }
+
+        return '';
     }
 
     private function compactArticle(?string $article): ?string
