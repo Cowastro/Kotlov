@@ -631,6 +631,15 @@ HTML;
         }
 
         $article = trim(explode('|', $article, 2)[0]);
+        $compact = mb_strtolower(preg_replace('/\s+/u', '', $article) ?? $article);
+
+        if (str_contains($compact, 'vannedn100') && str_contains($compact, 'vannedn110')) {
+            return 'Vanne DN 100/110';
+        }
+
+        if (str_contains($compact, 'vannedn50')) {
+            return 'Vanne DN 50';
+        }
 
         return $article;
     }
@@ -771,7 +780,8 @@ HTML;
 
             $needsUpdate = $newSku !== (string) $row->sku
                 || $supplierArticle !== (string) $row->supplier_article
-                || str_contains((string) $row->supplier_article, '|');
+                || str_contains((string) $row->supplier_article, '|')
+                || mb_strlen((string) $row->supplier_article) > 60;
 
             if (! $needsUpdate || $supplierArticle === '') {
                 continue;
