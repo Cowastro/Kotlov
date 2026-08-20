@@ -220,7 +220,7 @@ class EnrichTmManagementTmarketCommand extends Command
         $updates = [];
 
         if ($content !== '') {
-            $content = $this->cleanSeoContent($content);
+            $content = $this->cleanSeoContent($content, $product, $brand);
             $content = $enricher->sanitizeDescriptionHtml($content);
             if ($content !== '') {
                 $updates['content'] = $content;
@@ -228,7 +228,11 @@ class EnrichTmManagementTmarketCommand extends Command
         }
 
         if ($short !== '') {
-            $updates['short_description'] = $this->cleanSeoShortDescription($short);
+            $updates['short_description'] = $this->cleanSeoShortDescription(
+                $this->fixPumpPowerUnits($short, $product, $brand),
+                $product,
+                $brand
+            );
         }
 
         $updates['meta_description'] = $this->metaDescription($product, (string) ($updates['short_description'] ?? ''));
@@ -236,25 +240,50 @@ class EnrichTmManagementTmarketCommand extends Command
         return $updates === ['meta_description' => $updates['meta_description']] ? null : $updates;
     }
 
-    private function cleanSeoShortDescription(string $text): string
+    private function cleanSeoShortDescription(string $text, ?Product $product = null, string $brand = ''): string
     {
         $text = trim(preg_replace('/\s+/u', ' ', strip_tags($text)) ?? $text);
         $text = str_replace(['в %city%', '%city%'], 'по Беларуси', $text);
+        if ($product) {
+            $text = $this->fixPumpPowerUnits($text, $product, $brand);
+        }
 
         return Str::limit($text, 240, '');
     }
 
-    private function cleanSeoContent(string $html): string
+    private function cleanSeoContent(string $html, Product $product, string $brand): string
     {
         $html = preg_replace('~с\s+доставк(?:ой|у)\s+в\s+%city%~iu', 'в %city% с доставкой по Беларуси', $html) ?? $html;
         $html = preg_replace('~доставка\s+в\s+%city%~iu', 'доставка по Беларуси', $html) ?? $html;
         $html = preg_replace('~\bв\s+%city%\s+по\s+Беларуси\b~iu', 'в %city% с доставкой по Беларуси', $html) ?? $html;
+        $html = $this->fixPumpPowerUnits($html, $product, $brand);
 
         if (! str_contains($html, '%city%')) {
             $html .= '<p>На KOTLOV.BY можно подобрать и заказать эту позицию в %city% с доставкой по Беларуси.</p>';
         }
 
         return trim($html);
+    }
+
+    private function fixPumpPowerUnits(string $text, Product $product, string $brand): string
+    {
+        $category = mb_strtolower((string) ($product->category?->name ?? ''));
+        $name = mb_strtolower((string) $product->name);
+        $brandLower = mb_strtolower($brand);
+
+        $isPump = str_contains($category, 'насос')
+            || str_contains($name, 'насос')
+            || in_array($brandLower, ['sfa', 'shinhoo', 'джилекс'], true);
+
+        if (! $isPump || str_contains($category, 'теплов')) {
+            return $text;
+        }
+
+        return preg_replace_callback(
+            '~((?:потребляемая\s+)?мощность(?:\s+двигателя)?[^<.]{0,80}?)(\b\d{2,3})\s*кВт\b~iu',
+            static fn (array $matches): string => $matches[1] . $matches[2] . ' Вт',
+            $text
+        ) ?? $text;
     }
 
     private function metaDescription(Product $product, string $shortDescription): string
