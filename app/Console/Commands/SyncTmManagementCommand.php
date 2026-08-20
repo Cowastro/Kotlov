@@ -750,10 +750,10 @@ HTML;
 
         foreach ($rows as $row) {
             $raw = json_decode((string) $row->raw, true);
-            $priceArticle = is_array($raw) ? $this->cleanArticle((string) ($raw['article'] ?? '')) : '';
-            $supplierArticle = $priceArticle !== ''
-                ? $priceArticle
-                : $this->cleanArticle((string) $row->supplier_article);
+            $supplierArticle = $this->cleanArticle((string) $row->supplier_article);
+            if ($supplierArticle === '' && is_array($raw)) {
+                $supplierArticle = $this->cleanArticle((string) ($raw['article'] ?? ''));
+            }
 
             $articleKey = $this->normalizeArticle($supplierArticle);
             if ($articleKey !== '') {
