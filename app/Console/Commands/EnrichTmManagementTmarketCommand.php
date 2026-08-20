@@ -300,7 +300,7 @@ class EnrichTmManagementTmarketCommand extends Command
             ->where('s.code', self::SUPPLIER_CODE)
             ->whereNotNull('sp.supplier_article')
             ->where('sp.supplier_article', '!=', '')
-            ->select('sp.id', 'sp.supplier_article', 'p.name as product_name', 'b.name as brand_name');
+            ->select('sp.id', 'sp.supplier_id', 'sp.supplier_article', 'p.name as product_name', 'b.name as brand_name');
 
         if ($onlyBrand !== '') {
             $query->whereRaw('LOWER(b.name) = ?', [mb_strtolower($onlyBrand)]);
@@ -319,6 +319,12 @@ class EnrichTmManagementTmarketCommand extends Command
                 if ($clean === '' || $clean === (string) $row->supplier_article) {
                     continue;
                 }
+
+                $clean = $this->uniqueCleanSupplierArticle(
+                    (int) $row->supplier_id,
+                    (int) $row->id,
+                    $clean
+                );
 
                 if (count($examples) < 8) {
                     $examples[] = [
@@ -408,6 +414,23 @@ class EnrichTmManagementTmarketCommand extends Command
         }
 
         return '';
+    }
+
+    private function uniqueCleanSupplierArticle(int $supplierId, int $supplierProductId, string $article): string
+    {
+        $exists = DB::table('supplier_products')
+            ->where('supplier_id', $supplierId)
+            ->where('supplier_article', $article)
+            ->where('id', '!=', $supplierProductId)
+            ->exists();
+
+        if (! $exists) {
+            return $article;
+        }
+
+        $suffix = '-' . substr(md5((string) $supplierProductId), 0, 6);
+
+        return mb_substr($article, 0, 100 - mb_strlen($suffix)) . $suffix;
     }
 
     private function compactArticle(?string $article): ?string
