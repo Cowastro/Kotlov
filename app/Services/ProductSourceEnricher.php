@@ -1848,11 +1848,40 @@ class ProductSourceEnricher
         $lines = preg_split('/\R+/u', trim($text)) ?: [];
         foreach (array_slice($lines, 0, 40) as $line) {
             $line = trim($line);
-            if (! preg_match('/^([^:]{2,90}):\s*(.{1,180})$/u', $line, $parts)) {
+            if (preg_match('/^([^:]{2,90}):\s*(.{1,180})$/u', $line, $parts)) {
+                $this->addSpec($specs, $parts[1], $parts[2]);
+
                 continue;
             }
 
-            $this->addSpec($specs, $parts[1], $parts[2]);
+            $this->addSpecsFromInlineDashPairs($line, $specs);
+        }
+    }
+
+    private function addSpecsFromInlineDashPairs(string $text, array &$specs): void
+    {
+        $text = trim(preg_replace('/\s+/u', ' ', $text) ?? $text);
+        if ($text === '' || ! preg_match('/\s[-–—]\s/u', $text)) {
+            return;
+        }
+
+        $knownNextLabels = '(?:'
+            . 'Диаметр|Рекомендуемый|Мощность|Максимальн(?:ый|ая|ое)|Минимальн(?:ый|ая|ое)|'
+            . 'Количество|Объем|Объём|Габариты|Вес|Материал|Напряжение|Производительность|'
+            . 'Длина|Ширина|Высота|Температура|Давление|Расход|Тип|Назначение'
+            . ')';
+
+        if (! preg_match_all(
+            '/([А-ЯЁA-Z][А-ЯЁа-яёA-Za-z0-9 №"«»()\/.,+\-]{2,90}?)\s*[-–—]\s*(.{1,120}?)(?=\s+' . $knownNextLabels . '\b[^-–—]{0,90}\s*[-–—]\s*|$)/u',
+            $text,
+            $matches,
+            PREG_SET_ORDER
+        )) {
+            return;
+        }
+
+        foreach (array_slice($matches, 0, 40) as $match) {
+            $this->addSpec($specs, $match[1], $match[2]);
         }
     }
 
@@ -2047,7 +2076,16 @@ class ProductSourceEnricher
         $key = $this->cleanAttributeName($key);
         $value = $this->cleanAttributeValue($value);
 
-        if ($key === '' || $value === '' || mb_strlen($key) > 120 || mb_strlen($value) > 240 || $this->looksLikeMojibake($key) || $this->isTechnicalOrJunkAttribute($key, $value)) {
+        if (
+            $key === ''
+            || $value === ''
+            || str_contains($key, '#')
+            || str_contains($value, '#')
+            || mb_strlen($key) > 120
+            || mb_strlen($value) > 240
+            || $this->looksLikeMojibake($key)
+            || $this->isTechnicalOrJunkAttribute($key, $value)
+        ) {
             return;
         }
 
