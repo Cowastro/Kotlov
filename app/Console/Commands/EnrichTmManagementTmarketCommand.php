@@ -418,6 +418,13 @@ class EnrichTmManagementTmarketCommand extends Command
             return 1.0;
         }
 
+        if ((str_contains($left, $right) || str_contains($right, $left))
+            && $this->numericTokensCompatible($left, $right)
+            && $this->distinctiveTokensCompatible($left, $right)
+            && min(mb_strlen($left), mb_strlen($right)) >= 6) {
+            return 0.95;
+        }
+
         similar_text($left, $right, $percent);
         $score = $percent / 100;
 
@@ -432,9 +439,49 @@ class EnrichTmManagementTmarketCommand extends Command
     {
         $text = mb_strtolower($text);
         $text = str_replace(['ё', '×', 'х'], ['е', 'x', 'x'], $text);
+        $text = preg_replace('/\([^)]*\)/u', ' ', $text) ?? $text;
         $text = preg_replace('/\b(л|литр|литров|мм|см|квт|вт|бар)\b/u', '', $text) ?? $text;
+        $text = preg_replace(
+            '/\b(канализационный|дренажный|насос|насосная|станция|современная|шиберная|задвижка|аварийная|сигнализация|для|только|общественных|профессионального|использования|помещений|с|измельчителем|комплекте|сифоном|трапа|высотой|плоским|поддон|от)\b/u',
+            ' ',
+            $text
+        ) ?? $text;
         $text = preg_replace('/[^a-zа-я0-9]+/u', ' ', $text) ?? $text;
         return trim(preg_replace('/\s+/u', ' ', $text) ?? $text);
+    }
+
+    private function numericTokensCompatible(string $left, string $right): bool
+    {
+        preg_match_all('/\d+/u', $left, $leftMatches);
+        preg_match_all('/\d+/u', $right, $rightMatches);
+
+        $leftNumbers = array_values(array_unique($leftMatches[0] ?? []));
+        $rightNumbers = array_values(array_unique($rightMatches[0] ?? []));
+
+        if ($leftNumbers === [] || $rightNumbers === []) {
+            return true;
+        }
+
+        $shorter = mb_strlen($left) <= mb_strlen($right) ? $leftNumbers : $rightNumbers;
+        $longer = mb_strlen($left) <= mb_strlen($right) ? $rightNumbers : $leftNumbers;
+
+        return count(array_diff($shorter, $longer)) === 0;
+    }
+
+    private function distinctiveTokensCompatible(string $left, string $right): bool
+    {
+        $tokens = ['flat', 'pro', 'best', 'clim', 'mini', 'vx', 'gr', 'wp', 'ip', 'nm', 'dn', 'tri', 'smart'];
+
+        foreach ($tokens as $token) {
+            $leftHas = preg_match('/\b' . preg_quote($token, '/') . '\b/u', $left) === 1;
+            $rightHas = preg_match('/\b' . preg_quote($token, '/') . '\b/u', $right) === 1;
+
+            if ($leftHas !== $rightHas) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     private function imagesEmpty(mixed $images): bool
