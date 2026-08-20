@@ -609,6 +609,16 @@ class EnrichTmManagementTmarketCommand extends Command
             };
         }
 
+        if (mb_strtolower($brand) === 'джилекс') {
+            $slug = match (true) {
+                str_contains($name, 'дренажник') => 'drenajnyie',
+                str_contains($name, 'фекальник') => 'fekalnye-nasosy',
+                str_contains($name, 'крот') || str_contains($name, 'краб') || str_contains($name, 'насос-автомат') => 'nasosnyie-stantsii',
+                str_contains($name, 'вихревик') || str_contains($name, 'джамбо') => 'poverhnostnyie',
+                default => null,
+            };
+        }
+
         if (mb_strtolower($brand) === 'shinhoo') {
             $slug = 'tsirkulyatsionnyie';
         }
