@@ -96,12 +96,13 @@ class EnrichTmManagementTmarketCommand extends Command
 
             $stats['matched']++;
             $parsed = $match['parsed'];
+            $imageOnly = (bool) ($match['image_only'] ?? false);
             $rows[] = [
                 $product->brand_name,
                 Str::limit($product->name, 42),
                 Str::limit($match['title'], 42),
                 count($parsed['images'] ?? []) . ' img / ' . count($parsed['specs'] ?? []) . ' specs',
-                $match['url'],
+                ($imageOnly ? 'image only: ' : '') . $match['url'],
             ];
 
             if (! $apply) {
@@ -110,27 +111,31 @@ class EnrichTmManagementTmarketCommand extends Command
 
             try {
                 $model = Product::query()->findOrFail($product->id);
-                $displayName = $this->cleanDisplayName($model, (string) $product->brand_name, (string) $match['title']);
-                if ($displayName !== '' && $displayName !== $model->name) {
-                    $model->forceFill([
-                        'name' => $displayName,
-                        'h1' => $displayName,
-                        'meta_title' => $displayName . ' купить в %city%',
-                    ])->save();
-                } elseif ($displayName !== '' && ($model->h1 !== $displayName || blank($model->meta_title))) {
-                    $model->forceFill([
-                        'h1' => $displayName,
-                        'meta_title' => $displayName . ' купить в %city%',
-                    ])->save();
+                if (! $imageOnly) {
+                    $displayName = $this->cleanDisplayName($model, (string) $product->brand_name, (string) $match['title']);
+                    if ($displayName !== '' && $displayName !== $model->name) {
+                        $model->forceFill([
+                            'name' => $displayName,
+                            'h1' => $displayName,
+                            'meta_title' => $displayName . ' купить в %city%',
+                        ])->save();
+                    } elseif ($displayName !== '' && ($model->h1 !== $displayName || blank($model->meta_title))) {
+                        $model->forceFill([
+                            'h1' => $displayName,
+                            'meta_title' => $displayName . ' купить в %city%',
+                        ])->save();
+                    }
                 }
 
                 $parsedForStorage = $this->cleanParsedForStorage($parsed);
 
                 $result = $enricher->enrichFromParsed($model, $match['url'], $parsedForStorage, [
                     'update_images' => true,
-                    'replace_images' => (bool) $this->option('replace-images') || $this->imagesEmpty($model->images),
-                    'update_specs' => true,
-                    'replace_specs' => true,
+                    'replace_images' => $imageOnly
+                        ? $this->imagesEmpty($model->images)
+                        : ((bool) $this->option('replace-images') || $this->imagesEmpty($model->images)),
+                    'update_specs' => ! $imageOnly,
+                    'replace_specs' => ! $imageOnly,
                     'min_specs_to_replace' => 2,
                     'update_content' => false,
                     'source_content' => false,
@@ -138,13 +143,16 @@ class EnrichTmManagementTmarketCommand extends Command
                     'update_video' => false,
                 ]);
 
-                $updates = [
-                    'short_description' => $this->safeShortDescription($model, (string) $product->brand_name),
-                    'meta_description' => $model->name . ' — характеристики, консультация и поставка в %city%.',
-                    'updated_at' => now(),
-                ];
+                $updates = ['updated_at' => now()];
 
-                if ((bool) $this->option('content')) {
+                if (! $imageOnly) {
+                    $updates = array_merge($updates, [
+                        'short_description' => $this->safeShortDescription($model, (string) $product->brand_name),
+                        'meta_description' => $model->name . ' — характеристики, консультация и поставка в %city%.',
+                    ]);
+                }
+
+                if (! $imageOnly && (bool) $this->option('content')) {
                     $seo = $this->generateSeoContent($model, (string) $product->brand_name, $match['url'], $parsedForStorage, $enricher);
                     if ($seo !== null) {
                         $updates = array_merge($updates, $seo);
@@ -155,7 +163,7 @@ class EnrichTmManagementTmarketCommand extends Command
                 $model->forceFill($updates)->save();
 
                 $stats['images_saved'] += (int) ($result['images_saved'] ?? 0);
-                $stats['specs_found'] += (int) ($result['specs_found'] ?? 0);
+                $stats['specs_found'] += $imageOnly ? 0 : (int) ($result['specs_found'] ?? 0);
             } catch (\Throwable $e) {
                 $stats['errors']++;
                 $this->warn('Error product #' . $product->id . ': ' . $e->getMessage());
@@ -578,7 +586,7 @@ class EnrichTmManagementTmarketCommand extends Command
                 }
 
                 $relative = trim(mb_substr($path, mb_strlen($prefix)), '/');
-                if ($relative !== '' && ! str_contains($relative, '/')) {
+                if ($relative !== '' && ! str_contains($path, '?')) {
                     $urls[$brand . '|' . $path] = [
                         'brand' => $brand,
                         'url' => $this->absolute($path),
@@ -641,7 +649,7 @@ class EnrichTmManagementTmarketCommand extends Command
         }
 
         if (! $best || $bestScore < 0.92) {
-            return null;
+            return $this->matchProductBySafeSeriesImage($product, $candidates);
         }
 
         if (! $this->numericTokensCompatible($productNorm, $best['normalized'])
@@ -652,6 +660,65 @@ class EnrichTmManagementTmarketCommand extends Command
         }
 
         return $best + ['score' => $bestScore];
+    }
+
+    /**
+     * Some TMarket brands, especially Shinhoo, expose one source page per product
+     * series instead of one page per exact model. In that case use the source
+     * only as a safe image donor for products that have no photo; never copy
+     * specs, names or SEO text from a generic series page into a concrete model.
+     */
+    private function matchProductBySafeSeriesImage(object $product, array $candidates): ?array
+    {
+        $brand = mb_strtolower((string) $product->brand_name);
+        if ($brand !== 'shinhoo' || ! $this->imagesEmpty($product->images)) {
+            return null;
+        }
+
+        $series = $this->shinhooSeries((string) $product->name);
+        if ($series === '') {
+            return null;
+        }
+
+        foreach ($candidates as $candidate) {
+            if ($this->shinhooSeries((string) $candidate['title']) !== $series) {
+                continue;
+            }
+
+            if (count((array) ($candidate['parsed']['images'] ?? [])) === 0) {
+                continue;
+            }
+
+            return $candidate + [
+                'score' => 0.91,
+                'image_only' => true,
+            ];
+        }
+
+        return null;
+    }
+
+    private function shinhooSeries(string $name): string
+    {
+        $normalized = $this->normalize($name);
+
+        foreach ([
+            'basic pro' => 'basic-pro',
+            'basic s' => 'basic-s',
+            'master s' => 'master-s',
+            'mega s' => 'mega-s',
+            'aquamaster' => 'aquamaster',
+            'instant' => 'instant',
+            'basic' => 'basic',
+            'mega' => 'mega',
+            'promo' => 'promo',
+        ] as $needle => $series) {
+            if (str_contains($normalized, $needle)) {
+                return $series;
+            }
+        }
+
+        return '';
     }
 
     private function score(string $left, string $right): float
