@@ -2103,6 +2103,13 @@ class ProductSourceEnricher
 
     private function extractImages(string $html, string $pageUrl): array
     {
+        if (str_contains((string) parse_url($pageUrl, PHP_URL_HOST), 'tmarket.by')) {
+            $tmarketImages = $this->extractTmarketProductImages($html, $pageUrl);
+            if ($tmarketImages !== []) {
+                return $tmarketImages;
+            }
+        }
+
         $images = [];
 
         if (preg_match_all('~<meta[^>]+property=["\']og:image["\'][^>]+content=["\']([^"\']+)["\']~iu', $html, $matches)) {
@@ -2136,6 +2143,32 @@ class ProductSourceEnricher
         usort($images, fn (string $left, string $right): int => $this->imageScore($right, $pageUrl) <=> $this->imageScore($left, $pageUrl));
 
         return array_values(array_slice($images, 0, 12));
+    }
+
+    /**
+     * TMarket/Bitrix product pages contain many category/menu thumbnails before
+     * the real product gallery. Keep only the detail gallery pictures.
+     *
+     * @return array<int,string>
+     */
+    private function extractTmarketProductImages(string $html, string $pageUrl): array
+    {
+        $images = [];
+
+        if (! preg_match_all('~<img\b[^>]*class=["\'][^"\']*catalog-detail__gallery__picture[^"\']*["\'][^>]*>~iu', $html, $matches)) {
+            return [];
+        }
+
+        foreach ($matches[0] as $tagHtml) {
+            foreach ($this->imageUrlsFromTag($tagHtml, $pageUrl) as $url) {
+                $images[] = $url;
+            }
+        }
+
+        $images = $this->expandedImageCandidates($images);
+        usort($images, fn (string $left, string $right): int => $this->imageQualityScore($right) <=> $this->imageQualityScore($left));
+
+        return array_values(array_slice($images, 0, 8));
     }
 
     /**
