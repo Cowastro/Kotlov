@@ -213,6 +213,7 @@ class EnrichTmManagementTmarketCommand extends Command
         $updates = [];
 
         if ($content !== '') {
+            $content = $this->cleanSeoContent($content);
             $content = $enricher->sanitizeDescriptionHtml($content);
             if ($content !== '') {
                 $updates['content'] = $content;
@@ -234,6 +235,19 @@ class EnrichTmManagementTmarketCommand extends Command
         $text = str_replace(['в %city%', '%city%'], 'по Беларуси', $text);
 
         return Str::limit($text, 240, '');
+    }
+
+    private function cleanSeoContent(string $html): string
+    {
+        $html = preg_replace('~с\s+доставк(?:ой|у)\s+в\s+%city%~iu', 'в %city% с доставкой по Беларуси', $html) ?? $html;
+        $html = preg_replace('~доставка\s+в\s+%city%~iu', 'доставка по Беларуси', $html) ?? $html;
+        $html = preg_replace('~\bв\s+%city%\s+по\s+Беларуси\b~iu', 'в %city% с доставкой по Беларуси', $html) ?? $html;
+
+        if (! str_contains($html, '%city%')) {
+            $html .= '<p>На KOTLOV.BY можно подобрать и заказать эту позицию в %city% с доставкой по Беларуси.</p>';
+        }
+
+        return trim($html);
     }
 
     private function metaDescription(Product $product, string $shortDescription): string
