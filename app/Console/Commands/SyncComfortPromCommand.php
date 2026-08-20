@@ -255,8 +255,10 @@ class SyncComfortPromCommand extends Command
             $article = $this->cleanText($articleMatch[1]);
         }
 
-        $inStock = ! str_contains($this->cleanText($html), 'Товар временно отсутствует');
-        $stockText = $inStock ? 'Есть в наличии' : 'Товар временно отсутствует';
+        // ComfortProm поставляется по запросу: не показываем на витрине «нет в наличии»
+        // и не наследуем розничный остаток чужого сайта как наш склад.
+        $inStock = false;
+        $stockText = 'Уточняйте наличие';
 
         preg_match_all('/userfls\/shop\/large\/([\d]+\/[^"\']+\.(?:jpg|jpeg|png|webp))/iu', $html, $imgMatches);
         $imagesRemote = array_values(array_unique($imgMatches[1] ?? []));
@@ -385,7 +387,7 @@ class SyncComfortPromCommand extends Command
             'h1' => ($item['h1'] ?? '') ?: $item['name'],
             'price' => $item['price_byn'],
             'currency' => 'BYN',
-            'content' => $item['content'] ?? null,
+            'content' => $this->productDescription($item),
             'short_description' => $this->shortDescription($item),
             'images' => json_encode($images, JSON_UNESCAPED_UNICODE),
             'specs' => json_encode($attrs, JSON_UNESCAPED_UNICODE),
@@ -393,8 +395,8 @@ class SyncComfortPromCommand extends Command
             'warranty' => '24 мес.',
             'is_active' => true,
             'is_archived' => false,
-            'in_stock' => (bool) ($item['in_stock'] ?? true),
-            'availability_status' => (bool) ($item['in_stock'] ?? true) ? 'in_stock' : 'out_of_stock',
+            'in_stock' => false,
+            'availability_status' => 'check',
             'stock_qty' => null,
             'is_featured' => false,
             'is_new' => false,
@@ -451,10 +453,10 @@ class SyncComfortPromCommand extends Command
                 'currency' => 'BYN',
                 'currency_rate' => 1,
                 'price_byn' => $item['price_byn'],
-                'in_stock' => (bool) ($item['in_stock'] ?? true),
+                'in_stock' => false,
                 'stock_quantity' => null,
-                'stock_status' => (bool) ($item['in_stock'] ?? true) ? 'in_stock' : 'out_of_stock',
-                'stock_text' => $item['stock_text'] ?? null,
+                'stock_status' => 'preorder',
+                'stock_text' => 'Уточняйте наличие',
                 'warehouse_name' => 'teplodvor.by',
                 'delivery_days' => null,
                 'last_stock_synced_at' => $now,
@@ -597,6 +599,51 @@ class SyncComfortPromCommand extends Command
         return $parts
             ? self::SUPPLIER_NAME . ' — банная печь: ' . implode(', ', $parts) . '.'
             : self::SUPPLIER_NAME . ' — банная печь для частной бани с доставкой по Беларуси.';
+    }
+
+    private function productDescription(array $item): string
+    {
+        $attrs = $item['attributes'] ?? [];
+        $name = e((string) $item['name']);
+        $volume = e((string) ($attrs['Объем парной, м³'] ?? $attrs['Объем помещения, м3'] ?? ''));
+        $power = e((string) ($attrs['Мощность, кВт'] ?? ''));
+        $material = e((string) ($attrs['Материал топки'] ?? ''));
+        $thickness = e((string) ($attrs['Толщина металла'] ?? ''));
+        $heater = e((string) ($attrs['Каменка'] ?? $attrs['Вид каменки'] ?? ''));
+        $door = e((string) ($attrs['Дверь'] ?? $attrs['Дверца'] ?? $attrs['Тип дверцы'] ?? ''));
+        $chimney = e((string) ($attrs['Диаметр дымохода, мм'] ?? ''));
+        $weight = e((string) ($attrs['Вес, кг'] ?? ''));
+
+        $facts = array_filter([
+            $volume !== '' ? '<li><strong>Объём парной:</strong> ' . $volume . ' м³</li>' : null,
+            $power !== '' ? '<li><strong>Мощность:</strong> ' . $power . ' кВт</li>' : null,
+            $material !== '' ? '<li><strong>Материал топки:</strong> ' . $material . '</li>' : null,
+            $thickness !== '' ? '<li><strong>Толщина металла:</strong> ' . $thickness . '</li>' : null,
+            $heater !== '' ? '<li><strong>Каменка:</strong> ' . $heater . '</li>' : null,
+            $door !== '' ? '<li><strong>Дверца:</strong> ' . $door . '</li>' : null,
+            $chimney !== '' ? '<li><strong>Дымоход:</strong> Ø ' . $chimney . ' мм</li>' : null,
+            $weight !== '' ? '<li><strong>Вес:</strong> ' . $weight . ' кг</li>' : null,
+        ]);
+
+        $factsHtml = $facts
+            ? '<ul>' . implode('', $facts) . '</ul>'
+            : '<p>Основные технические параметры смотрите во вкладке «Технические характеристики».</p>';
+
+        return <<<HTML
+<p><strong>{$name}</strong> — банная печь ComfortProm для частной бани и сауны. Модель рассчитана на стабильный нагрев парной, удобную загрузку дров и понятное обслуживание без лишней сложности.</p>
+
+<h3>Что важно в этой модели</h3>
+{$factsHtml}
+
+<h3>Почему ComfortProm</h3>
+<p>ComfortProm — белорусский производитель банных печей. В этой карточке производитель и поставщик для KOTLOV.BY — одна и та же белорусская компания, поэтому описание, цена и комплектация ведутся по актуальной линейке ComfortProm.</p>
+
+<h3>Для каких задач подходит</h3>
+<p>Печь подойдёт для бань, где нужна простая и надёжная дровяная система: быстро протопить парную, поддерживать рабочую температуру и получать плотный банный пар. При выборе важно учитывать объём парной, тип каменки, длину дров, диаметр дымохода и требования к пожаробезопасному монтажу.</p>
+
+<h3>Поставка и подбор</h3>
+<p>KOTLOV.BY помогает подобрать печь ComfortProm под конкретную баню, дымоход и режим использования. Если сомневаетесь между несколькими моделями — лучше уточнить объём парной, утепление, высоту потолка и планируемый формат парения.</p>
+HTML;
     }
 
     private function normalizeName(string $name): string
