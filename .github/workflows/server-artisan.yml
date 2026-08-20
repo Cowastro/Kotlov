@@ -14,6 +14,7 @@ on:
           - artisan-background
           - tail-log
           - ps-artisan
+          - deploy-recover
       artisan_args:
         description: Artisan arguments, for example supplier:sync-ligmet --dry-run --brand=Blist
         required: false
@@ -40,7 +41,7 @@ jobs:
           set -euo pipefail
 
           case "$TASK" in
-            optimize-clear|artisan-dry-run|artisan-apply|artisan-background|tail-log|ps-artisan) ;;
+            optimize-clear|artisan-dry-run|artisan-apply|artisan-background|tail-log|ps-artisan|deploy-recover) ;;
             *) echo "::error::Unsupported task: $TASK"; exit 1 ;;
           esac
 
@@ -125,6 +126,11 @@ jobs:
               ;;
             ps-artisan)
               ps -ef | grep artisan | grep -v grep || true
+              ;;
+            deploy-recover)
+              git merge --abort || true
+              git pull --ff-only
+              "$PHP_BIN" artisan optimize:clear
               ;;
           esac
           SCRIPT
