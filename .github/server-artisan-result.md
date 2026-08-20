@@ -1,20 +1,19 @@
 # Server Artisan Result
 
-- Time: 2026-08-20 16:33:06 UTC
+- Time: 2026-08-20 17:01:27 UTC
 - Task: `artisan-apply`
-- Artisan args: `supplier:enrich-tm-tmarket --apply --replace-images --content --limit=20 --offset=40`
-- Log file: `storage/logs/tm-tmarket-seo-3.log`
+- Artisan args: `supplier:enrich-tm-tmarket --apply --replace-images --content --limit=20 --offset=120`
+- Log file: `storage/logs/tm-tmarket-seo-4.log`
 - Exit code: `0`
 
 ```text
 From https://github.com/Cowastro/Kotlov
-   88f0774..bedb676  main       -> origin/main
-Updating 88f0774..bedb676
+   2b3861d..15bceca  main       -> origin/main
+Updating 2b3861d..15bceca
 Fast-forward
- .github/server-artisan-result.md                          | 13 +++++++------
- .github/server-artisan-task.json                          |  2 +-
- app/Console/Commands/EnrichTmManagementTmarketCommand.php | 11 ++++++++++-
- 3 files changed, 18 insertions(+), 8 deletions(-)
+ .github/server-artisan-task.json                          | 6 +++---
+ app/Console/Commands/EnrichTmManagementTmarketCommand.php | 5 +++++
+ 2 files changed, 8 insertions(+), 3 deletions(-)
 APPLY: products will be enriched from TMarket.
 Products to check: 20
 TMarket categories: 27
@@ -22,38 +21,38 @@ De Dietrich: candidate URLs 23
 Shinhoo: candidate URLs 8
 SFA: candidate URLs 35
 Джилекс: candidate URLs 100
-+---------+------------------------------------+---------------+-----------------+--------------------------------------------------------------------------------+
-| brand   | site product                       | tmarket match | found           | url/status                                                                     |
-+---------+------------------------------------+---------------+-----------------+--------------------------------------------------------------------------------+
-| SFA     | Шиберная задвижка SFA VANNE DN 100 | VANNE DN 100  | 4 img / 5 specs | https://tmarket.by/product/nasosy-sfa/dopolnitelnoe-oborudovanie/vanne-dn-100/ |
-| SFA     | Шиберная задвижка SFA VANNE DN 50  | VANNE DN 50   | 4 img / 4 specs | https://tmarket.by/product/nasosy-sfa/dopolnitelnoe-oborudovanie/vanne-dn-50/  |
-| Shinhoo | BASIC 25-12S 1x230V                | —             | skip            | no safe match                                                                  |
-| Shinhoo | BASIC 25-16 1x230V                 | —             | skip            | no safe match                                                                  |
-| Shinhoo | BASIC 25-20 1x230V                 | —             | skip            | no safe match                                                                  |
-| Shinhoo | BASIC 32-12 180 1x230V             | —             | skip            | no safe match                                                                  |
-| Shinhoo | BASIC 32-12F 1x230V                | —             | skip            | no safe match                                                                  |
-| Shinhoo | BASIC 50-12F 1x230V                | —             | skip            | no safe match                                                                  |
-| Shinhoo | BASIC 65-12F 1х230V                | —             | skip            | no safe match                                                                  |
-| Shinhoo | BASIC 65-8F 1х230V                 | —             | skip            | no safe match                                                                  |
-| Shinhoo | BASIC 65-8SF 3х180V                | —             | skip            | no safe match                                                                  |
-| Shinhoo | BASIC PRO 32-12SF 1x230V           | —             | skip            | no safe match                                                                  |
-| Shinhoo | BASIC PRO 32-8SF 1x230V            | —             | skip            | no safe match                                                                  |
-| Shinhoo | BASIC PRO 40-14SF 1x230V           | —             | skip            | no safe match                                                                  |
-| Shinhoo | BASIC PRO 40-14SF 3x380V           | —             | skip            | no safe match                                                                  |
-| Shinhoo | BASIC PRO 40-18SF 1x230V           | —             | skip            | no safe match                                                                  |
-| Shinhoo | BASIC PRO 40-18SF 3x380V           | —             | skip            | no safe match                                                                  |
-| Shinhoo | BASIC PRO 40-4SF 1x230V            | —             | skip            | no safe match                                                                  |
-| Shinhoo | BASIC PRO 40-6SF 1x230V            | —             | skip            | no safe match                                                                  |
-| Shinhoo | BASIC PRO 50-12SF 1x230V           | —             | skip            | no safe match                                                                  |
-+---------+------------------------------------+---------------+-----------------+--------------------------------------------------------------------------------+
++---------+-----------------------------------------------+-----------------------+------------------+---------------------------------------------------------------------------------------------+
+| brand   | site product                                  | tmarket match         | found            | url/status                                                                                  |
++---------+-----------------------------------------------+-----------------------+------------------+---------------------------------------------------------------------------------------------+
+| Watrix  | Соединитель TBN 70/2 для коллектора C 60 2... | —                     | skip             | no safe match                                                                               |
+| Watrix  | Соединитель TBN 70/3 для коллектора C 60 3... | —                     | skip             | no safe match                                                                               |
+| Watrix  | Соединитель TBN 70/4 для коллектора C 60 4... | —                     | skip             | no safe match                                                                               |
+| Джилекс | "УЖ" комплект для всасывания 25-7,5           | —                     | skip             | no safe match                                                                               |
+| Джилекс | "УЖ" комплект для всасывания 32-7,5           | —                     | skip             | no safe match                                                                               |
+| Джилекс | "УЖ" шланг 25-15                              | —                     | skip             | no safe match                                                                               |
+| Джилекс | "УЖ" шланг 25-7,5                             | —                     | skip             | no safe match                                                                               |
+| Джилекс | "УЖ" шланг 32-15                              | —                     | skip             | no safe match                                                                               |
+| Джилекс | "УЖ" шланг 32-7,5                             | —                     | skip             | no safe match                                                                               |
+| Джилекс | Адаптер колодезный "АК"                       | —                     | skip             | no safe match                                                                               |
+| Джилекс | Базовое решение автоматизации «БРА»           | —                     | skip             | no safe match                                                                               |
+| Джилекс | Блок автоматики                               | Блок автоматики       | 3 img / 11 specs | https://tmarket.by/product/oborudovanie-dzhileks/komplektuyushchie2/blok-avtomatiki/        |
+| Джилекс | Водозаборный фильтр 1 МП                      | Водозаборный фильтр   | 4 img / 6 specs  | https://tmarket.by/product/oborudovanie-dzhileks/komplektuyushchie2/vodozabornyy-filtr/     |
+| Джилекс | Выключатель поплавковый универсальный с пр... | —                     | skip             | no safe match                                                                               |
+| Джилекс | Гидроаккумулятор В 100                        | Гидроаккумулятор В100 | 2 img / 10 specs | https://tmarket.by/product/oborudovanie-dzhileks/gidroakkumulyatory/gidroakkumulyator-v100/ |
+| Джилекс | Гидроаккумулятор В 100 «ХИТ»                  | —                     | skip             | no safe match                                                                               |
+| Джилекс | Гидроаккумулятор В 150                        | Гидроаккумулятор В150 | 2 img / 10 specs | https://tmarket.by/product/oborudovanie-dzhileks/gidroakkumulyatory/gidroakkumulyator-v150/ |
+| Джилекс | Гидроаккумулятор В 200                        | Гидроаккумулятор В200 | 2 img / 10 specs | https://tmarket.by/product/oborudovanie-dzhileks/gidroakkumulyatory/gidroakkumulyator-v200/ |
+| Джилекс | Гидроаккумулятор В 300                        | Гидроаккумулятор В300 | 2 img / 10 specs | https://tmarket.by/product/oborudovanie-dzhileks/gidroakkumulyatory/gidroakkumulyator-v300/ |
+| Джилекс | Гидроаккумулятор В 50                         | —                     | skip             | no safe match                                                                               |
++---------+-----------------------------------------------+-----------------------+------------------+---------------------------------------------------------------------------------------------+
 +---------------+-------+
 | metric        | count |
 +---------------+-------+
-| matched       | 2     |
-| skipped       | 18    |
-| images_saved  | 8     |
-| specs_found   | 9     |
-| content_found | 2     |
+| matched       | 6     |
+| skipped       | 14    |
+| images_saved  | 6     |
+| specs_found   | 57    |
+| content_found | 6     |
 | errors        | 0     |
 +---------------+-------+
 
