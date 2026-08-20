@@ -1,6 +1,6 @@
 {
-  "task": "artisan-dry-run",
-  "artisan_args": "products:inspect-price --sku=PS-007.453 --limit=10",
-  "log_file": "storage/logs/verify-plamen-price.log",
-  "run_id": "verify-plamen-price-20260714-1"
+  "task": "kill-pid",
+  "artisan_args": "983279",
+  "log_file": "storage/logs/tm-tmarket-enrich-2.log",
+  "run_id": "kill-tm-tmarket-enrich-20260820-1"
 }
