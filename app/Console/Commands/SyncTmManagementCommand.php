@@ -645,6 +645,38 @@ HTML;
             return mb_strtoupper($match[1]);
         }
 
+        if (str_contains($compact, 'sanifloor1')) {
+            return 'SANIFLOOR 1';
+        }
+
+        if (str_contains($compact, 'sanifloor2')) {
+            return 'SANIFLOOR 2';
+        }
+
+        if (str_contains($compact, 'sanicubic2classic')) {
+            return 'Sanicubic 2 Classic';
+        }
+
+        if (str_contains($compact, 'sanicubic2xlvxtrismart')) {
+            return 'SANICUBIC 2 XL VX TRI SMART';
+        }
+
+        if (str_contains($compact, 'sanicubic2xlvx')) {
+            return 'SANICUBIC 2 XL VX';
+        }
+
+        if (str_contains($compact, 'sanicubic1wp')) {
+            return 'SANICUBIC 1 WP';
+        }
+
+        if (str_contains($compact, 'sanicubic2pro')) {
+            return 'Sanicubic 2 Pro';
+        }
+
+        if (str_contains($compact, 'sanialarm')) {
+            return 'SANIALARM';
+        }
+
         if (str_contains($compact, 'sanidoucheflat')) {
             return 'SANIDOUCHE Flat';
         }
@@ -656,6 +688,21 @@ HTML;
     {
         $name = str_replace(["\r", "\n"], ' ', $name);
         $name = str_ireplace('пооским', 'плоским', $name);
+        $name = preg_replace(
+            '/^Шиберная задвижка Vanne DN 100\/\s*Vanne DN 110\b.*$/u',
+            'Шиберная задвижка Vanne DN 100/110 для SFA Sanicubic',
+            $name
+        ) ?? $name;
+        $name = preg_replace(
+            '/^Шиберная задвижка Vanne DN 50\b.*$/u',
+            'Шиберная задвижка Vanne DN 50 для SFA Sanicubic',
+            $name
+        ) ?? $name;
+        $name = preg_replace(
+            '/^Современная насосная станция Sanicubic 2 Classic$/u',
+            'Sanicubic 2 Classic',
+            $name
+        ) ?? $name;
 
         return trim(preg_replace('/\s+/u', ' ', $name) ?? $name);
     }
