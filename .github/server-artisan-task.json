@@ -1,6 +1,6 @@
 {
   "task": "artisan-apply",
-  "artisan_args": "supplier:enrich-tm-tmarket --apply --replace-images --content --limit=20 --offset=40",
-  "log_file": "storage/logs/tm-tmarket-seo-3.log",
-  "run_id": "apply-tm-tmarket-seo-20260820-6"
+  "artisan_args": "supplier:enrich-tm-tmarket --apply --replace-images --content --limit=20 --offset=120",
+  "log_file": "storage/logs/tm-tmarket-seo-4.log",
+  "run_id": "apply-tm-tmarket-seo-20260820-7"
 }

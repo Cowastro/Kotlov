@@ -474,6 +474,11 @@ class EnrichTmManagementTmarketCommand extends Command
             return null;
         }
 
+        if (! $this->numericTokensCompatible($productNorm, $best['normalized'])
+            || ! $this->distinctiveTokensCompatible($productNorm, $best['normalized'])) {
+            return null;
+        }
+
         return $best + ['score' => $bestScore];
     }
 
