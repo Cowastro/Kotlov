@@ -2427,10 +2427,9 @@ class ProductSourceEnricher
         $width = (int) ($info[0] ?? 0);
         $height = (int) ($info[1] ?? 0);
 
-        return $width >= 220
-            && $height >= 220
-            && max($width, $height) >= 420
-            && ($width * $height) >= 90000;
+        return $width >= 300
+            && $height >= 300
+            && ($width * $height) >= 80000;
     }
 
     private function isProductImage(string $url): bool
