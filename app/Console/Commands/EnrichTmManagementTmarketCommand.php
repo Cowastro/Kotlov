@@ -707,7 +707,7 @@ class EnrichTmManagementTmarketCommand extends Command
 
     private function distinctiveTokensCompatible(string $left, string $right): bool
     {
-        $tokens = ['flat', 'pro', 'best', 'clim', 'mini', 'vx', 'gr', 'wp', 'ip', 'nm', 'dn', 'tri', 'smart'];
+        $tokens = ['flat', 'pro', 'best', 'clim', 'mini', 'vx', 'gr', 'wp', 'ip', 'nm', 'dn', 'tri', 'smart', 'premium'];
 
         foreach ($tokens as $token) {
             $leftHas = preg_match('/\b' . preg_quote($token, '/') . '\b/u', $left) === 1;
