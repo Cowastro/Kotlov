@@ -475,7 +475,8 @@ class EnrichTmManagementTmarketCommand extends Command
         }
 
         if (! $this->numericTokensCompatible($productNorm, $best['normalized'])
-            || ! $this->distinctiveTokensCompatible($productNorm, $best['normalized'])) {
+            || ! $this->distinctiveTokensCompatible($productNorm, $best['normalized'])
+            || ! $this->modelSuffixCompatible($productNorm, $best['normalized'])) {
             return null;
         }
 
@@ -494,6 +495,7 @@ class EnrichTmManagementTmarketCommand extends Command
         if ((str_contains($left, $right) || str_contains($right, $left))
             && $this->numericTokensCompatible($left, $right)
             && $this->distinctiveTokensCompatible($left, $right)
+            && $this->modelSuffixCompatible($left, $right)
             && min(mb_strlen($left), mb_strlen($right)) >= 6) {
             return 0.95;
         }
@@ -555,6 +557,29 @@ class EnrichTmManagementTmarketCommand extends Command
         }
 
         return true;
+    }
+
+    private function modelSuffixCompatible(string $left, string $right): bool
+    {
+        $leftSuffixes = $this->extractModelSuffixes($left);
+        $rightSuffixes = $this->extractModelSuffixes($right);
+
+        if ($leftSuffixes === [] || $rightSuffixes === []) {
+            return true;
+        }
+
+        return count(array_diff($leftSuffixes, $rightSuffixes)) === 0
+            && count(array_diff($rightSuffixes, $leftSuffixes)) === 0;
+    }
+
+    /** @return array<int,string> */
+    private function extractModelSuffixes(string $text): array
+    {
+        preg_match_all('/\b[а-яa-z]\d{0,2}\b/u', $text, $matches);
+
+        return array_values(array_unique(array_filter($matches[0] ?? [], function (string $token): bool {
+            return preg_match('/^(?:т\d{0,2}|t\d{0,2})$/u', $token) === 1;
+        })));
     }
 
     private function imagesEmpty(mixed $images): bool
