@@ -1,6 +1,6 @@
 # Server Artisan Result
 
-- Time: 2026-08-20 16:24:25 UTC
+- Time: 2026-08-20 16:28:37 UTC
 - Task: `artisan-apply`
 - Artisan args: `supplier:enrich-tm-tmarket --apply --replace-images --content --limit=20 --offset=40`
 - Log file: `storage/logs/tm-tmarket-seo-3.log`
@@ -8,12 +8,13 @@
 
 ```text
 From https://github.com/Cowastro/Kotlov
-   d84fe73..881fbbe  main       -> origin/main
-Updating d84fe73..881fbbe
+   881fbbe..88f0774  main       -> origin/main
+Updating 881fbbe..88f0774
 Fast-forward
- .github/server-artisan-result.md | 76 ++++++++++++++++++++--------------------
- .github/server-artisan-task.json |  6 ++--
- 2 files changed, 41 insertions(+), 41 deletions(-)
+ .github/server-artisan-result.md                   | 75 +++++++++++-----------
+ .github/server-artisan-task.json                   |  2 +-
+ .../Commands/EnrichTmManagementTmarketCommand.php  | 17 +++++
+ 3 files changed, 55 insertions(+), 39 deletions(-)
 APPLY: products will be enriched from TMarket.
 Products to check: 20
 TMarket categories: 27
