@@ -15,6 +15,7 @@ class EnrichTmManagementTmarketCommand extends Command
     protected $signature = 'supplier:enrich-tm-tmarket
         {--apply : Apply images/specs/content to matched products}
         {--limit= : Limit products to process}
+        {--offset= : Skip first N products in the supplier list}
         {--brand= : Process only brand name}
         {--content : Update content from cleaned TMarket description}
         {--replace-images : Replace existing images instead of only filling missing images}';
@@ -39,11 +40,12 @@ class EnrichTmManagementTmarketCommand extends Command
     {
         $apply = (bool) $this->option('apply');
         $limit = $this->option('limit') ? max(1, (int) $this->option('limit')) : null;
+        $offset = $this->option('offset') ? max(0, (int) $this->option('offset')) : 0;
         $onlyBrand = trim((string) $this->option('brand'));
 
         $this->info($apply ? 'APPLY: products will be enriched from TMarket.' : 'DRY RUN: no database writes.');
 
-        $products = $this->tmProducts($onlyBrand, $limit);
+        $products = $this->tmProducts($onlyBrand, $limit, $offset);
         if ($products->isEmpty()) {
             $this->warn('No TM Management products found.');
             return self::SUCCESS;
@@ -299,7 +301,7 @@ class EnrichTmManagementTmarketCommand extends Command
         return Str::limit(trim($base), 250, '');
     }
 
-    private function tmProducts(string $onlyBrand, ?int $limit)
+    private function tmProducts(string $onlyBrand, ?int $limit, int $offset = 0)
     {
         $query = DB::table('products as p')
             ->join('brands as b', 'b.id', '=', 'p.brand_id')
@@ -317,6 +319,10 @@ class EnrichTmManagementTmarketCommand extends Command
 
         if ($limit) {
             $query->limit($limit);
+        }
+
+        if ($offset > 0) {
+            $query->offset($offset);
         }
 
         return $query->get();
