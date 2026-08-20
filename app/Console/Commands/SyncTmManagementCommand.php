@@ -36,6 +36,9 @@ class SyncTmManagementCommand extends Command
     /** @var array<string,int> */
     private array $categoryIds = [];
 
+    /** @var array<string,int> */
+    private array $supplierArticleSeen = [];
+
     public function handle(): int
     {
         $apply = (bool) $this->option('apply');
@@ -448,11 +451,15 @@ class SyncTmManagementCommand extends Command
             'is_sale' => false,
             'meta_title' => $item['name'] . ' купить в %city%',
             'meta_keywords' => $item['brand'] . ', ' . $item['name'] . ', купить в %city%',
-            'meta_description' => $item['name'] . ' — цена, характеристики и поставка под заказ в %city%.',
+            'meta_description' => $item['name'] . ' — цена, характеристики, консультация и поставка в %city%.',
             'updated_at' => $now,
         ];
 
         if ($product) {
+            $currentSku = (string) ($product->sku ?? '');
+            if ($currentSku === '' || str_contains($currentSku, '|') || mb_strlen($currentSku) > 90) {
+                $payload['sku'] = $this->publicSku($item);
+            }
             if (! empty($product->images ?? null)) {
                 unset($payload['images']);
             }
@@ -460,7 +467,7 @@ class SyncTmManagementCommand extends Command
             return (int) $product->id;
         }
 
-        $payload['sku'] = $item['article'];
+        $payload['sku'] = $this->publicSku($item);
         $payload['slug'] = $this->uniqueProductSlug($item['name']);
         $payload['images'] = json_encode([], JSON_UNESCAPED_UNICODE);
         $payload['created_at'] = $now;
@@ -480,7 +487,7 @@ class SyncTmManagementCommand extends Command
                 'supplier_sync_id' => $syncId,
                 'product_id' => $productId,
                 'product_sku' => DB::table('products')->where('id', $productId)->value('sku'),
-                'supplier_article' => $this->supplierKey($item),
+                'supplier_article' => $this->publicSupplierArticle($item),
                 'supplier_article_compact' => preg_replace('/[^A-Z0-9А-ЯЁ]+/u', '', mb_strtoupper($this->supplierKey($item))),
                 'supplier_name' => $item['name'],
                 'source_url' => $item['source_url'],
@@ -557,7 +564,7 @@ HTML;
 
     private function shortDescription(array $item): string
     {
-        return $item['brand'] . ' — поставка под заказ в %city%. Уточняйте наличие, комплектацию и срок поставки.';
+        return $item['brand'] . ' — поставка под заказ по Беларуси. Уточняйте наличие, комплектацию и срок поставки.';
     }
 
     private function aiSeo(array $item, AiContentEnricher $ai): ?array
@@ -582,6 +589,8 @@ HTML;
         if (! str_contains($seo['content'], '%city%')) {
             $seo['content'] .= '<p>На KOTLOV.BY можно подобрать эту позицию и совместимые комплектующие в %city%, чтобы заказ соответствовал вашей системе и условиям монтажа.</p>';
         }
+
+        $seo['short_description'] = str_replace('%city%', 'Беларуси', (string) $seo['short_description']);
 
         return $seo;
     }
@@ -660,6 +669,38 @@ HTML;
         }
 
         return mb_substr($raw, 0, 120) . '-' . substr(md5($raw), 0, 12);
+    }
+
+    private function publicSku(array $item): string
+    {
+        $article = $this->cleanOneLine((string) ($item['article'] ?? ''));
+        if (mb_strlen($article) <= 80) {
+            return $article;
+        }
+
+        return Str::limit($this->cleanOneLine((string) ($item['name'] ?? '')), 72, '') . '-' . substr(md5($this->supplierKey($item)), 0, 6);
+    }
+
+    private function publicSupplierArticle(array $item): string
+    {
+        $article = mb_substr($this->publicSku($item), 0, 100);
+        $normalized = $this->normalizeArticle($article);
+        $seenKey = self::SUPPLIER_CODE . '|' . $normalized;
+
+        if (! isset($this->supplierArticleSeen[$seenKey])) {
+            $this->supplierArticleSeen[$seenKey] = 1;
+            return $article;
+        }
+
+        $this->supplierArticleSeen[$seenKey]++;
+        $suffix = '-' . substr(md5($this->supplierKey($item)), 0, 8);
+
+        return mb_substr($article, 0, 100 - mb_strlen($suffix)) . $suffix;
+    }
+
+    private function cleanOneLine(string $value): string
+    {
+        return trim(preg_replace('/\s+/u', ' ', str_replace(["\r", "\n"], ' ', $value)) ?? $value);
     }
 
     private function normalizeName(string $name): string
