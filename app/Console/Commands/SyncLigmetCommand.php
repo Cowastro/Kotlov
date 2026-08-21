@@ -52,9 +52,10 @@ class SyncLigmetCommand extends Command
     private const SUPPLIER_CODE = 'ligmet';
     private const SUPPLIER_NAME = 'Лигмет';
     private const SYNC_KEY      = 'ligmet_stock';
-    private const FILE_ID       = '1YA5Aq05X2h3i1bRulkzvrgwlQ8JHdBMn';
+    private const FILE_ID       = '1r-DPkj-20kCDfxlkDngB7IP25M6Mhje_';
     private const FOLDER_ID     = '1pQQRGMKBEHHEjUF3AYsi_dTvlxxTFxzz';
     private const SOURCE_URL    = 'https://ligmet.by/';
+    private const DEFAULT_SHEET_URL = 'https://docs.google.com/spreadsheets/d/1r-DPkj-20kCDfxlkDngB7IP25M6Mhje_/edit?gid=411235644';
 
     /** Fixed column layout — header row 9: B..H (0-based A=0). */
     private const COLS = [
@@ -344,21 +345,30 @@ class SyncLigmetCommand extends Command
         $ctx = $this->httpContext();
 
         $folderUrl = $this->option('folder-url');
-        if ($folderUrl !== null || $this->option('sheet-url') === null) {
+        if ($folderUrl !== null) {
             $folderId = $this->driveFolderId((string) ($folderUrl ?: '')) ?: self::FOLDER_ID;
             $url = $this->latestDriveWorkbookUrl($folderId, $ctx);
             $this->line("Using latest Ligmet workbook from Drive folder: {$url}");
         } else {
-            $url = $this->option('sheet-url');
+            $url = $this->option('sheet-url') ?: self::DEFAULT_SHEET_URL;
         }
 
         $id  = self::FILE_ID;
+        $gid = null;
         if ($url !== null && preg_match('#/d/([a-zA-Z0-9_-]+)#', $url, $m)) {
             $id = $m[1];
         }
+        if ($url !== null && preg_match('/[?&]gid=(\d+)/', $url, $m)) {
+            $gid = $m[1];
+        }
+
+        // Google exports the selected gid as a single-sheet XLSX.  Without the
+        // gid it returns the whole workbook and parseWorkbook() would always
+        // read sheet1, silently ignoring a supplier's linked tab.
+        $gidQuery = $gid !== null ? '&gid=' . $gid : '';
 
         foreach ([
-            "https://docs.google.com/spreadsheets/d/{$id}/export?format=xlsx",
+            "https://docs.google.com/spreadsheets/d/{$id}/export?format=xlsx{$gidQuery}",
             "https://drive.google.com/uc?export=download&id={$id}",
         ] as $u) {
             $bin = @file_get_contents($u, false, $ctx);
