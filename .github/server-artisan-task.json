@@ -1,6 +1,6 @@
 {
   "task": "artisan-apply",
-  "artisan_args": "supplier:sync-tm-management --apply --sheet=Watrix",
-  "log_file": "storage/logs/tm-management-sync-manual.log",
-  "run_id": "deploy-tm-management-sync-watrix-20260821-9"
+  "artisan_args": "supplier:sync-ligmet-ermak-kvl --apply",
+  "log_file": "storage/logs/ligmet-ermak-kvl-sync.log",
+  "run_id": "deploy-ligmet-ermak-kvl-20260821-1"
 }
