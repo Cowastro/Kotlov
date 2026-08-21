@@ -1,6 +1,6 @@
 {
   "task": "artisan-apply",
-  "artisan_args": "supplier:enrich-tm-tmarket --apply --replace-images --content --limit=20 --offset=120",
-  "log_file": "storage/logs/tm-tmarket-seo-4.log",
-  "run_id": "apply-tm-tmarket-seo-20260820-7"
+  "artisan_args": "supplier:sync-tm-management --apply",
+  "log_file": "storage/logs/tm-management-sync-manual.log",
+  "run_id": "deploy-tm-management-sync-20260821-1"
 }
