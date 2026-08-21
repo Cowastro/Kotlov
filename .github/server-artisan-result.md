@@ -1,31 +1,32 @@
 # Server Artisan Result
 
-- Time: 2026-08-21 15:52:29 UTC
+- Time: 2026-08-21 16:12:08 UTC
 - Task: `artisan-apply`
-- Artisan args: `supplier:sync-teplov-sukhov-retail --apply`
+- Artisan args: `supplier:sync-teplov-sukhov-retail --apply --create-missing --sheet=ferrit-05`
 - Log file: `storage/logs/teplov-sukhov-retail-sync.log`
 - Exit code: `0`
 
 ```text
 No local changes to save
 From https://github.com/Cowastro/Kotlov
-   b0212ff9..bb6499ec  main       -> origin/main
-Updating b0212ff9..bb6499ec
+   bb6499ec..c59f9ae1  main       -> origin/main
+Updating bb6499ec..c59f9ae1
 Fast-forward
- .github/server-artisan-result.md                   | 22 ++++++++---------
- .github/server-artisan-task.json                   |  2 +-
- .../SyncTeplovSukhovRetailPricesCommand.php        | 28 +++++++++++++++++++++-
- 3 files changed, 39 insertions(+), 13 deletions(-)
+ .github/server-artisan-result.md                   |  26 ++--
+ .github/server-artisan-task.json                   |   4 +-
+ .../SyncTeplovSukhovRetailPricesCommand.php        | 158 ++++++++++++++++++++-
+ 3 files changed, 171 insertions(+), 17 deletions(-)
 Прайс 2026-08-10: retail. Режим: APPLY.
 +--------------------------------------+------------+
 | Показатель                           | Количество |
 +--------------------------------------+------------+
 | Строк в прайсе                       | 448        |
-| Безопасно сопоставлено               | 177        |
-| Цен обновлено                        | 1          |
-| Без изменения                        | 176        |
+| Безопасно сопоставлено               | 223        |
+| Цен обновлено                        | 0          |
+| Без изменения                        | 223        |
+| Создано точных новых карточек        | 46         |
 | Неоднозначных — пропущено            | 2          |
-| Не найдено — пропущено               | 255        |
+| Не найдено — пропущено               | 209        |
 | Конфликтов связи — пропущено         | 8          |
 | Конфликтов внутри прайса — пропущено | 0          |
 +--------------------------------------+------------+
