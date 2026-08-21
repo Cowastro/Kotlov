@@ -269,7 +269,13 @@ class SyncTeplovSukhovRetailPricesCommand extends Command
             // (for example, "адаптер котла" vs "адаптер моно"). Exact material,
             // thickness and all diameters are the primary identity; one shared
             // product-type word is enough only after those numbers match.
-            $required = count($needleNumbers) >= 2 ? 1 : max(2, min(4, count($needleWords) - 1));
+            // For simple hardware the workbook can contain only a technical
+            // type and one diameter (for example, "Фартук D180"). Once the
+            // type and every number match, one shared term is enough. A
+            // second candidate still becomes ambiguous and is never applied.
+            $required = count($needleNumbers) >= 2 || $needleTypes !== []
+                ? 1
+                : max(2, min(4, count($needleWords) - 1));
 
             return $hits >= $required;
         })->values();
@@ -332,6 +338,10 @@ class SyncTeplovSukhovRetailPricesCommand extends Command
         $value = preg_replace('/\b(?:зм|дм|зрм|трм|пмм|ом|шм)\s*(?:\(\s*м\s*\))?\s*[-–]?\s*р\b/u', 'моно', $value) ?? $value;
         $value = preg_replace('/\b(?:пмт|от|трt|трт|кт|шпмт)\s*[-–]?\s*р\b/u', 'термо', $value) ?? $value;
         $value = preg_replace('/\bd(?=\d)/u', 'd ', $value) ?? $value;
+        // Legacy cards write tube length as L250/L500/L1000, while the
+        // workbook uses "L 250". Separate the number so length remains a
+        // required technical discriminator instead of being silently ignored.
+        $value = preg_replace('/\bl(?=\d)/u', 'l ', $value) ?? $value;
         $value = preg_replace('/\b(?:теплов\s+и\s+сухов|тиc|тис)\b/u', ' ', $value) ?? $value;
         $value = preg_replace('/адаптер\s*[-–]?\s*переход/u', 'адаптер переход', $value) ?? $value;
         $value = preg_replace('/\b0?\.(\d)\b/u', '0.$1', $value) ?? $value;
