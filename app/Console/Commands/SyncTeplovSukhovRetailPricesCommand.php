@@ -56,7 +56,11 @@ class SyncTeplovSukhovRetailPricesCommand extends Command
         foreach ($this->uniqueRows($data['rows']) as $row) {
             if (($row['_price_list_conflict'] ?? false) === true) {
                 $stats['price_list_conflict']++;
-                $details[] = [$row['sku'], Str::limit((string) $row['name'], 48), 'conflicting duplicate in price list'];
+                $details[] = [
+                    $row['sku'],
+                    Str::limit((string) $row['name'], 48),
+                    'conflicting source rows: ' . implode(' || ', $row['_price_list_variants'] ?? []),
+                ];
                 continue;
             }
 
@@ -294,13 +298,24 @@ class SyncTeplovSukhovRetailPricesCommand extends Command
         $grouped = collect($rows)->filter(fn ($row) => trim((string) ($row['sku'] ?? '')) !== '')->groupBy('sku');
 
         return $grouped->map(function ($sameArticle) {
-            $variants = $sameArticle
+            $signatures = $sameArticle
                 ->map(fn ($row) => trim((string) ($row['name'] ?? '')) . '|' . trim((string) ($row['retail'] ?? '')))
                 ->unique();
 
+            $variants = $sameArticle
+                ->map(fn ($row) => sprintf(
+                    '%s: %s = %s',
+                    trim((string) ($row['sheet'] ?? '—')),
+                    trim((string) ($row['name'] ?? '—')),
+                    trim((string) ($row['retail'] ?? '—')),
+                ))
+                ->unique()
+                ->values();
+
             $row = $sameArticle->first();
-            if ($variants->count() > 1) {
+            if ($signatures->count() > 1) {
                 $row['_price_list_conflict'] = true;
+                $row['_price_list_variants'] = $variants->all();
             }
 
             return $row;
