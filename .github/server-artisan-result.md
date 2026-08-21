@@ -1,40 +1,40 @@
 # Server Artisan Result
 
-- Time: 2026-08-21 10:27:04 UTC
+- Time: 2026-08-21 10:29:24 UTC
 - Task: `artisan-apply`
-- Artisan args: `supplier:sync-tm-management --apply --sheet=SFA`
+- Artisan args: `supplier:sync-tm-management --apply --sheet=Watrix`
 - Log file: `storage/logs/tm-management-sync-manual.log`
 - Exit code: `0`
 
 ```text
 No local changes to save
 From https://github.com/Cowastro/Kotlov
-   bf1001b6..a5c471df  main       -> origin/main
-Updating bf1001b6..a5c471df
+   a5c471df..f467b080  main       -> origin/main
+Updating a5c471df..f467b080
 Fast-forward
- .github/server-artisan-result.md | 47 ++++++++++++++++++++--------------------
+ .github/server-artisan-result.md | 44 +++++++++++++++++++---------------------
  .github/server-artisan-task.json |  4 ++--
- 2 files changed, 26 insertions(+), 25 deletions(-)
+ 2 files changed, 23 insertions(+), 25 deletions(-)
 APPLY: database will be updated.
-Parsed products: 34
-+-------+-------+
-| brand | count |
-+-------+-------+
-| SFA   | 34    |
-+-------+-------+
-+---------------------+-------+
-| category            | count |
-+---------------------+-------+
-| Комплектующие       | 16    |
-| Группы безопасности | 16    |
-| Дренажные насосы    | 2     |
-+---------------------+-------+
+Parsed products: 13
++--------+-------+
+| brand  | count |
++--------+-------+
+| Watrix | 13    |
++--------+-------+
++-----------------------------------+-------+
+| category                          | count |
++-----------------------------------+-------+
+| Группы быстрого монтажа котельных | 10    |
+| Комплектующие                     | 2     |
+| Автоматика и терморегуляторы      | 1     |
++-----------------------------------+-------+
 +----------------+-------+
 | action         | count |
 +----------------+-------+
 | created        | 0     |
-| updated        | 34    |
-| linked         | 34    |
+| updated        | 13    |
+| linked         | 13    |
 | brands_created | 0     |
 | errors         | 0     |
 +----------------+-------+
