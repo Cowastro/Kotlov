@@ -1,6 +1,6 @@
 {
   "task": "artisan-apply",
-  "artisan_args": "supplier:sync-teplov-sukhov-retail --apply --create-missing --sheet=ferrit-05",
+  "artisan_args": "supplier:sync-teplov-sukhov-retail --apply --create-missing --sheet=mc-black",
   "log_file": "storage/logs/teplov-sukhov-retail-sync.log",
-  "run_id": "deploy-teplov-sukhov-retail-ferrit-05-20260821-1"
+  "run_id": "deploy-teplov-sukhov-retail-mc-black-20260821-1"
 }

@@ -501,6 +501,7 @@ class SyncTeplovSukhovRetailPricesCommand extends Command
         // multi-word arguments are intentionally disallowed.
         return match ($value) {
             'ferrit-05' => 'Тис Феррит 430-0,5',
+            'mc-black' => 'MC Black',
             default => $value,
         };
     }
