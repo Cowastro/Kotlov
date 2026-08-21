@@ -46,6 +46,25 @@ class SyncTeplovSukhovRetailPricesCommand extends Command
         $apply = (bool) $this->option('apply');
         $createMissing = (bool) $this->option('create-missing');
         $sheet = $this->resolveSheet(trim((string) $this->option('sheet')));
+        $availabilityUpdated = 0;
+
+        // «Теплов и Сухов» — постоянное наличие. Новые и ранее
+        // импортированные карточки этого бренда не должны попадать
+        // в статус «Уточняйте наличие».
+        if ($apply) {
+            $availabilityUpdated = Product::query()
+                ->where('brand_id', $brand->id)
+                ->where('is_archived', false)
+                ->where(function ($query) {
+                    $query->where('in_stock', false)
+                        ->orWhereNull('availability_status')
+                        ->orWhere('availability_status', '!=', Product::AVAILABILITY_IN_STOCK);
+                })
+                ->update([
+                    'in_stock' => true,
+                    'availability_status' => Product::AVAILABILITY_IN_STOCK,
+                ]);
+        }
         $stats = ['matched' => 0, 'changed' => 0, 'unchanged' => 0, 'created' => 0, 'would_create' => 0, 'ambiguous' => 0, 'unmatched' => 0, 'conflict' => 0, 'price_list_conflict' => 0];
         $details = [];
         $claimedProducts = SupplierProduct::query()
@@ -238,6 +257,7 @@ class SyncTeplovSukhovRetailPricesCommand extends Command
             ['Не найдено — пропущено', $stats['unmatched']],
             ['Конфликтов связи — пропущено', $stats['conflict']],
             ['Конфликтов внутри прайса — пропущено', $stats['price_list_conflict']],
+            ['Переведено в статус «В наличии»', $availabilityUpdated],
         ]);
         $this->table(['Артикул поставщика', 'Прайс', 'Результат'], array_slice($details, 0, 30));
 
@@ -275,6 +295,16 @@ class SyncTeplovSukhovRetailPricesCommand extends Command
             // on the card is allowed.
             if ($needleTypes !== [] && array_diff($needleTypes, $productTypes) !== []) {
                 return false;
+            }
+
+            // «Зонт-конус» и отдельный конус — разные элементы, как и
+            // трубный хомут и хомут растяжки. Дополнительное слово в старом
+            // названии здесь меняет конструкцию, поэтому не допускаем
+            // привязку к уже занятой карточке.
+            foreach (['зонт', 'трубный', 'растяжки'] as $identityWord) {
+                if (in_array($identityWord, $needleWords, true) !== in_array($identityWord, $productWords, true)) {
+                    return false;
+                }
             }
 
             // Material, thickness and every diameter from the supplier name must match exactly.
@@ -333,10 +363,11 @@ class SyncTeplovSukhovRetailPricesCommand extends Command
         $types = [
             'адаптер', 'переход', 'дефлектор', 'заглушка', 'труба', 'тройник',
             'ревизия', 'конденсатосборник', 'конденсатоотвод', 'хомут',
-            'кронштейн', 'шибер', 'зонт', 'конус', 'врезка', 'опора',
+            'кронштейн', 'шибер', 'задвижка', 'зонт', 'конус', 'врезка', 'опора',
             'разделка', 'проход', 'площадка', 'отвод', 'конвектор', 'фартук',
             'бак', 'регистр', 'теплообменник', 'пароперегреватель', 'лист',
-            'комплект', 'моно', 'термо', 'упш',
+            'комплект', 'моно', 'термо', 'упш', 'подвес', 'регулируемое',
+            'основное', 'универсальное',
         ];
 
         return array_values(array_intersect($types, $words));
@@ -454,8 +485,8 @@ class SyncTeplovSukhovRetailPricesCommand extends Command
             'specs' => array_values($specs),
             'is_active' => true,
             'is_archived' => false,
-            'in_stock' => false,
-            'availability_status' => Product::AVAILABILITY_CHECK,
+            'in_stock' => true,
+            'availability_status' => Product::AVAILABILITY_IN_STOCK,
             'is_featured' => false,
             'is_new' => false,
             'is_sale' => false,
