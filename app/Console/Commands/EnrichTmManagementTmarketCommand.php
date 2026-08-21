@@ -692,7 +692,8 @@ class EnrichTmManagementTmarketCommand extends Command
             return $this->matchProductBySafeSeriesImage($product, $candidates, (bool) $this->option('replace-images'));
         }
 
-        if (! $this->numericTokensCompatible($productNorm, $best['normalized'])
+        if (! $this->rawModelTokensCompatible((string) $product->name, (string) $best['title'] . ' ' . (string) $best['url'])
+            || ! $this->numericTokensCompatible($productNorm, $best['normalized'])
             || ! $this->distinctiveTokensCompatible($productNorm, $best['normalized'])
             || ! $this->modelSuffixCompatible($productNorm, $best['normalized'])
             || ! $this->expansionTankSeriesCompatible($productNorm, $best['normalized'])) {
@@ -818,6 +819,34 @@ class EnrichTmManagementTmarketCommand extends Command
 
         return count(array_diff($leftNumbers, $rightNumbers)) === 0
             && count(array_diff($rightNumbers, $leftNumbers)) === 0;
+    }
+
+    private function rawModelTokensCompatible(string $left, string $right): bool
+    {
+        $leftTokens = $this->extractRawModelTokens($left);
+        $rightTokens = $this->extractRawModelTokens($right);
+
+        if ($leftTokens === [] || $rightTokens === []) {
+            return true;
+        }
+
+        return count(array_diff($leftTokens, $rightTokens)) === 0
+            && count(array_diff($rightTokens, $leftTokens)) === 0;
+    }
+
+    /** @return array<int,string> */
+    private function extractRawModelTokens(string $text): array
+    {
+        $text = mb_strtolower(str_replace('ё', 'е', $text));
+        $tokens = [];
+
+        preg_match_all('/\b(?:впк|vpk|в|v|dn|дн|ip|wp|vx|gr)\s*[-\/]?\s*\d{1,4}\b/u', $text, $matches);
+        foreach ($matches[0] ?? [] as $token) {
+            $token = str_replace(['дн', 'впк', 'в'], ['dn', 'vpk', 'v'], $token);
+            $tokens[] = preg_replace('/[^a-z0-9]+/u', '', $token) ?: $token;
+        }
+
+        return array_values(array_unique($tokens));
     }
 
     private function distinctiveTokensCompatible(string $left, string $right): bool
