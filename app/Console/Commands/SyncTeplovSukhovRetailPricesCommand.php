@@ -236,10 +236,12 @@ class SyncTeplovSukhovRetailPricesCommand extends Command
     {
         $needleWords = $this->words($supplierName);
         $needleNumbers = $this->numbers($supplierName);
+        $needleMeasurements = $this->measurements($supplierName);
 
-        return $products->filter(function (Product $product) use ($needleWords, $needleNumbers) {
+        return $products->filter(function (Product $product) use ($needleWords, $needleNumbers, $needleMeasurements) {
             $productWords = $this->words($product->name);
             $productNumbers = $this->numbers($product->name);
+            $productMeasurements = $this->measurements($product->name);
 
             $needleTypes = $this->productTypes($needleWords);
             $productTypes = $this->productTypes($productWords);
@@ -253,6 +255,13 @@ class SyncTeplovSukhovRetailPricesCommand extends Command
 
             // Material, thickness and every diameter from the supplier name must match exactly.
             if (array_diff($needleNumbers, $productNumbers) !== []) {
+                return false;
+            }
+
+            // D250 and L250 are different measurements. Keeping their
+            // prefixes prevents a D250/L250 source row from matching, for
+            // example, a D120/L250 card merely because both contain "250".
+            if (array_diff($needleMeasurements, $productMeasurements) !== []) {
                 return false;
             }
 
@@ -317,6 +326,15 @@ class SyncTeplovSukhovRetailPricesCommand extends Command
         return array_values(array_unique($matches[0] ?? []));
     }
 
+    /** @return array<int, string> */
+    private function measurements(string $value): array
+    {
+        $value = $this->normalise($value);
+        preg_match_all('/\b(?:diam|length)\d+(?:\.\d+)?\b/u', $value, $matches);
+
+        return array_values(array_unique($matches[0] ?? []));
+    }
+
     private function normalise(string $value): string
     {
         $value = mb_strtolower($value);
@@ -351,6 +369,14 @@ class SyncTeplovSukhovRetailPricesCommand extends Command
         // workbook uses "L 250". Separate the number so length remains a
         // required technical discriminator instead of being silently ignored.
         $value = preg_replace('/\bl(?=\d)/u', 'l ', $value) ?? $value;
+        // Preserve the role of repeated values before punctuation is removed:
+        // D250 and L250 must not collapse into one undifferentiated "250".
+        $value = preg_replace_callback('/\bd\s*(\d+(?:\.\d+)?)(?:\s*\/\s*(\d+(?:\.\d+)?))*/u', function (array $matches): string {
+            preg_match_all('/\d+(?:\.\d+)?/u', $matches[0], $dimensions);
+
+            return ' ' . implode(' ', array_map(fn (string $dimension): string => 'diam' . $dimension, $dimensions[0] ?? [])) . ' ';
+        }, $value) ?? $value;
+        $value = preg_replace('/\bl\s*(\d+(?:\.\d+)?)/u', ' length$1 ', $value) ?? $value;
         $value = preg_replace('/\b(?:теплов\s+и\s+сухов|тиc|тис)\b/u', ' ', $value) ?? $value;
         $value = preg_replace('/адаптер\s*[-–]?\s*переход/u', 'адаптер переход', $value) ?? $value;
         $value = preg_replace('/\b0?\.(\d)\b/u', '0.$1', $value) ?? $value;

@@ -2,5 +2,5 @@
   "task": "artisan-apply",
   "artisan_args": "supplier:sync-teplov-sukhov-retail --apply",
   "log_file": "storage/logs/teplov-sukhov-retail-sync.log",
-  "run_id": "deploy-teplov-sukhov-retail-20260821-6"
+  "run_id": "deploy-teplov-sukhov-retail-20260821-7"
 }
