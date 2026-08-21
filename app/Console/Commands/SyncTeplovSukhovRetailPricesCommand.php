@@ -41,10 +41,24 @@ class SyncTeplovSukhovRetailPricesCommand extends Command
             ->get(['id', 'sku', 'name', 'price']);
 
         $apply = (bool) $this->option('apply');
-        $stats = ['matched' => 0, 'changed' => 0, 'unchanged' => 0, 'ambiguous' => 0, 'unmatched' => 0, 'conflict' => 0];
+        $stats = ['matched' => 0, 'changed' => 0, 'unchanged' => 0, 'ambiguous' => 0, 'unmatched' => 0, 'conflict' => 0, 'price_list_conflict' => 0];
         $details = [];
+        $claimedProducts = SupplierProduct::query()
+            ->where('supplier_id', $supplier->id)
+            ->whereNotNull('product_id')
+            ->orderBy('id')
+            ->get(['product_id', 'supplier_article'])
+            ->groupBy('product_id')
+            ->map(fn ($links) => $links->pluck('supplier_article')->unique()->values()->all())
+            ->all();
 
-        foreach ($data['rows'] as $row) {
+        foreach ($this->uniqueRows($data['rows']) as $row) {
+            if (($row['_price_list_conflict'] ?? false) === true) {
+                $stats['price_list_conflict']++;
+                $details[] = [$row['sku'], Str::limit((string) $row['name'], 48), 'conflicting duplicate in price list'];
+                continue;
+            }
+
             $article = trim((string) ($row['sku'] ?? ''));
             $name = trim((string) ($row['name'] ?? ''));
             $retail = $this->price($row['retail'] ?? null);
@@ -62,12 +76,17 @@ class SyncTeplovSukhovRetailPricesCommand extends Command
 
             if ($existing?->product_id) {
                 $candidate = $products->firstWhere('id', $existing->product_id);
-                $matches = $candidate ? collect([$candidate]) : collect();
+                $matches = $candidate ? $this->findMatches(collect([$candidate]), $name) : collect();
             } else {
                 $matches = $this->findMatches($products, $name);
             }
 
             if ($matches->count() === 0) {
+                if ($apply && $existing) {
+                    // A stale link must not make a future price overwrite a different item.
+                    $existing->delete();
+                    $claimedProducts[(int) $existing->product_id] = array_values(array_diff($claimedProducts[(int) $existing->product_id] ?? [], [$article]));
+                }
                 $stats['unmatched']++;
                 $details[] = [$article, Str::limit($name, 48), 'not matched'];
                 continue;
@@ -81,6 +100,13 @@ class SyncTeplovSukhovRetailPricesCommand extends Command
 
             /** @var Product $product */
             $product = $matches->first();
+
+            $otherArticles = array_values(array_diff($claimedProducts[(int) $product->id] ?? [], [$article]));
+            if ($otherArticles !== []) {
+                $stats['conflict']++;
+                $details[] = [$article, Str::limit($name, 48), 'product already linked to: ' . implode(',', $otherArticles)];
+                continue;
+            }
 
             if ($existing && $existing->product_id && (int) $existing->product_id !== (int) $product->id) {
                 $stats['conflict']++;
@@ -117,6 +143,7 @@ class SyncTeplovSukhovRetailPricesCommand extends Command
                     'last_synced_at' => now(),
                 ]
             );
+            $claimedProducts[(int) $product->id] = [$article];
         }
 
         $this->info(sprintf('Прайс %s: %s. Режим: %s.', $data['price_date'] ?? '—', $data['price_column'] ?? '—', $apply ? 'APPLY' : 'DRY-RUN'));
@@ -128,6 +155,7 @@ class SyncTeplovSukhovRetailPricesCommand extends Command
             ['Неоднозначных — пропущено', $stats['ambiguous']],
             ['Не найдено — пропущено', $stats['unmatched']],
             ['Конфликтов связи — пропущено', $stats['conflict']],
+            ['Конфликтов внутри прайса — пропущено', $stats['price_list_conflict']],
         ]);
         $this->table(['Артикул поставщика', 'Прайс', 'Результат'], array_slice($details, 0, 30));
 
@@ -151,6 +179,12 @@ class SyncTeplovSukhovRetailPricesCommand extends Command
 
             // Material, thickness and every diameter from the supplier name must match exactly.
             if (array_diff($needleNumbers, $productNumbers) !== []) {
+                return false;
+            }
+
+            $discriminators = ['базальт', 'керамоволокно', 'black', 'медь'];
+            $needleDiscriminators = array_values(array_intersect($discriminators, $needleWords));
+            if (array_diff($needleDiscriminators, $productWords) !== []) {
                 return false;
             }
 
@@ -208,5 +242,23 @@ class SyncTeplovSukhovRetailPricesCommand extends Command
     {
         $value = str_replace([' ', ','], ['', '.'], trim((string) $value));
         return is_numeric($value) && (float) $value > 0 ? round((float) $value, 2) : null;
+    }
+
+    private function uniqueRows(array $rows): array
+    {
+        $grouped = collect($rows)->filter(fn ($row) => trim((string) ($row['sku'] ?? '')) !== '')->groupBy('sku');
+
+        return $grouped->map(function ($sameArticle) {
+            $variants = $sameArticle
+                ->map(fn ($row) => trim((string) ($row['name'] ?? '')) . '|' . trim((string) ($row['retail'] ?? '')))
+                ->unique();
+
+            $row = $sameArticle->first();
+            if ($variants->count() > 1) {
+                $row['_price_list_conflict'] = true;
+            }
+
+            return $row;
+        })->values()->all();
     }
 }
