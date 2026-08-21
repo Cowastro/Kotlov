@@ -40,6 +40,25 @@ return new class extends Migration
         $categoryId = DB::table('categories')->where('slug', 'kotly-na-pelletah')->value('id')
             ?: DB::table('categories')->where('slug', 'tverdotoplivnye')->value('id');
 
+        if (! $categoryId) {
+            $parentId = DB::table('categories')->where('slug', 'kotly-otopleniya')->value('id');
+            $categoryId = DB::table('categories')->insertGetId([
+                'parent_id' => $parentId,
+                'name' => 'Пеллетные котлы',
+                'slug' => 'kotly-na-pelletah',
+                'h1' => 'Пеллетные котлы',
+                'type' => 'category',
+                'sort_order' => 0,
+                'is_active' => true,
+                'content' => null,
+                'meta_title' => 'Пеллетные котлы купить в Беларуси',
+                'meta_keywords' => 'пеллетные котлы, котлы на пеллетах',
+                'meta_description' => 'Пеллетные котлы для отопления дома и коммерческих объектов.',
+                'created_at' => $now,
+                'updated_at' => $now,
+            ]);
+        }
+
         DB::table('products')->updateOrInsert(
             ['slug' => self::BIOTEP_SLUG],
             [
