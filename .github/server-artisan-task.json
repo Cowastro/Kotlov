@@ -1,6 +1,6 @@
 {
   "task": "artisan-apply",
-  "artisan_args": "supplier:sync-tm-management --apply --sheet=Dietrich",
+  "artisan_args": "supplier:sync-tm-management --apply --sheet=Shinhoo",
   "log_file": "storage/logs/tm-management-sync-manual.log",
-  "run_id": "deploy-tm-management-sync-dedietrich-20260821-6"
+  "run_id": "deploy-tm-management-sync-shinhoo-20260821-7"
 }
