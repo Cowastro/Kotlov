@@ -42,6 +42,24 @@ return new class extends Migration
 
         if (! $categoryId) {
             $parentId = DB::table('categories')->where('slug', 'kotly-otopleniya')->value('id');
+            if (! $parentId) {
+                $parentId = DB::table('categories')->insertGetId([
+                    'parent_id' => 0,
+                    'name' => 'Котлы отопления',
+                    'slug' => 'kotly-otopleniya',
+                    'h1' => 'Котлы отопления',
+                    'type' => 'category',
+                    'sort_order' => 0,
+                    'is_active' => true,
+                    'content' => null,
+                    'meta_title' => 'Котлы отопления купить в Беларуси',
+                    'meta_keywords' => 'котлы отопления, отопительные котлы',
+                    'meta_description' => 'Котлы отопления для дома и коммерческих объектов.',
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                ]);
+            }
+
             $categoryId = DB::table('categories')->insertGetId([
                 'parent_id' => $parentId,
                 'name' => 'Пеллетные котлы',
