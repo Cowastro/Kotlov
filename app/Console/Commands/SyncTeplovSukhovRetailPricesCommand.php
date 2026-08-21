@@ -341,6 +341,11 @@ class SyncTeplovSukhovRetailPricesCommand extends Command
         $value = preg_replace('/\b[тt][тt]\s*[-–]?\s*р\b/ui', 'термо', $value) ?? $value;
         $value = preg_replace('/\b(?:зм|дм|зрм|трм|пмм|ом|шм)\s*(?:\(\s*м\s*\))?\s*[-–]?\s*р\b/u', 'моно', $value) ?? $value;
         $value = preg_replace('/\b(?:пмт|от|[тt][рp][тt]|кт|шпмт)\s*[-–]?\s*р\b/ui', 'термо', $value) ?? $value;
+        // In the TиС price list "(2S)" / "(3S)" is a construction note
+        // for elbows. Older catalogue titles do not contain it; the actual
+        // technical identity is still protected by angle, steel, thickness
+        // and every diameter, so this marker must not become a fake size.
+        $value = preg_replace('/\b[23]s\b/ui', ' ', $value) ?? $value;
         $value = preg_replace('/\bd(?=\d)/u', 'd ', $value) ?? $value;
         // Legacy cards write tube length as L250/L500/L1000, while the
         // workbook uses "L 250". Separate the number so length remains a
