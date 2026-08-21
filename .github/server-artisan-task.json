@@ -1,6 +1,6 @@
 {
   "task": "artisan-apply",
-  "artisan_args": "supplier:sync-tm-management --apply --sheet=SFA",
+  "artisan_args": "supplier:sync-tm-management --apply --sheet=Watrix",
   "log_file": "storage/logs/tm-management-sync-manual.log",
-  "run_id": "deploy-tm-management-sync-sfa-20260821-8"
+  "run_id": "deploy-tm-management-sync-watrix-20260821-9"
 }
