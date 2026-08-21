@@ -12,7 +12,8 @@ use Illuminate\Support\Str;
 class SyncTeplovSukhovRetailPricesCommand extends Command
 {
     protected $signature = 'supplier:sync-teplov-sukhov-retail
-                            {--apply : Apply verified retail prices and save supplier article links}';
+                            {--apply : Apply verified retail prices and save supplier article links}
+                            {--report : Save the complete matching report to storage/app/imports}';
 
     protected $description = 'Sync only retail prices from the approved Teplov i Sukhov price list. Ambiguous rows are never changed.';
 
@@ -159,6 +160,18 @@ class SyncTeplovSukhovRetailPricesCommand extends Command
         ]);
         $this->table(['Артикул поставщика', 'Прайс', 'Результат'], array_slice($details, 0, 30));
 
+        if ($this->option('report')) {
+            $path = storage_path('app/imports/teplov-sukhov-matching-report.json');
+            file_put_contents($path, json_encode([
+                'generated_at' => now()->toIso8601String(),
+                'price_date' => $data['price_date'] ?? null,
+                'mode' => $apply ? 'apply' : 'dry-run',
+                'stats' => $stats,
+                'details' => $details,
+            ], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
+            $this->info('Полный отчёт: ' . $path);
+        }
+
         return self::SUCCESS;
     }
 
@@ -173,7 +186,11 @@ class SyncTeplovSukhovRetailPricesCommand extends Command
 
             $needleTypes = $this->productTypes($needleWords);
             $productTypes = $this->productTypes($productWords);
-            if ($needleTypes !== [] && $needleTypes !== $productTypes) {
+            // Supplier naming is often shorter: for example "Зонт" in the
+            // price list corresponds to a storefront name "Зонт моно". The
+            // price-list type must be present in the card; extra specificity
+            // on the card is allowed.
+            if ($needleTypes !== [] && array_diff($needleTypes, $productTypes) !== []) {
                 return false;
             }
 
@@ -184,7 +201,9 @@ class SyncTeplovSukhovRetailPricesCommand extends Command
 
             $discriminators = ['базальт', 'керамоволокно', 'black', 'медь'];
             $needleDiscriminators = array_values(array_intersect($discriminators, $needleWords));
-            if (array_diff($needleDiscriminators, $productWords) !== []) {
+            $productDiscriminators = array_values(array_intersect($discriminators, $productWords));
+            if (array_diff($needleDiscriminators, $productWords) !== []
+                || array_diff($productDiscriminators, $needleWords) !== []) {
                 return false;
             }
 
@@ -212,7 +231,17 @@ class SyncTeplovSukhovRetailPricesCommand extends Command
 
     private function productTypes(array $words): array
     {
-        $types = ['адаптер', 'переход', 'дефлектор', 'заглушка', 'труба', 'тройник', 'ревизия', 'конденсатосборник', 'хомут', 'кронштейн', 'шибер', 'зонт', 'врезка', 'опора', 'разделка', 'проход', 'моно', 'термо'];
+        // A product type is part of the technical identity, not decoration.
+        // Keeping the full vocabulary prevents a condensate drain, platform
+        // or cone from being matched to another item with the same diameter.
+        $types = [
+            'адаптер', 'переход', 'дефлектор', 'заглушка', 'труба', 'тройник',
+            'ревизия', 'конденсатосборник', 'конденсатоотвод', 'хомут',
+            'кронштейн', 'шибер', 'зонт', 'конус', 'врезка', 'опора',
+            'разделка', 'проход', 'площадка', 'отвод', 'конвектор', 'фартук',
+            'бак', 'регистр', 'теплообменник', 'пароперегреватель', 'лист',
+            'комплект', 'моно', 'термо', 'упш',
+        ];
 
         return array_values(array_intersect($types, $words));
     }
@@ -228,7 +257,23 @@ class SyncTeplovSukhovRetailPricesCommand extends Command
     private function normalise(string $value): string
     {
         $value = mb_strtolower($value);
-        $value = str_replace([',', 'ø', 'ф'], ['.', 'd', 'd'], $value);
+        $value = str_replace([',', 'ø'], ['.', 'd'], $value);
+        // «Ф» denotes a diameter only as a standalone marker before a number;
+        // replacing every Cyrillic «ф» corrupts ordinary words such as
+        // «дефлектор» and makes a technical match impossible.
+        $value = preg_replace('/\bф\s*(?=\d)/u', 'd ', $value) ?? $value;
+        // Correct historic spelling variants before comparing the technical identity.
+        // The catalogue contains "конденсатоовод", while the supplier uses
+        // the correct spelling "конденсатоотвод".
+        $value = preg_replace('/конденсатоовод/u', 'конденсатоотвод', $value) ?? $value;
+        // TиС uses short series codes in the price list (ТМ-Р / ТТ-Р),
+        // whereas legacy cards spell the same construction as «моно» / «термо».
+        // Keep this distinction: a D120 mono pipe must never be matched to a
+        // D120/180 insulated pipe merely because their first diameter matches.
+        $value = preg_replace('/\bтм\s*[-–]?\s*р\b/u', 'моно', $value) ?? $value;
+        $value = preg_replace('/\bтт\s*[-–]?\s*р\b/u', 'термо', $value) ?? $value;
+        $value = preg_replace('/\b(?:зм|дм|зрм|трм|пмм|ом|шм)\s*(?:\(\s*м\s*\))?\s*[-–]?\s*р\b/u', 'моно', $value) ?? $value;
+        $value = preg_replace('/\b(?:пмт|от|трt|трт|кт|шпмт)\s*[-–]?\s*р\b/u', 'термо', $value) ?? $value;
         $value = preg_replace('/\bd(?=\d)/u', 'd ', $value) ?? $value;
         $value = preg_replace('/\b(?:теплов\s+и\s+сухов|тиc|тис)\b/u', ' ', $value) ?? $value;
         $value = preg_replace('/адаптер\s*[-–]?\s*переход/u', 'адаптер переход', $value) ?? $value;
