@@ -1,6 +1,6 @@
 # Server Artisan Result
 
-- Time: 2026-08-21 15:15:25 UTC
+- Time: 2026-08-21 15:28:44 UTC
 - Task: `artisan-apply`
 - Artisan args: `supplier:sync-teplov-sukhov-retail --apply`
 - Log file: `storage/logs/teplov-sukhov-retail-sync.log`
@@ -9,27 +9,24 @@
 ```text
 No local changes to save
 From https://github.com/Cowastro/Kotlov
-   95e55fc5..4637ef55  main       -> origin/main
-Updating 95e55fc5..4637ef55
+   4637ef55..cb847294  main       -> origin/main
+Updating 4637ef55..cb847294
 Fast-forward
- .github/server-artisan-result.md                   |  108 +-
- .github/server-artisan-task.json                   |    2 +-
- .../SyncTeplovSukhovRetailPricesCommand.php        |  133 +-
- scripts/extract_teplov_sukhov_price.py             |   92 +
- .../app/imports/sbg-teplov-sukhov-2026-08-10.json  | 3392 ++++++++++++++++++--
- 5 files changed, 3325 insertions(+), 402 deletions(-)
- create mode 100644 scripts/extract_teplov_sukhov_price.py
+ .github/server-artisan-result.md                   | 37 ++++++++++++----------
+ .github/server-artisan-task.json                   |  2 +-
+ .../SyncTeplovSukhovRetailPricesCommand.php        | 12 ++++++-
+ 3 files changed, 32 insertions(+), 19 deletions(-)
 Прайс 2026-08-10: retail. Режим: APPLY.
 +--------------------------------------+------------+
 | Показатель                           | Количество |
 +--------------------------------------+------------+
 | Строк в прайсе                       | 448        |
-| Безопасно сопоставлено               | 134        |
-| Цен обновлено                        | 94         |
-| Без изменения                        | 40         |
-| Неоднозначных — пропущено            | 3          |
-| Не найдено — пропущено               | 295        |
-| Конфликтов связи — пропущено         | 10         |
+| Безопасно сопоставлено               | 154        |
+| Цен обновлено                        | 20         |
+| Без изменения                        | 134        |
+| Неоднозначных — пропущено            | 5          |
+| Не найдено — пропущено               | 272        |
+| Конфликтов связи — пропущено         | 11         |
 | Конфликтов внутри прайса — пропущено | 0          |
 +--------------------------------------+------------+
 +-----------------------+--------------------------------------------+-----------------------------------------------------------------------+
