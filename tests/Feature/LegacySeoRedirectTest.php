@@ -38,8 +38,11 @@ class LegacySeoRedirectTest extends TestCase
             $table->id();
             $table->unsignedBigInteger('category_id')->nullable();
             $table->string('slug')->unique();
+            $table->decimal('price', 10, 2)->default(0);
             $table->boolean('is_active')->default(true);
             $table->boolean('is_archived')->default(false);
+            $table->string('availability_status')->default('check');
+            $table->boolean('in_stock')->default(false);
             $table->timestamps();
         });
 
