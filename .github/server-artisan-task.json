@@ -1,6 +1,6 @@
 {
   "task": "artisan-apply",
-  "artisan_args": "supplier:sync-tm-management --apply --sheet=Shinhoo",
+  "artisan_args": "supplier:sync-tm-management --apply --sheet=SFA",
   "log_file": "storage/logs/tm-management-sync-manual.log",
-  "run_id": "deploy-tm-management-sync-shinhoo-20260821-7"
+  "run_id": "deploy-tm-management-sync-sfa-20260821-8"
 }
