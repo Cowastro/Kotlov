@@ -13,7 +13,9 @@ class SyncTeplovSukhovRetailPricesCommand extends Command
 {
     protected $signature = 'supplier:sync-teplov-sukhov-retail
                             {--apply : Apply verified retail prices and save supplier article links}
-                            {--report : Save the complete matching report to storage/app/imports}';
+                            {--report : Save the complete matching report to storage/app/imports}
+                            {--create-missing : Create separate cards only for exact, verified missing rows}
+                            {--sheet= : Restrict creation to one workbook sheet}';
 
     protected $description = 'Sync only retail prices from the approved Teplov i Sukhov price list. Ambiguous rows are never changed.';
 
@@ -42,7 +44,9 @@ class SyncTeplovSukhovRetailPricesCommand extends Command
             ->get(['id', 'sku', 'name', 'price']);
 
         $apply = (bool) $this->option('apply');
-        $stats = ['matched' => 0, 'changed' => 0, 'unchanged' => 0, 'ambiguous' => 0, 'unmatched' => 0, 'conflict' => 0, 'price_list_conflict' => 0];
+        $createMissing = (bool) $this->option('create-missing');
+        $sheet = trim((string) $this->option('sheet'));
+        $stats = ['matched' => 0, 'changed' => 0, 'unchanged' => 0, 'created' => 0, 'would_create' => 0, 'ambiguous' => 0, 'unmatched' => 0, 'conflict' => 0, 'price_list_conflict' => 0];
         $details = [];
         $claimedProducts = SupplierProduct::query()
             ->where('supplier_id', $supplier->id)
@@ -136,6 +140,24 @@ class SyncTeplovSukhovRetailPricesCommand extends Command
             }
 
             if ($matches->count() === 0) {
+                // Missing rows are never "fuzzily" attached to a nearby
+                // diameter or thickness.  This opt-in branch creates a new
+                // card only from the exact source row and retains the source
+                // article exclusively in supplier_products.
+                if ($createMissing && ($sheet === '' || (string) ($row['sheet'] ?? '') === $sheet)) {
+                    if (! $apply) {
+                        $stats['would_create']++;
+                        $details[] = [$article, Str::limit($name, 48), 'will create exact missing card'];
+                        continue;
+                    }
+
+                    $product = $this->createMissingProduct($row, $brand, $retail);
+                    $products->push($product);
+                    $matches = collect([$product]);
+                    $stats['created']++;
+                }
+
+                if ($matches->count() === 0) {
                 if ($apply && $existing) {
                     // A stale link must not make a future price overwrite a different item.
                     $existing->delete();
@@ -144,6 +166,7 @@ class SyncTeplovSukhovRetailPricesCommand extends Command
                 $stats['unmatched']++;
                 $details[] = [$article, Str::limit($name, 48), 'not matched'];
                 continue;
+                }
             }
 
             if ($matches->count() > 1) {
@@ -210,6 +233,7 @@ class SyncTeplovSukhovRetailPricesCommand extends Command
             ['Безопасно сопоставлено', $stats['matched']],
             [$apply ? 'Цен обновлено' : 'Цен будет обновлено', $stats['changed']],
             ['Без изменения', $stats['unchanged']],
+            [$apply ? 'Создано точных новых карточек' : 'Будет создано точных новых карточек', $apply ? $stats['created'] : $stats['would_create']],
             ['Неоднозначных — пропущено', $stats['ambiguous']],
             ['Не найдено — пропущено', $stats['unmatched']],
             ['Конфликтов связи — пропущено', $stats['conflict']],
@@ -389,6 +413,126 @@ class SyncTeplovSukhovRetailPricesCommand extends Command
     {
         $value = str_replace([' ', ','], ['', '.'], trim((string) $value));
         return is_numeric($value) && (float) $value > 0 ? round((float) $value, 2) : null;
+    }
+
+    private function createMissingProduct(array $row, Brand $brand, float $retail): Product
+    {
+        $sourceName = trim(html_entity_decode((string) $row['name'], ENT_QUOTES | ENT_HTML5, 'UTF-8'));
+        $name = 'Теплов и Сухов ' . $sourceName;
+        $sku = $this->nextKotlovSku();
+        $slug = $this->uniqueSlug(Str::slug($name));
+        $categoryId = $this->categoryIdForSourceName($sourceName);
+        $diameters = $this->measurements($sourceName);
+        $diameterText = implode(', ', array_map(
+            fn (string $measurement) => str_replace('diam', 'D', $measurement),
+            array_filter($diameters, fn (string $measurement) => str_starts_with($measurement, 'diam'))
+        ));
+
+        $specs = array_filter([
+            ['name' => 'Тип элемента', 'value' => $this->sourceTypeLabel($sourceName)],
+            ['name' => 'Материал', 'value' => str_contains($this->normalise($sourceName), '430') ? 'Ферритная сталь AISI 430' : null],
+            ['name' => 'Толщина стали', 'value' => str_contains($this->normalise($sourceName), '0.5') ? '0,5 мм' : null],
+            ['name' => 'Диаметр', 'value' => $diameterText ?: null],
+        ], fn (array $spec) => filled($spec['value']));
+
+        return Product::query()->create([
+            'category_id' => $categoryId,
+            'brand_id' => $brand->id,
+            'supplier_id' => null,
+            'name' => $name,
+            'slug' => $slug,
+            'h1' => $name,
+            'sku' => $sku,
+            'price' => $retail,
+            'currency' => 'BYN',
+            // The short preview is displayed without the city-placeholder
+            // renderer. Keep local SEO in the body/meta, but never expose a
+            // literal %city% in the product header or catalogue cards.
+            'short_description' => sprintf('%s — элемент дымоходной системы Теплов и Сухов. Подбор совместимых комплектующих, консультация и доставка по Беларуси от KOTLOV.BY.', $sourceName),
+            'content' => $this->seoContent($sourceName),
+            'images' => [],
+            'specs' => array_values($specs),
+            'is_active' => true,
+            'is_archived' => false,
+            'in_stock' => false,
+            'availability_status' => Product::AVAILABILITY_CHECK,
+            'is_featured' => false,
+            'is_new' => false,
+            'is_sale' => false,
+            'meta_title' => sprintf('%s купить в %%city%% — цена | KOTLOV.BY', $sourceName),
+            'meta_description' => sprintf('%s Теплов и Сухов: цена, совместимость и доставка в %%city%%. Подбор дымохода специалистами KOTLOV.BY.', $sourceName),
+        ]);
+    }
+
+    private function categoryIdForSourceName(string $name): int
+    {
+        $value = $this->normalise($name);
+
+        return match (true) {
+            // Check these before "отвод": a condensate drain contains the
+            // same word but belongs to the service/revision category.
+            str_contains($value, 'ревизи'), str_contains($value, 'конденсатоотвод') => 317,
+            str_contains($value, 'труба') => 309,
+            str_contains($value, 'тройник') => 310,
+            str_contains($value, 'отвод') => 311,
+            str_contains($value, 'зонт'), str_contains($value, 'дефлектор') => 319,
+            default => 322,
+        };
+    }
+
+    private function sourceTypeLabel(string $name): string
+    {
+        foreach (['Труба', 'Отвод', 'Тройник', 'Зонт', 'Заглушка ревизии', 'Конденсатоотвод', 'Дефлектор'] as $type) {
+            if (str_contains($this->normalise($name), $this->normalise($type))) {
+                return $type;
+            }
+        }
+
+        return 'Элемент дымохода';
+    }
+
+    private function seoContent(string $name): string
+    {
+        $escapedName = e($name);
+
+        return <<<HTML
+<h2>{$escapedName} Теплов и Сухов</h2>
+<p>Оригинальный элемент дымоходной системы для безопасного отвода продуктов сгорания. В KOTLOV.BY можно купить {$escapedName} в %city% с проверкой совместимости с котлом, печью или камином.</p>
+<h3>Что важно при подборе</h3>
+<ul><li>сверить серию дымохода, марку и толщину стали;</li><li>учесть внутренний и наружный диаметры соединения;</li><li>подобрать совместимые трубы, отводы, крепления и элементы ревизии.</li></ul>
+<p>Уточняйте наличие и срок поставки: специалист KOTLOV.BY поможет собрать корректную систему дымохода для вашего объекта в %city%.</p>
+HTML;
+    }
+
+    private function nextKotlovSku(): string
+    {
+        static $next = null;
+
+        if ($next === null) {
+            $max = Product::query()
+                ->where('sku', 'like', 'KOTLOV-%')
+                ->pluck('sku')
+                ->map(function (string $sku): int {
+                    return (int) preg_replace('/^KOTLOV-0*/', '', $sku);
+                })
+                ->max() ?? 0;
+            $next = $max + 1;
+        }
+
+        return 'KOTLOV-' . str_pad((string) $next++, 6, '0', STR_PAD_LEFT);
+    }
+
+    private function uniqueSlug(string $slug): string
+    {
+        $base = $slug !== '' ? $slug : 'teplov-i-sukhov';
+        $candidate = $base;
+        $suffix = 2;
+
+        while (Product::query()->where('slug', $candidate)->exists()) {
+            $candidate = $base . '-' . $suffix++;
+        }
+
+        return $candidate;
     }
 
     private function uniqueRows(array $rows): array
