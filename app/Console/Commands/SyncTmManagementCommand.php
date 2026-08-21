@@ -821,25 +821,41 @@ HTML;
 
         $changed = 0;
         $examples = [];
-        $seenArticles = [];
+        $articleGroups = [];
 
         foreach ($rows as $row) {
             $raw = json_decode((string) $row->raw, true);
-            $rawArticle = is_array($raw) ? $this->cleanArticle((string) ($raw['article'] ?? '')) : '';
-            $supplierArticle = $rawArticle !== ''
-                ? $rawArticle
-                : $this->cleanArticle((string) $row->supplier_article);
-
-            $articleKey = $this->normalizeArticle($supplierArticle);
-            if ($articleKey !== '') {
-                if (isset($seenArticles[$articleKey])) {
-                    $suffix = '-' . substr(md5((string) $row->product_id . '|' . (string) ($raw['name'] ?? '')), 0, 6);
-                    $supplierArticle = mb_substr($supplierArticle, 0, 100 - mb_strlen($suffix)) . $suffix;
-                }
-                $seenArticles[$articleKey] = true;
+            $baseArticle = is_array($raw) ? $this->cleanArticle((string) ($raw['article'] ?? '')) : '';
+            if ($baseArticle === '') {
+                $baseArticle = $this->cleanArticle((string) $row->supplier_article);
+                $baseArticle = preg_replace('/-[0-9a-f]{6,8}$/i', '', $baseArticle) ?? $baseArticle;
             }
 
+            $articleKey = $this->normalizeArticle($baseArticle);
+            $row->__tm_base_article = $baseArticle;
+            $row->__tm_article_key = $articleKey;
+
+            if ($articleKey !== '') {
+                $articleGroups[$articleKey][] = [
+                    'product_id' => (int) $row->product_id,
+                    'supplier_product_id' => (int) $row->supplier_product_id,
+                ];
+            }
+        }
+
+        $canonicalSupplierProductIds = [];
+        foreach ($articleGroups as $articleKey => $group) {
+            usort($group, fn (array $a, array $b) => [$a['product_id'], $a['supplier_product_id']] <=> [$b['product_id'], $b['supplier_product_id']]);
+            $canonicalSupplierProductIds[$articleKey] = $group[0]['supplier_product_id'];
+        }
+
+        foreach ($rows as $row) {
+            $supplierArticle = (string) ($row->__tm_base_article ?? '');
+            $articleKey = (string) ($row->__tm_article_key ?? '');
+
             if (
+                count($articleGroups[$articleKey] ?? []) <= 1
+                &&
                 $supplierArticle !== (string) $row->supplier_article
                 && DB::table('supplier_products')
                     ->where('supplier_id', $supplierId)
@@ -849,6 +865,16 @@ HTML;
             ) {
                 $suffix = '-' . substr(md5((string) $row->supplier_product_id), 0, 6);
                 $supplierArticle = mb_substr($supplierArticle, 0, 100 - mb_strlen($suffix)) . $suffix;
+            }
+
+            if (
+                $articleKey !== ''
+                && count($articleGroups[$articleKey] ?? []) > 1
+                && ($canonicalSupplierProductIds[$articleKey] ?? null) !== (int) $row->supplier_product_id
+            ) {
+                $suffix = '-' . substr(md5((string) $row->supplier_product_id), 0, 6);
+                $base = (string) ($row->__tm_base_article ?? $supplierArticle);
+                $supplierArticle = mb_substr($base, 0, 100 - mb_strlen($suffix)) . $suffix;
             }
 
             $newSku = (string) $row->sku;
