@@ -333,10 +333,14 @@ class SyncTeplovSukhovRetailPricesCommand extends Command
         // whereas legacy cards spell the same construction as «моно» / «термо».
         // Keep this distinction: a D120 mono pipe must never be matched to a
         // D120/180 insulated pipe merely because their first diameter matches.
-        $value = preg_replace('/\bтм\s*[-–]?\s*р\b/u', 'моно', $value) ?? $value;
-        $value = preg_replace('/\bтт\s*[-–]?\s*р\b/u', 'термо', $value) ?? $value;
+        // Older product names sometimes contain visually identical Latin
+        // characters (for example "TРT-Р") copied from supplier files.
+        // Treat them as the same *series code* only; do not broadly replace
+        // Latin letters in the whole name.
+        $value = preg_replace('/\b[тt][мm]\s*[-–]?\s*р\b/ui', 'моно', $value) ?? $value;
+        $value = preg_replace('/\b[тt][тt]\s*[-–]?\s*р\b/ui', 'термо', $value) ?? $value;
         $value = preg_replace('/\b(?:зм|дм|зрм|трм|пмм|ом|шм)\s*(?:\(\s*м\s*\))?\s*[-–]?\s*р\b/u', 'моно', $value) ?? $value;
-        $value = preg_replace('/\b(?:пмт|от|трt|трт|кт|шпмт)\s*[-–]?\s*р\b/u', 'термо', $value) ?? $value;
+        $value = preg_replace('/\b(?:пмт|от|[тt][рp][тt]|кт|шпмт)\s*[-–]?\s*р\b/ui', 'термо', $value) ?? $value;
         $value = preg_replace('/\bd(?=\d)/u', 'd ', $value) ?? $value;
         // Legacy cards write tube length as L250/L500/L1000, while the
         // workbook uses "L 250". Separate the number so length remains a
