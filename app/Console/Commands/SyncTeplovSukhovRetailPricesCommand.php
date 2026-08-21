@@ -45,7 +45,7 @@ class SyncTeplovSukhovRetailPricesCommand extends Command
 
         $apply = (bool) $this->option('apply');
         $createMissing = (bool) $this->option('create-missing');
-        $sheet = trim((string) $this->option('sheet'));
+        $sheet = $this->resolveSheet(trim((string) $this->option('sheet')));
         $stats = ['matched' => 0, 'changed' => 0, 'unchanged' => 0, 'created' => 0, 'would_create' => 0, 'ambiguous' => 0, 'unmatched' => 0, 'conflict' => 0, 'price_list_conflict' => 0];
         $details = [];
         $claimedProducts = SupplierProduct::query()
@@ -462,6 +462,16 @@ class SyncTeplovSukhovRetailPricesCommand extends Command
             'meta_title' => sprintf('%s купить в %%city%% — цена | KOTLOV.BY', $sourceName),
             'meta_description' => sprintf('%s Теплов и Сухов: цена, совместимость и доставка в %%city%%. Подбор дымохода специалистами KOTLOV.BY.', $sourceName),
         ]);
+    }
+
+    private function resolveSheet(string $value): string
+    {
+        // A shell-safe alias is used by the production queue, where quoted
+        // multi-word arguments are intentionally disallowed.
+        return match ($value) {
+            'ferrit-05' => 'Тис Феррит 430-0,5',
+            default => $value,
+        };
     }
 
     private function categoryIdForSourceName(string $name): int
