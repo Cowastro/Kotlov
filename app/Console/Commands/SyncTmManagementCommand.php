@@ -839,6 +839,18 @@ HTML;
                 $seenArticles[$articleKey] = true;
             }
 
+            if (
+                $supplierArticle !== (string) $row->supplier_article
+                && DB::table('supplier_products')
+                    ->where('supplier_id', $supplierId)
+                    ->where('id', '!=', $row->supplier_product_id)
+                    ->where('supplier_article', $supplierArticle)
+                    ->exists()
+            ) {
+                $suffix = '-' . substr(md5((string) $row->supplier_product_id), 0, 6);
+                $supplierArticle = mb_substr($supplierArticle, 0, 100 - mb_strlen($suffix)) . $suffix;
+            }
+
             $newSku = (string) $row->sku;
             if (! preg_match('/^KOTLOV-\d{6}$/', $newSku)) {
                 $newSku = $this->nextKotlovSku();
@@ -904,6 +916,163 @@ HTML;
         if ($examples !== []) {
             $this->table(['product_id', 'sku_from', 'sku_to', 'article_from', 'article_to'], $examples);
         }
+
+        $split = $this->splitDuplicateSupplierProductLinks($supplierId, $apply);
+        $this->info(($apply ? 'Split duplicate product links' : 'Duplicate product links to split') . ': ' . $split);
+    }
+
+    private function splitDuplicateSupplierProductLinks(int $supplierId, bool $apply): int
+    {
+        $groups = DB::table('supplier_products')
+            ->where('supplier_id', $supplierId)
+            ->whereNotNull('product_id')
+            ->select('product_id')
+            ->groupBy('product_id')
+            ->havingRaw('COUNT(*) > 1')
+            ->pluck('product_id');
+
+        $split = 0;
+        $examples = [];
+
+        foreach ($groups as $productId) {
+            $product = DB::table('products')->where('id', $productId)->first();
+            if (! $product) {
+                continue;
+            }
+
+            $links = DB::table('supplier_products')
+                ->where('supplier_id', $supplierId)
+                ->where('product_id', $productId)
+                ->orderBy('id')
+                ->get();
+
+            $productNameNorm = $this->normalizeName((string) $product->name);
+            $keepId = optional($links->first(function ($link) use ($productNameNorm) {
+                return $this->normalizeName((string) $link->supplier_name) === $productNameNorm;
+            }))->id ?? optional($links->first())->id;
+
+            foreach ($links as $link) {
+                if ((int) $link->id === (int) $keepId) {
+                    continue;
+                }
+
+                $supplierName = $this->cleanName((string) $link->supplier_name);
+                if ($supplierName === '') {
+                    continue;
+                }
+
+                $nameNorm = $this->normalizeName($supplierName);
+                if ($nameNorm === '' || $nameNorm === $productNameNorm) {
+                    continue;
+                }
+
+                $existingProductId = DB::table('supplier_products')
+                    ->where('supplier_id', $supplierId)
+                    ->where('id', '!=', $link->id)
+                    ->where('supplier_article_normalized', $link->supplier_article_normalized)
+                    ->value('product_id');
+
+                if ($existingProductId && (int) $existingProductId !== (int) $productId) {
+                    if ($apply) {
+                        DB::table('supplier_products')->where('id', $link->id)->update([
+                            'product_id' => $existingProductId,
+                            'product_sku' => DB::table('products')->where('id', $existingProductId)->value('sku'),
+                            'updated_at' => now(),
+                        ]);
+                    }
+                    $split++;
+                    continue;
+                }
+
+                $newSku = $this->nextKotlovSku();
+                $price = $link->price_byn ?? $product->price;
+                $newProduct = [
+                    'category_id' => $product->category_id,
+                    'brand_id' => $product->brand_id,
+                    'supplier_id' => $product->supplier_id,
+                    'name' => $supplierName,
+                    'slug' => $this->uniqueProductSlug($supplierName),
+                    'h1' => $supplierName,
+                    'sku' => $newSku,
+                    'price' => $price,
+                    'price_old' => null,
+                    'currency' => $product->currency ?: 'BYN',
+                    'content' => $this->genericTmContent($supplierName),
+                    'short_description' => 'ТМ Менеджмент — поставка под заказ по Беларуси. Уточняйте наличие, комплектацию и срок поставки.',
+                    'images' => json_encode([], JSON_UNESCAPED_UNICODE),
+                    'specs' => $product->specs ?: json_encode([], JSON_UNESCAPED_UNICODE),
+                    'service_info' => $product->service_info,
+                    'documents' => $product->documents,
+                    'promo_flags' => $product->promo_flags,
+                    'video_url' => null,
+                    'weight' => $product->weight,
+                    'unit' => $product->unit ?: 'шт',
+                    'warranty' => $product->warranty,
+                    'is_active' => true,
+                    'is_archived' => false,
+                    'in_stock' => false,
+                    'availability_status' => 'check',
+                    'stock_qty' => null,
+                    'is_featured' => false,
+                    'is_new' => false,
+                    'is_sale' => false,
+                    'sort_order' => $product->sort_order,
+                    'meta_title' => $supplierName . ' купить в %city%',
+                    'meta_keywords' => $supplierName . ', купить в %city%, ТМ Менеджмент',
+                    'meta_description' => $supplierName . ' — цена, характеристики, консультация и поставка в %city%.',
+                    'rating' => 0,
+                    'reviews_count' => 0,
+                    'views_count' => 0,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ];
+
+                if (count($examples) < 8) {
+                    $examples[] = [
+                        'from_product' => $productId,
+                        'supplier_product' => $link->id,
+                        'new_sku' => $newSku,
+                        'name' => Str::limit($supplierName, 60),
+                    ];
+                }
+
+                if ($apply) {
+                    $newProductId = DB::table('products')->insertGetId($newProduct);
+                    DB::table('supplier_products')->where('id', $link->id)->update([
+                        'product_id' => $newProductId,
+                        'product_sku' => $newSku,
+                        'updated_at' => now(),
+                    ]);
+                }
+
+                $split++;
+            }
+        }
+
+        if ($examples !== []) {
+            $this->table(['from_product', 'supplier_product', 'new_sku', 'name'], $examples);
+        }
+
+        return $split;
+    }
+
+    private function genericTmContent(string $name): string
+    {
+        $name = e($name);
+
+        return <<<HTML
+<p><strong>{$name}</strong> — позиция из ассортимента поставщика ТМ Менеджмент. Товар можно заказать через KOTLOV.BY в %city% с консультацией по совместимости, комплектации и сроку поставки.</p>
+
+<p>Перед покупкой рекомендуем уточнить актуальное наличие, характеристики и применимость к вашей системе отопления, водоснабжения, канализации или монтажному узлу. Это помогает избежать ошибок по размерам, подключению и дополнительным комплектующим.</p>
+
+<h3>Что уточнить перед заказом</h3>
+<ul>
+    <li>подходит ли позиция к вашему оборудованию;</li>
+    <li>нужны ли переходники, крепёж, автоматика или расходные материалы;</li>
+    <li>актуальную цену, комплектацию и срок поставки в %city%;</li>
+    <li>условия монтажа и обслуживания.</li>
+</ul>
+HTML;
     }
 
     private function cleanOneLine(string $value): string

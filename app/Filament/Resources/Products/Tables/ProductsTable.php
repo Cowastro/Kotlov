@@ -83,7 +83,11 @@ class ProductsTable
                     ->label('Арт. пост.')
                     ->getStateUsing(function ($record): string {
                         $articles = $record->supplierProducts
-                            ->map(fn ($sp) => $sp->supplier_article)
+                            ->map(function ($sp): string {
+                                $article = trim((string) $sp->supplier_article);
+
+                                return preg_replace('/-[0-9a-f]{6,8}$/i', '', $article) ?: $article;
+                            })
                             ->filter()
                             ->unique()
                             ->values();
