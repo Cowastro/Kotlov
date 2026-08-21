@@ -232,7 +232,26 @@ class SyncTmManagementCommand extends Command
             $path = rtrim($localCsvDirectory, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR . trim($sheetName) . '.csv';
             $csv = @file_get_contents($path);
         } else {
-            $csv = @file_get_contents(self::CSV_URL . urlencode($sheetName));
+            $url = self::CSV_URL . urlencode($sheetName);
+            $context = stream_context_create([
+                'http' => [
+                    'timeout' => 30,
+                    'header' => "User-Agent: KOTLOV.BY supplier sync/1.0\r\n",
+                ],
+            ]);
+            $csv = false;
+
+            // Google Sheets occasionally returns an empty response or throttles
+            // consecutive exports. A small retry makes independent sheet jobs
+            // reliable without turning one failed request into a failed sync.
+            for ($attempt = 1; $attempt <= 3; $attempt++) {
+                $csv = @file_get_contents($url, false, $context);
+                if ($csv !== false && trim($csv) !== '') {
+                    break;
+                }
+
+                usleep(500000 * $attempt);
+            }
         }
 
         if ($csv === false || trim($csv) === '') {
@@ -488,40 +507,87 @@ class SyncTmManagementCommand extends Command
     private function upsertSupplierProduct(array $item, int $supplierId, int $syncId, int $productId): void
     {
         $now = now();
+        $supplierKey = $this->supplierKey($item);
         $publicSupplierArticle = $this->publicSupplierArticle($item);
 
-        DB::table('supplier_products')->updateOrInsert(
-            [
-                'supplier_id' => $supplierId,
-                'supplier_article_normalized' => $this->supplierKey($item),
-            ],
-            [
-                'supplier_sync_id' => $syncId,
-                'product_id' => $productId,
-                'product_sku' => DB::table('products')->where('id', $productId)->value('sku'),
-                'supplier_article' => $publicSupplierArticle,
-                'supplier_article_compact' => preg_replace('/[^A-Z0-9А-ЯЁ]+/u', '', mb_strtoupper($this->normalizeArticle($publicSupplierArticle))),
-                'supplier_name' => $item['name'],
-                'source_url' => $item['source_url'],
-                'price' => $item['price_opt'] ?? $item['price_retail'],
-                'currency' => 'BYN',
-                'currency_rate' => 1,
-                'price_byn' => $item['price_opt'] ?? $item['price_retail'],
-                'in_stock' => false,
-                'stock_quantity' => null,
-                'stock_status' => 'preorder',
-                'stock_text' => 'Уточняйте наличие',
-                'warehouse_name' => self::SUPPLIER_NAME,
-                'delivery_days' => null,
-                'last_stock_synced_at' => $now,
-                'match_status' => 'matched',
-                'match_confidence' => 1,
-                'raw' => json_encode($item, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
-                'last_synced_at' => $now,
-                'created_at' => $now,
-                'updated_at' => $now,
-            ]
-        );
+        // The database uniqueness rule is (supplier_id, supplier_article), while
+        // supplier_article_normalized is deliberately a richer matching key. Using
+        // the latter as updateOrInsert's key caused every existing TM row to be
+        // treated as new and then fail on the unique index.
+        $existing = DB::table('supplier_products')
+            ->where('supplier_id', $supplierId)
+            ->where(function ($query) use ($supplierKey, $publicSupplierArticle) {
+                $query->where('supplier_article_normalized', $supplierKey)
+                    ->orWhere('supplier_article', $publicSupplierArticle);
+            })
+            ->orderBy('id')
+            ->first();
+
+        if ($existing && (string) $existing->supplier_article !== $publicSupplierArticle) {
+            $publicSupplierArticle = $this->uniqueSupplierArticle($supplierId, $publicSupplierArticle, $supplierKey, (int) $existing->id);
+        } elseif (! $existing) {
+            $publicSupplierArticle = $this->uniqueSupplierArticle($supplierId, $publicSupplierArticle, $supplierKey);
+        }
+
+        $payload = [
+            'supplier_sync_id' => $syncId,
+            'product_id' => $productId,
+            'product_sku' => DB::table('products')->where('id', $productId)->value('sku'),
+            'supplier_article' => $publicSupplierArticle,
+            'supplier_article_normalized' => $supplierKey,
+            'supplier_article_compact' => preg_replace('/[^A-Z0-9А-ЯЁ]+/u', '', mb_strtoupper($this->normalizeArticle($publicSupplierArticle))),
+            'supplier_name' => $item['name'],
+            'source_url' => $item['source_url'],
+            'price' => $item['price_opt'] ?? $item['price_retail'],
+            'currency' => 'BYN',
+            'currency_rate' => 1,
+            'price_byn' => $item['price_opt'] ?? $item['price_retail'],
+            'in_stock' => false,
+            'stock_quantity' => null,
+            'stock_status' => 'preorder',
+            'stock_text' => 'Уточняйте наличие',
+            'warehouse_name' => self::SUPPLIER_NAME,
+            'delivery_days' => null,
+            'last_stock_synced_at' => $now,
+            'match_status' => 'matched',
+            'match_confidence' => 1,
+            'raw' => json_encode($item, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
+            'last_synced_at' => $now,
+            'updated_at' => $now,
+        ];
+
+        if ($existing) {
+            DB::table('supplier_products')->where('id', $existing->id)->update($payload);
+            return;
+        }
+
+        $payload['supplier_id'] = $supplierId;
+        $payload['created_at'] = $now;
+        DB::table('supplier_products')->insert($payload);
+    }
+
+    private function uniqueSupplierArticle(int $supplierId, string $article, string $supplierKey, ?int $exceptId = null): string
+    {
+        $base = mb_substr($article, 0, 100);
+        $candidate = $base;
+        $attempt = 0;
+
+        while (true) {
+            $query = DB::table('supplier_products')
+                ->where('supplier_id', $supplierId)
+                ->where('supplier_article', $candidate);
+            if ($exceptId !== null) {
+                $query->where('id', '!=', $exceptId);
+            }
+
+            if (! $query->exists()) {
+                return $candidate;
+            }
+
+            $suffix = '-' . substr(md5($supplierKey . '|' . $attempt), 0, 8);
+            $candidate = mb_substr($base, 0, 100 - mb_strlen($suffix)) . $suffix;
+            $attempt++;
+        }
     }
 
     private function startSync(int $supplierId, int $total): int
