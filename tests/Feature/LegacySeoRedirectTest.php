@@ -16,6 +16,12 @@ class LegacySeoRedirectTest extends TestCase
     {
         parent::setUp();
 
+        Schema::dropIfExists('redirects');
+        Schema::dropIfExists('brands');
+        Schema::dropIfExists('cities');
+        Schema::dropIfExists('products');
+        Schema::dropIfExists('categories');
+
         Schema::create('categories', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('parent_id')->default(0);
