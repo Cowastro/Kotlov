@@ -16,11 +16,13 @@ class LegacySeoRedirectTest extends TestCase
     {
         parent::setUp();
 
+        Schema::disableForeignKeyConstraints();
         Schema::dropIfExists('redirects');
+        Schema::dropIfExists('products');
         Schema::dropIfExists('brands');
         Schema::dropIfExists('cities');
-        Schema::dropIfExists('products');
         Schema::dropIfExists('categories');
+        Schema::enableForeignKeyConstraints();
 
         Schema::create('categories', function (Blueprint $table) {
             $table->id();
