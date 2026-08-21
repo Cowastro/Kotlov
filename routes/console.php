@@ -94,3 +94,11 @@ Schedule::command('supplier:sync-gazkotelbel --apply')
     ->withoutOverlapping()
     ->runInBackground()
     ->appendOutputTo(storage_path('logs/gazkotelbel-sync.log'));
+
+// TM Management: Google Sheets price/stock refresh and new product links.
+// Runs after the other supplier imports so shared price/stock writes do not overlap.
+Schedule::command('supplier:sync-tm-management --apply')
+    ->dailyAt('08:17')
+    ->withoutOverlapping()
+    ->runInBackground()
+    ->appendOutputTo(storage_path('logs/tm-management-sync.log'));

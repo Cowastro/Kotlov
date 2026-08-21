@@ -560,7 +560,7 @@ class SyncTmManagementCommand extends Command
         return <<<HTML
 <p><strong>{$name}</strong> — товар бренда {$brand} в категории «{$category}». Его можно заказать через KOTLOV.BY в %city% с консультацией по подбору, совместимости и комплектации.</p>
 
-<p>Позиция добавлена по прайсу поставщика ТМ Менеджмент. Наличие и срок поставки лучше уточнять перед заказом: по таким товарам важны актуальная комплектация, применимость к системе отопления или водоснабжения и корректный подбор сопутствующих элементов.</p>
+<p>Перед покупкой рекомендуем уточнить актуальное наличие, характеристики и применимость к вашей системе отопления, водоснабжения, канализации или монтажному узлу. Это помогает правильно подобрать товар, не ошибиться с размерами, подключением и дополнительными комплектующими.</p>
 
 {$noteHtml}
 
@@ -576,7 +576,7 @@ HTML;
 
     private function shortDescription(array $item): string
     {
-        return $item['brand'] . ' — поставка под заказ по Беларуси. Уточняйте наличие, комплектацию и срок поставки.';
+        return trim($item['brand']) . ' — товар для систем отопления, водоснабжения или монтажа. Уточняйте наличие, комплектацию и срок поставки по Беларуси.';
     }
 
     private function aiSeo(array $item, AiContentEnricher $ai): ?array
@@ -1024,7 +1024,7 @@ HTML;
                     'price_old' => null,
                     'currency' => $product->currency ?: 'BYN',
                     'content' => $this->genericTmContent($supplierName),
-                    'short_description' => 'ТМ Менеджмент — поставка под заказ по Беларуси. Уточняйте наличие, комплектацию и срок поставки.',
+                    'short_description' => $this->genericTmShortDescription($supplierName, $product->brand_id),
                     'images' => json_encode([], JSON_UNESCAPED_UNICODE),
                     'specs' => $product->specs ?: json_encode([], JSON_UNESCAPED_UNICODE),
                     'service_info' => $product->service_info,
@@ -1044,7 +1044,7 @@ HTML;
                     'is_sale' => false,
                     'sort_order' => $product->sort_order,
                     'meta_title' => $supplierName . ' купить в %city%',
-                    'meta_keywords' => $supplierName . ', купить в %city%, ТМ Менеджмент',
+                    'meta_keywords' => $supplierName . ', купить в %city%',
                     'meta_description' => $supplierName . ' — цена, характеристики, консультация и поставка в %city%.',
                     'rating' => 0,
                     'reviews_count' => 0,
@@ -1082,12 +1082,14 @@ HTML;
         return $split;
     }
 
-    private function genericTmContent(string $name): string
+    private function genericTmContent(string $name, ?string $brand = null, ?string $category = null): string
     {
         $name = e($name);
+        $brand = e($brand ?: 'товара');
+        $category = e($category ?: 'каталога отопительного оборудования');
 
         return <<<HTML
-<p><strong>{$name}</strong> — позиция из ассортимента поставщика ТМ Менеджмент. Товар можно заказать через KOTLOV.BY в %city% с консультацией по совместимости, комплектации и сроку поставки.</p>
+<p><strong>{$name}</strong> — товар бренда {$brand} в разделе «{$category}». Карточка подготовлена для подбора и заказа через KOTLOV.BY в %city% с консультацией по совместимости, комплектации и сроку поставки.</p>
 
 <p>Перед покупкой рекомендуем уточнить актуальное наличие, характеристики и применимость к вашей системе отопления, водоснабжения, канализации или монтажному узлу. Это помогает избежать ошибок по размерам, подключению и дополнительным комплектующим.</p>
 
@@ -1099,6 +1101,18 @@ HTML;
     <li>условия монтажа и обслуживания.</li>
 </ul>
 HTML;
+    }
+
+    private function genericTmShortDescription(string $name, ?int $brandId): string
+    {
+        $brand = $brandId ? DB::table('brands')->where('id', $brandId)->value('name') : null;
+        $brand = trim((string) $brand);
+
+        if ($brand !== '') {
+            return $brand . ' — товар для систем отопления, водоснабжения или монтажа. Уточняйте наличие, комплектацию и срок поставки по Беларуси.';
+        }
+
+        return $name . ' — товар для систем отопления, водоснабжения или монтажа. Уточняйте наличие, комплектацию и срок поставки по Беларуси.';
     }
 
     private function cleanOneLine(string $value): string

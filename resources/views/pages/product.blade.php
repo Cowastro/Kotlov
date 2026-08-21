@@ -491,7 +491,25 @@
                 }
                 $rawSpecs = $attributeValues->count() === 0 && !empty($product->specs)
                     ? collect(is_array($product->specs) ? $product->specs : (json_decode($product->specs, true) ?? []))
-                          ->filter(fn($s) => !empty($s['key']) && !empty($s['value']))
+                          ->map(function ($spec, $key) {
+                              if (is_array($spec)) {
+                                  $specKey = $spec['key'] ?? $spec['name'] ?? $spec['title'] ?? null;
+                                  $specValue = $spec['value'] ?? $spec['val'] ?? null;
+
+                                  return [
+                                      'key' => is_scalar($specKey) ? trim((string) $specKey) : '',
+                                      'value' => is_scalar($specValue) ? trim((string) $specValue) : '',
+                                      'unit' => is_scalar($spec['unit'] ?? null) ? trim((string) $spec['unit']) : '',
+                                  ];
+                              }
+
+                              return [
+                                  'key' => is_string($key) ? trim($key) : '',
+                                  'value' => is_scalar($spec) ? trim((string) $spec) : '',
+                                  'unit' => '',
+                              ];
+                          })
+                          ->filter(fn($s) => $s['key'] !== '' && $s['value'] !== '')
                           ->unique(fn($s) => mb_strtolower(trim($s['key'])))
                           ->values()
                     : collect();
@@ -574,13 +592,23 @@
                                                     'check'  => $val->is_checked === null,
                                                     default  => empty($val->value) || $val->value === '—' || (string) $val->value === '0' || (string) $val->value === '0.00' || (string) $val->value === '0.0',
                                                 };
+                                                $displayValue = (string) $val->value;
+                                                $displaySuffix = (string) ($val->attribute->suffix ?? '');
+                                                if (
+                                                    mb_strtolower((string) $val->attribute->name) === 'мощность двигателя'
+                                                    && preg_match('/^\d+(?:[,.]\d+)?$/u', $displayValue) === 1
+                                                    && (float) str_replace(',', '.', $displayValue) < 1000
+                                                    && mb_strtolower(trim($displaySuffix)) === 'квт'
+                                                ) {
+                                                    $displaySuffix = 'Вт';
+                                                }
                                             @endphp
                                             @if (!$isEmpty)
                                                 <tr>
                                                     <td class="fw-medium" style="width:45%">
                                                         {{ $val->attribute->name }}
-                                                        @if ($val->attribute->suffix)
-                                                            <span class="cl-text-2 fw-normal">, {{ $val->attribute->suffix }}</span>
+                                                        @if ($displaySuffix)
+                                                            <span class="cl-text-2 fw-normal">, {{ $displaySuffix }}</span>
                                                         @endif
                                                     </td>
                                                     <td>
@@ -596,7 +624,7 @@
                                                                 @endif
                                                                 @break
                                                             @default
-                                                                {{ $val->value }} {{ $val->attribute->suffix }}
+                                                                {{ $displayValue }} {{ $displaySuffix }}
                                                         @endswitch
                                                     </td>
                                                 </tr>

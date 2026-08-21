@@ -16,6 +16,7 @@ class SyncProductSpecsToAttributesCommand extends Command
         {--active-only : Restrict products to active catalog cards}
         {--not-archived : Exclude archived products}
         {--force : Sync products even when product_attribute_values already exist}
+        {--replace-existing : With --apply, delete existing product_attribute_values before syncing specs}
         {--audit-bad-attributes : Show product attribute rows with empty/unit-only/mojibake values}
         {--bad-reason=* : Filter audit by reason: empty_value, unit_only_value, value_has_unit_suffix, mojibake_name, mojibake_value}
         {--cleanup-empty-values : Delete already synced rows where a value attribute has an empty value}
@@ -39,6 +40,7 @@ class SyncProductSpecsToAttributesCommand extends Command
         $supplierCode = trim((string) $this->option('supplier'));
         $activeOnly = (bool) $this->option('active-only');
         $notArchived = (bool) $this->option('not-archived');
+        $replaceExisting = (bool) $this->option('replace-existing');
 
         if ((bool) $this->option('audit-bad-attributes')) {
             $reasons = collect($this->option('bad-reason'))
@@ -91,10 +93,16 @@ class SyncProductSpecsToAttributesCommand extends Command
         $samples = [];
         $errors = [];
 
-        $query->chunkById(200, function ($products) use ($enricher, $apply, $limit, &$checked, &$candidates, &$syncedProducts, &$syncedRows, &$samples, &$errors): bool {
+        $query->chunkById(200, function ($products) use ($enricher, $apply, $replaceExisting, $limit, &$checked, &$candidates, &$syncedProducts, &$syncedRows, &$samples, &$errors): bool {
             foreach ($products as $product) {
                 $checked++;
                 $specs = $enricher->filterUsableSpecs($this->normalizeSpecs($product->specs));
+
+                if ($apply && $replaceExisting) {
+                    DB::table('product_attribute_values')
+                        ->where('product_id', $product->id)
+                        ->delete();
+                }
 
                 if ($specs === []) {
                     continue;

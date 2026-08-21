@@ -3003,7 +3003,24 @@ class ProductSourceEnricher
             return true;
         }
 
+        if (
+            in_array($normalizedName, ['характеристика', 'параметр', 'показатель', 'название', 'наименование'], true)
+            && in_array($this->normalizeAttributeName($value), ['значение', 'характеристика', 'параметр'], true)
+        ) {
+            return true;
+        }
+
         if (preg_match('/^(?:с|c)\/?п\b/u', $normalizedName) || str_contains($normalizedName, 'айдаровское')) {
+            return true;
+        }
+
+        if (
+            mb_strlen($plainName) > 65
+            && (
+                mb_strlen($plainValue) > 18
+                || preg_match('/[.!?]|(?:\s(?:и|или|для|при|может|позволяет|обеспечивает|устанавливается|который|которая|которые|поверхность)\s)/iu', $plainName) === 1
+            )
+        ) {
             return true;
         }
 

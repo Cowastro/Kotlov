@@ -443,7 +443,7 @@ class EnrichTmManagementTmarketCommand extends Command
 
         $patterns = [
             '~\b(SANIPUMP\s+(?:GR|GP|VX))\b~iu',
-            '~\b(SANICUBIC\s+\d+\s*(?:XL|VX|GR|WP|IP\s*67|TRI|Classic|Pro|Smart)*)\b~iu',
+            '~\b(SANICUBIC\s+\d+(?:\s+(?:XL|VX|GR|WP|IP\s*67|TRI|Classic|Pro|Smart))*)\b~iu',
             '~\b(SANIACCESS\s*\d+)\b~iu',
             '~\b(SANICONDENS\s+(?:Clim\s+mini\s+S|Pro|Best\s+Flat|Best|Eco|Deco|Basic|Plus))\b~iu',
             '~\b(SANIDOUCHE(?:\s+Flat|\s+\(SOLOLIFT2\s+D-2\))?)\b~iu',
@@ -840,9 +840,9 @@ class EnrichTmManagementTmarketCommand extends Command
         $text = mb_strtolower(str_replace('ё', 'е', $text));
         $tokens = [];
 
-        preg_match_all('/\b(?:впк|vpk|в|v|dn|дн|ip|wp|vx|gr)\s*[-\/]?\s*\d{1,4}\b/u', $text, $matches);
+        preg_match_all('/\b(?:впк|vpk|вп|vp|в|v|dn|дн|ip|wp|vx|gr)\s*[-\/]?\s*\d{1,4}\b/u', $text, $matches);
         foreach ($matches[0] ?? [] as $token) {
-            $token = str_replace(['дн', 'впк', 'в'], ['dn', 'vpk', 'v'], $token);
+            $token = str_replace(['дн', 'впк', 'вп', 'в'], ['dn', 'vpk', 'vp', 'v'], $token);
             $tokens[] = preg_replace('/[^a-z0-9]+/u', '', $token) ?: $token;
         }
 
@@ -900,7 +900,7 @@ class EnrichTmManagementTmarketCommand extends Command
     {
         $series = [];
 
-        preg_match_all('/\b(\d+)\s*([a-zа-я])\b/u', $text, $numberLetter);
+        preg_match_all('/\b(\d+)\s*(вп|vp|[a-zа-я])\b/u', $text, $numberLetter);
         foreach ($numberLetter[1] ?? [] as $index => $number) {
             $letter = $this->normalizeSeriesLetter((string) ($numberLetter[2][$index] ?? ''));
             if ($letter !== '') {
@@ -908,7 +908,7 @@ class EnrichTmManagementTmarketCommand extends Command
             }
         }
 
-        preg_match_all('/\b([a-zа-я])\s*(\d+)\b/u', $text, $letterNumber);
+        preg_match_all('/\b(вп|vp|[a-zа-я])\s*(\d+)\b/u', $text, $letterNumber);
         foreach ($letterNumber[1] ?? [] as $index => $letter) {
             $letter = $this->normalizeSeriesLetter((string) $letter);
             $number = (string) ($letterNumber[2][$index] ?? '');
@@ -926,6 +926,7 @@ class EnrichTmManagementTmarketCommand extends Command
 
         return match ($letter) {
             'в' => 'v',
+            'вп' => 'vp',
             default => $letter,
         };
     }
