@@ -53,7 +53,12 @@ class SyncTeplovSukhovRetailPricesCommand extends Command
             ->map(fn ($links) => $links->pluck('supplier_article')->unique()->values()->all())
             ->all();
 
-        foreach ($this->uniqueRows($data['rows']) as $row) {
+        $sourceRows = $this->uniqueRows($data['rows']);
+        $namesByOriginalArticle = collect($sourceRows)
+            ->groupBy(fn (array $row) => trim((string) ($row['original_sku'] ?? $row['sku'] ?? '')))
+            ->map(fn ($rows) => $rows->pluck('name')->filter()->unique()->values());
+
+        foreach ($sourceRows as $row) {
             if (($row['_price_list_conflict'] ?? false) === true) {
                 $stats['price_list_conflict']++;
                 $details[] = [
@@ -78,6 +83,50 @@ class SyncTeplovSukhovRetailPricesCommand extends Command
                 ->where('supplier_id', $supplier->id)
                 ->where('supplier_article', $article)
                 ->first();
+
+            // A previous import stored the raw supplier article. Some rows in
+            // the approved workbook reuse that raw value, so the extractor now
+            // exposes a stable -01/-02 suffix. Move only a proven matching
+            // legacy link to its new unique article; the raw value stays in
+            // `raw` for auditing and is never used to overwrite another card.
+            $legacyArticle = trim((string) ($row['original_sku'] ?? ''));
+            if (! $existing && $legacyArticle !== '' && $legacyArticle !== $article) {
+                $legacy = SupplierProduct::query()
+                    ->where('supplier_id', $supplier->id)
+                    ->where('supplier_article', $legacyArticle)
+                    ->first();
+
+                if ($legacy?->product_id) {
+                    $legacyProduct = $products->firstWhere('id', $legacy->product_id);
+                    $legacyMatches = $legacyProduct ? $this->findMatches(collect([$legacyProduct]), $name) : collect();
+
+                    if ($legacyMatches->count() === 1) {
+                        if ($apply) {
+                            $legacy->supplier_article = $article;
+                            $legacy->save();
+                        }
+                        $existing = $legacy;
+                        $claimedProducts[(int) $legacy->product_id] = [$article];
+                    } elseif ($apply) {
+                        // If a raw article was reused, a previous import may
+                        // have linked it to an unrelated card. Keep it only
+                        // when that card matches at least one of the rows that
+                        // share this raw article; otherwise remove the stale
+                        // supplier relation before it can block a new match.
+                        $validForAnyRow = $legacyProduct
+                            && ($namesByOriginalArticle[$legacyArticle] ?? collect())
+                                ->contains(fn (string $sourceName) => $this->findMatches(collect([$legacyProduct]), $sourceName)->count() === 1);
+
+                        if (! $validForAnyRow) {
+                            $legacy->delete();
+                            $claimedProducts[(int) $legacy->product_id] = array_values(array_diff(
+                                $claimedProducts[(int) $legacy->product_id] ?? [],
+                                [$legacyArticle]
+                            ));
+                        }
+                    }
+                }
+            }
 
             if ($existing?->product_id) {
                 $candidate = $products->firstWhere('id', $existing->product_id);
@@ -144,7 +193,11 @@ class SyncTeplovSukhovRetailPricesCommand extends Command
                     'currency' => 'BYN',
                     'match_status' => 'matched',
                     'match_confidence' => 'verified_name_dimensions',
-                    'raw' => ['price_date' => $data['price_date'] ?? null, 'wholesale' => $row['wholesale'] ?? null],
+                    'raw' => [
+                        'price_date' => $data['price_date'] ?? null,
+                        'wholesale' => $row['wholesale'] ?? null,
+                        'original_supplier_article' => $row['original_sku'] ?? $article,
+                    ],
                     'last_synced_at' => now(),
                 ]
             );

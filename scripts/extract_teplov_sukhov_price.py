@@ -50,11 +50,29 @@ def main(source, destination):
                 rows.append({
                     'name': name,
                     'sku': article,
+                    'original_sku': article,
                     'retail': f'{retail:.2f}',
                     'wholesale': wholesale,
                     'sheet': sheet,
                 })
             break
+
+    # The supplier workbook contains a small number of reused article values.
+    # Do not merge those different rows: preserve the supplier value separately
+    # and make the import identifier stable and unique.  The suffix is only
+    # added when the rows differ by name or retail price; fully identical copies
+    # remain a single source item during the import command's de-duplication.
+    by_article = {}
+    for row in rows:
+        by_article.setdefault(row['original_sku'], []).append(row)
+
+    for original_sku, duplicates in by_article.items():
+        signatures = {(row['name'], row['retail']) for row in duplicates}
+        if len(signatures) <= 1:
+            continue
+
+        for index, row in enumerate(duplicates, start=1):
+            row['sku'] = f'{original_sku}-{index:02d}'
 
     output = {
         'supplier': 'СанБизнесГруп',
