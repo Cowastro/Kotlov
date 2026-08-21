@@ -128,17 +128,21 @@ class EnrichTmManagementTmarketCommand extends Command
                 }
 
                 $parsedForStorage = $this->cleanParsedForStorage($parsed);
+                if ($imageOnly) {
+                    $parsedForStorage = $this->preferProductCardImages($parsedForStorage);
+                }
 
                 $result = $enricher->enrichFromParsed($model, $match['url'], $parsedForStorage, [
                     'update_images' => true,
                     'replace_images' => $imageOnly
-                        ? $this->imagesEmpty($model->images)
+                        ? ((bool) $this->option('replace-images') || $this->imagesEmpty($model->images))
                         : ((bool) $this->option('replace-images') || $this->imagesEmpty($model->images)),
                     'update_specs' => ! $imageOnly,
                     'replace_specs' => ! $imageOnly,
                     'min_specs_to_replace' => 2,
                     'update_content' => false,
                     'source_content' => false,
+                    'prefer_resize_cache_images' => $imageOnly,
                     'update_documents' => false,
                     'update_video' => false,
                 ]);
@@ -210,6 +214,42 @@ class EnrichTmManagementTmarketCommand extends Command
         }
 
         $parsed['description'] = trim($cleaned);
+
+        return $parsed;
+    }
+
+    /**
+     * On some TMarket series pages the first image is a huge original canvas
+     * that looks cropped in the storefront. Prefer normal product-card resize
+     * images and drop tiny thumbnails.
+     *
+     * @param array<string,mixed> $parsed
+     * @return array<string,mixed>
+     */
+    private function preferProductCardImages(array $parsed): array
+    {
+        $images = array_values(array_filter((array) ($parsed['images'] ?? []), 'is_string'));
+        if ($images === []) {
+            return $parsed;
+        }
+
+        $preferred = array_values(array_filter($images, function (string $url): bool {
+            if (! str_contains($url, '/resize_cache/')) {
+                return false;
+            }
+
+            if (preg_match('/\/(\d+)_(\d+)_/u', $url, $matches) !== 1) {
+                return true;
+            }
+
+            return (int) $matches[1] >= 300 && (int) $matches[2] >= 300;
+        }));
+
+        if ($preferred === []) {
+            return $parsed;
+        }
+
+        $parsed['images'] = $preferred;
 
         return $parsed;
     }
@@ -649,7 +689,7 @@ class EnrichTmManagementTmarketCommand extends Command
         }
 
         if (! $best || $bestScore < 0.92) {
-            return $this->matchProductBySafeSeriesImage($product, $candidates);
+            return $this->matchProductBySafeSeriesImage($product, $candidates, (bool) $this->option('replace-images'));
         }
 
         if (! $this->numericTokensCompatible($productNorm, $best['normalized'])
@@ -668,10 +708,10 @@ class EnrichTmManagementTmarketCommand extends Command
      * only as a safe image donor for products that have no photo; never copy
      * specs, names or SEO text from a generic series page into a concrete model.
      */
-    private function matchProductBySafeSeriesImage(object $product, array $candidates): ?array
+    private function matchProductBySafeSeriesImage(object $product, array $candidates, bool $replaceImages = false): ?array
     {
         $brand = mb_strtolower((string) $product->brand_name);
-        if ($brand !== 'shinhoo' || ! $this->imagesEmpty($product->images)) {
+        if ($brand !== 'shinhoo' || (! $replaceImages && ! $this->imagesEmpty($product->images))) {
             return null;
         }
 

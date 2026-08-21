@@ -488,6 +488,8 @@ class SyncTmManagementCommand extends Command
     private function upsertSupplierProduct(array $item, int $supplierId, int $syncId, int $productId): void
     {
         $now = now();
+        $publicSupplierArticle = $this->publicSupplierArticle($item);
+
         DB::table('supplier_products')->updateOrInsert(
             [
                 'supplier_id' => $supplierId,
@@ -497,8 +499,8 @@ class SyncTmManagementCommand extends Command
                 'supplier_sync_id' => $syncId,
                 'product_id' => $productId,
                 'product_sku' => DB::table('products')->where('id', $productId)->value('sku'),
-                'supplier_article' => $this->publicSupplierArticle($item),
-                'supplier_article_compact' => preg_replace('/[^A-Z0-9А-ЯЁ]+/u', '', mb_strtoupper($this->supplierKey($item))),
+                'supplier_article' => $publicSupplierArticle,
+                'supplier_article_compact' => preg_replace('/[^A-Z0-9А-ЯЁ]+/u', '', mb_strtoupper($this->normalizeArticle($publicSupplierArticle))),
                 'supplier_name' => $item['name'],
                 'source_url' => $item['source_url'],
                 'price' => $item['price_opt'] ?? $item['price_retail'],
@@ -625,12 +627,12 @@ HTML;
 
     private function cleanArticle(string $article): string
     {
-        $article = trim($article);
+        $article = $this->cleanOneLine($article);
         if (preg_match('/^\d+\\.0$/', $article)) {
             $article = (string) (int) $article;
         }
 
-        $article = trim(explode('|', $article, 2)[0]);
+        $article = $this->cleanOneLine(explode('|', $article, 2)[0]);
         $compact = mb_strtolower(preg_replace('/\s+/u', '', $article) ?? $article);
 
         if (str_contains($compact, 'vannedn100') && str_contains($compact, 'vannedn110')) {
@@ -823,10 +825,10 @@ HTML;
 
         foreach ($rows as $row) {
             $raw = json_decode((string) $row->raw, true);
-            $supplierArticle = $this->cleanArticle((string) $row->supplier_article);
-            if ($supplierArticle === '' && is_array($raw)) {
-                $supplierArticle = $this->cleanArticle((string) ($raw['article'] ?? ''));
-            }
+            $rawArticle = is_array($raw) ? $this->cleanArticle((string) ($raw['article'] ?? '')) : '';
+            $supplierArticle = $rawArticle !== ''
+                ? $rawArticle
+                : $this->cleanArticle((string) $row->supplier_article);
 
             $articleKey = $this->normalizeArticle($supplierArticle);
             if ($articleKey !== '') {

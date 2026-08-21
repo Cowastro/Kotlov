@@ -51,6 +51,9 @@ class ProductSourceEnricher
 
         $parsed = $this->normalizeParsedData($parsed);
         $parsed = $this->adaptParsedDataForProduct($parsed, $product, $sourceUrl);
+        if (($options['prefer_resize_cache_images'] ?? false) === true) {
+            $parsed['images'] = $this->preferResizeCacheImages($parsed['images']);
+        }
         $updates = [];
         $stats = [
             'images_found' => count($parsed['images']),
@@ -87,7 +90,12 @@ class ProductSourceEnricher
 
         try {
             if (($options['update_images'] ?? true) === true && $parsed['images'] !== []) {
-                $downloaded = $this->downloadImages($parsed['images'], $product, $sourceUrl);
+                $downloaded = $this->downloadImages(
+                    $parsed['images'],
+                    $product,
+                    $sourceUrl,
+                    (bool) ($options['prefer_resize_cache_images'] ?? false)
+                );
                 $stats['images_saved'] = count($downloaded);
 
                 if ($downloaded !== []) {
@@ -2191,6 +2199,31 @@ class ProductSourceEnricher
         return array_values(array_filter(array_unique($expanded), fn ($url) => $this->isProductImage($url)));
     }
 
+    /**
+     * Some Bitrix/TMarket product-series pages have a huge original image with
+     * a bad canvas, while the product-card resize is the visually correct one.
+     *
+     * @param array<int,string> $urls
+     * @return array<int,string>
+     */
+    private function preferResizeCacheImages(array $urls): array
+    {
+        $preferred = array_values(array_filter($urls, function (string $url): bool {
+            $path = (string) parse_url($url, PHP_URL_PATH);
+            if (! str_contains($path, '/resize_cache/')) {
+                return false;
+            }
+
+            if (preg_match('~/(\\d+)_(\\d+)_~u', $path, $match) !== 1) {
+                return true;
+            }
+
+            return (int) $match[1] >= 300 && (int) $match[2] >= 300;
+        }));
+
+        return $preferred !== [] ? array_values(array_unique($preferred)) : $urls;
+    }
+
     private function canonicalWordPressImageUrl(string $url): string
     {
         $path = (string) parse_url($url, PHP_URL_PATH);
@@ -2325,7 +2358,7 @@ class ProductSourceEnricher
         return array_values(array_filter(array_unique($urls)));
     }
 
-    private function downloadImages(array $urls, Product $product, string $sourceUrl = ''): array
+    private function downloadImages(array $urls, Product $product, string $sourceUrl = '', bool $preferResizeCacheImages = false): array
     {
         $dir = public_path(self::IMAGE_DIR);
         if (! is_dir($dir)) {
@@ -2333,7 +2366,9 @@ class ProductSourceEnricher
         }
 
         $saved = [];
-        $candidateUrls = $this->expandedImageCandidates($urls);
+        $candidateUrls = $preferResizeCacheImages
+            ? $this->preferResizeCacheImages($urls)
+            : $this->expandedImageCandidates($urls);
         $imageContextUrl = $sourceUrl ?: (string) ($candidateUrls[0] ?? '');
         usort($candidateUrls, fn (string $left, string $right): int => $this->imageScore($right, $imageContextUrl) <=> $this->imageScore($left, $imageContextUrl));
 
