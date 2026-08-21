@@ -1,34 +1,35 @@
 # Server Artisan Result
 
-- Time: 2026-08-21 16:12:08 UTC
+- Time: 2026-08-21 18:01:17 UTC
 - Task: `artisan-apply`
-- Artisan args: `supplier:sync-teplov-sukhov-retail --apply --create-missing --sheet=ferrit-05`
+- Artisan args: `supplier:sync-teplov-sukhov-retail --apply --create-missing --sheet=mc-black`
 - Log file: `storage/logs/teplov-sukhov-retail-sync.log`
 - Exit code: `0`
 
 ```text
 No local changes to save
 From https://github.com/Cowastro/Kotlov
-   bb6499ec..c59f9ae1  main       -> origin/main
-Updating bb6499ec..c59f9ae1
+   c59f9ae1..089c1387  main       -> origin/main
+Updating c59f9ae1..089c1387
 Fast-forward
- .github/server-artisan-result.md                   |  26 ++--
- .github/server-artisan-task.json                   |   4 +-
- .../SyncTeplovSukhovRetailPricesCommand.php        | 158 ++++++++++++++++++++-
- 3 files changed, 171 insertions(+), 17 deletions(-)
+ .github/server-artisan-result.md                   | 25 +++++++-------
+ .github/server-artisan-task.json                   |  4 +--
+ .../SyncTeplovSukhovRetailPricesCommand.php        | 40 +++++++++++++++++++---
+ 3 files changed, 51 insertions(+), 18 deletions(-)
 Прайс 2026-08-10: retail. Режим: APPLY.
 +--------------------------------------+------------+
 | Показатель                           | Количество |
 +--------------------------------------+------------+
 | Строк в прайсе                       | 448        |
-| Безопасно сопоставлено               | 223        |
+| Безопасно сопоставлено               | 300        |
 | Цен обновлено                        | 0          |
-| Без изменения                        | 223        |
-| Создано точных новых карточек        | 46         |
+| Без изменения                        | 300        |
+| Создано точных новых карточек        | 79         |
 | Неоднозначных — пропущено            | 2          |
-| Не найдено — пропущено               | 209        |
-| Конфликтов связи — пропущено         | 8          |
+| Не найдено — пропущено               | 134        |
+| Конфликтов связи — пропущено         | 6          |
 | Конфликтов внутри прайса — пропущено | 0          |
+| Переведено в статус «В наличии»      | 340        |
 +--------------------------------------+------------+
 +-----------------------+--------------------------------------------+-----------------------------------------------------------------------+
 | Артикул поставщика    | Прайс                                      | Результат                                                             |
