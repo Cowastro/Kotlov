@@ -1,6 +1,6 @@
 # Server Artisan Result
 
-- Time: 2026-08-21 15:28:44 UTC
+- Time: 2026-08-21 15:36:30 UTC
 - Task: `artisan-apply`
 - Artisan args: `supplier:sync-teplov-sukhov-retail --apply`
 - Log file: `storage/logs/teplov-sukhov-retail-sync.log`
@@ -9,23 +9,23 @@
 ```text
 No local changes to save
 From https://github.com/Cowastro/Kotlov
-   4637ef55..cb847294  main       -> origin/main
-Updating 4637ef55..cb847294
+   cb847294..d6445bd8  main       -> origin/main
+Updating cb847294..d6445bd8
 Fast-forward
- .github/server-artisan-result.md                   | 37 ++++++++++++----------
+ .github/server-artisan-result.md                   | 29 ++++++++++------------
  .github/server-artisan-task.json                   |  2 +-
- .../SyncTeplovSukhovRetailPricesCommand.php        | 12 ++++++-
- 3 files changed, 32 insertions(+), 19 deletions(-)
+ .../SyncTeplovSukhovRetailPricesCommand.php        | 10 +++++---
+ 3 files changed, 21 insertions(+), 20 deletions(-)
 Прайс 2026-08-10: retail. Режим: APPLY.
 +--------------------------------------+------------+
 | Показатель                           | Количество |
 +--------------------------------------+------------+
 | Строк в прайсе                       | 448        |
-| Безопасно сопоставлено               | 154        |
-| Цен обновлено                        | 20         |
-| Без изменения                        | 134        |
+| Безопасно сопоставлено               | 164        |
+| Цен обновлено                        | 10         |
+| Без изменения                        | 154        |
 | Неоднозначных — пропущено            | 5          |
-| Не найдено — пропущено               | 272        |
+| Не найдено — пропущено               | 262        |
 | Конфликтов связи — пропущено         | 11         |
 | Конфликтов внутри прайса — пропущено | 0          |
 +--------------------------------------+------------+
