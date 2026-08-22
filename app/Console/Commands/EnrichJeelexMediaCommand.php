@@ -34,7 +34,8 @@ class EnrichJeelexMediaCommand extends Command
                             {--apply : Write photos and specs to the DB (default: dry-run)}
                             {--overwrite : Replace existing photos/specs even if already set}
                             {--limit= : Max products to process}
-                            {--sku= : Process a single supplier article}';
+                            {--sku= : Process a single supplier article}
+                            {--link= : Create a missing supplier_products link before processing, as "productId:supplierArticle"}';
 
     protected $description = 'Fill photos and specs for Джилекс products from the jeelex.ru media map';
 
@@ -60,6 +61,30 @@ class EnrichJeelexMediaCommand extends Command
         if (! $supplier) {
             $this->error('Поставщик ' . self::SUPPLIER_CODE . ' не найден.');
             return self::FAILURE;
+        }
+
+        $linkSpec = trim((string) $this->option('link'));
+        if ($linkSpec !== '') {
+            if (! preg_match('/^(\d+):(.+)$/', $linkSpec, $m)) {
+                $this->error('Неверный формат --link, ожидается "productId:supplierArticle".');
+                return self::FAILURE;
+            }
+            $linkProductId = (int) $m[1];
+            $linkArticle = trim($m[2]);
+            $linkProduct = Product::query()->find($linkProductId);
+            if (! $linkProduct) {
+                $this->error("Товар #{$linkProductId} не найден.");
+                return self::FAILURE;
+            }
+            if ($apply) {
+                SupplierProduct::query()->updateOrCreate(
+                    ['supplier_id' => $supplier->id, 'supplier_article' => $linkArticle],
+                    ['product_id' => $linkProductId, 'product_sku' => $linkProduct->sku, 'match_status' => 'matched', 'match_confidence' => 'manual_media_link']
+                );
+                $this->info("Связь создана: товар #{$linkProductId} ({$linkProduct->sku}) ↔ {$linkArticle}");
+            } else {
+                $this->info("[DRY RUN] Будет создана связь: товар #{$linkProductId} ({$linkProduct->sku}) ↔ {$linkArticle}");
+            }
         }
 
         $this->line($apply
