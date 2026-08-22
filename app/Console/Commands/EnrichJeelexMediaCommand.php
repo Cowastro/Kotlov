@@ -84,6 +84,28 @@ class EnrichJeelexMediaCommand extends Command
                 ->first();
 
             if (! $link || ! $link->product_id) {
+                // A raw article collision during the TM Management price sync gets
+                // disambiguated with a "-<hash>" suffix (see SyncTmManagementCommand::
+                // uniqueSupplierArticle) — the plain numeric jeelex.ru article then no
+                // longer matches exactly. Fall back to a prefix match, but only act on
+                // it when it is unambiguous: a shared collision prefix can point at
+                // several different products, and guessing which one is wrong is worse
+                // than leaving it unmatched.
+                $candidates = SupplierProduct::query()
+                    ->where('supplier_id', $supplier->id)
+                    ->where('supplier_article', 'like', $sku . '-%')
+                    ->get();
+
+                if ($candidates->count() === 1) {
+                    $link = $candidates->first();
+                } elseif ($candidates->count() > 1) {
+                    $stats['no_link']++;
+                    $rows[] = [(string) $sku, '—', 'неоднозначно: ' . $candidates->pluck('product_id')->implode(',')];
+                    continue;
+                }
+            }
+
+            if (! $link || ! $link->product_id) {
                 $stats['no_link']++;
                 $rows[] = [(string) $sku, '—', 'нет связи supplier_products'];
                 continue;
