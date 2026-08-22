@@ -152,7 +152,7 @@ class EnrichJeelexMediaCommand extends Command
             $needsImage = $overwrite || ! $hasImages;
 
             $existingSpecs = $this->decodeSpecs($product->specs);
-            $hasSpecs = count($existingSpecs) > 0;
+            $hasSpecs = $this->hasRealSpecs($existingSpecs);
             $needsSpecs = $overwrite || ! $hasSpecs;
 
             $imageUrl = $data['image'] ?? null;
@@ -228,6 +228,27 @@ class EnrichJeelexMediaCommand extends Command
         }
         $decoded = json_decode((string) $specs, true);
         return is_array($decoded) ? $decoded : [];
+    }
+
+    // The TM Management import writes bookkeeping fields (brand, supplier,
+    // wholesale/retail price, price-list section, supplier article) into the
+    // same specs array used for real technical characteristics. A product
+    // carrying only those counts as having NO specs for enrichment purposes —
+    // otherwise every imported product looks "already enriched" and the real
+    // jeelex.ru specs (material, power, dimensions, ...) never get written.
+    private const META_ONLY_SPEC_KEYS = [
+        'бренд', 'поставщик', 'цена опт, byn', 'цена ррц, byn', 'раздел прайса', 'артикул поставщика',
+    ];
+
+    private function hasRealSpecs(array $specs): bool
+    {
+        foreach ($specs as $s) {
+            $key = mb_strtolower((string) ($s['key'] ?? $s['name'] ?? ''));
+            if ($key !== '' && ! in_array($key, self::META_ONLY_SPEC_KEYS, true)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private function applySpecs(Product $product, array $existingSpecs, array $sourceSpecs, bool $overwrite): void
