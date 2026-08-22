@@ -758,14 +758,20 @@ class EnrichBaniaPriceListProductsCommand extends Command
             foreach ($this->extractAnchors($html, $url) as $anchor) {
                 $anchorUrl = (string) $anchor['url'];
                 $anchorTitle = trim((string) $anchor['title']);
-                if (! $this->urlMatchesSourceDomain($anchorUrl) || $anchorTitle === '') {
+                if (! $this->urlMatchesSourceDomain($anchorUrl)) {
                     continue;
                 }
                 if (! $this->isInsideSourceStartPath($anchorUrl)) {
                     continue;
                 }
 
-                if ($this->isCatalogCandidate($anchorUrl, $anchorTitle)) {
+                // Some catalog grids wrap product links around only an <img>
+                // (no anchor text) — the real title lives on the product page
+                // itself, extracted from <title> once it's fetched below. Don't
+                // drop these links before they even get a chance to be queued;
+                // isCatalogNavigationLink's path-based keyword match still
+                // filters out irrelevant (nav/footer/social) links.
+                if ($anchorTitle !== '' && $this->isCatalogCandidate($anchorUrl, $anchorTitle)) {
                     $links[$anchorUrl] = [
                         'url' => $anchorUrl,
                         'title' => $anchorTitle,
