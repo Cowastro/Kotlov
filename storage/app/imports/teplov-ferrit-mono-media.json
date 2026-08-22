@@ -1,0 +1,426 @@
+{
+    "TS.FRT.TRB.0080.32815": {
+        "name": "Труба L1000 ТМ-Р 430-0.5 D80",
+        "diam": "80",
+        "image": "https:\/\/teplov.ru\/upload\/iblock\/9c9\/9278cck5e4r8cwqqil2kxfbkmldjpm6d.jpeg",
+        "steel": "430",
+        "thickness": null,
+        "href": "\/catalog\/detail\/truba_l1000_tm_r_430_0_5_d80\/"
+    },
+    "TS.FRT.TRB.0080.32800": {
+        "name": "Труба L500 ТМ-Р 430-0.5 D80",
+        "diam": "80",
+        "image": "https:\/\/teplov.ru\/upload\/iblock\/854\/n6viokuh7ospafw167jagftzh6e5qrxu.jpeg",
+        "steel": "430",
+        "thickness": null,
+        "href": "\/catalog\/detail\/truba_l500_tm_r_430_0_5_d80\/"
+    },
+    "TS.FRT.TRB.0080.32785": {
+        "name": "Труба L250 ТМ-Р 430-0.5 D80",
+        "diam": "80",
+        "image": "https:\/\/teplov.ru\/upload\/iblock\/70a\/wcnrq703i2h0qy48l4ycskz4vqymoojw.jpeg",
+        "steel": "430",
+        "thickness": null,
+        "href": "\/catalog\/detail\/truba_l250_tm_r_430_0_5_d80\/"
+    },
+    "TS.FRT.O87.0080.75382": {
+        "name": "Отвод 87* ОМ-Р 430-0.5 D80 (3S)",
+        "diam": "80",
+        "image": "https:\/\/teplov.ru\/upload\/iblock\/b5e\/5i0tfpuz3w7nmrj6vtigi25ippgur71g.jpeg",
+        "steel": "430",
+        "thickness": null,
+        "href": "\/catalog\/detail\/otvod_87_om_r_430_0_5_d80_3s\/"
+    },
+    "TS.FRT.O45.0080.75295": {
+        "name": "Отвод 45* ОМ-Р 430-0.5 D80 (2S)",
+        "diam": "80",
+        "image": null,
+        "steel": "430",
+        "thickness": null,
+        "href": "\/catalog\/detail\/otvod_45_om_r_430_0_5_d80_2s_u\/"
+    },
+    "TS.FRT.T87.0080.70171": {
+        "name": "Тройник 87* ТРМ(М)-Р 430-0.5 D80",
+        "diam": "80",
+        "image": "https:\/\/teplov.ru\/upload\/iblock\/b79\/tvp55w7vjw6i4z1utzhj3lqkt0ek8vzg.jpeg",
+        "steel": "430",
+        "thickness": null,
+        "href": "\/catalog\/detail\/troynik_87_trm_m_r_430_0_5_d80\/"
+    },
+    "TS.KMP.ZRV.0080.71862": {
+        "name": "Заглушка ревизии моно ЗРМ-Р 430-0.5 D80 М",
+        "diam": "80",
+        "image": null,
+        "steel": "430",
+        "thickness": null,
+        "href": "\/catalog\/detail\/zaglushka_revizii_mono_zrm_r_430_0_5_d80_m_u\/"
+    },
+    "TS.KMP.KND.0080.71863": {
+        "name": "Конденсатоотвод моно КМ-Р 430-0.5 D80 М",
+        "diam": "80",
+        "image": null,
+        "steel": "430",
+        "thickness": null,
+        "href": "\/catalog\/detail\/kondensatootvod_mono_km_r_430_0_5_d80_m_u\/"
+    },
+    "TS.FRT.ZNT.0080.72095": {
+        "name": "Зонт ЗМ-Р 430-0.5 D80",
+        "diam": "80",
+        "image": "https:\/\/teplov.ru\/upload\/iblock\/99a\/db9sm7k4qz8yx0bu6t0qeohs9kbnsgj0.jpeg",
+        "steel": "430",
+        "thickness": null,
+        "href": "\/catalog\/detail\/zont_zm_r_430_0_5_d80_u\/"
+    },
+    "TS.FRT.TRB.0100.32816": {
+        "name": "Труба L1000 ТМ-Р 430-0.5 D100",
+        "diam": "100",
+        "image": "https:\/\/teplov.ru\/upload\/iblock\/cef\/x2rzz1c3sphruld9q39y79jfumwyg90l.jpeg",
+        "steel": "430",
+        "thickness": null,
+        "href": "\/catalog\/detail\/truba_l1000_tm_r_430_0_5_d100\/"
+    },
+    "TS.FRT.TRB.0100.32801": {
+        "name": "Труба L500 ТМ-Р 430-0.5 D100",
+        "diam": "100",
+        "image": "https:\/\/teplov.ru\/upload\/iblock\/2c0\/qvlvfnw98279chufk0802qug0xluqsjp.jpeg",
+        "steel": "430",
+        "thickness": null,
+        "href": "\/catalog\/detail\/truba_l500_tm_r_430_0_5_d100\/"
+    },
+    "TS.FRT.TRB.0100.32786": {
+        "name": "Труба L250 ТМ-Р 430-0.5 D100",
+        "diam": "100",
+        "image": "https:\/\/teplov.ru\/upload\/iblock\/9ba\/kfrzmpoqnj3yuyw6kyodgz01o3w1p5mj.jpeg",
+        "steel": "430",
+        "thickness": null,
+        "href": "\/catalog\/detail\/truba_l250_tm_r_430_0_5_d100\/"
+    },
+    "TS.FRT.O87.0100.75369": {
+        "name": "Отвод 87* ОМ-Р 430-0.5 D100 (3S)",
+        "diam": "100",
+        "image": "https:\/\/teplov.ru\/upload\/iblock\/40e\/m4n02akygshvqtwss46yz4h1g0c7dz52.jpeg",
+        "steel": "430",
+        "thickness": null,
+        "href": "\/catalog\/detail\/otvod_87_om_r_430_0_5_d100_3s\/"
+    },
+    "TS.FRT.O45.0100.75283": {
+        "name": "Отвод 45* ОМ-Р 430-0.5 D100 (2S)",
+        "diam": "100",
+        "image": null,
+        "steel": "430",
+        "thickness": null,
+        "href": "\/catalog\/detail\/otvod_45_om_r_430_0_5_d100_2s_u\/"
+    },
+    "TS.FRT.T87.0100.72069": {
+        "name": "Тройник 87* ТРМ(М)-Р 430-0.5 D100",
+        "diam": "100",
+        "image": "https:\/\/teplov.ru\/upload\/iblock\/41f\/z08yu50ujutpie55p3ecl6nyrjkzkiqt.jpeg",
+        "steel": "430",
+        "thickness": null,
+        "href": "\/catalog\/detail\/troynik_87_trm_m_r_430_0_5_d100_u\/"
+    },
+    "TS.KMP.ZRV.0100.73793": {
+        "name": "Заглушка ревизии моно ЗРМ-Р 430-0.5 D100 М",
+        "diam": "100",
+        "image": null,
+        "steel": "430",
+        "thickness": null,
+        "href": "\/catalog\/detail\/zaglushka_revizii_mono_zrm_r_430_0_5_d100_m_u\/"
+    },
+    "TS.KMP.KND.0100.72696": {
+        "name": "Конденсатоотвод моно КМ-Р 430-0.5 D100 М",
+        "diam": "100",
+        "image": null,
+        "steel": "430",
+        "thickness": null,
+        "href": "\/catalog\/detail\/kondensatootvod_mono_km_r_430_0_5_d100_m_u\/"
+    },
+    "TS.FRT.ZNT.0100.72474": {
+        "name": "Зонт ЗМ-Р 430-0.5 D100",
+        "diam": "100",
+        "image": "https:\/\/teplov.ru\/upload\/iblock\/f5f\/mts1a19tnz2vk4b4eyyw4u2655xrlvjt.jpeg",
+        "steel": "430",
+        "thickness": null,
+        "href": "\/catalog\/detail\/zont_zm_r_430_0_5_d100_u1\/"
+    },
+    "TS.FRT.TRB.0110.32817": {
+        "name": "Труба L1000 ТМ-Р 430-0.5 D110",
+        "diam": "110",
+        "image": "https:\/\/teplov.ru\/upload\/iblock\/9c3\/xoe8xu1p326mb936m12sas2aqj888h9b.jpeg",
+        "steel": "430",
+        "thickness": null,
+        "href": "\/catalog\/detail\/truba_l1000_tm_r_430_0_5_d110\/"
+    },
+    "TS.FRT.TRB.0110.32802": {
+        "name": "Труба L500 ТМ-Р 430-0.5 D110",
+        "diam": "110",
+        "image": "https:\/\/teplov.ru\/upload\/iblock\/36e\/vf1lpc3utnkom0odgg5mkv1y591ea6cz.jpeg",
+        "steel": "430",
+        "thickness": null,
+        "href": "\/catalog\/detail\/truba_l500_tm_r_430_0_5_d110\/"
+    },
+    "TS.FRT.TRB.0110.32787": {
+        "name": "Труба L250 ТМ-Р 430-0.5 D110",
+        "diam": "110",
+        "image": "https:\/\/teplov.ru\/upload\/iblock\/fb6\/z3habew756nsl3rnheo845kdxau8diyx.jpeg",
+        "steel": "430",
+        "thickness": null,
+        "href": "\/catalog\/detail\/truba_l250_tm_r_430_0_5_d110\/"
+    },
+    "TS.FRT.O87.0110.75370": {
+        "name": "Отвод 87* ОМ-Р 430-0.5 D110 (3S)",
+        "diam": "110",
+        "image": "https:\/\/teplov.ru\/upload\/iblock\/af4\/o1a0p2g9tki0x0ija0kfiscrhn9f5zgn.jpeg",
+        "steel": "430",
+        "thickness": null,
+        "href": "\/catalog\/detail\/otvod_87_om_r_430_0_5_d110_3s\/"
+    },
+    "TS.FRT.O45.0110.75284": {
+        "name": "Отвод 45* ОМ-Р 430-0.5 D110 (2S)",
+        "diam": "110",
+        "image": "https:\/\/teplov.ru\/upload\/iblock\/43e\/dn0dsxgy179y0u5pxmjn2jxb8m5lissl.jpeg",
+        "steel": "430",
+        "thickness": null,
+        "href": "\/catalog\/detail\/otvod_45_om_r_430_0_5_d110_2s\/"
+    },
+    "TS.FRT.T87.0110.66140": {
+        "name": "Тройник 87* ТРМ(М)-Р 430-0.5 D110",
+        "diam": "110",
+        "image": "https:\/\/teplov.ru\/upload\/iblock\/81b\/tp1n5hk6o416xdxxthzlhsu6wfi5gb42.jpeg",
+        "steel": "430",
+        "thickness": null,
+        "href": "\/catalog\/detail\/troynik_87_trm_m_r_430_0_5_d110\/"
+    },
+    "TS.KMP.ZRV.0110.73953": {
+        "name": "Заглушка ревизии моно ЗРМ-Р 430-0.5 D110 М",
+        "diam": "110",
+        "image": null,
+        "steel": "430",
+        "thickness": null,
+        "href": "\/catalog\/detail\/zaglushka_revizii_mono_zrm_r_430_0_5_d110_m_u\/"
+    },
+    "TS.KMP.KND.0110.73627": {
+        "name": "Конденсатоотвод моно КМ-Р 430-0.5 D110 М",
+        "diam": "110",
+        "image": null,
+        "steel": "430",
+        "thickness": null,
+        "href": "\/catalog\/detail\/kondensatootvod_mono_km_r_430_0_5_d110_m_u\/"
+    },
+    "TS.FRT.ZNT.0110.73102": {
+        "name": "Зонт ЗМ-Р 430-0.5 D110",
+        "diam": "110",
+        "image": "https:\/\/teplov.ru\/upload\/iblock\/471\/ij994ljoiligizaciouh0n8rmcyf6c5m.jpeg",
+        "steel": "430",
+        "thickness": null,
+        "href": "\/catalog\/detail\/zont_zm_r_430_0_5_d110_u1\/"
+    },
+    "TS.FRT.TRB.0120.32819": {
+        "name": "Труба L1000 ТМ-Р 430-0.5 D120",
+        "diam": "120",
+        "image": "https:\/\/teplov.ru\/upload\/iblock\/c94\/r3gk2rku2aevducwd5jskm5ma3y099et.jpeg",
+        "steel": "430",
+        "thickness": null,
+        "href": "\/catalog\/detail\/truba_l1000_tm_r_430_0_5_d120\/"
+    },
+    "TS.FRT.TRB.0120.32804": {
+        "name": "Труба L500 ТМ-Р 430-0.5 D120",
+        "diam": "120",
+        "image": "https:\/\/teplov.ru\/upload\/iblock\/ae0\/qtjfy3zlllcncg2d4txlyrjflr23b992.jpeg",
+        "steel": "430",
+        "thickness": null,
+        "href": "\/catalog\/detail\/truba_l500_tm_r_430_0_5_d120\/"
+    },
+    "TS.FRT.TRB.0120.32789": {
+        "name": "Труба L250 ТМ-Р 430-0.5 D120",
+        "diam": "120",
+        "image": "https:\/\/teplov.ru\/upload\/iblock\/1ca\/ehd4hhinrp9isv22d852ell4flgsfp1d.jpeg",
+        "steel": "430",
+        "thickness": null,
+        "href": "\/catalog\/detail\/truba_l250_tm_r_430_0_5_d120\/"
+    },
+    "TS.FRT.O87.0120.75372": {
+        "name": "Отвод 87* ОМ-Р 430-0.5 D120 (3S)",
+        "diam": "120",
+        "image": "https:\/\/teplov.ru\/upload\/iblock\/38b\/2zeooq5rsd85hl2im0nwie66onzamt46.jpeg",
+        "steel": "430",
+        "thickness": null,
+        "href": "\/catalog\/detail\/otvod_87_om_r_430_0_5_d120_3s\/"
+    },
+    "TS.FRT.O45.0120.75286": {
+        "name": "Отвод 45* ОМ-Р 430-0.5 D120 (2S)",
+        "diam": "120",
+        "image": "https:\/\/teplov.ru\/upload\/iblock\/370\/7ak8j0woj3z5omrc2jjh9n6fhz4bpt4x.jpeg",
+        "steel": "430",
+        "thickness": null,
+        "href": "\/catalog\/detail\/otvod_45_om_r_430_0_5_d120_2s\/"
+    },
+    "TS.FRT.T87.0120.66142": {
+        "name": "Тройник 87* ТРМ(М)-Р 430-0.5 D120",
+        "diam": "120",
+        "image": "https:\/\/teplov.ru\/upload\/iblock\/eb3\/vk33v8go9oi97b7qa6dn0sqpti01hqlr.jpeg",
+        "steel": "430",
+        "thickness": null,
+        "href": "\/catalog\/detail\/troynik_87_trm_m_r_430_0_5_d120\/"
+    },
+    "TS.KMP.ZRV.0120.72047": {
+        "name": "Заглушка ревизии моно ЗРМ-Р 430-0.5 D120 М",
+        "diam": "120",
+        "image": null,
+        "steel": "430",
+        "thickness": null,
+        "href": "\/catalog\/detail\/zaglushka_revizii_mono_zrm_r_430_0_5_d120_m_u1\/"
+    },
+    "TS.KMP.KND.0120.72170": {
+        "name": "Конденсатоотвод моно КМ-Р 430-0.5 D120 М",
+        "diam": "120",
+        "image": null,
+        "steel": "430",
+        "thickness": null,
+        "href": "\/catalog\/detail\/kondensatootvod_mono_km_r_430_0_5_d120_m_u1\/"
+    },
+    "TS.FRT.ZNT.0120.74692": {
+        "name": "Зонт ЗМ-Р 430-0.5 D120",
+        "diam": "120",
+        "image": "https:\/\/teplov.ru\/upload\/iblock\/8b5\/fqcy48k25xajkmdx70o81sfvvcyymfab.jpeg",
+        "steel": "430",
+        "thickness": null,
+        "href": "\/catalog\/detail\/zont_zm_r_430_0_5_d120_u3\/"
+    },
+    "TS.FRT.TRB.0130.32820": {
+        "name": "Труба L1000 ТМ-Р 430-0.5 D130",
+        "diam": "130",
+        "image": "https:\/\/teplov.ru\/upload\/iblock\/b4f\/3z01n0gfvddoobnhjfexssny2v8zqtzl.jpeg",
+        "steel": "430",
+        "thickness": null,
+        "href": "\/catalog\/detail\/truba_l1000_tm_r_430_0_5_d130\/"
+    },
+    "TS.FRT.TRB.0130.32805": {
+        "name": "Труба L500 ТМ-Р 430-0.5 D130",
+        "diam": "130",
+        "image": "https:\/\/teplov.ru\/upload\/iblock\/b77\/bwamyb2pqpg2fm2u9smuntq6cymj88hm.jpeg",
+        "steel": "430",
+        "thickness": null,
+        "href": "\/catalog\/detail\/truba_l500_tm_r_430_0_5_d130\/"
+    },
+    "TS.FRT.TRB.0130.32790": {
+        "name": "Труба L250 ТМ-Р 430-0.5 D130",
+        "diam": "130",
+        "image": "https:\/\/teplov.ru\/upload\/iblock\/5a1\/zugvtloxphr76f951xgydiq8an5sjt27.jpeg",
+        "steel": "430",
+        "thickness": null,
+        "href": "\/catalog\/detail\/truba_l250_tm_r_430_0_5_d130\/"
+    },
+    "TS.FRT.O87.0130.75374": {
+        "name": "Отвод 87* ОМ-Р 430-0.5 D130 (3S)",
+        "diam": "130",
+        "image": "https:\/\/teplov.ru\/upload\/iblock\/918\/vwa10sam38zwrwl19nptxxwwv5u22zsk.jpeg",
+        "steel": "430",
+        "thickness": null,
+        "href": "\/catalog\/detail\/otvod_87_om_r_430_0_5_d130_3s\/"
+    },
+    "TS.FRT.O45.0130.75288": {
+        "name": "Отвод 45* ОМ-Р 430-0.5 D130 (2S)",
+        "diam": "130",
+        "image": "https:\/\/teplov.ru\/upload\/iblock\/7a8\/mirvaeaysqhwcvmj8o722xgv6oxxs7x5.jpeg",
+        "steel": "430",
+        "thickness": null,
+        "href": "\/catalog\/detail\/otvod_45_om_r_430_0_5_d130_2s\/"
+    },
+    "TS.KMP.ZRV.0130.72511": {
+        "name": "Заглушка ревизии моно ЗРМ-Р 430-0.5 D130 М",
+        "diam": "130",
+        "image": "https:\/\/teplov.ru\/upload\/iblock\/ed1\/fc69pundwwshh4ia84olo1rpj2fups6w.jpeg",
+        "steel": "430",
+        "thickness": null,
+        "href": "\/catalog\/detail\/zaglushka_revizii_mono_zrm_r_430_0_5_d130_m\/"
+    },
+    "TS.KMP.KND.0130.72118": {
+        "name": "Конденсатоотвод моно КМ-Р 430-0.5 D130 М",
+        "diam": "130",
+        "image": "https:\/\/teplov.ru\/upload\/iblock\/9b4\/vh8vzuycuf2u3b0hmbliftb3j8ki47ix.jpeg",
+        "steel": "430",
+        "thickness": null,
+        "href": "\/catalog\/detail\/kondensatootvod_mono_km_r_430_0_5_d130_m_u\/"
+    },
+    "TS.FRT.ZNT.0130.74693": {
+        "name": "Зонт ЗМ-Р 430-0.5 D130",
+        "diam": "130",
+        "image": "https:\/\/teplov.ru\/upload\/iblock\/267\/ds0f1l99awoo7bnaht3k3cjn3j0711w3.jpeg",
+        "steel": "430",
+        "thickness": null,
+        "href": "\/catalog\/detail\/zont_zm_r_430_0_5_d130_u2\/"
+    },
+    "TS.FRT.TRB.0150.75224": {
+        "name": "Труба L1000 ТМ-Р 430-0.5 D150",
+        "diam": "150",
+        "image": "https:\/\/teplov.ru\/upload\/iblock\/bda\/s0piaakk1mi11p9q3xzajtej2pcpbit3.jpeg",
+        "steel": "430",
+        "thickness": null,
+        "href": "\/catalog\/detail\/truba_l1000_tm_r_430_0_5_d150_u2\/"
+    },
+    "TS.FRT.TRB.0150.70528": {
+        "name": "Труба L500 ТМ-Р 430-0.5 D150",
+        "diam": "150",
+        "image": "https:\/\/teplov.ru\/upload\/iblock\/cfb\/0dk86c9ccf308tvyypcneasyrj30b38z.jpeg",
+        "steel": "430",
+        "thickness": null,
+        "href": "\/catalog\/detail\/truba_l500_tm_r_430_0_5_d150_u\/"
+    },
+    "TS.FRT.TRB.0150.32792": {
+        "name": "Труба L250 ТМ-Р 430-0.5 D150",
+        "diam": "150",
+        "image": "https:\/\/teplov.ru\/upload\/iblock\/dd1\/kxw7uddohan2lwkssttr3lhszgvzveow.jpeg",
+        "steel": "430",
+        "thickness": null,
+        "href": "\/catalog\/detail\/truba_l250_tm_r_430_0_5_d150\/"
+    },
+    "TS.FRT.O87.0150.75377": {
+        "name": "Отвод 87* ОМ-Р 430-0.5 D150 (3S)",
+        "diam": "150",
+        "image": "https:\/\/teplov.ru\/upload\/iblock\/5e3\/hsl2aoqmo0wifpybhop1hzgp3dkf4hi8.jpeg",
+        "steel": "430",
+        "thickness": null,
+        "href": "\/catalog\/detail\/otvod_87_om_r_430_0_5_d150_3s\/"
+    },
+    "TS.FRT.O45.0150.75291": {
+        "name": "Отвод 45* ОМ-Р 430-0.5 D150 (2S)",
+        "diam": "150",
+        "image": "https:\/\/teplov.ru\/upload\/iblock\/9f4\/21hxm9oplddjikjvx6rbwflq4blx28xg.jpeg",
+        "steel": "430",
+        "thickness": null,
+        "href": "\/catalog\/detail\/otvod_45_om_r_430_0_5_d150_2s\/"
+    },
+    "TS.FRT.T87.0150.66144": {
+        "name": "Тройник 87* ТРМ(М)-Р 430-0.5 D150",
+        "diam": "150",
+        "image": "https:\/\/teplov.ru\/upload\/iblock\/fbd\/wpaq95zn3zp5ih0xqczceeu21yjvv4r8.jpeg",
+        "steel": "430",
+        "thickness": null,
+        "href": "\/catalog\/detail\/troynik_87_trm_m_r_430_0_5_d150\/"
+    },
+    "TS.KMP.ZRV.0150.72966": {
+        "name": "Заглушка ревизии моно ЗРМ-Р 430-0.5 D150 М",
+        "diam": "150",
+        "image": "https:\/\/teplov.ru\/upload\/iblock\/eca\/tjefjegvdtz1h4f2ncju0ygg5h2el13t.jpeg",
+        "steel": "430",
+        "thickness": null,
+        "href": "\/catalog\/detail\/zaglushka_revizii_mono_zrm_r_430_0_5_d150_m\/"
+    },
+    "TS.KMP.KND.0150.72953": {
+        "name": "Конденсатоотвод моно КМ-Р 430-0.5 D150 М",
+        "diam": "150",
+        "image": "https:\/\/teplov.ru\/upload\/iblock\/891\/5h4d3jho21fdzfuod5jdwmlg3y9y1y6t.jpeg",
+        "steel": "430",
+        "thickness": null,
+        "href": "\/catalog\/detail\/kondensatootvod_mono_km_r_430_0_5_d150_m\/"
+    },
+    "TS.FRT.ZNT.0150.74694": {
+        "name": "Зонт ЗМ-Р 430-0.5 D150",
+        "diam": "150",
+        "image": "https:\/\/teplov.ru\/upload\/iblock\/e81\/xbw2eudxc8dexldd3li745g8t4lpxpnu.jpeg",
+        "steel": "430",
+        "thickness": null,
+        "href": "\/catalog\/detail\/zont_zm_r_430_0_5_d150_u2\/"
+    }
+}
