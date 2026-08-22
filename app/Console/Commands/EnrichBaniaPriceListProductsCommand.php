@@ -50,6 +50,7 @@ class EnrichBaniaPriceListProductsCommand extends Command
         'teplodar.ru',
         'prosept.ru',
         'harvia.com',
+        'termofor.com',
     ];
 
     private AiContentEnricher $ai;
