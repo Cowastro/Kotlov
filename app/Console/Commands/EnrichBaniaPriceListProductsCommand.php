@@ -18,6 +18,7 @@ class EnrichBaniaPriceListProductsCommand extends Command
         {--sku= : Process one product SKU}
         {--category= : Filter by category id}
         {--brand= : Filter by brand name fragment}
+        {--supplier=bania : supplier_products.supplier_id code to scope the product query to, e.g. maitek-group}
         {--source-domain=bania.by : Allowed source domain to search, e.g. pech-aston.ru}
         {--source-url= : Start from one or more comma-separated allowed catalog URLs instead of Serper}
         {--crawl-limit=160 : Max source pages to crawl when --source-url is used}
@@ -219,7 +220,8 @@ class EnrichBaniaPriceListProductsCommand extends Command
 
     private function productsToProcess()
     {
-        $supplierId = (int) DB::table('suppliers')->where('code', self::SUPPLIER_CODE)->value('id');
+        $supplierCode = trim((string) $this->option('supplier')) ?: self::SUPPLIER_CODE;
+        $supplierId   = (int) DB::table('suppliers')->where('code', $supplierCode)->value('id');
         if (! $supplierId) {
             return collect();
         }
