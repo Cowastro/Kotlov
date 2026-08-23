@@ -870,6 +870,16 @@ class EnrichBaniaPriceListProductsCommand extends Command
             return false;
         }
 
+        // teplodar.ru accessory pages (баки, парогенераторы, задвижки, ...) live
+        // under catalog/detail/* but their titles rarely contain a pech/kamin-type
+        // keyword — isInsideSourceStartPath already scoped these correctly, so
+        // skip the keyword filter for them rather than trying to keyword-list
+        // every accessory category.
+        $path = (string) parse_url($url, PHP_URL_PATH);
+        if ($this->sourceDomain === 'teplodar.ru' && str_contains($path, '/catalog/detail/')) {
+            return true;
+        }
+
         return preg_match('~(?:pech|печ|kamin|камин|dver|двер|setka|сетка|stekl|стекл|tmf|aston|doorwood|vezuv|teplodar|prosept|harvia|ermak|aksess|kamenk|каменк)~iu', $text) === 1;
     }
 
