@@ -1237,7 +1237,11 @@ class EnrichBaniaPriceListProductsCommand extends Command
             throw new \InvalidArgumentException('Source URL is outside allowed source domain.');
         }
 
-        return rtrim($url, '/');
+        // Some sites (sten.ru confirmed; doorwood.net suspected) 404 a category
+        // path without its trailing slash — stripping it unconditionally caused
+        // the very first fetch() to fail and the whole crawl to silently return
+        // zero candidates near-instantly. Preserve whatever the caller passed.
+        return $url === '/' ? $url : rtrim($url, '/') . (str_ends_with($url, '/') ? '/' : '');
     }
 
     private function normalizeSourceUrls(string $urls): array
