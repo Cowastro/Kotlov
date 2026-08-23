@@ -157,6 +157,12 @@ class EnrichLigmetExtraCommand extends Command
                         $this->line("  HTML page {$page}: no new links, stopping.");
                         break;
                     }
+                    // Child-path links (real products, on sites like ermak-termo.com)
+                    // are usually buried after dozens of shared nav/mega-menu sibling
+                    // links in raw HTML order — process the likelier candidates first
+                    // so a modest --limit reaches them instead of exhausting itself
+                    // on repeated nav junk.
+                    usort($newLinks, fn ($a, $b) => str_starts_with($b, $prefix) <=> str_starts_with($a, $prefix));
                     foreach ($newLinks as $l) {
                         $seen[$l] = true;
                         $links[]  = $l;
