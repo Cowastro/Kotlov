@@ -844,6 +844,13 @@ class EnrichBaniaPriceListProductsCommand extends Command
             return false;
         }
 
+        // Bitrix-style filter-permutation URLs (/filter/attr-is-value/apply/) match
+        // catalog keywords via their parent category path but explode the crawl
+        // queue with dozens of near-duplicate junk pages — exclude them explicitly.
+        if (str_contains((string) parse_url($url, PHP_URL_PATH), '/filter/')) {
+            return false;
+        }
+
         return preg_match('~(?:catalog|katalog|pech|bann|kamn|kamin|aston|doorwood|dver|aksess|prinad|tmf|termofor|vezuv|teplodar|prosept|harvia)~iu', $text) === 1;
     }
 
