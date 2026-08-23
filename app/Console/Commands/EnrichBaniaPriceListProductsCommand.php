@@ -1020,7 +1020,35 @@ class EnrichBaniaPriceListProductsCommand extends Command
             }
         }
 
-        return array_values(array_unique(array_slice($images, 0, 8)));
+        // Some Bitrix sites (doorwood.net) render the real product gallery
+        // client-side from a JS/JSON blob — the actual photo path
+        // (/upload/iblock/.../hash.jpg) appears as a bare quoted string, not
+        // inside any <img>/data-* attribute the passes above look for. Pick
+        // those up too, scoped to the iblock upload convention so this
+        // doesn't grab arbitrary unrelated JS string literals. Deliberately
+        // excludes /resize_cache/ variants and caps at 2 — pages often also
+        // embed several *other* products' resize_cache thumbnails (a "related
+        // products" widget), which have no reliable per-product signal since
+        // filenames are opaque hashes; the plain /upload/iblock/ path is far
+        // less likely to be duplicated that way. Prepended ahead of the
+        // (often icon-cluttered) passes above so it isn't pushed out by the
+        // trailing array_slice cap.
+        $iblockImages = [];
+        if (preg_match_all('~["\'](/upload/iblock/[^"\']+\.(?:jpg|jpeg|png|webp))["\']~iu', $html, $matches)) {
+            foreach (array_slice($matches[1], 0, 2) as $src) {
+                $url = $this->normalizeImageUrl($this->absoluteUrl($src, $pageUrl));
+                if (! $this->isProductImage($url)) {
+                    continue;
+                }
+
+                if (! $allowGenericProductImages && ! $this->imageMatchesProduct($url, $url, $product)) {
+                    continue;
+                }
+                $iblockImages[] = $url;
+            }
+        }
+
+        return array_values(array_unique(array_slice(array_merge($iblockImages, $images), 0, 8)));
     }
 
     private function tagAttribute(string $tag, string $name): string
