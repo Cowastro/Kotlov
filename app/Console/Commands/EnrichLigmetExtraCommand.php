@@ -147,7 +147,11 @@ class EnrichLigmetExtraCommand extends Command
                     $pageUrl  = $this->listingUrl($path, $page);
                     $newLinks = array_filter(
                         $this->collectLinks($pageUrl),
-                        fn ($l) => ! isset($seen[$l]) && str_starts_with($l, $parentPath) && $l !== $prefix
+                        // Some sites nest products as children of the listing path itself
+                        // (e.g. /catalog/teploobmennik/teploobmennik-xxx/) rather than as
+                        // siblings — accept both shapes.
+                        fn ($l) => ! isset($seen[$l]) && $l !== $prefix
+                            && (str_starts_with($l, $parentPath) || str_starts_with($l, $prefix))
                     );
                     if ($newLinks === []) {
                         $this->line("  HTML page {$page}: no new links, stopping.");
