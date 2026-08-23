@@ -166,9 +166,21 @@ class EnrichLigmetExtraCommand extends Command
                     // are usually buried after dozens of shared nav/mega-menu sibling
                     // links in raw HTML order — process the likelier candidates first
                     // so a modest --limit reaches them instead of exhausting itself
-                    // on repeated nav junk.
-                    $rank = fn ($l) => str_starts_with($l, $prefix)
-                        || ($slugToken !== '' && str_contains(mb_strtolower($l), $slugToken));
+                    // on repeated nav junk. On brand-aggregator sites (pechnoi.ru) the
+                    // slug-token alone matches everything (filter pages, category pages,
+                    // AND real products all mention the brand) — a "/product/"-shaped
+                    // path is a much stronger real-product signal there, so rank it above
+                    // a bare slug-token match.
+                    $rank = function ($l) use ($prefix, $slugToken) {
+                        if (str_starts_with($l, $prefix)) {
+                            return 2;
+                        }
+                        $path = mb_strtolower((string) parse_url($l, PHP_URL_PATH));
+                        if (preg_match('#/(product|item|tovar)/#', $path) === 1) {
+                            return 1;
+                        }
+                        return ($slugToken !== '' && str_contains($path, $slugToken)) ? 0 : -1;
+                    };
                     usort($newLinks, fn ($a, $b) => $rank($b) <=> $rank($a));
                     foreach ($newLinks as $l) {
                         $seen[$l] = true;
