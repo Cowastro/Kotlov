@@ -883,6 +883,13 @@ class EnrichBaniaPriceListProductsCommand extends Command
             return true;
         }
 
+        // sten.ru product titles are bare model codes ("ТЭНБР-3-G1¼-Т") with no
+        // pech/kamin/sten-type keyword at all — isInsideSourceStartPath already
+        // scopes the crawl to the caller's chosen category roots, so trust that.
+        if ($this->sourceDomain === 'sten.ru') {
+            return true;
+        }
+
         return preg_match('~(?:pech|печ|kamin|камин|dver|двер|setka|сетка|stekl|стекл|tmf|aston|doorwood|vezuv|teplodar|prosept|harvia|ermak|aksess|kamenk|каменк|sten|kotl|котл)~iu', $text) === 1;
     }
 
