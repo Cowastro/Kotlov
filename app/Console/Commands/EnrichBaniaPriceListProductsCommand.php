@@ -51,6 +51,7 @@ class EnrichBaniaPriceListProductsCommand extends Command
         'prosept.ru',
         'harvia.com',
         'termofor.com',
+        'ermak-pech.ru',
     ];
 
     private AiContentEnricher $ai;
@@ -854,7 +855,7 @@ class EnrichBaniaPriceListProductsCommand extends Command
             return false;
         }
 
-        return preg_match('~(?:pech|печ|kamin|камин|dver|двер|setka|сетка|stekl|стекл|tmf|aston|doorwood|vezuv|teplodar|prosept|harvia)~iu', $text) === 1;
+        return preg_match('~(?:pech|печ|kamin|камин|dver|двер|setka|сетка|stekl|стекл|tmf|aston|doorwood|vezuv|teplodar|prosept|harvia|ermak|aksess|kamenk|каменк)~iu', $text) === 1;
     }
 
     private function buildContent(object $product, array $result): string
