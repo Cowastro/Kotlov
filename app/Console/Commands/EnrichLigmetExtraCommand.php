@@ -138,10 +138,14 @@ class EnrichLigmetExtraCommand extends Command
                 $this->line('  sitemap: no links — falling back to HTML crawl');
                 // Product URLs may be siblings of the listing page (same parent dir), not children.
                 // Filter by parent path to include e.g. /cat/pech-brand-model/ from listing /cat/brand/
-                $parentPath = $this->base . '/' . implode('/', array_slice(
-                    array_filter(explode('/', trim($path, '/'))),
-                    0, -1
-                )) . '/';
+                $pathSegments = array_filter(explode('/', trim($path, '/')));
+                $parentPath = $this->base . '/' . implode('/', array_slice($pathSegments, 0, -1)) . '/';
+                // Some sites key a brand listing page (e.g. /brand/ermak) whose real
+                // products live in a totally unrelated top-level namespace (e.g.
+                // /product/setka-kamenka-ermak-...) — neither sibling nor child of the
+                // listing path. As a last resort, accept any link whose slug contains
+                // the listing's own last path segment (the brand slug).
+                $slugToken = mb_strtolower((string) end($pathSegments));
                 $seen = [];
                 for ($page = 1; $page <= $maxPages; $page++) {
                     $pageUrl  = $this->listingUrl($path, $page);
@@ -149,9 +153,10 @@ class EnrichLigmetExtraCommand extends Command
                         $this->collectLinks($pageUrl),
                         // Some sites nest products as children of the listing path itself
                         // (e.g. /catalog/teploobmennik/teploobmennik-xxx/) rather than as
-                        // siblings — accept both shapes.
+                        // siblings — accept both shapes, plus the brand-slug fallback above.
                         fn ($l) => ! isset($seen[$l]) && $l !== $prefix
-                            && (str_starts_with($l, $parentPath) || str_starts_with($l, $prefix))
+                            && (str_starts_with($l, $parentPath) || str_starts_with($l, $prefix)
+                                || ($slugToken !== '' && str_contains(mb_strtolower($l), $slugToken)))
                     );
                     if ($newLinks === []) {
                         $this->line("  HTML page {$page}: no new links, stopping.");
@@ -162,7 +167,9 @@ class EnrichLigmetExtraCommand extends Command
                     // links in raw HTML order — process the likelier candidates first
                     // so a modest --limit reaches them instead of exhausting itself
                     // on repeated nav junk.
-                    usort($newLinks, fn ($a, $b) => str_starts_with($b, $prefix) <=> str_starts_with($a, $prefix));
+                    $rank = fn ($l) => str_starts_with($l, $prefix)
+                        || ($slugToken !== '' && str_contains(mb_strtolower($l), $slugToken));
+                    usort($newLinks, fn ($a, $b) => $rank($b) <=> $rank($a));
                     foreach ($newLinks as $l) {
                         $seen[$l] = true;
                         $links[]  = $l;
