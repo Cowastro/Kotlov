@@ -16,7 +16,7 @@ on:
           - ps-artisan
           - deploy-recover
       artisan_args:
-        description: Artisan arguments, for example supplier:sync-ligmet --dry-run --brand=Blist
+        description: 'Artisan args, e.g. supplier:sync-ligmet --dry-run --brand=Blist. Use %20 for a space inside one value, e.g. --brand=Теплов%20и%20Сухов'
         required: false
         type: string
       log_file:
@@ -105,20 +105,34 @@ jobs:
           set -euo pipefail
           cd "$SERVER_PATH"
 
+          # ARTISAN_ARGS is a single flat string; splitting it unquoted on
+          # whitespace is what turns "--dry-run --brand=X" into separate argv
+          # entries, but the same split corrupts any value containing a real
+          # space (e.g. --brand=Теплов и Сухов -> 3 broken tokens). Quoting
+          # ARTISAN_ARGS itself isn't an option (quote characters are already
+          # blocked at the workflow-input validation step, to keep the SSH
+          # command line injection-safe). Instead, split on real whitespace
+          # first, then restore literal %20 -> space per-token — so a caller
+          # who needs a space inside one value writes it as %20.
+          IFS=' ' read -r -a ARTISAN_ARGV <<< "$ARTISAN_ARGS"
+          for i in "${!ARTISAN_ARGV[@]}"; do
+            ARTISAN_ARGV[$i]="${ARTISAN_ARGV[$i]//%20/ }"
+          done
+
           case "$TASK" in
             optimize-clear)
               git pull
               "$PHP_BIN" artisan optimize:clear
               ;;
             artisan-dry-run)
-              "$PHP_BIN" artisan $ARTISAN_ARGS
+              "$PHP_BIN" artisan "${ARTISAN_ARGV[@]}"
               ;;
             artisan-apply)
-              "$PHP_BIN" artisan $ARTISAN_ARGS
+              "$PHP_BIN" artisan "${ARTISAN_ARGV[@]}"
               ;;
             artisan-background)
               mkdir -p "$(dirname "$LOG_FILE")"
-              nohup "$PHP_BIN" artisan $ARTISAN_ARGS > "$LOG_FILE" 2>&1 &
+              nohup "$PHP_BIN" artisan "${ARTISAN_ARGV[@]}" > "$LOG_FILE" 2>&1 &
               echo "started pid=$!"
               ;;
             tail-log)
