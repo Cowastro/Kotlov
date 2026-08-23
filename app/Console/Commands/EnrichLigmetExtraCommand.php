@@ -439,11 +439,15 @@ class EnrichLigmetExtraCommand extends Command
             $n = preg_replace('/' . preg_quote(mb_strtoupper($brand), '/') . '/u', '', $n) ?? $n;
         }
         $n    = preg_replace('/[^А-ЯЁA-Z0-9]/u', ' ', $n) ?? $n;
+        // ERMAK spare-part names distinguish variants purely by size/kg number
+        // ("Сетка-каменка Ермак 12" vs "...16-20-24") — dropping numeric tokens
+        // collapses distinct products into the same key. Keep numbers for it.
+        $keepNumbers = mb_strtolower($brand) === 'ермак';
         $toks = array_filter(
             preg_split('/\s+/u', trim($n)) ?: [],
             fn ($t) => $t !== ''
                 && ! $this->isStopword($t, $brand)
-                && ! preg_match('/^\d+$/', $t)
+                && ($keepNumbers || ! preg_match('/^\d+$/', $t))
         );
         $key = implode(' ', $toks);
         if (mb_strtolower($brand) === 'blist') {
