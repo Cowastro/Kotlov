@@ -372,6 +372,15 @@ class EnrichLigmetExtraCommand extends Command
             return [];
         }
 
+        // Some sites (pechnoi.ru) use bare relative hrefs ("product/xxx", no
+        // leading slash) that only resolve correctly via a <base href="..."> tag
+        // — without accounting for it, every such link resolves against the
+        // wrong directory and gets silently dropped below.
+        $baseHref = null;
+        if (preg_match('/<base\b[^>]*href=["\']([^"\']+)["\']/i', $html, $bm)) {
+            $baseHref = rtrim($bm[1], '/');
+        }
+
         // Extract all hrefs — both absolute (https://domain/...) and relative (/path/...)
         preg_match_all('/href=["\']([^"\']+)["\']/', $html, $m);
         $links = [];
@@ -385,8 +394,10 @@ class EnrichLigmetExtraCommand extends Command
                 $abs = $href;
             } elseif (str_starts_with($href, '/')) {
                 $abs = $this->base . $href;
+            } elseif ($baseHref !== null) {
+                $abs = $baseHref . '/' . $href;
             } else {
-                continue; // relative or anchor — skip
+                continue; // relative with no <base> to resolve against — skip
             }
 
             $path = parse_url($abs, PHP_URL_PATH) ?? '';
