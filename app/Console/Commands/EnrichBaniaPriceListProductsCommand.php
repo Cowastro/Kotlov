@@ -827,6 +827,14 @@ class EnrichBaniaPriceListProductsCommand extends Command
             return true;
         }
 
+        // teplodar.ru's Bitrix catalog splits listing pages (catalog/section/...)
+        // and product detail pages (catalog/detail/...) into disjoint URL
+        // subtrees — a --source-url scoped to catalog/section/* would otherwise
+        // exclude every real product page discovered while crawling it.
+        if ($this->sourceDomain === 'teplodar.ru' && str_starts_with($path, 'catalog/detail/')) {
+            return true;
+        }
+
         foreach ($this->sourceStartPaths as $sourceStartPath) {
             if ($sourceStartPath === '' || $path === $sourceStartPath || str_starts_with($path, $sourceStartPath . '/')) {
                 return true;
