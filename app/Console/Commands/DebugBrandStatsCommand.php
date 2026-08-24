@@ -69,15 +69,15 @@ class DebugBrandStatsCommand extends Command
                 $total, $archived, $noSlug, $activeNoSlug, $noImages, $noSpecs, $needsEnrich
             ));
 
-            $sample = DB::table('products')->where('brand_id', $b->id)
-                ->limit(3)->get(['id', 'name', 'slug', 'is_archived', 'images', 'specs']);
-            foreach ($sample as $p) {
-                $imgLen = strlen((string) $p->images);
-                $specLen = strlen((string) $p->specs);
+            $all = DB::table('products')->where('brand_id', $b->id)
+                ->get(['id', 'name', 'slug', 'is_archived', 'images', 'specs']);
+            foreach ($all as $p) {
+                $imgVal = var_export($p->images, true);
+                $specVal = var_export($p->specs, true);
                 $this->line(sprintf(
-                    '    #%d %s | slug=%s archived=%s images_len=%d specs_len=%d',
-                    $p->id, mb_substr($p->name, 0, 40), $p->slug ?: '(none)',
-                    $p->is_archived ? '1' : '0', $imgLen, $specLen
+                    '    id=%d "%s" archived=%s images=%s specs=%s',
+                    $p->id, mb_substr($p->name, 0, 30), $p->is_archived ? '1' : '0',
+                    mb_substr($imgVal, 0, 30), mb_substr($specVal, 0, 30)
                 ));
             }
         }
