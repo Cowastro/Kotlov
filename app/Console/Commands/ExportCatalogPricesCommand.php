@@ -10,19 +10,37 @@ use Illuminate\Console\Command;
  * for active, non-archived products — used to sync prices into an external
  * marketplace export (sbg.by / deal.by) by fuzzy name matching, done locally.
  *
- * Prints NDJSON between two markers so it can be pulled straight out of the
- * GitHub Actions log rather than published anywhere.
+ * Writes NDJSON to public/exports/ (fetched directly over HTTPS and deleted
+ * right after) instead of printing to the GitHub Actions log — GH Actions
+ * masks any log substring that happens to match a registered secret (e.g.
+ * SERVER_PORT's digits), which was silently corrupting price numbers into
+ * "***" when printed there.
  *
  *   php artisan catalog:export-prices
  */
 class ExportCatalogPricesCommand extends Command
 {
-    protected $signature = 'catalog:export-prices {--brand= : Optional brand name filter}';
+    protected $signature = 'catalog:export-prices {--brand= : Optional brand name filter} {--delete : Delete the exported file instead of writing it}';
 
-    protected $description = 'Dump {sku, name, brand, price, currency} for active products as NDJSON (for external price sync)';
+    protected $description = 'Write {sku, name, brand, price, currency} for active products as NDJSON to public/exports/ (for external price sync)';
+
+    private const OUTPUT_PATH = 'exports/kotlov-catalog-export.ndjson';
 
     public function handle(): int
     {
+        $path = public_path(self::OUTPUT_PATH);
+
+        if ($this->option('delete')) {
+            if (file_exists($path)) {
+                unlink($path);
+                $this->info('Deleted: ' . $path);
+            } else {
+                $this->info('Nothing to delete.');
+            }
+
+            return self::SUCCESS;
+        }
+
         $query = Product::query()
             ->where('is_archived', false)
             ->where('is_active', true)
@@ -33,22 +51,30 @@ class ExportCatalogPricesCommand extends Command
             $query->whereHas('brand', fn ($q) => $q->where('name', 'like', '%' . $brand . '%'));
         }
 
-        $this->info('EXPORT_START');
+        if (! is_dir(dirname($path))) {
+            mkdir(dirname($path), 0755, true);
+        }
 
-        $query->chunk(500, function ($products) {
+        $handle = fopen($path, 'w');
+        $count = 0;
+
+        $query->chunk(500, function ($products) use ($handle, &$count) {
             foreach ($products as $product) {
-                $this->line(json_encode([
+                fwrite($handle, json_encode([
                     'id' => $product->id,
                     'sku' => $product->sku,
                     'name' => $product->name,
                     'brand' => $product->brand->name ?? null,
                     'price' => $product->price !== null ? (float) $product->price : null,
                     'currency' => $product->currency,
-                ], JSON_UNESCAPED_UNICODE));
+                ], JSON_UNESCAPED_UNICODE) . "\n");
+                $count++;
             }
         });
 
-        $this->info('EXPORT_END');
+        fclose($handle);
+
+        $this->info(sprintf('Wrote %d products to %s', $count, self::OUTPUT_PATH));
 
         return self::SUCCESS;
     }
