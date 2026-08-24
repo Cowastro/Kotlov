@@ -17,7 +17,8 @@ class DebugBrandStatsCommand extends Command
 {
     protected $signature = 'debug:brand-stats
         {--brand= : Brand name (substring match against brands.name)}
-        {--name=  : Product name (substring match against products.name) — use when no brand row is found}';
+        {--name=  : Product name (substring match against products.name) — use when no brand row is found}
+        {--no-brand : List active products with brand_id IS NULL}';
 
     protected $description = 'Diagnose brand/product counts for enrichment anomalies';
 
@@ -25,9 +26,22 @@ class DebugBrandStatsCommand extends Command
     {
         $brandNeedle = (string) $this->option('brand');
         $nameNeedle  = (string) $this->option('name');
+        $noBrand     = (bool) $this->option('no-brand');
+
+        if ($noBrand) {
+            $products = DB::table('products')
+                ->whereNull('brand_id')
+                ->where('is_archived', false)
+                ->get(['id', 'name', 'slug']);
+            $this->line(sprintf('%d active products with brand_id IS NULL:', $products->count()));
+            foreach ($products as $p) {
+                $this->line(sprintf('  id=%d | %s', $p->id, mb_substr($p->name, 0, 70)));
+            }
+            return self::SUCCESS;
+        }
 
         if ($brandNeedle === '' && $nameNeedle === '') {
-            $this->error('--brand= or --name= is required');
+            $this->error('--brand=, --name=, or --no-brand is required');
             return self::FAILURE;
         }
 
