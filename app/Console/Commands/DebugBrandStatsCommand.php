@@ -18,7 +18,8 @@ class DebugBrandStatsCommand extends Command
     protected $signature = 'debug:brand-stats
         {--brand= : Brand name (substring match against brands.name)}
         {--name=  : Product name (substring match against products.name) — use when no brand row is found}
-        {--no-brand : List active products with brand_id IS NULL}';
+        {--no-brand : List active products with brand_id IS NULL}
+        {--needing-enrich : List all brands with active products still missing photos/specs, by count}';
 
     protected $description = 'Diagnose brand/product counts for enrichment anomalies';
 
@@ -40,8 +41,31 @@ class DebugBrandStatsCommand extends Command
             return self::SUCCESS;
         }
 
+        if ((bool) $this->option('needing-enrich')) {
+            $rows = DB::table('products')
+                ->join('brands', 'brands.id', '=', 'products.brand_id')
+                ->where('products.is_archived', false)
+                ->whereNotNull('products.slug')->where('products.slug', '!=', '')
+                ->where('brands.is_active', true)
+                ->where(function ($q) {
+                    $q->whereNull('products.images')->orWhere('products.images', '')->orWhereRaw('JSON_LENGTH(products.images) = 0')
+                        ->orWhere(function ($q2) {
+                            $q2->whereNull('products.specs')->orWhere('products.specs', '')->orWhereRaw('JSON_LENGTH(products.specs) = 0');
+                        });
+                })
+                ->selectRaw('brands.id as brand_id, brands.name as brand_name, COUNT(*) as cnt')
+                ->groupBy('brands.id', 'brands.name')
+                ->orderByDesc('cnt')
+                ->get();
+            $this->line(sprintf('%d brands with active products still needing photos/specs:', $rows->count()));
+            foreach ($rows as $r) {
+                $this->line(sprintf('  %s (id=%d): %d', $r->brand_name, $r->brand_id, $r->cnt));
+            }
+            return self::SUCCESS;
+        }
+
         if ($brandNeedle === '' && $nameNeedle === '') {
-            $this->error('--brand=, --name=, or --no-brand is required');
+            $this->error('--brand=, --name=, --no-brand, or --needing-enrich is required');
             return self::FAILURE;
         }
 
