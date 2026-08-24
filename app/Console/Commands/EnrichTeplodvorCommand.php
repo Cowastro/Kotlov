@@ -122,12 +122,22 @@ class EnrichTeplodvorCommand extends Command
             });
         } elseif (! $overwrite) {
             // Default: products missing photos OR specs
+            // NOTE: images/specs are native MySQL JSON columns. Comparing a JSON
+            // column to a plain string literal ('[]', '{}') via Laravel's ->where()
+            // silently matches ZERO rows — MySQL's JSON comparison rules don't treat
+            // it as equal, even though the stored value prints as exactly '[]' /
+            // '{}'. Any product whose empty state was written as an explicit empty
+            // JSON array/object (not NULL) was invisible to this query as a result
+            // (discovered via brand=Tesy reporting "0 products to process" despite
+            // 10/13 active products having images=[] and specs=[]). Must use
+            // JSON_LENGTH(...) = 0 instead, same pattern already used below for
+            // service_info.
             $query->where(function ($q) {
                 $q->whereNull('images')
                     ->orWhere('images', '')
-                    ->orWhere('images', '[]')
+                    ->orWhereRaw('JSON_LENGTH(images) = 0')
                     ->orWhere(function ($q2) {
-                        $q2->whereNull('specs')->orWhere('specs', '')->orWhere('specs', '{}');
+                        $q2->whereNull('specs')->orWhere('specs', '')->orWhereRaw('JSON_LENGTH(specs) = 0');
                     })
                     ->orWhere(function ($q2) {
                         $q2->whereNull('service_info')->orWhere('service_info', '')->orWhere('service_info', '[]')->orWhere('service_info', '{}')
