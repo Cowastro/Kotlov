@@ -95,9 +95,12 @@ class EnrichTeplodvorCommand extends Command
 
         if ($this->option('brand')) {
             // Exact match first, then prefix, then substring — avoids "TIS1" beating "TIS".
-            $brandId = DB::table('brands')->where('name', $this->option('brand'))->value('id')
-                ?? DB::table('brands')->where('name', 'like', $this->option('brand') . '%')->value('id')
-                ?? DB::table('brands')->where('name', 'like', '%' . $this->option('brand') . '%')->value('id');
+            // is_active=true excludes deactivated duplicate brand rows (e.g. old "TESY" vs
+            // canonical "Tesy" — MySQL's case-insensitive collation made the plain exact-name
+            // match resolve to either row non-deterministically before this filter).
+            $brandId = DB::table('brands')->where('name', $this->option('brand'))->where('is_active', true)->value('id')
+                ?? DB::table('brands')->where('name', 'like', $this->option('brand') . '%')->where('is_active', true)->value('id')
+                ?? DB::table('brands')->where('name', 'like', '%' . $this->option('brand') . '%')->where('is_active', true)->value('id');
             if (! $brandId) {
                 $this->error('Brand not found: ' . $this->option('brand'));
                 return self::FAILURE;
