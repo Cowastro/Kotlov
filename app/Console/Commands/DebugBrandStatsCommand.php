@@ -63,7 +63,14 @@ class DebugBrandStatsCommand extends Command
                         });
                 })->count();
 
-            $this->line(sprintf('brand id=%d name=%s', $b->id, $b->name));
+            $rawImgEmptyBracket = DB::table('products')->where('brand_id', $b->id)->where('images', '[]')->count();
+            $rawImgEmptyStr = DB::table('products')->where('brand_id', $b->id)->where('images', '')->count();
+            $rawImgNull = DB::table('products')->where('brand_id', $b->id)->whereNull('images')->count();
+            $imgType = DB::selectOne("SHOW COLUMNS FROM products LIKE 'images'")->Type ?? 'unknown';
+            $specType = DB::selectOne("SHOW COLUMNS FROM products LIKE 'specs'")->Type ?? 'unknown';
+
+            $this->line(sprintf('brand id=%d name=%s (images col type=%s, specs col type=%s)', $b->id, $b->name, $imgType, $specType));
+            $this->line(sprintf('  raw: images=[] -> %d | images="" -> %d | images NULL -> %d', $rawImgEmptyBracket, $rawImgEmptyStr, $rawImgNull));
             $this->line(sprintf(
                 '  total=%d archived=%d no_slug=%d active_no_slug=%d no_images=%d no_specs=%d matches_enrich_query=%d',
                 $total, $archived, $noSlug, $activeNoSlug, $noImages, $noSpecs, $needsEnrich
