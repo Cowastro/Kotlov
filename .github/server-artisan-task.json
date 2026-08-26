@@ -2,5 +2,5 @@
   "task": "artisan-apply",
   "artisan_args": "images:diagnose",
   "log_file": "storage/logs/images-diagnose.log",
-  "run_id": "diagnose-images-20260826-1"
+  "run_id": "diagnose-images-20260826-2"
 }
