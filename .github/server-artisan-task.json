@@ -1,6 +1,6 @@
 {
-  "task": "tail-log",
-  "artisan_args": "",
-  "log_file": "storage/logs/images-restore.log",
-  "run_id": "check-restore-progress-1"
+  "task": "artisan-apply",
+  "artisan_args": "images:diagnose",
+  "log_file": "storage/logs/images-diagnose.log",
+  "run_id": "check-progress-2"
 }
