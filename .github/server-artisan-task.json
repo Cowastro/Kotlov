@@ -1,6 +1,6 @@
 {
-  "task": "artisan-background",
-  "artisan_args": "images:restore-remaining",
+  "task": "tail-log",
+  "artisan_args": "",
   "log_file": "storage/logs/restore-remaining-2.log",
-  "run_id": "restore-remaining-2"
+  "run_id": "check-remaining-2-result"
 }
