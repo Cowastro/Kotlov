@@ -1,173 +1,21 @@
 # Server Artisan Result
 
-- Time: 2026-08-26 16:52:05 UTC
-- Task: `tail-log`
-- Artisan args: ``
-- Log file: `storage/logs/images-restore.log`
+- Time: 2026-08-26 17:13:33 UTC
+- Task: `artisan-background`
+- Artisan args: `brands:discover-teplodvor-logos --apply --force --limit=0`
+- Log file: `storage/logs/restore-brand-logos.log`
 - Exit code: `0`
 
 ```text
 No local changes to save
-Already up to date.
-product/008/008903/5e035c55be5b8.png
-product/008/008903/5e035c55be688.png
-product/008/008903/5e035c55be758.png
-product/008/008904/
-product/008/008904/5e035c9aab80b.png
-product/008/008904/5e035c9aab8ea.png
-product/008/008904/5e035c9aaba01.png
-product/008/008905/
-product/008/008905/5e03ae24db242.png
-product/008/008905/5e03ae24db337.png
-product/008/008905/5e03ae24db43b.png
-product/008/008906/
-product/008/008906/5e03af0fcbd31.png
-product/008/008906/5e03af0fcbdf5.png
-product/008/008906/5e03af0fcbea1.png
-product/008/008907/
-product/008/008907/5e03beabb6947.png
-product/008/008907/5e03beabb6a38.png
-product/008/008907/5e03beabb6b07.png
-product/008/008908/
-product/008/008908/5e03bf3714797.png
-product/008/008908/5e03bf3714858.png
-product/008/008908/5e03bf37148fd.png
-product/008/008909/
-product/008/008909/5e03c0f541f30.png
-product/008/008909/5e03c0f542009.png
-product/008/008909/5e03c0f54208f.png
-product/008/008909/5e03c0f54217e.png
-product/008/008910/
-product/008/008910/5e03c23742a90.png
-product/008/008910/5e03c23742b55.png
-product/008/008910/5e03c23742bfd.png
-product/008/008910/5e03c23742c9e.png
-product/008/008911/
-product/008/008911/5e03c2d1829ef.png
-product/008/008911/5e03c2d182aff.png
-product/008/008911/5e03c2d182bc8.png
-product/008/008911/5e03c2d182c89.png
-product/008/008912/
-product/008/008912/5e03c39ac5df8.png
-product/008/008912/5e03c39ac5f00.png
-product/008/008912/5e03c39ac6030.png
-product/008/008912/5e03c39ac6123.png
-product/008/008913/
-product/008/008913/5f9a7e5cae0b0.png
-product/008/008913/660575411d764.png
-product/008/008913/660575411e072.png
-product/008/008913/660575411e0d7.png
-product/008/008913/660575411e120.png
-product/008/008913/660575411e176.png
-product/008/008913/660575411e1c0.jpg
-product/008/008914/
-product/008/008914/5e03c4e78449c.png
-product/008/008914/5e03c4e784589.png
-product/008/008914/5e03c4e784658.png
-product/008/008914/5e03c4e784733.png
-product/008/008915/
-product/008/008915/5e03c641a6322.png
-product/008/008915/5e03c641a6420.png
-product/008/008915/5e03c641a64f2.png
-product/008/008915/5e03c641a65bf.png
-product/008/008916/
-product/008/008916/5e03c5bd1c281.png
-product/008/008916/5e03c5bd1c383.png
-product/008/008916/5e03c5bd1c451.png
-product/008/008916/5e03c5bd1c51d.png
-product/008/008917/
-product/008/008917/5e03c688dbf77.png
-product/008/008917/5e03c688dc037.png
-product/008/008917/5e03c688dc0db.png
-product/008/008917/5e03c688dc17d.png
-product/008/008918/
-product/008/008918/5e03c75f4da3b.png
-product/008/008918/5e03c75f4db01.png
-product/008/008918/5e03c75f4dba8.png
-product/008/008918/5e03c75f4dc18.png
-product/008/008919/
-product/008/008919/5e03c7dba2105.png
-product/008/008919/5e03c7dba21f3.png
-product/008/008919/5e03c7dba22ce.png
-product/008/008919/5e03c7dba2382.png
-product/008/008920/
-product/008/008920/6968e5159642b.jpg
-product/008/008920/6968e51596acc.jpg
-product/008/008920/6968e51596b34.jpg
-product/008/008920/6968e51596b82.jpg
-product/008/008920/6968e51596bd3.jpg
-product/008/008920/6968e51596c26.jpg
-product/008/008920/6968e51596c8e.jpg
-product/008/008921/
-product/008/008921/5e2fe4a359200.png
-product/008/008921/5e2fe4a3592ce.png
-product/008/008921/5e2fe4a359372.jpg
-product/008/008921/5e2fe4a359414.png
-product/008/008922/
-product/008/008922/60804495d34cb.jpg
-product/008/008923/
-product/008/008923/5e2fe4ce15d77.png
-product/008/008923/63da6d40a6721.jpg
-product/008/008923/63da6d40a6c9d.jpg
-product/008/008923/65ce2ec297e20.jpg
-product/008/008923/65ce2ec29842f.jpg
-product/008/008923/65ce2ec29848f.jpg
-product/008/008923/65ce2ec2984e2.jpg
-product/008/008923/65ce2ec298531.jpg
-product/008/008923/65ce2ec298595.jpg
-product/008/008923/65ce2ec2985e6.jpg
-product/008/008923/65ce2ec29864a.jpg
-product/008/008923/65ce2ec2986ab.jpg
-product/008/008923/6967a6901ae0c.jpg
-product/008/008923/6967a6901b44c.jpg
-product/008/008923/6967a6901b4bf.jpg
-product/008/008923/6967a6901b51c.jpg
-product/008/008923/6967a6901b58c.jpg
-product/008/008923/6967a6901b5e1.jpg
-product/008/008923/6967a6901b659.jpg
-product/008/008923/6967a6901b6b2.jpg
-product/008/008923/6967a6901b705.jpg
-product/008/008924/
-product/008/008924/5e0de02746840.jpg
-product/008/008925/
-product/008/008925/5e0de10a2a59f.jpg
-product/008/008926/
-product/008/008926/5e0de24f20aa8.jpg
-product/008/008927/
-product/008/008927/5e0de264803eb.jpg
-product/008/008928/
-product/008/008928/5e0de2d6bba7b.jpg
-product/008/008929/
-product/008/008929/5e0de34d77a3f.jpg
-product/008/008930/
-product/008/008930/5e0de481b5a8c.jpg
-product/008/008931/
-product/008/008931/5e0de4c2ee153.jpg
-product/008/008932/
-product/008/008932/6761781f9fb90.jpg
-product/008/008932/6761781f9fc2f.jpg
-product/008/008932/6761781f9fcc1.jpg
-product/008/008932/6761781f9fd23.jpg
-product/008/008932/6761781f9fd7d.jpg
-product/008/008933/
-product/008/008933/647dcebac1dd6.jpg
-product/008/008933/647dcebac1eaf.jpg
-product/008/008951/
-product/008/008951/6967a4237c884.jpg
-product/008/008951/6967a4237c919.jpg
-product/008/008951/6967a4237c978.jpg
-product/008/008951/6967a4237c9cf.jpg
-product/008/008951/6967a4237ca1c.jpg
-product/008/008951/6967a4237ca7e.jpg
-product/008/008951/6967a4237cad7.jpg
-product/008/008951/6967a4237cb2c.jpg
-product/008/008951/6967a4237cb83.jpg
-product/008/008951/6967a4237cbd2.jpg
-product/008/008952/
-product/008/008952/5e221cfba9b0b.fif
-product/008/008952/5e2842a7def35.png
-product/008/008953/
-product/008/008953/5e283a61178de.jpg
-product/008/008953/5e283a61179bd.png
+From https://github.com/Cowastro/Kotlov
+   aaa4e63c..40627a12  main       -> origin/main
+Updating aaa4e63c..40627a12
+Fast-forward
+ .github/server-artisan-result.md | 226 ++++++++++++++++++++++++++++-----------
+ .github/server-artisan-task.json |   8 +-
+ .gitignore                       |  10 ++
+ 3 files changed, 179 insertions(+), 65 deletions(-)
+started pid=1132223
 
 ```
