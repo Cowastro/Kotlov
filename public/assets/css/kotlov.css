@@ -1720,6 +1720,30 @@ a.category-v05.subcat-tile:hover .cate-icon {
     }
 }
 
+.home-popular-categories .category-v04 .cate-image {
+    width: min(100%, 240px);
+    aspect-ratio: 1 / 1;
+    overflow: hidden;
+    border-radius: 50%;
+    margin-right: auto;
+    margin-left: auto;
+    background: #f6f6f6;
+}
+
+.home-popular-categories .category-v04 .cate-image img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+@media (max-width: 767px) {
+    .home-popular-categories .category-v04 .cate-image {
+        width: min(100%, 170px);
+        margin-bottom: 14px;
+    }
+}
+
 .section-blog .tf-grid-layout,
 .section-related .tf-grid-layout {
     align-items: stretch;

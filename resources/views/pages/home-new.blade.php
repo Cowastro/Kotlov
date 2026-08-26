@@ -129,7 +129,7 @@
             </div>
             <!-- /Banner Slider -->
             <!-- Categories -->
-            <section class="themesFlat flat-spacing">
+            <section class="themesFlat flat-spacing home-popular-categories">
                 <div class="container">
                     <div class="sect-heading type-2 text-center wow fadeInUp">
                         <h3 class="s-title">
