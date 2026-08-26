@@ -1,6 +1,6 @@
 {
   "task": "artisan-background",
-  "artisan_args": "supplier:sync-belkomin-tis-boilers --apply",
-  "log_file": "storage/logs/restore-belkomin-tis.log",
-  "run_id": "restore-belkomin-tis-1"
+  "artisan_args": "images:restore-remaining",
+  "log_file": "storage/logs/restore-remaining.log",
+  "run_id": "restore-remaining-1"
 }
