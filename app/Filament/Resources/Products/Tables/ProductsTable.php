@@ -602,7 +602,8 @@ class ProductsTable
                 ->default(true),
             Toggle::make('replace_images')
                 ->label('Заменить текущие фото')
-                ->default(true),
+                ->helperText('Оставьте выключенным, чтобы новые фото только добавлялись к существующим.')
+                ->default(false),
             Toggle::make('update_specs')
                 ->label('Обновить характеристики')
                 ->default(true),
@@ -630,7 +631,7 @@ class ProductsTable
 
         $options = [
             'update_images' => (bool) ($data['update_images'] ?? true),
-            'replace_images' => (bool) ($data['replace_images'] ?? true),
+            'replace_images' => (bool) ($data['replace_images'] ?? false),
             'update_specs' => (bool) ($data['update_specs'] ?? true),
             'replace_specs' => true,
             'update_content' => (bool) ($data['update_content'] ?? true),

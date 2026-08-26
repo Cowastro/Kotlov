@@ -99,7 +99,7 @@ class ProductSourceEnricher
                 $stats['images_saved'] = count($downloaded);
 
                 if ($downloaded !== []) {
-                    $replaceImages = (bool) ($options['replace_images'] ?? true);
+                    $replaceImages = (bool) ($options['replace_images'] ?? false);
 
                     if ($replaceImages) {
                         $updates['images'] = array_values($downloaded);
