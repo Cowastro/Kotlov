@@ -21,6 +21,12 @@
 /public/hot
 /public/storage
 /public/img/products/bania/
+
+# Legacy rsynced product photos (18k+ files, never committed) — must stay
+# untouched by `git stash --include-untracked` in the server-artisan-queue
+# workflow. Without this, stash -u sweeps it up and it silently vanishes
+# from the working tree on every queued task run.
+/public/images/
 /storage/*.key
 /storage/pail
 /vendor
