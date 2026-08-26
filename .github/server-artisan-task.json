@@ -1,6 +1,6 @@
 {
   "task": "tail-log",
   "artisan_args": "",
-  "log_file": "storage/logs/restore-remaining.log",
-  "run_id": "check-remaining-result"
+  "log_file": "storage/logs/restore-belkomin-tis.log",
+  "run_id": "check-belkomin-result"
 }

@@ -12,17 +12,17 @@ class RestoreRemainingSupplierImagesCommand extends Command
     protected $description = 'Re-run the remaining supplier sync commands whose downloaded images were swept by the stash bug (belkomin-tis already done separately)';
 
     private const COMMANDS = [
-        'supplier:sync-ecokamin-fireboxes' => ['--apply'],
-        'supplier:sync-ecokamin-stoves' => ['--apply'],
-        'supplier:sync-elicon-gas-meters' => ['--apply'],
-        'supplier:sync-gorodkotlov-vaillant' => ['--apply'],
+        'supplier:sync-ecokamin-fireboxes' => ['--apply' => true],
+        'supplier:sync-ecokamin-stoves' => ['--apply' => true],
+        'supplier:sync-elicon-gas-meters' => ['--apply' => true],
+        'supplier:sync-gorodkotlov-vaillant' => ['--apply' => true],
     ];
 
     public function handle(): int
     {
         foreach (self::COMMANDS as $command => $args) {
             $this->line('');
-            $this->line('=== Running: ' . $command . ' ' . implode(' ', $args) . ' ===');
+            $this->line('=== Running: ' . $command . ' ' . implode(' ', array_keys($args)) . ' ===');
 
             try {
                 $exitCode = Artisan::call($command, $args, $this->getOutput());
