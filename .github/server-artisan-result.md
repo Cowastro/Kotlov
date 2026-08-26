@@ -1,21 +1,19 @@
 # Server Artisan Result
 
-- Time: 2026-08-26 17:13:33 UTC
+- Time: 2026-08-26 17:17:52 UTC
 - Task: `artisan-background`
-- Artisan args: `brands:discover-teplodvor-logos --apply --force --limit=0`
-- Log file: `storage/logs/restore-brand-logos.log`
+- Artisan args: `supplier:sync-belkomin-tis-boilers --apply`
+- Log file: `storage/logs/restore-belkomin-tis.log`
 - Exit code: `0`
 
 ```text
 No local changes to save
 From https://github.com/Cowastro/Kotlov
-   aaa4e63c..40627a12  main       -> origin/main
-Updating aaa4e63c..40627a12
+   0d178d2d..cf0b7e1a  main       -> origin/main
+Updating 0d178d2d..cf0b7e1a
 Fast-forward
- .github/server-artisan-result.md | 226 ++++++++++++++++++++++++++++-----------
- .github/server-artisan-task.json |   8 +-
- .gitignore                       |  10 ++
- 3 files changed, 179 insertions(+), 65 deletions(-)
-started pid=1132223
+ .github/server-artisan-task.json | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+started pid=1139379
 
 ```
