@@ -1,6 +1,6 @@
 {
   "task": "artisan-apply",
-  "artisan_args": "supplier:sync-teplov-sukhov-retail --apply --create-missing --sheet=mc-black",
-  "log_file": "storage/logs/teplov-sukhov-retail-sync.log",
-  "run_id": "deploy-teplov-sukhov-retail-mc-black-20260821-1"
+  "artisan_args": "images:diagnose",
+  "log_file": "storage/logs/images-diagnose.log",
+  "run_id": "diagnose-images-20260826-1"
 }
