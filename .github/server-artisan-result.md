@@ -1,23 +1,20 @@
 # Server Artisan Result
 
-- Time: 2026-08-26 17:47:34 UTC
-- Task: `tail-log`
-- Artisan args: ``
-- Log file: `storage/logs/restore-belkomin-tis.log`
+- Time: 2026-08-26 17:49:24 UTC
+- Task: `artisan-background`
+- Artisan args: `images:restore-remaining`
+- Log file: `storage/logs/restore-remaining-2.log`
 - Exit code: `0`
 
 ```text
 No local changes to save
 From https://github.com/Cowastro/Kotlov
-   8faa58fe..724e937b  main       -> origin/main
-Updating 8faa58fe..724e937b
+   724e937b..6860da5f  main       -> origin/main
+Updating 724e937b..6860da5f
 Fast-forward
- .github/server-artisan-result.md                   | 84 ++++++----------------
- .github/server-artisan-task.json                   |  4 +-
- .../RestoreRemainingSupplierImagesCommand.php      | 10 +--
- 3 files changed, 28 insertions(+), 70 deletions(-)
-APPLY: database will be updated.
-Catalog scrape failed: file_get_contents(): SSL operation failed with code 1. OpenSSL Error messages:
-error:0A000086:SSL routines::certificate verify failed
+ .github/server-artisan-result.md | 32 +++++++++++---------------------
+ .github/server-artisan-task.json |  8 ++++----
+ 2 files changed, 15 insertions(+), 25 deletions(-)
+started pid=1189174
 
 ```
