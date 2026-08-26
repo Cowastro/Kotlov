@@ -1,6 +1,6 @@
 {
   "task": "artisan-background",
-  "artisan_args": "brands:discover-teplodvor-logos --apply --force --limit=0",
-  "log_file": "storage/logs/restore-brand-logos.log",
-  "run_id": "restore-brand-logos-1"
+  "artisan_args": "supplier:sync-belkomin-tis-boilers --apply",
+  "log_file": "storage/logs/restore-belkomin-tis.log",
+  "run_id": "restore-belkomin-tis-1"
 }
