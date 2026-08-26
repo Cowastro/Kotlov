@@ -112,10 +112,12 @@ jobs:
           remote_script=$(cat <<'SCRIPT'
           set -euo pipefail
           cd "$SERVER_PATH"
-          # Preserve legacy files left by previous enrichment runs so git pull
-          # cannot be blocked by untracked images on the production checkout.
-          git stash push --include-untracked -m "pre-artisan-queue-$(date +%Y%m%d%H%M%S)" || true
-          git pull
+          # Keep production media directories in place.  Queued tasks used to
+          # stash untracked files with `--include-untracked`, which removed
+          # restored supplier images from the checkout until they were manually
+          # recovered.  Stash tracked edits only; ignored media must stay put.
+          git stash push -m "pre-artisan-queue-$(date +%Y%m%d%H%M%S)" || true
+          git pull --ff-only
 
           case "$TASK" in
             optimize-clear)
