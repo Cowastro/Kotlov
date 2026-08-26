@@ -1,33 +1,23 @@
 # Server Artisan Result
 
-- Time: 2026-08-26 17:35:21 UTC
+- Time: 2026-08-26 17:47:34 UTC
 - Task: `tail-log`
 - Artisan args: ``
-- Log file: `storage/logs/restore-remaining.log`
+- Log file: `storage/logs/restore-belkomin-tis.log`
 - Exit code: `0`
 
 ```text
 No local changes to save
 From https://github.com/Cowastro/Kotlov
-   082463b9..8faa58fe  main       -> origin/main
-Updating 082463b9..8faa58fe
+   8faa58fe..724e937b  main       -> origin/main
+Updating 8faa58fe..724e937b
 Fast-forward
- .github/server-artisan-result.md | 77 +++++++++++++++++++++++++++++++++-------
- .github/server-artisan-task.json |  4 +--
- 2 files changed, 67 insertions(+), 14 deletions(-)
-
-=== Running: supplier:sync-ecokamin-fireboxes --apply ===
-Failed: The "1" argument does not exist.
-
-=== Running: supplier:sync-ecokamin-stoves --apply ===
-Failed: The "1" argument does not exist.
-
-=== Running: supplier:sync-elicon-gas-meters --apply ===
-Failed: The "1" argument does not exist.
-
-=== Running: supplier:sync-gorodkotlov-vaillant --apply ===
-Failed: The "1" argument does not exist.
-
-Done restoring remaining supplier images.
+ .github/server-artisan-result.md                   | 84 ++++++----------------
+ .github/server-artisan-task.json                   |  4 +-
+ .../RestoreRemainingSupplierImagesCommand.php      | 10 +--
+ 3 files changed, 28 insertions(+), 70 deletions(-)
+APPLY: database will be updated.
+Catalog scrape failed: file_get_contents(): SSL operation failed with code 1. OpenSSL Error messages:
+error:0A000086:SSL routines::certificate verify failed
 
 ```
