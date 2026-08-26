@@ -1,69 +1,173 @@
 # Server Artisan Result
 
-- Time: 2026-08-21 18:01:17 UTC
-- Task: `artisan-apply`
-- Artisan args: `supplier:sync-teplov-sukhov-retail --apply --create-missing --sheet=mc-black`
-- Log file: `storage/logs/teplov-sukhov-retail-sync.log`
+- Time: 2026-08-26 16:52:05 UTC
+- Task: `tail-log`
+- Artisan args: ``
+- Log file: `storage/logs/images-restore.log`
 - Exit code: `0`
 
 ```text
 No local changes to save
-From https://github.com/Cowastro/Kotlov
-   c59f9ae1..089c1387  main       -> origin/main
-Updating c59f9ae1..089c1387
-Fast-forward
- .github/server-artisan-result.md                   | 25 +++++++-------
- .github/server-artisan-task.json                   |  4 +--
- .../SyncTeplovSukhovRetailPricesCommand.php        | 40 +++++++++++++++++++---
- 3 files changed, 51 insertions(+), 18 deletions(-)
-Прайс 2026-08-10: retail. Режим: APPLY.
-+--------------------------------------+------------+
-| Показатель                           | Количество |
-+--------------------------------------+------------+
-| Строк в прайсе                       | 448        |
-| Безопасно сопоставлено               | 300        |
-| Цен обновлено                        | 0          |
-| Без изменения                        | 300        |
-| Создано точных новых карточек        | 79         |
-| Неоднозначных — пропущено            | 2          |
-| Не найдено — пропущено               | 134        |
-| Конфликтов связи — пропущено         | 6          |
-| Конфликтов внутри прайса — пропущено | 0          |
-| Переведено в статус «В наличии»      | 340        |
-+--------------------------------------+------------+
-+-----------------------+--------------------------------------------+-----------------------------------------------------------------------+
-| Артикул поставщика    | Прайс                                      | Результат                                                             |
-+-----------------------+--------------------------------------------+-----------------------------------------------------------------------+
-| TS.FRT.AKL.0080.62699 | Адаптер Моно М-М 430-0.5 D80               | not matched                                                           |
-| TS.FRT.AKL.0100.72542 | Адаптер Моно М-М 430-0.5 D100              | not matched                                                           |
-| TS.FRT.AKL.0110.32905 | Адаптер Моно М-М 430-0.8 D110              | ambiguous: 8990,8991                                                  |
-| TS.FRT.AKL.0115.32906 | Адаптер Моно М-М 430-0.8 D115              | product already linked to: TS.FRT.AKP.0115.64928                      |
-| TS.FRT.AKL.0120.32907 | Адаптер Моно М-М 430-0.8 D120              | #8985 Адаптер котла Теплов и Сухов моно М-...: 14.74 → 14.74 (same)   |
-| TS.FRT.AKL.0130.32856 | Адаптер Моно М-М 430-0.8 D130              | ambiguous: 8993,8994                                                  |
-| TS.FRT.AKL.0150.32858 | Адаптер Моно М-М 430-0.8 D150              | #8986 Адаптер котла Теплов и Сухов моно М-...: 18.06 → 18.06 (same)   |
-| TS.FRT.AKL.0180.32912 | Адаптер Моно М-М 430-0.8 D180              | #8987 Адаптер котла Теплов и Сухов моно М-...: 21.27 → 21.27 (same)   |
-| TS.FRT.AKL.0200.32913 | Адаптер Моно М-М 430-0.8 D200              | #8988 Адаптер котла Теплов и Сухов моно М-...: 23.17 → 23.17 (same)   |
-| TS.FRT.AKL.0250.32914 | Адаптер Моно М-М 430-0.8 D250              | #8989 Адаптер котла Теплов и Сухов моно М-...: 27.81 → 27.81 (same)   |
-| TS.FRT.AKP.0100.74001 | Адаптер переход Моно М-М 430-0.8 D100/110  | #8990 Адаптер-переход Теплов и Сухов Моно...: 24.52 → 24.52 (same)    |
-| TS.FRT.AKP.0100.73738 | Адаптер переход Моно М-М 430-0.8 D100/120  | not matched                                                           |
-| TS.FRT.AKP.0110.73628 | Адаптер переход Моно М-М 430-0.8 D110/120  | #8991 Адаптер-переход Теплов и Сухов Моно...: 24.85 → 24.85 (same)    |
-| TS.FRT.AKP.0115.64928 | Адаптер переход Моно М-М 430-0.8 D115/120  | #8992 Адаптер-переход Теплов и Сухов Моно...: 25.01 → 25.01 (same)    |
-| TS.FRT.AKP.0120.72195 | Адаптер переход Моно М-М 430-0.8 D120/130  | #8993 Адаптер-переход Теплов и Сухов Моно...: 29.56 → 29.56 (same)    |
-| TS.FRT.AKP.0130.72197 | Адаптер переход Моно М-М 430-0.8 D130/150  | #8994 Адаптер-переход Теплов и Сухов Моно...: 32.09 → 32.09 (same)    |
-| TS.FRT.AKP.0140.70054 | Адаптер переход Моно М-М 430-0.8 D140/150  | not matched                                                           |
-| TS.FRT.AKP.0150.72198 | Адаптер переход Моно М-М 430-0.8 D150/160  | #8995 Адаптер-переход Теплов и Сухов Моно...: 30.52 → 30.52 (same)    |
-| TS.FRT.AKP.0160.68982 | Адаптер переход Моно М-М 430-0.8 D160/180  | #8996 Адаптер-переход Теплов и Сухов Моно...: 37.35 → 37.35 (same)    |
-| TS.FRT.DFR.0115.74683 | Дефлектор ДМ-Р 430-0.5 D115 М              | not matched                                                           |
-| TS.FRT.DFR.0120.74684 | Дефлектор ДМ-Р 430-0.5 D120 М              | #8997 Дефлектор Теплов и Сухов моно ДМ-Р 4...: 57.73 → 57.73 (same)   |
-| TS.FRT.DFR.0150.74687 | Дефлектор ДМ-Р 430-0.5 D150 М              | #8998 Дефлектор Теплов и Сухов моно ДМ-Р 4...: 65.39 → 65.39 (same)   |
-| TS.FRT.DFR.0180.72739 | Дефлектор ДМ-Р 430-0.5 D180 М              | not matched                                                           |
-| TS.FRT.DFR.0200.72723 | Дефлектор ДМ-Р 430-0.5 D200 М              | #8999 Дефлектор Теплов и Сухов моно ДМ-Р 4...: 95.16 → 95.16 (same)   |
-| TS.FRT.DFR.0250.72740 | Дефлектор ДМ-Р 430-0.5 D250 М              | #9000 Дефлектор Теплов и Сухов моно ДМ-Р 4...: 133.45 → 133.45 (same) |
-| TS.KMP.ZRV.0115.72187 | Заглушка ревизии моно ЗРМ-Р 430-0.5 D115 М | not matched                                                           |
-| TS.KMP.ZRV.0120.72047 | Заглушка ревизии моно ЗРМ-Р 430-0.5 D120 М | #9001 Заглушка ревизии моно 430 0,5 мм Ø 1...: 16.30 → 16.30 (same)   |
-| TS.KMP.ZRV.0150.72966 | Заглушка ревизии моно ЗРМ-Р 430-0.5 D150 М | #9002 Заглушка ревизии моно 430 0,5 мм Ø 1...: 20.25 → 20.25 (same)   |
-| TS.KMP.ZRV.0180.74621 | Заглушка ревизии моно ЗРМ-Р 430-0.5 D180 М | #9003 Заглушка ревизии моно 430 0,5 мм Ø 1...: 19.37 → 19.37 (same)   |
-| TS.KMP.ZRV.0200.56441 | Заглушка ревизии моно ЗРМ-Р 430-0.5 D200 М | #9004 Заглушка ревизии моно 430 0,5 мм Ø 2...: 21.51 → 21.51 (same)   |
-+-----------------------+--------------------------------------------+-----------------------------------------------------------------------+
+Already up to date.
+product/008/008903/5e035c55be5b8.png
+product/008/008903/5e035c55be688.png
+product/008/008903/5e035c55be758.png
+product/008/008904/
+product/008/008904/5e035c9aab80b.png
+product/008/008904/5e035c9aab8ea.png
+product/008/008904/5e035c9aaba01.png
+product/008/008905/
+product/008/008905/5e03ae24db242.png
+product/008/008905/5e03ae24db337.png
+product/008/008905/5e03ae24db43b.png
+product/008/008906/
+product/008/008906/5e03af0fcbd31.png
+product/008/008906/5e03af0fcbdf5.png
+product/008/008906/5e03af0fcbea1.png
+product/008/008907/
+product/008/008907/5e03beabb6947.png
+product/008/008907/5e03beabb6a38.png
+product/008/008907/5e03beabb6b07.png
+product/008/008908/
+product/008/008908/5e03bf3714797.png
+product/008/008908/5e03bf3714858.png
+product/008/008908/5e03bf37148fd.png
+product/008/008909/
+product/008/008909/5e03c0f541f30.png
+product/008/008909/5e03c0f542009.png
+product/008/008909/5e03c0f54208f.png
+product/008/008909/5e03c0f54217e.png
+product/008/008910/
+product/008/008910/5e03c23742a90.png
+product/008/008910/5e03c23742b55.png
+product/008/008910/5e03c23742bfd.png
+product/008/008910/5e03c23742c9e.png
+product/008/008911/
+product/008/008911/5e03c2d1829ef.png
+product/008/008911/5e03c2d182aff.png
+product/008/008911/5e03c2d182bc8.png
+product/008/008911/5e03c2d182c89.png
+product/008/008912/
+product/008/008912/5e03c39ac5df8.png
+product/008/008912/5e03c39ac5f00.png
+product/008/008912/5e03c39ac6030.png
+product/008/008912/5e03c39ac6123.png
+product/008/008913/
+product/008/008913/5f9a7e5cae0b0.png
+product/008/008913/660575411d764.png
+product/008/008913/660575411e072.png
+product/008/008913/660575411e0d7.png
+product/008/008913/660575411e120.png
+product/008/008913/660575411e176.png
+product/008/008913/660575411e1c0.jpg
+product/008/008914/
+product/008/008914/5e03c4e78449c.png
+product/008/008914/5e03c4e784589.png
+product/008/008914/5e03c4e784658.png
+product/008/008914/5e03c4e784733.png
+product/008/008915/
+product/008/008915/5e03c641a6322.png
+product/008/008915/5e03c641a6420.png
+product/008/008915/5e03c641a64f2.png
+product/008/008915/5e03c641a65bf.png
+product/008/008916/
+product/008/008916/5e03c5bd1c281.png
+product/008/008916/5e03c5bd1c383.png
+product/008/008916/5e03c5bd1c451.png
+product/008/008916/5e03c5bd1c51d.png
+product/008/008917/
+product/008/008917/5e03c688dbf77.png
+product/008/008917/5e03c688dc037.png
+product/008/008917/5e03c688dc0db.png
+product/008/008917/5e03c688dc17d.png
+product/008/008918/
+product/008/008918/5e03c75f4da3b.png
+product/008/008918/5e03c75f4db01.png
+product/008/008918/5e03c75f4dba8.png
+product/008/008918/5e03c75f4dc18.png
+product/008/008919/
+product/008/008919/5e03c7dba2105.png
+product/008/008919/5e03c7dba21f3.png
+product/008/008919/5e03c7dba22ce.png
+product/008/008919/5e03c7dba2382.png
+product/008/008920/
+product/008/008920/6968e5159642b.jpg
+product/008/008920/6968e51596acc.jpg
+product/008/008920/6968e51596b34.jpg
+product/008/008920/6968e51596b82.jpg
+product/008/008920/6968e51596bd3.jpg
+product/008/008920/6968e51596c26.jpg
+product/008/008920/6968e51596c8e.jpg
+product/008/008921/
+product/008/008921/5e2fe4a359200.png
+product/008/008921/5e2fe4a3592ce.png
+product/008/008921/5e2fe4a359372.jpg
+product/008/008921/5e2fe4a359414.png
+product/008/008922/
+product/008/008922/60804495d34cb.jpg
+product/008/008923/
+product/008/008923/5e2fe4ce15d77.png
+product/008/008923/63da6d40a6721.jpg
+product/008/008923/63da6d40a6c9d.jpg
+product/008/008923/65ce2ec297e20.jpg
+product/008/008923/65ce2ec29842f.jpg
+product/008/008923/65ce2ec29848f.jpg
+product/008/008923/65ce2ec2984e2.jpg
+product/008/008923/65ce2ec298531.jpg
+product/008/008923/65ce2ec298595.jpg
+product/008/008923/65ce2ec2985e6.jpg
+product/008/008923/65ce2ec29864a.jpg
+product/008/008923/65ce2ec2986ab.jpg
+product/008/008923/6967a6901ae0c.jpg
+product/008/008923/6967a6901b44c.jpg
+product/008/008923/6967a6901b4bf.jpg
+product/008/008923/6967a6901b51c.jpg
+product/008/008923/6967a6901b58c.jpg
+product/008/008923/6967a6901b5e1.jpg
+product/008/008923/6967a6901b659.jpg
+product/008/008923/6967a6901b6b2.jpg
+product/008/008923/6967a6901b705.jpg
+product/008/008924/
+product/008/008924/5e0de02746840.jpg
+product/008/008925/
+product/008/008925/5e0de10a2a59f.jpg
+product/008/008926/
+product/008/008926/5e0de24f20aa8.jpg
+product/008/008927/
+product/008/008927/5e0de264803eb.jpg
+product/008/008928/
+product/008/008928/5e0de2d6bba7b.jpg
+product/008/008929/
+product/008/008929/5e0de34d77a3f.jpg
+product/008/008930/
+product/008/008930/5e0de481b5a8c.jpg
+product/008/008931/
+product/008/008931/5e0de4c2ee153.jpg
+product/008/008932/
+product/008/008932/6761781f9fb90.jpg
+product/008/008932/6761781f9fc2f.jpg
+product/008/008932/6761781f9fcc1.jpg
+product/008/008932/6761781f9fd23.jpg
+product/008/008932/6761781f9fd7d.jpg
+product/008/008933/
+product/008/008933/647dcebac1dd6.jpg
+product/008/008933/647dcebac1eaf.jpg
+product/008/008951/
+product/008/008951/6967a4237c884.jpg
+product/008/008951/6967a4237c919.jpg
+product/008/008951/6967a4237c978.jpg
+product/008/008951/6967a4237c9cf.jpg
+product/008/008951/6967a4237ca1c.jpg
+product/008/008951/6967a4237ca7e.jpg
+product/008/008951/6967a4237cad7.jpg
+product/008/008951/6967a4237cb2c.jpg
+product/008/008951/6967a4237cb83.jpg
+product/008/008951/6967a4237cbd2.jpg
+product/008/008952/
+product/008/008952/5e221cfba9b0b.fif
+product/008/008952/5e2842a7def35.png
+product/008/008953/
+product/008/008953/5e283a61178de.jpg
+product/008/008953/5e283a61179bd.png
 
 ```
