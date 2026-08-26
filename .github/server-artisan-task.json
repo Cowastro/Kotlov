@@ -1,6 +1,6 @@
 {
-  "task": "artisan-apply",
-  "artisan_args": "images:diagnose",
-  "log_file": "storage/logs/images-diagnose.log",
-  "run_id": "diagnose-images-20260826-4"
+  "task": "artisan-background",
+  "artisan_args": "images:restore-legacy",
+  "log_file": "storage/logs/images-restore.log",
+  "run_id": "restore-legacy-images-20260826-1"
 }
