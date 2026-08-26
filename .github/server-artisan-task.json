@@ -1,6 +1,6 @@
 {
-  "task": "artisan-apply",
-  "artisan_args": "images:diagnose",
-  "log_file": "storage/logs/images-diagnose.log",
-  "run_id": "check-progress-2"
+  "task": "artisan-background",
+  "artisan_args": "brands:discover-teplodvor-logos --apply --force --limit=0",
+  "log_file": "storage/logs/restore-brand-logos.log",
+  "run_id": "restore-brand-logos-1"
 }
