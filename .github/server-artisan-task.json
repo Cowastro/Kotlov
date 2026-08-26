@@ -1,6 +1,6 @@
 {
-  "task": "artisan-background",
-  "artisan_args": "images:restore-legacy",
+  "task": "tail-log",
+  "artisan_args": "",
   "log_file": "storage/logs/images-restore.log",
-  "run_id": "restore-legacy-images-20260826-2"
+  "run_id": "check-restore-progress-1"
 }
