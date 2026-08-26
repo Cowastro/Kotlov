@@ -1,6 +1,6 @@
 {
   "task": "tail-log",
   "artisan_args": "",
-  "log_file": "storage/logs/restore-brand-logos.log",
-  "run_id": "check-brand-logos-result"
+  "log_file": "storage/logs/restore-remaining.log",
+  "run_id": "check-remaining-result"
 }
