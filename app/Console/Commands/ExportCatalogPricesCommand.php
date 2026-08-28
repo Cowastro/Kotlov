@@ -20,7 +20,7 @@ use Illuminate\Console\Command;
  */
 class ExportCatalogPricesCommand extends Command
 {
-    protected $signature = 'catalog:export-prices {--brand= : Optional brand name filter} {--delete : Delete the exported file instead of writing it}';
+    protected $signature = 'catalog:export-prices {--brand= : Optional brand name filter} {--delete : Delete the exported file instead of writing it} {--include-archived : Also include archived/inactive products}';
 
     protected $description = 'Write {sku, name, brand, price, currency} for active products as NDJSON to public/exports/ (for external price sync)';
 
@@ -42,10 +42,12 @@ class ExportCatalogPricesCommand extends Command
         }
 
         $query = Product::query()
-            ->where('is_archived', false)
-            ->where('is_active', true)
             ->with('brand:id,name')
             ->orderBy('id');
+
+        if (! $this->option('include-archived')) {
+            $query->where('is_archived', false)->where('is_active', true);
+        }
 
         if ($brand = trim((string) $this->option('brand'))) {
             $query->whereHas('brand', fn ($q) => $q->where('name', 'like', '%' . $brand . '%'));
@@ -67,6 +69,8 @@ class ExportCatalogPricesCommand extends Command
                     'brand' => $product->brand->name ?? null,
                     'price' => $product->price !== null ? (float) $product->price : null,
                     'currency' => $product->currency,
+                    'is_archived' => (bool) $product->is_archived,
+                    'is_active' => (bool) $product->is_active,
                 ], JSON_UNESCAPED_UNICODE) . "\n");
                 $count++;
             }
