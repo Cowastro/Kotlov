@@ -83,7 +83,7 @@ class DebugBrandStatsCommand extends Command
             $this->line(sprintf('%d products match "%s":', $products->count(), $nameNeedle));
             foreach ($products as $p) {
                 $bn = $p->brand_id ? ($brandNames[$p->brand_id] ?? '?') . " (id={$p->brand_id})" : '(no brand)';
-                $this->line(sprintf('  id=%d archived=%s brand=%s | %s', $p->id, $p->is_archived ? '1' : '0', $bn, mb_substr($p->name, 0, 60)));
+                $this->line(sprintf('  id=%d archived=%s brand=%s slug=%s | %s', $p->id, $p->is_archived ? '1' : '0', $bn, $p->slug ?: '-', mb_substr($p->name, 0, 60)));
             }
             return self::SUCCESS;
         }
