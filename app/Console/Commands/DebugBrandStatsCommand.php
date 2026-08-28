@@ -20,7 +20,8 @@ class DebugBrandStatsCommand extends Command
         {--name=  : Product name (substring match against products.name) — use when no brand row is found}
         {--no-brand : List active products with brand_id IS NULL}
         {--needing-enrich : List all brands with active products still missing photos/specs, by count}
-        {--dump : With --brand, print id/name/price/sku for every product instead of aggregate stats}';
+        {--dump : With --brand, print id/name/price/sku for every product instead of aggregate stats}
+        {--specs-check : With --brand, print specs JSON length + product_attribute_values row count per product}';
 
     protected $description = 'Diagnose brand/product counts for enrichment anomalies';
 
@@ -91,6 +92,26 @@ class DebugBrandStatsCommand extends Command
 
         if ($brands->isEmpty()) {
             $this->warn("No brand row matches \"{$brandNeedle}\".");
+            return self::SUCCESS;
+        }
+
+        if ((bool) $this->option('specs-check')) {
+            foreach ($brands as $b) {
+                $products = DB::table('products')->where('brand_id', $b->id)
+                    ->where('is_archived', false)
+                    ->orderBy('id')
+                    ->get(['id', 'name', 'specs', 'content']);
+                $this->line(sprintf('brand id=%d name=%s: %d active products', $b->id, $b->name, $products->count()));
+                foreach ($products as $p) {
+                    $attrCount = DB::table('product_attribute_values')->where('product_id', $p->id)->count();
+                    $specsLen = $p->specs ? strlen((string) $p->specs) : 0;
+                    $contentLen = $p->content ? mb_strlen(strip_tags((string) $p->content)) : 0;
+                    $this->line(sprintf(
+                        '  id=%d specs_json_len=%d attr_rows=%d content_len=%d | %s',
+                        $p->id, $specsLen, $attrCount, $contentLen, mb_substr($p->name, 0, 50)
+                    ));
+                }
+            }
             return self::SUCCESS;
         }
 
