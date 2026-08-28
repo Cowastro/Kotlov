@@ -15,6 +15,7 @@ class RepairProductImagesCommand extends Command
     protected $signature = 'catalog:repair-product-images
         {--category= : Category slug; includes descendants}
         {--products= : Comma-separated product IDs}
+        {--source-urls= : Comma-separated product_id=url pairs; overrides supplier_products.source_url for listed products}
         {--limit=30 : Max products per run, 0 means no limit}
         {--offset=0 : Skip repair candidates}
         {--apply : Download and write images; default is dry-run}
@@ -40,6 +41,7 @@ class RepairProductImagesCommand extends Command
             return self::FAILURE;
         }
 
+        $sourceUrlOverrides = $this->sourceUrlOverrides((string) $this->option('source-urls'));
         $sourceUrls = DB::table('supplier_products')
             ->whereNotNull('product_id')
             ->whereNotNull('source_url')
@@ -49,6 +51,10 @@ class RepairProductImagesCommand extends Command
             ->get(['product_id', 'source_url'])
             ->groupBy('product_id')
             ->map(fn ($rows) => (string) $rows->first()->source_url);
+
+        foreach ($sourceUrlOverrides as $productId => $sourceUrl) {
+            $sourceUrls->put($productId, $sourceUrl);
+        }
 
         $candidates = Product::query()
             ->orderable()
@@ -270,6 +276,29 @@ class RepairProductImagesCommand extends Command
         }
 
         return array_values(array_unique($ids));
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    private function sourceUrlOverrides(string $value): array
+    {
+        if (trim($value) === '') {
+            return [];
+        }
+
+        $pairs = [];
+        foreach (explode(',', $value) as $part) {
+            [$id, $url] = array_pad(explode('=', trim($part), 2), 2, '');
+            $id = (int) trim($id);
+            $url = trim($url);
+
+            if ($id > 0 && filter_var($url, FILTER_VALIDATE_URL)) {
+                $pairs[$id] = $url;
+            }
+        }
+
+        return $pairs;
     }
 
     private function collectCategoryAndDescendantIds(int $categoryId): Collection
