@@ -699,7 +699,9 @@ class ImportTeplodvorCatalogCommand extends Command
         if (empty($ourTokens)) {
             return 0.0;
         }
-        $normTep = str_replace(array_keys(self::SLUG_NORM), array_values(self::SLUG_NORM), $tepSlug);
+        // Segment-safe: a blind str_replace would also hit "pec" as a substring of the
+        // already-correct "pech", corrupting it into "pechh" and breaking the match.
+        $normTep = implode('-', array_map(fn ($s) => self::SLUG_NORM[$s] ?? $s, explode('-', $tepSlug)));
 
         // Brand must appear in teplodvor slug
         if (! empty($brandTokens)) {

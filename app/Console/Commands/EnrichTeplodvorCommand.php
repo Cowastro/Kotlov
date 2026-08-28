@@ -332,7 +332,9 @@ class EnrichTeplodvorCommand extends Command
         $bestScore = 0.0;
 
         foreach ($index as $tSlug => $url) {
-            $normTSlug = str_replace(array_keys(self::SLUG_NORM), array_values(self::SLUG_NORM), $tSlug);
+            // Segment-safe: a blind str_replace would also hit "pec" as a substring of the
+            // already-correct "pech", corrupting it into "pechh" and breaking the match.
+            $normTSlug = implode('-', array_map(fn ($s) => self::SLUG_NORM[$s] ?? $s, explode('-', $tSlug)));
 
             // Hard pre-filter: every required numeric must appear as a whole-word segment,
             // OR all numerics together must appear concatenated (e.g. 60100 for 60/100 pipe).
