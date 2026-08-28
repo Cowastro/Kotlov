@@ -100,15 +100,17 @@ class DebugBrandStatsCommand extends Command
                 $products = DB::table('products')->where('brand_id', $b->id)
                     ->where('is_archived', false)
                     ->orderBy('id')
-                    ->get(['id', 'name', 'specs', 'content']);
+                    ->get(['id', 'name', 'specs', 'content', 'images']);
                 $this->line(sprintf('brand id=%d name=%s: %d active products', $b->id, $b->name, $products->count()));
                 foreach ($products as $p) {
                     $attrCount = DB::table('product_attribute_values')->where('product_id', $p->id)->count();
                     $specsLen = $p->specs ? strlen((string) $p->specs) : 0;
                     $contentLen = $p->content ? mb_strlen(strip_tags((string) $p->content)) : 0;
+                    $imagesArr = $p->images ? json_decode((string) $p->images, true) : [];
+                    $imagesCount = is_array($imagesArr) ? count($imagesArr) : 0;
                     $this->line(sprintf(
-                        '  id=%d specs_json_len=%d attr_rows=%d content_len=%d | %s',
-                        $p->id, $specsLen, $attrCount, $contentLen, mb_substr($p->name, 0, 50)
+                        '  id=%d images=%d specs_json_len=%d attr_rows=%d content_len=%d | %s',
+                        $p->id, $imagesCount, $specsLen, $attrCount, $contentLen, mb_substr($p->name, 0, 50)
                     ));
                 }
             }
