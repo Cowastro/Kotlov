@@ -156,6 +156,7 @@
                         @foreach ($navCategories as $rootCat)
                             @php
                                 $icons = config('navigation.icons', []);
+                                $iconClasses = config('navigation.icon_classes', []);
                                 $editorial = config('navigation.editorial.' . $rootCat->slug, []);
                                 $liveCategoryUrls = $navCategoryUrls ?? [];
                                 $isLiveCategoryUrl = function (?string $url) use ($liveCategoryUrls) {
@@ -186,6 +187,7 @@
                                     ->values()
                                     ->all();
                                 $icon = $icons[$rootCat->slug] ?? null;
+                                $iconClass = $iconClasses[$rootCat->slug] ?? null;
                                 $children = $rootCat->children->where('is_active', true);
                                 $hasChildren = $children->count() > 0 || count($editorial) > 0;
                                 $cols = config('navigation.columns.' . $rootCat->slug, 2);
@@ -194,7 +196,9 @@
                             <li class="{{ $hasChildren ? 'has-sub-nav-category' : '' }}">
                                 <a href="/{{ $rootCat->slug }}" class="nav-category_link">
                                     <span class="d-flex align-items-center gap-2">
-                                        @if ($icon)
+                                        @if ($iconClass)
+                                            <i class="icon {{ $iconClass }} cat-icon cat-icon--font"></i>
+                                        @elseif ($icon)
                                             <img src="{{ asset('icons/' . $icon) }}"
                                                 alt="{{ $rootCat->name }}"
                                                 class="cat-icon">

@@ -43,6 +43,27 @@ return [
         'komplektuyushhie-dlya-otopleniya'   => 'wrench.svg',
     ],
 
+    // Маппинг slug категории -> CSS-иконка из icomoon. Используется в хедере,
+    // чтобы меню не показывало битые <img>, если серверный /icons недоступен.
+    'icon_classes' => [
+        'kotly'                              => 'icon-Lightning',
+        'teplovyie-nasosyi'                  => 'icon-Wind',
+        'pelletnye-gorelki'                 => 'icon-Sparkle',
+        'vodonagrevateli'                    => 'icon-Leaf',
+        'pechki'                             => 'icon-Sparkle',
+        'bani-i-sauny'                       => 'icon-HouseLine',
+        'kaminy'                             => 'icon-Sparkle',
+        'dymohody'                           => 'icon-ArrowFatUp',
+        'vodosnabzhenie'                     => 'icon-Leaf',
+        'klimat'                             => 'icon-Wind',
+        'radiatory'                          => 'icon-Layout',
+        'truby-i-fitingi'                    => 'icon-GearSix',
+        'teplyj-pol'                         => 'icon-HouseLine',
+        'elektricheskie-konvektoryi'         => 'icon-Lightning',
+        'filtry'                             => 'icon-filter',
+        'komplektuyushhie-dlya-otopleniya'   => 'icon-GearSix',
+    ],
+
     // Редакционные блоки мегаменю по slug корневой категории
     // Каждый блок: [ 'title' => '...', 'links' => [ ['name'=>'...', 'url'=>'...'], ... ] ]
     'editorial' => [
