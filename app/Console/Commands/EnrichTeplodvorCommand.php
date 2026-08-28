@@ -267,7 +267,13 @@ class EnrichTeplodvorCommand extends Command
         'nasos', 'nasosnaya', 'stantsiya', 'klapan', 'schetchik', 'komplekte', 'datchikom', 'datchik',
         'dyimohodom', 'dymohodom', 'boylera', 'komnatnoy', 'temperaturyi', 'temperatury',
         // Generic product type prefixes — very long, dominate scores across all brands
-        'kotel', 'pech', 'otopitelnaya', 'otopitelnyj', 'napolnyiy', 'napolnyj', 'chugunnyiy', 'chugunnyj',
+        // 'pec'/'peci' — Laravel's Str::slug() transliterates "ч" as bare "c" (drops the "h"),
+        // so "печь"/"печи" become "pec"/"peci" in OUR slugs, never "pech"/"pechi" like on
+        // teplodvor.by. Without these, that dead-weight token can never match anything and
+        // silently drags every печь-product's score below --min-score (found via Теплодар
+        // "Печь ТОП-140 ДС": true score 0.67 < 0.75 default, caused by 'pec' inflating the
+        // denominator with no possible match) — see project_tsarpechi_enrichment memory.
+        'kotel', 'pech', 'pec', 'peci', 'otopitelnaya', 'otopitelnyj', 'napolnyiy', 'napolnyj', 'chugunnyiy', 'chugunnyj',
         'tverdotoplivnyj', 'tverdotoplivnyy', 'tverdotoplivnyi',
         'elektricheskij', 'elektricheskiy', 'elektricheskaya', 'elektriceskii', 'elektriceskiy', 'elektricheskiyiy',
         'gazovyj', 'gazovaya', 'gazovyy', 'gazovyi', 'gazovyiy',

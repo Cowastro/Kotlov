@@ -134,6 +134,11 @@ class ImportTeplodvorCatalogCommand extends Command
 
     private const SLUG_STOPWORDS = [
         'bez', 'dlya', 'so', 'na', 'po', 'iz', 'ot', 'ob', 'pri', 'ili', 'ne', 'do',
+        // 'pech'/'pec'/'peci' — Str::slug() transliterates "ч" as bare "c" (drops the "h"),
+        // so our own "печь"/"печи" tokens read "pec"/"peci", never teplodvor's real "pech"/
+        // "pechi" — a dead-weight token that can never match. See EnrichTeplodvorCommand's
+        // SLUG_STOPWORDS comment / project_tsarpechi_enrichment memory for the full story.
+        'pech', 'pec', 'peci',
         'kotel', 'nasos', 'gazovyy', 'gazovaya', 'elektricheskiy', 'elektricheskaya',
         'nastennyi', 'nastennaya', 'nastennoe', 'napolnyi',
         'dvuhkonturnyi', 'odnokonturnyi', 'kondensat', 'kondensatsionnyy',
