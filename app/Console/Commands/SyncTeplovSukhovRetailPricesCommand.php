@@ -189,9 +189,28 @@ class SyncTeplovSukhovRetailPricesCommand extends Command
             }
 
             if ($matches->count() > 1) {
+                // One supplier article always identifies one commercial
+                // position.  Some legacy cards have nearly identical names
+                // (for example D110 and D110/120), therefore an ambiguous
+                // name match must never attach the price to either card.  In
+                // explicit create-missing mode keep the supplier SKU intact
+                // by creating a separate, exact card instead.
+                if ($createMissing && ($sheet === '' || (string) ($row['sheet'] ?? '') === $sheet)) {
+                    if (! $apply) {
+                        $stats['would_create']++;
+                        $details[] = [$article, Str::limit($name, 48), 'will create separate exact card (ambiguous legacy match)'];
+                        continue;
+                    }
+
+                    $product = $this->createMissingProduct($row, $brand, $retail);
+                    $products->push($product);
+                    $matches = collect([$product]);
+                    $stats['created']++;
+                } else {
                 $stats['ambiguous']++;
                 $details[] = [$article, Str::limit($name, 48), 'ambiguous: ' . $matches->pluck('id')->implode(',')];
                 continue;
+                }
             }
 
             /** @var Product $product */
@@ -199,15 +218,42 @@ class SyncTeplovSukhovRetailPricesCommand extends Command
 
             $otherArticles = array_values(array_diff($claimedProducts[(int) $product->id] ?? [], [$article]));
             if ($otherArticles !== []) {
+                if ($createMissing && ($sheet === '' || (string) ($row['sheet'] ?? '') === $sheet)) {
+                    if (! $apply) {
+                        $stats['would_create']++;
+                        $details[] = [$article, Str::limit($name, 48), 'will create separate exact card (supplier article already used)'];
+                        continue;
+                    }
+
+                    $product = $this->createMissingProduct($row, $brand, $retail);
+                    $products->push($product);
+                    $claimedProducts[(int) $product->id] = [$article];
+                    $stats['created']++;
+                    $otherArticles = [];
+                } else {
                 $stats['conflict']++;
                 $details[] = [$article, Str::limit($name, 48), 'product already linked to: ' . implode(',', $otherArticles)];
                 continue;
+                }
             }
 
             if ($existing && $existing->product_id && (int) $existing->product_id !== (int) $product->id) {
+                if ($createMissing && ($sheet === '' || (string) ($row['sheet'] ?? '') === $sheet)) {
+                    if (! $apply) {
+                        $stats['would_create']++;
+                        $details[] = [$article, Str::limit($name, 48), 'will create separate exact card (stale supplier relation)'];
+                        continue;
+                    }
+
+                    $product = $this->createMissingProduct($row, $brand, $retail);
+                    $products->push($product);
+                    $claimedProducts[(int) $product->id] = [$article];
+                    $stats['created']++;
+                } else {
                 $stats['conflict']++;
                 $details[] = [$article, Str::limit($name, 48), 'supplier link conflict'];
                 continue;
+                }
             }
 
             $stats['matched']++;

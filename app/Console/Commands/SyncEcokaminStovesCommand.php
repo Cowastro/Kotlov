@@ -15,6 +15,7 @@ class SyncEcokaminStovesCommand extends Command
         {--dry-run : Preview without writing changes to the database}
         {--limit= : Limit number of products for testing}
         {--no-images : Do not download product images}
+        {--only-broken-images : Only replace existing products whose image paths are empty or missing on disk}
         {--enrich : Generate AI descriptions for products that have none (DeepSeek)}
         {--sleep=150 : Delay between product requests in milliseconds}';
 
@@ -46,6 +47,7 @@ class SyncEcokaminStovesCommand extends Command
         $apply          = (bool) $this->option('apply');
         $limit          = $this->option('limit') !== null ? (int) $this->option('limit') : null;
         $downloadImages = ! (bool) $this->option('no-images');
+        $onlyBrokenImages = (bool) $this->option('only-broken-images');
         $enrichContent  = (bool) $this->option('enrich');
 
         $enricher = new AiContentEnricher();
@@ -67,7 +69,7 @@ class SyncEcokaminStovesCommand extends Command
 
         $this->line(sprintf('Supplier currency: %s, rate to BYN: %s', $this->supplierCurrency, $this->supplierRate));
 
-        if ($apply && $this->supplierCurrency !== CurrencyPriceConverter::BASE_CURRENCY && abs($this->supplierRate - 1.0) < 0.0001) {
+        if ($apply && ! $onlyBrokenImages && $this->supplierCurrency !== CurrencyPriceConverter::BASE_CURRENCY && abs($this->supplierRate - 1.0) < 0.0001) {
             $this->error(sprintf(
                 'У поставщика валюта %s, но курс к BYN = 1 (заглушка). Задайте реальный курс в админке /admin/suppliers и повторите.',
                 $this->supplierCurrency
@@ -103,6 +105,9 @@ class SyncEcokaminStovesCommand extends Command
             'updated'          => 0,
             'attributes'       => 0,
             'images'           => 0,
+            'image_repaired'   => 0,
+            'skipped_image_ok' => 0,
+            'skipped_missing'  => 0,
             'skipped_invicta'  => count($skippedInvicta),
             'errors'           => 0,
         ];
@@ -121,6 +126,37 @@ class SyncEcokaminStovesCommand extends Command
                 $product = $this->findProduct($merged, $supplierId);
                 $isNew   = ! $product;
                 $images  = [];
+
+                if ($onlyBrokenImages) {
+                    if (! $product) {
+                        $stats['skipped_missing']++;
+                        $this->line('  skipped: no existing product match');
+                        continue;
+                    }
+
+                    if ($this->hasUsableImages($product)) {
+                        $stats['skipped_image_ok']++;
+                        $this->line('  skipped: current image exists');
+                        continue;
+                    }
+
+                    $images = $downloadImages ? $this->downloadImages($merged) : [];
+                    if ($images === []) {
+                        $stats['errors']++;
+                        $this->warn('  failed: no replacement images downloaded');
+                        continue;
+                    }
+
+                    DB::table('products')->where('id', $product->id)->update([
+                        'images' => json_encode($images, JSON_UNESCAPED_UNICODE),
+                        'updated_at' => $now,
+                    ]);
+
+                    $stats['images'] += count($images);
+                    $stats['image_repaired']++;
+                    $this->line('  repaired images: ' . count($images));
+                    continue;
+                }
 
                 // Enrich with AI only if product has no description yet
                 $productHasContent = $product
@@ -202,7 +238,7 @@ class SyncEcokaminStovesCommand extends Command
                         ? number_format($item['price'], 2, '.', '') . ' ' . $this->supplierCurrency
                         : 'no price',
                     'price_byn' => $priceByn !== null ? number_format($priceByn, 2, '.', '') : '—',
-                    'action'    => $this->previewPriceAction(['article' => $article] + $item, $priceByn, $previewSupplierId),
+                    'action'    => $this->previewAction(['article' => $article] + $item, $priceByn, $previewSupplierId),
                     'name'      => mb_substr($item['name'], 0, 44),
                     'url'       => $this->shortUrl($item['url']),
                 ];
@@ -236,7 +272,9 @@ class SyncEcokaminStovesCommand extends Command
         }
 
         $this->table(['article', 'brand', 'price', 'price_byn', 'action', 'name', 'url'], $preview);
-        $this->line('Run with --apply to update products, attributes and images.');
+        $this->line((bool) $this->option('only-broken-images')
+            ? 'Run with --apply --only-broken-images to replace only missing product images.'
+            : 'Run with --apply to update products, attributes and images.');
 
         return self::SUCCESS;
     }
@@ -693,6 +731,21 @@ class SyncEcokaminStovesCommand extends Command
         return null;
     }
 
+    private function previewAction(array $item, ?float $priceByn, int $supplierId): string
+    {
+        $product = $this->findProduct($item, $supplierId);
+
+        if ((bool) $this->option('only-broken-images')) {
+            if (! $product) {
+                return 'skip missing product';
+            }
+
+            return $this->hasUsableImages($product) ? 'skip image ok' : 'repair broken image';
+        }
+
+        return $this->previewPriceAction($item, $priceByn, $supplierId);
+    }
+
     private function previewPriceAction(array $item, ?float $priceByn, int $supplierId): string
     {
         $product = $this->findProduct($item, $supplierId);
@@ -712,6 +765,54 @@ class SyncEcokaminStovesCommand extends Command
         }
 
         return sprintf('%.2f → %.2f', $currentPrice, $priceByn);
+    }
+
+    private function hasUsableImages(object $product): bool
+    {
+        $images = is_string($product->images)
+            ? (json_decode($product->images, true) ?: [])
+            : (array) ($product->images ?? []);
+
+        foreach ($images as $image) {
+            if ($this->imageExists((string) $image)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private function imageExists(string $image): bool
+    {
+        $image = trim($image);
+
+        if ($image === '') {
+            return false;
+        }
+
+        if (preg_match('~^https?://~i', $image)) {
+            return true;
+        }
+
+        $path = ltrim($image, '/');
+
+        if (str_starts_with($path, 'proxy-image/')) {
+            $path = substr($path, strlen('proxy-image/'));
+        }
+
+        if (file_exists(public_path($path))) {
+            return true;
+        }
+
+        if (file_exists(public_path('images/' . $path))) {
+            return true;
+        }
+
+        if (file_exists(public_path('storage/' . $path))) {
+            return true;
+        }
+
+        return false;
     }
 
     private function downloadImages(array $item): array

@@ -37,7 +37,7 @@ class EditProduct extends EditRecord
                         ->value('source_url'),
                     'preview_only' => false,
                     'update_images' => true,
-                    'replace_images' => true,
+                    'replace_images' => false,
                     'update_specs' => true,
                     'update_content' => true,
                     'update_service' => true,
@@ -57,7 +57,8 @@ class EditProduct extends EditRecord
                         ->default(true),
                     Toggle::make('replace_images')
                         ->label('Заменить текущие фото')
-                        ->default(true),
+                        ->helperText('Оставьте выключенным, чтобы новые фото только добавлялись к существующим.')
+                        ->default(false),
                     Toggle::make('update_specs')
                         ->label('Обновить характеристики')
                         ->default(true),
@@ -83,7 +84,7 @@ class EditProduct extends EditRecord
     {
         $options = [
             'update_images' => (bool) ($data['update_images'] ?? true),
-            'replace_images' => (bool) ($data['replace_images'] ?? true),
+            'replace_images' => (bool) ($data['replace_images'] ?? false),
             'update_specs' => (bool) ($data['update_specs'] ?? true),
             'replace_specs' => true,
             'update_content' => (bool) ($data['update_content'] ?? true),

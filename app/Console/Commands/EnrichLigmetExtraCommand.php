@@ -28,6 +28,7 @@ class EnrichLigmetExtraCommand extends Command
         {--limit=           : Max products to process}
         {--sleep=800        : Delay between requests, ms}
         {--overwrite-images : Replace existing images}
+        {--only-broken-images : Process only products whose first image is empty or missing on disk}
         {--only-ai          : Regenerate AI texts only, skip images and specs}
         {--skip-ai          : Skip AI description/SEO generation}
         {--apply            : Write changes (default: dry-run)}
@@ -235,6 +236,10 @@ class EnrichLigmetExtraCommand extends Command
             }
             $this->catalogIndex[$key] = [];
             $query->get(['id', 'name', 'images', 'content', 'category_id'])->each(function ($p) use ($key, $b) {
+                if ($this->option('only-broken-images') && ! $this->needsImageRepair($p)) {
+                    return;
+                }
+
                 $modelKey = $this->modelKey((string) $p->name, $b->name);
                 if ($modelKey !== '') {
                     $this->catalogIndex[$key][$modelKey] = [
@@ -325,6 +330,41 @@ class EnrichLigmetExtraCommand extends Command
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────────
+
+    private function needsImageRepair(object $product): bool
+    {
+        $images = json_decode((string) ($product->images ?? '[]'), true);
+        if (! is_array($images) || $images === [] || trim((string) ($images[0] ?? '')) === '') {
+            return true;
+        }
+
+        $raw = ltrim((string) $images[0], '/');
+        if ($raw === '') {
+            return true;
+        }
+
+        if (str_starts_with($raw, 'http://') || str_starts_with($raw, 'https://')) {
+            return false;
+        }
+
+        if (str_starts_with($raw, 'img/')) {
+            return ! file_exists(public_path($raw));
+        }
+
+        if (str_starts_with($raw, 'products/')) {
+            return ! file_exists(storage_path('app/public/' . $raw));
+        }
+
+        if (str_starts_with($raw, 'product/')) {
+            return ! file_exists(public_path('images/' . $raw));
+        }
+
+        if (substr_count($raw, '/') >= 2) {
+            return ! file_exists(public_path('images/product/' . $raw));
+        }
+
+        return true;
+    }
 
     // ── Sitemap discovery ─────────────────────────────────────────────────────────
 

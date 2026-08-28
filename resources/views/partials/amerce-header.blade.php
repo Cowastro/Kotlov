@@ -156,6 +156,7 @@
                         @foreach ($navCategories as $rootCat)
                             @php
                                 $icons = config('navigation.icons', []);
+                                $iconClasses = config('navigation.icon_classes', []);
                                 $editorial = config('navigation.editorial.' . $rootCat->slug, []);
                                 $liveCategoryUrls = $navCategoryUrls ?? [];
                                 $isLiveCategoryUrl = function (?string $url) use ($liveCategoryUrls) {
@@ -186,6 +187,8 @@
                                     ->values()
                                     ->all();
                                 $icon = $icons[$rootCat->slug] ?? null;
+                                $iconFile = $icon ? pathinfo($icon, PATHINFO_FILENAME) : null;
+                                $iconClass = $iconClasses[$rootCat->slug] ?? null;
                                 $children = $rootCat->children->where('is_active', true);
                                 $hasChildren = $children->count() > 0 || count($editorial) > 0;
                                 $cols = config('navigation.columns.' . $rootCat->slug, 2);
@@ -194,10 +197,12 @@
                             <li class="{{ $hasChildren ? 'has-sub-nav-category' : '' }}">
                                 <a href="/{{ $rootCat->slug }}" class="nav-category_link">
                                     <span class="d-flex align-items-center gap-2">
-                                        @if ($icon)
-                                            <img src="{{ asset('icons/' . $icon) }}"
+                                        @if ($iconFile)
+                                            <img src="{{ route('catalog.icon', ['file' => $iconFile]) }}"
                                                 alt="{{ $rootCat->name }}"
                                                 class="cat-icon">
+                                        @elseif ($iconClass)
+                                            <i class="icon {{ $iconClass }} cat-icon cat-icon--font"></i>
                                         @endif
                                         <span>{{ $rootCat->name }}</span>
                                     </span>

@@ -30,6 +30,7 @@ class Enrich100KaminovCommand extends Command
         {--skip-ai     : Skip AI description/SEO generation}
         {--only-ai     : Only regenerate AI texts, skip images and specs}
         {--only-missing : Skip products that already have images}
+        {--only-broken-images : Process only products whose first image is empty or missing on disk}
         {--apply       : Write to DB (default: dry-run)}
         {--dry-run     : Preview only (default)}';
 
@@ -402,6 +403,10 @@ class Enrich100KaminovCommand extends Command
             }
 
             $query->get(['id', 'name', 'images'])->each(function ($p) use ($key, $brandName) {
+                if ($this->option('only-broken-images') && ! $this->needsImageRepair($p)) {
+                    return;
+                }
+
                 $model = $this->model((string) $p->name, $brandName);
                 if ($model !== '') {
                     $hasImages = ! empty(json_decode((string) ($p->images ?? '[]'), true));
@@ -826,6 +831,41 @@ class Enrich100KaminovCommand extends Command
         }
 
         return $written;
+    }
+
+    private function needsImageRepair(object $product): bool
+    {
+        $images = json_decode((string) ($product->images ?? '[]'), true);
+        if (! is_array($images) || $images === [] || trim((string) ($images[0] ?? '')) === '') {
+            return true;
+        }
+
+        $raw = ltrim((string) $images[0], '/');
+        if ($raw === '') {
+            return true;
+        }
+
+        if (str_starts_with($raw, 'http://') || str_starts_with($raw, 'https://')) {
+            return false;
+        }
+
+        if (str_starts_with($raw, 'img/')) {
+            return ! file_exists(public_path($raw));
+        }
+
+        if (str_starts_with($raw, 'products/')) {
+            return ! file_exists(storage_path('app/public/' . $raw));
+        }
+
+        if (str_starts_with($raw, 'product/')) {
+            return ! file_exists(public_path('images/' . $raw));
+        }
+
+        if (substr_count($raw, '/') >= 2) {
+            return ! file_exists(public_path('images/product/' . $raw));
+        }
+
+        return true;
     }
 
     // ── Specs → product_attribute_values ─────────────────────────────────────────

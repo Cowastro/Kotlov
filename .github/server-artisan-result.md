@@ -1,69 +1,181 @@
 # Server Artisan Result
 
-- Time: 2026-08-21 18:01:17 UTC
-- Task: `artisan-apply`
-- Artisan args: `supplier:sync-teplov-sukhov-retail --apply --create-missing --sheet=mc-black`
-- Log file: `storage/logs/teplov-sukhov-retail-sync.log`
+- Time: 2026-08-26 18:06:54 UTC
+- Task: `tail-log`
+- Artisan args: ``
+- Log file: `storage/logs/restore-remaining-2.log`
 - Exit code: `0`
 
 ```text
 No local changes to save
 From https://github.com/Cowastro/Kotlov
-   c59f9ae1..089c1387  main       -> origin/main
-Updating c59f9ae1..089c1387
+   6860da5f..5b1b9f3f  main       -> origin/main
+Updating 6860da5f..5b1b9f3f
 Fast-forward
- .github/server-artisan-result.md                   | 25 +++++++-------
- .github/server-artisan-task.json                   |  4 +--
- .../SyncTeplovSukhovRetailPricesCommand.php        | 40 +++++++++++++++++++---
- 3 files changed, 51 insertions(+), 18 deletions(-)
-Прайс 2026-08-10: retail. Режим: APPLY.
-+--------------------------------------+------------+
-| Показатель                           | Количество |
-+--------------------------------------+------------+
-| Строк в прайсе                       | 448        |
-| Безопасно сопоставлено               | 300        |
-| Цен обновлено                        | 0          |
-| Без изменения                        | 300        |
-| Создано точных новых карточек        | 79         |
-| Неоднозначных — пропущено            | 2          |
-| Не найдено — пропущено               | 134        |
-| Конфликтов связи — пропущено         | 6          |
-| Конфликтов внутри прайса — пропущено | 0          |
-| Переведено в статус «В наличии»      | 340        |
-+--------------------------------------+------------+
-+-----------------------+--------------------------------------------+-----------------------------------------------------------------------+
-| Артикул поставщика    | Прайс                                      | Результат                                                             |
-+-----------------------+--------------------------------------------+-----------------------------------------------------------------------+
-| TS.FRT.AKL.0080.62699 | Адаптер Моно М-М 430-0.5 D80               | not matched                                                           |
-| TS.FRT.AKL.0100.72542 | Адаптер Моно М-М 430-0.5 D100              | not matched                                                           |
-| TS.FRT.AKL.0110.32905 | Адаптер Моно М-М 430-0.8 D110              | ambiguous: 8990,8991                                                  |
-| TS.FRT.AKL.0115.32906 | Адаптер Моно М-М 430-0.8 D115              | product already linked to: TS.FRT.AKP.0115.64928                      |
-| TS.FRT.AKL.0120.32907 | Адаптер Моно М-М 430-0.8 D120              | #8985 Адаптер котла Теплов и Сухов моно М-...: 14.74 → 14.74 (same)   |
-| TS.FRT.AKL.0130.32856 | Адаптер Моно М-М 430-0.8 D130              | ambiguous: 8993,8994                                                  |
-| TS.FRT.AKL.0150.32858 | Адаптер Моно М-М 430-0.8 D150              | #8986 Адаптер котла Теплов и Сухов моно М-...: 18.06 → 18.06 (same)   |
-| TS.FRT.AKL.0180.32912 | Адаптер Моно М-М 430-0.8 D180              | #8987 Адаптер котла Теплов и Сухов моно М-...: 21.27 → 21.27 (same)   |
-| TS.FRT.AKL.0200.32913 | Адаптер Моно М-М 430-0.8 D200              | #8988 Адаптер котла Теплов и Сухов моно М-...: 23.17 → 23.17 (same)   |
-| TS.FRT.AKL.0250.32914 | Адаптер Моно М-М 430-0.8 D250              | #8989 Адаптер котла Теплов и Сухов моно М-...: 27.81 → 27.81 (same)   |
-| TS.FRT.AKP.0100.74001 | Адаптер переход Моно М-М 430-0.8 D100/110  | #8990 Адаптер-переход Теплов и Сухов Моно...: 24.52 → 24.52 (same)    |
-| TS.FRT.AKP.0100.73738 | Адаптер переход Моно М-М 430-0.8 D100/120  | not matched                                                           |
-| TS.FRT.AKP.0110.73628 | Адаптер переход Моно М-М 430-0.8 D110/120  | #8991 Адаптер-переход Теплов и Сухов Моно...: 24.85 → 24.85 (same)    |
-| TS.FRT.AKP.0115.64928 | Адаптер переход Моно М-М 430-0.8 D115/120  | #8992 Адаптер-переход Теплов и Сухов Моно...: 25.01 → 25.01 (same)    |
-| TS.FRT.AKP.0120.72195 | Адаптер переход Моно М-М 430-0.8 D120/130  | #8993 Адаптер-переход Теплов и Сухов Моно...: 29.56 → 29.56 (same)    |
-| TS.FRT.AKP.0130.72197 | Адаптер переход Моно М-М 430-0.8 D130/150  | #8994 Адаптер-переход Теплов и Сухов Моно...: 32.09 → 32.09 (same)    |
-| TS.FRT.AKP.0140.70054 | Адаптер переход Моно М-М 430-0.8 D140/150  | not matched                                                           |
-| TS.FRT.AKP.0150.72198 | Адаптер переход Моно М-М 430-0.8 D150/160  | #8995 Адаптер-переход Теплов и Сухов Моно...: 30.52 → 30.52 (same)    |
-| TS.FRT.AKP.0160.68982 | Адаптер переход Моно М-М 430-0.8 D160/180  | #8996 Адаптер-переход Теплов и Сухов Моно...: 37.35 → 37.35 (same)    |
-| TS.FRT.DFR.0115.74683 | Дефлектор ДМ-Р 430-0.5 D115 М              | not matched                                                           |
-| TS.FRT.DFR.0120.74684 | Дефлектор ДМ-Р 430-0.5 D120 М              | #8997 Дефлектор Теплов и Сухов моно ДМ-Р 4...: 57.73 → 57.73 (same)   |
-| TS.FRT.DFR.0150.74687 | Дефлектор ДМ-Р 430-0.5 D150 М              | #8998 Дефлектор Теплов и Сухов моно ДМ-Р 4...: 65.39 → 65.39 (same)   |
-| TS.FRT.DFR.0180.72739 | Дефлектор ДМ-Р 430-0.5 D180 М              | not matched                                                           |
-| TS.FRT.DFR.0200.72723 | Дефлектор ДМ-Р 430-0.5 D200 М              | #8999 Дефлектор Теплов и Сухов моно ДМ-Р 4...: 95.16 → 95.16 (same)   |
-| TS.FRT.DFR.0250.72740 | Дефлектор ДМ-Р 430-0.5 D250 М              | #9000 Дефлектор Теплов и Сухов моно ДМ-Р 4...: 133.45 → 133.45 (same) |
-| TS.KMP.ZRV.0115.72187 | Заглушка ревизии моно ЗРМ-Р 430-0.5 D115 М | not matched                                                           |
-| TS.KMP.ZRV.0120.72047 | Заглушка ревизии моно ЗРМ-Р 430-0.5 D120 М | #9001 Заглушка ревизии моно 430 0,5 мм Ø 1...: 16.30 → 16.30 (same)   |
-| TS.KMP.ZRV.0150.72966 | Заглушка ревизии моно ЗРМ-Р 430-0.5 D150 М | #9002 Заглушка ревизии моно 430 0,5 мм Ø 1...: 20.25 → 20.25 (same)   |
-| TS.KMP.ZRV.0180.74621 | Заглушка ревизии моно ЗРМ-Р 430-0.5 D180 М | #9003 Заглушка ревизии моно 430 0,5 мм Ø 1...: 19.37 → 19.37 (same)   |
-| TS.KMP.ZRV.0200.56441 | Заглушка ревизии моно ЗРМ-Р 430-0.5 D200 М | #9004 Заглушка ревизии моно 430 0,5 мм Ø 2...: 21.51 → 21.51 (same)   |
-+-----------------------+--------------------------------------------+-----------------------------------------------------------------------+
+ .github/server-artisan-result.md         | 23 ++++++++++-------------
+ .github/server-artisan-task.json         |  6 +++---
+ public/assets/css/kotlov.css             | 24 ++++++++++++++++++++++++
+ resources/views/pages/home-new.blade.php |  2 +-
+ 4 files changed, 38 insertions(+), 17 deletions(-)
+[38/92] TA800L
+[39/92] TA800LB
+[40/92] TA800RB
+[41/92] TA800
+[42/92] TA800R
+[43/92] TDN900P
+[44/92] TDN900PB
+[45/92] TDN700P
+[46/92] TDN700PB
+[47/92] TBN1600P
+[48/92] TDN900B
+[49/92] TBN1000T
+[50/92] TDN900
+[51/92] TBN800TB
+[52/92] TBN800T
+[53/92] TDN800RP
+[54/92] TDNP1000R
+[55/92] TDNP1000L
+[56/92] TDN800RPB
+[57/92] TDNP1000LB
+[58/92] TDN800LP
+[59/92] TDN800LPB
+[60/92] TDNP1000RB
+[61/92] TDN800L
+[62/92] TDN800R
+[63/92] TDN800P
+[64/92] TBN1600PB
+[65/92] TDN800LB
+[66/92] TDN800RB
+[67/92] TDN800РB
+[68/92] TDN800B
+[69/92] TDN1200
+[70/92] TBN1000TB
+[71/92] TDN800
+[72/92] TDN1200B
+[73/92] TA700-1K
+[74/92] TA700-1KB
+[75/92] TA1000R
+[76/92] TA1000L
+[77/92] TA1000LB
+[78/92] TAN700-1B
+[79/92] TAN700LB
+[80/92] TAN700RB
+[81/92] TA1000
+[82/92] TAN700R
+[83/92] TAN700L
+[84/92] TAN700-1
+[85/92] TA1000B
+[86/92] TA1000RB
+[87/92] TO700
+[88/92] TP700
+[89/92] TDN800V
+[90/92] TDN800PV
+[91/92] TDN800BV
+[92/92] TDN800PВV
++-----------------+-------+
+| metric          | count |
++-----------------+-------+
+| created         | 6     |
+| updated         | 86    |
+| attributes      | 140   |
+| images          | 36    |
+| skipped_invicta | 0     |
+| errors          | 0     |
++-----------------+-------+
+Exit code: 0
+
+=== Running: supplier:sync-ecokamin-stoves --apply ===
+APPLY: database will be updated.
+Supplier currency: RUB, rate to BYN: 0.039
+  Раздел: https://ecokamin.ru/catalog/pechi_kaminy/bavariya/
+  Раздел: https://ecokamin.ru/catalog/kaminy/
+Found stoves: 35 (skipped Invicta: 0)
+[1/35] PK004
+[2/35] PK168M
+[3/35] PK166M
+[4/35] PK049
+[5/35] PK123
+[6/35] PK007
+[7/35] PK165M
+[8/35] PK147
+[9/35] PK187
+[10/35] PK145
+[11/35] PK138
+[12/35] PK179
+[13/35] РК193
+[14/35] PK189
+[15/35] PK186
+[16/35] K218
+[17/35] K186B
+[18/35] K186
+[19/35] KM211B
+[20/35] KM203
+[21/35] KTS201
+[22/35] KTS200
+[23/35] KM212CB
+[24/35] KM212C
+[25/35] KPN202B
+[26/35] KPN202
+[27/35] K185
+[28/35] KP197RB
+[29/35] KP195LB
+[30/35] KP196R
+[31/35] KP194L
+[32/35] KM210LB
+[33/35] KM205L
+[34/35] KRN800BK
+[35/35] KRN800BG
++-----------------+-------+
+| metric          | count |
++-----------------+-------+
+| created         | 0     |
+| updated         | 35    |
+| attributes      | 0     |
+| images          | 0     |
+| skipped_invicta | 0     |
+| errors          | 0     |
++-----------------+-------+
+Exit code: 0
+
+=== Running: supplier:sync-elicon-gas-meters --apply ===
+APPLY: database will be updated.
+Listing scrape failed: file_get_contents(https://elicon.by/product-category/bitovie_schetchiki_gaza/page/4/): Failed to open stream: HTTP request failed! HTTP/1.1 404 Not Found
+
+Exit code: 1
+
+=== Running: supplier:sync-gorodkotlov-vaillant --apply ===
+APPLY: database will be updated.
+Found 16 unique Vaillant products on gorodkotlov.by.
+[1/16] https://gorodkotlov.by/catalog/gazovye-kotly/gazovyy-kotel-vaillant-turbotec-pro-vuw-242-5-3/
+[2/16] https://gorodkotlov.by/catalog/gazovye-kotly/gazovyy-kotel-vaillant-turbotec-plus-vu-242-5-5-/
+[3/16] https://gorodkotlov.by/catalog/gazovye-kotly/kondensatsionnyy-gazovyy-kotel-vaillant-ecotec-plus-vu-35-cs-1-5/
+[4/16] https://gorodkotlov.by/catalog/gazovye-kotly/kondensatsionnyy-gazovyy-kotel-vaillant-ecotec-plus-vu-30-cs-1-5/
+[5/16] https://gorodkotlov.by/catalog/gazovye-kotly/kondensatsionnyy-gazovyy-kotel-vaillant-ecotec-plus-vu-25-cs-1-5/
+[6/16] https://gorodkotlov.by/catalog/gazovye-kotly/gazovyy-kotel-vaillant-turbotec-plus-vu-282-5-5/
+[7/16] https://gorodkotlov.by/catalog/gazovye-kotly/gazovyy-kotel-vaillant-turbotec-plus-vu-362-5-5/
+[8/16] https://gorodkotlov.by/catalog/gazovye-kotly/gazovyy-kotel-vaillant-turbofit-vuw-242-5-2/
+[9/16] https://gorodkotlov.by/catalog/gazovye-kotly/gazovyy-kotel-vaillant-turbotec-plus-vuw-282-5-5/
+[10/16] https://gorodkotlov.by/catalog/gazovye-kotly/gazovyy-kotel-vaillant-turbotec-plus-vuw-242-5-5/
+[11/16] https://gorodkotlov.by/catalog/gazovye-kotly/gazovyy-kotel-vaillant-atmotec-plus-vuw-280-5-5/
+[12/16] https://gorodkotlov.by/catalog/gazovye-kotly/gazovyy-kotel-vaillant-atmotec-plus-vuw-240-5-5/
+[13/16] https://gorodkotlov.by/catalog/gazovye-kotly/gazovyy-kotel-vaillant-atmotec-plus-vu-240_5_5/
+[14/16] https://gorodkotlov.by/catalog/gazovye-kotly/gazovyy-kotel-vaillant-atmotec-pro-vuw-280-5-3-/
+[15/16] https://gorodkotlov.by/catalog/gazovye-kotly/gazovyy_kotel_vaillant_atmotec_pro_vuw_240_5_3_/
+[16/16] https://gorodkotlov.by/catalog/gazovye-kotly/gazovyy-kotel-vaillant-turbotec-pro-vuw-282-5-3/
++-------------+-------+
+| action      | count |
++-------------+-------+
+| created     | 0     |
+| updated     | 4     |
+| no_change   | 12    |
+| seo         | 0     |
+| documents   | 28    |
+| promo_flags | 32    |
+| skipped     | 0     |
+| errors      | 0     |
++-------------+-------+
+Exit code: 0
+
+Done restoring remaining supplier images.
 
 ```

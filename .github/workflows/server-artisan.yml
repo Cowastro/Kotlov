@@ -122,6 +122,7 @@ jobs:
           case "$TASK" in
             optimize-clear)
               git pull
+              git checkout -- public/icons
               "$PHP_BIN" artisan optimize:clear
               ;;
             artisan-dry-run)
@@ -144,6 +145,7 @@ jobs:
             deploy-recover)
               git merge --abort || true
               git pull --ff-only
+              git checkout -- public/icons
               "$PHP_BIN" artisan optimize:clear
               ;;
           esac

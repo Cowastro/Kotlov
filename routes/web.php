@@ -226,6 +226,51 @@ Route::post('/telegram/webhook', [TelegramWebhookController::class, 'handle']);
 
 // sitemap.xml — вынесен в routes/sitemap.php без session middleware
 
+// ===== SVG-иконки каталога =====
+Route::get('/icons/{file}.svg', function (string $file) {
+    if (! preg_match('/^[a-z0-9_-]+$/i', $file)) {
+        abort(404);
+    }
+
+    $path = public_path("icons/{$file}.svg");
+
+    if (! file_exists($path)) {
+        abort(404);
+    }
+
+    return response()->file($path, [
+        'Content-Type' => 'image/svg+xml; charset=UTF-8',
+        'Cache-Control' => 'public, max-age=604800',
+    ]);
+})->withoutMiddleware([
+    \Illuminate\Session\Middleware\StartSession::class,
+    \Illuminate\View\Middleware\ShareErrorsFromSession::class,
+    \Illuminate\Foundation\Http\Middleware\ValidateCsrfToken::class,
+    \Illuminate\Foundation\Http\Middleware\PreventRequestForgery::class,
+]);
+
+Route::get('/catalog-icons/{file}', function (string $file) {
+    if (! preg_match('/^[a-z0-9_-]+$/i', $file)) {
+        abort(404);
+    }
+
+    $path = public_path("icons/{$file}.svg");
+
+    if (! file_exists($path)) {
+        abort(404);
+    }
+
+    return response()->file($path, [
+        'Content-Type' => 'image/svg+xml; charset=UTF-8',
+        'Cache-Control' => 'public, max-age=604800',
+    ]);
+})->name('catalog.icon')->withoutMiddleware([
+    \Illuminate\Session\Middleware\StartSession::class,
+    \Illuminate\View\Middleware\ShareErrorsFromSession::class,
+    \Illuminate\Foundation\Http\Middleware\ValidateCsrfToken::class,
+    \Illuminate\Foundation\Http\Middleware\PreventRequestForgery::class,
+]);
+
 // ===== Прочие формы =====
 Route::post('/ask', [ContactRequestController::class, 'store'])
     ->middleware('public.form.protect:ask')
