@@ -187,6 +187,7 @@
                                     ->values()
                                     ->all();
                                 $icon = $icons[$rootCat->slug] ?? null;
+                                $iconFile = $icon ? pathinfo($icon, PATHINFO_FILENAME) : null;
                                 $iconClass = $iconClasses[$rootCat->slug] ?? null;
                                 $children = $rootCat->children->where('is_active', true);
                                 $hasChildren = $children->count() > 0 || count($editorial) > 0;
@@ -196,12 +197,12 @@
                             <li class="{{ $hasChildren ? 'has-sub-nav-category' : '' }}">
                                 <a href="/{{ $rootCat->slug }}" class="nav-category_link">
                                     <span class="d-flex align-items-center gap-2">
-                                        @if ($iconClass)
-                                            <i class="icon {{ $iconClass }} cat-icon cat-icon--font"></i>
-                                        @elseif ($icon)
-                                            <img src="{{ asset('icons/' . $icon) }}"
+                                        @if ($iconFile)
+                                            <img src="{{ route('catalog.icon', ['file' => $iconFile]) }}"
                                                 alt="{{ $rootCat->name }}"
                                                 class="cat-icon">
+                                        @elseif ($iconClass)
+                                            <i class="icon {{ $iconClass }} cat-icon cat-icon--font"></i>
                                         @endif
                                         <span>{{ $rootCat->name }}</span>
                                     </span>
