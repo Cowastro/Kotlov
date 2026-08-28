@@ -257,6 +257,15 @@ class EnrichTeplodvorCommand extends Command
     // Transliteration corrections: our CMS slugifies differently from teplodvor.by.
     private const SLUG_NORM = [
         'eco' => 'eko',  // TIS EKO/ECO, EcoKamin, etc.
+        // Str::slug() transliterates "ч" as bare "c" (drops the "h"), so OUR "печь"/"печи"
+        // tokens read "pec"/"peci" — teplodvor.by's own slugs correctly spell "pech"/"pechi".
+        // Left as a stopword this token could never match and only dragged scores down;
+        // stripping it outright (tried first) instead caused false positives, since "печь"
+        // vs. an accessory for the same model (e.g. "Теплосъемник ... ТОП-140") is exactly
+        // the distinction that token exists to make. Normalizing it to teplodvor's real
+        // spelling keeps that specificity. See project_tsarpechi_enrichment memory.
+        'pec' => 'pech',
+        'peci' => 'pechi',
     ];
 
     // Function words and generic category words that inflate match scores without adding specificity.
@@ -267,13 +276,7 @@ class EnrichTeplodvorCommand extends Command
         'nasos', 'nasosnaya', 'stantsiya', 'klapan', 'schetchik', 'komplekte', 'datchikom', 'datchik',
         'dyimohodom', 'dymohodom', 'boylera', 'komnatnoy', 'temperaturyi', 'temperatury',
         // Generic product type prefixes — very long, dominate scores across all brands
-        // 'pec'/'peci' — Laravel's Str::slug() transliterates "ч" as bare "c" (drops the "h"),
-        // so "печь"/"печи" become "pec"/"peci" in OUR slugs, never "pech"/"pechi" like on
-        // teplodvor.by. Without these, that dead-weight token can never match anything and
-        // silently drags every печь-product's score below --min-score (found via Теплодар
-        // "Печь ТОП-140 ДС": true score 0.67 < 0.75 default, caused by 'pec' inflating the
-        // denominator with no possible match) — see project_tsarpechi_enrichment memory.
-        'kotel', 'pech', 'pec', 'peci', 'otopitelnaya', 'otopitelnyj', 'napolnyiy', 'napolnyj', 'chugunnyiy', 'chugunnyj',
+        'kotel', 'pech', 'otopitelnaya', 'otopitelnyj', 'napolnyiy', 'napolnyj', 'chugunnyiy', 'chugunnyj',
         'tverdotoplivnyj', 'tverdotoplivnyy', 'tverdotoplivnyi',
         'elektricheskij', 'elektricheskiy', 'elektricheskaya', 'elektriceskii', 'elektriceskiy', 'elektricheskiyiy',
         'gazovyj', 'gazovaya', 'gazovyy', 'gazovyi', 'gazovyiy',

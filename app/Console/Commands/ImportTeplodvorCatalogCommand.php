@@ -134,11 +134,6 @@ class ImportTeplodvorCatalogCommand extends Command
 
     private const SLUG_STOPWORDS = [
         'bez', 'dlya', 'so', 'na', 'po', 'iz', 'ot', 'ob', 'pri', 'ili', 'ne', 'do',
-        // 'pech'/'pec'/'peci' — Str::slug() transliterates "ч" as bare "c" (drops the "h"),
-        // so our own "печь"/"печи" tokens read "pec"/"peci", never teplodvor's real "pech"/
-        // "pechi" — a dead-weight token that can never match. See EnrichTeplodvorCommand's
-        // SLUG_STOPWORDS comment / project_tsarpechi_enrichment memory for the full story.
-        'pech', 'pec', 'peci',
         'kotel', 'nasos', 'gazovyy', 'gazovaya', 'elektricheskiy', 'elektricheskaya',
         'nastennyi', 'nastennaya', 'nastennoe', 'napolnyi',
         'dvuhkonturnyi', 'odnokonturnyi', 'kondensat', 'kondensatsionnyy',
@@ -146,7 +141,10 @@ class ImportTeplodvorCatalogCommand extends Command
         'vodogrevatel', 'vodonagrevateli', 'nakopitelnyy',
     ];
 
-    private const SLUG_NORM = ['eco' => 'eko'];
+    // Str::slug() transliterates "ч" as bare "c" (drops the "h"), so our own "печь"/"печи"
+    // tokens read "pec"/"peci" — teplodvor.by's real slugs correctly spell "pech"/"pechi".
+    // See EnrichTeplodvorCommand::SLUG_NORM / project_tsarpechi_enrichment memory.
+    private const SLUG_NORM = ['eco' => 'eko', 'pec' => 'pech', 'peci' => 'pechi'];
 
     public function handle(): int
     {
