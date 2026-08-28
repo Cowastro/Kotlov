@@ -21,7 +21,8 @@ class DebugBrandStatsCommand extends Command
         {--no-brand : List active products with brand_id IS NULL}
         {--needing-enrich : List all brands with active products still missing photos/specs, by count}
         {--dump : With --brand, print id/name/price/sku for every product instead of aggregate stats}
-        {--specs-check : With --brand, print specs JSON length + product_attribute_values row count per product}';
+        {--specs-check : With --brand, print specs JSON length + product_attribute_values row count per product}
+        {--source-urls= : Comma-separated product ids — print their supplier_products.source_url rows}';
 
     protected $description = 'Diagnose brand/product counts for enrichment anomalies';
 
@@ -62,6 +63,22 @@ class DebugBrandStatsCommand extends Command
             $this->line(sprintf('%d brands with active products still needing photos/specs:', $rows->count()));
             foreach ($rows as $r) {
                 $this->line(sprintf('  %s (id=%d): %d', $r->brand_name, $r->brand_id, $r->cnt));
+            }
+            return self::SUCCESS;
+        }
+
+        if ($idsOpt = trim((string) $this->option('source-urls'))) {
+            $ids = array_filter(array_map('intval', explode(',', $idsOpt)));
+            $rows = DB::table('supplier_products')->whereIn('product_id', $ids)
+                ->get(['id', 'product_id', 'supplier_id', 'source_url', 'match_status']);
+            $this->line(sprintf('%d supplier_products rows for ids [%s]:', $rows->count(), implode(',', $ids)));
+            foreach ($rows as $r) {
+                $this->line(sprintf('  sp_id=%d product_id=%d supplier_id=%d status=%s url=%s', $r->id, $r->product_id, $r->supplier_id, $r->match_status, $r->source_url ?: '(null)'));
+            }
+            $found = $rows->pluck('product_id')->unique()->all();
+            $missing = array_diff($ids, $found);
+            if ($missing) {
+                $this->warn('No supplier_products row at all for: ' . implode(',', $missing));
             }
             return self::SUCCESS;
         }
