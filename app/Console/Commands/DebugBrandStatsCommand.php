@@ -19,7 +19,8 @@ class DebugBrandStatsCommand extends Command
         {--brand= : Brand name (substring match against brands.name)}
         {--name=  : Product name (substring match against products.name) — use when no brand row is found}
         {--no-brand : List active products with brand_id IS NULL}
-        {--needing-enrich : List all brands with active products still missing photos/specs, by count}';
+        {--needing-enrich : List all brands with active products still missing photos/specs, by count}
+        {--dump : With --brand, print id/name/price/sku for every product instead of aggregate stats}';
 
     protected $description = 'Diagnose brand/product counts for enrichment anomalies';
 
@@ -90,6 +91,22 @@ class DebugBrandStatsCommand extends Command
 
         if ($brands->isEmpty()) {
             $this->warn("No brand row matches \"{$brandNeedle}\".");
+            return self::SUCCESS;
+        }
+
+        if ((bool) $this->option('dump')) {
+            foreach ($brands as $b) {
+                $products = DB::table('products')->where('brand_id', $b->id)
+                    ->orderBy('id')
+                    ->get(['id', 'name', 'sku', 'price', 'currency', 'is_archived']);
+                $this->line(sprintf('brand id=%d name=%s: %d products', $b->id, $b->name, $products->count()));
+                foreach ($products as $p) {
+                    $this->line(sprintf(
+                        '  id=%d archived=%s sku=%s price=%s %s | %s',
+                        $p->id, $p->is_archived ? '1' : '0', $p->sku ?: '-', $p->price, $p->currency, $p->name
+                    ));
+                }
+            }
             return self::SUCCESS;
         }
 
