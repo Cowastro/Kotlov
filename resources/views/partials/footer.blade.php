@@ -65,6 +65,9 @@
                             <a href="tel:+375293544041" class="text-white link h4 fw-medium mb-12">
                                 +375 (29) 354-40-41
                             </a>
+                            <a href="tel:+375333777093" class="text-white link h4 fw-medium mb-12">
+                                +375 (33) 377-70-93
+                            </a>
                             <a href="https://www.google.com/maps?q=Минск,+ул.+Селицкого,+39Б"
                                 target="_blank" class="cl-text-3 link mb-4">
                                 Беларусь, Минск, ул. Селицкого, 39Б, каб. 23
@@ -151,6 +154,30 @@
                     </div>
                 </div>
 
+            </div>
+        </div>
+    </div>
+
+    {{-- Юридическая информация --}}
+    @php
+        $seller = config('legal.seller');
+        $resourceOwner = config('legal.resource_owner');
+        $tradeRegistry = config('legal.trade_registry');
+    @endphp
+    <div class="footer-legal">
+        <div class="container-full">
+            <div class="footer-legal-grid">
+                <div>
+                    <p class="text-white fw-semibold">Продавец товаров: {{ $seller['name'] }}</p>
+                    <p class="cl-text-3">УНП {{ $seller['unp'] }}, государственная регистрация {{ $seller['registration_date'] }}, {{ $seller['registration_authority'] }}.</p>
+                    <p class="cl-text-3">Адрес: {{ $seller['address'] }}. Обращения покупателей рассматривает {{ $seller['appeals_person'] }}.</p>
+                </div>
+                <div>
+                    <p class="cl-text-3">Телефоны: {{ implode(', ', $seller['phones']) }}</p>
+                    <p class="cl-text-3">E-mail: <a href="mailto:{{ $seller['email'] }}" class="text-white link">{{ $seller['email'] }}</a></p>
+                    <p class="cl-text-3">Ресурс {{ $resourceOwner['domain'] }}: БелГИЭ N {{ $resourceOwner['belgie_number'] }} от {{ $resourceOwner['belgie_registration_date'] }}. Торговый реестр: N {{ $tradeRegistry['registration_number'] }} от {{ $tradeRegistry['registration_date'] }}.</p>
+                    <p><a href="/#legal-info" class="text-white link link-underline">Полная информация о продавце</a></p>
+                </div>
             </div>
         </div>
     </div>

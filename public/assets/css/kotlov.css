@@ -1783,6 +1783,27 @@ a.category-v05.subcat-tile:hover .cate-icon {
     flex-direction: column;
 }
 
+.footer-legal {
+    border-top: 1px solid rgba(255, 255, 255, .1);
+    padding: 24px 0;
+}
+
+.footer-legal-grid {
+    display: grid;
+    grid-template-columns: 1.1fr .9fr;
+    gap: 20px;
+}
+
+.footer-legal p {
+    margin-bottom: 6px;
+}
+
+@media (max-width: 991px) {
+    .footer-legal-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
 @media (max-width: 575px) {
     .kotlov-blog-content .box-social-tag {
         align-items: flex-start;

@@ -77,7 +77,8 @@
             <a href="https://www.google.com/maps?q=Минск,+ул.+Селицкого,+39Б" target="_blank"
                 class="text-decoration-underline text-primary lh-26 mb-16">Открыть на карте</a>
             <a href="mailto:info@kotlov.by" class="cl-text-2 link mb-8">info@kotlov.by</a>
-            <a href="tel:+375293544041" class="cl-text-2 link">+375 (29) 354-40-41</a>
+            <a href="tel:+375293544041" class="cl-text-2 link mb-4">+375 (29) 354-40-41</a>
+            <a href="tel:+375333777093" class="cl-text-2 link">+375 (33) 377-70-93</a>
             <p class="lh-26 cl-text-2 mt-8 mb-0">Пн–Пт: 9:00–18:00</p>
         </div>
     </div>
