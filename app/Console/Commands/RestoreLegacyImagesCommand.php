@@ -45,7 +45,7 @@ class RestoreLegacyImagesCommand extends Command
     }
 
     /**
-     * @return array<int, array{name: string, sources: array<int, string>, target: string, verifyDir: string, checks: array<int, string>}>
+     * @return array<int, array{name: string, sources: array<int, string>, target: string, verifyDir: string, checks: array<int, string>, discoverFile?: string}>
      */
     private function targets(string $target): array
     {
@@ -77,6 +77,7 @@ class RestoreLegacyImagesCommand extends Command
                     'teplodvor/18060_0.png',
                     'teplodvor/18005_0.jpg',
                 ],
+                'discoverFile' => 'teplodvor/18027_0.jpg',
             ],
         ];
 
@@ -88,7 +89,7 @@ class RestoreLegacyImagesCommand extends Command
     }
 
     /**
-     * @param array{name: string, sources: array<int, string>, target: string, verifyDir: string, checks: array<int, string>} $target
+     * @param array{name: string, sources: array<int, string>, target: string, verifyDir: string, checks: array<int, string>, discoverFile?: string} $target
      */
     private function restoreTarget(array $target, string $keyPath): bool
     {
@@ -100,7 +101,14 @@ class RestoreLegacyImagesCommand extends Command
 
         $lastExitCode = null;
 
-        foreach ($target['sources'] as $source) {
+        $sources = $target['sources'];
+
+        if (isset($target['discoverFile'])) {
+            array_push($sources, ...$this->discoverSources($target['discoverFile'], $keyPath));
+            $sources = array_values(array_unique($sources));
+        }
+
+        foreach ($sources as $source) {
             $this->line('Source: ' . self::OLD_SERVER . ':' . $source);
             $this->line('Starting rsync...');
 
@@ -132,7 +140,49 @@ class RestoreLegacyImagesCommand extends Command
     }
 
     /**
-     * @param array{name: string, sources: array<int, string>, target: string, verifyDir: string, checks: array<int, string>} $target
+     * @return array<int, string>
+     */
+    private function discoverSources(string $relativeFile, string $keyPath): array
+    {
+        $this->line('Searching old server for: */img/products/' . $relativeFile);
+
+        $process = new Process([
+            'ssh',
+            '-i',
+            $keyPath,
+            '-o',
+            'StrictHostKeyChecking=no',
+            self::OLD_SERVER,
+            'find /home -path "*/img/products/' . $relativeFile . '" -print 2>/dev/null | head -n 10',
+        ]);
+        $process->setTimeout(300);
+        $process->run();
+
+        if (!$process->isSuccessful()) {
+            $this->warn('Remote find failed with exit code ' . $process->getExitCode());
+            return [];
+        }
+
+        $sources = [];
+        $suffix = '/' . str_replace('\\', '/', $relativeFile);
+
+        foreach (preg_split('/\R/', trim($process->getOutput())) ?: [] as $found) {
+            $found = trim($found);
+
+            if ($found === '' || !str_ends_with($found, $suffix)) {
+                continue;
+            }
+
+            $source = substr($found, 0, -strlen($suffix)) . '/';
+            $this->line('Discovered source: ' . self::OLD_SERVER . ':' . $source);
+            $sources[] = $source;
+        }
+
+        return $sources;
+    }
+
+    /**
+     * @param array{name: string, sources: array<int, string>, target: string, verifyDir: string, checks: array<int, string>, discoverFile?: string} $target
      */
     private function verifyTarget(array $target): void
     {
