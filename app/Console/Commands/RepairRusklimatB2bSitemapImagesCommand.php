@@ -263,6 +263,34 @@ class RepairRusklimatB2bSitemapImagesCommand extends Command
             }
         }
 
+        if ($best !== null) {
+            return $best;
+        }
+
+        $compactNeedles = $this->compactModelNeedles($product, $brandSlug);
+        if ($compactNeedles === []) {
+            return null;
+        }
+
+        foreach ($sitemap as $slug => $url) {
+            if (! str_contains($slug, $brandSlug)) {
+                continue;
+            }
+
+            $compactSlug = str_replace('-', '', $slug);
+            foreach ($compactNeedles as $needle) {
+                if (! str_contains($compactSlug, $needle)) {
+                    continue;
+                }
+
+                $length = strlen($slug);
+                if ($length < $bestLength) {
+                    $best = $url;
+                    $bestLength = $length;
+                }
+            }
+        }
+
         return $best;
     }
 
@@ -290,6 +318,59 @@ class RepairRusklimatB2bSitemapImagesCommand extends Command
             ->filter(fn (string $token): bool => strlen($token) >= 2)
             ->reject(fn (string $token): bool => in_array($token, $generic, true))
             ->unique()
+            ->values()
+            ->all();
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    private function compactModelNeedles(Product $product, string $brandSlug): array
+    {
+        $sources = array_filter([
+            (string) $product->name,
+            (string) $product->slug,
+            (string) $product->sku,
+        ]);
+
+        $brandTokens = $brandSlug !== '' ? explode('-', $brandSlug) : [];
+        $generic = [
+            'komplekt', 'dlia', 'bez', 'belyi', 'belyy', 'chernyi', 'chernyy',
+            'nastennyi', 'napolnyi', 'nagrevatelnyi', 'elektricheskii',
+            'radiator', 'kotel', 'konvektor', 'vodonagrevatel', 'nasos',
+            'filtr', 'truba', 'klapan', 'dizain', 'sekc', 'sekciia', 'sekts',
+            'split', 'sistema', 'tipa', 'blok', 'vnutrennii', 'universalnyi',
+        ];
+
+        $needles = [];
+        foreach ($sources as $source) {
+            $parts = collect(explode('-', Str::slug($source)))
+                ->map(fn (string $token): string => trim($token))
+                ->filter(fn (string $token): bool => $token !== '')
+                ->reject(fn (string $token): bool => in_array($token, $brandTokens, true))
+                ->reject(fn (string $token): bool => in_array($token, $generic, true))
+                ->values()
+                ->all();
+
+            $compact = implode('', $parts);
+            if (strlen($compact) >= 6 && preg_match('/\d/', $compact)) {
+                $needles[] = $compact;
+            }
+
+            $count = count($parts);
+            for ($size = min(5, $count); $size >= 2; $size--) {
+                for ($i = 0; $i <= $count - $size; $i++) {
+                    $candidate = implode('', array_slice($parts, $i, $size));
+                    if (strlen($candidate) >= 6 && preg_match('/\d/', $candidate)) {
+                        $needles[] = $candidate;
+                    }
+                }
+            }
+        }
+
+        return collect($needles)
+            ->unique()
+            ->sortByDesc(fn (string $needle): int => strlen($needle))
             ->values()
             ->all();
     }
