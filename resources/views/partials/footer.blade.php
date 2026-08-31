@@ -158,30 +158,6 @@
         </div>
     </div>
 
-    {{-- Юридическая информация --}}
-    @php
-        $seller = config('legal.seller');
-        $resourceOwner = config('legal.resource_owner');
-        $tradeRegistry = config('legal.trade_registry');
-    @endphp
-    <div class="footer-legal">
-        <div class="container-full">
-            <div class="footer-legal-grid">
-                <div>
-                    <p class="text-white fw-semibold">Продавец товаров: {{ $seller['name'] }}</p>
-                    <p class="cl-text-3">УНП {{ $seller['unp'] }}, государственная регистрация {{ $seller['registration_date'] }}, {{ $seller['registration_authority'] }}.</p>
-                    <p class="cl-text-3">Адрес: {{ $seller['address'] }}. Обращения покупателей рассматривает {{ $seller['appeals_person'] }}.</p>
-                </div>
-                <div>
-                    <p class="cl-text-3">Телефоны: {{ implode(', ', $seller['phones']) }}</p>
-                    <p class="cl-text-3">E-mail: <a href="mailto:{{ $seller['email'] }}" class="text-white link">{{ $seller['email'] }}</a></p>
-                    <p class="cl-text-3">Ресурс {{ $resourceOwner['domain'] }}: БелГИЭ N {{ $resourceOwner['belgie_number'] }} от {{ $resourceOwner['belgie_registration_date'] }}. Торговый реестр: N {{ $tradeRegistry['registration_number'] }} от {{ $tradeRegistry['registration_date'] }}.</p>
-                    <p><a href="/#legal-info" class="text-white link link-underline">Полная информация о продавце</a></p>
-                </div>
-            </div>
-        </div>
-    </div>
-
     {{-- Нижняя строка --}}
     <div class="footer-bottom">
         <div class="container-full">
@@ -202,6 +178,34 @@
                     </li>
                 </ul>
             </div>
+        </div>
+    </div>
+
+    {{-- Юридическая информация --}}
+    @php
+        $seller = config('legal.seller');
+        $resourceOwner = config('legal.resource_owner');
+        $tradeRegistry = config('legal.trade_registry');
+        $authority = config('legal.local_authority');
+        $delivery = config('shop.delivery_methods', []);
+        $payments = config('shop.payment_methods', []);
+    @endphp
+    <div class="footer-legal" id="legal-info">
+        <div class="container-full">
+            <p>
+                Продавец товаров: {{ $seller['name'] }}, УНП {{ $seller['unp'] }}, государственная регистрация {{ $seller['registration_date'] }}, {{ $seller['registration_authority'] }}. Адрес: {{ $seller['address'] }}. Обращения покупателей рассматривает {{ $seller['appeals_person'] }}.
+                Телефоны: {{ implode(', ', $seller['phones']) }}. E-mail: <a href="mailto:{{ $seller['email'] }}">{{ $seller['email'] }}</a>.
+            </p>
+            <p>
+                Интернет-магазин {{ $resourceOwner['domain'] }} используется {{ $seller['short_name'] }} на основании дилерского договора с {{ $resourceOwner['name'] }}. Владелец интернет-ресурса: {{ $resourceOwner['name'] }}. Регистрация в БелГИЭ: ресурс N {{ $resourceOwner['belgie_number'] }}, дата {{ $resourceOwner['belgie_registration_date'] }}, статус: {{ $resourceOwner['belgie_status'] }}. Торговый реестр Республики Беларусь: {{ $tradeRegistry['shop'] }}, дата включения {{ $tradeRegistry['registration_date'] }}, регистрационный номер {{ $tradeRegistry['registration_number'] }}.
+            </p>
+            <p>
+                Способы оплаты: {{ $payments['cash']['name'] ?? 'наличными' }}, {{ $payments['card']['name'] ?? 'банковской картой' }}, {{ $payments['bank_transfer']['name'] ?? 'безналичный расчет' }}, {{ $payments['webpay']['name'] ?? 'WEBPAY' }}, рассрочка, кредит, оплата по счету для организаций.
+                Способы доставки: {{ $delivery['pickup']['name'] ?? 'самовывоз' }} по адресу {{ $delivery['pickup']['address'] ?? $seller['address'] }}, {{ $delivery['courier']['name'] ?? 'доставка курьером по г. Минску' }}, {{ $delivery['transport']['name'] ?? 'транспортная компания по Беларуси' }}, {{ $delivery['kit']['name'] ?? 'международная доставка ТК КИТ' }}.
+            </p>
+            <p>
+                Местный исполнительный и распорядительный орган по месту регистрации продавца: {{ $authority['name'] }}, {{ $authority['address'] }}, телефоны {{ implode(', ', $authority['phones']) }}, e-mail <a href="mailto:{{ $authority['email'] }}">{{ $authority['email'] }}</a>, сайт {{ $authority['site'] }}.
+            </p>
         </div>
     </div>
 

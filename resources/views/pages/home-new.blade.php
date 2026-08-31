@@ -724,8 +724,6 @@
     </div>
 </section>
           
-@include('partials.legal-info')
-
         </main>
    
 

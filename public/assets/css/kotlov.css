@@ -1785,23 +1785,25 @@ a.category-v05.subcat-tile:hover .cate-icon {
 
 .footer-legal {
     border-top: 1px solid rgba(255, 255, 255, .1);
-    padding: 24px 0;
-}
-
-.footer-legal-grid {
-    display: grid;
-    grid-template-columns: 1.1fr .9fr;
-    gap: 20px;
+    padding: 14px 0 18px;
+    color: rgba(255, 255, 255, .42);
+    font-size: 11px;
+    line-height: 1.45;
 }
 
 .footer-legal p {
-    margin-bottom: 6px;
+    max-width: 1320px;
+    margin-bottom: 5px;
 }
 
-@media (max-width: 991px) {
-    .footer-legal-grid {
-        grid-template-columns: 1fr;
-    }
+.footer-legal p:last-child {
+    margin-bottom: 0;
+}
+
+.footer-legal a {
+    color: rgba(255, 255, 255, .58);
+    text-decoration: underline;
+    text-underline-offset: 2px;
 }
 
 @media (max-width: 575px) {
