@@ -233,6 +233,7 @@ class RepairRusklimatB2bSitemapImagesCommand extends Command
 
         $brandSlug = Str::slug((string) ($product->brand?->name ?? ''));
         $modelTokens = $this->modelTokens($product, $brandSlug);
+        $requiredSlugTokens = $this->requiredCandidateTokens($product, $brandSlug);
         if ($brandSlug === '' || count($modelTokens) < 2) {
             return null;
         }
@@ -242,6 +243,10 @@ class RepairRusklimatB2bSitemapImagesCommand extends Command
 
         foreach ($sitemap as $slug => $url) {
             if (! str_contains($slug, $brandSlug)) {
+                continue;
+            }
+
+            if (! $this->hasRequiredCandidateTokens($slug, $requiredSlugTokens)) {
                 continue;
             }
 
@@ -274,6 +279,10 @@ class RepairRusklimatB2bSitemapImagesCommand extends Command
 
         foreach ($sitemap as $slug => $url) {
             if (! str_contains($slug, $brandSlug)) {
+                continue;
+            }
+
+            if (! $this->hasRequiredCandidateTokens($slug, $requiredSlugTokens)) {
                 continue;
             }
 
@@ -373,6 +382,46 @@ class RepairRusklimatB2bSitemapImagesCommand extends Command
             ->sortByDesc(fn (string $needle): int => strlen($needle))
             ->values()
             ->all();
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    private function requiredCandidateTokens(Product $product, string $brandSlug): array
+    {
+        if ($brandSlug !== 'royal-thermo') {
+            return [];
+        }
+
+        $slug = Str::slug(implode(' ', array_filter([
+            (string) $product->name,
+            (string) $product->slug,
+            (string) $product->sku,
+        ])));
+
+        $families = [
+            'biliner', 'dreamliner', 'firenze', 'indigo', 'infinity',
+            'pianoforte', 'revolution', 'sorrento', 'vittoria',
+        ];
+
+        return collect($families)
+            ->filter(fn (string $family): bool => str_contains($slug, $family))
+            ->values()
+            ->all();
+    }
+
+    /**
+     * @param array<int, string> $requiredTokens
+     */
+    private function hasRequiredCandidateTokens(string $candidateSlug, array $requiredTokens): bool
+    {
+        foreach ($requiredTokens as $token) {
+            if (! str_contains($candidateSlug, $token)) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     private function imageStatus(Product $product): array
