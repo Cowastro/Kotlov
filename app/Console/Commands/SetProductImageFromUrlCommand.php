@@ -80,7 +80,7 @@ class SetProductImageFromUrlCommand extends Command
         File::ensureDirectoryExists(dirname($absolute));
         File::put($absolute, $body);
 
-        $product->images = json_encode([$path], JSON_UNESCAPED_UNICODE);
+        $product->images = [$path];
         $product->save();
 
         $this->info(sprintf('Saved %dx%d image and updated product.', $info[0] ?? 0, $info[1] ?? 0));
