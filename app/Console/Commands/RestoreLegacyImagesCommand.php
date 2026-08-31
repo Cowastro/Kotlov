@@ -7,12 +7,11 @@ use Symfony\Component\Process\Process;
 
 class RestoreLegacyImagesCommand extends Command
 {
-    protected $signature = 'images:restore-legacy';
+    protected $signature = 'images:restore-legacy {--target=images : What to restore: images, img-products, all}';
 
-    protected $description = 'Re-sync legacy product photos from the old server into public/images (recovery after they were swept away by git stash)';
+    protected $description = 'Re-sync legacy product photos from the old server into public/images or public/img/products';
 
     private const OLD_SERVER = 'root@178.172.161.109';
-    private const OLD_PATH = '/home/kotlov.by/www/images/';
     private const SSH_KEY = '/.ssh/id_rsa_kotlov';
 
     public function handle(): int
@@ -27,20 +26,80 @@ class RestoreLegacyImagesCommand extends Command
             return self::FAILURE;
         }
 
-        $target = public_path('images') . '/';
-        @mkdir($target, 0755, true);
+        $targets = $this->targets((string) $this->option('target'));
 
-        $this->line('Target: ' . $target);
-        $this->line('Source: ' . self::OLD_SERVER . ':' . self::OLD_PATH);
-        $this->line('Starting rsync (this can take a while for ~18k files)...');
+        if ($targets === []) {
+            $this->error('Unknown target. Use one of: images, img-products, all.');
+            return self::FAILURE;
+        }
+
+        foreach ($targets as $target) {
+            if (!$this->restoreTarget($target, $keyPath)) {
+                return self::FAILURE;
+            }
+        }
+
+        $this->info('Done.');
+
+        return self::SUCCESS;
+    }
+
+    /**
+     * @return array<int, array{name: string, source: string, target: string, verifyDir: string, checks: array<int, string>}>
+     */
+    private function targets(string $target): array
+    {
+        $all = [
+            'images' => [
+                'name' => 'public/images',
+                'source' => '/home/kotlov.by/www/images/',
+                'target' => public_path('images') . '/',
+                'verifyDir' => public_path('images/product'),
+                'checks' => [
+                    'product/008/008011/eco_4s.jpg',
+                    'product/0010/010397/660313bb042d2.png',
+                ],
+            ],
+            'img-products' => [
+                'name' => 'public/img/products',
+                'source' => '/home/kotlov.by/www/img/products/',
+                'target' => public_path('img/products') . '/',
+                'verifyDir' => public_path('img/products'),
+                'checks' => [
+                    'teplodvor/18027_0.jpg',
+                    'teplodvor/18060_0.png',
+                    'teplodvor/18005_0.jpg',
+                ],
+            ],
+        ];
+
+        if ($target === 'all') {
+            return array_values($all);
+        }
+
+        return isset($all[$target]) ? [$all[$target]] : [];
+    }
+
+    /**
+     * @param array{name: string, source: string, target: string, verifyDir: string, checks: array<int, string>} $target
+     */
+    private function restoreTarget(array $target, string $keyPath): bool
+    {
+        @mkdir($target['target'], 0755, true);
+
+        $this->line('');
+        $this->line('=== Restoring ' . $target['name'] . ' ===');
+        $this->line('Target: ' . $target['target']);
+        $this->line('Source: ' . self::OLD_SERVER . ':' . $target['source']);
+        $this->line('Starting rsync...');
 
         $process = new Process([
             'rsync',
             '-avz',
             '--stats',
             '-e', "ssh -i {$keyPath} -o StrictHostKeyChecking=no",
-            self::OLD_SERVER . ':' . self::OLD_PATH,
-            $target,
+            self::OLD_SERVER . ':' . $target['source'],
+            $target['target'],
         ]);
         $process->setTimeout(3600);
 
@@ -50,16 +109,26 @@ class RestoreLegacyImagesCommand extends Command
 
         if (!$process->isSuccessful()) {
             $this->error('rsync failed with exit code ' . $process->getExitCode());
-            return self::FAILURE;
+            return false;
         }
 
-        // Verify
+        $this->verifyTarget($target);
+
+        return true;
+    }
+
+    /**
+     * @param array{name: string, source: string, target: string, verifyDir: string, checks: array<int, string>} $target
+     */
+    private function verifyTarget(array $target): void
+    {
         $count = 0;
-        $productDir = $target . 'product';
-        if (is_dir($productDir)) {
+
+        if (is_dir($target['verifyDir'])) {
             $iter = new \RecursiveIteratorIterator(
-                new \RecursiveDirectoryIterator($productDir, \FilesystemIterator::SKIP_DOTS)
+                new \RecursiveDirectoryIterator($target['verifyDir'], \FilesystemIterator::SKIP_DOTS)
             );
+
             foreach ($iter as $file) {
                 if ($file->isFile()) {
                     $count++;
@@ -68,21 +137,12 @@ class RestoreLegacyImagesCommand extends Command
         }
 
         $this->line('');
-        $this->line('=== Verification ===');
-        $this->line('Files under public/images/product/: ' . $count);
+        $this->line('=== Verification: ' . $target['name'] . ' ===');
+        $this->line('Files under ' . $target['verifyDir'] . ': ' . $count);
 
-        $checkPaths = [
-            'product/008/008011/eco_4s.jpg',
-            'product/0010/010397/660313bb042d2.png',
-        ];
-        foreach ($checkPaths as $p) {
-            $full = $target . $p;
-            $this->line('check ' . $p . ': ' . (file_exists($full) ? 'EXISTS (' . filesize($full) . ' bytes)' : 'still missing'));
+        foreach ($target['checks'] as $path) {
+            $full = $target['target'] . $path;
+            $this->line('check ' . $path . ': ' . (file_exists($full) ? 'EXISTS (' . filesize($full) . ' bytes)' : 'still missing'));
         }
-
-        $this->line('');
-        $this->info('Done.');
-
-        return self::SUCCESS;
     }
 }
