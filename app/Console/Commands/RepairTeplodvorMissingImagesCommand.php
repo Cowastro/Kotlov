@@ -78,6 +78,22 @@ class RepairTeplodvorMissingImagesCommand extends Command
                 break;
             }
 
+            $products = Product::query()
+                ->where('brand_id', $brand->id)
+                ->where('is_archived', false)
+                ->orderBy('id')
+                ->get(['id', 'brand_id', 'name', 'slug', 'sku', 'images']);
+
+            if (! $force) {
+                $products = $products
+                    ->filter(fn (Product $product) => ! $this->hasUsableProductImage($product))
+                    ->values();
+            }
+
+            if ($products->isEmpty()) {
+                continue;
+            }
+
             $sourceUrls = $this->sourceUrlsForBrand($brand, $allLinks);
             if ($sourceUrls === []) {
                 continue;
@@ -96,22 +112,12 @@ class RepairTeplodvorMissingImagesCommand extends Command
                 continue;
             }
 
-            $products = Product::query()
-                ->where('brand_id', $brand->id)
-                ->where('is_archived', false)
-                ->orderBy('id')
-                ->get(['id', 'brand_id', 'name', 'slug', 'sku', 'images']);
-
             foreach ($products as $product) {
                 if ($limit > 0 && $updatedTotal >= $limit) {
                     break 2;
                 }
 
                 $this->stats['products']++;
-                if (! $force && $this->hasUsableProductImage($product)) {
-                    $this->stats['already_ok']++;
-                    continue;
-                }
 
                 $key = $this->modelKey((string) $product->name, (string) $brand->name);
                 $item = $items[$key] ?? null;
@@ -126,6 +132,7 @@ class RepairTeplodvorMissingImagesCommand extends Command
 
                 if (! $apply) {
                     $this->stats['would_update']++;
+                    $updatedTotal++;
                     continue;
                 }
 
