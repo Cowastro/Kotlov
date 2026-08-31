@@ -13,6 +13,7 @@ class AuditProductImagesCommand extends Command
 {
     protected $signature = 'catalog:audit-product-images
         {--category= : Category slug; includes descendants}
+        {--supplier= : Supplier code or id}
         {--missing-only : Show only empty, placeholder or broken images}
         {--icons : Also audit public/icons SVG files}
         {--limit=100 : Max product rows to show, 0 means no limit}';
@@ -26,9 +27,10 @@ class AuditProductImagesCommand extends Command
         }
 
         $categorySlug = trim((string) $this->option('category'));
-        if ($categorySlug === '') {
+        $supplierFilter = trim((string) $this->option('supplier'));
+        if ($categorySlug === '' && $supplierFilter === '') {
             if (! (bool) $this->option('icons')) {
-                $this->error('--category or --icons is required.');
+                $this->error('--category, --supplier or --icons is required.');
 
                 return self::FAILURE;
             }
@@ -36,21 +38,46 @@ class AuditProductImagesCommand extends Command
             return self::SUCCESS;
         }
 
-        $category = Category::query()
-            ->where('slug', $categorySlug)
-            ->first(['id', 'name', 'slug']);
+        $category = null;
+        $categoryIds = collect();
+        if ($categorySlug !== '') {
+            $category = Category::query()
+                ->where('slug', $categorySlug)
+                ->first(['id', 'name', 'slug']);
 
-        if (! $category) {
-            $this->error('Category not found: ' . $categorySlug);
+            if (! $category) {
+                $this->error('Category not found: ' . $categorySlug);
 
-            return self::FAILURE;
+                return self::FAILURE;
+            }
+
+            $categoryIds = $this->collectCategoryAndDescendantIds((int) $category->id);
         }
 
-        $categoryIds = $this->collectCategoryAndDescendantIds((int) $category->id);
-        $sourceUrls = DB::table('supplier_products')
+        $supplier = null;
+        if ($supplierFilter !== '') {
+            $supplier = DB::table('suppliers')
+                ->where('code', $supplierFilter)
+                ->when(is_numeric($supplierFilter), fn ($query) => $query->orWhere('id', (int) $supplierFilter))
+                ->first(['id', 'code', 'name']);
+
+            if (! $supplier) {
+                $this->error('Supplier not found: ' . $supplierFilter);
+
+                return self::FAILURE;
+            }
+        }
+
+        $sourceUrlQuery = DB::table('supplier_products')
             ->whereNotNull('product_id')
             ->whereNotNull('source_url')
-            ->where('source_url', 'like', 'http%')
+            ->where('source_url', 'like', 'http%');
+
+        if ($supplier) {
+            $sourceUrlQuery->where('supplier_id', (int) $supplier->id);
+        }
+
+        $sourceUrls = $sourceUrlQuery
             ->orderByDesc('updated_at')
             ->get(['product_id', 'source_url'])
             ->groupBy('product_id')
@@ -72,7 +99,13 @@ class AuditProductImagesCommand extends Command
 
         Product::query()
             ->orderable()
-            ->whereIn('category_id', $categoryIds)
+            ->when($categoryIds->isNotEmpty(), fn ($query) => $query->whereIn('category_id', $categoryIds))
+            ->when($supplier, fn ($query) => $query->whereIn('products.id', function ($subquery) use ($supplier): void {
+                $subquery->from('supplier_products')
+                    ->select('product_id')
+                    ->where('supplier_id', (int) $supplier->id)
+                    ->whereNotNull('product_id');
+            }))
             ->with(['brand:id,name', 'category:id,name,slug'])
             ->orderBy('sort_order')
             ->orderByDesc('is_featured')
@@ -109,7 +142,15 @@ class AuditProductImagesCommand extends Command
                 ];
             });
 
-        $this->line(sprintf('Products in %s (%s)', $category->slug, $category->name));
+        $scope = [];
+        if ($category) {
+            $scope[] = sprintf('%s (%s)', $category->slug, $category->name);
+        }
+        if ($supplier) {
+            $scope[] = sprintf('supplier %s #%d (%s)', $supplier->code, $supplier->id, $supplier->name);
+        }
+
+        $this->line('Products in ' . implode(' + ', $scope));
         $this->table(['metric', 'count'], collect($summary)->map(fn ($count, $metric) => [$metric, $count])->values()->all());
 
         if ($rows !== []) {
