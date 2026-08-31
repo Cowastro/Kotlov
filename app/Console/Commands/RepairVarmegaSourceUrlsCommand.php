@@ -21,6 +21,7 @@ class RepairVarmegaSourceUrlsCommand extends Command
         {--rn-profi-section-pages=80 : Maximum RN-Profi product pages to index from section}
         {--rn-profi-search-limit=0 : Maximum RN-Profi article searches, 0 means all}
         {--rn-profi-candidate-limit=8 : Maximum RN-Profi candidate pages to verify per article}
+        {--supplier=rn-profi : Supplier code filter; use all to process every supplier}
         {--http-timeout=8 : HTTP timeout for source discovery requests, seconds}
         {--product= : Process one product ID}
         {--article-prefix= : Process only supplier articles with this prefix or comma-separated prefixes, e.g. VM7040,VM7050}
@@ -35,7 +36,7 @@ class RepairVarmegaSourceUrlsCommand extends Command
         {--skip-documents : Do not copy documents/PDFs}
         {--sleep=1000 : Delay between enrichment requests, ms}';
 
-    protected $description = 'Repair existing RN-Profi Varmega source URLs by exact official Varmega supplier article.';
+    protected $description = 'Repair existing Varmega source URLs by exact official Varmega supplier article.';
 
     private const CACHE_PATH = 'supplier-cache/varmega-official-url-index.json';
 
@@ -46,6 +47,7 @@ class RepairVarmegaSourceUrlsCommand extends Command
         $limit = max(0, (int) $this->option('limit'));
         $offset = max(0, (int) $this->option('offset'));
         $sleep = max(300, (int) $this->option('sleep'));
+        $supplierCode = trim((string) $this->option('supplier')) ?: 'rn-profi';
 
         $this->line($apply
             ? '<fg=red;options=bold>APPLY: Varmega official source URLs will be written.</>'
@@ -66,7 +68,6 @@ class RepairVarmegaSourceUrlsCommand extends Command
             ->join('products as p', 'p.id', '=', 'sp.product_id')
             ->join('brands as b', 'b.id', '=', 'p.brand_id')
             ->leftJoin('categories as c', 'c.id', '=', 'p.category_id')
-            ->where('s.code', 'rn-profi')
             ->where('b.name', 'Varmega')
             ->where('p.is_archived', false)
             ->whereNotNull('sp.supplier_article')
@@ -84,6 +85,10 @@ class RepairVarmegaSourceUrlsCommand extends Command
                 'c.name as category_name',
             ])
             ->orderBy('p.id');
+
+        if ($supplierCode !== 'all') {
+            $query->where('s.code', $supplierCode);
+        }
 
         if ($category = trim((string) $this->option('category'))) {
             $query->where('c.name', 'like', '%' . $category . '%');
@@ -114,7 +119,8 @@ class RepairVarmegaSourceUrlsCommand extends Command
         }
 
         $rows = $query->get();
-        $this->info(sprintf('RN-Profi Varmega links to check: %d.', $rows->count()));
+        $supplierLabel = $supplierCode === 'all' ? 'all suppliers' : $supplierCode;
+        $this->info(sprintf('Varmega links to check (%s): %d.', $supplierLabel, $rows->count()));
 
         $stats = [
             'checked' => 0,
