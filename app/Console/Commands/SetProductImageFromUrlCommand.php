@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\Http;
 class SetProductImageFromUrlCommand extends Command
 {
     protected $signature = 'products:set-image-from-url
-        {--product= : Product ID}
+        {--product= : Product ID, SKU or slug}
         {--image-url= : Source image URL to download}
         {--path= : Public-relative target path, e.g. img/products/restored/file.png}
         {--apply : Write file and update product images}';
@@ -19,12 +19,12 @@ class SetProductImageFromUrlCommand extends Command
 
     public function handle(): int
     {
-        $productId = (int) $this->option('product');
+        $productRef = trim((string) $this->option('product'));
         $imageUrl = trim((string) $this->option('image-url'));
         $path = ltrim(str_replace('\\', '/', trim((string) $this->option('path'))), '/');
         $apply = (bool) $this->option('apply');
 
-        if ($productId <= 0 || $imageUrl === '' || $path === '') {
+        if ($productRef === '' || $imageUrl === '' || $path === '') {
             $this->error('--product, --image-url and --path are required.');
 
             return self::FAILURE;
@@ -36,9 +36,9 @@ class SetProductImageFromUrlCommand extends Command
             return self::FAILURE;
         }
 
-        $product = Product::query()->find($productId);
+        $product = $this->resolveProduct($productRef);
         if (! $product) {
-            $this->error("Product #{$productId} not found.");
+            $this->error("Product {$productRef} not found by id, sku or slug.");
 
             return self::FAILURE;
         }
@@ -86,5 +86,20 @@ class SetProductImageFromUrlCommand extends Command
         $this->info(sprintf('Saved %dx%d image and updated product.', $info[0] ?? 0, $info[1] ?? 0));
 
         return self::SUCCESS;
+    }
+
+    private function resolveProduct(string $ref): ?Product
+    {
+        if (ctype_digit($ref)) {
+            $product = Product::query()->find((int) $ref);
+            if ($product) {
+                return $product;
+            }
+        }
+
+        return Product::query()
+            ->where('sku', $ref)
+            ->orWhere('slug', $ref)
+            ->first();
     }
 }
