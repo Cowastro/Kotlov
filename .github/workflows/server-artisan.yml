@@ -14,6 +14,7 @@ on:
           - artisan-background
           - tail-log
           - ps-artisan
+          - stop-varmega-image-repair
           - deploy-recover
       artisan_args:
         description: 'Artisan args, e.g. supplier:sync-ligmet --dry-run --brand=Blist. Use %20 for a space inside one value, e.g. --brand=Теплов%20и%20Сухов'
@@ -41,7 +42,7 @@ jobs:
           set -euo pipefail
 
           case "$TASK" in
-            optimize-clear|artisan-dry-run|artisan-apply|artisan-background|tail-log|ps-artisan|deploy-recover) ;;
+            optimize-clear|artisan-dry-run|artisan-apply|artisan-background|tail-log|ps-artisan|stop-varmega-image-repair|deploy-recover) ;;
             *) echo "::error::Unsupported task: $TASK"; exit 1 ;;
           esac
 
@@ -140,6 +141,10 @@ jobs:
               tail -n 120 "$LOG_FILE"
               ;;
             ps-artisan)
+              ps -ef | grep artisan | grep -v grep || true
+              ;;
+            stop-varmega-image-repair)
+              pkill -f 'artisan catalog:repair-product-images --brand=Varmega' || true
               ps -ef | grep artisan | grep -v grep || true
               ;;
             deploy-recover)
