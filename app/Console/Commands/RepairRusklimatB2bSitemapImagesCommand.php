@@ -24,6 +24,9 @@ class RepairRusklimatB2bSitemapImagesCommand extends Command
     private const SUPPLIER_CODE = 'rusklimat';
     private const SITEMAP_URL = 'https://b2b.rusklimat.com/sitemap.xml';
 
+    /** @var array<int, string> */
+    private array $supplierArticlesByProductId = [];
+
     private array $stats = [
         'b2b_urls' => 0,
         'broken_products' => 0,
@@ -77,6 +80,13 @@ class RepairRusklimatB2bSitemapImagesCommand extends Command
             ->get(['id', 'brand_id', 'name', 'slug', 'sku', 'images'])
             ->filter(fn (Product $product) => $this->imageStatus($product)[0] !== 'ok')
             ->values();
+
+        $this->supplierArticlesByProductId = DB::table('supplier_products')
+            ->where('supplier_id', $supplierId)
+            ->whereIn('product_id', $products->pluck('id')->all())
+            ->pluck('supplier_article', 'product_id')
+            ->map(fn ($article): string => (string) $article)
+            ->all();
 
         $this->stats['broken_products'] = $products->count();
 
@@ -236,14 +246,34 @@ class RepairRusklimatB2bSitemapImagesCommand extends Command
         }
 
         $brandSlug = Str::slug((string) ($product->brand?->name ?? ''));
+        $articleNeedles = $this->articleNeedles($product);
         $modelTokens = $this->modelTokens($product, $brandSlug);
         $requiredSlugTokens = $this->requiredCandidateTokens($product, $brandSlug);
         if ($brandSlug === '' || count($modelTokens) < 2) {
-            return null;
+            if ($articleNeedles === []) {
+                return null;
+            }
         }
 
         $best = null;
         $bestLength = PHP_INT_MAX;
+
+        foreach ($sitemap as $slug => $url) {
+            $compactSlug = str_replace('-', '', $slug);
+            foreach ($articleNeedles as $needle) {
+                if (str_contains($slug, $needle) || str_contains($compactSlug, $needle)) {
+                    $length = strlen($slug);
+                    if ($length < $bestLength) {
+                        $best = $url;
+                        $bestLength = $length;
+                    }
+                }
+            }
+        }
+
+        if ($best !== null) {
+            return $best;
+        }
 
         foreach ($sitemap as $slug => $url) {
             if (! str_contains($slug, $brandSlug)) {
@@ -344,6 +374,7 @@ class RepairRusklimatB2bSitemapImagesCommand extends Command
             (string) $product->name,
             (string) $product->slug,
             (string) $product->sku,
+            $this->supplierArticlesByProductId[(int) $product->id] ?? '',
         ]);
 
         $brandTokens = $brandSlug !== '' ? explode('-', $brandSlug) : [];
@@ -426,6 +457,26 @@ class RepairRusklimatB2bSitemapImagesCommand extends Command
         }
 
         return true;
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    private function articleNeedles(Product $product): array
+    {
+        $article = (string) ($this->supplierArticlesByProductId[(int) $product->id] ?? '');
+        if ($article === '') {
+            return [];
+        }
+
+        $slug = Str::slug($article);
+        $compact = str_replace('-', '', $slug);
+
+        return collect([$slug, $compact])
+            ->filter(fn (string $value): bool => strlen($value) >= 5)
+            ->unique()
+            ->values()
+            ->all();
     }
 
     private function imageStatus(Product $product): array
