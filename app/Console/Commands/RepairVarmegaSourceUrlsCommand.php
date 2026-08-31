@@ -156,6 +156,20 @@ class RepairVarmegaSourceUrlsCommand extends Command
                 ? $this->knownOfficialVarmegaSourceForArticle($article)
                 : null;
 
+            if ($match === null) {
+                foreach ($this->extractVisibleArticleTokens((string) $row->product_name) as $nameArticle) {
+                    if ($nameArticle === $article) {
+                        continue;
+                    }
+
+                    $match = $index[$nameArticle] ?? $this->knownOfficialVarmegaSourceForArticle($nameArticle);
+                    if ($match !== null) {
+                        $article = $nameArticle;
+                        break;
+                    }
+                }
+            }
+
             if ($match === null
                 && (bool) $this->option('rn-profi-fallback')
                 && $article !== ''
