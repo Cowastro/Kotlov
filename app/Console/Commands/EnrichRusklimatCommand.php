@@ -41,6 +41,7 @@ class EnrichRusklimatCommand extends Command
         {--no-scrape         : Do not touch the web at all (build from existing DB data only)}
         {--build-content     : Compose content from short_description + specs (no AI, supplier data)}
         {--build-short       : Compose short_description from content/specs (no AI, supplier data)}
+        {--only-broken-images : Process only products whose first image is empty or missing on disk}
         {--include-archived  : Also process archived products (default: active only)}
         {--dry-run           : Preview only, no DB writes}';
 
@@ -96,6 +97,7 @@ class EnrichRusklimatCommand extends Command
         $includeArchived = (bool) $this->option('include-archived');
         $brandFilter     = $this->option('brand');
         $categoryFilter  = $this->option('category');
+        $onlyBrokenImages = (bool) $this->option('only-broken-images');
 
         // "Needs enrichment" — any enrichable field is empty. JSON-safe: the column
         // may be a JSON type or TEXT, and a string compare to "[]" is unreliable
@@ -116,7 +118,7 @@ class EnrichRusklimatCommand extends Command
                 ->join('brands as br', 'p.brand_id', '=', 'br.id')
                 ->where('br.name', 'like', '%' . $brandFilter . '%'))
             ->when($categoryFilter, fn ($q) => $q->where('p.category_id', (int) $categoryFilter))
-            ->when(! $force, fn ($q) => $q->where($missingWhere));
+            ->when(! $force && ! $onlyBrokenImages, fn ($q) => $q->where($missingWhere));
 
         // Diagnostics: how the active/archived split looks for the current filter.
         $activeMatch   = (clone $base)->where('p.is_archived', false)->distinct('p.id')->count('p.id');
@@ -125,16 +127,26 @@ class EnrichRusklimatCommand extends Command
         $query = (clone $base)
             ->when(! $includeArchived, fn ($q) => $q->where('p.is_archived', false))
             ->select('p.id', 'p.name', 'p.slug', 'p.content', 'p.specs',
-                     'p.images', 'p.short_description', 'sp.supplier_article', 'sp.raw');
+                     'p.sku', 'p.images', 'p.short_description', 'sp.supplier_article', 'sp.raw');
 
-        $total    = (clone $query)->distinct('p.id')->count('p.id');
-        $products = $query->orderBy('p.id')->offset($offset)->limit($limit)->get();
+        if ($onlyBrokenImages) {
+            $allProducts = $query->orderBy('p.id')->get()
+                ->filter(fn (object $product): bool => ! $this->hasRealImage($product->images, (string) $product->sku, (int) $product->id))
+                ->values();
+
+            $total = $allProducts->count();
+            $products = $allProducts->slice($offset, $limit > 0 ? $limit : null)->values();
+        } else {
+            $total    = (clone $query)->distinct('p.id')->count('p.id');
+            $products = $query->orderBy('p.id')->offset($offset)->limit($limit)->get();
+        }
 
         $this->newLine();
         $this->info(sprintf(
-            'Products to enrich: %d (processing %d, offset %d%s%s%s%s)',
+            'Products to enrich: %d (processing %d, offset %d%s%s%s%s%s)',
             $total, $products->count(), $offset,
             $force ? ', --force' : '',
+            $onlyBrokenImages ? ', only broken images' : '',
             $brandFilter ? ', brand=' . $brandFilter : '',
             $categoryFilter ? ', category=' . $categoryFilter : '',
             $includeArchived ? ', incl. archived' : ''
@@ -226,7 +238,7 @@ class EnrichRusklimatCommand extends Command
 
             // ── Step 4: Image ─────────────────────────────────────────────────────
             if (! $this->option('skip-images') && ! empty($scraped['image_url'])) {
-                if ($force || $this->imagesMissing($product->images)) {
+                if ($force || $onlyBrokenImages || $this->imagesMissing($product->images)) {
                     $localPath = $this->downloadImage($scraped['image_url'], $product->slug, $imgDir);
                     if ($localPath) {
                         $updates['images'] = json_encode(
@@ -302,8 +314,17 @@ class EnrichRusklimatCommand extends Command
             } elseif (! $this->dryRun) {
                 $updates['updated_at'] = now();
                 DB::table('products')->where('id', $product->id)->update($updates);
+                if (! empty($scraped['source_url'])) {
+                    DB::table('supplier_products')
+                        ->where('supplier_id', $supplierId)
+                        ->where('product_id', $product->id)
+                        ->update(['source_url' => $scraped['source_url'], 'updated_at' => now()]);
+                }
             } else {
                 $this->line('  [dry-run] would update: ' . implode(', ', array_keys($updates)));
+                if (! empty($scraped['source_url'])) {
+                    $this->line('  [dry-run] would update source_url: ' . $scraped['source_url']);
+                }
             }
         }
 
@@ -773,6 +794,93 @@ class EnrichRusklimatCommand extends Command
         }
 
         return true;
+    }
+
+    private function hasRealImage(?string $raw, string $sku, int $id): bool
+    {
+        if ($raw === null || trim($raw) === '') {
+            return false;
+        }
+
+        $decoded = json_decode($raw, true);
+        if (! is_array($decoded)) {
+            return false;
+        }
+
+        foreach ($decoded as $entry) {
+            if (! is_string($entry)) {
+                continue;
+            }
+
+            $entry = trim($entry);
+            if ($entry === '' || $entry === '[]' || $entry === 'null' || $entry === '""') {
+                continue;
+            }
+
+            if (str_starts_with($entry, 'http://') || str_starts_with($entry, 'https://')) {
+                return true;
+            }
+
+            if ($this->localImageExists($entry, $sku, $id)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private function localImageExists(string $raw, string $sku, int $id): bool
+    {
+        $raw = ltrim($raw, '/');
+
+        if (str_starts_with($raw, 'img/')) {
+            return file_exists(public_path($raw));
+        }
+
+        if (str_starts_with($raw, 'products/')) {
+            return file_exists(storage_path('app/public/' . $raw));
+        }
+
+        if (str_starts_with($raw, 'product/')) {
+            return file_exists(public_path('images/' . $raw));
+        }
+
+        if (substr_count($raw, '/') >= 2) {
+            return file_exists(public_path('images/product/' . $raw));
+        }
+
+        $skuPath = $this->legacySkuPath($sku, $raw);
+        if ($skuPath !== null && file_exists(public_path('images/' . $skuPath))) {
+            return true;
+        }
+
+        return file_exists(public_path('images/' . $this->legacyIdPath($id, $raw)));
+    }
+
+    private function legacySkuPath(string $sku, string $file): ?string
+    {
+        $skuParts = explode('.', $sku);
+        $firstRaw = explode('-', $skuParts[0] ?? '')[1] ?? null;
+        $secondRaw = $skuParts[1] ?? null;
+
+        if ($firstRaw === null || $secondRaw === null || ! is_numeric($firstRaw) || ! is_numeric($secondRaw)) {
+            return null;
+        }
+
+        $n1 = (int) $firstRaw;
+        $dir1 = sprintf('00%d', $n1);
+        $dir2 = sprintf('%s%03d', str_pad((string) $n1, 3, '0', STR_PAD_LEFT), (int) $secondRaw);
+
+        return 'product/' . $dir1 . '/' . $dir2 . '/' . $file;
+    }
+
+    private function legacyIdPath(int $id, string $file): string
+    {
+        $n1 = (int) floor($id / 1000);
+        $dir1 = sprintf('00%d', $n1);
+        $dir2 = str_pad((string) $id, 6, '0', STR_PAD_LEFT);
+
+        return 'product/' . $dir1 . '/' . $dir2 . '/' . $file;
     }
 
     /** True when specs is null, "", [], {} or "null". */
