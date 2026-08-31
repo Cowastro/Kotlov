@@ -7,6 +7,7 @@ use App\Services\AiContentEnricher;
 use App\Services\ProductSourceEnricher;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
 /**
@@ -28,6 +29,8 @@ class EnrichTeplodvorCommand extends Command
         {--skip-ai         : Skip AI description generation}
         {--only-ai         : Only (re)generate AI texts, skip photos and specs}
         {--overwrite       : Replace images even if product already has photos}
+        {--images-only     : Download/update images only; do not change specs, service info or AI content}
+        {--missing-images-only : Process only products with empty, placeholder or broken first image}
         {--product=        : Process single product by ID}
         {--limit=          : Max products to enrich in this run}
         {--min-score=0.75  : Minimum token match score (0–1)}
@@ -85,6 +88,8 @@ class EnrichTeplodvorCommand extends Command
         // ── Phase 2: products ───────────────────────────────────────────────────
         $onlyAi   = (bool) $this->option('only-ai');
         $overwrite = (bool) $this->option('overwrite');
+        $imagesOnly = (bool) $this->option('images-only');
+        $missingImagesOnly = (bool) $this->option('missing-images-only');
         $minScore  = (float) $this->option('min-score');
         $limit     = $this->option('limit') ? (int) $this->option('limit') : PHP_INT_MAX;
 
@@ -151,7 +156,12 @@ class EnrichTeplodvorCommand extends Command
             });
         }
 
-        $products = $query->get(['id', 'name', 'slug', 'brand_id', 'images', 'specs', 'service_info', 'content']);
+        $products = $query->get(['id', 'name', 'slug', 'sku', 'brand_id', 'images', 'specs', 'service_info', 'content']);
+        if ($missingImagesOnly) {
+            $products = $products
+                ->filter(fn ($product) => ! $this->hasUsableProductImage($product))
+                ->values();
+        }
         $this->info(sprintf('Products to process: %d', count($products)));
 
         $brandNames = DB::table('brands')->pluck('name', 'id')->toArray();
@@ -194,7 +204,7 @@ class EnrichTeplodvorCommand extends Command
             try {
                 $brandName = (string) ($brandNames[$product->brand_id] ?? '');
                 $hasImages = ! empty(json_decode((string) ($product->images ?? '[]'), true));
-                $this->enrichProduct((int) $product->id, $url, $brandName, $hasImages, $onlyAi, $overwrite);
+                $this->enrichProduct((int) $product->id, $url, $brandName, $hasImages, $onlyAi, $overwrite, $imagesOnly);
             } catch (\Throwable $e) {
                 $this->stats['errors']++;
                 $this->warn('    ERROR: ' . $e->getMessage());
@@ -378,7 +388,7 @@ class EnrichTeplodvorCommand extends Command
 
     private function enrichProduct(
         int $pid, string $url, string $brandName, bool $hasImages,
-        bool $onlyAi, bool $overwrite
+        bool $onlyAi, bool $overwrite, bool $imagesOnly = false
     ): void {
         $html = $this->fetch($url);
         if ($html === null) {
@@ -404,7 +414,7 @@ class EnrichTeplodvorCommand extends Command
             $written = $this->downloadImages($pid, $card['images'], $hasImages, $overwrite);
             $this->stats['images'] += $written;
 
-            if (! empty($card['specs'])) {
+            if (! $imagesOnly && ! empty($card['specs'])) {
                 // Convert flat dict {key: value} to [{key, value, unit}] — unified format for display & attribute sync
                 $newSpecs = [];
                 foreach ($card['specs'] as $k => $v) {
@@ -451,7 +461,7 @@ class EnrichTeplodvorCommand extends Command
                 $this->line('    specs saved: ' . count($merged));
             }
 
-            if (! empty($card['serviceInfo'])) {
+            if (! $imagesOnly && ! empty($card['serviceInfo'])) {
                 $existingService = DB::table('products')->where('id', $pid)->value('service_info');
                 $needsUpdate = empty($existingService) || $existingService === '[]' || $existingService === '{}';
                 if (! $needsUpdate) {
@@ -472,7 +482,7 @@ class EnrichTeplodvorCommand extends Command
             }
         }
 
-        if (! $this->option('skip-ai')) {
+        if (! $imagesOnly && ! $this->option('skip-ai')) {
             $existing = (string) DB::table('products')->where('id', $pid)->value('content');
             if ($onlyAi || trim($existing) === '') {
                 $this->generateAiContent($pid, $card, $brandName, $now);
@@ -556,6 +566,73 @@ class EnrichTeplodvorCommand extends Command
     {
         $value = html_entity_decode(strip_tags($value), ENT_QUOTES | ENT_HTML5, 'UTF-8');
         return trim((string) preg_replace('/\s+/u', ' ', $value));
+    }
+
+    private function hasUsableProductImage(object $product): bool
+    {
+        $images = json_decode((string) ($product->images ?? '[]'), true);
+        if (! is_array($images) || $images === []) {
+            return false;
+        }
+
+        $raw = trim((string) ($images[0] ?? ''));
+        if ($raw === '' || str_contains($raw, 'product-placeholder')) {
+            return false;
+        }
+
+        if (str_starts_with($raw, 'http://') || str_starts_with($raw, 'https://')) {
+            return true;
+        }
+
+        $raw = ltrim($raw, '/');
+        if (str_starts_with($raw, 'img/')) {
+            return file_exists(public_path($raw));
+        }
+
+        if (str_starts_with($raw, 'products/')) {
+            return Storage::disk('public')->exists($raw);
+        }
+
+        if (str_starts_with($raw, 'product/')) {
+            return file_exists(public_path('images/' . $raw));
+        }
+
+        if (substr_count($raw, '/') >= 2) {
+            return file_exists(public_path('images/product/' . $raw));
+        }
+
+        $skuPath = $this->legacySkuPath($product, $raw);
+        if ($skuPath !== null && file_exists(public_path('images/' . $skuPath))) {
+            return true;
+        }
+
+        return file_exists(public_path('images/' . $this->legacyIdPath($product, $raw)));
+    }
+
+    private function legacySkuPath(object $product, string $file): ?string
+    {
+        $skuParts = explode('.', (string) ($product->sku ?? ''));
+        $firstRaw = explode('-', $skuParts[0] ?? '')[1] ?? null;
+        $secondRaw = $skuParts[1] ?? null;
+
+        if ($firstRaw === null || $secondRaw === null || ! is_numeric($firstRaw) || ! is_numeric($secondRaw)) {
+            return null;
+        }
+
+        $n1 = (int) $firstRaw;
+        $dir1 = sprintf('00%d', $n1);
+        $dir2 = sprintf('%s%03d', str_pad((string) $n1, 3, '0', STR_PAD_LEFT), (int) $secondRaw);
+
+        return 'product/' . $dir1 . '/' . $dir2 . '/' . $file;
+    }
+
+    private function legacyIdPath(object $product, string $file): string
+    {
+        $n1 = (int) floor(((int) $product->id) / 1000);
+        $dir1 = sprintf('00%d', $n1);
+        $dir2 = str_pad((string) $product->id, 6, '0', STR_PAD_LEFT);
+
+        return 'product/' . $dir1 . '/' . $dir2 . '/' . $file;
     }
 
     // ── Images ────────────────────────────────────────────────────────────────────
