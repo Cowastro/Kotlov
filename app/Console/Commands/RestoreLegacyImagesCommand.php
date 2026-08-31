@@ -45,14 +45,16 @@ class RestoreLegacyImagesCommand extends Command
     }
 
     /**
-     * @return array<int, array{name: string, source: string, target: string, verifyDir: string, checks: array<int, string>}>
+     * @return array<int, array{name: string, sources: array<int, string>, target: string, verifyDir: string, checks: array<int, string>}>
      */
     private function targets(string $target): array
     {
         $all = [
             'images' => [
                 'name' => 'public/images',
-                'source' => '/home/kotlov.by/www/images/',
+                'sources' => [
+                    '/home/kotlov.by/www/images/',
+                ],
                 'target' => public_path('images') . '/',
                 'verifyDir' => public_path('images/product'),
                 'checks' => [
@@ -62,7 +64,12 @@ class RestoreLegacyImagesCommand extends Command
             ],
             'img-products' => [
                 'name' => 'public/img/products',
-                'source' => '/home/kotlov.by/www/img/products/',
+                'sources' => [
+                    '/home/kotlov.by/www/img/products/',
+                    '/home/kotlov.by/www/public/img/products/',
+                    '/home/kotlov.by/www/kotlov-new2026/public/img/products/',
+                    '/home/kotlov.by/www/kotlov/public/img/products/',
+                ],
                 'target' => public_path('img/products') . '/',
                 'verifyDir' => public_path('img/products'),
                 'checks' => [
@@ -81,7 +88,7 @@ class RestoreLegacyImagesCommand extends Command
     }
 
     /**
-     * @param array{name: string, source: string, target: string, verifyDir: string, checks: array<int, string>} $target
+     * @param array{name: string, sources: array<int, string>, target: string, verifyDir: string, checks: array<int, string>} $target
      */
     private function restoreTarget(array $target, string $keyPath): bool
     {
@@ -90,35 +97,42 @@ class RestoreLegacyImagesCommand extends Command
         $this->line('');
         $this->line('=== Restoring ' . $target['name'] . ' ===');
         $this->line('Target: ' . $target['target']);
-        $this->line('Source: ' . self::OLD_SERVER . ':' . $target['source']);
-        $this->line('Starting rsync...');
 
-        $process = new Process([
-            'rsync',
-            '-avz',
-            '--stats',
-            '-e', "ssh -i {$keyPath} -o StrictHostKeyChecking=no",
-            self::OLD_SERVER . ':' . $target['source'],
-            $target['target'],
-        ]);
-        $process->setTimeout(3600);
+        $lastExitCode = null;
 
-        $process->run(function ($type, $buffer) {
-            echo $buffer;
-        });
+        foreach ($target['sources'] as $source) {
+            $this->line('Source: ' . self::OLD_SERVER . ':' . $source);
+            $this->line('Starting rsync...');
 
-        if (!$process->isSuccessful()) {
-            $this->error('rsync failed with exit code ' . $process->getExitCode());
-            return false;
+            $process = new Process([
+                'rsync',
+                '-avz',
+                '--stats',
+                '-e', "ssh -i {$keyPath} -o StrictHostKeyChecking=no",
+                self::OLD_SERVER . ':' . $source,
+                $target['target'],
+            ]);
+            $process->setTimeout(3600);
+
+            $process->run(function ($type, $buffer) {
+                echo $buffer;
+            });
+
+            if ($process->isSuccessful()) {
+                $this->verifyTarget($target);
+                return true;
+            }
+
+            $lastExitCode = $process->getExitCode();
+            $this->warn('rsync failed for this source with exit code ' . $lastExitCode . '; trying next source if available.');
         }
 
-        $this->verifyTarget($target);
-
-        return true;
+        $this->error('All rsync sources failed. Last exit code: ' . ($lastExitCode ?? 'unknown'));
+        return false;
     }
 
     /**
-     * @param array{name: string, source: string, target: string, verifyDir: string, checks: array<int, string>} $target
+     * @param array{name: string, sources: array<int, string>, target: string, verifyDir: string, checks: array<int, string>} $target
      */
     private function verifyTarget(array $target): void
     {
