@@ -15,6 +15,7 @@ class RepairProductImagesCommand extends Command
     protected $signature = 'catalog:repair-product-images
         {--all : Scan all products with source URLs}
         {--category= : Category slug; includes descendants}
+        {--supplier= : Supplier code or id}
         {--brand= : Brand name filter}
         {--products= : Comma-separated product IDs}
         {--source-urls= : Comma-separated product_id=url pairs; overrides supplier_products.source_url for listed products}
@@ -36,11 +37,16 @@ class RepairProductImagesCommand extends Command
         $all = (bool) $this->option('all');
 
         $categoryIds = $this->categoryIds();
+        $supplier = $this->supplier();
         $brandId = $this->brandId();
         $productIds = $this->productIds((string) $this->option('products'));
 
-        if (! $all && $categoryIds->isEmpty() && $brandId === null && $productIds === []) {
-            $this->error('--all, --category, --brand or --products is required.');
+        if (trim((string) $this->option('supplier')) !== '' && $supplier === null) {
+            return self::FAILURE;
+        }
+
+        if (! $all && $categoryIds->isEmpty() && $supplier === null && $brandId === null && $productIds === []) {
+            $this->error('--all, --category, --supplier, --brand or --products is required.');
 
             return self::FAILURE;
         }
@@ -51,6 +57,7 @@ class RepairProductImagesCommand extends Command
             ->whereNotNull('source_url')
             ->where('source_url', 'like', 'http%')
             ->where('source_url', 'not like', '%docs.google.com/spreadsheets%')
+            ->when($supplier, fn ($query) => $query->where('supplier_id', (int) $supplier->id))
             ->orderByDesc('updated_at')
             ->get(['product_id', 'source_url'])
             ->groupBy('product_id')
@@ -63,6 +70,12 @@ class RepairProductImagesCommand extends Command
         $candidates = Product::query()
             ->orderable()
             ->when($categoryIds->isNotEmpty(), fn ($query) => $query->whereIn('category_id', $categoryIds))
+            ->when($supplier, fn ($query) => $query->whereIn('products.id', function ($subquery) use ($supplier): void {
+                $subquery->from('supplier_products')
+                    ->select('product_id')
+                    ->where('supplier_id', (int) $supplier->id)
+                    ->whereNotNull('product_id');
+            }))
             ->when($brandId !== null, fn ($query) => $query->where('brand_id', $brandId))
             ->when($productIds !== [], fn ($query) => $query->whereIn('id', $productIds))
             ->with(['brand:id,name', 'category:id,name,slug'])
@@ -217,6 +230,25 @@ class RepairProductImagesCommand extends Command
         }
 
         return (int) $id;
+    }
+
+    private function supplier(): ?object
+    {
+        $value = trim((string) $this->option('supplier'));
+        if ($value === '') {
+            return null;
+        }
+
+        $supplier = DB::table('suppliers')
+            ->where('code', $value)
+            ->when(is_numeric($value), fn ($query) => $query->orWhere('id', (int) $value))
+            ->first(['id', 'code', 'name']);
+
+        if (! $supplier) {
+            $this->error('Supplier not found: ' . $value);
+        }
+
+        return $supplier;
     }
 
     private function imageStatus(Product $product): array
