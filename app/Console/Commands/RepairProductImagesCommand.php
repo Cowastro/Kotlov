@@ -71,11 +71,7 @@ class RepairProductImagesCommand extends Command
             ->orderByDesc('created_at')
             ->orderBy('name')
             ->get(['id', 'category_id', 'brand_id', 'name', 'slug', 'sku', 'images'])
-            ->filter(function (Product $product) use ($sourceUrls, $force): bool {
-                if (! $sourceUrls->has($product->id)) {
-                    return false;
-                }
-
+            ->filter(function (Product $product) use ($force): bool {
                 if ($force) {
                     return true;
                 }
@@ -103,6 +99,7 @@ class RepairProductImagesCommand extends Command
             'repaired' => 0,
             'images_found' => 0,
             'images_saved' => 0,
+            'no_source_url' => 0,
             'no_source_images' => 0,
             'errors' => 0,
         ];
@@ -123,6 +120,12 @@ class RepairProductImagesCommand extends Command
             ));
             $this->line('  current: ' . $detail);
             $this->line('  source: ' . $sourceUrl);
+
+            if ($sourceUrl === '') {
+                $stats['no_source_url']++;
+                $this->warn('  skipped: no source_url found for this product');
+                continue;
+            }
 
             try {
                 $result = $enricher->enrich($product, $sourceUrl, [
