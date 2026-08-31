@@ -13,7 +13,9 @@ use Illuminate\Support\Facades\Storage;
 class RepairProductImagesCommand extends Command
 {
     protected $signature = 'catalog:repair-product-images
+        {--all : Scan all products with source URLs}
         {--category= : Category slug; includes descendants}
+        {--brand= : Brand name filter}
         {--products= : Comma-separated product IDs}
         {--source-urls= : Comma-separated product_id=url pairs; overrides supplier_products.source_url for listed products}
         {--limit=30 : Max products per run, 0 means no limit}
@@ -31,12 +33,14 @@ class RepairProductImagesCommand extends Command
         $offset = max(0, (int) $this->option('offset'));
         $sleep = max(300, (int) $this->option('sleep'));
         $force = (bool) $this->option('force');
+        $all = (bool) $this->option('all');
 
         $categoryIds = $this->categoryIds();
+        $brandId = $this->brandId();
         $productIds = $this->productIds((string) $this->option('products'));
 
-        if ($categoryIds->isEmpty() && $productIds === []) {
-            $this->error('--category or --products is required.');
+        if (! $all && $categoryIds->isEmpty() && $brandId === null && $productIds === []) {
+            $this->error('--all, --category, --brand or --products is required.');
 
             return self::FAILURE;
         }
@@ -59,6 +63,7 @@ class RepairProductImagesCommand extends Command
         $candidates = Product::query()
             ->orderable()
             ->when($categoryIds->isNotEmpty(), fn ($query) => $query->whereIn('category_id', $categoryIds))
+            ->when($brandId !== null, fn ($query) => $query->where('brand_id', $brandId))
             ->when($productIds !== [], fn ($query) => $query->whereIn('id', $productIds))
             ->with(['brand:id,name', 'category:id,name,slug'])
             ->orderBy('sort_order')
@@ -183,6 +188,32 @@ class RepairProductImagesCommand extends Command
         }
 
         return $this->collectCategoryAndDescendantIds((int) $category->id);
+    }
+
+    private function brandId(): ?int
+    {
+        $name = trim((string) $this->option('brand'));
+        if ($name === '') {
+            return null;
+        }
+
+        $id = DB::table('brands')
+            ->where('is_active', true)
+            ->where(function ($query) use ($name): void {
+                $query->where('name', $name)
+                    ->orWhere('name', 'like', $name . '%')
+                    ->orWhere('name', 'like', '%' . $name . '%');
+            })
+            ->orderByRaw('CASE WHEN name = ? THEN 0 WHEN name LIKE ? THEN 1 ELSE 2 END', [$name, $name . '%'])
+            ->value('id');
+
+        if (! $id) {
+            $this->error('Brand not found: ' . $name);
+
+            return null;
+        }
+
+        return (int) $id;
     }
 
     private function imageStatus(Product $product): array
