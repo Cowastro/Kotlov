@@ -133,6 +133,7 @@ class RepairRusklimatB2bSitemapImagesCommand extends Command
                     'update_documents' => false,
                     'update_video' => false,
                     'update_content' => false,
+                    'fallback_remote_images' => true,
                 ]);
 
                 $imagesFound = (int) ($result['images_found'] ?? 0);
@@ -153,6 +154,9 @@ class RepairRusklimatB2bSitemapImagesCommand extends Command
                 }
 
                 $this->line(sprintf('  found=%d saved=%d', $imagesFound, $imagesSaved));
+                foreach ($result['errors'] ?? [] as $error) {
+                    $this->warn('  warning: ' . $error);
+                }
             } catch (\Throwable $e) {
                 $this->stats['errors']++;
                 $this->warn('  ERROR: ' . $e->getMessage());

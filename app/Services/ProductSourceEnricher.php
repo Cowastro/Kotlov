@@ -108,6 +108,19 @@ class ProductSourceEnricher
                         $existing = $this->decodeArray($product->images);
                         $updates['images'] = array_values(array_unique(array_merge($existing, $downloaded)));
                     }
+                } elseif (($options['fallback_remote_images'] ?? false) === true) {
+                    $remoteImages = array_values(array_slice($parsed['images'], 0, 4));
+                    $replaceImages = (bool) ($options['replace_images'] ?? false);
+
+                    if ($replaceImages) {
+                        $updates['images'] = $remoteImages;
+                        $stats['images_replaced'] = 1;
+                    } else {
+                        $existing = $this->decodeArray($product->images);
+                        $updates['images'] = array_values(array_unique(array_merge($existing, $remoteImages)));
+                    }
+
+                    $stats['errors'][] = 'images: using remote source image URLs because downloads failed';
                 } else {
                     $stats['errors'][] = 'images: source images were found but none could be downloaded';
                 }
