@@ -337,12 +337,55 @@ class RepairTeplodvorMissingImagesCommand extends Command
 
     private function modelKey(string $productName, string $brandName): string
     {
+        if ($this->compactKey($brandName) === 'kermi') {
+            $key = $this->kermiModelKey($productName);
+            if ($key !== '') {
+                return $key;
+            }
+        }
+
         $name = html_entity_decode(strip_tags($productName), ENT_QUOTES | ENT_HTML5, 'UTF-8');
         $name = preg_replace('/\b' . preg_quote($brandName, '/') . '\b/ui', '', $name) ?? $name;
         $name = preg_replace('/\([^)]*\)/u', '', $name) ?? $name;
         $name = preg_replace('/\b(водонагреватель|кот[её]л|радиатор|конвектор|насос|кондиционер|обогреватель|электрический|газовый|накопительный|настенный|напольный|проточный|твердотопливный|печь|камин|дымоход)\b/ui', ' ', trim($name)) ?? $name;
 
         return $this->normalizeKey($name);
+    }
+
+    private function kermiModelKey(string $productName): string
+    {
+        $name = mb_strtolower(html_entity_decode(strip_tags($productName), ENT_QUOTES | ENT_HTML5, 'UTF-8'));
+        $name = str_replace(['ё', '×', 'х', 'x', '/', '\\', '-', '_', ','], ['е', 'x', 'x', 'x', ' ', ' ', ' ', ' ', '.'], $name);
+
+        $line = match (true) {
+            str_contains($name, 'ventil'),
+            str_contains($name, 'profil ventil'),
+            preg_match('/\bf[kt]v\b/u', $name) === 1 => 'ventil',
+            str_contains($name, 'kompakt'),
+            str_contains($name, 'profil kompakt'),
+            preg_match('/\bfko\b/u', $name) === 1 => 'kompakt',
+            default => '',
+        };
+
+        $type = null;
+        $height = null;
+        $length = null;
+
+        if (preg_match('/\b(10|11|12|20|21|22|30|33)\s*[x\s]+([23456]00|900)\s*[x\s]+([4-9]00|1[0-9]00|2[0-9]00|3000)\b/u', $name, $match)) {
+            $type = $match[1];
+            $height = $match[2];
+            $length = $match[3];
+        } elseif (preg_match('/\b(10|11|12|20|21|22|30|33)([23456]00|900)([4-9]00|1[0-9]00|2[0-9]00|3000)\b/u', $name, $match)) {
+            $type = $match[1];
+            $height = $match[2];
+            $length = $match[3];
+        }
+
+        if ($type === null || $height === null || $length === null) {
+            return '';
+        }
+
+        return trim(implode(' ', array_filter([$line, $type, (string) (int) $height, (string) (int) $length])));
     }
 
     private function normalizeKey(string $value): string

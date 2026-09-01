@@ -15,6 +15,7 @@ class AuditProductImagesCommand extends Command
         {--all : Audit all orderable products}
         {--category= : Category slug; includes descendants}
         {--supplier= : Supplier code or id}
+        {--brand= : Brand name filter}
         {--missing-only : Show only empty, placeholder or broken images}
         {--summary-by-brand : Show missing image counts grouped by brand}
         {--icons : Also audit public/icons SVG files}
@@ -30,10 +31,11 @@ class AuditProductImagesCommand extends Command
 
         $categorySlug = trim((string) $this->option('category'));
         $supplierFilter = trim((string) $this->option('supplier'));
+        $brandFilter = trim((string) $this->option('brand'));
         $allProducts = (bool) $this->option('all');
-        if (! $allProducts && $categorySlug === '' && $supplierFilter === '') {
+        if (! $allProducts && $categorySlug === '' && $supplierFilter === '' && $brandFilter === '') {
             if (! (bool) $this->option('icons')) {
-                $this->error('--all, --category, --supplier or --icons is required.');
+                $this->error('--all, --category, --supplier, --brand or --icons is required.');
 
                 return self::FAILURE;
             }
@@ -111,6 +113,7 @@ class AuditProductImagesCommand extends Command
                     ->where('supplier_id', (int) $supplier->id)
                     ->whereNotNull('product_id');
             }))
+            ->when($brandFilter !== '', fn ($query) => $query->whereHas('brand', fn ($brandQuery) => $brandQuery->where('name', 'like', '%' . $brandFilter . '%')))
             ->with(['brand:id,name', 'category:id,name,slug'])
             ->orderBy('sort_order')
             ->orderByDesc('is_featured')
@@ -178,6 +181,9 @@ class AuditProductImagesCommand extends Command
         }
         if ($allProducts) {
             $scope[] = 'all orderable products';
+        }
+        if ($brandFilter !== '') {
+            $scope[] = 'brand ' . $brandFilter;
         }
 
         $this->line('Products in ' . implode(' + ', $scope));
