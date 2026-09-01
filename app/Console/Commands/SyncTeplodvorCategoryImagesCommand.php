@@ -15,7 +15,8 @@ class SyncTeplodvorCategoryImagesCommand extends Command
         {--apply : Download images and update products}
         {--force : Update even when the first local image exists}
         {--limit=0 : Max products to check, 0 means no limit}
-        {--offset=0 : Skip products after sorting by id}';
+        {--offset=0 : Skip products after sorting by id}
+        {--max-pages=8 : Max paginated Teplodvor pages per category URL}';
 
     protected $description = 'Restore product images from a Teplodvor category page by exact title/model matching.';
 
@@ -150,34 +151,54 @@ class SyncTeplodvorCategoryImagesCommand extends Command
         $items = [];
 
         foreach ($urls as $url) {
-            $html = $this->fetch($url);
-            if ($html === null) {
-                $this->warn('Failed to fetch ' . $url);
-                continue;
-            }
-
-            if (! preg_match_all('/<img[^>]+src=["\']([^"\']+)["\'][^>]+alt=["\']([^"\']*' . preg_quote($brandName, '/') . '[^"\']*)["\'][^>]*>.*?<a[^>]+href=["\']([^"\']+)["\'][^>]*class=["\'][^"\']*shop-item-link[^"\']*["\'][^>]*>(.*?)<\/a>/siu', $html, $matches, PREG_SET_ORDER)) {
-                continue;
-            }
-
-            foreach ($matches as $match) {
-                $title = trim(html_entity_decode(strip_tags($match[4] ?: $match[2]), ENT_QUOTES | ENT_HTML5, 'UTF-8'));
-                $img = $this->absoluteTeplodvorUrl($match[1]);
-                $productUrl = $this->absoluteTeplodvorUrl($match[3]);
-
-                if ($title === '' || $img === '') {
+            foreach ($this->expandPages($url, max(1, (int) $this->option('max-pages'))) as $pageUrl) {
+                $html = $this->fetch($pageUrl);
+                if ($html === null) {
+                    $this->warn('Failed to fetch ' . $pageUrl);
                     continue;
                 }
 
-                $items[$this->modelKey($title, $brandName)] = [
-                    'title' => $title,
-                    'image_url' => $img,
-                    'product_url' => $productUrl,
-                ];
+                if (! preg_match_all('/<img[^>]+src=["\']([^"\']+)["\'][^>]+alt=["\']([^"\']*' . preg_quote($brandName, '/') . '[^"\']*)["\'][^>]*>.*?<a[^>]+href=["\']([^"\']+)["\'][^>]*class=["\'][^"\']*shop-item-link[^"\']*["\'][^>]*>(.*?)<\/a>/siu', $html, $matches, PREG_SET_ORDER)) {
+                    continue;
+                }
+
+                foreach ($matches as $match) {
+                    $title = trim(html_entity_decode(strip_tags($match[4] ?: $match[2]), ENT_QUOTES | ENT_HTML5, 'UTF-8'));
+                    $img = $this->absoluteTeplodvorUrl($match[1]);
+                    $productUrl = $this->absoluteTeplodvorUrl($match[3]);
+
+                    if ($title === '' || $img === '') {
+                        continue;
+                    }
+
+                    $items[$this->modelKey($title, $brandName)] = [
+                        'title' => $title,
+                        'image_url' => $img,
+                        'product_url' => $productUrl,
+                    ];
+                }
             }
         }
 
         return $items;
+    }
+
+    private function expandPages(string $sourceUrl, int $maxPages): array
+    {
+        $sourceUrl = rtrim($sourceUrl, '/') . '/';
+        $urls = [$sourceUrl];
+        $firstHtml = $this->fetch($sourceUrl);
+        $pageMax = 1;
+
+        if ($firstHtml !== null && preg_match_all('/\/page(\d+)\/["\']/iu', $firstHtml, $matches)) {
+            $pageMax = max(array_map('intval', $matches[1]));
+        }
+
+        for ($page = 2; $page <= min($pageMax, $maxPages); $page++) {
+            $urls[] = $sourceUrl . 'page' . $page . '/';
+        }
+
+        return array_values(array_unique($urls));
     }
 
     private function bestImageUrl(array $item): ?string
