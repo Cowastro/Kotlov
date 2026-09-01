@@ -11,7 +11,8 @@ class SyncVistarRetailPricesCommand extends Command
 {
     protected $signature = 'supplier:sync-vistar-retail
         {--apply : Write matched retail prices; default is dry-run}
-        {--include-inactive : Allow inactive products to be matched}';
+        {--include-inactive : Allow inactive products to be matched}
+        {--export= : Write matched products as a CSV export path under public/exports}';
 
     protected $description = 'Sync safe retail prices from VISTAR Price 01.09.2026.';
 
@@ -37,6 +38,7 @@ class SyncVistarRetailPricesCommand extends Command
             'invalid' => 0,
         ];
         $details = [];
+        $exportRows = [];
 
         foreach ($data['rows'] as $row) {
             $brand = $this->brandFor($row);
@@ -80,6 +82,18 @@ class SyncVistarRetailPricesCommand extends Command
                 number_format((float) $product->price, 2, '.', '') . ' -> ' . number_format($retail, 2, '.', ''),
                 '#' . $product->id . ' ' . mb_substr((string) $product->name, 0, 52),
             ];
+            $exportRows[] = [
+                'Код товара' => (string) ($product->sku ?? $product->id),
+                'Название' => (string) $product->name,
+                'Цена' => number_format($retail, 2, '.', ''),
+                'Валюта' => (string) ($product->currency ?? 'BYN'),
+                'Наличие' => 'В наличии',
+                'ID KOTLOV' => (string) $product->id,
+                'Бренд' => (string) $product->brand,
+                'Артикул VISTAR' => (string) ($row['article'] ?? ''),
+                'Название VISTAR' => (string) ($row['name'] ?? ''),
+                'Лист VISTAR' => (string) ($row['sheet'] ?? ''),
+            ];
 
             if ($apply && $changed) {
                 Product::query()
@@ -103,6 +117,10 @@ class SyncVistarRetailPricesCommand extends Command
 
         $this->table(['metric', 'count'], collect($stats)->map(fn ($count, $metric) => [$metric, $count])->values()->all());
         $this->table(['sheet', 'article', 'price-list name', 'price', 'product'], array_slice($details, 0, 80));
+
+        if ($this->option('export')) {
+            $this->writeExport((string) $this->option('export'), $exportRows);
+        }
 
         return self::SUCCESS;
     }
@@ -133,7 +151,7 @@ class SyncVistarRetailPricesCommand extends Command
             ->join('brands as b', 'b.id', '=', 'p.brand_id')
             ->where('p.is_archived', false)
             ->whereIn('b.name', ['BAXI', 'Viessmann', 'Reflex', 'Flamco'])
-            ->select('p.id', 'p.name', 'p.price', 'b.name as brand');
+            ->select('p.id', 'p.sku', 'p.name', 'p.price', 'p.currency', 'b.name as brand');
 
         if (! (bool) $this->option('include-inactive')) {
             $query->where('p.is_active', true);
@@ -218,5 +236,38 @@ class SyncVistarRetailPricesCommand extends Command
         $value = str_replace(',', '', preg_replace('/[^0-9.,-]/', '', (string) $value) ?? '');
 
         return is_numeric($value) ? round((float) $value, 2) : null;
+    }
+
+    /**
+     * @param array<int,array<string,string>> $rows
+     */
+    private function writeExport(string $relativePath, array $rows): void
+    {
+        $relativePath = trim(str_replace('\\', '/', $relativePath), '/');
+        if ($relativePath === '') {
+            return;
+        }
+
+        if (! str_starts_with($relativePath, 'exports/')) {
+            $relativePath = 'exports/' . basename($relativePath);
+        }
+
+        $path = public_path($relativePath);
+        if (! is_dir(dirname($path))) {
+            mkdir(dirname($path), 0755, true);
+        }
+
+        $handle = fopen($path, 'w');
+        fwrite($handle, "\xEF\xBB\xBF");
+        $headers = ['Код товара', 'Название', 'Цена', 'Валюта', 'Наличие', 'ID KOTLOV', 'Бренд', 'Артикул VISTAR', 'Название VISTAR', 'Лист VISTAR'];
+        fputcsv($handle, $headers, ';');
+
+        foreach ($rows as $row) {
+            fputcsv($handle, array_map(fn ($header) => $row[$header] ?? '', $headers), ';');
+        }
+
+        fclose($handle);
+
+        $this->info(sprintf('Exported %d matched products to public/%s', count($rows), $relativePath));
     }
 }
