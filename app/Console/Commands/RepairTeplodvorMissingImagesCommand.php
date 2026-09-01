@@ -362,7 +362,7 @@ class RepairTeplodvorMissingImagesCommand extends Command
 
     private function nearestKermiFkoImage(string $html, int $offset): string
     {
-        $before = substr($html, max(0, $offset - 12000), min(12000, $offset));
+        $before = substr($html, max(0, $offset - 80000), min(80000, $offset));
 
         if (! preg_match_all('/<img\b(?<tag>[^>]*\b(?:visImgTabRow|imageTabRow|Catalog|kermi)[^>]*)>/iu', $before, $matches)) {
             return '';
