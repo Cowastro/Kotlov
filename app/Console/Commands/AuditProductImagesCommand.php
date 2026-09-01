@@ -12,9 +12,11 @@ use Illuminate\Support\Facades\Storage;
 class AuditProductImagesCommand extends Command
 {
     protected $signature = 'catalog:audit-product-images
+        {--all : Audit all orderable products}
         {--category= : Category slug; includes descendants}
         {--supplier= : Supplier code or id}
         {--missing-only : Show only empty, placeholder or broken images}
+        {--summary-by-brand : Show missing image counts grouped by brand}
         {--icons : Also audit public/icons SVG files}
         {--limit=100 : Max product rows to show, 0 means no limit}';
 
@@ -28,9 +30,10 @@ class AuditProductImagesCommand extends Command
 
         $categorySlug = trim((string) $this->option('category'));
         $supplierFilter = trim((string) $this->option('supplier'));
-        if ($categorySlug === '' && $supplierFilter === '') {
+        $allProducts = (bool) $this->option('all');
+        if (! $allProducts && $categorySlug === '' && $supplierFilter === '') {
             if (! (bool) $this->option('icons')) {
-                $this->error('--category, --supplier or --icons is required.');
+                $this->error('--all, --category, --supplier or --icons is required.');
 
                 return self::FAILURE;
             }
@@ -94,8 +97,10 @@ class AuditProductImagesCommand extends Command
         ];
 
         $rows = [];
+        $brandSummary = [];
         $limit = max(0, (int) $this->option('limit'));
         $missingOnly = (bool) $this->option('missing-only');
+        $summaryByBrand = (bool) $this->option('summary-by-brand');
 
         Product::query()
             ->orderable()
@@ -112,7 +117,7 @@ class AuditProductImagesCommand extends Command
             ->orderByDesc('created_at')
             ->orderBy('name')
             ->get(['id', 'category_id', 'brand_id', 'name', 'slug', 'sku', 'images'])
-            ->each(function (Product $product) use (&$summary, &$rows, $sourceUrls, $missingOnly, $limit): void {
+            ->each(function (Product $product) use (&$summary, &$rows, &$brandSummary, $sourceUrls, $missingOnly, $limit, $summaryByBrand): void {
                 $summary['checked']++;
 
                 $sourceUrl = (string) ($sourceUrls->get($product->id) ?? '');
@@ -122,6 +127,28 @@ class AuditProductImagesCommand extends Command
 
                 [$status, $detail] = $this->imageStatus($product);
                 $summary[$status]++;
+                if ($summaryByBrand) {
+                    $brand = (string) ($product->brand?->name ?? 'Без бренда');
+                    $brandSummary[$brand] ??= [
+                        'brand' => $brand,
+                        'checked' => 0,
+                        'missing' => 0,
+                        'empty' => 0,
+                        'placeholder' => 0,
+                        'broken' => 0,
+                        'remote' => 0,
+                        'with_source_url' => 0,
+                    ];
+                    $brandSummary[$brand]['checked']++;
+                    $brandSummary[$brand]['with_source_url'] += $sourceUrl !== '' ? 1 : 0;
+
+                    if (in_array($status, ['empty', 'placeholder', 'broken'], true)) {
+                        $brandSummary[$brand]['missing']++;
+                        $brandSummary[$brand][$status]++;
+                    } elseif ($status === 'remote') {
+                        $brandSummary[$brand]['remote']++;
+                    }
+                }
 
                 if ($missingOnly && $status === 'ok') {
                     return;
@@ -149,9 +176,32 @@ class AuditProductImagesCommand extends Command
         if ($supplier) {
             $scope[] = sprintf('supplier %s #%d (%s)', $supplier->code, $supplier->id, $supplier->name);
         }
+        if ($allProducts) {
+            $scope[] = 'all orderable products';
+        }
 
         $this->line('Products in ' . implode(' + ', $scope));
         $this->table(['metric', 'count'], collect($summary)->map(fn ($count, $metric) => [$metric, $count])->values()->all());
+
+        if ($summaryByBrand && $brandSummary !== []) {
+            $brandRows = collect($brandSummary)
+                ->filter(fn (array $row) => $row['missing'] > 0 || $row['remote'] > 0)
+                ->sortByDesc('missing')
+                ->values()
+                ->map(fn (array $row) => [
+                    $row['brand'],
+                    $row['checked'],
+                    $row['missing'],
+                    $row['empty'],
+                    $row['placeholder'],
+                    $row['broken'],
+                    $row['remote'],
+                    $row['with_source_url'],
+                ])
+                ->all();
+
+            $this->table(['brand', 'checked', 'missing', 'empty', 'placeholder', 'broken', 'remote', 'source URLs'], $brandRows);
+        }
 
         if ($rows !== []) {
             $this->table(['id', 'slug', 'brand', 'name', 'image', 'source', 'detail'], $rows);
