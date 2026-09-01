@@ -23,6 +23,7 @@ class RepairProductImagesCommand extends Command
         {--offset=0 : Skip repair candidates}
         {--apply : Download and write images; default is dry-run}
         {--force : Process even products whose main image currently looks OK}
+        {--fallback-remote-images : Save remote image URLs when downloads fail}
         {--sleep=1200 : Delay between source requests, ms}';
 
     protected $description = 'Repair empty or broken product images from supplier_products.source_url without touching healthy product cards.';
@@ -35,6 +36,7 @@ class RepairProductImagesCommand extends Command
         $sleep = max(300, (int) $this->option('sleep'));
         $force = (bool) $this->option('force');
         $all = (bool) $this->option('all');
+        $fallbackRemoteImages = (bool) $this->option('fallback-remote-images');
 
         $categoryIds = $this->categoryIds();
         $supplier = $this->supplier();
@@ -150,6 +152,7 @@ class RepairProductImagesCommand extends Command
                     'update_documents' => false,
                     'update_video' => false,
                     'update_content' => false,
+                    'fallback_remote_images' => $fallbackRemoteImages,
                 ]);
 
                 $imagesFound = (int) ($result['images_found'] ?? 0);
