@@ -101,6 +101,36 @@ class DebugSslCheckCommand extends Command
             $this->line(mb_substr(strip_tags($body), 0, 200));
         }
 
+        // Now try WITH the pinned cacert.pem bundle, exactly like the fixed
+        // SyncBelkominTisBoilersCommand::fetch() does.
+        $this->newLine();
+        $caBundle = resource_path('certs/cacert.pem');
+        $this->info('cacert.pem path: ' . $caBundle);
+        $this->line('  exists: ' . (file_exists($caBundle) ? 'yes' : 'NO'));
+        $this->line('  readable: ' . (is_readable($caBundle) ? 'yes' : 'NO'));
+        $this->line('  size: ' . (file_exists($caBundle) ? filesize($caBundle) . ' bytes' : 'n/a'));
+
+        $this->info('Now attempting a fetch WITH pinned cacert.pem...');
+        $pinnedContext = stream_context_create([
+            'http' => [
+                'method' => 'GET',
+                'header' => "User-Agent: Mozilla/5.0 (compatible; KotlovBot/1.0)\r\n",
+                'timeout' => 15,
+            ],
+            'ssl' => [
+                'verify_peer' => true,
+                'verify_peer_name' => true,
+                'cafile' => $caBundle,
+            ],
+        ]);
+        $body2 = @file_get_contents("https://{$host}/", false, $pinnedContext);
+        if ($body2 === false) {
+            $err = error_get_last();
+            $this->error('Pinned-CA fetch FAILED: ' . ($err['message'] ?? 'unknown'));
+        } else {
+            $this->info('Pinned-CA fetch SUCCEEDED, ' . strlen($body2) . ' bytes');
+        }
+
         // Also try via cURL with verbose-ish info, since curl may use a
         // different CA bundle / TLS stack than PHP streams.
         $this->newLine();
