@@ -886,10 +886,43 @@ class ProductSourceEnricher
             }, (array) ($parsed['documents'] ?? []))), 0, 12)),
             'video_url' => filter_var((string) ($parsed['video_url'] ?? ''), FILTER_VALIDATE_URL) ? (string) $parsed['video_url'] : '',
             'images' => array_values(array_slice(array_filter(array_map(
-                fn ($url) => filter_var($url, FILTER_VALIDATE_URL) ? (string) $url : '',
+                fn ($url) => $this->normalizeUrlForValidation((string) $url),
                 (array) ($parsed['images'] ?? [])
             )), 0, 4)),
         ];
+    }
+
+    private function normalizeUrlForValidation(string $url): string
+    {
+        $url = trim($url);
+        if ($url === '') {
+            return '';
+        }
+
+        if (filter_var($url, FILTER_VALIDATE_URL)) {
+            return $url;
+        }
+
+        $parts = parse_url($url);
+        if (! is_array($parts) || ! isset($parts['scheme'], $parts['host'])) {
+            return '';
+        }
+
+        $path = (string) ($parts['path'] ?? '');
+        $encodedPath = implode('/', array_map(
+            fn (string $segment): string => rawurlencode(rawurldecode($segment)),
+            explode('/', $path)
+        ));
+
+        $normalized = $parts['scheme'] . '://' . $parts['host'] . $encodedPath;
+        if (isset($parts['query'])) {
+            $normalized .= '?' . $parts['query'];
+        }
+        if (isset($parts['fragment'])) {
+            $normalized .= '#' . $parts['fragment'];
+        }
+
+        return filter_var($normalized, FILTER_VALIDATE_URL) ? $normalized : '';
     }
 
     private function adaptParsedDataForProduct(array $parsed, Product $product, string $sourceUrl): array
