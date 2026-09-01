@@ -487,7 +487,7 @@ class Enrich100KaminovCommand extends Command
         }
 
         // Detect brand from card title.
-        $brandKey   = $this->detectBrand($card['name']);
+        $brandKey   = $this->detectBrand($card['name']) ?? $this->detectBrand((string) ($card['brand'] ?? ''));
         if ($brandKey === null) {
             return false;
         }
@@ -569,14 +569,21 @@ class Enrich100KaminovCommand extends Command
     {
         // Name from og:title, strip "купить..." suffix.
         $name = '';
-        if (preg_match('/"og:title" content="([^"]+)"/i', $html, $m)) {
+        if (preg_match('/<meta[^>]+property=["\']og:title["\'][^>]+content=["\']([^"\']+)["\']/iu', $html, $m)
+            || preg_match('/<meta[^>]+content=["\']([^"\']+)["\'][^>]+property=["\']og:title["\']/iu', $html, $m)) {
             $name = preg_replace('/\s+купить\s+.*/iu', '', html_entity_decode($m[1], ENT_QUOTES, 'UTF-8'));
             $name = trim($name, " \t\n\r\0\x0B.,");
         }
 
+        $brand = '';
+        if (preg_match('/"brand"\s*:\s*"([^"]+)"/iu', $html, $brandMatch)) {
+            $brand = trim(json_decode('"' . $brandMatch[1] . '"') ?: $brandMatch[1]);
+        }
+
         // Images: collect all deal.by thumbnails, convert to w640 full-size.
         $images = [];
-        if (preg_match('#"og:image" content="(https://images\.deal\.by/[^"]+)"#i', $html, $og)) {
+        if (preg_match('#<meta[^>]+property=["\']og:image["\'][^>]+content=["\'](https://images\.deal\.by/[^"\']+)["\']#iu', $html, $og)
+            || preg_match('#<meta[^>]+content=["\'](https://images\.deal\.by/[^"\']+)["\'][^>]+property=["\']og:image["\']#iu', $html, $og)) {
             $images[] = preg_replace('#_w\d+_h\d+_#', '_w640_h640_', $og[1]);
         }
         preg_match_all('#(https://images\.deal\.by/\d+_w\d+_h\d+_[^\s"\']+\.jpg)#i', $html, $im);
@@ -611,7 +618,7 @@ class Enrich100KaminovCommand extends Command
             $desc = trim($raw);
         }
 
-        return compact('name', 'images', 'specs', 'desc');
+        return compact('name', 'brand', 'images', 'specs', 'desc');
     }
 
     private function detectBrand(string $name): ?string
