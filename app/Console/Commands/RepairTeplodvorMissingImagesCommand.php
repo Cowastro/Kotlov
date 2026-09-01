@@ -226,6 +226,10 @@ class RepairTeplodvorMissingImagesCommand extends Command
 
     private function sourceUrlsForBrand(object $brand, array $links): array
     {
+        if ($this->option('source-url')) {
+            return array_values(array_unique(array_column($links, 'url')));
+        }
+
         $brandName = (string) $brand->name;
         $brandText = $this->compactKey($brandName);
         $brandSlug = $this->looseSlug(Str::slug($brandName));
