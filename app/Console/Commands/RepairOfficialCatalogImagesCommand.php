@@ -243,7 +243,8 @@ class RepairOfficialCatalogImagesCommand extends Command
     {
         $items = [];
         if (! preg_match_all('#<article\b[^>]*class=["\'][^"\']*catalog-item[^"\']*["\'][^>]*>(.*?)</article>#siu', $html, $cards)) {
-            return $this->parseAsproCatalogItems($html, $pageUrl, $brandName);
+            return $this->parseStenbelCatalogItems($html, $pageUrl, $brandName)
+                ?: $this->parseAsproCatalogItems($html, $pageUrl, $brandName);
         }
 
         foreach ($cards[1] as $card) {
@@ -270,6 +271,56 @@ class RepairOfficialCatalogImagesCommand extends Command
                 continue;
             }
 
+            $items[] = [
+                'title' => $title,
+                'url' => $url,
+                'image' => $image,
+                'slug' => $this->sourceSlug($url),
+                'tokens' => $this->tokens($title . ' ' . $this->sourceSlug($url), $brandName),
+            ];
+        }
+
+        return $items;
+    }
+
+    /**
+     * @return array<int, array{title:string,url:string,image:string,slug:string,tokens:array<int,string>}>
+     */
+    private function parseStenbelCatalogItems(string $html, string $pageUrl, string $brandName): array
+    {
+        $items = [];
+        $seen = [];
+
+        if (! preg_match_all('#<article\b[^>]*class=["\'][^"\']*\bcard\b[^"\']*["\'][^>]*>(.*?)</article>#siu', $html, $cards)) {
+            return [];
+        }
+
+        foreach ($cards[1] as $card) {
+            if (! preg_match('#<a\b[^>]*class=["\'][^"\']*\bcard__t\b[^"\']*["\'][^>]*href=["\']([^"\']+)["\'][^>]*>(.*?)</a>#siu', $card, $titleMatch)
+                && ! preg_match('#<a\b[^>]*href=["\']([^"\']+)["\'][^>]*class=["\'][^"\']*\bcard__t\b[^"\']*["\'][^>]*>(.*?)</a>#siu', $card, $titleMatch)) {
+                continue;
+            }
+
+            $url = strtok($this->absoluteUrl($titleMatch[1], $pageUrl), '?') ?: '';
+            $title = trim(html_entity_decode(strip_tags($titleMatch[2]), ENT_QUOTES | ENT_HTML5, 'UTF-8'));
+
+            if ($url === '' || $title === '' || isset($seen[$url])) {
+                continue;
+            }
+
+            $image = '';
+            if (preg_match('#<a\b[^>]*class=["\'][^"\']*\bcard__img\b[^"\']*["\'][^>]*>.*?</a>#siu', $card, $imageBlock)) {
+                $image = $this->bestCardImage($imageBlock[0], $pageUrl);
+            }
+            if ($image === '') {
+                $image = $this->bestCardImage($card, $pageUrl);
+            }
+
+            if ($image === '' || $this->isIconImage($image)) {
+                continue;
+            }
+
+            $seen[$url] = true;
             $items[] = [
                 'title' => $title,
                 'url' => $url,
