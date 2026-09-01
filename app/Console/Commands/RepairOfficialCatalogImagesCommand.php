@@ -484,7 +484,19 @@ class RepairOfficialCatalogImagesCommand extends Command
         $productPower = $this->stenPower($productText, $productSeries);
         $sourcePower = $this->stenPower($sourceText, $sourceSeries);
         if ($productPower !== null && $sourcePower !== null) {
-            return abs($productPower - $sourcePower) < 0.01;
+            if (abs($productPower - $sourcePower) >= 0.01) {
+                return false;
+            }
+
+            if (! $this->stenColorCompatible($productText, $sourceText)) {
+                return false;
+            }
+
+            if (in_array($productSeries, ['tenb', 'tenbr'], true) && ! $this->stenThreadCompatible($productText, $sourceText)) {
+                return false;
+            }
+
+            return true;
         }
 
         return null;
@@ -540,6 +552,43 @@ class RepairOfficialCatalogImagesCommand extends Command
             if (preg_match($pattern, $value, $match)) {
                 return round((float) $match[1], 2);
             }
+        }
+
+        return null;
+    }
+
+    private function stenColorCompatible(string $productText, string $sourceText): bool
+    {
+        $productGraphite = preg_match('/(?:grafit|графит)/iu', $productText) === 1;
+        $sourceGraphite = preg_match('/(?:grafit|графит)/iu', $sourceText) === 1;
+        if ($productGraphite || $sourceGraphite) {
+            return $productGraphite === $sourceGraphite;
+        }
+
+        $productWhite = preg_match('/(?:belyi|белый|white)/iu', $productText) === 1;
+        $sourceWhite = preg_match('/(?:belyi|белый|white)/iu', $sourceText) === 1;
+
+        return ! $productWhite || $sourceWhite || ! $sourceGraphite;
+    }
+
+    private function stenThreadCompatible(string $productText, string $sourceText): bool
+    {
+        $productThread = $this->stenThread($productText);
+        $sourceThread = $this->stenThread($sourceText);
+
+        return $productThread === null || $sourceThread === null || $productThread === $sourceThread;
+    }
+
+    private function stenThread(string $value): ?string
+    {
+        if (preg_match('/(?:g\s*2|g2|\b2\s*[″"])/iu', $value)) {
+            return 'g2';
+        }
+        if (preg_match('/(?:g\s*1\s*[½1\/2]|g1½|g1\s*1\/2|1\s*1\/2|1½|1-12)/iu', $value)) {
+            return 'g112';
+        }
+        if (preg_match('/(?:g\s*1\s*[¼1\/4]|g1¼|g1\s*1\/4|1\s*1\/4|1¼|1-14)/iu', $value)) {
+            return 'g114';
         }
 
         return null;
