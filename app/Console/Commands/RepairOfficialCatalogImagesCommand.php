@@ -581,7 +581,7 @@ class RepairOfficialCatalogImagesCommand extends Command
 
     private function stenThread(string $value): ?string
     {
-        if (preg_match('/(?:g\s*2|g2|\b2\s*[″"])/iu', $value)) {
+        if (preg_match('/(?:g\s*2|g2)/iu', $value)) {
             return 'g2';
         }
         if (preg_match('/(?:g\s*1\s*[½1\/2]|g1½|g1\s*1\/2|1\s*1\/2|1½|1-12)/iu', $value)) {
