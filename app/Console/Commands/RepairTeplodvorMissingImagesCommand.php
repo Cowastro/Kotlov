@@ -360,10 +360,12 @@ class RepairTeplodvorMissingImagesCommand extends Command
         $line = match (true) {
             str_contains($name, 'ventil'),
             str_contains($name, 'profil ventil'),
-            preg_match('/\bf[kt]v\b/u', $name) === 1 => 'ventil',
+            preg_match('/\bf[kt]v\b/u', $name) === 1,
+            preg_match('/\bf[kt]v[0-9]/u', $name) === 1 => 'ventil',
             str_contains($name, 'kompakt'),
             str_contains($name, 'profil kompakt'),
-            preg_match('/\bfko\b/u', $name) === 1 => 'kompakt',
+            preg_match('/\bfko\b/u', $name) === 1,
+            preg_match('/\bfko[0-9]/u', $name) === 1 => 'kompakt',
             default => '',
         };
 
@@ -371,7 +373,12 @@ class RepairTeplodvorMissingImagesCommand extends Command
         $height = null;
         $length = null;
 
-        if (preg_match('/\b(10|11|12|20|21|22|30|33)\s*[x\s]+([23456]00|900)\s*[x\s]+([4-9]00|1[0-9]00|2[0-9]00|3000)\b/u', $name, $match)) {
+        if (preg_match('/\bf(?<line>ko|[kt]v)\s*(?<type>10|11|12|20|21|22|30|33)(?<height>0[234569]0)(?<length>0[4-9]0|1[0-9]0|2[0-9]0|300)/u', $name, $match)) {
+            $line = $line !== '' ? $line : ($match['line'] === 'ko' ? 'kompakt' : 'ventil');
+            $type = $match['type'];
+            $height = (string) ((int) $match['height'] * 10);
+            $length = (string) ((int) $match['length'] * 10);
+        } elseif (preg_match('/\b(10|11|12|20|21|22|30|33)\s*[x\s]+([23456]00|900)\s*[x\s]+([4-9]00|1[0-9]00|2[0-9]00|3000)\b/u', $name, $match)) {
             $type = $match[1];
             $height = $match[2];
             $length = $match[3];
