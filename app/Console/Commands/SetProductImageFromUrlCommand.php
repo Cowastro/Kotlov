@@ -12,6 +12,7 @@ class SetProductImageFromUrlCommand extends Command
     protected $signature = 'products:set-image-from-url
         {--product= : Product ID, SKU or slug}
         {--image-url= : Source image URL to download}
+        {--image-page-url= : Product page URL; the command will use its og:image}
         {--path= : Public-relative target path, e.g. img/products/restored/file.png}
         {--apply : Write file and update product images}';
 
@@ -21,11 +22,12 @@ class SetProductImageFromUrlCommand extends Command
     {
         $productRef = trim((string) $this->option('product'));
         $imageUrl = trim((string) $this->option('image-url'));
+        $imagePageUrl = trim((string) $this->option('image-page-url'));
         $path = ltrim(str_replace('\\', '/', trim((string) $this->option('path'))), '/');
         $apply = (bool) $this->option('apply');
 
-        if ($productRef === '' || $imageUrl === '' || $path === '') {
-            $this->error('--product, --image-url and --path are required.');
+        if ($productRef === '' || ($imageUrl === '' && $imagePageUrl === '') || $path === '') {
+            $this->error('--product, --path and either --image-url or --image-page-url are required.');
 
             return self::FAILURE;
         }
@@ -41,6 +43,15 @@ class SetProductImageFromUrlCommand extends Command
             $this->error("Product {$productRef} not found by id, sku or slug.");
 
             return self::FAILURE;
+        }
+
+        if ($imageUrl === '') {
+            $imageUrl = $this->extractImageUrlFromPage($imagePageUrl);
+            if ($imageUrl === null) {
+                $this->error("No usable og:image found on {$imagePageUrl}.");
+
+                return self::FAILURE;
+            }
         }
 
         $this->line(sprintf('#%d %s', $product->id, $product->name));
@@ -86,6 +97,30 @@ class SetProductImageFromUrlCommand extends Command
         $this->info(sprintf('Saved %dx%d image and updated product.', $info[0] ?? 0, $info[1] ?? 0));
 
         return self::SUCCESS;
+    }
+
+    private function extractImageUrlFromPage(string $url): ?string
+    {
+        $response = Http::timeout(30)
+            ->retry(2, 500)
+            ->withHeaders([
+                'User-Agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+                'Accept' => 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+            ])
+            ->get($url);
+
+        if (! $response->ok()) {
+            return null;
+        }
+
+        $html = $response->body();
+
+        if (preg_match('/<meta[^>]+property=["\']og:image["\'][^>]+content=["\']([^"\']+)["\']/iu', $html, $match)
+            || preg_match('/<meta[^>]+content=["\']([^"\']+)["\'][^>]+property=["\']og:image["\']/iu', $html, $match)) {
+            return html_entity_decode($match[1], ENT_QUOTES | ENT_HTML5, 'UTF-8');
+        }
+
+        return null;
     }
 
     private function resolveProduct(string $ref): ?Product
