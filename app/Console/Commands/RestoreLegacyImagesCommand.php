@@ -7,7 +7,10 @@ use Symfony\Component\Process\Process;
 
 class RestoreLegacyImagesCommand extends Command
 {
-    protected $signature = 'images:restore-legacy {--target=images : What to restore: images, img-products, all}';
+    protected $signature = 'images:restore-legacy
+        {--target=images : What to restore: images, img-products, all}
+        {--dry-run : Preview rsync changes without writing files}
+        {--overwrite : Overwrite existing local files instead of restoring only missing files}';
 
     protected $description = 'Re-sync legacy product photos from the old server into public/images or public/img/products';
 
@@ -27,6 +30,8 @@ class RestoreLegacyImagesCommand extends Command
         }
 
         $targets = $this->targets((string) $this->option('target'));
+        $dryRun = (bool) $this->option('dry-run');
+        $overwrite = (bool) $this->option('overwrite');
 
         if ($targets === []) {
             $this->error('Unknown target. Use one of: images, img-products, all.');
@@ -34,7 +39,7 @@ class RestoreLegacyImagesCommand extends Command
         }
 
         foreach ($targets as $target) {
-            if (!$this->restoreTarget($target, $keyPath)) {
+            if (!$this->restoreTarget($target, $keyPath, $dryRun, $overwrite)) {
                 return self::FAILURE;
             }
         }
@@ -91,13 +96,15 @@ class RestoreLegacyImagesCommand extends Command
     /**
      * @param array{name: string, sources: array<int, string>, target: string, verifyDir: string, checks: array<int, string>, discoverFile?: string} $target
      */
-    private function restoreTarget(array $target, string $keyPath): bool
+    private function restoreTarget(array $target, string $keyPath, bool $dryRun, bool $overwrite): bool
     {
         @mkdir($target['target'], 0755, true);
 
         $this->line('');
         $this->line('=== Restoring ' . $target['name'] . ' ===');
         $this->line('Target: ' . $target['target']);
+        $this->line($dryRun ? 'Mode: DRY RUN' : 'Mode: APPLY');
+        $this->line($overwrite ? 'Existing files: overwrite' : 'Existing files: keep');
 
         $lastExitCode = null;
 
@@ -112,14 +119,25 @@ class RestoreLegacyImagesCommand extends Command
             $this->line('Source: ' . self::OLD_SERVER . ':' . $source);
             $this->line('Starting rsync...');
 
-            $process = new Process([
+            $command = [
                 'rsync',
                 '-avz',
                 '--stats',
                 '-e', "ssh -i {$keyPath} -o StrictHostKeyChecking=no",
-                self::OLD_SERVER . ':' . $source,
-                $target['target'],
-            ]);
+            ];
+
+            if ($dryRun) {
+                $command[] = '--dry-run';
+            }
+
+            if (! $overwrite) {
+                $command[] = '--ignore-existing';
+            }
+
+            $command[] = self::OLD_SERVER . ':' . $source;
+            $command[] = $target['target'];
+
+            $process = new Process($command);
             $process->setTimeout(3600);
 
             $process->run(function ($type, $buffer) {
