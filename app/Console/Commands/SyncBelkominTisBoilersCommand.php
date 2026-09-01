@@ -808,16 +808,29 @@ class SyncBelkominTisBoilersCommand extends Command
     {
         $url = str_replace(' ', '%20', $url);
 
+        // The server's system CA bundle is missing belkomin.com's current
+        // intermediate ("GlobalSign GCC R6 AlphaSSL CA 2025", issued Feb
+        // 2026 — confirmed via `debug:ssl-check`: the cert itself is valid,
+        // not expired, correct domain — it's genuinely "unable to get local
+        // issuer certificate", not a WAF/anti-bot cert swap). Pin a fresh
+        // official CA bundle (curl.se, Mozilla-sourced) instead of touching
+        // system-wide trust or disabling verification.
+        $sslOptions = [
+            'verify_peer' => true,
+            'verify_peer_name' => true,
+        ];
+        $caBundle = resource_path('certs/cacert.pem');
+        if (file_exists($caBundle)) {
+            $sslOptions['cafile'] = $caBundle;
+        }
+
         $context = stream_context_create([
             'http' => [
                 'method' => 'GET',
                 'header' => "User-Agent: Mozilla/5.0 (compatible; KotlovBot/1.0)\r\nAccept-Language: ru,en;q=0.8\r\n",
                 'timeout' => 30,
             ],
-            'ssl' => [
-                'verify_peer' => true,
-                'verify_peer_name' => true,
-            ],
+            'ssl' => $sslOptions,
         ]);
 
         $body = file_get_contents($url, false, $context);
