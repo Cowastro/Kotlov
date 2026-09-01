@@ -70,7 +70,7 @@ class RepairProductImagesCommand extends Command
         }
 
         $candidates = Product::query()
-            ->orderable()
+            ->when($productIds === [], fn ($query) => $query->orderable())
             ->when($categoryIds->isNotEmpty(), fn ($query) => $query->whereIn('category_id', $categoryIds))
             ->when($supplier, fn ($query) => $query->whereIn('products.id', function ($subquery) use ($supplier): void {
                 $subquery->from('supplier_products')
