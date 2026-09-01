@@ -31,6 +31,8 @@ class RepairOfficialCatalogImagesCommand extends Command
         'drovyanye', 'drovyanaya', 'drovyanoy', 'дровяная', 'дровяной', 'na', 'на',
         'kupit', 'купить', 'catalog', 'katalog', 'каталог', 'tovar', 'товар',
         'god', 'года', 'seriya', 'серия',
+        'smolcom', 'смолком', 'portal', 'портал', 'elektrokamin', 'электрокамин',
+        'kaminokomplekt', 'каминокомплект', 'uglovoj', 'uglovoy', 'угловой',
     ];
 
     /** @var array<int, array{title:string,url:string,image:string,slug:string,tokens:array<int,string>}> */
@@ -241,7 +243,7 @@ class RepairOfficialCatalogImagesCommand extends Command
     {
         $items = [];
         if (! preg_match_all('#<article\b[^>]*class=["\'][^"\']*catalog-item[^"\']*["\'][^>]*>(.*?)</article>#siu', $html, $cards)) {
-            return [];
+            return $this->parseAsproCatalogItems($html, $pageUrl, $brandName);
         }
 
         foreach ($cards[1] as $card) {
@@ -267,6 +269,57 @@ class RepairOfficialCatalogImagesCommand extends Command
             if ($url === '' || $image === '' || $this->isIconImage($image)) {
                 continue;
             }
+
+            $items[] = [
+                'title' => $title,
+                'url' => $url,
+                'image' => $image,
+                'slug' => $this->sourceSlug($url),
+                'tokens' => $this->tokens($title . ' ' . $this->sourceSlug($url), $brandName),
+            ];
+        }
+
+        return $items;
+    }
+
+    /**
+     * @return array<int, array{title:string,url:string,image:string,slug:string,tokens:array<int,string>}>
+     */
+    private function parseAsproCatalogItems(string $html, string $pageUrl, string $brandName): array
+    {
+        $items = [];
+        $seen = [];
+        if (! preg_match_all('#<img\b[^>]+(?:src|data-src)=["\']([^"\']+\.(?:jpe?g|png|webp))["\'][^>]*>#iu', $html, $images, PREG_OFFSET_CAPTURE)) {
+            return [];
+        }
+
+        foreach ($images[0] as $index => $tagMatch) {
+            $tag = $tagMatch[0];
+            $offset = $tagMatch[1];
+            $image = $this->absoluteUrl($images[1][$index][0], $pageUrl);
+            if ($this->isIconImage($image)) {
+                continue;
+            }
+
+            $title = '';
+            if (preg_match('#\b(?:alt|title)=["\']([^"\']{3,160})["\']#iu', $tag, $titleMatch)) {
+                $title = trim(html_entity_decode($titleMatch[1], ENT_QUOTES | ENT_HTML5, 'UTF-8'));
+            }
+            if ($title === '' || preg_match('/^(?:подробнее|сравнить|отложить)$/iu', $title)) {
+                continue;
+            }
+
+            $aroundStart = max(0, $offset - 2500);
+            $around = substr($html, $aroundStart, 4500);
+            if (! preg_match('#href=["\']([^"\']*/catalog/[^"\']+/\d+/)["\']#iu', $around, $urlMatch)) {
+                continue;
+            }
+
+            $url = $this->absoluteUrl($urlMatch[1], $pageUrl);
+            if (isset($seen[$url])) {
+                continue;
+            }
+            $seen[$url] = true;
 
             $items[] = [
                 'title' => $title,
@@ -379,6 +432,7 @@ class RepairOfficialCatalogImagesCommand extends Command
         $slug = preg_replace('/\b20(?:2[0-9]|3[0-9])\b/u', ' ', $slug) ?? $slug;
         $slug = str_replace(['aisi ', 'inox ', 'aisi-', 'inox-'], ' ', $slug);
         $slug = preg_replace('/\b0+(\d)\b/u', '$1', $slug) ?? $slug;
+        $slug = str_replace(['std asp', 'std-asp'], 'std asp', $slug);
 
         $tokens = preg_split('/\s+/u', trim($slug)) ?: [];
         $tokens = array_values(array_filter($tokens, function (string $token): bool {
