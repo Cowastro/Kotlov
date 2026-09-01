@@ -20,6 +20,7 @@ class RepairTeplodvorMissingImagesCommand extends Command
         {--max-brands=0 : Max brands to scan, 0 means no limit}
         {--force : Update even when a local image exists}
         {--check-remote : Treat unreachable remote image URLs as needing repair}
+        {--debug-no-match : Print product keys that did not match source items}
         {--debug-source : Print source fetch and parse diagnostics}';
 
     protected $description = 'Repair empty or broken product images from Teplodvor catalog/brand pages.';
@@ -126,6 +127,9 @@ class RepairTeplodvorMissingImagesCommand extends Command
 
                 if ($item === null) {
                     $this->stats['no_match']++;
+                    if ($this->option('debug-no-match')) {
+                        $this->line(sprintf('  no match #%d key=%s name=%s', $product->id, $key, mb_substr($product->name, 0, 96)));
+                    }
                     continue;
                 }
 
