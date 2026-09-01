@@ -136,7 +136,7 @@ class Enrich100KaminovCommand extends Command
                 $path = str_starts_with($p, 'http') ? parse_url($p, PHP_URL_PATH) . '?' . (parse_url($p, PHP_URL_QUERY) ?? '') : $p;
                 $categories[rtrim($path, '?')] = null;
             }
-            $brandSlugFilter = null; // URL already scoped to brand
+            $brandSlugFilter = '__scoped_source__'; // URL already scoped; detect brand on product pages.
         } else {
             $categories      = self::CATEGORIES;
             $brandSlugFilter = $brandFilter;
@@ -440,18 +440,16 @@ class Enrich100KaminovCommand extends Command
             }
             $seen[$href] = true;
 
-            // Quick brand filter from URL slug.
+            // Deal.by storefront product URLs are often generic (/p123-name.html);
+            // the real brand is checked on the product page in processProduct().
+            if ($brandFilter === '__scoped_source__') {
+                $links[] = self::BASE . $href;
+                continue;
+            }
+
             if ($brandFilter !== null) {
-                $matched = false;
-                foreach (self::BRAND_SLUGS as $slug => $name) {
-                    if (mb_strtolower($name) === $brandFilter && str_contains($href, $slug)) {
-                        $matched = true;
-                        break;
-                    }
-                }
-                if (! $matched) {
-                    continue;
-                }
+                $links[] = self::BASE . $href;
+                continue;
             } else {
                 // Must belong to one of our brands.
                 $anyBrand = false;
