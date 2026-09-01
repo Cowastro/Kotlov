@@ -282,7 +282,7 @@ class RepairTeplodvorMissingImagesCommand extends Command
                 }
 
                 foreach ($cards as $card) {
-                    if (! $this->titleLooksLikeBrand($card['title'], $brandName)) {
+                    if (! $this->option('source-url') && ! $this->titleLooksLikeBrand($card['title'], $brandName)) {
                         continue;
                     }
 
