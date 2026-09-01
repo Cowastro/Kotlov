@@ -2129,6 +2129,13 @@ class ProductSourceEnricher
 
     private function extractImages(string $html, string $pageUrl): array
     {
+        if ($this->isEliconUrl($pageUrl)) {
+            $eliconImages = $this->extractWooCommerceProductGalleryImages($html, $pageUrl);
+            if ($eliconImages !== []) {
+                return $eliconImages;
+            }
+        }
+
         if (str_contains((string) parse_url($pageUrl, PHP_URL_HOST), 'tmarket.by')) {
             $tmarketImages = $this->extractTmarketProductImages($html, $pageUrl);
             if ($tmarketImages !== []) {
@@ -2169,6 +2176,42 @@ class ProductSourceEnricher
         usort($images, fn (string $left, string $right): int => $this->imageScore($right, $pageUrl) <=> $this->imageScore($left, $pageUrl));
 
         return array_values(array_slice($images, 0, 12));
+    }
+
+    private function isEliconUrl(string $url): bool
+    {
+        return str_contains((string) parse_url($url, PHP_URL_HOST), 'elicon.by');
+    }
+
+    /**
+     * Elicon product pages are WooCommerce pages. The generic extractor also
+     * sees related products below the card, so keep only the main gallery.
+     *
+     * @return array<int,string>
+     */
+    private function extractWooCommerceProductGalleryImages(string $html, string $pageUrl): array
+    {
+        $start = stripos($html, 'woocommerce-product-gallery');
+        if ($start === false) {
+            return [];
+        }
+
+        $end = stripos($html, 'summary entry-summary', $start);
+        $block = substr($html, $start, $end !== false ? max(0, $end - $start) : 30000);
+        $images = [];
+
+        if (preg_match_all('~<(?:a|img)\b[^>]*>~iu', $block, $matches)) {
+            foreach ($matches[0] as $tagHtml) {
+                foreach ($this->imageUrlsFromTag($tagHtml, $pageUrl) as $url) {
+                    $images[] = $url;
+                }
+            }
+        }
+
+        $images = $this->expandedImageCandidates($images);
+        usort($images, fn (string $left, string $right): int => $this->imageQualityScore($right) <=> $this->imageQualityScore($left));
+
+        return array_values(array_slice($images, 0, 8));
     }
 
     /**
@@ -2300,6 +2343,7 @@ class ProductSourceEnricher
             'data-full-image',
             'data-zoom-image',
             'data-large',
+            'data-large_image',
             'data-original',
             'data-image',
             'data-lazy-src',
