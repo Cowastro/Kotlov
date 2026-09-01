@@ -65,7 +65,7 @@ class Enrich100KaminovCommand extends Command
 
     /** Model-normalization stopwords (mirrors SyncLigmetCommand). */
     private const STOPWORDS = [
-        'ПЕЧЬ','ПЕЧЬ-КАМИН','ПЕЧЬ-КАМИНЫ','КАМИН','КАМИННАЯ','КАМИННЫЙ','ТОПКА',
+        'ПЕЧЬ','ПЕЧЬ-КАМИН','ПЕЧЬ-КАМИНЫ','КАМИН','КАМИННАЯ','КАМИННЫЙ','ВЕНТИЛЯЦИОННАЯ','ВЕНТИЛЯЦИОННЫЙ','ТОПКА',
         'ПЕЧНОЙ','ДРОВЯНАЯ','ДРОВЯНОЙ','БАННАЯ','ОТОПИТЕЛЬНАЯ','ВАРОЧНАЯ',
         'СТАЛЬНАЯ','СТАЛЬНОЙ','ЧУГУННАЯ','ЧУГУННЫЙ',
         'СЕРАЯ','СЕРЫЙ','СЕРОЕ','СЕРЫЕ','ЧЁРНАЯ','ЧЁРНЫЙ','ЧЁРНОЕ','ЧЕРНАЯ','ЧЕРНЫЙ','ЧЕРНОЕ',
@@ -592,6 +592,17 @@ class Enrich100KaminovCommand extends Command
         }
         $images = array_values(array_unique(array_filter($images)));
 
+        $variation = $this->currentProductVariation($html, $url);
+        if ($variation !== []) {
+            if (($variation['name'] ?? '') !== '') {
+                $name = (string) $variation['name'];
+            }
+            if (($variation['image_url'] ?? '') !== '') {
+                array_unshift($images, (string) $variation['image_url']);
+                $images = array_values(array_unique(array_filter($images)));
+            }
+        }
+
         // Specs: parse row-by-row so header cells (colspan) are naturally skipped.
         // Each <tr> with exactly 2 b-product-info__cell cells is a key→value pair.
         $specs = [];
@@ -619,6 +630,49 @@ class Enrich100KaminovCommand extends Command
         }
 
         return compact('name', 'brand', 'images', 'specs', 'desc');
+    }
+
+    private function currentProductVariation(string $html, string $url): array
+    {
+        if (! preg_match('/"key"\s*:\s*"ProductVariations"\s*,\s*"value"\s*:\s*"((?:\\\\.|[^"\\\\])*)"/su', $html, $match)) {
+            return [];
+        }
+
+        $json = json_decode('"' . $match[1] . '"');
+        if (! is_string($json) || $json === '') {
+            return [];
+        }
+
+        $data = json_decode($json, true);
+        if (! is_array($data) || empty($data['modifications']) || ! is_array($data['modifications'])) {
+            return [];
+        }
+
+        $currentUrl = strtok($url, '?') ?: $url;
+        $currentId = (int) ($data['current_id'] ?? 0);
+
+        foreach ($data['modifications'] as $modification) {
+            if (! is_array($modification)) {
+                continue;
+            }
+
+            $modUrl = strtok((string) ($modification['url'] ?? ''), '?') ?: '';
+            $modId = (int) ($modification['id'] ?? 0);
+
+            if (($modUrl !== '' && $modUrl === $currentUrl) || ($currentId > 0 && $modId === $currentId)) {
+                $imageUrl = (string) ($modification['image_url'] ?? '');
+                if ($imageUrl !== '') {
+                    $imageUrl = preg_replace('#_w\d+_h\d+_#', '_w640_h640_', $imageUrl) ?? $imageUrl;
+                }
+
+                return [
+                    'name' => (string) ($modification['name'] ?? ''),
+                    'image_url' => $imageUrl,
+                ];
+            }
+        }
+
+        return [];
     }
 
     private function detectBrand(string $name): ?string
