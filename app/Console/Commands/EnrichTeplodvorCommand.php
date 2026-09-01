@@ -32,6 +32,7 @@ class EnrichTeplodvorCommand extends Command
         {--images-only     : Download/update images only; do not change specs, service info or AI content}
         {--missing-images-only : Process only products with empty, placeholder or broken first image}
         {--product=        : Process single product by ID}
+        {--products=       : Process comma-separated product IDs, bypassing the missing-photos filter}
         {--limit=          : Max products to enrich in this run}
         {--min-score=0.75  : Minimum token match score (0–1)}
         {--sleep=800       : Delay between HTTP requests (ms)}
@@ -122,7 +123,17 @@ class EnrichTeplodvorCommand extends Command
             ));
         }
 
-        if ($this->option('product')) {
+        $productIds = [];
+        foreach (explode(',', (string) $this->option('products')) as $part) {
+            $id = (int) trim($part);
+            if ($id > 0) {
+                $productIds[] = $id;
+            }
+        }
+
+        if ($productIds !== []) {
+            $query->whereIn('id', $productIds);
+        } elseif ($this->option('product')) {
             $query->where('id', (int) $this->option('product'));
         } elseif ($onlyAi) {
             $query->where(function ($q) {
