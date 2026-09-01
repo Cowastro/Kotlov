@@ -438,6 +438,11 @@ class RepairOfficialCatalogImagesCommand extends Command
 
         foreach ($this->sourceItems as $item) {
             $sourceKey = implode(' ', $item['tokens']);
+            $stenModelMatch = $this->stenModelMatch($product, $item, $brandName);
+            if ($stenModelMatch === false) {
+                continue;
+            }
+
             $overlap = $this->overlapScore($productTokens, $item['tokens']);
             $similarity = 0.0;
 
@@ -448,6 +453,9 @@ class RepairOfficialCatalogImagesCommand extends Command
 
             $containsBoost = ($productKey !== '' && $sourceKey !== '' && (str_contains($productKey, $sourceKey) || str_contains($sourceKey, $productKey))) ? 0.12 : 0.0;
             $score = min(1.0, max($overlap, $similarity) + $containsBoost);
+            if ($stenModelMatch === true) {
+                $score = max($score, 0.88);
+            }
 
             $matches[] = ['item' => $item, 'score' => $score];
         }
@@ -455,6 +463,86 @@ class RepairOfficialCatalogImagesCommand extends Command
         usort($matches, fn ($a, $b) => $b['score'] <=> $a['score']);
 
         return $matches;
+    }
+
+    private function stenModelMatch(Product $product, array $item, string $brandName): ?bool
+    {
+        $brand = mb_strtolower($brandName);
+        if (! str_contains($brand, 'стэн') && ! str_contains($brand, 'sten')) {
+            return null;
+        }
+
+        $productText = $this->normalizeModelText($product->name . ' ' . $product->slug);
+        $sourceText = $this->normalizeModelText((string) ($item['title'] ?? '') . ' ' . (string) ($item['slug'] ?? ''));
+
+        $productSeries = $this->stenSeries($productText);
+        $sourceSeries = $this->stenSeries($sourceText);
+        if ($productSeries !== null && $sourceSeries !== null && $productSeries !== $sourceSeries) {
+            return false;
+        }
+
+        $productPower = $this->stenPower($productText, $productSeries);
+        $sourcePower = $this->stenPower($sourceText, $sourceSeries);
+        if ($productPower !== null && $sourcePower !== null) {
+            return abs($productPower - $sourcePower) < 0.01;
+        }
+
+        return null;
+    }
+
+    private function normalizeModelText(string $value): string
+    {
+        $value = mb_strtolower(str_replace(['ё', 'х', 'Х'], ['е', 'x', 'x'], $value));
+        $value = str_replace(',', '.', $value);
+
+        return preg_replace('/\s+/u', ' ', $value) ?? $value;
+    }
+
+    private function stenSeries(string $value): ?string
+    {
+        if (preg_match('/(?:standard|стандарт)\s*(?:plus|плюс)/iu', $value)) {
+            return 'standart-plus';
+        }
+        if (preg_match('/(?:standard|стандарт)/iu', $value)) {
+            return 'standart';
+        }
+        if (preg_match('/(?:evpm|эвпм)/iu', $value)) {
+            return 'evpm';
+        }
+        if (preg_match('/(?:eko|эко)/iu', $value)) {
+            return 'eko';
+        }
+        if (preg_match('/(?:tnbr|tenbr|тнбр|тэнбр)/iu', $value)) {
+            return 'tenbr';
+        }
+        if (preg_match('/(?:tenb|тэнб)/iu', $value)) {
+            return 'tenb';
+        }
+
+        return null;
+    }
+
+    private function stenPower(string $value, ?string $series): ?float
+    {
+        $patterns = match ($series) {
+            'standart-plus' => ['/(?:standard|стандарт)\s*(?:plus|плюс)[^\d]{0,24}(\d+(?:\.\d+)?)/iu'],
+            'standart' => ['/(?:standard|стандарт)(?!\s*(?:plus|плюс))[^\d]{0,24}(\d+(?:\.\d+)?)/iu'],
+            'evpm' => ['/(?:evpm|эвпм)[^\d]{0,24}(\d+(?:\.\d+)?)/iu'],
+            'eko' => ['/(?:eko|эко)[^\d]{0,24}(\d+(?:\.\d+)?)/iu'],
+            'tenbr' => ['/(?:tnbr|tenbr|тнбр|тэнбр)[^\d]{0,24}(\d+(?:\.\d+)?)/iu'],
+            'tenb' => ['/(?:tenb|тэнб)[^\d]{0,24}(\d+(?:\.\d+)?)/iu'],
+            default => [
+                '/(?:standard|стандарт|evpm|эвпм|eko|эко|tnbr|tenbr|тнбр|тэнбр|tenb|тэнб)[^\d]{0,24}(\d+(?:\.\d+)?)/iu',
+            ],
+        };
+
+        foreach ($patterns as $pattern) {
+            if (preg_match($pattern, $value, $match)) {
+                return round((float) $match[1], 2);
+            }
+        }
+
+        return null;
     }
 
     private function overlapScore(array $left, array $right): float
