@@ -90,12 +90,15 @@ class ProductSourceEnricher
 
         try {
             if (($options['update_images'] ?? true) === true && $parsed['images'] !== []) {
-                $downloaded = $this->downloadImages(
-                    $parsed['images'],
-                    $product,
-                    $sourceUrl,
-                    (bool) ($options['prefer_resize_cache_images'] ?? false)
-                );
+                $downloaded = [];
+                if (($options['remote_only_images'] ?? false) !== true) {
+                    $downloaded = $this->downloadImages(
+                        $parsed['images'],
+                        $product,
+                        $sourceUrl,
+                        (bool) ($options['prefer_resize_cache_images'] ?? false)
+                    );
+                }
                 $stats['images_saved'] = count($downloaded);
 
                 if ($downloaded !== []) {
@@ -108,7 +111,7 @@ class ProductSourceEnricher
                         $existing = $this->decodeArray($product->images);
                         $updates['images'] = array_values(array_unique(array_merge($existing, $downloaded)));
                     }
-                } elseif (($options['fallback_remote_images'] ?? false) === true) {
+                } elseif (($options['fallback_remote_images'] ?? false) === true || ($options['remote_only_images'] ?? false) === true) {
                     $remoteImages = array_values(array_slice($parsed['images'], 0, 4));
                     $replaceImages = (bool) ($options['replace_images'] ?? false);
 
@@ -120,7 +123,9 @@ class ProductSourceEnricher
                         $updates['images'] = array_values(array_unique(array_merge($existing, $remoteImages)));
                     }
 
-                    $stats['errors'][] = 'images: using remote source image URLs because downloads failed';
+                    $stats['errors'][] = ($options['remote_only_images'] ?? false) === true
+                        ? 'images: using remote source image URLs without downloading'
+                        : 'images: using remote source image URLs because downloads failed';
                 } else {
                     $stats['errors'][] = 'images: source images were found but none could be downloaded';
                 }
