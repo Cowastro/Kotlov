@@ -2539,7 +2539,7 @@ class ProductSourceEnricher
             return false;
         }
 
-        if (preg_match('~(?:logo|icon|sprite|placeholder|noimage|nophoto|payment|social|banner|watermark|telegram|viber|whatsapp|star|rating|loader|loading|close|cart|wishlist|compare|flag|flags|avatar|rass?roch|halva|karta-pokupok)~i', $path)) {
+        if (preg_match('~(?:logo|icon|sprite|placeholder|noimage|nophoto|payment|social|banner|watermark|telegram|viber|whatsapp|star|rating|loader|loading|close|cart|wishlist|compare|flag|flags|avatar|rass?roch|halva|karta-pokupok|/a1\.png|/mts\.png|cropped-logo)~i', $path)) {
             return false;
         }
 
@@ -2559,7 +2559,7 @@ class ProductSourceEnricher
             $score += 80;
         }
 
-        if (preg_match('~(?:logo|icon|sprite|placeholder|noimage|nophoto|payment|social|banner|watermark|telegram|viber|whatsapp|star|rating|loader|loading|close|cart|wishlist|compare|flag|flags|avatar|rass?roch|halva|karta-pokupok)~i', $path)) {
+        if (preg_match('~(?:logo|icon|sprite|placeholder|noimage|nophoto|payment|social|banner|watermark|telegram|viber|whatsapp|star|rating|loader|loading|close|cart|wishlist|compare|flag|flags|avatar|rass?roch|halva|karta-pokupok|/a1\.png|/mts\.png|cropped-logo)~i', $path)) {
             $score -= 500;
         }
 
