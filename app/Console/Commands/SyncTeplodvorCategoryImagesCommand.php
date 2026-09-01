@@ -94,7 +94,7 @@ class SyncTeplodvorCategoryImagesCommand extends Command
 
         foreach ($products as $product) {
             $key = $this->modelKey($product->name, $brand->name);
-            $item = $items[$key] ?? null;
+            $item = $items[$key] ?? $this->uniqueLooseItem($key, $items);
 
             if (! $item) {
                 $this->stats['no_match']++;
@@ -273,6 +273,42 @@ class SyncTeplodvorCategoryImagesCommand extends Command
         $name = preg_replace('/\b(водонагреватель|кот[её]л|радиатор|конвектор|насос|кондиционер|обогреватель|электрический|газовый|накопительный|настенный|напольный|проточный|твердотопливный)\b/ui', ' ', trim($name));
 
         return $this->normalizeKey($name);
+    }
+
+    private function uniqueLooseItem(string $productKey, array $items): ?array
+    {
+        $productKey = trim($productKey);
+        if (! $this->hasDistinctiveToken($productKey)) {
+            return null;
+        }
+
+        $matches = [];
+        foreach ($items as $sourceKey => $item) {
+            $sourceKey = trim((string) $sourceKey);
+            if ($sourceKey === '' || ! $this->hasDistinctiveToken($sourceKey)) {
+                continue;
+            }
+
+            if (str_contains(' ' . $sourceKey . ' ', ' ' . $productKey . ' ')
+                || str_contains(' ' . $productKey . ' ', ' ' . $sourceKey . ' ')
+            ) {
+                $matches[$sourceKey] = $item;
+            }
+        }
+
+        return count($matches) === 1 ? array_values($matches)[0] : null;
+    }
+
+    private function hasDistinctiveToken(string $key): bool
+    {
+        $tokens = preg_split('/\s+/u', $key) ?: [];
+        foreach ($tokens as $token) {
+            if (preg_match('/[a-z]{2,}\d|\d[a-z]{2,}/iu', $token) === 1 || mb_strlen($token) >= 5) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private function normalizeKey(string $value): string
