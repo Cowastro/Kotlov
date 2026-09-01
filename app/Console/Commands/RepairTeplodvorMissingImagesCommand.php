@@ -19,6 +19,7 @@ class RepairTeplodvorMissingImagesCommand extends Command
         {--max-pages=8 : Max Teplodvor pages per source URL}
         {--max-brands=0 : Max brands to scan, 0 means no limit}
         {--force : Update even when a local image exists}
+        {--check-remote : Treat unreachable remote image URLs as needing repair}
         {--debug-source : Print source fetch and parse diagnostics}';
 
     protected $description = 'Repair empty or broken product images from Teplodvor catalog/brand pages.';
@@ -271,7 +272,7 @@ class RepairTeplodvorMissingImagesCommand extends Command
                     continue;
                 }
 
-                $cards = $this->parseProductCards($html);
+                $cards = $this->parseProductCards($html, $url);
                 if ($this->option('debug-source')) {
                     $this->line(sprintf('  source parsed: %s bytes=%d cards=%d', $url, strlen($html), count($cards)));
                 }
@@ -314,7 +315,7 @@ class RepairTeplodvorMissingImagesCommand extends Command
         return array_values(array_unique($urls));
     }
 
-    private function parseProductCards(string $html): array
+    private function parseProductCards(string $html, ?string $sourceUrl = null): array
     {
         $cards = [];
 
@@ -327,7 +328,7 @@ class RepairTeplodvorMissingImagesCommand extends Command
 
         foreach ($matches as $match) {
             $title = $this->cleanText($match[3]);
-            $imageUrl = $this->largeImageUrl($match[1]);
+            $imageUrl = $this->largeImageUrl($match[1], $sourceUrl);
             if ($title === '' || $imageUrl === '') {
                 continue;
             }
@@ -335,11 +336,41 @@ class RepairTeplodvorMissingImagesCommand extends Command
             $cards[] = [
                 'title' => $title,
                 'image_url' => $imageUrl,
-                'product_url' => $this->absoluteUrl($match[2]),
+                'product_url' => $this->absoluteUrl($match[2], $sourceUrl),
             ];
         }
 
+        array_push($cards, ...$this->parseSchemaProductCards($html, $sourceUrl));
         array_push($cards, ...$this->parseKermiFkoTableCards($html));
+
+        return $cards;
+    }
+
+    private function parseSchemaProductCards(string $html, ?string $sourceUrl = null): array
+    {
+        $cards = [];
+
+        preg_match_all(
+            '/<div\b[^>]*class=["\'][^"\']*product-schema[^"\']*["\'][^>]*>[\s\S]*?<div\b[^>]*itemprop=["\']name["\'][^>]*>(?<title>[\s\S]*?)<\/div>[\s\S]*?<img\b[^>]*itemprop=["\']image["\'][^>]*src=["\'](?<image>[^"\']+)["\'][^>]*>[\s\S]*?<a\b[^>]*itemprop=["\']url["\'][^>]*href=["\'](?<href>[^"\']+)["\']/iu',
+            $html,
+            $matches,
+            PREG_SET_ORDER
+        );
+
+        foreach ($matches as $match) {
+            $title = $this->cleanText($match['title']);
+            $imageUrl = $this->absoluteUrl($match['image'], $sourceUrl);
+
+            if ($title === '' || $imageUrl === '') {
+                continue;
+            }
+
+            $cards[] = [
+                'title' => $title,
+                'image_url' => $imageUrl,
+                'product_url' => $this->absoluteUrl($match['href'], $sourceUrl),
+            ];
+        }
 
         return $cards;
     }
@@ -485,6 +516,10 @@ class RepairTeplodvorMissingImagesCommand extends Command
         }
 
         if (str_starts_with($raw, 'http://') || str_starts_with($raw, 'https://')) {
+            if ($this->option('check-remote')) {
+                return $this->remoteImageLooksUsable($raw);
+            }
+
             return true;
         }
 
@@ -508,6 +543,25 @@ class RepairTeplodvorMissingImagesCommand extends Command
         }
 
         return file_exists(public_path('images/' . $this->legacyIdPath($product, $raw)));
+    }
+
+    private function remoteImageLooksUsable(string $url): bool
+    {
+        try {
+            $response = Http::withHeaders(['User-Agent' => 'Mozilla/5.0'])
+                ->timeout(10)
+                ->withOptions(['verify' => false])
+                ->get($url);
+
+            $body = $response->body();
+            if (! $response->successful() || strlen($body) < 1024) {
+                return false;
+            }
+
+            return @getimagesizefromstring($body) !== false;
+        } catch (\Throwable) {
+            return false;
+        }
     }
 
     private function downloadForProduct(Product $product, string $imageUrl, string $brandName): ?string
@@ -592,7 +646,7 @@ class RepairTeplodvorMissingImagesCommand extends Command
         }
     }
 
-    private function absoluteUrl(string $url): string
+    private function absoluteUrl(string $url, ?string $baseUrl = null): string
     {
         if (str_starts_with($url, 'http://') || str_starts_with($url, 'https://')) {
             return $url;
@@ -601,12 +655,20 @@ class RepairTeplodvorMissingImagesCommand extends Command
             return 'https:' . $url;
         }
 
+        if ($baseUrl !== null) {
+            $scheme = parse_url($baseUrl, PHP_URL_SCHEME) ?: 'https';
+            $host = parse_url($baseUrl, PHP_URL_HOST);
+            if (is_string($host) && $host !== '') {
+                return $scheme . '://' . $host . '/' . ltrim($url, '/');
+            }
+        }
+
         return self::BASE . '/' . ltrim($url, '/');
     }
 
-    private function largeImageUrl(string $url): string
+    private function largeImageUrl(string $url, ?string $baseUrl = null): string
     {
-        $url = $this->absoluteUrl($url);
+        $url = $this->absoluteUrl($url, $baseUrl);
 
         return str_replace('/userfls/shop/small/', '/userfls/shop/large/', $url);
     }
