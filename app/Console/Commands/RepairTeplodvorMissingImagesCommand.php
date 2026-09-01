@@ -283,7 +283,9 @@ class RepairTeplodvorMissingImagesCommand extends Command
 
     private function expandPages(string $sourceUrl, int $maxPages): array
     {
-        $urls = [rtrim($sourceUrl, '/') . '/'];
+        $path = parse_url($sourceUrl, PHP_URL_PATH) ?: '';
+        $baseUrl = preg_match('/\.[a-z0-9]{2,5}$/i', $path) ? $sourceUrl : rtrim($sourceUrl, '/') . '/';
+        $urls = [$baseUrl];
         $firstHtml = $this->fetch($sourceUrl);
         $pageMax = 1;
 
@@ -324,7 +326,54 @@ class RepairTeplodvorMissingImagesCommand extends Command
             ];
         }
 
+        array_push($cards, ...$this->parseKermiFkoTableCards($html));
+
         return $cards;
+    }
+
+    private function parseKermiFkoTableCards(string $html): array
+    {
+        $cards = [];
+
+        preg_match_all(
+            '/<tr>\s*<td\b[^>]*class=["\'][^"\']*hiddenCol[^"\']*["\'][^>]*>(?<sku>[^<]+)<\/td>\s*<td\b[^>]*class=["\'][^"\']*moreDetails[^"\']*["\'][^>]*>(?<title>[\s\S]*?)<\/td>[\s\S]{0,900}?<a\b[^>]*class=["\'][^"\']*urlPrice[^"\']*["\'][^>]*href=["\'](?<href>[^"\']+)["\']/iu',
+            $html,
+            $matches,
+            PREG_SET_ORDER | PREG_OFFSET_CAPTURE
+        );
+
+        foreach ($matches as $match) {
+            $title = $this->cleanText($match['title'][0]);
+            $imageUrl = $this->nearestKermiFkoImage($html, $match[0][1]);
+
+            if ($title === '' || $imageUrl === '') {
+                continue;
+            }
+
+            $cards[] = [
+                'title' => $title,
+                'image_url' => $imageUrl,
+                'product_url' => $this->absoluteUrl($match['href'][0]),
+            ];
+        }
+
+        return $cards;
+    }
+
+    private function nearestKermiFkoImage(string $html, int $offset): string
+    {
+        $before = substr($html, max(0, $offset - 12000), min(12000, $offset));
+
+        if (! preg_match_all('/<img\b(?<tag>[^>]*\b(?:visImgTabRow|imageTabRow|Catalog|kermi)[^>]*)>/iu', $before, $matches)) {
+            return '';
+        }
+
+        $tag = end($matches['tag']);
+        if (! is_string($tag) || ! preg_match('/\bsrc=["\'](?<src>[^"\']+)["\']/iu', $tag, $srcMatch)) {
+            return '';
+        }
+
+        return $this->absoluteUrl($srcMatch['src']);
     }
 
     private function titleLooksLikeBrand(string $title, string $brandName): bool
@@ -494,7 +543,37 @@ class RepairTeplodvorMissingImagesCommand extends Command
                 'Referer' => self::BASE . '/',
             ])->timeout(40)->withOptions(['verify' => false])->get($this->absoluteUrl($url));
 
-            return $response->successful() && strlen($response->body()) > 500 ? $response->body() : null;
+            $body = $response->body();
+            if (! mb_check_encoding($body, 'UTF-8')) {
+                $body = mb_convert_encoding($body, 'UTF-8', 'Windows-1251');
+            }
+
+            if ($response->successful() && strlen($body) > 500) {
+                return $body;
+            }
+        } catch (\Throwable) {
+        }
+
+        try {
+            $context = stream_context_create([
+                'http' => [
+                    'header' => "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36\r\nAccept-Language: ru-RU,ru;q=0.9\r\n",
+                    'timeout' => 40,
+                ],
+                'ssl' => [
+                    'verify_peer' => false,
+                    'verify_peer_name' => false,
+                ],
+            ]);
+            $body = file_get_contents($this->absoluteUrl($url), false, $context);
+            if (! is_string($body) || strlen($body) <= 500) {
+                return null;
+            }
+            if (! mb_check_encoding($body, 'UTF-8')) {
+                $body = mb_convert_encoding($body, 'UTF-8', 'Windows-1251');
+            }
+
+            return $body;
         } catch (\Throwable) {
             return null;
         }
