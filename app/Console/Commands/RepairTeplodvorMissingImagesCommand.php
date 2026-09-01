@@ -437,6 +437,13 @@ class RepairTeplodvorMissingImagesCommand extends Command
             }
         }
 
+        if ($this->compactKey($brandName) === 'electrolux') {
+            $key = $this->electroluxModelKey($productName);
+            if ($key !== '') {
+                return $key;
+            }
+        }
+
         $name = html_entity_decode(strip_tags($productName), ENT_QUOTES | ENT_HTML5, 'UTF-8');
         $name = preg_replace('/\b' . preg_quote($brandName, '/') . '\b/ui', '', $name) ?? $name;
         $name = preg_replace('/\([^)]*\)/u', '', $name) ?? $name;
@@ -486,6 +493,36 @@ class RepairTeplodvorMissingImagesCommand extends Command
         }
 
         return trim(implode(' ', array_filter([$line, $type, (string) (int) $height, (string) (int) $length])));
+    }
+
+    private function electroluxModelKey(string $productName): string
+    {
+        $name = mb_strtoupper(html_entity_decode(strip_tags($productName), ENT_QUOTES | ENT_HTML5, 'UTF-8'));
+        $name = str_replace(['Ё', 'Х', '×', '_'], ['Е', 'X', 'X', ' '], $name);
+
+        $patterns = [
+            '/\bEACS\s*\/?\s*I\s*[-\s]*[A-Z0-9]+(?:[\/\-\s_]*[A-Z0-9]+){1,5}\b/u',
+            '/\bEACS\s*[-\s]*[A-Z0-9]+(?:[\/\-\s_]*[A-Z0-9]+){1,5}\b/u',
+            '/\bEACM\s*[-\s]*[A-Z0-9]+(?:[\/\-\s_]*[A-Z0-9]+){1,5}\b/u',
+            '/\bEWH\s*[-\s]*\d+\s+[A-Z0-9]+(?:[\/\-\s_]*[A-Z0-9.]+){0,5}\b/u',
+            '/\bECH\s*\/?\s*[A-Z0-9]+\s*[-\s]*\d+[A-Z0-9]*(?:[\/\-\s_]*[A-Z0-9]+){0,4}\b/u',
+            '/\b(?:NPX|NP|EHU|EFF|EAP|EHW|EDH|EDM|EDL|ETA|ETB|ETS|ETT|EFA)\s*[-\s]*[A-Z0-9]+(?:[\/\-\s_]*[A-Z0-9.]+){0,5}\b/u',
+            '/\b(?:EFP\s*\/?\s*P|EFH\s*\/?\s*C|EFT\s*\/?\s*AG2R|EFT)\s*[-\s]*[A-Z0-9]+(?:[\/\-\s_]*[A-Z0-9.]+){0,5}\b/u',
+        ];
+
+        foreach ($patterns as $pattern) {
+            if (! preg_match($pattern, $name, $match)) {
+                continue;
+            }
+
+            $key = preg_replace('/[^A-Z0-9]+/u', '', $match[0]) ?? '';
+            $key = preg_replace('/^EACSI/', 'EACSI', $key) ?? $key;
+            $key = preg_replace('/ONOFF$/', '', $key) ?? $key;
+
+            return mb_strtolower($key);
+        }
+
+        return '';
     }
 
     private function normalizeKey(string $value): string
