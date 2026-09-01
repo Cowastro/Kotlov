@@ -262,10 +262,7 @@ class RepairOfficialCatalogImagesCommand extends Command
                 $url = strtok($url, '?') ?: $url;
             }
 
-            $image = '';
-            if (preg_match('#<img\b[^>]*(?:itemprop=["\']image["\'][^>]*src|src)=["\']([^"\']+\.(?:jpe?g|png|webp))["\']#iu', $card, $imageMatch)) {
-                $image = $this->absoluteUrl($imageMatch[1], $pageUrl);
-            }
+            $image = $this->bestCardImage($card, $pageUrl);
 
             if ($url === '' || $image === '' || $this->isIconImage($image)) {
                 continue;
@@ -281,6 +278,49 @@ class RepairOfficialCatalogImagesCommand extends Command
         }
 
         return $items;
+    }
+
+    private function bestCardImage(string $card, string $pageUrl): string
+    {
+        $candidates = [];
+        if (! preg_match_all('#<img\b[^>]+>#iu', $card, $images)) {
+            return '';
+        }
+
+        foreach ($images[0] as $imgTag) {
+            if (! preg_match('#\b(?:src|data-src)=["\']([^"\']+\.(?:jpe?g|png|webp))["\']#iu', $imgTag, $match)) {
+                continue;
+            }
+
+            $url = $this->absoluteUrl($match[1], $pageUrl);
+            if ($this->isIconImage($url)) {
+                continue;
+            }
+
+            $score = 0;
+            if (str_contains($imgTag, 'itemprop="image"') || str_contains($imgTag, "itemprop='image'")) {
+                $score += 4;
+            }
+            if (str_contains($url, '/upload/resize_cache/iblock/') || str_contains($url, '/upload/iblock/')) {
+                $score += 2;
+            }
+            if (preg_match('#/(?:240_250|300_|400_|500_|600_)#', $url)) {
+                $score += 2;
+            }
+            if (str_contains($imgTag, 'hidden_visually')) {
+                $score -= 2;
+            }
+
+            $candidates[] = ['url' => $url, 'score' => $score];
+        }
+
+        if ($candidates === []) {
+            return '';
+        }
+
+        usort($candidates, fn ($a, $b) => $b['score'] <=> $a['score']);
+
+        return $candidates[0]['url'];
     }
 
     /**
