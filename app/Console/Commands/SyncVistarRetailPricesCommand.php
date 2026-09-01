@@ -12,7 +12,8 @@ class SyncVistarRetailPricesCommand extends Command
     protected $signature = 'supplier:sync-vistar-retail
         {--apply : Write matched retail prices; default is dry-run}
         {--include-inactive : Allow inactive products to be matched}
-        {--export= : Write matched products as a CSV export path under public/exports}';
+        {--export= : Write matched products as a CSV export path under public/exports}
+        {--delete-export= : Delete a VISTAR CSV export path under public/exports and exit}';
 
     protected $description = 'Sync safe retail prices from VISTAR Price 01.09.2026.';
 
@@ -21,6 +22,13 @@ class SyncVistarRetailPricesCommand extends Command
     public function handle(): int
     {
         $apply = (bool) $this->option('apply');
+
+        if ($this->option('delete-export')) {
+            $this->deleteExport((string) $this->option('delete-export'));
+
+            return self::SUCCESS;
+        }
+
         $data = $this->loadData();
 
         if ($data === null) {
@@ -243,13 +251,9 @@ class SyncVistarRetailPricesCommand extends Command
      */
     private function writeExport(string $relativePath, array $rows): void
     {
-        $relativePath = trim(str_replace('\\', '/', $relativePath), '/');
+        $relativePath = $this->normalizeExportPath($relativePath);
         if ($relativePath === '') {
             return;
-        }
-
-        if (! str_starts_with($relativePath, 'exports/')) {
-            $relativePath = 'exports/' . basename($relativePath);
         }
 
         $path = public_path($relativePath);
@@ -269,5 +273,31 @@ class SyncVistarRetailPricesCommand extends Command
         fclose($handle);
 
         $this->info(sprintf('Exported %d matched products to public/%s', count($rows), $relativePath));
+    }
+
+    private function deleteExport(string $relativePath): void
+    {
+        $relativePath = $this->normalizeExportPath($relativePath);
+        if ($relativePath === '') {
+            return;
+        }
+
+        $path = public_path($relativePath);
+        if (is_file($path)) {
+            unlink($path);
+            $this->info('Deleted public/' . $relativePath);
+        } else {
+            $this->info('Nothing to delete at public/' . $relativePath);
+        }
+    }
+
+    private function normalizeExportPath(string $relativePath): string
+    {
+        $relativePath = trim(str_replace('\\', '/', $relativePath), '/');
+        if ($relativePath === '') {
+            return '';
+        }
+
+        return 'exports/' . basename($relativePath);
     }
 }
