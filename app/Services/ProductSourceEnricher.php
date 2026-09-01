@@ -2191,16 +2191,14 @@ class ProductSourceEnricher
      */
     private function extractWooCommerceProductGalleryImages(string $html, string $pageUrl): array
     {
-        $start = stripos($html, 'woocommerce-product-gallery');
-        if ($start === false) {
+        if (! preg_match('~<div\b[^>]*class=["\'][^"\']*\bwoocommerce-product-gallery\b[^"\']*["\'][^>]*>[\s\S]*?(?=<div\b[^>]*class=["\'][^"\']*\bsummary\b[^"\']*\bentry-summary\b)~iu', $html, $match)) {
             return [];
         }
 
-        $end = stripos($html, 'summary entry-summary', $start);
-        $block = substr($html, $start, $end !== false ? max(0, $end - $start) : 30000);
+        $block = $match[0];
         $images = [];
 
-        if (preg_match_all('~<(?:a|img)\b[^>]*>~iu', $block, $matches)) {
+        if (preg_match_all('~<img\b[^>]*(?:data-large_image|wp-post-image)[^>]*>~iu', $block, $matches)) {
             foreach ($matches[0] as $tagHtml) {
                 foreach ($this->imageUrlsFromTag($tagHtml, $pageUrl) as $url) {
                     $images[] = $url;
