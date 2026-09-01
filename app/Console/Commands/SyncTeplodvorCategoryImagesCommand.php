@@ -158,29 +158,78 @@ class SyncTeplodvorCategoryImagesCommand extends Command
                     continue;
                 }
 
-                if (! preg_match_all('/<img[^>]+src=["\']([^"\']+)["\'][^>]+alt=["\']([^"\']*' . preg_quote($brandName, '/') . '[^"\']*)["\'][^>]*>.*?<a[^>]+href=["\']([^"\']+)["\'][^>]*class=["\'][^"\']*shop-item-link[^"\']*["\'][^>]*>(.*?)<\/a>/siu', $html, $matches, PREG_SET_ORDER)) {
-                    continue;
+                if (preg_match_all('/<img[^>]+src=["\']([^"\']+)["\'][^>]+alt=["\']([^"\']*' . preg_quote($brandName, '/') . '[^"\']*)["\'][^>]*>.*?<a[^>]+href=["\']([^"\']+)["\'][^>]*class=["\'][^"\']*shop-item-link[^"\']*["\'][^>]*>(.*?)<\/a>/siu', $html, $matches, PREG_SET_ORDER)) {
+                    foreach ($matches as $match) {
+                        $title = trim(html_entity_decode(strip_tags($match[4] ?: $match[2]), ENT_QUOTES | ENT_HTML5, 'UTF-8'));
+                        $img = $this->absoluteTeplodvorUrl($match[1], $pageUrl);
+                        $productUrl = $this->absoluteTeplodvorUrl($match[3], $pageUrl);
+
+                        if ($title === '' || $img === '') {
+                            continue;
+                        }
+
+                        $items[$this->modelKey($title, $brandName)] = [
+                            'title' => $title,
+                            'image_url' => $img,
+                            'product_url' => $productUrl,
+                        ];
+                    }
                 }
 
-                foreach ($matches as $match) {
-                    $title = trim(html_entity_decode(strip_tags($match[4] ?: $match[2]), ENT_QUOTES | ENT_HTML5, 'UTF-8'));
-                    $img = $this->absoluteTeplodvorUrl($match[1]);
-                    $productUrl = $this->absoluteTeplodvorUrl($match[3]);
-
-                    if ($title === '' || $img === '') {
-                        continue;
-                    }
-
-                    $items[$this->modelKey($title, $brandName)] = [
-                        'title' => $title,
-                        'image_url' => $img,
-                        'product_url' => $productUrl,
+                foreach ($this->parseTeplodvorRuCards($html, $pageUrl) as $card) {
+                    $items[$this->modelKey($card['title'], $brandName)] = [
+                        'title' => $card['title'],
+                        'image_url' => $card['image_url'],
+                        'product_url' => $card['product_url'],
                     ];
                 }
             }
         }
 
         return $items;
+    }
+
+    private function parseTeplodvorRuCards(string $html, string $pageUrl): array
+    {
+        $cards = [];
+
+        preg_match_all(
+            '/<div\b[^>]*class=["\'][^"\']*product-item[^"\']*["\'][^>]*>[\s\S]*?<img\b(?<imgtag>[^>]*)>[\s\S]*?<div\b[^>]*class=["\'][^"\']*title[^"\']*["\'][^>]*>\s*<a\b[^>]*href=["\'](?<href>[^"\']+)["\'][^>]*>(?<title>[\s\S]*?)<\/a>/iu',
+            $html,
+            $matches,
+            PREG_SET_ORDER
+        );
+
+        foreach ($matches as $match) {
+            $title = trim(html_entity_decode(strip_tags($match['title']), ENT_QUOTES | ENT_HTML5, 'UTF-8'));
+            $image = $this->imageFromTag($match['imgtag'], $pageUrl);
+            $productUrl = $this->absoluteTeplodvorUrl($match['href'], $pageUrl);
+
+            if ($title === '' || $image === '') {
+                continue;
+            }
+
+            $cards[] = [
+                        'title' => $title,
+                'image_url' => $image,
+                        'product_url' => $productUrl,
+            ];
+        }
+
+        return $cards;
+    }
+
+    private function imageFromTag(string $tag, string $pageUrl): string
+    {
+        foreach (['data-src', 'src'] as $attr) {
+            if (preg_match('/\b' . $attr . '=["\']([^"\']+)["\']/iu', $tag, $match)
+                && ! str_starts_with($match[1], 'data:image/')
+            ) {
+                return $this->absoluteTeplodvorUrl($match[1], $pageUrl);
+            }
+        }
+
+        return '';
     }
 
     private function expandPages(string $sourceUrl, int $maxPages): array
@@ -206,10 +255,10 @@ class SyncTeplodvorCategoryImagesCommand extends Command
         $detailHtml = $this->fetch($item['product_url']);
         if ($detailHtml !== null) {
             if (preg_match('/<a[^>]+href=["\']([^"\']*userfls\/shop\/large[^"\']*\.(?:jpg|jpeg|png|webp))["\']/i', $detailHtml, $large)) {
-                return $this->absoluteTeplodvorUrl($large[1]);
+                return $this->absoluteTeplodvorUrl($large[1], $item['product_url']);
             }
             if (preg_match('/<img[^>]+src=["\']([^"\']*userfls\/shop\/(?:large|medium|small)[^"\']*\.(?:jpg|jpeg|png|webp))["\']/i', $detailHtml, $image)) {
-                return $this->absoluteTeplodvorUrl($image[1]);
+                return $this->absoluteTeplodvorUrl($image[1], $item['product_url']);
             }
         }
 
@@ -291,13 +340,21 @@ class SyncTeplodvorCategoryImagesCommand extends Command
         }
     }
 
-    private function absoluteTeplodvorUrl(string $url): string
+    private function absoluteTeplodvorUrl(string $url, ?string $baseUrl = null): string
     {
         if (str_starts_with($url, 'http')) {
             return $url;
         }
         if (str_starts_with($url, '//')) {
             return 'https:' . $url;
+        }
+
+        if ($baseUrl !== null) {
+            $scheme = parse_url($baseUrl, PHP_URL_SCHEME) ?: 'https';
+            $host = parse_url($baseUrl, PHP_URL_HOST);
+            if (is_string($host) && $host !== '') {
+                return $scheme . '://' . $host . '/' . ltrim($url, '/');
+            }
         }
 
         return 'https://www.teplodvor.by/' . ltrim($url, '/');
