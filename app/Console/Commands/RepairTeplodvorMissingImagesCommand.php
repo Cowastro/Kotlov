@@ -566,24 +566,29 @@ class RepairTeplodvorMissingImagesCommand extends Command
 
         $raw = ltrim($raw, '/');
         if (str_starts_with($raw, 'img/')) {
-            return file_exists(public_path($raw));
+            return $this->localImageLooksUsable(public_path($raw));
         }
         if (str_starts_with($raw, 'products/')) {
-            return Storage::disk('public')->exists($raw);
+            return $this->localImageLooksUsable(Storage::disk('public')->path($raw));
         }
         if (str_starts_with($raw, 'product/')) {
-            return file_exists(public_path('images/' . $raw));
+            return $this->localImageLooksUsable(public_path('images/' . $raw));
         }
         if (substr_count($raw, '/') >= 2) {
-            return file_exists(public_path('images/product/' . $raw));
+            return $this->localImageLooksUsable(public_path('images/product/' . $raw));
         }
 
         $skuPath = $this->legacySkuPath($product, $raw);
-        if ($skuPath !== null && file_exists(public_path('images/' . $skuPath))) {
+        if ($skuPath !== null && $this->localImageLooksUsable(public_path('images/' . $skuPath))) {
             return true;
         }
 
-        return file_exists(public_path('images/' . $this->legacyIdPath($product, $raw)));
+        return $this->localImageLooksUsable(public_path('images/' . $this->legacyIdPath($product, $raw)));
+    }
+
+    private function localImageLooksUsable(string $path): bool
+    {
+        return is_file($path) && filesize($path) >= 1024 && @getimagesize($path) !== false;
     }
 
     private function remoteImageLooksUsable(string $url): bool
