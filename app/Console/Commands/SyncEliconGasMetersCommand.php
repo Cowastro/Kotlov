@@ -164,9 +164,20 @@ class SyncEliconGasMetersCommand extends Command
     {
         $items = [];
 
-        for ($page = 1; $page <= 4; $page++) {
+        // Page count on elicon.by's category isn't fixed — it shrinks/grows as
+        // they add/remove products, so stop gracefully on the first missing
+        // page instead of assuming a hardcoded count (was hardcoded to 4;
+        // observed 01.09.2026 it had shrunk to 3, crashing the whole sync).
+        for ($page = 1; $page <= 10; $page++) {
             $url = $page === 1 ? self::CATEGORY_URL : self::CATEGORY_URL . 'page/' . $page . '/';
-            $html = $this->fetch($url);
+            try {
+                $html = $this->fetch($url);
+            } catch (\Throwable $e) {
+                if ($page > 1) {
+                    break; // ran past the last real page
+                }
+                throw $e;
+            }
 
             foreach ($this->productNodes($html) as $nodeHtml) {
                 $item = $this->parseListingItem($nodeHtml);
