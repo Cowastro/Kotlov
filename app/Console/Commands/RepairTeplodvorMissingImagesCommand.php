@@ -18,7 +18,8 @@ class RepairTeplodvorMissingImagesCommand extends Command
         {--limit=0 : Max products to update, 0 means no limit}
         {--max-pages=8 : Max Teplodvor pages per source URL}
         {--max-brands=0 : Max brands to scan, 0 means no limit}
-        {--force : Update even when a local image exists}';
+        {--force : Update even when a local image exists}
+        {--debug-source : Print source fetch and parse diagnostics}';
 
     protected $description = 'Repair empty or broken product images from Teplodvor catalog/brand pages.';
 
@@ -260,10 +261,18 @@ class RepairTeplodvorMissingImagesCommand extends Command
             foreach ($this->expandPages($sourceUrl, $maxPages) as $url) {
                 $html = $this->fetch($url);
                 if ($html === null) {
+                    if ($this->option('debug-source')) {
+                        $this->warn('  source fetch failed: ' . $url);
+                    }
                     continue;
                 }
 
-                foreach ($this->parseProductCards($html) as $card) {
+                $cards = $this->parseProductCards($html);
+                if ($this->option('debug-source')) {
+                    $this->line(sprintf('  source parsed: %s bytes=%d cards=%d', $url, strlen($html), count($cards)));
+                }
+
+                foreach ($cards as $card) {
                     if (! $this->titleLooksLikeBrand($card['title'], $brandName)) {
                         continue;
                     }
