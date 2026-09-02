@@ -3,6 +3,7 @@
 namespace App\Console\Commands;
 
 use App\Models\Product;
+use App\Models\Category;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 
@@ -10,6 +11,7 @@ class MarkBrandAvailabilityCheckCommand extends Command
 {
     protected $signature = 'catalog:mark-brand-check
         {--brand=* : Exact brand name to mark, can be repeated}
+        {--category=* : Exact category slug to scope products, can be repeated}
         {--apply : Write product and supplier stock status; default is dry-run}';
 
     protected $description = 'Mark non-archived products for selected brands as "Уточняйте наличие".';
@@ -18,6 +20,7 @@ class MarkBrandAvailabilityCheckCommand extends Command
     {
         $apply = (bool) $this->option('apply');
         $brands = array_values(array_filter(array_map('trim', (array) $this->option('brand'))));
+        $categorySlugs = array_values(array_filter(array_map('trim', (array) $this->option('category'))));
 
         if ($brands === []) {
             $this->error('At least one --brand is required.');
@@ -25,9 +28,19 @@ class MarkBrandAvailabilityCheckCommand extends Command
             return self::FAILURE;
         }
 
+        $categoryIds = $categorySlugs === []
+            ? []
+            : Category::query()->whereIn('slug', $categorySlugs)->pluck('id')->all();
+
+        $missingCategorySlugs = array_values(array_diff($categorySlugs, Category::query()->whereIn('id', $categoryIds)->pluck('slug')->all()));
+        foreach ($missingCategorySlugs as $slug) {
+            $this->warn('Category not found: ' . $slug);
+        }
+
         $products = Product::query()
             ->where('is_archived', false)
             ->whereHas('brand', fn ($query) => $query->whereIn('name', $brands))
+            ->when($categoryIds !== [], fn ($query) => $query->whereIn('category_id', $categoryIds))
             ->with(['brand:id,name', 'category:id,name,slug'])
             ->orderBy('brand_id')
             ->orderBy('name')
