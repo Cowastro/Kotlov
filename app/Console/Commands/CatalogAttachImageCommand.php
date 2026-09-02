@@ -89,7 +89,12 @@ class CatalogAttachImageCommand extends Command
 
             $body = $resp->body();
             $contentType = (string) $resp->header('Content-Type');
-            if (strlen($body) < 2000 || ! str_starts_with($contentType, 'image/')) {
+            // 500 bytes (not 2000): some legitimate sources (e.g. ru-buderus.com's
+            // 160x160 catalog thumbnails) are genuinely ~1.5KB webp files — a real,
+            // correctly-typed image, just small. The content-type check is what
+            // actually guards against an HTML error page mislabeled as an image;
+            // size alone only needs to rule out a near-empty/truncated response.
+            if (strlen($body) < 500 || ! str_starts_with($contentType, 'image/')) {
                 $this->warn("  ✗ not a real image (content-type={$contentType}, bytes=" . strlen($body) . "): {$url}");
                 continue;
             }
