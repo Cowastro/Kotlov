@@ -36,7 +36,9 @@ class FindBrokenProductImagesCommand extends Command
     protected $signature = 'debug:find-broken-images
         {--limit=0 : Cap number of products scanned (0 = all active)}
         {--export : Write full broken list to public/exports/*.ndjson}
-        {--delete-export= : Delete a previously written export file (filename only)}';
+        {--delete-export= : Delete a previously written export file (filename only)}
+        {--clear-broken : Strip confirmed-broken paths out of products.images (a product falls back to the placeholder image once none remain) — preview only unless --apply is also given}
+        {--apply : Write the --clear-broken changes to the database}';
 
     protected $description = 'Site-wide check of every active product image against its actual resolved file/URL (not just HTTP status)';
 
@@ -79,12 +81,14 @@ class FindBrokenProductImagesCommand extends Command
         $httpTargets = []; // path => [productId, index]
 
         $resolved = []; // productId => [ [path, scheme, checkTarget], ... ]
+        $imagesByProduct = []; // productId => decoded images array, for --clear-broken
 
         foreach ($products as $p) {
             $images = json_decode((string) $p->images, true);
             if (!is_array($images) || empty($images)) {
                 continue;
             }
+            $imagesByProduct[$p->id] = $images;
             foreach ($images as $idx => $path) {
                 if (!is_string($path) || $path === '') {
                     continue;
@@ -181,6 +185,10 @@ class FindBrokenProductImagesCommand extends Command
             $this->line("  {$scheme}: {$cnt}");
         }
 
+        if ($this->option('clear-broken') && $brokenCount > 0) {
+            $this->clearBroken($brokenRows, $imagesByProduct, (bool) $this->option('apply'));
+        }
+
         if ($export && $brokenCount > 0) {
             $dir = public_path('exports');
             if (!is_dir($dir)) {
@@ -197,6 +205,65 @@ class FindBrokenProductImagesCommand extends Command
         }
 
         return self::SUCCESS;
+    }
+
+    /**
+     * Remove confirmed-broken paths from products.images so a visitor never
+     * sees a broken <img> — Product::imageUrl() already falls back to the
+     * placeholder cleanly once the array is empty or the requested index is
+     * missing. This never deletes information for entries a later automated
+     * or manual fix could still recover (nothing on disk is touched, and the
+     * source path is only dropped from THIS product's own array — a re-run
+     * of the relevant supplier sync just repopulates it normally).
+     */
+    private function clearBroken(array $brokenRows, array $imagesByProduct, bool $apply): void
+    {
+        $byProduct = [];
+        foreach ($brokenRows as $r) {
+            $byProduct[$r['product_id']][] = $r['index'];
+        }
+
+        $this->newLine();
+        $this->info(sprintf(
+            'clear-broken: %d products have at least one broken image path.',
+            count($byProduct)
+        ));
+
+        $willBeEmptied = 0;
+        $willBePartial = 0;
+        $updated = 0;
+
+        foreach ($byProduct as $productId => $brokenIndexes) {
+            $images = $imagesByProduct[$productId] ?? null;
+            if (!is_array($images)) {
+                continue;
+            }
+
+            $cleaned = array_values(array_diff_key($images, array_flip($brokenIndexes)));
+
+            if ($cleaned === []) {
+                $willBeEmptied++;
+            } else {
+                $willBePartial++;
+            }
+
+            if ($apply) {
+                DB::table('products')->where('id', $productId)->update([
+                    'images' => json_encode($cleaned, JSON_UNESCAPED_UNICODE),
+                    'updated_at' => now(),
+                ]);
+                $updated++;
+            }
+        }
+
+        if (!$apply) {
+            $this->line("  would fall back to placeholder (all images were broken): {$willBeEmptied}");
+            $this->line("  would keep remaining valid images, just drop the broken one(s): {$willBePartial}");
+            $this->line('  (dry run — pass --apply to write)');
+            return;
+        }
+
+        $this->info("clear-broken: updated {$updated} products ({$willBeEmptied} now show the placeholder, {$willBePartial} kept their other valid images).");
     }
 
     private function recordBroken(array &$rows, object $p, int $idx, string $path, string $scheme, string $target): void
