@@ -508,6 +508,14 @@ class EnrichLigmetExtraCommand extends Command
         if ($brand !== '') {
             $n = preg_replace('/' . preg_quote(mb_strtoupper($brand), '/') . '/u', '', $n) ?? $n;
         }
+        // Dimension separators vary by source ("17*37", "17×37" on some sites
+        // vs our own "17х49" with a Cyrillic х) — normalize to the Cyrillic
+        // form BEFORE the alnum strip below turns "*"/"×" into a space and
+        // isolates the numbers, which then get dropped as noise by the
+        // numeric-token filter a few lines down (collapsing every distinct
+        // size into the same generic key, e.g. all Kratki grilles → "РЕШЕТКА
+        // КАМИНА ЖАЛЮЗИ").
+        $n    = preg_replace('/(\d)\s*[*×xX]\s*(\d)/u', '$1Х$2', $n) ?? $n;
         $n    = preg_replace('/[^А-ЯЁA-Z0-9]/u', ' ', $n) ?? $n;
         // ERMAK spare-part names distinguish variants purely by size/kg number
         // ("Сетка-каменка Ермак 12" vs "...16-20-24") — dropping numeric tokens
