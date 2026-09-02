@@ -42,6 +42,7 @@ class EnrichRusklimatCommand extends Command
         {--build-content     : Compose content from short_description + specs (no AI, supplier data)}
         {--build-short       : Compose short_description from content/specs (no AI, supplier data)}
         {--include-archived  : Also process archived products (default: active only)}
+        {--products=         : Comma-separated product IDs, bypassing --limit/--offset/--brand/--category filters}
         {--dry-run           : Preview only, no DB writes}';
 
     protected $description = 'Enrich Rusklimat products: scrape specs/images from rusklimat.by + AI description';
@@ -109,14 +110,23 @@ class EnrichRusklimatCommand extends Command
               ->orWhereRaw('(JSON_VALID(p.images) AND JSON_LENGTH(p.images) = 0)');
         };
 
+        $productIds = [];
+        foreach (explode(',', (string) $this->option('products')) as $part) {
+            $id = (int) trim($part);
+            if ($id > 0) {
+                $productIds[] = $id;
+            }
+        }
+
         $base = DB::table('products as p')
             ->join('supplier_products as sp', 'p.id', '=', 'sp.product_id')
             ->where('sp.supplier_id', $supplierId)
-            ->when($brandFilter, fn ($q) => $q
+            ->when($brandFilter && $productIds === [], fn ($q) => $q
                 ->join('brands as br', 'p.brand_id', '=', 'br.id')
                 ->where('br.name', 'like', '%' . $brandFilter . '%'))
-            ->when($categoryFilter, fn ($q) => $q->where('p.category_id', (int) $categoryFilter))
-            ->when(! $force, fn ($q) => $q->where($missingWhere));
+            ->when($categoryFilter && $productIds === [], fn ($q) => $q->where('p.category_id', (int) $categoryFilter))
+            ->when($productIds !== [], fn ($q) => $q->whereIn('p.id', $productIds))
+            ->when($productIds === [] && ! $force, fn ($q) => $q->where($missingWhere));
 
         // Diagnostics: how the active/archived split looks for the current filter.
         $activeMatch   = (clone $base)->where('p.is_archived', false)->distinct('p.id')->count('p.id');
@@ -128,7 +138,9 @@ class EnrichRusklimatCommand extends Command
                      'p.images', 'p.short_description', 'sp.supplier_article', 'sp.raw');
 
         $total    = (clone $query)->distinct('p.id')->count('p.id');
-        $products = $query->orderBy('p.id')->offset($offset)->limit($limit)->get();
+        $products = $query->orderBy('p.id')
+            ->when($productIds === [], fn ($q) => $q->offset($offset)->limit($limit))
+            ->get();
 
         $this->newLine();
         $this->info(sprintf(
