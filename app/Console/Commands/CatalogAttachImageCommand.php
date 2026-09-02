@@ -25,7 +25,8 @@ use Illuminate\Support\Facades\Http;
 class CatalogAttachImageCommand extends Command
 {
     protected $signature = 'catalog:attach-image
-        {product : Product ID}
+        {product : Product ID, or SKU (e.g. KOTLOV-000105) when --sku is passed}
+        {--sku : Treat the product argument as a SKU instead of a numeric ID}
         {--url=* : One or more image URLs to download and attach, in order}
         {--replace : Replace the existing images array instead of appending}
         {--apply : Write changes to the database (default: dry-run preview)}';
@@ -36,21 +37,26 @@ class CatalogAttachImageCommand extends Command
 
     public function handle(): int
     {
-        $productId = (int) $this->argument('product');
-        $urls      = (array) $this->option('url');
-        $apply     = (bool) $this->option('apply');
-        $replace   = (bool) $this->option('replace');
+        $productArg = (string) $this->argument('product');
+        $urls       = (array) $this->option('url');
+        $apply      = (bool) $this->option('apply');
+        $replace    = (bool) $this->option('replace');
 
         if ($urls === []) {
             $this->error('At least one --url= is required.');
             return self::FAILURE;
         }
 
-        $product = DB::table('products')->where('id', $productId)->first();
+        $product = $this->option('sku')
+            ? DB::table('products')->where('sku', $productArg)->first()
+            : DB::table('products')->where('id', (int) $productArg)->first();
+
         if (! $product) {
-            $this->error("Product {$productId} not found.");
+            $this->error("Product {$productArg} not found.");
             return self::FAILURE;
         }
+
+        $productId = (int) $product->id;
 
         $this->info("Product #{$productId}: {$product->name} (sku {$product->sku})");
         $this->line($apply ? '<fg=red;options=bold>APPLY</>' : '<fg=yellow;options=bold>DRY RUN</>');
