@@ -448,10 +448,15 @@ class SyncEliconGasMetersCommand extends Command
 
     private function downloadImages(array $item): array
     {
-        $urls = array_values(array_unique(array_filter(array_merge(
-            [$item['listing_image'] ?? null],
-            $item['images_remote'] ?? []
-        ))));
+        // Prefer the detail-page gallery over the catalog-listing thumbnail
+        // (same fix as supplier:sync-belkomin-tis-boilers): a listing card
+        // is the more likely place for a supplier to show a promo badge
+        // instead of the real product photo, so it's used only as a
+        // fallback when the detail page has no images at all.
+        $remoteImages = $item['images_remote'] ?? [];
+        $urls = array_values(array_unique(array_filter(
+            $remoteImages !== [] ? $remoteImages : [$item['listing_image'] ?? null]
+        )));
 
         $paths = [];
         $dir = public_path('img/products/elicon');
