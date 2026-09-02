@@ -180,9 +180,10 @@ class EnrichRusklimatCommand extends Command
             $article  = $product->supplier_article ?? '';
 
             $this->line(sprintf(
-                '[%d/%d] <fg=cyan>%s</> %s',
+                '[%d/%d] #%d <fg=cyan>%s</> %s',
                 $this->stats['processed'],
                 $products->count(),
+                $product->id,
                 $brand,
                 mb_substr($product->name, 0, 60)
             ));
