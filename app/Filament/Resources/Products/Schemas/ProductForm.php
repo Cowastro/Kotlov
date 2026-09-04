@@ -15,6 +15,7 @@ use Filament\Forms\Components\Toggle;
 use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\HtmlString;
 use Illuminate\Support\Str;
 
@@ -112,6 +113,49 @@ class ProductForm
 
                         Section::make('Цены')
                             ->schema([
+                                // Блок «Цена поставщика» — показывается если у товара есть
+                                // запись в supplier_products с иностранной валютой.
+                                Placeholder::make('supplier_price_info')
+                                    ->label('Цена поставщика')
+                                    ->content(function (?Product $record): HtmlString {
+                                        if (!$record?->id) {
+                                            return new HtmlString('');
+                                        }
+                                        $sp = DB::table('supplier_products')
+                                            ->join('suppliers', 'suppliers.id', '=', 'supplier_products.supplier_id')
+                                            ->where('supplier_products.product_id', $record->id)
+                                            ->whereNotIn('supplier_products.currency', ['BYN'])
+                                            ->select(
+                                                'supplier_products.price',
+                                                'supplier_products.currency',
+                                                'supplier_products.currency_rate',
+                                                'supplier_products.price_byn',
+                                                'suppliers.name as supplier_name',
+                                                'suppliers.updated_at as rate_updated_at',
+                                            )
+                                            ->first();
+                                        if (!$sp) {
+                                            return new HtmlString('<span class="text-gray-400 text-sm">—</span>');
+                                        }
+                                        $rate   = number_format((float) $sp->currency_rate, 4, '.', ' ');
+                                        $eur    = number_format((float) $sp->price, 2, '.', ' ');
+                                        $byn    = number_format((float) $sp->price_byn, 2, '.', ' ');
+                                        $upd    = $sp->rate_updated_at
+                                            ? \Carbon\Carbon::parse($sp->rate_updated_at)->format('d.m.Y H:i')
+                                            : '—';
+                                        return new HtmlString(
+                                            '<div style="font-size:13px;line-height:1.7">'
+                                            . '<span style="font-weight:600">' . e($sp->supplier_name) . '</span>: '
+                                            . '<span style="color:#f59e0b">' . $eur . ' ' . e($sp->currency) . '</span>'
+                                            . ' × <span style="color:#6b7280">' . $rate . '</span>'
+                                            . ' = <span style="font-weight:600">' . $byn . ' BYN</span>'
+                                            . '<br><span style="color:#9ca3af;font-size:11px">Курс обновлён: ' . $upd . '</span>'
+                                            . '</div>'
+                                        );
+                                    })
+                                    ->columnSpanFull()
+                                    ->visible(fn (?Product $record) => (bool) $record?->id),
+
                                 TextInput::make('price')
                                     ->label('Цена')
                                     ->required()
