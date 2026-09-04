@@ -216,11 +216,17 @@ class SyncStankCommand extends Command
                     ->where('product_id', $product->id)
                     ->update($spData);
             } else {
-                DB::table('supplier_products')->insert(array_merge($spData, [
-                    'supplier_id' => $supplier->id,
-                    'product_id'  => $product->id,
-                    'created_at'  => now(),
-                ]));
+                try {
+                    DB::table('supplier_products')->insert(array_merge($spData, [
+                        'supplier_id' => $supplier->id,
+                        'product_id'  => $product->id,
+                        'created_at'  => now(),
+                    ]));
+                } catch (\Illuminate\Database\UniqueConstraintViolationException $e) {
+                    // Другой товар уже занял этот артикул у поставщика.
+                    // Цена на products будет обновлена ниже; supplier_products пропускаем.
+                    $this->line("  ⚠ Артикул {$artKey} уже занят другим товаром, supplier_products пропущен для #{$product->id}");
+                }
             }
 
             // products.price
