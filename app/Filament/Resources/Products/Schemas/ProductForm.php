@@ -113,54 +113,52 @@ class ProductForm
 
                         Section::make('Цены')
                             ->schema([
-                                // Блок «Цена поставщика» — показывается если у товара есть
-                                // запись в supplier_products с иностранной валютой.
-                                Placeholder::make('supplier_price_info')
-                                    ->label('Цена поставщика')
-                                    ->content(function (?Product $record): HtmlString {
-                                        if (!$record?->id) {
-                                            return new HtmlString('');
-                                        }
+                                // EUR поле — редактируемое, только для товаров с поставщиком в иностранной валюте.
+                                // Изменение пересчитывает BYN цену ниже в реальном времени.
+                                // При сохранении формы EditProduct.afterSave() обновляет supplier_products.
+                                TextInput::make('eur_price_virtual')
+                                    ->label('Цена поставщика (EUR)')
+                                    ->helperText(function (?Product $record): string {
+                                        if (!$record?->id) return '';
                                         $sp = DB::table('supplier_products')
                                             ->join('suppliers', 'suppliers.id', '=', 'supplier_products.supplier_id')
                                             ->where('supplier_products.product_id', $record->id)
                                             ->whereNotIn('supplier_products.currency', ['BYN'])
-                                            ->select(
-                                                'supplier_products.price',
-                                                'supplier_products.currency',
-                                                'supplier_products.currency_rate',
-                                                'supplier_products.price_byn',
-                                                'suppliers.name as supplier_name',
-                                                'suppliers.updated_at as rate_updated_at',
-                                            )
+                                            ->select('supplier_products.currency_rate', 'suppliers.name as supplier_name', 'suppliers.updated_at')
                                             ->first();
-                                        if (!$sp) {
-                                            return new HtmlString('<span class="text-gray-400 text-sm">—</span>');
-                                        }
-                                        $rate   = number_format((float) $sp->currency_rate, 4, '.', ' ');
-                                        $eur    = number_format((float) $sp->price, 2, '.', ' ');
-                                        $byn    = number_format((float) $sp->price_byn, 2, '.', ' ');
-                                        $upd    = $sp->rate_updated_at
-                                            ? \Carbon\Carbon::parse($sp->rate_updated_at)->format('d.m.Y H:i')
+                                        if (!$sp) return '';
+                                        $rate = number_format((float) $sp->currency_rate, 4, '.', ' ');
+                                        $upd  = $sp->updated_at
+                                            ? \Carbon\Carbon::parse($sp->updated_at)->format('d.m.Y H:i')
                                             : '—';
-                                        return new HtmlString(
-                                            '<div style="font-size:13px;line-height:1.7">'
-                                            . '<span style="font-weight:600">' . e($sp->supplier_name) . '</span>: '
-                                            . '<span style="color:#f59e0b">' . $eur . ' ' . e($sp->currency) . '</span>'
-                                            . ' × <span style="color:#6b7280">' . $rate . '</span>'
-                                            . ' = <span style="font-weight:600">' . $byn . ' BYN</span>'
-                                            . '<br><span style="color:#9ca3af;font-size:11px">Курс обновлён: ' . $upd . '</span>'
-                                            . '</div>'
-                                        );
+                                        return "{$sp->supplier_name} · курс 1 EUR = {$rate} BYN (обновлён {$upd})";
+                                    })
+                                    ->numeric()
+                                    ->prefix('EUR')
+                                    ->step('0.01')
+                                    ->dehydrated(false)
+                                    ->live()
+                                    ->afterStateUpdated(function ($state, callable $set, ?Product $record): void {
+                                        if (!$state || !$record?->id) return;
+                                        $sp = DB::table('supplier_products')
+                                            ->where('product_id', $record->id)
+                                            ->whereNotIn('currency', ['BYN'])
+                                            ->first();
+                                        if (!$sp || !$sp->currency_rate) return;
+                                        $set('price', round((float) $state * (float) $sp->currency_rate, 2));
                                     })
                                     ->columnSpanFull()
-                                    ->visible(fn (?Product $record) => (bool) $record?->id),
+                                    ->visible(fn (?Product $record): bool => (bool) DB::table('supplier_products')
+                                        ->where('product_id', $record?->id ?? 0)
+                                        ->whereNotIn('currency', ['BYN'])
+                                        ->exists()),
 
                                 TextInput::make('price')
-                                    ->label('Цена')
+                                    ->label('Цена на сайте')
                                     ->required()
                                     ->numeric()
                                     ->prefix('BYN')
+                                    ->helperText('Автоматически из EUR × курс НБРБ. Можно скорректировать вручную.')
                                     ->default(0),
 
                                 TextInput::make('price_old')
