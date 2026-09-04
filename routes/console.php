@@ -87,6 +87,14 @@ Schedule::command('supplier:sync-tsk-nasosy --apply')
     ->runInBackground()
     ->appendOutputTo(storage_path('logs/tsk-nasosy-sync.log'));
 
+// Курсы НБРБ: ежедневно загружаем EUR/USD/RUB и пересчитываем BYN цены
+// для поставщиков с иностранной валютой (S-TANK и др.).
+Schedule::command('currency:fetch-nbrb-rates')
+    ->dailyAt('07:00')
+    ->withoutOverlapping()
+    ->runInBackground()
+    ->appendOutputTo(storage_path('logs/nbrb-rates.log'));
+
 // ГазКотелБел (ЖИТОМИР / GKB): ежедневно обновляем цены, остатки и РРЦ.
 // Прайс в BYN — конвертация не нужна.
 Schedule::command('supplier:sync-gazkotelbel --apply')
