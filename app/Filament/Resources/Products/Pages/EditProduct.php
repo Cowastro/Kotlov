@@ -127,12 +127,13 @@ class EditProduct extends EditRecord
         }
         $data['specs'] = app(ProductSourceEnricher::class)->normalizeSpecsForStorage($data['specs']);
 
-        // ── EUR price virtual field ──────────────────────────────────────────────
+        // ── Цена и валюта поставщика (виртуальные поля) ─────────────────────────
         $sp = DB::table('supplier_products')
             ->where('product_id', $this->record->id)
-            ->whereNotIn('currency', ['BYN'])
+            ->orderByRaw("CASE WHEN currency != 'BYN' THEN 0 ELSE 1 END")
             ->first();
-        $data['eur_price_virtual'] = $sp ? (float) $sp->price : null;
+        $data['supplier_price_virtual']    = $sp ? (float) $sp->price : null;
+        $data['supplier_currency_virtual'] = $sp ? $sp->currency : null;
 
         return $data;
     }
@@ -171,28 +172,31 @@ class EditProduct extends EditRecord
             $this->normalizeSpecs($this->record->specs ?? []),
         );
 
-        // ── Если изменили EUR цену — обновить supplier_products ─────────────────
-        $formState = $this->form->getState();
-        $newEurPrice = isset($formState['eur_price_virtual'])
-            ? (float) $formState['eur_price_virtual']
+        // ── Если изменили цену/валюту поставщика — обновить supplier_products ───
+        $formState   = $this->form->getState();
+        $newPrice    = isset($formState['supplier_price_virtual'])
+            ? (float) $formState['supplier_price_virtual']
             : null;
+        $newCurrency = $formState['supplier_currency_virtual'] ?? null;
 
-        if ($newEurPrice !== null && $newEurPrice > 0) {
+        if ($newPrice !== null && $newPrice > 0) {
             $sp = DB::table('supplier_products')
                 ->where('product_id', $this->record->id)
-                ->whereNotIn('currency', ['BYN'])
+                ->orderByRaw("CASE WHEN currency != 'BYN' THEN 0 ELSE 1 END")
                 ->first();
 
             if ($sp) {
-                $newByn = round($newEurPrice * (float) $sp->currency_rate, 2);
+                $update = [
+                    'price'      => $newPrice,
+                    'price_byn'  => $this->record->price, // BYN уже сохранён формой
+                    'updated_at' => now(),
+                ];
+                if ($newCurrency && $newCurrency !== $sp->currency) {
+                    $update['currency'] = $newCurrency;
+                }
                 DB::table('supplier_products')
                     ->where('id', $sp->id)
-                    ->update([
-                        'price'      => $newEurPrice,
-                        'price_byn'  => $newByn,
-                        'updated_at' => now(),
-                    ]);
-                // products.price уже сохранён формой (BYN через afterStateUpdated)
+                    ->update($update);
             }
         }
     }
