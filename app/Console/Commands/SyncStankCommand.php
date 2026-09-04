@@ -187,26 +187,41 @@ class SyncStankCommand extends Command
             $bynPrice  = $row['bynPrice'];
             $artKey    = $row['artKey'];
 
-            // supplier_products — upsert по product_id + supplier_id
-            DB::table('supplier_products')->updateOrInsert(
-                ['supplier_id' => $supplier->id, 'product_id' => $product->id],
-                [
-                    'supplier_article'            => $artKey,
-                    'supplier_article_normalized' => strtolower($artKey),
-                    'supplier_article_compact'    => preg_replace('/[^a-z0-9]/', '', strtolower($artKey)),
-                    'supplier_name'               => $product->name,
-                    'price'                       => $eurPrice,
-                    'currency'                    => 'EUR',
-                    'currency_rate'               => $rate,
-                    'price_byn'                   => $bynPrice,
-                    'in_stock'                    => 1,
-                    'match_status'                => 'matched',
-                    'match_confidence'            => 'manual',
-                    'last_synced_at'              => now(),
-                    'updated_at'                  => now(),
-                    'created_at'                  => now(),
-                ]
-            );
+            // supplier_products — upsert по product_id + supplier_id.
+            // Если запись уже есть — обновляем. Если нет — вставляем.
+            // Не используем updateOrInsert т.к. он пытается INSERT, который падает
+            // на unique(supplier_id, supplier_article) когда два товара имеют одинаковый артикул.
+            $spData = [
+                'supplier_article'            => $artKey,
+                'supplier_article_normalized' => strtolower($artKey),
+                'supplier_article_compact'    => preg_replace('/[^a-z0-9]/', '', strtolower($artKey)),
+                'supplier_name'               => $product->name,
+                'price'                       => $eurPrice,
+                'currency'                    => 'EUR',
+                'currency_rate'               => $rate,
+                'price_byn'                   => $bynPrice,
+                'in_stock'                    => 1,
+                'match_status'                => 'matched',
+                'match_confidence'            => 'manual',
+                'last_synced_at'              => now(),
+                'updated_at'                  => now(),
+            ];
+            $exists = DB::table('supplier_products')
+                ->where('supplier_id', $supplier->id)
+                ->where('product_id', $product->id)
+                ->exists();
+            if ($exists) {
+                DB::table('supplier_products')
+                    ->where('supplier_id', $supplier->id)
+                    ->where('product_id', $product->id)
+                    ->update($spData);
+            } else {
+                DB::table('supplier_products')->insert(array_merge($spData, [
+                    'supplier_id' => $supplier->id,
+                    'product_id'  => $product->id,
+                    'created_at'  => now(),
+                ]));
+            }
 
             // products.price
             DB::table('products')->where('id', $product->id)->update([
