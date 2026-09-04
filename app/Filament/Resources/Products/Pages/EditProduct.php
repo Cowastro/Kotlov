@@ -12,6 +12,7 @@ use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\EditRecord;
+use Illuminate\Support\Facades\DB;
 
 class EditProduct extends EditRecord
 {
@@ -126,6 +127,13 @@ class EditProduct extends EditRecord
         }
         $data['specs'] = app(ProductSourceEnricher::class)->normalizeSpecsForStorage($data['specs']);
 
+        // ── EUR price virtual field ──────────────────────────────────────────────
+        $sp = DB::table('supplier_products')
+            ->where('product_id', $this->record->id)
+            ->whereNotIn('currency', ['BYN'])
+            ->first();
+        $data['eur_price_virtual'] = $sp ? (float) $sp->price : null;
+
         return $data;
     }
 
@@ -162,6 +170,31 @@ class EditProduct extends EditRecord
             $this->record,
             $this->normalizeSpecs($this->record->specs ?? []),
         );
+
+        // ── Если изменили EUR цену — обновить supplier_products ─────────────────
+        $formState = $this->form->getState();
+        $newEurPrice = isset($formState['eur_price_virtual'])
+            ? (float) $formState['eur_price_virtual']
+            : null;
+
+        if ($newEurPrice !== null && $newEurPrice > 0) {
+            $sp = DB::table('supplier_products')
+                ->where('product_id', $this->record->id)
+                ->whereNotIn('currency', ['BYN'])
+                ->first();
+
+            if ($sp) {
+                $newByn = round($newEurPrice * (float) $sp->currency_rate, 2);
+                DB::table('supplier_products')
+                    ->where('id', $sp->id)
+                    ->update([
+                        'price'      => $newEurPrice,
+                        'price_byn'  => $newByn,
+                        'updated_at' => now(),
+                    ]);
+                // products.price уже сохранён формой (BYN через afterStateUpdated)
+            }
+        }
     }
 
     /**
