@@ -179,7 +179,7 @@ Route::get('/contacts',   fn() => view('pages.contacts'))->name('contacts');
 Route::post('/contacts', function (\Illuminate\Http\Request $request) {
     $data = $request->validate([
         'name'    => ['required', 'string', 'max:100', new \App\Rules\NoHtmlOrLinks()],
-        'phone'   => 'required|string|max:30',
+        'phone'   => ['required', 'string', 'max:30', new \App\Rules\PhoneNotSpam()],
         'email'   => 'nullable|email|max:150',
         'message' => ['required', 'string', 'max:1000', new \App\Rules\NoHtmlOrLinks()],
     ]);
