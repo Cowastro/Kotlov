@@ -14,7 +14,7 @@ class PartnerApplicationController extends Controller
     {
         $data = Validator::make($request->all(), [
             'contact_name'     => ['required', 'string', 'max:100', new NoHtmlOrLinks()],
-            'phone'            => 'required|string|max:30',
+            'phone'            => ['required', 'string', 'max:30', new \App\Rules\PhoneNotSpam()],
             'email'            => 'nullable|email|max:150',
             'city'             => ['nullable', 'string', 'max:100', new NoHtmlOrLinks()],
             'company_name'     => ['nullable', 'string', 'max:255', new NoHtmlOrLinks()],
