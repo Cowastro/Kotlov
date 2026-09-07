@@ -28,7 +28,7 @@ class SyncBaniaPricelistCommand extends Command
 
     private const SUPPLIER_CODE = 'bania';
     private const DEFAULT_SHEET_URL = 'https://docs.google.com/spreadsheets/d/1R2qoKV_NKlOAwaBb5dC58CjRawHXJGGX/edit?gid=1105454588#gid=1105454588';
-    private const DEFAULT_RETAIL_SHEET_URL = 'https://docs.google.com/spreadsheets/d/1tdKCGzoMoeYQngx2ggeI9DifxHKSDMPc/edit?gid=886304601#gid=886304601';
+    private const DEFAULT_RETAIL_SHEET_URL = 'https://docs.google.com/spreadsheets/d/1tdKCGzoMoeYQngx2ggeI9DifxHKSDMPc/edit?gid=1529722532#gid=1529722532';
     private const CACHE_PATH = 'supplier-cache/bania-pricelist.xlsx';
     private const RETAIL_CACHE_PATH = 'supplier-cache/bania-retail-pricelist.xlsx';
     private const PRODUCTION_BRANDS = [
