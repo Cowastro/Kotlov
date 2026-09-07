@@ -1423,13 +1423,16 @@ a.category-v05.subcat-tile:hover .cate-icon {
 
 .brand-detail-content {
     color: #3f4752;
+    font-size: 16px;
+    line-height: 1.72;
+}
+
+.brand-detail-content:has(figure) {
     display: grid;
     grid-template-columns: minmax(0, 1fr) minmax(240px, 320px);
     column-gap: 36px;
     justify-content: space-between;
     align-items: start;
-    font-size: 16px;
-    line-height: 1.72;
 }
 
 .brand-detail-content h2,
@@ -1543,8 +1546,11 @@ a.category-v05.subcat-tile:hover .cate-icon {
     }
 
     .brand-detail-content {
-        display: block;
         font-size: 16px;
+    }
+
+    .brand-detail-content:has(figure) {
+        display: block;
     }
 
     .brand-detail-content-panel {
