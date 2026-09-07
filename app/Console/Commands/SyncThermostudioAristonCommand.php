@@ -417,7 +417,25 @@ class SyncThermostudioAristonCommand extends Command
                 ->first();
 
             if ($sp) {
-                return DB::table('products')->where('id', $sp->product_id)->first();
+                $product = DB::table('products')->where('id', $sp->product_id)->first();
+
+                // supplier_products may still point to a product that was archived by
+                // DeduplicateProductsCommand --fix-slugs (slug contains "-archived-{id}").
+                // Returning it would cause upsertProduct to reactivate the duplicate.
+                // Fall through to name-based search to find (and update) the canonical product;
+                // upsertSupplierProduct will then re-link the row to the correct product_id.
+                if ($product && str_contains((string) $product->slug, '-archived-')) {
+                    $this->line(sprintf(
+                        '  <fg=yellow>supplier_products points to archived product id=%d (slug: %s); re-linking to canonical.</>',
+                        $product->id,
+                        $product->slug,
+                    ));
+                    $product = null;
+                }
+
+                if ($product) {
+                    return $product;
+                }
             }
         }
 
