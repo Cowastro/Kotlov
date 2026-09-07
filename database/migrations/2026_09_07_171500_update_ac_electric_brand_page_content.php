@@ -25,7 +25,7 @@ HTML;
         DB::table('brands')
             ->where('slug', 'ac-electric')
             ->update([
-                'h1' => 'AC Electric — климатическая техника и теплый пол',
+                'h1' => 'AC Electric — климат и теплый пол',
                 'content' => $content,
                 'meta_title' => 'AC Electric — кондиционеры, теплый пол и терморегуляторы | Kotlov.by',
                 'meta_description' => 'Каталог AC Electric на Kotlov.by: сплит-системы, комплекты теплого пола, терморегуляторы и автоматика. Подбор по назначению и доставка по Беларуси.',
