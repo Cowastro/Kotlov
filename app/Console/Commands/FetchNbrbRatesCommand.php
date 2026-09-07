@@ -133,9 +133,11 @@ class FetchNbrbRatesCommand extends Command
         try {
             $resp = Http::timeout(10)->get(sprintf(self::NBRB_API, $currency));
             if ($resp->ok()) {
-                $rate = $resp->json('Cur_OfficialRate');
-                if ($rate > 0) {
-                    return round((float) $rate, 4);
+                $rate = (float) $resp->json('Cur_OfficialRate');
+                $scale = (int) ($resp->json('Cur_Scale') ?: 1);
+
+                if ($rate > 0 && $scale > 0) {
+                    return round($rate / $scale, 6);
                 }
             }
         } catch (\Throwable $e) {
