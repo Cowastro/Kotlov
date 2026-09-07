@@ -25,7 +25,7 @@ HTML;
         DB::table('brands')
             ->where('slug', 'antifrogen')
             ->update([
-                'h1' => 'Antifrogen — теплоносители',
+                'h1' => 'Antifrogen N и L',
                 'content' => $content,
                 'meta_title' => 'Antifrogen — теплоносители и антифризы купить в Беларуси | Kotlov.by',
                 'meta_description' => 'Каталог Antifrogen на Kotlov.by: теплоносители N и L, концентраты на этиленгликоле и пропиленгликоле для отопления и охлаждения. Доставка по Беларуси.',
