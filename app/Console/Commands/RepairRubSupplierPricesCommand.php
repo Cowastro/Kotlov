@@ -46,10 +46,13 @@ class RepairRubSupplierPricesCommand extends Command
         $totalRows = 0;
         $totalChangedRows = 0;
         $totalProducts = 0;
+        $supplierRateChanges = 0;
         $preview = [];
 
         foreach ($suppliers as $supplier) {
             $supplierCurrency = CurrencyPriceConverter::normalizeCurrency($supplier->currency ?? null);
+            $supplierRateChanged = $supplierCurrency === 'RUB'
+                && abs((float) $supplier->currency_rate - $rate) >= 0.000001;
 
             $rows = DB::table('supplier_products as sp')
                 ->join('products as p', 'p.id', '=', 'sp.product_id')
@@ -77,20 +80,30 @@ class RepairRubSupplierPricesCommand extends Command
                 ->orderBy('p.id')
                 ->get();
 
+            if ($supplierRateChanged) {
+                $supplierRateChanges++;
+
+                if ($apply) {
+                    DB::table('suppliers')->where('id', $supplier->id)->update([
+                        'currency_rate' => $rate,
+                        'updated_at' => $now,
+                    ]);
+                }
+            }
+
             if ($rows->isEmpty()) {
-                $this->line(sprintf('%s: no linked RUB rows.', $supplier->code));
+                $this->line(sprintf(
+                    '%s: no linked RUB rows%s.',
+                    $supplier->code,
+                    $supplierRateChanged
+                        ? sprintf('; supplier rate %.6f -> %.6f', (float) $supplier->currency_rate, $rate)
+                        : ''
+                ));
                 continue;
             }
 
             $changedRows = 0;
             $productIds = [];
-
-            if ($apply && $supplierCurrency === 'RUB') {
-                DB::table('suppliers')->where('id', $supplier->id)->update([
-                    'currency_rate' => $rate,
-                    'updated_at' => $now,
-                ]);
-            }
 
             foreach ($rows as $row) {
                 $newPriceByn = CurrencyPriceConverter::convertToByn($row->supplier_price, 'RUB', $rate);
@@ -134,19 +147,23 @@ class RepairRubSupplierPricesCommand extends Command
             $totalProducts += $updatedProducts;
 
             $this->line(sprintf(
-                '%s %s rows=%d changed_rows=%d refreshed_products=%d',
+                '%s %s rows=%d changed_rows=%d refreshed_products=%d%s',
                 $apply ? 'APPLIED' : 'DRY-RUN',
                 $supplier->code,
                 $rows->count(),
                 $changedRows,
-                $updatedProducts
+                $updatedProducts,
+                $supplierRateChanged
+                    ? sprintf(' rate %.6f -> %.6f', (float) $supplier->currency_rate, $rate)
+                    : ''
             ));
         }
 
         $this->info(sprintf(
-            '%s RUB suppliers=%d rows=%d changed_rows=%d refreshed_products=%d rate=%s',
+            '%s RUB suppliers=%d supplier_rate_changes=%d rows=%d changed_rows=%d refreshed_products=%d rate=%s',
             $apply ? 'APPLIED' : 'DRY-RUN',
             $suppliers->count(),
+            $supplierRateChanges,
             $totalRows,
             $totalChangedRows,
             $totalProducts,
