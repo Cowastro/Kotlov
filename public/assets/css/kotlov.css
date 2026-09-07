@@ -1316,6 +1316,7 @@ a.category-v05.subcat-tile:hover .cate-icon {
     font-size: clamp(32px, 3.2vw, 48px);
     line-height: 1.08;
     letter-spacing: 0;
+    overflow-wrap: anywhere;
 }
 
 .brand-detail-meta {
@@ -1518,16 +1519,22 @@ a.category-v05.subcat-tile:hover .cate-icon {
     }
 
     .brand-detail-card {
+        width: 100%;
+        max-width: 100%;
         padding: 20px;
         border-radius: 8px;
+        overflow: hidden;
     }
 
     .brand-detail-summary h1 {
-        font-size: 32px;
+        max-width: 100%;
+        font-size: 30px;
+        line-height: 1.12;
     }
 
     .brand-detail-actions .tf-btn {
         width: 100%;
+        min-width: 0;
     }
 
     .brand-category-grid {
