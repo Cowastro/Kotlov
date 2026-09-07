@@ -469,11 +469,21 @@ class SyncBaniaPricelistCommand extends Command
 
     private function toExportUrl(string $url): string
     {
+        $parts = parse_url($url);
+        parse_str((string) ($parts['query'] ?? ''), $query);
+
+        // Extract gid from query string first, then from fragment (Google Sheets puts it in both)
+        $gid = $query['gid'] ?? null;
+        if (! $gid && ! empty($parts['fragment'])) {
+            parse_str((string) $parts['fragment'], $fragment);
+            $gid = $fragment['gid'] ?? null;
+        }
+
         if (str_contains($url, '/export?')) {
-            $parts = parse_url($url);
-            parse_str((string) ($parts['query'] ?? ''), $query);
             $query['format'] = 'xlsx';
-            unset($query['gid']);
+            if ($gid) {
+                $query['gid'] = $gid;
+            }
 
             return sprintf(
                 '%s://%s%s?%s',
@@ -488,7 +498,12 @@ class SyncBaniaPricelistCommand extends Command
             return $url;
         }
 
-        return sprintf('https://docs.google.com/spreadsheets/d/%s/export?format=xlsx', $matches[1]);
+        $exportUrl = sprintf('https://docs.google.com/spreadsheets/d/%s/export?format=xlsx', $matches[1]);
+        if ($gid) {
+            $exportUrl .= '&gid=' . urlencode((string) $gid);
+        }
+
+        return $exportUrl;
     }
 
     private function readPriceRows(string $path): array
