@@ -1523,13 +1523,14 @@ a.category-v05.subcat-tile:hover .cate-icon {
         max-width: 100%;
         padding: 20px;
         border-radius: 8px;
-        overflow: hidden;
     }
 
     .brand-detail-summary h1 {
         max-width: 100%;
-        font-size: 30px;
+        font-size: 27px;
         line-height: 1.12;
+        word-break: break-word;
+        hyphens: auto;
     }
 
     .brand-detail-actions .tf-btn {
