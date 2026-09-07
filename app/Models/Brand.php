@@ -50,6 +50,18 @@ class Brand extends Model
             return asset('storage/' . $path);
         }
 
+        $legacyBrandPath = 'images/catalog_brand/'
+            . sprintf('%03d', floor(((int) $this->id) / 1000))
+            . '/'
+            . str_pad((string) $this->id, 6, '0', STR_PAD_LEFT)
+            . '/'
+            . $path;
+
+        $legacyBrandFile = public_path($legacyBrandPath);
+        if ($this->id && file_exists($legacyBrandFile)) {
+            return '/' . $legacyBrandPath;
+        }
+
         return '/proxy-image/' . ltrim($path, '/');
     }
 
