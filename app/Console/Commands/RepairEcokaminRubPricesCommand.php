@@ -5,11 +5,13 @@ namespace App\Console\Commands;
 use App\Services\Pricing\CurrencyPriceConverter;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Http;
 
 class RepairEcokaminRubPricesCommand extends Command
 {
     protected $signature = 'repair:ecokamin-rub-prices
-        {--apply : Write recalculated prices to the database}';
+        {--apply : Write recalculated prices to the database}
+        {--rate= : Explicit RUB to BYN rate; defaults to the NBRB rate for one RUB}';
 
     protected $description = 'Recalculate EcoKamin BYN prices from stored RUB supplier prices after currency-rate fixes.';
 
@@ -25,7 +27,7 @@ class RepairEcokaminRubPricesCommand extends Command
         }
 
         $currency = CurrencyPriceConverter::normalizeCurrency($supplier->currency ?? 'RUB');
-        $rate = CurrencyPriceConverter::rateFor($currency, $supplier->currency_rate ?? null);
+        $rate = $this->resolveRate($currency);
 
         if ($currency !== 'RUB') {
             $this->warn(sprintf('Supplier ecokamin currency is %s, expected RUB. Continuing with configured rate.', $currency));
@@ -58,6 +60,13 @@ class RepairEcokaminRubPricesCommand extends Command
         $clearedOld = 0;
         $preview = [];
         $now = now();
+
+        if ($apply) {
+            DB::table('suppliers')->where('id', $supplier->id)->update([
+                'currency_rate' => $rate,
+                'updated_at' => $now,
+            ]);
+        }
 
         foreach ($rows as $row) {
             $newPrice = CurrencyPriceConverter::convertToByn($row->supplier_price, $currency, $rate);
@@ -120,5 +129,33 @@ class RepairEcokaminRubPricesCommand extends Command
         }
 
         return self::SUCCESS;
+    }
+
+    private function resolveRate(string $currency): float
+    {
+        $explicitRate = trim((string) $this->option('rate'));
+
+        if ($explicitRate !== '') {
+            return CurrencyPriceConverter::rateFor($currency, str_replace(',', '.', $explicitRate));
+        }
+
+        if ($currency !== 'RUB') {
+            throw new \InvalidArgumentException('Pass --rate for non-RUB EcoKamin currency.');
+        }
+
+        $resp = Http::timeout(10)->get('https://api.nbrb.by/exrates/rates/RUB?parammode=2');
+
+        if (! $resp->ok()) {
+            throw new \RuntimeException('Unable to fetch NBRB RUB rate.');
+        }
+
+        $officialRate = (float) $resp->json('Cur_OfficialRate');
+        $scale = (int) ($resp->json('Cur_Scale') ?: 1);
+
+        if ($officialRate <= 0 || $scale <= 0) {
+            throw new \RuntimeException('Invalid NBRB RUB rate response.');
+        }
+
+        return CurrencyPriceConverter::rateFor($currency, round($officialRate / $scale, 6));
     }
 }
