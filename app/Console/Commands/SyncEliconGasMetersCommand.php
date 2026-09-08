@@ -164,9 +164,20 @@ class SyncEliconGasMetersCommand extends Command
     {
         $items = [];
 
-        for ($page = 1; $page <= 4; $page++) {
+        // Page count on elicon.by's category isn't fixed — it shrinks/grows as
+        // they add/remove products, so stop gracefully on the first missing
+        // page instead of assuming a hardcoded count (was hardcoded to 4;
+        // observed 01.09.2026 it had shrunk to 3, crashing the whole sync).
+        for ($page = 1; $page <= 10; $page++) {
             $url = $page === 1 ? self::CATEGORY_URL : self::CATEGORY_URL . 'page/' . $page . '/';
-            $html = $this->fetch($url);
+            try {
+                $html = $this->fetch($url);
+            } catch (\Throwable $e) {
+                if ($page > 1) {
+                    break; // ran past the last real page
+                }
+                throw $e;
+            }
 
             foreach ($this->productNodes($html) as $nodeHtml) {
                 $item = $this->parseListingItem($nodeHtml);
@@ -437,10 +448,15 @@ class SyncEliconGasMetersCommand extends Command
 
     private function downloadImages(array $item): array
     {
-        $urls = array_values(array_unique(array_filter(array_merge(
-            [$item['listing_image'] ?? null],
-            $item['images_remote'] ?? []
-        ))));
+        // Prefer the detail-page gallery over the catalog-listing thumbnail
+        // (same fix as supplier:sync-belkomin-tis-boilers): a listing card
+        // is the more likely place for a supplier to show a promo badge
+        // instead of the real product photo, so it's used only as a
+        // fallback when the detail page has no images at all.
+        $remoteImages = $item['images_remote'] ?? [];
+        $urls = array_values(array_unique(array_filter(
+            $remoteImages !== [] ? $remoteImages : [$item['listing_image'] ?? null]
+        )));
 
         $paths = [];
         $dir = public_path('img/products/elicon');

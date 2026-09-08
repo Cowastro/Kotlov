@@ -51,7 +51,7 @@ class InstallRequestController extends Controller
     {
         $validated = $request->validate([
             'customer_name'        => ['required', 'string', 'max:100', new NoHtmlOrLinks()],
-            'customer_phone'       => 'required|string|max:30',
+            'customer_phone'       => ['required', 'string', 'max:30', new \App\Rules\PhoneNotSpam()],
             'customer_email'       => 'nullable|email|max:150',
             'city'                 => ['nullable', 'string', 'max:100', new NoHtmlOrLinks()],
             'region'               => 'nullable|string|max:100',

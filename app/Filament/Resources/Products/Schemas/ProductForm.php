@@ -15,6 +15,7 @@ use Filament\Forms\Components\Toggle;
 use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\HtmlString;
 use Illuminate\Support\Str;
 
@@ -111,35 +112,115 @@ class ProductForm
                             ]),
 
                         Section::make('Цены')
+                            ->columns(3)
                             ->schema([
+                                // Цена поставщика + валюта поставщика — в одной строке (2+1 колонки).
+                                // Изменение пересчитывает BYN цену в реальном времени.
+                                // При сохранении EditProduct.afterSave() сохраняет в supplier_products.
+                                TextInput::make('supplier_price_virtual')
+                                    ->label('Цена поставщика')
+                                    ->helperText(function (?Product $record): string {
+                                        if (!$record?->id) return '';
+                                        $sp = DB::table('supplier_products')
+                                            ->join('suppliers', 'suppliers.id', '=', 'supplier_products.supplier_id')
+                                            ->where('supplier_products.product_id', $record->id)
+                                            ->select('supplier_products.currency_rate', 'supplier_products.currency', 'suppliers.name as supplier_name', 'suppliers.updated_at')
+                                            ->orderByRaw("CASE WHEN supplier_products.currency != 'BYN' THEN 0 ELSE 1 END")
+                                            ->first();
+                                        if (!$sp) return '';
+                                        if ($sp->currency === 'BYN') return $sp->supplier_name;
+                                        $rate = number_format((float) $sp->currency_rate, 4, '.', ' ');
+                                        $upd  = $sp->updated_at
+                                            ? \Carbon\Carbon::parse($sp->updated_at)->format('d.m.Y H:i')
+                                            : '—';
+                                        return "{$sp->supplier_name} · курс 1 {$sp->currency} = {$rate} BYN (обновлён {$upd})";
+                                    })
+                                    ->numeric()
+                                    ->step('0.01')
+                                    ->dehydrated(false)
+                                    ->live()
+                                    ->afterStateUpdated(function ($state, callable $get, callable $set, ?Product $record): void {
+                                        if ($state === null || $state === '' || !$record?->id) return;
+                                        $currency = $get('supplier_currency_virtual') ?: 'BYN';
+                                        if ($currency === 'BYN') {
+                                            $set('price', round((float) $state, 2));
+                                            return;
+                                        }
+                                        $sp = DB::table('supplier_products')
+                                            ->where('product_id', $record->id)
+                                            ->where('currency', $currency)
+                                            ->first();
+                                        if ($sp && $sp->currency_rate) {
+                                            $set('price', round((float) $state * (float) $sp->currency_rate, 2));
+                                        }
+                                    })
+                                    ->visible(fn (?Product $record): bool => (bool) DB::table('supplier_products')
+                                        ->where('product_id', $record?->id ?? 0)
+                                        ->exists())
+                                    ->columnSpan(2),
+
+                                Select::make('supplier_currency_virtual')
+                                    ->label('Валюта поставщика')
+                                    ->options(['EUR' => 'EUR', 'USD' => 'USD', 'RUB' => 'RUB', 'BYN' => 'BYN'])
+                                    ->dehydrated(false)
+                                    ->live()
+                                    ->afterStateUpdated(function ($state, callable $get, callable $set, ?Product $record): void {
+                                        if (!$record?->id) return;
+                                        $price = (float) ($get('supplier_price_virtual') ?? 0);
+                                        if (!$price) return;
+                                        if ($state === 'BYN') {
+                                            $set('price', round($price, 2));
+                                            return;
+                                        }
+                                        $sp = DB::table('supplier_products')
+                                            ->where('product_id', $record->id)
+                                            ->where('currency', $state)
+                                            ->first();
+                                        if ($sp && $sp->currency_rate) {
+                                            $set('price', round($price * (float) $sp->currency_rate, 2));
+                                        }
+                                    })
+                                    ->visible(fn (?Product $record): bool => (bool) DB::table('supplier_products')
+                                        ->where('product_id', $record?->id ?? 0)
+                                        ->exists())
+                                    ->columnSpan(1),
+
                                 TextInput::make('price')
-                                    ->label('Цена')
+                                    ->label('Цена на сайте')
                                     ->required()
                                     ->numeric()
                                     ->prefix('BYN')
-                                    ->default(0),
+                                    ->helperText('Автоматически из цены поставщика × курс НБРБ. Можно скорректировать вручную.')
+                                    ->default(0)
+                                    ->columnSpanFull(),
 
                                 TextInput::make('price_old')
                                     ->label('Старая цена')
                                     ->numeric()
-                                    ->prefix('BYN'),
+                                    ->prefix('BYN')
+                                    ->columnSpanFull(),
 
                                 Select::make('currency')
-                                    ->label('Валюта')
+                                    ->label('Валюта сайта')
+                                    ->helperText('Валюта в которой показывается цена на сайте (обычно BYN).')
                                     ->options(['BYN' => 'BYN', 'USD' => 'USD', 'EUR' => 'EUR', 'RUB' => 'RUB'])
                                     ->default('BYN')
-                                    ->required(),
+                                    ->required()
+                                    ->columnSpanFull(),
 
                                 TextInput::make('stock_qty')
                                     ->label('Кол-во на складе')
-                                    ->numeric(),
+                                    ->numeric()
+                                    ->columnSpanFull(),
 
                                 TextInput::make('unit')
                                     ->label('Ед. измерения')
-                                    ->default('шт'),
+                                    ->default('шт')
+                                    ->columnSpanFull(),
 
                                 TextInput::make('warranty')
-                                    ->label('Гарантия'),
+                                    ->label('Гарантия')
+                                    ->columnSpanFull(),
                             ]),
                     ]),
 

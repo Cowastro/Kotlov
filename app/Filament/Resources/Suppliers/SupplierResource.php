@@ -13,12 +13,15 @@ use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
+use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
+use Filament\Tables\Actions\Action;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
+use Illuminate\Support\Facades\Http;
 
 class SupplierResource extends Resource
 {
@@ -135,6 +138,57 @@ class SupplierResource extends Resource
             ])
             ->defaultSort('name')
             ->recordActions([
+                Action::make('fetchNbrb')
+                    ->label('Курс НБРБ')
+                    ->icon(Heroicon::OutlinedArrowPath)
+                    ->color('info')
+                    ->tooltip('Загрузить официальный курс НБРБ и пересчитать BYN цены')
+                    ->visible(fn (Supplier $record) => $record->currency !== CurrencyPriceConverter::BASE_CURRENCY)
+                    ->action(function (Supplier $record) {
+                        $url  = 'https://api.nbrb.by/exrates/rates/' . $record->currency . '?parammode=2';
+                        $resp = Http::timeout(10)->get($url);
+                        if (!$resp->ok() || !($rate = $resp->json('Cur_OfficialRate'))) {
+                            Notification::make()
+                                ->title('Ошибка НБРБ')
+                                ->body('Не удалось получить курс ' . $record->currency)
+                                ->danger()
+                                ->send();
+                            return;
+                        }
+                        $rate = round((float) $rate, 4);
+                        $record->update(['currency_rate' => $rate]);
+
+                        // Пересчитать price_byn в supplier_products
+                        \Illuminate\Support\Facades\DB::table('supplier_products')
+                            ->where('supplier_id', $record->id)
+                            ->where('currency', $record->currency)
+                            ->update([
+                                'currency_rate' => $rate,
+                                'price_byn'     => \Illuminate\Support\Facades\DB::raw("ROUND(price * {$rate}, 2)"),
+                                'updated_at'    => now(),
+                            ]);
+
+                        // Обновить products.price
+                        $sps = \Illuminate\Support\Facades\DB::table('supplier_products')
+                            ->where('supplier_id', $record->id)
+                            ->whereNotNull('product_id')
+                            ->get(['product_id', 'price_byn']);
+
+                        foreach ($sps as $sp) {
+                            if ($sp->price_byn > 0) {
+                                \Illuminate\Support\Facades\DB::table('products')
+                                    ->where('id', $sp->product_id)
+                                    ->update(['price' => $sp->price_byn, 'updated_at' => now()]);
+                            }
+                        }
+
+                        Notification::make()
+                            ->title("Курс обновлён: 1 {$record->currency} = {$rate} BYN")
+                            ->body("Пересчитано {$sps->count()} товаров.")
+                            ->success()
+                            ->send();
+                    }),
+
                 EditAction::make(),
             ]);
     }

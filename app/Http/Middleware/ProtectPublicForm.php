@@ -19,20 +19,33 @@ class ProtectPublicForm
             return $this->fakeSuccess($request);
         }
 
-        // 2. Время заполнения — слишком быстро = бот
+        // 2. Время заполнения: слишком быстро = бот, слишком давно = реплей/скрипт
         $startedAt = (int) $request->input('form_started_at', 0);
-        if ($startedAt > 0 && (time() - $startedAt) < 3) {
-            $this->logBlocked($request, $formKey, 'too_fast', ['elapsed' => time() - $startedAt]);
+        $elapsed   = $startedAt > 0 ? time() - $startedAt : null;
+        if ($elapsed !== null && $elapsed < 5) {
+            $this->logBlocked($request, $formKey, 'too_fast', ['elapsed' => $elapsed]);
+            return $this->fakeSuccess($request);
+        }
+        if ($elapsed !== null && $elapsed > 3600) {
+            // Форма открыта больше часа назад — скорее всего автоматическая отправка
+            $this->logBlocked($request, $formKey, 'stale_form', ['elapsed' => $elapsed]);
             return $this->fakeSuccess($request);
         }
 
-        // 3. Rate limit: 5 отправок за 10 минут с одного IP
+        // 3. Rate limit: 3 отправки за 10 минут с одного IP (было 5)
         $rateLimitKey = 'form:' . $formKey . ':' . $request->ip();
-        if (RateLimiter::tooManyAttempts($rateLimitKey, 5)) {
+        if (RateLimiter::tooManyAttempts($rateLimitKey, 3)) {
             $this->logBlocked($request, $formKey, 'rate_limit');
             return $this->fakeSuccess($request);
         }
         RateLimiter::hit($rateLimitKey, 600);
+
+        // 4b. Подозрительный User-Agent — пустой или явно автоматизированный
+        $ua = $request->userAgent() ?? '';
+        if ($ua === '' || preg_match('/python|curl|wget|scrapy|headless|phantomjs|selenium|go-http|java\/|axios|node-fetch/i', $ua)) {
+            $this->logBlocked($request, $formKey, 'bad_ua', ['ua' => $ua]);
+            return $this->fakeSuccess($request);
+        }
 
         // 4. Cloudflare Turnstile (если включён)
         if (config('services.turnstile.enabled')) {

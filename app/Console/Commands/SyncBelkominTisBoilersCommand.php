@@ -16,7 +16,8 @@ class SyncBelkominTisBoilersCommand extends Command
         {--limit= : Limit number of products for testing}
         {--no-images : Do not download product images}
         {--enrich : Generate unique SEO descriptions via Claude API (requires ANTHROPIC_API_KEY)}
-        {--sleep=150 : Delay between product requests in milliseconds}';
+        {--sleep=150 : Delay between product requests in milliseconds}
+        {--purge-badge-images : Delete already-downloaded image files that are actually belkomin.com\'s site-wide "4% credit" promo badge (image2026/4procent.webp), which an old bug saved as the main product photo}';
 
     protected $description = 'Scrape belkomin.com TIS boilers and sync prices, cards, photos and attributes.';
 
@@ -60,6 +61,10 @@ class SyncBelkominTisBoilersCommand extends Command
         if ($enrichContent && ! $enricher->isAvailable()) {
             $this->warn('--enrich: no AI provider configured, enrichment skipped.');
             $enrichContent = false;
+        }
+
+        if ($this->option('purge-badge-images')) {
+            $this->purgeBadgeImages($apply);
         }
 
         $this->line($apply
@@ -523,10 +528,16 @@ class SyncBelkominTisBoilersCommand extends Command
 
     private function downloadImages(array $item): array
     {
-        $urls = array_values(array_unique(array_filter(array_merge(
-            [$item['listing_image'] ?? null],
-            $item['images_remote'] ?? []
-        ))));
+        // belkomin.com puts a site-wide "4% credit" promo badge
+        // (/image2026/4procent.webp) as the FIRST <img> in every catalog
+        // listing card — it is never a real product photo. Real photos
+        // only ever come from the product detail page (images_remote).
+        // listing_image is kept purely as a last-resort fallback for the
+        // rare case a detail page exposes no images at all.
+        $remoteImages = $item['images_remote'] ?? [];
+        $urls = array_values(array_unique(array_filter(
+            $remoteImages !== [] ? $remoteImages : [$item['listing_image'] ?? null]
+        )));
 
         $paths = [];
         $dir = public_path('img/products/belkomin-tis');
@@ -555,6 +566,56 @@ class SyncBelkominTisBoilersCommand extends Command
         }
 
         return array_values(array_unique($paths));
+    }
+
+    /**
+     * One-time cleanup for the listing/detail-image ordering bug fixed
+     * above: every "…-1.<ext>" file downloaded by an earlier run of this
+     * command is the site-wide "4% credit" promo badge, not a product
+     * photo (see downloadImages()). Verify by content hash against the
+     * live badge before deleting, so a legitimate file is never touched.
+     */
+    private function purgeBadgeImages(bool $apply): void
+    {
+        $dir = public_path('img/products/belkomin-tis');
+        if (! is_dir($dir)) {
+            $this->info('purge-badge-images: directory does not exist, nothing to do.');
+            return;
+        }
+
+        try {
+            $badgeBytes = $this->fetch($this->absoluteUrl('image2026/4procent.webp'));
+        } catch (\Throwable $e) {
+            $this->error('purge-badge-images: could not fetch reference badge image, aborting purge: ' . $e->getMessage());
+            return;
+        }
+        $badgeHash = md5($badgeBytes);
+
+        $candidates = glob($dir . DIRECTORY_SEPARATOR . '*-1.*') ?: [];
+        $toDelete = [];
+        foreach ($candidates as $path) {
+            if (md5_file($path) === $badgeHash) {
+                $toDelete[] = $path;
+            }
+        }
+
+        $this->info(sprintf(
+            'purge-badge-images: %d candidate "-1.*" files, %d match the promo badge by content hash.',
+            count($candidates),
+            count($toDelete)
+        ));
+
+        if (! $apply) {
+            foreach ($toDelete as $path) {
+                $this->line('  would delete: ' . basename($path));
+            }
+            return;
+        }
+
+        foreach ($toDelete as $path) {
+            unlink($path);
+        }
+        $this->info('purge-badge-images: deleted ' . count($toDelete) . ' badge files.');
     }
 
     private function ensureSupplier($now): int
@@ -808,16 +869,29 @@ class SyncBelkominTisBoilersCommand extends Command
     {
         $url = str_replace(' ', '%20', $url);
 
+        // The server's system CA bundle is missing belkomin.com's current
+        // intermediate ("GlobalSign GCC R6 AlphaSSL CA 2025", issued Feb
+        // 2026 — confirmed via `debug:ssl-check`: the cert itself is valid,
+        // not expired, correct domain — it's genuinely "unable to get local
+        // issuer certificate", not a WAF/anti-bot cert swap). Pin a fresh
+        // official CA bundle (curl.se, Mozilla-sourced) instead of touching
+        // system-wide trust or disabling verification.
+        $sslOptions = [
+            'verify_peer' => true,
+            'verify_peer_name' => true,
+        ];
+        $caBundle = resource_path('certs/cacert.pem');
+        if (file_exists($caBundle)) {
+            $sslOptions['cafile'] = $caBundle;
+        }
+
         $context = stream_context_create([
             'http' => [
                 'method' => 'GET',
                 'header' => "User-Agent: Mozilla/5.0 (compatible; KotlovBot/1.0)\r\nAccept-Language: ru,en;q=0.8\r\n",
                 'timeout' => 30,
             ],
-            'ssl' => [
-                'verify_peer' => true,
-                'verify_peer_name' => true,
-            ],
+            'ssl' => $sslOptions,
         ]);
 
         $body = file_get_contents($url, false, $context);

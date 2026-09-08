@@ -309,7 +309,7 @@ class EnrichBaniaPriceListProductsCommand extends Command
         ]);
 
         if (! $response->successful()) {
-            throw new \RuntimeException('Serper error: HTTP ' . $response->status());
+            throw new \RuntimeException('Serper error: HTTP ' . $response->status() . ' body=' . mb_substr($response->body(), 0, 300));
         }
 
         $links = collect($response->json('organic') ?? [])

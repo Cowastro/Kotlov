@@ -13,7 +13,7 @@
     $price = $canBuy
         ? number_format($product->price, 2, '.', ' ') . ' BYN'
         : ($availabilityStatus === 'out_of_stock' ? 'Нет в наличии' : 'Цена по запросу');
-    $priceOld = ($product->price_old && $product->price_old > 0)
+    $priceOld = ($canBuy && $product->price_old && $product->price_old > $product->price)
         ? number_format($product->price_old, 2, '.', ' ') . ' BYN'
         : null;
 

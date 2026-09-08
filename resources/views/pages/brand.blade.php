@@ -8,6 +8,12 @@
         $cleanContent = $brand->content
             ? preg_replace(['/<h1([^>]*)>/i', '/<\/h1>/i'], ['<h2$1>', '</h2>'], $brand->content)
             : null;
+
+        if ($cleanContent) {
+            $cleanContent = preg_replace('/<!--\s*\/?(?:Start|End)Fragment\s*-->/i', '', $cleanContent);
+            $cleanContent = preg_replace('/\s(?:class|style|target|rel|title)="[^"]*"/i', '', $cleanContent);
+            $cleanContent = str_replace('%city%', 'Минске', $cleanContent);
+        }
     @endphp
 
     <section class="brand-detail-hero flat-spacing-2">

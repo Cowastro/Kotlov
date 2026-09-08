@@ -12,6 +12,7 @@ use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\EditRecord;
+use Illuminate\Support\Facades\DB;
 
 class EditProduct extends EditRecord
 {
@@ -126,6 +127,14 @@ class EditProduct extends EditRecord
         }
         $data['specs'] = app(ProductSourceEnricher::class)->normalizeSpecsForStorage($data['specs']);
 
+        // ── Цена и валюта поставщика (виртуальные поля) ─────────────────────────
+        $sp = DB::table('supplier_products')
+            ->where('product_id', $this->record->id)
+            ->orderByRaw("CASE WHEN currency != 'BYN' THEN 0 ELSE 1 END")
+            ->first();
+        $data['supplier_price_virtual']    = $sp ? (float) $sp->price : null;
+        $data['supplier_currency_virtual'] = $sp ? $sp->currency : null;
+
         return $data;
     }
 
@@ -162,6 +171,34 @@ class EditProduct extends EditRecord
             $this->record,
             $this->normalizeSpecs($this->record->specs ?? []),
         );
+
+        // ── Если изменили цену/валюту поставщика — обновить supplier_products ───
+        $formState   = $this->form->getState();
+        $newPrice    = isset($formState['supplier_price_virtual'])
+            ? (float) $formState['supplier_price_virtual']
+            : null;
+        $newCurrency = $formState['supplier_currency_virtual'] ?? null;
+
+        if ($newPrice !== null && $newPrice > 0) {
+            $sp = DB::table('supplier_products')
+                ->where('product_id', $this->record->id)
+                ->orderByRaw("CASE WHEN currency != 'BYN' THEN 0 ELSE 1 END")
+                ->first();
+
+            if ($sp) {
+                $update = [
+                    'price'      => $newPrice,
+                    'price_byn'  => $this->record->price, // BYN уже сохранён формой
+                    'updated_at' => now(),
+                ];
+                if ($newCurrency && $newCurrency !== $sp->currency) {
+                    $update['currency'] = $newCurrency;
+                }
+                DB::table('supplier_products')
+                    ->where('id', $sp->id)
+                    ->update($update);
+            }
+        }
     }
 
     /**

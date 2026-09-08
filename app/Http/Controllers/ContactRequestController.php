@@ -16,7 +16,7 @@ class ContactRequestController extends Controller
     {
         $validated = $request->validate([
             'name'         => ['required', 'string', 'max:255'],
-            'phone'        => ['required', 'string', 'max:50'],
+            'phone'        => ['required', 'string', 'max:50', new \App\Rules\PhoneNotSpam()],
             'email'        => ['nullable', 'email', 'max:255'],
             'message'      => ['nullable', 'string', 'max:2000'],
             'product_id'   => ['nullable', 'integer'],
