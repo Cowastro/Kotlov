@@ -97,16 +97,16 @@ class InstallRequestsTable
                 TextColumn::make('source')
                     ->label('Источник')
                     ->formatStateUsing(fn ($state) => match ($state) {
-                        'installers_page'   => 'Монтажники',
-                        'installer_profile' => 'Профиль',
-                        'product_page'      => 'Товар',
-                        'cart'              => 'Корзина',
-                        'admin'             => 'Админка',
-                        'other'             => 'Другое',
-                        default             => $state,
+                        'installers_page'        => 'Монтажники',
+                        'installer_profile'      => 'Профиль',
+                        'heat_pump_installation' => 'Монтаж тепловых насосов',
+                        'product_page'           => 'Товар',
+                        'cart'                   => 'Корзина',
+                        'admin'                  => 'Админка',
+                        'other'                  => 'Другое',
+                        default                  => $state,
                     })
-                    ->placeholder('-')
-                    ->toggleable(isToggledHiddenByDefault: true),
+                    ->placeholder('-'),
                 TextColumn::make('preferred_date')
                     ->label('Дата')
                     ->date('d.m.Y')
@@ -146,12 +146,13 @@ class InstallRequestsTable
                 SelectFilter::make('source')
                     ->label('Источник')
                     ->options([
-                        'installers_page'   => 'Страница монтажников',
-                        'installer_profile' => 'Профиль монтажника',
-                        'product_page'      => 'Карточка товара',
-                        'cart'              => 'Корзина',
-                        'admin'             => 'Админка',
-                        'other'             => 'Другое',
+                        'installers_page'        => 'Страница монтажников',
+                        'installer_profile'      => 'Профиль монтажника',
+                        'heat_pump_installation' => 'Страница монтажа тепловых насосов',
+                        'product_page'           => 'Карточка товара',
+                        'cart'                   => 'Корзина',
+                        'admin'                  => 'Админка',
+                        'other'                  => 'Другое',
                     ]),
                 SelectFilter::make('installer_profile_id')
                     ->label('Монтажник')

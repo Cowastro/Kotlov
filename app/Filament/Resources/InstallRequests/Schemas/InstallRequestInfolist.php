@@ -113,11 +113,12 @@ class InstallRequestInfolist
                         TextEntry::make('source')
                             ->label('Источник')
                             ->formatStateUsing(fn ($state) => match ($state) {
-                                'installers_page'   => 'Страница монтажников',
-                                'installer_profile' => 'Профиль монтажника',
-                                'product_page'      => 'Карточка товара',
-                                'cart'              => 'Корзина',
-                                'admin'             => 'Админка',
+                                'installers_page'        => 'Страница монтажников',
+                                'installer_profile'      => 'Профиль монтажника',
+                                'heat_pump_installation' => 'Страница монтажа тепловых насосов',
+                                'product_page'           => 'Карточка товара',
+                                'cart'                   => 'Корзина',
+                                'admin'                  => 'Админка',
                                 'other'             => 'Другое',
                                 default             => $state,
                             })

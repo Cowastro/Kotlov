@@ -142,11 +142,12 @@ class InstallRequestForm
                         Select::make('source')
                             ->label('Источник заявки')
                             ->options([
-                                'installers_page'  => 'Страница монтажников',
-                                'installer_profile' => 'Профиль монтажника',
-                                'product_page'     => 'Карточка товара',
-                                'cart'             => 'Корзина',
-                                'admin'            => 'Админка',
+                                'installers_page'        => 'Страница монтажников',
+                                'installer_profile'      => 'Профиль монтажника',
+                                'heat_pump_installation' => 'Страница монтажа тепловых насосов',
+                                'product_page'           => 'Карточка товара',
+                                'cart'                   => 'Корзина',
+                                'admin'                  => 'Админка',
                                 'other'            => 'Другое',
                             ])
                             ->nullable(),
