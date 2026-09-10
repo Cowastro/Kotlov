@@ -866,7 +866,16 @@ class ProductSourceEnricher
             }
         }
 
+        if ($this->isRusklimatUrl($url) && $this->isSupplierPromoDescription((string) $parsed['short_description'])) {
+            $parsed['short_description'] = (string) $parsed['description'];
+        }
+
         return $this->normalizeParsedData($parsed);
+    }
+
+    private function isSupplierPromoDescription(string $text): bool
+    {
+        return preg_match('/(?:купить\s+оптом|b2b\.?\s*русклимат|доставк\w*\s+по\s+россии)/iu', $text) === 1;
     }
 
     private function normalizeParsedData(array $parsed): array

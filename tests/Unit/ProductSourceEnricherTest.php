@@ -48,4 +48,25 @@ class ProductSourceEnricherTest extends TestCase
             'unit' => '',
         ], $specs);
     }
+
+    public function test_it_does_not_use_rusklimat_b2b_marketing_meta_as_short_description(): void
+    {
+        $html = <<<'HTML'
+        <html><head>
+            <meta name="description" content="Купить оптом с доставкой по России в B2B.РУСКЛИМАТ.">
+        </head><body>
+            <div class="product-description">Бойлер косвенного нагрева с баком из нержавеющей стали для системы горячего водоснабжения.</div>
+        </body></html>
+        HTML;
+
+        $method = new ReflectionMethod(ProductSourceEnricher::class, 'parsePage');
+        $parsed = $method->invoke(
+            new ProductSourceEnricher(),
+            $html,
+            'https://b2b.rusklimat.com/catalog/product/example/'
+        );
+
+        $this->assertStringStartsWith('Бойлер косвенного нагрева', $parsed['short_description']);
+        $this->assertStringNotContainsString('купить оптом', mb_strtolower($parsed['short_description']));
+    }
 }
