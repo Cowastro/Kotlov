@@ -4,14 +4,27 @@
 <style>
     .kotlov-blog-content .blog-author-box,
     .kotlov-blog-content .blog-next-box {
+        position: relative;
+        overflow: hidden;
         border: 1px solid #e7e4de;
         border-radius: 18px;
         background: #fff;
         box-shadow: 0 10px 35px rgba(25, 31, 35, .045);
     }
-    .kotlov-blog-content .blog-author-box { border-left: 3px solid #f4554c; }
-    .kotlov-blog-content .blog-next-box { padding-top: 28px !important; }
+    .kotlov-blog-content .blog-author-box { padding: 26px 28px 26px 31px !important; }
+    .kotlov-blog-content .blog-author-box::before {
+        position: absolute;
+        top: 24px;
+        bottom: 24px;
+        left: 0;
+        width: 3px;
+        border-radius: 0 3px 3px 0;
+        background: #f4554c;
+        content: '';
+    }
+    .kotlov-blog-content .blog-next-box { padding: 30px !important; }
     .kotlov-blog-content .blog-next-link {
+        padding: 18px 20px !important;
         border: 1px solid #ebe8e2;
         border-radius: 14px;
         background: #fff;
@@ -21,6 +34,12 @@
         transform: translateY(-2px);
         border-color: #d7d2ca;
         box-shadow: 0 9px 24px rgba(25, 31, 35, .07);
+    }
+    @media (max-width: 767px) {
+        .kotlov-blog-content .blog-author-box { padding: 22px 20px 22px 24px !important; }
+        .kotlov-blog-content .blog-author-box::before { top: 20px; bottom: 20px; }
+        .kotlov-blog-content .blog-next-box { padding: 24px 20px !important; }
+        .kotlov-blog-content .blog-next-link { padding: 17px 18px !important; }
     }
 </style>
 @endpush
@@ -104,7 +123,7 @@
                                 {!! $post->content !!}
                             </div>
 
-                            <aside class="blog-author-box mt-32 p-24" aria-label="Об авторе материала">
+                            <aside class="blog-author-box mt-32 p-24" id="about-material" aria-label="Об авторе материала">
                                 <p class="text-caption-01 text-primary fw-semibold mb-8">О МАТЕРИАЛЕ</p>
                                 <h5 class="mb-8">Подготовлено командой KOTLOV</h5>
                                 <p class="text-body-2 cl-text-2 mb-0">
@@ -115,7 +134,7 @@
                             </aside>
 
                             @if (($isHeatPumpContent ?? false) && ($heatPumpLinks ?? collect())->isNotEmpty())
-                                <aside class="blog-next-box mt-32 p-24" aria-label="Материалы по подбору теплового насоса">
+                                <aside class="blog-next-box mt-32 p-24" id="heat-pump-next-step" aria-label="Материалы по подбору теплового насоса">
                                     <h4 class="mb-8">Следующий шаг по вашему проекту</h4>
                                     <p class="text-body-1 cl-text-2 mb-20">
                                         Перейдите от общего вопроса к моделям, расчёту и опыту на реальных объектах.
