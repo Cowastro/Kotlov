@@ -50,6 +50,11 @@
                                 @endif
                                 <h3 class="entry-title">{{ $post->title }}</h3>
                                 <div class="entry-meta">
+                                    <div class="meta-item">
+                                        <i class="icon icon-User"></i>
+                                        <a href="/about" class="text-body-1 link">{{ $post->author?->name ?: 'Команда KOTLOV' }}</a>
+                                    </div>
+                                    <div class="br-line type-vertical"></div>
                                     <div class="meta-item meta-date">
                                         <i class="icon icon-CalendarBlank"></i>
                                         <span class="text-body-1">{{ $post->published_at->translatedFormat('d F Y') }}</span>
@@ -73,6 +78,33 @@
                             <div class="blog-body d-grid gap-16">
                                 {!! $post->content !!}
                             </div>
+
+                            <aside class="mt-32 p-24 rounded-4 bg-surface" aria-label="Об авторе материала">
+                                <p class="text-caption-01 text-primary fw-semibold mb-8">О МАТЕРИАЛЕ</p>
+                                <h5 class="mb-8">Подготовлено командой KOTLOV</h5>
+                                <p class="text-body-2 cl-text-2 mb-0">
+                                    Практические материалы о подборе и монтаже отопительного оборудования.
+                                    Характеристики конкретного проекта уточняются инженерным расчётом.
+                                    <a href="/about" class="link text-decoration-underline">Подробнее о компании</a>.
+                                </p>
+                            </aside>
+
+                            @if (($isHeatPumpContent ?? false) && ($heatPumpLinks ?? collect())->isNotEmpty())
+                                <aside class="mt-32 p-24 rounded-4 bg-surface" aria-label="Материалы по подбору теплового насоса">
+                                    <h4 class="mb-8">Следующий шаг по вашему проекту</h4>
+                                    <p class="text-body-1 cl-text-2 mb-20">
+                                        Перейдите от общего вопроса к моделям, расчёту и опыту на реальных объектах.
+                                    </p>
+                                    <div class="tf-grid-layout sm-col-2">
+                                        @foreach ($heatPumpLinks as $link)
+                                            <a href="{{ $link['url'] }}" class="p-16 rounded-3 bg-white link d-block">
+                                                <h6 class="mb-6">{{ $link['title'] }}</h6>
+                                                <p class="text-caption-01 cl-text-2 mb-0">{{ $link['text'] }}</p>
+                                            </a>
+                                        @endforeach
+                                    </div>
+                                </aside>
+                            @endif
 
                             <div class="box-social-tag">
                                 <div class="tags-right d-flex align-items-center flex-wrap gap-8">

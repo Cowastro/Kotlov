@@ -62,6 +62,25 @@ class HandleRedirects
             return $percentRedirect;
         }
 
+        // Exact redirect mappings must win over broad legacy-path rules.
+        // Keep currently valid product URLs untouched even if an obsolete
+        // redirect row with the same source still exists in the database.
+        if (! $this->isCanonicalProductPath($path)) {
+            $redirect = DB::table('redirects')
+                ->where('from_url', $path)
+                ->where('is_active', 1)
+                ->select('to_url', 'status_code')
+                ->first();
+
+            if ($redirect) {
+                $query = $request->getQueryString();
+                $target = $redirect->to_url . ($query ? '?' . $query : '');
+                if (! $this->redirectTargetLoopsToProductPath($path, (string) $redirect->to_url)) {
+                    return redirect($target, $redirect->status_code ?? 301);
+                }
+            }
+        }
+
         if (preg_match('#^(.*)/page:(\d+)$#', $path, $matches)) {
             $basePath = rtrim($matches[1], '/') ?: '/';
             $query = $request->getQueryString();
@@ -165,27 +184,6 @@ class HandleRedirects
 
         if ($legacyBrandCategoryRedirect = $this->redirectLegacyBrandCategoryPath($request, $path)) {
             return $legacyBrandCategoryRedirect;
-        }
-
-        if ($this->isCanonicalProductPath($path)) {
-            return $next($request);
-        }
-
-        $redirect = DB::table('redirects')
-            ->where('from_url', $path)
-            ->where('is_active', 1)
-            ->select('to_url', 'status_code')
-            ->first();
-
-        if ($redirect) {
-            // Сохраняем query string если есть
-            $query = $request->getQueryString();
-            $target = $redirect->to_url . ($query ? '?' . $query : '');
-            if ($this->redirectTargetLoopsToProductPath($path, (string) $redirect->to_url)) {
-                return $next($request);
-            }
-
-            return redirect($target, $redirect->status_code ?? 301);
         }
 
         return $next($request);

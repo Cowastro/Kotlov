@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Attribute;
 use App\Models\Brand;
+use App\Models\BlogPost;
 use App\Models\Category;
 use App\Models\Product;
 use App\Models\ProductAttributeValue;
@@ -357,11 +358,53 @@ class CatalogController extends Controller
             'item'     => $canonical,
         ];
 
-        $schemaJson = json_encode([
+        $breadcrumbSchema = [
             '@context'        => 'https://schema.org',
             '@type'           => 'BreadcrumbList',
             'itemListElement' => $breadcrumbs,
-        ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        ];
+
+        $heatPumpArticles = collect();
+        $schemaNodes = [$breadcrumbSchema];
+
+        if ($category->slug === 'teplovyie-nasosyi') {
+            $articleOrder = [
+                'kak-vybrat-teplovoy-nasos',
+                'teplovye-nasosy-ge-r290-vysokotemperaturnye',
+                'teplovoy-nasos-kotlov-ge-24-kvt-r32-nareyki',
+                'teplovoy-nasos-115-kvt-r290-ostroshitskiy-gorodok',
+            ];
+
+            $heatPumpArticles = BlogPost::published()
+                ->whereIn('slug', $articleOrder)
+                ->get()
+                ->sortBy(fn (BlogPost $post) => array_search($post->slug, $articleOrder, true))
+                ->values();
+
+            $schemaNodes[] = [
+                '@context' => 'https://schema.org',
+                '@type' => 'ItemList',
+                'name' => 'Тепловые насосы воздух-вода',
+                'numberOfItems' => $products->count(),
+                'itemListElement' => $products->values()->map(fn (Product $product, int $index) => [
+                    '@type' => 'ListItem',
+                    'position' => $index + 1,
+                    'name' => $product->name,
+                    'url' => 'https://kotlov.by/' . $product->category->slug . '/' . $product->slug,
+                ])->all(),
+            ];
+
+            $schemaNodes[] = [
+                '@context' => 'https://schema.org',
+                '@type' => 'FAQPage',
+                'mainEntity' => $this->heatPumpFaqSchema(),
+            ];
+        }
+
+        $schemaJson = json_encode(
+            count($schemaNodes) === 1 ? $schemaNodes[0] : $schemaNodes,
+            JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES
+        );
 
         return view('pages.catalog', compact(
             'category',
@@ -377,8 +420,30 @@ class CatalogController extends Controller
             'description',
             'keywords',
             'canonical',
-            'schemaJson'
+            'schemaJson',
+            'heatPumpArticles'
         ));
+    }
+
+    private function heatPumpFaqSchema(): array
+    {
+        $items = [
+            'Как подобрать мощность теплового насоса?' => 'Мощность подбирают по расчётным теплопотерям здания, а не только по площади. Учитывают утепление, окна, вентиляцию, температуру воздуха зимой, отопительные приборы, горячее водоснабжение и доступную электрическую мощность.',
+            'Подходит ли тепловой насос для тёплого пола?' => 'Да. Водяной тёплый пол работает с низкой температурой подачи и создаёт благоприятные условия для эффективной работы теплового насоса.',
+            'Можно ли подключить тепловой насос к радиаторам?' => 'Можно, если проверить теплоотдачу радиаторов при расчётной температуре подачи. Для высокотемпературных систем рассматривают увеличенные радиаторы или модели на R290.',
+            'Чем отличаются тепловые насосы R32 и R290?' => 'R32 хорошо подходит для современных низкотемпературных систем. Линейка KOTLOV GE на R290 рассчитана в том числе на более высокую температуру подачи, поэтому её рассматривают для радиаторов и горячего водоснабжения.',
+            'Нужен ли резервный источник отопления?' => 'Решение принимают по теплопотерям, расчётной температуре региона и требованиям к надёжности. Резервный котёл или встроенный электрический нагреватель может покрывать пики нагрузки и использоваться во время обслуживания.',
+            'От чего зависит расход электричества?' => 'От температуры наружного воздуха и подачи, теплопотерь дома, режима горячего водоснабжения, настройки автоматики и качества монтажа. Чем ниже требуемая температура воды, тем выше потенциальная эффективность системы.',
+        ];
+
+        return collect($items)->map(fn (string $answer, string $question) => [
+            '@type' => 'Question',
+            'name' => $question,
+            'acceptedAnswer' => [
+                '@type' => 'Answer',
+                'text' => $answer,
+            ],
+        ])->values()->all();
     }
 
     private function collectCategoryAndDescendantIds(int $categoryId): Collection

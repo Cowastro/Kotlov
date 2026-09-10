@@ -4,11 +4,14 @@ namespace App\Http\Controllers;
 
 use App\Models\Product;
 use App\Models\Category;
+use App\Models\BlogPost;
 use App\Models\ProductAttributeValue;
 use Illuminate\Support\Facades\Log;
 
 class ProductController extends Controller
 {
+    private const CANONICAL_BASE = 'https://kotlov.by';
+
     public function show(string $category, string $productOrSubcategory, string $product = null)
     {
         $productSlug = $product ?? $productOrSubcategory;
@@ -112,7 +115,9 @@ class ProductController extends Controller
             $product->content = $replaceCityIn($product->content);
         }
 
-        $canonicalBase = 'https://' . request()->getHost();
+        // Product data is shared by all city subdomains. The primary-domain
+        // canonical prevents every city host from competing with the same card.
+        $canonicalBase = self::CANONICAL_BASE;
         $canonical = $canonicalBase . '/' . $productCategory->slug . '/' . $product->slug;
 
         $firstImage = $product->imageUrl(0);
@@ -246,6 +251,28 @@ class ProductController extends Controller
 
         $robots = $product->is_archived ? 'noindex, follow' : null;
 
+        $heatPumpGuides = collect();
+        if ($productCategory->slug === 'teplovyie-nasosyi') {
+            $isR290 = str_contains(mb_strtoupper($nameFull), 'R290');
+            $guideOrder = $isR290
+                ? [
+                    'teplovye-nasosy-ge-r290-vysokotemperaturnye',
+                    'teplovoy-nasos-115-kvt-r290-ostroshitskiy-gorodok',
+                    'kak-vybrat-teplovoy-nasos',
+                ]
+                : [
+                    'teplovoy-nasos-kotlov-ge-24-kvt-r32-nareyki',
+                    'montazh-teplovogo-nasosa-hotta-30-kvt-i-rezervnogo-pelletnogo-kotla-biotep-25',
+                    'kak-vybrat-teplovoy-nasos',
+                ];
+
+            $heatPumpGuides = BlogPost::published()
+                ->whereIn('slug', $guideOrder)
+                ->get()
+                ->sortBy(fn (BlogPost $post) => array_search($post->slug, $guideOrder, true))
+                ->values();
+        }
+
         return view('pages.product', compact(
             'product',
             'attributeValues',
@@ -258,7 +285,8 @@ class ProductController extends Controller
             'ogImage',
             'schemaJson',
             'breadcrumbJson',
-            'robots'
+            'robots',
+            'heatPumpGuides'
         ));
     }
 }

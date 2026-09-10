@@ -547,6 +547,10 @@
         </div>
     </section>
 
+    @if ($category->slug === 'teplovyie-nasosyi' && !request()->hasAny(['page', 'price_min', 'price_max', 'in_stock', 'brand', 'attr', 'sort']))
+        @include('partials.heat-pump-category-content', ['articles' => $heatPumpArticles ?? collect()])
+    @endif
+
 </main>
 
 <script>

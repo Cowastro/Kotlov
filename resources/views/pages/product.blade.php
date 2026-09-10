@@ -904,6 +904,10 @@
         </div>
     </section>
 
+    @if (($heatPumpGuides ?? collect())->isNotEmpty())
+        @include('partials.product-heat-pump-resources', ['articles' => $heatPumpGuides])
+    @endif
+
     {{-- Похожие товары --}}
     @if ($relatedProducts->count() > 0)
         <section class="flat-spacing">

@@ -8,6 +8,8 @@ use Illuminate\Http\Request;
 
 class BlogController extends Controller
 {
+    private const CANONICAL_BASE = 'https://kotlov.by';
+
     public function index(Request $request)
     {
         $query = BlogPost::published()
@@ -73,7 +75,9 @@ class BlogController extends Controller
             ? 'Статьи о ' . mb_strtolower($activeCategory->name) . '. Советы по выбору и эксплуатации отопительного оборудования.'
             : 'Полезные статьи об отоплении: выбор котла, печи, камина. Советы по монтажу и эксплуатации.';
 
-        $canonicalBase = 'https://' . request()->getHost();
+        // Blog content is identical on city subdomains. Keep one canonical
+        // version so ranking signals are consolidated on the primary domain.
+        $canonicalBase = self::CANONICAL_BASE;
         $canonical = $canonicalBase . '/blog' . ($activeCategory ? '?category=' . $activeCategory->slug : '');
 
         return view('pages.blog', compact(
@@ -98,16 +102,29 @@ class BlogController extends Controller
 
         $post->increment('views_count');
 
+        $isHeatPumpContent = preg_match('/\bтеплов\p{L}*\s+насос\p{L}*/u', mb_strtolower($post->title)) === 1
+            || collect($post->tags ?? [])->contains(
+                fn ($tag) => preg_match('/\bтеплов\p{L}*\s+насос\p{L}*/u', mb_strtolower((string) $tag)) === 1
+            );
+
         $related = BlogPost::published()
             ->where('id', '!=', $post->id)
-            ->where('category_id', $post->category_id)
+            ->when(
+                $isHeatPumpContent,
+                fn ($query) => $query->where(fn ($relatedQuery) => $relatedQuery
+                    ->where('category_id', $post->category_id)
+                    ->orWhereJsonContains('tags', 'тепловые насосы')),
+                fn ($query) => $query->where('category_id', $post->category_id)
+            )
             ->orderByDesc('published_at')
             ->limit(3)
             ->get();
 
+        $heatPumpLinks = $isHeatPumpContent ? $this->heatPumpLinks($post) : collect();
+
         $title = $post->meta_title ?: ($post->title . ' | KOTLOV');
         $description = $post->meta_description ?: ($post->excerpt ?: mb_substr(strip_tags($post->content ?? ''), 0, 160));
-        $canonical = 'https://' . request()->getHost() . '/blog/' . $post->slug;
+        $canonical = self::CANONICAL_BASE . '/blog/' . $post->slug;
         $ogImage = $post->cover_image_url;
         $ogImageSecure = $ogImage;
         $ogImageWidth = 1600;
@@ -150,9 +167,52 @@ class BlogController extends Controller
             'articleModifiedTime',
             'articleSection',
             'articleTags',
+            'isHeatPumpContent',
+            'heatPumpLinks',
             'schemaJson',
             'breadcrumbJson'
         ));
+    }
+
+    private function heatPumpLinks(BlogPost $post)
+    {
+        $links = collect([
+            [
+                'title' => 'Каталог тепловых насосов',
+                'text' => 'Модели KOTLOV GE на R32 и R290, цены и характеристики.',
+                'url' => '/teplovyie-nasosyi',
+            ],
+        ]);
+
+        if ($post->slug !== 'kak-vybrat-teplovoy-nasos') {
+            $links->push([
+                'title' => 'Как выбрать тепловой насос',
+                'text' => 'Мощность, COP, температура подачи, резерв и монтаж.',
+                'url' => '/blog/kak-vybrat-teplovoy-nasos',
+            ]);
+        }
+
+        if ($post->slug !== 'teplovye-nasosy-ge-r290-vysokotemperaturnye') {
+            $links->push([
+                'title' => 'R32 или R290',
+                'text' => 'Когда важны тёплый пол, радиаторы и высокая температура воды.',
+                'url' => '/blog/teplovye-nasosy-ge-r290-vysokotemperaturnye',
+            ]);
+        } else {
+            $links->push([
+                'title' => 'R290 на радиаторах: реальный объект',
+                'text' => 'Монтаж высокотемпературного насоса в Острошицком Городке.',
+                'url' => '/blog/teplovoy-nasos-115-kvt-r290-ostroshitskiy-gorodok',
+            ]);
+        }
+
+        $links->push([
+            'title' => 'Монтаж теплового насоса под ключ',
+            'text' => 'Расчёт, гидравлическая схема, установка и пусконаладка.',
+            'url' => '/montazh-teplovyh-nasosov',
+        ]);
+
+        return $links->take(4)->values();
     }
 
     private function articleSchema(BlogPost $post, string $canonical): array
@@ -172,7 +232,7 @@ class BlogController extends Controller
             'author' => [
                 '@type' => 'Organization',
                 'name' => 'KOTLOV',
-                'url' => 'https://' . request()->getHost(),
+                'url' => self::CANONICAL_BASE,
             ],
             'publisher' => [
                 '@type' => 'Organization',
@@ -226,13 +286,13 @@ class BlogController extends Controller
                     '@type' => 'ListItem',
                     'position' => 1,
                     'name' => 'Главная',
-                    'item' => 'https://' . request()->getHost(),
+                    'item' => self::CANONICAL_BASE,
                 ],
                 [
                     '@type' => 'ListItem',
                     'position' => 2,
                     'name' => 'Статьи',
-                    'item' => 'https://' . request()->getHost() . '/blog',
+                    'item' => self::CANONICAL_BASE . '/blog',
                 ],
                 [
                     '@type' => 'ListItem',

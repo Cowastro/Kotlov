@@ -7,6 +7,7 @@ use App\Models\Product;
 use App\Http\Middleware\HandleRedirects;
 use Illuminate\Http\Request;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Tests\TestCase;
 
@@ -128,6 +129,37 @@ class LegacySeoRedirectTest extends TestCase
 
         $this->assertSame(204, $response->getStatusCode());
         $this->assertNull($response->headers->get('Location'));
+    }
+
+    public function test_exact_product_redirect_wins_over_broad_legacy_rules(): void
+    {
+        $category = Category::create([
+            'parent_id' => 0,
+            'name' => 'Тепловые насосы',
+            'slug' => 'teplovyie-nasosyi',
+            'is_active' => true,
+        ]);
+
+        Product::create([
+            'category_id' => $category->id,
+            'slug' => 'kotlov-ge-flm30-r32-10-kvt',
+            'is_active' => true,
+            'is_archived' => false,
+        ]);
+
+        DB::table('redirects')->insert([
+            'from_url' => '/teplovyie-nasosyi/teplovoy-nasos-vozduh-voda-b3sd',
+            'to_url' => '/teplovyie-nasosyi/kotlov-ge-flm30-r32-10-kvt',
+            'status_code' => 301,
+            'is_active' => true,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $response = $this->get('https://gomel.kotlov.by/teplovyie-nasosyi/teplovoy-nasos-vozduh-voda-b3sd');
+
+        $response->assertStatus(301);
+        $response->assertRedirect('https://gomel.kotlov.by/teplovyie-nasosyi/kotlov-ge-flm30-r32-10-kvt');
     }
 
     public function test_old_parts_prefix_is_removed_instead_of_rewritten_to_wrong_section(): void

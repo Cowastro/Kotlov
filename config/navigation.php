@@ -93,18 +93,18 @@ return [
             [
                 'title' => 'По типу',
                 'links' => [
-                    ['name' => 'Воздух-вода',       'url' => '/teplovyie-nasosyi?filter=air-water'],
-                    ['name' => 'Для отопления',      'url' => '/teplovyie-nasosyi?filter=otoplenie'],
-                    ['name' => 'Для ГВС',            'url' => '/teplovyie-nasosyi?filter=gvs'],
-                    ['name' => 'Для дома',           'url' => '/teplovyie-nasosyi?filter=dom'],
+                    ['name' => 'Воздух-вода',       'url' => '/teplovyie-nasosyi'],
+                    ['name' => 'Для тёплого пола',  'url' => '/teplovyie-nasosyi#heat-pump-guide-title'],
+                    ['name' => 'Для радиаторов',    'url' => '/blog/teplovye-nasosy-ge-r290-vysokotemperaturnye'],
+                    ['name' => 'Как выбрать',       'url' => '/blog/kak-vybrat-teplovoy-nasos'],
                 ],
             ],
             [
                 'title' => 'Монтаж и сервис',
                 'links' => [
-                    ['name' => 'Монтаж насосов',     'url' => '/installers'],
-                    ['name' => 'Подбор оборудования','url' => '/installers'],
-                    ['name' => 'Пеллетные горелки',  'url' => '/pelletnye-gorelki'],
+                    ['name' => 'Монтаж насосов',     'url' => '/montazh-teplovyh-nasosov'],
+                    ['name' => 'Подбор оборудования','url' => '/montazh-teplovyh-nasosov#heat-pump-request'],
+                    ['name' => 'Реальные объекты',  'url' => '/teplovyie-nasosyi#heat-pump-cases'],
                 ],
             ],
         ],
@@ -251,11 +251,11 @@ return [
         ],
 
         'teplovyie-nasosyi' => [
-            'brands' => ['Hotta', 'Daikin', 'Mitsubishi', 'LG', 'Haier'],
+            'brands' => ['KOTLOV GE', 'Galmet', 'Kospel'],
             'banner' => ['img' => 'banners/banner_pump.jpg', 'url' => '/teplovyie-nasosyi', 'title' => 'Тепловые насосы'],
             'cta' => [
-                ['name' => 'Подбор насоса →',  'url' => '/installers'],
-                ['name' => 'Акции →',          'url' => '/akcii'],
+                ['name' => 'Подбор насоса →',  'url' => '/montazh-teplovyh-nasosov#heat-pump-request'],
+                ['name' => 'Реальные объекты →','url' => '/teplovyie-nasosyi#heat-pump-cases'],
                 ['name' => 'Все насосы →',     'url' => '/teplovyie-nasosyi'],
             ],
         ],

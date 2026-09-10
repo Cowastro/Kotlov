@@ -4,6 +4,7 @@ use App\Models\Banner;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\InstallerController;
 use App\Http\Controllers\InstallRequestController;
+use App\Http\Controllers\HeatPumpInstallationController;
 use App\Http\Controllers\BlogController;
 use App\Http\Controllers\BrandController;
 use App\Http\Controllers\CartController;
@@ -147,6 +148,7 @@ Route::post('/suppliers/apply', [PartnerApplicationController::class, 'storeSupp
 Route::get('/become-installer', fn() => view('pages.become-installer'))->name('become-installer');
 Route::view('/demo-installer-profile', 'pages.demo-installer-profile')->name('demo-installer-profile');
 Route::get('/installers', [InstallerController::class, 'index'])->name('installers.index');
+Route::get('/montazh-teplovyh-nasosov', HeatPumpInstallationController::class)->name('heat-pumps.installation');
 Route::get('/installers/{slug}', [InstallerController::class, 'show'])->name('installers.show');
 Route::get('/install-request', [InstallRequestController::class, 'create'])->name('install-requests.create');
 Route::post('/install-request', [InstallRequestController::class, 'store'])->middleware('public.form.protect:install-request')->name('install-requests.store');

@@ -166,6 +166,8 @@
     <script src="{{ asset('amerce/assets/js/carousel.js') }}"></script>
     <script src="{{ asset('amerce/assets/js/main.js') }}"></script>
 
+    @include('partials.analytics-events')
+
     {{-- Umnico widget --}}
     <script type="text/javascript">
         document.umnicoWidgetHash = 'd23f029234c8a1ab66264142802cc4e7';

@@ -61,6 +61,7 @@ class InstallRequestController extends Controller
             'preferred_date'       => 'nullable|date',
             'budget'               => 'nullable|numeric|min:0',
             'installer_profile_id' => 'nullable|integer',
+            'source'               => 'nullable|in:heat_pump_installation',
         ], [
             'customer_name.required'  => 'Укажите ваше имя.',
             'customer_phone.required' => 'Укажите номер телефона.',
@@ -81,6 +82,8 @@ class InstallRequestController extends Controller
             }
         }
 
+        $isHeatPumpLanding = ($validated['source'] ?? null) === 'heat_pump_installation';
+
         $installRequest = InstallRequest::create([
             'customer_name'        => $validated['customer_name'],
             'customer_phone'       => $validated['customer_phone'],
@@ -93,13 +96,23 @@ class InstallRequestController extends Controller
             'preferred_date'       => $validated['preferred_date'] ?? null,
             'budget'               => $validated['budget'] ?? null,
             'installer_profile_id' => $installerProfileId,
-            'source'               => $installerProfileId ? 'installer_profile' : 'installers_page',
+            'source'               => $installerProfileId
+                ? 'installer_profile'
+                : ($isHeatPumpLanding ? 'heat_pump_installation' : 'installers_page'),
             'status'               => 'new',
         ]);
 
         User::where('role', 'admin')->each(
             fn (User $admin) => $admin->notify(new NewInstallRequestNotification($installRequest))
         );
+
+        if ($isHeatPumpLanding) {
+            return redirect()
+                ->to(route('heat-pumps.installation') . '#heat-pump-request')
+                ->with('success', 'Заявка отправлена. Мы свяжемся с вами для уточнения деталей.')
+                ->with('analytics_event', 'heat_pump_lead_success')
+                ->with('analytics_parameters', ['lead_type' => 'heat_pump_calculation']);
+        }
 
         return redirect()
             ->route('install-requests.create', $installerProfileId ? ['installer' => $installerProfileId] : [])

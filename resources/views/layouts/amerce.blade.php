@@ -493,6 +493,8 @@
     <script src="{{ asset('assets/js/form-validate.js') }}"></script>
     @stack('scripts')
 
+    @include('partials.analytics-events')
+
     <script>
 
     // ===== ПОИСК: автодополнение =====
