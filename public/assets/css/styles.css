@@ -10125,6 +10125,10 @@ button.animate-btn::after,
 }
 .select-category .close-option {
   cursor: pointer;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: inherit;
   -webkit-transition: all 0.3s ease;
   -moz-transition: all 0.3s ease;
   -ms-transition: all 0.3s ease;
@@ -10177,6 +10181,7 @@ button.animate-btn::after,
 }
 .select-category .header-select-option {
   display: flex;
+  width: 100%;
   align-items: center;
   justify-content: space-between;
   font-weight: 600;

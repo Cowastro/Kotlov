@@ -1221,12 +1221,17 @@
         $("select#product_cate").each(function () {
             var $this = $(this),
                 selectOptions = $(this).children("option").length;
+
+            if ($this.next(".tf-select-custom").length) {
+                return;
+            }
+
             $this.addClass("hide-select");
             $this.after('<div class="tf-select-custom"></div>');
             var $customSelect = $this.next("div.tf-select-custom");
             $customSelect.text($this.children("option").eq(0).text());
             var $optionlist = $(
-                '<ul class="select-options" /><div class="header-select-option"><span>Все категории</span><span class="close-option"><i class="icon-X2"></i></div>'
+                '<ul class="select-options"><li class="header-select-option"><span>Все категории</span><button type="button" class="close-option" aria-label="Закрыть"><i class="icon-X2"></i></button></li></ul>'
             ).insertAfter($customSelect);
             for (var i = 0; i < selectOptions; i++) {
                 var value = $this.children("option").eq(i).val();
@@ -1247,7 +1252,7 @@
 
                 $li.append($a).appendTo($optionlist);
             }
-            var $optionlistItems = $optionlist.children("li");
+            var $optionlistItems = $optionlist.children("li:not(.header-select-option)");
             $customSelect.on("click", function (e) {
                 e.stopPropagation();
                 $("div.tf-select-custom.active")
@@ -1267,7 +1272,8 @@
                 $customSelect.removeClass("active");
                 $optionlist.hide();
             });
-            $(".close-option").on("click", function () {
+            $optionlist.find(".close-option").on("click", function (e) {
+                e.stopPropagation();
                 $customSelect.removeClass("active");
                 $optionlist.hide();
             });
