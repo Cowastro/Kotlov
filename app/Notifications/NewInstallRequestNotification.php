@@ -26,6 +26,7 @@ class NewInstallRequestNotification extends Notification
             'sauna'         => 'Монтаж банной печи',
             'service'       => 'Сервис',
             'commissioning' => 'Пусконаладка',
+            'engineering'   => 'Инженерный подбор',
             'other'         => 'Другое',
         ];
 

@@ -56,6 +56,7 @@ class InstallRequestForm
                                 'sauna'         => 'Монтаж банной печи',
                                 'service'       => 'Сервис',
                                 'commissioning' => 'Пусконаладка',
+                                'engineering'   => 'Инженерный подбор',
                                 'other'         => 'Другое',
                             ])
                             ->nullable(),
@@ -146,6 +147,7 @@ class InstallRequestForm
                                 'installer_profile'      => 'Профиль монтажника',
                                 'heat_pump_installation' => 'Страница монтажа тепловых насосов',
                                 'fireplace_installation' => 'Страница монтажа каминов',
+                                'product_engineering_calculation' => 'Инженерный расчёт из карточки товара',
                                 'product_page'           => 'Карточка товара',
                                 'cart'                   => 'Корзина',
                                 'admin'                  => 'Админка',

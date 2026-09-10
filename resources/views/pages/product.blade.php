@@ -390,20 +390,26 @@
                                 @endif
                             </div>
 
-                            {{-- Trust seal --}}
-                            <div class="tf-product-trust-seal">
-                                <p class="h6 text-seal">Безопасная оплата:</p>
-                                <ul class="list-card">
-                                    <li class="card-item">
-                                        <img width="50" height="32" src="{{ asset('assets/images/payment/visa.svg') }}" alt="Visa">
-                                    </li>
-                                    <li class="card-item">
-                                        <img width="50" height="32" src="{{ asset('assets/images/payment/master-card.svg') }}" alt="Mastercard">
-                                    </li>
-                                    <li class="card-item">
-                                        <img width="50" height="32" src="{{ asset('assets/images/payment/paypal.svg') }}" alt="PayPal">
-                                    </li>
-                                </ul>
+                            {{-- Инженерный сервис --}}
+                            <div class="tf-product-engineering">
+                                <div class="tf-product-engineering__icon" aria-hidden="true">
+                                    <svg viewBox="0 0 24 24" fill="none">
+                                        <path d="M4 4h16v16H4zM8 8h8M8 12h3M8 16h3M15 12v4M13 14h4"/>
+                                    </svg>
+                                </div>
+                                <div class="tf-product-engineering__content">
+                                    <p class="tf-product-engineering__label">Инженерный сервис KOTLOV</p>
+                                    <p class="h6 tf-product-engineering__title">Инженерный подбор под ключ</p>
+                                    <p class="tf-product-engineering__text">
+                                        Рассчитаем мощность, проверим совместимость, подберём комплектующие и организуем монтаж.
+                                    </p>
+                                    <a href="#engineeringCalculation" data-bs-toggle="modal"
+                                        class="tf-product-engineering__link"
+                                        data-analytics-event="product_engineering_calculation_click">
+                                        Оставить заявку на расчёт
+                                        <span aria-hidden="true">→</span>
+                                    </a>
+                                </div>
                             </div>
 
                         </div>

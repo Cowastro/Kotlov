@@ -254,6 +254,53 @@
 </div>
 <!-- /Ask -->
 
+@isset($product)
+<!-- Engineering calculation -->
+<div class="modal modalCentered fade modal-log modal-ask" id="engineeringCalculation">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <span class="icon-close-popup" data-bs-dismiss="modal"><i class="icon-X2"></i></span>
+            <div class="modal-heading text-center">
+                <h3 class="title-pop mb-8">Заявка на инженерный расчёт</h3>
+                <p class="desc-pop cl-text-2">Специалист уточнит задачу, проверит оборудование и предложит решение под ключ.</p>
+            </div>
+            <div class="modal-main">
+                <form class="form-log mb-20" action="{{ route('install-requests.store') }}" method="POST"
+                    data-analytics-form="product_engineering_calculation">
+                    @csrf
+                    <x-form-protection />
+                    <input type="hidden" name="product_id" value="{{ $product->id }}">
+                    <input type="hidden" name="specialization" value="engineering">
+                    <input type="hidden" name="source" value="product_engineering_calculation">
+                    <div class="form-content">
+                        <fieldset class="tf-field">
+                            <label for="engineering-name" class="tf-lable fw-medium">Ваше имя <span class="text-primary">*</span></label>
+                            <input type="text" name="customer_name" id="engineering-name" placeholder="Ваше имя*" required>
+                        </fieldset>
+                        <fieldset class="tf-field">
+                            <label for="engineering-phone" class="tf-lable fw-medium">Телефон <span class="text-primary">*</span></label>
+                            <input type="tel" name="customer_phone" id="engineering-phone" placeholder="+375 (XX) XXX-XX-XX" required>
+                        </fieldset>
+                        <fieldset class="tf-field">
+                            <label for="engineering-city" class="tf-lable fw-medium">Город</label>
+                            <input type="text" name="city" id="engineering-city" placeholder="Город или район" value="{{ $cityName ?? ($currentCity->name ?? '') }}">
+                        </fieldset>
+                        <fieldset class="tf-field">
+                            <label for="engineering-description" class="tf-lable fw-medium">Что нужно рассчитать</label>
+                            <textarea name="description" id="engineering-description" placeholder="Объект, площадь, система отопления или другая важная информация..."></textarea>
+                        </fieldset>
+                    </div>
+                    <div class="group-action">
+                        <button type="submit" class="tf-btn animate-btn w-100">Отправить заявку на расчёт</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- /Engineering calculation -->
+@endisset
+
 <!-- Compare Offcanvas -->
 <div class="offcanvas offcanvas-bottom canvas-compare" id="compare">
     <div class="canvas-wrapper">

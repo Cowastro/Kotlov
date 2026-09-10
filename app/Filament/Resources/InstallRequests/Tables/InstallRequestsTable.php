@@ -41,6 +41,7 @@ class InstallRequestsTable
                         'sauna'         => 'success',
                         'service'       => 'primary',
                         'commissioning' => 'primary',
+                        'engineering'   => 'info',
                         default         => 'gray',
                     })
                     ->formatStateUsing(fn ($state) => match ($state) {
@@ -51,6 +52,7 @@ class InstallRequestsTable
                         'sauna'         => 'Монтаж банной печи',
                         'service'       => 'Сервис',
                         'commissioning' => 'Пусконаладка',
+                        'engineering'   => 'Инженерный подбор',
                         'other'         => 'Другое',
                         default         => $state,
                     })
@@ -101,6 +103,7 @@ class InstallRequestsTable
                         'installer_profile'      => 'Профиль',
                         'heat_pump_installation' => 'Монтаж тепловых насосов',
                         'fireplace_installation' => 'Монтаж каминов',
+                        'product_engineering_calculation' => 'Инженерный расчёт из товара',
                         'product_page'           => 'Товар',
                         'cart'                   => 'Корзина',
                         'admin'                  => 'Админка',
@@ -142,6 +145,7 @@ class InstallRequestsTable
                         'sauna'         => 'Монтаж банной печи',
                         'service'       => 'Сервис',
                         'commissioning' => 'Пусконаладка',
+                        'engineering'   => 'Инженерный подбор',
                         'other'         => 'Другое',
                     ]),
                 SelectFilter::make('source')
@@ -151,6 +155,7 @@ class InstallRequestsTable
                         'installer_profile'      => 'Профиль монтажника',
                         'heat_pump_installation' => 'Страница монтажа тепловых насосов',
                         'fireplace_installation' => 'Страница монтажа каминов',
+                        'product_engineering_calculation' => 'Инженерный расчёт из карточки товара',
                         'product_page'           => 'Карточка товара',
                         'cart'                   => 'Корзина',
                         'admin'                  => 'Админка',

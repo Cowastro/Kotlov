@@ -53,6 +53,7 @@ class InstallRequestController extends Controller
             'customer_name'        => ['required', 'string', 'max:100', new NoHtmlOrLinks()],
             'customer_phone'       => ['required', 'string', 'max:30', new \App\Rules\PhoneNotSpam()],
             'customer_email'       => 'nullable|email|max:150',
+            'product_id'           => 'nullable|integer|exists:products,id',
             'city'                 => ['nullable', 'string', 'max:100', new NoHtmlOrLinks()],
             'region'               => 'nullable|string|max:100',
             'address'              => ['nullable', 'string', 'max:255', new NoHtmlOrLinks()],
@@ -61,7 +62,7 @@ class InstallRequestController extends Controller
             'preferred_date'       => 'nullable|date',
             'budget'               => 'nullable|numeric|min:0',
             'installer_profile_id' => 'nullable|integer',
-            'source'               => 'nullable|in:heat_pump_installation,fireplace_installation',
+            'source'               => 'nullable|in:heat_pump_installation,fireplace_installation,product_engineering_calculation',
         ], [
             'customer_name.required'  => 'Укажите ваше имя.',
             'customer_phone.required' => 'Укажите номер телефона.',
@@ -82,7 +83,7 @@ class InstallRequestController extends Controller
             }
         }
 
-        $landingSource = in_array(($validated['source'] ?? null), ['heat_pump_installation', 'fireplace_installation'], true)
+        $landingSource = in_array(($validated['source'] ?? null), ['heat_pump_installation', 'fireplace_installation', 'product_engineering_calculation'], true)
             ? $validated['source']
             : null;
 
@@ -90,6 +91,7 @@ class InstallRequestController extends Controller
             'customer_name'        => $validated['customer_name'],
             'customer_phone'       => $validated['customer_phone'],
             'customer_email'       => $validated['customer_email'] ?? null,
+            'product_id'           => $validated['product_id'] ?? null,
             'city'                 => $validated['city'] ?? null,
             'region'               => $validated['region'] ?? null,
             'address'              => $validated['address'] ?? null,
@@ -122,6 +124,13 @@ class InstallRequestController extends Controller
                 ->with('success', 'Заявка отправлена. Мы свяжемся с вами для уточнения деталей.')
                 ->with('analytics_event', 'fireplace_lead_success')
                 ->with('analytics_parameters', ['lead_type' => 'fireplace_calculation']);
+        }
+
+        if ($landingSource === 'product_engineering_calculation') {
+            return back()
+                ->with('success', 'Заявка на инженерный расчёт отправлена. Специалист свяжется с вами для уточнения задачи.')
+                ->with('analytics_event', 'product_engineering_calculation_success')
+                ->with('analytics_parameters', ['lead_type' => 'product_engineering_calculation']);
         }
 
         return redirect()
