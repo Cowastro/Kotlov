@@ -68,5 +68,6 @@ class ProductSourceEnricherTest extends TestCase
 
         $this->assertStringStartsWith('Бойлер косвенного нагрева', $parsed['short_description']);
         $this->assertStringNotContainsString('купить оптом', mb_strtolower($parsed['short_description']));
+        $this->assertLessThanOrEqual(240, mb_strlen($parsed['short_description']));
     }
 }

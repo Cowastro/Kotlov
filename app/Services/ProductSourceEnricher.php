@@ -867,7 +867,7 @@ class ProductSourceEnricher
         }
 
         if ($this->isRusklimatUrl($url) && $this->isSupplierPromoDescription((string) $parsed['short_description'])) {
-            $parsed['short_description'] = (string) $parsed['description'];
+            $parsed['short_description'] = $this->sourceSummary((string) $parsed['description']);
         }
 
         return $this->normalizeParsedData($parsed);
@@ -876,6 +876,15 @@ class ProductSourceEnricher
     private function isSupplierPromoDescription(string $text): bool
     {
         return preg_match('/(?:купить\s+оптом|b2b\.?\s*русклимат|доставк\w*\s+по\s+россии)/iu', $text) === 1;
+    }
+
+    private function sourceSummary(string $text): string
+    {
+        $text = $this->cleanText($text);
+        $sentences = preg_split('/(?<=[.!?])\s+/u', $text, 2) ?: [];
+        $summary = trim((string) ($sentences[0] ?? $text));
+
+        return mb_strlen($summary) <= 240 ? $summary : Str::words($summary, 30, '…');
     }
 
     private function normalizeParsedData(array $parsed): array
