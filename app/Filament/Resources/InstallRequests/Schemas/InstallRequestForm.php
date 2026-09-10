@@ -145,6 +145,7 @@ class InstallRequestForm
                                 'installers_page'        => 'Страница монтажников',
                                 'installer_profile'      => 'Профиль монтажника',
                                 'heat_pump_installation' => 'Страница монтажа тепловых насосов',
+                                'fireplace_installation' => 'Страница монтажа каминов',
                                 'product_page'           => 'Карточка товара',
                                 'cart'                   => 'Корзина',
                                 'admin'                  => 'Админка',

@@ -61,7 +61,7 @@ class InstallRequestController extends Controller
             'preferred_date'       => 'nullable|date',
             'budget'               => 'nullable|numeric|min:0',
             'installer_profile_id' => 'nullable|integer',
-            'source'               => 'nullable|in:heat_pump_installation',
+            'source'               => 'nullable|in:heat_pump_installation,fireplace_installation',
         ], [
             'customer_name.required'  => 'Укажите ваше имя.',
             'customer_phone.required' => 'Укажите номер телефона.',
@@ -82,7 +82,9 @@ class InstallRequestController extends Controller
             }
         }
 
-        $isHeatPumpLanding = ($validated['source'] ?? null) === 'heat_pump_installation';
+        $landingSource = in_array(($validated['source'] ?? null), ['heat_pump_installation', 'fireplace_installation'], true)
+            ? $validated['source']
+            : null;
 
         $installRequest = InstallRequest::create([
             'customer_name'        => $validated['customer_name'],
@@ -98,7 +100,7 @@ class InstallRequestController extends Controller
             'installer_profile_id' => $installerProfileId,
             'source'               => $installerProfileId
                 ? 'installer_profile'
-                : ($isHeatPumpLanding ? 'heat_pump_installation' : 'installers_page'),
+                : ($landingSource ?: 'installers_page'),
             'status'               => 'new',
         ]);
 
@@ -106,12 +108,20 @@ class InstallRequestController extends Controller
             fn (User $admin) => $admin->notify(new NewInstallRequestNotification($installRequest))
         );
 
-        if ($isHeatPumpLanding) {
+        if ($landingSource === 'heat_pump_installation') {
             return redirect()
                 ->to(route('heat-pumps.installation') . '#heat-pump-request')
                 ->with('success', 'Заявка отправлена. Мы свяжемся с вами для уточнения деталей.')
                 ->with('analytics_event', 'heat_pump_lead_success')
                 ->with('analytics_parameters', ['lead_type' => 'heat_pump_calculation']);
+        }
+
+        if ($landingSource === 'fireplace_installation') {
+            return redirect()
+                ->to(route('fireplaces.installation') . '#fireplace-request')
+                ->with('success', 'Заявка отправлена. Мы свяжемся с вами для уточнения деталей.')
+                ->with('analytics_event', 'fireplace_lead_success')
+                ->with('analytics_parameters', ['lead_type' => 'fireplace_calculation']);
         }
 
         return redirect()

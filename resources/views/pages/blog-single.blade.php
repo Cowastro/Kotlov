@@ -150,6 +150,23 @@
                                 </aside>
                             @endif
 
+                            @if (($isFireplaceContent ?? false) && ($fireplaceLinks ?? collect())->isNotEmpty())
+                                <aside class="blog-next-box mt-32 p-24" id="fireplace-next-step" aria-label="Материалы по подбору и монтажу камина">
+                                    <h4 class="mb-8">Следующий шаг по вашему проекту</h4>
+                                    <p class="text-body-1 cl-text-2 mb-20">
+                                        Перейдите от реального объекта к модели, дымоходу и расчёту монтажа.
+                                    </p>
+                                    <div class="tf-grid-layout sm-col-2">
+                                        @foreach ($fireplaceLinks as $link)
+                                            <a href="{{ $link['url'] }}" class="blog-next-link p-16 link d-block">
+                                                <h6 class="mb-6">{{ $link['title'] }}</h6>
+                                                <p class="text-caption-01 cl-text-2 mb-0">{{ $link['text'] }}</p>
+                                            </a>
+                                        @endforeach
+                                    </div>
+                                </aside>
+                            @endif
+
                             <div class="box-social-tag">
                                 <div class="tags-right d-flex align-items-center flex-wrap gap-8">
                                     <p>Теги:</p>

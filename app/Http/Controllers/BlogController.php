@@ -107,6 +107,11 @@ class BlogController extends Controller
                 fn ($tag) => preg_match('/\bтеплов\p{L}*\s+насос\p{L}*/u', mb_strtolower((string) $tag)) === 1
             );
 
+        $isFireplaceContent = preg_match('/\b(камин|печь|топк|дымоход)\p{L}*/u', mb_strtolower($post->title)) === 1
+            || collect($post->tags ?? [])->contains(
+                fn ($tag) => preg_match('/\b(камин|печь|топк|дымоход)\p{L}*/u', mb_strtolower((string) $tag)) === 1
+            );
+
         $related = BlogPost::published()
             ->where('id', '!=', $post->id)
             ->when(
@@ -121,6 +126,7 @@ class BlogController extends Controller
             ->get();
 
         $heatPumpLinks = $isHeatPumpContent ? $this->heatPumpLinks($post) : collect();
+        $fireplaceLinks = $isFireplaceContent ? $this->fireplaceLinks($post) : collect();
 
         $title = $post->meta_title ?: ($post->title . ' | KOTLOV');
         $description = $post->meta_description ?: ($post->excerpt ?: mb_substr(strip_tags($post->content ?? ''), 0, 160));
@@ -169,6 +175,8 @@ class BlogController extends Controller
             'articleTags',
             'isHeatPumpContent',
             'heatPumpLinks',
+            'isFireplaceContent',
+            'fireplaceLinks',
             'schemaJson',
             'breadcrumbJson'
         ));
@@ -213,6 +221,32 @@ class BlogController extends Controller
         ]);
 
         return $links->take(4)->values();
+    }
+
+    private function fireplaceLinks(BlogPost $post)
+    {
+        return collect([
+            [
+                'title' => 'Печи-камины для дома и дачи',
+                'text' => 'Модели разной мощности, с плитой и длительным горением.',
+                'url' => '/pechki',
+            ],
+            [
+                'title' => 'Камины и каминные топки',
+                'text' => 'Подбор топки под интерьер, площадь и режим эксплуатации.',
+                'url' => '/kaminy',
+            ],
+            [
+                'title' => 'Дымоходы и комплектующие',
+                'text' => 'Диаметр, высота, проходы перекрытий и кровельные узлы.',
+                'url' => '/dymohody',
+            ],
+            [
+                'title' => 'Монтаж камина под ключ',
+                'text' => 'Расчёт, комплектация, противопожарные узлы и запуск.',
+                'url' => '/montazh-kaminov',
+            ],
+        ]);
     }
 
     private function articleSchema(BlogPost $post, string $canonical): array
