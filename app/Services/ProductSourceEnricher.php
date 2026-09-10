@@ -1702,6 +1702,7 @@ class ProductSourceEnricher
 
         $this->addSpecsFromWooCommerceAttributes($xpath, $specs);
         $this->addSpecsFromAsproProperties($xpath, $specs);
+        $this->addSpecsFromRusklimatB2b($xpath, $specs);
         $this->addSpecsFromCharacteristicLists($xpath, $specs);
         $this->addSpecsFromDescriptionText($html, $specs);
         $this->addSpecsFromMetaDescription($html, $specs);
@@ -1848,6 +1849,31 @@ class ProductSourceEnricher
             }
 
             $this->addSpec($specs, $titleNode->textContent, $valueNode->textContent);
+        }
+    }
+
+    private function addSpecsFromRusklimatB2b(\DOMXPath $xpath, array &$specs): void
+    {
+        $rows = $xpath->query('//*[contains(concat(" ", normalize-space(@class), " "), " characteristics__line ")]');
+        if ($rows === false) {
+            return;
+        }
+
+        foreach ($rows as $row) {
+            $label = $xpath->query('.//*[contains(concat(" ", normalize-space(@class), " "), " characteristics__leftText ")]', $row)?->item(0);
+            $value = $xpath->query('.//*[contains(concat(" ", normalize-space(@class), " "), " characteristics__right ")]', $row)?->item(0);
+
+            if (! $label || ! $value) {
+                continue;
+            }
+
+            $labelText = $this->cleanText($label->textContent);
+            $valueText = $this->cleanText($value->textContent);
+            if (mb_strtolower($labelText) === 'фото' && mb_strtolower($valueText) === 'наименование') {
+                continue;
+            }
+
+            $this->addSpec($specs, $labelText, $valueText);
         }
     }
 
@@ -2138,6 +2164,7 @@ class ProductSourceEnricher
         if (
             $key === ''
             || $value === ''
+            || (mb_strtolower($key) === 'фото' && mb_strtolower($value) === 'наименование')
             || str_contains($key, '#')
             || str_contains($value, '#')
             || mb_strlen($key) > 120
