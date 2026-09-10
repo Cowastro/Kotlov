@@ -1,5 +1,30 @@
 @extends('layouts.amerce')
 
+@push('styles')
+<style>
+    .kotlov-blog-content .blog-author-box,
+    .kotlov-blog-content .blog-next-box {
+        border: 1px solid #e7e4de;
+        border-radius: 18px;
+        background: #fff;
+        box-shadow: 0 10px 35px rgba(25, 31, 35, .045);
+    }
+    .kotlov-blog-content .blog-author-box { border-left: 3px solid #f4554c; }
+    .kotlov-blog-content .blog-next-box { padding-top: 28px !important; }
+    .kotlov-blog-content .blog-next-link {
+        border: 1px solid #ebe8e2;
+        border-radius: 14px;
+        background: #fff;
+        transition: border-color .2s ease, transform .2s ease, box-shadow .2s ease;
+    }
+    .kotlov-blog-content .blog-next-link:hover {
+        transform: translateY(-2px);
+        border-color: #d7d2ca;
+        box-shadow: 0 9px 24px rgba(25, 31, 35, .07);
+    }
+</style>
+@endpush
+
 @section('content')
 @php
     $shareUrl = $canonical ?? url()->current();
@@ -79,7 +104,7 @@
                                 {!! $post->content !!}
                             </div>
 
-                            <aside class="mt-32 p-24 rounded-4 bg-surface" aria-label="Об авторе материала">
+                            <aside class="blog-author-box mt-32 p-24" aria-label="Об авторе материала">
                                 <p class="text-caption-01 text-primary fw-semibold mb-8">О МАТЕРИАЛЕ</p>
                                 <h5 class="mb-8">Подготовлено командой KOTLOV</h5>
                                 <p class="text-body-2 cl-text-2 mb-0">
@@ -90,14 +115,14 @@
                             </aside>
 
                             @if (($isHeatPumpContent ?? false) && ($heatPumpLinks ?? collect())->isNotEmpty())
-                                <aside class="mt-32 p-24 rounded-4 bg-surface" aria-label="Материалы по подбору теплового насоса">
+                                <aside class="blog-next-box mt-32 p-24" aria-label="Материалы по подбору теплового насоса">
                                     <h4 class="mb-8">Следующий шаг по вашему проекту</h4>
                                     <p class="text-body-1 cl-text-2 mb-20">
                                         Перейдите от общего вопроса к моделям, расчёту и опыту на реальных объектах.
                                     </p>
                                     <div class="tf-grid-layout sm-col-2">
                                         @foreach ($heatPumpLinks as $link)
-                                            <a href="{{ $link['url'] }}" class="p-16 rounded-3 bg-white link d-block">
+                                            <a href="{{ $link['url'] }}" class="blog-next-link p-16 link d-block">
                                                 <h6 class="mb-6">{{ $link['title'] }}</h6>
                                                 <p class="text-caption-01 cl-text-2 mb-0">{{ $link['text'] }}</p>
                                             </a>
