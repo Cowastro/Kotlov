@@ -256,14 +256,14 @@ class ProductController extends Controller
             $isR290 = str_contains(mb_strtoupper($nameFull), 'R290');
             $guideOrder = $isR290
                 ? [
-                    'teplovye-nasosy-ge-r290-vysokotemperaturnye',
                     'teplovoy-nasos-115-kvt-r290-ostroshitskiy-gorodok',
-                    'kak-vybrat-teplovoy-nasos',
+                    'teplovoy-nasos-kotlov-ge-24-kvt-r32-nareyki',
+                    'montazh-teplovogo-nasosa-hotta-30-kvt-i-rezervnogo-pelletnogo-kotla-biotep-25',
                 ]
                 : [
                     'teplovoy-nasos-kotlov-ge-24-kvt-r32-nareyki',
                     'montazh-teplovogo-nasosa-hotta-30-kvt-i-rezervnogo-pelletnogo-kotla-biotep-25',
-                    'kak-vybrat-teplovoy-nasos',
+                    'teplovoy-nasos-115-kvt-r290-ostroshitskiy-gorodok',
                 ];
 
             $heatPumpGuides = BlogPost::published()
