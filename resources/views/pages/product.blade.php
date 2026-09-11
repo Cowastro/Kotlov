@@ -60,7 +60,7 @@
     </div>
 
     {{-- Основной блок товара --}}
-    <section class="section-product-single tf-main-product section-image-zoom">
+    <section class="section-product-single tf-main-product section-image-zoom {{ str_starts_with($product->slug, 'pelletnaya-gorelka-hotta-ceramik-') ? 'hotta-product-gallery' : '' }}">
         <div class="container">
             <div class="row">
 
@@ -250,6 +250,10 @@
 
                                 @if ($product->slug === 'pelletnaya-gorelka-kotlov-xo-evo-18-kvt-eb140' && $product->is_sale)
                                     <x-xo-evo-promo-note />
+                                @endif
+
+                                @if (in_array($product->slug, ['pelletnaya-gorelka-hotta-ceramik-20-kvt-komplekt-1', 'pelletnaya-gorelka-hotta-ceramik-30-kvt-komplekt-3'], true) && $product->is_sale)
+                                    <x-hotta-promo-note />
                                 @endif
 
                                 {{-- Краткое описание --}}
@@ -934,6 +938,10 @@
         @include('partials.product-xo-evo-resources', ['product' => $product])
     @endif
 
+    @if (in_array($product->slug, \App\Models\Product::PUBLIC_SALE_SLUGS, true))
+        @include('partials.xo-controller-feature')
+    @endif
+
     {{-- Похожие товары --}}
     @if ($relatedProducts->count() > 0)
         <section class="flat-spacing">
@@ -958,6 +966,26 @@
     @endif
 
 </main>
+
+@push('styles')
+<style>
+@media (max-width: 767px) {
+    .hotta-product-gallery .tf-product-media-main {
+        aspect-ratio: 1 / 1;
+    }
+
+    .hotta-product-gallery .tf-product-media-main .swiper-wrapper,
+    .hotta-product-gallery .tf-product-media-main .swiper-slide,
+    .hotta-product-gallery .tf-product-media-main .item {
+        height: 100% !important;
+    }
+
+    .hotta-product-gallery .tf-product-media-main .item img {
+        object-fit: contain;
+    }
+}
+</style>
+@endpush
 
 @push('scripts')
 <script>

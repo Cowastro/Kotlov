@@ -89,6 +89,28 @@
     </section>
     @endif
 
+    @if(($hottaProducts ?? collect())->count() === 2)
+    <section class="promo-feature promo-feature--evo">
+        <div class="container">
+            <article class="promo-feature__card">
+                <a href="{{ route('promotions.hotta-ceramik') }}" class="promo-feature__media" aria-label="Подробнее о распродаже HOTTA Ceramik 20 и 30 кВт">
+                    <img loading="lazy" src="{{ asset('img/promotions/hotta-ceramik/hotta-20-1.jpg') }}" alt="Пеллетная горелка HOTTA Ceramik на распродаже">
+                </a>
+                <div class="promo-feature__copy">
+                    <span class="promo-feature__badge">СКЛАДСКАЯ РАСПРОДАЖА</span>
+                    <h2 class="mb-16">HOTTA Ceramik 20 и 30 кВт</h2>
+                    <p class="mb-0" style="color:rgba(255,255,255,.7)">Проверенная серия с подвижными самоочищающимися колосниками — теперь с современным контроллером XO, встроенным Wi‑Fi и интернет-управлением.</p>
+                    <div class="promo-feature__price"><span class="promo-feature__new">от 4 300 BYN</span></div>
+                    <div class="promo-feature__actions">
+                        <a href="{{ route('promotions.hotta-ceramik') }}" class="tf-btn animate-btn">Смотреть комплекты</a>
+                        <a href="/blog/hotta-ceramik-20-30-kvt-rasprodazha-s-wifi-kontrollerom" class="tf-btn btn-white">Техническая статья</a>
+                    </div>
+                </div>
+            </article>
+        </div>
+    </section>
+    @endif
+
     @if($saleProducts->isNotEmpty())
     <section class="promo-products">
         <div class="container">

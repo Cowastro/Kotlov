@@ -121,6 +121,7 @@ class InstallRequestInfolist
                                 'product_engineering_calculation' => 'Инженерный расчёт из карточки товара',
                                 'pellet_burner_promo'   => 'Акция KOTLOV XO Ceramic PRO',
                                 'pellet_burner_evo_promo' => 'Распродажа KOTLOV XO EVO 26 кВт',
+                                'pellet_burner_hotta_promo' => 'Распродажа HOTTA Ceramik 20/30 кВт',
                                 'product_page'           => 'Карточка товара',
                                 'cart'                   => 'Корзина',
                                 'admin'                  => 'Админка',

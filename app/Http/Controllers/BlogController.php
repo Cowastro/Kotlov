@@ -259,6 +259,31 @@ class BlogController extends Controller
 
     private function pelletBurnerLinks(BlogPost $post)
     {
+        if ($post->slug === 'hotta-ceramik-20-30-kvt-rasprodazha-s-wifi-kontrollerom') {
+            return collect([
+                [
+                    'title' => 'Распродажа HOTTA Ceramik 20/30 кВт',
+                    'text' => 'Цены комплектов, Wi‑Fi-контроллер и заявка на проверку котла.',
+                    'url' => '/akcii/hotta-ceramik-20-30',
+                ],
+                [
+                    'title' => 'HOTTA Ceramik 20 кВт',
+                    'text' => 'Комплект 1 за 4 300 BYN: диапазон 8–20 кВт.',
+                    'url' => '/pelletnye-gorelki/pelletnaya-gorelka-hotta-ceramik-20-kvt-komplekt-1',
+                ],
+                [
+                    'title' => 'HOTTA Ceramik 30 кВт',
+                    'text' => 'Комплект 3 за 4 600 BYN: диапазон 10–30 кВт.',
+                    'url' => '/pelletnye-gorelki/pelletnaya-gorelka-hotta-ceramik-30-kvt-komplekt-3',
+                ],
+                [
+                    'title' => 'Руководство контроллера XO',
+                    'text' => 'Wi‑Fi, подключение датчиков, насосов, шнека и автоматики.',
+                    'url' => '/docs/kotlov-xo-controller-1-2os-ru.pdf',
+                ],
+            ]);
+        }
+
         if ($post->slug === 'pelletnaya-gorelka-kotlov-xo-evo-26-kvt') {
             return collect([
                 [

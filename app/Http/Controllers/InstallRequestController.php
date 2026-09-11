@@ -62,7 +62,7 @@ class InstallRequestController extends Controller
             'preferred_date'       => 'nullable|date',
             'budget'               => 'nullable|numeric|min:0',
             'installer_profile_id' => 'nullable|integer',
-            'source'               => 'nullable|in:heat_pump_installation,fireplace_installation,product_engineering_calculation,pellet_burner_promo,pellet_burner_evo_promo',
+            'source'               => 'nullable|in:heat_pump_installation,fireplace_installation,product_engineering_calculation,pellet_burner_promo,pellet_burner_evo_promo,pellet_burner_hotta_promo',
         ], [
             'customer_name.required'  => 'Укажите ваше имя.',
             'customer_phone.required' => 'Укажите номер телефона.',
@@ -83,7 +83,7 @@ class InstallRequestController extends Controller
             }
         }
 
-        $landingSource = in_array(($validated['source'] ?? null), ['heat_pump_installation', 'fireplace_installation', 'product_engineering_calculation', 'pellet_burner_promo', 'pellet_burner_evo_promo'], true)
+        $landingSource = in_array(($validated['source'] ?? null), ['heat_pump_installation', 'fireplace_installation', 'product_engineering_calculation', 'pellet_burner_promo', 'pellet_burner_evo_promo', 'pellet_burner_hotta_promo'], true)
             ? $validated['source']
             : null;
 
@@ -147,6 +147,14 @@ class InstallRequestController extends Controller
                 ->with('success', 'Заявка отправлена. Инженер свяжется с вами для проверки совместимости и комплектации.')
                 ->with('analytics_event', 'pellet_burner_evo_lead_success')
                 ->with('analytics_parameters', ['lead_type' => 'pellet_burner_evo_promo']);
+        }
+
+        if ($landingSource === 'pellet_burner_hotta_promo') {
+            return redirect()
+                ->to(route('promotions.hotta-ceramik') . '#hotta-request')
+                ->with('success', 'Заявка отправлена. Инженер свяжется с вами для выбора комплекта и проверки котла.')
+                ->with('analytics_event', 'pellet_burner_hotta_lead_success')
+                ->with('analytics_parameters', ['lead_type' => 'pellet_burner_hotta_promo']);
         }
 
         return redirect()

@@ -8,6 +8,8 @@ class PromotionController extends Controller
 {
     private const XO_SLUG = 'pelletnaya-gorelka-kotlov-xo-ceramic-pro-100-kvt';
     private const XO_EVO_SLUG = 'pelletnaya-gorelka-kotlov-xo-evo-18-kvt-eb140';
+    private const HOTTA_20_SLUG = 'pelletnaya-gorelka-hotta-ceramik-20-kvt-komplekt-1';
+    private const HOTTA_30_SLUG = 'pelletnaya-gorelka-hotta-ceramik-30-kvt-komplekt-3';
 
     public function index()
     {
@@ -30,19 +32,27 @@ class PromotionController extends Controller
             ->where('slug', self::XO_EVO_SLUG)
             ->first();
 
+        $hottaProducts = Product::query()
+            ->active()
+            ->notArchived()
+            ->with(['category', 'brand'])
+            ->whereIn('slug', [self::HOTTA_20_SLUG, self::HOTTA_30_SLUG])
+            ->orderBy('price')
+            ->get();
+
         $saleProducts = Product::query()
             ->active()
             ->notArchived()
             ->where('is_sale', true)
             ->whereIn('slug', Product::PUBLIC_SALE_SLUGS)
-            ->whereNotIn('slug', [self::XO_SLUG, self::XO_EVO_SLUG])
+            ->whereNotIn('slug', [self::XO_SLUG, self::XO_EVO_SLUG, self::HOTTA_20_SLUG, self::HOTTA_30_SLUG])
             ->with(['category', 'brand'])
             ->orderByDesc('is_featured')
             ->orderByDesc('updated_at')
             ->limit(8)
             ->get();
 
-        return view('pages.promotions', compact('title', 'description', 'canonical', 'ogImage', 'xoProduct', 'evoProduct', 'saleProducts'));
+        return view('pages.promotions', compact('title', 'description', 'canonical', 'ogImage', 'xoProduct', 'evoProduct', 'hottaProducts', 'saleProducts'));
     }
 
     public function xoCeramicPro()
@@ -210,6 +220,89 @@ class PromotionController extends Controller
             'product', 'discountPercent', 'saving', 'stockCount',
             'title', 'description', 'canonical', 'ogImage', 'ogImageSecure',
             'ogImageWidth', 'ogImageHeight', 'ogImageType', 'faq', 'schemaJson'
+        ));
+    }
+
+    public function hottaCeramik()
+    {
+        $products = Product::query()
+            ->active()
+            ->notArchived()
+            ->with(['category', 'brand'])
+            ->whereIn('slug', [self::HOTTA_20_SLUG, self::HOTTA_30_SLUG])
+            ->orderBy('price')
+            ->get();
+
+        abort_if($products->count() !== 2, 404);
+
+        $product20 = $products->firstWhere('slug', self::HOTTA_20_SLUG);
+        $product30 = $products->firstWhere('slug', self::HOTTA_30_SLUG);
+        $title = 'Распродажа HOTTA Ceramik 20 и 30 кВт с Wi‑Fi-контроллером';
+        $description = 'Комплекты HOTTA Ceramik 20 кВт за 4 300 BYN и 30 кВт за 4 600 BYN. Самоочистка, современный контроллер XO со встроенным Wi‑Fi, шнек, гарантия и инженерный подбор.';
+        $canonical = 'https://kotlov.by/akcii/hotta-ceramik-20-30';
+        $ogImage = asset('img/promotions/hotta-ceramik/hotta-20-1.jpg');
+        $ogImageSecure = $ogImage;
+        $ogImageWidth = 1280;
+        $ogImageHeight = 713;
+        $ogImageType = 'image/jpeg';
+
+        $faq = [
+            'Что входит в акционный комплект?' => 'Горелка HOTTA Ceramik выбранной мощности, современный контроллер XO со встроенным Wi‑Fi, шнек подачи, плавкий гофрированный рукав, датчики и эксплуатационная документация. Состав подключения уточняется после проверки котла.',
+            'Можно ли установить горелку в существующий твердотопливный котёл?' => 'Да, если подходят мощность и геометрия топки, дверца, направление факела, герметичность котла и дымоход. Перед заказом инженер проверяет эти параметры по модели и фотографиям котла.',
+            'Подходит ли горелка для агропеллеты и пеллет из лузги?' => 'Самоочищающиеся подвижные колосники и раздельная настройка подачи и воздуха дают больше возможностей для работы со сложным топливом. Возможность применения конкретной пеллеты определяется после пробной настройки: учитываются зольность, влажность, спекание золы и фактическая нагрузка.',
+            'Что можно делать через Wi‑Fi?' => 'После подключения контроллера к сети можно видеть температуру котла и состояние системы, включать и выключать котёл, изменять заданную температуру и просматривать графики показаний. Набор данных зависит от подключённых датчиков.',
+            'Почему серия называется HOTTA Ceramik?' => 'Это складские комплекты проверенной серии HOTTA Cyberia/Ceramik. В Беларуси оборудование ранее продавалось под брендом HOTTA; в основе — конструктивная линия OXI Ceramik, применявшаяся на объектах более десяти лет.',
+            'Есть ли гарантия?' => 'Да. Горелки продаются KOTLOV с гарантией; точный срок и состав гарантийных обязательств указываются в документах поставки.',
+        ];
+
+        $schemaJson = json_encode([
+            [
+                '@context' => 'https://schema.org',
+                '@type' => 'ItemList',
+                'name' => 'Распродажа HOTTA Ceramik',
+                'itemListElement' => $products->values()->map(fn (Product $product, int $index) => [
+                    '@type' => 'ListItem',
+                    'position' => $index + 1,
+                    'item' => [
+                        '@type' => 'Product',
+                        'name' => $product->name,
+                        'image' => [$product->image_url],
+                        'sku' => $product->sku,
+                        'brand' => ['@type' => 'Brand', 'name' => 'HOTTA'],
+                        'offers' => [
+                            '@type' => 'Offer',
+                            'url' => 'https://kotlov.by/pelletnye-gorelki/' . $product->slug,
+                            'priceCurrency' => 'BYN',
+                            'price' => (string) $product->price,
+                            'availability' => 'https://schema.org/InStock',
+                        ],
+                    ],
+                ])->all(),
+            ],
+            [
+                '@context' => 'https://schema.org',
+                '@type' => 'FAQPage',
+                'mainEntity' => collect($faq)->map(fn (string $answer, string $question) => [
+                    '@type' => 'Question',
+                    'name' => $question,
+                    'acceptedAnswer' => ['@type' => 'Answer', 'text' => $answer],
+                ])->values()->all(),
+            ],
+            [
+                '@context' => 'https://schema.org',
+                '@type' => 'BreadcrumbList',
+                'itemListElement' => [
+                    ['@type' => 'ListItem', 'position' => 1, 'name' => 'Главная', 'item' => 'https://kotlov.by'],
+                    ['@type' => 'ListItem', 'position' => 2, 'name' => 'Акции', 'item' => 'https://kotlov.by/akcii'],
+                    ['@type' => 'ListItem', 'position' => 3, 'name' => 'HOTTA Ceramik 20 и 30 кВт', 'item' => $canonical],
+                ],
+            ],
+        ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+
+        return view('pages.promotion-hotta-ceramik', compact(
+            'products', 'product20', 'product30', 'title', 'description', 'canonical',
+            'ogImage', 'ogImageSecure', 'ogImageWidth', 'ogImageHeight', 'ogImageType',
+            'faq', 'schemaJson'
         ));
     }
 }

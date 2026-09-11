@@ -15,6 +15,8 @@ class Product extends Model
     public const PUBLIC_SALE_SLUGS = [
         'pelletnaya-gorelka-kotlov-xo-ceramic-pro-100-kvt',
         'pelletnaya-gorelka-kotlov-xo-evo-18-kvt-eb140',
+        'pelletnaya-gorelka-hotta-ceramik-20-kvt-komplekt-1',
+        'pelletnaya-gorelka-hotta-ceramik-30-kvt-komplekt-3',
     ];
 
     private const SUPPLIER_TECHNICAL_ATTRIBUTES = [

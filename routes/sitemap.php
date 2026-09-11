@@ -18,7 +18,7 @@ Route::get('/sitemap.xml', function () {
 
         foreach ([
             '/', '/about', '/dostavka', '/reviews', '/catalog',
-            '/brands', '/akcii', '/akcii/kotlov-xo-ceramic-pro', '/akcii/kotlov-xo-evo-26', '/contacts', '/installers', '/become-installer',
+            '/brands', '/akcii', '/akcii/kotlov-xo-ceramic-pro', '/akcii/kotlov-xo-evo-26', '/akcii/hotta-ceramik-20-30', '/contacts', '/installers', '/become-installer',
             '/montazh-teplovyh-nasosov', '/montazh-kaminov', '/partners', '/suppliers', '/faq', '/privacy', '/blog',
         ] as $path) {
             $addUrl($path);
