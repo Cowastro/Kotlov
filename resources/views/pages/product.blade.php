@@ -912,7 +912,10 @@
                             </div>
                         </div>
                     </div>
-                    <x-order-confirmation-notice class="mt-24" />
+                    <x-order-confirmation-notice
+                        class="mt-24"
+                        :availability-confirmed="$product->slug === 'pelletnaya-gorelka-kotlov-xo-evo-18-kvt-eb140' && (int) $product->stock_qty > 0"
+                    />
                 </div>
 
             </div>
