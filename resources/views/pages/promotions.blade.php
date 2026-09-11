@@ -40,11 +40,11 @@
     </section>
 
     @if($xoProduct)
-    <section class="promo-feature">
+    <section class="promo-feature" id="xo-ceramic-pro-promo">
         <div class="container">
             <article class="promo-feature__card">
                 <a href="{{ route('promotions.xo-ceramic-pro') }}" class="promo-feature__media" aria-label="Подробнее об акции KOTLOV XO Ceramic PRO">
-                    <img loading="eager" src="{{ asset('img/promotions/kotlov-xo-ceramic-pro-sale-cover.jpg') }}" alt="Пеллетные горелки KOTLOV XO нового поколения">
+                    <img loading="eager" src="{{ asset('img/promotions/kotlov-xo-ceramic-pro-sale-cover-v2.webp') }}" alt="KOTLOV XO Ceramic PRO 100 кВт: модель, реальная топка и контроллер">
                 </a>
                 <div class="promo-feature__copy">
                     <span class="promo-feature__badge">−10% · В НАЛИЧИИ</span>
