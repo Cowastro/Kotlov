@@ -120,6 +120,7 @@ class InstallRequestInfolist
                                 'fireplace_installation' => 'Страница монтажа каминов',
                                 'product_engineering_calculation' => 'Инженерный расчёт из карточки товара',
                                 'pellet_burner_promo'   => 'Акция KOTLOV XO Ceramic PRO',
+                                'pellet_burner_evo_promo' => 'Распродажа KOTLOV XO EVO 26 кВт',
                                 'product_page'           => 'Карточка товара',
                                 'cart'                   => 'Корзина',
                                 'admin'                  => 'Админка',

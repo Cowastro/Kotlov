@@ -259,6 +259,31 @@ class BlogController extends Controller
 
     private function pelletBurnerLinks(BlogPost $post)
     {
+        if ($post->slug === 'pelletnaya-gorelka-kotlov-xo-evo-26-kvt') {
+            return collect([
+                [
+                    'title' => 'Распродажа −20% на EVO 26 кВт',
+                    'text' => 'Две горелки в наличии, цена и заявка на проверку котла.',
+                    'url' => '/akcii/kotlov-xo-evo-26',
+                ],
+                [
+                    'title' => 'KOTLOV XO EVO 26 кВт EB140',
+                    'text' => 'Карточка товара, фотографии, характеристики и комплект.',
+                    'url' => '/pelletnye-gorelki/pelletnaya-gorelka-kotlov-xo-evo-18-kvt-eb140',
+                ],
+                [
+                    'title' => 'Каталог пеллетных горелок',
+                    'text' => 'Модели KOTLOV XO для частных и промышленных объектов.',
+                    'url' => '/pelletnye-gorelki',
+                ],
+                [
+                    'title' => 'Ceramic PRO 100 кВт',
+                    'text' => 'Решение для более мощной коммерческой котельной.',
+                    'url' => '/akcii/kotlov-xo-ceramic-pro',
+                ],
+            ]);
+        }
+
         return collect([
             [
                 'title' => 'Акция −10% на Ceramic PRO 100 кВт',

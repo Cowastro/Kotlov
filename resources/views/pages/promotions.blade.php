@@ -9,6 +9,7 @@
     .promo-index__kicker { display:inline-flex; align-items:center; gap:10px; color:var(--promo-red); font-size:13px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; }
     .promo-index__kicker::before { width:28px; height:2px; background:currentColor; content:""; }
     .promo-feature { padding:96px 0; background:#fff; }
+    .promo-feature--evo { padding-top:0; }
     .promo-feature__card { position:relative; display:grid; grid-template-columns:1.1fr .9fr; min-height:540px; overflow:hidden; border-radius:28px; background:#15171a; color:#fff; box-shadow:0 28px 70px rgba(17,19,22,.18); }
     .promo-feature__media { position:relative; min-height:420px; overflow:hidden; }
     .promo-feature__media img { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; }
@@ -56,6 +57,31 @@
                     <div class="promo-feature__actions">
                         <a href="{{ route('promotions.xo-ceramic-pro') }}" class="tf-btn animate-btn">Условия акции</a>
                         <a href="/{{ $xoProduct->category->slug }}/{{ $xoProduct->slug }}" class="tf-btn btn-white">Карточка товара</a>
+                    </div>
+                </div>
+            </article>
+        </div>
+    </section>
+    @endif
+
+    @if($evoProduct)
+    <section class="promo-feature promo-feature--evo">
+        <div class="container">
+            <article class="promo-feature__card">
+                <a href="{{ route('promotions.xo-evo-26') }}" class="promo-feature__media" aria-label="Подробнее о распродаже KOTLOV XO EVO 26 кВт">
+                    <img loading="lazy" src="{{ asset('img/promotions/kotlov-xo-evo-26-stock-cover.jpg') }}" alt="KOTLOV XO EVO 26 кВт в наличии на складе">
+                </a>
+                <div class="promo-feature__copy">
+                    <span class="promo-feature__badge">−20% · ОСТАЛОСЬ 2 ШТУКИ</span>
+                    <h2 class="mb-16">KOTLOV XO EVO 26 кВт</h2>
+                    <p class="mb-0" style="color:rgba(255,255,255,.7)">Распродажа двух складских горелок: сменная топка AISI 310S, самоочищающийся колосник, керамический розжиг и контроллер XO-1.0S.</p>
+                    <div class="promo-feature__price">
+                        <span class="promo-feature__new">{{ number_format($evoProduct->price, 0, '.', ' ') }} BYN</span>
+                        @if($evoProduct->price_old > $evoProduct->price)<span class="promo-feature__old">{{ number_format($evoProduct->price_old, 0, '.', ' ') }} BYN</span>@endif
+                    </div>
+                    <div class="promo-feature__actions">
+                        <a href="{{ route('promotions.xo-evo-26') }}" class="tf-btn animate-btn">Условия распродажи</a>
+                        <a href="/{{ $evoProduct->category->slug }}/{{ $evoProduct->slug }}" class="tf-btn btn-white">Карточка товара</a>
                     </div>
                 </div>
             </article>

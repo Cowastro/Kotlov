@@ -248,6 +248,10 @@
                                     <x-xo-promo-note />
                                 @endif
 
+                                @if ($product->slug === 'pelletnaya-gorelka-kotlov-xo-evo-18-kvt-eb140' && $product->is_sale)
+                                    <x-xo-evo-promo-note />
+                                @endif
+
                                 {{-- Краткое описание --}}
                                 @if ($product->short_description)
                                     <p class="product-infor-desc cl-text-2 mb-12">
@@ -921,6 +925,10 @@
 
     @if ($product->slug === 'pelletnaya-gorelka-kotlov-xo-ceramic-pro-100-kvt')
         @include('partials.product-xo-resources', ['product' => $product])
+    @endif
+
+    @if ($product->slug === 'pelletnaya-gorelka-kotlov-xo-evo-18-kvt-eb140')
+        @include('partials.product-xo-evo-resources', ['product' => $product])
     @endif
 
     {{-- Похожие товары --}}
