@@ -7,10 +7,13 @@ use App\Models\InstallerProfile;
 use App\Models\User;
 use App\Notifications\NewInstallRequestNotification;
 use App\Rules\NoHtmlOrLinks;
+use App\Services\InstallRequestTelegramNotifier;
 use Illuminate\Http\Request;
 
 class InstallRequestController extends Controller
 {
+    public function __construct(private InstallRequestTelegramNotifier $telegramNotifier) {}
+
     public function create(Request $request)
     {
         $installer = null;
@@ -109,6 +112,8 @@ class InstallRequestController extends Controller
         User::where('role', 'admin')->each(
             fn (User $admin) => $admin->notify(new NewInstallRequestNotification($installRequest))
         );
+
+        $this->telegramNotifier->send($installRequest);
 
         if ($landingSource === 'heat_pump_installation') {
             return redirect()
