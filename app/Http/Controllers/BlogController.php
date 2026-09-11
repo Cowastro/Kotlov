@@ -112,6 +112,11 @@ class BlogController extends Controller
                 fn ($tag) => preg_match('/\b(камин|печь|топк|дымоход)\p{L}*/u', mb_strtolower((string) $tag)) === 1
             );
 
+        $isPelletBurnerContent = preg_match('/(пеллетн\p{L}*\s+горел|ceramic\s+pro|kotlov\s+xo)/u', mb_strtolower($post->title)) === 1
+            || collect($post->tags ?? [])->contains(
+                fn ($tag) => preg_match('/(пеллетн\p{L}*\s+горел|ceramic\s+pro|kotlov\s+xo)/u', mb_strtolower((string) $tag)) === 1
+            );
+
         $related = BlogPost::published()
             ->where('id', '!=', $post->id)
             ->when(
@@ -127,6 +132,7 @@ class BlogController extends Controller
 
         $heatPumpLinks = $isHeatPumpContent ? $this->heatPumpLinks($post) : collect();
         $fireplaceLinks = $isFireplaceContent ? $this->fireplaceLinks($post) : collect();
+        $pelletBurnerLinks = $isPelletBurnerContent ? $this->pelletBurnerLinks($post) : collect();
 
         $title = $post->meta_title ?: ($post->title . ' | KOTLOV');
         $description = $post->meta_description ?: ($post->excerpt ?: mb_substr(strip_tags($post->content ?? ''), 0, 160));
@@ -177,6 +183,8 @@ class BlogController extends Controller
             'heatPumpLinks',
             'isFireplaceContent',
             'fireplaceLinks',
+            'isPelletBurnerContent',
+            'pelletBurnerLinks',
             'schemaJson',
             'breadcrumbJson'
         ));
@@ -245,6 +253,32 @@ class BlogController extends Controller
                 'title' => 'Монтаж камина под ключ',
                 'text' => 'Расчёт, комплектация, противопожарные узлы и запуск.',
                 'url' => '/montazh-kaminov',
+            ],
+        ]);
+    }
+
+    private function pelletBurnerLinks(BlogPost $post)
+    {
+        return collect([
+            [
+                'title' => 'Акция −10% на Ceramic PRO 100 кВт',
+                'text' => 'Цена, условия предложения и заявка на инженерный расчёт.',
+                'url' => '/akcii/kotlov-xo-ceramic-pro',
+            ],
+            [
+                'title' => 'KOTLOV XO Ceramic PRO 100 кВт',
+                'text' => 'Фотографии, характеристики, комплектация и актуальная цена.',
+                'url' => '/pelletnye-gorelki/pelletnaya-gorelka-kotlov-xo-ceramic-pro-100-kvt',
+            ],
+            [
+                'title' => 'Каталог пеллетных горелок',
+                'text' => 'Модели KOTLOV XO для частных и промышленных объектов.',
+                'url' => '/pelletnye-gorelki',
+            ],
+            [
+                'title' => 'Инженерный подбор и монтаж',
+                'text' => 'Проверим котёл, дымоход, автоматику, шнек и бункер.',
+                'url' => '/akcii/kotlov-xo-ceramic-pro#xo-request',
             ],
         ]);
     }

@@ -119,6 +119,7 @@ class InstallRequestInfolist
                                 'heat_pump_installation' => 'Страница монтажа тепловых насосов',
                                 'fireplace_installation' => 'Страница монтажа каминов',
                                 'product_engineering_calculation' => 'Инженерный расчёт из карточки товара',
+                                'pellet_burner_promo'   => 'Акция KOTLOV XO Ceramic PRO',
                                 'product_page'           => 'Карточка товара',
                                 'cart'                   => 'Корзина',
                                 'admin'                  => 'Админка',

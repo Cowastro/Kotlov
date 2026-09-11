@@ -167,6 +167,23 @@
                                 </aside>
                             @endif
 
+                            @if (($isPelletBurnerContent ?? false) && ($pelletBurnerLinks ?? collect())->isNotEmpty())
+                                <aside class="blog-next-box mt-32 p-24" id="pellet-burner-next-step" aria-label="Подбор пеллетной горелки">
+                                    <h4 class="mb-8">Перейти от статьи к расчёту</h4>
+                                    <p class="text-body-1 cl-text-2 mb-20">
+                                        Сравните характеристики, условия акции и передайте инженеру данные вашей котельной.
+                                    </p>
+                                    <div class="tf-grid-layout sm-col-2">
+                                        @foreach ($pelletBurnerLinks as $link)
+                                            <a href="{{ $link['url'] }}" class="blog-next-link p-16 link d-block">
+                                                <h6 class="mb-6">{{ $link['title'] }}</h6>
+                                                <p class="text-caption-01 cl-text-2 mb-0">{{ $link['text'] }}</p>
+                                            </a>
+                                        @endforeach
+                                    </div>
+                                </aside>
+                            @endif
+
                             <div class="box-social-tag">
                                 <div class="tags-right d-flex align-items-center flex-wrap gap-8">
                                     <p>Теги:</p>

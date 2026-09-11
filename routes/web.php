@@ -7,6 +7,7 @@ use App\Http\Controllers\InstallRequestController;
 use App\Http\Controllers\HeatPumpInstallationController;
 use App\Http\Controllers\FireplaceInstallationController;
 use App\Http\Controllers\BlogController;
+use App\Http\Controllers\PromotionController;
 use App\Http\Controllers\BrandController;
 use App\Http\Controllers\CartController;
 use App\Http\Controllers\CatalogController;
@@ -140,7 +141,8 @@ Route::get('/', function () {
 
 // ===== Статичные страницы — ДО динамических! =====
 Route::view('/about',      'pages.about');
-Route::view('/akcii',      'pages.akcii');
+Route::get('/akcii', [PromotionController::class, 'index'])->name('promotions.index');
+Route::get('/akcii/kotlov-xo-ceramic-pro', [PromotionController::class, 'xoCeramicPro'])->name('promotions.xo-ceramic-pro');
 Route::view('/dostavka',   'pages.dostavka');
 Route::get('/partners',  fn() => view('pages.partners'))->name('partners');
 Route::post('/partners/apply-installer', [PartnerApplicationController::class, 'storeInstaller'])->middleware('public.form.protect:installer')->name('partners.apply-installer');

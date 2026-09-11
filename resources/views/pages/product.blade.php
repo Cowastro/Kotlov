@@ -244,6 +244,10 @@
                                     </div>
                                 @endif
 
+                                @if ($product->slug === 'pelletnaya-gorelka-kotlov-xo-ceramic-pro-100-kvt' && $product->is_sale)
+                                    <x-xo-promo-note />
+                                @endif
+
                                 {{-- Краткое описание --}}
                                 @if ($product->short_description)
                                     <p class="product-infor-desc cl-text-2 mb-12">
@@ -904,6 +908,7 @@
                             </div>
                         </div>
                     </div>
+                    <x-order-confirmation-notice class="mt-24" />
                 </div>
 
             </div>
@@ -912,6 +917,10 @@
 
     @if (($heatPumpGuides ?? collect())->isNotEmpty())
         @include('partials.product-heat-pump-resources', ['articles' => $heatPumpGuides])
+    @endif
+
+    @if ($product->slug === 'pelletnaya-gorelka-kotlov-xo-ceramic-pro-100-kvt')
+        @include('partials.product-xo-resources', ['product' => $product])
     @endif
 
     {{-- Похожие товары --}}

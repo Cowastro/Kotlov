@@ -62,7 +62,7 @@ class InstallRequestController extends Controller
             'preferred_date'       => 'nullable|date',
             'budget'               => 'nullable|numeric|min:0',
             'installer_profile_id' => 'nullable|integer',
-            'source'               => 'nullable|in:heat_pump_installation,fireplace_installation,product_engineering_calculation',
+            'source'               => 'nullable|in:heat_pump_installation,fireplace_installation,product_engineering_calculation,pellet_burner_promo',
         ], [
             'customer_name.required'  => 'Укажите ваше имя.',
             'customer_phone.required' => 'Укажите номер телефона.',
@@ -83,7 +83,7 @@ class InstallRequestController extends Controller
             }
         }
 
-        $landingSource = in_array(($validated['source'] ?? null), ['heat_pump_installation', 'fireplace_installation', 'product_engineering_calculation'], true)
+        $landingSource = in_array(($validated['source'] ?? null), ['heat_pump_installation', 'fireplace_installation', 'product_engineering_calculation', 'pellet_burner_promo'], true)
             ? $validated['source']
             : null;
 
@@ -131,6 +131,14 @@ class InstallRequestController extends Controller
                 ->with('success', 'Заявка на инженерный расчёт отправлена. Специалист свяжется с вами для уточнения задачи.')
                 ->with('analytics_event', 'product_engineering_calculation_success')
                 ->with('analytics_parameters', ['lead_type' => 'product_engineering_calculation']);
+        }
+
+        if ($landingSource === 'pellet_burner_promo') {
+            return redirect()
+                ->to(route('promotions.xo-ceramic-pro') . '#xo-request')
+                ->with('success', 'Заявка отправлена. Инженер свяжется с вами для проверки котла и комплектации.')
+                ->with('analytics_event', 'pellet_burner_lead_success')
+                ->with('analytics_parameters', ['lead_type' => 'pellet_burner_promo']);
         }
 
         return redirect()

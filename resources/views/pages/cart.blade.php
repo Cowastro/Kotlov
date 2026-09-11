@@ -163,6 +163,8 @@
                                     @endif
                                 </div>
 
+                                <x-order-confirmation-notice class="mb-20" />
+
                                 {{-- Согласие с условиями --}}
                                 <div class="checkbox-wrap mb-16">
                                     <input class="tf-check style-2" type="checkbox" id="cart-agree">
