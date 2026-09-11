@@ -11,6 +11,6 @@
 @endonce
 
 <aside class="xo-promo-note mb-16" aria-label="Акция на KOTLOV XO Ceramic PRO">
-    <div><span class="xo-promo-note__badge">Акция −10%</span><p>Модель 100 кВт в наличии. Wi‑Fi встроен, экономия 1 440 BYN.</p></div>
+    <div><span class="xo-promo-note__badge">Акция −10%</span><p>Модель 100 кВт в наличии. Wi‑Fi встроен, топка съёмная, экономия 1 440 BYN.</p></div>
     <a href="{{ route('promotions.xo-ceramic-pro') }}">Условия и расчёт →</a>
 </aside>

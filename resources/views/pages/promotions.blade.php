@@ -48,7 +48,7 @@
                 <div class="promo-feature__copy">
                     <span class="promo-feature__badge">−10% · В НАЛИЧИИ</span>
                     <h2 class="mb-16">KOTLOV XO Ceramic PRO 100 кВт</h2>
-                    <p class="mb-0" style="color:rgba(255,255,255,.7)">Промышленная пеллетная горелка со встроенным Wi‑Fi, шамотированной камерой, каскадной самоочисткой и инженерным сопровождением.</p>
+                    <p class="mb-0" style="color:rgba(255,255,255,.7)">Промышленная пеллетная горелка со встроенным Wi‑Fi, съёмной топкой, шамотированной камерой, каскадной самоочисткой и инженерным сопровождением.</p>
                     <div class="promo-feature__price">
                         <span class="promo-feature__new">{{ number_format($xoProduct->price, 0, '.', ' ') }} BYN</span>
                         @if($xoProduct->price_old > $xoProduct->price)<span class="promo-feature__old">{{ number_format($xoProduct->price_old, 0, '.', ' ') }} BYN</span>@endif
