@@ -12,6 +12,10 @@ class Product extends Model
     public const AVAILABILITY_IN_STOCK = 'in_stock';
     public const AVAILABILITY_CHECK = 'check';
     public const AVAILABILITY_OUT_OF_STOCK = 'out_of_stock';
+    public const PUBLIC_SALE_SLUGS = [
+        'pelletnaya-gorelka-kotlov-xo-ceramic-pro-100-kvt',
+        'pelletnaya-gorelka-kotlov-xo-evo-18-kvt-eb140',
+    ];
 
     private const SUPPLIER_TECHNICAL_ATTRIBUTES = [
         'Поставщик',
@@ -102,6 +106,11 @@ class Product extends Model
                 self::AVAILABILITY_IN_STOCK,
                 self::AVAILABILITY_CHECK,
             ], true);
+    }
+
+    public function isPublicSale(): bool
+    {
+        return $this->is_sale && in_array($this->slug, self::PUBLIC_SALE_SLUGS, true);
     }
 
     public function category(): BelongsTo
@@ -243,7 +252,7 @@ class Product extends Model
     // Процент скидки
     public function getDiscountPercentAttribute(): ?int
     {
-        if ($this->price_old && $this->price_old > $this->price) {
+        if ($this->isPublicSale() && $this->price_old && $this->price_old > $this->price) {
             return round((1 - $this->price / $this->price_old) * 100);
         }
         return null;

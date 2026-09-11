@@ -43,7 +43,8 @@
                             $price    = $product->price > 0
                                 ? number_format($product->price, 2, '.', ' ') . ' BYN'
                                 : 'Цена по запросу';
-                            $priceOld = ($product->price_old && $product->price_old > 0)
+                            $isPublicSale = method_exists($product, 'isPublicSale') ? $product->isPublicSale() : false;
+                            $priceOld = ($isPublicSale && $product->price_old && $product->price_old > $product->price)
                                 ? number_format($product->price_old, 2, '.', ' ') . ' BYN'
                                 : null;
                             $productUrl = '/' . ($product->category->slug ?? 'catalog') . '/' . $product->slug;
@@ -86,9 +87,9 @@
                                     </li>
                                 </ul>
 
-                                @if ($product->is_sale || $product->is_new || $product->is_featured)
+                                @if ($isPublicSale || $product->is_new || $product->is_featured)
                                     <ul class="product-badge_list">
-                                        @if ($product->is_sale)
+                                        @if ($isPublicSale)
                                             <li class="product-badge_item text-caption-01 sale">Акция</li>
                                         @elseif ($product->is_new)
                                             <li class="product-badge_item text-caption-01 new">Новинка</li>

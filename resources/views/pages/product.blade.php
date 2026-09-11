@@ -212,7 +212,7 @@
                                         <h4 class="price-on-sale">
                                             {{ number_format($product->price, 2, '.', ' ') }} BYN
                                         </h4>
-                                        @if ($product->price_old > $product->price)
+                                        @if ($product->isPublicSale() && $product->price_old > $product->price)
                                             <div class="br-line type-vertical"></div>
                                             <p class="cl-text-3 text-decoration-line-through">
                                                 {{ number_format($product->price_old, 2, '.', ' ') }} BYN

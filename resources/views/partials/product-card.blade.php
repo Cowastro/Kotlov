@@ -7,12 +7,13 @@
     $availabilityStatus = method_exists($product, 'effectiveAvailabilityStatus') ? $product->effectiveAvailabilityStatus() : ($product->in_stock ? 'in_stock' : 'out_of_stock');
     $availabilityLabel = method_exists($product, 'availabilityLabel') ? $product->availabilityLabel() : ($product->in_stock ? 'В наличии' : 'Нет в наличии');
     $canBuy = method_exists($product, 'canBeOrdered') ? $product->canBeOrdered() : ($product->in_stock && $product->price > 0);
+    $isPublicSale = method_exists($product, 'isPublicSale') ? $product->isPublicSale() : false;
 
     $price = $canBuy
         ? number_format($product->price, 2, '.', ' ') . ' BYN'
         : ($availabilityStatus === 'out_of_stock' ? 'Нет в наличии' : 'Цена по запросу');
 
-    $priceOld = ($canBuy && $product->price_old && $product->price_old > $product->price)
+    $priceOld = ($canBuy && $isPublicSale && $product->price_old && $product->price_old > $product->price)
         ? number_format($product->price_old, 2, '.', ' ') . ' BYN'
         : null;
 
@@ -78,9 +79,9 @@
         </ul>
 
         {{-- Бейджи --}}
-        @if ($product->is_sale || $product->is_new || $product->is_featured)
+        @if ($isPublicSale || $product->is_new || $product->is_featured)
             <ul class="product-badge_list">
-                @if ($product->is_sale)
+                @if ($isPublicSale)
                     <li class="product-badge_item text-caption-01 sale"><span class="badge-label-full">Акция</span><span class="badge-label-mobile">%</span></li>
                 @elseif ($product->is_new)
                     <li class="product-badge_item text-caption-01 new"><span class="badge-label-full">Новинка</span><span class="badge-label-mobile">NEW</span></li>

@@ -34,6 +34,7 @@ class PromotionController extends Controller
             ->active()
             ->notArchived()
             ->where('is_sale', true)
+            ->whereIn('slug', Product::PUBLIC_SALE_SLUGS)
             ->whereNotIn('slug', [self::XO_SLUG, self::XO_EVO_SLUG])
             ->with(['category', 'brand'])
             ->orderByDesc('is_featured')
