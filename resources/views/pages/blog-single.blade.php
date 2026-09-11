@@ -36,6 +36,55 @@
         box-shadow: 0 9px 24px rgba(25, 31, 35, .07);
     }
     @media (max-width: 767px) {
+        .section-page-title-single .container,
+        .main-blog-single > .container { padding-right: 16px; padding-left: 16px; }
+        .main-blog-single > .container > .row { margin-right: 0; margin-left: 0; }
+        .main-blog-single > .container > .row > [class*="col-"] {
+            width: 100%;
+            min-width: 0;
+            padding-right: 0;
+            padding-left: 0;
+        }
+        .section-page-title-single .breadcrumbs,
+        .section-page-title-single .breadcrumbs p,
+        .kotlov-blog-content,
+        .kotlov-blog-content .blog-heading,
+        .kotlov-blog-content .blog-body {
+            width: calc(100vw - 32px);
+            min-width: 0;
+            max-width: calc(100vw - 32px);
+        }
+        .section-page-title-single .breadcrumbs p {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .kotlov-blog-content .entry-title,
+        .kotlov-blog-content .blog-body h2,
+        .kotlov-blog-content .blog-body h3,
+        .kotlov-blog-content .blog-body p,
+        .kotlov-blog-content .blog-body li,
+        .kotlov-blog-content .blog-body a {
+            max-width: 100%;
+            overflow-wrap: anywhere;
+        }
+        .kotlov-blog-content .entry-title {
+            font-size: clamp(28px, 8vw, 34px);
+            line-height: 1.15;
+        }
+        .main-blog-single .blog-heading .entry-meta {
+            width: calc(100vw - 32px);
+            min-width: 0;
+            max-width: calc(100vw - 32px);
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 8px 14px;
+        }
+        .main-blog-single .blog-heading .meta-item { min-width: 0; }
+        .main-blog-single .blog-heading .entry-meta .br-line { display: none; }
+        .kotlov-blog-content .blog-body img { max-width: 100%; height: auto; }
+        .kotlov-blog-content .blog-body ul,
+        .kotlov-blog-content .blog-body ol { padding-left: 22px; }
         .kotlov-blog-content .blog-author-box { padding: 22px 20px 22px 24px !important; }
         .kotlov-blog-content .blog-author-box::before { top: 20px; bottom: 20px; }
         .kotlov-blog-content .blog-next-box { padding: 24px 20px !important; }

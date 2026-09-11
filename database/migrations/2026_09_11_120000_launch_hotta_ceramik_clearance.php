@@ -178,13 +178,14 @@ return new class extends Migration
 
         return [
             'pelletnaya-gorelka-hotta-ceramik-20-kvt-komplekt-1' => array_merge($common, [
-                'name' => 'Пеллетная горелка HOTTA Ceramik 20 кВт — Комплект 1',
-                'h1' => 'Пеллетная горелка HOTTA Ceramik 20 кВт с Wi‑Fi — Комплект 1',
+                'name' => 'Пеллетная горелка HOTTA Ceramik 20 кВт с Wi‑Fi',
+                'h1' => 'Пеллетная горелка HOTTA Ceramik 20 кВт с Wi‑Fi',
                 'sku' => 'KTL-HOTTA-CERAMIK-20-K1',
                 'price' => 4300,
                 'price_old' => null,
                 'short_description' => 'Распродажа складской серии: диапазон 8–20 кВт, самоочищающиеся подвижные колосники, шнек и контроллер XO со встроенным Wi‑Fi.',
-                'content' => $this->productContent(20, 8, 4300, 'Комплект 1'),
+                'content' => $this->productContent(20, 8, 4300),
+                'stock_qty' => 1,
                 'images' => json_encode([
                     'img/promotions/hotta-ceramik/hotta-20-1.jpg',
                     'img/promotions/hotta-ceramik/hotta-20-2.jpg',
@@ -198,13 +199,14 @@ return new class extends Migration
                 'meta_description' => 'HOTTA Ceramik 20 кВт: комплект с самоочисткой, шнеком и контроллером XO Wi‑Fi. Цена распродажи 4 300 BYN, гарантия и инженерный подбор.',
             ]),
             'pelletnaya-gorelka-hotta-ceramik-30-kvt-komplekt-3' => array_merge($common, [
-                'name' => 'Пеллетная горелка HOTTA Ceramik 30 кВт — Комплект 3',
-                'h1' => 'Пеллетная горелка HOTTA Ceramik 30 кВт с Wi‑Fi — Комплект 3',
+                'name' => 'Пеллетная горелка HOTTA Ceramik 30 кВт с Wi‑Fi',
+                'h1' => 'Пеллетная горелка HOTTA Ceramik 30 кВт с Wi‑Fi',
                 'sku' => 'KTL-HOTTA-CERAMIK-30-K3',
                 'price' => 4600,
                 'price_old' => null,
                 'short_description' => 'Распродажа складской серии: диапазон 10–30 кВт, самоочищающиеся подвижные колосники, шнек и контроллер XO со встроенным Wi‑Fi.',
-                'content' => $this->productContent(30, 10, 4600, 'Комплект 3'),
+                'content' => $this->productContent(30, 10, 4600),
+                'stock_qty' => 3,
                 'images' => json_encode([
                     'img/promotions/hotta-ceramik/hotta-30-1.jpg',
                     'img/promotions/hotta-ceramik/hotta-30-2.jpg',
@@ -241,11 +243,11 @@ return new class extends Migration
         ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
     }
 
-    private function productContent(int $maxPower, int $minPower, int $price, string $kit): string
+    private function productContent(int $maxPower, int $minPower, int $price): string
     {
         return <<<HTML
 <h2>HOTTA Ceramik {$maxPower} кВт — проверенная механика с современной автоматикой</h2>
-<p>Акционный {$kit} объединяет пеллетную горелку проверенной серии HOTTA Cyberia/Ceramik, шнек подачи и современный контроллер XO со встроенным Wi‑Fi. Рабочий диапазон составляет <strong>{$minPower}–{$maxPower} кВт</strong>, цена распродажи — <strong>{$price} BYN</strong>.</p>
+<p>Акционный комплект объединяет пеллетную горелку проверенной серии HOTTA Cyberia/Ceramik, шнек подачи и современный контроллер XO со встроенным Wi‑Fi. Рабочий диапазон составляет <strong>{$minPower}–{$maxPower} кВт</strong>, цена распродажи — <strong>{$price} BYN</strong>.</p>
 <h2>Почему эта серия интересна для сложной пеллеты</h2>
 <p>В топке применяются подвижные самоочищающиеся колосники. Автоматика позволяет отдельно настроить время подачи, паузы, подачу воздуха и циклы очистки. Это даёт возможность адаптировать горение к пеллетам с повышенной зольностью, включая некоторые виды агропеллеты и пеллеты из лузги. Совместимость конкретного топлива подтверждается пробным запуском: важны влажность, спекание золы и теплотворность.</p>
 <h2>Современный контроллер XO в комплекте</h2>
@@ -274,7 +276,7 @@ HTML;
     {
         return <<<'HTML'
 <p class="text text-body-1"><strong>HOTTA Ceramik 20 и 30 кВт</strong> — складские комплекты проверенной серии пеллетных горелок, которую в Беларуси хорошо знали под маркой HOTTA Cyberia. Мы обновили ключевую часть комплектации: теперь вместе с горелкой поставляется современный контроллер XO со встроенным Wi‑Fi и интернет-управлением.</p>
-<blockquote>Цена распродажи: HOTTA Ceramik 20 кВт, Комплект 1 — <strong>4 300 BYN</strong>; HOTTA Ceramik 30 кВт, Комплект 3 — <strong>4 600 BYN</strong>. Оба варианта находятся в наличии и продаются с гарантией KOTLOV.</blockquote>
+<blockquote>Цена распродажи: HOTTA Ceramik 20 кВт — <strong>4 300 BYN</strong>, в наличии 1 штука; HOTTA Ceramik 30 кВт — <strong>4 600 BYN</strong>, в наличии 3 штуки. Оба варианта продаются с гарантией KOTLOV.</blockquote>
 <div class="blog-image-2"><img loading="lazy" width="1280" height="713" src="/img/promotions/hotta-ceramik/hotta-20-1.jpg" alt="Пеллетная горелка HOTTA Ceramik Cyberia 20 кВт"></div>
 
 <h2>Не просто старая горелка, а обновлённый комплект</h2>
@@ -292,9 +294,9 @@ HTML;
 <p class="text text-body-1">Это не означает, что подходит любое топливо. Перед постоянной эксплуатацией оценивают диаметр и длину гранулы, влажность, зольность, температуру плавления золы и поведение топлива при пробном сжигании. Для пеллет с повышенной зольностью может потребоваться снижение нагрузки и более частая очистка котла.</p>
 
 <h2>Два готовых варианта</h2>
-<h3>HOTTA Ceramik 20 кВт — Комплект 1</h3>
+<h3>HOTTA Ceramik 20 кВт — в наличии 1 штука</h3>
 <p class="text text-body-1">Диапазон модуляции 8–20 кВт. Подходит для небольших и средних объектов после расчёта теплопотерь. Цена комплекта — <strong>4 300 BYN</strong>.</p>
-<h3>HOTTA Ceramik 30 кВт — Комплект 3</h3>
+<h3>HOTTA Ceramik 30 кВт — в наличии 3 штуки</h3>
 <p class="text text-body-1">Диапазон модуляции 10–30 кВт. Вариант для более высокой тепловой нагрузки или котла соответствующей мощности. Цена комплекта — <strong>4 600 BYN</strong>.</p>
 <div class="blog-image-2"><img loading="lazy" width="1280" height="713" src="/img/promotions/hotta-ceramik/hotta-30-1.jpg" alt="Пеллетная горелка HOTTA Ceramik Cyberia 30 кВт"></div>
 

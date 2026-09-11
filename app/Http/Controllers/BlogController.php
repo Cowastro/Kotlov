@@ -268,12 +268,12 @@ class BlogController extends Controller
                 ],
                 [
                     'title' => 'HOTTA Ceramik 20 кВт',
-                    'text' => 'Комплект 1 за 4 300 BYN: диапазон 8–20 кВт.',
+                    'text' => 'В наличии 1 штука за 4 300 BYN: диапазон 8–20 кВт.',
                     'url' => '/pelletnye-gorelki/pelletnaya-gorelka-hotta-ceramik-20-kvt-komplekt-1',
                 ],
                 [
                     'title' => 'HOTTA Ceramik 30 кВт',
-                    'text' => 'Комплект 3 за 4 600 BYN: диапазон 10–30 кВт.',
+                    'text' => 'В наличии 3 штуки за 4 600 BYN: диапазон 10–30 кВт.',
                     'url' => '/pelletnye-gorelki/pelletnaya-gorelka-hotta-ceramik-30-kvt-komplekt-3',
                 ],
                 [

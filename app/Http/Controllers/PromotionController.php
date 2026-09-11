@@ -238,7 +238,7 @@ class PromotionController extends Controller
         $product20 = $products->firstWhere('slug', self::HOTTA_20_SLUG);
         $product30 = $products->firstWhere('slug', self::HOTTA_30_SLUG);
         $title = 'Распродажа HOTTA Ceramik 20 и 30 кВт с Wi‑Fi-контроллером';
-        $description = 'Комплекты HOTTA Ceramik 20 кВт за 4 300 BYN и 30 кВт за 4 600 BYN. Самоочистка, современный контроллер XO со встроенным Wi‑Fi, шнек, гарантия и инженерный подбор.';
+        $description = 'HOTTA Ceramik 20 кВт — 1 штука за 4 300 BYN; 30 кВт — 3 штуки за 4 600 BYN. Самоочистка, современный контроллер XO со встроенным Wi‑Fi, шнек, гарантия и инженерный подбор.';
         $canonical = 'https://kotlov.by/akcii/hotta-ceramik-20-30';
         $ogImage = asset('img/promotions/hotta-ceramik/hotta-20-1.jpg');
         $ogImageSecure = $ogImage;
