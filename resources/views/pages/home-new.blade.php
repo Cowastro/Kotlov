@@ -1,5 +1,15 @@
 @extends('layouts.amerce')
 
+@push('styles')
+<style>
+    .pellet-clearance-slide{position:relative;height:680px;background:#111317;color:#fff}.pellet-clearance-slide .sld_image{position:absolute;inset:0}.pellet-clearance-slide .sld_image img{width:100%;height:100%;object-fit:cover}.pellet-clearance__layout{position:relative;z-index:1;display:grid;grid-template-columns:minmax(0,.92fr) minmax(520px,1.08fr);gap:48px;align-items:center;height:100%;padding:54px 68px}.pellet-clearance__layout>*{min-width:0}.pellet-clearance__copy{min-width:0;max-width:760px}.pellet-clearance__eyebrow{display:inline-flex;align-items:center;gap:10px;margin-bottom:17px;color:#ff7772;font-size:13px;font-weight:700;letter-spacing:.075em}.pellet-clearance__eyebrow:before{content:"";width:27px;height:2px;background:currentColor}.pellet-clearance__copy h2{max-width:720px;margin:0 0 16px;color:#fff;font-size:clamp(46px,4.6vw,72px);line-height:.98;letter-spacing:-.05em}.pellet-clearance__copy p{max-width:660px;margin:0 0 25px;color:rgba(255,255,255,.68);font-size:18px;line-height:1.55}.pellet-clearance__facts{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 27px}.pellet-clearance__facts span{padding:7px 11px;border:1px solid rgba(255,255,255,.14);border-radius:999px;color:rgba(255,255,255,.72);font-size:12px}.pellet-clearance__products{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:13px;align-items:end;min-width:0}.pellet-clearance__product{position:relative;display:block;min-width:0;height:330px;padding:38px 10px 45px;overflow:hidden;border:1px solid rgba(255,255,255,.12);border-radius:22px;background:rgba(255,255,255,.96);box-shadow:0 24px 55px rgba(0,0,0,.28);box-sizing:border-box;transition:transform .25s ease}.pellet-clearance__product:nth-child(2){height:380px}.pellet-clearance__product:hover{transform:translateY(-5px)}.pellet-clearance__product img{width:100%;height:100%;object-fit:contain}.pellet-clearance__offer{position:absolute;top:13px;left:13px;padding:6px 9px;border-radius:999px;background:#ef4b4b;color:#fff;font-size:11px;font-weight:700}.pellet-clearance__name{position:absolute;right:12px;bottom:13px;left:12px;color:#17191d;font-size:12px;font-weight:700;line-height:1.25;text-align:center}
+    @media(max-width:1439px){.pellet-clearance-slide{height:600px}.pellet-clearance__layout{grid-template-columns:minmax(0,.9fr) minmax(450px,1.1fr);padding:46px}.pellet-clearance__product{height:285px}.pellet-clearance__product:nth-child(2){height:330px}}
+    @media(max-width:991px){.pellet-clearance__layout{grid-template-columns:minmax(0,1fr) minmax(360px,.9fr);gap:24px;padding:38px 34px}.pellet-clearance__copy h2{font-size:45px}.pellet-clearance__copy p{font-size:16px}.pellet-clearance__product{height:235px;padding:34px 7px 42px}.pellet-clearance__product:nth-child(2){height:270px}}
+    @media(max-width:767px){.pellet-clearance-slide{width:calc(100vw - 30px)!important;max-width:calc(100vw - 30px)!important;height:550px}.pellet-clearance__layout{display:flex;flex-direction:column;align-items:stretch;width:calc(100vw - 30px);max-width:calc(100vw - 30px);gap:18px;padding:30px 24px 35px;overflow:hidden;box-sizing:border-box}.pellet-clearance__copy,.pellet-clearance__products{width:100%;max-width:100%;min-width:0}.pellet-clearance__copy h2,.pellet-clearance__copy p{width:100%;max-width:100%;white-space:normal;overflow-wrap:anywhere}.pellet-clearance__copy h2{font-size:38px}.pellet-clearance__copy p{margin-bottom:18px;font-size:15px}.pellet-clearance__facts{display:none}.pellet-clearance__copy .tf-btn{min-height:45px}.pellet-clearance__products{flex:1;min-height:0;gap:8px}.pellet-clearance__product,.pellet-clearance__product:nth-child(2){width:100%;height:100%;min-height:150px;padding:31px 5px 36px;border-radius:15px}.pellet-clearance__offer{top:8px;left:8px;padding:5px 7px;font-size:10px}.pellet-clearance__name{right:7px;bottom:9px;left:7px;font-size:10px;overflow-wrap:anywhere}}
+    @media(max-width:575px){.pellet-clearance-slide{height:450px}.pellet-clearance__layout{gap:13px;padding:21px 16px 27px}.pellet-clearance__eyebrow{margin-bottom:9px;font-size:10px}.pellet-clearance__copy h2{margin-bottom:9px;font-size:29px;line-height:1}.pellet-clearance__copy p{margin-bottom:13px;font-size:13px;line-height:1.38}.pellet-clearance__copy .tf-btn{min-height:40px;padding:8px 15px;font-size:12px}.pellet-clearance__product,.pellet-clearance__product:nth-child(2){min-height:112px}.pellet-clearance__name{font-size:9px}}
+</style>
+@endpush
+
 @section('content')
 
             <!-- Scroll Top -->
@@ -67,6 +77,30 @@
                         <div class="swiper-wrapper">
                             @forelse($bannersHero as $banner)
                             <div class="swiper-slide">
+                                @if($banner->image === 'banners/pellet-burner-clearance-desktop.svg')
+                                <div class="slider-wrap slideshow-wrap rounded-20 overflow-hidden pellet-clearance-slide">
+                                    <div class="sld_image" aria-hidden="true">
+                                        <picture>
+                                            <source media="(max-width: 767px)" srcset="{{ asset('storage/' . $banner->image_mobile) }}">
+                                            <img width="1770" height="680" loading="eager" decoding="async" src="{{ asset('storage/' . $banner->image) }}" alt="">
+                                        </picture>
+                                    </div>
+                                    <div class="pellet-clearance__layout">
+                                        <div class="pellet-clearance__copy">
+                                            <span class="pellet-clearance__eyebrow">{{ $banner->subtitle }}</span>
+                                            <h2>{{ $banner->title }}</h2>
+                                            <p>{{ $banner->description }}</p>
+                                            <div class="pellet-clearance__facts"><span>Wi‑Fi и интернет</span><span>Инженерный подбор</span><span>Гарантия KOTLOV</span></div>
+                                            <a href="{{ $banner->link }}" class="tf-btn btn-white">{{ $banner->button_text }}</a>
+                                        </div>
+                                        <div class="pellet-clearance__products" aria-label="Акционные пеллетные горелки">
+                                            <a href="/akcii/kotlov-xo-ceramic-pro" class="pellet-clearance__product"><span class="pellet-clearance__offer">−10%</span><img loading="eager" src="/proxy-image/product/0012/012203/cp-100_1.jpg" alt="KOTLOV XO Ceramic PRO 100 кВт"><span class="pellet-clearance__name">Ceramic PRO<br>100 кВт</span></a>
+                                            <a href="/akcii/kotlov-xo-evo-26" class="pellet-clearance__product"><span class="pellet-clearance__offer">−20% · 2 шт.</span><img loading="eager" src="{{ asset('img/promotions/kotlov-xo-evo-26-stock-cover.jpg') }}" alt="KOTLOV XO EVO 26 кВт"><span class="pellet-clearance__name">XO EVO<br>26 кВт</span></a>
+                                            <a href="/akcii/hotta-ceramik-20-30" class="pellet-clearance__product"><span class="pellet-clearance__offer">от 4 300 BYN</span><img loading="eager" src="{{ asset('img/promotions/hotta-ceramik/hotta-20-1.jpg') }}" alt="HOTTA Ceramik 20 и 30 кВт"><span class="pellet-clearance__name">HOTTA Ceramik<br>20 / 30 кВт</span></a>
+                                        </div>
+                                    </div>
+                                </div>
+                                @else
                                 <div class="slider-wrap slideshow-wrap rounded-20 overflow-hidden">
                                     <div class="sld_image">
                                         <picture>
@@ -108,6 +142,7 @@
                                     </div>
                                     @endif
                                 </div>
+                                @endif
                             </div>
                             @empty
                             {{-- Заглушка если баннеры не добавлены --}}
