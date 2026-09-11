@@ -29,12 +29,15 @@ class InstallRequest extends Model
         'source',
         'notes',
         'installer_profile_id',
+        'telegram_message_id',
+        'telegram_notified_at',
     ];
 
     protected $casts = [
         'preferred_date' => 'date',
         'price_agreed'   => 'decimal:2',
         'budget'         => 'decimal:2',
+        'telegram_notified_at' => 'datetime',
     ];
 
     public const STATUSES = [

@@ -87,10 +87,19 @@ class InstallRequestTelegramNotifier
             );
 
             if ($result['ok'] ?? false) {
+                $messageId = $result['result']['message_id'] ?? null;
+
+                if ($installRequest->exists) {
+                    $installRequest->updateQuietly([
+                        'telegram_message_id' => $messageId,
+                        'telegram_notified_at' => now(),
+                    ]);
+                }
+
                 Log::info('Telegram install request notification sent.', [
                     'install_request_id' => $installRequest->id,
                     'source' => $installRequest->source,
-                    'telegram_message_id' => $result['result']['message_id'] ?? null,
+                    'telegram_message_id' => $messageId,
                 ]);
 
                 return true;
