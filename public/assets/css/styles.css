@@ -3498,8 +3498,39 @@ header.header-sticky.tf-header-landing {
   overflow: hidden;
   position: relative;
 }
+.article-blog .blog-entry-meta {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+}
 .article-blog .entry-date {
-  margin-bottom: 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  width: fit-content;
+  margin: 0;
+  padding: 5px 10px;
+  border: 1px solid var(--line);
+  border-radius: 100px;
+  background: #f7f7f5;
+  color: var(--text-2);
+  line-height: 1.25;
+}
+.article-blog .entry-date::before {
+  width: 5px;
+  height: 5px;
+  flex: 0 0 5px;
+  border-radius: 50%;
+  background: var(--primary);
+  content: "";
+}
+.article-blog .entry-category {
+  color: var(--text-2);
+  line-height: 1.35;
+}
+.article-blog .entry-category:hover {
+  color: var(--primary);
 }
 .article-blog .entry-title {
   margin-bottom: 8px;

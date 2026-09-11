@@ -42,13 +42,14 @@
                                         onerror="this.src='{{ asset('img/blog/blog-boiler.jpg') }}'">
                                 </a>
                                 <div class="blog-content">
-                                    <div class="d-flex align-items-center gap-12 mb-4">
-                                        <p class="entry-date text-caption-01 fw-semibold cl-text-3">
+                                    <div class="blog-entry-meta mb-8">
+                                        <time class="entry-date text-caption-01 fw-semibold"
+                                              datetime="{{ $post->published_at->format('Y-m-d') }}">
                                             {{ $post->published_at->translatedFormat('d F Y') }}
-                                        </p>
+                                        </time>
                                         @if ($post->category)
                                             <a href="/blog?category={{ $post->category->slug }}"
-                                               class="text-caption-01 cl-text-2 link">
+                                               class="entry-category text-caption-01 link">
                                                 {{ $post->category->name }}
                                             </a>
                                         @endif
