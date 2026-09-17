@@ -19,7 +19,7 @@ class SyncTeplovSukhovRetailPricesCommand extends Command
 
     protected $description = 'Sync only retail prices from the approved Teplov i Sukhov price list. Ambiguous rows are never changed.';
 
-    private const PRICE_FILE = 'imports/sbg-teplov-sukhov-2026-08-10.json';
+    private const PRICE_FILE = 'imports/sbg-teplov-sukhov-2026-09-17.json';
 
     public function handle(): int
     {
