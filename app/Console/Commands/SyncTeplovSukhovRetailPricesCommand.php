@@ -305,7 +305,7 @@ class SyncTeplovSukhovRetailPricesCommand extends Command
             ['Конфликтов внутри прайса — пропущено', $stats['price_list_conflict']],
             ['Переведено в статус «В наличии»', $availabilityUpdated],
         ]);
-        $this->table(['Артикул поставщика', 'Прайс', 'Результат'], array_slice($details, 0, 30));
+        $this->table(['Артикул поставщика', 'Прайс', 'Результат'], array_slice($details, 0, 500));
 
         if ($this->option('report')) {
             $path = storage_path('app/imports/teplov-sukhov-matching-report.json');
