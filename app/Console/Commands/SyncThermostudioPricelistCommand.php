@@ -142,6 +142,8 @@ class SyncThermostudioPricelistCommand extends Command
             ? '<fg=red;options=bold>APPLY: Thermostudio price list will write changes.</>'
             : '<fg=yellow;options=bold>DRY RUN: Thermostudio price list will preview only.</>');
 
+        $this->buildIndexes();
+
         try {
             $rows = $this->loadRows();
         } catch (\Throwable $e) {
@@ -173,7 +175,6 @@ class SyncThermostudioPricelistCommand extends Command
             $rows = array_slice($rows, 0, (int) $limit);
         }
 
-        $this->buildIndexes();
         $classified = array_map(fn (array $row) => $this->classify($row), $rows);
 
         return $apply
@@ -365,7 +366,12 @@ class SyncThermostudioPricelistCommand extends Command
             $row['ambiguous_variant'] = ($key !== '' && ($counts[$key] ?? 0) > 1)
                 || (($modelCounts[$modelKey] ?? 0) > 1);
 
-            if ($key !== '' && ($counts[$key] ?? 0) > 1) {
+            // A supplier_article that already resolves to an established product link must keep
+            // matching that link. Rewriting norm_article here (to de-duplicate coincidental
+            // article collisions between rows) would otherwise orphan an already-confirmed match,
+            // permanently freezing its price/stock sync (see supplier_products lookups in match()).
+            $hasEstablishedLink = $key !== '' && isset($this->indexBySupplierArticle[$key]);
+            if ($key !== '' && ($counts[$key] ?? 0) > 1 && ! $hasEstablishedLink) {
                 $suffix = $this->variantSuffix((string) $row['name'], (string) $row['description']);
                 $row['supplier_article_unique'] = trim((string) $row['supplier_article_raw'] . ' | ' . $suffix);
                 $row['norm_article'] = $this->normArticle((string) $row['supplier_article_unique']);
