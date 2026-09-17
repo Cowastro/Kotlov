@@ -15,7 +15,8 @@ class SyncTeplovSukhovRetailPricesCommand extends Command
                             {--apply : Apply verified retail prices and save supplier article links}
                             {--report : Save the complete matching report to storage/app/imports}
                             {--create-missing : Create separate cards only for exact, verified missing rows}
-                            {--sheet= : Restrict creation to one workbook sheet}';
+                            {--sheet= : Restrict creation to one workbook sheet}
+                            {--only=* : Restrict --create-missing to these supplier article(s) (comma-separated or repeatable)}';
 
     protected $description = 'Sync only retail prices from the approved Teplov i Sukhov price list. Ambiguous rows are never changed.';
 
@@ -46,6 +47,12 @@ class SyncTeplovSukhovRetailPricesCommand extends Command
         $apply = (bool) $this->option('apply');
         $createMissing = (bool) $this->option('create-missing');
         $sheet = $this->resolveSheet(trim((string) $this->option('sheet')));
+        $onlyFilter = collect((array) $this->option('only'))
+            ->flatMap(fn ($value) => explode(',', (string) $value))
+            ->map(fn ($value) => trim($value))
+            ->filter()
+            ->values()
+            ->all();
         $availabilityUpdated = 0;
 
         // «Теплов и Сухов» — постоянное наличие. Новые и ранее
@@ -163,7 +170,7 @@ class SyncTeplovSukhovRetailPricesCommand extends Command
                 // diameter or thickness.  This opt-in branch creates a new
                 // card only from the exact source row and retains the source
                 // article exclusively in supplier_products.
-                if ($createMissing && ($sheet === '' || (string) ($row['sheet'] ?? '') === $sheet)) {
+                if ($createMissing && ($sheet === '' || (string) ($row['sheet'] ?? '') === $sheet) && ($onlyFilter === [] || in_array($article, $onlyFilter, true))) {
                     if (! $apply) {
                         $stats['would_create']++;
                         $details[] = [$article, Str::limit($name, 48), 'will create exact missing card'];
@@ -195,7 +202,7 @@ class SyncTeplovSukhovRetailPricesCommand extends Command
                 // name match must never attach the price to either card.  In
                 // explicit create-missing mode keep the supplier SKU intact
                 // by creating a separate, exact card instead.
-                if ($createMissing && ($sheet === '' || (string) ($row['sheet'] ?? '') === $sheet)) {
+                if ($createMissing && ($sheet === '' || (string) ($row['sheet'] ?? '') === $sheet) && ($onlyFilter === [] || in_array($article, $onlyFilter, true))) {
                     if (! $apply) {
                         $stats['would_create']++;
                         $details[] = [$article, Str::limit($name, 48), 'will create separate exact card (ambiguous legacy match)'];
@@ -218,7 +225,7 @@ class SyncTeplovSukhovRetailPricesCommand extends Command
 
             $otherArticles = array_values(array_diff($claimedProducts[(int) $product->id] ?? [], [$article]));
             if ($otherArticles !== []) {
-                if ($createMissing && ($sheet === '' || (string) ($row['sheet'] ?? '') === $sheet)) {
+                if ($createMissing && ($sheet === '' || (string) ($row['sheet'] ?? '') === $sheet) && ($onlyFilter === [] || in_array($article, $onlyFilter, true))) {
                     if (! $apply) {
                         $stats['would_create']++;
                         $details[] = [$article, Str::limit($name, 48), 'will create separate exact card (supplier article already used)'];
@@ -238,7 +245,7 @@ class SyncTeplovSukhovRetailPricesCommand extends Command
             }
 
             if ($existing && $existing->product_id && (int) $existing->product_id !== (int) $product->id) {
-                if ($createMissing && ($sheet === '' || (string) ($row['sheet'] ?? '') === $sheet)) {
+                if ($createMissing && ($sheet === '' || (string) ($row['sheet'] ?? '') === $sheet) && ($onlyFilter === [] || in_array($article, $onlyFilter, true))) {
                     if (! $apply) {
                         $stats['would_create']++;
                         $details[] = [$article, Str::limit($name, 48), 'will create separate exact card (stale supplier relation)'];
