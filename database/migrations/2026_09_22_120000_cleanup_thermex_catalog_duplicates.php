@@ -60,7 +60,12 @@ return new class extends Migration
         foreach ($duplicates as $duplicateSlug => $canonicalSlug) {
             $duplicate = DB::table('products')->where('slug', $duplicateSlug)->first();
             $canonical = DB::table('products')->where('slug', $canonicalSlug)->first();
-            if (! $duplicate || ! $canonical) {
+            if (
+                ! $duplicate
+                || ! $canonical
+                || ! (bool) $canonical->is_active
+                || (bool) $canonical->is_archived
+            ) {
                 continue;
             }
 
