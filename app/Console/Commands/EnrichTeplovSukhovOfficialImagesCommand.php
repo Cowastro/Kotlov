@@ -14,6 +14,7 @@ class EnrichTeplovSukhovOfficialImagesCommand extends Command
     protected $signature = 'supplier:enrich-teplov-sukhov-images
         {--limit=25 : Maximum number of exact matches to process}
         {--offset=0 : Skip exact matches before processing}
+        {--show-unmatched : List cards without an exact official catalog match}
         {--apply : Download and save images; omitted means preview only}';
 
     protected $description = 'Add missing Teplov i Sukhov images only from exact official catalog matches.';
@@ -64,6 +65,7 @@ class EnrichTeplovSukhovOfficialImagesCommand extends Command
 
         $exact = [];
         $ambiguous = 0;
+        $unmatched = [];
 
         foreach ($products as $product) {
             $key = $this->key($product->name);
@@ -73,6 +75,8 @@ class EnrichTeplovSukhovOfficialImagesCommand extends Command
                 $exact[] = [$product, $candidates[0]];
             } elseif (count($candidates) > 1) {
                 $ambiguous++;
+            } else {
+                $unmatched[] = $product;
             }
         }
 
@@ -87,6 +91,15 @@ class EnrichTeplovSukhovOfficialImagesCommand extends Command
             $ambiguous,
             count($selected),
         ));
+
+        if ((bool) $this->option('show-unmatched') && $unmatched !== []) {
+            $this->newLine();
+            $this->warn('Без точного совпадения в официальном каталоге:');
+            foreach ($unmatched as $product) {
+                $this->line(sprintf('#%d %s', $product->id, $product->name));
+            }
+            $this->newLine();
+        }
 
         foreach ($selected as [$product, $candidate]) {
             $this->line(sprintf('#%d %s', $product->id, $product->name));
