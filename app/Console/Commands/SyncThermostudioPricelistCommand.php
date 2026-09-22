@@ -4,6 +4,7 @@ namespace App\Console\Commands;
 
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 use PhpOffice\PhpSpreadsheet\Cell\Coordinate;
@@ -21,6 +22,8 @@ class SyncThermostudioPricelistCommand extends Command
         {--only-linked : Update only already linked Thermostudio supplier rows}
         {--create-new : Create products that do not match existing catalog items}
         {--sync-retail-prices : Update products.price from retail BYN}
+        {--prices-only : Do not change stock or availability while syncing prices}
+        {--eur-rate= : EUR/BYN rate for rows explicitly priced in EUR; defaults to NBRB}
         {--candidate-report= : Write create_candidate review CSV to a path}
         {--limit= : Process only N parsed rows after filters}
         {--offset=0 : Skip N parsed rows after filters}';
@@ -133,6 +136,14 @@ class SyncThermostudioPricelistCommand extends Command
     /** @var array<string,int> */
     private array $indexByModelSignature = [];
 
+    /** @var array<string,int> */
+    private array $indexByBrandModelCode = [];
+
+    /** @var array<string,bool> */
+    private array $ambiguousBrandModelCodes = [];
+
+    private ?float $resolvedEurRate = null;
+
     public function handle(): int
     {
         $apply = (bool) $this->option('apply') && ! (bool) $this->option('dry-run');
@@ -175,10 +186,41 @@ class SyncThermostudioPricelistCommand extends Command
 
         $this->buildIndexes();
         $classified = array_map(fn (array $row) => $this->classify($row), $rows);
+        $classified = $this->rejectDuplicateProductMatches($classified);
 
         return $apply
             ? $this->applyRows($classified, $createNew)
             : $this->report($classified);
+    }
+
+    /**
+     * A single catalog product must never receive two competing prices from one
+     * supplier file. Leave every conflicting row unapplied for manual review.
+     *
+     * @param array<int,array<string,mixed>> $rows
+     * @return array<int,array<string,mixed>>
+     */
+    private function rejectDuplicateProductMatches(array $rows): array
+    {
+        $counts = [];
+        foreach ($rows as $row) {
+            $productId = (int) ($row['matched_product_id'] ?? 0);
+            if ($productId > 0) {
+                $counts[$productId] = ($counts[$productId] ?? 0) + 1;
+            }
+        }
+
+        foreach ($rows as &$row) {
+            $productId = (int) ($row['matched_product_id'] ?? 0);
+            if ($productId > 0 && ($counts[$productId] ?? 0) > 1) {
+                $row['action'] = 'duplicate_product_match';
+                $row['matched_product_id'] = null;
+                $row['match_confidence'] = null;
+            }
+        }
+        unset($row);
+
+        return $rows;
     }
 
     /**
@@ -206,9 +248,12 @@ class SyncThermostudioPricelistCommand extends Command
 
             $currentBrand = $this->canonicalBrand($sheetTitle);
             $currentSection = null;
+            $specialLayout = $this->specialBrandLayout($sheetTitle);
+            $currencyHint = 'BYN';
 
             for ($rowIndex = 1; $rowIndex <= $maxRow; $rowIndex++) {
                 $cells = [];
+                $formats = [];
                 for ($col = 1; $col <= min($maxCol, 12); $col++) {
                     $name = Coordinate::stringFromColumnIndex($col);
                     $cell = $sheet->getCell($name . $rowIndex);
@@ -217,6 +262,36 @@ class SyncThermostudioPricelistCommand extends Command
                         $value = $match[1];
                     }
                     $cells[$col - 1] = $this->clean((string) (is_numeric($value) ? $value : $cell->getFormattedValue()));
+                    $formats[$col - 1] = (string) $cell->getStyle()->getNumberFormat()->getFormatCode();
+                }
+
+                if ($specialLayout !== null && $currentBrand !== null) {
+                    $headerCurrency = $this->specialHeaderCurrency($cells);
+                    if ($headerCurrency !== null) {
+                        $currencyHint = $headerCurrency;
+                        continue;
+                    }
+
+                    $item = $this->normaliseSpecialBrandRow(
+                        $cells,
+                        $formats,
+                        $specialLayout,
+                        $rowIndex,
+                        $currentBrand,
+                        $currentSection,
+                        $sheetTitle,
+                        $currencyHint,
+                    );
+                    if ($item !== null) {
+                        $rows[] = $item;
+                        continue;
+                    }
+
+                    $marker = $this->clean($cells[$specialLayout['model']] ?? '');
+                    if ($marker !== '' && ! $this->isHeaderLike($marker)) {
+                        $currentSection = $marker;
+                    }
+                    continue;
                 }
                 $cells = $this->trimLeadingEmptyCells($cells);
 
@@ -247,6 +322,127 @@ class SyncThermostudioPricelistCommand extends Command
         }
 
         return $this->makeSupplierArticlesUnique($rows);
+    }
+
+    /**
+     * @return array{model:int,description:int,opt:int,retail:int}|null
+     */
+    private function specialBrandLayout(string $sheetTitle): ?array
+    {
+        return match ($this->brandKey($sheetTitle)) {
+            'vaillant' => ['model' => 1, 'description' => 3, 'opt' => 4, 'retail' => 5],
+            'protherm' => ['model' => 1, 'description' => 2, 'opt' => 5, 'retail' => 6],
+            default => null,
+        };
+    }
+
+    /**
+     * @param array<int,string> $cells
+     */
+    private function specialHeaderCurrency(array $cells): ?string
+    {
+        $text = mb_strtolower(implode(' ', $cells));
+        if (! str_contains($text, 'розниц') && ! str_contains($text, 'ррц')) {
+            return null;
+        }
+
+        return str_contains($text, 'eur') || str_contains($text, '€') ? 'EUR' : 'BYN';
+    }
+
+    /**
+     * @param array<int,string> $cells
+     * @param array<int,string> $formats
+     * @param array{model:int,description:int,opt:int,retail:int} $layout
+     * @return array<string,mixed>|null
+     */
+    private function normaliseSpecialBrandRow(
+        array $cells,
+        array $formats,
+        array $layout,
+        int $sheetRow,
+        string $brand,
+        ?string $section,
+        string $sheetTitle,
+        string $currencyHint,
+    ): ?array {
+        $model = $this->clean($cells[$layout['model']] ?? '');
+        $description = $this->clean($cells[$layout['description']] ?? '');
+        $price = $this->priceInByn(
+            $cells[$layout['opt']] ?? '',
+            $formats[$layout['opt']] ?? '',
+            $currencyHint,
+        );
+        $retail = $this->priceInByn(
+            $cells[$layout['retail']] ?? '',
+            $formats[$layout['retail']] ?? '',
+            $currencyHint,
+        );
+
+        if (($price === null && $retail === null) || $model === '' || $this->isHeaderLike($model)) {
+            return null;
+        }
+
+        if ($price !== null && $retail !== null && $retail > 0 && $retail < $price) {
+            $retail = $price;
+        }
+
+        return [
+            'sheet' => $sheetTitle,
+            'sheet_row' => $sheetRow,
+            'brand' => $brand,
+            'section' => $section,
+            'name' => $model,
+            'description' => $description,
+            'price_byn' => $price,
+            'retail_byn' => $retail,
+            'stock_text' => '',
+            'stock_quantity' => null,
+            'stock_status' => 'out_of_stock',
+            'in_stock' => false,
+            'supplier_article_raw' => $model,
+            'supplier_article' => $model,
+            'supplier_article_unique' => $model,
+            'norm_article' => $this->normArticle($model),
+        ];
+    }
+
+    private function priceInByn(string $value, string $numberFormat, string $currencyHint): ?float
+    {
+        $amount = $this->money($value);
+        if ($amount === null) {
+            return null;
+        }
+
+        $currencyText = mb_strtolower($value . ' ' . $numberFormat);
+        $currency = match (true) {
+            str_contains($currencyText, 'br'), str_contains($currencyText, 'byn') => 'BYN',
+            str_contains($currencyText, '€'), str_contains($currencyText, 'eur') => 'EUR',
+            default => $currencyHint,
+        };
+
+        return $currency === 'EUR'
+            ? round($amount * $this->eurRate(), 2)
+            : round($amount, 2);
+    }
+
+    private function eurRate(): float
+    {
+        if ($this->resolvedEurRate !== null) {
+            return $this->resolvedEurRate;
+        }
+
+        $optionText = str_replace(',', '.', trim((string) ($this->option('eur-rate') ?? '')));
+        if ($optionText !== '' && is_numeric($optionText) && (float) $optionText > 0) {
+            return $this->resolvedEurRate = (float) $optionText;
+        }
+
+        $response = Http::timeout(15)->get('https://api.nbrb.by/exrates/rates/EUR?parammode=2');
+        $rate = $response->successful() ? (float) $response->json('Cur_OfficialRate') : 0.0;
+        if ($rate <= 0) {
+            throw new \RuntimeException('Unable to resolve EUR/BYN rate. Pass --eur-rate=X.XXXX.');
+        }
+
+        return $this->resolvedEurRate = $rate;
     }
 
     private function downloadSheet(string $sheetUrl): string
@@ -491,6 +687,12 @@ class SyncThermostudioPricelistCommand extends Command
             if ($signature !== '' && isset($this->indexByModelSignature[$sigKey])) {
                 return ['product_id' => $this->indexByModelSignature[$sigKey], 'confidence' => 'model_signature'];
             }
+
+            $modelCode = $this->brandModelCode((string) $row['name'], $brand);
+            $codeKey = $brandKey . '|' . $modelCode;
+            if ($modelCode !== '' && isset($this->indexByBrandModelCode[$codeKey])) {
+                return ['product_id' => $this->indexByBrandModelCode[$codeKey], 'confidence' => 'brand_model_code'];
+            }
         }
 
         return null;
@@ -519,17 +721,24 @@ class SyncThermostudioPricelistCommand extends Command
                     continue;
                 }
 
-                $this->upsertSupplierProduct($row, $productId, $supplierId, $syncId, $now);
+                if ($row['price_byn'] !== null) {
+                    $this->upsertSupplierProduct($row, $productId, $supplierId, $syncId, $now);
+                }
                 $stats['matched']++;
 
                 if ((bool) $this->option('sync-retail-prices') && $row['retail_byn'] !== null) {
-                    DB::table('products')->where('id', $productId)->update([
+                    $productUpdate = [
                         'price' => $row['retail_byn'],
-                        'in_stock' => $row['in_stock'],
-                        'stock_qty' => $row['stock_quantity'],
-                        'availability_status' => $this->productAvailability($row['stock_status']),
                         'updated_at' => $now,
-                    ]);
+                    ];
+                    if (! (bool) $this->option('prices-only')) {
+                        $productUpdate += [
+                            'in_stock' => $row['in_stock'],
+                            'stock_qty' => $row['stock_quantity'],
+                            'availability_status' => $this->productAvailability($row['stock_status']),
+                        ];
+                    }
+                    DB::table('products')->where('id', $productId)->update($productUpdate);
                     $stats['updated_retail']++;
                 }
             } catch (\Throwable $e) {
@@ -562,6 +771,31 @@ class SyncThermostudioPricelistCommand extends Command
         $matched = array_filter($rows, fn ($row) => $row['matched_product_id'] !== null);
         $this->info('Match confidence:');
         $this->table(['confidence', 'count'], $this->counts($matched, 'match_confidence'));
+
+        if ($matched !== []) {
+            $currentPrices = DB::table('products')
+                ->whereIn('id', array_values(array_unique(array_map(fn ($row) => (int) $row['matched_product_id'], $matched))))
+                ->pluck('price', 'id');
+            $this->info('Matched retail price changes:');
+            $this->table(
+                ['brand', 'row', 'product', 'model', 'current', 'new', 'change'],
+                array_map(function ($row) use ($currentPrices) {
+                    $productId = (int) $row['matched_product_id'];
+                    $current = (float) ($currentPrices[$productId] ?? 0);
+                    $new = (float) ($row['retail_byn'] ?? 0);
+
+                    return [
+                        $row['brand'],
+                        $row['sheet_row'],
+                        $productId,
+                        mb_substr((string) $row['name'], 0, 42),
+                        number_format($current, 2, '.', ''),
+                        number_format($new, 2, '.', ''),
+                        number_format($new - $current, 2, '.', ''),
+                    ];
+                }, array_values($matched))
+            );
+        }
 
         $this->info('Examples:');
         $this->table(
@@ -627,6 +861,19 @@ class SyncThermostudioPricelistCommand extends Command
             'last_synced_at' => $now,
             'updated_at' => $now,
         ];
+
+        if ((bool) $this->option('prices-only')) {
+            foreach ([
+                'in_stock',
+                'stock_quantity',
+                'stock_status',
+                'stock_text',
+                'delivery_days',
+                'last_stock_synced_at',
+            ] as $stockField) {
+                unset($payload[$stockField]);
+            }
+        }
 
         if (Schema::hasColumn('supplier_products', 'supplier_article_compact')) {
             $payload['supplier_article_compact'] = $this->compactArticle((string) $row['supplier_article_unique']);
@@ -730,6 +977,20 @@ class SyncThermostudioPricelistCommand extends Command
                     $signature = $this->modelSignature($name);
                     if ($signature !== '') {
                         $this->indexByModelSignature[$brandKey . '|' . $signature] = $productId;
+                    }
+
+                    $modelCode = $this->brandModelCode($name, $brand);
+                    if ($modelCode !== '') {
+                        $codeKey = $brandKey . '|' . $modelCode;
+                        if (isset($this->ambiguousBrandModelCodes[$codeKey])) {
+                            return;
+                        }
+                        if (isset($this->indexByBrandModelCode[$codeKey]) && $this->indexByBrandModelCode[$codeKey] !== $productId) {
+                            unset($this->indexByBrandModelCode[$codeKey]);
+                            $this->ambiguousBrandModelCodes[$codeKey] = true;
+                            return;
+                        }
+                        $this->indexByBrandModelCode[$codeKey] = $productId;
                     }
                 }
             });
@@ -1316,6 +1577,59 @@ class SyncThermostudioPricelistCommand extends Command
         }
 
         return preg_replace('/[^a-zа-я0-9]+/u', '', $value) ?? '';
+    }
+
+    private function brandModelCode(string $value, string $brand): string
+    {
+        $wordValue = mb_strtoupper($this->nameKey($value));
+        $value = $this->normArticle($value);
+        $value = str_replace([' ', ','], '', $value);
+        $brandKey = $this->brandKey($brand);
+
+        if ($brandKey === 'protherm') {
+            if (preg_match('/(\d+)(MOV|MTV|KOV|KTV|KLOM|KOO|KTO|KLZR|KLZ)/u', $value, $match)) {
+                return $match[1] . $match[2];
+            }
+            if (preg_match('/(?:LYNX|РЫСЬ)(?:\s+CONDENS)?\s*(\d+)/u', $wordValue, $match)
+                || preg_match('/(\d+)\s*(?:LYNX|РЫСЬ)/u', $wordValue, $match)) {
+                return 'LYNX' . $match[1];
+            }
+            if (preg_match('/(?:СКАТ|SKAT)\s*(\d+)/u', $wordValue, $match)
+                || preg_match('/(\d+)[A-ZА-Я]*\s*(?:СКАТ|SKAT)/u', $wordValue, $match)) {
+                return 'SKAT' . $match[1];
+            }
+        }
+
+        if ($brandKey === 'vaillant') {
+            $family = '';
+            foreach (['TURBOTEC', 'ATMOTEC', 'ECOTEC', 'ECOBIG', 'ECOCRAFT', 'ECOCOMPACT', 'ELOBLOCK', 'UNISTOR'] as $candidate) {
+                if (str_contains($value, $candidate)) {
+                    $family = $candidate;
+                    break;
+                }
+            }
+
+            $patterns = [
+                '/VUW(?:INTIV|OE)?(\d+\/\d+-\d+)/u' => 'VUW',
+                '/VU(?:INTIV|OE)?(\d+(?:CS)?\/\d+-\d+)/u' => 'VU',
+                '/VKK(\d+\/\d+-[A-Z]+(?:HL)?)/u' => 'VKK',
+                '/VSC(?:INT)?(\d+\/\d+-[A-Z]?\d+\d*)/u' => 'VSC',
+                '/VE(\d+\/\d+)/u' => 'VE',
+                '/VIH([A-Z]+\d+\/\d+[A-Z]*)/u' => 'VIH',
+                '/VR(C?\d+)/u' => 'VR',
+            ];
+            foreach ($patterns as $pattern => $prefix) {
+                if (preg_match($pattern, $value, $match)) {
+                    return $family . '|' . $prefix . $match[1];
+                }
+            }
+        }
+
+        if (preg_match('/(?<!\d)(\d{6,10})(?!\d)/u', $value, $match)) {
+            return 'ARTICLE' . $match[1];
+        }
+
+        return '';
     }
 
     private function uniqueSlug(string $name): string
