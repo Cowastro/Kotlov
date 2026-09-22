@@ -66,7 +66,7 @@ Schedule::command('supplier:sync-thermostudio-pricelist --apply --available-only
     ->appendOutputTo(storage_path('logs/thermostudio-pricelist-sync.log'));
 
 // Akvatermex: safe daily price/stock refresh for already linked Thermex group products only.
-Schedule::command('supplier:sync-akvatermex --apply --available-only --only-linked --sync-retail-prices --prefer-teplodvor-source')
+Schedule::command('supplier:sync-akvatermex --apply --only-linked --sync-retail-prices --prefer-teplodvor-source')
     ->dailyAt('06:57')
     ->withoutOverlapping()
     ->runInBackground()

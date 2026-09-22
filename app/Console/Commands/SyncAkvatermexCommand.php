@@ -101,7 +101,10 @@ class SyncAkvatermexCommand extends Command
         $brandFilter = $this->brandFilter();
         $availableOnly = (bool) $this->option('available-only');
         $rows = array_values(array_filter($rows, function (array $row) use ($brandFilter, $availableOnly) {
-            if ($row['name'] === '' || ($row['price_byn'] === null && $row['retail_byn'] === null)) {
+            if (
+                $row['name'] === ''
+                || ($row['price_byn'] === null && $row['retail_byn'] === null && $row['stock_text'] === '')
+            ) {
                 return false;
             }
 
@@ -128,6 +131,7 @@ class SyncAkvatermexCommand extends Command
 
         $this->buildIndexes();
         $classified = array_map(fn (array $row) => $this->classify($row), $rows);
+        $classified = $this->rejectDuplicateProductMatches($classified);
 
         return $apply
             ? $this->applyRows($classified, $createNew)
@@ -287,6 +291,7 @@ class SyncAkvatermexCommand extends Command
         $action = match (true) {
             $match !== null => 'matched',
             (bool) $this->option('only-linked') => 'skip_unlinked',
+            $row['price_byn'] === null && $row['retail_byn'] === null => 'skip_no_price',
             $categoryId === null => 'category_missing',
             default => 'create_candidate',
         };
@@ -356,15 +361,20 @@ class SyncAkvatermexCommand extends Command
                 $this->upsertSupplierProduct($row, $productId, $supplierId, $syncId, $now);
                 $stats['matched']++;
 
-                if ((bool) $this->option('sync-retail-prices') && $row['retail_byn'] !== null) {
-                    DB::table('products')->where('id', $productId)->update([
-                        'price' => $row['retail_byn'],
+                if ((bool) $this->option('sync-retail-prices')) {
+                    $productUpdate = [
                         'in_stock' => $row['in_stock'],
                         'stock_qty' => $row['stock_quantity'],
                         'availability_status' => $this->productAvailability($row['stock_status']),
                         'updated_at' => $now,
-                    ]);
-                    $stats['updated_retail']++;
+                    ];
+
+                    if ($row['retail_byn'] !== null) {
+                        $productUpdate['price'] = $row['retail_byn'];
+                        $stats['updated_retail']++;
+                    }
+
+                    DB::table('products')->where('id', $productId)->update($productUpdate);
                 }
             } catch (\Throwable $e) {
                 $stats['errors']++;
@@ -423,6 +433,38 @@ class SyncAkvatermexCommand extends Command
         $this->line('Next: run with --apply to update matched rows. Add --create-new only after reviewing create_candidate rows.');
 
         return self::SUCCESS;
+    }
+
+    /**
+     * Do not let two supplier rows update one catalog product. This catches
+     * duplicated/misaligned supplier lines before any price or stock is written.
+     *
+     * @param array<int,array<string,mixed>> $rows
+     * @return array<int,array<string,mixed>>
+     */
+    private function rejectDuplicateProductMatches(array $rows): array
+    {
+        $matched = [];
+        foreach ($rows as $index => $row) {
+            $productId = (int) ($row['matched_product_id'] ?? 0);
+            if ($productId > 0 && ($row['action'] ?? null) === 'matched') {
+                $matched[$productId][] = $index;
+            }
+        }
+
+        foreach ($matched as $indexes) {
+            if (count($indexes) < 2) {
+                continue;
+            }
+
+            foreach ($indexes as $index) {
+                $rows[$index]['matched_product_id'] = null;
+                $rows[$index]['match_confidence'] = null;
+                $rows[$index]['action'] = 'duplicate_product_match';
+            }
+        }
+
+        return $rows;
     }
 
     private function upsertSupplierProduct(array $row, int $productId, int $supplierId, ?int $syncId, $now): void
@@ -1175,14 +1217,32 @@ class SyncAkvatermexCommand extends Command
     private function modelKey(string $name, string $brand): string
     {
         $name = $this->nameKey($name);
+        $name = preg_replace('/(?<=\pL)(?=\d)|(?<=\d)(?=\pL)/u', ' ', $name) ?? $name;
         $brand = $this->nameKey($brand);
         if ($brand !== '') {
             $name = trim(preg_replace('/\b' . preg_quote($brand, '/') . '\b/u', '', $name) ?? $name);
         }
 
-        foreach (['водонагреватель', 'конвектор', 'газовая', 'колонка', 'электрический', 'котел', 'котёл'] as $word) {
+        foreach ([
+            'водонагреватель',
+            'конвектор',
+            'газовая',
+            'газовый',
+            'колонка',
+            'электрический',
+            'аккумуляционный',
+            'накопительный',
+            'проточный',
+            'бытовой',
+            'настенный',
+            'напольный',
+            'котел',
+            'котёл',
+        ] as $word) {
             $name = trim(preg_replace('/\b' . preg_quote($word, '/') . '\b/u', ' ', $name) ?? $name);
         }
+
+        $name = preg_replace('/\bдымоход\s+в\s+подарок\b/u', ' ', $name) ?? $name;
 
         return trim(preg_replace('/\s+/u', ' ', $name) ?? $name);
     }
