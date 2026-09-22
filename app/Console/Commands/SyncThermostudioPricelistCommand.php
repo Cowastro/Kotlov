@@ -24,6 +24,8 @@ class SyncThermostudioPricelistCommand extends Command
         {--sync-retail-prices : Update products.price from retail BYN}
         {--prices-only : Do not change stock or availability while syncing prices}
         {--eur-rate= : EUR/BYN rate for rows explicitly priced in EUR; defaults to NBRB}
+        {--export-sbg-existing= : Crawl public sbg.by and export price updates for existing products only}
+        {--include-unchanged-sbg : Include existing SBG matches whose price is already current}
         {--candidate-report= : Write create_candidate review CSV to a path}
         {--limit= : Process only N parsed rows after filters}
         {--offset=0 : Skip N parsed rows after filters}';
@@ -182,6 +184,13 @@ class SyncThermostudioPricelistCommand extends Command
         $limit = $this->option('limit');
         if ($limit !== null && (int) $limit > 0) {
             $rows = array_slice($rows, 0, (int) $limit);
+        }
+
+        if ($this->option('export-sbg-existing')) {
+            return $this->exportExistingSbgProducts(
+                $rows,
+                (string) $this->option('export-sbg-existing'),
+            );
         }
 
         $this->buildIndexes();
@@ -750,6 +759,230 @@ class SyncThermostudioPricelistCommand extends Command
         $this->table(['metric', 'count'], array_map(fn ($key, $value) => [$key, $value], array_keys($stats), array_values($stats)));
 
         return $stats['errors'] > 0 ? self::FAILURE : self::SUCCESS;
+    }
+
+    /**
+     * Build a Deal.by-compatible CSV containing price changes for products
+     * that already exist on the public SBG storefront. Product creation,
+     * availability and content are deliberately outside this export.
+     *
+     * @param array<int,array<string,mixed>> $rows
+     */
+    private function exportExistingSbgProducts(array $rows, string $relativePath): int
+    {
+        $sourceIndex = [];
+        $duplicateSourceCodes = [];
+
+        foreach ($rows as $row) {
+            $brand = (string) ($row['brand'] ?? '');
+            $modelCode = $this->brandModelCode((string) ($row['name'] ?? ''), $brand);
+            if ($modelCode === '' || $row['retail_byn'] === null) {
+                continue;
+            }
+
+            $key = $this->brandKey($brand) . '|' . $modelCode;
+            if (isset($sourceIndex[$key])) {
+                $duplicateSourceCodes[$key] = true;
+                continue;
+            }
+
+            $sourceIndex[$key] = $row;
+        }
+
+        foreach (array_keys($duplicateSourceCodes) as $key) {
+            unset($sourceIndex[$key]);
+        }
+
+        $products = [];
+        foreach ($this->discoverSbgProductUrls(array_values(array_unique(array_column($rows, 'brand')))) as $url) {
+            $product = $this->fetchSbgProduct($url);
+            if ($product !== null) {
+                $products[] = $product;
+            }
+        }
+
+        $targetCounts = [];
+        foreach ($products as $product) {
+            $targetCounts[$product['key']] = ($targetCounts[$product['key']] ?? 0) + 1;
+        }
+
+        $includeUnchanged = (bool) $this->option('include-unchanged-sbg');
+        $stats = [
+            'source_rows' => count($rows),
+            'source_unique_models' => count($sourceIndex),
+            'source_duplicate_models_skipped' => count($duplicateSourceCodes),
+            'sbg_products_loaded' => count($products),
+            'matched_existing' => 0,
+            'price_updates' => 0,
+            'unchanged' => 0,
+            'unmatched_sbg' => 0,
+            'ambiguous_sbg_skipped' => 0,
+        ];
+        $exportRows = [];
+
+        foreach ($products as $product) {
+            $key = $product['key'];
+            if (($targetCounts[$key] ?? 0) > 1) {
+                $stats['ambiguous_sbg_skipped']++;
+                continue;
+            }
+            if (! isset($sourceIndex[$key])) {
+                $stats['unmatched_sbg']++;
+                continue;
+            }
+
+            $source = $sourceIndex[$key];
+            $newPrice = round((float) $source['retail_byn'], 2);
+            $currentPrice = $product['price'];
+            $changed = $currentPrice === null || abs($currentPrice - $newPrice) >= 0.005;
+            $stats['matched_existing']++;
+            $stats[$changed ? 'price_updates' : 'unchanged']++;
+
+            if (! $changed && ! $includeUnchanged) {
+                continue;
+            }
+
+            $exportRows[] = [
+                'ID товара' => $product['id'],
+                'Название' => $product['title'],
+                'Цена' => number_format($newPrice, 2, '.', ''),
+                'Валюта' => 'BYN',
+                'Ссылка SBG' => $product['url'],
+                'Текущая цена SBG' => $currentPrice === null ? '' : number_format($currentPrice, 2, '.', ''),
+                'Бренд' => (string) $source['brand'],
+                'Модель из прайса' => (string) $source['name'],
+                'Лист' => (string) $source['sheet'],
+                'Строка' => (string) $source['sheet_row'],
+            ];
+        }
+
+        usort($exportRows, fn ($a, $b) => [(string) $a['Бренд'], (string) $a['Название']] <=> [(string) $b['Бренд'], (string) $b['Название']]);
+
+        $this->line('<fg=yellow;options=bold>SBG export: existing products and prices only; no availability or content changes.</>');
+        $this->table(['metric', 'count'], array_map(fn ($key, $value) => [$key, $value], array_keys($stats), array_values($stats)));
+        $this->writeSbgExport($relativePath, $exportRows);
+
+        return self::SUCCESS;
+    }
+
+    /** @param array<int,string> $brands */
+    private function discoverSbgProductUrls(array $brands): array
+    {
+        $terms = [];
+        foreach ($brands as $brand) {
+            if (in_array($this->brandKey($brand), ['vaillant', 'protherm'], true)) {
+                $terms[] = $brand;
+            }
+        }
+
+        $urls = [];
+        foreach (array_values(array_unique($terms)) as $term) {
+            $html = $this->fetchSbgPage('https://sbg.by/site_search?search_term=' . rawurlencode($term));
+            if ($html === null) {
+                continue;
+            }
+
+            if (preg_match_all('/href=["\'](https:\/\/sbg\.by)?(\/p\d+-[^"\']+\.html)["\']/u', $html, $matches, PREG_SET_ORDER)) {
+                foreach ($matches as $match) {
+                    $urls['https://sbg.by' . $match[2]] = true;
+                }
+            }
+        }
+
+        return array_keys($urls);
+    }
+
+    /** @return array{id:string,url:string,title:string,price:?float,key:string}|null */
+    private function fetchSbgProduct(string $url): ?array
+    {
+        $html = $this->fetchSbgPage($url);
+        if ($html === null || ! preg_match('/\/p(\d+)-/u', $url, $idMatch)) {
+            return null;
+        }
+        if (! preg_match('/<h1[^>]*>(.*?)<\/h1>/isu', $html, $titleMatch)) {
+            return null;
+        }
+
+        $title = $this->clean(strip_tags($titleMatch[1]));
+        $titleUpper = mb_strtoupper($title);
+        $brand = match (true) {
+            str_contains($titleUpper, 'VAILLANT') => 'Vaillant',
+            str_contains($titleUpper, 'PROTHERM') => 'Protherm',
+            default => null,
+        };
+        if ($brand === null) {
+            return null;
+        }
+
+        $modelCode = $this->brandModelCode($title, $brand);
+        if ($modelCode === '') {
+            return null;
+        }
+
+        $price = null;
+        foreach ([
+            '/"price"\s*:\s*"?([0-9]+(?:[.,][0-9]+)?)/u',
+            '/ec_price_original["\']?\s*[:=]\s*["\']?([0-9]+(?:[.,][0-9]+)?)/u',
+        ] as $pattern) {
+            if (preg_match($pattern, $html, $priceMatch)) {
+                $price = $this->money($priceMatch[1]);
+                break;
+            }
+        }
+
+        return [
+            'id' => $idMatch[1],
+            'url' => $url,
+            'title' => $title,
+            'price' => $price,
+            'key' => $this->brandKey($brand) . '|' . $modelCode,
+        ];
+    }
+
+    private function fetchSbgPage(string $url): ?string
+    {
+        $context = stream_context_create([
+            'http' => [
+                'method' => 'GET',
+                'timeout' => 20,
+                'follow_location' => 1,
+                'max_redirects' => 5,
+                'header' => "User-Agent: Mozilla/5.0 (compatible; KotlovPriceAudit/1.0)\r\nAccept: text/html\r\n",
+            ],
+            'ssl' => [
+                'verify_peer' => false,
+                'verify_peer_name' => false,
+            ],
+        ]);
+
+        $content = @file_get_contents($url, false, $context);
+
+        return is_string($content) && $content !== '' ? $content : null;
+    }
+
+    /** @param array<int,array<string,string>> $rows */
+    private function writeSbgExport(string $relativePath, array $rows): void
+    {
+        $relativePath = trim(str_replace('\\', '/', $relativePath), '/');
+        if ($relativePath === '') {
+            return;
+        }
+
+        $path = public_path('exports/' . basename($relativePath));
+        if (! is_dir(dirname($path))) {
+            mkdir(dirname($path), 0755, true);
+        }
+
+        $headers = ['ID товара', 'Название', 'Цена', 'Валюта', 'Ссылка SBG', 'Текущая цена SBG', 'Бренд', 'Модель из прайса', 'Лист', 'Строка'];
+        $handle = fopen($path, 'wb');
+        fwrite($handle, "\xEF\xBB\xBF");
+        fputcsv($handle, $headers, ';');
+        foreach ($rows as $row) {
+            fputcsv($handle, array_map(fn ($header) => $row[$header] ?? '', $headers), ';');
+        }
+        fclose($handle);
+
+        $this->info(sprintf('Exported %d SBG price updates to %s', count($rows), $path));
     }
 
     private function report(array $rows): int
