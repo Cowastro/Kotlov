@@ -18,7 +18,7 @@ use PhpOffice\PhpSpreadsheet\IOFactory;
  *   php artisan supplier:sync-tsk-nasosy --apply --create-new
  *
  * Pricing: «Опт 1 с НДС» = our purchase price → supplier_products.price/price_byn.
- * «МРЦ с НДС» = recommended retail → products.price for newly created products.
+ * «МРЦ с НДС» = recommended retail → products.price for matched and newly created products.
  * Stock «под заказ …» → preorder (supplier_products.in_stock = false).
  */
 class SyncTskNasosyCommand extends Command
@@ -38,7 +38,7 @@ class SyncTskNasosyCommand extends Command
     private const SUPPLIER_NAME = 'ТСК Насосы';
     private const SYNC_KEY      = 'tsk_nasosy_stock';
     private const SOURCE_URL    = 'https://aqualider.by/';
-    private const DEFAULT_SHEET_URL = 'https://docs.google.com/spreadsheets/d/1NlqXqVky2cDDAELEEKKAO0e07mpZjpkhLOQN13YWiuU/edit';
+    private const DEFAULT_SHEET_URL = 'https://docs.google.com/spreadsheets/d/1d1gN9MI_MNhwnfP0Q1kqZ-29JSKHgSRn_1pre9XduPA/edit';
     private const SHEET_CACHE_PATH  = 'supplier-cache/tsk-nasosy.xlsx';
 
     /**
@@ -563,6 +563,9 @@ class SyncTskNasosyCommand extends Command
                 if ($r['matched_product_id'] !== null) {
                     $this->upsertSupplierProduct($r, (int) $r['matched_product_id'], (string) $r['matched_sku'], $sid, $syncId, $now);
                     $stats['matched']++;
+                    if ($this->updateProductRetailAndStock($r, (int) $r['matched_product_id'], $now)) {
+                        $stats['updated']++;
+                    }
                 } elseif ($createNew && trim($r['brand']) !== '' && $r['resolved_category_id'] !== null) {
                     $r['resolved_brand_id'] = $r['resolved_brand_id'] ?? $this->findOrCreateBrand($r['brand']);
                     $pid = $this->createProduct($r, $now);
@@ -586,6 +589,46 @@ class SyncTskNasosyCommand extends Command
         $this->newLine();
         $this->table(['метрика', 'кол-во'], array_map(fn ($k, $v) => [$k, $v], array_keys($stats), array_values($stats)));
         return $stats['errors'] > 0 ? self::FAILURE : self::SUCCESS;
+    }
+
+    private function updateProductRetailAndStock(array $row, int $productId, $now): bool
+    {
+        $product = DB::table('products')->where('id', $productId)->first([
+            'price',
+            'in_stock',
+            'availability_status',
+        ]);
+        if (! $product) {
+            return false;
+        }
+
+        $update = [
+            'in_stock' => $row['stock']['in_stock'],
+            'availability_status' => $this->productAvailability($row['stock']['status']),
+            'updated_at' => $now,
+        ];
+        if ($row['retail_price'] !== null) {
+            $update['price'] = $row['retail_price'];
+        }
+
+        $changed = (bool) $product->in_stock !== (bool) $update['in_stock']
+            || (string) $product->availability_status !== (string) $update['availability_status']
+            || (isset($update['price']) && abs((float) $product->price - (float) $update['price']) > 0.001);
+
+        if ($changed) {
+            DB::table('products')->where('id', $productId)->update($update);
+        }
+
+        return $changed;
+    }
+
+    private function productAvailability(string $stockStatus): string
+    {
+        return match ($stockStatus) {
+            'in_stock' => 'in_stock',
+            'out_of_stock' => 'out_of_stock',
+            default => 'check',
+        };
     }
 
     private function upsertSupplierProduct(array $r, int $pid, string $sku, int $sid, ?int $syncId, $now): void
