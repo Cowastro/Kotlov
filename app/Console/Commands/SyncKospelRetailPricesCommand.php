@@ -63,7 +63,7 @@ class SyncKospelRetailPricesCommand extends Command
         }
 
         if ($report['ambiguous'] !== [] || $report['conflicts'] !== []) {
-            $this->error('Apply aborted: ambiguous or conflicting matches must be resolved first.');
+            $this->error('Apply aborted: unresolved ambiguous or conflicting matches remain.');
 
             return self::FAILURE;
         }
@@ -91,7 +91,7 @@ class SyncKospelRetailPricesCommand extends Command
                         'currency_rate' => $rate,
                         'price_byn' => $row['price_byn'],
                         'match_status' => 'matched',
-                        'match_confidence' => 'exact_model',
+                        'match_confidence' => $row['duplicate_model'] ? 'exact_model_duplicate' : 'exact_model',
                         'raw' => [
                             'source_file' => $source['source_file'],
                             'price_date' => $source['price_date'],
@@ -136,6 +136,7 @@ class SyncKospelRetailPricesCommand extends Command
         $matched = [];
         $unmatched = [];
         $ambiguous = [];
+        $duplicateModels = [];
         $conflicts = [];
         $claimedProducts = [];
 
@@ -158,40 +159,50 @@ class SyncKospelRetailPricesCommand extends Command
                 continue;
             }
 
-            if ($candidates->count() > 1) {
-                $ambiguous[] = $this->sourceIdentity($sourceRow) + [
+            $candidates = $candidates
+                ->reject(fn (Product $product) => $this->isDifferentVariant($model, $product->name))
+                ->values();
+
+            if ($candidates->isEmpty()) {
+                $unmatched[] = $this->sourceIdentity($sourceRow) + ['reason' => 'only_different_variants'];
+                continue;
+            }
+
+            $isDuplicateModel = $candidates->count() > 1;
+            if ($isDuplicateModel) {
+                $duplicateModels[] = $this->sourceIdentity($sourceRow) + [
                     'candidates' => $candidates->map(fn (Product $product) => [
                         'id' => $product->id,
                         'sku' => $product->sku,
                         'name' => $product->name,
                     ])->all(),
                 ];
-                continue;
             }
 
-            /** @var Product $product */
-            $product = $candidates->first();
-            if (isset($claimedProducts[$product->id])) {
-                $conflicts[] = $this->sourceIdentity($sourceRow) + [
-                    'reason' => 'product_already_claimed',
+            foreach ($candidates as $product) {
+                if (isset($claimedProducts[$product->id])) {
+                    $conflicts[] = $this->sourceIdentity($sourceRow) + [
+                        'reason' => 'product_already_claimed',
+                        'product_id' => $product->id,
+                        'claimed_by' => $claimedProducts[$product->id],
+                    ];
+                    continue;
+                }
+                $claimedProducts[$product->id] = $model;
+
+                $priceByn = round($priceEur * $rate, 2);
+                $oldPrice = round((float) $product->price, 2);
+                $matched[] = $this->sourceIdentity($sourceRow) + [
                     'product_id' => $product->id,
-                    'claimed_by' => $claimedProducts[$product->id],
+                    'product_sku' => $product->sku,
+                    'product_name' => $product->name,
+                    'price_eur' => $priceEur,
+                    'old_price_byn' => $oldPrice,
+                    'price_byn' => $priceByn,
+                    'changed' => abs($oldPrice - $priceByn) >= 0.01,
+                    'duplicate_model' => $isDuplicateModel,
                 ];
-                continue;
             }
-            $claimedProducts[$product->id] = $model;
-
-            $priceByn = round($priceEur * $rate, 2);
-            $oldPrice = round((float) $product->price, 2);
-            $matched[] = $this->sourceIdentity($sourceRow) + [
-                'product_id' => $product->id,
-                'product_sku' => $product->sku,
-                'product_name' => $product->name,
-                'price_eur' => $priceEur,
-                'old_price_byn' => $oldPrice,
-                'price_byn' => $priceByn,
-                'changed' => abs($oldPrice - $priceByn) >= 0.01,
-            ];
         }
 
         return [
@@ -202,10 +213,12 @@ class SyncKospelRetailPricesCommand extends Command
             'unchanged_count' => count(array_filter($matched, fn (array $row) => ! $row['changed'])),
             'unmatched_count' => count($unmatched),
             'ambiguous_count' => count($ambiguous),
+            'duplicate_model_count' => count($duplicateModels),
             'conflict_count' => count($conflicts),
             'matched' => $matched,
             'unmatched' => $unmatched,
             'ambiguous' => $ambiguous,
+            'duplicate_models' => $duplicateModels,
             'conflicts' => $conflicts,
         ];
     }
@@ -218,12 +231,13 @@ class SyncKospelRetailPricesCommand extends Command
             count($source['rows']),
             $rate,
         ));
-        $this->table(['supplier', 'matched', 'changed', 'current', 'unmatched', 'ambiguous', 'conflicts'], [[
+        $this->table(['supplier', 'matched cards', 'changed', 'current', 'unmatched models', 'duplicate models', 'ambiguous', 'conflicts'], [[
             $supplier->name,
             $report['matched_count'],
             $report['changed_count'],
             $report['unchanged_count'],
             $report['unmatched_count'],
+            $report['duplicate_model_count'],
             $report['ambiguous_count'],
             $report['conflict_count'],
         ]]);
@@ -263,6 +277,17 @@ class SyncKospelRetailPricesCommand extends Command
             }
             $this->table(['source model', 'product id', 'sku', 'candidate'], $rows);
         }
+
+        if ($report['duplicate_models'] !== []) {
+            $rows = [];
+            foreach ($report['duplicate_models'] as $sourceRow) {
+                foreach ($sourceRow['candidates'] as $candidate) {
+                    $rows[] = [$sourceRow['model'], $candidate['id'], $candidate['sku'], $candidate['name']];
+                }
+            }
+            $this->warn('Exact duplicate product cards will all receive the same current price:');
+            $this->table(['source model', 'product id', 'sku', 'duplicate card'], $rows);
+        }
     }
 
     private function sourceIdentity(array $row): array
@@ -295,5 +320,14 @@ class SyncKospelRetailPricesCommand extends Command
     private function normalizeArticle(string $article): string
     {
         return mb_strtolower(trim(preg_replace('/\s+/u', ' ', $article) ?? $article));
+    }
+
+    private function isDifferentVariant(string $sourceModel, string $productName): bool
+    {
+        if (preg_match('/^EPS2-/i', $sourceModel) && ! preg_match('/P$/i', $sourceModel)) {
+            return (bool) preg_match('/EPS2[\s._-]*\d+(?:[.,]\d+)?P\b/ui', $productName);
+        }
+
+        return false;
     }
 }
