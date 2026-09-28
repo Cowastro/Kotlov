@@ -1,0 +1,844 @@
+{
+  "source_file": "Прайс_Kospel_Общий _ 23.09.2026 г..xlsx",
+  "price_date": "2026-09-23",
+  "currency": "EUR",
+  "rows": [
+    {
+      "sheet": "ЭЛЕКТРОКОТЛЫ",
+      "row": 8,
+      "model": "EKCO.L2M-04",
+      "price_eur": 752.0,
+      "price_cell": "F8",
+      "status": "increased",
+      "fill_rgb": "FFFFFF00"
+    },
+    {
+      "sheet": "ЭЛЕКТРОКОТЛЫ",
+      "row": 9,
+      "model": "EKCO.L2M-06",
+      "price_eur": 758.0,
+      "price_cell": "F9",
+      "status": "increased",
+      "fill_rgb": "FFFFFF00"
+    },
+    {
+      "sheet": "ЭЛЕКТРОКОТЛЫ",
+      "row": 10,
+      "model": "EKCO.L2M-08",
+      "price_eur": 770.0,
+      "price_cell": "F10",
+      "status": "increased",
+      "fill_rgb": "FFFFFF00"
+    },
+    {
+      "sheet": "ЭЛЕКТРОКОТЛЫ",
+      "row": 11,
+      "model": "EKCO.L2M-12",
+      "price_eur": 776.0,
+      "price_cell": "F11",
+      "status": "increased",
+      "fill_rgb": "FFFFFF00"
+    },
+    {
+      "sheet": "ЭЛЕКТРОКОТЛЫ",
+      "row": 12,
+      "model": "EKCO.L2M-15",
+      "price_eur": 793.23,
+      "price_cell": "F12",
+      "status": "unchanged",
+      "fill_rgb": "FF00B050"
+    },
+    {
+      "sheet": "ЭЛЕКТРОКОТЛЫ",
+      "row": 13,
+      "model": "EKCO.L2M-18",
+      "price_eur": 810.03,
+      "price_cell": "F13",
+      "status": "unchanged",
+      "fill_rgb": "FF00B050"
+    },
+    {
+      "sheet": "ЭЛЕКТРОКОТЛЫ",
+      "row": 14,
+      "model": "EKCO.L2M-21",
+      "price_eur": 838.0,
+      "price_cell": "F14",
+      "status": "increased",
+      "fill_rgb": "FFFFFF00"
+    },
+    {
+      "sheet": "ЭЛЕКТРОКОТЛЫ",
+      "row": 15,
+      "model": "EKCO.L2M-24",
+      "price_eur": 846.23,
+      "price_cell": "F15",
+      "status": "unchanged",
+      "fill_rgb": "FF00B050"
+    },
+    {
+      "sheet": "ЭЛЕКТРОКОТЛЫ",
+      "row": 16,
+      "model": "EKCO.L2M-30",
+      "price_eur": 900.0,
+      "price_cell": "F16",
+      "status": "increased",
+      "fill_rgb": "FFFFFF00"
+    },
+    {
+      "sheet": "ЭЛЕКТРОКОТЛЫ",
+      "row": 17,
+      "model": "EKCO.L2M-36",
+      "price_eur": 956.0,
+      "price_cell": "F17",
+      "status": "unmarked",
+      "fill_rgb": null
+    },
+    {
+      "sheet": "ЭЛЕКТРОКОТЛЫ",
+      "row": 19,
+      "model": "EKCO.LN2M-4",
+      "price_eur": 836.0,
+      "price_cell": "F19",
+      "status": "increased",
+      "fill_rgb": "FFFFFF00"
+    },
+    {
+      "sheet": "ЭЛЕКТРОКОТЛЫ",
+      "row": 20,
+      "model": "EKCO.LN2M-6",
+      "price_eur": 846.0,
+      "price_cell": "F20",
+      "status": "increased",
+      "fill_rgb": "FFFFFF00"
+    },
+    {
+      "sheet": "ЭЛЕКТРОКОТЛЫ",
+      "row": 21,
+      "model": "EKCO.LN2M-8",
+      "price_eur": 870.0,
+      "price_cell": "F21",
+      "status": "increased",
+      "fill_rgb": "FFFFFF00"
+    },
+    {
+      "sheet": "ЭЛЕКТРОКОТЛЫ",
+      "row": 22,
+      "model": "EKCO.LN2M-12",
+      "price_eur": 883.0,
+      "price_cell": "F22",
+      "status": "increased",
+      "fill_rgb": "FFFFFF00"
+    },
+    {
+      "sheet": "ЭЛЕКТРОКОТЛЫ",
+      "row": 23,
+      "model": "EKCO.LN2M-15",
+      "price_eur": 888.0,
+      "price_cell": "F23",
+      "status": "increased",
+      "fill_rgb": "FFFFFF00"
+    },
+    {
+      "sheet": "ЭЛЕКТРОКОТЛЫ",
+      "row": 24,
+      "model": "EKCO.LN2M-18",
+      "price_eur": 904.0,
+      "price_cell": "F24",
+      "status": "increased",
+      "fill_rgb": "FFFFFF00"
+    },
+    {
+      "sheet": "ЭЛЕКТРОКОТЛЫ",
+      "row": 25,
+      "model": "EKCO.LN2M-21",
+      "price_eur": 924.0,
+      "price_cell": "F25",
+      "status": "increased",
+      "fill_rgb": "FFFFFF00"
+    },
+    {
+      "sheet": "ЭЛЕКТРОКОТЛЫ",
+      "row": 26,
+      "model": "EKCO.LN2M-24",
+      "price_eur": 947.0,
+      "price_cell": "F26",
+      "status": "increased",
+      "fill_rgb": "FFFFFF00"
+    },
+    {
+      "sheet": "ЭЛЕКТРОКОТЛЫ",
+      "row": 27,
+      "model": "EKCO.LN2M-30",
+      "price_eur": 979.0,
+      "price_cell": "F27",
+      "status": "increased",
+      "fill_rgb": "FFFFFF00"
+    },
+    {
+      "sheet": "ЭЛЕКТРОКОТЛЫ",
+      "row": 28,
+      "model": "EKCO.LN2M-36",
+      "price_eur": 1002.0,
+      "price_cell": "F28",
+      "status": "increased",
+      "fill_rgb": "FFFFFF00"
+    },
+    {
+      "sheet": "ЭЛЕКТРОКОТЛЫ",
+      "row": 30,
+      "model": "EKCO.L3-04/06/08.PL",
+      "price_eur": 853.0,
+      "price_cell": "F30",
+      "status": "increased",
+      "fill_rgb": "FFFFFF00"
+    },
+    {
+      "sheet": "ЭЛЕКТРОКОТЛЫ",
+      "row": 31,
+      "model": "EKCO.L3-12/16/20/24.PL",
+      "price_eur": 871.0,
+      "price_cell": "F31",
+      "status": "increased",
+      "fill_rgb": "FFFFFF00"
+    },
+    {
+      "sheet": "ЭЛЕКТРОКОТЛЫ",
+      "row": 33,
+      "model": "EKCO.LN3-04/06/08.PL",
+      "price_eur": 924.0,
+      "price_cell": "F33",
+      "status": "increased",
+      "fill_rgb": "FFFFFF00"
+    },
+    {
+      "sheet": "ЭЛЕКТРОКОТЛЫ",
+      "row": 34,
+      "model": "EKCO.LN3-12/16/20/24.PL",
+      "price_eur": 942.0,
+      "price_cell": "F34",
+      "status": "increased",
+      "fill_rgb": "FFFFFF00"
+    },
+    {
+      "sheet": "ЭЛЕКТРОКОТЛЫ",
+      "row": 36,
+      "model": "EKCO.M3-04/06/08.PL",
+      "price_eur": 902.0,
+      "price_cell": "F36",
+      "status": "increased",
+      "fill_rgb": "FFFFFF00"
+    },
+    {
+      "sheet": "ЭЛЕКТРОКОТЛЫ",
+      "row": 37,
+      "model": "EKCO.M3-12/16/20/24.PL",
+      "price_eur": 920.0,
+      "price_cell": "F37",
+      "status": "increased",
+      "fill_rgb": "FFFFFF00"
+    },
+    {
+      "sheet": "ЭЛЕКТРОКОТЛЫ",
+      "row": 39,
+      "model": "EKCO.MN3-04/06/08.PL",
+      "price_eur": 967.0,
+      "price_cell": "F39",
+      "status": "increased",
+      "fill_rgb": "FFFFFF00"
+    },
+    {
+      "sheet": "ЭЛЕКТРОКОТЛЫ",
+      "row": 40,
+      "model": "EKCO.MN3-12/16/20/24.PL",
+      "price_eur": 986.0,
+      "price_cell": "F40",
+      "status": "increased",
+      "fill_rgb": "FFFFFF00"
+    },
+    {
+      "sheet": "ЭЛЕКТРОКОТЛЫ",
+      "row": 42,
+      "model": "EKD.M3 - 04/06/08",
+      "price_eur": 2830.5,
+      "price_cell": "F42",
+      "status": "unchanged",
+      "fill_rgb": "FF00B050"
+    },
+    {
+      "sheet": "ЭЛЕКТРОКОТЛЫ",
+      "row": 43,
+      "model": "EKD.M3 - 12/16/20/24",
+      "price_eur": 2940.0,
+      "price_cell": "F43",
+      "status": "increased",
+      "fill_rgb": "FFFFFF00"
+    },
+    {
+      "sheet": "ЭЛЕКТРОКОТЛЫ",
+      "row": 46,
+      "model": "EKCO.T36",
+      "price_eur": 1704.0,
+      "price_cell": "F46",
+      "status": "increased",
+      "fill_rgb": "FFFFFF00"
+    },
+    {
+      "sheet": "ЭЛЕКТРОКОТЛЫ",
+      "row": 47,
+      "model": "EKCO.T42",
+      "price_eur": 1764.0,
+      "price_cell": "F47",
+      "status": "increased",
+      "fill_rgb": "FFFFFF00"
+    },
+    {
+      "sheet": "ЭЛЕКТРОКОТЛЫ",
+      "row": 48,
+      "model": "EKCO.T48",
+      "price_eur": 1800.0,
+      "price_cell": "F48",
+      "status": "increased",
+      "fill_rgb": "FFFFFF00"
+    },
+    {
+      "sheet": "ЭЛЕКТРОКОТЛЫ",
+      "row": 52,
+      "model": "EKCO.TM 42",
+      "price_eur": 1974.0,
+      "price_cell": "F52",
+      "status": "increased",
+      "fill_rgb": "FFFFFF00"
+    },
+    {
+      "sheet": "ЭЛЕКТРОКОТЛЫ",
+      "row": 53,
+      "model": "EKCO.TM 48",
+      "price_eur": 2016.0,
+      "price_cell": "F53",
+      "status": "increased",
+      "fill_rgb": "FFFFFF00"
+    },
+    {
+      "sheet": "ЭЛЕКТРОКОТЛЫ",
+      "row": 55,
+      "model": "WE-019/01",
+      "price_eur": 35.0,
+      "price_cell": "F55",
+      "status": "unchanged",
+      "fill_rgb": "FF00B050"
+    },
+    {
+      "sheet": "ЭЛЕКТРОКОТЛЫ",
+      "row": 56,
+      "model": "WE-008",
+      "price_eur": 35.0,
+      "price_cell": "F56",
+      "status": "increased",
+      "fill_rgb": "FFFFFF00"
+    },
+    {
+      "sheet": "ЭЛЕКТРОКОТЛЫ",
+      "row": 57,
+      "model": "WE-027.PL",
+      "price_eur": 35.0,
+      "price_cell": "F57",
+      "status": "unchanged",
+      "fill_rgb": "FF00B050"
+    },
+    {
+      "sheet": "ЭЛЕКТРОКОТЛЫ",
+      "row": 58,
+      "model": "C.MG3.PL",
+      "price_eur": 149.0,
+      "price_cell": "F58",
+      "status": "increased",
+      "fill_rgb": "FFFFFF00"
+    },
+    {
+      "sheet": "ЭЛЕКТРОКОТЛЫ",
+      "row": 59,
+      "model": "C.MI.PL",
+      "price_eur": 239.0,
+      "price_cell": "F59",
+      "status": "increased",
+      "fill_rgb": "FFFFFF00"
+    },
+    {
+      "sheet": "КОСВЕН. НАГРЕВА",
+      "row": 8,
+      "model": "WW-80",
+      "price_eur": 312.0,
+      "price_cell": "F8",
+      "status": "review",
+      "fill_rgb": "FFFFC000"
+    },
+    {
+      "sheet": "КОСВЕН. НАГРЕВА",
+      "row": 9,
+      "model": "WW-100",
+      "price_eur": 331.0,
+      "price_cell": "F9",
+      "status": "increased",
+      "fill_rgb": "FFFFFF00"
+    },
+    {
+      "sheet": "КОСВЕН. НАГРЕВА",
+      "row": 10,
+      "model": "WW-120",
+      "price_eur": 366.0,
+      "price_cell": "F10",
+      "status": "increased",
+      "fill_rgb": "FFFFFF00"
+    },
+    {
+      "sheet": "КОСВЕН. НАГРЕВА",
+      "row": 11,
+      "model": "WW-140",
+      "price_eur": 374.0,
+      "price_cell": "F11",
+      "status": "increased",
+      "fill_rgb": "FFFFFF00"
+    },
+    {
+      "sheet": "КОСВЕН. НАГРЕВА",
+      "row": 13,
+      "model": "WP-100",
+      "price_eur": 356.0,
+      "price_cell": "F13",
+      "status": "increased",
+      "fill_rgb": "FFFFFF00"
+    },
+    {
+      "sheet": "КОСВЕН. НАГРЕВА",
+      "row": 14,
+      "model": "WP-120",
+      "price_eur": 372.0,
+      "price_cell": "F14",
+      "status": "increased",
+      "fill_rgb": "FFFFFF00"
+    },
+    {
+      "sheet": "КОСВЕН. НАГРЕВА",
+      "row": 15,
+      "model": "WP-140",
+      "price_eur": 394.0,
+      "price_cell": "F15",
+      "status": "increased",
+      "fill_rgb": "FFFFFF00"
+    },
+    {
+      "sheet": "КОСВЕН. НАГРЕВА",
+      "row": 17,
+      "model": "SWR-100",
+      "price_eur": 425.0,
+      "price_cell": "F17",
+      "status": "increased",
+      "fill_rgb": "FFFFFF00"
+    },
+    {
+      "sheet": "КОСВЕН. НАГРЕВА",
+      "row": 18,
+      "model": "SWR-120",
+      "price_eur": 452.0,
+      "price_cell": "F18",
+      "status": "increased",
+      "fill_rgb": "FFFFFF00"
+    },
+    {
+      "sheet": "КОСВЕН. НАГРЕВА",
+      "row": 19,
+      "model": "SWR-140",
+      "price_eur": 462.0,
+      "price_cell": "F19",
+      "status": "increased",
+      "fill_rgb": "FFFFFF00"
+    },
+    {
+      "sheet": "КОСВЕН. НАГРЕВА",
+      "row": 22,
+      "model": "SWK-120.A WHITE",
+      "price_eur": 593.0,
+      "price_cell": "F22",
+      "status": "increased",
+      "fill_rgb": "FFFFFF00"
+    },
+    {
+      "sheet": "КОСВЕН. НАГРЕВА",
+      "row": 23,
+      "model": "SWK-140.A WHITE",
+      "price_eur": 642.0,
+      "price_cell": "F23",
+      "status": "increased",
+      "fill_rgb": "FFFFFF00"
+    },
+    {
+      "sheet": "КОСВЕН. НАГРЕВА",
+      "row": 25,
+      "model": "SW-100",
+      "price_eur": 543.0,
+      "price_cell": "F25",
+      "status": "increased",
+      "fill_rgb": "FFFFFF00"
+    },
+    {
+      "sheet": "КОСВЕН. НАГРЕВА",
+      "row": 26,
+      "model": "SW-120",
+      "price_eur": 557.0,
+      "price_cell": "F26",
+      "status": "increased",
+      "fill_rgb": "FFFFFF00"
+    },
+    {
+      "sheet": "КОСВЕН. НАГРЕВА",
+      "row": 27,
+      "model": "SW-140",
+      "price_eur": 574.0,
+      "price_cell": "F27",
+      "status": "increased",
+      "fill_rgb": "FFFFFF00"
+    },
+    {
+      "sheet": "КОСВЕН. НАГРЕВА",
+      "row": 28,
+      "model": "SW-201",
+      "price_eur": 804.0,
+      "price_cell": "F28",
+      "status": "increased",
+      "fill_rgb": "FFFFFF00"
+    },
+    {
+      "sheet": "КОСВЕН. НАГРЕВА",
+      "row": 29,
+      "model": "SW-251",
+      "price_eur": 894.0,
+      "price_cell": "F29",
+      "status": "increased",
+      "fill_rgb": "FFFFFF00"
+    },
+    {
+      "sheet": "КОСВЕН. НАГРЕВА",
+      "row": 30,
+      "model": "SW-301",
+      "price_eur": 962.0,
+      "price_cell": "F30",
+      "status": "increased",
+      "fill_rgb": "FFFFFF00"
+    },
+    {
+      "sheet": "КОСВЕН. НАГРЕВА",
+      "row": 32,
+      "model": "SW-500",
+      "price_eur": 1512.0,
+      "price_cell": "F32",
+      "status": "increased",
+      "fill_rgb": "FFFFFF00"
+    },
+    {
+      "sheet": "КОСВЕН. НАГРЕВА",
+      "row": 33,
+      "model": "SW-1000",
+      "price_eur": 3760.28,
+      "price_cell": "F33",
+      "status": "unmarked",
+      "fill_rgb": null
+    },
+    {
+      "sheet": "КОСВЕН. НАГРЕВА",
+      "row": 35,
+      "model": "SB-201",
+      "price_eur": 930.0,
+      "price_cell": "F35",
+      "status": "increased",
+      "fill_rgb": "FFFFFF00"
+    },
+    {
+      "sheet": "КОСВЕН. НАГРЕВА",
+      "row": 39,
+      "model": "SB-501",
+      "price_eur": 1769.0,
+      "price_cell": "F39",
+      "status": "increased",
+      "fill_rgb": "FFFFFF00"
+    },
+    {
+      "sheet": "КОСВЕН. НАГРЕВА",
+      "row": 41,
+      "model": "SWP-201",
+      "price_eur": 1185.0,
+      "price_cell": "F41",
+      "status": "increased",
+      "fill_rgb": "FFFFFF00"
+    },
+    {
+      "sheet": "КОСВЕН. НАГРЕВА",
+      "row": 42,
+      "model": "SWP-301",
+      "price_eur": 1379.0,
+      "price_cell": "F42",
+      "status": "increased",
+      "fill_rgb": "FFFFFF00"
+    },
+    {
+      "sheet": "КОСВЕН. НАГРЕВА",
+      "row": 44,
+      "model": "SWPC-300",
+      "price_eur": 1574.0,
+      "price_cell": "F44",
+      "status": "increased",
+      "fill_rgb": "FFFFFF00"
+    },
+    {
+      "sheet": "КОСВЕН. НАГРЕВА",
+      "row": 48,
+      "model": "SVK-100",
+      "price_eur": 419.0,
+      "price_cell": "F48",
+      "status": "increased",
+      "fill_rgb": "FFFFFF00"
+    },
+    {
+      "sheet": "КОСВЕН. НАГРЕВА",
+      "row": 56,
+      "model": "GRW-1.4kW./230V",
+      "price_eur": 71.0,
+      "price_cell": "F56",
+      "status": "increased",
+      "fill_rgb": "FFFFFF00"
+    },
+    {
+      "sheet": "КОСВЕН. НАГРЕВА",
+      "row": 57,
+      "model": "GRW-2.0kW./230V",
+      "price_eur": 76.0,
+      "price_cell": "F57",
+      "status": "increased",
+      "fill_rgb": "FFFFFF00"
+    },
+    {
+      "sheet": "КОСВЕН. НАГРЕВА",
+      "row": 58,
+      "model": "GRW-3.0./3000W",
+      "price_eur": 94.0,
+      "price_cell": "F58",
+      "status": "increased",
+      "fill_rgb": "FFFFFF00"
+    },
+    {
+      "sheet": "КОСВЕН. НАГРЕВА",
+      "row": 59,
+      "model": "GRW-4.5./4500W",
+      "price_eur": 283.0,
+      "price_cell": "F59",
+      "status": "increased",
+      "fill_rgb": "FFFFFF00"
+    },
+    {
+      "sheet": "КОСВЕН. НАГРЕВА",
+      "row": 60,
+      "model": "GRW-6.0./6000W",
+      "price_eur": 304.0,
+      "price_cell": "F60",
+      "status": "increased",
+      "fill_rgb": "FFFFFF00"
+    },
+    {
+      "sheet": "КОСВЕН. НАГРЕВА",
+      "row": 61,
+      "model": "MW-2,0kW/230V",
+      "price_eur": 79.0,
+      "price_cell": "F61",
+      "status": "increased",
+      "fill_rgb": "FFFFFF00"
+    },
+    {
+      "sheet": "КОСВЕН. НАГРЕВА",
+      "row": 63,
+      "model": "АNODA.AMW.400",
+      "price_eur": 24.0,
+      "price_cell": "F63",
+      "status": "increased",
+      "fill_rgb": "FFFFFF00"
+    },
+    {
+      "sheet": "КОСВЕН. НАГРЕВА",
+      "row": 64,
+      "model": "АNODA.AMW.660",
+      "price_eur": 40.0,
+      "price_cell": "F64",
+      "status": "increased",
+      "fill_rgb": "FFFFFF00"
+    },
+    {
+      "sheet": "КОСВЕН. НАГРЕВА",
+      "row": 65,
+      "model": "АNODA.AMW.800",
+      "price_eur": 41.0,
+      "price_cell": "F65",
+      "status": "increased",
+      "fill_rgb": "FFFFFF00"
+    },
+    {
+      "sheet": "КОСВЕН. НАГРЕВА",
+      "row": 66,
+      "model": "АNODA.AMW.М8.400",
+      "price_eur": 55.0,
+      "price_cell": "F66",
+      "status": "increased",
+      "fill_rgb": "FFFFFF00"
+    },
+    {
+      "sheet": "КОСВЕН. НАГРЕВА",
+      "row": 67,
+      "model": "АNODA.AMW.М8.450",
+      "price_eur": 43.0,
+      "price_cell": "F67",
+      "status": "unchanged",
+      "fill_rgb": "FF00B050"
+    },
+    {
+      "sheet": "КОСВЕН. НАГРЕВА",
+      "row": 68,
+      "model": "АNODA.AMW.М8.500",
+      "price_eur": 73.0,
+      "price_cell": "F68",
+      "status": "unchanged",
+      "fill_rgb": "FF00B050"
+    },
+    {
+      "sheet": "КОСВЕН. НАГРЕВА",
+      "row": 69,
+      "model": "АNODA.AMW.М8.590",
+      "price_eur": 78.0,
+      "price_cell": "F69",
+      "status": "unchanged",
+      "fill_rgb": "FF00B050"
+    },
+    {
+      "sheet": "ПРОТОЧНИКИ",
+      "row": 8,
+      "model": "EPS2-3,5",
+      "price_eur": 91.0,
+      "price_cell": "F8",
+      "status": "increased",
+      "fill_rgb": "FFFFFF00"
+    },
+    {
+      "sheet": "ПРОТОЧНИКИ",
+      "row": 9,
+      "model": "EPS2-4,4",
+      "price_eur": 103.0,
+      "price_cell": "F9",
+      "status": "increased",
+      "fill_rgb": "FFFFFF00"
+    },
+    {
+      "sheet": "ПРОТОЧНИКИ",
+      "row": 10,
+      "model": "EPS2-5,5",
+      "price_eur": 106.0,
+      "price_cell": "F10",
+      "status": "increased",
+      "fill_rgb": "FFFFFF00"
+    },
+    {
+      "sheet": "ПРОТОЧНИКИ",
+      "row": 15,
+      "model": "EPO2-3",
+      "price_eur": 108.0,
+      "price_cell": "F15",
+      "status": "increased",
+      "fill_rgb": "FFFFFF00"
+    },
+    {
+      "sheet": "ПРОТОЧНИКИ",
+      "row": 16,
+      "model": "EPO2-4",
+      "price_eur": 108.0,
+      "price_cell": "F16",
+      "status": "increased",
+      "fill_rgb": "FFFFFF00"
+    },
+    {
+      "sheet": "ПРОТОЧНИКИ",
+      "row": 17,
+      "model": "EPO2-5",
+      "price_eur": 108.0,
+      "price_cell": "F17",
+      "status": "increased",
+      "fill_rgb": "FFFFFF00"
+    },
+    {
+      "sheet": "ПРОТОЧНИКИ",
+      "row": 18,
+      "model": "EPO2-6",
+      "price_eur": 108.0,
+      "price_cell": "F18",
+      "status": "increased",
+      "fill_rgb": "FFFFFF00"
+    },
+    {
+      "sheet": "ПРОТОЧНИКИ",
+      "row": 28,
+      "model": "PPE4.L-10/11/12/15",
+      "price_eur": 291.0,
+      "price_cell": "F28",
+      "status": "increased",
+      "fill_rgb": "FFFFFF00"
+    },
+    {
+      "sheet": "ПРОТОЧНИКИ",
+      "row": 29,
+      "model": "PPE4.L-17/18/21/24",
+      "price_eur": 291.0,
+      "price_cell": "F29",
+      "status": "increased",
+      "fill_rgb": "FFFFFF00"
+    },
+    {
+      "sheet": "ПРОТОЧНИКИ",
+      "row": 30,
+      "model": "PPE4.L-27",
+      "price_eur": 291.0,
+      "price_cell": "F30",
+      "status": "increased",
+      "fill_rgb": "FFFFFF00"
+    },
+    {
+      "sheet": "ПРОТОЧНИКИ",
+      "row": 32,
+      "model": "PPE4.B-10/11/12/15",
+      "price_eur": 377.0,
+      "price_cell": "F32",
+      "status": "increased",
+      "fill_rgb": "FFFFFF00"
+    },
+    {
+      "sheet": "ПРОТОЧНИКИ",
+      "row": 33,
+      "model": "PPE4.B-17/18/21/24",
+      "price_eur": 377.0,
+      "price_cell": "F33",
+      "status": "increased",
+      "fill_rgb": "FFFFFF00"
+    },
+    {
+      "sheet": "ПРОТОЧНИКИ",
+      "row": 36,
+      "model": "PPE4.M-10/11/12/15",
+      "price_eur": 430.0,
+      "price_cell": "F36",
+      "status": "increased",
+      "fill_rgb": "FFFFFF00"
+    },
+    {
+      "sheet": "ПРОТОЧНИКИ",
+      "row": 37,
+      "model": "PPE4.M-17/18/21/24",
+      "price_eur": 430.0,
+      "price_cell": "F37",
+      "status": "increased",
+      "fill_rgb": "FFFFFF00"
+    }
+  ]
+}
