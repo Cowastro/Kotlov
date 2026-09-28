@@ -248,6 +248,21 @@ class SyncKospelRetailPricesCommand extends Command
                 $this->warn(strtoupper($section).': '.implode(', ', array_column($report[$section], 'model')));
             }
         }
+
+        if ($report['ambiguous'] !== []) {
+            $rows = [];
+            foreach ($report['ambiguous'] as $sourceRow) {
+                foreach ($sourceRow['candidates'] as $candidate) {
+                    $rows[] = [
+                        $sourceRow['model'],
+                        $candidate['id'],
+                        $candidate['sku'],
+                        $candidate['name'],
+                    ];
+                }
+            }
+            $this->table(['source model', 'product id', 'sku', 'candidate'], $rows);
+        }
     }
 
     private function sourceIdentity(array $row): array
