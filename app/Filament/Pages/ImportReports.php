@@ -28,6 +28,15 @@ class ImportReports extends Page
     public bool $showAllColumns = false;
     public array $retailPriceInputs = [];
 
+    /**
+     * Reports are referenced several times while the Blade view is rendered.
+     * Keep the filesystem scan request-local so a single page load does not
+     * reopen every CSV file four or more times.
+     *
+     * @var array<int, array<string, mixed>>|null
+     */
+    private ?array $allReportsCache = null;
+
     public static function getNavigationGroup(): ?string
     {
         return 'Каталог';
@@ -911,9 +920,13 @@ class ImportReports extends Page
 
     private function allReports(): array
     {
+        if ($this->allReportsCache !== null) {
+            return $this->allReportsCache;
+        }
+
         $root = $this->reportsRoot();
         if (! is_dir($root)) {
-            return [];
+            return $this->allReportsCache = [];
         }
 
         $files = glob($root . DIRECTORY_SEPARATOR . '{*,*/*}.csv', GLOB_BRACE) ?: [];
@@ -942,7 +955,7 @@ class ImportReports extends Page
 
         usort($reports, fn (array $left, array $right): int => $right['modified_at'] <=> $left['modified_at']);
 
-        return $reports;
+        return $this->allReportsCache = $reports;
     }
 
     private function reportsRoot(): string
