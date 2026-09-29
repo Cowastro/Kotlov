@@ -19,15 +19,16 @@ Artisan::command('inspire', function () {
 // повторять не нужно):
 //   php artisan supplier:enrich-rusklimat --skip-content   # фото + характеристики, без AI
 //   php artisan supplier:enrich-rusklimat --ai-only        # AI-описания (по согласованию)
-Schedule::command('supplier:sync-rusklimat --apply --create-new')
+Schedule::command('supplier:sync-rusklimat --apply --create-new --fix-retail-prices')
     ->dailyAt('06:00')
     ->withoutOverlapping()
     ->runInBackground()
     ->appendOutputTo(storage_path('logs/rusklimat-sync.log'));
 
-// Rusklimat: frequent lightweight supplier cost/stock refresh for already linked products.
-// Does not create products, download images, generate descriptions, or change products.price.
-Schedule::command('supplier:sync-rusklimat --apply --only-existing --no-images')
+// Rusklimat: frequent lightweight supplier cost, retail price and stock refresh
+// for already linked products. Does not create products, download images or
+// generate descriptions.
+Schedule::command('supplier:sync-rusklimat --apply --only-existing --no-images --fix-retail-prices')
     ->hourlyAt(10)
     ->unlessBetween('05:45', '06:45')
     ->withoutOverlapping()
