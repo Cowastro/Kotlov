@@ -64,8 +64,9 @@ Schedule::command('supplier:sync-akvatermex --apply --only-linked --sync-retail-
     ->appendOutputTo(storage_path('logs/akvatermex-pricelist-sync.log'));
 
 // Лигмет: ежедневно обновляем цены и наличие печей/каминов/топок.
-// Новые товары не создаются автоматически — только обновление уже связанных.
-Schedule::command('supplier:sync-ligmet --apply')
+// Поставщик заменяет файл в общей папке, поэтому каждый запуск сам выбирает
+// самый свежий XLS/XLSX. Новые товары автоматически не создаются.
+Schedule::command('supplier:sync-ligmet --apply --folder-url=https://drive.google.com/drive/folders/1pQQRGMKBEHHEjUF3AYsi_dTvlxxTFxzz')
     ->dailyAt('07:00')
     ->withoutOverlapping()
     ->runInBackground()
