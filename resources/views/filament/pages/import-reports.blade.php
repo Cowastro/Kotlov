@@ -326,7 +326,12 @@
             <div class="import-reports-card-header">
                 <div>
                     <div class="import-reports-title">Файлы отчётов</div>
-                    <div class="import-reports-muted">Найдено: {{ count($reports) }}</div>
+                    <div class="import-reports-muted">
+                        Показано: {{ count($reports) }}
+                        @if (count($reports) >= 200)
+                            · для более старых файлов используйте фильтры или поиск
+                        @endif
+                    </div>
                 </div>
             </div>
 
@@ -337,7 +342,6 @@
                             <th>Файл</th>
                             <th>Поставщик</th>
                             <th>Тип</th>
-                            <th>Внимание</th>
                             <th>Дата</th>
                             <th>Размер</th>
                         </tr>
@@ -360,21 +364,12 @@
                                 </td>
                                 <td>{{ strtoupper($report['supplier']) }}</td>
                                 <td>{{ $report['type'] }}</td>
-                                <td>
-                                    @if ($report['attention_count'] > 0)
-                                        <span class="import-reports-badge import-reports-badge-attention">
-                                            {{ $report['attention_count'] }}
-                                        </span>
-                                    @else
-                                        <span class="import-reports-muted">—</span>
-                                    @endif
-                                </td>
                                 <td>{{ date('d.m.Y H:i', $report['modified_at']) }}</td>
                                 <td>{{ number_format($report['size'] / 1024, 1, ',', ' ') }} KB</td>
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="6" class="import-reports-muted">Отчёты пока не найдены.</td>
+                                <td colspan="5" class="import-reports-muted">Отчёты пока не найдены.</td>
                             </tr>
                         @endforelse
                     </tbody>

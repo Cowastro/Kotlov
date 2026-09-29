@@ -14,6 +14,8 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class ImportReports extends Page
 {
+    private const REPORT_LIST_LIMIT = 200;
+
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedDocumentText;
     protected static ?string $navigationLabel = 'Отчёты импорта';
     protected static ?string $title = 'Отчёты импорта';
@@ -91,7 +93,7 @@ class ImportReports extends Page
 
     public function reports(): array
     {
-        return array_values(array_filter($this->allReports(), function (array $report): bool {
+        $reports = array_values(array_filter($this->allReports(), function (array $report): bool {
             if ($this->supplier !== '' && $report['supplier'] !== $this->supplier) {
                 return false;
             }
@@ -115,6 +117,12 @@ class ImportReports extends Page
 
             return true;
         }));
+
+        // Rendering thousands of historical entries can exhaust the web
+        // request even when their CSV contents are not opened. Filters are
+        // applied first, so an older report remains reachable by supplier,
+        // type or search while the default list stays compact.
+        return array_slice($reports, 0, self::REPORT_LIST_LIMIT);
     }
 
     public function selectedReport(): ?array
@@ -949,7 +957,11 @@ class ImportReports extends Page
                 'file_name' => $fileName,
                 'size' => filesize($path) ?: 0,
                 'modified_at' => filemtime($path) ?: 0,
-                'attention_count' => $this->attentionCount($path),
+                // Do not open every CSV just to build the sidebar. Some
+                // suppliers generate hundreds of historical reports and the
+                // aggregate scan can exceed PHP's request time limit. The
+                // selected report is parsed separately below when requested.
+                'attention_count' => null,
             ];
         }
 
@@ -975,28 +987,6 @@ class ImportReports extends Page
             str_contains($fileName, 'import') => 'import',
             default => 'report',
         };
-    }
-
-    private function attentionCount(string $path): int
-    {
-        $count = 0;
-        foreach ($this->readCsv($path, 500) as $row) {
-            $action = mb_strtolower((string) ($row['action'] ?? $row['recommended_action'] ?? ''));
-            $note = mb_strtolower((string) ($row['note'] ?? $row['reason'] ?? ''));
-
-            if (
-                str_contains($action, 'manual')
-                || str_contains($action, 'error')
-                || str_contains($action, 'cost_above_retail')
-                || str_contains($action, 'keep_manual_review')
-                || str_contains($note, 'manual')
-                || str_contains($note, 'check')
-            ) {
-                $count++;
-            }
-        }
-
-        return $count;
     }
 
     private function readCsv(string $path, int $limit = 1000): array
