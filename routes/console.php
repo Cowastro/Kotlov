@@ -94,19 +94,10 @@ Schedule::command('supplier:sync-gazkotelbel --apply')
     ->runInBackground()
     ->appendOutputTo(storage_path('logs/gazkotelbel-sync.log'));
 
-// TM Management: each Google Sheet is synchronized independently. This keeps a
-// broken sheet from blocking the others and avoids one long, monolithic import.
-foreach ([
-    ' De Dietrich РЦ BYN 25.05' => '08:17',
-    ' Shinhoo Vanjord 03.03' => '09:17',
-    'Джилекс  03.03' => '10:17',
-    ' SFA 13.04' => '11:17',
-    'Watrix' => '12:17',
-] as $tmSheet => $tmTime) {
-    Schedule::command('supplier:sync-tm-management --apply --sheet=' . escapeshellarg($tmSheet))
-        ->name('tm-management-' . md5($tmSheet))
-        ->dailyAt($tmTime)
-        ->withoutOverlapping(180)
-        ->runInBackground()
-        ->appendOutputTo(storage_path('logs/tm-management-sync.log'));
-}
+// TM Management: once a day refresh all price-list sheets in one run.
+// This also keeps the synchronization journal concise: one supplier entry per day.
+Schedule::command('supplier:sync-tm-management --apply')
+    ->dailyAt('08:17')
+    ->withoutOverlapping(180)
+    ->runInBackground()
+    ->appendOutputTo(storage_path('logs/tm-management-sync.log'));
