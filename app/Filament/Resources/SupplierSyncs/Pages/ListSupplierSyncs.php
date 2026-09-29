@@ -13,6 +13,11 @@ class ListSupplierSyncs extends ListRecords
 {
     protected static string $resource = SupplierSyncResource::class;
 
+    public function getMaxContentWidth(): ?string
+    {
+        return 'full';
+    }
+
     public function getTitle(): string
     {
         return 'Обновление товаров';
