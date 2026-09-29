@@ -4,6 +4,7 @@ namespace App\Filament\Resources\SupplierSyncRuns;
 
 use App\Filament\Resources\SupplierSyncRuns\Pages\ListSupplierSyncRuns;
 use App\Models\SupplierSyncRun;
+use App\Services\SupplierSyncRunTextExporter;
 use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Resources\Resource;
@@ -16,10 +17,15 @@ use Filament\Tables\Table;
 class SupplierSyncRunResource extends Resource
 {
     protected static ?string $model = SupplierSyncRun::class;
+
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedClock;
+
     protected static ?string $navigationLabel = 'Журнал синхронизаций';
+
     protected static ?string $modelLabel = 'запуск синхронизации';
+
     protected static ?string $pluralModelLabel = 'Журнал синхронизаций';
+
     protected static ?int $navigationSort = 5;
 
     public static function getNavigationGroup(): ?string
@@ -84,7 +90,7 @@ class SupplierSyncRunResource extends Resource
                     ->label('Время')
                     ->formatStateUsing(fn (?int $state): string => $state === null
                         ? '—'
-                        : number_format($state / 1000, 1, ',', ' ') . ' с')
+                        : number_format($state / 1000, 1, ',', ' ').' с')
                     ->alignRight(),
             ])
             ->filters([
@@ -107,10 +113,23 @@ class SupplierSyncRunResource extends Resource
             ])
             ->defaultSort('started_at', 'desc')
             ->recordActions([
+                Action::make('downloadChanges')
+                    ->label('Скачать TXT')
+                    ->icon('heroicon-o-arrow-down-tray')
+                    ->color('gray')
+                    ->action(function (SupplierSyncRun $record) {
+                        $exporter = app(SupplierSyncRunTextExporter::class);
+
+                        return response()->streamDownload(
+                            fn () => print $exporter->render($record),
+                            $exporter->filename($record),
+                            ['Content-Type' => 'text/plain; charset=UTF-8']
+                        );
+                    }),
                 Action::make('changes')
                     ->label('Изменения')
                     ->icon('heroicon-o-document-magnifying-glass')
-                    ->modalHeading(fn (SupplierSyncRun $record): string => 'Изменения: ' . $record->command)
+                    ->modalHeading(fn (SupplierSyncRun $record): string => 'Изменения: '.$record->command)
                     ->modalWidth('7xl')
                     ->modalSubmitAction(false)
                     ->modalCancelActionLabel('Закрыть')
