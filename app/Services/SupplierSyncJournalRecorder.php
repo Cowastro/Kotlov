@@ -12,9 +12,20 @@ class SupplierSyncJournalRecorder
     /** @var array<int, array{command:string, run_id:int, started_at:float}> */
     private array $runs = [];
 
+    /** @var array<int, string> Commands invoked inside another tracked sync. */
+    private array $nestedCommands = [];
+
     public function start(?string $command, InputInterface $input): void
     {
         if (! $this->shouldTrack($command) || ! $this->tablesExist()) {
+            return;
+        }
+
+        // Composite commands (for example RN-Profi split by sheet tabs) call
+        // other supplier:sync-* commands internally. Keep one journal row for
+        // the complete daily run instead of one row per nested sheet.
+        if ($this->runs !== []) {
+            $this->nestedCommands[] = (string) $command;
             return;
         }
 
@@ -35,6 +46,12 @@ class SupplierSyncJournalRecorder
     public function finish(?string $command, int $exitCode): void
     {
         if (! $this->shouldTrack($command) || ! $this->tablesExist()) {
+            return;
+        }
+
+        $nestedPosition = $this->findNestedCommandPosition((string) $command);
+        if ($nestedPosition !== null) {
+            array_splice($this->nestedCommands, $nestedPosition, 1);
             return;
         }
 
@@ -289,6 +306,17 @@ class SupplierSyncJournalRecorder
     {
         for ($i = count($this->runs) - 1; $i >= 0; $i--) {
             if ($this->runs[$i]['command'] === $command) {
+                return $i;
+            }
+        }
+
+        return null;
+    }
+
+    private function findNestedCommandPosition(string $command): ?int
+    {
+        for ($i = count($this->nestedCommands) - 1; $i >= 0; $i--) {
+            if ($this->nestedCommands[$i] === $command) {
                 return $i;
             }
         }

@@ -25,20 +25,10 @@ Schedule::command('supplier:sync-rusklimat --apply --create-new --fix-retail-pri
     ->runInBackground()
     ->appendOutputTo(storage_path('logs/rusklimat-sync.log'));
 
-// Rusklimat: frequent lightweight supplier cost, retail price and stock refresh
-// for already linked products. Does not create products, download images or
-// generate descriptions.
-Schedule::command('supplier:sync-rusklimat --apply --only-existing --no-images --fix-retail-prices')
-    ->hourlyAt(10)
-    ->unlessBetween('05:45', '06:45')
-    ->withoutOverlapping()
-    ->runInBackground()
-    ->appendOutputTo(storage_path('logs/rusklimat-price-stock-sync.log'));
-
-// BANIA: регулярно обновляет закупку, наличие и розничные цены по уже связанным товарам.
+// BANIA: раз в сутки обновляет закупку, наличие и розничные цены по уже связанным товарам.
 // Новые товары не создаются, сомнительные совпадения уходят в CSV-отчёт.
 Schedule::command('supplier:sync-bania-pricelist --apply --sync-retail-prices')
-    ->hourly()
+    ->dailyAt('06:07')
     ->withoutOverlapping()
     ->runInBackground()
     ->appendOutputTo(storage_path('logs/bania-pricelist-sync.log'));
