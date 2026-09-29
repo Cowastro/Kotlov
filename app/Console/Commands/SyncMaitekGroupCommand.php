@@ -3,6 +3,7 @@
 namespace App\Console\Commands;
 
 use App\Services\ProductSourceEnricher;
+use App\Services\SupplierProductAvailabilityService;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
@@ -768,6 +769,7 @@ class SyncMaitekGroupCommand extends Command
         $supplierId = $this->ensureSupplier($now);
         $syncId = $this->ensureSync($now);
         $stats = array_fill_keys(['matched', 'created', 'updated_retail', 'skipped', 'errors'], 0);
+        $touchedProductIds = [];
 
         foreach ($rows as $row) {
             try {
@@ -787,6 +789,7 @@ class SyncMaitekGroupCommand extends Command
                 }
 
                 $this->upsertSupplierProduct($row, $productId, $supplierId, $syncId, $now);
+                $touchedProductIds[] = $productId;
                 $stats['matched']++;
 
                 if ((bool) $this->option('sync-retail-prices') && $row['retail_byn'] !== null) {
@@ -811,6 +814,8 @@ class SyncMaitekGroupCommand extends Command
                 $this->warn(sprintf('[error] %s: %s', $row['name'], $e->getMessage()));
             }
         }
+
+        app(SupplierProductAvailabilityService::class)->refreshMany($touchedProductIds, $now);
 
         $this->table(['metric', 'count'], array_map(fn ($key, $value) => [$key, $value], array_keys($stats), array_values($stats)));
 

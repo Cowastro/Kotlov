@@ -3,6 +3,7 @@
 namespace App\Console\Commands;
 
 use App\Models\Product;
+use App\Services\SupplierProductAvailabilityService;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -119,6 +120,7 @@ class SyncGazKotelBelCommand extends Command
 
         $stats = ['matched' => 0, 'created' => 0, 'updated' => 0, 'skipped' => 0, 'errors' => 0];
         $now   = now();
+        $touchedProductIds = [];
 
         foreach ($rows as $row) {
             try {
@@ -132,13 +134,15 @@ class SyncGazKotelBelCommand extends Command
                     $changed = $this->upsertSupplierProduct($product->id, $row, $now);
                     if ($changed) {
                         $stats['updated']++;
-                        $this->updateProductPrice($product->id, $row, $now);
                     }
+                    $this->updateProductPrice($product->id, $row, $now);
+                    $touchedProductIds[] = (int) $product->id;
                     $this->line(sprintf('  <fg=green>matched</> [%s] %s qty=%d cost=%.2f BYN',
                         $row['article'], $row['name'], $row['qty'], $row['cost_byn']));
                 } elseif ($createNew) {
                     $id = $this->createProduct($row, $brandId, $categoryId, $now);
                     $this->upsertSupplierProduct($id, $row, $now);
+                    $touchedProductIds[] = $id;
                     $stats['created']++;
                     $this->line(sprintf('  <fg=cyan>created</> [%s] %s', $row['article'], $row['name']));
                 } else {
@@ -150,6 +154,8 @@ class SyncGazKotelBelCommand extends Command
                 $this->error(sprintf('  error [%s] %s: %s', $row['article'] ?? '?', $row['name'] ?? '?', $e->getMessage()));
             }
         }
+
+        app(SupplierProductAvailabilityService::class)->refreshMany($touchedProductIds, $now);
 
         // Mark sync completed
         if ($this->syncId > 0) {
@@ -604,7 +610,6 @@ class SyncGazKotelBelCommand extends Command
 
         DB::table('products')->where('id', $productId)->update([
             'price'      => $retailByn,
-            'in_stock'   => $row['qty'] > 0,
             'updated_at' => $now,
         ]);
     }

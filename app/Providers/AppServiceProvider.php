@@ -5,15 +5,28 @@ namespace App\Providers;
 use App\Models\Brand;
 use App\Models\Category;
 use App\Models\Product;
+use App\Services\SupplierSyncJournalRecorder;
+use Illuminate\Console\Events\CommandFinished;
+use Illuminate\Console\Events\CommandStarting;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
 {
-    public function boot(): void
+    public function boot(SupplierSyncJournalRecorder $syncJournal): void
     {
+        if (app()->runningInConsole()) {
+            Event::listen(CommandStarting::class, function (CommandStarting $event) use ($syncJournal): void {
+                $syncJournal->start($event->command, $event->input);
+            });
+            Event::listen(CommandFinished::class, function (CommandFinished $event) use ($syncJournal): void {
+                $syncJournal->finish($event->command, $event->exitCode);
+            });
+        }
+
         // During a fresh test database boot the provider runs before
         // RefreshDatabase has created the catalogue tables.
         if (app()->runningUnitTests() && ! Schema::hasTable('categories')) {

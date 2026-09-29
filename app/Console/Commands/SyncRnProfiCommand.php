@@ -4,6 +4,7 @@ namespace App\Console\Commands;
 
 use App\Services\AiContentEnricher;
 use App\Services\ProductSourceEnricher;
+use App\Services\SupplierProductAvailabilityService;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
@@ -3441,6 +3442,7 @@ PROMPT;
             'skipped', 'skipped_not_linked', 'skipped_duplicate_article', 'missing_marked_out_of_stock', 'errors',
         ], 0);
         $presentArticles = [];
+        $touchedProductIds = [];
         $createUnmatched = (bool) $this->option('create-unmatched-from-price');
         $onlyLinked = (bool) $this->option('only-linked');
 
@@ -3467,6 +3469,7 @@ PROMPT;
                         $row['matched_sku'] = $this->sku($productId);
                         $row['confidence'] = 'price_article_create';
                         $this->upsertSupplierProduct($row, $supplierId, $syncId, $now);
+                        $touchedProductIds[] = $productId;
                         $stats['created_from_price']++;
 
                         if ((bool) $this->option('enrich-created') && ! empty($row['source_url'])) {
@@ -3506,6 +3509,7 @@ PROMPT;
                 }
 
                 $this->upsertSupplierProduct($row, $supplierId, $syncId, $now);
+                $touchedProductIds[] = (int) $row['matched_product_id'];
                 $stats['matched_updated']++;
 
                 if ($this->option('sync-retail-prices') && $row['retail_price'] !== null) {
@@ -3529,6 +3533,8 @@ PROMPT;
         if ($this->option('mark-missing-out-of-stock')) {
             $stats['missing_marked_out_of_stock'] = $this->markMissingOutOfStock($supplierId, $presentArticles, $now);
         }
+
+        app(SupplierProductAvailabilityService::class)->refreshMany($touchedProductIds, $now);
 
         $this->table(['metric', 'count'], $this->mapCounts($stats));
 

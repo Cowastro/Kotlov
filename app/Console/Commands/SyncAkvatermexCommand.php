@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Services\SupplierProductAvailabilityService;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
@@ -341,6 +342,7 @@ class SyncAkvatermexCommand extends Command
         $supplierId = $this->ensureSupplier($now);
         $syncId = $this->ensureSync($now);
         $stats = array_fill_keys(['matched', 'created', 'updated_retail', 'skipped', 'errors'], 0);
+        $touchedProductIds = [];
 
         foreach ($rows as $row) {
             try {
@@ -359,28 +361,25 @@ class SyncAkvatermexCommand extends Command
                 }
 
                 $this->upsertSupplierProduct($row, $productId, $supplierId, $syncId, $now);
+                $touchedProductIds[] = $productId;
                 $stats['matched']++;
 
                 if ((bool) $this->option('sync-retail-prices')) {
-                    $productUpdate = [
-                        'in_stock' => $row['in_stock'],
-                        'stock_qty' => $row['stock_quantity'],
-                        'availability_status' => $this->productAvailability($row['stock_status']),
-                        'updated_at' => $now,
-                    ];
-
-                    if ($row['retail_byn'] !== null) {
-                        $productUpdate['price'] = $row['retail_byn'];
+                    if ($row['retail_byn'] !== null && (float) $row['retail_byn'] > 0) {
+                        DB::table('products')->where('id', $productId)->update([
+                            'price' => $row['retail_byn'],
+                            'updated_at' => $now,
+                        ]);
                         $stats['updated_retail']++;
                     }
-
-                    DB::table('products')->where('id', $productId)->update($productUpdate);
                 }
             } catch (\Throwable $e) {
                 $stats['errors']++;
                 $this->warn(sprintf('[error] row %s %s: %s', $row['sheet_row'], $row['name'], $e->getMessage()));
             }
         }
+
+        app(SupplierProductAvailabilityService::class)->refreshMany($touchedProductIds, $now);
 
         $this->table(['metric', 'count'], array_map(fn ($key, $value) => [$key, $value], array_keys($stats), array_values($stats)));
 

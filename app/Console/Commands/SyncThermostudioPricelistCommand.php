@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Services\SupplierProductAvailabilityService;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
@@ -713,6 +714,7 @@ class SyncThermostudioPricelistCommand extends Command
         $supplierId = $this->ensureSupplier($now);
         $syncId = $this->ensureSync($now);
         $stats = array_fill_keys(['matched', 'created', 'updated_retail', 'skipped', 'errors'], 0);
+        $touchedProductIds = [];
 
         foreach ($rows as $row) {
             try {
@@ -732,28 +734,25 @@ class SyncThermostudioPricelistCommand extends Command
 
                 if ($row['price_byn'] !== null) {
                     $this->upsertSupplierProduct($row, $productId, $supplierId, $syncId, $now);
+                    $touchedProductIds[] = $productId;
                 }
                 $stats['matched']++;
 
-                if ((bool) $this->option('sync-retail-prices') && $row['retail_byn'] !== null) {
-                    $productUpdate = [
+                if ((bool) $this->option('sync-retail-prices') && $row['retail_byn'] !== null && (float) $row['retail_byn'] > 0) {
+                    DB::table('products')->where('id', $productId)->update([
                         'price' => $row['retail_byn'],
                         'updated_at' => $now,
-                    ];
-                    if (! (bool) $this->option('prices-only')) {
-                        $productUpdate += [
-                            'in_stock' => $row['in_stock'],
-                            'stock_qty' => $row['stock_quantity'],
-                            'availability_status' => $this->productAvailability($row['stock_status']),
-                        ];
-                    }
-                    DB::table('products')->where('id', $productId)->update($productUpdate);
+                    ]);
                     $stats['updated_retail']++;
                 }
             } catch (\Throwable $e) {
                 $stats['errors']++;
                 $this->warn(sprintf('[error] row %s %s: %s', $row['sheet_row'], $row['name'], $e->getMessage()));
             }
+        }
+
+        if (! (bool) $this->option('prices-only')) {
+            app(SupplierProductAvailabilityService::class)->refreshMany($touchedProductIds, $now);
         }
 
         $this->table(['metric', 'count'], array_map(fn ($key, $value) => [$key, $value], array_keys($stats), array_values($stats)));

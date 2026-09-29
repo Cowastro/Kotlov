@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Services\SupplierProductAvailabilityService;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
@@ -549,6 +550,7 @@ class SyncTskNasosyCommand extends Command
         $sid = $this->ensureSupplier($now);
         $syncId = $this->ensureSync($now);
         $stats = array_fill_keys(['matched', 'created', 'updated', 'brand_missing', 'category_missing', 'skipped', 'errors'], 0);
+        $touchedProductIds = [];
 
         foreach ($rows as $r) {
             if (in_array($r['action'], ['brand_missing', 'category_missing'], true)) {
@@ -561,9 +563,11 @@ class SyncTskNasosyCommand extends Command
             }
             try {
                 if ($r['matched_product_id'] !== null) {
-                    $this->upsertSupplierProduct($r, (int) $r['matched_product_id'], (string) $r['matched_sku'], $sid, $syncId, $now);
+                    $pid = (int) $r['matched_product_id'];
+                    $this->upsertSupplierProduct($r, $pid, (string) $r['matched_sku'], $sid, $syncId, $now);
+                    $touchedProductIds[] = $pid;
                     $stats['matched']++;
-                    if ($this->updateProductRetailAndStock($r, (int) $r['matched_product_id'], $now)) {
+                    if ($this->updateProductRetailAndStock($r, $pid, $now)) {
                         $stats['updated']++;
                     }
                 } elseif ($createNew && trim($r['brand']) !== '' && $r['resolved_category_id'] !== null) {
@@ -571,6 +575,7 @@ class SyncTskNasosyCommand extends Command
                     $pid = $this->createProduct($r, $now);
                     $sku = $this->sku($pid);
                     $this->upsertSupplierProduct($r, $pid, $sku, $sid, $syncId, $now);
+                    $touchedProductIds[] = $pid;
                     $stats['created']++;
                     $this->line("[create] {$r['article']} → {$sku}");
                 } else {
@@ -584,7 +589,8 @@ class SyncTskNasosyCommand extends Command
 
         // Mark supplier links absent for products no longer in the price (do NOT delete).
         $present = array_filter(array_map(fn ($r) => $r['norm_article'], $rows));
-        $this->deactivateMissing($sid, $present, $now);
+        $touchedProductIds = array_merge($touchedProductIds, $this->deactivateMissing($sid, $present, $now));
+        app(SupplierProductAvailabilityService::class)->refreshMany($touchedProductIds, $now);
 
         $this->newLine();
         $this->table(['метрика', 'кол-во'], array_map(fn ($k, $v) => [$k, $v], array_keys($stats), array_values($stats)));
@@ -699,13 +705,17 @@ class SyncTskNasosyCommand extends Command
         ]);
     }
 
-    private function deactivateMissing(int $sid, array $presentArticles, $now): void
+    /** @return array<int, int> */
+    private function deactivateMissing(int $sid, array $presentArticles, $now): array
     {
         $present = array_values(array_unique($presentArticles));
-        DB::table('supplier_products')
+        $query = DB::table('supplier_products')
             ->where('supplier_id', $sid)
-            ->when($present !== [], fn ($q) => $q->whereNotIn('supplier_article', $present))
-            ->update(['in_stock' => false, 'stock_status' => 'out_of_stock', 'updated_at' => $now]);
+            ->when($present !== [], fn ($q) => $q->whereNotIn('supplier_article', $present));
+        $productIds = $query->clone()->whereNotNull('product_id')->pluck('product_id')->map(fn ($id) => (int) $id)->all();
+        $query->update(['in_stock' => false, 'stock_status' => 'out_of_stock', 'updated_at' => $now]);
+
+        return $productIds;
     }
 
     // ── Supplier / sync registration ──────────────────────────────────────────────

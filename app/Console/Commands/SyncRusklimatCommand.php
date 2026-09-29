@@ -2,9 +2,9 @@
 
 namespace App\Console\Commands;
 
-use App\Models\Product;
 use App\Services\AiContentEnricher;
 use App\Services\Pricing\CurrencyPriceConverter;
+use App\Services\SupplierProductAvailabilityService;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -1019,7 +1019,7 @@ class SyncRusklimatCommand extends Command
                     // Product already exists — upsert supplier_products
                     $productId = (int) $row['matched_product_id'];
                     $this->upsertSupplierProduct($row, $productId, (string) ($row['matched_sku'] ?? ''), $supplierId, $syncId, $now);
-                    $this->refreshProductAvailability($productId, $now);
+                    app(SupplierProductAvailabilityService::class)->refresh($productId, $now);
 
                     // Optionally update retail price on the product itself
                     if ($fixRetailPrices && $row['retail_price'] !== null && (float) $row['retail_price'] > 0) {
@@ -1058,7 +1058,7 @@ class SyncRusklimatCommand extends Command
                     $productId = $this->createProduct($row, $supplierId, $now, $noImages);
                     $sku       = (string) DB::table('products')->where('id', $productId)->value('sku');
                     $this->upsertSupplierProduct($row, $productId, $sku, $supplierId, $syncId, $now);
-                    $this->refreshProductAvailability($productId, $now);
+                    app(SupplierProductAvailabilityService::class)->refresh($productId, $now);
                     $stats['created']++;
                     $this->line(sprintf(
                         '[create]  %s  →  %s  закупка=%.2f  розница=%s BYN',
@@ -1135,39 +1135,6 @@ class SyncRusklimatCommand extends Command
                 'created_at'                  => $now,
             ]
         );
-    }
-
-    /**
-     * Keep storefront availability in sync with all active linked suppliers.
-     * A product is marked "В наличии" only when at least one supplier confirms
-     * stock. Missing, unknown and preorder data remain "Уточняйте наличие".
-     */
-    private function refreshProductAvailability(int $productId, $now): void
-    {
-        $supplierStocks = DB::table('supplier_products as sp')
-            ->join('suppliers as s', 's.id', '=', 'sp.supplier_id')
-            ->where('sp.product_id', $productId)
-            ->where('s.is_active', true)
-            ->get(['sp.in_stock', 'sp.stock_quantity']);
-
-        $confirmedInStock = $supplierStocks->contains(
-            fn (object $stock): bool => (bool) $stock->in_stock
-        );
-
-        $knownQuantities = $supplierStocks
-            ->filter(fn (object $stock): bool => $stock->stock_quantity !== null);
-        $stockQty = $knownQuantities->isEmpty()
-            ? null
-            : $knownQuantities->sum(fn (object $stock): int => max(0, (int) $stock->stock_quantity));
-
-        DB::table('products')->where('id', $productId)->update([
-            'in_stock' => $confirmedInStock,
-            'stock_qty' => $stockQty,
-            'availability_status' => $confirmedInStock
-                ? Product::AVAILABILITY_IN_STOCK
-                : Product::AVAILABILITY_CHECK,
-            'updated_at' => $now,
-        ]);
     }
 
     private function createProduct(array $row, int $supplierId, $now, bool $noImages): int

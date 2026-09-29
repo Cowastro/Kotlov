@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Services\SupplierProductAvailabilityService;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
@@ -936,6 +937,7 @@ class SyncLigmetCommand extends Command
         $sid = $this->ensureSupplier($now);
         $syncId = $this->ensureSync($now);
         $stats = array_fill_keys(['matched', 'created', 'retail_set', 'skipped', 'errors'], 0);
+        $touchedProductIds = [];
 
         foreach ($rows as $r) {
             try {
@@ -943,12 +945,14 @@ class SyncLigmetCommand extends Command
                     $pid = (int) $r['matched_product_id'];
                     $this->setRetail($pid, $r['retail_price'], $now, $stats);
                     $this->upsertSupplierProduct($r, $pid, (string) $r['matched_sku'], $sid, $syncId, $now);
+                    $touchedProductIds[] = $pid;
                     $stats['matched']++;
                 } elseif ($createNew) {
                     $r['resolved_brand_id'] = $r['resolved_brand_id'] ?? $this->findOrCreateBrand($r['brand']);
                     $pid = $this->createProduct($r, $now);
                     $sku = $this->sku($pid);
                     $this->upsertSupplierProduct($r, $pid, $sku, $sid, $syncId, $now);
+                    $touchedProductIds[] = $pid;
                     // remember for old→new redirect mapping
                     $bid = (int) $r['resolved_brand_id'];
                     $model = $this->model($r['name'], $this->brandById[$bid] ?? $r['brand']);
@@ -965,6 +969,8 @@ class SyncLigmetCommand extends Command
                 $this->warn("[error] {$r['article']}: " . $e->getMessage());
             }
         }
+
+        app(SupplierProductAvailabilityService::class)->refreshMany($touchedProductIds, $now);
 
         $this->newLine();
         $this->table(['метрика', 'кол-во'], array_map(fn ($k, $v) => [$k, $v], array_keys($stats), array_values($stats)));
