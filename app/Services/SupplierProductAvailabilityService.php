@@ -25,6 +25,10 @@ class SupplierProductAvailabilityService
         }
 
         $now ??= now();
+        $products = DB::table('products')
+            ->whereIn('id', $productIds)
+            ->get(['id', 'in_stock', 'stock_qty', 'availability_status'])
+            ->keyBy('id');
         $stockByProduct = DB::table('supplier_products as sp')
             ->join('suppliers as s', 's.id', '=', 'sp.supplier_id')
             ->where('s.is_active', true)
@@ -38,18 +42,31 @@ class SupplierProductAvailabilityService
             ->keyBy('product_id');
 
         foreach ($productIds as $productId) {
+            $product = $products->get($productId);
+            if ($product === null) {
+                continue;
+            }
+
             $stock = $stockByProduct->get($productId);
             $confirmedInStock = $stock !== null && (bool) $stock->confirmed_in_stock;
             $stockQty = $stock !== null && (int) $stock->known_quantity_count > 0
                 ? max(0, (int) $stock->total_quantity)
                 : null;
+            $availability = $confirmedInStock
+                ? Product::AVAILABILITY_IN_STOCK
+                : Product::AVAILABILITY_CHECK;
+
+            $currentQty = $product->stock_qty === null ? null : (int) $product->stock_qty;
+            if ((bool) $product->in_stock === $confirmedInStock
+                && $currentQty === $stockQty
+                && (string) $product->availability_status === $availability) {
+                continue;
+            }
 
             DB::table('products')->where('id', $productId)->update([
                 'in_stock' => $confirmedInStock,
                 'stock_qty' => $stockQty,
-                'availability_status' => $confirmedInStock
-                    ? Product::AVAILABILITY_IN_STOCK
-                    : Product::AVAILABILITY_CHECK,
+                'availability_status' => $availability,
                 'updated_at' => $now,
             ]);
         }
