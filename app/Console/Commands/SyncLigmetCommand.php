@@ -409,7 +409,7 @@ class SyncLigmetCommand extends Command
     {
         $html = @file_get_contents("https://drive.google.com/drive/folders/{$folderId}", false, $ctx);
         if ($html === false || $html === '') {
-            return "https://docs.google.com/spreadsheets/d/" . self::FILE_ID . "/edit";
+            throw new \RuntimeException('Could not read the Ligmet Google Drive folder. The previous workbook was not used.');
         }
 
         $payload = $html;
@@ -426,7 +426,7 @@ class SyncLigmetCommand extends Command
         );
 
         if ($matches === []) {
-            return "https://docs.google.com/spreadsheets/d/" . self::FILE_ID . "/edit";
+            throw new \RuntimeException('No XLS/XLSX workbook found in the Ligmet Google Drive folder. The previous workbook was not used.');
         }
 
         usort($matches, function (array $a, array $b): int {
