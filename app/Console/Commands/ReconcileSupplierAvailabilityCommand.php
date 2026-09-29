@@ -38,6 +38,18 @@ class ReconcileSupplierAvailabilityCommand extends Command
             $availability->refreshMany($chunk);
         }
 
+        // A storefront label of "Уточняйте наличие" must never be paired with
+        // the boolean in-stock flag, even for manually managed products that do
+        // not currently have an active supplier link.
+        DB::table('products')
+            ->where('availability_status', Product::AVAILABILITY_CHECK)
+            ->where('in_stock', true)
+            ->update([
+                'in_stock' => false,
+                'stock_qty' => null,
+                'updated_at' => now(),
+            ]);
+
         $after = $this->inconsistencyCounts();
         $this->newLine();
         $this->info('Пересчитано связанных товаров: ' . count($productIds));
