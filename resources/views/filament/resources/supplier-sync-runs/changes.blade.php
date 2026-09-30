@@ -1,6 +1,6 @@
 <div class="space-y-4">
     <div class="text-sm text-gray-600 dark:text-gray-300">
-        Начало: {{ $run->started_at?->format('d.m.Y H:i:s') }}.
+        Начало: {{ $run->started_at?->timezone('Europe/Minsk')->format('d.m.Y H:i:s') }}.
         Всего изменений: {{ $total }}.
         @if ($total > 300)
             Показаны последние 300 записей.

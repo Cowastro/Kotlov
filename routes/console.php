@@ -8,6 +8,8 @@ Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
 })->purpose('Display an inspiring quote');
 
+$supplierSyncTimezone = 'Europe/Minsk';
+
 // ── Русклимат: ежедневная синхронизация ──────────────────────────────────────
 // Сервер cron (один раз): * * * * * cd /var/www/h209767/data/www/new.kotlov.by && /opt/alt/php83/usr/bin/php artisan schedule:run >> /dev/null 2>&1
 //
@@ -20,7 +22,8 @@ Artisan::command('inspire', function () {
 //   php artisan supplier:enrich-rusklimat --skip-content   # фото + характеристики, без AI
 //   php artisan supplier:enrich-rusklimat --ai-only        # AI-описания (по согласованию)
 Schedule::command('supplier:sync-rusklimat --apply --create-new --fix-retail-prices')
-    ->dailyAt('06:00')
+    ->dailyAt('07:00')
+    ->timezone($supplierSyncTimezone)
     ->withoutOverlapping()
     ->runInBackground()
     ->appendOutputTo(storage_path('logs/rusklimat-sync.log'));
@@ -28,7 +31,8 @@ Schedule::command('supplier:sync-rusklimat --apply --create-new --fix-retail-pri
 // BANIA: раз в сутки обновляет закупку, наличие и розничные цены по уже связанным товарам.
 // Новые товары не создаются, сомнительные совпадения уходят в CSV-отчёт.
 Schedule::command('supplier:sync-bania-pricelist --apply --sync-retail-prices')
-    ->dailyAt('06:07')
+    ->dailyAt('07:10')
+    ->timezone($supplierSyncTimezone)
     ->withoutOverlapping()
     ->runInBackground()
     ->appendOutputTo(storage_path('logs/bania-pricelist-sync.log'));
@@ -36,7 +40,8 @@ Schedule::command('supplier:sync-bania-pricelist --apply --sync-retail-prices')
 // RN-Profi: обновляем цены и наличие кусками по вкладкам Google Sheet.
 // Только уже связанные товары; создание карточек и обогащение источников запускаем отдельно.
 Schedule::command('supplier:sync-rn-profi-chunks --apply --sync-retail-prices --only-linked')
-    ->dailyAt('06:17')
+    ->dailyAt('07:20')
+    ->timezone($supplierSyncTimezone)
     ->withoutOverlapping()
     ->runInBackground()
     ->appendOutputTo(storage_path('logs/rn-profi-price-stock-sync.log'));
@@ -44,21 +49,24 @@ Schedule::command('supplier:sync-rn-profi-chunks --apply --sync-retail-prices --
 // Майтек Групп: ежедневно обновляем цены, наличие и source_url по уже связанным товарам.
 // Новые товары и обогащение карточек запускаются отдельно после проверки.
 Schedule::command('supplier:sync-maitek-group --apply --sync-retail-prices')
-    ->dailyAt('06:37')
+    ->dailyAt('07:40')
+    ->timezone($supplierSyncTimezone)
     ->withoutOverlapping()
     ->runInBackground()
     ->appendOutputTo(storage_path('logs/maitek-group-price-stock-sync.log'));
 
 // Thermostudio: safe daily price/stock refresh for already linked products only.
 Schedule::command('supplier:sync-thermostudio-pricelist --apply --only-linked --sync-retail-prices')
-    ->dailyAt('06:47')
+    ->dailyAt('07:50')
+    ->timezone($supplierSyncTimezone)
     ->withoutOverlapping()
     ->runInBackground()
     ->appendOutputTo(storage_path('logs/thermostudio-pricelist-sync.log'));
 
 // Akvatermex: safe daily price/stock refresh for already linked Thermex group products only.
 Schedule::command('supplier:sync-akvatermex --apply --only-linked --sync-retail-prices --prefer-teplodvor-source')
-    ->dailyAt('06:57')
+    ->dailyAt('08:00')
+    ->timezone($supplierSyncTimezone)
     ->withoutOverlapping()
     ->runInBackground()
     ->appendOutputTo(storage_path('logs/akvatermex-pricelist-sync.log'));
@@ -67,14 +75,16 @@ Schedule::command('supplier:sync-akvatermex --apply --only-linked --sync-retail-
 // Поставщик заменяет файл в общей папке, поэтому каждый запуск сам выбирает
 // самый свежий XLS/XLSX. Новые товары автоматически не создаются.
 Schedule::command('supplier:sync-ligmet --apply --folder-url=https://drive.google.com/drive/folders/1pQQRGMKBEHHEjUF3AYsi_dTvlxxTFxzz')
-    ->dailyAt('07:00')
+    ->dailyAt('08:10')
+    ->timezone($supplierSyncTimezone)
     ->withoutOverlapping()
     ->runInBackground()
     ->appendOutputTo(storage_path('logs/ligmet-sync.log'));
 
 // ТСК Насосы: ежедневно обновляем цены и наличие насосного оборудования.
 Schedule::command('supplier:sync-tsk-nasosy --apply')
-    ->dailyAt('07:30')
+    ->dailyAt('08:20')
+    ->timezone($supplierSyncTimezone)
     ->withoutOverlapping()
     ->runInBackground()
     ->appendOutputTo(storage_path('logs/tsk-nasosy-sync.log'));
@@ -82,7 +92,8 @@ Schedule::command('supplier:sync-tsk-nasosy --apply')
 // Курсы НБРБ: ежедневно загружаем EUR/USD/RUB и пересчитываем BYN цены
 // для поставщиков с иностранной валютой (S-TANK и др.).
 Schedule::command('currency:fetch-nbrb-rates')
-    ->dailyAt('07:00')
+    ->dailyAt('06:55')
+    ->timezone($supplierSyncTimezone)
     ->withoutOverlapping()
     ->runInBackground()
     ->appendOutputTo(storage_path('logs/nbrb-rates.log'));
@@ -90,7 +101,8 @@ Schedule::command('currency:fetch-nbrb-rates')
 // ГазКотелБел (ЖИТОМИР / GKB): ежедневно обновляем цены, остатки и РРЦ.
 // Прайс в BYN — конвертация не нужна.
 Schedule::command('supplier:sync-gazkotelbel --apply')
-    ->dailyAt('08:00')
+    ->dailyAt('08:30')
+    ->timezone($supplierSyncTimezone)
     ->withoutOverlapping()
     ->runInBackground()
     ->appendOutputTo(storage_path('logs/gazkotelbel-sync.log'));
@@ -98,7 +110,8 @@ Schedule::command('supplier:sync-gazkotelbel --apply')
 // TM Management: once a day refresh all price-list sheets in one run.
 // This also keeps the synchronization journal concise: one supplier entry per day.
 Schedule::command('supplier:sync-tm-management --apply')
-    ->dailyAt('08:17')
+    ->dailyAt('08:40')
+    ->timezone($supplierSyncTimezone)
     ->withoutOverlapping(180)
     ->runInBackground()
     ->appendOutputTo(storage_path('logs/tm-management-sync.log'));

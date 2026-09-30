@@ -44,7 +44,7 @@ class SupplierSyncRunResource extends Resource
             ->columns([
                 TextColumn::make('started_at')
                     ->label('Дата и время')
-                    ->dateTime('d.m.Y H:i:s')
+                    ->dateTime('d.m.Y H:i:s', 'Europe/Minsk')
                     ->sortable(),
 
                 TextColumn::make('command')

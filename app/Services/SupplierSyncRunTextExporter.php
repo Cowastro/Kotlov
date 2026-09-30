@@ -22,7 +22,7 @@ class SupplierSyncRunTextExporter
         $lines = [
             'ЖУРНАЛ ИЗМЕНЕНИЙ СИНХРОНИЗАЦИИ',
             str_repeat('=', 42),
-            'Дата запуска: '.($run->started_at?->format('d.m.Y H:i:s') ?? '—'),
+            'Дата запуска: '.($run->started_at?->timezone('Europe/Minsk')->format('d.m.Y H:i:s') ?? '—'),
             'Команда: '.($run->command ?: '—'),
             'Поставщик: '.($run->supplier_names ?: '—'),
             'Статус: '.$this->status($run->status),
