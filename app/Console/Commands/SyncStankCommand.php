@@ -24,7 +24,8 @@ class SyncStankCommand extends Command
 {
     protected $signature = 'supplier:sync-stank
         {--dry-run   : Показать что изменится без записи}
-        {--rate=     : Курс EUR/BYN вместо НБРБ API}';
+        {--rate=     : Курс EUR/BYN вместо НБРБ API}
+        {--only-series= : Ограничить синхронизацию сериями через запятую, например BER}';
 
     protected $description = 'Sync S-TANK EUR prices: создаёт поставщика, supplier_products и обновляет products.price';
 
@@ -33,18 +34,18 @@ class SyncStankCommand extends Command
     private const NBRB_URL      = 'https://api.nbrb.by/exrates/rates/EUR?parammode=2';
 
     /**
-     * EUR РРЦ из прайса S-TANK (январь 2026).
+     * EUR РРЦ из прайса S-TANK (октябрь 2026).
      * Ключ = нормализованный артикул (СЕРИЯ-РАЗМЕР, верхний регистр, без пробелов).
      */
     private const EUR_PRICES = [
         // BER — баки косвенного нагрева
-        'BER-150'  => 484.00,
-        'BER-200'  => 542.00,
-        'BER-300'  => 842.00,
-        'BER-400'  => 1212.00,
-        'BER-500'  => 1370.00,
-        'BER-750'  => 1792.00,
-        'BER-1000' => 2133.00,
+        'BER-150'  => 508.00,
+        'BER-200'  => 569.00,
+        'BER-300'  => 884.00,
+        'BER-400'  => 1273.00,
+        'BER-500'  => 1439.00,
+        'BER-750'  => 1882.00,
+        'BER-1000' => 2240.00,
 
         // TA90 / TA line → в каталоге "AT-xxx" и "Prestige AT-xxx"
         'AT-200'   => 442.00,
@@ -97,6 +98,10 @@ class SyncStankCommand extends Command
     public function handle(): int
     {
         $dryRun = $this->option('dry-run');
+        $onlySeries = array_values(array_filter(array_map(
+            static fn (string $series): string => strtoupper(trim($series)),
+            explode(',', (string) $this->option('only-series'))
+        )));
 
         // 1. Получить курс EUR/BYN
         $rate = $this->fetchRate();
@@ -142,6 +147,12 @@ class SyncStankCommand extends Command
 
         foreach ($products as $product) {
             $artKey = $this->extractArticleKey($product->name);
+            if ($artKey !== null && $onlySeries !== [] && ! collect($onlySeries)->contains(
+                static fn (string $series): bool => str_starts_with($artKey, $series . '-')
+            )) {
+                continue;
+            }
+
             if ($artKey === null || !isset(self::EUR_PRICES[$artKey])) {
                 $this->warn("  ⚠️  Не найдена EUR цена для: {$product->name} (ключ: " . ($artKey ?? 'null') . ")");
                 $stats['no_price']++;
