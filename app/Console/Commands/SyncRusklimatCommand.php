@@ -327,7 +327,20 @@ class SyncRusklimatCommand extends Command
             ],
         ]);
 
-        $content = @file_get_contents($exportUrl, false, $context);
+        $content = false;
+
+        for ($attempt = 1; $attempt <= 3; $attempt++) {
+            $content = @file_get_contents($exportUrl, false, $context);
+
+            if ($content !== false && trim($content) !== '') {
+                break;
+            }
+
+            if ($attempt < 3) {
+                $this->warn("Google Sheets did not respond (attempt {$attempt}/3). Retrying in 5 seconds…");
+                sleep(5);
+            }
+        }
 
         if ($content === false) {
             // Try without SSL verification as a fallback (some Windows setups lack CA bundle)
