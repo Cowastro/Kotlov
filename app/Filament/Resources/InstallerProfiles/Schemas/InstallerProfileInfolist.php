@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\InstallerProfiles\Schemas;
 
+use App\Support\InstallerMedia;
 use Filament\Infolists\Components\IconEntry;
 use Filament\Infolists\Components\ImageEntry;
 use Filament\Infolists\Components\TextEntry;
@@ -148,14 +149,20 @@ class InstallerProfileInfolist
                     ->schema([
                         ImageEntry::make('photo')
                             ->label('Фото / аватар')
+                            ->getStateUsing(fn ($record) => InstallerMedia::url($record->photo))
                             ->circular()
                             ->placeholder('—'),
                         ImageEntry::make('logo')
                             ->label('Логотип')
+                            ->getStateUsing(fn ($record) => InstallerMedia::url($record->logo))
                             ->placeholder('—'),
-                        TextEntry::make('gallery')
-                            ->label('Галерея (файлы)')
-                            ->badge()
+                        ImageEntry::make('gallery')
+                            ->label('Галерея работ')
+                            ->getStateUsing(fn ($record) => collect($record->gallery ?? [])
+                                ->map(fn ($path) => InstallerMedia::url($path))
+                                ->filter()
+                                ->values()
+                                ->all())
                             ->placeholder('—'),
                         TextEntry::make('certificate_photo')
                             ->label('Сертификат (старое поле)')

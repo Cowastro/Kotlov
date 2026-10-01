@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\InstallerProfiles\Tables;
 
+use App\Support\InstallerMedia;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\Action;
 use Filament\Actions\DeleteBulkAction;
@@ -22,6 +23,7 @@ class InstallerProfilesTable
             ->columns([
                 ImageColumn::make('photo')
                     ->label('Фото')
+                    ->getStateUsing(fn ($record) => InstallerMedia::url($record->photo))
                     ->circular()
                     ->defaultImageUrl(fn () => null)
                     ->toggleable(),
