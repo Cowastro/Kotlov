@@ -371,6 +371,7 @@ class CatalogController extends Controller
             $articleOrder = [
                 'kak-vybrat-teplovoy-nasos',
                 'teplovye-nasosy-ge-r290-vysokotemperaturnye',
+                'montazh-teplovogo-nasosa-kotlov-ge-10-kvt-r290-smolevichskiy-rayon',
                 'teplovoy-nasos-kotlov-ge-24-kvt-r32-nareyki',
                 'teplovoy-nasos-115-kvt-r290-ostroshitskiy-gorodok',
             ];
