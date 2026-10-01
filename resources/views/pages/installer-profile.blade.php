@@ -42,6 +42,11 @@
     .installer-work-card__media img { width:100%;height:100%;object-fit:cover;transition:transform .3s ease; }
     .installer-work-card:hover .installer-work-card__media img { transform:scale(1.025); }
     .installer-work-card__badge { position:absolute;top:12px;left:12px;padding:6px 9px;border-radius:999px;background:rgba(17,17,17,.86);color:#fff;font-size:10px;font-weight:750;backdrop-filter:blur(8px); }
+    .installer-work-card__count { position:absolute;right:12px;bottom:12px;padding:6px 9px;border-radius:999px;background:rgba(255,255,255,.9);color:#171717;font-size:10px;font-weight:750;backdrop-filter:blur(8px); }
+    .installer-work-card__gallery { display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;padding:6px 6px 0;background:#fff; }
+    .installer-work-card__gallery a { display:block;aspect-ratio:4/3;overflow:hidden;border-radius:10px;background:#efefef; }
+    .installer-work-card__gallery img { width:100%;height:100%;object-fit:cover;transition:transform .25s ease; }
+    .installer-work-card__gallery a:hover img { transform:scale(1.04); }
     .installer-work-card__body { padding:18px; }
     .installer-work-card__description { color:#666;font-size:13px;line-height:1.55; }
     .installer-work-card__link { display:inline-flex;align-items:center;gap:6px;margin-top:12px;color:#a85d00;font-size:13px;font-weight:750; }
@@ -469,7 +474,7 @@
 
                             <a href="{{ route('install-requests.create', ['installer' => $installer->id]) }}"
                                class="tf-btn animate-btn w-100 text-center installer-profile__mobile-cta">
-                                Оставить заявку Алексею Максимову
+                                Оставить заявку специалисту
                             </a>
                         </div>
 
@@ -496,8 +501,11 @@
                             <div class="row g-20">
                                 @foreach($installer->works as $work)
                                 @php
-                                    $photo = is_array($work->photos) && count($work->photos)
-                                        ? \App\Support\InstallerMedia::url($work->photos[0]) : null;
+                                    $workPhotos = collect(is_array($work->photos) ? $work->photos : [])
+                                        ->map(fn ($path) => \App\Support\InstallerMedia::url($path))
+                                        ->filter()
+                                        ->values();
+                                    $photo = $workPhotos->first();
                                     $articleUrl = $work->blogPost ? route('blog.show', $work->blogPost->slug) : null;
                                 @endphp
                                 <div class="col-md-6">
@@ -507,7 +515,20 @@
                                             <img src="{{ $photo }}" alt="{{ $work->title }}"
                                                  loading="lazy">
                                             <span class="installer-work-card__badge">Реальный объект</span>
+                                            @if($workPhotos->count() > 1)
+                                            <span class="installer-work-card__count">{{ $workPhotos->count() }} фото</span>
+                                            @endif
                                         </a>
+                                        @if($workPhotos->count() > 1)
+                                        <div class="installer-work-card__gallery">
+                                            @foreach($workPhotos->skip(1)->take(3) as $index => $galleryPhoto)
+                                            <a href="{{ $galleryPhoto }}" target="_blank" rel="noopener"
+                                               aria-label="Открыть дополнительное фото работы {{ $index + 2 }}">
+                                                <img src="{{ $galleryPhoto }}" alt="{{ $work->title }} — фото {{ $index + 2 }}" loading="lazy">
+                                            </a>
+                                            @endforeach
+                                        </div>
+                                        @endif
                                         @else
                                         <div class="installer-work-card__media" style="display:flex;align-items:center;justify-content:center;">
                                             <i class="icon icon-Image fs-32 cl-text-3"></i>
