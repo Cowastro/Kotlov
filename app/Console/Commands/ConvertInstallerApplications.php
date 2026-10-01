@@ -10,7 +10,7 @@ class ConvertInstallerApplications extends Command
 {
     protected $signature = 'installer:convert-applications
                             {--application=* : ID конкретных заявок}
-                            {--draft : Создать профили без публикации}';
+                            {--publish : Сразу опубликовать профили после проверки согласия}';
 
     protected $description = 'Создать профили монтажников из принятых заявок без дублей';
 
@@ -36,7 +36,7 @@ class ConvertInstallerApplications extends Command
         }
 
         foreach ($applications as $application) {
-            $profile = $converter->convert($application, ! $this->option('draft'));
+            $profile = $converter->convert($application, (bool) $this->option('publish'));
             $this->line("#{$application->id} {$application->contact_name} -> профиль #{$profile->id} {$profile->slug}");
         }
 

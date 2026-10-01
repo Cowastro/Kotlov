@@ -116,7 +116,7 @@ class InstallerApplicationConverter
                 ? "Монтажник инженерных систем, опыт {$experience} лет"
                 : 'Монтажник инженерных систем',
             'specializations' => $specializations,
-            'status' => 'active',
+            'status' => $publish ? 'active' : 'pending',
             'is_published' => $publish,
             'is_verified' => false,
         ];

@@ -73,14 +73,14 @@ class InstallerApplicationsTable
                     ->color('success')
                     ->requiresConfirmation()
                     ->modalHeading('Создать профиль монтажника?')
-                    ->modalDescription('Данные будут перенесены из заявки. Профиль станет активным и появится в публичном каталоге, но останется без отметки верификации.')
+                    ->modalDescription('Данные будут перенесены в черновик профиля. Проверьте контакты, добавьте фото и портфолио, затем опубликуйте профиль вручную.')
                     ->visible(fn ($record) => $record->status === 'approved' && ! $record->installer_profile_id)
                     ->action(function ($record) {
-                        $profile = app(InstallerApplicationConverter::class)->convert($record);
+                        $profile = app(InstallerApplicationConverter::class)->convert($record, false);
 
                         Notification::make()
                             ->success()
-                            ->title('Профиль монтажника создан')
+                            ->title('Черновик профиля создан')
                             ->body('Теперь добавьте фотографию, описание и портфолио.')
                             ->send();
 
