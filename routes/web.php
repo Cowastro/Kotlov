@@ -18,6 +18,7 @@ use App\Http\Controllers\TelegramWebhookController;
 use App\Http\Controllers\CompareController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\AccountController;
+use App\Http\Controllers\InstallerAccountController;
 use App\Http\Controllers\SearchController;
 use App\Http\Controllers\PartnerApplicationController;
 use App\Http\Controllers\ReviewController;
@@ -319,6 +320,17 @@ Route::middleware('auth')->group(function () {
     Route::put('/account/profile',      [AccountController::class, 'updateProfile'])->name('account.profile');
     Route::put('/account/password',     [AccountController::class, 'updatePassword'])->name('account.password');
     Route::post('/account/b2b-request', [AccountController::class, 'b2bRequest'])->name('account.b2b-request');
+
+    Route::get('/account/installer-profile', [InstallerAccountController::class, 'edit'])
+        ->name('account.installer-profile');
+    Route::put('/account/installer-profile', [InstallerAccountController::class, 'update'])
+        ->name('account.installer-profile.update');
+    Route::post('/account/installer-works', [InstallerAccountController::class, 'storeWork'])
+        ->name('account.installer-works.store');
+    Route::put('/account/installer-works/{work}', [InstallerAccountController::class, 'updateWork'])
+        ->name('account.installer-works.update');
+    Route::delete('/account/installer-works/{work}', [InstallerAccountController::class, 'destroyWork'])
+        ->name('account.installer-works.destroy');
 });
 
 

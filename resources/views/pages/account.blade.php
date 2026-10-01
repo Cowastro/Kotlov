@@ -66,6 +66,12 @@
                         <div class="br-line mb-8"></div>
 
                         <div class="my-account-nav">
+                            @if ($installerProfile)
+                            <a href="{{ route('account.installer-profile') }}" class="link-account">
+                                <i class="icon icon-Wrench"></i>
+                                <span class="text h6 fw-medium">Кабинет монтажника</span>
+                            </a>
+                            @endif
                             <a href="#" class="link-account {{ session('open_tab', 'orders') === 'orders' && !$errors->any() ? 'active' : '' }}"
                                 data-tab="orders" onclick="showAccountTab('orders'); return false;">
                                 <i class="icon icon-Package"></i>
@@ -398,6 +404,12 @@
         </div>
         <div class="canvas-body">
             <div class="my-account-nav">
+                @if ($installerProfile)
+                <a href="{{ route('account.installer-profile') }}" class="link-account">
+                    <i class="icon icon-Wrench"></i>
+                    <span class="text h6 fw-medium">Кабинет монтажника</span>
+                </a>
+                @endif
                 <a href="#" class="link-account" data-tab="orders"
                     onclick="showAccountTab('orders'); bootstrap.Offcanvas.getInstance(document.getElementById('mbSidebar')).hide(); return false;">
                     <i class="icon icon-Package"></i>

@@ -20,7 +20,9 @@ class AccountController extends Controller
             ->orderByDesc('created_at')
             ->paginate(10);
 
-        return view('pages.account', compact('user', 'orders'));
+        $installerProfile = $user->installerProfile;
+
+        return view('pages.account', compact('user', 'orders', 'installerProfile'));
     }
 
     public function updateProfile(Request $request)
