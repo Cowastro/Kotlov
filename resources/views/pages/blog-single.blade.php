@@ -35,10 +35,114 @@
         border-color: #d7d2ca;
         box-shadow: 0 9px 24px rgba(25, 31, 35, .07);
     }
+    .kotlov-blog-content .blog-faq {
+        box-sizing: border-box;
+        width: 100%;
+        max-width: 100%;
+        margin: 44px 0 12px;
+        padding: 32px;
+        border: 1px solid #e8e4dc;
+        border-radius: 22px;
+        background: linear-gradient(145deg, #fff 0%, #fbfaf7 100%);
+        box-shadow: 0 14px 42px rgba(25, 31, 35, .06);
+    }
+    .kotlov-blog-content .blog-faq-heading { margin-bottom: 22px; }
+    .kotlov-blog-content .blog-faq-kicker {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 9px;
+        color: #e94b42;
+        font-size: 12px;
+        font-weight: 700;
+        letter-spacing: .08em;
+        line-height: 1.2;
+        text-transform: uppercase;
+    }
+    .kotlov-blog-content .blog-faq-kicker::before {
+        width: 24px;
+        height: 2px;
+        border-radius: 999px;
+        background: currentColor;
+        content: '';
+    }
+    .kotlov-blog-content .blog-faq .blog-faq-title {
+        margin: 0;
+        font-size: clamp(28px, 3vw, 38px);
+        line-height: 1.14;
+        letter-spacing: -.025em;
+    }
+    .kotlov-blog-content .blog-faq-list {
+        display: grid;
+        gap: 12px;
+    }
+    .kotlov-blog-content .blog-faq-item {
+        box-sizing: border-box;
+        width: 100%;
+        min-width: 0;
+        overflow: hidden;
+        border: 1px solid #e7e2da;
+        border-radius: 15px;
+        background: #fff;
+        transition: border-color .2s ease, box-shadow .2s ease;
+    }
+    .kotlov-blog-content .blog-faq-item[open] {
+        border-color: #f1b4ad;
+        box-shadow: 0 9px 26px rgba(25, 31, 35, .055);
+    }
+    .kotlov-blog-content .blog-faq-question {
+        position: relative;
+        display: flex;
+        align-items: center;
+        min-height: 70px;
+        margin: 0;
+        padding: 19px 64px 19px 22px;
+        color: #17191c;
+        cursor: pointer;
+        font-size: 19px;
+        font-weight: 650;
+        line-height: 1.35;
+        list-style: none;
+        overflow-wrap: anywhere;
+    }
+    .kotlov-blog-content .blog-faq-question::-webkit-details-marker { display: none; }
+    .kotlov-blog-content .blog-faq-question::before,
+    .kotlov-blog-content .blog-faq-question::after {
+        position: absolute;
+        top: 50%;
+        right: 24px;
+        width: 16px;
+        height: 2px;
+        border-radius: 999px;
+        background: #e94b42;
+        content: '';
+        transition: transform .2s ease;
+    }
+    .kotlov-blog-content .blog-faq-question::after { transform: rotate(90deg); }
+    .kotlov-blog-content .blog-faq-item[open] .blog-faq-question::after { transform: rotate(0); }
+    .kotlov-blog-content .blog-faq-answer {
+        padding: 0 64px 21px 22px;
+        color: #555a60;
+        font-size: 16px;
+        line-height: 1.7;
+    }
+    .kotlov-blog-content .blog-faq-answer p { margin: 0; }
     @media (max-width: 767px) {
         .section-page-title-single .container,
-        .main-blog-single > .container { padding-right: 16px; padding-left: 16px; }
-        .main-blog-single > .container > .row { margin-right: 0; margin-left: 0; }
+        .main-blog-single > .container {
+            box-sizing: border-box;
+            width: 100%;
+            max-width: 100%;
+            padding-right: 16px;
+            padding-left: 16px;
+        }
+        .main-blog-single > .container > .row {
+            box-sizing: border-box;
+            width: 100%;
+            max-width: 100%;
+            margin-right: 0;
+            margin-left: 0;
+        }
         .main-blog-single > .container > .row > [class*="col-"] {
             width: 100%;
             min-width: 0;
@@ -50,9 +154,10 @@
         .kotlov-blog-content,
         .kotlov-blog-content .blog-heading,
         .kotlov-blog-content .blog-body {
-            width: calc(100vw - 32px);
+            box-sizing: border-box;
+            width: 100%;
             min-width: 0;
-            max-width: calc(100vw - 32px);
+            max-width: 100%;
         }
         .section-page-title-single .breadcrumbs p {
             overflow: hidden;
@@ -68,14 +173,20 @@
             max-width: 100%;
             overflow-wrap: anywhere;
         }
+        .kotlov-blog-content .blog-body > * {
+            box-sizing: border-box;
+            min-width: 0;
+            max-width: 100%;
+        }
         .kotlov-blog-content .entry-title {
             font-size: clamp(28px, 8vw, 34px);
             line-height: 1.15;
         }
         .main-blog-single .blog-heading .entry-meta {
-            width: calc(100vw - 32px);
+            box-sizing: border-box;
+            width: 100%;
             min-width: 0;
-            max-width: calc(100vw - 32px);
+            max-width: 100%;
             flex-wrap: wrap;
             justify-content: center;
             gap: 8px 14px;
@@ -89,6 +200,34 @@
         .kotlov-blog-content .blog-author-box::before { top: 20px; bottom: 20px; }
         .kotlov-blog-content .blog-next-box { padding: 24px 20px !important; }
         .kotlov-blog-content .blog-next-link { padding: 17px 18px !important; }
+        .kotlov-blog-content .blog-faq {
+            margin-top: 34px;
+            padding: 22px 16px 16px;
+            border-radius: 18px;
+        }
+        .kotlov-blog-content .blog-faq-heading { margin-bottom: 17px; padding: 0 3px; }
+        .kotlov-blog-content .blog-faq .blog-faq-title {
+            font-size: clamp(25px, 7.4vw, 31px);
+            line-height: 1.16;
+        }
+        .kotlov-blog-content .blog-faq-list { gap: 9px; }
+        .kotlov-blog-content .blog-faq-item { border-radius: 13px; }
+        .kotlov-blog-content .blog-faq-question {
+            min-height: 62px;
+            padding: 16px 50px 16px 17px;
+            font-size: 17px;
+            line-height: 1.35;
+        }
+        .kotlov-blog-content .blog-faq-question::before,
+        .kotlov-blog-content .blog-faq-question::after {
+            right: 18px;
+            width: 14px;
+        }
+        .kotlov-blog-content .blog-faq-answer {
+            padding: 0 17px 18px;
+            font-size: 15px;
+            line-height: 1.62;
+        }
     }
 </style>
 @endpush
