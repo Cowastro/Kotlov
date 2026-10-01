@@ -210,7 +210,7 @@
                                 : null;
                             $installerMedia = \App\Support\InstallerMedia::url($installer->photo ?? $installer->logo ?? $featuredPhoto);
                         @endphp
-                        <div class="account-avatar mb-20 text-center">
+                        <div class="mb-20 text-center">
                             <div class="mb-12">
                                 @if($installerMedia)
                                     <img src="{{ $installerMedia }}"
