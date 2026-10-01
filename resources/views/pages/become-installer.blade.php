@@ -18,9 +18,9 @@
                         <i class="icon icon-CaretRightThin cl-text-3"></i>
                         <p class="text-caption-01">Стать монтажником</p>
                     </div>
-                    <h1 class="mb-16">Станьте монтажником KOTLOV — получайте новых клиентов каждый месяц</h1>
+                    <h1 class="mb-16">Станьте монтажником KOTLOV — получайте заявки на монтаж</h1>
                     <p class="text-body-1 cl-text-2 mb-12">
-                        Ваша личная страница специалиста в крупнейшем отопительном каталоге Беларуси.
+                        Ваша личная страница специалиста в каталоге отопительного оборудования Беларуси.
                         Клиенты находят вас сами — когда уже выбирают котёл, камин или тепловой насос.
                     </p>
                     <p class="text-body-1 cl-text-2 mb-32">
@@ -71,7 +71,7 @@
                 <div class="col-lg-4 col-sm-6">
                     <div class="box-icon-custom text-center p-24 h-100" style="border:1px solid #f0f0f0;border-radius:16px;">
                         <div class="mb-16"><i class="icon icon-Users fs-40 cl-primary"></i></div>
-                        <p class="h6 fw-semibold mb-8">Новые клиенты каждый месяц</p>
+                        <p class="h6 fw-semibold mb-8">Доступ к новым клиентам</p>
                         <p class="cl-text-2 text-body-2">
                             Ваш профиль виден на карточках товаров, в каталоге монтажников и региональных страницах.
                             Клиент выбирает котёл — и сразу видит вас рядом.
@@ -104,7 +104,7 @@
                         <p class="h6 fw-semibold mb-8">Статус «Проверенный монтажник»</p>
                         <p class="cl-text-2 text-body-2">
                             После проверки — бейдж доверия KOTLOV.
-                            Клиенты выбирают проверенных специалистов в первую очередь.
+                            Статус помогает клиенту отличить заполненный и проверенный профиль.
                         </p>
                     </div>
                 </div>
@@ -121,10 +121,10 @@
                 <div class="col-lg-4 col-sm-6">
                     <div class="box-icon-custom text-center p-24 h-100" style="border:1px solid #f0f0f0;border-radius:16px;">
                         <div class="mb-16"><i class="icon icon-Devices fs-40 cl-primary"></i></div>
-                        <p class="h6 fw-semibold mb-8">Личный кабинет (скоро)</p>
+                        <p class="h6 fw-semibold mb-8">Адресные заявки</p>
                         <p class="cl-text-2 text-body-2">
-                            Управляйте профилем, заявками и заказами оборудования в одном окне.
-                            Без звонков менеджерам — всё онлайн.
+                            Клиент выбирает конкретного специалиста, а заявка сохраняется с его именем.
+                            Менеджер KOTLOV помогает согласовать следующий шаг.
                         </p>
                     </div>
                 </div>
@@ -133,7 +133,8 @@
     </section>
     {{-- /Блок результатов --}}
 
-    {{-- Сколько может зарабатывать монтажник --}}
+    {{-- Сколько может зарабатывать монтажник. Скрыто до накопления подтверждённой статистики. --}}
+    @if (false)
     <section class="flat-spacing pt-0">
         <div class="container">
             <div class="sect-heading type-2 text-center mb-40">
@@ -181,6 +182,7 @@
             </div>
         </div>
     </section>
+    @endif
     {{-- /Сколько может зарабатывать --}}
 
     {{-- Собственный мини-сайт специалиста --}}
@@ -228,7 +230,8 @@
     </section>
     {{-- /Мини-сайт --}}
 
-    {{-- Пример профиля монтажника (мокап) --}}
+    {{-- Старый HTML-мокап профиля. Скрыт: выше уже используется актуальное превью реальной страницы. --}}
+    @if (false)
     <section class="flat-spacing pt-0" id="profile-mockup">
         <div class="container">
             <div class="sect-heading type-2 text-center mb-40">
@@ -377,6 +380,7 @@
             </div>
         </div>
     </section>
+    @endif
     {{-- /Мокап профиля --}}
 
     {{-- Проверенный монтажник KOTLOV --}}
@@ -396,7 +400,7 @@
                         <strong>«Проверенный монтажник KOTLOV»</strong> — зелёный бейдж доверия на странице профиля.
                     </p>
                     <p class="text-body-1 cl-text-2 mb-24">
-                        Клиенты выбирают проверенных специалистов в 3 раза чаще. Бейдж означает, что
+                        Такой профиль получает заметную отметку в каталоге. Бейдж означает, что
                         мы проверили опыт, специализацию и регион работы монтажника.
                     </p>
                     <div class="d-flex flex-column gap-10 mb-32">
@@ -470,7 +474,7 @@
                             по специальным ценам для партнёров KOTLOV.
                         </p>
                         <div class="d-flex flex-column gap-10">
-                            @foreach(['Скидка до 15% от розничной цены','Доступно на весь ассортимент каталога','Цены видны только в личном кабинете'] as $item)
+                            @foreach(['Скидка до 15% от розничной цены','Доступно на весь ассортимент каталога','Условия уточняются у персонального менеджера'] as $item)
                             <div class="d-flex align-items-center gap-8">
                                 <i class="icon icon-CheckCircle cl-primary" style="font-size:16px;flex-shrink:0;"></i>
                                 <span style="font-size:14px;color:#666;">{{ $item }}</span>
@@ -520,7 +524,8 @@
     </section>
     {{-- /Партнёрские цены --}}
 
-    {{-- Будущий личный кабинет --}}
+    {{-- Будущий личный кабинет. Вернём блок после запуска доступной пользователю функции. --}}
+    @if (false)
     <section class="flat-spacing pt-0" id="installer-cabinet">
         <div class="container">
             <div class="sect-heading type-2 text-center mb-40">
@@ -589,6 +594,7 @@
             </div>
         </div>
     </section>
+    @endif
     {{-- /Будущий личный кабинет --}}
 
     {{-- Как это работает --}}
@@ -758,7 +764,8 @@
     </section>
     {{-- /Какие заявки --}}
 
-    {{-- CTA перед формой --}}
+    {{-- Дублирующий CTA перед формой скрыт: форма уже начинается сразу после полезного контента. --}}
+    @if (false)
     <section class="flat-spacing pt-0">
         <div class="container">
             <div class="flat-cta rounded-16" style="background:var(--line);padding:40px 32px;">
@@ -785,6 +792,7 @@
             </div>
         </div>
     </section>
+    @endif
     {{-- /CTA --}}
 
     {{-- Форма заявки --}}
@@ -1022,9 +1030,9 @@
     <section class="flat-spacing pt-0">
         <div class="container">
             <div class="flat-cta text-center p-48 rounded-16" style="background:var(--line);">
-                <h3 class="mb-12">Готовы получать новых клиентов каждый месяц?</h3>
+                <h3 class="mb-12">Готовы принимать заявки через KOTLOV?</h3>
                 <p class="text-body-1 cl-text-2 mb-8">
-                    Подайте заявку прямо сейчас — и начните получать заявки на монтаж уже в этом месяце.
+                    Подайте заявку — после проверки мы подготовим и опубликуем профиль специалиста.
                 </p>
                 <p class="cl-text-3 mb-32" style="font-size:14px;">
                     Страница специалиста · Портфолио · Отзывы · Партнёрские цены — всё бесплатно
