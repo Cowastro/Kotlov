@@ -64,6 +64,7 @@ class InstallerController extends Controller
             ->where(function ($q) {
                 $q->whereNotNull('contact_name')->orWhereNotNull('company_name');
             })
+            ->with('featuredWork')
             ->withCount([
                 'works' => fn ($q) => $q->where('is_published', true),
             ]);
@@ -162,6 +163,7 @@ class InstallerController extends Controller
             ->where('status', 'active')
             ->with([
                 'works' => fn ($q) => $q->where('is_published', true)
+                                        ->with('blogPost')
                                         ->orderByDesc('completed_at'),
                 'reviews' => fn ($q) => $q->where('is_approved', true)
                                           ->latest(),

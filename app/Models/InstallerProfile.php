@@ -95,6 +95,13 @@ class InstallerProfile extends Model
         return $this->hasMany(InstallerWork::class);
     }
 
+    public function featuredWork(): HasOne
+    {
+        return $this->hasOne(InstallerWork::class)
+            ->where('is_published', true)
+            ->ofMany('completed_at', 'max');
+    }
+
     public function installRequests(): HasMany
     {
         return $this->hasMany(InstallRequest::class);

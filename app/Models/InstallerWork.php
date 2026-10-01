@@ -9,6 +9,7 @@ class InstallerWork extends Model
 {
     protected $fillable = [
         'installer_profile_id',
+        'blog_post_id',
         'title',
         'description',
         'work_type',
@@ -30,5 +31,10 @@ class InstallerWork extends Model
     public function installerProfile(): BelongsTo
     {
         return $this->belongsTo(InstallerProfile::class);
+    }
+
+    public function blogPost(): BelongsTo
+    {
+        return $this->belongsTo(BlogPost::class);
     }
 }

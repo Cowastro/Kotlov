@@ -204,12 +204,16 @@
                                     $location = $installer->nationwide ? 'Вся Беларусь' : implode(', ', array_filter([$installer->city, $installer->region]));
                                     $profileSpecs = collect($installer->specializations ?? [])->filter(fn ($spec) => isset($specializations[$spec]));
                                     $description = $installer->short_description ?: $installer->bio;
+                                    $featuredPhoto = $installer->featuredWork && is_array($installer->featuredWork->photos)
+                                        ? ($installer->featuredWork->photos[0] ?? null)
+                                        : null;
+                                    $cardMedia = \App\Support\InstallerMedia::url($installer->photo ?? $installer->logo ?? $featuredPhoto);
                                 @endphp
                                 <div class="col-xl-6 col-md-6">
                                     <article class="installer-card">
                                         <a class="installer-card__media" href="{{ route('installers.show', $installer->slug) }}" aria-label="Открыть профиль {{ $name }}">
-                                            @if($installer->photo || $installer->logo)
-                                                <img loading="lazy" src="{{ asset('storage/' . ($installer->photo ?? $installer->logo)) }}" alt="{{ $name }}">
+                                            @if($cardMedia)
+                                                <img loading="lazy" src="{{ $cardMedia }}" alt="Работа монтажника {{ $name }}">
                                             @else
                                                 <span class="installer-card__initials">{{ $initials ?: 'K' }}</span>
                                             @endif

@@ -1,7 +1,56 @@
 @extends('layouts.amerce')
 
+@section('title', ($installer->contact_name ?: $installer->company_name) . ' — монтажник систем отопления | KOTLOV')
+@section('description', $installer->short_description ?: 'Проверенный монтажник KOTLOV: профиль, специализации, география и реальные выполненные работы.')
+
+@push('styles')
+<style>
+    .installer-profile { --ip-accent:#f28c00; --ip-ink:#171717; }
+    .installer-profile .sidebar-account-wrap { padding:20px;border:1px solid #e7e7e7;border-radius:20px;background:#fff;box-shadow:0 12px 34px rgba(0,0,0,.05); }
+    .installer-profile__portrait { width:100%;aspect-ratio:4/3;border-radius:16px;overflow:hidden;background:linear-gradient(145deg,#f0f0f0,#fff5e6); }
+    .installer-profile__portrait img { width:100%;height:100%;object-fit:cover; }
+    .installer-profile__portrait-empty { display:flex;align-items:center;justify-content:center;width:100%;height:100%;font-size:48px;font-weight:750;color:#333; }
+    .installer-profile__trust { display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border-radius:999px;background:#eaf8ef;color:#16713a;font-size:11px;font-weight:750; }
+    .installer-profile__lead { padding:26px;border-radius:20px;background:linear-gradient(135deg,#171717 0%,#29231d 68%,#493017 100%);color:#fff; }
+    .installer-profile__lead .cl-text-2 { color:rgba(255,255,255,.72)!important; }
+    .installer-profile__lead .installer-profile__chip { background:rgba(255,255,255,.1);color:#fff;border:1px solid rgba(255,255,255,.12); }
+    .installer-profile__chip { display:inline-flex;padding:7px 11px;border-radius:999px;background:#f3f3f3;color:#333;font-size:12px;font-weight:650; }
+    .installer-profile__gallery { display:grid;grid-template-columns:2fr 1fr 1fr;gap:10px; }
+    .installer-profile__gallery a { min-height:150px;border-radius:14px;overflow:hidden;background:#eee; }
+    .installer-profile__gallery a:first-child { grid-row:span 2; }
+    .installer-profile__gallery img { width:100%;height:100%;object-fit:cover;transition:transform .3s ease; }
+    .installer-profile__gallery a:hover img { transform:scale(1.025); }
+    .installer-work-card { height:100%;overflow:hidden;border:1px solid #e8e8e8;border-radius:16px;background:#fff;box-shadow:0 8px 24px rgba(0,0,0,.045); }
+    .installer-work-card__media { position:relative;display:block;aspect-ratio:16/10;overflow:hidden;background:#efefef; }
+    .installer-work-card__media img { width:100%;height:100%;object-fit:cover;transition:transform .3s ease; }
+    .installer-work-card:hover .installer-work-card__media img { transform:scale(1.025); }
+    .installer-work-card__badge { position:absolute;top:12px;left:12px;padding:6px 9px;border-radius:999px;background:rgba(17,17,17,.86);color:#fff;font-size:10px;font-weight:750;backdrop-filter:blur(8px); }
+    .installer-work-card__body { padding:18px; }
+    .installer-work-card__description { color:#666;font-size:13px;line-height:1.55; }
+    .installer-work-card__link { display:inline-flex;align-items:center;gap:6px;margin-top:12px;color:#a85d00;font-size:13px;font-weight:750; }
+    @media(max-width:991px){
+        .installer-profile .sidebar-account-wrap { position:static!important;margin-bottom:24px; }
+        .installer-profile__portrait { max-height:360px; }
+    }
+    @media(max-width:575px){
+        .installer-profile__lead { padding:20px; }
+        .installer-profile__gallery { grid-template-columns:1fr 1fr; }
+        .installer-profile__gallery a { min-height:118px; }
+        .installer-profile__gallery a:first-child { grid-column:1/-1;grid-row:auto;min-height:220px; }
+    }
+</style>
+@endpush
+
 @section('content')
-<main id="wrapper">
+@php
+    $featuredPhoto = $installer->works->first() && is_array($installer->works->first()->photos)
+        ? ($installer->works->first()->photos[0] ?? null)
+        : null;
+    $profileMedia = \App\Support\InstallerMedia::url($installer->photo ?? $installer->logo ?? $featuredPhoto);
+    $initials = collect(preg_split('/\s+/u', trim($installer->contact_name ?: $installer->company_name ?: 'KOTLOV')))
+        ->filter()->take(2)->map(fn ($part) => mb_strtoupper(mb_substr($part, 0, 1)))->implode('');
+@endphp
+<main id="wrapper" class="installer-profile">
 
     {{-- PAGE TITLE --}}
     <section class="section-page-title text-center flat-spacing-2 pb-0">
@@ -31,16 +80,12 @@
 
                         {{-- Аватар — account-avatar --}}
                         <div class="account-avatar mb-20 d-flex flex-column align-items-center text-center">
-                            <div class="avatar-image mb-16">
-                                @if($installer->photo || $installer->logo)
-                                    <img loading="lazy" width="120" height="120"
-                                        src="{{ asset('storage/' . ($installer->photo ?? $installer->logo)) }}"
-                                        alt="{{ $installer->company_name ?? $installer->contact_name }}"
-                                        style="border-radius:50%;object-fit:cover;width:120px;height:120px;">
+                            <div class="installer-profile__portrait mb-16">
+                                @if($profileMedia)
+                                    <img loading="lazy" src="{{ $profileMedia }}"
+                                        alt="Работа монтажника {{ $installer->contact_name ?? $installer->company_name }}">
                                 @else
-                                    <div style="width:120px;height:120px;border-radius:50%;background:var(--line);display:flex;align-items:center;justify-content:center;">
-                                        <i class="icon icon-UserCircle fs-56 cl-text-3"></i>
-                                    </div>
+                                    <div class="installer-profile__portrait-empty">{{ $initials ?: 'K' }}</div>
                                 @endif
                             </div>
 
@@ -54,7 +99,7 @@
                             {{-- Бейджи --}}
                             <div class="d-flex flex-wrap justify-content-center gap-6 mb-12">
                                 @if($installer->is_verified)
-                                <span style="font-size:11px;padding:2px 10px;background:#e8f5e9;color:#2e7d32;border-radius:4px;font-weight:600;">
+                                <span class="installer-profile__trust">
                                     <i class="icon icon-CheckCircle"></i> Верифицирован
                                 </span>
                                 @endif
@@ -157,8 +202,12 @@
                     <div class="my-account-content">
 
                         {{-- ── О специалисте ──────────────────────────── --}}
-                        <div id="section-about" class="account-my_address mb-32">
-                            <h4 class="account-title">О специалисте</h4>
+                        <div id="section-about" class="account-my_address installer-profile__lead mb-32">
+                            <p class="text-caption-01 mb-8" style="color:#f2a13a;font-weight:750;letter-spacing:.08em;text-transform:uppercase;">Проверенный специалист KOTLOV</p>
+                            <h1 class="h3 mb-12" style="color:#fff;">{{ $installer->contact_name ?: $installer->company_name }}</h1>
+                            @if($installer->company_name && $installer->contact_name)
+                            <p class="text-body-1 cl-text-2 mb-12">{{ $installer->company_name }}</p>
+                            @endif
 
                             @if($installer->short_description)
                             <p class="text-body-1 fw-medium mb-8">{{ $installer->short_description }}</p>
@@ -173,7 +222,7 @@
                                 <p class="text-caption-01 fw-medium cl-text-2 mb-8">Специализации:</p>
                                 <div class="d-flex flex-wrap gap-8">
                                     @foreach($installer->specializations as $spec)
-                                    <span style="font-size:12px;padding:4px 12px;background:var(--line);border-radius:20px;font-weight:500;">
+                                    <span class="installer-profile__chip">
                                         {{ $specLabels[$spec] ?? $spec }}
                                     </span>
                                     @endforeach
@@ -185,6 +234,25 @@
                             <p class="text-body-1 cl-text-3">Описание не заполнено.</p>
                             @endif
                         </div>
+
+                        @if($installer->gallery && count($installer->gallery))
+                        <div class="account-my_address mb-32">
+                            <div class="d-flex align-items-end justify-content-between gap-16 mb-16">
+                                <div>
+                                    <p class="text-caption-01 cl-text-3 mb-4">Реальные объекты</p>
+                                    <h4 class="account-title mb-0">Монтажи в работе и после запуска</h4>
+                                </div>
+                                <a href="#section-works" class="link fw-semibold">Смотреть кейсы ↓</a>
+                            </div>
+                            <div class="installer-profile__gallery">
+                                @foreach(array_slice($installer->gallery, 0, 4) as $image)
+                                <a href="{{ \App\Support\InstallerMedia::url($image) }}" target="_blank" rel="noopener">
+                                    <img loading="lazy" src="{{ \App\Support\InstallerMedia::url($image) }}" alt="Объект монтажника {{ $installer->contact_name }}">
+                                </a>
+                                @endforeach
+                            </div>
+                        </div>
+                        @endif
 
                         <div class="br-line fake-class" style="margin-bottom:24px;"></div>
 
@@ -327,31 +395,31 @@
                                     'commissioning' => 'Пусконаладка',
                                 ];
                             @endphp
-                            <div class="row g-3">
+                            <div class="row g-20">
                                 @foreach($installer->works as $work)
                                 @php
                                     $photo = is_array($work->photos) && count($work->photos)
-                                        ? asset('storage/' . $work->photos[0]) : null;
+                                        ? \App\Support\InstallerMedia::url($work->photos[0]) : null;
+                                    $articleUrl = $work->blogPost ? route('blog.show', $work->blogPost->slug) : null;
                                 @endphp
-                                <div class="col-sm-6 col-md-4">
-                                    <div style="border:1px solid var(--line);border-radius:10px;overflow:hidden;">
-                                        {{-- Фото --}}
+                                <div class="col-md-6">
+                                    <article class="installer-work-card">
                                         @if($photo)
-                                        <div style="aspect-ratio:4/3;overflow:hidden;">
+                                        <a class="installer-work-card__media" href="{{ $articleUrl ?: $photo }}" @unless($articleUrl) target="_blank" rel="noopener" @endunless>
                                             <img src="{{ $photo }}" alt="{{ $work->title }}"
-                                                 style="width:100%;height:100%;object-fit:cover;">
-                                        </div>
+                                                 loading="lazy">
+                                            <span class="installer-work-card__badge">Реальный объект</span>
+                                        </a>
                                         @else
-                                        <div style="aspect-ratio:4/3;background:var(--line);display:flex;align-items:center;justify-content:center;">
+                                        <div class="installer-work-card__media" style="display:flex;align-items:center;justify-content:center;">
                                             <i class="icon icon-Image fs-32 cl-text-3"></i>
                                         </div>
                                         @endif
-                                        {{-- Текст --}}
-                                        <div style="padding:12px;">
-                                            <p class="fw-medium mb-6" style="font-size:14px;">{{ $work->title }}</p>
-                                            <div class="d-flex flex-wrap gap-6 mb-6">
+                                        <div class="installer-work-card__body">
+                                            <h3 class="h6 mb-8">{{ $work->title }}</h3>
+                                            <div class="d-flex flex-wrap gap-8 mb-10">
                                                 @if($work->work_type)
-                                                <span class="text-caption-01" style="padding:1px 7px;background:var(--line);border-radius:4px;">
+                                                <span class="installer-profile__chip">
                                                     {{ $workTypeLabels[$work->work_type] ?? $work->work_type }}
                                                 </span>
                                                 @endif
@@ -361,16 +429,17 @@
                                                 </span>
                                                 @endif
                                             </div>
-                                            @if($work->brand)
-                                            <p class="text-caption-01 cl-text-3">{{ $work->brand }}</p>
+                                            @if($work->description)
+                                            <p class="installer-work-card__description mb-10">{{ $work->description }}</p>
                                             @endif
-                                            @if($work->completed_at)
-                                            <p class="text-caption-01 cl-text-3 mt-4">
-                                                {{ $work->completed_at->translatedFormat('F Y') }}
+                                            <p class="text-caption-01 cl-text-3 mb-0">
+                                                {{ implode(' · ', array_filter([$work->brand, $work->equipment_type, $work->completed_at?->translatedFormat('F Y')])) }}
                                             </p>
+                                            @if($articleUrl)
+                                            <a class="installer-work-card__link" href="{{ $articleUrl }}">Подробный разбор объекта →</a>
                                             @endif
                                         </div>
-                                    </div>
+                                    </article>
                                 </div>
                                 @endforeach
                             </div>
