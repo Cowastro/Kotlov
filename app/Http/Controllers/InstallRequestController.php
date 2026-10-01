@@ -20,6 +20,7 @@ class InstallRequestController extends Controller
 
         if ($request->filled('installer')) {
             $installer = InstallerProfile::query()
+                ->with('featuredWork')
                 ->where('id', $request->integer('installer'))
                 ->where('is_published', true)
                 ->where('status', 'active')

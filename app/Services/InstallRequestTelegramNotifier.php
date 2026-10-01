@@ -22,7 +22,7 @@ class InstallRequestTelegramNotifier
             return false;
         }
 
-        $installRequest->loadMissing('product');
+        $installRequest->loadMissing(['product', 'installerProfile']);
 
         $sourceLabels = [
             'heat_pump_installation' => 'Монтаж тепловых насосов',
@@ -60,12 +60,14 @@ class InstallRequestTelegramNotifier
             ?? $installRequest->specialization
             ?? 'Не указано';
         $product = $installRequest->product;
+        $installerProfile = $installRequest->installerProfile;
         $adminUrl = url('/admin/install-requests/'.$installRequest->id);
 
         $lines = [
             '🛠 *Новая заявка на монтаж / расчёт*',
             '',
             '*Источник:* '.$escape($source),
+            $installerProfile ? '*Монтажник:* '.$escape($installerProfile->display_name) : null,
             '*Направление:* '.$escape($specialization),
             $product ? '*Товар:* '.$escape($product->name) : null,
             '',

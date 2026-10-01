@@ -34,7 +34,7 @@ class NewInstallRequestNotification extends Notification
 
         $installer = null;
         if ($request->installerProfile) {
-            $installer = $request->installerProfile->name ?? 'ID ' . $request->installer_profile_id;
+            $installer = $request->installerProfile->display_name;
         }
 
         return [

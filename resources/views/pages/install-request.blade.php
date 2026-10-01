@@ -189,7 +189,7 @@
 
                             <div class="btn-submit">
                                 <button type="submit" class="tf-btn animate-btn">
-                                    Отправить заявку
+                                    {{ $installer ? 'Отправить заявку специалисту' : 'Отправить заявку' }}
                                 </button>
                             </div>
 
@@ -204,13 +204,18 @@
 
                         @if($installer)
                         {{-- Монтажник выбран --}}
+                        @php
+                            $featuredPhoto = $installer->featuredWork && is_array($installer->featuredWork->photos)
+                                ? ($installer->featuredWork->photos[0] ?? null)
+                                : null;
+                            $installerMedia = \App\Support\InstallerMedia::url($installer->photo ?? $installer->logo ?? $featuredPhoto);
+                        @endphp
                         <div class="account-avatar mb-20 text-center">
                             <div class="mb-12">
-                                @if($installer->photo || $installer->logo)
-                                    <img src="{{ asset('storage/' . ($installer->photo ?? $installer->logo)) }}"
+                                @if($installerMedia)
+                                    <img src="{{ $installerMedia }}"
                                          alt="{{ $installer->company_name ?? $installer->contact_name }}"
-                                         width="80" height="80"
-                                         style="border-radius:50%;object-fit:cover;border:2px solid var(--line);">
+                                         style="width:100%;aspect-ratio:16/10;border-radius:14px;object-fit:cover;border:1px solid var(--line);">
                                 @else
                                     <div style="width:80px;height:80px;border-radius:50%;background:var(--line);display:flex;align-items:center;justify-content:center;margin:0 auto;">
                                         <i class="icon icon-UserCircle fs-36 cl-text-3"></i>

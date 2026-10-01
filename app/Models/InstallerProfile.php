@@ -85,6 +85,16 @@ class InstallerProfile extends Model
         'rating' => 'decimal:2',
     ];
 
+    public function getDisplayNameAttribute(): string
+    {
+        if ($this->company_name && $this->contact_name) {
+            return $this->company_name . ' — ' . $this->contact_name;
+        }
+
+        return $this->company_name
+            ?: ($this->contact_name ?: 'Монтажник #' . $this->getKey());
+    }
+
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
