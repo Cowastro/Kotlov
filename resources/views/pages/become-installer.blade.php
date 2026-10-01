@@ -638,8 +638,8 @@
 
                 <div class="bn-image">
                     <img loading="lazy" width="640" height="480"
-                        src="{{ asset('assets/images/section/s-contact-1.jpg') }}"
-                        alt="Монтажники KOTLOV Marketplace">
+                        src="{{ asset('img/hero/montazh.jpg') }}"
+                        alt="Монтажник инженерных систем KOTLOV на объекте">
                 </div>
 
                 <div class="bn-content">
