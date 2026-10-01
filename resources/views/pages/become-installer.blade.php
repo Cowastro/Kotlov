@@ -184,7 +184,7 @@
     {{-- /Сколько может зарабатывать --}}
 
     {{-- Собственный мини-сайт специалиста --}}
-    <section class="flat-spacing pt-0">
+    <section class="flat-spacing pt-0" id="installer-mini-site">
         <div class="container">
             <div class="row align-items-center gy-40">
                 <div class="col-lg-6 order-lg-2">
@@ -215,10 +215,12 @@
                     <a href="#apply" class="tf-btn animate-btn w-100 text-center">Создать страницу специалиста</a>
                 </div>
                 <div class="col-lg-6 order-lg-1 d-none d-lg-block">
-                    <div class="hero-image">
+                    <div class="hero-image overflow-hidden rounded-16"
+                        style="border:1px solid #e8e8e8;box-shadow:0 18px 50px rgba(17,17,17,.1);background:#fff;">
                         <img loading="lazy" width="640" height="460"
-                            src="{{ asset('assets/images/section/s-contact-3.jpg') }}"
-                            alt="Мини-сайт монтажника KOTLOV">
+                            src="{{ asset('img/hero/installer-profile-preview.webp') }}"
+                            style="display:block;width:100%;height:auto;"
+                            alt="Пример персональной страницы монтажника KOTLOV">
                     </div>
                 </div>
             </div>
