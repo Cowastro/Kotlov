@@ -10,6 +10,9 @@
     .installer-profile__portrait { width:100%;aspect-ratio:4/3;border-radius:16px;overflow:hidden;background:linear-gradient(145deg,#f0f0f0,#fff5e6); }
     .installer-profile__portrait img { width:100%;height:100%;object-fit:cover; }
     .installer-profile__portrait-empty { display:flex;align-items:center;justify-content:center;width:100%;height:100%;font-size:48px;font-weight:750;color:#333; }
+    .installer-profile__mobile-cover { display:none;aspect-ratio:16/10;margin-bottom:14px;border-radius:18px;overflow:hidden;background:#f2f2f2; }
+    .installer-profile__mobile-cover img { width:100%;height:100%;object-fit:cover; }
+    .installer-profile__mobile-cta { display:none; }
     .installer-profile__trust { display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border-radius:999px;background:#eaf8ef;color:#16713a;font-size:11px;font-weight:750; }
     .installer-profile__lead { padding:26px;border-radius:20px;background:linear-gradient(135deg,#171717 0%,#29231d 68%,#493017 100%);color:#fff; }
     .installer-profile__lead .cl-text-2 { color:rgba(255,255,255,.72)!important; }
@@ -29,8 +32,10 @@
     .installer-work-card__description { color:#666;font-size:13px;line-height:1.55; }
     .installer-work-card__link { display:inline-flex;align-items:center;gap:6px;margin-top:12px;color:#a85d00;font-size:13px;font-weight:750; }
     @media(max-width:991px){
-        .installer-profile .sidebar-account-wrap { position:static!important;margin-bottom:24px; }
-        .installer-profile__portrait { max-height:360px; }
+        .installer-profile__sidebar-col { display:none; }
+        .installer-profile__content-col { width:100%;margin-left:0!important; }
+        .installer-profile__mobile-cover,.installer-profile__mobile-cta { display:block; }
+        .installer-profile__mobile-cta { margin-top:18px; }
     }
     @media(max-width:575px){
         .installer-profile__lead { padding:20px; }
@@ -75,7 +80,7 @@
             <div class="row">
 
                 {{-- ══ ЛЕВАЯ КОЛОНКА: sidebar-account-wrap ════════════════ --}}
-                <div class="col-lg-4 col-xl-3">
+                <div class="col-lg-4 col-xl-3 installer-profile__sidebar-col">
                     <div class="sidebar-account-wrap sidebar-content-wrap sticky-top d-lg-block">
 
                         {{-- Аватар — account-avatar --}}
@@ -198,8 +203,14 @@
                 {{-- /ЛЕВАЯ КОЛОНКА --}}
 
                 {{-- ══ ПРАВАЯ КОЛОНКА: my-account-content ════════════════ --}}
-                <div class="col-lg-8 ms-auto">
+                <div class="col-lg-8 ms-auto installer-profile__content-col">
                     <div class="my-account-content">
+
+                        @if($profileMedia)
+                        <div class="installer-profile__mobile-cover">
+                            <img loading="lazy" src="{{ $profileMedia }}" alt="Работа монтажника {{ $installer->contact_name ?? $installer->company_name }}">
+                        </div>
+                        @endif
 
                         {{-- ── О специалисте ──────────────────────────── --}}
                         <div id="section-about" class="account-my_address installer-profile__lead mb-32">
@@ -373,6 +384,11 @@
                                 @endif
                             </div>
                             @endif
+
+                            <a href="{{ route('install-requests.create', ['installer' => $installer->id]) }}"
+                               class="tf-btn animate-btn w-100 text-center installer-profile__mobile-cta">
+                                Оставить заявку Алексею Максимову
+                            </a>
                         </div>
 
                         <div class="br-line fake-class" style="margin-bottom:24px;"></div>
