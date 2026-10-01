@@ -17,7 +17,21 @@
     .installer-profile__lead { padding:26px;border-radius:20px;background:linear-gradient(135deg,#171717 0%,#29231d 68%,#493017 100%);color:#fff; }
     .installer-profile__lead .cl-text-2 { color:rgba(255,255,255,.72)!important; }
     .installer-profile__lead .installer-profile__chip { background:rgba(255,255,255,.1);color:#fff;border:1px solid rgba(255,255,255,.12); }
+    .installer-profile__hero-actions { display:flex;flex-wrap:wrap;gap:10px;margin-top:20px; }
+    .installer-profile__hero-actions .tf-btn { min-width:190px; }
+    .installer-profile__hero-actions .btn-outline { border-color:rgba(255,255,255,.35);color:#fff; }
+    .installer-profile__hero-actions .btn-outline:hover { border-color:#fff;background:#fff;color:#171717; }
+    .installer-profile__metrics { display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-top:24px;padding-top:20px;border-top:1px solid rgba(255,255,255,.15); }
+    .installer-profile__metric { min-width:0;padding:12px 14px;border-radius:14px;background:rgba(255,255,255,.075); }
+    .installer-profile__metric strong { display:block;color:#fff;font-size:24px;line-height:1.05; }
+    .installer-profile__metric span { display:block;margin-top:5px;color:rgba(255,255,255,.66);font-size:11px;line-height:1.35; }
     .installer-profile__chip { display:inline-flex;padding:7px 11px;border-radius:999px;background:#f3f3f3;color:#333;font-size:12px;font-weight:650; }
+    .installer-profile__process { padding:24px;border:1px solid #e8e8e8;border-radius:20px;background:#fafafa; }
+    .installer-profile__process-grid { display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-top:18px; }
+    .installer-profile__process-step { position:relative;padding:17px 15px;border-radius:14px;background:#fff;border:1px solid #ececec; }
+    .installer-profile__process-step small { display:block;margin-bottom:8px;color:#b46500;font-size:10px;font-weight:800;letter-spacing:.08em; }
+    .installer-profile__process-step strong { display:block;margin-bottom:5px;font-size:14px; }
+    .installer-profile__process-step p { color:#777;font-size:12px;line-height:1.45; }
     .installer-profile__gallery { display:grid;grid-template-columns:2fr 1fr 1fr;gap:10px; }
     .installer-profile__gallery a { min-height:150px;border-radius:14px;overflow:hidden;background:#eee; }
     .installer-profile__gallery a:first-child { grid-row:span 2; }
@@ -36,9 +50,16 @@
         .installer-profile__content-col { width:100%;margin-left:0!important; }
         .installer-profile__mobile-cover,.installer-profile__mobile-cta { display:block; }
         .installer-profile__mobile-cta { margin-top:18px; }
+        .installer-profile__process-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
     }
     @media(max-width:575px){
         .installer-profile__lead { padding:20px; }
+        .installer-profile__hero-actions { display:grid;grid-template-columns:1fr; }
+        .installer-profile__hero-actions .tf-btn { min-width:0;width:100%; }
+        .installer-profile__metrics { grid-template-columns:1fr 1fr; }
+        .installer-profile__metric:last-child:nth-child(odd) { grid-column:1/-1; }
+        .installer-profile__process { padding:18px; }
+        .installer-profile__process-grid { grid-template-columns:1fr; }
         .installer-profile__gallery { grid-template-columns:1fr 1fr; }
         .installer-profile__gallery a { min-height:118px; }
         .installer-profile__gallery a:first-child { grid-column:1/-1;grid-row:auto;min-height:220px; }
@@ -241,6 +262,40 @@
                             </div>
                             @endif
 
+                            <div class="installer-profile__hero-actions">
+                                <a href="{{ route('install-requests.create', ['installer' => $installer->id]) }}" class="tf-btn animate-btn text-center">
+                                    Обсудить монтаж
+                                </a>
+                                @if($installer->phone)
+                                <a href="tel:{{ preg_replace('/[^\d+]/', '', $installer->phone) }}" class="tf-btn btn-outline text-center">
+                                    Позвонить специалисту
+                                </a>
+                                @endif
+                            </div>
+
+                            @if($installer->experience_years || $installer->works->count() || $installer->is_verified)
+                            <div class="installer-profile__metrics" aria-label="Опыт и подтверждения специалиста">
+                                @if($installer->experience_years)
+                                <div class="installer-profile__metric">
+                                    <strong>{{ $installer->experience_years }} лет</strong>
+                                    <span>практического опыта</span>
+                                </div>
+                                @endif
+                                @if($installer->works->count())
+                                <div class="installer-profile__metric">
+                                    <strong>{{ $installer->works->count() }}</strong>
+                                    <span>реальных работ в профиле</span>
+                                </div>
+                                @endif
+                                @if($installer->is_verified)
+                                <div class="installer-profile__metric">
+                                    <strong>Проверен</strong>
+                                    <span>профиль подтверждён KOTLOV</span>
+                                </div>
+                                @endif
+                            </div>
+                            @endif
+
                             @if(!$installer->short_description && !$installer->bio && (!$installer->specializations || !count($installer->specializations)))
                             <p class="text-body-1 cl-text-3">Описание не заполнено.</p>
                             @endif
@@ -264,6 +319,33 @@
                             </div>
                         </div>
                         @endif
+
+                        <div class="installer-profile__process mb-32">
+                            <p class="text-caption-01 cl-text-3 mb-4">Без лишней переписки</p>
+                            <h4 class="account-title mb-0">Как начинается работа со специалистом</h4>
+                            <div class="installer-profile__process-grid">
+                                <div class="installer-profile__process-step">
+                                    <small>ШАГ 01</small>
+                                    <strong>Заявка</strong>
+                                    <p class="mb-0">Опишите объект и нужный вид работ.</p>
+                                </div>
+                                <div class="installer-profile__process-step">
+                                    <small>ШАГ 02</small>
+                                    <strong>Уточнение</strong>
+                                    <p class="mb-0">Специалист свяжется и запросит исходные данные.</p>
+                                </div>
+                                <div class="installer-profile__process-step">
+                                    <small>ШАГ 03</small>
+                                    <strong>Решение</strong>
+                                    <p class="mb-0">Согласуются схема, состав работ и стоимость.</p>
+                                </div>
+                                <div class="installer-profile__process-step">
+                                    <small>ШАГ 04</small>
+                                    <strong>Монтаж</strong>
+                                    <p class="mb-0">Монтаж, настройка и запуск системы.</p>
+                                </div>
+                            </div>
+                        </div>
 
                         <div class="br-line fake-class" style="margin-bottom:24px;"></div>
 
@@ -490,6 +572,7 @@
                         </div>
                         @endif
 
+                        @if($installer->reviews->isNotEmpty())
                         <div class="br-line fake-class" style="margin-bottom:24px;"></div>
 
                         {{-- ── Отзывы ──────────────────────────────────── --}}
@@ -504,9 +587,6 @@
                                 @endif
                             </h4>
 
-                            @if($installer->reviews->isEmpty())
-                            <p class="text-body-1 cl-text-3">Отзывов пока нет.</p>
-                            @else
                             <div class="d-flex flex-column gap-16">
                                 @foreach($installer->reviews as $review)
                                 <div style="border:1px solid var(--line);border-radius:10px;padding:16px;">
@@ -548,8 +628,8 @@
                                 </div>
                                 @endforeach
                             </div>
-                            @endif
                         </div>
+                        @endif
 
                     </div>
                 </div>
