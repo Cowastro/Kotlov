@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class InstallerProfile extends Model
 {
@@ -64,24 +65,24 @@ class InstallerProfile extends Model
 
     protected $casts = [
         // JSON-массивы
-        'work_regions'     => 'array',
-        'work_cities'      => 'array',
-        'specializations'  => 'array',
-        'gallery'          => 'array',
-        'certificate_files'=> 'array',
+        'work_regions' => 'array',
+        'work_cities' => 'array',
+        'specializations' => 'array',
+        'gallery' => 'array',
+        'certificate_files' => 'array',
 
         // Boolean
-        'is_verified'  => 'boolean',
+        'is_verified' => 'boolean',
         'is_published' => 'boolean',
-        'nationwide'   => 'boolean',
+        'nationwide' => 'boolean',
 
         // Числовые
         'experience_years' => 'integer',
-        'work_radius_km'   => 'integer',
-        'reviews_count'    => 'integer',
-        'orders_count'     => 'integer',
-        'price_from'       => 'decimal:2',
-        'rating'           => 'decimal:2',
+        'work_radius_km' => 'integer',
+        'reviews_count' => 'integer',
+        'orders_count' => 'integer',
+        'price_from' => 'decimal:2',
+        'rating' => 'decimal:2',
     ];
 
     public function user(): BelongsTo
@@ -97,6 +98,11 @@ class InstallerProfile extends Model
     public function installRequests(): HasMany
     {
         return $this->hasMany(InstallRequest::class);
+    }
+
+    public function sourceApplication(): HasOne
+    {
+        return $this->hasOne(InstallerApplication::class);
     }
 
     public function reviews()

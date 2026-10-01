@@ -3,10 +3,12 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class InstallerApplication extends Model
 {
     protected $fillable = [
+        'installer_profile_id',
         'contact_name',
         'phone',
         'email',
@@ -20,22 +22,27 @@ class InstallerApplication extends Model
     ];
 
     protected $casts = [
-        'specializations'  => 'array',
+        'specializations' => 'array',
         'experience_years' => 'integer',
     ];
 
     public static array $statuses = [
-        'new'       => 'Новая',
+        'new' => 'Новая',
         'contacted' => 'Связались',
-        'approved'  => 'Принята',
+        'approved' => 'Принята',
     ];
 
     public static array $specializationLabels = [
-        'kotly'         => 'Монтаж котлов',
+        'kotly' => 'Монтаж котлов',
         'teplovye_nasosy' => 'Тепловые насосы',
-        'kaminy'        => 'Камины и печи',
-        'dymohody'      => 'Дымоходы',
-        'otoplenie'     => 'Системы отопления',
-        'bani'          => 'Банные печи',
+        'kaminy' => 'Камины и печи',
+        'dymohody' => 'Дымоходы',
+        'otoplenie' => 'Системы отопления',
+        'bani' => 'Банные печи',
     ];
+
+    public function installerProfile(): BelongsTo
+    {
+        return $this->belongsTo(InstallerProfile::class);
+    }
 }

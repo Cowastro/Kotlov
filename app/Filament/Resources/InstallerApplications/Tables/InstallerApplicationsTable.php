@@ -2,12 +2,15 @@
 
 namespace App\Filament\Resources\InstallerApplications\Tables;
 
+use App\Filament\Resources\InstallerProfiles\InstallerProfileResource;
 use App\Models\InstallerApplication;
+use App\Services\InstallerApplicationConverter;
 use Filament\Actions\Action;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
-use Filament\Actions\ViewAction;
 use Filament\Actions\EditAction;
+use Filament\Actions\ViewAction;
+use Filament\Notifications\Notification;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
@@ -45,10 +48,10 @@ class InstallerApplicationsTable
                     ->label('Статус')
                     ->badge()
                     ->color(fn ($state) => match ($state) {
-                        'new'       => 'info',
+                        'new' => 'info',
                         'contacted' => 'warning',
-                        'approved'  => 'success',
-                        default     => 'gray',
+                        'approved' => 'success',
+                        default => 'gray',
                     })
                     ->formatStateUsing(fn ($state) => InstallerApplication::$statuses[$state] ?? $state)
                     ->sortable(),
@@ -64,6 +67,33 @@ class InstallerApplicationsTable
             ])
             ->recordActions([
                 ViewAction::make(),
+                Action::make('createInstallerProfile')
+                    ->label('Создать профиль')
+                    ->icon('heroicon-o-user-plus')
+                    ->color('success')
+                    ->requiresConfirmation()
+                    ->modalHeading('Создать профиль монтажника?')
+                    ->modalDescription('Данные будут перенесены из заявки. Профиль станет активным и появится в публичном каталоге, но останется без отметки верификации.')
+                    ->visible(fn ($record) => $record->status === 'approved' && ! $record->installer_profile_id)
+                    ->action(function ($record) {
+                        $profile = app(InstallerApplicationConverter::class)->convert($record);
+
+                        Notification::make()
+                            ->success()
+                            ->title('Профиль монтажника создан')
+                            ->body('Теперь добавьте фотографию, описание и портфолио.')
+                            ->send();
+
+                        return redirect(InstallerProfileResource::getUrl('edit', ['record' => $profile]));
+                    }),
+                Action::make('openInstallerProfile')
+                    ->label('Профиль')
+                    ->icon('heroicon-o-identification')
+                    ->color('info')
+                    ->visible(fn ($record) => (bool) $record->installer_profile_id)
+                    ->url(fn ($record) => InstallerProfileResource::getUrl('edit', [
+                        'record' => $record->installer_profile_id,
+                    ])),
                 Action::make('contacted')
                     ->label('Связались')
                     ->icon('heroicon-o-phone')
