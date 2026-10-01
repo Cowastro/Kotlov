@@ -57,6 +57,22 @@ class InstallerAccountController extends Controller
         ]);
     }
 
+    public function preview(Request $request, InstallerProfile $profile): View
+    {
+        abort_unless($request->user()?->isAdmin(), 403);
+
+        $profile->load(['works' => fn ($query) => $query->latest('completed_at')->latest('id')]);
+
+        return view('pages.account-installer-profile', [
+            'user' => $profile->user,
+            'profile' => $profile,
+            'specializations' => self::SPECIALIZATIONS,
+            'workTypes' => self::WORK_TYPES,
+            'regions' => self::REGIONS,
+            'previewMode' => true,
+        ]);
+    }
+
     public function update(Request $request): RedirectResponse
     {
         $profile = $this->profile($request);

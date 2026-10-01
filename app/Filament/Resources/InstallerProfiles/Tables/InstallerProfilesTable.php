@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\InstallerProfiles\Tables;
 
 use Filament\Actions\BulkActionGroup;
+use Filament\Actions\Action;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Actions\ViewAction;
@@ -131,6 +132,11 @@ class InstallerProfilesTable
                     ->falseLabel('Только по региону'),
             ])
             ->recordActions([
+                Action::make('cabinetPreview')
+                    ->label('Кабинет')
+                    ->icon('heroicon-o-computer-desktop')
+                    ->url(fn ($record) => route('admin.installer-cabinet-preview', $record))
+                    ->openUrlInNewTab(),
                 ViewAction::make(),
                 EditAction::make(),
             ])

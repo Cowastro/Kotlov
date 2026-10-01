@@ -5,9 +5,11 @@ namespace Tests\Feature;
 use App\Models\InstallerProfile;
 use App\Models\InstallerWork;
 use App\Models\User;
+use App\Http\Controllers\InstallerAccountController;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Schema;
 use Tests\TestCase;
@@ -30,6 +32,8 @@ class InstallerAccountTest extends TestCase
             $table->string('email')->unique();
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
+            $table->string('role')->default('client');
+            $table->boolean('is_active')->default(true);
             $table->rememberToken();
             $table->timestamps();
         });
@@ -94,6 +98,22 @@ class InstallerAccountTest extends TestCase
     {
         $this->get(route('account.installer-profile'))
             ->assertRedirect(route('login'));
+    }
+
+    public function test_admin_can_preview_an_installer_cabinet_without_impersonation(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+        $installer = User::factory()->create(['role' => 'installer']);
+        $profile = $this->profile($installer);
+        $request = Request::create(route('admin.installer-cabinet-preview', $profile));
+        $request->setUserResolver(fn () => $admin);
+
+        $view = app(InstallerAccountController::class)->preview($request, $profile);
+
+        $this->assertSame('pages.account-installer-profile', $view->name());
+        $this->assertTrue($view->getData()['previewMode']);
+        $this->assertTrue($view->getData()['profile']->is($profile));
+        $this->assertFalse(auth()->check());
     }
 
     public function test_user_without_installer_profile_cannot_open_installer_cabinet(): void

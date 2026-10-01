@@ -331,6 +331,9 @@ Route::middleware('auth')->group(function () {
         ->name('account.installer-works.update');
     Route::delete('/account/installer-works/{work}', [InstallerAccountController::class, 'destroyWork'])
         ->name('account.installer-works.destroy');
+
+    Route::get('/admin/installer-cabinet-preview/{profile}', [InstallerAccountController::class, 'preview'])
+        ->name('admin.installer-cabinet-preview');
 });
 
 

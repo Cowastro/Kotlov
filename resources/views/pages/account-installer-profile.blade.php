@@ -44,6 +44,7 @@
 
 @section('content')
 @php
+    $previewMode = $previewMode ?? false;
     $profilePhoto = \App\Support\InstallerMedia::url($profile->photo ?? $profile->logo);
     $statusLabels = ['active' => 'Активен', 'pending' => 'На проверке', 'suspended' => 'Приостановлен', 'blocked' => 'Заблокирован'];
 @endphp
@@ -67,6 +68,15 @@
 
     <section class="flat-spacing">
         <div class="container">
+            @if($previewMode)
+            <div class="alert alert-warning mb-20 d-flex flex-wrap align-items-center justify-content-between gap-12">
+                <div>
+                    <strong>Предпросмотр от имени администратора.</strong>
+                    Вы видите кабинет монтажника, но вход под его учетной записью не выполнялся. Все поля заблокированы.
+                </div>
+                <a href="{{ \App\Filament\Resources\InstallerProfiles\InstallerProfileResource::getUrl('edit', ['record' => $profile]) }}" class="tf-btn btn-outline">Вернуться в админку</a>
+            </div>
+            @endif
             @if(session('success'))
             <div class="alert alert-success mb-20">{{ session('success') }}</div>
             @endif
@@ -91,7 +101,11 @@
                     @if($profile->is_published && $profile->slug)
                     <a href="{{ route('installers.show', $profile->slug) }}" target="_blank" class="tf-btn btn-white">Открыть профиль</a>
                     @endif
+                    @if($previewMode)
+                    <a href="{{ \App\Filament\Resources\InstallerProfiles\InstallerProfileResource::getUrl('edit', ['record' => $profile]) }}" class="tf-btn btn-outline" style="border-color:rgba(255,255,255,.35);color:#fff;">Редактировать в админке</a>
+                    @else
                     <a href="{{ route('account') }}" class="tf-btn btn-outline" style="border-color:rgba(255,255,255,.35);color:#fff;">Обычный кабинет</a>
+                    @endif
                 </div>
             </div>
 
@@ -105,6 +119,7 @@
                         <form method="POST" action="{{ route('account.installer-profile.update') }}" enctype="multipart/form-data" class="form-setting">
                             @csrf
                             @method('PUT')
+                            <fieldset @disabled($previewMode) style="border:0;padding:0;margin:0;min-width:0;">
 
                             <div class="tf-grid-layout sm-col-2 mb-16">
                                 <fieldset class="tf-field">
@@ -177,7 +192,8 @@
                                 <span class="text-caption-01 cl-text-3 mt-4">JPG, PNG или WebP, до 5 МБ.</span>
                             </fieldset>
 
-                            <button class="tf-btn animate-btn" type="submit">Сохранить профиль</button>
+                            @unless($previewMode)<button class="tf-btn animate-btn" type="submit">Сохранить профиль</button>@endunless
+                            </fieldset>
                         </form>
                     </section>
 
@@ -202,13 +218,17 @@
                                 <summary>Редактировать работу ↓</summary>
                                 <form method="POST" action="{{ route('account.installer-works.update', $work) }}" enctype="multipart/form-data">
                                     @csrf @method('PUT')
+                                    <fieldset @disabled($previewMode) style="border:0;padding:0;margin:0;min-width:0;">
                                     @include('pages.partials.installer-work-fields', ['item' => $work])
-                                    <button class="tf-btn animate-btn mt-18" type="submit">Сохранить работу</button>
+                                    @unless($previewMode)<button class="tf-btn animate-btn mt-18" type="submit">Сохранить работу</button>@endunless
+                                    </fieldset>
                                 </form>
+                                @unless($previewMode)
                                 <form class="mt-10" method="POST" action="{{ route('account.installer-works.destroy', $work) }}" onsubmit="return confirm('Удалить эту работу из портфолио?');">
                                     @csrf @method('DELETE')
                                     <button class="tf-btn btn-outline" type="submit">Удалить</button>
                                 </form>
+                                @endunless
                             </details>
                         </article>
                         @empty
@@ -234,8 +254,10 @@
                         </div>
                         <form method="POST" action="{{ route('account.installer-works.store') }}" enctype="multipart/form-data">
                             @csrf
+                            <fieldset @disabled($previewMode) style="border:0;padding:0;margin:0;min-width:0;">
                             @include('pages.partials.installer-work-fields', ['item' => null])
-                            <button class="tf-btn animate-btn w-100 mt-18" type="submit">Добавить в портфолио</button>
+                            @unless($previewMode)<button class="tf-btn animate-btn w-100 mt-18" type="submit">Добавить в портфолио</button>@endunless
+                            </fieldset>
                         </form>
                     </section>
                 </aside>
