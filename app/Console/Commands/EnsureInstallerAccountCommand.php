@@ -3,21 +3,17 @@
 namespace App\Console\Commands;
 
 use App\Enums\ClientType;
-use App\Http\Controllers\InstallerAccountController;
 use App\Models\InstallerProfile;
 use App\Models\User;
 use Illuminate\Console\Command;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Str;
-use Throwable;
 
 class EnsureInstallerAccountCommand extends Command
 {
     protected $signature = 'installer:ensure-account
                             {profile : ID или slug профиля монтажника}
-                            {--check-preview : Проверить рендер read-only кабинета администратора}
                             {--send-reset : Отправить письмо для установки пароля}';
 
     protected $description = 'Проверить и восстановить связь профиля монтажника с активной учетной записью';
@@ -90,27 +86,6 @@ class EnsureInstallerAccountCommand extends Command
             $user->role,
             $user->is_active ? 'да' : 'нет',
         ]]);
-
-        if ($this->option('check-preview')) {
-            $admin = User::query()->where('role', 'admin')->where('is_active', true)->first();
-
-            if (! $admin) {
-                $this->error('Не найден активный администратор для проверки предпросмотра.');
-
-                return self::FAILURE;
-            }
-
-            try {
-                $request = Request::create(route('admin.installer-cabinet-preview', $profile));
-                $request->setUserResolver(fn () => $admin);
-                app(InstallerAccountController::class)->preview($request, $profile)->render();
-                $this->info('Предпросмотр кабинета успешно отрисован.');
-            } catch (Throwable $exception) {
-                $this->error('Ошибка предпросмотра: '.$exception::class.' — '.$exception->getMessage());
-
-                return self::FAILURE;
-            }
-        }
 
         if (! $this->option('send-reset')) {
             $this->info('Связь и права проверены. Письмо для установки пароля не отправлялось.');
