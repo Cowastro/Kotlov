@@ -25,9 +25,11 @@
     .installer-result-head { display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:20px; }
     .installer-card { display:flex;flex-direction:column;height:100%;overflow:hidden;border:1px solid #e7e7e7;border-radius:18px;background:#fff;transition:transform .2s ease,box-shadow .2s ease,border-color .2s ease; }
     .installer-card:hover { transform:translateY(-3px);border-color:#d7d7d7;box-shadow:0 16px 38px rgba(0,0,0,.08); }
-    .installer-card__media { position:relative;height:224px;background:linear-gradient(135deg,#efefef,#fafafa);overflow:hidden; }
-    .installer-card__media img { width:100%;height:100%;object-fit:cover; }
+    .installer-card__media { position:relative;display:flex;align-items:center;justify-content:center;height:224px;background:linear-gradient(135deg,#efefef,#fafafa);overflow:hidden;isolation:isolate; }
+    .installer-card__media.has-photo::before { content:"";position:absolute;inset:-18px;z-index:-1;background-image:var(--installer-card-media);background-position:center;background-size:cover;filter:blur(16px) saturate(.82);opacity:.48;transform:scale(1.08); }
+    .installer-card__media img { position:relative;width:100%;height:100%;object-fit:contain; }
     .installer-card__media.is-logo { display:flex;align-items:center;justify-content:center;background:linear-gradient(145deg,#f3f3f3,#fbfbfb); }
+    .installer-card__media.is-logo::before { display:none; }
     .installer-card__media.is-logo img { object-fit:contain;padding:24px 32px; }
     .installer-card__initials { display:flex;align-items:center;justify-content:center;width:100%;height:100%;font-size:54px;font-weight:750;color:#333;background:linear-gradient(145deg,#f0f0f0,#fff5e6); }
     .installer-card__verified { position:absolute;top:14px;left:14px;padding:7px 10px;border-radius:999px;background:#ecf8ef;color:#16713a;font-size:11px;font-weight:750;box-shadow:0 4px 14px rgba(0,0,0,.07); }
@@ -215,7 +217,9 @@
                                 @endphp
                                 <div class="col-xl-6 col-md-6">
                                     <article class="installer-card">
-                                        <a class="installer-card__media {{ $cardMediaIsLogo ? 'is-logo' : '' }}" href="{{ route('installers.show', $installer->slug) }}" aria-label="Открыть профиль {{ $name }}">
+                                        <a class="installer-card__media {{ $cardMedia ? 'has-photo' : '' }} {{ $cardMediaIsLogo ? 'is-logo' : '' }}"
+                                           @if($cardMedia && !$cardMediaIsLogo) style="--installer-card-media:url('{{ $cardMedia }}')" @endif
+                                           href="{{ route('installers.show', $installer->slug) }}" aria-label="Открыть профиль {{ $name }}">
                                             @if($cardMedia)
                                                 <img loading="lazy" src="{{ $cardMedia }}" alt="Работа монтажника {{ $name }}">
                                             @else
