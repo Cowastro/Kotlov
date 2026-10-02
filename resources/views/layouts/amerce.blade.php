@@ -661,6 +661,27 @@
         x.charset = 'UTF-8';
         x.async = true;
         document.body.appendChild(x);
+
+        // На телефонах поднимаем чат над фиксированной нижней навигацией.
+        // Виджет использует Shadow DOM, поэтому стиль добавляется внутрь него после загрузки.
+        (function keepUmnicoClearOfMobileNavigation() {
+            var tries = 0;
+            var timer = window.setInterval(function () {
+                tries++;
+                var host = document.getElementById('umnico-widget-wrapper');
+                var root = host && host.shadowRoot;
+
+                if (root && !root.getElementById('kotlov-umnico-mobile-offset')) {
+                    var style = document.createElement('style');
+                    style.id = 'kotlov-umnico-mobile-offset';
+                    style.textContent = '@media (max-width: 767px){.widget__preview-block{bottom:88px!important;left:12px!important;margin:0!important;transform:scale(.9);transform-origin:left bottom}.widget__chat-preview{bottom:78px!important}}';
+                    root.appendChild(style);
+                    window.clearInterval(timer);
+                } else if (tries >= 40) {
+                    window.clearInterval(timer);
+                }
+            }, 250);
+        })();
     </script>
 
 </body>

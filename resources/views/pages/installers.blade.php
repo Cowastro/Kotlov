@@ -6,10 +6,11 @@
 @push('styles')
 <style>
     .installer-catalog { --installer-accent:#f28c00; --installer-ink:#161616; }
-    .installer-catalog__hero { padding:54px 0 42px; background:linear-gradient(135deg,#f7f7f7 0%,#fff 55%,#fff6e9 100%); border-bottom:1px solid #ececec; }
+    .installer-catalog__hero { padding:36px 0 32px; background:linear-gradient(135deg,#f7f7f7 0%,#fff 55%,#fff6e9 100%); border-bottom:1px solid #ececec; }
+    .installer-catalog__hero h1 { max-width:940px;font-size:clamp(40px,4.2vw,60px);line-height:1.06;letter-spacing:-.025em; }
     .installer-catalog__eyebrow { display:inline-flex;align-items:center;gap:8px;margin-bottom:14px;color:#b76500;font-size:13px;font-weight:700;letter-spacing:.06em;text-transform:uppercase; }
     .installer-catalog__eyebrow::before { content:"";width:28px;height:2px;background:var(--installer-accent); }
-    .installer-catalog__stats { display:flex;flex-wrap:wrap;gap:10px;margin-top:26px; }
+    .installer-catalog__stats { display:flex;flex-wrap:wrap;gap:10px;margin-top:20px; }
     .installer-catalog__stat { min-width:138px;padding:12px 16px;border:1px solid #e7e7e7;border-radius:12px;background:rgba(255,255,255,.82); }
     .installer-catalog__stat strong { display:block;font-size:20px;line-height:1.1;color:var(--installer-ink); }
     .installer-catalog__stat span { color:#707070;font-size:12px; }
@@ -66,6 +67,7 @@
     .installer-pagination .is-disabled { color:#aaa;background:#f7f7f7; }
     @media(max-width:991px){
         .installer-catalog__hero { padding:34px 0 30px; }
+        .installer-catalog__hero h1 { font-size:clamp(36px,7vw,52px); }
         .installer-join__panel { grid-template-columns:1fr;gap:20px; }
         .installer-join__form { grid-template-columns:1fr 1fr; }
         .installer-join__submit { width:100%; }
@@ -75,6 +77,8 @@
         .installer-filter__body { padding-top:18px; }
     }
     @media(max-width:575px){
+        .installer-catalog__hero { padding:28px 0 24px; }
+        .installer-catalog__hero h1 { font-size:36px;line-height:1.08; }
         .installer-catalog__stats { display:grid;grid-template-columns:1fr 1fr; }
         .installer-catalog__stat { min-width:0; }
         .installer-join { padding:24px 0; }
@@ -99,7 +103,7 @@
     <section class="installer-catalog__hero">
         <div class="container">
             <div class="row align-items-end gy-24">
-                <div class="col-lg-8">
+                <div class="col-lg-9">
                     <div class="breadcrumbs mb-16">
                         <a href="/" class="text-caption-01 cl-text-3 link">Главная</a>
                         <i class="icon icon-CaretRightThin cl-text-3"></i>
@@ -113,10 +117,14 @@
                     <div class="installer-catalog__stats">
                         <div class="installer-catalog__stat"><strong>{{ $installersCount }}</strong><span>опубликовано профилей</span></div>
                         <div class="installer-catalog__stat"><strong>{{ $worksCount }}</strong><span>работ в портфолио</span></div>
-                        <div class="installer-catalog__stat"><strong>{{ $reviewsCount }}</strong><span>отзывов клиентов</span></div>
+                        @if($reviewsCount > 0)
+                            <div class="installer-catalog__stat"><strong>{{ $reviewsCount }}</strong><span>отзывов клиентов</span></div>
+                        @else
+                            <div class="installer-catalog__stat"><strong>Новые</strong><span>профили специалистов</span></div>
+                        @endif
                     </div>
                 </div>
-                <div class="col-lg-4 text-lg-end">
+                <div class="col-lg-3 text-lg-end">
                     <a href="#installer-join" class="tf-btn animate-btn">Получать заявки на монтаж</a>
                     <p class="cl-text-3 mt-10 mb-0" style="font-size:12px;">Бесплатный профиль · без комиссии</p>
                 </div>
@@ -317,7 +325,11 @@
                                             <div class="installer-card__facts">
                                                 <div class="installer-card__fact"><strong>{{ $installer->experience_years ?: '—' }}</strong><span>лет опыта</span></div>
                                                 <div class="installer-card__fact"><strong>{{ $installer->works_count }}</strong><span>работ</span></div>
-                                                <div class="installer-card__fact"><strong>{{ $installer->reviews_count }}</strong><span>отзывов</span></div>
+                                                @if($installer->reviews_count > 0)
+                                                    <div class="installer-card__fact"><strong>{{ $installer->reviews_count }}</strong><span>отзывов</span></div>
+                                                @else
+                                                    <div class="installer-card__fact"><strong>Новый</strong><span>профиль</span></div>
+                                                @endif
                                             </div>
                                             @if($installer->price_from)
                                                 <p class="fw-semibold mt-14 mb-0">Работы от {{ number_format((float)$installer->price_from, 0, ',', ' ') }} BYN</p>

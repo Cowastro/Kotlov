@@ -3,11 +3,41 @@
 @section('title', 'Стать монтажником KOTLOV — заявки на монтаж отопления в Беларуси')
 @section('description', 'Станьте монтажником KOTLOV: получайте заявки на монтаж котлов, дымоходов, каминов, тепловых насосов и систем отопления в Беларуси.')
 
+@push('styles')
+<style>
+    .installer-recruit-page { --installer-accent:#f28c00;--installer-ink:#161616; }
+    .installer-recruit-hero { padding-top:48px; }
+    .installer-recruit-hero__title { max-width:620px;font-size:clamp(44px,4.2vw,64px);line-height:1.06;letter-spacing:-.025em; }
+    .installer-recruit-hero__lead { max-width:620px; }
+    .installer-recruit-hero__image { overflow:hidden;border-radius:18px;background:#f1f1f1;aspect-ratio:7/5; }
+    .installer-recruit-hero__image img { width:100%;height:100%;object-fit:cover;object-position:45% center; }
+    .installer-recruit-hero__priority { margin:18px 0;padding:14px 16px;border:1px solid #ead2a9;border-radius:12px;background:#fffaf1;color:#5f3b00;line-height:1.45; }
+    .installer-recruit-hero__benefits { margin-bottom:22px; }
+    .installer-recruit-hero__actions { margin:18px 0 8px; }
+    .installer-recruit-page .box-icon-custom { transition:border-color .2s ease,box-shadow .2s ease; }
+    .installer-recruit-page .box-icon-custom:hover { border-color:#dedede!important;box-shadow:0 12px 28px rgba(0,0,0,.05); }
+    @media(max-width:991px){
+        .installer-recruit-hero { padding-top:34px; }
+        .installer-recruit-hero__title { font-size:clamp(40px,7vw,54px); }
+    }
+    @media(max-width:575px){
+        .installer-recruit-hero { padding-top:26px; }
+        .installer-recruit-hero .breadcrumbs { margin-bottom:16px!important; }
+        .installer-recruit-hero__title { font-size:38px;line-height:1.08; }
+        .installer-recruit-hero__lead { font-size:16px;line-height:1.55; }
+        .installer-recruit-hero__actions { margin-top:16px; }
+        .installer-recruit-hero__priority { margin-top:16px; }
+        .installer-recruit-hero__benefits { margin-bottom:18px; }
+        .installer-recruit-hero__image { margin-top:8px;border-radius:14px;aspect-ratio:4/3; }
+    }
+</style>
+@endpush
+
 @section('content')
-<main id="wrapper">
+<main id="wrapper" class="installer-recruit-page">
 
     {{-- Hero --}}
-    <section class="flat-spacing-2 pb-0">
+    <section class="flat-spacing-2 pb-0 installer-recruit-hero">
         <div class="container">
             <div class="row align-items-center gy-40">
                 <div class="col-lg-6">
@@ -18,18 +48,19 @@
                         <i class="icon icon-CaretRightThin cl-text-3"></i>
                         <p class="text-caption-01">Стать монтажником</p>
                     </div>
-                    <h1 class="mb-16">Станьте монтажником KOTLOV — получайте заявки на монтаж</h1>
-                    <p class="text-body-1 cl-text-2 mb-12">
-                        Ваша личная страница специалиста в каталоге отопительного оборудования Беларуси.
-                        Клиенты находят вас сами — когда уже выбирают котёл, камин или тепловой насос.
+                    <h1 class="installer-recruit-hero__title mb-16">Получайте заявки на монтаж через KOTLOV</h1>
+                    <p class="installer-recruit-hero__lead text-body-1 cl-text-2 mb-12">
+                        Бесплатный профиль специалиста в каталоге отопительного оборудования Беларуси.
+                        Клиенты увидят вас, когда уже выбирают котёл, камин или тепловой насос.
                     </p>
-                    <p class="text-body-1 cl-text-2 mb-32">
-                        Бесплатный мини-сайт, портфолио, отзывы, партнёрские цены и заявки из вашего региона.
-                    </p>
-                    <div class="mb-24 p-16 rounded-12" style="background:#fff7e8;border:1px solid #ffd89c;color:#5f3b00;line-height:1.45;">
+                    <div class="installer-recruit-hero__actions d-flex flex-column flex-sm-row gap-12">
+                        <a href="#apply" class="tf-btn animate-btn w-100 w-sm-auto text-center">Подать заявку бесплатно</a>
+                        <a href="{{ route('demo-installer-profile') }}" target="_blank" class="tf-btn btn-outline w-100 w-sm-auto text-center">Как выглядит профиль</a>
+                    </div>
+                    <div class="installer-recruit-hero__priority">
                         <strong>Стартовое преимущество:</strong> первые 30 одобренных новых профилей получают приоритетное размещение в каталоге своего региона на 90 дней.
                     </div>
-                    <div class="d-flex flex-column gap-10 mb-32">
+                    <div class="installer-recruit-hero__benefits d-flex flex-column gap-10">
                         <div class="d-flex align-items-start gap-10">
                             <i class="icon icon-CheckCircle cl-primary mt-1" style="font-size:18px;flex-shrink:0;"></i>
                             <p style="color:#555;margin:0;"><strong style="color:#111;">Заявки от реальных клиентов</strong> — без агрегаторов и комиссий</p>
@@ -43,16 +74,12 @@
                             <p style="color:#555;margin:0;"><strong style="color:#111;">Партнёрские B2B-цены</strong> на оборудование для объектов</p>
                         </div>
                     </div>
-                    <div class="d-flex flex-column flex-sm-row gap-12 mb-8">
-                        <a href="#apply" class="tf-btn animate-btn w-100 w-sm-auto text-center">Подать заявку бесплатно</a>
-                        <a href="{{ route('demo-installer-profile') }}" target="_blank" class="tf-btn btn-outline w-100 w-sm-auto text-center">Как выглядит профиль</a>
-                    </div>
                 </div>
                 <div class="col-lg-6 mt-4 mt-lg-0">
-                    <div class="hero-image">
-                        <img loading="lazy" width="700" height="480"
-                            src="{{ asset('assets/images/section/s-contact-2.jpg') }}"
-                            alt="Стать монтажником KOTLOV Marketplace">
+                    <div class="installer-recruit-hero__image">
+                        <img width="700" height="525"
+                            src="{{ asset('img/hero/montazh.jpg') }}"
+                            alt="Монтажник инженерных систем на выполненном объекте">
                     </div>
                 </div>
             </div>
@@ -98,36 +125,6 @@
                         <p class="cl-text-2 text-body-2">
                             Публикуйте фотографии объектов и описания проектов.
                             Клиент видит вашу квалификацию до первого звонка — и уже готов к заказу.
-                        </p>
-                    </div>
-                </div>
-                <div class="col-lg-4 col-sm-6">
-                    <div class="box-icon-custom text-center p-24 h-100" style="border:1px solid #f0f0f0;border-radius:16px;">
-                        <div class="mb-16"><i class="icon icon-ShieldCheck fs-40 cl-primary"></i></div>
-                        <p class="h6 fw-semibold mb-8">Статус «Проверенный монтажник»</p>
-                        <p class="cl-text-2 text-body-2">
-                            После проверки — бейдж доверия KOTLOV.
-                            Статус помогает клиенту отличить заполненный и проверенный профиль.
-                        </p>
-                    </div>
-                </div>
-                <div class="col-lg-4 col-sm-6">
-                    <div class="box-icon-custom text-center p-24 h-100" style="border:1px solid #f0f0f0;border-radius:16px;">
-                        <div class="mb-16"><i class="icon icon-SealPercent fs-40 cl-primary"></i></div>
-                        <p class="h6 fw-semibold mb-8">Партнёрские цены на оборудование</p>
-                        <p class="cl-text-2 text-body-2">
-                            B2B-цены на котлы, насосы, дымоходы и комплектующие.
-                            Покупайте для объектов дешевле — зарабатывайте больше на каждом монтаже.
-                        </p>
-                    </div>
-                </div>
-                <div class="col-lg-4 col-sm-6">
-                    <div class="box-icon-custom text-center p-24 h-100" style="border:1px solid #f0f0f0;border-radius:16px;">
-                        <div class="mb-16"><i class="icon icon-Devices fs-40 cl-primary"></i></div>
-                        <p class="h6 fw-semibold mb-8">Адресные заявки</p>
-                        <p class="cl-text-2 text-body-2">
-                            Клиент выбирает конкретного специалиста, а заявка сохраняется с его именем.
-                            Менеджер KOTLOV помогает согласовать следующий шаг.
                         </p>
                     </div>
                 </div>
