@@ -58,6 +58,12 @@ class TelegramApi
 
     private function call(string $method, array $params): array
     {
+        // Automated tests must never contact the real bot, even when a local
+        // .env file contains production Telegram credentials.
+        if (app()->environment('testing') && ! config('services.telegram.allow_in_tests', false)) {
+            return ['ok' => false, 'skipped' => 'telegram_disabled_in_tests'];
+        }
+
         $url = "https://api.telegram.org/bot{$this->token}/{$method}";
 
         $ch = curl_init($url);

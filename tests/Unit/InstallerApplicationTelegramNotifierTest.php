@@ -48,6 +48,7 @@ class InstallerApplicationTelegramNotifierTest extends TestCase
                     && str_contains($message, '15 лет')
                     && str_contains($message, 'Монтаж котлов, Дымоходы')
                     && str_contains($message, 'Монтаж под ключ')
+                    && str_contains($message, 'Дата:</b> 02.10.2026 21:00 (Минск)')
                     && str_contains($message, '/admin/installer-applications/321');
             })
             ->andReturn(['ok' => false, 'description' => 'test response']);

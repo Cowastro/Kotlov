@@ -51,6 +51,7 @@ class InstallRequestTelegramNotifierTest extends TestCase
                 return $chatId === '-100123456789'
                     && str_contains($message, $label)
                     && str_contains($message, 'Тест KOTLOV')
+                    && str_contains($message, '*Дата:* 11.09.2026 17:00 (Минск)')
                     && str_contains($message, '/admin/install-requests/123');
             })
             ->andReturn(['ok' => true, 'result' => ['message_id' => 456]]);

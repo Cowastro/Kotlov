@@ -37,6 +37,9 @@ class InstallerApplicationTelegramNotifier
         $adminUrl = $application->id
             ? url('/admin/installer-applications/'.$application->id)
             : null;
+        $submittedAt = ($application->created_at ?? now())
+            ->copy()
+            ->timezone(config('app.display_timezone', 'Europe/Minsk'));
 
         $lines = [
             '🧰 <b>Новая заявка монтажника</b>',
@@ -52,7 +55,7 @@ class InstallerApplicationTelegramNotifier
             $application->message ? "<b>О себе:</b>\n".$escape($application->message) : null,
             '',
             $adminUrl ? '<a href="'.$escape($adminUrl).'">Открыть заявку в админке</a>' : null,
-            '<b>Дата:</b> '.($application->created_at?->format('d.m.Y H:i') ?? now()->format('d.m.Y H:i')),
+            '<b>Дата:</b> '.$submittedAt->format('d.m.Y H:i').' (Минск)',
         ];
 
         try {

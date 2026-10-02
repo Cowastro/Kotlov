@@ -68,6 +68,9 @@ return [
 
     'timezone' => 'UTC',
 
+    // Human-facing timestamps for the Belarusian storefront and notifications.
+    'display_timezone' => env('APP_DISPLAY_TIMEZONE', 'Europe/Minsk'),
+
     /*
     |--------------------------------------------------------------------------
     | Application Locale Configuration

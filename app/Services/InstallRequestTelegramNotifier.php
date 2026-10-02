@@ -66,6 +66,9 @@ class InstallRequestTelegramNotifier
         $product = $installRequest->product;
         $installerProfile = $installRequest->installerProfile;
         $adminUrl = url('/admin/install-requests/'.$installRequest->id);
+        $submittedAt = ($installRequest->created_at ?? now())
+            ->copy()
+            ->timezone(config('app.display_timezone', 'Europe/Minsk'));
 
         $lines = [
             '🛠 *Новая заявка на монтаж / расчёт*',
@@ -83,7 +86,7 @@ class InstallRequestTelegramNotifier
             $installRequest->description ? "*Задача:*\n".$escape($installRequest->description) : '*Задача:* Не указана',
             '',
             '*Заявка в CRM:* '.$adminUrl,
-            '*Дата:* '.($installRequest->created_at?->format('d.m.Y H:i') ?? now()->format('d.m.Y H:i')),
+            '*Дата:* '.$submittedAt->format('d.m.Y H:i').' (Минск)',
         ];
 
         try {

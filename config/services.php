@@ -43,6 +43,7 @@ return [
 
     'telegram' => [
         'bot_token'      => env('TELEGRAM_BOT_TOKEN'),
+        'allow_in_tests' => (bool) env('TELEGRAM_ALLOW_IN_TESTS', false),
         'orders_chat_id' => env('TELEGRAM_ORDERS_CHAT_ID'),
         'installer_applications_chat_id' => env('TELEGRAM_INSTALLER_APPLICATIONS_CHAT_ID', env('TELEGRAM_ORDERS_CHAT_ID')),
     ],
