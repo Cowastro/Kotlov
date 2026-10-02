@@ -80,7 +80,8 @@
         ? ($installer->works->first()->photos[0] ?? null)
         : null;
     $profileMedia = \App\Support\InstallerMedia::url($installer->photo ?? $installer->logo ?? $featuredPhoto);
-    $profileMediaIsLogo = !$installer->photo && $installer->logo;
+    $profileMediaIsLogo = $installer->logo
+        && (!$installer->photo || $installer->photo === $installer->logo);
     $initials = collect(preg_split('/\s+/u', trim($installer->contact_name ?: $installer->company_name ?: 'KOTLOV')))
         ->filter()->take(2)->map(fn ($part) => mb_strtoupper(mb_substr($part, 0, 1)))->implode('');
 @endphp
