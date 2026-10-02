@@ -17,6 +17,7 @@ class InstallerApplication extends Model
         'experience_years',
         'specializations',
         'message',
+        'source',
         'status',
         'admin_notes',
     ];
@@ -30,6 +31,12 @@ class InstallerApplication extends Model
         'new' => 'Новая',
         'contacted' => 'Связались',
         'approved' => 'Принята',
+    ];
+
+    public static array $sourceLabels = [
+        'installers-catalog' => 'Быстрая форма в каталоге',
+        'become-installer' => 'Страница «Стать монтажником»',
+        'partners' => 'Страница партнёров',
     ];
 
     public static array $specializationLabels = [

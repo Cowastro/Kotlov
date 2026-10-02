@@ -44,6 +44,11 @@ class InstallerApplicationsTable
                 TextColumn::make('experience_years')
                     ->label('Опыт, лет')
                     ->placeholder('-'),
+                TextColumn::make('source')
+                    ->label('Источник')
+                    ->formatStateUsing(fn ($state) => InstallerApplication::$sourceLabels[$state] ?? $state)
+                    ->placeholder('-')
+                    ->toggleable(),
                 TextColumn::make('status')
                     ->label('Статус')
                     ->badge()
@@ -64,6 +69,9 @@ class InstallerApplicationsTable
                 SelectFilter::make('status')
                     ->label('Статус')
                     ->options(InstallerApplication::$statuses),
+                SelectFilter::make('source')
+                    ->label('Источник')
+                    ->options(InstallerApplication::$sourceLabels),
             ])
             ->recordActions([
                 ViewAction::make(),

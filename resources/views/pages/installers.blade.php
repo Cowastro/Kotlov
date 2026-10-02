@@ -13,6 +13,22 @@
     .installer-catalog__stat { min-width:138px;padding:12px 16px;border:1px solid #e7e7e7;border-radius:12px;background:rgba(255,255,255,.82); }
     .installer-catalog__stat strong { display:block;font-size:20px;line-height:1.1;color:var(--installer-ink); }
     .installer-catalog__stat span { color:#707070;font-size:12px; }
+    .installer-join { margin-top:-1px;padding:26px 0;background:#171717;color:#fff; }
+    .installer-join__panel { display:grid;grid-template-columns:minmax(280px,.9fr) minmax(560px,1.35fr);align-items:center;gap:28px; }
+    .installer-join__eyebrow { display:inline-flex;align-items:center;gap:8px;margin-bottom:8px;color:#ffad3d;font-size:12px;font-weight:750;letter-spacing:.07em;text-transform:uppercase; }
+    .installer-join__title { margin:0 0 7px;color:#fff;font-size:24px;line-height:1.2; }
+    .installer-join__copy { margin:0;color:#c8c8c8;font-size:14px;line-height:1.55; }
+    .installer-join__benefits { display:flex;flex-wrap:wrap;gap:8px 16px;margin-top:12px;color:#f3f3f3;font-size:12px;font-weight:650; }
+    .installer-join__benefits span::before { content:"✓";margin-right:6px;color:#ff970d; }
+    .installer-join__form { display:grid;grid-template-columns:1fr 1fr .85fr auto;align-items:end;gap:10px; }
+    .installer-join__field label { display:block;margin-bottom:6px;color:#ddd;font-size:11px;font-weight:650; }
+    .installer-join__field .form-control { min-height:46px;border:1px solid #424242;border-radius:10px;background:#262626;color:#fff; }
+    .installer-join__field .form-control::placeholder { color:#929292; }
+    .installer-join__submit { min-height:46px;white-space:nowrap;border:0;background:var(--installer-accent);color:#111;font-weight:750; }
+    .installer-join__meta { grid-column:1/-1;display:flex;align-items:center;justify-content:space-between;gap:14px;margin-top:2px;color:#aaa;font-size:11px; }
+    .installer-join__meta a { color:#ddd;text-decoration:underline; }
+    .installer-join__alert { margin-bottom:14px;padding:12px 14px;border-radius:10px;background:#eaf8ee;color:#176d38;font-size:13px;font-weight:650; }
+    .installer-join__alert--error { background:#fff0f0;color:#9c2424; }
     .installer-filter { padding:20px;border:1px solid #e6e6e6;border-radius:16px;background:#fff;position:sticky;top:96px; }
     .installer-filter__summary { display:none;align-items:center;justify-content:space-between;list-style:none;font-weight:700;cursor:pointer; }
     .installer-filter__toggle { display:none; }
@@ -50,6 +66,9 @@
     .installer-pagination .is-disabled { color:#aaa;background:#f7f7f7; }
     @media(max-width:991px){
         .installer-catalog__hero { padding:34px 0 30px; }
+        .installer-join__panel { grid-template-columns:1fr;gap:20px; }
+        .installer-join__form { grid-template-columns:1fr 1fr; }
+        .installer-join__submit { width:100%; }
         .installer-filter { position:static;padding:16px;margin-bottom:22px; }
         .installer-filter__summary { display:flex; }
         .installer-filter__toggle:not(:checked) + .installer-filter__body { display:none; }
@@ -58,6 +77,10 @@
     @media(max-width:575px){
         .installer-catalog__stats { display:grid;grid-template-columns:1fr 1fr; }
         .installer-catalog__stat { min-width:0; }
+        .installer-join { padding:24px 0; }
+        .installer-join__title { font-size:21px; }
+        .installer-join__form { grid-template-columns:1fr; }
+        .installer-join__meta { align-items:flex-start;flex-direction:column; }
         .installer-result-head { align-items:flex-start;flex-direction:column; }
         .installer-card__media { height:210px; }
         .installer-card__actions { grid-template-columns:1fr; }
@@ -94,8 +117,57 @@
                     </div>
                 </div>
                 <div class="col-lg-4 text-lg-end">
-                    <a href="{{ route('become-installer') }}" class="tf-btn btn-outline">Стать монтажником</a>
+                    <a href="#installer-join" class="tf-btn animate-btn">Получать заявки на монтаж</a>
+                    <p class="cl-text-3 mt-10 mb-0" style="font-size:12px;">Бесплатный профиль · без комиссии</p>
                 </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="installer-join" id="installer-join" aria-labelledby="installer-join-title">
+        <div class="container">
+            @if(session('installer_success'))
+                <div class="installer-join__alert" role="status">{{ session('installer_success') }}</div>
+            @endif
+            @if($errors->installer->any())
+                <div class="installer-join__alert installer-join__alert--error" role="alert">
+                    Проверьте имя и телефон — мы сохранили остальные заполненные данные.
+                </div>
+            @endif
+            <div class="installer-join__panel">
+                <div>
+                    <span class="installer-join__eyebrow">Для монтажников и сервисных бригад</span>
+                    <h2 class="installer-join__title" id="installer-join-title">Получайте клиентов в своём регионе</h2>
+                    <p class="installer-join__copy">Оставьте контакты — менеджер расскажет об условиях и поможет бесплатно оформить профиль с портфолио.</p>
+                    <div class="installer-join__benefits" aria-label="Преимущества участия">
+                        <span>Заявки без комиссии</span>
+                        <span>Партнёрские цены</span>
+                        <span>Проверенный профиль</span>
+                    </div>
+                </div>
+                <form action="{{ route('partners.apply-installer') }}" method="POST" class="installer-join__form kv-form" novalidate>
+                    @csrf
+                    <input type="hidden" name="_source" value="installers-catalog">
+                    <input type="hidden" name="form_started_at" value="{{ time() }}">
+                    <input type="text" name="_hpf" value="" tabindex="-1" autocomplete="off" aria-hidden="true" style="position:absolute;left:-9999px;opacity:0;">
+                    <div class="installer-join__field">
+                        <label for="installer-join-name">Ваше имя *</label>
+                        <input id="installer-join-name" type="text" name="contact_name" class="form-control" value="{{ old('contact_name') }}" placeholder="Александр" required autocomplete="name" data-required="1" data-label="Имя">
+                    </div>
+                    <div class="installer-join__field">
+                        <label for="installer-join-phone">Телефон *</label>
+                        <input id="installer-join-phone" type="tel" name="phone" class="form-control" value="{{ old('phone') }}" placeholder="+375 29 000-00-00" required autocomplete="tel" data-required="1" data-label="Телефон">
+                    </div>
+                    <div class="installer-join__field">
+                        <label for="installer-join-city">Город</label>
+                        <input id="installer-join-city" type="text" name="city" class="form-control" value="{{ old('city') }}" placeholder="Например, Витебск" autocomplete="address-level2">
+                    </div>
+                    <button type="submit" class="tf-btn installer-join__submit">Подать заявку</button>
+                    <div class="installer-join__meta">
+                        <span>Займёт меньше минуты · ответим в течение рабочего дня</span>
+                        <span>Подробнее: <a href="{{ route('become-installer') }}">условия участия и пример профиля</a></span>
+                    </div>
+                </form>
             </div>
         </div>
     </section>

@@ -22,13 +22,18 @@ class PartnerApplicationController extends Controller
             'specializations'  => 'nullable|array',
             'specializations.*'=> 'string',
             'message'          => ['nullable', 'string', 'max:1000', new NoHtmlOrLinks()],
+            '_source'          => 'nullable|in:become-installer,installers-catalog,partners',
         ])->validateWithBag('installer');
 
+        $data['source'] = $data['_source'] ?? 'partners';
+        unset($data['_source']);
         InstallerApplication::create($data);
 
-        $anchor = $request->input('_source') === 'become-installer'
-            ? route('become-installer') . '#apply'
-            : route('partners') . '#apply';
+        $anchor = match ($request->input('_source')) {
+            'become-installer' => route('become-installer') . '#apply',
+            'installers-catalog' => route('installers.index') . '#installer-join',
+            default => route('partners') . '#apply',
+        };
 
         return redirect($anchor)->with('installer_success', 'Ваша заявка отправлена! Мы свяжемся с вами в течение рабочего дня.');
     }

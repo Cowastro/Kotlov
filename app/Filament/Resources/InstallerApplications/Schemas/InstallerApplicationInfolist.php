@@ -17,6 +17,10 @@ class InstallerApplicationInfolist
             TextEntry::make('city')->label('Город')->placeholder('-'),
             TextEntry::make('company_name')->label('Компания')->placeholder('-'),
             TextEntry::make('experience_years')->label('Опыт, лет')->placeholder('-'),
+            TextEntry::make('source')
+                ->label('Источник')
+                ->formatStateUsing(fn ($state) => InstallerApplication::$sourceLabels[$state] ?? $state)
+                ->placeholder('-'),
             TextEntry::make('specializations')
                 ->label('Специализации')
                 ->formatStateUsing(function ($state) {
