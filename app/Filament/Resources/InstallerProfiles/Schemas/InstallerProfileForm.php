@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\InstallerProfiles\Schemas;
 
+use App\Filament\Support\InstallerMediaUpload;
 use Filament\Forms\Components\CheckboxList;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Select;
@@ -180,17 +181,17 @@ class InstallerProfileForm
                 Section::make('Медиа и документы')
                     ->columns(2)
                     ->schema([
-                        FileUpload::make('photo')
+                        InstallerMediaUpload::configure(FileUpload::make('photo'))
                             ->label('Фото / аватар')
                             ->image()
                             ->directory('installers/photos')
                             ->maxSize(2048),
-                        FileUpload::make('logo')
+                        InstallerMediaUpload::configure(FileUpload::make('logo'))
                             ->label('Логотип компании')
                             ->image()
                             ->directory('installers/logos')
                             ->maxSize(2048),
-                        FileUpload::make('gallery')
+                        InstallerMediaUpload::configure(FileUpload::make('gallery'))
                             ->label('Галерея работ')
                             ->image()
                             ->multiple()
@@ -200,7 +201,7 @@ class InstallerProfileForm
                         TextInput::make('certificate_photo')
                             ->label('Сертификат (старое поле, URL/путь)')
                             ->maxLength(255),
-                        FileUpload::make('certificate_files')
+                        InstallerMediaUpload::configure(FileUpload::make('certificate_files'))
                             ->label('Сертификаты и документы')
                             ->multiple()
                             ->directory('installers/certificates')

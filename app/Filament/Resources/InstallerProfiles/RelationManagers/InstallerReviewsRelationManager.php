@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\InstallerProfiles\RelationManagers;
 
+use App\Filament\Support\InstallerMediaUpload;
 use Filament\Actions\CreateAction;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
@@ -21,8 +22,11 @@ use Filament\Tables\Table;
 class InstallerReviewsRelationManager extends RelationManager
 {
     protected static string $relationship = 'reviews';
+
     protected static ?string $title = 'Отзывы монтажника';
+
     protected static ?string $label = 'Отзыв';
+
     protected static ?string $pluralLabel = 'Отзывы';
 
     public function form(Schema $schema): Schema
@@ -60,12 +64,11 @@ class InstallerReviewsRelationManager extends RelationManager
                 ->required()
                 ->columnSpanFull(),
 
-            FileUpload::make('photos')
+            InstallerMediaUpload::configure(FileUpload::make('photos'))
                 ->label('Фотографии')
                 ->image()
                 ->multiple()
                 ->directory('installers/reviews')
-                ->disk('public')
                 ->maxSize(4096)
                 ->columnSpanFull(),
 
@@ -89,13 +92,13 @@ class InstallerReviewsRelationManager extends RelationManager
                     ->label('Оценка')
                     ->badge()
                     ->color(fn ($state) => match ((int) $state) {
-                        5       => 'success',
-                        4       => 'info',
-                        3       => 'warning',
-                        1, 2    => 'danger',
+                        5 => 'success',
+                        4 => 'info',
+                        3 => 'warning',
+                        1, 2 => 'danger',
                         default => 'gray',
                     })
-                    ->formatStateUsing(fn ($state) => $state . ' ★')
+                    ->formatStateUsing(fn ($state) => $state.' ★')
                     ->sortable(),
                 TextColumn::make('text')
                     ->label('Отзыв')

@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\InstallerProfiles\RelationManagers;
 
+use App\Filament\Support\InstallerMediaUpload;
 use Filament\Actions\CreateAction;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
@@ -95,12 +96,11 @@ class WorksRelationManager extends RelationManager
                 ->nullable()
                 ->columnSpanFull(),
 
-            FileUpload::make('photos')
+            InstallerMediaUpload::configure(FileUpload::make('photos'))
                 ->label('Фотографии работы')
                 ->image()
                 ->multiple()
                 ->directory('installers/works')
-                ->disk('public')
                 ->maxSize(4096)
                 ->columnSpanFull(),
 
