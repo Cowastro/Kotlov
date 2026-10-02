@@ -123,6 +123,7 @@ class InstallerApplicationConverter
             'status' => $publish ? 'active' : 'pending',
             'is_published' => $publish,
             'is_verified' => false,
+            'priority_until' => $publish && $this->hasLaunchPrioritySlot() ? now()->addDays(90) : null,
         ];
     }
 
@@ -132,7 +133,7 @@ class InstallerApplicationConverter
         $data = [];
 
         foreach ($source as $field => $value) {
-            if (in_array($field, ['status', 'is_published', 'is_verified'], true)) {
+            if (in_array($field, ['status', 'is_published', 'is_verified', 'priority_until'], true)) {
                 continue;
             }
 
@@ -142,6 +143,13 @@ class InstallerApplicationConverter
         }
 
         return $data;
+    }
+
+    private function hasLaunchPrioritySlot(): bool
+    {
+        return InstallerProfile::query()
+            ->where('priority_until', '>', now())
+            ->count() < 30;
     }
 
     private function mapSpecializations(array $specializations): array

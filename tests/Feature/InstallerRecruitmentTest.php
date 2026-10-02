@@ -65,4 +65,52 @@ class InstallerRecruitmentTest extends TestCase
             'status' => 'new',
         ]);
     }
+
+    public function test_outreach_link_opens_messenger_campaign_landing(): void
+    {
+        $this->withoutMiddleware(\App\Http\Middleware\HandleRedirects::class);
+
+        $this->get(route('installers.outreach'))
+            ->assertRedirect('/become-installer?ref=messenger#apply');
+    }
+
+    public function test_messenger_application_is_attributed_separately(): void
+    {
+        $this->withoutMiddleware([
+            ProtectPublicForm::class,
+            \App\Http\Middleware\HandleRedirects::class,
+        ]);
+
+        $response = $this->post(route('partners.apply-installer'), [
+            '_source' => 'outreach-messenger',
+            'contact_name' => 'Монтажник из Telegram',
+            'phone' => '+375 29 765-43-21',
+            'city' => 'Брест',
+        ]);
+
+        $response->assertRedirect(route('become-installer', ['ref' => 'messenger']) . '#apply');
+        $this->assertDatabaseHas(InstallerApplication::class, [
+            'contact_name' => 'Монтажник из Telegram',
+            'source' => 'outreach-messenger',
+        ]);
+    }
+
+    public function test_category_application_is_attributed_separately(): void
+    {
+        $this->withoutMiddleware([
+            ProtectPublicForm::class,
+            \App\Http\Middleware\HandleRedirects::class,
+        ]);
+
+        $this->post(route('partners.apply-installer'), [
+            '_source' => 'category-cta',
+            'contact_name' => 'Монтажник из каталога',
+            'phone' => '+375 44 123-45-67',
+        ])->assertRedirect(route('become-installer', ['ref' => 'category']) . '#apply');
+
+        $this->assertDatabaseHas(InstallerApplication::class, [
+            'contact_name' => 'Монтажник из каталога',
+            'source' => 'category-cta',
+        ]);
+    }
 }

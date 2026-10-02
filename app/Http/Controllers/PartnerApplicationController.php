@@ -22,7 +22,7 @@ class PartnerApplicationController extends Controller
             'specializations'  => 'nullable|array',
             'specializations.*'=> 'string',
             'message'          => ['nullable', 'string', 'max:1000', new NoHtmlOrLinks()],
-            '_source'          => 'nullable|in:become-installer,installers-catalog,partners',
+            '_source'          => 'nullable|in:become-installer,installers-catalog,partners,outreach-messenger,category-cta',
         ])->validateWithBag('installer');
 
         $data['source'] = $data['_source'] ?? 'partners';
@@ -32,6 +32,8 @@ class PartnerApplicationController extends Controller
         $anchor = match ($request->input('_source')) {
             'become-installer' => route('become-installer') . '#apply',
             'installers-catalog' => route('installers.index') . '#installer-join',
+            'outreach-messenger' => route('become-installer', ['ref' => 'messenger']) . '#apply',
+            'category-cta' => route('become-installer', ['ref' => 'category']) . '#apply',
             default => route('partners') . '#apply',
         };
 

@@ -143,6 +143,7 @@
                         <span>Заявки без комиссии</span>
                         <span>Партнёрские цены</span>
                         <span>Проверенный профиль</span>
+                        <span>Первым 30 — приоритет на 90 дней</span>
                     </div>
                 </div>
                 <form action="{{ route('partners.apply-installer') }}" method="POST" class="installer-join__form kv-form" novalidate>

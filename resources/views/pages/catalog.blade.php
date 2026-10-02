@@ -28,6 +28,10 @@
         </div>
     </section>
 
+    @if ($installerRecruitment)
+        @include('partials.installer-recruitment-note', $installerRecruitment)
+    @endif
+
     {{-- Каталог --}}
     <section class="flat-spacing">
         <div class="container">

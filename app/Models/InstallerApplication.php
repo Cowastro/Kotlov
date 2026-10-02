@@ -36,6 +36,8 @@ class InstallerApplication extends Model
     public static array $sourceLabels = [
         'installers-catalog' => 'Быстрая форма в каталоге',
         'become-installer' => 'Страница «Стать монтажником»',
+        'outreach-messenger' => 'Рассылка Telegram / Viber',
+        'category-cta' => 'Призыв в товарном каталоге',
         'partners' => 'Страница партнёров',
     ];
 

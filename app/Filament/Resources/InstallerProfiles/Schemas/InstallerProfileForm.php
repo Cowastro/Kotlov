@@ -4,6 +4,7 @@ namespace App\Filament\Resources\InstallerProfiles\Schemas;
 
 use App\Filament\Support\InstallerMediaUpload;
 use Filament\Forms\Components\CheckboxList;
+use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TagsInput;
@@ -239,6 +240,10 @@ class InstallerProfileForm
                             ->label('Заказов')
                             ->numeric()
                             ->readOnly(),
+                        DateTimePicker::make('priority_until')
+                            ->label('Приоритетное размещение до')
+                            ->seconds(false)
+                            ->helperText('Активный приоритет поднимает профиль в рекомендованной выдаче.'),
                     ]),
 
             ]);

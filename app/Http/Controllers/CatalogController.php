@@ -407,6 +407,8 @@ class CatalogController extends Controller
             JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES
         );
 
+        $installerRecruitment = $this->installerRecruitmentContext($category);
+
         return view('pages.catalog', compact(
             'category',
             'subcategories',
@@ -422,8 +424,32 @@ class CatalogController extends Controller
             'keywords',
             'canonical',
             'schemaJson',
-            'heatPumpArticles'
+            'heatPumpArticles',
+            'installerRecruitment'
         ));
+    }
+
+    private function installerRecruitmentContext(Category $category): ?array
+    {
+        $root = $category;
+
+        while ($root->parent_id) {
+            $parent = Category::query()->find($root->parent_id);
+
+            if (! $parent) {
+                break;
+            }
+
+            $root = $parent;
+        }
+
+        return match ($root->slug) {
+            'kotly' => ['service' => 'монтажом котлов', 'category' => 'Котлы'],
+            'dymohody' => ['service' => 'монтажом дымоходов', 'category' => 'Дымоходы'],
+            'pechki', 'kaminy' => ['service' => 'монтажом печей и каминов', 'category' => 'Печи и камины'],
+            'komplektuyushhie-dlya-otopleniya' => ['service' => 'монтажом систем отопления', 'category' => 'Отопление'],
+            default => null,
+        };
     }
 
     private function heatPumpFaqSchema(): array

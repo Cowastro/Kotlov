@@ -67,6 +67,13 @@ class InstallerProfilesTable
                         default     => $state,
                     })
                     ->sortable(),
+                TextColumn::make('priority_until')
+                    ->label('Приоритет до')
+                    ->date('d.m.Y')
+                    ->badge()
+                    ->color(fn ($state) => $state && $state->isFuture() ? 'warning' : 'gray')
+                    ->placeholder('—')
+                    ->sortable(),
                 IconColumn::make('is_published')
                     ->label('Опубл.')
                     ->boolean()

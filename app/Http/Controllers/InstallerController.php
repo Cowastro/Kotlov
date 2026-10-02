@@ -132,7 +132,8 @@ class InstallerController extends Controller
         } elseif ($sort === 'experience') {
             $query->orderByDesc('experience_years');
         } else {
-            $query->orderByDesc('is_verified')
+            $query->orderByRaw('CASE WHEN priority_until IS NOT NULL AND priority_until > ? THEN 0 ELSE 1 END', [now()])
+                ->orderByDesc('is_verified')
                 ->orderByDesc('works_count')
                 ->orderByDesc('rating')
                 ->orderByDesc('reviews_count');

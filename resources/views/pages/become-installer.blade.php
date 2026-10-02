@@ -26,6 +26,9 @@
                     <p class="text-body-1 cl-text-2 mb-32">
                         Бесплатный мини-сайт, портфолио, отзывы, партнёрские цены и заявки из вашего региона.
                     </p>
+                    <div class="mb-24 p-16 rounded-12" style="background:#fff7e8;border:1px solid #ffd89c;color:#5f3b00;line-height:1.45;">
+                        <strong>Стартовое преимущество:</strong> первые 30 одобренных новых профилей получают приоритетное размещение в каталоге своего региона на 90 дней.
+                    </div>
                     <div class="d-flex flex-column gap-10 mb-32">
                         <div class="d-flex align-items-start gap-10">
                             <i class="icon icon-CheckCircle cl-primary mt-1" style="font-size:18px;flex-shrink:0;"></i>
@@ -818,7 +821,7 @@
 
                     <form action="{{ route('partners.apply-installer') }}" method="POST" class="tf-form-contact kv-form" novalidate>
                         @csrf
-                        <input type="hidden" name="_source" value="become-installer">
+                        <input type="hidden" name="_source" value="{{ match(request('ref')) { 'messenger' => 'outreach-messenger', 'category' => 'category-cta', default => 'become-installer' } }}">
                         <x-form-protection />
 
                         @if($errors->installer->any())
