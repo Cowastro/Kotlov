@@ -13,7 +13,10 @@ class TelegramApi
 
     public function __construct(int $timeout = 10)
     {
-        $this->token   = config('services.telegram.bot_token', '');
+        // config() returns null when the key exists but its environment value
+        // is unset. Keep the API client constructible so callers can perform
+        // their existing "credentials configured" guard without a TypeError.
+        $this->token   = (string) config('services.telegram.bot_token', '');
         $this->timeout = $timeout;
     }
 

@@ -22,76 +22,82 @@ class InstallerAccountTest extends TestCase
 
         $this->withoutMiddleware(\App\Http\Middleware\HandleRedirects::class);
 
-        Schema::dropIfExists('installer_works');
-        Schema::dropIfExists('installer_profiles');
-        Schema::dropIfExists('users');
+        Schema::disableForeignKeyConstraints();
 
-        Schema::create('users', function (Blueprint $table) {
-            $table->id();
-            $table->string('name');
-            $table->string('email')->unique();
-            $table->timestamp('email_verified_at')->nullable();
-            $table->string('password');
-            $table->string('role')->default('client');
-            $table->boolean('is_active')->default(true);
-            $table->rememberToken();
-            $table->timestamps();
-        });
+        try {
+            Schema::dropIfExists('installer_works');
+            Schema::dropIfExists('installer_profiles');
+            Schema::dropIfExists('users');
 
-        Schema::create('installer_profiles', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('user_id')->unique();
-            $table->string('contact_name')->nullable();
-            $table->string('phone')->nullable();
-            $table->string('additional_phone')->nullable();
-            $table->string('email')->nullable();
-            $table->string('website')->nullable();
-            $table->string('telegram')->nullable();
-            $table->string('viber')->nullable();
-            $table->string('whatsapp')->nullable();
-            $table->string('company_name')->nullable();
-            $table->string('photo')->nullable();
-            $table->text('bio')->nullable();
-            $table->unsignedInteger('experience_years')->default(0);
-            $table->decimal('price_from', 10, 2)->nullable();
-            $table->string('city')->nullable();
-            $table->string('region')->nullable();
-            $table->json('work_regions')->nullable();
-            $table->json('work_cities')->nullable();
-            $table->unsignedInteger('work_radius_km')->nullable();
-            $table->boolean('nationwide')->default(false);
-            $table->string('slug')->nullable();
-            $table->string('short_description')->nullable();
-            $table->string('logo')->nullable();
-            $table->json('gallery')->nullable();
-            $table->json('certificate_files')->nullable();
-            $table->string('certificate_photo')->nullable();
-            $table->boolean('is_published')->default(false);
-            $table->string('status')->default('pending');
-            $table->boolean('is_verified')->default(false);
-            $table->decimal('rating', 4, 2)->default(0);
-            $table->unsignedInteger('reviews_count')->default(0);
-            $table->unsignedInteger('orders_count')->default(0);
-            $table->json('specializations')->nullable();
-            $table->timestamps();
-        });
+            Schema::create('users', function (Blueprint $table) {
+                $table->id();
+                $table->string('name');
+                $table->string('email')->unique();
+                $table->timestamp('email_verified_at')->nullable();
+                $table->string('password');
+                $table->string('role')->default('client');
+                $table->boolean('is_active')->default(true);
+                $table->rememberToken();
+                $table->timestamps();
+            });
 
-        Schema::create('installer_works', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('installer_profile_id');
-            $table->unsignedBigInteger('blog_post_id')->nullable();
-            $table->string('title');
-            $table->text('description')->nullable();
-            $table->string('work_type')->nullable();
-            $table->string('city')->nullable();
-            $table->string('region')->nullable();
-            $table->string('equipment_type')->nullable();
-            $table->string('brand')->nullable();
-            $table->json('photos')->nullable();
-            $table->date('completed_at')->nullable();
-            $table->boolean('is_published')->default(true);
-            $table->timestamps();
-        });
+            Schema::create('installer_profiles', function (Blueprint $table) {
+                $table->id();
+                $table->foreignId('user_id')->unique();
+                $table->string('contact_name')->nullable();
+                $table->string('phone')->nullable();
+                $table->string('additional_phone')->nullable();
+                $table->string('email')->nullable();
+                $table->string('website')->nullable();
+                $table->string('telegram')->nullable();
+                $table->string('viber')->nullable();
+                $table->string('whatsapp')->nullable();
+                $table->string('company_name')->nullable();
+                $table->string('photo')->nullable();
+                $table->text('bio')->nullable();
+                $table->unsignedInteger('experience_years')->default(0);
+                $table->decimal('price_from', 10, 2)->nullable();
+                $table->string('city')->nullable();
+                $table->string('region')->nullable();
+                $table->json('work_regions')->nullable();
+                $table->json('work_cities')->nullable();
+                $table->unsignedInteger('work_radius_km')->nullable();
+                $table->boolean('nationwide')->default(false);
+                $table->string('slug')->nullable();
+                $table->string('short_description')->nullable();
+                $table->string('logo')->nullable();
+                $table->json('gallery')->nullable();
+                $table->json('certificate_files')->nullable();
+                $table->string('certificate_photo')->nullable();
+                $table->boolean('is_published')->default(false);
+                $table->string('status')->default('pending');
+                $table->boolean('is_verified')->default(false);
+                $table->decimal('rating', 4, 2)->default(0);
+                $table->unsignedInteger('reviews_count')->default(0);
+                $table->unsignedInteger('orders_count')->default(0);
+                $table->json('specializations')->nullable();
+                $table->timestamps();
+            });
+
+            Schema::create('installer_works', function (Blueprint $table) {
+                $table->id();
+                $table->foreignId('installer_profile_id');
+                $table->unsignedBigInteger('blog_post_id')->nullable();
+                $table->string('title');
+                $table->text('description')->nullable();
+                $table->string('work_type')->nullable();
+                $table->string('city')->nullable();
+                $table->string('region')->nullable();
+                $table->string('equipment_type')->nullable();
+                $table->string('brand')->nullable();
+                $table->json('photos')->nullable();
+                $table->date('completed_at')->nullable();
+                $table->boolean('is_published')->default(true);
+                $table->timestamps();
+            });
+        } finally {
+            Schema::enableForeignKeyConstraints();
+        }
     }
 
     public function test_guest_is_redirected_from_installer_cabinet(): void
