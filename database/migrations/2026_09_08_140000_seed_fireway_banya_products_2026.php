@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Database\Migrations\Migration;
+use Illuminate\Support\Facades\DB;
 use App\Models\Product;
 use App\Models\Supplier;
 use App\Models\SupplierProduct;
@@ -28,6 +29,14 @@ return new class extends Migration
 
     public function up(): void
     {
+        // Fixed IDs belong to the imported legacy catalogue. On a clean
+        // database (for example CI) the related records do not exist, and this
+        // optional product import must be skipped instead of violating FKs.
+        if (! DB::table('brands')->where('id', self::BRAND_ID)->exists()
+            || ! DB::table('categories')->where('id', self::CAT_ID)->exists()) {
+            return;
+        }
+
         $supplier = Supplier::where('code', self::SUPPLIER_CODE)->first();
 
         foreach ($this->products() as $p) {

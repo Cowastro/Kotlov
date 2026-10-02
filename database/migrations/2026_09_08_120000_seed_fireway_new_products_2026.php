@@ -2,6 +2,7 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use App\Models\Product;
 
@@ -17,6 +18,14 @@ return new class extends Migration
 
     public function up(): void
     {
+        // This data migration targets the legacy production catalogue, where
+        // Fireway and these categories already exist with fixed IDs. A clean
+        // install (tests/CI) intentionally has no catalogue seed data, so there
+        // is nothing safe to attach these products to.
+        if (! $this->catalogPrerequisitesExist()) {
+            return;
+        }
+
         foreach ($this->products() as $p) {
             if (Product::where('slug', $p['slug'])->exists()) {
                 continue;
@@ -31,6 +40,13 @@ return new class extends Migration
                 'is_new'              => true,
             ]));
         }
+    }
+
+    private function catalogPrerequisitesExist(): bool
+    {
+        return DB::table('brands')->where('id', self::BRAND_ID)->exists()
+            && DB::table('categories')->where('id', self::CAT_TOPKI)->exists()
+            && DB::table('categories')->where('id', self::CAT_PECHI)->exists();
     }
 
     public function down(): void
