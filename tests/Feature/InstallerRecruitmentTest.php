@@ -4,8 +4,10 @@ namespace Tests\Feature;
 
 use App\Http\Middleware\ProtectPublicForm;
 use App\Models\InstallerApplication;
+use App\Services\InstallerApplicationTelegramNotifier;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
+use Mockery;
 use Tests\TestCase;
 
 class InstallerRecruitmentTest extends TestCase
@@ -26,6 +28,8 @@ class InstallerRecruitmentTest extends TestCase
             $table->json('specializations')->nullable();
             $table->text('message')->nullable();
             $table->string('source', 50)->nullable();
+            $table->unsignedBigInteger('telegram_message_id')->nullable();
+            $table->timestamp('telegram_notified_at')->nullable();
             $table->string('status')->default('new');
             $table->text('admin_notes')->nullable();
             $table->timestamps();
@@ -152,5 +156,30 @@ class InstallerRecruitmentTest extends TestCase
         $this->assertSame('Монтаж котельных и систем отопления под ключ.', $application->message);
         $this->assertSame('outreach-messenger', $application->source);
         $this->assertSame('new', $application->status);
+    }
+
+    public function test_new_application_triggers_telegram_notification(): void
+    {
+        $this->withoutMiddleware([
+            ProtectPublicForm::class,
+            \App\Http\Middleware\HandleRedirects::class,
+        ]);
+
+        $notifier = Mockery::mock(InstallerApplicationTelegramNotifier::class);
+        $notifier->shouldReceive('send')
+            ->once()
+            ->withArgs(fn (InstallerApplication $application) =>
+                $application->exists
+                && $application->contact_name === 'Монтажник с уведомлением'
+                && $application->source === 'category-cta'
+            )
+            ->andReturn(true);
+        $this->app->instance(InstallerApplicationTelegramNotifier::class, $notifier);
+
+        $this->post(route('partners.apply-installer'), [
+            '_source' => 'category-cta',
+            'contact_name' => 'Монтажник с уведомлением',
+            'phone' => '+375 33 123-45-67',
+        ])->assertRedirect(route('become-installer', ['ref' => 'category']) . '#apply');
     }
 }

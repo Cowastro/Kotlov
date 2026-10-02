@@ -29,6 +29,10 @@ class InstallerApplicationInfolist
                     return collect($state)->map(fn ($s) => $labels[$s] ?? $s)->join(', ');
                 }),
             TextEntry::make('message')->label('Сообщение')->placeholder('-'),
+            TextEntry::make('telegram_notified_at')
+                ->label('Отправлено в Telegram')
+                ->dateTime('d.m.Y H:i')
+                ->placeholder('Не отправлено'),
             TextEntry::make('status')
                 ->label('Статус')
                 ->badge()

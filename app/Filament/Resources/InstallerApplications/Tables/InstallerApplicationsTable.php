@@ -5,6 +5,7 @@ namespace App\Filament\Resources\InstallerApplications\Tables;
 use App\Filament\Resources\InstallerProfiles\InstallerProfileResource;
 use App\Models\InstallerApplication;
 use App\Services\InstallerApplicationConverter;
+use App\Services\InstallerApplicationTelegramNotifier;
 use Filament\Actions\Action;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
@@ -12,6 +13,7 @@ use Filament\Actions\EditAction;
 use Filament\Actions\ViewAction;
 use Filament\Notifications\Notification;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 
@@ -49,6 +51,13 @@ class InstallerApplicationsTable
                     ->formatStateUsing(fn ($state) => InstallerApplication::$sourceLabels[$state] ?? $state)
                     ->placeholder('-')
                     ->toggleable(),
+                IconColumn::make('telegram_notified_at')
+                    ->label('Telegram')
+                    ->boolean()
+                    ->getStateUsing(fn ($record) => (bool) $record->telegram_notified_at)
+                    ->trueColor('success')
+                    ->falseColor('danger')
+                    ->toggleable(),
                 TextColumn::make('status')
                     ->label('Статус')
                     ->badge()
@@ -75,6 +84,18 @@ class InstallerApplicationsTable
             ])
             ->recordActions([
                 ViewAction::make(),
+                Action::make('sendTelegram')
+                    ->label(fn ($record) => $record->telegram_notified_at ? 'Отправить повторно' : 'В Telegram')
+                    ->icon('heroicon-o-paper-airplane')
+                    ->color('info')
+                    ->action(function ($record) {
+                        $sent = app(InstallerApplicationTelegramNotifier::class)->send($record);
+                        $notification = Notification::make()
+                            ->title($sent ? 'Уведомление отправлено' : 'Не удалось отправить уведомление');
+
+                        $sent ? $notification->success() : $notification->danger();
+                        $notification->send();
+                    }),
                 Action::make('createInstallerProfile')
                     ->label('Создать профиль')
                     ->icon('heroicon-o-user-plus')

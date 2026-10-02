@@ -5,11 +5,14 @@ namespace App\Http\Controllers;
 use App\Models\InstallerApplication;
 use App\Models\SupplierApplication;
 use App\Rules\NoHtmlOrLinks;
+use App\Services\InstallerApplicationTelegramNotifier;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 
 class PartnerApplicationController extends Controller
 {
+    public function __construct(private InstallerApplicationTelegramNotifier $telegramNotifier) {}
+
     public function storeInstaller(Request $request)
     {
         $data = Validator::make($request->all(), [
@@ -27,7 +30,8 @@ class PartnerApplicationController extends Controller
 
         $data['source'] = $data['_source'] ?? 'partners';
         unset($data['_source']);
-        InstallerApplication::create($data);
+        $application = InstallerApplication::create($data);
+        $this->telegramNotifier->send($application);
 
         $anchor = match ($request->input('_source')) {
             'become-installer' => route('become-installer') . '#apply',

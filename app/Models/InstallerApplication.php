@@ -20,11 +20,15 @@ class InstallerApplication extends Model
         'source',
         'status',
         'admin_notes',
+        'telegram_message_id',
+        'telegram_notified_at',
     ];
 
     protected $casts = [
         'specializations' => 'array',
         'experience_years' => 'integer',
+        'telegram_message_id' => 'integer',
+        'telegram_notified_at' => 'datetime',
     ];
 
     public static array $statuses = [
