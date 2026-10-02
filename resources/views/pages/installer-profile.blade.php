@@ -9,9 +9,11 @@
     .installer-profile .sidebar-account-wrap { padding:20px;border:1px solid #e7e7e7;border-radius:20px;background:#fff;box-shadow:0 12px 34px rgba(0,0,0,.05); }
     .installer-profile__portrait { width:100%;aspect-ratio:4/3;border-radius:16px;overflow:hidden;background:linear-gradient(145deg,#f0f0f0,#fff5e6); }
     .installer-profile__portrait img { width:100%;height:100%;object-fit:cover; }
+    .installer-profile__portrait.is-logo img { object-fit:contain;padding:22px;background:#f7f7f7; }
     .installer-profile__portrait-empty { display:flex;align-items:center;justify-content:center;width:100%;height:100%;font-size:48px;font-weight:750;color:#333; }
     .installer-profile__mobile-cover { display:none;aspect-ratio:16/10;margin-bottom:14px;border-radius:18px;overflow:hidden;background:#f2f2f2; }
     .installer-profile__mobile-cover img { width:100%;height:100%;object-fit:cover; }
+    .installer-profile__mobile-cover.is-logo img { object-fit:contain;padding:24px;background:#f7f7f7; }
     .installer-profile__mobile-cta { display:none; }
     .installer-profile__trust { display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border-radius:999px;background:#eaf8ef;color:#16713a;font-size:11px;font-weight:750; }
     .installer-profile__lead { padding:26px;border-radius:20px;background:linear-gradient(135deg,#171717 0%,#29231d 68%,#493017 100%);color:#fff; }
@@ -78,6 +80,7 @@
         ? ($installer->works->first()->photos[0] ?? null)
         : null;
     $profileMedia = \App\Support\InstallerMedia::url($installer->photo ?? $installer->logo ?? $featuredPhoto);
+    $profileMediaIsLogo = !$installer->photo && $installer->logo;
     $initials = collect(preg_split('/\s+/u', trim($installer->contact_name ?: $installer->company_name ?: 'KOTLOV')))
         ->filter()->take(2)->map(fn ($part) => mb_strtoupper(mb_substr($part, 0, 1)))->implode('');
 @endphp
@@ -111,7 +114,7 @@
 
                         {{-- Аватар — account-avatar --}}
                         <div class="account-avatar mb-20 d-flex flex-column align-items-center text-center">
-                            <div class="installer-profile__portrait mb-16">
+                            <div class="installer-profile__portrait mb-16 {{ $profileMediaIsLogo ? 'is-logo' : '' }}">
                                 @if($profileMedia)
                                     <img loading="lazy" src="{{ $profileMedia }}"
                                         alt="Работа монтажника {{ $installer->contact_name ?? $installer->company_name }}">
@@ -233,7 +236,7 @@
                     <div class="my-account-content">
 
                         @if($profileMedia)
-                        <div class="installer-profile__mobile-cover">
+                        <div class="installer-profile__mobile-cover {{ $profileMediaIsLogo ? 'is-logo' : '' }}">
                             <img loading="lazy" src="{{ $profileMedia }}" alt="Работа монтажника {{ $installer->contact_name ?? $installer->company_name }}">
                         </div>
                         @endif
