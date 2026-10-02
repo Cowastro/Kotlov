@@ -155,11 +155,18 @@ jobs:
               ;;
             deploy-safe)
               # Never discard production changes. A dirty tracked worktree is a
-              # hard stop so an operator can inspect and preserve it first.
-              if [[ -n "$(git status --porcelain --untracked-files=no)" ]]; then
+              # hard stop so an operator can inspect and preserve it first. The
+              # Teplodvor index is runtime data: it may stay dirty, and Git will
+              # still refuse the pull if an incoming commit touches that file.
+              tracked_changes="$(git status --porcelain --untracked-files=no)"
+              unexpected_changes="$(printf '%s\n' "$tracked_changes" | grep -vE '^ M storage/teplodvor_index\.json$' || true)"
+              if [[ -n "$unexpected_changes" ]]; then
                 echo "::error::Deployment stopped: tracked server files contain local changes."
-                git status --short --untracked-files=no
+                printf '%s\n' "$unexpected_changes"
                 exit 1
+              fi
+              if [[ -n "$tracked_changes" ]]; then
+                echo "Preserving runtime file: storage/teplodvor_index.json"
               fi
 
               current_branch="$(git branch --show-current)"
