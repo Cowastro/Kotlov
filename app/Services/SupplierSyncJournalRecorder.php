@@ -12,6 +12,11 @@ class SupplierSyncJournalRecorder
     /** @var array<int, array{command:string, run_id:int, started_at:float}> */
     private array $runs = [];
 
+    private const COMMAND_SUPPLIER_CODES = [
+        'supplier:sync-rusklimat' => 'rusklimat',
+        'supplier:sync-rusklimat-pricelist' => 'rusklimat',
+    ];
+
     /** @var array<int, string> Commands invoked inside another tracked sync. */
     private array $nestedCommands = [];
 
@@ -64,7 +69,7 @@ class SupplierSyncJournalRecorder
         array_splice($this->runs, $position, 1);
 
         try {
-            $summary = $this->captureChanges((int) $active['run_id']);
+            $summary = $this->captureChanges((int) $active['run_id'], (string) $active['command']);
 
             SupplierSyncRun::query()->whereKey($active['run_id'])->update([
                 'status' => $exitCode === 0 ? 'success' : 'failed',
@@ -119,7 +124,7 @@ class SupplierSyncJournalRecorder
     }
 
     /** @return array{changes:int, prices:int, stock:int, suppliers:?string} */
-    private function captureChanges(int $runId): array
+    private function captureChanges(int $runId, string $command): array
     {
         $current = $this->currentStates();
         $previous = DB::table('supplier_sync_states')
@@ -131,12 +136,22 @@ class SupplierSyncJournalRecorder
         $priceCount = 0;
         $stockCount = 0;
         $supplierNames = [];
+        $scopedSupplierId = $this->scopedSupplierId($command);
 
         foreach ($current as $supplierProductId => $state) {
             $before = $previous->get($supplierProductId);
             $flags = $before ? $this->changeFlags($before, $state) : ['link_created'];
 
             if ($flags === []) {
+                continue;
+            }
+
+            // Always advance the global baseline. Product-level retail and
+            // availability changes are reflected in every supplier link, but
+            // a supplier-specific command must record only its own link.
+            $changedStates[] = $this->statePayload($state, $now);
+
+            if ($scopedSupplierId !== null && $state['supplier_id'] !== $scopedSupplierId) {
                 continue;
             }
 
@@ -149,12 +164,14 @@ class SupplierSyncJournalRecorder
             $supplierNames[$state['supplier_name'] ?: 'Без поставщика'] = true;
 
             $changes[] = $this->changePayload($runId, $before, $state, $flags, $now);
-            $changedStates[] = $this->statePayload($state, $now);
         }
 
         $removedIds = $previous->keys()->diff(array_keys($current));
         foreach ($removedIds as $supplierProductId) {
             $before = $previous->get($supplierProductId);
+            if ($scopedSupplierId !== null && (int) $before->supplier_id !== $scopedSupplierId) {
+                continue;
+            }
             $supplierNames[$before->supplier_name ?: 'Без поставщика'] = true;
             $changes[] = $this->changePayload($runId, $before, null, ['link_removed'], $now);
         }
@@ -288,6 +305,18 @@ class SupplierSyncJournalRecorder
     private function money(mixed $value): ?string
     {
         return $value === null ? null : number_format((float) $value, 2, '.', '');
+    }
+
+    private function scopedSupplierId(string $command): ?int
+    {
+        $code = self::COMMAND_SUPPLIER_CODES[$command] ?? null;
+        if ($code === null) {
+            return null;
+        }
+
+        $id = DB::table('suppliers')->where('code', $code)->value('id');
+
+        return $id !== null ? (int) $id : null;
     }
 
     private function shouldTrack(?string $command): bool

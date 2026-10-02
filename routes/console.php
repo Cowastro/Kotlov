@@ -13,7 +13,8 @@ $supplierSyncTimezone = 'Europe/Minsk';
 // ── Русклимат: ежедневная синхронизация ──────────────────────────────────────
 // Сервер cron (один раз): * * * * * cd /var/www/h209767/data/www/new.kotlov.by && /opt/alt/php83/usr/bin/php artisan schedule:run >> /dev/null 2>&1
 //
-// Ежедневно обновляем ТОЛЬКО цены, наличие и создаём новые товары.
+// Ежедневно обновляем ТОЛЬКО цены и наличие уже связанных товаров.
+// Новые связи и карточки создаются лишь отдельным ручным импортом после проверки.
 // Без AI и без массовой загрузки фото — это быстро, стабильно и не зависит от API.
 //
 // Фото, характеристики и описания заполняются ОТДЕЛЬНО и ВРУЧНУЮ, только для
@@ -21,7 +22,7 @@ $supplierSyncTimezone = 'Europe/Minsk';
 // повторять не нужно):
 //   php artisan supplier:enrich-rusklimat --skip-content   # фото + характеристики, без AI
 //   php artisan supplier:enrich-rusklimat --ai-only        # AI-описания (по согласованию)
-Schedule::command('supplier:sync-rusklimat --apply --create-new --fix-retail-prices')
+Schedule::command('supplier:sync-rusklimat-pricelist --apply --sync-retail-prices')
     ->dailyAt('07:00')
     ->timezone($supplierSyncTimezone)
     ->withoutOverlapping()

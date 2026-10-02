@@ -30,7 +30,8 @@ class SyncRusklimatCommand extends Command
         {--sheet-url= : Google Sheets URL to download (overrides built-in default)}
         {--no-images : Skip downloading product images}
         {--create-new : Create new products for rows that have no match in KOTLOV}
-        {--only-existing : Only update supplier_products for already-matched products; skip create_candidates}
+        {--only-existing : Only update products already linked to Русклимат; never create or infer new links}
+        {--only-linked : Alias for --only-existing}
         {--fix-retail-prices : Update products.price from розница column for matched products (fixes existing wrong prices)}
         {--enrich : Generate AI descriptions for new products (requires ANTHROPIC_API_KEY or AI_API_KEY)}';
 
@@ -227,7 +228,7 @@ class SyncRusklimatCommand extends Command
         $dryRun       = (bool) $this->option('dry-run') || ! $apply;
         $limit        = $this->option('limit') !== null ? (int) $this->option('limit') : null;
         $createNew    = (bool) $this->option('create-new');
-        $onlyExisting = (bool) $this->option('only-existing');
+        $onlyExisting = (bool) $this->option('only-existing') || (bool) $this->option('only-linked');
         $noImages     = (bool) $this->option('no-images');
 
         $this->line($apply && ! $this->option('dry-run')
@@ -487,7 +488,7 @@ class SyncRusklimatCommand extends Command
         }
 
         $items = [];
-        $seen  = [];
+        $articleCounts = [];
 
         for ($i = $headerIdx + 1; $i < count($rawRows); $i++) {
             $row     = $rawRows[$i];
@@ -499,14 +500,20 @@ class SyncRusklimatCommand extends Command
 
             $normArticle = $this->normaliseArticle($article);
 
-            if (isset($seen[$normArticle])) {
-                $items[] = array_merge($this->extractRow($row, $colMap, $article, $normArticle), ['_action' => 'skipped_duplicate']);
-                continue;
-            }
-
-            $seen[$normArticle] = true;
-            $items[]            = $this->extractRow($row, $colMap, $article, $normArticle);
+            $articleCounts[$normArticle] = ($articleCounts[$normArticle] ?? 0) + 1;
+            $items[] = $this->extractRow($row, $colMap, $article, $normArticle);
         }
+
+        // A duplicate supplier code is ambiguous even when prices happen to
+        // be equal: the live sheet currently contains codes assigned to two
+        // different models, and one code with conflicting price/stock. Skip
+        // every occurrence so row ordering can never choose the wrong value.
+        foreach ($items as &$item) {
+            if (($articleCounts[$item['norm_article']] ?? 0) > 1) {
+                $item['_action'] = 'skipped_duplicate';
+            }
+        }
+        unset($item);
 
         return $items;
     }
@@ -553,11 +560,14 @@ class SyncRusklimatCommand extends Command
         $map = [];
 
         $patterns = [
-            'article'   => ['артикул', 'article', 'sku', 'код', 'code', 'vendor_code', 'арт'],
+            // Русклимат's stable identifier is its internal НС code. Some
+            // category tabs also contain a manufacturer article, which is not
+            // guaranteed to be present or unique in the consolidated upload.
+            'article'   => ['код нс', 'код', 'артикул', 'article', 'sku', 'code', 'vendor_code', 'арт'],
             'name'      => ['наименование', 'название', 'товар', 'name', 'product', 'позиция', 'модель', 'model'],
             'brand'     => ['бренд', 'производитель', 'brand', 'марка', 'manufacturer'],
             'category'  => ['категория', 'группа', 'раздел', 'category', 'group', 'section'],
-            'price'        => ['дилер', 'дилерская', 'закупка', 'закупочная', 'цена дилера', 'price', 'цена', 'стоимость'],
+            'price'        => ['дилер', 'опт', 'дилерская', 'закупка', 'закупочная', 'цена дилера', 'price', 'цена', 'стоимость'],
             'retail_price' => ['розница', 'мрц', 'рекомендованная', 'ррц', 'retail', 'розничная'],
             'currency'  => ['валюта', 'currency', 'curr'],
             'quantity'  => ['остаток', 'количество', 'кол-во', 'qty', 'quantity', 'stock', 'наличие'],
@@ -669,7 +679,7 @@ class SyncRusklimatCommand extends Command
                 continue;
             }
 
-            $match     = $this->matchProduct($row);
+            $match     = $this->matchProduct($row, $onlyExisting);
             $brandId   = $this->resolveBrand($row['brand']);
             $catId     = $this->resolveCategory($row['category'], $row['name']);
             $stockStat = $this->normaliseStockStatus($row['status_text'], $row['quantity']);
@@ -740,7 +750,7 @@ class SyncRusklimatCommand extends Command
      *   L4 – brand + article as model tokens
      *   L5 – low confidence → manual_review flag
      */
-    private function matchProduct(array $row): ?array
+    private function matchProduct(array $row, bool $onlyExisting = false): ?array
     {
         $normArticle = $row['norm_article'];
         $brandId     = $this->resolveBrand($row['brand']);
@@ -750,6 +760,14 @@ class SyncRusklimatCommand extends Command
             $pid = $this->indexBySupplierArticle[$normArticle];
             $sku = (string) DB::table('products')->where('id', $pid)->value('sku');
             return ['product_id' => $pid, 'sku' => $sku, 'confidence' => 'exact_supplier_article'];
+        }
+
+        // The daily price/stock job must never guess a new relation. A fuzzy
+        // brand/model match can be useful during a supervised import, but it
+        // is unsafe for an unattended sync because it may overwrite another
+        // product's price and stock.
+        if ($onlyExisting) {
+            return null;
         }
 
         // L2: article matches products.sku
@@ -1116,8 +1134,34 @@ class SyncRusklimatCommand extends Command
         // must be shown as "Уточняйте наличие" on the storefront.
         $inStock = in_array($row['stock_status'], ['in_stock', 'low_stock'], true);
 
+        $key = ['supplier_id' => $supplierId, 'supplier_article' => $row['norm_article']];
+        $existingStock = DB::table('supplier_products')
+            ->where($key)
+            ->first(['in_stock', 'stock_quantity', 'stock_status', 'stock_text', 'delivery_days', 'last_stock_synced_at']);
+        $hasStockValue = $row['quantity'] !== null || $row['stock_status'] !== 'unknown';
+
+        // Blank stock in the supplier file means "not supplied", not zero.
+        // Preserve the last confirmed stock instead of taking a product off sale.
+        $stockValues = $hasStockValue || $existingStock === null
+            ? [
+                'in_stock' => $inStock,
+                'stock_quantity' => $row['quantity'],
+                'stock_status' => $row['stock_status'],
+                'stock_text' => $row['status_text'] !== '' ? $row['status_text'] : null,
+                'delivery_days' => $inStock ? 0 : ($row['stock_status'] === 'preorder' ? 7 : null),
+                'last_stock_synced_at' => $hasStockValue ? $now : null,
+            ]
+            : [
+                'in_stock' => $existingStock->in_stock,
+                'stock_quantity' => $existingStock->stock_quantity,
+                'stock_status' => $existingStock->stock_status,
+                'stock_text' => $existingStock->stock_text,
+                'delivery_days' => $existingStock->delivery_days,
+                'last_stock_synced_at' => $existingStock->last_stock_synced_at,
+            ];
+
         DB::table('supplier_products')->updateOrInsert(
-            ['supplier_id' => $supplierId, 'supplier_article' => $row['norm_article']],
+            $key,
             [
                 'supplier_article_normalized' => $row['norm_article'],
                 'supplier_sync_id'            => $syncId,
@@ -1129,12 +1173,8 @@ class SyncRusklimatCommand extends Command
                 'currency'                    => $row['currency'],
                 'currency_rate'               => $row['currency'] === 'BYN' ? 1.0 : $this->supplierCurrencyRate(),
                 'price_byn'                   => $row['price_byn'],
-                'in_stock'                    => $inStock,
-                'stock_quantity'              => $row['quantity'],
-                'stock_status'                => $row['stock_status'],
-                'stock_text'                  => $row['status_text'] !== '' ? $row['status_text'] : null,
+                ...$stockValues,
                 'warehouse_name'              => $row['warehouse'] !== '' ? $row['warehouse'] : null,
-                'delivery_days'               => $inStock ? 0 : ($row['stock_status'] === 'preorder' ? 7 : null),
                 'match_status'                => 'matched',
                 'match_confidence'            => $row['confidence'],
                 'raw'                         => json_encode([
@@ -1143,7 +1183,6 @@ class SyncRusklimatCommand extends Command
                     'category' => $row['category'],
                 ], JSON_UNESCAPED_UNICODE),
                 'last_synced_at'              => $now,
-                'last_stock_synced_at'        => $now,
                 'updated_at'                  => $now,
                 'created_at'                  => $now,
             ]
