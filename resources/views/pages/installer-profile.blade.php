@@ -49,6 +49,21 @@
     .installer-work-card__gallery a { display:block;aspect-ratio:4/3;overflow:hidden;border-radius:10px;background:#efefef; }
     .installer-work-card__gallery img { width:100%;height:100%;object-fit:cover;transition:transform .25s ease; }
     .installer-work-card__gallery a:hover img { transform:scale(1.04); }
+    .installer-gallery-trigger { position:relative;cursor:zoom-in; }
+    .installer-gallery-trigger::after { content:"↗";position:absolute;right:10px;top:10px;display:grid;place-items:center;width:32px;height:32px;border-radius:50%;background:rgba(17,17,17,.72);color:#fff;font-size:15px;line-height:1;opacity:0;transform:translateY(4px);transition:opacity .2s ease,transform .2s ease;backdrop-filter:blur(8px); }
+    .installer-gallery-trigger:hover::after,.installer-gallery-trigger:focus-visible::after { opacity:1;transform:none; }
+    .installer-lightbox[hidden] { display:none!important; }
+    .installer-lightbox { position:fixed;inset:0;z-index:10050;display:flex;align-items:center;justify-content:center;padding:24px;background:rgba(9,9,9,.94); }
+    .installer-lightbox__stage { position:relative;display:flex;align-items:center;justify-content:center;width:min(1240px,100%);height:min(88vh,900px); }
+    .installer-lightbox__image { display:block;max-width:100%;max-height:100%;object-fit:contain;border-radius:10px;box-shadow:0 24px 80px rgba(0,0,0,.45);user-select:none; }
+    .installer-lightbox__close,.installer-lightbox__nav { position:absolute;z-index:2;display:grid;place-items:center;border:0;border-radius:50%;background:rgba(255,255,255,.94);color:#171717;box-shadow:0 8px 28px rgba(0,0,0,.22);transition:transform .2s ease,background .2s ease; }
+    .installer-lightbox__close:hover,.installer-lightbox__nav:hover { background:#fff;transform:scale(1.05); }
+    .installer-lightbox__close { top:18px;right:18px;width:44px;height:44px;font-size:28px; }
+    .installer-lightbox__nav { top:50%;width:50px;height:50px;margin-top:-25px;font-size:29px; }
+    .installer-lightbox__prev { left:18px; }
+    .installer-lightbox__next { right:18px; }
+    .installer-lightbox__counter { position:absolute;bottom:18px;left:50%;z-index:2;transform:translateX(-50%);padding:7px 13px;border-radius:999px;background:rgba(17,17,17,.72);color:#fff;font-size:12px;font-weight:700;backdrop-filter:blur(8px); }
+    body.installer-lightbox-open { overflow:hidden; }
     .installer-work-card__body { padding:18px; }
     .installer-work-card__description { color:#666;font-size:13px;line-height:1.55; }
     .installer-work-card__link { display:inline-flex;align-items:center;gap:6px;margin-top:12px;color:#a85d00;font-size:13px;font-weight:750; }
@@ -70,6 +85,14 @@
         .installer-profile__gallery { grid-template-columns:1fr 1fr; }
         .installer-profile__gallery a { min-height:118px; }
         .installer-profile__gallery a:first-child { grid-column:1/-1;grid-row:auto;min-height:220px; }
+        .installer-gallery-trigger::after { opacity:1;transform:none;width:28px;height:28px;font-size:13px; }
+        .installer-lightbox { padding:12px; }
+        .installer-lightbox__stage { height:82vh; }
+        .installer-lightbox__close { top:12px;right:12px;width:40px;height:40px; }
+        .installer-lightbox__nav { width:42px;height:42px;margin-top:-21px;font-size:24px; }
+        .installer-lightbox__prev { left:8px; }
+        .installer-lightbox__next { right:8px; }
+        .installer-lightbox__counter { bottom:12px; }
     }
 </style>
 @endpush
@@ -84,6 +107,10 @@
         && (!$installer->photo || $installer->photo === $installer->logo);
     $initials = collect(preg_split('/\s+/u', trim($installer->contact_name ?: $installer->company_name ?: 'KOTLOV')))
         ->filter()->take(2)->map(fn ($part) => mb_strtoupper(mb_substr($part, 0, 1)))->implode('');
+    $profileGalleryPhotos = collect($installer->gallery ?? [])
+        ->map(fn ($path) => \App\Support\InstallerMedia::url($path))
+        ->filter()
+        ->values();
 @endphp
 <main id="wrapper" class="installer-profile">
 
@@ -320,9 +347,12 @@
                                 <a href="#section-works" class="link fw-semibold">Смотреть кейсы ↓</a>
                             </div>
                             <div class="installer-profile__gallery">
-                                @foreach(array_slice($installer->gallery, 0, 4) as $image)
-                                <a href="{{ \App\Support\InstallerMedia::url($image) }}" target="_blank" rel="noopener">
-                                    <img loading="lazy" src="{{ \App\Support\InstallerMedia::url($image) }}" alt="Объект монтажника {{ $installer->contact_name }}">
+                                @foreach($profileGalleryPhotos->take(4) as $index => $image)
+                                <a href="{{ $image }}" class="installer-gallery-trigger"
+                                   data-installer-gallery="{{ $profileGalleryPhotos->toJson() }}"
+                                   data-installer-gallery-index="{{ $index }}"
+                                   aria-label="Открыть галерею объектов, фото {{ $index + 1 }} из {{ $profileGalleryPhotos->count() }}">
+                                    <img loading="lazy" src="{{ $image }}" alt="Объект монтажника {{ $installer->contact_name }}">
                                 </a>
                                 @endforeach
                             </div>
@@ -519,7 +549,10 @@
                                 <div class="col-md-6">
                                     <article class="installer-work-card">
                                         @if($photo)
-                                        <a class="installer-work-card__media" href="{{ $articleUrl ?: $photo }}" @unless($articleUrl) target="_blank" rel="noopener" @endunless>
+                                        <a class="installer-work-card__media installer-gallery-trigger" href="{{ $photo }}"
+                                           data-installer-gallery="{{ $workPhotos->toJson() }}"
+                                           data-installer-gallery-index="0"
+                                           aria-label="Открыть галерею работы «{{ $work->title }}», фото 1 из {{ $workPhotos->count() }}">
                                             <img src="{{ $photo }}" alt="{{ $work->title }}"
                                                  loading="lazy">
                                             <span class="installer-work-card__badge">Реальный объект</span>
@@ -530,8 +563,10 @@
                                         @if($workPhotos->count() > 1)
                                         <div class="installer-work-card__gallery">
                                             @foreach($workPhotos->skip(1)->take(3) as $index => $galleryPhoto)
-                                            <a href="{{ $galleryPhoto }}" target="_blank" rel="noopener"
-                                               aria-label="Открыть дополнительное фото работы {{ $index + 2 }}">
+                                            <a href="{{ $galleryPhoto }}" class="installer-gallery-trigger"
+                                               data-installer-gallery="{{ $workPhotos->toJson() }}"
+                                               data-installer-gallery-index="{{ $index + 1 }}"
+                                               aria-label="Открыть галерею работы «{{ $work->title }}», фото {{ $index + 2 }} из {{ $workPhotos->count() }}">
                                                 <img src="{{ $galleryPhoto }}" alt="{{ $work->title }} — фото {{ $index + 2 }}" loading="lazy">
                                             </a>
                                             @endforeach
@@ -696,5 +731,112 @@
         </div>
     </section>
 
+    <div class="installer-lightbox" id="installer-lightbox" role="dialog" aria-modal="true"
+         aria-label="Просмотр фотографий работы" aria-hidden="true" hidden>
+        <button type="button" class="installer-lightbox__close" data-lightbox-close aria-label="Закрыть галерею">×</button>
+        <div class="installer-lightbox__stage">
+            <button type="button" class="installer-lightbox__nav installer-lightbox__prev" data-lightbox-prev aria-label="Предыдущее фото">‹</button>
+            <img class="installer-lightbox__image" src="" alt="">
+            <button type="button" class="installer-lightbox__nav installer-lightbox__next" data-lightbox-next aria-label="Следующее фото">›</button>
+            <div class="installer-lightbox__counter" aria-live="polite"></div>
+        </div>
+    </div>
+
 </main>
 @endsection
+
+@push('scripts')
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const lightbox = document.getElementById('installer-lightbox');
+    if (!lightbox) return;
+
+    const image = lightbox.querySelector('.installer-lightbox__image');
+    const counter = lightbox.querySelector('.installer-lightbox__counter');
+    const closeButton = lightbox.querySelector('[data-lightbox-close]');
+    const previousButton = lightbox.querySelector('[data-lightbox-prev]');
+    const nextButton = lightbox.querySelector('[data-lightbox-next]');
+    let photos = [];
+    let currentIndex = 0;
+    let activeTrigger = null;
+    let touchStartX = 0;
+
+    const normalizeIndex = (index) => (index + photos.length) % photos.length;
+
+    function renderPhoto(index) {
+        if (!photos.length) return;
+
+        currentIndex = normalizeIndex(index);
+        image.src = photos[currentIndex];
+        image.alt = `Фото ${currentIndex + 1} из ${photos.length}`;
+        counter.textContent = `${currentIndex + 1} / ${photos.length}`;
+
+        const hasMultiplePhotos = photos.length > 1;
+        previousButton.hidden = !hasMultiplePhotos;
+        nextButton.hidden = !hasMultiplePhotos;
+
+        if (hasMultiplePhotos) {
+            [photos[normalizeIndex(currentIndex - 1)], photos[normalizeIndex(currentIndex + 1)]]
+                .forEach((src) => { const preload = new Image(); preload.src = src; });
+        }
+    }
+
+    function openGallery(trigger) {
+        try {
+            photos = JSON.parse(trigger.dataset.installerGallery || '[]').filter(Boolean);
+        } catch (error) {
+            photos = [];
+        }
+
+        if (!photos.length) return;
+
+        activeTrigger = trigger;
+        lightbox.hidden = false;
+        lightbox.setAttribute('aria-hidden', 'false');
+        document.body.classList.add('installer-lightbox-open');
+        renderPhoto(Number.parseInt(trigger.dataset.installerGalleryIndex || '0', 10));
+        closeButton.focus();
+    }
+
+    function closeGallery() {
+        lightbox.hidden = true;
+        lightbox.setAttribute('aria-hidden', 'true');
+        document.body.classList.remove('installer-lightbox-open');
+        image.removeAttribute('src');
+        if (activeTrigger) activeTrigger.focus();
+    }
+
+    document.addEventListener('click', function (event) {
+        const trigger = event.target.closest('[data-installer-gallery]');
+        if (!trigger) return;
+        event.preventDefault();
+        openGallery(trigger);
+    });
+
+    closeButton.addEventListener('click', closeGallery);
+    previousButton.addEventListener('click', () => renderPhoto(currentIndex - 1));
+    nextButton.addEventListener('click', () => renderPhoto(currentIndex + 1));
+    lightbox.addEventListener('click', (event) => {
+        if (event.target === lightbox) closeGallery();
+    });
+
+    document.addEventListener('keydown', function (event) {
+        if (lightbox.hidden) return;
+        if (event.key === 'Escape') closeGallery();
+        if (event.key === 'ArrowLeft') renderPhoto(currentIndex - 1);
+        if (event.key === 'ArrowRight') renderPhoto(currentIndex + 1);
+    });
+
+    lightbox.addEventListener('touchstart', (event) => {
+        touchStartX = event.changedTouches[0].clientX;
+    }, { passive: true });
+
+    lightbox.addEventListener('touchend', (event) => {
+        if (photos.length < 2) return;
+        const distance = event.changedTouches[0].clientX - touchStartX;
+        if (Math.abs(distance) < 45) return;
+        renderPhoto(distance > 0 ? currentIndex - 1 : currentIndex + 1);
+    }, { passive: true });
+});
+</script>
+@endpush
