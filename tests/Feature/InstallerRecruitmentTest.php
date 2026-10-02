@@ -39,6 +39,7 @@ class InstallerRecruitmentTest extends TestCase
         $this->assertStringContainsString('Получайте клиентов в своём регионе', $template);
         $this->assertStringContainsString('Заявки без комиссии', $template);
         $this->assertStringContainsString('name="_source" value="installers-catalog"', $template);
+        $this->assertStringContainsString('<x-form-protection />', $template);
     }
 
     public function test_quick_application_is_attributed_and_returns_to_catalog(): void
@@ -112,5 +113,44 @@ class InstallerRecruitmentTest extends TestCase
             'contact_name' => 'Монтажник из каталога',
             'source' => 'category-cta',
         ]);
+    }
+
+    public function test_real_protected_form_saves_every_application_field(): void
+    {
+        config(['services.turnstile.enabled' => false]);
+        $this->withoutMiddleware(\App\Http\Middleware\HandleRedirects::class);
+
+        $response = $this
+            ->withHeader('User-Agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)')
+            ->post(route('partners.apply-installer'), [
+                '_source' => 'outreach-messenger',
+                '_hpf' => '',
+                'form_started_at' => time() - 10,
+                'contact_name' => 'Иван Тестовый',
+                'phone' => '+375 29 111-22-33',
+                'email' => 'installer-test@example.com',
+                'city' => 'Могилёв',
+                'company_name' => 'Тест Монтаж',
+                'experience_years' => 12,
+                'specializations' => ['kotly', 'dymohody', 'teplye_poly'],
+                'message' => 'Монтаж котельных и систем отопления под ключ.',
+            ]);
+
+        $response->assertRedirect(route('become-installer', ['ref' => 'messenger']) . '#apply');
+        $response->assertSessionHas('installer_success');
+
+        $application = InstallerApplication::query()
+            ->where('email', 'installer-test@example.com')
+            ->firstOrFail();
+
+        $this->assertSame('Иван Тестовый', $application->contact_name);
+        $this->assertSame('+375 29 111-22-33', $application->phone);
+        $this->assertSame('Могилёв', $application->city);
+        $this->assertSame('Тест Монтаж', $application->company_name);
+        $this->assertSame(12, $application->experience_years);
+        $this->assertSame(['kotly', 'dymohody', 'teplye_poly'], $application->specializations);
+        $this->assertSame('Монтаж котельных и систем отопления под ключ.', $application->message);
+        $this->assertSame('outreach-messenger', $application->source);
+        $this->assertSame('new', $application->status);
     }
 }

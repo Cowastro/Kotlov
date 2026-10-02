@@ -149,8 +149,7 @@
                 <form action="{{ route('partners.apply-installer') }}" method="POST" class="installer-join__form kv-form" novalidate>
                     @csrf
                     <input type="hidden" name="_source" value="installers-catalog">
-                    <input type="hidden" name="form_started_at" value="{{ time() }}">
-                    <input type="text" name="_hpf" value="" tabindex="-1" autocomplete="off" aria-hidden="true" style="position:absolute;left:-9999px;opacity:0;">
+                    <x-form-protection />
                     <div class="installer-join__field">
                         <label for="installer-join-name">Ваше имя *</label>
                         <input id="installer-join-name" type="text" name="contact_name" class="form-control" value="{{ old('contact_name') }}" placeholder="Александр" required autocomplete="name" data-required="1" data-label="Имя">
