@@ -16,6 +16,7 @@ class SyncBaniaPricelistCommand extends Command
         {--apply : Update BANIA supplier_products from the price list}
         {--price-file= : Path to a local XLSX/CSV file}
         {--sheet-url= : Google Sheets URL to download}
+        {--folder-url= : Google Drive folder with the named BANIA stock and retail workbooks}
         {--retail-price-file= : Path to a local BANIA retail XLSX/CSV file}
         {--retail-sheet-url= : Google Sheets URL with BANIA retail prices}
         {--sync-retail-prices : Update products.price from the retail price list when a confident row is found}
@@ -24,9 +25,12 @@ class SyncBaniaPricelistCommand extends Command
         {--mark-missing-out-of-stock : Mark linked BANIA rows missing from the price list as out_of_stock}
         {--archive-missing-products : Archive products whose BANIA wholesale rows disappeared and which have no other supplier links}';
 
-    protected $description = 'Sync BANIA supplier cost and stock from the dynamic Google price list without changing products.price.';
+    protected $description = 'Sync BANIA supplier cost/stock and optionally catalogue RRP from the named Drive workbooks.';
 
     private const SUPPLIER_CODE = 'bania';
+    private const DEFAULT_FOLDER_URL = 'https://drive.google.com/drive/folders/108zmF6VlM-AWiRgXaMK9BFFqgz2iAdNG';
+    private const STOCK_WORKBOOK_NAME = 'Наличие товара (без фото).xlsx';
+    private const RETAIL_WORKBOOK_NAME = 'Рекомендуемые розничные цены.xlsx';
     private const DEFAULT_SHEET_URL = 'https://docs.google.com/spreadsheets/d/1R2qoKV_NKlOAwaBb5dC58CjRawHXJGGX/edit?gid=1105454588#gid=1105454588';
     private const DEFAULT_RETAIL_SHEET_URL = 'https://docs.google.com/spreadsheets/d/1tdKCGzoMoeYQngx2ggeI9DifxHKSDMPc/edit?gid=1529722532#gid=1529722532';
     private const CACHE_PATH = 'supplier-cache/bania-pricelist.xlsx';
@@ -79,6 +83,9 @@ class SyncBaniaPricelistCommand extends Command
     private array $reportRows = [];
     private array $manualRows = [];
     private array $appliedManualLinkIndex = [];
+    private array $driveFolderWorkbookUrls = [];
+    private int $duplicatePriceArticlesSkipped = 0;
+    private int $duplicateRetailArticlesSkipped = 0;
 
     public function handle(): int
     {
@@ -170,6 +177,8 @@ class SyncBaniaPricelistCommand extends Command
             'create_missing_skipped_no_retail' => 0,
             'create_missing_skipped_duplicate_article' => 0,
             'create_missing_skipped_auto_disabled' => 0,
+            'duplicate_price_articles_skipped' => $this->duplicatePriceArticlesSkipped,
+            'duplicate_retail_articles_skipped' => $this->duplicateRetailArticlesSkipped,
         ];
 
         foreach ($rows as $row) {
@@ -379,7 +388,8 @@ class SyncBaniaPricelistCommand extends Command
             return (string) $priceFile;
         }
 
-        $url = (string) ($this->option('sheet-url') ?: self::DEFAULT_SHEET_URL);
+        $url = $this->folderWorkbookUrl(self::STOCK_WORKBOOK_NAME)
+            ?: (string) ($this->option('sheet-url') ?: self::DEFAULT_SHEET_URL);
         return $this->downloadGoogleSheet($url, self::CACHE_PATH, 'Google wholesale price list');
     }
 
@@ -390,8 +400,80 @@ class SyncBaniaPricelistCommand extends Command
             return (string) $priceFile;
         }
 
-        $url = (string) ($this->option('retail-sheet-url') ?: self::DEFAULT_RETAIL_SHEET_URL);
+        $url = $this->folderWorkbookUrl(self::RETAIL_WORKBOOK_NAME)
+            ?: (string) ($this->option('retail-sheet-url') ?: self::DEFAULT_RETAIL_SHEET_URL);
         return $this->downloadGoogleSheet($url, self::RETAIL_CACHE_PATH, 'Google retail price list');
+    }
+
+    private function folderWorkbookUrl(string $expectedName): ?string
+    {
+        $folderUrl = $this->option('folder-url');
+        if ($folderUrl === null) {
+            return null;
+        }
+
+        if ($this->driveFolderWorkbookUrls === []) {
+            $folderUrl = trim((string) $folderUrl) ?: self::DEFAULT_FOLDER_URL;
+            if (! preg_match('#/folders/([a-zA-Z0-9_-]+)#', $folderUrl, $matches)) {
+                throw new \RuntimeException('Invalid BANIA Google Drive folder URL.');
+            }
+
+            $folderId = $matches[1];
+            $context = stream_context_create([
+                'http' => [
+                    'method' => 'GET',
+                    'header' => "User-Agent: Mozilla/5.0 (compatible; KotlovBot/1.0)\r\nAccept: text/html,*/*",
+                    'timeout' => 45,
+                    'follow_location' => 1,
+                    'max_redirects' => 10,
+                ],
+                'ssl' => ['verify_peer' => true, 'verify_peer_name' => true],
+            ]);
+            $html = @file_get_contents("https://drive.google.com/drive/folders/{$folderId}", false, $context);
+            if ($html === false || $html === '') {
+                throw new \RuntimeException('Could not read the BANIA Google Drive folder.');
+            }
+
+            $this->driveFolderWorkbookUrls = $this->parseDriveFolderWorkbookUrls($html, $folderId);
+        }
+
+        $key = mb_strtolower($expectedName);
+        $urls = $this->driveFolderWorkbookUrls[$key] ?? [];
+        if (count($urls) !== 1) {
+            throw new \RuntimeException(sprintf(
+                'Expected exactly one "%s" in the BANIA Drive folder; found %d.',
+                $expectedName,
+                count($urls)
+            ));
+        }
+
+        $this->line("Using BANIA Drive workbook: {$expectedName}");
+
+        return $urls[0];
+    }
+
+    /** @return array<string,array<int,string>> */
+    private function parseDriveFolderWorkbookUrls(string $html, string $folderId): array
+    {
+        $payload = $html;
+        if (preg_match("/window\\['_DRIVE_ivd'\\]\\s*=\\s*'([^']+)'/s", $html, $matches)) {
+            $payload = stripcslashes($matches[1]);
+        }
+
+        preg_match_all(
+            '/\\["([a-zA-Z0-9_-]{20,})",\\["' . preg_quote($folderId, '/') . '"\\],"([^"]+\\.(?:xls|xlsx))","application\\/(?:vnd\\.ms-excel|vnd\\.openxmlformats-officedocument\\.spreadsheetml\\.sheet)"/u',
+            $payload,
+            $matches,
+            PREG_SET_ORDER
+        );
+
+        $result = [];
+        foreach ($matches as $match) {
+            $name = stripcslashes($match[2]);
+            $result[mb_strtolower($name)][] = "https://docs.google.com/spreadsheets/d/{$match[1]}/edit?rtpof=true&sd=true";
+        }
+
+        return $result;
     }
 
     private function downloadGoogleSheet(string $url, string $cachePath, string $label): string
@@ -515,7 +597,6 @@ class SyncBaniaPricelistCommand extends Command
         $rawRows = $sheet->toArray(null, true, true, false);
 
         $rows = [];
-        $seen = [];
 
         foreach ($rawRows as $index => $row) {
             $name = $this->cell($row, 0);
@@ -532,12 +613,6 @@ class SyncBaniaPricelistCommand extends Command
                 continue;
             }
 
-            $key = $this->normalizeArticle($article) ?: sha1($normalizedName . '|' . $price . '|' . $stockText);
-            if (isset($seen[$key])) {
-                continue;
-            }
-
-            $seen[$key] = true;
             $rows[] = [
                 'row' => $index + 1,
                 'name' => $name,
@@ -550,7 +625,7 @@ class SyncBaniaPricelistCommand extends Command
             ];
         }
 
-        return $rows;
+        return $this->removeDuplicateArticleRows($rows, 'price');
     }
 
     private function readRetailRows(string $path): array
@@ -562,7 +637,6 @@ class SyncBaniaPricelistCommand extends Command
         $rawRows = $sheet->toArray(null, true, true, false);
 
         $rows = [];
-        $seen = [];
 
         foreach ($rawRows as $index => $row) {
             if ($index < 3) {
@@ -574,16 +648,43 @@ class SyncBaniaPricelistCommand extends Command
                 continue;
             }
 
-            $key = $parsed['norm_article'] ?: sha1($parsed['normalized_name'] . '|' . $parsed['price']);
-            if (isset($seen[$key])) {
-                continue;
-            }
-
-            $seen[$key] = true;
             $rows[] = $parsed;
         }
 
-        return $rows;
+        return $this->removeDuplicateArticleRows($rows, 'retail');
+    }
+
+    private function removeDuplicateArticleRows(array $rows, string $source): array
+    {
+        $counts = [];
+        foreach ($rows as $row) {
+            $article = (string) ($row['norm_article'] ?? '');
+            if ($article !== '') {
+                $counts[$article] = ($counts[$article] ?? 0) + 1;
+            }
+        }
+
+        $duplicates = array_filter($counts, fn (int $count): bool => $count > 1);
+        if ($source === 'price') {
+            $this->duplicatePriceArticlesSkipped = count($duplicates);
+        } else {
+            $this->duplicateRetailArticlesSkipped = count($duplicates);
+        }
+
+        if ($duplicates === []) {
+            return $rows;
+        }
+
+        $this->warn(sprintf(
+            '%s workbook: skipped every row for %d duplicate article(s).',
+            ucfirst($source),
+            count($duplicates)
+        ));
+
+        return array_values(array_filter($rows, function (array $row) use ($duplicates): bool {
+            $article = (string) ($row['norm_article'] ?? '');
+            return $article === '' || ! isset($duplicates[$article]);
+        }));
     }
 
     private function parseRetailRow(array $row, int $rowNumber): ?array
@@ -599,15 +700,11 @@ class SyncBaniaPricelistCommand extends Command
             $name = $this->firstTextCell($cells);
         }
 
+        // The supplier's RRP workbook has a stable layout: A=name,
+        // B=article, C=unit, D=RRP. Never infer an article from another
+        // numeric cell: doing so can turn the RRP itself into a false SKU.
         $article = $this->cell($cells, 1);
-        if ($this->normalizeArticle($article) === '') {
-            $article = $this->cell($cells, 2);
-        }
-        if ($this->normalizeArticle($article) === '') {
-            $article = $this->firstArticleCell($cells);
-        }
-
-        $price = $this->lastMoneyCell($cells);
+        $price = $this->parseMoney($this->cell($cells, 3));
         $normalizedName = $this->normalizeName($name);
         if ($normalizedName === '' || $price === null || $price <= 0) {
             return null;
@@ -688,8 +785,9 @@ class SyncBaniaPricelistCommand extends Command
     private function matchRow(array $row, array $indexes, array $supplierProducts): array
     {
         if ($row['norm_article'] !== '' && isset($indexes['article'][$row['norm_article']])) {
-            $best = $this->bestCandidate($row, $indexes['article'][$row['norm_article']]);
-            if ($best['score'] >= 55) {
+            $articleCandidates = $indexes['article'][$row['norm_article']];
+            $best = $this->bestCandidate($row, $articleCandidates);
+            if (count($articleCandidates) === 1 && $this->hasCompatibleProductIdentity($row, $best['supplier_product'])) {
                 return [
                     'supplier_product' => $best['supplier_product'],
                     'match_type' => 'article',
@@ -700,38 +798,22 @@ class SyncBaniaPricelistCommand extends Command
 
             return [
                 'action' => 'manual_review',
-                'match_type' => 'article_ambiguous',
+                'match_type' => count($articleCandidates) === 1 ? 'article_title_conflict' : 'article_ambiguous',
                 'confidence' => $best['score'],
                 'supplier_product' => $best['supplier_product'] ?? null,
-                'reason' => 'article matched but title compatibility is low',
+                'reason' => count($articleCandidates) === 1
+                    ? 'article matched but the catalogue model/variant title conflicts with the supplier row'
+                    : 'article is linked to more than one BANIA supplier product',
             ];
         }
 
         $best = $this->bestCandidate($row, $supplierProducts);
-        if ($best['score'] >= 95) {
+        if ($best['score'] === 100 && $this->hasCompatibleProductIdentity($row, $best['supplier_product'])) {
             return [
                 'supplier_product' => $best['supplier_product'],
                 'match_type' => 'title',
                 'confidence' => $best['score'],
                 'reason' => '',
-            ];
-        }
-
-        if ($best['score'] >= 80 && $this->needsSupplierCostRepair($best['supplier_product'] ?? null)) {
-            return [
-                'supplier_product' => $best['supplier_product'],
-                'match_type' => 'title_repair_equal_retail',
-                'confidence' => $best['score'],
-                'reason' => 'supplier cost equals product retail; repairing from BANIA price list',
-            ];
-        }
-
-        if ($best['score'] >= 70 && $this->canRepairSaunaStoveCostByTitle($row, $best)) {
-            return [
-                'supplier_product' => $best['supplier_product'],
-                'match_type' => 'title_repair_sauna_stove_equal_retail',
-                'confidence' => $best['score'],
-                'reason' => 'sauna stove supplier cost equals retail and has no price-list link; repairing from BANIA price list',
             ];
         }
 
@@ -752,6 +834,34 @@ class SyncBaniaPricelistCommand extends Command
             'supplier_product' => $best['supplier_product'] ?? null,
             'reason' => 'no linked BANIA supplier product found',
         ];
+    }
+
+    private function hasCompatibleProductIdentity(array $row, ?object $supplierProduct): bool
+    {
+        if (! $supplierProduct) {
+            return false;
+        }
+
+        $candidateName = trim((string) ($supplierProduct->product_name ?? ''));
+        if ($candidateName === '') {
+            $candidateName = trim((string) ($supplierProduct->supplier_name ?? ''));
+        }
+
+        return $this->modelIdentity((string) ($row['name'] ?? '')) !== ''
+            && $this->modelIdentity((string) ($row['name'] ?? '')) === $this->modelIdentity($candidateName);
+    }
+
+    private function modelIdentity(string $value): string
+    {
+        $value = $this->normalizeName($value);
+        $value = preg_replace(
+            '/\b(везувий|чугунная|чугунный|чугунное|стальная|стальной|стальное|отопительная|отопительный|отопительное)\b/u',
+            ' ',
+            $value
+        ) ?? $value;
+        $value = preg_replace('/\s+/u', ' ', $value) ?? $value;
+
+        return trim($value);
     }
 
     private function matchRetailForPriceRow(array $row, array $indexes, ?object $supplierProduct = null): ?array
@@ -1500,7 +1610,9 @@ class SyncBaniaPricelistCommand extends Command
 
     private function normalizeArticle(string $value): string
     {
-        return mb_strtoupper(preg_replace('/[^0-9A-ZА-ЯЁ]+/u', '', trim($value)) ?? '');
+        $normalized = mb_strtoupper(preg_replace('/[^0-9A-ZА-ЯЁ]+/u', '', trim($value)) ?? '');
+
+        return in_array($normalized, ['NULL', 'NA', 'VALUE', 'REF', 'DIV0'], true) ? '' : $normalized;
     }
 
     private function normalizeName(string $value): string

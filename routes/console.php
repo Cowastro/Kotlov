@@ -31,7 +31,7 @@ Schedule::command('supplier:sync-rusklimat-pricelist --apply --sync-retail-price
 
 // BANIA: раз в сутки обновляет закупку, наличие и розничные цены по уже связанным товарам.
 // Новые товары не создаются, сомнительные совпадения уходят в CSV-отчёт.
-Schedule::command('supplier:sync-bania-pricelist --apply --sync-retail-prices')
+Schedule::command('supplier:sync-bania-pricelist --apply --sync-retail-prices --folder-url=https://drive.google.com/drive/folders/108zmF6VlM-AWiRgXaMK9BFFqgz2iAdNG')
     ->dailyAt('07:10')
     ->timezone($supplierSyncTimezone)
     ->withoutOverlapping()
