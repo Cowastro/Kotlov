@@ -562,7 +562,7 @@
                                         </a>
                                         @if($workPhotos->count() > 1)
                                         <div class="installer-work-card__gallery">
-                                            @foreach($workPhotos->skip(1)->take(3) as $index => $galleryPhoto)
+                                            @foreach($workPhotos->skip(1)->take(3)->values() as $index => $galleryPhoto)
                                             <a href="{{ $galleryPhoto }}" class="installer-gallery-trigger"
                                                data-installer-gallery="{{ $workPhotos->toJson() }}"
                                                data-installer-gallery-index="{{ $index + 1 }}"
