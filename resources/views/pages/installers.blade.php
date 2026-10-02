@@ -27,6 +27,8 @@
     .installer-card:hover { transform:translateY(-3px);border-color:#d7d7d7;box-shadow:0 16px 38px rgba(0,0,0,.08); }
     .installer-card__media { position:relative;height:224px;background:linear-gradient(135deg,#efefef,#fafafa);overflow:hidden; }
     .installer-card__media img { width:100%;height:100%;object-fit:cover; }
+    .installer-card__media.is-logo { display:flex;align-items:center;justify-content:center;background:linear-gradient(145deg,#f3f3f3,#fbfbfb); }
+    .installer-card__media.is-logo img { object-fit:contain;padding:24px 32px; }
     .installer-card__initials { display:flex;align-items:center;justify-content:center;width:100%;height:100%;font-size:54px;font-weight:750;color:#333;background:linear-gradient(145deg,#f0f0f0,#fff5e6); }
     .installer-card__verified { position:absolute;top:14px;left:14px;padding:7px 10px;border-radius:999px;background:#ecf8ef;color:#16713a;font-size:11px;font-weight:750;box-shadow:0 4px 14px rgba(0,0,0,.07); }
     .installer-card__body { display:flex;flex-direction:column;flex:1;padding:20px; }
@@ -208,10 +210,12 @@
                                         ? ($installer->featuredWork->photos[0] ?? null)
                                         : null;
                                     $cardMedia = \App\Support\InstallerMedia::url($installer->photo ?? $installer->logo ?? $featuredPhoto);
+                                    $cardMediaIsLogo = $installer->logo
+                                        && (!$installer->photo || $installer->photo === $installer->logo);
                                 @endphp
                                 <div class="col-xl-6 col-md-6">
                                     <article class="installer-card">
-                                        <a class="installer-card__media" href="{{ route('installers.show', $installer->slug) }}" aria-label="Открыть профиль {{ $name }}">
+                                        <a class="installer-card__media {{ $cardMediaIsLogo ? 'is-logo' : '' }}" href="{{ route('installers.show', $installer->slug) }}" aria-label="Открыть профиль {{ $name }}">
                                             @if($cardMedia)
                                                 <img loading="lazy" src="{{ $cardMedia }}" alt="Работа монтажника {{ $name }}">
                                             @else
