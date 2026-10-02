@@ -16,6 +16,7 @@ on:
           - ps-artisan
           - stop-varmega-image-repair
           - stop-product-image-repair
+          - deploy-safe
           - deploy-recover
       artisan_args:
         description: 'Artisan args, e.g. supplier:sync-ligmet --dry-run --brand=Blist. Use %20 for a space inside one value, e.g. --brand=Теплов%20и%20Сухов'
@@ -43,7 +44,7 @@ jobs:
           set -euo pipefail
 
           case "$TASK" in
-            optimize-clear|artisan-dry-run|artisan-apply|artisan-background|tail-log|ps-artisan|stop-varmega-image-repair|stop-product-image-repair|deploy-recover) ;;
+            optimize-clear|artisan-dry-run|artisan-apply|artisan-background|tail-log|ps-artisan|stop-varmega-image-repair|stop-product-image-repair|deploy-safe|deploy-recover) ;;
             *) echo "::error::Unsupported task: $TASK"; exit 1 ;;
           esac
 
@@ -151,6 +152,27 @@ jobs:
             stop-product-image-repair)
               pkill -f 'artisan catalog:repair-product-images' || true
               ps -ef | grep artisan | grep -v grep || true
+              ;;
+            deploy-safe)
+              # Never discard production changes. A dirty tracked worktree is a
+              # hard stop so an operator can inspect and preserve it first.
+              if [[ -n "$(git status --porcelain --untracked-files=no)" ]]; then
+                echo "::error::Deployment stopped: tracked server files contain local changes."
+                git status --short --untracked-files=no
+                exit 1
+              fi
+
+              current_branch="$(git branch --show-current)"
+              if [[ "$current_branch" != "main" ]]; then
+                echo "::error::Deployment stopped: expected branch main, found $current_branch."
+                exit 1
+              fi
+
+              # Fast-forward only: refuse divergent history and never create a
+              # merge commit on the production checkout.
+              git pull --ff-only origin main
+              "$PHP_BIN" artisan migrate --force
+              "$PHP_BIN" artisan optimize:clear
               ;;
             deploy-recover)
               git merge --abort || true
