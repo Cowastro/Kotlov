@@ -38,6 +38,10 @@ class InstallerApplication extends Model
         'kaminy' => 'Камины и печи',
         'dymohody' => 'Дымоходы',
         'otoplenie' => 'Системы отопления',
+        'radiatory' => 'Радиаторы',
+        'tverdotoplivnye_kotly' => 'Твердотопливные котлы',
+        'pelletnye_kotly' => 'Пеллетные котлы',
+        'teplye_poly' => 'Тёплые полы',
         'bani' => 'Банные печи',
     ];
 

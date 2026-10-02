@@ -19,15 +19,19 @@ class NewInstallRequestNotification extends Notification
         $request = $this->installRequest;
 
         $specializations = [
-            'heating'       => 'Монтаж котла',
-            'heatpump'      => 'Монтаж теплового насоса',
-            'fireplace'     => 'Монтаж камина',
-            'chimney'       => 'Монтаж дымохода',
-            'sauna'         => 'Монтаж банной печи',
-            'service'       => 'Сервис',
+            'heating' => 'Системы отопления и котельные',
+            'heatpump' => 'Монтаж теплового насоса',
+            'radiators' => 'Монтаж радиаторов',
+            'solid_fuel' => 'Монтаж твердотопливного котла',
+            'pellet' => 'Монтаж пеллетного котла',
+            'underfloor' => 'Монтаж тёплого пола',
+            'fireplace' => 'Монтаж камина',
+            'chimney' => 'Монтаж дымохода',
+            'sauna' => 'Монтаж банной печи',
+            'service' => 'Сервис',
             'commissioning' => 'Пусконаладка',
-            'engineering'   => 'Инженерный подбор',
-            'other'         => 'Другое',
+            'engineering' => 'Инженерный подбор',
+            'other' => 'Другое',
         ];
 
         $specialization = $specializations[$request->specialization] ?? $request->specialization ?? '—';
@@ -39,12 +43,12 @@ class NewInstallRequestNotification extends Notification
 
         return [
             'install_request_id' => $request->id,
-            'customer_name'      => $request->customer_name,
-            'customer_phone'     => $request->customer_phone,
-            'city'               => $request->city ?? '—',
-            'specialization'     => $specialization,
-            'installer'          => $installer,
-            'url'                => url('/admin/install-requests/' . $request->id),
+            'customer_name' => $request->customer_name,
+            'customer_phone' => $request->customer_phone,
+            'city' => $request->city ?? '—',
+            'specialization' => $specialization,
+            'installer' => $installer,
+            'url' => url('/admin/install-requests/'.$request->id),
         ];
     }
 }

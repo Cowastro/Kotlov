@@ -11,12 +11,12 @@ class InstallerController extends Controller
     public function index(Request $request)
     {
         $regions = [
-            'Минск'               => 'Минск',
-            'Минская область'     => 'Минская область',
-            'Гомельская область'  => 'Гомельская область',
+            'Минск' => 'Минск',
+            'Минская область' => 'Минская область',
+            'Гомельская область' => 'Гомельская область',
             'Гродненская область' => 'Гродненская область',
-            'Брестская область'   => 'Брестская область',
-            'Витебская область'   => 'Витебская область',
+            'Брестская область' => 'Брестская область',
+            'Витебская область' => 'Витебская область',
             'Могилёвская область' => 'Могилёвская область',
         ];
 
@@ -35,19 +35,23 @@ class InstallerController extends Controller
         ];
 
         $specializations = [
-            'heating'       => 'Монтаж котлов',
-            'heatpump'      => 'Монтаж тепловых насосов',
-            'fireplace'     => 'Камины и печи',
-            'chimney'       => 'Дымоходы',
-            'sauna'         => 'Банные печи',
-            'service'       => 'Сервис и ремонт',
+            'heating' => 'Системы отопления и котельные',
+            'heatpump' => 'Монтаж тепловых насосов',
+            'radiators' => 'Монтаж радиаторов',
+            'solid_fuel' => 'Твердотопливные котлы',
+            'pellet' => 'Пеллетные котлы',
+            'underfloor' => 'Тёплые полы',
+            'fireplace' => 'Камины и печи',
+            'chimney' => 'Дымоходы',
+            'sauna' => 'Банные печи',
+            'service' => 'Сервис и ремонт',
             'commissioning' => 'Пусконаладка',
         ];
 
         $ratings = [
-            '4'   => 'от 4 ★',
+            '4' => 'от 4 ★',
             '4.5' => 'от 4,5 ★',
-            '5'   => '5 ★',
+            '5' => '5 ★',
         ];
 
         $experienceOptions = [
@@ -84,8 +88,8 @@ class InstallerController extends Controller
             $region = $request->region;
             $query->where(function ($q) use ($region) {
                 $q->where('region', $region)
-                  ->orWhere('nationwide', true)
-                  ->orWhereJsonContains('work_regions', $region);
+                    ->orWhere('nationwide', true)
+                    ->orWhereJsonContains('work_regions', $region);
             });
         }
 
@@ -94,8 +98,8 @@ class InstallerController extends Controller
             $city = $request->city;
             $query->where(function ($q) use ($city) {
                 $q->where('city', $city)
-                  ->orWhere('nationwide', true)
-                  ->orWhereJsonContains('work_cities', $city);
+                    ->orWhere('nationwide', true)
+                    ->orWhereJsonContains('work_cities', $city);
             });
         }
 
@@ -139,8 +143,8 @@ class InstallerController extends Controller
         $installers = $query->paginate(12)->withQueryString();
 
         $installersCount = InstallerProfile::where('is_published', true)->where('status', 'active')->count();
-        $worksCount      = InstallerWork::where('is_published', true)->count();
-        $reviewsCount    = InstallerProfile::where('is_published', true)->sum('reviews_count');
+        $worksCount = InstallerWork::where('is_published', true)->count();
+        $reviewsCount = InstallerProfile::where('is_published', true)->sum('reviews_count');
 
         return view('pages.installers', compact(
             'installers',
@@ -163,21 +167,25 @@ class InstallerController extends Controller
             ->where('status', 'active')
             ->with([
                 'works' => fn ($q) => $q->where('is_published', true)
-                                        ->with('blogPost')
-                                        ->orderByDesc('completed_at'),
+                    ->with('blogPost')
+                    ->orderByDesc('completed_at'),
                 'reviews' => fn ($q) => $q->where('is_approved', true)
-                                          ->latest(),
+                    ->latest(),
                 'user',
             ])
             ->firstOrFail();
 
         $specLabels = [
-            'heating'       => 'Монтаж котлов',
-            'heatpump'      => 'Монтаж тепловых насосов',
-            'fireplace'     => 'Монтаж каминов и печей',
-            'chimney'       => 'Монтаж дымоходов',
-            'sauna'         => 'Монтаж банных печей',
-            'service'       => 'Сервис котлов',
+            'heating' => 'Системы отопления и котельные',
+            'heatpump' => 'Монтаж тепловых насосов',
+            'radiators' => 'Монтаж радиаторов',
+            'solid_fuel' => 'Твердотопливные котлы',
+            'pellet' => 'Пеллетные котлы',
+            'underfloor' => 'Тёплые полы',
+            'fireplace' => 'Монтаж каминов и печей',
+            'chimney' => 'Монтаж дымоходов',
+            'sauna' => 'Монтаж банных печей',
+            'service' => 'Сервис котлов',
             'commissioning' => 'Пусконаладка',
         ];
 

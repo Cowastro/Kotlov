@@ -21,8 +21,11 @@ use Filament\Tables\Table;
 class WorksRelationManager extends RelationManager
 {
     protected static string $relationship = 'works';
+
     protected static ?string $title = 'Портфолио работ';
+
     protected static ?string $label = 'Работа';
+
     protected static ?string $pluralLabel = 'Работы';
 
     public function form(Schema $schema): Schema
@@ -38,26 +41,30 @@ class WorksRelationManager extends RelationManager
             Select::make('work_type')
                 ->label('Тип работы')
                 ->options([
-                    'heating'       => 'Монтаж котла',
-                    'heatpump'      => 'Монтаж теплового насоса',
-                    'fireplace'     => 'Монтаж камина',
-                    'chimney'       => 'Монтаж дымохода',
-                    'sauna'         => 'Монтаж банной печи',
-                    'service'       => 'Сервис',
+                    'heating' => 'Монтаж котла',
+                    'heatpump' => 'Монтаж теплового насоса',
+                    'radiators' => 'Радиаторное отопление',
+                    'solid_fuel' => 'Твердотопливный котёл',
+                    'pellet' => 'Пеллетный котёл',
+                    'underfloor' => 'Тёплый пол',
+                    'fireplace' => 'Монтаж камина',
+                    'chimney' => 'Монтаж дымохода',
+                    'sauna' => 'Монтаж банной печи',
+                    'service' => 'Сервис',
                     'commissioning' => 'Пусконаладка',
-                    'other'         => 'Другое',
+                    'other' => 'Другое',
                 ])
                 ->nullable(),
 
             Select::make('region')
                 ->label('Область')
                 ->options([
-                    'Минск'               => 'Минск',
-                    'Минская область'     => 'Минская область',
-                    'Гомельская область'  => 'Гомельская область',
+                    'Минск' => 'Минск',
+                    'Минская область' => 'Минская область',
+                    'Гомельская область' => 'Гомельская область',
                     'Гродненская область' => 'Гродненская область',
-                    'Брестская область'   => 'Брестская область',
-                    'Витебская область'   => 'Витебская область',
+                    'Брестская область' => 'Брестская область',
+                    'Витебская область' => 'Витебская область',
                     'Могилёвская область' => 'Могилёвская область',
                 ])
                 ->nullable(),
@@ -113,25 +120,33 @@ class WorksRelationManager extends RelationManager
                     ->label('Тип')
                     ->badge()
                     ->color(fn ($state) => match ($state) {
-                        'heating'       => 'warning',
-                        'heatpump'      => 'info',
-                        'fireplace'     => 'danger',
-                        'chimney'       => 'gray',
-                        'sauna'         => 'success',
-                        'service'       => 'primary',
+                        'heating' => 'warning',
+                        'heatpump' => 'info',
+                        'radiators' => 'success',
+                        'solid_fuel' => 'danger',
+                        'pellet' => 'warning',
+                        'underfloor' => 'success',
+                        'fireplace' => 'danger',
+                        'chimney' => 'gray',
+                        'sauna' => 'success',
+                        'service' => 'primary',
                         'commissioning' => 'primary',
-                        default         => 'gray',
+                        default => 'gray',
                     })
                     ->formatStateUsing(fn ($state) => match ($state) {
-                        'heating'       => 'Монтаж котла',
-                        'heatpump'      => 'Монтаж насоса',
-                        'fireplace'     => 'Монтаж камина',
-                        'chimney'       => 'Монтаж дымохода',
-                        'sauna'         => 'Монтаж банной печи',
-                        'service'       => 'Сервис',
+                        'heating' => 'Монтаж котла',
+                        'heatpump' => 'Монтаж насоса',
+                        'radiators' => 'Радиаторное отопление',
+                        'solid_fuel' => 'Твердотопливный котёл',
+                        'pellet' => 'Пеллетный котёл',
+                        'underfloor' => 'Тёплый пол',
+                        'fireplace' => 'Монтаж камина',
+                        'chimney' => 'Монтаж дымохода',
+                        'sauna' => 'Монтаж банной печи',
+                        'service' => 'Сервис',
                         'commissioning' => 'Пусконаладка',
-                        'other'         => 'Другое',
-                        default         => $state,
+                        'other' => 'Другое',
+                        default => $state,
                     }),
                 TextColumn::make('city')
                     ->label('Город')

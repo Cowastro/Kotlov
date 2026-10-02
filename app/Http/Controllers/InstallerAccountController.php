@@ -13,8 +13,12 @@ use Illuminate\View\View;
 class InstallerAccountController extends Controller
 {
     private const SPECIALIZATIONS = [
-        'heating' => 'Монтаж котлов',
+        'heating' => 'Системы отопления и котельные',
         'heatpump' => 'Монтаж тепловых насосов',
+        'radiators' => 'Монтаж радиаторов',
+        'solid_fuel' => 'Твердотопливные котлы',
+        'pellet' => 'Пеллетные котлы',
+        'underfloor' => 'Тёплые полы',
         'fireplace' => 'Камины и печи',
         'chimney' => 'Дымоходы',
         'sauna' => 'Банные печи',
@@ -25,6 +29,10 @@ class InstallerAccountController extends Controller
     private const WORK_TYPES = [
         'heating' => 'Монтаж котла',
         'heatpump' => 'Тепловой насос',
+        'radiators' => 'Радиаторное отопление',
+        'solid_fuel' => 'Твердотопливный котёл',
+        'pellet' => 'Пеллетный котёл',
+        'underfloor' => 'Тёплый пол',
         'fireplace' => 'Камин / печь',
         'chimney' => 'Дымоход',
         'sauna' => 'Баня / сауна',

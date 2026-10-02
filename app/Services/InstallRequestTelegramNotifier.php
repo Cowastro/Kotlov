@@ -36,8 +36,12 @@ class InstallRequestTelegramNotifier
         ];
 
         $specializationLabels = [
-            'heating' => 'Монтаж котла',
+            'heating' => 'Системы отопления и котельные',
             'heatpump' => 'Монтаж теплового насоса',
+            'radiators' => 'Монтаж радиаторов',
+            'solid_fuel' => 'Монтаж твердотопливного котла',
+            'pellet' => 'Монтаж пеллетного котла',
+            'underfloor' => 'Монтаж тёплого пола',
             'fireplace' => 'Монтаж камина',
             'chimney' => 'Монтаж дымохода',
             'sauna' => 'Монтаж банной печи',

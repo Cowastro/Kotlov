@@ -17,6 +17,10 @@ class InstallerApplicationConverter
         'kaminy' => 'fireplace',
         'dymohody' => 'chimney',
         'otoplenie' => 'heating',
+        'radiatory' => 'radiators',
+        'tverdotoplivnye_kotly' => 'solid_fuel',
+        'pelletnye_kotly' => 'pellet',
+        'teplye_poly' => 'underfloor',
         'bani' => 'sauna',
     ];
 

@@ -2,11 +2,12 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\InstallRequest;
 use App\Models\InstallerProfile;
+use App\Models\InstallRequest;
 use App\Models\User;
 use App\Notifications\NewInstallRequestNotification;
 use App\Rules\NoHtmlOrLinks;
+use App\Rules\PhoneNotSpam;
 use App\Services\InstallRequestTelegramNotifier;
 use Illuminate\Http\Request;
 
@@ -28,23 +29,27 @@ class InstallRequestController extends Controller
         }
 
         $specializations = [
-            'heating'       => 'Монтаж котла',
-            'heatpump'      => 'Монтаж теплового насоса',
-            'fireplace'     => 'Монтаж камина',
-            'chimney'       => 'Монтаж дымохода',
-            'sauna'         => 'Монтаж банной печи',
-            'service'       => 'Сервис',
+            'heating' => 'Системы отопления и котельные',
+            'heatpump' => 'Монтаж теплового насоса',
+            'radiators' => 'Монтаж радиаторов',
+            'solid_fuel' => 'Монтаж твердотопливного котла',
+            'pellet' => 'Монтаж пеллетного котла',
+            'underfloor' => 'Монтаж тёплого пола',
+            'fireplace' => 'Монтаж камина',
+            'chimney' => 'Монтаж дымохода',
+            'sauna' => 'Монтаж банной печи',
+            'service' => 'Сервис',
             'commissioning' => 'Пусконаладка',
-            'other'         => 'Другое',
+            'other' => 'Другое',
         ];
 
         $regions = [
-            'Минск'               => 'Минск',
-            'Минская область'     => 'Минская область',
-            'Гомельская область'  => 'Гомельская область',
+            'Минск' => 'Минск',
+            'Минская область' => 'Минская область',
+            'Гомельская область' => 'Гомельская область',
             'Гродненская область' => 'Гродненская область',
-            'Брестская область'   => 'Брестская область',
-            'Витебская область'   => 'Витебская область',
+            'Брестская область' => 'Брестская область',
+            'Витебская область' => 'Витебская область',
             'Могилёвская область' => 'Могилёвская область',
         ];
 
@@ -54,30 +59,30 @@ class InstallRequestController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'customer_name'        => ['required', 'string', 'max:100', new NoHtmlOrLinks()],
-            'customer_phone'       => ['required', 'string', 'max:30', new \App\Rules\PhoneNotSpam()],
-            'customer_email'       => 'nullable|email|max:150',
-            'product_id'           => 'nullable|integer|exists:products,id',
-            'city'                 => ['nullable', 'string', 'max:100', new NoHtmlOrLinks()],
-            'region'               => 'nullable|string|max:100',
-            'address'              => ['nullable', 'string', 'max:255', new NoHtmlOrLinks()],
-            'specialization'       => 'nullable|string|max:100',
-            'description'          => ['nullable', 'string', 'max:1000', new NoHtmlOrLinks()],
-            'preferred_date'       => 'nullable|date',
-            'budget'               => 'nullable|numeric|min:0',
+            'customer_name' => ['required', 'string', 'max:100', new NoHtmlOrLinks],
+            'customer_phone' => ['required', 'string', 'max:30', new PhoneNotSpam],
+            'customer_email' => 'nullable|email|max:150',
+            'product_id' => 'nullable|integer|exists:products,id',
+            'city' => ['nullable', 'string', 'max:100', new NoHtmlOrLinks],
+            'region' => 'nullable|string|max:100',
+            'address' => ['nullable', 'string', 'max:255', new NoHtmlOrLinks],
+            'specialization' => 'nullable|string|max:100',
+            'description' => ['nullable', 'string', 'max:1000', new NoHtmlOrLinks],
+            'preferred_date' => 'nullable|date',
+            'budget' => 'nullable|numeric|min:0',
             'installer_profile_id' => 'nullable|integer',
-            'source'               => 'nullable|in:heat_pump_installation,fireplace_installation,product_engineering_calculation,pellet_burner_promo,pellet_burner_evo_promo,pellet_burner_hotta_promo',
+            'source' => 'nullable|in:heat_pump_installation,fireplace_installation,product_engineering_calculation,pellet_burner_promo,pellet_burner_evo_promo,pellet_burner_hotta_promo',
         ], [
-            'customer_name.required'  => 'Укажите ваше имя.',
+            'customer_name.required' => 'Укажите ваше имя.',
             'customer_phone.required' => 'Укажите номер телефона.',
-            'email.email'             => 'Введите корректный email.',
-            'preferred_date.date'     => 'Некорректная дата.',
-            'budget.numeric'          => 'Бюджет должен быть числом.',
+            'email.email' => 'Введите корректный email.',
+            'preferred_date.date' => 'Некорректная дата.',
+            'budget.numeric' => 'Бюджет должен быть числом.',
         ]);
 
         // Проверяем монтажника отдельно (must be active + published)
         $installerProfileId = null;
-        if (!empty($validated['installer_profile_id'])) {
+        if (! empty($validated['installer_profile_id'])) {
             $exists = InstallerProfile::where('id', $validated['installer_profile_id'])
                 ->where('is_published', true)
                 ->where('status', 'active')
@@ -92,22 +97,22 @@ class InstallRequestController extends Controller
             : null;
 
         $installRequest = InstallRequest::create([
-            'customer_name'        => $validated['customer_name'],
-            'customer_phone'       => $validated['customer_phone'],
-            'customer_email'       => $validated['customer_email'] ?? null,
-            'product_id'           => $validated['product_id'] ?? null,
-            'city'                 => $validated['city'] ?? null,
-            'region'               => $validated['region'] ?? null,
-            'address'              => $validated['address'] ?? null,
-            'specialization'       => $validated['specialization'] ?? null,
-            'description'          => $validated['description'] ?? null,
-            'preferred_date'       => $validated['preferred_date'] ?? null,
-            'budget'               => $validated['budget'] ?? null,
+            'customer_name' => $validated['customer_name'],
+            'customer_phone' => $validated['customer_phone'],
+            'customer_email' => $validated['customer_email'] ?? null,
+            'product_id' => $validated['product_id'] ?? null,
+            'city' => $validated['city'] ?? null,
+            'region' => $validated['region'] ?? null,
+            'address' => $validated['address'] ?? null,
+            'specialization' => $validated['specialization'] ?? null,
+            'description' => $validated['description'] ?? null,
+            'preferred_date' => $validated['preferred_date'] ?? null,
+            'budget' => $validated['budget'] ?? null,
             'installer_profile_id' => $installerProfileId,
-            'source'               => $installerProfileId
+            'source' => $installerProfileId
                 ? 'installer_profile'
                 : ($landingSource ?: 'installers_page'),
-            'status'               => 'new',
+            'status' => 'new',
         ]);
 
         User::where('role', 'admin')->each(
@@ -118,7 +123,7 @@ class InstallRequestController extends Controller
 
         if ($landingSource === 'heat_pump_installation') {
             return redirect()
-                ->to(route('heat-pumps.installation') . '#heat-pump-request')
+                ->to(route('heat-pumps.installation').'#heat-pump-request')
                 ->with('success', 'Заявка отправлена. Мы свяжемся с вами для уточнения деталей.')
                 ->with('analytics_event', 'heat_pump_lead_success')
                 ->with('analytics_parameters', ['lead_type' => 'heat_pump_calculation']);
@@ -126,7 +131,7 @@ class InstallRequestController extends Controller
 
         if ($landingSource === 'fireplace_installation') {
             return redirect()
-                ->to(route('fireplaces.installation') . '#fireplace-request')
+                ->to(route('fireplaces.installation').'#fireplace-request')
                 ->with('success', 'Заявка отправлена. Мы свяжемся с вами для уточнения деталей.')
                 ->with('analytics_event', 'fireplace_lead_success')
                 ->with('analytics_parameters', ['lead_type' => 'fireplace_calculation']);
@@ -141,7 +146,7 @@ class InstallRequestController extends Controller
 
         if ($landingSource === 'pellet_burner_promo') {
             return redirect()
-                ->to(route('promotions.xo-ceramic-pro') . '#xo-request')
+                ->to(route('promotions.xo-ceramic-pro').'#xo-request')
                 ->with('success', 'Заявка отправлена. Инженер свяжется с вами для проверки котла и комплектации.')
                 ->with('analytics_event', 'pellet_burner_lead_success')
                 ->with('analytics_parameters', ['lead_type' => 'pellet_burner_promo']);
@@ -149,7 +154,7 @@ class InstallRequestController extends Controller
 
         if ($landingSource === 'pellet_burner_evo_promo') {
             return redirect()
-                ->to(route('promotions.xo-evo-26') . '#evo-request')
+                ->to(route('promotions.xo-evo-26').'#evo-request')
                 ->with('success', 'Заявка отправлена. Инженер свяжется с вами для проверки совместимости и комплектации.')
                 ->with('analytics_event', 'pellet_burner_evo_lead_success')
                 ->with('analytics_parameters', ['lead_type' => 'pellet_burner_evo_promo']);
@@ -157,7 +162,7 @@ class InstallRequestController extends Controller
 
         if ($landingSource === 'pellet_burner_hotta_promo') {
             return redirect()
-                ->to(route('promotions.hotta-ceramik') . '#hotta-request')
+                ->to(route('promotions.hotta-ceramik').'#hotta-request')
                 ->with('success', 'Заявка отправлена. Инженер свяжется с вами для выбора комплекта и проверки котла.')
                 ->with('analytics_event', 'pellet_burner_hotta_lead_success')
                 ->with('analytics_parameters', ['lead_type' => 'pellet_burner_hotta_promo']);
