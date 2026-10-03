@@ -14,6 +14,13 @@ use Illuminate\Support\Collection;
 
 class CatalogController extends Controller
 {
+    private const PELLET_POWER_RANGES = [
+        'up-to-25' => ['label' => 'до 25 кВт', 'min' => null, 'max' => 25],
+        '26-50' => ['label' => '26–50 кВт', 'min' => 25, 'max' => 50],
+        '51-100' => ['label' => '51–100 кВт', 'min' => 50, 'max' => 100],
+        'over-100' => ['label' => 'свыше 100 кВт', 'min' => 100, 'max' => null],
+    ];
+
     public function show(string $categorySlug)
     {
         $selectedBrandId = request('brand') ? (int) request('brand') : null;
@@ -107,6 +114,42 @@ class CatalogController extends Controller
             $curr = Category::find($curr->parent_id);
         }
         $attrCategoryIds = $activeCategoryIds->merge($ancestorCategoryIds)->unique();
+
+        $pelletPowerAttributeIds = collect();
+        $pelletPowerRanges = collect();
+        if ($category->slug === 'pelletnye-gorelki') {
+            $pelletPowerAttributeIds = Attribute::query()
+                ->whereIn('category_id', $attrCategoryIds)
+                ->where('type', 'value')
+                ->get(['id', 'name'])
+                ->filter(fn (Attribute $attribute) => in_array(
+                    $this->normalizeFilterName($attribute->name),
+                    ['номинальная мощность', 'мощность'],
+                    true
+                ))
+                ->pluck('id')
+                ->values();
+
+            if ($pelletPowerAttributeIds->isNotEmpty()) {
+                $pelletPowerRanges = collect(self::PELLET_POWER_RANGES)
+                    ->map(function (array $range, string $key) use ($activeCategoryIds, $selectedBrandId, $pelletPowerAttributeIds) {
+                        $countQuery = Product::query()
+                            ->orderable()
+                            ->whereIn('category_id', $activeCategoryIds)
+                            ->when($selectedBrandId, fn ($query) => $query->where('brand_id', $selectedBrandId));
+
+                        $this->applyPelletPowerRange($countQuery, $pelletPowerAttributeIds, $key);
+
+                        return (object) [
+                            'key' => $key,
+                            'label' => $range['label'],
+                            'products_count' => $countQuery->count(),
+                        ];
+                    })
+                    ->filter(fn (object $range) => $range->products_count > 0)
+                    ->values();
+            }
+        }
 
         $rawAttributes = Attribute::where('in_filter', true)
             ->where('type', 'select')
@@ -241,6 +284,14 @@ class CatalogController extends Controller
             $query->where('brand_id', request('brand'));
         }
 
+        if ($category->slug === 'pelletnye-gorelki' && request('power')) {
+            $this->applyPelletPowerRange(
+                $query,
+                $pelletPowerAttributeIds,
+                (string) request('power')
+            );
+        }
+
         // Фильтр по атрибутам
         // request('attr') содержит id первичного атрибута → ищем по всем его дублям
         if (request('attr')) {
@@ -372,6 +423,7 @@ class CatalogController extends Controller
 
         $heatPumpArticles = collect();
         $pelletBurnerFaq = collect();
+        $pelletComparisonProducts = collect();
         $schemaNodes = [$breadcrumbSchema];
 
         if ($category->slug === 'teplovyie-nasosyi') {
@@ -411,6 +463,18 @@ class CatalogController extends Controller
 
         if ($category->slug === 'pelletnye-gorelki') {
             $pelletBurnerFaq = $this->pelletBurnerFaqItems();
+            $comparisonOrder = [
+                'pelletnaya-gorelka-kotlov-xo-evo-18-kvt-ea140',
+                'pelletnaya-gorelka-hotta-ceramik-30-kvt-komplekt-3',
+                'pelletnaya-gorelka-kotlov-xo-ceramic-pro-100-kvt',
+            ];
+            $pelletComparisonProducts = Product::query()
+                ->orderable()
+                ->whereIn('slug', $comparisonOrder)
+                ->with(['category', 'brand'])
+                ->get()
+                ->sortBy(fn (Product $product) => array_search($product->slug, $comparisonOrder, true))
+                ->values();
 
             $schemaNodes[] = [
                 '@context' => 'https://schema.org',
@@ -463,6 +527,8 @@ class CatalogController extends Controller
             'schemaJson',
             'heatPumpArticles',
             'pelletBurnerFaq',
+            'pelletPowerRanges',
+            'pelletComparisonProducts',
             'installerRecruitment'
         ));
     }
@@ -526,6 +592,27 @@ class CatalogController extends Controller
             'question' => $question,
             'answer' => $answer,
         ])->values();
+    }
+
+    private function applyPelletPowerRange($query, Collection $attributeIds, string $rangeKey): void
+    {
+        $range = self::PELLET_POWER_RANGES[$rangeKey] ?? null;
+
+        if (! $range || $attributeIds->isEmpty()) {
+            return;
+        }
+
+        $query->whereHas('allAttributeValues', function ($attributeQuery) use ($attributeIds, $range) {
+            $attributeQuery->whereIn('attribute_id', $attributeIds);
+            $numericValue = "CAST(REPLACE(TRIM(value), ',', '.') AS DECIMAL(10,2))";
+
+            if ($range['min'] !== null) {
+                $attributeQuery->whereRaw($numericValue . ' > ?', [$range['min']]);
+            }
+            if ($range['max'] !== null) {
+                $attributeQuery->whereRaw($numericValue . ' <= ?', [$range['max']]);
+            }
+        });
     }
 
     private function collectCategoryAndDescendantIds(int $categoryId): Collection

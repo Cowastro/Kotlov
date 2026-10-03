@@ -17,6 +17,22 @@
                 <a href="/akcii/kotlov-xo-ceramic-pro" class="tf-btn btn-white">Комплекты по акции</a>
             </div>
         </div>
+        @if ($pelletPowerRanges->isNotEmpty())
+            <nav class="pellet-power-filter" aria-label="Фильтр горелок по мощности">
+                <span class="pellet-power-filter__label">Мощность:</span>
+                <a href="?{{ http_build_query(request()->except(['power', 'page'])) }}"
+                    class="pellet-power-filter__item {{ !request('power') ? 'is-active' : '' }}">
+                    Все
+                </a>
+                @foreach ($pelletPowerRanges as $range)
+                    <a href="?{{ http_build_query(array_merge(request()->except(['power', 'page']), ['power' => $range->key])) }}"
+                        class="pellet-power-filter__item {{ request('power') === $range->key ? 'is-active' : '' }}">
+                        {{ $range->label }}
+                        <span class="pellet-power-filter__count">{{ $range->products_count }}</span>
+                    </a>
+                @endforeach
+            </nav>
+        @endif
         <nav class="pellet-category-links" aria-label="Материалы о пеллетных горелках">
             <a href="/blog/pelletnaya-gorelka-100-kvt-kotlov-xo-ceramic-pro">Как работает горелка 100 кВт</a>
             <a href="/pelletnye-gorelki/pelletnaya-gorelka-kotlov-xo-ceramic-pro-100-kvt">KOTLOV XO Ceramic PRO 100 кВт</a>
