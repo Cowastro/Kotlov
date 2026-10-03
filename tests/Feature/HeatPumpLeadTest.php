@@ -17,6 +17,8 @@ class HeatPumpLeadTest extends TestCase
     {
         parent::setUp();
 
+        Schema::disableForeignKeyConstraints();
+
         Schema::dropIfExists('install_requests');
         Schema::dropIfExists('users');
         Schema::dropIfExists('products');
@@ -58,6 +60,8 @@ class HeatPumpLeadTest extends TestCase
             $table->timestamp('telegram_notified_at')->nullable();
             $table->timestamps();
         });
+
+        Schema::enableForeignKeyConstraints();
     }
 
     public function test_heat_pump_form_saves_structured_project_details(): void

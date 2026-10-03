@@ -16,6 +16,7 @@ class ProductCatalogOrderTest extends TestCase
     {
         parent::setUp();
 
+        Schema::disableForeignKeyConstraints();
         Schema::dropIfExists('products');
         Schema::create('products', function (Blueprint $table) {
             $table->id();
@@ -24,6 +25,7 @@ class ProductCatalogOrderTest extends TestCase
             $table->boolean('is_featured')->default(false);
             $table->decimal('rating', 3, 2)->default(0);
         });
+        Schema::enableForeignKeyConstraints();
     }
 
     public function test_default_catalog_order_keeps_priority_brand_first(): void
