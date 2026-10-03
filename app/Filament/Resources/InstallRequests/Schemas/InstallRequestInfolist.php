@@ -35,16 +35,16 @@ class InstallRequestInfolist
                             ->label('Тип работ')
                             ->badge()
                             ->formatStateUsing(fn ($state) => match ($state) {
-                                'heating'       => 'Монтаж котла',
-                                'heatpump'      => 'Монтаж теплового насоса',
-                                'fireplace'     => 'Монтаж камина',
-                                'chimney'       => 'Монтаж дымохода',
-                                'sauna'         => 'Монтаж банной печи',
-                                'service'       => 'Сервис',
+                                'heating' => 'Монтаж котла',
+                                'heatpump' => 'Монтаж теплового насоса',
+                                'fireplace' => 'Монтаж камина',
+                                'chimney' => 'Монтаж дымохода',
+                                'sauna' => 'Монтаж банной печи',
+                                'service' => 'Сервис',
                                 'commissioning' => 'Пусконаладка',
-                                'engineering'   => 'Инженерный подбор',
-                                'other'         => 'Другое',
-                                default         => $state,
+                                'engineering' => 'Инженерный подбор',
+                                'other' => 'Другое',
+                                default => $state,
                             })
                             ->placeholder('-'),
                         TextEntry::make('product.name')
@@ -87,20 +87,20 @@ class InstallRequestInfolist
                             ->label('Статус')
                             ->badge()
                             ->color(fn ($state) => match ($state) {
-                                'new'         => 'info',
-                                'accepted'    => 'warning',
+                                'new' => 'info',
+                                'accepted' => 'warning',
                                 'in_progress' => 'primary',
-                                'done'        => 'success',
-                                'cancelled'   => 'danger',
-                                default       => 'gray',
+                                'done' => 'success',
+                                'cancelled' => 'danger',
+                                default => 'gray',
                             })
                             ->formatStateUsing(fn ($state) => match ($state) {
-                                'new'         => 'Новая',
-                                'accepted'    => 'Принята',
+                                'new' => 'Новая',
+                                'accepted' => 'Принята',
                                 'in_progress' => 'В работе',
-                                'done'        => 'Выполнена',
-                                'cancelled'   => 'Отменена',
-                                default       => $state,
+                                'done' => 'Выполнена',
+                                'cancelled' => 'Отменена',
+                                default => $state,
                             }),
                         TextEntry::make('price_agreed')
                             ->label('Согласованная цена (BYN)')
@@ -108,25 +108,68 @@ class InstallRequestInfolist
                             ->placeholder('-'),
                     ]),
 
+                Section::make('Параметры объекта')
+                    ->columns(2)
+                    ->schema([
+                        TextEntry::make('project_details.property_area')
+                            ->label('Площадь дома')
+                            ->suffix(' м²')
+                            ->placeholder('-'),
+                        TextEntry::make('project_details.heating_system')
+                            ->label('Система отопления')
+                            ->formatStateUsing(fn ($state) => match ($state) {
+                                'underfloor' => 'Тёплый пол',
+                                'radiators' => 'Радиаторы',
+                                'mixed' => 'Тёплый пол + радиаторы',
+                                'unknown' => 'Пока неизвестно',
+                                default => $state,
+                            })
+                            ->placeholder('-'),
+                        TextEntry::make('project_details.flow_temperature')
+                            ->label('Температура подачи')
+                            ->formatStateUsing(fn ($state) => match ($state) {
+                                'up_to_45' => 'До 45 °C',
+                                '46_to_60' => '46–60 °C',
+                                '61_to_75' => '61–75 °C',
+                                'unknown' => 'Пока неизвестно',
+                                default => $state,
+                            })
+                            ->placeholder('-'),
+                        TextEntry::make('project_details.power_supply')
+                            ->label('Электропитание')
+                            ->formatStateUsing(fn ($state) => match ($state) {
+                                '220' => '220 В',
+                                '380' => '380 В',
+                                'unknown' => 'Пока неизвестно',
+                                default => $state,
+                            })
+                            ->placeholder('-'),
+                        TextEntry::make('project_details.needs_hot_water')
+                            ->label('Горячее водоснабжение')
+                            ->formatStateUsing(fn ($state) => $state === null ? null : ($state ? 'Нужно' : 'Не нужно'))
+                            ->placeholder('-'),
+                    ])
+                    ->visible(fn ($record) => ! empty($record?->project_details)),
+
                 Section::make('Источник и заметки')
                     ->columns(2)
                     ->schema([
                         TextEntry::make('source')
                             ->label('Источник')
                             ->formatStateUsing(fn ($state) => match ($state) {
-                                'installers_page'        => 'Страница монтажников',
-                                'installer_profile'      => 'Профиль монтажника',
+                                'installers_page' => 'Страница монтажников',
+                                'installer_profile' => 'Профиль монтажника',
                                 'heat_pump_installation' => 'Страница монтажа тепловых насосов',
                                 'fireplace_installation' => 'Страница монтажа каминов',
                                 'product_engineering_calculation' => 'Инженерный расчёт из карточки товара',
-                                'pellet_burner_promo'   => 'Акция KOTLOV XO Ceramic PRO',
+                                'pellet_burner_promo' => 'Акция KOTLOV XO Ceramic PRO',
                                 'pellet_burner_evo_promo' => 'Распродажа KOTLOV XO EVO 26 кВт',
                                 'pellet_burner_hotta_promo' => 'Распродажа HOTTA Ceramik 20/30 кВт',
-                                'product_page'           => 'Карточка товара',
-                                'cart'                   => 'Корзина',
-                                'admin'                  => 'Админка',
-                                'other'             => 'Другое',
-                                default             => $state,
+                                'product_page' => 'Карточка товара',
+                                'cart' => 'Корзина',
+                                'admin' => 'Админка',
+                                'other' => 'Другое',
+                                default => $state,
                             })
                             ->placeholder('-'),
                         TextEntry::make('notes')

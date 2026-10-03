@@ -68,6 +68,11 @@ class InstallRequestController extends Controller
             'address' => ['nullable', 'string', 'max:255', new NoHtmlOrLinks],
             'specialization' => 'nullable|string|max:100',
             'description' => ['nullable', 'string', 'max:1000', new NoHtmlOrLinks],
+            'property_area' => 'nullable|integer|min:10|max:10000',
+            'heating_system' => 'nullable|in:underfloor,radiators,mixed,unknown',
+            'flow_temperature' => 'nullable|in:up_to_45,46_to_60,61_to_75,unknown',
+            'power_supply' => 'nullable|in:220,380,unknown',
+            'needs_hot_water' => 'nullable|boolean',
             'preferred_date' => 'nullable|date',
             'budget' => 'nullable|numeric|min:0',
             'installer_profile_id' => 'nullable|integer',
@@ -96,6 +101,18 @@ class InstallRequestController extends Controller
             ? $validated['source']
             : null;
 
+        $projectDetails = $landingSource === 'heat_pump_installation'
+            ? array_filter([
+                'property_area' => $validated['property_area'] ?? null,
+                'heating_system' => $validated['heating_system'] ?? null,
+                'flow_temperature' => $validated['flow_temperature'] ?? null,
+                'power_supply' => $validated['power_supply'] ?? null,
+                'needs_hot_water' => array_key_exists('needs_hot_water', $validated)
+                    ? (bool) $validated['needs_hot_water']
+                    : null,
+            ], fn ($value) => $value !== null && $value !== '')
+            : null;
+
         $installRequest = InstallRequest::create([
             'customer_name' => $validated['customer_name'],
             'customer_phone' => $validated['customer_phone'],
@@ -106,6 +123,7 @@ class InstallRequestController extends Controller
             'address' => $validated['address'] ?? null,
             'specialization' => $validated['specialization'] ?? null,
             'description' => $validated['description'] ?? null,
+            'project_details' => $projectDetails ?: null,
             'preferred_date' => $validated['preferred_date'] ?? null,
             'budget' => $validated['budget'] ?? null,
             'installer_profile_id' => $installerProfileId,

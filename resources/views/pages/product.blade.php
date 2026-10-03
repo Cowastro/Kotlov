@@ -507,7 +507,11 @@
                 } elseif ($videoUrl && preg_match('~rutube\.ru/video/([A-Za-z0-9]+)/?~i', $videoUrl, $videoMatch)) {
                     $videoEmbedUrl = 'https://rutube.ru/play/embed/' . $videoMatch[1];
                 }
-                $rawSpecs = $attributeValues->count() === 0 && !empty($product->specs)
+                $attributeSpecNames = $attributeValues
+                    ->map(fn ($value) => mb_strtolower(trim((string) ($value->attribute?->name ?? ''))))
+                    ->filter()
+                    ->values();
+                $rawSpecs = !empty($product->specs)
                     ? collect(is_array($product->specs) ? $product->specs : (json_decode($product->specs, true) ?? []))
                           ->map(function ($spec, $key) {
                               if (is_array($spec)) {
@@ -527,7 +531,33 @@
                                   'unit' => '',
                               ];
                           })
-                          ->filter(fn($s) => $s['key'] !== '' && $s['value'] !== '')
+                          ->filter(function ($spec) use ($attributeSpecNames) {
+                              if ($spec['key'] === '' || $spec['value'] === '') {
+                                  return false;
+                              }
+
+                              $normalizedKey = mb_strtolower(trim($spec['key']));
+
+                              if ($attributeSpecNames->contains($normalizedKey)) {
+                                  return false;
+                              }
+
+                              if ($normalizedKey === 'питание' && $attributeSpecNames->contains('электропитание')) {
+                                  return false;
+                              }
+
+                              if ($normalizedKey === 'диапазон мощности для фильтра') {
+                                  return false;
+                              }
+
+                              // Диапазон «Мощность» используется только как фильтр, а точное
+                              // значение уже хранится в «Мощность теплового насоса».
+                              if ($normalizedKey === 'мощность' && $attributeSpecNames->contains('мощность теплового насоса')) {
+                                  return false;
+                              }
+
+                              return true;
+                          })
                           ->unique(fn($s) => mb_strtolower(trim($s['key'])))
                           ->values()
                     : collect();
@@ -620,6 +650,9 @@
                                                 ) {
                                                     $displaySuffix = 'Вт';
                                                 }
+                                                if ($displaySuffix !== '' && mb_stripos($displayValue, $displaySuffix) !== false) {
+                                                    $displaySuffix = '';
+                                                }
                                             @endphp
                                             @if (!$isEmpty)
                                                 <tr>
@@ -648,7 +681,8 @@
                                                 </tr>
                                             @endif
                                         @endforeach
-                                    @else
+                                    @endif
+                                    @if ($rawSpecs->count() > 0)
                                         @foreach ($rawSpecs as $spec)
                                             <tr>
                                                 <td class="fw-medium" style="width:45%">{{ $spec['key'] }}</td>

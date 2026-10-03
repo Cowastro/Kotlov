@@ -16,6 +16,7 @@ class InstallRequest extends Model
         'customer_phone',
         'customer_email',
         'description',
+        'project_details',
         'region',
         'city',
         'preferred_date',
@@ -35,17 +36,18 @@ class InstallRequest extends Model
 
     protected $casts = [
         'preferred_date' => 'date',
-        'price_agreed'   => 'decimal:2',
-        'budget'         => 'decimal:2',
+        'price_agreed' => 'decimal:2',
+        'budget' => 'decimal:2',
         'telegram_notified_at' => 'datetime',
+        'project_details' => 'array',
     ];
 
     public const STATUSES = [
-        'new'         => 'Новая',
-        'accepted'    => 'Принята',
+        'new' => 'Новая',
+        'accepted' => 'Принята',
         'in_progress' => 'В работе',
-        'done'        => 'Выполнена',
-        'cancelled'   => 'Отменена',
+        'done' => 'Выполнена',
+        'cancelled' => 'Отменена',
     ];
 
     public function client(): BelongsTo

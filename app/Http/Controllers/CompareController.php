@@ -16,12 +16,15 @@ class CompareController extends Controller
     public function index()
     {
         $query = CompareItem::with([
-            'product' => fn($q) => $q->with([
+            'product' => fn ($q) => $q->with([
                 'brand', 'category',
-                'attributeValues' => fn($q) => $q
+                'attributeValues' => fn ($q) => $q
                     ->with('attribute', 'option')
+                    ->whereHas('attribute', fn ($attributeQuery) => $attributeQuery
+                        ->where('is_comparable', true)
+                        ->whereNotIn('name', Product::supplierTechnicalAttributeNames()))
                     ->orderBy('attribute_id'),
-            ])
+            ]),
         ]);
 
         if (auth()->check()) {
@@ -30,13 +33,13 @@ class CompareController extends Controller
             $query->where('session_id', $this->getSessionId());
         }
 
-        $items    = $query->get();
+        $items = $query->get();
         $products = $items->pluck('product')->filter();
 
         // Собираем все уникальные атрибуты со всех товаров
         $allAttributes = $products->flatMap(function ($product) {
-            return $product->attributeValues->map(fn($v) => [
-                'id'   => $v->attribute_id,
+            return $product->attributeValues->map(fn ($v) => [
+                'id' => $v->attribute_id,
                 'name' => $v->attribute->name ?? '',
             ]);
         })->unique('id')->sortBy('name')->values();
@@ -68,7 +71,7 @@ class CompareController extends Controller
 
         CompareItem::create([
             'product_id' => $request->product_id,
-            'user_id'    => auth()->id(),
+            'user_id' => auth()->id(),
             'session_id' => $this->getSessionId(),
         ]);
 
@@ -89,6 +92,7 @@ class CompareController extends Controller
     public function clear()
     {
         $this->getBaseQuery()->delete();
+
         return redirect('/compare')->with('success', 'Список сравнения очищен.');
     }
 
@@ -99,22 +103,24 @@ class CompareController extends Controller
             ->get();
 
         return response()->json(
-            $items->filter(fn($i) => $i->product)
-                  ->map(function ($i) {
-                      $p = $i->product;
-                      return [
-                          'id'    => $p->id,
-                          'name'  => $p->name,
-                          'url'   => '/' . ($p->category->slug ?? 'catalog') . '/' . $p->slug,
-                          'image' => $p->image_url,
-                      ];
-                  })->values()
+            $items->filter(fn ($i) => $i->product)
+                ->map(function ($i) {
+                    $p = $i->product;
+
+                    return [
+                        'id' => $p->id,
+                        'name' => $p->name,
+                        'url' => '/'.($p->category->slug ?? 'catalog').'/'.$p->slug,
+                        'image' => $p->image_url,
+                    ];
+                })->values()
         );
     }
 
     public function clearAjax()
     {
         $this->getBaseQuery()->delete();
+
         return response()->json(['message' => 'cleared']);
     }
 
@@ -126,6 +132,7 @@ class CompareController extends Controller
         } else {
             $query->where('session_id', $this->getSessionId());
         }
+
         return $query;
     }
 

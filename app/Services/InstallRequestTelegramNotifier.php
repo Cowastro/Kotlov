@@ -69,6 +69,20 @@ class InstallRequestTelegramNotifier
         $submittedAt = ($installRequest->created_at ?? now())
             ->copy()
             ->timezone(config('app.display_timezone', 'Europe/Minsk'));
+        $projectDetails = $installRequest->project_details ?? [];
+        $heatingSystemLabels = [
+            'underfloor' => 'Тёплый пол',
+            'radiators' => 'Радиаторы',
+            'mixed' => 'Тёплый пол + радиаторы',
+            'unknown' => 'Пока неизвестно',
+        ];
+        $flowTemperatureLabels = [
+            'up_to_45' => 'до 45 °C',
+            '46_to_60' => '46–60 °C',
+            '61_to_75' => '61–75 °C',
+            'unknown' => 'пока неизвестно',
+        ];
+        $powerSupplyLabels = ['220' => '220 В', '380' => '380 В', 'unknown' => 'пока неизвестно'];
 
         $lines = [
             '🛠 *Новая заявка на монтаж / расчёт*',
@@ -83,6 +97,11 @@ class InstallRequestTelegramNotifier
             $installRequest->customer_email ? '*Email:* '.$escape($installRequest->customer_email) : null,
             $installRequest->city ? '*Город:* '.$escape($installRequest->city) : null,
             $installRequest->region ? '*Регион:* '.$escape($installRequest->region) : null,
+            ! empty($projectDetails['property_area']) ? '*Площадь:* '.$escape((string) $projectDetails['property_area']).' м²' : null,
+            ! empty($projectDetails['heating_system']) ? '*Отопление:* '.$escape($heatingSystemLabels[$projectDetails['heating_system']] ?? $projectDetails['heating_system']) : null,
+            ! empty($projectDetails['flow_temperature']) ? '*Подача:* '.$escape($flowTemperatureLabels[$projectDetails['flow_temperature']] ?? $projectDetails['flow_temperature']) : null,
+            ! empty($projectDetails['power_supply']) ? '*Электропитание:* '.$escape($powerSupplyLabels[$projectDetails['power_supply']] ?? $projectDetails['power_supply']) : null,
+            array_key_exists('needs_hot_water', $projectDetails) ? '*ГВС:* '.($projectDetails['needs_hot_water'] ? 'нужно' : 'не нужно') : null,
             $installRequest->description ? "*Задача:*\n".$escape($installRequest->description) : '*Задача:* Не указана',
             '',
             '*Заявка в CRM:* '.$adminUrl,

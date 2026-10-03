@@ -44,6 +44,10 @@
         @include('partials.pellet-burner-category-intro')
     @endif
 
+    @if ($category->slug === 'teplovyie-nasosyi')
+        @include('partials.heat-pump-category-intro')
+    @endif
+
     {{-- Каталог --}}
     <section class="flat-spacing">
         <div class="container">

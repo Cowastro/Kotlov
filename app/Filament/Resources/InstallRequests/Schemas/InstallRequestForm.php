@@ -49,15 +49,15 @@ class InstallRequestForm
                         Select::make('specialization')
                             ->label('Тип работ')
                             ->options([
-                                'heating'       => 'Монтаж котла',
-                                'heatpump'      => 'Монтаж теплового насоса',
-                                'fireplace'     => 'Монтаж камина',
-                                'chimney'       => 'Монтаж дымохода',
-                                'sauna'         => 'Монтаж банной печи',
-                                'service'       => 'Сервис',
+                                'heating' => 'Монтаж котла',
+                                'heatpump' => 'Монтаж теплового насоса',
+                                'fireplace' => 'Монтаж камина',
+                                'chimney' => 'Монтаж дымохода',
+                                'sauna' => 'Монтаж банной печи',
+                                'service' => 'Сервис',
                                 'commissioning' => 'Пусконаладка',
-                                'engineering'   => 'Инженерный подбор',
-                                'other'         => 'Другое',
+                                'engineering' => 'Инженерный подбор',
+                                'other' => 'Другое',
                             ])
                             ->nullable(),
                         Select::make('product_id')
@@ -69,12 +69,12 @@ class InstallRequestForm
                         Select::make('region')
                             ->label('Регион')
                             ->options([
-                                'Минск'               => 'Минск',
-                                'Минская область'     => 'Минская область',
-                                'Гомельская область'  => 'Гомельская область',
+                                'Минск' => 'Минск',
+                                'Минская область' => 'Минская область',
+                                'Гомельская область' => 'Гомельская область',
                                 'Гродненская область' => 'Гродненская область',
-                                'Брестская область'   => 'Брестская область',
-                                'Витебская область'   => 'Витебская область',
+                                'Брестская область' => 'Брестская область',
+                                'Витебская область' => 'Витебская область',
                                 'Могилёвская область' => 'Могилёвская область',
                             ])
                             ->nullable(),
@@ -95,6 +95,33 @@ class InstallRequestForm
                             ->label('Описание работ')
                             ->rows(4)
                             ->columnSpanFull(),
+                        TextInput::make('project_details.property_area')
+                            ->label('Площадь дома, м²')
+                            ->numeric()
+                            ->minValue(10)
+                            ->maxValue(10000),
+                        Select::make('project_details.heating_system')
+                            ->label('Система отопления')
+                            ->options([
+                                'underfloor' => 'Тёплый пол',
+                                'radiators' => 'Радиаторы',
+                                'mixed' => 'Тёплый пол + радиаторы',
+                                'unknown' => 'Пока неизвестно',
+                            ]),
+                        Select::make('project_details.flow_temperature')
+                            ->label('Температура подачи')
+                            ->options([
+                                'up_to_45' => 'До 45 °C',
+                                '46_to_60' => '46–60 °C',
+                                '61_to_75' => '61–75 °C',
+                                'unknown' => 'Пока неизвестно',
+                            ]),
+                        Select::make('project_details.power_supply')
+                            ->label('Электропитание')
+                            ->options(['220' => '220 В', '380' => '380 В', 'unknown' => 'Пока неизвестно']),
+                        Select::make('project_details.needs_hot_water')
+                            ->label('Горячее водоснабжение')
+                            ->options([1 => 'Нужно', 0 => 'Не нужно']),
                     ]),
 
                 // ── 3. Монтажник и статус ────────────────────────────────
@@ -122,11 +149,11 @@ class InstallRequestForm
                         Select::make('status')
                             ->label('Статус')
                             ->options([
-                                'new'         => 'Новая',
-                                'accepted'    => 'Принята',
+                                'new' => 'Новая',
+                                'accepted' => 'Принята',
                                 'in_progress' => 'В работе',
-                                'done'        => 'Выполнена',
-                                'cancelled'   => 'Отменена',
+                                'done' => 'Выполнена',
+                                'cancelled' => 'Отменена',
                             ])
                             ->default('new')
                             ->required(),
@@ -143,18 +170,18 @@ class InstallRequestForm
                         Select::make('source')
                             ->label('Источник заявки')
                             ->options([
-                                'installers_page'        => 'Страница монтажников',
-                                'installer_profile'      => 'Профиль монтажника',
+                                'installers_page' => 'Страница монтажников',
+                                'installer_profile' => 'Профиль монтажника',
                                 'heat_pump_installation' => 'Страница монтажа тепловых насосов',
                                 'fireplace_installation' => 'Страница монтажа каминов',
                                 'product_engineering_calculation' => 'Инженерный расчёт из карточки товара',
-                                'pellet_burner_promo'   => 'Акция KOTLOV XO Ceramic PRO',
+                                'pellet_burner_promo' => 'Акция KOTLOV XO Ceramic PRO',
                                 'pellet_burner_evo_promo' => 'Распродажа KOTLOV XO EVO 26 кВт',
                                 'pellet_burner_hotta_promo' => 'Распродажа HOTTA Ceramik 20/30 кВт',
-                                'product_page'           => 'Карточка товара',
-                                'cart'                   => 'Корзина',
-                                'admin'                  => 'Админка',
-                                'other'            => 'Другое',
+                                'product_page' => 'Карточка товара',
+                                'cart' => 'Корзина',
+                                'admin' => 'Админка',
+                                'other' => 'Другое',
                             ])
                             ->nullable(),
                         Textarea::make('notes')

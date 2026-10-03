@@ -2,8 +2,8 @@
 
 namespace Tests\Unit;
 
-use App\Models\InstallRequest;
 use App\Models\InstallerProfile;
+use App\Models\InstallRequest;
 use App\Services\InstallRequestTelegramNotifier;
 use App\Services\TelegramApi;
 use Carbon\Carbon;
@@ -87,12 +87,49 @@ class InstallRequestTelegramNotifierTest extends TestCase
         $telegram = Mockery::mock(TelegramApi::class);
         $telegram->shouldReceive('sendMessage')
             ->once()
-            ->withArgs(fn ($chatId, string $message): bool =>
-                $chatId === '-100123456789'
+            ->withArgs(fn ($chatId, string $message): bool => $chatId === '-100123456789'
                 && str_contains($message, '*Монтажник:* ООО «Отопление плюс» — Алексей Максимов')
                 && str_contains($message, '*Источник:* Карточка монтажника')
             )
             ->andReturn(['ok' => true, 'result' => ['message_id' => 457]]);
+
+        $this->assertTrue((new InstallRequestTelegramNotifier($telegram))->send($request));
+    }
+
+    public function test_heat_pump_notification_contains_structured_project_details(): void
+    {
+        config([
+            'services.telegram.bot_token' => 'test-token',
+            'services.telegram.orders_chat_id' => '-100123456789',
+        ]);
+
+        $request = new InstallRequest([
+            'customer_name' => 'Тест теплового насоса',
+            'customer_phone' => '+375 29 000-00-00',
+            'specialization' => 'heatpump',
+            'source' => 'heat_pump_installation',
+            'project_details' => [
+                'property_area' => 180,
+                'heating_system' => 'mixed',
+                'flow_temperature' => '46_to_60',
+                'power_supply' => '380',
+                'needs_hot_water' => true,
+            ],
+        ]);
+        $request->id = 125;
+        $request->created_at = Carbon::parse('2026-10-03 10:00:00');
+
+        $telegram = Mockery::mock(TelegramApi::class);
+        $telegram->shouldReceive('sendMessage')
+            ->once()
+            ->withArgs(fn ($chatId, string $message): bool => $chatId === '-100123456789'
+                && str_contains($message, '*Площадь:* 180 м²')
+                && str_contains($message, '*Отопление:* Тёплый пол + радиаторы')
+                && str_contains($message, '*Подача:* 46–60 °C')
+                && str_contains($message, '*Электропитание:* 380 В')
+                && str_contains($message, '*ГВС:* нужно')
+            )
+            ->andReturn(['ok' => true, 'result' => ['message_id' => 458]]);
 
         $this->assertTrue((new InstallRequestTelegramNotifier($telegram))->send($request));
     }
