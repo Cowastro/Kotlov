@@ -20,8 +20,18 @@
     .kotlov-hp-profile__use { padding: 8px 12px; border-radius: 999px; background: rgba(255,255,255,.1); color: var(--white); font-size: 13px; }
     .kotlov-hp-profile__actions { display: flex; flex-shrink: 0; flex-wrap: wrap; gap: 10px; }
     .kotlov-hp-profile__actions .tf-btn { min-width: 210px; }
-    .kotlov-hp-profile__actions .btn-white { border-color: rgba(255,255,255,.32); background: transparent; color: var(--white); }
-    .kotlov-hp-profile__actions .btn-white:hover { border-color: var(--white); background: var(--white); color: var(--text); }
+    .kotlov-hp-profile .kotlov-hp-profile__actions .tf-btn.kotlov-hp-profile__secondary,
+    .kotlov-hp-profile .kotlov-hp-profile__actions .tf-btn.kotlov-hp-profile__secondary:visited {
+        border: 1px solid rgba(255,255,255,.45);
+        background: transparent;
+        color: #fff;
+    }
+    .kotlov-hp-profile .kotlov-hp-profile__actions .tf-btn.kotlov-hp-profile__secondary:hover,
+    .kotlov-hp-profile .kotlov-hp-profile__actions .tf-btn.kotlov-hp-profile__secondary:focus-visible {
+        border-color: #fff;
+        background: #fff;
+        color: #111;
+    }
     .kotlov-hp-profile__note { margin-top: 18px; color: rgba(255,255,255,.58); font-size: 12px; line-height: 1.5; }
 
     @media (max-width: 991px) {
@@ -82,7 +92,7 @@
                 <div class="kotlov-hp-profile__actions">
                     <a href="#engineeringCalculation" data-bs-toggle="modal" class="tf-btn btn-primary"
                        data-analytics-event="kotlov_heat_pump_calculation_click">Рассчитать под мой дом</a>
-                    <a href="{{ $profile['landing_url'] }}" class="tf-btn btn-white btn-stroke">
+                    <a href="{{ $profile['landing_url'] }}" class="tf-btn btn-white btn-stroke kotlov-hp-profile__secondary">
                         {{ $profile['landing_label'] }}
                     </a>
                 </div>
