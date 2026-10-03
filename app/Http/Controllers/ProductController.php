@@ -6,6 +6,7 @@ use App\Models\Product;
 use App\Models\Category;
 use App\Models\BlogPost;
 use App\Models\ProductAttributeValue;
+use App\Services\SeoMetadataBuilder;
 use Illuminate\Support\Facades\Log;
 
 class ProductController extends Controller
@@ -85,27 +86,12 @@ class ProductController extends Controller
         $sharedCityIn = view()->shared('cityIn');
         $cityIn       = $sharedCityIn ?: 'в Беларуси';
 
-        $cityName = preg_replace('/^в\s+/u', '', $cityIn);
-        $replaceCityIn = function (?string $text) use ($cityIn, $cityName): ?string {
-            if (!$text) return null;
-            $text = str_replace('в %city%', $cityIn, $text);
-            $text = str_replace('%city%', $cityName, $text);
-            return $text;
-        };
-
-        $brandName = $product->brand?->name ?? '';
-        $nameFull  = trim($brandName . ' ' . $product->name);
-
-        $autoTitle = $nameFull . ' — купить ' . $cityIn . ' | KOTLOV';
-        if (mb_strlen($autoTitle) > 70) {
-            $autoTitle = mb_substr($product->name, 0, 40) . ' — купить | KOTLOV';
-        }
-        $title = $replaceCityIn($product->meta_title) ?: $autoTitle;
-
-        $description = $replaceCityIn($product->meta_description)
-            ?: ('Купить ' . $nameFull . ' ' . $cityIn
-                . ($product->price ? '. Цена ' . number_format($product->price, 0, '.', ' ') . ' руб.' : '')
-                . ' Доставка по всей Беларуси, гарантия качества.');
+        $seo = app(SeoMetadataBuilder::class);
+        $replaceCityIn = fn (?string $text): ?string => $seo->replaceCity($text, $cityIn);
+        $brandName = trim((string) ($product->brand?->name ?? ''));
+        $nameFull = $seo->productName($product);
+        $title = $seo->productTitle($product, $cityIn);
+        $description = $seo->productDescription($product, $cityIn);
 
         $keywords = $replaceCityIn($product->meta_keywords)
             ?: ($nameFull . ', купить ' . mb_strtolower($nameFull) . ', цена, ' . $cityIn);

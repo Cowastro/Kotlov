@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\BlogCategory;
 use App\Models\BlogPost;
+use App\Services\SeoMetadataBuilder;
 use Illuminate\Http\Request;
 
 class BlogController extends Controller
@@ -134,8 +135,12 @@ class BlogController extends Controller
         $fireplaceLinks = $isFireplaceContent ? $this->fireplaceLinks($post) : collect();
         $pelletBurnerLinks = $isPelletBurnerContent ? $this->pelletBurnerLinks($post) : collect();
 
-        $title = $post->meta_title ?: ($post->title . ' | KOTLOV');
-        $description = $post->meta_description ?: ($post->excerpt ?: mb_substr(strip_tags($post->content ?? ''), 0, 160));
+        $seo = app(SeoMetadataBuilder::class);
+        $title = $seo->title($post->meta_title, $post->title . ' | KOTLOV');
+        $description = $seo->description(
+            $post->meta_description,
+            $post->excerpt ?: strip_tags($post->content ?? '')
+        );
         $canonical = self::CANONICAL_BASE . '/blog/' . $post->slug;
         $ogImage = $post->cover_image_url;
         $ogImageSecure = $ogImage;

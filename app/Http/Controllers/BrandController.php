@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Brand;
+use App\Services\SeoMetadataBuilder;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -75,9 +76,13 @@ class BrandController extends Controller
 
         $brandName = trim((string) ($brand->name ?: $brand->slug));
         $h1        = $brand->h1 ?: "Каталог {$brandName}";
-        $title     = $brand->meta_title    ?: "{$brandName} — купить в Беларуси | KOTLOV";
-        $description = $brand->meta_description ?: "Каталог товаров бренда {$brandName}. Купить {$brandName} в Беларуси с доставкой. Гарантия, монтаж.";
-        $canonicalBase = 'https://' . request()->getHost();
+        $seo = app(SeoMetadataBuilder::class);
+        $title = $seo->title($brand->meta_title, "{$brandName} — купить в Беларуси | KOTLOV");
+        $description = $seo->description(
+            $brand->meta_description,
+            "Каталог товаров бренда {$brandName}. Купить {$brandName} в Беларуси с доставкой. Гарантия, монтаж."
+        );
+        $canonicalBase = 'https://kotlov.by';
         $canonical = $canonicalBase . '/brands/' . strtolower($brand->slug);
 
         $schemaJson = json_encode([

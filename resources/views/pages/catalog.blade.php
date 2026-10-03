@@ -1,5 +1,13 @@
 ﻿@extends('layouts.amerce')
 
+@if ($category->slug === 'pelletnye-gorelki')
+    @push('styles')
+        <style>
+            .pellet-category-intro{margin-top:28px}.pellet-category-intro__panel{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(290px,.65fr);gap:36px;align-items:center;padding:34px;border:1px solid #e7e7e7;border-radius:24px;background:linear-gradient(135deg,#111 0%,#202020 72%,#351412 100%);color:#fff;box-shadow:0 18px 50px rgba(0,0,0,.08)}.pellet-category-intro__eyebrow{display:inline-flex;margin-bottom:10px;color:#ff6b5f;font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase}.pellet-category-intro h2{margin:0 0 12px;color:#fff;font-size:clamp(27px,3vw,42px);line-height:1.08}.pellet-category-intro p{max-width:780px;margin:0;color:rgba(255,255,255,.74);font-size:15px;line-height:1.55}.pellet-category-intro__points{display:flex;flex-wrap:wrap;gap:8px;margin-top:18px}.pellet-category-intro__points span{padding:7px 11px;border:1px solid rgba(255,255,255,.14);border-radius:999px;background:rgba(255,255,255,.06);color:rgba(255,255,255,.85);font-size:12px}.pellet-category-intro__actions{display:flex;flex-direction:column;gap:10px}.pellet-category-intro__actions .tf-btn{justify-content:center;width:100%;min-height:48px}.pellet-category-intro__actions .btn-white{border-color:rgba(255,255,255,.3);background:#fff;color:#111}.pellet-category-links{display:flex;flex-wrap:wrap;gap:10px 22px;margin-top:17px}.pellet-category-links a{color:#111;text-decoration:underline;text-underline-offset:4px}.pellet-category-faq{margin-top:52px;scroll-margin-top:100px}.pellet-category-faq__grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.pellet-category-faq details{padding:20px 22px;border:1px solid #e7e7e7;border-radius:16px;background:#fff}.pellet-category-faq summary{cursor:pointer;font-weight:650;list-style:none}.pellet-category-faq summary::-webkit-details-marker{display:none}.pellet-category-faq p{margin:12px 0 0;color:#6f6f6f;line-height:1.55}@media(max-width:767px){.pellet-category-intro__panel{grid-template-columns:1fr;gap:20px;padding:24px}.pellet-category-intro__points{display:none}.pellet-category-faq__grid{grid-template-columns:1fr}.section-page-title.flat-spacing-2{padding-top:44px;padding-bottom:10px}}
+        </style>
+    @endpush
+@endif
+
 @section('content')
 <main id="wrapper">
 
@@ -30,6 +38,10 @@
 
     @if ($installerRecruitment)
         @include('partials.installer-recruitment-note', $installerRecruitment)
+    @endif
+
+    @if ($category->slug === 'pelletnye-gorelki')
+        @include('partials.pellet-burner-category-intro')
     @endif
 
     {{-- Каталог --}}
@@ -553,6 +565,10 @@
 
     @if ($category->slug === 'teplovyie-nasosyi' && !request()->hasAny(['page', 'price_min', 'price_max', 'in_stock', 'brand', 'attr', 'sort']))
         @include('partials.heat-pump-category-content', ['articles' => $heatPumpArticles ?? collect()])
+    @endif
+
+    @if ($category->slug === 'pelletnye-gorelki' && !request()->hasAny(['page', 'price_min', 'price_max', 'in_stock', 'brand', 'attr', 'sort']))
+        @include('partials.pellet-burner-category-faq')
     @endif
 
 </main>

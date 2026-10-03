@@ -280,7 +280,7 @@
                                 @if ($post->category)
                                     <div class="entry-tag fw-medium">{{ $post->category->name }}</div>
                                 @endif
-                                <h3 class="entry-title">{{ $post->title }}</h3>
+                                <h1 class="entry-title">{{ $post->title }}</h1>
                                 <div class="entry-meta">
                                     <div class="meta-item">
                                         <i class="icon icon-User"></i>

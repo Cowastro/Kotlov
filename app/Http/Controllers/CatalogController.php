@@ -8,6 +8,7 @@ use App\Models\BlogPost;
 use App\Models\Category;
 use App\Models\Product;
 use App\Models\ProductAttributeValue;
+use App\Services\SeoMetadataBuilder;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 
@@ -314,18 +315,23 @@ class CatalogController extends Controller
         $nameLower = mb_strtolower($name);
 
         // Title: если старый > 70 символов — заменяем на короткий автошаблон
+        $seo = app(SeoMetadataBuilder::class);
         $rawTitle = $replaceCityIn($category->meta_title);
-        $title = ($rawTitle && mb_strlen($rawTitle) <= 70)
-            ? $rawTitle
-            : ($name . ' — купить ' . $cityIn . ' | KOTLOV');
+        $autoTitle = $name . ' — купить ' . $cityIn . ' | KOTLOV';
+        $title = $seo->title(
+            $rawTitle && mb_strlen($rawTitle) <= SeoMetadataBuilder::TITLE_LIMIT ? $rawTitle : null,
+            $autoTitle
+        );
 
         // Description: если > 180 символов — заменяем на короткий автошаблон
         $rawDesc = $replaceCityIn($category->meta_description);
-        $description = ($rawDesc && mb_strlen($rawDesc) <= 180)
-            ? $rawDesc
-            : ('Купить ' . $nameLower . ' ' . $cityIn
+        $autoDescription = 'Купить ' . $nameLower . ' ' . $cityIn
                 . '. Каталог ' . $allProductsCount . ' товаров.'
-                . ' Доставка по Беларуси, гарантия, монтаж.');
+                . ' Доставка по Беларуси, гарантия, монтаж.';
+        $description = $seo->description(
+            $rawDesc && mb_strlen($rawDesc) <= SeoMetadataBuilder::DESCRIPTION_LIMIT ? $rawDesc : null,
+            $autoDescription
+        );
 
         $keywords = $replaceCityIn($category->meta_keywords)
             ?: ($name . ', купить ' . $nameLower . ' ' . $cityIn . ', цена, каталог');
@@ -365,6 +371,7 @@ class CatalogController extends Controller
         ];
 
         $heatPumpArticles = collect();
+        $pelletBurnerFaq = collect();
         $schemaNodes = [$breadcrumbSchema];
 
         if ($category->slug === 'teplovyie-nasosyi') {
@@ -402,6 +409,36 @@ class CatalogController extends Controller
             ];
         }
 
+        if ($category->slug === 'pelletnye-gorelki') {
+            $pelletBurnerFaq = $this->pelletBurnerFaqItems();
+
+            $schemaNodes[] = [
+                '@context' => 'https://schema.org',
+                '@type' => 'ItemList',
+                'name' => 'Пеллетные горелки',
+                'numberOfItems' => $products->count(),
+                'itemListElement' => $products->values()->map(fn (Product $product, int $index) => [
+                    '@type' => 'ListItem',
+                    'position' => $index + 1,
+                    'name' => $product->name,
+                    'url' => 'https://kotlov.by/' . $product->category->slug . '/' . $product->slug,
+                ])->all(),
+            ];
+
+            $schemaNodes[] = [
+                '@context' => 'https://schema.org',
+                '@type' => 'FAQPage',
+                'mainEntity' => $pelletBurnerFaq->map(fn (array $item) => [
+                    '@type' => 'Question',
+                    'name' => $item['question'],
+                    'acceptedAnswer' => [
+                        '@type' => 'Answer',
+                        'text' => $item['answer'],
+                    ],
+                ])->values()->all(),
+            ];
+        }
+
         $schemaJson = json_encode(
             count($schemaNodes) === 1 ? $schemaNodes[0] : $schemaNodes,
             JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES
@@ -425,6 +462,7 @@ class CatalogController extends Controller
             'canonical',
             'schemaJson',
             'heatPumpArticles',
+            'pelletBurnerFaq',
             'installerRecruitment'
         ));
     }
@@ -471,6 +509,23 @@ class CatalogController extends Controller
                 'text' => $answer,
             ],
         ])->values()->all();
+    }
+
+    private function pelletBurnerFaqItems(): Collection
+    {
+        $items = [
+            'Как подобрать мощность пеллетной горелки?' => 'Мощность подбирают по теплопотерям здания и рабочему диапазону котла. Горелка должна уверенно покрывать расчётную нагрузку, но не работать постоянно на минимальной мощности.',
+            'Можно ли установить пеллетную горелку в существующий котёл?' => 'Во многих твердотопливных котлах это возможно после проверки размеров топки, дверцы, теплообменника, тяги дымохода и места для шнека. Совместимость нужно подтвердить до покупки.',
+            'Что входит в комплект автоматизации?' => 'Комплектация зависит от модели. Обычно система включает горелку, контроллер, вентилятор, шнек подачи и датчики. Бункер, защита от обратного пламени и дополнительная автоматика могут поставляться отдельно.',
+            'Как качество пеллет влияет на работу?' => 'Зольность, влажность и фракция влияют на стабильность горения, расход топлива и частоту очистки. Настройки автоматики корректируют под конкретное топливо.',
+            'Как часто нужно обслуживать горелку?' => 'Периодичность зависит от качества пеллет, режима работы и конструкции горелки. Необходимо регулярно очищать зону горения и теплообменник, проверять подачу топлива и состояние дымохода.',
+            'Можно ли заказать подбор и монтаж?' => 'Да. Специалист KOTLOV проверит котёл, требуемую мощность, дымоход и компоновку котельной, после чего предложит совместимый комплект и вариант монтажа.',
+        ];
+
+        return collect($items)->map(fn (string $answer, string $question) => [
+            'question' => $question,
+            'answer' => $answer,
+        ])->values();
     }
 
     private function collectCategoryAndDescendantIds(int $categoryId): Collection

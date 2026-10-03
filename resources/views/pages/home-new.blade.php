@@ -30,6 +30,7 @@
         <!-- /Preload -->
 
         <main id="wrapper">
+            <h1 class="visually-hidden">Отопительное оборудование и монтаж в Беларуси — KOTLOV.BY</h1>
 
 
             <!-- Banner Slider -->
