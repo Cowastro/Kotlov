@@ -19,7 +19,7 @@
     .kotlov-hp-profile__uses { display: flex; flex-wrap: wrap; gap: 9px; margin-top: 12px; }
     .kotlov-hp-profile__use { padding: 8px 12px; border-radius: 999px; background: rgba(255,255,255,.1); color: var(--white); font-size: 13px; }
     .kotlov-hp-profile__actions { display: flex; flex-shrink: 0; flex-wrap: wrap; gap: 10px; }
-    .kotlov-hp-profile__actions .tf-btn { min-width: 210px; }
+    .kotlov-hp-profile__actions .tf-btn { min-width: 210px; height: auto; min-height: 44px; padding-top: 10px; padding-bottom: 10px; text-align: center; line-height: 1.25; }
     .kotlov-hp-profile .kotlov-hp-profile__actions .tf-btn.kotlov-hp-profile__secondary,
     .kotlov-hp-profile .kotlov-hp-profile__actions .tf-btn.kotlov-hp-profile__secondary:visited {
         border: 1px solid rgba(255,255,255,.45);
@@ -45,7 +45,7 @@
         .kotlov-hp-profile__head { gap: 24px; }
         .kotlov-hp-profile__specs { grid-template-columns: 1fr; }
         .kotlov-hp-profile__actions { flex-direction: column; }
-        .kotlov-hp-profile__actions .tf-btn { width: 100%; min-width: 0; }
+        .kotlov-hp-profile__actions .tf-btn { width: 100%; min-width: 0; min-height: 52px; padding: 12px 18px; }
     }
 </style>
 @endpush
