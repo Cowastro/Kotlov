@@ -29,6 +29,10 @@
     if (empty($quickViewImages)) {
         $quickViewImages = [$product->image_url];
     }
+
+    $heatPumpMeta = method_exists($product, 'heatPumpCatalogMeta')
+        ? $product->heatPumpCatalogMeta()
+        : null;
 @endphp
 
 <div class="card-product product-style_stroke">
@@ -109,6 +113,17 @@
             class="name-product lh-24 fw-medium link-underline-text">
             {{ $product->name }}
         </a>
+
+        @if ($heatPumpMeta)
+            <div class="heat-pump-card-meta" aria-label="Основные характеристики модели">
+                <div class="heat-pump-card-meta__chips">
+                    @foreach ($heatPumpMeta['chips'] as $chip)
+                        <span>{{ $chip }}</span>
+                    @endforeach
+                </div>
+                <p>{{ $heatPumpMeta['purpose'] }}</p>
+            </div>
+        @endif
 
         @if ($product->rating > 0)
             <div class="star-wrap d-flex align-items-center">

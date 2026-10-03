@@ -793,6 +793,69 @@ body {
     }
 }
 
+/* ── Тепловые насосы: ключевые параметры в карточке ────── */
+.heat-pump-card-meta {
+    width: 100%;
+    min-height: 48px;
+}
+
+.heat-pump-card-meta__chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+}
+
+.heat-pump-card-meta__chips span {
+    display: inline-flex;
+    align-items: center;
+    min-height: 24px;
+    padding: 4px 8px;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    background: var(--surface);
+    color: var(--text);
+    font-size: 11px;
+    font-weight: 600;
+    line-height: 1.2;
+    white-space: nowrap;
+}
+
+.heat-pump-card-meta p {
+    margin: 6px 0 0;
+    color: var(--text-2);
+    font-size: 11px;
+    line-height: 1.35;
+}
+
+.heat-pump-card-meta--list {
+    min-height: 0;
+}
+
+@media (max-width: 767px) {
+    #gridLayout .heat-pump-card-meta {
+        min-height: 56px;
+    }
+
+    #gridLayout .heat-pump-card-meta__chips {
+        gap: 4px;
+    }
+
+    #gridLayout .heat-pump-card-meta__chips span {
+        min-height: 20px;
+        padding: 3px 6px;
+        font-size: 9px;
+    }
+
+    #gridLayout .heat-pump-card-meta p {
+        display: -webkit-box;
+        overflow: hidden;
+        margin-top: 4px;
+        -webkit-box-orient: vertical;
+        -webkit-line-clamp: 1;
+        font-size: 9px;
+    }
+}
+
 /* ── Mini-cart mobile: карточка товара ──────────────────── */
 @media (max-width: 767px) {
     /* 1. Карточка: flex-wrap — price уходит на вторую строку */

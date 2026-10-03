@@ -2,6 +2,8 @@
 
 namespace Tests\Feature;
 
+use App\Models\Brand;
+use App\Models\Category;
 use App\Models\Product;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
@@ -54,5 +56,36 @@ class ProductCatalogOrderTest extends TestCase
             ->all();
 
         $this->assertSame([3, 2, 1], $orderedIds);
+    }
+
+    public function test_kotlov_heat_pump_catalog_meta_uses_product_specs(): void
+    {
+        $product = new Product([
+            'specs' => [
+                ['key' => 'Хладагент', 'value' => 'R290'],
+                ['key' => 'Мощность', 'value' => '12,8 кВт'],
+                ['key' => 'Температура воды', 'value' => 'ГВС до 80°C, отопление до 75°C'],
+            ],
+        ]);
+        $product->setRelation('category', new Category(['slug' => 'teplovyie-nasosyi']));
+        $product->setRelation('brand', new Brand(['slug' => 'kotlov-ge']));
+
+        $this->assertSame([
+            'chips' => ['R290', '12,8 кВт', 'до 75 °C'],
+            'purpose' => 'Радиаторы и горячая вода',
+        ], $product->heatPumpCatalogMeta());
+    }
+
+    public function test_catalog_meta_is_not_added_to_other_brands(): void
+    {
+        $product = new Product([
+            'specs' => [
+                ['key' => 'Хладагент', 'value' => 'R32'],
+            ],
+        ]);
+        $product->setRelation('category', new Category(['slug' => 'teplovyie-nasosyi']));
+        $product->setRelation('brand', new Brand(['slug' => 'other-brand']));
+
+        $this->assertNull($product->heatPumpCatalogMeta());
     }
 }

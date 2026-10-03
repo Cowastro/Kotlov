@@ -110,6 +110,47 @@ class Product extends Model
             ], true);
     }
 
+    public function heatPumpCatalogMeta(): ?array
+    {
+        if ($this->category?->slug !== 'teplovyie-nasosyi' || $this->brand?->slug !== 'kotlov-ge') {
+            return null;
+        }
+
+        $specs = collect($this->specs ?: [])
+            ->filter(fn ($spec) => is_array($spec) && isset($spec['key'], $spec['value']))
+            ->mapWithKeys(fn ($spec) => [mb_strtolower(trim((string) $spec['key'])) => trim((string) $spec['value'])]);
+
+        $refrigerant = $specs->get('хладагент');
+        $power = $specs->get('мощность');
+        $waterTemperature = $specs->get('температура воды');
+        $temperature = null;
+
+        if ($waterTemperature && preg_match('/отоплен\S*\s+до\s*(\d+)/ui', $waterTemperature, $match)) {
+            $temperature = 'до ' . $match[1] . ' °C';
+        } elseif ($waterTemperature && preg_match('/до\s*(\d+)/ui', $waterTemperature, $match)) {
+            $temperature = 'до ' . $match[1] . ' °C';
+        }
+
+        $chips = collect([$refrigerant, $power, $temperature])
+            ->filter(fn ($value) => $value && mb_strtolower($value) !== 'уточняйте')
+            ->unique()
+            ->values()
+            ->all();
+
+        if ($chips === []) {
+            return null;
+        }
+
+        return [
+            'chips' => $chips,
+            'purpose' => match (mb_strtoupper((string) $refrigerant)) {
+                'R290' => 'Радиаторы и горячая вода',
+                'R32' => 'Тёплый пол и охлаждение',
+                default => 'Отопление и горячая вода',
+            },
+        ];
+    }
+
     public function isPublicSale(): bool
     {
         return $this->is_sale && in_array($this->slug, self::PUBLIC_SALE_SLUGS, true);
