@@ -214,7 +214,7 @@ class CatalogController extends Controller
                 $dto = new \stdClass();
                 $dto->id = $primary->id;
                 $dto->name = trim($primary->name);
-                $dto->suffix = $primary->suffix;
+                $dto->suffix = $this->visibleFilterSuffix($dto->name, $primary->suffix);
                 $dto->type = $primary->type;
                 $dto->options = $mergedOptions;
                 $dto->all_ids = $allAttrIds;
@@ -340,7 +340,10 @@ class CatalogController extends Controller
                     ? Brand::query()->where('slug', 'kotlov-ge')->value('id')
                     : null;
 
-                $query->catalogDefaultOrder($priorityBrandId);
+                $query->catalogDefaultOrder(
+                    $priorityBrandId,
+                    $category->slug === 'tverdotoplivnye'
+                );
         }
 
         $totalCount = $query->count();
@@ -513,6 +516,9 @@ class CatalogController extends Controller
         );
 
         $installerRecruitment = $this->installerRecruitmentContext($category);
+        $catalogIntro = $category->slug === 'tverdotoplivnye'
+            ? 'Твердотопливные котлы для отопления дома на дровах, угле и пеллетах. Подберите модель по мощности, площади обогрева и типу топлива.'
+            : null;
 
         return view('pages.catalog', compact(
             'category',
@@ -533,8 +539,26 @@ class CatalogController extends Controller
             'pelletBurnerFaq',
             'pelletPowerRanges',
             'pelletComparisonProducts',
-            'installerRecruitment'
+            'installerRecruitment',
+            'catalogIntro'
         ));
+    }
+
+    private function visibleFilterSuffix(string $name, ?string $suffix): ?string
+    {
+        $suffix = trim((string) $suffix);
+
+        if ($suffix === '') {
+            return null;
+        }
+
+        $quotedSuffix = preg_quote($suffix, '/');
+        $suffixAlreadyInName = preg_match(
+            '/(?:\(\s*' . $quotedSuffix . '\s*\)|,\s*' . $quotedSuffix . ')\s*$/ui',
+            trim($name)
+        ) === 1;
+
+        return $suffixAlreadyInName ? null : $suffix;
     }
 
     private function installerRecruitmentContext(Category $category): ?array

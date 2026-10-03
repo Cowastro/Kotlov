@@ -20,6 +20,7 @@ class ProductCatalogOrderTest extends TestCase
         Schema::create('products', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('brand_id')->nullable();
+            $table->boolean('in_stock')->default(false);
             $table->boolean('is_featured')->default(false);
             $table->decimal('rating', 3, 2)->default(0);
         });
@@ -52,6 +53,22 @@ class ProductCatalogOrderTest extends TestCase
 
         $orderedIds = Product::query()
             ->catalogDefaultOrder()
+            ->pluck('id')
+            ->all();
+
+        $this->assertSame([3, 2, 1], $orderedIds);
+    }
+
+    public function test_default_catalog_order_can_prioritize_available_products(): void
+    {
+        DB::table('products')->insert([
+            ['id' => 1, 'brand_id' => 10, 'in_stock' => false, 'is_featured' => true, 'rating' => 5],
+            ['id' => 2, 'brand_id' => 20, 'in_stock' => true, 'is_featured' => false, 'rating' => 3],
+            ['id' => 3, 'brand_id' => 30, 'in_stock' => true, 'is_featured' => true, 'rating' => 4],
+        ]);
+
+        $orderedIds = Product::query()
+            ->catalogDefaultOrder(null, true)
             ->pluck('id')
             ->all();
 

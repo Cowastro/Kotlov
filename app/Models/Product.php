@@ -316,13 +316,21 @@ class Product extends Model
         return $query->where('is_featured', true);
     }
 
-    public function scopeCatalogDefaultOrder($query, ?int $priorityBrandId = null)
+    public function scopeCatalogDefaultOrder(
+        $query,
+        ?int $priorityBrandId = null,
+        bool $prioritizeStock = false
+    )
     {
         if ($priorityBrandId) {
             $query->orderByRaw(
                 'CASE WHEN brand_id = ? THEN 0 ELSE 1 END',
                 [$priorityBrandId]
             );
+        }
+
+        if ($prioritizeStock) {
+            $query->orderByDesc('in_stock');
         }
 
         return $query
