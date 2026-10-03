@@ -342,7 +342,7 @@ class CatalogController extends Controller
 
                 $query->catalogDefaultOrder(
                     $priorityBrandId,
-                    $category->slug === 'tverdotoplivnye'
+                    in_array($category->slug, ['tverdotoplivnye', 'bufernye-emkosti'], true)
                 );
         }
 
@@ -516,9 +516,11 @@ class CatalogController extends Controller
         );
 
         $installerRecruitment = $this->installerRecruitmentContext($category);
-        $catalogIntro = $category->slug === 'tverdotoplivnye'
-            ? 'Твердотопливные котлы для отопления дома на дровах, угле и пеллетах. Подберите модель по мощности, площади обогрева и типу топлива.'
-            : null;
+        $catalogIntro = match ($category->slug) {
+            'tverdotoplivnye' => 'Твердотопливные котлы для отопления дома на дровах, угле и пеллетах. Подберите модель по мощности, площади обогрева и типу топлива.',
+            'bufernye-emkosti' => 'Буферные ёмкости и теплоаккумуляторы для котлов и систем отопления. Сравните модели по объёму, конструкции и наличию теплообменника.',
+            default => null,
+        };
 
         return view('pages.catalog', compact(
             'category',
