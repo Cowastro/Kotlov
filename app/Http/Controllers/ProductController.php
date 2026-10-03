@@ -6,6 +6,7 @@ use App\Models\Product;
 use App\Models\Category;
 use App\Models\BlogPost;
 use App\Models\ProductAttributeValue;
+use App\Services\HeatPumpProductPresenter;
 use App\Services\SeoMetadataBuilder;
 use Illuminate\Support\Facades\Log;
 
@@ -238,7 +239,9 @@ class ProductController extends Controller
         $robots = $product->is_archived ? 'noindex, follow' : null;
 
         $heatPumpGuides = collect();
+        $heatPumpProfile = null;
         if ($productCategory->slug === 'teplovyie-nasosyi') {
+            $heatPumpProfile = app(HeatPumpProductPresenter::class)->build($product);
             $isR290 = str_contains(mb_strtoupper($nameFull), 'R290');
             $guideOrder = $isR290
                 ? [
@@ -273,7 +276,8 @@ class ProductController extends Controller
             'schemaJson',
             'breadcrumbJson',
             'robots',
-            'heatPumpGuides'
+            'heatPumpGuides',
+            'heatPumpProfile'
         ));
     }
 }

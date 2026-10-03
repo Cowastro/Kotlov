@@ -1,25 +1,25 @@
 <style>
-    .hp-product-resources { background: #f5f6f3; }
-    .hp-product-resource-card { display: flex; flex-direction: column; height: 100%; overflow: hidden; border: 1px solid #e1e3df; border-radius: 20px; background: #fff; color: inherit; transition: transform .25s ease, border-color .25s ease, box-shadow .25s ease; }
-    .hp-product-resource-card:hover { transform: translateY(-4px); border-color: #d0d3cd; box-shadow: 0 18px 38px rgba(28, 31, 27, .08); }
-    .hp-product-resource-card__image { aspect-ratio: 16 / 9; overflow: hidden; background: #e9ebe7; }
+    .hp-product-resources { background: var(--bg-2); }
+    .hp-product-resource-card { display: flex; flex-direction: column; height: 100%; overflow: hidden; border: 1px solid var(--line); border-radius: 20px; background: var(--white); color: inherit; transition: transform .25s ease, border-color .25s ease, box-shadow .25s ease; }
+    .hp-product-resource-card:hover { transform: translateY(-4px); border-color: var(--text-3); box-shadow: 0 18px 38px rgba(28, 31, 27, .08); }
+    .hp-product-resource-card__image { aspect-ratio: 16 / 9; overflow: hidden; background: var(--bg); }
     .hp-product-resource-card__image img { width: 100%; height: 100%; object-fit: cover; transition: transform .45s ease; }
     .hp-product-resource-card:hover .hp-product-resource-card__image img { transform: scale(1.035); }
     .hp-product-resource-card__body { display: flex; flex: 1; flex-direction: column; padding: 22px 24px 24px; }
-    .hp-product-resource-card__meta { display: flex; align-items: center; gap: 9px; margin-bottom: 12px; color: #73776f; font-size: 12px; font-weight: 600; letter-spacing: .035em; text-transform: uppercase; }
-    .hp-product-resource-card__meta::before { width: 22px; height: 2px; background: #ef4b4b; content: ''; }
+    .hp-product-resource-card__meta { display: flex; align-items: center; gap: 9px; margin-bottom: 12px; color: var(--text-2); font-size: 12px; font-weight: 600; letter-spacing: .035em; text-transform: uppercase; }
+    .hp-product-resource-card__meta::before { width: 22px; height: 2px; background: var(--primary); content: ''; }
     .hp-product-resource-card__title { display: -webkit-box; overflow: hidden; margin-bottom: 12px; -webkit-box-orient: vertical; -webkit-line-clamp: 3; }
     .hp-product-resource-card__excerpt { display: -webkit-box; overflow: hidden; margin-bottom: 20px; -webkit-box-orient: vertical; -webkit-line-clamp: 3; }
-    .hp-product-resource-card__more { display: inline-flex; align-items: center; gap: 8px; margin-top: auto; color: #171817; font-weight: 600; }
+    .hp-product-resource-card__more { display: inline-flex; align-items: center; gap: 8px; margin-top: auto; color: var(--text); font-weight: 600; }
     .hp-product-resource-card__more span { transition: transform .2s ease; }
     .hp-product-resource-card:hover .hp-product-resource-card__more span { transform: translateX(4px); }
-    .hp-product-resources__cta { position: relative; display: flex; align-items: center; justify-content: space-between; gap: 28px; overflow: hidden; margin-top: 28px; padding: 30px 34px; border-radius: 20px; background: #191b19; color: #fff; }
-    .hp-product-resources__cta::before { position: absolute; top: 0; bottom: 0; left: 0; width: 4px; background: #ef4b4b; content: ''; }
+    .hp-product-resources__cta { position: relative; display: flex; align-items: center; justify-content: space-between; gap: 28px; overflow: hidden; margin-top: 28px; padding: 30px 34px; border-radius: 20px; background: var(--text); color: var(--white); }
+    .hp-product-resources__cta::before { position: absolute; top: 0; bottom: 0; left: 0; width: 4px; background: var(--primary); content: ''; }
     .hp-product-resources__cta-copy { position: relative; max-width: 760px; }
-    .hp-product-resources__cta-label { margin-bottom: 8px; color: #ff6b63; font-size: 12px; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; }
-    .hp-product-resources__cta h4, .hp-product-resources__cta p { color: #fff; }
+    .hp-product-resources__cta-label { margin-bottom: 8px; color: var(--primary); font-size: 12px; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; }
+    .hp-product-resources__cta h4, .hp-product-resources__cta p { color: var(--white); }
     .hp-product-resources__cta p { opacity: .7; }
-    .hp-product-resources__cta .tf-btn { min-width: 220px; border-color: #fff; background: #fff; color: #111; }
+    .hp-product-resources__cta .tf-btn { min-width: 220px; border-color: var(--white); background: var(--white); color: var(--text); }
 
     @media (max-width: 767px) {
         .hp-product-resources .sect-heading { text-align: left !important; }

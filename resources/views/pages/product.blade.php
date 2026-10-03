@@ -134,6 +134,10 @@
 
                             <div class="tf-product-info-heading">
 
+                                @if ($heatPumpProfile ?? null)
+                                    <p class="kotlov-hp-line-badge">Наша линейка · KOTLOV GE</p>
+                                @endif
+
                                 {{-- Категория --}}
                                 @if ($product->category)
                                     <p class="product-infor-cate text-caption-01 mb-4">
@@ -431,6 +435,10 @@
             </div>
         </div>
     </section>
+
+    @if ($heatPumpProfile ?? null)
+        @include('partials.product-kotlov-heat-pump-profile', ['profile' => $heatPumpProfile])
+    @endif
 
     {{-- Sticky кнопка "В корзину" при скролле --}}
     @if (!$product->is_archived)
