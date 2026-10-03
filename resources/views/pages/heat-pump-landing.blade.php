@@ -5,18 +5,18 @@
 
 @push('styles')
 <style>
-    .hp-landing { --hp-red:#f4554c; --hp-ink:#15191d; --hp-muted:#68717d; --hp-line:#e4e1da; }
-    .hp-landing__hero { padding:54px 0 70px; background:#f4f1eb; }
+    .hp-landing { --hp-red:var(--primary); --hp-ink:var(--text); --hp-muted:var(--text-2); --hp-line:var(--line); }
+    .hp-landing__hero { padding:54px 0 70px; background:var(--bg-2); }
     .hp-landing__hero h1 { max-width:850px; font-size:clamp(38px,5vw,68px); line-height:1; letter-spacing:-.045em; }
     .hp-landing__lead { max-width:760px; color:var(--hp-muted); font-size:clamp(17px,1.4vw,21px); line-height:1.55; }
-    .hp-landing__badge { display:inline-flex; padding:8px 12px; border-radius:999px; background:#fff0ee; color:#b93f38; font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:.06em; }
+    .hp-landing__badge { display:inline-flex; padding:8px 12px; border-radius:999px; background:var(--bg-4); color:var(--primary); font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:.06em; }
     .hp-landing__actions { display:flex; flex-wrap:wrap; gap:12px; margin-top:28px; }
     .hp-landing__benefits { padding:34px 0; border-bottom:1px solid var(--hp-line); background:#fff; }
-    .hp-landing__benefit { display:flex; gap:12px; height:100%; padding:20px; border:1px solid var(--hp-line); border-radius:18px; }
+    .hp-landing__benefit { display:flex; gap:12px; height:100%; padding:20px; border:1px solid var(--hp-line); border-radius:20px; }
     .hp-landing__benefit span { display:grid; place-items:center; flex:0 0 28px; width:28px; height:28px; border-radius:50%; background:var(--hp-red); color:#fff; font-weight:700; }
     .hp-landing__products { padding:82px 0; }
     .hp-landing__section-head { display:flex; align-items:end; justify-content:space-between; gap:24px; margin-bottom:34px; }
-    .hp-landing__faq { padding:82px 0; background:#f7f7f5; }
+    .hp-landing__faq { padding:82px 0; background:var(--bg); }
     .hp-landing__faq-item { height:100%; padding:26px; border:1px solid var(--hp-line); border-radius:20px; background:#fff; }
     .hp-landing__links { display:flex; flex-wrap:wrap; gap:9px; margin-top:28px; }
     .hp-landing__links a { padding:9px 13px; border:1px solid var(--hp-line); border-radius:999px; color:var(--hp-ink); font-size:13px; }

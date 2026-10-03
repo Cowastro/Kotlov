@@ -1,14 +1,14 @@
 <style>
-    .hp-guide { background: #f7f7f5; }
-    .hp-guide__panel { background: #fff; border: 1px solid #e9e9e5; border-radius: 20px; padding: 28px; height: 100%; }
-    .hp-guide__eyebrow { color: #f4554c; font-size: 13px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
+    .hp-guide { background: var(--bg); }
+    .hp-guide__panel { background: var(--white); border: 1px solid var(--line); border-radius: 20px; padding: 28px; height: 100%; }
+    .hp-guide__eyebrow { color: var(--primary); font-size: 13px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
     .hp-guide__link { display: block; color: inherit; }
-    .hp-guide__link:hover h4, .hp-guide__link:hover h5 { color: #f4554c; }
+    .hp-guide__link:hover h4, .hp-guide__link:hover h5 { color: var(--primary); }
     .hp-guide__tag { display: inline-flex; padding: 6px 10px; border-radius: 999px; background: #f1f1ed; font-size: 13px; }
-    .hp-guide__compare { border-left: 4px solid #f4554c; }
+    .hp-guide__compare { border-left: 4px solid var(--primary); }
     .hp-guide__routes { display: flex; flex-wrap: wrap; gap: 9px; margin: -18px 0 42px; }
     .hp-guide__routes a { padding: 9px 13px; border: 1px solid #e2e2de; border-radius: 999px; background: #fff; color: #20231f; font-size: 13px; }
-    .hp-guide__routes a:hover { border-color: #f4554c; color: #c33f38; }
+    .hp-guide__routes a:hover { border-color: var(--primary); color: var(--primary); }
     .hp-guide__article-image { aspect-ratio: 16 / 10; border-radius: 16px; overflow: hidden; margin-bottom: 18px; }
     .hp-guide__article-image img { width: 100%; height: 100%; object-fit: cover; }
     .hp-guide__cta { border-radius: 24px; padding: 36px; background: #20231f; color: #fff; }
