@@ -8,6 +8,14 @@
     @endpush
 @endif
 
+@if ($category->slug === 'dymohody')
+    @push('styles')
+        <style>
+            .chimney-brand-note{margin-top:22px}.chimney-brand-note__inner{display:flex;align-items:center;justify-content:space-between;gap:28px;padding:22px 26px;border:1px solid var(--line);border-radius:18px;background:var(--bg)}.chimney-brand-note__eyebrow{display:block;margin-bottom:5px;color:var(--text-2);font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase}.chimney-brand-note h2{margin:0 0 5px;font-size:22px;line-height:1.2}.chimney-brand-note p{max-width:790px;margin:0;color:var(--text-2);font-size:13px;line-height:1.5}.chimney-brand-note .tf-btn{flex:0 0 auto;min-width:210px;justify-content:center}@media(max-width:767px){.chimney-brand-note{margin-top:16px}.chimney-brand-note__inner{align-items:stretch;flex-direction:column;gap:16px;padding:19px}.chimney-brand-note h2{font-size:20px}.chimney-brand-note .tf-btn{width:100%;min-width:0}}
+        </style>
+    @endpush
+@endif
+
 @section('content')
 <main id="wrapper">
 
@@ -46,6 +54,23 @@
 
     @if ($category->slug === 'teplovyie-nasosyi')
         @include('partials.heat-pump-category-intro')
+    @endif
+
+    @if ($chimneySpotlight)
+        <section class="chimney-brand-note" aria-labelledby="chimney-brand-title">
+            <div class="container">
+                <div class="chimney-brand-note__inner">
+                    <div>
+                        <span class="chimney-brand-note__eyebrow">Основной ассортимент</span>
+                        <h2 id="chimney-brand-title">{{ $chimneySpotlight['title'] }}</h2>
+                        <p>{{ $chimneySpotlight['text'] }}</p>
+                    </div>
+                    <a href="{{ $chimneySpotlight['url'] }}" class="tf-btn btn-white btn-stroke">
+                        Все товары бренда
+                    </a>
+                </div>
+            </div>
+        </section>
     @endif
 
     {{-- Каталог --}}

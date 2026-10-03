@@ -87,6 +87,23 @@ class ProductCatalogOrderTest extends TestCase
         $this->assertSame([3, 2, 1], $orderedIds);
     }
 
+    public function test_default_catalog_order_combines_priority_brand_and_availability(): void
+    {
+        DB::table('catalog_order_products')->insert([
+            ['id' => 1, 'brand_id' => 10, 'in_stock' => true, 'is_featured' => true, 'rating' => 5],
+            ['id' => 2, 'brand_id' => 20, 'in_stock' => false, 'is_featured' => true, 'rating' => 5],
+            ['id' => 3, 'brand_id' => 20, 'in_stock' => true, 'is_featured' => false, 'rating' => 3],
+            ['id' => 4, 'brand_id' => 20, 'in_stock' => true, 'is_featured' => true, 'rating' => 4],
+        ]);
+
+        $orderedIds = CatalogOrderProduct::query()
+            ->catalogDefaultOrder(20, true)
+            ->pluck('id')
+            ->all();
+
+        $this->assertSame([4, 3, 2, 1], $orderedIds);
+    }
+
     public function test_kotlov_heat_pump_catalog_meta_uses_product_specs(): void
     {
         $product = new Product([

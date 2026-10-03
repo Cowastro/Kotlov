@@ -319,6 +319,11 @@ class CatalogController extends Controller
         }
 
         // Сортировка
+        $isChimneyCatalog = $category->slug === 'dymohody'
+            || $category->parent?->slug === 'dymohody';
+        $isStoveOrFireplaceCatalog = in_array($category->slug, ['pechki', 'kaminy'], true)
+            || in_array($category->parent?->slug, ['pechki', 'kaminy'], true);
+
         switch (request('sort')) {
             case 'price_asc':
                 $query->orderBy('price');
@@ -336,13 +341,19 @@ class CatalogController extends Controller
                 $query->orderByDesc('is_new')->orderByDesc('id');
                 break;
             default:
-                $priorityBrandId = $category->slug === 'teplovyie-nasosyi'
-                    ? Brand::query()->where('slug', 'kotlov-ge')->value('id')
-                    : null;
+                $priorityBrandId = match (true) {
+                    $category->slug === 'teplovyie-nasosyi' => Brand::query()
+                        ->where('slug', 'kotlov-ge')
+                        ->value('id'),
+                    $isChimneyCatalog => $brands->firstWhere('slug', 'teplov-i-suhov')?->id,
+                    default => null,
+                };
 
                 $query->catalogDefaultOrder(
                     $priorityBrandId,
-                    in_array($category->slug, ['tverdotoplivnye', 'bufernye-emkosti', 'kosvennye'], true)
+                    $isChimneyCatalog
+                        || $isStoveOrFireplaceCatalog
+                        || in_array($category->slug, ['tverdotoplivnye', 'bufernye-emkosti', 'kosvennye'], true)
                 );
         }
 
@@ -520,8 +531,30 @@ class CatalogController extends Controller
             'tverdotoplivnye' => 'Твердотопливные котлы для отопления дома на дровах, угле и пеллетах. Подберите модель по мощности, площади обогрева и типу топлива.',
             'bufernye-emkosti' => 'Буферные ёмкости и теплоаккумуляторы для котлов и систем отопления. Сравните модели по объёму, конструкции и наличию теплообменника.',
             'kosvennye' => 'Бойлеры косвенного нагрева для горячего водоснабжения от котла или теплового насоса. Сравните модели по объёму, установке, материалу бака и числу теплообменников.',
+            'pechki' => 'Отопительные и дровяные печи для дома и дачи. Сравните модели по мощности, площади обогрева, материалу и диаметру дымохода.',
+            'pechi-kaminy' => 'Печи-камины для отопления дома с обзором пламени. Выбирайте по мощности, материалу, наличию варочной панели и подключению дымохода.',
+            'pechi' => 'Дровяные печи для отопления дома, дачи и мастерской. Подберите печь по мощности, объёму помещения, материалу и диаметру дымохода.',
+            'kaminy' => 'Камины для дома: каминные топки, электрокамины, порталы и аксессуары. Сравните тип, размер, мощность и вариант монтажа.',
+            'topki' => 'Каминные топки из стали и чугуна с прямым, угловым и трёхсторонним стеклом. Сравните ширину, мощность, материал и тип открывания дверцы.',
+            'dymohody' => 'Дымоходы из нержавеющей стали для котлов, печей и каминов. Моно- и сэндвич-системы, крепления и фасонные элементы с подбором по диаметру.',
+            'dymohody-mono' => 'Одностенные дымоходы Моно для прокладки внутри отапливаемых помещений и гильзования каналов. Сравните диаметр, марку и толщину стали.',
+            'dymohody-sendvich' => 'Утеплённые сэндвич-дымоходы для наружных участков и проходов через перекрытия. Подберите систему по диаметру, толщине стали и слою изоляции.',
             default => null,
         };
+
+        $chimneySpotlight = null;
+        if ($category->slug === 'dymohody') {
+            $teplovBrand = $brands->firstWhere('slug', 'teplov-i-suhov');
+
+            if ($teplovBrand) {
+                $chimneySpotlight = [
+                    'title' => 'Дымоходы «Теплов и Сухов»',
+                    'text' => 'Моно, сэндвич, переходы, ревизии и крепления одной модульной системы. Фильтр покажет весь доступный ассортимент бренда.',
+                    'url' => url('/dymohody') . '?brand=' . $teplovBrand->id,
+                    'count' => $teplovBrand->products_count,
+                ];
+            }
+        }
 
         return view('pages.catalog', compact(
             'category',
@@ -543,7 +576,8 @@ class CatalogController extends Controller
             'pelletPowerRanges',
             'pelletComparisonProducts',
             'installerRecruitment',
-            'catalogIntro'
+            'catalogIntro',
+            'chimneySpotlight'
         ));
     }
 
