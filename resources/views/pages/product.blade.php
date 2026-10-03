@@ -438,6 +438,10 @@
 
     @if ($heatPumpProfile ?? null)
         @include('partials.product-kotlov-heat-pump-profile', ['profile' => $heatPumpProfile])
+        @include('partials.product-kotlov-heat-pump-comparison', [
+            'models' => $kotlovHeatPumpModels,
+            'currentProduct' => $product,
+        ])
     @endif
 
     {{-- Sticky кнопка "В корзину" при скролле --}}

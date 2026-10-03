@@ -162,6 +162,37 @@ class LegacySeoRedirectTest extends TestCase
         $response->assertRedirect('https://gomel.kotlov.by/teplovyie-nasosyi/kotlov-ge-flm30-r32-10-kvt');
     }
 
+    public function test_exact_redirect_replaces_an_archived_duplicate_product_url(): void
+    {
+        $category = Category::create([
+            'parent_id' => 0,
+            'name' => 'Тепловые насосы',
+            'slug' => 'teplovyie-nasosyi',
+            'is_active' => true,
+        ]);
+
+        Product::create([
+            'category_id' => $category->id,
+            'slug' => 'old-duplicate-heat-pump',
+            'is_active' => false,
+            'is_archived' => true,
+        ]);
+
+        DB::table('redirects')->insert([
+            'from_url' => '/teplovyie-nasosyi/old-duplicate-heat-pump',
+            'to_url' => '/teplovyie-nasosyi/canonical-heat-pump',
+            'status_code' => 301,
+            'is_active' => true,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $response = $this->get('https://kotlov.by/teplovyie-nasosyi/old-duplicate-heat-pump');
+
+        $response->assertStatus(301);
+        $response->assertRedirect('https://kotlov.by/teplovyie-nasosyi/canonical-heat-pump');
+    }
+
     public function test_old_parts_prefix_is_removed_instead_of_rewritten_to_wrong_section(): void
     {
         $response = $this->get('https://chechersk.kotlov.by/otoplenie-parts/grebenki');

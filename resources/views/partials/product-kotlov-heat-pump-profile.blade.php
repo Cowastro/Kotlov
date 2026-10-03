@@ -20,7 +20,8 @@
     .kotlov-hp-profile__use { padding: 8px 12px; border-radius: 999px; background: rgba(255,255,255,.1); color: var(--white); font-size: 13px; }
     .kotlov-hp-profile__actions { display: flex; flex-shrink: 0; flex-wrap: wrap; gap: 10px; }
     .kotlov-hp-profile__actions .tf-btn { min-width: 210px; }
-    .kotlov-hp-profile__actions .btn-white { border-color: rgba(255,255,255,.32); }
+    .kotlov-hp-profile__actions .btn-white { border-color: rgba(255,255,255,.32); background: transparent; color: var(--white); }
+    .kotlov-hp-profile__actions .btn-white:hover { border-color: var(--white); background: var(--white); color: var(--text); }
     .kotlov-hp-profile__note { margin-top: 18px; color: rgba(255,255,255,.58); font-size: 12px; line-height: 1.5; }
 
     @media (max-width: 991px) {

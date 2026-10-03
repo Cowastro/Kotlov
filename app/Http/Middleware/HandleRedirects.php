@@ -266,6 +266,8 @@ class HandleRedirects
 
         $product = Product::query()
             ->where('slug', $productSlug)
+            ->where('is_active', true)
+            ->where('is_archived', false)
             ->with('category')
             ->first();
 

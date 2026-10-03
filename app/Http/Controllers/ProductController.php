@@ -240,8 +240,39 @@ class ProductController extends Controller
 
         $heatPumpGuides = collect();
         $heatPumpProfile = null;
+        $kotlovHeatPumpModels = collect();
         if ($productCategory->slug === 'teplovyie-nasosyi') {
-            $heatPumpProfile = app(HeatPumpProductPresenter::class)->build($product);
+            $heatPumpPresenter = app(HeatPumpProductPresenter::class);
+            $heatPumpProfile = $heatPumpPresenter->build($product);
+
+            if ($heatPumpProfile) {
+                $kotlovHeatPumpModels = Product::query()
+                    ->where('category_id', $productCategory->id)
+                    ->orderable()
+                    ->whereHas('brand', fn ($query) => $query->where('name', 'KOTLOV GE'))
+                    ->with(['brand', 'category'])
+                    ->get()
+                    ->map(function (Product $model) use ($heatPumpPresenter): ?array {
+                        $profile = $heatPumpPresenter->build($model);
+                        if (! $profile) {
+                            return null;
+                        }
+
+                        preg_match('/\d+(?:[,.]\d+)?/u', (string) ($profile['power'] ?? ''), $powerMatch);
+
+                        return [
+                            'product' => $model,
+                            'profile' => $profile,
+                            'power_value' => isset($powerMatch[0])
+                                ? (float) str_replace(',', '.', $powerMatch[0])
+                                : 999,
+                        ];
+                    })
+                    ->filter()
+                    ->sortBy('power_value')
+                    ->values();
+            }
+
             $isR290 = str_contains(mb_strtoupper($nameFull), 'R290');
             $guideOrder = $isR290
                 ? [
@@ -277,7 +308,8 @@ class ProductController extends Controller
             'breadcrumbJson',
             'robots',
             'heatPumpGuides',
-            'heatPumpProfile'
+            'heatPumpProfile',
+            'kotlovHeatPumpModels'
         ));
     }
 }
