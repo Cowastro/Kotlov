@@ -1,11 +1,14 @@
 <style>
     .hp-guide { background: #f7f7f5; }
     .hp-guide__panel { background: #fff; border: 1px solid #e9e9e5; border-radius: 20px; padding: 28px; height: 100%; }
-    .hp-guide__eyebrow { color: #e4572e; font-size: 13px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
+    .hp-guide__eyebrow { color: #f4554c; font-size: 13px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
     .hp-guide__link { display: block; color: inherit; }
-    .hp-guide__link:hover h4, .hp-guide__link:hover h5 { color: #e4572e; }
+    .hp-guide__link:hover h4, .hp-guide__link:hover h5 { color: #f4554c; }
     .hp-guide__tag { display: inline-flex; padding: 6px 10px; border-radius: 999px; background: #f1f1ed; font-size: 13px; }
-    .hp-guide__compare { border-left: 4px solid #e4572e; }
+    .hp-guide__compare { border-left: 4px solid #f4554c; }
+    .hp-guide__routes { display: flex; flex-wrap: wrap; gap: 9px; margin: -18px 0 42px; }
+    .hp-guide__routes a { padding: 9px 13px; border: 1px solid #e2e2de; border-radius: 999px; background: #fff; color: #20231f; font-size: 13px; }
+    .hp-guide__routes a:hover { border-color: #f4554c; color: #c33f38; }
     .hp-guide__article-image { aspect-ratio: 16 / 10; border-radius: 16px; overflow: hidden; margin-bottom: 18px; }
     .hp-guide__article-image img { width: 100%; height: 100%; object-fit: cover; }
     .hp-guide__cta { border-radius: 24px; padding: 36px; background: #20231f; color: #fff; }
@@ -47,6 +50,13 @@
                 </div>
             </div>
         </div>
+
+        <nav class="hp-guide__routes" aria-label="Подбор теплового насоса по задаче">
+            <a href="/teplovye-nasosy-dlya-doma">Для частного дома</a>
+            <a href="/teplovye-nasosy-dlya-teplogo-pola">Для тёплого пола</a>
+            <a href="/teplovye-nasosy-dlya-radiatorov">Для радиаторов</a>
+            <a href="/teplovye-nasosy-r290">Модели на R290</a>
+        </nav>
 
         <div class="sect-heading text-center mb-32">
             <h3 class="s-title">R32 или R290: что подходит вашему объекту</h3>

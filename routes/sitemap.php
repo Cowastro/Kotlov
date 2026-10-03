@@ -1,25 +1,26 @@
 <?php
 
-use App\Models\Brand;
 use App\Models\BlogPost;
+use App\Models\Brand;
 use App\Models\Category;
 use App\Models\InstallerProfile;
 use App\Models\Product;
+use Illuminate\Support\Facades\Cache;
 
 Route::get('/sitemap.xml', function () {
-    $xml = \Illuminate\Support\Facades\Cache::remember('sitemap.xml.v2', 86400, function () {
+    $xml = Cache::remember('sitemap.xml.v2', 86400, function () {
         $baseUrl = 'https://kotlov.by';
         $urls = [];
 
         $addUrl = function (string $path, $lastModified = null, ?string $image = null, ?string $imageTitle = null) use (&$urls, $baseUrl) {
-            $path = '/' . ltrim($path, '/');
-            $location = $baseUrl . ($path === '/' ? '' : $path);
+            $path = '/'.ltrim($path, '/');
+            $location = $baseUrl.($path === '/' ? '' : $path);
 
             $imageUrl = null;
             if ($image && ! str_contains($image, 'product-placeholder')) {
                 $candidate = str_starts_with($image, 'http://') || str_starts_with($image, 'https://')
                     ? $image
-                    : $baseUrl . '/' . ltrim($image, '/');
+                    : $baseUrl.'/'.ltrim($image, '/');
 
                 if (parse_url($candidate, PHP_URL_HOST) === 'kotlov.by') {
                     $imageUrl = $candidate;
@@ -38,6 +39,8 @@ Route::get('/sitemap.xml', function () {
             '/', '/about', '/dostavka', '/reviews', '/catalog',
             '/brands', '/akcii', '/akcii/kotlov-xo-ceramic-pro', '/akcii/kotlov-xo-evo-26', '/akcii/hotta-ceramik-20-30', '/contacts', '/installers', '/become-installer',
             '/montazh-teplovyh-nasosov', '/montazh-kaminov', '/partners', '/suppliers', '/faq', '/privacy', '/blog',
+            '/teplovye-nasosy-r290', '/teplovye-nasosy-dlya-radiatorov',
+            '/teplovye-nasosy-dlya-teplogo-pola', '/teplovye-nasosy-dlya-doma',
         ] as $path) {
             $addUrl($path);
         }
@@ -54,7 +57,7 @@ Route::get('/sitemap.xml', function () {
                 foreach ($products as $product) {
                     if ($product->category?->slug && $product->slug) {
                         $addUrl(
-                            $product->category->slug . '/' . $product->slug,
+                            $product->category->slug.'/'.$product->slug,
                             $product->updated_at,
                             $product->image_url,
                             $product->name
@@ -64,14 +67,14 @@ Route::get('/sitemap.xml', function () {
             });
 
         Brand::active()->whereNotNull('slug')->orderBy('name')
-            ->get(['slug', 'updated_at'])->each(fn ($b) => $addUrl('brands/' . strtolower($b->slug), $b->updated_at));
+            ->get(['slug', 'updated_at'])->each(fn ($b) => $addUrl('brands/'.strtolower($b->slug), $b->updated_at));
 
         BlogPost::published()->whereNotNull('slug')->orderByDesc('published_at')
-            ->get(['slug', 'updated_at'])->each(fn ($p) => $addUrl('blog/' . $p->slug, $p->updated_at));
+            ->get(['slug', 'updated_at'])->each(fn ($p) => $addUrl('blog/'.$p->slug, $p->updated_at));
 
         InstallerProfile::query()->where('is_published', true)->whereNotNull('slug')
             ->orderBy('id')->get(['slug', 'updated_at'])
-            ->each(fn ($i) => $addUrl('installers/' . $i->slug, $i->updated_at));
+            ->each(fn ($i) => $addUrl('installers/'.$i->slug, $i->updated_at));
 
         $doc = new DOMDocument('1.0', 'UTF-8');
         $doc->formatOutput = true;
