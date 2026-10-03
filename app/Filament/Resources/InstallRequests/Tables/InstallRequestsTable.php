@@ -34,27 +34,27 @@ class InstallRequestsTable
                     ->label('Тип работ')
                     ->badge()
                     ->color(fn ($state) => match ($state) {
-                        'heating'       => 'warning',
-                        'heatpump'      => 'info',
-                        'fireplace'     => 'danger',
-                        'chimney'       => 'gray',
-                        'sauna'         => 'success',
-                        'service'       => 'primary',
+                        'heating' => 'warning',
+                        'heatpump' => 'info',
+                        'fireplace' => 'danger',
+                        'chimney' => 'gray',
+                        'sauna' => 'success',
+                        'service' => 'primary',
                         'commissioning' => 'primary',
-                        'engineering'   => 'info',
-                        default         => 'gray',
+                        'engineering' => 'info',
+                        default => 'gray',
                     })
                     ->formatStateUsing(fn ($state) => match ($state) {
-                        'heating'       => 'Монтаж котла',
-                        'heatpump'      => 'Монтаж насоса',
-                        'fireplace'     => 'Монтаж камина',
-                        'chimney'       => 'Монтаж дымохода',
-                        'sauna'         => 'Монтаж банной печи',
-                        'service'       => 'Сервис',
+                        'heating' => 'Монтаж котла',
+                        'heatpump' => 'Монтаж насоса',
+                        'fireplace' => 'Монтаж камина',
+                        'chimney' => 'Монтаж дымохода',
+                        'sauna' => 'Монтаж банной печи',
+                        'service' => 'Сервис',
                         'commissioning' => 'Пусконаладка',
-                        'engineering'   => 'Инженерный подбор',
-                        'other'         => 'Другое',
-                        default         => $state,
+                        'engineering' => 'Инженерный подбор',
+                        'other' => 'Другое',
+                        default => $state,
                     })
                     ->placeholder('-'),
                 TextColumn::make('city')
@@ -75,20 +75,20 @@ class InstallRequestsTable
                     ->label('Статус')
                     ->badge()
                     ->color(fn ($state) => match ($state) {
-                        'new'         => 'info',
-                        'accepted'    => 'warning',
+                        'new' => 'info',
+                        'accepted' => 'warning',
                         'in_progress' => 'primary',
-                        'done'        => 'success',
-                        'cancelled'   => 'danger',
-                        default       => 'gray',
+                        'done' => 'success',
+                        'cancelled' => 'danger',
+                        default => 'gray',
                     })
                     ->formatStateUsing(fn ($state) => match ($state) {
-                        'new'         => 'Новая',
-                        'accepted'    => 'Принята',
+                        'new' => 'Новая',
+                        'accepted' => 'Принята',
                         'in_progress' => 'В работе',
-                        'done'        => 'Выполнена',
-                        'cancelled'   => 'Отменена',
-                        default       => $state,
+                        'done' => 'Выполнена',
+                        'cancelled' => 'Отменена',
+                        default => $state,
                     })
                     ->sortable(),
                 TextColumn::make('budget')
@@ -99,19 +99,20 @@ class InstallRequestsTable
                 TextColumn::make('source')
                     ->label('Источник')
                     ->formatStateUsing(fn ($state) => match ($state) {
-                        'installers_page'        => 'Монтажники',
-                        'installer_profile'      => 'Профиль',
+                        'installers_page' => 'Монтажники',
+                        'installer_profile' => 'Профиль',
                         'heat_pump_installation' => 'Монтаж тепловых насосов',
+                        'heat_pump_catalog' => 'Каталог тепловых насосов',
                         'fireplace_installation' => 'Монтаж каминов',
                         'product_engineering_calculation' => 'Инженерный расчёт из товара',
-                        'pellet_burner_promo'   => 'Акция KOTLOV XO',
+                        'pellet_burner_promo' => 'Акция KOTLOV XO',
                         'pellet_burner_evo_promo' => 'Распродажа KOTLOV XO EVO',
                         'pellet_burner_hotta_promo' => 'Распродажа HOTTA Ceramik',
-                        'product_page'           => 'Товар',
-                        'cart'                   => 'Корзина',
-                        'admin'                  => 'Админка',
-                        'other'                  => 'Другое',
-                        default                  => $state,
+                        'product_page' => 'Товар',
+                        'cart' => 'Корзина',
+                        'admin' => 'Админка',
+                        'other' => 'Другое',
+                        default => $state,
                     })
                     ->placeholder('-'),
                 TextColumn::make('preferred_date')
@@ -132,40 +133,41 @@ class InstallRequestsTable
                 SelectFilter::make('status')
                     ->label('Статус')
                     ->options([
-                        'new'         => 'Новая',
-                        'accepted'    => 'Принята',
+                        'new' => 'Новая',
+                        'accepted' => 'Принята',
                         'in_progress' => 'В работе',
-                        'done'        => 'Выполнена',
-                        'cancelled'   => 'Отменена',
+                        'done' => 'Выполнена',
+                        'cancelled' => 'Отменена',
                     ]),
                 SelectFilter::make('specialization')
                     ->label('Тип работ')
                     ->options([
-                        'heating'       => 'Монтаж котла',
-                        'heatpump'      => 'Монтаж теплового насоса',
-                        'fireplace'     => 'Монтаж камина',
-                        'chimney'       => 'Монтаж дымохода',
-                        'sauna'         => 'Монтаж банной печи',
-                        'service'       => 'Сервис',
+                        'heating' => 'Монтаж котла',
+                        'heatpump' => 'Монтаж теплового насоса',
+                        'fireplace' => 'Монтаж камина',
+                        'chimney' => 'Монтаж дымохода',
+                        'sauna' => 'Монтаж банной печи',
+                        'service' => 'Сервис',
                         'commissioning' => 'Пусконаладка',
-                        'engineering'   => 'Инженерный подбор',
-                        'other'         => 'Другое',
+                        'engineering' => 'Инженерный подбор',
+                        'other' => 'Другое',
                     ]),
                 SelectFilter::make('source')
                     ->label('Источник')
                     ->options([
-                        'installers_page'        => 'Страница монтажников',
-                        'installer_profile'      => 'Профиль монтажника',
+                        'installers_page' => 'Страница монтажников',
+                        'installer_profile' => 'Профиль монтажника',
                         'heat_pump_installation' => 'Страница монтажа тепловых насосов',
+                        'heat_pump_catalog' => 'Каталог тепловых насосов',
                         'fireplace_installation' => 'Страница монтажа каминов',
                         'product_engineering_calculation' => 'Инженерный расчёт из карточки товара',
-                        'pellet_burner_promo'   => 'Акция KOTLOV XO Ceramic PRO',
+                        'pellet_burner_promo' => 'Акция KOTLOV XO Ceramic PRO',
                         'pellet_burner_evo_promo' => 'Распродажа KOTLOV XO EVO 26 кВт',
                         'pellet_burner_hotta_promo' => 'Распродажа HOTTA Ceramik 20/30 кВт',
-                        'product_page'           => 'Карточка товара',
-                        'cart'                   => 'Корзина',
-                        'admin'                  => 'Админка',
-                        'other'                  => 'Другое',
+                        'product_page' => 'Карточка товара',
+                        'cart' => 'Корзина',
+                        'admin' => 'Админка',
+                        'other' => 'Другое',
                     ]),
                 SelectFilter::make('installer_profile_id')
                     ->label('Монтажник')
@@ -180,12 +182,12 @@ class InstallRequestsTable
                 SelectFilter::make('city')
                     ->label('Город')
                     ->options([
-                        'Минск'    => 'Минск',
-                        'Гродно'   => 'Гродно',
-                        'Брест'    => 'Брест',
-                        'Витебск'  => 'Витебск',
-                        'Гомель'   => 'Гомель',
-                        'Могилёв'  => 'Могилёв',
+                        'Минск' => 'Минск',
+                        'Гродно' => 'Гродно',
+                        'Брест' => 'Брест',
+                        'Витебск' => 'Витебск',
+                        'Гомель' => 'Гомель',
+                        'Могилёв' => 'Могилёв',
                     ]),
             ])
             ->recordActions([

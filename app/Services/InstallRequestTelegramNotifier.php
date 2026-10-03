@@ -26,6 +26,7 @@ class InstallRequestTelegramNotifier
 
         $sourceLabels = [
             'heat_pump_installation' => 'Монтаж тепловых насосов',
+            'heat_pump_catalog' => 'Каталог тепловых насосов',
             'fireplace_installation' => 'Монтаж каминов и печей-каминов',
             'product_engineering_calculation' => 'Инженерный расчёт из карточки товара',
             'pellet_burner_promo' => 'Акция KOTLOV XO Ceramic PRO',

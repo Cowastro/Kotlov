@@ -3,14 +3,30 @@
 namespace App\Http\Controllers;
 
 use App\Models\BlogPost;
+use App\Models\Product;
+use Illuminate\Http\Request;
 
 class HeatPumpInstallationController extends Controller
 {
-    public function __invoke()
+    public function __invoke(Request $request)
     {
         $title = 'Монтаж теплового насоса под ключ в Минске и Беларуси | KOTLOV';
         $description = 'Расчёт, подбор и монтаж тепловых насосов воздух-вода KOTLOV GE. Тёплый пол, радиаторы, ГВС, резервный котёл, пусконаладка и гарантия.';
         $canonical = 'https://kotlov.by/montazh-teplovyh-nasosov';
+
+        $selectedProduct = null;
+
+        if ($request->query('source') === 'heat_pump_catalog' && $request->filled('product')) {
+            $selectedProduct = Product::query()
+                ->orderable()
+                ->with(['brand', 'category'])
+                ->where('slug', $request->string('product')->toString())
+                ->whereHas('brand', fn ($query) => $query->where('slug', 'kotlov-ge'))
+                ->whereHas('category', fn ($query) => $query->where('slug', 'teplovyie-nasosyi'))
+                ->first();
+        }
+
+        $leadSource = $selectedProduct ? 'heat_pump_catalog' : 'heat_pump_installation';
 
         $caseSlugs = [
             'montazh-teplovogo-nasosa-kotlov-ge-10-kvt-r290-smolevichskiy-rayon',
@@ -73,7 +89,9 @@ class HeatPumpInstallationController extends Controller
             'canonical',
             'cases',
             'faq',
-            'schemaJson'
+            'schemaJson',
+            'selectedProduct',
+            'leadSource'
         ));
     }
 }

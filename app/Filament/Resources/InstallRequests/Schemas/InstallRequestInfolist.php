@@ -160,6 +160,7 @@ class InstallRequestInfolist
                                 'installers_page' => 'Страница монтажников',
                                 'installer_profile' => 'Профиль монтажника',
                                 'heat_pump_installation' => 'Страница монтажа тепловых насосов',
+                                'heat_pump_catalog' => 'Каталог тепловых насосов',
                                 'fireplace_installation' => 'Страница монтажа каминов',
                                 'product_engineering_calculation' => 'Инженерный расчёт из карточки товара',
                                 'pellet_burner_promo' => 'Акция KOTLOV XO Ceramic PRO',

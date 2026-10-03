@@ -19,10 +19,17 @@ class HeatPumpLeadTest extends TestCase
 
         Schema::dropIfExists('install_requests');
         Schema::dropIfExists('users');
+        Schema::dropIfExists('products');
 
         Schema::create('users', function (Blueprint $table) {
             $table->id();
             $table->string('role')->nullable();
+            $table->timestamps();
+        });
+
+        Schema::create('products', function (Blueprint $table) {
+            $table->id();
+            $table->string('name');
             $table->timestamps();
         });
 
@@ -99,5 +106,51 @@ class HeatPumpLeadTest extends TestCase
         $this->assertSame('46_to_60', $request->project_details['flow_temperature']);
         $this->assertSame('380', $request->project_details['power_supply']);
         $this->assertTrue($request->project_details['needs_hot_water']);
+    }
+
+    public function test_catalog_heat_pump_form_preserves_selected_product_and_source(): void
+    {
+        $this->withoutMiddleware([
+            ProtectPublicForm::class,
+            HandleRedirects::class,
+        ]);
+
+        Schema::getConnection()->table('products')->insert([
+            'id' => 77,
+            'name' => 'Тепловой насос KOTLOV GE 12 кВт R290',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $notifier = Mockery::mock(InstallRequestTelegramNotifier::class);
+        $notifier->shouldReceive('send')
+            ->once()
+            ->withArgs(fn (InstallRequest $request) => $request->exists
+                && $request->source === 'heat_pump_catalog'
+                && $request->product_id === 77
+                && $request->project_details['property_area'] === 140
+            )
+            ->andReturn(true);
+        $this->app->instance(InstallRequestTelegramNotifier::class, $notifier);
+
+        $response = $this->post(route('install-requests.store'), [
+            'customer_name' => 'Анна Тестовая',
+            'customer_phone' => '+375 29 222-33-44',
+            'city' => 'Минск',
+            'specialization' => 'heatpump',
+            'source' => 'heat_pump_catalog',
+            'product_id' => 77,
+            'property_area' => 140,
+            'heating_system' => 'underfloor',
+        ]);
+
+        $response->assertRedirect(route('heat-pumps.installation').'#heat-pump-request');
+        $response->assertSessionHas('success');
+
+        $request = InstallRequest::query()->firstOrFail();
+
+        $this->assertSame('heat_pump_catalog', $request->source);
+        $this->assertSame(77, $request->product_id);
+        $this->assertSame(140, $request->project_details['property_area']);
     }
 }

@@ -62,7 +62,7 @@ class InstallRequestController extends Controller
             'customer_name' => ['required', 'string', 'max:100', new NoHtmlOrLinks],
             'customer_phone' => ['required', 'string', 'max:30', new PhoneNotSpam],
             'customer_email' => 'nullable|email|max:150',
-            'product_id' => 'nullable|integer|exists:products,id',
+            'product_id' => 'required_if:source,heat_pump_catalog|nullable|integer|exists:products,id',
             'city' => ['nullable', 'string', 'max:100', new NoHtmlOrLinks],
             'region' => 'nullable|string|max:100',
             'address' => ['nullable', 'string', 'max:255', new NoHtmlOrLinks],
@@ -76,7 +76,7 @@ class InstallRequestController extends Controller
             'preferred_date' => 'nullable|date',
             'budget' => 'nullable|numeric|min:0',
             'installer_profile_id' => 'nullable|integer',
-            'source' => 'nullable|in:heat_pump_installation,fireplace_installation,product_engineering_calculation,pellet_burner_promo,pellet_burner_evo_promo,pellet_burner_hotta_promo',
+            'source' => 'nullable|in:heat_pump_installation,heat_pump_catalog,fireplace_installation,product_engineering_calculation,pellet_burner_promo,pellet_burner_evo_promo,pellet_burner_hotta_promo',
         ], [
             'customer_name.required' => 'Укажите ваше имя.',
             'customer_phone.required' => 'Укажите номер телефона.',
@@ -97,11 +97,11 @@ class InstallRequestController extends Controller
             }
         }
 
-        $landingSource = in_array(($validated['source'] ?? null), ['heat_pump_installation', 'fireplace_installation', 'product_engineering_calculation', 'pellet_burner_promo', 'pellet_burner_evo_promo', 'pellet_burner_hotta_promo'], true)
+        $landingSource = in_array(($validated['source'] ?? null), ['heat_pump_installation', 'heat_pump_catalog', 'fireplace_installation', 'product_engineering_calculation', 'pellet_burner_promo', 'pellet_burner_evo_promo', 'pellet_burner_hotta_promo'], true)
             ? $validated['source']
             : null;
 
-        $projectDetails = $landingSource === 'heat_pump_installation'
+        $projectDetails = in_array($landingSource, ['heat_pump_installation', 'heat_pump_catalog'], true)
             ? array_filter([
                 'property_area' => $validated['property_area'] ?? null,
                 'heating_system' => $validated['heating_system'] ?? null,
@@ -139,12 +139,15 @@ class InstallRequestController extends Controller
 
         $this->telegramNotifier->send($installRequest);
 
-        if ($landingSource === 'heat_pump_installation') {
+        if (in_array($landingSource, ['heat_pump_installation', 'heat_pump_catalog'], true)) {
             return redirect()
                 ->to(route('heat-pumps.installation').'#heat-pump-request')
                 ->with('success', 'Заявка отправлена. Мы свяжемся с вами для уточнения деталей.')
                 ->with('analytics_event', 'heat_pump_lead_success')
-                ->with('analytics_parameters', ['lead_type' => 'heat_pump_calculation']);
+                ->with('analytics_parameters', [
+                    'lead_type' => 'heat_pump_calculation',
+                    'lead_source' => $landingSource,
+                ]);
         }
 
         if ($landingSource === 'fireplace_installation') {

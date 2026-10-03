@@ -831,6 +831,37 @@ body {
     min-height: 0;
 }
 
+.heat-pump-card-cta {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    min-height: 36px;
+    margin-top: 5px;
+    padding: 7px 14px;
+    border: 1px solid var(--primary);
+    border-radius: 999px;
+    background: var(--primary);
+    color: var(--white) !important;
+    font-size: 12px;
+    font-weight: 700;
+    line-height: 1.2;
+    text-align: center;
+    transition: background-color .2s ease, border-color .2s ease, transform .2s ease;
+}
+
+.heat-pump-card-cta:hover {
+    border-color: var(--text);
+    background: var(--text);
+    transform: translateY(-1px);
+}
+
+.heat-pump-card-cta--list {
+    width: fit-content;
+    min-width: 190px;
+    margin: 10px 0;
+}
+
 @media (max-width: 767px) {
     #gridLayout .heat-pump-card-meta {
         min-height: 56px;
@@ -853,6 +884,12 @@ body {
         -webkit-box-orient: vertical;
         -webkit-line-clamp: 1;
         font-size: 9px;
+    }
+
+    #gridLayout .heat-pump-card-cta {
+        min-height: 34px;
+        padding: 6px 8px;
+        font-size: 10px;
     }
 }
 

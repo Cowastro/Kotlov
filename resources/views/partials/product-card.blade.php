@@ -33,6 +33,9 @@
     $heatPumpMeta = method_exists($product, 'heatPumpCatalogMeta')
         ? $product->heatPumpCatalogMeta()
         : null;
+    $heatPumpLeadUrl = $heatPumpMeta
+        ? route('heat-pumps.installation', ['product' => $product->slug, 'source' => 'heat_pump_catalog']).'#heat-pump-request'
+        : null;
 @endphp
 
 <div class="card-product product-style_stroke">
@@ -141,5 +144,14 @@
                 </span>
             @endif
         </div>
+
+        @if ($heatPumpLeadUrl)
+            <a href="{{ $heatPumpLeadUrl }}"
+                class="heat-pump-card-cta"
+                data-analytics-event="heat_pump_catalog_lead_click"
+                data-analytics-model="{{ $product->slug }}">
+                Подобрать под дом
+            </a>
+        @endif
     </div>
 </div>

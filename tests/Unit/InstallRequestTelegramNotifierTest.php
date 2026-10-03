@@ -4,6 +4,7 @@ namespace Tests\Unit;
 
 use App\Models\InstallerProfile;
 use App\Models\InstallRequest;
+use App\Models\Product;
 use App\Services\InstallRequestTelegramNotifier;
 use App\Services\TelegramApi;
 use Carbon\Carbon;
@@ -17,6 +18,7 @@ class InstallRequestTelegramNotifierTest extends TestCase
     {
         return [
             ['heat_pump_installation', 'Монтаж тепловых насосов'],
+            ['heat_pump_catalog', 'Каталог тепловых насосов'],
             ['fireplace_installation', 'Монтаж каминов и печей-каминов'],
             ['product_engineering_calculation', 'Инженерный расчёт из карточки товара'],
             ['pellet_burner_promo', 'Акция KOTLOV XO Ceramic PRO'],
@@ -130,6 +132,39 @@ class InstallRequestTelegramNotifierTest extends TestCase
                 && str_contains($message, '*ГВС:* нужно')
             )
             ->andReturn(['ok' => true, 'result' => ['message_id' => 458]]);
+
+        $this->assertTrue((new InstallRequestTelegramNotifier($telegram))->send($request));
+    }
+
+    public function test_catalog_heat_pump_notification_contains_selected_model(): void
+    {
+        config([
+            'services.telegram.bot_token' => 'test-token',
+            'services.telegram.orders_chat_id' => '-100123456789',
+        ]);
+
+        $product = new Product(['name' => 'Тепловой насос KOTLOV GE 12 кВт R290']);
+        $product->id = 77;
+
+        $request = new InstallRequest([
+            'customer_name' => 'Тест каталога',
+            'customer_phone' => '+375 29 000-00-00',
+            'specialization' => 'heatpump',
+            'source' => 'heat_pump_catalog',
+            'product_id' => 77,
+        ]);
+        $request->id = 126;
+        $request->created_at = Carbon::parse('2026-10-03 10:00:00');
+        $request->setRelation('product', $product);
+
+        $telegram = Mockery::mock(TelegramApi::class);
+        $telegram->shouldReceive('sendMessage')
+            ->once()
+            ->withArgs(fn ($chatId, string $message): bool => $chatId === '-100123456789'
+                && str_contains($message, '*Источник:* Каталог тепловых насосов')
+                && str_contains($message, '*Товар:* Тепловой насос KOTLOV GE 12 кВт R290')
+            )
+            ->andReturn(['ok' => true, 'result' => ['message_id' => 459]]);
 
         $this->assertTrue((new InstallRequestTelegramNotifier($telegram))->send($request));
     }
