@@ -336,7 +336,11 @@ class CatalogController extends Controller
                 $query->orderByDesc('is_new')->orderByDesc('id');
                 break;
             default:
-                $query->orderByDesc('is_featured')->orderByDesc('rating');
+                $priorityBrandId = $category->slug === 'teplovyie-nasosyi'
+                    ? Brand::query()->where('slug', 'kotlov-ge')->value('id')
+                    : null;
+
+                $query->catalogDefaultOrder($priorityBrandId);
         }
 
         $totalCount = $query->count();
