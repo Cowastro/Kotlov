@@ -10,34 +10,44 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Tests\TestCase;
 
+class CatalogOrderProduct extends Product
+{
+    protected $table = 'catalog_order_products';
+}
+
 class ProductCatalogOrderTest extends TestCase
 {
     protected function setUp(): void
     {
         parent::setUp();
 
-        Schema::disableForeignKeyConstraints();
-        Schema::dropIfExists('products');
-        Schema::create('products', function (Blueprint $table) {
+        Schema::dropIfExists('catalog_order_products');
+        Schema::create('catalog_order_products', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('brand_id')->nullable();
             $table->boolean('in_stock')->default(false);
             $table->boolean('is_featured')->default(false);
             $table->decimal('rating', 3, 2)->default(0);
         });
-        Schema::enableForeignKeyConstraints();
+    }
+
+    protected function tearDown(): void
+    {
+        Schema::dropIfExists('catalog_order_products');
+
+        parent::tearDown();
     }
 
     public function test_default_catalog_order_keeps_priority_brand_first(): void
     {
-        DB::table('products')->insert([
+        DB::table('catalog_order_products')->insert([
             ['id' => 1, 'brand_id' => 10, 'is_featured' => true, 'rating' => 5],
             ['id' => 2, 'brand_id' => 20, 'is_featured' => false, 'rating' => 3],
             ['id' => 3, 'brand_id' => 20, 'is_featured' => true, 'rating' => 4],
             ['id' => 4, 'brand_id' => 10, 'is_featured' => true, 'rating' => 4],
         ]);
 
-        $orderedIds = Product::query()
+        $orderedIds = CatalogOrderProduct::query()
             ->catalogDefaultOrder(20)
             ->pluck('id')
             ->all();
@@ -47,13 +57,13 @@ class ProductCatalogOrderTest extends TestCase
 
     public function test_default_catalog_order_is_unchanged_without_priority_brand(): void
     {
-        DB::table('products')->insert([
+        DB::table('catalog_order_products')->insert([
             ['id' => 1, 'brand_id' => 10, 'is_featured' => false, 'rating' => 5],
             ['id' => 2, 'brand_id' => 20, 'is_featured' => true, 'rating' => 3],
             ['id' => 3, 'brand_id' => 30, 'is_featured' => true, 'rating' => 4],
         ]);
 
-        $orderedIds = Product::query()
+        $orderedIds = CatalogOrderProduct::query()
             ->catalogDefaultOrder()
             ->pluck('id')
             ->all();
@@ -63,13 +73,13 @@ class ProductCatalogOrderTest extends TestCase
 
     public function test_default_catalog_order_can_prioritize_available_products(): void
     {
-        DB::table('products')->insert([
+        DB::table('catalog_order_products')->insert([
             ['id' => 1, 'brand_id' => 10, 'in_stock' => false, 'is_featured' => true, 'rating' => 5],
             ['id' => 2, 'brand_id' => 20, 'in_stock' => true, 'is_featured' => false, 'rating' => 3],
             ['id' => 3, 'brand_id' => 30, 'in_stock' => true, 'is_featured' => true, 'rating' => 4],
         ]);
 
-        $orderedIds = Product::query()
+        $orderedIds = CatalogOrderProduct::query()
             ->catalogDefaultOrder(null, true)
             ->pluck('id')
             ->all();
