@@ -13,7 +13,7 @@ class StoveOfficialHeatingVolumeCatalogTest extends TestCase
         $normalizer = new StoveHeatingVolumeNormalizer;
         $entries = (new StoveOfficialHeatingVolumeCatalog)->entries();
 
-        $this->assertCount(61, $entries);
+        $this->assertCount(62, $entries);
 
         foreach ($entries as $slug => $entry) {
             $this->assertNotSame('', $slug);
@@ -120,5 +120,13 @@ class StoveOfficialHeatingVolumeCatalogTest extends TestCase
             $this->assertSame($volume, $entries[$slug]['volume']);
             $this->assertStringStartsWith('https://everest-pech.com/', $entries[$slug]['source_url']);
         }
+    }
+
+    public function test_kennet_aria_keeps_its_published_volume(): void
+    {
+        $entry = (new StoveOfficialHeatingVolumeCatalog)->entries()['pech-otopitelnaya-kennet-ariya-200-11429'];
+
+        $this->assertSame('до 200 м³', $entry['volume']);
+        $this->assertStringStartsWith('https://www.kennet.ru/', $entry['source_url']);
     }
 }
