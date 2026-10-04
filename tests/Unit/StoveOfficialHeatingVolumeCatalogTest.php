@@ -13,7 +13,7 @@ class StoveOfficialHeatingVolumeCatalogTest extends TestCase
         $normalizer = new StoveHeatingVolumeNormalizer;
         $entries = (new StoveOfficialHeatingVolumeCatalog)->entries();
 
-        $this->assertCount(55, $entries);
+        $this->assertCount(57, $entries);
 
         foreach ($entries as $slug => $entry) {
             $this->assertNotSame('', $slug);
@@ -80,6 +80,19 @@ class StoveOfficialHeatingVolumeCatalogTest extends TestCase
         ] as $slug => $volume) {
             $this->assertSame($volume, $entries[$slug]['volume']);
             $this->assertStringStartsWith('https://pech-aston.ru/', $entries[$slug]['source_url']);
+        }
+    }
+
+    public function test_tmf_fahrenheit_variants_keep_their_published_volume(): void
+    {
+        $entries = (new StoveOfficialHeatingVolumeCatalog)->entries();
+
+        foreach ([
+            'po-farengeit-8-antracit',
+            'po-farengeit-8-lait-antracit',
+        ] as $slug) {
+            $this->assertSame('до 150 м³', $entries[$slug]['volume']);
+            $this->assertStringStartsWith('https://t-m-f.ru/', $entries[$slug]['source_url']);
         }
     }
 }

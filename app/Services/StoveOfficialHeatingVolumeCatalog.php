@@ -24,6 +24,8 @@ class StoveOfficialHeatingVolumeCatalog
             'pec-top-200-ds' => $this->entry('140–200 м³', 'https://www.teplodar.ru/catalog/detail/top_model_200_so_stalnoy_dvertsey/', 'Теплодар — ТОП-модель-200 ДС'),
             'pec-top-300-dc' => $this->entry('200–300 м³', 'https://www.teplodar.ru/catalog/detail/top_model_300_s_chugunnoy_dvertsey/', 'Теплодар — ТОП-модель-300 ДЧ'),
             'pec-top-draiv-150' => $this->entry('50–150 м³', 'https://www.teplodar.ru/catalog/detail/top_drayv_150/', 'Теплодар — ТОП-драйв-150'),
+            'po-farengeit-8-antracit' => $this->entry('до 150 м³', 'https://t-m-f.ru/catalog-new/model/otopitelnye_pechi_1/drovyanye/farengeyt_8/', 'TMF — Фаренгейт 8'),
+            'po-farengeit-8-lait-antracit' => $this->entry('до 150 м³', 'https://t-m-f.ru/upload/iblock/cc5/bse8nlgy9rr898y87b8dhf3p3si2kr3j/RE-Farengeyt-Layt-_141222_.pdf', 'TMF — руководство Фаренгейт 8 Лайт'),
             '-pech-otopitelnaya-vezuviy-' => $this->entry('до 100 м³', 'https://vezuviy.su/otopitelnoe-oborudovanie/pechi-otopitelnye/otopitelnye-pechi-seriya-komfort/', 'Везувий — Комфорт 100 ДТ-3С'),
             'pech-otopitelnaya-vezuvij-triumf-180-to' => $this->entry('до 180 м³', 'https://vezuviy.su/otopitelnoe-oborudovanie/chugunnye-pechi-kaminy/pech-otopitelnaya-vezuviy-chugunnaya-triumf-180-teploobmennik/', 'Везувий — Триумф 180 т/о'),
             'pech-otopitelnaya-vezuvij-v5' => $this->entry('до 100 м³', 'https://vezuviy.su/otopitelnoe-oborudovanie/pechi-otopitelnye/pech-otopitelnaya-vezuviy-v5/', 'Везувий — В5'),
