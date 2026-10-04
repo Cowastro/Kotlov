@@ -339,6 +339,14 @@ class Product extends Model
             ->orderByDesc('id');
     }
 
+    public function scopePelletBoilerCatalogOrder($query)
+    {
+        return $query
+            ->orderByDesc('in_stock')
+            ->orderByRaw('CASE WHEN price > 0 THEN 0 ELSE 1 END')
+            ->orderBy('price');
+    }
+
     public function scopePrioritizeAttributeOptions(
         $query,
         array $optionIds,

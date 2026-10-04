@@ -134,6 +134,24 @@ class ProductCatalogOrderTest extends TestCase
         $this->assertSame([4, 3, 2, 1], $orderedIds);
     }
 
+    public function test_pellet_boiler_order_keeps_available_priced_models_in_ascending_lineup(): void
+    {
+        DB::table('catalog_order_products')->insert([
+            ['id' => 1, 'in_stock' => true, 'price' => 14000, 'is_featured' => true],
+            ['id' => 2, 'in_stock' => true, 'price' => 10030, 'is_featured' => false],
+            ['id' => 3, 'in_stock' => false, 'price' => 3500, 'is_featured' => false],
+            ['id' => 4, 'in_stock' => true, 'price' => 0, 'is_featured' => false],
+        ]);
+
+        $orderedIds = CatalogOrderProduct::query()
+            ->pelletBoilerCatalogOrder()
+            ->catalogDefaultOrder()
+            ->pluck('id')
+            ->all();
+
+        $this->assertSame([2, 1, 4, 3], $orderedIds);
+    }
+
     public function test_attribute_option_priority_keeps_residential_products_before_industrial_products(): void
     {
         DB::table('catalog_order_products')->insert([

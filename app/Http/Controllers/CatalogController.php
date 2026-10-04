@@ -365,6 +365,11 @@ class CatalogController extends Controller
                     $catalogStockAlreadyOrdered = true;
                 }
 
+                if ($category->slug === 'kotly-na-pelletah') {
+                    $query->pelletBoilerCatalogOrder();
+                    $catalogStockAlreadyOrdered = true;
+                }
+
                 if (in_array($category->slug, ['pechki', 'kaminy'], true) && ! request('subcategory')) {
                     $accessoryCategorySlugs = $category->slug === 'pechki'
                         ? ['pechnoe-i-kaminnoe-lite']
@@ -409,7 +414,7 @@ class CatalogController extends Controller
                     ! $catalogStockAlreadyOrdered && ($isChimneyCatalog
                         || $isStoveOrFireplaceCatalog
                         || $isPipesCatalog
-                        || in_array($category->slug, ['tverdotoplivnye', 'kotly-na-pelletah', 'bufernye-emkosti', 'kosvennye'], true))
+                        || in_array($category->slug, ['tverdotoplivnye', 'bufernye-emkosti', 'kosvennye'], true))
                 );
         }
 
