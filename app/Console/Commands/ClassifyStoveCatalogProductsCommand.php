@@ -29,7 +29,10 @@ class ClassifyStoveCatalogProductsCommand extends Command
         'mangalyi' => ['mangalyi'],
         'aksessuary-kaminy' => ['aksessuary-kaminy'],
         'pelletnye-gorelki' => ['pelletnye-gorelki', 'pelletnyie-gorelki'],
-        'kazany' => ['kazany'],
+        // Production currently has no separate cauldron category; use the
+        // existing outdoor-cooking catalogue instead of leaving these goods
+        // among heating stoves.
+        'kazany' => ['kazany', 'pechi-dlya-kazana', 'mangalyi'],
     ];
 
     protected $signature = 'catalog:classify-stove-products
