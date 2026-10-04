@@ -56,6 +56,10 @@
         @include('partials.heat-pump-category-intro')
     @endif
 
+    @if (in_array($category->slug, ['drovyanye-pechi-dlya-bani', 'drovianye-peci-bannye'], true))
+        @include('partials.sauna-stove-quick-filters')
+    @endif
+
     @if ($catalogSpotlight)
         <section class="catalog-brand-note" aria-labelledby="catalog-brand-title">
             <div class="container">
@@ -74,7 +78,7 @@
     @endif
 
     {{-- Каталог --}}
-    <section class="flat-spacing">
+    <section class="flat-spacing" id="catalog-products">
         <div class="container">
             <div class="row">
 
