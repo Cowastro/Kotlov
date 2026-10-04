@@ -68,6 +68,10 @@
         @include('partials.solid-fuel-boiler-quick-filters')
     @endif
 
+    @if ($category->slug === 'kotly-na-pelletah')
+        @include('partials.pellet-boiler-quick-filters')
+    @endif
+
     @if (in_array($category->slug, ['pechki', 'pechi-kaminy', 'pechi', 'peci-drovianye-otopitelnye', 'burzhuiki-pechi', 'dlya-dachi', 'kaminy', 'topki'], true))
         @include('partials.stove-fireplace-quick-filters')
     @endif

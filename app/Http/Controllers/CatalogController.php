@@ -3,8 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Models\Attribute;
-use App\Models\Brand;
 use App\Models\BlogPost;
+use App\Models\Brand;
 use App\Models\Category;
 use App\Models\Product;
 use App\Models\ProductAttributeValue;
@@ -70,7 +70,7 @@ class CatalogController extends Controller
                     ->when($selectedBrandId, fn ($query) => $query->where('brand_id', $selectedBrandId))
                     ->count();
             })
-            ->filter(fn($subcategory) => $subcategory->products_count > 0)
+            ->filter(fn ($subcategory) => $subcategory->products_count > 0)
             ->values();
 
         // Если выбрана подкатегория
@@ -86,19 +86,17 @@ class CatalogController extends Controller
         }
 
         // Бренды с количеством товаров в категории
-        $brands = Brand::whereHas('products', fn($q) =>
-                $q->orderable()->whereIn('category_id', $activeCategoryIds)
-            )
-            ->withCount(['products' => fn($q) =>
-                $q->orderable()->whereIn('category_id', $activeCategoryIds)
-            ])
+        $brands = Brand::whereHas('products', fn ($q) => $q->orderable()->whereIn('category_id', $activeCategoryIds)
+        )
+            ->withCount(['products' => fn ($q) => $q->orderable()->whereIn('category_id', $activeCategoryIds),
+        ])
             ->orderBy('name')
             ->get();
 
         // На родительской категории без выбранной подкатегории range-фильтры
         // (мощность, площадь) не показываем — каждая подкатегория имеет свои диапазоны,
         // их объединение в один список бессмысленно для пользователя.
-        $isParentView = $subcategories->isNotEmpty() && !request('subcategory');
+        $isParentView = $subcategories->isNotEmpty() && ! request('subcategory');
         $rangeFilterNames = ['мощность', 'обогреваемая площадь', 'площадь обогрева'];
 
         // Атрибуты для фильтрации — дедупликация по имени
@@ -117,14 +115,20 @@ class CatalogController extends Controller
 
         $pelletPowerAttributeIds = collect();
         $pelletPowerRanges = collect();
-        if ($category->slug === 'pelletnye-gorelki') {
+        $isPelletPowerCatalog = in_array($category->slug, ['pelletnye-gorelki', 'kotly-na-pelletah'], true);
+        if ($isPelletPowerCatalog) {
             $pelletPowerAttributeIds = Attribute::query()
-                ->whereIn('category_id', $attrCategoryIds)
                 ->where('type', 'value')
+                ->whereHas('values', fn ($valueQuery) => $valueQuery
+                    ->whereHas('product', fn ($productQuery) => $productQuery
+                        ->orderable()
+                        ->whereIn('category_id', $activeCategoryIds)
+                    )
+                )
                 ->get(['id', 'name'])
                 ->filter(fn (Attribute $attribute) => in_array(
                     $this->normalizeFilterName($attribute->name),
-                    ['номинальная мощность', 'мощность'],
+                    ['номинальная мощность', 'мощность номинальная', 'мощность'],
                     true
                 ))
                 ->pluck('id')
@@ -154,7 +158,7 @@ class CatalogController extends Controller
         $rawAttributes = Attribute::where('in_filter', true)
             ->where('type', 'select')
             ->whereIn('category_id', $attrCategoryIds)
-            ->with(['options' => fn($q) => $q->orderBy('sort_order')])
+            ->with(['options' => fn ($q) => $q->orderBy('sort_order')])
             ->orderBy('sort_order')
             ->get();
 
@@ -163,7 +167,7 @@ class CatalogController extends Controller
         $optionCounts = ProductAttributeValue::query()
             ->whereIn('attribute_id', $rawAttributes->pluck('id'))
             ->whereNotNull('option_id')
-            ->whereHas('product', fn($q) => $q
+            ->whereHas('product', fn ($q) => $q
                 ->orderable()
                 ->whereIn('category_id', $activeCategoryIds)
                 ->when($selectedBrandId, fn ($query) => $query->where('brand_id', $selectedBrandId))
@@ -173,15 +177,15 @@ class CatalogController extends Controller
             ->get();
 
         $filterAttributes = $rawAttributes
-            ->groupBy(fn($attr) => $this->normalizeFilterName($attr->name))
+            ->groupBy(fn ($attr) => $this->normalizeFilterName($attr->name))
             ->map(function ($group) use ($optionCounts) {
                 /** @var Attribute $primary */
                 $primary = $group->first();
                 $allAttrIds = $group->pluck('id')->all();
 
                 $mergedOptions = $group
-                    ->flatMap(fn($attr) => $attr->options)
-                    ->groupBy(fn($option) => $this->normalizeFilterName($option->name))
+                    ->flatMap(fn ($attr) => $attr->options)
+                    ->groupBy(fn ($option) => $this->normalizeFilterName($option->name))
                     ->map(function ($options) use ($allAttrIds, $optionCounts) {
                         $primaryOption = $options->sortBy('sort_order')->first();
                         $optionIds = $options->pluck('id')->all();
@@ -194,7 +198,7 @@ class CatalogController extends Controller
                             return null;
                         }
 
-                        $dto = new \stdClass();
+                        $dto = new \stdClass;
                         $dto->id = $primaryOption->id;
                         $dto->name = trim($primaryOption->name);
                         $dto->sort_order = $primaryOption->sort_order;
@@ -211,14 +215,14 @@ class CatalogController extends Controller
                     return null;
                 }
 
-                $dto = new \stdClass();
+                $dto = new \stdClass;
                 $dto->id = $primary->id;
                 $dto->name = trim($primary->name);
                 $dto->suffix = $this->visibleFilterSuffix($dto->name, $primary->suffix);
                 $dto->type = $primary->type;
                 $dto->options = $mergedOptions;
                 $dto->all_ids = $allAttrIds;
-                $dto->option_id_map = $mergedOptions->mapWithKeys(fn($option) => [
+                $dto->option_id_map = $mergedOptions->mapWithKeys(fn ($option) => [
                     $option->id => $option->all_ids,
                 ])->all();
 
@@ -229,14 +233,14 @@ class CatalogController extends Controller
 
         if ($brands->isNotEmpty()) {
             $filterAttributes = $filterAttributes
-                ->reject(fn($attr) => in_array($this->normalizeFilterName($attr->name), ['производитель', 'бренд'], true))
+                ->reject(fn ($attr) => in_array($this->normalizeFilterName($attr->name), ['производитель', 'бренд'], true))
                 ->values();
         }
 
         // Скрываем range-фильтры на родительской странице (без выбранной подкатегории)
         if ($isParentView) {
             $filterAttributes = $filterAttributes
-                ->reject(fn($attr) => in_array(
+                ->reject(fn ($attr) => in_array(
                     mb_strtolower(trim(preg_replace('/\s*\(.*\)/', '', $attr->name))),
                     $rangeFilterNames,
                     true
@@ -284,7 +288,7 @@ class CatalogController extends Controller
             $query->where('brand_id', request('brand'));
         }
 
-        if ($category->slug === 'pelletnye-gorelki' && request('power')) {
+        if ($isPelletPowerCatalog && request('power')) {
             $this->applyPelletPowerRange(
                 $query,
                 $pelletPowerAttributeIds,
@@ -296,23 +300,23 @@ class CatalogController extends Controller
         // request('attr') содержит id первичного атрибута → ищем по всем его дублям
         if (request('attr')) {
             // Строим карту: первичный id → все id дублей (включая сам)
-            $attrMap = $filterAttributes->mapWithKeys(fn($attr) => [
+            $attrMap = $filterAttributes->mapWithKeys(fn ($attr) => [
                 $attr->id => $attr,
             ]);
 
             foreach (request('attr') as $attrId => $optionIds) {
-                if (!empty($optionIds)) {
+                if (! empty($optionIds)) {
                     $attr = $attrMap->get((int) $attrId);
                     $allAttrIds = $attr?->all_ids ?? [(int) $attrId];
                     $allOptionIds = collect((array) $optionIds)
-                        ->flatMap(fn($optionId) => $attr?->option_id_map[(int) $optionId] ?? [(int) $optionId])
+                        ->flatMap(fn ($optionId) => $attr?->option_id_map[(int) $optionId] ?? [(int) $optionId])
                         ->unique()
                         ->values()
                         ->all();
 
                     $query->whereHas('allAttributeValues', function ($q) use ($allAttrIds, $allOptionIds) {
                         $q->whereIn('attribute_id', $allAttrIds)
-                          ->whereIn('option_id', $allOptionIds);
+                            ->whereIn('option_id', $allOptionIds);
                     });
                 }
             }
@@ -423,25 +427,28 @@ class CatalogController extends Controller
 
         // Город с поддомена (через middleware CitySubdomain)
         $sharedCityIn = view()->shared('cityIn');
-        $cityIn       = $sharedCityIn ?: 'в Беларуси';
-        $citySuffix   = ' ' . $cityIn;
+        $cityIn = $sharedCityIn ?: 'в Беларуси';
+        $citySuffix = ' '.$cityIn;
 
         // Подставляем город в мета-теги из БД или генерируем автоматически
         // name_in уже содержит предлог «в» (напр. «в Борисове»)
         // Поэтому «в %city%» → cityIn, а одиночный %city% → только название (без «в»)
         $cityName = preg_replace('/^в\s+/u', '', $cityIn); // «Борисове» или «Беларуси»
         $replaceCityIn = function (?string $text) use ($cityIn, $cityName): ?string {
-            if (!$text) return null;
+            if (! $text) {
+                return null;
+            }
             $text = str_replace('в %city%', $cityIn, $text);   // «в %city%» → «в Борисове»
             $text = str_replace('%city%', $cityName, $text);    // остаток «%city%» → «Борисове»
+
             return $text;
         };
 
-        $category->name        = $replaceCityIn($category->name)        ?? $category->name;
-        $category->h1          = $replaceCityIn($category->h1)          ?? $category->h1;
+        $category->name = $replaceCityIn($category->name) ?? $category->name;
+        $category->h1 = $replaceCityIn($category->h1) ?? $category->h1;
         $category->description = $replaceCityIn($category->description) ?? $category->description;
 
-        $name      = $category->name;
+        $name = $category->name;
         $nameLower = mb_strtolower($name);
 
         // Title: если старый > 70 символов — заменяем на короткий автошаблон
@@ -455,48 +462,48 @@ class CatalogController extends Controller
 
         // Description: если > 180 символов — заменяем на короткий автошаблон
         $rawDesc = $replaceCityIn($category->meta_description);
-        $autoDescription = 'Купить ' . $nameLower . ' ' . $cityIn
-                . '. Каталог ' . $allProductsCount . ' товаров.'
-                . ' Доставка по Беларуси, гарантия, монтаж.';
+        $autoDescription = 'Купить '.$nameLower.' '.$cityIn
+                .'. Каталог '.$allProductsCount.' товаров.'
+                .' Доставка по Беларуси, гарантия, монтаж.';
         $description = $seo->description(
             $rawDesc && mb_strlen($rawDesc) <= SeoMetadataBuilder::DESCRIPTION_LIMIT ? $rawDesc : null,
             $autoDescription
         );
 
         $keywords = $replaceCityIn($category->meta_keywords)
-            ?: ($name . ', купить ' . $nameLower . ' ' . $cityIn . ', цена, каталог');
+            ?: ($name.', купить '.$nameLower.' '.$cityIn.', цена, каталог');
 
-        $canonicalBase = 'https://' . request()->getHost();
-        $canonical = $canonicalBase . '/' . $category->slug;
+        $canonicalBase = 'https://'.request()->getHost();
+        $canonical = $canonicalBase.'/'.$category->slug;
 
         // Schema.org BreadcrumbList
         $breadcrumbs = [
-            ['@type' => 'ListItem', 'position' => 1, 'name' => 'Главная', 'item' => $canonicalBase . '/'],
+            ['@type' => 'ListItem', 'position' => 1, 'name' => 'Главная', 'item' => $canonicalBase.'/'],
         ];
         $pos = 2;
         if ($category->parent_id && $category->parent) {
             $parentSchemaName = trim((string) ($category->parent->name ?: $category->parent->slug));
 
             $breadcrumbs[] = [
-                '@type'    => 'ListItem',
+                '@type' => 'ListItem',
                 'position' => $pos++,
-                'name'     => $parentSchemaName,
-                'item'     => $canonicalBase . '/' . $category->parent->slug,
+                'name' => $parentSchemaName,
+                'item' => $canonicalBase.'/'.$category->parent->slug,
             ];
         }
 
         $categorySchemaName = trim((string) ($category->h1 ?: $category->name ?: $category->slug));
 
         $breadcrumbs[] = [
-            '@type'    => 'ListItem',
+            '@type' => 'ListItem',
             'position' => $pos,
-            'name'     => $categorySchemaName,
-            'item'     => $canonical,
+            'name' => $categorySchemaName,
+            'item' => $canonical,
         ];
 
         $breadcrumbSchema = [
-            '@context'        => 'https://schema.org',
-            '@type'           => 'BreadcrumbList',
+            '@context' => 'https://schema.org',
+            '@type' => 'BreadcrumbList',
             'itemListElement' => $breadcrumbs,
         ];
 
@@ -529,7 +536,7 @@ class CatalogController extends Controller
                     '@type' => 'ListItem',
                     'position' => $index + 1,
                     'name' => $product->name,
-                    'url' => 'https://kotlov.by/' . $product->category->slug . '/' . $product->slug,
+                    'url' => 'https://kotlov.by/'.$product->category->slug.'/'.$product->slug,
                 ])->all(),
             ];
 
@@ -564,7 +571,7 @@ class CatalogController extends Controller
                     '@type' => 'ListItem',
                     'position' => $index + 1,
                     'name' => $product->name,
-                    'url' => 'https://kotlov.by/' . $product->category->slug . '/' . $product->slug,
+                    'url' => 'https://kotlov.by/'.$product->category->slug.'/'.$product->slug,
                 ])->all(),
             ];
 
@@ -625,7 +632,7 @@ class CatalogController extends Controller
                     'eyebrow' => 'Основной ассортимент',
                     'title' => 'Дымоходы «Теплов и Сухов»',
                     'text' => 'Моно, сэндвич, переходы, ревизии и крепления одной модульной системы. Фильтр покажет весь доступный ассортимент бренда.',
-                    'url' => url('/dymohody') . '?brand=' . $teplovBrand->id,
+                    'url' => url('/dymohody').'?brand='.$teplovBrand->id,
                     'button' => 'Все товары бренда',
                 ];
             }
@@ -639,7 +646,7 @@ class CatalogController extends Controller
                     'eyebrow' => 'Основной ассортимент',
                     'title' => 'Трубы и фитинги Varmega',
                     'text' => 'Пресс-фитинги, резьбовые и компрессионные соединения, трубы и комплектующие одной совместимой системы.',
-                    'url' => url('/truby-i-fitingi') . '?brand=' . $varmegaBrand->id,
+                    'url' => url('/truby-i-fitingi').'?brand='.$varmegaBrand->id,
                     'button' => 'Все товары бренда',
                 ];
             }
@@ -659,7 +666,7 @@ class CatalogController extends Controller
                     'eyebrow' => 'Главный раздел',
                     'title' => 'Печи для бани',
                     'text' => 'Дровяные и чугунные банные печи для парных разного объёма. Сравните материал, тип каменки и конструкцию топочного канала.',
-                    'url' => url('/' . $saunaStoves->slug),
+                    'url' => url('/'.$saunaStoves->slug),
                     'button' => 'Смотреть банные печи',
                 ];
             }
@@ -700,7 +707,7 @@ class CatalogController extends Controller
 
         $quotedSuffix = preg_quote($suffix, '/');
         $suffixAlreadyInName = preg_match(
-            '/(?:\(\s*' . $quotedSuffix . '\s*\)|,\s*' . $quotedSuffix . ')\s*$/ui',
+            '/(?:\(\s*'.$quotedSuffix.'\s*\)|,\s*'.$quotedSuffix.')\s*$/ui',
             trim($name)
         ) === 1;
 
@@ -778,13 +785,13 @@ class CatalogController extends Controller
 
         $query->whereHas('allAttributeValues', function ($attributeQuery) use ($attributeIds, $range) {
             $attributeQuery->whereIn('attribute_id', $attributeIds);
-            $numericValue = "CAST(REPLACE(TRIM(value), ',', '.') AS DECIMAL(10,2))";
+            $numericValue = "CAST(REPLACE(TRIM(SUBSTRING_INDEX(value, '-', -1)), ',', '.') AS DECIMAL(10,2))";
 
             if ($range['min'] !== null) {
-                $attributeQuery->whereRaw($numericValue . ' > ?', [$range['min']]);
+                $attributeQuery->whereRaw($numericValue.' > ?', [$range['min']]);
             }
             if ($range['max'] !== null) {
-                $attributeQuery->whereRaw($numericValue . ' <= ?', [$range['max']]);
+                $attributeQuery->whereRaw($numericValue.' <= ?', [$range['max']]);
             }
         });
     }
