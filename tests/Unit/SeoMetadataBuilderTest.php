@@ -22,7 +22,8 @@ class SeoMetadataBuilderTest extends TestCase
         $cases = [
             'tverdotoplivnye' => 'Твердотопливные котлы: цены, купить в Минске | KOTLOV',
             'kotly-na-pelletah' => 'Пеллетные котлы: цены, купить в Минске | KOTLOV',
-            'gazovye' => 'Газовые котлы — купить в Минске | KOTLOV',
+            'gazovye' => 'Газовые котлы: цены, купить в Минске | KOTLOV',
+            'elektricheskie' => 'Электрические котлы: цены, купить в Минске | KOTLOV',
             'electric' => 'Электрические водонагреватели — купить в Минске | KOTLOV',
         ];
 

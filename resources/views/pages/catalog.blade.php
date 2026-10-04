@@ -68,6 +68,14 @@
         @include('partials.solid-fuel-boiler-quick-filters')
     @endif
 
+    @if ($category->slug === 'gazovye')
+        @include('partials.gas-boiler-quick-filters')
+    @endif
+
+    @if ($category->slug === 'elektricheskie')
+        @include('partials.electric-boiler-quick-filters')
+    @endif
+
     @if ($category->slug === 'kotly-na-pelletah')
         @include('partials.pellet-boiler-quick-filters')
     @endif

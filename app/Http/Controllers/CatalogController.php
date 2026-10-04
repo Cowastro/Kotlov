@@ -619,6 +619,21 @@ class CatalogController extends Controller
             ];
         }
 
+        if (in_array($category->slug, ['gazovye', 'elektricheskie'], true)) {
+            $schemaNodes[] = [
+                '@context' => 'https://schema.org',
+                '@type' => 'ItemList',
+                'name' => $category->slug === 'gazovye' ? 'Газовые котлы' : 'Электрические котлы',
+                'numberOfItems' => $products->count(),
+                'itemListElement' => $products->values()->map(fn (Product $product, int $index) => [
+                    '@type' => 'ListItem',
+                    'position' => $index + 1,
+                    'name' => $product->name,
+                    'url' => 'https://kotlov.by/'.$product->category->slug.'/'.$product->slug,
+                ])->all(),
+            ];
+        }
+
         $schemaJson = json_encode(
             count($schemaNodes) === 1 ? $schemaNodes[0] : $schemaNodes,
             JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES
@@ -629,6 +644,7 @@ class CatalogController extends Controller
             'tverdotoplivnye' => 'Твердотопливные котлы для отопления дома на дровах, угле и пеллетах. Подберите модель по мощности, площади обогрева и типу топлива.',
             'kotly-na-pelletah' => 'Пеллетные котлы с автоматической подачей топлива для дома и коммерческих объектов. Сравните мощность, объём бункера, автоматику и доступность сервисного обслуживания.',
             'gazovye' => 'Газовые котлы для отопления и горячего водоснабжения. Подберите одноконтурную или двухконтурную модель по мощности, способу установки и типу камеры сгорания.',
+            'elektricheskie' => 'Электрические котлы для основного или резервного отопления дома. Сравните мощность, площадь обогрева, число фаз и возможности автоматики.',
             'electric' => 'Электрические накопительные и проточные водонагреватели для квартиры, дома и дачи. Сравните объём, мощность, форму бака и способ установки.',
             'vodonagrevateli' => 'Водонагреватели для дома и квартиры: электрические, газовые, косвенные и комбинированные модели. Выберите тип нагрева, объём и способ установки.',
             'bufernye-emkosti' => 'Буферные ёмкости и теплоаккумуляторы для котлов и систем отопления. Сравните модели по объёму, конструкции и наличию теплообменника.',
