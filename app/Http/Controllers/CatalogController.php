@@ -550,18 +550,22 @@ class CatalogController extends Controller
             'press-fitingi' => 'Пресс-фитинги для быстрых неразъёмных соединений труб. Сравните диаметр, профиль прессования, материал и назначение.',
             'kompressionnye-fitingi' => 'Компрессионные фитинги для труб отопления и водоснабжения. Подберите тип соединения, диаметр и материал корпуса.',
             'krepleniya-dlya-trub' => 'Крепления для надёжной фиксации труб: клипсы, хомуты и опоры. Сравните диаметр, материал и способ монтажа.',
+            'bani-i-sauny' => 'Печи и оборудование для бани и сауны. Подберите банную печь по объёму парной, материалу, типу каменки и выносу топки.',
+            'drovyanye-pechi-dlya-bani', 'drovianye-peci-bannye' => 'Дровяные печи для бани и сауны. Сравните модели по объёму парной, материалу, типу каменки и конструкции топочного канала.',
             default => null,
         };
 
-        $catalogBrandSpotlight = null;
+        $catalogSpotlight = null;
         if ($category->slug === 'dymohody') {
             $teplovBrand = $brands->firstWhere('slug', 'teplov-i-suhov');
 
             if ($teplovBrand) {
-                $catalogBrandSpotlight = [
+                $catalogSpotlight = [
+                    'eyebrow' => 'Основной ассортимент',
                     'title' => 'Дымоходы «Теплов и Сухов»',
                     'text' => 'Моно, сэндвич, переходы, ревизии и крепления одной модульной системы. Фильтр покажет весь доступный ассортимент бренда.',
                     'url' => url('/dymohody') . '?brand=' . $teplovBrand->id,
+                    'button' => 'Все товары бренда',
                 ];
             }
         }
@@ -570,10 +574,32 @@ class CatalogController extends Controller
             $varmegaBrand = $brands->firstWhere('slug', 'varmega');
 
             if ($varmegaBrand) {
-                $catalogBrandSpotlight = [
+                $catalogSpotlight = [
+                    'eyebrow' => 'Основной ассортимент',
                     'title' => 'Трубы и фитинги Varmega',
                     'text' => 'Пресс-фитинги, резьбовые и компрессионные соединения, трубы и комплектующие одной совместимой системы.',
                     'url' => url('/truby-i-fitingi') . '?brand=' . $varmegaBrand->id,
+                    'button' => 'Все товары бренда',
+                ];
+            }
+        }
+
+        if ($category->slug === 'bani-i-sauny') {
+            $saunaStoves = $subcategories->first(
+                fn (Category $subcategory) => in_array(
+                    $subcategory->slug,
+                    ['drovyanye-pechi-dlya-bani', 'drovianye-peci-bannye'],
+                    true
+                )
+            );
+
+            if ($saunaStoves) {
+                $catalogSpotlight = [
+                    'eyebrow' => 'Главный раздел',
+                    'title' => 'Печи для бани',
+                    'text' => 'Дровяные и чугунные банные печи для парных разного объёма. Сравните материал, тип каменки и конструкцию топочного канала.',
+                    'url' => url('/' . $saunaStoves->slug),
+                    'button' => 'Смотреть банные печи',
                 ];
             }
         }
@@ -599,7 +625,7 @@ class CatalogController extends Controller
             'pelletComparisonProducts',
             'installerRecruitment',
             'catalogIntro',
-            'catalogBrandSpotlight'
+            'catalogSpotlight'
         ));
     }
 

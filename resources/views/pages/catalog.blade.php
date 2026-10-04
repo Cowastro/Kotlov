@@ -8,7 +8,7 @@
     @endpush
 @endif
 
-@if (in_array($category->slug, ['dymohody', 'truby-i-fitingi'], true))
+@if (in_array($category->slug, ['dymohody', 'truby-i-fitingi', 'bani-i-sauny'], true))
     @push('styles')
         <style>
             .catalog-brand-note{margin-top:22px}.catalog-brand-note__inner{display:flex;align-items:center;justify-content:space-between;gap:28px;padding:22px 26px;border:1px solid var(--line);border-radius:18px;background:var(--bg)}.catalog-brand-note__eyebrow{display:block;margin-bottom:5px;color:var(--text-2);font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase}.catalog-brand-note h2{margin:0 0 5px;font-size:22px;line-height:1.2}.catalog-brand-note p{max-width:790px;margin:0;color:var(--text-2);font-size:13px;line-height:1.5}.catalog-brand-note .tf-btn{flex:0 0 auto;min-width:210px;justify-content:center}@media(max-width:767px){.catalog-brand-note{margin-top:16px}.catalog-brand-note__inner{align-items:stretch;flex-direction:column;gap:16px;padding:19px}.catalog-brand-note h2{font-size:20px}.catalog-brand-note .tf-btn{box-sizing:border-box;width:100%;min-width:0}}
@@ -56,17 +56,17 @@
         @include('partials.heat-pump-category-intro')
     @endif
 
-    @if ($catalogBrandSpotlight)
+    @if ($catalogSpotlight)
         <section class="catalog-brand-note" aria-labelledby="catalog-brand-title">
             <div class="container">
                 <div class="catalog-brand-note__inner">
                     <div>
-                        <span class="catalog-brand-note__eyebrow">Основной ассортимент</span>
-                        <h2 id="catalog-brand-title">{{ $catalogBrandSpotlight['title'] }}</h2>
-                        <p>{{ $catalogBrandSpotlight['text'] }}</p>
+                        <span class="catalog-brand-note__eyebrow">{{ $catalogSpotlight['eyebrow'] }}</span>
+                        <h2 id="catalog-brand-title">{{ $catalogSpotlight['title'] }}</h2>
+                        <p>{{ $catalogSpotlight['text'] }}</p>
                     </div>
-                    <a href="{{ $catalogBrandSpotlight['url'] }}" class="tf-btn btn-white btn-stroke">
-                        Все товары бренда
+                    <a href="{{ $catalogSpotlight['url'] }}" class="tf-btn btn-white btn-stroke">
+                        {{ $catalogSpotlight['button'] }}
                     </a>
                 </div>
             </div>
