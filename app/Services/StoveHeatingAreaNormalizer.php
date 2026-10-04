@@ -59,6 +59,40 @@ class StoveHeatingAreaNormalizer
         return count($facts) === 1 ? $facts[0] : null;
     }
 
+    public function detectText(string ...$texts): ?string
+    {
+        $facts = [];
+
+        foreach ($texts as $text) {
+            $text = $this->normalize(html_entity_decode(strip_tags($text), ENT_QUOTES | ENT_HTML5, 'UTF-8'));
+            if ($text === '') {
+                continue;
+            }
+
+            preg_match_all(
+                '/(?:площад\S*|отаплива\S*|обогрева\S*)[^.!?;]{0,60}?(\d+(?:[.,]\d+)?)\s*(?:м2|кв\.?\s*м)/u',
+                $text,
+                $forward
+            );
+            preg_match_all(
+                '/(\d+(?:[.,]\d+)?)\s*(?:м2|кв\.?\s*м)[^.!?;]{0,40}?(?:площад\S*|отаплива\S*|обогрева\S*)/u',
+                $text,
+                $backward
+            );
+
+            foreach (array_merge($forward[1] ?? [], $backward[1] ?? []) as $number) {
+                $range = $this->classify((string) $number);
+                if ($range !== null) {
+                    $facts[] = $range;
+                }
+            }
+        }
+
+        $facts = array_values(array_unique($facts));
+
+        return count($facts) === 1 ? $facts[0] : null;
+    }
+
     public function classify(string $value): ?string
     {
         $normalized = $this->normalize($value);

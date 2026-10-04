@@ -49,6 +49,7 @@ class NormalizeStoveHeatingAreasCommand extends Command
             'under_50' => 0,
             'from_50_to_100' => 0,
             'over_100' => 0,
+            'from_description' => 0,
             'unchanged' => 0,
             'writes' => 0,
             'conflicting' => 0,
@@ -74,6 +75,17 @@ class NormalizeStoveHeatingAreasCommand extends Command
             $range = $hasExplicitSource
                 ? $normalizer->detect($product->specs ?: [], $rawAttributeFacts)
                 : $normalizer->detect([], $selectAttributeFacts);
+
+            if (! $hasExplicitSource && $selectAttributeFacts === []) {
+                $descriptionRange = $normalizer->detectText(
+                    (string) $product->short_description,
+                    (string) $product->content,
+                );
+                if ($descriptionRange !== null) {
+                    $range = $descriptionRange;
+                    $stats['from_description']++;
+                }
+            }
 
             if ($range === null) {
                 if ($hasExplicitSource) {

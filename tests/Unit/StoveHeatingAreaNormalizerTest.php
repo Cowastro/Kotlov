@@ -61,4 +61,20 @@ class StoveHeatingAreaNormalizerTest extends TestCase
             [['name' => 'Площадь отапливаемого помещения', 'value' => '120 м²']]
         ));
     }
+
+    public function test_it_reads_only_explicit_heated_area_from_descriptions(): void
+    {
+        $normalizer = new StoveHeatingAreaNormalizer;
+
+        $this->assertSame(
+            StoveHeatingAreaNormalizer::FROM_50_TO_100,
+            $normalizer->detectText('<p>Печь рассчитана на отопление помещения площадью до 85 м².</p>')
+        );
+        $this->assertSame(
+            StoveHeatingAreaNormalizer::OVER_100,
+            $normalizer->detectText('Эффективно обогревает до 140 кв. м жилого пространства.')
+        );
+        $this->assertNull($normalizer->detectText('Мощность 12 кВт. Размер печи: 80 × 50 см.'));
+        $this->assertNull($normalizer->detectText('Объем отапливаемого помещения — 180 м³.'));
+    }
 }
