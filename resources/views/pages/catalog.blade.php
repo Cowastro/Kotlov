@@ -1,4 +1,4 @@
-﻿@extends('layouts.amerce')
+@extends('layouts.amerce')
 
 @if ($category->slug === 'pelletnye-gorelki')
     @push('styles')
@@ -68,7 +68,7 @@
         @include('partials.solid-fuel-boiler-quick-filters')
     @endif
 
-    @if (in_array($category->slug, ['pechki', 'pechi-kaminy', 'pechi', 'peci-drovianye-otopitelnye', 'kaminy', 'topki'], true))
+    @if (in_array($category->slug, ['pechki', 'pechi-kaminy', 'pechi', 'peci-drovianye-otopitelnye', 'burzhuiki-pechi', 'dlya-dachi', 'kaminy', 'topki'], true))
         @include('partials.stove-fireplace-quick-filters')
     @endif
 

@@ -13,6 +13,13 @@ use Illuminate\Support\Facades\DB;
 
 class NormalizeStoveHeatingAreasCommand extends Command
 {
+    private const CATEGORY_SLUGS = [
+        'pechi-kaminy',
+        'peci-drovianye-otopitelnye',
+        'burzhuiki-pechi',
+        'dlya-dachi',
+    ];
+
     protected $signature = 'catalog:normalize-stove-heating-areas
         {--apply : Persist canonical heated-area ranges; the default is a dry run}
         {--sample=15 : Number of unresolved or conflicting products to show}
@@ -23,22 +30,27 @@ class NormalizeStoveHeatingAreasCommand extends Command
     public function handle(StoveHeatingAreaNormalizer $normalizer): int
     {
         $apply = (bool) $this->option('apply');
-        $category = Category::query()->where('slug', 'pechi-kaminy')->first();
+        $categories = Category::query()
+            ->whereIn('slug', self::CATEGORY_SLUGS)
+            ->get()
+            ->unique('id')
+            ->values();
 
-        if (! $category) {
-            $this->error('The pechi-kaminy category was not found.');
+        if ($categories->isEmpty()) {
+            $this->error('No heating-stove categories were found.');
 
             return self::FAILURE;
         }
 
         $products = Product::query()
-            ->where('category_id', $category->id)
+            ->whereIn('category_id', $categories->pluck('id'))
             ->where('is_active', true)
             ->where('is_archived', false)
             ->with([
                 'allAttributeValues.attribute:id,name,type',
                 'allAttributeValues.option:id,name',
                 'brand:id,name',
+                'category:id,slug,name',
                 'supplierProducts:id,product_id,source_url',
             ])
             ->orderBy('id')
@@ -120,18 +132,32 @@ class NormalizeStoveHeatingAreasCommand extends Command
         }
 
         if ($apply) {
-            DB::transaction(function () use ($category, $plans, $normalizer) {
-                $attribute = $this->ensureAttribute($category);
-                $options = $this->ensureOptions($attribute, $normalizer);
+            DB::transaction(function () use ($categories, $plans, $normalizer) {
+                $targetCategoryIds = $plans
+                    ->map(fn (array $plan) => (int) $plan['product']->category_id)
+                    ->unique();
+                $targets = $categories
+                    ->whereIn('id', $targetCategoryIds)
+                    ->mapWithKeys(function (Category $category) use ($normalizer) {
+                        $attribute = $this->ensureAttribute($category);
+                        $options = $this->ensureOptions($attribute, $normalizer);
+
+                        return [$category->id => compact('attribute', 'options')];
+                    });
 
                 foreach ($plans as $plan) {
+                    $target = $targets->get($plan['product']->category_id);
+                    if (! $target) {
+                        continue;
+                    }
+
                     ProductAttributeValue::query()->updateOrCreate(
                         [
                             'product_id' => $plan['product']->id,
-                            'attribute_id' => $attribute->id,
+                            'attribute_id' => $target['attribute']->id,
                         ],
                         [
-                            'option_id' => $options[$plan['range']]->id,
+                            'option_id' => $target['options'][$plan['range']]->id,
                             'is_checked' => false,
                             'value' => null,
                         ]
@@ -148,9 +174,10 @@ class NormalizeStoveHeatingAreasCommand extends Command
         if ($conflicting->isNotEmpty() && $sample > 0) {
             $this->warn('Conflicting area facts (left unchanged):');
             $this->table(
-                ['ID', 'Product', 'Slug', 'Brand'],
+                ['ID', 'Category', 'Product', 'Slug', 'Brand'],
                 $conflicting->take($sample)->map(fn (Product $product) => [
                     $product->id,
+                    $product->category?->name,
                     $product->name,
                     $product->slug,
                     $product->brand?->name,
@@ -160,9 +187,10 @@ class NormalizeStoveHeatingAreasCommand extends Command
         if ($unresolved->isNotEmpty() && $sample > 0) {
             $this->warn('Products without an explicit heated area (left unchanged):');
             $this->table(
-                ['ID', 'Product', 'Slug', 'Brand'],
+                ['ID', 'Category', 'Product', 'Slug', 'Brand'],
                 $unresolved->take($sample)->map(fn (Product $product) => [
                     $product->id,
+                    $product->category?->name,
                     $product->name,
                     $product->slug,
                     $product->brand?->name,
@@ -178,6 +206,7 @@ class NormalizeStoveHeatingAreasCommand extends Command
                     'name' => $product->name,
                     'slug' => $product->slug,
                     'brand' => $product->brand?->name,
+                    'category' => $product->category?->slug,
                     'source_urls' => $product->supplierProducts->pluck('source_url')->filter()->values()->all(),
                     'specs' => $product->specs,
                     'short_description' => $product->short_description,

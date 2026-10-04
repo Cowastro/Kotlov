@@ -76,6 +76,43 @@ class StoveFireplaceQuickFiltersTest extends TestCase
         $this->assertStringNotContainsString('attr%5B791%5D', $html);
     }
 
+    public function test_heating_stove_filters_use_available_material_and_area_facts(): void
+    {
+        $category = new Category(['slug' => 'peci-drovianye-otopitelnye']);
+        $filterAttributes = collect([
+            $this->attribute(791, 'Материал', [
+                $this->option(1, 'Чугун', 2),
+                $this->option(2, 'Сталь', 37),
+            ]),
+            $this->attribute(944, 'Площадь отапливаемого помещения', [
+                $this->option(3, '50 м2 - 100 м2', 14),
+            ]),
+        ]);
+
+        $html = view('partials.stove-fireplace-quick-filters', compact('category', 'filterAttributes'))->render();
+
+        $this->assertStringContainsString('Подберите отопительную печь', $html);
+        $this->assertStringContainsString('чугун', $html);
+        $this->assertStringContainsString('сталь', $html);
+        $this->assertStringContainsString('50–100 м²', $html);
+    }
+
+    public function test_root_stove_page_adapts_quick_filter_heading_to_selected_subcategory(): void
+    {
+        request()->merge(['subcategory' => 'burzhuiki-pechi']);
+        $category = new Category(['slug' => 'pechki']);
+        $filterAttributes = collect([
+            $this->attribute(791, 'Материал', [
+                $this->option(2, 'Сталь', 35),
+            ]),
+        ]);
+
+        $html = view('partials.stove-fireplace-quick-filters', compact('category', 'filterAttributes'))->render();
+
+        $this->assertStringContainsString('Подберите отопительную печь', $html);
+        $this->assertStringContainsString('35', $html);
+    }
+
     private function attribute(int $id, string $name, array $options): object
     {
         return (object) [
