@@ -136,7 +136,22 @@ class StoveHeatingAreaNormalizer
 
     public function isAreaKey(string $key): bool
     {
-        return in_array($this->normalize($key), self::AREA_KEYS, true);
+        $normalized = $this->normalize($key);
+
+        if (in_array($normalized, self::AREA_KEYS, true)) {
+            return true;
+        }
+
+        // Supplier specifications often append the unit to the key itself,
+        // for example "Отапливаемая площадь, м2". Strip only an area unit
+        // suffix; unrelated fields such as surface area must stay ignored.
+        $withoutUnit = preg_replace(
+            '/\s*[,;:]?\s*(?:м2|кв\.?\s*м)\.?\s*$/u',
+            '',
+            $normalized
+        ) ?? $normalized;
+
+        return in_array(trim($withoutUnit), self::AREA_KEYS, true);
     }
 
     private function addFact(array &$facts, string $key, mixed $value): void

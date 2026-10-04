@@ -39,6 +39,9 @@ class StoveHeatingAreaNormalizerTest extends TestCase
         $this->assertSame(StoveHeatingAreaNormalizer::OVER_100, $normalizer->detect([], [
             ['name' => 'Отапливаемая площадь', 'value' => '140'],
         ]));
+        $this->assertSame(StoveHeatingAreaNormalizer::FROM_50_TO_100, $normalizer->detect([
+            'Отапливаемая площадь, м2' => '80',
+        ]));
     }
 
     public function test_it_ignores_power_volume_and_unrelated_dimensions(): void
@@ -49,6 +52,7 @@ class StoveHeatingAreaNormalizerTest extends TestCase
             'Мощность' => '12 кВт',
             'Объем отапливаемого помещения' => '180 м³',
             'Размер помещения' => '80 м²',
+            'Площадь поверхности, м2' => '90',
         ]));
     }
 
