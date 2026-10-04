@@ -12,7 +12,7 @@ class StoveOfficialHeatingAreaCatalogTest extends TestCase
     {
         $entries = (new StoveOfficialHeatingAreaCatalog)->entries();
 
-        $this->assertCount(27, $entries);
+        $this->assertCount(32, $entries);
         foreach ($entries as $slug => $entry) {
             $this->assertNotSame('', $slug);
             $this->assertGreaterThan(0, $entry['area']);

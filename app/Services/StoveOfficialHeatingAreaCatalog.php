@@ -43,6 +43,11 @@ class StoveOfficialHeatingAreaCatalog
             'pech-termofor-professor-chd' => $this->entry(370, 'https://t-m-f.ru/catalog-new/model/otopitelnye_pechi_1/professor/', 'TMF — Профессор'),
             'termofor-ogon-batareya-5b-antracit' => $this->entry(37, 'https://t-m-f.ru/catalog-new/model/otopitelnye_pechi_1/ogon_batareya_5/', 'TMF — Огонь-Батарея 5Б'),
             'terfomor-ogon-batareya-7b-antracit' => $this->entry(56, 'https://t-m-f.ru/catalog-new/model/otopitelnye_pechi_1/ogon_batareya_7/', 'TMF — Огонь-Батарея 7Б'),
+            'termofor-ogon-batareya-5-lajt-antracit' => $this->entry(37, 'https://t-m-f.ru/catalog-new/model/otopitelnye_pechi_1/ogon_batareya_5_layt/', 'TMF — Огонь-Батарея 5 Лайт'),
+            'termofor-ogon-batareya-7-lajt-antracit' => $this->entry(56, 'https://t-m-f.ru/catalog-new/model/otopitelnye_pechi_1/ogon_batareya_7_layt/', 'TMF — Огонь-Батарея 7 Лайт'),
+            'termofor-ogon-batareya-9-lajt-antracit' => $this->entry(74, 'https://t-m-f.ru/catalog-new/model/otopitelnye_pechi_1/ogon_batareya_9_layt/', 'TMF — Огонь-Батарея 9 Лайт'),
+            'termofor-ogon-batareya-11-lajt-antracit' => $this->entry(93, 'https://t-m-f.ru/catalog-new/model/otopitelnye_pechi_1/ogon_batareya_11_layt/', 'TMF — Огонь-Батарея 11 Лайт'),
+            'termofor-student-ugol' => $this->entry(56, 'https://t-m-f.ru/catalog-new/model/otopitelnye_pechi_1/student_ugol/', 'TMF — Студент Уголь'),
         ];
     }
 
