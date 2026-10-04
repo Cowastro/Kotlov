@@ -50,6 +50,9 @@ class StoveOfficialTechnicalSpecCatalogTest extends TestCase
         $this->assertSame('74', $specs['КПД']['value']);
         $this->assertSame('120', $specs['Диаметр дымохода']['value']);
         $this->assertSame('Печь Ferguss L Ornament Cook (8606107095288) (УЦЕНКА)', $entry['product_name']);
+        $this->assertSame('Печь Ferguss L Ornament Cook с варочной плитой', $entry['h1']);
+        $this->assertStringContainsString('Ferguss L Ornament Cook', $entry['meta_title']);
+        $this->assertStringContainsString('12,8 кВт', $entry['meta_description']);
         $this->assertStringNotContainsString('Lawa', $entry['product_name']);
         $this->assertStringContainsString('Площадь отопления производителем для этой модели не заявлена', $entry['content']);
         $this->assertFalse($specs->keys()->contains(fn (string $key) => str_contains(mb_strtolower($key), 'площад')));

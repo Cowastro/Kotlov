@@ -65,7 +65,7 @@ class ApplyOfficialStoveTechnicalSpecsCommand extends Command
             $plans->map(function (array $plan): array {
                 $fields = collect($plan['evidence']['specs'])->pluck('key');
                 if (isset($plan['evidence']['product_name'])) {
-                    $fields->prepend('Название и описание');
+                    $fields->prepend('Название, H1 и описание');
                 }
 
                 return [
@@ -106,7 +106,14 @@ class ApplyOfficialStoveTechnicalSpecsCommand extends Command
                         'service_info' => $serviceInfo,
                     ];
 
-                    foreach (['product_name' => 'name', 'short_description' => 'short_description', 'content' => 'content'] as $evidenceKey => $productField) {
+                    foreach ([
+                        'product_name' => 'name',
+                        'h1' => 'h1',
+                        'meta_title' => 'meta_title',
+                        'meta_description' => 'meta_description',
+                        'short_description' => 'short_description',
+                        'content' => 'content',
+                    ] as $evidenceKey => $productField) {
                         if (isset($plan['evidence'][$evidenceKey])) {
                             $updates[$productField] = $plan['evidence'][$evidenceKey];
                         }
