@@ -136,6 +136,22 @@ Schedule::command('catalog:normalize-stove-heating-areas --apply --sample=0')
     ->runInBackground()
     ->appendOutputTo(storage_path('logs/stove-heating-area-normalization.log'));
 
+// Официальные объёмы в м³ храним и фильтруем отдельно от площади в м².
+// Так ежедневные импорты не превращают объём помещения в выдуманную площадь.
+Schedule::command('catalog:apply-official-stove-heating-volumes --apply')
+    ->dailyAt('09:06')
+    ->timezone($supplierSyncTimezone)
+    ->withoutOverlapping()
+    ->runInBackground()
+    ->appendOutputTo(storage_path('logs/stove-official-heating-volumes.log'));
+
+Schedule::command('catalog:normalize-stove-heating-volumes --apply --sample=0')
+    ->dailyAt('09:07')
+    ->timezone($supplierSyncTimezone)
+    ->withoutOverlapping()
+    ->runInBackground()
+    ->appendOutputTo(storage_path('logs/stove-heating-volume-normalization.log'));
+
 Schedule::command('catalog:normalize-stove-materials --apply --sample=0')
     ->dailyAt('09:10')
     ->timezone($supplierSyncTimezone)

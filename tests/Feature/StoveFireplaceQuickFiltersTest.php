@@ -101,6 +101,29 @@ class StoveFireplaceQuickFiltersTest extends TestCase
         $this->assertStringContainsString('/montazh-kaminov', $html);
     }
 
+    public function test_heating_stove_filters_keep_room_volume_separate_from_area(): void
+    {
+        $category = new Category(['slug' => 'peci-drovianye-otopitelnye']);
+        $filterAttributes = collect([
+            $this->attribute(944, 'Площадь отапливаемого помещения', [
+                $this->option(3, '50 м2 - 100 м2', 14),
+            ]),
+            $this->attribute(945, 'Объём отапливаемого помещения', [
+                $this->option(4, 'До 100 м3', 3),
+                $this->option(5, '101 м3 - 200 м3', 11),
+                $this->option(6, 'Более 200 м3', 2),
+            ]),
+        ]);
+
+        $html = view('partials.stove-fireplace-quick-filters', compact('category', 'filterAttributes'))->render();
+
+        $this->assertStringContainsString('50–100 м²', $html);
+        $this->assertStringContainsString('до 100 м³', $html);
+        $this->assertStringContainsString('101–200 м³', $html);
+        $this->assertStringContainsString('Объём', $html);
+        $this->assertStringContainsString('attr%5B945%5D%5B0%5D=5', $html);
+    }
+
     public function test_root_stove_page_adapts_quick_filter_heading_to_selected_subcategory(): void
     {
         request()->merge(['subcategory' => 'burzhuiki-pechi']);
