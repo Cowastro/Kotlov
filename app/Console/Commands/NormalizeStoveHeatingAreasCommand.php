@@ -8,6 +8,7 @@ use App\Models\Category;
 use App\Models\Product;
 use App\Models\ProductAttributeValue;
 use App\Services\StoveHeatingAreaNormalizer;
+use App\Services\StoveHeatingAreaFromVolumeConverter;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 
@@ -28,7 +29,10 @@ class NormalizeStoveHeatingAreasCommand extends Command
 
     protected $description = 'Map explicit stove heated-area facts to the catalog range filter';
 
-    public function handle(StoveHeatingAreaNormalizer $normalizer): int
+    public function handle(
+        StoveHeatingAreaNormalizer $normalizer,
+        StoveHeatingAreaFromVolumeConverter $volumeConverter,
+    ): int
     {
         $apply = (bool) $this->option('apply');
         $categories = Category::query()
@@ -66,6 +70,7 @@ class NormalizeStoveHeatingAreasCommand extends Command
             'from_50_to_100' => 0,
             'over_100' => 0,
             'from_description' => 0,
+            'from_structured_volume' => 0,
             'unchanged' => 0,
             'writes' => 0,
             'conflicting' => 0,
@@ -92,7 +97,26 @@ class NormalizeStoveHeatingAreasCommand extends Command
                 ? $normalizer->detect($product->specs ?: [], $rawAttributeFacts)
                 : $normalizer->detect([], $selectAttributeFacts);
 
-            if (! $hasExplicitSource && $selectAttributeFacts === []) {
+            if ($range === null && ! $hasExplicitSource) {
+                $volumeAttributeFacts = $product->allAttributeValues
+                    ->filter(fn (ProductAttributeValue $row) => $row->attribute
+                        && $row->attribute->type !== 'select'
+                        && $volumeConverter->isVolumeKey($row->attribute->name))
+                    ->map(fn (ProductAttributeValue $row) => [
+                        'name' => $row->attribute->name,
+                        'value' => $row->option?->name ?? $row->value,
+                    ])
+                    ->values()
+                    ->all();
+                $derivedArea = $volumeConverter->detect($product->specs ?: [], $volumeAttributeFacts);
+
+                if ($derivedArea !== null) {
+                    $range = $normalizer->classify((string) $derivedArea);
+                    $stats['from_structured_volume']++;
+                }
+            }
+
+            if ($range === null && ! $hasExplicitSource && $selectAttributeFacts === []) {
                 $descriptionRange = $normalizer->detectText(
                     (string) $product->short_description,
                     (string) $product->content,
@@ -169,7 +193,7 @@ class NormalizeStoveHeatingAreasCommand extends Command
 
         $this->table(['Metric', 'Count'], collect($stats)->map(fn ($value, $key) => [$key, $value])->values());
         $this->line('Mode: '.($apply ? 'APPLY' : 'DRY RUN'));
-        $this->line('Only explicit heated-area facts were used; no power or room-volume estimates were made.');
+        $this->line('Explicit heated area has priority. Otherwise structured heated volume is divided by the standard 2.5 m ceiling height; power is never converted.');
 
         $sample = max(0, (int) $this->option('sample'));
         if ($conflicting->isNotEmpty() && $sample > 0) {
