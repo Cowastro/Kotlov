@@ -205,6 +205,56 @@ class StoveOfficialTechnicalSpecCatalog
                 '120',
                 'Верхнее',
             ),
+            'pec-kamin-meta-bel-lava' => $this->metabelModel(
+                'печь-камин «Лава» АОТ-6,0',
+                '450×400×900',
+                '6',
+                '150',
+                '95',
+                'Верхнее и заднее',
+                [
+                    $this->spec('Материал корпуса', 'Сталь', ''),
+                    $this->spec('КПД', 'не менее 75', '%'),
+                    $this->spec('Система «чистое стекло»', 'Да', ''),
+                    $this->spec('Система «длительное горение»', 'Да', ''),
+                    $this->spec('Гарантия', '36', 'мес.'),
+                ],
+                'https://metabel.by/produktsiya/pechi-kaminy/pech-kamin-lava-aot-6-0',
+            ),
+            'pec-kamin-meta-bel-moskva-9' => $this->metabelModel(
+                'печь-камин «Москва 9» АОТ-9,0-01',
+                '554×540×1048',
+                '9',
+                '150',
+                '150',
+                'Верхнее и заднее',
+                [
+                    $this->spec('Материал корпуса', 'Сталь', ''),
+                    $this->spec('КПД', 'не менее 75', '%'),
+                    $this->spec('Система «чистое стекло»', 'Да', ''),
+                    $this->spec('Система «длительное горение»', 'Да', ''),
+                    $this->spec('Гарантия', '36', 'мес.'),
+                ],
+                'https://metabel.by/produktsiya/pechi-kaminy/pech-kamin-moskva-9-aot-9-0-01',
+            ),
+            'pec-kamin-meta-bel-monblan-700' => $this->metabelModel(
+                'печь-камин «Монблан 700» АОТ-10,0',
+                '690×570×906',
+                '10',
+                '150',
+                '263',
+                'Верхнее и заднее',
+                [
+                    $this->spec('Материал корпуса', 'Сталь', ''),
+                    $this->spec('Толщина стали', 'до 6', 'мм'),
+                    $this->spec('КПД', 'не менее 75', '%'),
+                    $this->spec('Система «чистое стекло»', 'Да', ''),
+                    $this->spec('Система «регулируемого вторичного дожига»', 'Да', ''),
+                    $this->spec('Подача воздуха извне', 'Да', ''),
+                    $this->spec('Гарантия', '36', 'мес.'),
+                ],
+                'https://metabel.by/produktsiya/pechi-kaminy/pech-kamin-monblan-700-aot-10-0',
+            ),
         ];
     }
 
@@ -276,6 +326,7 @@ class StoveOfficialTechnicalSpecCatalog
         string $weight,
         string $chimneyConnection,
         array $extraSpecs = [],
+        string $sourceUrl = 'https://metabel.by/images/produktsiya-meta-bel.pdf',
     ): array {
         return [
             'specs' => [
@@ -286,7 +337,7 @@ class StoveOfficialTechnicalSpecCatalog
                 $this->spec('Масса', $weight, 'кг'),
                 ...$extraSpecs,
             ],
-            'source_url' => 'https://metabel.by/images/produktsiya-meta-bel.pdf',
+            'source_url' => $sourceUrl,
             'source_label' => "Мета-Бел — {$label}, официальный каталог",
         ];
     }

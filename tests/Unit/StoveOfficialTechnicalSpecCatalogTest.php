@@ -11,7 +11,7 @@ class StoveOfficialTechnicalSpecCatalogTest extends TestCase
     {
         $entries = (new StoveOfficialTechnicalSpecCatalog)->entries();
 
-        $this->assertCount(28, $entries);
+        $this->assertCount(31, $entries);
 
         foreach ($entries as $entry) {
             $keys = collect($entry['specs'])->pluck('key');
@@ -155,5 +155,53 @@ class StoveOfficialTechnicalSpecCatalogTest extends TestCase
 
         $this->assertSame('Есть', collect($entries['pech-otopitelnaya-meta-bel-yamal']['specs'])->keyBy('key')['Варочная поверхность']['value']);
         $this->assertSame('Есть', collect($entries['pec-kamin-meta-bel-narva-7m']['specs'])->keyBy('key')['Варочная поверхность']['value']);
+    }
+
+    public function test_hidden_current_metabel_cards_supply_exact_specs_for_lava_moscow_and_montblanc(): void
+    {
+        $entries = (new StoveOfficialTechnicalSpecCatalog)->entries();
+        $expected = [
+            'pec-kamin-meta-bel-lava' => [
+                'url' => 'https://metabel.by/produktsiya/pechi-kaminy/pech-kamin-lava-aot-6-0',
+                'dimensions' => '450×400×900',
+                'power' => '6',
+                'weight' => '95',
+            ],
+            'pec-kamin-meta-bel-moskva-9' => [
+                'url' => 'https://metabel.by/produktsiya/pechi-kaminy/pech-kamin-moskva-9-aot-9-0-01',
+                'dimensions' => '554×540×1048',
+                'power' => '9',
+                'weight' => '150',
+            ],
+            'pec-kamin-meta-bel-monblan-700' => [
+                'url' => 'https://metabel.by/produktsiya/pechi-kaminy/pech-kamin-monblan-700-aot-10-0',
+                'dimensions' => '690×570×906',
+                'power' => '10',
+                'weight' => '263',
+            ],
+        ];
+
+        foreach ($expected as $slug => $expectedEntry) {
+            $entry = $entries[$slug];
+            $specs = collect($entry['specs'])->keyBy('key');
+
+            $this->assertSame($expectedEntry['url'], $entry['source_url']);
+            $this->assertSame($expectedEntry['dimensions'], $specs['Габариты (Ш×Г×В)']['value']);
+            $this->assertSame($expectedEntry['power'], $specs['Мощность']['value']);
+            $this->assertSame($expectedEntry['weight'], $specs['Масса']['value']);
+            $this->assertSame('150', $specs['Диаметр дымохода']['value']);
+            $this->assertSame('Сталь', $specs['Материал корпуса']['value']);
+            $this->assertSame('не менее 75', $specs['КПД']['value']);
+            $this->assertSame('36', $specs['Гарантия']['value']);
+            $this->assertFalse($specs->keys()->contains(
+                fn (string $key) => str_contains(mb_strtolower($key), 'площад')
+                    || str_contains(mb_strtolower($key), 'объём помещения')
+            ));
+        }
+
+        $montblanc = collect($entries['pec-kamin-meta-bel-monblan-700']['specs'])->keyBy('key');
+        $this->assertSame('до 6', $montblanc['Толщина стали']['value']);
+        $this->assertSame('Да', $montblanc['Система «регулируемого вторичного дожига»']['value']);
+        $this->assertSame('Да', $montblanc['Подача воздуха извне']['value']);
     }
 }
