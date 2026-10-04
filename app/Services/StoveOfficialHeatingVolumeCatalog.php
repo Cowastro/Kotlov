@@ -33,6 +33,19 @@ class StoveOfficialHeatingVolumeCatalog
             'pech-otopitelnaya-vezuviy-komfort-100-dt-3' => $this->entry('до 100 м³', 'https://vezuviy.su/otopitelnoe-oborudovanie/pechi-otopitelnye/pech-otopitelnaya-vezuviy-komfort-100-dt-3/', 'Везувий — Комфорт 100 ДТ-3'),
             'pech-otopitelnaya-vezuviy-komfort-200-dt-3s' => $this->entry('до 200 м³', 'https://vezuviy.su/otopitelnoe-oborudovanie/pechi-otopitelnye/otopitelnye-pechi-seriya-komfort/', 'Везувий — Комфорт 200 ДТ-3С'),
             'pech-otopitelnaya-vezuviy-komfort-300-dt-3s' => $this->entry('до 300 м³', 'https://vezuviy.su/otopitelnoe-oborudovanie/pechi-otopitelnye/otopitelnye-pechi-seriya-komfort/', 'Везувий — Комфорт 300 ДТ-3С'),
+            'otopitelnaya-pech-tsar-pechi-burjuyka' => $this->entry('30–50 м³', 'https://banpechi.ru/pechi-otopitelnyie-v-minske/burzhuyka/', 'Царь-Печи — Буржуйка'),
+            'pech-car-pechi-matreshka-malaya-1' => $this->entry('70–100 м³', 'https://banpechi.ru/pechi-otopitelnyie-v-minske/matreshka-malaya-1/', 'Царь-Печи — Матрёшка малая 1'),
+            'pech-tsar-pechi-matreshka-bolshaya-1' => $this->entry('100–170 м³', 'https://banpechi.ru/pechi-otopitelnyie-v-minske/matreshka-bolshaya-1/', 'Царь-Печи — Матрёшка большая 1'),
+            'pech-tsar-pechi-matreshka-bolshaya-1-chds' => $this->entry('100–170 м³', 'https://banpechi.ru/pechi-otopitelnyie-v-minske/matreshka-bolshaya-1/', 'Царь-Печи — Матрёшка большая 1 ЧДС'),
+            'pech-tsar-pechi-matreshka-bolshaya-2' => $this->entry('150–200 м³', 'https://banpechi.ru/pechi-otopitelnyie-v-minske/matreshka-bolshaya-2/', 'Царь-Печи — Матрёшка большая 2'),
+            'pech-tsar-pechi-matreshka-bolshaya-2-chds' => $this->entry('150–200 м³', 'https://banpechi.ru/pechi-otopitelnyie-v-minske/matreshka-bolshaya-2/', 'Царь-Печи — Матрёшка большая 2 ЧДС'),
+            'pech-tsar-pechi-matreshka-malaya-1-chds' => $this->entry('70–100 м³', 'https://banpechi.ru/pechi-otopitelnyie-v-minske/matreshka-malaya-1/', 'Царь-Печи — Матрёшка малая 1 ЧДС'),
+            'pech-tsar-pechi-matreshka-malaya-2-chds' => $this->entry('80–130 м³', 'https://banpechi.ru/pechi-otopitelnyie-v-minske/matreshka-malaya-2/', 'Царь-Печи — Матрёшка малая 2 ЧДС'),
+            'pech-car-pechi-zlata' => $this->entry('35–50 м³', 'https://banpechi.ru/pechi-otopitelnyie-v-minske/zlata/', 'Царь-Печи — Злата'),
+            'pech-car-pechi-zolovka' => $this->entry('50–70 м³', 'https://banpechi.ru/pechi-otopitelnyie-v-minske/zolovka/', 'Царь-Печи — Золовка'),
+            'pech-tsar-pechi-milana' => $this->entry('35–45 м³', 'https://banpechi.ru/pechi-otopitelnyie-v-minske/milana/', 'Царь-Печи — Милана'),
+            'pech-tsar-pechi-yarilo' => $this->entry('40–60 м³', 'https://banpechi.ru/product/otopitelnue/yarilo/', 'Царь-Печи — Ярило'),
+            'pech-tsar-pechi-yarilo-dekor' => $this->entry('40–60 м³', 'https://banpechi.ru/product/otopitelnue/yarilo/', 'Царь-Печи — Ярило Декор'),
         ];
     }
 

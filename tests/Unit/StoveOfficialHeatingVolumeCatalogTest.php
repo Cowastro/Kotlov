@@ -13,7 +13,7 @@ class StoveOfficialHeatingVolumeCatalogTest extends TestCase
         $normalizer = new StoveHeatingVolumeNormalizer;
         $entries = (new StoveOfficialHeatingVolumeCatalog)->entries();
 
-        $this->assertCount(21, $entries);
+        $this->assertCount(34, $entries);
 
         foreach ($entries as $slug => $entry) {
             $this->assertNotSame('', $slug);
