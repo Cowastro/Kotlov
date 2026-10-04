@@ -11,7 +11,7 @@ class StoveOfficialTechnicalSpecCatalogTest extends TestCase
     {
         $entries = (new StoveOfficialTechnicalSpecCatalog)->entries();
 
-        $this->assertCount(31, $entries);
+        $this->assertCount(33, $entries);
 
         foreach ($entries as $entry) {
             $keys = collect($entry['specs'])->pluck('key');
@@ -203,5 +203,42 @@ class StoveOfficialTechnicalSpecCatalogTest extends TestCase
         $this->assertSame('до 6', $montblanc['Толщина стали']['value']);
         $this->assertSame('Да', $montblanc['Система «регулируемого вторичного дожига»']['value']);
         $this->assertSame('Да', $montblanc['Подача воздуха извне']['value']);
+    }
+
+    public function test_napoli_and_potapych_use_exact_current_manufacturer_cards_without_inferred_area(): void
+    {
+        $entries = (new StoveOfficialTechnicalSpecCatalog)->entries();
+        $napoli = collect($entries['blist-pec-napoli']['specs'])->keyBy('key');
+        $potapych = collect($entries['pech-otopitelnaya-tsar-pechi-potapyich']['specs'])->keyBy('key');
+
+        $this->assertSame(
+            'https://blist.co.rs/proizvodi/peci-i-kamini-na-cvrsto-gorivo/blist-br/',
+            $entries['blist-pec-napoli']['source_url']
+        );
+        $this->assertSame('510×490×1070', $napoli['Габариты (Ш×Г×В)']['value']);
+        $this->assertSame('440×390×340', $napoli['Размеры топки (Ш×Г×В)']['value']);
+        $this->assertSame('430×300×220', $napoli['Размеры духовки (Ш×Г×В)']['value']);
+        $this->assertSame('10–12', $napoli['Мощность']['value']);
+        $this->assertSame('94', $napoli['Масса']['value']);
+        $this->assertSame('118', $napoli['Диаметр дымохода']['value']);
+        $this->assertSame('Сталь', $napoli['Материал корпуса']['value']);
+
+        $this->assertSame(
+            'https://banpechi.ru/product/otopitelnue/potapyich-3-mm/',
+            $entries['pech-otopitelnaya-tsar-pechi-potapyich']['source_url']
+        );
+        $this->assertSame('320×400×350', $potapych['Габариты (Ш×Г×В)']['value']);
+        $this->assertSame('18', $potapych['Масса']['value']);
+        $this->assertSame('115', $potapych['Диаметр дымохода']['value']);
+        $this->assertSame('Сталь', $potapych['Материал корпуса']['value']);
+        $this->assertSame('3', $potapych['Толщина стали']['value']);
+        $this->assertFalse($potapych->has('Мощность'));
+
+        foreach ([$napoli, $potapych] as $specs) {
+            $this->assertFalse($specs->keys()->contains(
+                fn (string $key) => str_contains(mb_strtolower($key), 'площад')
+                    || str_contains(mb_strtolower($key), 'объём помещения')
+            ));
+        }
     }
 }

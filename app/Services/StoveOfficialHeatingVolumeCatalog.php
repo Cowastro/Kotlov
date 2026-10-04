@@ -60,6 +60,7 @@ class StoveOfficialHeatingVolumeCatalog
             'pech-tsar-pechi-milana' => $this->entry('30–45 м³', 'https://banpechi.ru/product/otopitelnue/milana/', 'Царь-Печи — Милана'),
             'pech-tsar-pechi-yarilo' => $this->entry('45–100 м³', 'https://banpechi.ru/product/otopitelnue/yarilo/', 'Царь-Печи — Ярило'),
             'pech-tsar-pechi-yarilo-dekor' => $this->entry('45–100 м³', 'https://banpechi.ru/product/otopitelnue/yarilo/', 'Царь-Печи — Ярило Декор'),
+            'pech-otopitelnaya-tsar-pechi-potapyich' => $this->entry('45–60 м³', 'https://banpechi.ru/product/otopitelnue/potapyich-3-mm/', 'Царь-Печи — Потапыч 3 мм'),
             'otopitelnaya-pech-pegas-termo-150' => $this->entry('до 150 м³', 'https://pegas-pech.ru/katalog/item/pech_pegas_termo_150/', 'Pegas — Термо 150'),
             'otopitelnaya-pech-pegas-termo-150-steklo' => $this->entry('до 150 м³', 'https://pegas-pech.ru/katalog/item/pech_pegas_termo_150_steklo/', 'Pegas — Термо 150 Стекло'),
             'otopitelnaya-pech-pegas-termo-200' => $this->entry('до 200 м³', 'https://pegas-pech.ru/katalog/katalog2/', 'Pegas — Термо 200'),

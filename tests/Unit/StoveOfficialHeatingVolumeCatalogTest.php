@@ -2,6 +2,8 @@
 
 namespace Tests\Unit;
 
+use App\Services\StoveHeatingAreaFromVolumeConverter;
+use App\Services\StoveHeatingAreaNormalizer;
 use App\Services\StoveHeatingVolumeNormalizer;
 use App\Services\StoveOfficialHeatingVolumeCatalog;
 use PHPUnit\Framework\TestCase;
@@ -13,7 +15,7 @@ class StoveOfficialHeatingVolumeCatalogTest extends TestCase
         $normalizer = new StoveHeatingVolumeNormalizer;
         $entries = (new StoveOfficialHeatingVolumeCatalog)->entries();
 
-        $this->assertCount(64, $entries);
+        $this->assertCount(65, $entries);
 
         foreach ($entries as $slug => $entry) {
             $this->assertNotSame('', $slug);
@@ -164,9 +166,22 @@ class StoveOfficialHeatingVolumeCatalogTest extends TestCase
             'pech-tsar-pechi-milana' => '30–45 м³',
             'pech-tsar-pechi-yarilo' => '45–100 м³',
             'pech-tsar-pechi-yarilo-dekor' => '45–100 м³',
+            'pech-otopitelnaya-tsar-pechi-potapyich' => '45–60 м³',
         ] as $slug => $volume) {
             $this->assertSame($volume, $entries[$slug]['volume']);
             $this->assertStringStartsWith('https://banpechi.ru/product/otopitelnue/', $entries[$slug]['source_url']);
         }
+
+        $this->assertSame(
+            'https://banpechi.ru/product/otopitelnue/potapyich-3-mm/',
+            $entries['pech-otopitelnaya-tsar-pechi-potapyich']['source_url']
+        );
+
+        $area = (new StoveHeatingAreaFromVolumeConverter)->convert('45–60 м³');
+        $this->assertSame(24.0, $area);
+        $this->assertSame(
+            StoveHeatingAreaNormalizer::UNDER_50,
+            (new StoveHeatingAreaNormalizer)->classify((string) $area)
+        );
     }
 }

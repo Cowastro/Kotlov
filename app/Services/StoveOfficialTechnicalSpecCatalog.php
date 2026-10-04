@@ -46,6 +46,34 @@ class StoveOfficialTechnicalSpecCatalog
             'blist-pec-roma-e-bezevaia' => $models['roma-e'],
             'blist-pec-roma-s-bezevaia' => $models['roma-s'],
             'blist-pec-roma-g-bezevaia' => $models['roma-g'],
+            'blist-pec-napoli' => [
+                'specs' => [
+                    $this->spec('Габариты (Ш×Г×В)', '510×490×1070', 'мм'),
+                    $this->spec('Размеры топки (Ш×Г×В)', '440×390×340', 'мм'),
+                    $this->spec('Размеры духовки (Ш×Г×В)', '430×300×220', 'мм'),
+                    $this->spec('Мощность', '10–12', 'кВт'),
+                    $this->spec('Масса', '94', 'кг'),
+                    $this->spec('Диаметр дымохода', '118', 'мм'),
+                    $this->spec('Материал корпуса', 'Сталь', ''),
+                    $this->spec('Духовой шкаф', 'Есть', ''),
+                ],
+                'source_url' => 'https://blist.co.rs/proizvodi/peci-i-kamini-na-cvrsto-gorivo/blist-br/',
+                'source_label' => 'Blist — NAPOLI, официальная карточка и техническая инструкция',
+            ],
+            'pech-otopitelnaya-tsar-pechi-potapyich' => [
+                'specs' => [
+                    $this->spec('Габариты (Ш×Г×В)', '320×400×350', 'мм'),
+                    $this->spec('Материал корпуса', 'Сталь', ''),
+                    $this->spec('Толщина стали', '3', 'мм'),
+                    $this->spec('Масса', '18', 'кг'),
+                    $this->spec('Диаметр дымохода', '115', 'мм'),
+                    $this->spec('Максимальная длина полена', '40', 'см'),
+                    $this->spec('Вид топлива', 'Дрова', ''),
+                    $this->spec('Гарантия', '5', 'лет'),
+                ],
+                'source_url' => 'https://banpechi.ru/product/otopitelnue/potapyich-3-mm/',
+                'source_label' => 'Царь-Печи — Потапыч 3 мм, официальная карточка',
+            ],
             'ferguss-pec-ferguss-l-8606107095288-lawa-cook-ucenka' => [
                 'specs' => [
                     $this->spec('Габариты (Ш×Г×В)', '535×445×926', 'мм'),
