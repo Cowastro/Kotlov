@@ -10,6 +10,16 @@ use Illuminate\Support\Facades\DB;
 
 class ClassifyStoveCatalogProductsCommand extends Command
 {
+    private const TARGET_CATEGORY_ALIASES = [
+        'drovyanye-pechi-dlya-bani' => [
+            'drovyanye-pechi-dlya-bani',
+            'drovianye-peci-bannye',
+            'pechi-dlya-bani',
+        ],
+        'mangalyi' => ['mangalyi'],
+        'aksessuary-kaminy' => ['aksessuary-kaminy'],
+    ];
+
     protected $signature = 'catalog:classify-stove-products
         {--apply : Move unambiguous non-heating products; the default is a dry run}
         {--sample=50 : Number of planned moves to show}';
@@ -42,12 +52,31 @@ class ClassifyStoveCatalogProductsCommand extends Command
             ->filter()
             ->values();
 
-        $targetSlugs = $plans->pluck('target_slug')->unique()->values();
+        $targetSlugs = $plans
+            ->pluck('target_slug')
+            ->unique()
+            ->flatMap(fn (string $slug) => self::TARGET_CATEGORY_ALIASES[$slug] ?? [$slug])
+            ->unique()
+            ->values();
         $targets = Category::query()
             ->whereIn('slug', $targetSlugs)
             ->get()
             ->keyBy('slug');
-        $missingTargets = $targetSlugs->reject(fn (string $slug) => $targets->has($slug))->values();
+        $resolvedTargets = $plans
+            ->pluck('target_slug')
+            ->unique()
+            ->mapWithKeys(function (string $slug) use ($targets) {
+                $aliases = self::TARGET_CATEGORY_ALIASES[$slug] ?? [$slug];
+                $category = collect($aliases)
+                    ->map(fn (string $alias) => $targets->get($alias))
+                    ->first();
+
+                return [$slug => $category];
+            });
+        $missingTargets = $resolvedTargets
+            ->filter(fn ($category) => $category === null)
+            ->keys()
+            ->values();
 
         $this->table(['Metric', 'Count'], [
             ['products_checked', $products->count()],
@@ -65,7 +94,7 @@ class ClassifyStoveCatalogProductsCommand extends Command
                     $plan['product']->name,
                     $plan['product']->slug,
                     $source->slug,
-                    $plan['target_slug'],
+                    $resolvedTargets[$plan['target_slug']]?->slug ?? $plan['target_slug'],
                 ])->all()
             );
         }
@@ -78,10 +107,10 @@ class ClassifyStoveCatalogProductsCommand extends Command
         }
 
         if ($this->option('apply') && $plans->isNotEmpty()) {
-            DB::transaction(function () use ($plans, $targets) {
+            DB::transaction(function () use ($plans, $resolvedTargets) {
                 foreach ($plans as $plan) {
                     $plan['product']->update([
-                        'category_id' => $targets[$plan['target_slug']]->id,
+                        'category_id' => $resolvedTargets[$plan['target_slug']]->id,
                     ]);
                 }
             });
