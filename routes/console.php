@@ -125,3 +125,20 @@ Schedule::command('supplier:sync-stank')
     ->withoutOverlapping()
     ->runInBackground()
     ->appendOutputTo(storage_path('logs/stank-sync.log'));
+
+// Каталог печей: после импортов связываем только явно указанные характеристики
+// с едиными фильтрами. Команды не вычисляют площадь по мощности/объёму и не
+// угадывают материал по бренду, поэтому неподтверждённые карточки не меняются.
+Schedule::command('catalog:normalize-stove-heating-areas --apply --sample=0')
+    ->dailyAt('09:05')
+    ->timezone($supplierSyncTimezone)
+    ->withoutOverlapping()
+    ->runInBackground()
+    ->appendOutputTo(storage_path('logs/stove-heating-area-normalization.log'));
+
+Schedule::command('catalog:normalize-stove-materials --apply --sample=0')
+    ->dailyAt('09:10')
+    ->timezone($supplierSyncTimezone)
+    ->withoutOverlapping()
+    ->runInBackground()
+    ->appendOutputTo(storage_path('logs/stove-material-normalization.log'));
