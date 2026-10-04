@@ -45,6 +45,7 @@ class StoveOfficialHeatingVolumeCatalog
             'fireway-pec-cugunnaia-tango' => $this->entry('до 150 м³', 'https://fireway.pro/pech-chugunnaya-ka.html', 'FireWay — Tango'),
             'pec-kamin-everest-n12m' => $this->entry('до 240 м³', 'https://everest-pech.com/chugunnye-pechi-kaminy/pech-kamin-everest-n12m/', 'Эверест — Н12М'),
             'pec-kamin-everest-n16' => $this->entry('до 320 м³', 'https://everest-pech.com/chugunnye-pechi-kaminy/pech-kamin-everest-h16/', 'Эверест — Н16'),
+            'pec-kamin-everest-b7k' => $this->entry('до 140 м³', 'https://everest-pech.com/chugunnye-pechi-kaminy/pech-kamin-everest-b7u/', 'Эверест — B7'),
             'pech-otopitelnaya-kennet-ariya-200-11429' => $this->entry('до 200 м³', 'https://www.kennet.ru/catalog/dlya_doma/otopitelnye_pechi/1462/', 'Kennet — Ария 200'),
             'otopitelnaya-pech-tsar-pechi-burjuyka' => $this->entry('30–50 м³', 'https://banpechi.ru/pechi-otopitelnyie-v-minske/burzhuyka/', 'Царь-Печи — Буржуйка'),
             'pech-car-pechi-matreshka-malaya-1' => $this->entry('70–100 м³', 'https://banpechi.ru/pechi-otopitelnyie-v-minske/matreshka-malaya-1/', 'Царь-Печи — Матрёшка малая 1'),

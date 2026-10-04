@@ -13,7 +13,7 @@ class StoveOfficialHeatingVolumeCatalogTest extends TestCase
         $normalizer = new StoveHeatingVolumeNormalizer;
         $entries = (new StoveOfficialHeatingVolumeCatalog)->entries();
 
-        $this->assertCount(62, $entries);
+        $this->assertCount(63, $entries);
 
         foreach ($entries as $slug => $entry) {
             $this->assertNotSame('', $slug);
@@ -116,6 +116,7 @@ class StoveOfficialHeatingVolumeCatalogTest extends TestCase
         foreach ([
             'pec-kamin-everest-n12m' => 'до 240 м³',
             'pec-kamin-everest-n16' => 'до 320 м³',
+            'pec-kamin-everest-b7k' => 'до 140 м³',
         ] as $slug => $volume) {
             $this->assertSame($volume, $entries[$slug]['volume']);
             $this->assertStringStartsWith('https://everest-pech.com/', $entries[$slug]['source_url']);
