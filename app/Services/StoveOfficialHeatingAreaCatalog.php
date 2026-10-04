@@ -48,6 +48,11 @@ class StoveOfficialHeatingAreaCatalog
             'termofor-ogon-batareya-9-lajt-antracit' => $this->entry(74, 'https://t-m-f.ru/catalog-new/model/otopitelnye_pechi_1/ogon_batareya_9_layt/', 'TMF — Огонь-Батарея 9 Лайт'),
             'termofor-ogon-batareya-11-lajt-antracit' => $this->entry(93, 'https://t-m-f.ru/catalog-new/model/otopitelnye_pechi_1/ogon_batareya_11_layt/', 'TMF — Огонь-Батарея 11 Лайт'),
             'termofor-student-ugol' => $this->entry(56, 'https://t-m-f.ru/catalog-new/model/otopitelnye_pechi_1/student_ugol/', 'TMF — Студент Уголь'),
+            'termofor-inzhener-ugol' => $this->entry(93, 'https://t-m-f.ru/catalog-new/model/otopitelnye_pechi_1/inzhener_ugol/', 'TMF — Инженер Уголь'),
+            'termofor-professor-ugol' => $this->entry(370, 'https://t-m-f.ru/catalog-new/model/otopitelnye_pechi_1/professor_ugol/', 'TMF — Профессор Уголь'),
+            'termofor-normal-2-turbo-antracit' => $this->entry(45, 'https://t-m-f.ru/catalog-new/model/otopitelnye_pechi_1/normal_2_turbo/', 'TMF — Нормаль-2 Турбо'),
+            'pech-termofor-ogon-batareya-7-antracit-seryj-metallik' => $this->entry(56, 'https://t-m-f.ru/catalog-new/model/otopitelnye_pechi_1/ogon_batareya_7/', 'TMF — Огонь-Батарея 7'),
+            'termofor-zolushka-lajt' => $this->entry(19, 'https://t-m-f.ru/catalog-new/model/otopitelnye_pechi_1/zolushka_2016_layt/', 'TMF — Золушка 2016 Лайт'),
         ];
     }
 
