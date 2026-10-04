@@ -9,7 +9,7 @@ class StoveOfficialTechnicalSpecCatalog
      * manufacturer catalogues. Heated area is deliberately absent unless it
      * is explicitly published by the manufacturer.
      *
-     * @return array<string, array{specs: array<int, array{key: string, value: string, unit: string}>, source_url: string, source_label: string}>
+     * @return array<string, array<string, mixed>>
      */
     public function entries(): array
     {
@@ -58,6 +58,9 @@ class StoveOfficialTechnicalSpecCatalog
                 ],
                 'source_url' => 'https://www.ikoma.hr/Content/product/document/ferguss-katalog-2018.pdf',
                 'source_label' => 'Ferguss — каталог 2018, EAN 8606107095288',
+                'product_name' => 'Печь Ferguss L Ornament Cook (8606107095288) (УЦЕНКА)',
+                'short_description' => 'Чугунная отопительно-варочная печь Ferguss L Ornament Cook с декоративным литьём и дымовой заслонкой. Мощность 12,8 кВт, КПД 74%, масса 168 кг, дымоход 120 мм.',
+                'content' => '<p><strong>Ferguss L Ornament Cook</strong> — чугунная отопительно-варочная печь с декоративным литьём, варочной поверхностью и дымовой заслонкой. Модель точно идентифицирована по коду EAN 8606107095288 в фирменном каталоге Ferguss.</p><p>Производитель указывает мощность 12,8 кВт, КПД 74%, массу 168 кг и габариты 535 × 445 × 926 мм. Размер топочной камеры составляет 410 × 310 × 270 мм, диаметр дымохода — 120 мм, максимальная длина полена — 250 мм.</p><p>Площадь отопления производителем для этой модели не заявлена. Печь следует подбирать с учётом теплопотерь здания, высоты помещений, утепления и режима эксплуатации.</p>',
             ],
         ];
     }

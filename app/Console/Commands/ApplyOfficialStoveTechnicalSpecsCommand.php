@@ -62,12 +62,19 @@ class ApplyOfficialStoveTechnicalSpecsCommand extends Command
 
         $this->table(
             ['ID', 'Product', 'Verified fields', 'Official source'],
-            $plans->map(fn (array $plan) => [
-                $plan['product']->id,
-                $plan['product']->name,
-                collect($plan['evidence']['specs'])->pluck('key')->implode(', '),
-                $plan['evidence']['source_url'],
-            ])->all()
+            $plans->map(function (array $plan): array {
+                $fields = collect($plan['evidence']['specs'])->pluck('key');
+                if (isset($plan['evidence']['product_name'])) {
+                    $fields->prepend('Название и описание');
+                }
+
+                return [
+                    $plan['product']->id,
+                    $plan['product']->name,
+                    $fields->implode(', '),
+                    $plan['evidence']['source_url'],
+                ];
+            })->all()
         );
 
         if ($skipped !== []) {
@@ -94,10 +101,18 @@ class ApplyOfficialStoveTechnicalSpecsCommand extends Command
                         'verified_at' => now()->toDateString(),
                     ];
 
-                    $product->update([
+                    $updates = [
                         'specs' => $plan['updatedSpecs'],
                         'service_info' => $serviceInfo,
-                    ]);
+                    ];
+
+                    foreach (['product_name' => 'name', 'short_description' => 'short_description', 'content' => 'content'] as $evidenceKey => $productField) {
+                        if (isset($plan['evidence'][$evidenceKey])) {
+                            $updates[$productField] = $plan['evidence'][$evidenceKey];
+                        }
+                    }
+
+                    $product->update($updates);
 
                     $this->removeConflictingAttributeValues($product, $plan['evidence']['specs']);
                     $attributeValuesSaved += $enricher->syncSpecsToAttributeValues(
