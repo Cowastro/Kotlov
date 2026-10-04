@@ -15,7 +15,8 @@ class NormalizeStoveHeatingAreasCommand extends Command
 {
     protected $signature = 'catalog:normalize-stove-heating-areas
         {--apply : Persist canonical heated-area ranges; the default is a dry run}
-        {--sample=15 : Number of unresolved or conflicting products to show}';
+        {--sample=15 : Number of unresolved or conflicting products to show}
+        {--json-unresolved : Print current production evidence for every unresolved product as JSON lines}';
 
     protected $description = 'Map explicit stove heated-area facts to the catalog range filter';
 
@@ -37,6 +38,8 @@ class NormalizeStoveHeatingAreasCommand extends Command
             ->with([
                 'allAttributeValues.attribute:id,name,type',
                 'allAttributeValues.option:id,name',
+                'brand:id,name',
+                'supplierProducts:id,product_id,source_url',
             ])
             ->orderBy('id')
             ->get();
@@ -90,10 +93,10 @@ class NormalizeStoveHeatingAreasCommand extends Command
             if ($range === null) {
                 if ($hasExplicitSource) {
                     $stats['conflicting']++;
-                    $conflicting->push([$product->id, $product->name]);
+                    $conflicting->push($product);
                 } else {
                     $stats['unresolved']++;
-                    $unresolved->push([$product->id, $product->name]);
+                    $unresolved->push($product);
                 }
 
                 continue;
@@ -144,11 +147,44 @@ class NormalizeStoveHeatingAreasCommand extends Command
         $sample = max(0, (int) $this->option('sample'));
         if ($conflicting->isNotEmpty() && $sample > 0) {
             $this->warn('Conflicting area facts (left unchanged):');
-            $this->table(['ID', 'Product'], $conflicting->take($sample)->all());
+            $this->table(
+                ['ID', 'Product', 'Slug', 'Brand'],
+                $conflicting->take($sample)->map(fn (Product $product) => [
+                    $product->id,
+                    $product->name,
+                    $product->slug,
+                    $product->brand?->name,
+                ])->all()
+            );
         }
         if ($unresolved->isNotEmpty() && $sample > 0) {
             $this->warn('Products without an explicit heated area (left unchanged):');
-            $this->table(['ID', 'Product'], $unresolved->take($sample)->all());
+            $this->table(
+                ['ID', 'Product', 'Slug', 'Brand'],
+                $unresolved->take($sample)->map(fn (Product $product) => [
+                    $product->id,
+                    $product->name,
+                    $product->slug,
+                    $product->brand?->name,
+                ])->all()
+            );
+        }
+
+        if ($this->option('json-unresolved')) {
+            $this->line('UNRESOLVED_JSON_BEGIN');
+            foreach ($unresolved as $product) {
+                $this->line(json_encode([
+                    'id' => $product->id,
+                    'name' => $product->name,
+                    'slug' => $product->slug,
+                    'brand' => $product->brand?->name,
+                    'source_urls' => $product->supplierProducts->pluck('source_url')->filter()->values()->all(),
+                    'specs' => $product->specs,
+                    'short_description' => $product->short_description,
+                    'content' => $product->content,
+                ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
+            }
+            $this->line('UNRESOLVED_JSON_END');
         }
 
         return self::SUCCESS;
