@@ -10,6 +10,13 @@ use Illuminate\Support\Facades\DB;
 
 class ApplyOfficialStoveHeatingAreasCommand extends Command
 {
+    private const HEATING_STOVE_CATEGORY_SLUGS = [
+        'pechi-kaminy',
+        'peci-drovianye-otopitelnye',
+        'burzhuiki-pechi',
+        'dlya-dachi',
+    ];
+
     protected $signature = 'catalog:apply-official-stove-heating-areas
         {--apply : Persist manufacturer-published heated areas; the default is a dry run}';
 
@@ -40,7 +47,9 @@ class ApplyOfficialStoveHeatingAreasCommand extends Command
                 continue;
             }
 
-            if ($product->category?->slug !== 'pechi-kaminy' || ! $product->is_active || $product->is_archived) {
+            if (! in_array($product->category?->slug, self::HEATING_STOVE_CATEGORY_SLUGS, true)
+                || ! $product->is_active
+                || $product->is_archived) {
                 $skipped[] = [$product->id, $product->name, 'not an active stove product'];
 
                 continue;

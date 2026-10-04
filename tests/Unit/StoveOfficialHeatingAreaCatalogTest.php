@@ -12,11 +12,11 @@ class StoveOfficialHeatingAreaCatalogTest extends TestCase
     {
         $entries = (new StoveOfficialHeatingAreaCatalog)->entries();
 
-        $this->assertCount(12, $entries);
+        $this->assertCount(27, $entries);
         foreach ($entries as $slug => $entry) {
             $this->assertNotSame('', $slug);
             $this->assertGreaterThan(0, $entry['area']);
-            $this->assertMatchesRegularExpression('/^https:\/\/(?:www\.|old\.)?(?:panadero\.com|mbs\.rs|nordflam\.eu)\//', $entry['source_url']);
+            $this->assertMatchesRegularExpression('/^https:\/\/(?:www\.|old\.)?(?:panadero\.com|mbs\.rs|nordflam\.eu|t-m-f\.ru)\//', $entry['source_url']);
             $this->assertNotSame('', $entry['source_label']);
         }
     }

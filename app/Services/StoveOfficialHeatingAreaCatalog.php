@@ -28,6 +28,21 @@ class StoveOfficialHeatingAreaCatalog
             'nordflam-pec-kamin-carini-eko' => $this->entry(84, 'https://nordflam.eu/carini', 'Nordflam — Carini'),
             'nordflam-pec-kamin-frovi-eko-belaia' => $this->entry(50, 'https://old.nordflam.eu/frovibiel', 'Nordflam — Frovi'),
             'nordflam-pec-kamin-palermo-eko' => $this->entry(78, 'https://nordflam.eu/palermo', 'Nordflam — Palermo'),
+            'pech-otopitelnaya-termofor-ogon-batareya-7-antrocit' => $this->entry(56, 'https://t-m-f.ru/catalog-new/model/otopitelnye_pechi_1/ogon_batareya_7/', 'TMF — Огонь-Батарея 7'),
+            'pech-otopitelnaya-termofor-student' => $this->entry(56, 'https://t-m-f.ru/catalog-new/model/otopitelnye_pechi_1/student/', 'TMF — Студент'),
+            'pech-otopitelnaya-termofor-student-2' => $this->entry(56, 'https://t-m-f.ru/catalog-new/model/otopitelnye_pechi_1/student/', 'TMF — Студент'),
+            'pech-otopitelnaya-ogon-batareya-11-antracit' => $this->entry(93, 'https://t-m-f.ru/catalog-new/model/otopitelnye_pechi_1/ogon_batareya_11/', 'TMF — Огонь-Батарея 11'),
+            'pech-otopitelnaya-termofor-inzhiner' => $this->entry(93, 'https://t-m-f.ru/catalog-new/model/otopitelnye_pechi_1/inzhener/', 'TMF — Инженер'),
+            'pech-otopitelnaya-termofor-docent' => $this->entry(186, 'https://t-m-f.ru/catalog-new/model/otopitelnye_pechi_1/dotsent/', 'TMF — Доцент'),
+            'pech-otopitelnaya-termofor-docent-2' => $this->entry(186, 'https://t-m-f.ru/catalog-new/model/otopitelnye_pechi_1/dotsent/', 'TMF — Доцент'),
+            'pech-otopitelnaya-termofor-professor' => $this->entry(370, 'https://t-m-f.ru/catalog-new/model/otopitelnye_pechi_1/professor/', 'TMF — Профессор'),
+            'pech-otopitelnaya-termofor-normal-2' => $this->entry(37, 'https://t-m-f.ru/catalog-new/model/otopitelnye_pechi_1/normal/', 'TMF — Нормаль-2'),
+            'pech-termofor-ogon-batareya-9-antracit' => $this->entry(74, 'https://t-m-f.ru/catalog-new/model/otopitelnye_pechi_1/ogon_batareya_9/', 'TMF — Огонь-Батарея 9'),
+            'termofor-ogon-batareya-5-antracit' => $this->entry(37, 'https://t-m-f.ru/catalog-new/model/otopitelnye_pechi_1/ogon_batareya_5/', 'TMF — Огонь-Батарея 5'),
+            'termofor-gimnazist' => $this->entry(37, 'https://t-m-f.ru/catalog-new/model/otopitelnye_pechi_1/gimnazist/', 'TMF — Гимназист'),
+            'pech-termofor-professor-chd' => $this->entry(370, 'https://t-m-f.ru/catalog-new/model/otopitelnye_pechi_1/professor/', 'TMF — Профессор'),
+            'termofor-ogon-batareya-5b-antracit' => $this->entry(37, 'https://t-m-f.ru/catalog-new/model/otopitelnye_pechi_1/ogon_batareya_5/', 'TMF — Огонь-Батарея 5Б'),
+            'terfomor-ogon-batareya-7b-antracit' => $this->entry(56, 'https://t-m-f.ru/catalog-new/model/otopitelnye_pechi_1/ogon_batareya_7/', 'TMF — Огонь-Батарея 7Б'),
         ];
     }
 
