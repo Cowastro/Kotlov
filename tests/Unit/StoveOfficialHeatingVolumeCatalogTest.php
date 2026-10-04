@@ -13,7 +13,7 @@ class StoveOfficialHeatingVolumeCatalogTest extends TestCase
         $normalizer = new StoveHeatingVolumeNormalizer;
         $entries = (new StoveOfficialHeatingVolumeCatalog)->entries();
 
-        $this->assertCount(41, $entries);
+        $this->assertCount(45, $entries);
 
         foreach ($entries as $slug => $entry) {
             $this->assertNotSame('', $slug);
@@ -22,6 +22,21 @@ class StoveOfficialHeatingVolumeCatalogTest extends TestCase
             ]));
             $this->assertStringStartsWith('https://', $entry['source_url']);
             $this->assertNotSame('', $entry['source_label']);
+        }
+    }
+
+    public function test_ecokamin_praga_uses_official_volume_without_area_conversion(): void
+    {
+        $entries = (new StoveOfficialHeatingVolumeCatalog)->entries();
+        $praga = collect($entries)->filter(
+            fn (array $entry, string $slug) => str_starts_with($slug, 'kamin-praga-uglovoy-')
+        );
+
+        $this->assertCount(4, $praga);
+
+        foreach ($praga as $entry) {
+            $this->assertSame('105–240 м³', $entry['volume']);
+            $this->assertStringStartsWith('https://ecokamin.ru/catalog/kaminy/praga/', $entry['source_url']);
         }
     }
 }

@@ -53,6 +53,10 @@ class StoveOfficialHeatingVolumeCatalog
             'otopitelnaya-pech-varvara-domovoy' => $this->entry('до 50 м³', 'https://pech-varvara.ru/products/otoplenie-doma/otopitelnye-pechi/domovoy/', 'Варвара — Домовой'),
             'otopitelnaya-pech-varvara-teplyiy-dom-150' => $this->entry('до 150 м³', 'https://pech-varvara.ru/products/otoplenie-doma/otopitelnye-pechi/teplyydom/', 'Варвара — Теплый Дом 150'),
             'otopitelnaya-pech-varvara-uyut-1-konforka' => $this->entry('до 100 м³', 'https://pech-varvara.ru/products/otoplenie-doma/otopitelnye-pechi/uyu/', 'Варвара — Уют 1 конфорка'),
+            'kamin-praga-uglovoy-pravyiy-chernyiy-shamot-chernyiy' => $this->entry('105–240 м³', 'https://ecokamin.ru/catalog/kaminy/praga/14407/', 'ЭкоКамин — Прага Угловой правый, белый шамот'),
+            'kamin-praga-uglovoy-levyiy-chernyiy-shamot-chernyiy' => $this->entry('105–240 м³', 'https://ecokamin.ru/catalog/kaminy/praga/14531/', 'ЭкоКамин — Прага Угловой левый, чёрный шамот'),
+            'kamin-praga-uglovoy-pravyiy-chernyiy-shamot-belyiy' => $this->entry('105–240 м³', 'https://ecokamin.ru/catalog/kaminy/praga/14532/', 'ЭкоКамин — Прага Угловой правый, чёрный шамот'),
+            'kamin-praga-uglovoy-levyiy-chernyiy-shamot-belyiy' => $this->entry('105–240 м³', 'https://ecokamin.ru/catalog/kaminy/praga/14342/', 'ЭкоКамин — Прага Угловой левый, белый шамот'),
         ];
     }
 
