@@ -37,6 +37,8 @@ class StoveOfficialHeatingVolumeCatalog
             'pec-kamin-vezuvii-hr-15-antracit' => $this->entry('до 300 м³', 'https://vezuviy.su/otopitelnoe-oborudovanie/pech-kamin-vezuviy-hr-15-antracit/', 'Везувий — HR-15 Антрацит'),
             'pec-kamin-vezuvii-hr-15r-antracit' => $this->entry('до 300 м³', 'https://vezuviy.su/otopitelnoe-oborudovanie/pech-kamin-vezuviy-hr-15r-antracit/', 'Везувий — HR-15P Антрацит'),
             'pec-kamin-vezuvii-kz-14rs-antracit' => $this->entry('до 280 м³', 'https://vezuviy.su/otopitelnoe-oborudovanie/pech-kamin-vezuviy-kz-14sr-antracit/', 'Везувий — KZ-14PS Антрацит'),
+            'pec-kamin-aston-11kvt-180-m3-pristenno-uglovoi-o-150mm' => $this->entry('до 180 м³', 'https://pech-aston.ru/katalog/pechi-kaminy/pech-kamin-aston-11kvt-180-m3-pristenno-uglovoy-o-150mm', 'ASTON — печь-камин 11 кВт, пристенно-угловая'),
+            'pec-kamin-aston-12-kvt-200-m3-prizmatik' => $this->entry('до 200 м³', 'https://pech-aston.ru/katalog/pechi-kaminy/pechi-kaminy-aston-prizmatik/pech-kamin-aston-12-kvt-200-m3-prizmatik', 'ASTON — печь-камин Призматик 12 кВт'),
             'otopitelnaya-pech-tsar-pechi-burjuyka' => $this->entry('30–50 м³', 'https://banpechi.ru/pechi-otopitelnyie-v-minske/burzhuyka/', 'Царь-Печи — Буржуйка'),
             'pech-car-pechi-matreshka-malaya-1' => $this->entry('70–100 м³', 'https://banpechi.ru/pechi-otopitelnyie-v-minske/matreshka-malaya-1/', 'Царь-Печи — Матрёшка малая 1'),
             'pech-tsar-pechi-matreshka-bolshaya-1' => $this->entry('100–170 м³', 'https://banpechi.ru/pechi-otopitelnyie-v-minske/matreshka-bolshaya-1/', 'Царь-Печи — Матрёшка большая 1'),

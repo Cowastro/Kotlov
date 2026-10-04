@@ -13,7 +13,7 @@ class StoveOfficialHeatingVolumeCatalogTest extends TestCase
         $normalizer = new StoveHeatingVolumeNormalizer;
         $entries = (new StoveOfficialHeatingVolumeCatalog)->entries();
 
-        $this->assertCount(53, $entries);
+        $this->assertCount(55, $entries);
 
         foreach ($entries as $slug => $entry) {
             $this->assertNotSame('', $slug);
@@ -67,6 +67,19 @@ class StoveOfficialHeatingVolumeCatalogTest extends TestCase
         ] as $slug => $volume) {
             $this->assertSame($volume, $entries[$slug]['volume']);
             $this->assertStringStartsWith('https://vezuviy.su/', $entries[$slug]['source_url']);
+        }
+    }
+
+    public function test_aston_fireplace_stoves_keep_their_published_volumes(): void
+    {
+        $entries = (new StoveOfficialHeatingVolumeCatalog)->entries();
+
+        foreach ([
+            'pec-kamin-aston-11kvt-180-m3-pristenno-uglovoi-o-150mm' => 'до 180 м³',
+            'pec-kamin-aston-12-kvt-200-m3-prizmatik' => 'до 200 м³',
+        ] as $slug => $volume) {
+            $this->assertSame($volume, $entries[$slug]['volume']);
+            $this->assertStringStartsWith('https://pech-aston.ru/', $entries[$slug]['source_url']);
         }
     }
 }
