@@ -23,6 +23,9 @@ class StoveCatalogClassifierTest extends TestCase
             ['Kratki костровая чаша CASA GOBLET', 'mangalyi'],
             ['Садовый очаг из стали', 'mangalyi'],
             ['Полки для подогрева к печи Тайга Pro', 'aksessuary-kaminy'],
+            ['Пеллетная горелка для печи Потапыч', 'pelletnye-gorelki'],
+            ['Казан чугунный 12 л + крышка', 'kazany'],
+            ['Печь под казан «Сибирь»', 'kazany'],
         ];
     }
 

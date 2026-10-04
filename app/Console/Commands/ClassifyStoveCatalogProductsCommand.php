@@ -10,6 +10,13 @@ use Illuminate\Support\Facades\DB;
 
 class ClassifyStoveCatalogProductsCommand extends Command
 {
+    private const SOURCE_CATEGORY_SLUGS = [
+        'pechi-kaminy',
+        'peci-drovianye-otopitelnye',
+        'burzhuiki-pechi',
+        'dlya-dachi',
+    ];
+
     private const TARGET_CATEGORY_ALIASES = [
         'drovyanye-pechi-dlya-bani' => [
             'drovyanye-pechi-dlya-bani',
@@ -21,6 +28,8 @@ class ClassifyStoveCatalogProductsCommand extends Command
         ],
         'mangalyi' => ['mangalyi'],
         'aksessuary-kaminy' => ['aksessuary-kaminy'],
+        'pelletnye-gorelki' => ['pelletnye-gorelki', 'pelletnyie-gorelki'],
+        'kazany' => ['kazany'],
     ];
 
     protected $signature = 'catalog:classify-stove-products
@@ -31,19 +40,20 @@ class ClassifyStoveCatalogProductsCommand extends Command
 
     public function handle(StoveCatalogClassifier $classifier): int
     {
-        $source = Category::query()->where('slug', 'pechi-kaminy')->first();
+        $sources = Category::query()->whereIn('slug', self::SOURCE_CATEGORY_SLUGS)->get();
 
-        if (! $source) {
-            $this->error('The pechi-kaminy category was not found.');
+        if ($sources->isEmpty()) {
+            $this->error('No heating-stove source categories were found.');
 
             return self::FAILURE;
         }
 
         $products = Product::query()
-            ->where('category_id', $source->id)
+            ->whereIn('category_id', $sources->pluck('id'))
             ->where('is_active', true)
             ->where('is_archived', false)
             ->orderBy('id')
+            ->with('category:id,slug')
             ->get(['id', 'name', 'slug', 'category_id']);
 
         $plans = $products
@@ -97,7 +107,7 @@ class ClassifyStoveCatalogProductsCommand extends Command
                     $plan['product']->id,
                     $plan['product']->name,
                     $plan['product']->slug,
-                    $source->slug,
+                    $plan['product']->category?->slug,
                     $resolvedTargets[$plan['target_slug']]?->slug ?? $plan['target_slug'],
                 ])->all()
             );

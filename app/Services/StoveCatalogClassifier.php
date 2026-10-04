@@ -24,6 +24,14 @@ class StoveCatalogClassifier
             return 'aksessuary-kaminy';
         }
 
+        if (preg_match('/пеллетн\S*\s+горелк/u', $name)) {
+            return 'pelletnye-gorelki';
+        }
+
+        if (preg_match('/(?:казан\s+чугунн\S*|печь\s+под\s+казан)/u', $name)) {
+            return 'kazany';
+        }
+
         return null;
     }
 
