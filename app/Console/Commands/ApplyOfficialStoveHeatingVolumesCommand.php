@@ -67,16 +67,15 @@ class ApplyOfficialStoveHeatingVolumesCommand extends Command
                 continue;
             }
 
-            $derivedArea = null;
-            if (! $this->containsAreaSpec($updatedSpecs, $areaNormalizer)) {
-                $derivedArea = $areaConverter->convert($evidence['volume']);
-                if ($derivedArea !== null) {
-                    $updatedSpecs[] = [
-                        'key' => 'Площадь отапливаемого помещения',
-                        'value' => $areaConverter->label($derivedArea),
-                    ];
-                }
-            }
+            $serviceInfo = is_array($product->service_info) ? $product->service_info : [];
+            $derivedArea = $areaConverter->convert($evidence['volume']);
+            [$updatedSpecs, $derivedArea] = $this->withDerivedAreaSpec(
+                $updatedSpecs,
+                $derivedArea,
+                $serviceInfo,
+                $areaNormalizer,
+                $areaConverter,
+            );
 
             $plans->push(compact('product', 'evidence', 'updatedSpecs', 'range', 'derivedArea'));
         }
@@ -166,19 +165,55 @@ class ApplyOfficialStoveHeatingVolumesCommand extends Command
         return $specs;
     }
 
-    /** @param array<int|string, mixed> $specs */
-    private function containsAreaSpec(array $specs, StoveHeatingAreaNormalizer $normalizer): bool
-    {
+    /**
+     * Refresh an area previously derived by this command while preserving a
+     * manufacturer-published or manually corrected explicit area.
+     *
+     * @param  array<int|string, mixed>  $specs
+     * @param  array<string, mixed>  $serviceInfo
+     * @return array{0: array<int|string, mixed>, 1: float|null}
+     */
+    private function withDerivedAreaSpec(
+        array $specs,
+        ?float $newArea,
+        array $serviceInfo,
+        StoveHeatingAreaNormalizer $normalizer,
+        StoveHeatingAreaFromVolumeConverter $converter,
+    ): array {
+        if ($newArea === null) {
+            return [$specs, null];
+        }
+
+        $previousArea = data_get($serviceInfo, 'derived_heating_area.value');
+        $previousLabel = is_numeric($previousArea) ? $converter->label((float) $previousArea) : null;
+
         foreach ($specs as $key => $spec) {
             if (is_array($spec) && isset($spec['key']) && $normalizer->isAreaKey((string) $spec['key'])) {
-                return true;
+                if ($previousLabel !== null && trim((string) ($spec['value'] ?? '')) === $previousLabel) {
+                    $specs[$key]['value'] = $converter->label($newArea);
+
+                    return [$specs, $newArea];
+                }
+
+                return [$specs, null];
             }
 
             if (is_string($key) && $normalizer->isAreaKey($key)) {
-                return true;
+                if ($previousLabel !== null && trim((string) $spec) === $previousLabel) {
+                    $specs[$key] = $converter->label($newArea);
+
+                    return [$specs, $newArea];
+                }
+
+                return [$specs, null];
             }
         }
 
-        return false;
+        $specs[] = [
+            'key' => 'Площадь отапливаемого помещения',
+            'value' => $converter->label($newArea),
+        ];
+
+        return [$specs, $newArea];
     }
 }

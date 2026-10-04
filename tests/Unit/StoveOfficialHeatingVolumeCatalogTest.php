@@ -130,4 +130,19 @@ class StoveOfficialHeatingVolumeCatalogTest extends TestCase
         $this->assertSame('до 200 м³', $entry['volume']);
         $this->assertStringStartsWith('https://www.kennet.ru/', $entry['source_url']);
     }
+
+    public function test_tsar_pechi_current_pages_keep_their_published_volumes(): void
+    {
+        $entries = (new StoveOfficialHeatingVolumeCatalog)->entries();
+
+        foreach ([
+            'otopitelnaya-pech-tsar-pechi-burjuyka' => '85–180 м³',
+            'pech-tsar-pechi-milana' => '30–45 м³',
+            'pech-tsar-pechi-yarilo' => '45–100 м³',
+            'pech-tsar-pechi-yarilo-dekor' => '45–100 м³',
+        ] as $slug => $volume) {
+            $this->assertSame($volume, $entries[$slug]['volume']);
+            $this->assertStringStartsWith('https://banpechi.ru/product/otopitelnue/', $entries[$slug]['source_url']);
+        }
+    }
 }
