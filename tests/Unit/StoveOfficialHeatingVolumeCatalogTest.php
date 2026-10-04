@@ -13,7 +13,7 @@ class StoveOfficialHeatingVolumeCatalogTest extends TestCase
         $normalizer = new StoveHeatingVolumeNormalizer;
         $entries = (new StoveOfficialHeatingVolumeCatalog)->entries();
 
-        $this->assertCount(57, $entries);
+        $this->assertCount(59, $entries);
 
         foreach ($entries as $slug => $entry) {
             $this->assertNotSame('', $slug);
@@ -93,6 +93,19 @@ class StoveOfficialHeatingVolumeCatalogTest extends TestCase
         ] as $slug) {
             $this->assertSame('до 150 м³', $entries[$slug]['volume']);
             $this->assertStringStartsWith('https://t-m-f.ru/', $entries[$slug]['source_url']);
+        }
+    }
+
+    public function test_fireway_stoves_keep_their_published_volumes(): void
+    {
+        $entries = (new StoveOfficialHeatingVolumeCatalog)->entries();
+
+        foreach ([
+            'fireway-pec-otopitelno-varocnaia-dacha-ii' => 'до 240 м³',
+            'fireway-pec-cugunnaia-tango' => 'до 150 м³',
+        ] as $slug => $volume) {
+            $this->assertSame($volume, $entries[$slug]['volume']);
+            $this->assertStringStartsWith('https://fireway.pro/', $entries[$slug]['source_url']);
         }
     }
 }
