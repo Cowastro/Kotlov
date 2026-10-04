@@ -67,9 +67,11 @@ class StoveOfficialHeatingVolumeCatalog
             'otopitelnaya-pech-varvara-domovoy' => $this->entry('до 50 м³', 'https://pech-varvara.ru/products/otoplenie-doma/otopitelnye-pechi/domovoy/', 'Варвара — Домовой'),
             'otopitelnaya-pech-varvara-teplyiy-dom-150' => $this->entry('до 150 м³', 'https://pech-varvara.ru/products/otoplenie-doma/otopitelnye-pechi/teplyydom/', 'Варвара — Теплый Дом 150'),
             'otopitelnaya-pech-varvara-uyut-1-konforka' => $this->entry('до 100 м³', 'https://pech-varvara.ru/products/otoplenie-doma/otopitelnye-pechi/uyu/', 'Варвара — Уют 1 конфорка'),
-            'kamin-praga-uglovoy-pravyiy-chernyiy-shamot-chernyiy' => $this->entry('105–240 м³', 'https://ecokamin.ru/catalog/kaminy/praga/14532/', 'ЭкоКамин — Прага Угловой правый, чёрный шамот'),
+            // The two historical right-corner slugs have their finish suffixes inverted in production.
+            // Keep evidence mapped to the actual product names, not to the misleading slug suffix.
+            'kamin-praga-uglovoy-pravyiy-chernyiy-shamot-chernyiy' => $this->entry('105–240 м³', 'https://ecokamin.ru/catalog/kaminy/praga/14407/', 'ЭкоКамин — Прага Угловой правый, белый шамот'),
             'kamin-praga-uglovoy-levyiy-chernyiy-shamot-chernyiy' => $this->entry('105–240 м³', 'https://ecokamin.ru/catalog/kaminy/praga/14531/', 'ЭкоКамин — Прага Угловой левый, чёрный шамот'),
-            'kamin-praga-uglovoy-pravyiy-chernyiy-shamot-belyiy' => $this->entry('105–240 м³', 'https://ecokamin.ru/catalog/kaminy/praga/14407/', 'ЭкоКамин — Прага Угловой правый, белый шамот'),
+            'kamin-praga-uglovoy-pravyiy-chernyiy-shamot-belyiy' => $this->entry('105–240 м³', 'https://ecokamin.ru/catalog/kaminy/praga/14532/', 'ЭкоКамин — Прага Угловой правый, чёрный шамот'),
             'kamin-praga-uglovoy-levyiy-chernyiy-shamot-belyiy' => $this->entry('105–240 м³', 'https://ecokamin.ru/catalog/kaminy/praga/14342/', 'ЭкоКамин — Прага Угловой левый, белый шамот'),
             'pech-kamin-ecokamin-bavariya-panorama-prizma-s-plitoy' => $this->entry('135–240 м³', 'https://www.ecokamin.ru/upload/%D0%9A%D0%B0%D1%82%D0%B0%D0%BB%D0%BE%D0%B3%20%D0%AD%D0%BA%D0%BE%D0%BA%D0%B0%D0%BC%D0%B8%D0%BD%202023.pdf', 'ЭкоКамин 2023 — Бавария Панорама Призма с плитой, PK189'),
             'kamin-eklips-ostrovnoi-gigant-grafit' => $this->entry('140–325 м³', 'https://www.ecokamin.ru/upload/%D0%9A%D0%B0%D1%82%D0%B0%D0%BB%D0%BE%D0%B3%20%D0%AD%D0%BA%D0%BE%D0%BA%D0%B0%D0%BC%D0%B8%D0%BD%202023.pdf', 'ЭкоКамин 2023 — Эклипс Гигант'),

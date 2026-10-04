@@ -123,24 +123,24 @@ class StoveOfficialHeatingVolumeCatalogTest extends TestCase
         }
     }
 
-    public function test_praga_right_corner_variants_point_to_the_matching_official_finish(): void
+    public function test_praga_right_corner_legacy_slugs_still_point_to_the_actual_product_finish(): void
     {
         $entries = (new StoveOfficialHeatingVolumeCatalog)->entries();
 
         $this->assertSame(
-            'https://ecokamin.ru/catalog/kaminy/praga/14532/',
+            'https://ecokamin.ru/catalog/kaminy/praga/14407/',
             $entries['kamin-praga-uglovoy-pravyiy-chernyiy-shamot-chernyiy']['source_url']
         );
         $this->assertSame(
-            'ЭкоКамин — Прага Угловой правый, чёрный шамот',
+            'ЭкоКамин — Прага Угловой правый, белый шамот',
             $entries['kamin-praga-uglovoy-pravyiy-chernyiy-shamot-chernyiy']['source_label']
         );
         $this->assertSame(
-            'https://ecokamin.ru/catalog/kaminy/praga/14407/',
+            'https://ecokamin.ru/catalog/kaminy/praga/14532/',
             $entries['kamin-praga-uglovoy-pravyiy-chernyiy-shamot-belyiy']['source_url']
         );
         $this->assertSame(
-            'ЭкоКамин — Прага Угловой правый, белый шамот',
+            'ЭкоКамин — Прага Угловой правый, чёрный шамот',
             $entries['kamin-praga-uglovoy-pravyiy-chernyiy-shamot-belyiy']['source_label']
         );
     }
