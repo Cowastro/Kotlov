@@ -430,8 +430,11 @@ class Product extends Model
             ->where(function ($query) {
                 $query->where('availability_status', self::AVAILABILITY_CHECK)
                     ->orWhere(function ($query) {
-                        $query->where('availability_status', self::AVAILABILITY_IN_STOCK)
-                            ->where('in_stock', true);
+                        $query->where('in_stock', true)
+                            ->where(function ($statusQuery) {
+                                $statusQuery->whereNull('availability_status')
+                                    ->orWhere('availability_status', '!=', self::AVAILABILITY_OUT_OF_STOCK);
+                            });
                     });
             });
     }

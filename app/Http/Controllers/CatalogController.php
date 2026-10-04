@@ -409,7 +409,7 @@ class CatalogController extends Controller
                     ! $catalogStockAlreadyOrdered && ($isChimneyCatalog
                         || $isStoveOrFireplaceCatalog
                         || $isPipesCatalog
-                        || in_array($category->slug, ['tverdotoplivnye', 'bufernye-emkosti', 'kosvennye'], true))
+                        || in_array($category->slug, ['tverdotoplivnye', 'kotly-na-pelletah', 'bufernye-emkosti', 'kosvennye'], true))
                 );
         }
 

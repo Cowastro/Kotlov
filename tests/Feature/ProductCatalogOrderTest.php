@@ -28,6 +28,10 @@ class ProductCatalogOrderTest extends TestCase
             $table->unsignedBigInteger('category_id')->nullable();
             $table->string('name')->nullable();
             $table->boolean('in_stock')->default(false);
+            $table->string('availability_status')->nullable();
+            $table->decimal('price', 12, 2)->default(1);
+            $table->boolean('is_active')->default(true);
+            $table->boolean('is_archived')->default(false);
             $table->boolean('is_featured')->default(false);
             $table->decimal('rating', 3, 2)->default(0);
         });
@@ -63,6 +67,22 @@ class ProductCatalogOrderTest extends TestCase
             ->all();
 
         $this->assertSame([3, 2, 1, 4], $orderedIds);
+    }
+
+    public function test_orderable_scope_keeps_legacy_in_stock_products_with_empty_status(): void
+    {
+        DB::table('catalog_order_products')->insert([
+            ['id' => 1, 'in_stock' => true, 'availability_status' => null],
+            ['id' => 2, 'in_stock' => true, 'availability_status' => Product::AVAILABILITY_IN_STOCK],
+            ['id' => 3, 'in_stock' => false, 'availability_status' => Product::AVAILABILITY_CHECK],
+            ['id' => 4, 'in_stock' => true, 'availability_status' => Product::AVAILABILITY_OUT_OF_STOCK],
+            ['id' => 5, 'in_stock' => false, 'availability_status' => null],
+        ]);
+
+        $this->assertSame(
+            [1, 2, 3],
+            CatalogOrderProduct::query()->orderable()->orderBy('id')->pluck('id')->all()
+        );
     }
 
     public function test_default_catalog_order_is_unchanged_without_priority_brand(): void
