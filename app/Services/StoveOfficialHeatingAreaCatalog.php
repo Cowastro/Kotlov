@@ -25,6 +25,9 @@ class StoveOfficialHeatingAreaCatalog
             'mbs-pec-olympia-l-cernaia' => $this->entry(79, 'https://mbs.rs/wp-content/uploads/2024/01/MBS-Serbia-catalogue-2024.pdf', 'MBS product catalogue 2024 — SD Olympia'),
             'mbs-pec-olympia-s' => $this->entry(79, 'https://mbs.rs/wp-content/uploads/2024/01/MBS-Serbia-catalogue-2024.pdf', 'MBS product catalogue 2024 — SD Olympia S'),
             'mbs-pec-olymp-l-krasnaia' => $this->entry(67, 'https://mbs.rs/wp-content/uploads/2024/01/MBS-Serbia-catalogue-2024.pdf', 'MBS product catalogue 2024 — SD Olymp'),
+            'nordflam-pec-kamin-carini-eko' => $this->entry(84, 'https://nordflam.eu/carini', 'Nordflam — Carini'),
+            'nordflam-pec-kamin-frovi-eko-belaia' => $this->entry(50, 'https://old.nordflam.eu/frovibiel', 'Nordflam — Frovi'),
+            'nordflam-pec-kamin-palermo-eko' => $this->entry(78, 'https://nordflam.eu/palermo', 'Nordflam — Palermo'),
         ];
     }
 
