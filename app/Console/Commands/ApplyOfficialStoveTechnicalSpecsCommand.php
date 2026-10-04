@@ -179,6 +179,13 @@ class ApplyOfficialStoveTechnicalSpecsCommand extends Command
             ['шгв', 'шгв', 'шгв', 'вшг', 'вшг', 'вшг'],
             $normalized,
         );
+
+        // Do this before removing unit suffixes: the abbreviation "л" must not
+        // trim the last letter from the Russian word "материал".
+        if (preg_match('/^(?:материал|материалкорпуса|материалтопки|облицовочныйматериал)$/u', $normalized)) {
+            return 'материал';
+        }
+
         $normalized = preg_replace('/(?:мм|кг|квт|литр(?:а|ов)?|л)$/u', '', $normalized) ?: $normalized;
         $normalized = preg_replace('/(?:шгв|вшг|дшв)$/u', '', $normalized) ?: $normalized;
 
@@ -216,6 +223,14 @@ class ApplyOfficialStoveTechnicalSpecsCommand extends Command
 
         if (preg_match('/^(?:максимальнаядлинаполена|максимальнаядлинадров|длинаполена)$/u', $normalized)) {
             return 'максимальнаядлинаполена';
+        }
+
+        if (preg_match('/^(?:подключениедымохода|выходдымохода)$/u', $normalized)) {
+            return 'подключениедымохода';
+        }
+
+        if (preg_match('/^(?:гарантия|гарантийныйсрок)$/u', $normalized)) {
+            return 'гарантия';
         }
 
         return $normalized;

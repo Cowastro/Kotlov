@@ -11,7 +11,7 @@ class StoveOfficialTechnicalSpecCatalogTest extends TestCase
     {
         $entries = (new StoveOfficialTechnicalSpecCatalog)->entries();
 
-        $this->assertCount(14, $entries);
+        $this->assertCount(16, $entries);
 
         foreach ($entries as $entry) {
             $keys = collect($entry['specs'])->pluck('key');
@@ -22,7 +22,9 @@ class StoveOfficialTechnicalSpecCatalogTest extends TestCase
             $this->assertFalse($keys->contains(fn (string $key) => str_contains(mb_strtolower($key), 'объём помещения')));
         }
 
-        $blistEntries = collect($entries)->except('ferguss-pec-ferguss-l-8606107095288-lawa-cook-ucenka');
+        $blistEntries = collect($entries)->filter(
+            fn (array $entry): bool => str_starts_with($entry['source_url'], 'https://blist.co.rs/')
+        );
         foreach ($blistEntries as $entry) {
             $this->assertStringStartsWith('https://blist.co.rs/', $entry['source_url']);
         }
@@ -56,5 +58,33 @@ class StoveOfficialTechnicalSpecCatalogTest extends TestCase
         $this->assertStringNotContainsString('Lawa', $entry['product_name']);
         $this->assertStringContainsString('Площадь отопления производителем для этой модели не заявлена', $entry['content']);
         $this->assertFalse($specs->keys()->contains(fn (string $key) => str_contains(mb_strtolower($key), 'площад')));
+    }
+
+    public function test_fireway_models_use_only_their_official_product_pages_without_inferred_area(): void
+    {
+        $entries = (new StoveOfficialTechnicalSpecCatalog)->entries();
+        $konnekta = $entries['pech-kamin-fireway-konnecta'];
+        $skif = $entries['otopitelno-varochnaya-pech-fireway-skif'];
+        $konnektaSpecs = collect($konnekta['specs'])->keyBy('key');
+        $skifSpecs = collect($skif['specs'])->keyBy('key');
+
+        $this->assertSame('https://fireway.pro/pech-chugunnaya-konnekta.html', $konnekta['source_url']);
+        $this->assertSame('590×473×882', $konnektaSpecs['Габариты (Ш×Г×В)']['value']);
+        $this->assertSame('10', $konnektaSpecs['Мощность']['value']);
+        $this->assertSame('Чугун', $konnektaSpecs['Материал корпуса']['value']);
+        $this->assertSame('150', $konnektaSpecs['Диаметр дымохода']['value']);
+
+        $this->assertSame('https://fireway.pro/pech-kamin-skif.html', $skif['source_url']);
+        $this->assertSame('950×600×863', $skifSpecs['Габариты (Ш×Г×В)']['value']);
+        $this->assertSame('8', $skifSpecs['Мощность']['value']);
+        $this->assertSame('Есть', $skifSpecs['Варочная поверхность']['value']);
+        $this->assertSame('Есть', $skifSpecs['Духовой шкаф']['value']);
+
+        foreach ([$konnektaSpecs, $skifSpecs] as $specs) {
+            $this->assertFalse($specs->keys()->contains(
+                fn (string $key) => str_contains(mb_strtolower($key), 'площад')
+                    || str_contains(mb_strtolower($key), 'объём помещения')
+            ));
+        }
     }
 }

@@ -24,6 +24,11 @@ class ApplyOfficialStoveTechnicalSpecsCommandTest extends TestCase
         $this->assertSame('кпд', $normalize->invoke($command, 'Эффективность, %'));
         $this->assertSame('диаметрдымохода', $normalize->invoke($command, 'Диаметр дымоходного патрубка'));
         $this->assertSame('максимальнаядлинаполена', $normalize->invoke($command, 'Максимальная длина дров'));
+        $this->assertSame('материал', $normalize->invoke($command, 'Материал корпуса'));
+        $this->assertSame('материал', $normalize->invoke($command, 'Материал топки'));
+        $this->assertSame('материал', $normalize->invoke($command, 'Облицовочный материал'));
+        $this->assertSame('подключениедымохода', $normalize->invoke($command, 'Выход дымохода'));
+        $this->assertSame('гарантия', $normalize->invoke($command, 'Гарантийный срок'));
     }
 
     public function test_verified_specs_replace_synonyms_but_preserve_unrelated_fields(): void
