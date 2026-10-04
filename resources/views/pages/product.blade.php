@@ -647,11 +647,7 @@
                                     @if ($attributeValues->count() > 0)
                                         @foreach ($attributeValues as $val)
                                             @php
-                                                $isEmpty = match($val->attribute->type) {
-                                                    'select' => empty($val->option?->name),
-                                                    'check'  => $val->is_checked === null,
-                                                    default  => empty($val->value) || $val->value === '—' || (string) $val->value === '0' || (string) $val->value === '0.00' || (string) $val->value === '0.0',
-                                                };
+                                                $isEmpty = ! $val->hasDisplayValue();
                                                 $displayValue = (string) $val->value;
                                                 $displaySuffix = (string) ($val->attribute->suffix ?? '');
                                                 if (

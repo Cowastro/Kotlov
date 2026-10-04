@@ -2,9 +2,9 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Product;
-use App\Models\Category;
 use App\Models\BlogPost;
+use App\Models\Category;
+use App\Models\Product;
 use App\Models\ProductAttributeValue;
 use App\Services\HeatPumpProductPresenter;
 use App\Services\SeoMetadataBuilder;
@@ -14,27 +14,28 @@ class ProductController extends Controller
 {
     private const CANONICAL_BASE = 'https://kotlov.by';
 
-    public function show(string $category, string $productOrSubcategory, string $product = null)
+    public function show(string $category, string $productOrSubcategory, ?string $product = null)
     {
         $productSlug = $product ?? $productOrSubcategory;
 
         // Проверяем не является ли последний сегмент URL слагом категории
         $lastSegment = $product ?? $productOrSubcategory;
-        $maybeCategory = \App\Models\Category::where('slug', $lastSegment)->first();
+        $maybeCategory = Category::where('slug', $lastSegment)->first();
         if ($maybeCategory) {
             if ($maybeCategory->is_active) {
                 return app(CatalogController::class)->show($maybeCategory->slug);
             }
             $parentSlug = $maybeCategory->parent?->slug ?? null;
-            return redirect($parentSlug ? '/' . $parentSlug : '/', 301);
+
+            return redirect($parentSlug ? '/'.$parentSlug : '/', 301);
         }
 
         $product = Product::where('slug', $productSlug)
-            ->where(fn($q) => $q->where('is_active', true)->orWhere('is_archived', true))
+            ->where(fn ($q) => $q->where('is_active', true)->orWhere('is_archived', true))
             ->with([
                 'category.parent',
                 'brand',
-                'reviews' => fn($q) => $q->where('is_approved', true)->latest()->limit(10),
+                'reviews' => fn ($q) => $q->where('is_approved', true)->latest()->limit(10),
             ])
             ->firstOrFail();
 
@@ -52,8 +53,8 @@ class ProductController extends Controller
             abort(404);
         }
 
-        $canonicalPath = '/' . $productCategory->slug . '/' . $product->slug;
-        $currentPath = '/' . trim(request()->path(), '/');
+        $canonicalPath = '/'.$productCategory->slug.'/'.$product->slug;
+        $currentPath = '/'.trim(request()->path(), '/');
 
         if ($currentPath !== $canonicalPath && ! request()->attributes->get('allow_single_slug_product')) {
             return redirect($canonicalPath, 301);
@@ -62,12 +63,13 @@ class ProductController extends Controller
         // Атрибуты товара для вкладки "Характеристики"
         $attributeValues = ProductAttributeValue::where('product_id', $product->id)
             ->with(['attribute', 'option'])
-            ->whereHas('attribute', fn($q) => $q
+            ->whereHas('attribute', fn ($q) => $q
                 ->where('in_product', true)
                 ->whereNotIn('name', Product::supplierTechnicalAttributeNames()))
             ->orderBy('attribute_id')
             ->get()
-            ->unique(fn($val) => mb_strtolower(trim($val->attribute->name ?? '')))
+            ->filter(fn ($value) => $value->hasDisplayValue())
+            ->unique(fn ($val) => mb_strtolower(trim($val->attribute->name ?? '')))
             ->values();
 
         // Похожие товары
@@ -85,7 +87,7 @@ class ProductController extends Controller
 
         // SEO
         $sharedCityIn = view()->shared('cityIn');
-        $cityIn       = $sharedCityIn ?: 'в Беларуси';
+        $cityIn = $sharedCityIn ?: 'в Беларуси';
 
         $seo = app(SeoMetadataBuilder::class);
         $replaceCityIn = fn (?string $text): ?string => $seo->replaceCity($text, $cityIn);
@@ -95,7 +97,7 @@ class ProductController extends Controller
         $description = $seo->productDescription($product, $cityIn);
 
         $keywords = $replaceCityIn($product->meta_keywords)
-            ?: ($nameFull . ', купить ' . mb_strtolower($nameFull) . ', цена, ' . $cityIn);
+            ?: ($nameFull.', купить '.mb_strtolower($nameFull).', цена, '.$cityIn);
 
         // Replace %city% placeholders in product body content too
         if ($product->content) {
@@ -105,20 +107,20 @@ class ProductController extends Controller
         // Product data is shared by all city subdomains. The primary-domain
         // canonical prevents every city host from competing with the same card.
         $canonicalBase = self::CANONICAL_BASE;
-        $canonical = $canonicalBase . '/' . $productCategory->slug . '/' . $product->slug;
+        $canonical = $canonicalBase.'/'.$productCategory->slug.'/'.$product->slug;
 
         $firstImage = $product->imageUrl(0);
         $ogImageRaw = $firstImage ?: asset('img/og-default.jpg');
         // og:image и Schema.org требуют абсолютный URL
-        $ogImage = str_starts_with($ogImageRaw, '/') ? 'https://kotlov.by' . $ogImageRaw : $ogImageRaw;
+        $ogImage = str_starts_with($ogImageRaw, '/') ? 'https://kotlov.by'.$ogImageRaw : $ogImageRaw;
 
         // Schema.org Product
         $schema = [
             '@context' => 'https://schema.org',
-            '@type'    => 'Product',
-            'name'     => $nameFull,
-            'sku'      => $product->sku ?? $product->id,
-            'url'      => $canonical,
+            '@type' => 'Product',
+            'name' => $nameFull,
+            'sku' => $product->sku ?? $product->id,
+            'url' => $canonical,
         ];
 
         if (filled($product->sku)) {
@@ -147,11 +149,11 @@ class ProductController extends Controller
             };
 
             $schema['offers'] = [
-                '@type'         => 'Offer',
-                'price'         => (string) $product->price,
+                '@type' => 'Offer',
+                'price' => (string) $product->price,
                 'priceCurrency' => 'BYN',
-                'availability'  => $availability,
-                'url'           => $canonical,
+                'availability' => $availability,
+                'url' => $canonical,
                 'shippingDetails' => [
                     '@type' => 'OfferShippingDetails',
                     'shippingDestination' => [
@@ -223,13 +225,13 @@ class ProductController extends Controller
         $productSchemaName = trim((string) ($nameFull ?: $product->name ?: $product->slug));
 
         $breadcrumbs = [
-            ['@type' => 'ListItem', 'position' => 1, 'name' => 'Главная',      'item' => $canonicalBase . '/'],
-            ['@type' => 'ListItem', 'position' => 2, 'name' => $categorySchemaName, 'item' => $canonicalBase . '/' . $productCategory->slug],
+            ['@type' => 'ListItem', 'position' => 1, 'name' => 'Главная',      'item' => $canonicalBase.'/'],
+            ['@type' => 'ListItem', 'position' => 2, 'name' => $categorySchemaName, 'item' => $canonicalBase.'/'.$productCategory->slug],
             ['@type' => 'ListItem', 'position' => 3, 'name' => $productSchemaName,      'item' => $canonical],
         ];
         $breadcrumbSchema = [
-            '@context'        => 'https://schema.org',
-            '@type'           => 'BreadcrumbList',
+            '@context' => 'https://schema.org',
+            '@type' => 'BreadcrumbList',
             'itemListElement' => $breadcrumbs,
         ];
 
