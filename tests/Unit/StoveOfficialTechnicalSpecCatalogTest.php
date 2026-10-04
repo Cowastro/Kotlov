@@ -11,7 +11,7 @@ class StoveOfficialTechnicalSpecCatalogTest extends TestCase
     {
         $entries = (new StoveOfficialTechnicalSpecCatalog)->entries();
 
-        $this->assertCount(24, $entries);
+        $this->assertCount(28, $entries);
 
         foreach ($entries as $entry) {
             $keys = collect($entry['specs'])->pluck('key');
@@ -125,5 +125,35 @@ class StoveOfficialTechnicalSpecCatalogTest extends TestCase
         $this->assertSame('8', $madrid['Мощность']['value']);
         $this->assertSame('187', $madrid['Масса']['value']);
         $this->assertFalse($madrid->has('Материал корпуса'));
+    }
+
+    public function test_metabel_models_use_the_official_catalog_without_inferred_heating_area(): void
+    {
+        $entries = (new StoveOfficialTechnicalSpecCatalog)->entries();
+        $expected = [
+            'pech-otopitelnaya-meta-bel-yamal' => ['358×546×456', null, '115', '37', 'Верхнее'],
+            'pech-kamin-meta-bel-rona-aot-60' => ['480×437×1188', '6', '150', '110', 'Верхнее'],
+            'pec-kamin-meta-bel-narva-7m' => ['466×481×855', '7', '150', '93', 'Заднее'],
+            'pec-kamin-meta-bel-svitiaz-nr' => ['700×400×1076', '7', '150', '120', 'Верхнее'],
+        ];
+
+        foreach ($expected as $slug => [$dimensions, $power, $diameter, $weight, $connection]) {
+            $entry = $entries[$slug];
+            $specs = collect($entry['specs'])->keyBy('key');
+
+            $this->assertSame('https://metabel.by/images/produktsiya-meta-bel.pdf', $entry['source_url']);
+            $this->assertSame($dimensions, $specs['Габариты (Ш×Г×В)']['value']);
+            $this->assertSame($diameter, $specs['Диаметр дымохода']['value']);
+            $this->assertSame($weight, $specs['Масса']['value']);
+            $this->assertSame($connection, $specs['Подключение дымохода']['value']);
+            $this->assertSame($power, $specs->get('Мощность')['value'] ?? null);
+            $this->assertFalse($specs->keys()->contains(
+                fn (string $key) => str_contains(mb_strtolower($key), 'площад')
+                    || str_contains(mb_strtolower($key), 'объём помещения')
+            ));
+        }
+
+        $this->assertSame('Есть', collect($entries['pech-otopitelnaya-meta-bel-yamal']['specs'])->keyBy('key')['Варочная поверхность']['value']);
+        $this->assertSame('Есть', collect($entries['pec-kamin-meta-bel-narva-7m']['specs'])->keyBy('key')['Варочная поверхность']['value']);
     }
 }

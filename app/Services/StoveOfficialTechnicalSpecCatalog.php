@@ -171,6 +171,40 @@ class StoveOfficialTechnicalSpecCatalog
                 '205',
                 '80',
             ),
+            'pech-otopitelnaya-meta-bel-yamal' => $this->metabelModel(
+                'отопительная печь «Ямал» АОТ-6,0',
+                '358×546×456',
+                null,
+                '115',
+                '37',
+                'Верхнее',
+                [$this->spec('Варочная поверхность', 'Есть', '')],
+            ),
+            'pech-kamin-meta-bel-rona-aot-60' => $this->metabelModel(
+                'печь-камин «Рона» АОТ-6,0-01',
+                '480×437×1188',
+                '6',
+                '150',
+                '110',
+                'Верхнее',
+            ),
+            'pec-kamin-meta-bel-narva-7m' => $this->metabelModel(
+                'печь-камин «Нарва 7М» АОТ-7,0',
+                '466×481×855',
+                '7',
+                '150',
+                '93',
+                'Заднее',
+                [$this->spec('Варочная поверхность', 'Есть', '')],
+            ),
+            'pec-kamin-meta-bel-svitiaz-nr' => $this->metabelModel(
+                'печь-камин «Свитязь» АОТ-7,0-01',
+                '700×400×1076',
+                '7',
+                '150',
+                '120',
+                'Верхнее',
+            ),
         ];
     }
 
@@ -227,6 +261,33 @@ class StoveOfficialTechnicalSpecCatalog
             ],
             'source_url' => $sourceUrl,
             'source_label' => "ЭкоКамин — {$label}",
+        ];
+    }
+
+    /**
+     * @param  array<int, array{key: string, value: string, unit: string}>  $extraSpecs
+     * @return array{specs: array<int, array{key: string, value: string, unit: string}>, source_url: string, source_label: string}
+     */
+    private function metabelModel(
+        string $label,
+        string $dimensions,
+        ?string $power,
+        string $chimneyDiameter,
+        string $weight,
+        string $chimneyConnection,
+        array $extraSpecs = [],
+    ): array {
+        return [
+            'specs' => [
+                $this->spec('Габариты (Ш×Г×В)', $dimensions, 'мм'),
+                ...($power !== null ? [$this->spec('Мощность', $power, 'кВт')] : []),
+                $this->spec('Диаметр дымохода', $chimneyDiameter, 'мм'),
+                $this->spec('Подключение дымохода', $chimneyConnection, ''),
+                $this->spec('Масса', $weight, 'кг'),
+                ...$extraSpecs,
+            ],
+            'source_url' => 'https://metabel.by/images/produktsiya-meta-bel.pdf',
+            'source_label' => "Мета-Бел — {$label}, официальный каталог",
         ];
     }
 
