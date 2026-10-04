@@ -16,6 +16,7 @@ class BackfillElectricSaunaHeaterFiltersCommand extends Command
 {
     protected $signature = 'catalog:backfill-electric-sauna-heater-filters
         {--apply : Persist normalized filter values; the default is a dry run}
+        {--audit-inventory : Show why products from the category are excluded from the public catalog}
         {--sample=12 : Number of unresolved products to show}';
 
     protected $description = 'Safely normalize explicit power, steam-room volume and stone-weight filters for electric sauna heaters';
@@ -34,6 +35,10 @@ class BackfillElectricSaunaHeaterFiltersCommand extends Command
             $this->error('Required filter attributes or options were not found. Run the catalog migration first.');
 
             return self::FAILURE;
+        }
+
+        if ($this->option('audit-inventory')) {
+            $this->auditInventory((int) $category->id);
         }
 
         $products = Product::query()
@@ -129,6 +134,62 @@ class BackfillElectricSaunaHeaterFiltersCommand extends Command
         }
 
         return self::SUCCESS;
+    }
+
+    private function auditInventory(int $categoryId): void
+    {
+        $base = Product::query()->where('category_id', $categoryId);
+        $metrics = [
+            ['all products in category', (clone $base)->count()],
+            ['active', (clone $base)->where('is_active', true)->count()],
+            ['archived', (clone $base)->where('is_archived', true)->count()],
+            ['price greater than zero', (clone $base)->where('price', '>', 0)->count()],
+            ['availability: check', (clone $base)->where('availability_status', Product::AVAILABILITY_CHECK)->count()],
+            ['availability: in stock', (clone $base)->where('availability_status', Product::AVAILABILITY_IN_STOCK)->where('in_stock', true)->count()],
+            ['availability: out of stock', (clone $base)->where('availability_status', Product::AVAILABILITY_OUT_OF_STOCK)->count()],
+            ['public/orderable', (clone $base)->orderable()->count()],
+        ];
+
+        $this->newLine();
+        $this->info('Electric sauna heater inventory audit (read-only)');
+        $this->table(['Metric', 'Count'], $metrics);
+
+        $excluded = (clone $base)
+            ->where(function ($query) {
+                $query->where('is_active', false)
+                    ->orWhere('is_archived', true)
+                    ->orWhere('price', '<=', 0)
+                    ->orWhere(function ($availability) {
+                        $availability->where('availability_status', '!=', Product::AVAILABILITY_CHECK)
+                            ->where(function ($stock) {
+                                $stock->where('availability_status', '!=', Product::AVAILABILITY_IN_STOCK)
+                                    ->orWhere('in_stock', false);
+                            });
+                    });
+            })
+            ->with('brand:id,name')
+            ->orderBy('id')
+            ->limit(max(0, (int) $this->option('sample')))
+            ->get();
+
+        if ($excluded->isNotEmpty()) {
+            $this->line('Sample excluded products:');
+            $this->table(
+                ['ID', 'Brand', 'Active', 'Archived', 'Price', 'In stock', 'Availability', 'Product'],
+                $excluded->map(fn (Product $product) => [
+                    $product->id,
+                    $product->brand?->name ?? '—',
+                    $product->is_active ? 'yes' : 'no',
+                    $product->is_archived ? 'yes' : 'no',
+                    $product->price,
+                    $product->in_stock ? 'yes' : 'no',
+                    $product->availability_status,
+                    $product->name,
+                ])->all(),
+            );
+        }
+
+        $this->newLine();
     }
 
     private function queueValue(
