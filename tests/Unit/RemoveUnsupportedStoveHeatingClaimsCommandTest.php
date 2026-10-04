@@ -34,4 +34,24 @@ class RemoveUnsupportedStoveHeatingClaimsCommandTest extends TestCase
         $this->assertSame(0, $count);
         $this->assertSame('Для отопления дома', $result);
     }
+
+    public function test_all_reviewed_modena_wording_variants_are_removed(): void
+    {
+        $command = new RemoveUnsupportedStoveHeatingClaimsCommand;
+        $clean = new ReflectionMethod($command, 'cleanField');
+
+        [$result, $count] = $clean->invoke(
+            $command,
+            'Печь предназначена для обогрева помещений объёмом до 150 м³. Конфорка подходит для обогрева до 150 м³ и приготовления пищи.',
+            [
+                'предназначена для обогрева помещений объёмом до 150 м³' => 'предназначена для отопления жилых помещений',
+                'для обогрева до 150 м³' => 'для отопления дома',
+            ],
+        );
+
+        $this->assertSame(2, $count);
+        $this->assertStringNotContainsString('150 м³', $result);
+        $this->assertStringContainsString('для отопления жилых помещений', $result);
+        $this->assertStringContainsString('для отопления дома', $result);
+    }
 }
