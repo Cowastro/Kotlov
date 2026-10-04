@@ -13,7 +13,7 @@ class StoveOfficialHeatingVolumeCatalogTest extends TestCase
         $normalizer = new StoveHeatingVolumeNormalizer;
         $entries = (new StoveOfficialHeatingVolumeCatalog)->entries();
 
-        $this->assertCount(45, $entries);
+        $this->assertCount(49, $entries);
 
         foreach ($entries as $slug => $entry) {
             $this->assertNotSame('', $slug);
@@ -37,6 +37,21 @@ class StoveOfficialHeatingVolumeCatalogTest extends TestCase
         foreach ($praga as $entry) {
             $this->assertSame('105–240 м³', $entry['volume']);
             $this->assertStringStartsWith('https://ecokamin.ru/catalog/kaminy/praga/', $entry['source_url']);
+        }
+    }
+
+    public function test_ecokamin_catalog_models_keep_their_published_volumes(): void
+    {
+        $entries = (new StoveOfficialHeatingVolumeCatalog)->entries();
+
+        $this->assertSame('135–240 м³', $entries['pech-kamin-ecokamin-bavariya-panorama-prizma-s-plitoy']['volume']);
+        foreach ([
+            'kamin-eklips-ostrovnoi-gigant-grafit',
+            'kamin-eklips-ostrovnoi-gigant-s-cernym-samotom',
+            'kamin-eklips-ostrovnoi-gigant',
+        ] as $slug) {
+            $this->assertSame('140–325 м³', $entries[$slug]['volume']);
+            $this->assertStringContainsString('ecokamin.ru/upload/', $entries[$slug]['source_url']);
         }
     }
 }
