@@ -24,6 +24,7 @@ use App\Http\Controllers\SearchController;
 use App\Http\Controllers\TelegramWebhookController;
 use App\Http\Controllers\WishlistController;
 use App\Models\Banner;
+use App\Models\BlogPost;
 use App\Models\Category;
 use App\Models\ContactRequest;
 use App\Models\EmailSubscriber;
@@ -133,6 +134,12 @@ Route::get('/', function () {
         $bannerPromoAkcii = Banner::active()->byPosition('promo_akcii')->first();
         $bannerPartners = Banner::active()->byPosition('partners')->first();
 
+        $homeBlogPosts = BlogPost::published()
+            ->with('category:id,name,slug')
+            ->orderByDesc('published_at')
+            ->limit(6)
+            ->get();
+
         return compact(
             'popularCategories',
             'productsKotly', 'productsNasosy',
@@ -140,7 +147,7 @@ Route::get('/', function () {
             'bannersHero',
             'bannerPromoKotly', 'bannerPromoNasosy',
             'bannerPromoKaminy', 'bannerPromoAkcii',
-            'bannerPartners'
+            'bannerPartners', 'homeBlogPosts'
         );
     });
 

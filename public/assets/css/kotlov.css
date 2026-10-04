@@ -1905,6 +1905,36 @@ a.category-v05.subcat-tile:hover .cate-icon {
     flex-direction: column;
 }
 
+.home-blog-section .swiper-slide {
+    height: auto;
+}
+
+.home-blog-section .entry-title {
+    display: -webkit-box;
+    min-height: 2.8em;
+    overflow: hidden;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+}
+
+.home-blog-section .entry-desc {
+    display: -webkit-box;
+    overflow: hidden;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 3;
+}
+
+@media (max-width: 575px) {
+    .home-blog-section .sect-heading.has-col-right {
+        align-items: flex-start;
+    }
+
+    .home-blog-section .col-right,
+    .home-blog-section .col-right .tf-btn {
+        width: 100%;
+    }
+}
+
 .footer-legal {
     border-top: 1px solid rgba(255, 255, 255, .1);
     padding: 14px 0 18px;
