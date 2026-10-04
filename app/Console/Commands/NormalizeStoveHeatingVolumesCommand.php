@@ -25,7 +25,7 @@ class NormalizeStoveHeatingVolumesCommand extends Command
         {--apply : Persist canonical room-volume ranges; the default is a dry run}
         {--sample=15 : Number of unresolved products to show}';
 
-    protected $description = 'Map explicit stove room-volume facts to a separate m³ catalog filter';
+    protected $description = 'Keep legacy room-volume ranges for product data without exposing a separate catalog filter';
 
     public function handle(StoveHeatingVolumeNormalizer $normalizer): int
     {
@@ -34,6 +34,7 @@ class NormalizeStoveHeatingVolumesCommand extends Command
 
         if ($categories->isEmpty()) {
             $this->error('No heating-stove categories were found.');
+
             return self::FAILURE;
         }
 
@@ -62,6 +63,7 @@ class NormalizeStoveHeatingVolumesCommand extends Command
             if ($range === null) {
                 $stats['unresolved']++;
                 $unresolved->push($product);
+
                 continue;
             }
 
@@ -88,6 +90,7 @@ class NormalizeStoveHeatingVolumesCommand extends Command
                     ->whereIn('id', $plans->pluck('product.category_id')->unique())
                     ->mapWithKeys(function (Category $category) use ($normalizer) {
                         $attribute = $this->ensureAttribute($category);
+
                         return [$category->id => [
                             'attribute' => $attribute,
                             'options' => $this->ensureOptions($attribute, $normalizer),
@@ -110,7 +113,7 @@ class NormalizeStoveHeatingVolumesCommand extends Command
 
         $this->table(['Metric', 'Count'], collect($stats)->map(fn ($value, $key) => [$key, $value])->values());
         $this->line('Mode: '.($apply ? 'APPLY' : 'DRY RUN'));
-        $this->line('Only explicit room-volume facts were used; m³ was not converted to m².');
+        $this->line('Legacy m³ ranges were retained but are hidden from catalog filters.');
 
         $sample = max(0, (int) $this->option('sample'));
         if ($sample > 0 && $unresolved->isNotEmpty()) {
@@ -140,13 +143,14 @@ class NormalizeStoveHeatingVolumesCommand extends Command
         $values = [
             'name' => 'Объём отапливаемого помещения',
             'suffix' => 'м³',
-            'in_filter' => true,
+            'in_filter' => false,
             'in_product' => true,
             'is_comparable' => true,
         ];
 
         if ($attribute) {
             $attribute->update($values);
+
             return $attribute;
         }
 

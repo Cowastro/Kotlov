@@ -101,7 +101,7 @@ class StoveFireplaceQuickFiltersTest extends TestCase
         $this->assertStringContainsString('/montazh-kaminov', $html);
     }
 
-    public function test_heating_stove_filters_keep_room_volume_separate_from_area(): void
+    public function test_heating_stove_filters_do_not_duplicate_area_with_room_volume(): void
     {
         $category = new Category(['slug' => 'peci-drovianye-otopitelnye']);
         $filterAttributes = collect([
@@ -118,10 +118,10 @@ class StoveFireplaceQuickFiltersTest extends TestCase
         $html = view('partials.stove-fireplace-quick-filters', compact('category', 'filterAttributes'))->render();
 
         $this->assertStringContainsString('50–100 м²', $html);
-        $this->assertStringContainsString('до 100 м³', $html);
-        $this->assertStringContainsString('101–200 м³', $html);
-        $this->assertStringContainsString('Объём', $html);
-        $this->assertStringContainsString('attr%5B945%5D%5B0%5D=5', $html);
+        $this->assertStringNotContainsString('до 100 м³', $html);
+        $this->assertStringNotContainsString('101–200 м³', $html);
+        $this->assertStringNotContainsString('attr%5B945%5D', $html);
+        $this->assertStringContainsString('высоте потолка 2,5 м', $html);
     }
 
     public function test_root_stove_page_adapts_quick_filter_heading_to_selected_subcategory(): void

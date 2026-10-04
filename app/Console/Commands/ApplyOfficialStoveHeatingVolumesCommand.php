@@ -3,6 +3,8 @@
 namespace App\Console\Commands;
 
 use App\Models\Product;
+use App\Services\StoveHeatingAreaFromVolumeConverter;
+use App\Services\StoveHeatingAreaNormalizer;
 use App\Services\StoveHeatingVolumeNormalizer;
 use App\Services\StoveOfficialHeatingVolumeCatalog;
 use Illuminate\Console\Command;
@@ -25,6 +27,8 @@ class ApplyOfficialStoveHeatingVolumesCommand extends Command
     public function handle(
         StoveOfficialHeatingVolumeCatalog $catalog,
         StoveHeatingVolumeNormalizer $normalizer,
+        StoveHeatingAreaNormalizer $areaNormalizer,
+        StoveHeatingAreaFromVolumeConverter $areaConverter,
     ): int {
         $apply = (bool) $this->option('apply');
         $entries = $catalog->entries();
@@ -43,6 +47,7 @@ class ApplyOfficialStoveHeatingVolumesCommand extends Command
             $product = $products->get($slug);
             if (! $product) {
                 $missing[] = $slug;
+
                 continue;
             }
 
@@ -50,6 +55,7 @@ class ApplyOfficialStoveHeatingVolumesCommand extends Command
                 || ! $product->is_active
                 || $product->is_archived) {
                 $skipped[] = [$product->id, $product->name, 'not an active heating stove'];
+
                 continue;
             }
 
@@ -57,19 +63,31 @@ class ApplyOfficialStoveHeatingVolumesCommand extends Command
             $range = $normalizer->detect($updatedSpecs);
             if ($range === null) {
                 $skipped[] = [$product->id, $product->name, 'conflicting room-volume facts'];
+
                 continue;
             }
 
-            $plans->push(compact('product', 'evidence', 'updatedSpecs', 'range'));
+            $derivedArea = null;
+            if (! $this->containsAreaSpec($updatedSpecs, $areaNormalizer)) {
+                $derivedArea = $areaConverter->convert($evidence['volume']);
+                if ($derivedArea !== null) {
+                    $updatedSpecs[] = [
+                        'key' => 'Площадь отапливаемого помещения',
+                        'value' => $areaConverter->label($derivedArea),
+                    ];
+                }
+            }
+
+            $plans->push(compact('product', 'evidence', 'updatedSpecs', 'range', 'derivedArea'));
         }
 
         $this->table(
-            ['ID', 'Product', 'Volume', 'Filter range', 'Official source'],
+            ['ID', 'Product', 'Volume', 'Area at 2.5 m', 'Official source'],
             $plans->map(fn (array $plan) => [
                 $plan['product']->id,
                 $plan['product']->name,
                 $plan['evidence']['volume'],
-                $plan['range'],
+                $plan['derivedArea'] !== null ? $areaConverter->label($plan['derivedArea']) : 'kept explicit area',
                 $plan['evidence']['source_url'],
             ])->all()
         );
@@ -95,6 +113,16 @@ class ApplyOfficialStoveHeatingVolumesCommand extends Command
                         'verified_at' => now()->toDateString(),
                     ];
 
+                    if ($plan['derivedArea'] !== null) {
+                        $serviceInfo['derived_heating_area'] = [
+                            'value' => $plan['derivedArea'],
+                            'ceiling_height_m' => StoveHeatingAreaFromVolumeConverter::STANDARD_CEILING_HEIGHT,
+                            'formula' => 'maximum official volume / ceiling height',
+                            'source_url' => $plan['evidence']['source_url'],
+                            'verified_at' => now()->toDateString(),
+                        ];
+                    }
+
                     $product->update([
                         'specs' => $plan['updatedSpecs'],
                         'service_info' => $serviceInfo,
@@ -111,7 +139,7 @@ class ApplyOfficialStoveHeatingVolumesCommand extends Command
             count($skipped),
             count($missing),
         ));
-        $this->line('Official m³ values remain separate from heated-area m² filters; no conversion was made.');
+        $this->line('The m² filter uses maximum official volume / 2.5 m; an explicit manufacturer area always has priority.');
 
         return ($missing === [] && $skipped === []) ? self::SUCCESS : self::FAILURE;
     }
@@ -122,11 +150,13 @@ class ApplyOfficialStoveHeatingVolumesCommand extends Command
         foreach ($specs as $key => $spec) {
             if (is_array($spec) && isset($spec['key']) && $normalizer->isVolumeKey((string) $spec['key'])) {
                 $specs[$key]['value'] = $value;
+
                 return $specs;
             }
 
             if (is_string($key) && $normalizer->isVolumeKey($key)) {
                 $specs[$key] = $value;
+
                 return $specs;
             }
         }
@@ -134,5 +164,21 @@ class ApplyOfficialStoveHeatingVolumesCommand extends Command
         $specs[] = ['key' => 'Объём отапливаемого помещения', 'value' => $value];
 
         return $specs;
+    }
+
+    /** @param array<int|string, mixed> $specs */
+    private function containsAreaSpec(array $specs, StoveHeatingAreaNormalizer $normalizer): bool
+    {
+        foreach ($specs as $key => $spec) {
+            if (is_array($spec) && isset($spec['key']) && $normalizer->isAreaKey((string) $spec['key'])) {
+                return true;
+            }
+
+            if (is_string($key) && $normalizer->isAreaKey($key)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 }
