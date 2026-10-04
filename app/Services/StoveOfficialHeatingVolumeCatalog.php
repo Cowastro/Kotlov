@@ -24,6 +24,15 @@ class StoveOfficialHeatingVolumeCatalog
             'pec-top-200-ds' => $this->entry('140–200 м³', 'https://www.teplodar.ru/catalog/detail/top_model_200_so_stalnoy_dvertsey/', 'Теплодар — ТОП-модель-200 ДС'),
             'pec-top-300-dc' => $this->entry('200–300 м³', 'https://www.teplodar.ru/catalog/detail/top_model_300_s_chugunnoy_dvertsey/', 'Теплодар — ТОП-модель-300 ДЧ'),
             'pec-top-draiv-150' => $this->entry('50–150 м³', 'https://www.teplodar.ru/catalog/detail/top_drayv_150/', 'Теплодар — ТОП-драйв-150'),
+            '-pech-otopitelnaya-vezuviy-' => $this->entry('до 100 м³', 'https://vezuviy.su/otopitelnoe-oborudovanie/pechi-otopitelnye/otopitelnye-pechi-seriya-komfort/', 'Везувий — Комфорт 100 ДТ-3С'),
+            'pech-otopitelnaya-vezuvij-triumf-180-to' => $this->entry('до 180 м³', 'https://vezuviy.su/otopitelnoe-oborudovanie/chugunnye-pechi-kaminy/pech-otopitelnaya-vezuviy-chugunnaya-triumf-180-teploobmennik/', 'Везувий — Триумф 180 т/о'),
+            'pech-otopitelnaya-vezuvij-v5' => $this->entry('до 100 м³', 'https://vezuviy.su/otopitelnoe-oborudovanie/pechi-otopitelnye/pech-otopitelnaya-vezuviy-v5/', 'Везувий — В5'),
+            'pech-otopitelnaya-vezuviy-aogt-02' => $this->entry('до 400 м³', 'https://vezuviy.su/otopitelnoe-oborudovanie/pech-otopitelnaya-vezuviy-aogt-02-c/', 'Везувий — АОГТ 02'),
+            'pech-otopitelnaya-vezuviy-aogt-03-s' => $this->entry('до 600 м³', 'https://vezuviy.su/otopitelnoe-oborudovanie/pech-otopitelnaya-vezuviy-aogt-03/', 'Везувий — АОГТ 03'),
+            'pech-otopitelnaya-vezuviy-aogt-04' => $this->entry('до 1000 м³', 'https://vezuviy.su/otopitelnoe-oborudovanie/pech-otopitelnaya-vezuviy-aogt-04/', 'Везувий — АОГТ 04'),
+            'pech-otopitelnaya-vezuviy-komfort-100-dt-3' => $this->entry('до 100 м³', 'https://vezuviy.su/otopitelnoe-oborudovanie/pechi-otopitelnye/pech-otopitelnaya-vezuviy-komfort-100-dt-3/', 'Везувий — Комфорт 100 ДТ-3'),
+            'pech-otopitelnaya-vezuviy-komfort-200-dt-3s' => $this->entry('до 200 м³', 'https://vezuviy.su/otopitelnoe-oborudovanie/pechi-otopitelnye/otopitelnye-pechi-seriya-komfort/', 'Везувий — Комфорт 200 ДТ-3С'),
+            'pech-otopitelnaya-vezuviy-komfort-300-dt-3s' => $this->entry('до 300 м³', 'https://vezuviy.su/otopitelnoe-oborudovanie/pechi-otopitelnye/otopitelnye-pechi-seriya-komfort/', 'Везувий — Комфорт 300 ДТ-3С'),
         ];
     }
 
