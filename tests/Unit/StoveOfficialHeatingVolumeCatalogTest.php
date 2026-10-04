@@ -13,7 +13,7 @@ class StoveOfficialHeatingVolumeCatalogTest extends TestCase
         $normalizer = new StoveHeatingVolumeNormalizer;
         $entries = (new StoveOfficialHeatingVolumeCatalog)->entries();
 
-        $this->assertCount(49, $entries);
+        $this->assertCount(53, $entries);
 
         foreach ($entries as $slug => $entry) {
             $this->assertNotSame('', $slug);
@@ -52,6 +52,21 @@ class StoveOfficialHeatingVolumeCatalogTest extends TestCase
         ] as $slug) {
             $this->assertSame('140–325 м³', $entries[$slug]['volume']);
             $this->assertStringContainsString('ecokamin.ru/upload/', $entries[$slug]['source_url']);
+        }
+    }
+
+    public function test_vesuviy_fireplace_stoves_keep_their_published_volumes(): void
+    {
+        $entries = (new StoveOfficialHeatingVolumeCatalog)->entries();
+
+        foreach ([
+            'pec-kamin-vezuvii-ast-13k-antracit' => 'до 260 м³',
+            'pec-kamin-vezuvii-hr-15-antracit' => 'до 300 м³',
+            'pec-kamin-vezuvii-hr-15r-antracit' => 'до 300 м³',
+            'pec-kamin-vezuvii-kz-14rs-antracit' => 'до 280 м³',
+        ] as $slug => $volume) {
+            $this->assertSame($volume, $entries[$slug]['volume']);
+            $this->assertStringStartsWith('https://vezuviy.su/', $entries[$slug]['source_url']);
         }
     }
 }
