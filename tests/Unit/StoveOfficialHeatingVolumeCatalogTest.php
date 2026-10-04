@@ -13,7 +13,7 @@ class StoveOfficialHeatingVolumeCatalogTest extends TestCase
         $normalizer = new StoveHeatingVolumeNormalizer;
         $entries = (new StoveOfficialHeatingVolumeCatalog)->entries();
 
-        $this->assertCount(59, $entries);
+        $this->assertCount(61, $entries);
 
         foreach ($entries as $slug => $entry) {
             $this->assertNotSame('', $slug);
@@ -106,6 +106,19 @@ class StoveOfficialHeatingVolumeCatalogTest extends TestCase
         ] as $slug => $volume) {
             $this->assertSame($volume, $entries[$slug]['volume']);
             $this->assertStringStartsWith('https://fireway.pro/', $entries[$slug]['source_url']);
+        }
+    }
+
+    public function test_everest_stoves_keep_their_published_volumes(): void
+    {
+        $entries = (new StoveOfficialHeatingVolumeCatalog)->entries();
+
+        foreach ([
+            'pec-kamin-everest-n12m' => 'до 240 м³',
+            'pec-kamin-everest-n16' => 'до 320 м³',
+        ] as $slug => $volume) {
+            $this->assertSame($volume, $entries[$slug]['volume']);
+            $this->assertStringStartsWith('https://everest-pech.com/', $entries[$slug]['source_url']);
         }
     }
 }
