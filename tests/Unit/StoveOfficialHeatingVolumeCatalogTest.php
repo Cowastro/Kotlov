@@ -13,7 +13,7 @@ class StoveOfficialHeatingVolumeCatalogTest extends TestCase
         $normalizer = new StoveHeatingVolumeNormalizer;
         $entries = (new StoveOfficialHeatingVolumeCatalog)->entries();
 
-        $this->assertCount(63, $entries);
+        $this->assertCount(64, $entries);
 
         foreach ($entries as $slug => $entry) {
             $this->assertNotSame('', $slug);
@@ -44,6 +44,8 @@ class StoveOfficialHeatingVolumeCatalogTest extends TestCase
     {
         $entries = (new StoveOfficialHeatingVolumeCatalog)->entries();
 
+        $this->assertSame('135–240 м³', $entries['pech-kotel-derevenka-dve-konforki-bez-teploobmennikov']['volume']);
+        $this->assertStringContainsString('PK193', $entries['pech-kotel-derevenka-dve-konforki-bez-teploobmennikov']['source_label']);
         $this->assertSame('135–240 м³', $entries['pech-kamin-ecokamin-bavariya-panorama-prizma-s-plitoy']['volume']);
         foreach ([
             'kamin-eklips-ostrovnoi-gigant-grafit',
