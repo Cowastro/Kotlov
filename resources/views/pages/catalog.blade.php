@@ -68,6 +68,10 @@
         @include('partials.solid-fuel-boiler-quick-filters')
     @endif
 
+    @if (in_array($category->slug, ['pechki', 'pechi-kaminy', 'pechi', 'peci-drovianye-otopitelnye', 'kaminy', 'topki'], true))
+        @include('partials.stove-fireplace-quick-filters')
+    @endif
+
     @if ($catalogSpotlight)
         <section class="catalog-brand-note" aria-labelledby="catalog-brand-title">
             <div class="container">

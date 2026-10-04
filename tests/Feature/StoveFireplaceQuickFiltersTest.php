@@ -1,0 +1,96 @@
+<?php
+
+namespace Tests\Feature;
+
+use App\Models\Category;
+use Tests\TestCase;
+
+class StoveFireplaceQuickFiltersTest extends TestCase
+{
+    public function test_stove_filters_render_material_and_heating_area_links(): void
+    {
+        $category = new Category(['slug' => 'pechki']);
+        $filterAttributes = collect([
+            $this->attribute(791, 'Материал', [
+                $this->option(1, 'Чугун', 299),
+                $this->option(2, 'Сталь', 233),
+            ]),
+            $this->attribute(944, 'Площадь отапливаемого помещения', [
+                $this->option(3, 'Менее 50 м2', 46),
+                $this->option(4, '50 м2 - 100 м2', 319),
+                $this->option(5, 'Более 100 м2', 162),
+            ]),
+        ]);
+
+        $html = view('partials.stove-fireplace-quick-filters', compact('category', 'filterAttributes'))->render();
+
+        $this->assertStringContainsString('Подберите печь для дома', $html);
+        $this->assertStringContainsString('чугун', $html);
+        $this->assertStringContainsString('сталь', $html);
+        $this->assertStringContainsString('50–100 м²', $html);
+        $this->assertStringContainsString('attr%5B791%5D%5B0%5D=1', $html);
+        $this->assertStringContainsString('299', $html);
+    }
+
+    public function test_fireplace_filters_match_dash_variants_in_power_options(): void
+    {
+        $category = new Category(['slug' => 'topki']);
+        $filterAttributes = collect([
+            $this->attribute(839, 'Материал', [
+                $this->option(6, 'чугун', 176),
+                $this->option(7, 'сталь', 147),
+            ]),
+            $this->attribute(836, 'Мощность', [
+                $this->option(8, 'до 10 кВт', 34),
+                $this->option(9, '10 — 15 кВт', 162),
+                $this->option(10, '15 — 20 кВт', 115),
+            ]),
+        ]);
+
+        $html = view('partials.stove-fireplace-quick-filters', compact('category', 'filterAttributes'))->render();
+
+        $this->assertStringContainsString('Подберите каминную топку', $html);
+        $this->assertStringContainsString('10–15 кВт', $html);
+        $this->assertStringContainsString('attr%5B836%5D%5B0%5D=9', $html);
+    }
+
+    public function test_active_filter_link_removes_it_and_keeps_brand(): void
+    {
+        request()->merge([
+            'attr' => [791 => [1]],
+            'brand' => 45,
+            'page' => 2,
+        ]);
+        $category = new Category(['slug' => 'pechi-kaminy']);
+        $filterAttributes = collect([
+            $this->attribute(791, 'Материал', [
+                $this->option(1, 'Чугун', 299),
+            ]),
+        ]);
+
+        $html = view('partials.stove-fireplace-quick-filters', compact('category', 'filterAttributes'))->render();
+
+        $this->assertStringContainsString('aria-current="true"', $html);
+        $this->assertStringContainsString('brand=45', $html);
+        $this->assertStringNotContainsString('page=2', $html);
+        $this->assertStringNotContainsString('attr%5B791%5D', $html);
+    }
+
+    private function attribute(int $id, string $name, array $options): object
+    {
+        return (object) [
+            'id' => $id,
+            'name' => $name,
+            'options' => collect($options),
+        ];
+    }
+
+    private function option(int $id, string $name, int $productsCount): object
+    {
+        return (object) [
+            'id' => $id,
+            'name' => $name,
+            'products_count' => $productsCount,
+        ];
+    }
+}
