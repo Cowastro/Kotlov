@@ -64,6 +64,10 @@
         @include('partials.electric-sauna-heater-quick-filters')
     @endif
 
+    @if ($category->slug === 'tverdotoplivnye')
+        @include('partials.solid-fuel-boiler-quick-filters')
+    @endif
+
     @if ($catalogSpotlight)
         <section class="catalog-brand-note" aria-labelledby="catalog-brand-title">
             <div class="container">
