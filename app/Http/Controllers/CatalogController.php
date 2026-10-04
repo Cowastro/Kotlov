@@ -323,6 +323,8 @@ class CatalogController extends Controller
             || $category->parent?->slug === 'dymohody';
         $isStoveOrFireplaceCatalog = in_array($category->slug, ['pechki', 'kaminy'], true)
             || in_array($category->parent?->slug, ['pechki', 'kaminy'], true);
+        $isPipesCatalog = $category->slug === 'truby-i-fitingi'
+            || $category->parent?->slug === 'truby-i-fitingi';
 
         switch (request('sort')) {
             case 'price_asc':
@@ -346,6 +348,7 @@ class CatalogController extends Controller
                         ->where('slug', 'kotlov-ge')
                         ->value('id'),
                     $isChimneyCatalog => $brands->firstWhere('slug', 'teplov-i-suhov')?->id,
+                    $isPipesCatalog => $brands->firstWhere('slug', 'varmega')?->id,
                     default => null,
                 };
 
@@ -353,6 +356,7 @@ class CatalogController extends Controller
                     $priorityBrandId,
                     $isChimneyCatalog
                         || $isStoveOrFireplaceCatalog
+                        || $isPipesCatalog
                         || in_array($category->slug, ['tverdotoplivnye', 'bufernye-emkosti', 'kosvennye'], true)
                 );
         }
@@ -539,19 +543,37 @@ class CatalogController extends Controller
             'dymohody' => 'Дымоходы из нержавеющей стали для котлов, печей и каминов. Моно- и сэндвич-системы, крепления и фасонные элементы с подбором по диаметру.',
             'dymohody-mono' => 'Одностенные дымоходы Моно для прокладки внутри отапливаемых помещений и гильзования каналов. Сравните диаметр, марку и толщину стали.',
             'dymohody-sendvich' => 'Утеплённые сэндвич-дымоходы для наружных участков и проходов через перекрытия. Подберите систему по диаметру, толщине стали и слою изоляции.',
+            'truby-i-fitingi' => 'Трубы и фитинги для систем отопления, водоснабжения и тёплого пола. Сравните материал, диаметр, тип соединения и рабочее давление.',
+            'truby-iz-sshitogo-polietilena' => 'Трубы из сшитого полиэтилена для отопления и водяного тёплого пола. Подберите диаметр, толщину стенки и длину бухты.',
+            'rezbovye-fitingi' => 'Резьбовые фитинги для разъёмных соединений труб: муфты, угольники, тройники и переходники. Сравните размер резьбы и материал.',
+            'vodyanoy-teplyy-pol' => 'Комплектующие для водяного тёплого пола: трубы, фитинги и элементы подключения. Подберите совместимые компоненты системы.',
+            'press-fitingi' => 'Пресс-фитинги для быстрых неразъёмных соединений труб. Сравните диаметр, профиль прессования, материал и назначение.',
+            'kompressionnye-fitingi' => 'Компрессионные фитинги для труб отопления и водоснабжения. Подберите тип соединения, диаметр и материал корпуса.',
+            'krepleniya-dlya-trub' => 'Крепления для надёжной фиксации труб: клипсы, хомуты и опоры. Сравните диаметр, материал и способ монтажа.',
             default => null,
         };
 
-        $chimneySpotlight = null;
+        $catalogBrandSpotlight = null;
         if ($category->slug === 'dymohody') {
             $teplovBrand = $brands->firstWhere('slug', 'teplov-i-suhov');
 
             if ($teplovBrand) {
-                $chimneySpotlight = [
+                $catalogBrandSpotlight = [
                     'title' => 'Дымоходы «Теплов и Сухов»',
                     'text' => 'Моно, сэндвич, переходы, ревизии и крепления одной модульной системы. Фильтр покажет весь доступный ассортимент бренда.',
                     'url' => url('/dymohody') . '?brand=' . $teplovBrand->id,
-                    'count' => $teplovBrand->products_count,
+                ];
+            }
+        }
+
+        if ($category->slug === 'truby-i-fitingi') {
+            $varmegaBrand = $brands->firstWhere('slug', 'varmega');
+
+            if ($varmegaBrand) {
+                $catalogBrandSpotlight = [
+                    'title' => 'Трубы и фитинги Varmega',
+                    'text' => 'Пресс-фитинги, резьбовые и компрессионные соединения, трубы и комплектующие одной совместимой системы.',
+                    'url' => url('/truby-i-fitingi') . '?brand=' . $varmegaBrand->id,
                 ];
             }
         }
@@ -577,7 +599,7 @@ class CatalogController extends Controller
             'pelletComparisonProducts',
             'installerRecruitment',
             'catalogIntro',
-            'chimneySpotlight'
+            'catalogBrandSpotlight'
         ));
     }
 
