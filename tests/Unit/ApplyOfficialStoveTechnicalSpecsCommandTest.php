@@ -15,6 +15,8 @@ class ApplyOfficialStoveTechnicalSpecsCommandTest extends TestCase
 
         $this->assertSame('масса', $normalize->invoke($command, 'Вес, кг'));
         $this->assertSame('масса', $normalize->invoke($command, 'Масса'));
+        $this->assertSame('масса', $normalize->invoke($command, 'Вес, нетто кг'));
+        $this->assertSame('мощность', $normalize->invoke($command, 'Тепловая мощность'));
         $this->assertSame('габариты', $normalize->invoke($command, 'Размеры печи, мм'));
         $this->assertSame('габариты', $normalize->invoke($command, 'Габариты (Ш×Г×В)'));
         $this->assertSame('размерытопки', $normalize->invoke($command, 'Размеры топочной камеры'));
@@ -28,7 +30,9 @@ class ApplyOfficialStoveTechnicalSpecsCommandTest extends TestCase
         $this->assertSame('материал', $normalize->invoke($command, 'Материал топки'));
         $this->assertSame('материал', $normalize->invoke($command, 'Облицовочный материал'));
         $this->assertSame('подключениедымохода', $normalize->invoke($command, 'Выход дымохода'));
+        $this->assertSame('подключениедымохода', $normalize->invoke($command, 'Подключение'));
         $this->assertSame('гарантия', $normalize->invoke($command, 'Гарантийный срок'));
+        $this->assertSame('гарантия', $normalize->invoke($command, 'Гарантия производителя'));
     }
 
     public function test_verified_specs_replace_synonyms_but_preserve_unrelated_fields(): void

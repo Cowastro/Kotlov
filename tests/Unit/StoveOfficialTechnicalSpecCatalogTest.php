@@ -11,12 +11,11 @@ class StoveOfficialTechnicalSpecCatalogTest extends TestCase
     {
         $entries = (new StoveOfficialTechnicalSpecCatalog)->entries();
 
-        $this->assertCount(16, $entries);
+        $this->assertCount(24, $entries);
 
         foreach ($entries as $entry) {
             $keys = collect($entry['specs'])->pluck('key');
 
-            $this->assertTrue($keys->contains('Мощность'));
             $this->assertTrue($keys->contains('Габариты (Ш×Г×В)'));
             $this->assertFalse($keys->contains(fn (string $key) => str_contains(mb_strtolower($key), 'площад')));
             $this->assertFalse($keys->contains(fn (string $key) => str_contains(mb_strtolower($key), 'объём помещения')));
@@ -86,5 +85,45 @@ class StoveOfficialTechnicalSpecCatalogTest extends TestCase
                     || str_contains(mb_strtolower($key), 'объём помещения')
             ));
         }
+    }
+
+    public function test_ecokamin_models_use_exact_official_cards_without_inferred_heating_area(): void
+    {
+        $entries = (new StoveOfficialTechnicalSpecCatalog)->entries();
+        $slugs = [
+            'otopitelnaya-pech-ecokamin-ogonek',
+            'kamin-panorama-tri-stekla-grafit',
+            'kamin-panorama-tri-stekla-chernyiy',
+            'kamin-praga-tri-stekla-new-chernyiy',
+            'kamin-praga-tri-stekla-new-cernyi-samot-cernyi',
+            'kamin-madrid-na-drovnike-podovyi',
+            'kamin-madrid-na-drovnike-gigant-centralnyi-cernyi-samot-podovyi',
+            'kamin-madrid-na-drovnike-gigant-sleva-cernyi-samot-podovyi',
+        ];
+
+        foreach ($slugs as $slug) {
+            $entry = $entries[$slug];
+            $keys = collect($entry['specs'])->pluck('key');
+
+            $this->assertStringContainsString('ecokamin.ru/catalog/', $entry['source_url']);
+            $this->assertFalse($keys->contains(
+                fn (string $key) => str_contains(mb_strtolower($key), 'площад')
+                    || str_contains(mb_strtolower($key), 'объём помещения')
+            ));
+        }
+
+        $ogonek = collect($entries['otopitelnaya-pech-ecokamin-ogonek']['specs'])->keyBy('key');
+        $this->assertSame('300×477×421', $ogonek['Габариты (Ш×Г×В)']['value']);
+        $this->assertSame('23', $ogonek['Масса']['value']);
+        $this->assertFalse($ogonek->has('Мощность'));
+
+        $praga = collect($entries['kamin-praga-tri-stekla-new-chernyiy']['specs'])->keyBy('key');
+        $this->assertSame('14', $praga['Мощность']['value']);
+        $this->assertSame('223', $praga['Масса']['value']);
+
+        $madrid = collect($entries['kamin-madrid-na-drovnike-podovyi']['specs'])->keyBy('key');
+        $this->assertSame('8', $madrid['Мощность']['value']);
+        $this->assertSame('187', $madrid['Масса']['value']);
+        $this->assertFalse($madrid->has('Материал корпуса'));
     }
 }

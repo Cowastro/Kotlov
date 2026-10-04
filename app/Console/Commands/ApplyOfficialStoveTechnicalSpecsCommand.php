@@ -189,11 +189,11 @@ class ApplyOfficialStoveTechnicalSpecsCommand extends Command
         $normalized = preg_replace('/(?:мм|кг|квт|литр(?:а|ов)?|л)$/u', '', $normalized) ?: $normalized;
         $normalized = preg_replace('/(?:шгв|вшг|дшв)$/u', '', $normalized) ?: $normalized;
 
-        if (preg_match('/^(?:масса|вес)$/u', $normalized)) {
+        if (preg_match('/^(?:масса|вес|веснетто)$/u', $normalized)) {
             return 'масса';
         }
 
-        if (preg_match('/^(?:мощность|номинальнаямощность|диапазонмощности)$/u', $normalized)) {
+        if (preg_match('/^(?:мощность|тепловаямощность|номинальнаямощность|диапазонмощности)$/u', $normalized)) {
             return 'мощность';
         }
 
@@ -225,11 +225,11 @@ class ApplyOfficialStoveTechnicalSpecsCommand extends Command
             return 'максимальнаядлинаполена';
         }
 
-        if (preg_match('/^(?:подключениедымохода|выходдымохода)$/u', $normalized)) {
+        if (preg_match('/^(?:подключение|подключениедымохода|выходдымохода)$/u', $normalized)) {
             return 'подключениедымохода';
         }
 
-        if (preg_match('/^(?:гарантия|гарантийныйсрок)$/u', $normalized)) {
+        if (preg_match('/^(?:гарантия|гарантийныйсрок|гарантияпроизводителя)$/u', $normalized)) {
             return 'гарантия';
         }
 

@@ -92,6 +92,85 @@ class StoveOfficialTechnicalSpecCatalog
                 'source_url' => 'https://fireway.pro/pech-kamin-skif.html',
                 'source_label' => 'Fireway — отопительно-варочная печь Skif',
             ],
+            'otopitelnaya-pech-ecokamin-ogonek' => [
+                'specs' => [
+                    $this->spec('Габариты (Ш×Г×В)', '300×477×421', 'мм'),
+                    $this->spec('Материал корпуса', 'Сталь', ''),
+                    $this->spec('Диаметр дымохода', '120', 'мм'),
+                    $this->spec('Подключение дымохода', 'Верхнее', ''),
+                    $this->spec('Масса', '23', 'кг'),
+                    $this->spec('Вид топлива', 'Дрова', ''),
+                ],
+                'source_url' => 'https://www.ecokamin.ru/catalog/otopitelnye_pechi/13581/',
+                'source_label' => 'ЭкоКамин — отопительная печь ОГОНЕК, PO 001',
+            ],
+            'kamin-panorama-tri-stekla-grafit' => $this->ecokaminFireplace(
+                'ПАНОРАМА ТРИ СТЕКЛА графит',
+                'https://ecokamin.ru/catalog/kaminy/kaminy_tri_stekla/16115/',
+                '729×539×2643',
+                '12',
+                '150',
+                '157',
+                '80',
+                'Сталь',
+            ),
+            'kamin-panorama-tri-stekla-chernyiy' => $this->ecokaminFireplace(
+                'ПАНОРАМА ТРИ СТЕКЛА чёрный',
+                'https://ecokamin.ru/catalog/kaminy/kaminy_tri_stekla/16025/',
+                '729×539×2643',
+                '12',
+                '150',
+                '157',
+                '80',
+                'Сталь',
+            ),
+            'kamin-praga-tri-stekla-new-chernyiy' => $this->ecokaminFireplace(
+                'ПРАГА три стекла NEW, чёрный',
+                'https://ecokamin.ru/catalog/kaminy/praga/16933/',
+                '836×554×2820',
+                '14',
+                '200',
+                '223',
+                '78',
+                'Сталь',
+            ),
+            'kamin-praga-tri-stekla-new-cernyi-samot-cernyi' => $this->ecokaminFireplace(
+                'ПРАГА три стекла NEW, чёрный шамот',
+                'https://ecokamin.ru/catalog/kaminy/praga/18615/',
+                '836×554×2820',
+                '14',
+                '200',
+                '223',
+                '78',
+                'Сталь',
+            ),
+            'kamin-madrid-na-drovnike-podovyi' => $this->ecokaminFireplace(
+                'МАДРИД на дровнике, подовый',
+                'https://ecokamin.ru/catalog/kaminy/kaminy_madrid/17564/',
+                '768×526×2529',
+                '8',
+                '200',
+                '187',
+                '80',
+            ),
+            'kamin-madrid-na-drovnike-gigant-centralnyi-cernyi-samot-podovyi' => $this->ecokaminFireplace(
+                'МАДРИД на дровнике Гигант центральный, чёрный шамот',
+                'https://ecokamin.ru/catalog/kaminy/kaminy_madrid/17570/',
+                '1300×580×2529',
+                '8',
+                '200',
+                '205',
+                '80',
+            ),
+            'kamin-madrid-na-drovnike-gigant-sleva-cernyi-samot-podovyi' => $this->ecokaminFireplace(
+                'МАДРИД на дровнике Гигант слева, чёрный шамот',
+                'https://ecokamin.ru/catalog/kaminy/kaminy_madrid/17565/',
+                '1300×580×2529',
+                '8',
+                '200',
+                '205',
+                '80',
+            ),
         ];
     }
 
@@ -118,6 +197,36 @@ class StoveOfficialTechnicalSpecCatalog
             ],
             'source_url' => "https://blist.co.rs/proizvodi/peci-i-kamini-na-cvrsto-gorivo/peci-i-kamini/{$path}/",
             'source_label' => "Blist — {$label}",
+        ];
+    }
+
+    /**
+     * @return array{specs: array<int, array{key: string, value: string, unit: string}>, source_url: string, source_label: string}
+     */
+    private function ecokaminFireplace(
+        string $label,
+        string $sourceUrl,
+        string $dimensions,
+        string $power,
+        string $chimneyDiameter,
+        string $weight,
+        string $efficiency,
+        ?string $material = null,
+    ): array {
+        return [
+            'specs' => [
+                $this->spec('Габариты (Ш×Г×В)', $dimensions, 'мм'),
+                $this->spec('Мощность', $power, 'кВт'),
+                ...($material !== null ? [$this->spec('Материал корпуса', $material, '')] : []),
+                $this->spec('Диаметр дымохода', $chimneyDiameter, 'мм'),
+                $this->spec('Подключение дымохода', 'Верхнее и заднее', ''),
+                $this->spec('Масса', $weight, 'кг'),
+                $this->spec('КПД', $efficiency, '%'),
+                $this->spec('Гарантия', '2', 'года'),
+                $this->spec('Вид топлива', 'Дрова', ''),
+            ],
+            'source_url' => $sourceUrl,
+            'source_label' => "ЭкоКамин — {$label}",
         ];
     }
 
