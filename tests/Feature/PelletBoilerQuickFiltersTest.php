@@ -16,10 +16,13 @@ class PelletBoilerQuickFiltersTest extends TestCase
 
         $html = view('partials.pellet-boiler-quick-filters', compact('pelletPowerRanges'))->render();
 
-        $this->assertStringContainsString('Подберите пеллетный котёл', $html);
+        $this->assertStringContainsString('Как выбрать пеллетный котёл', $html);
         $this->assertStringContainsString('до 25 кВт', $html);
         $this->assertStringContainsString('power=up-to-25', $html);
         $this->assertStringContainsString('12', $html);
+        $this->assertStringContainsString('Пеллетный или газовый котёл', $html);
+        $this->assertStringContainsString('/pelletnye-gorelki', $html);
+        $this->assertStringContainsString('/tverdotoplivnye', $html);
     }
 
     public function test_active_power_range_can_be_removed_without_losing_brand(): void
@@ -35,5 +38,16 @@ class PelletBoilerQuickFiltersTest extends TestCase
         $this->assertStringContainsString('brand=15', $html);
         $this->assertStringNotContainsString('power=', $html);
         $this->assertStringNotContainsString('page=2', $html);
+    }
+
+    public function test_guide_and_internal_links_render_without_power_ranges(): void
+    {
+        $pelletPowerRanges = collect();
+
+        $html = view('partials.pellet-boiler-quick-filters', compact('pelletPowerRanges'))->render();
+
+        $this->assertStringContainsString('Как выбрать пеллетный котёл', $html);
+        $this->assertStringContainsString('объём бункера', $html);
+        $this->assertStringContainsString('/blog/pelletnyy-kotel-ili-gazovyy', $html);
     }
 }

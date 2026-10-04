@@ -110,11 +110,17 @@ class SeoMetadataBuilder
     {
         $commercialNames = [
             'tverdotoplivnye' => 'Твердотопливные котлы',
-            'kotly-na-pelletah' => 'Пеллетные котлы',
             'gazovye' => 'Газовые котлы',
             'electric' => 'Электрические водонагреватели',
             'vodonagrevateli' => 'Водонагреватели',
         ];
+
+        if ($slug === 'kotly-na-pelletah') {
+            return $this->title(
+                null,
+                'Пеллетные котлы: цены, купить ' . $cityIn . ' | KOTLOV'
+            );
+        }
 
         if (isset($commercialNames[$slug])) {
             return $this->title(
