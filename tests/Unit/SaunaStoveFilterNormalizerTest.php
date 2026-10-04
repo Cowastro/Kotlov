@@ -106,6 +106,26 @@ class SaunaStoveFilterNormalizerTest extends TestCase
                 'Печь для бани ASTON «Шторм 16» (ДТ-4)',
                 ['volume' => 16.0, 'door' => false, 'remote_firebox' => true],
             ],
+            'ASTON 20 glass' => [
+                'ASTON',
+                'Печь для бани ASTON 20 INOX стекло',
+                ['volume' => 22.0, 'door' => true, 'remote_firebox' => true],
+            ],
+            'TMF Sayany Mini' => [
+                'Термофор',
+                'ПБ Саяны Мини Carbon ДА',
+                ['volume' => 9.0, 'door' => false, 'remote_firebox' => true],
+            ],
+            'NMK Siberia 24 panorama' => [
+                'НМК',
+                'Печь банная чугунная «Сибирь-24». Панорамная дверца',
+                ['volume' => 24.0, 'door' => true, 'remote_firebox' => true],
+            ],
+            'Ermak 24' => [
+                'Ермак',
+                'Ермак ERMAK 24 Сетка - Премиум Чугун',
+                ['volume' => 26.0, 'door' => null, 'remote_firebox' => true],
+            ],
             'same number from unknown brand is ignored' => [
                 'Другой',
                 'Печь Медведь 30',

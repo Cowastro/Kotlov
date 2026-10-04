@@ -68,8 +68,49 @@ class SaunaStoveFilterNormalizer
                 (bool) preg_match('/\bгроза\s*24\b/u', $name) => ['volume' => 24.0],
                 default => [],
             };
-        } elseif ($brand === 'aston' && preg_match('/\bшторм\s*16\b.*\(дт-4\)/u', $name)) {
-            $verified = ['volume' => 16.0, 'door' => false, 'remote_firebox' => true];
+        } elseif ($brand === 'aston') {
+            $verified = match (true) {
+                (bool) preg_match('/\bшторм\s*16\b/u', $name) => ['volume' => 16.0, 'door' => str_contains($name, 'дт-4с'), 'remote_firebox' => true],
+                (bool) preg_match('/\bшторм\s*20\b/u', $name) => ['volume' => 20.0, 'door' => true, 'remote_firebox' => true],
+                (bool) preg_match('/\baston\s*12\b/u', $name) => ['volume' => 14.0, 'door' => str_contains($name, 'стекл'), 'remote_firebox' => true],
+                (bool) preg_match('/\baston\s*16\b/u', $name) => ['volume' => 18.0, 'door' => str_contains($name, 'стекл'), 'remote_firebox' => true],
+                (bool) preg_match('/\baston\s*20\b/u', $name) => ['volume' => 22.0, 'door' => str_contains($name, 'стекл'), 'remote_firebox' => true],
+                (bool) preg_match('/\baston\s*24\b/u', $name) => ['volume' => 26.0, 'door' => true, 'remote_firebox' => true],
+                default => [],
+            };
+        } elseif (in_array($brand, ['термофор', 'tmf'], true)) {
+            $verified = match (true) {
+                str_contains($name, 'саяны мини') => ['volume' => 9.0, 'door' => false, 'remote_firebox' => true],
+                str_contains($name, 'саяны xxl') => ['volume' => 24.0, 'door' => ! str_contains($name, ' да'), 'remote_firebox' => true],
+                str_contains($name, 'скоропарка iii') => ['volume' => 16.0],
+                str_contains($name, 'черная жемчужина') => ['volume' => 20.0, 'door' => true],
+                default => [],
+            };
+        } elseif ($brand === 'теплодар' && preg_match('/\bрусь-18\s+лу\b/u', $name)) {
+            $verified = ['volume' => 18.0, 'door' => false, 'remote_firebox' => false];
+        } elseif ($brand === 'prometall' && preg_match('/\bатмосфера\s+m\b/u', $name)) {
+            $verified = ['volume' => 16.0, 'door' => true, 'remote_firebox' => true];
+        } elseif (in_array($brand, ['сибирь', 'нмк'], true)) {
+            $verified = match (true) {
+                (bool) preg_match('/\bкамчатка-?10\b/u', $name) => ['volume' => 10.0, 'door' => true, 'remote_firebox' => true],
+                (bool) preg_match('/\bкамчатка-?15\b/u', $name) => ['volume' => 15.0, 'door' => true, 'remote_firebox' => true],
+                (bool) preg_match('/\bсибирь-15\b/u', $name) => ['volume' => 15.0, 'door' => false, 'remote_firebox' => str_contains($name, 'с втк')],
+                (bool) preg_match('/\bсибирь-20\b/u', $name) => ['volume' => 20.0, 'door' => str_contains($name, 'панорам'), 'remote_firebox' => true],
+                (bool) preg_match('/\bсибирь-22\b/u', $name) => ['volume' => 22.0, 'door' => str_contains($name, 'панорам'), 'remote_firebox' => true],
+                (bool) preg_match('/\bсибирь-24\b/u', $name) => ['volume' => 24.0, 'door' => str_contains($name, 'панорам'), 'remote_firebox' => true],
+                default => [],
+            };
+        } elseif ($brand === 'fireway' && preg_match('/\bпаровар\s*24\b.*\bк505\b/u', str_replace(['(', ')'], ' ', $name))) {
+            $verified = ['volume' => 24.0, 'door' => true, 'remote_firebox' => true];
+        } elseif ($brand === 'ермак' && preg_match('/\b(16|20|24)\b/u', $name, $matches)) {
+            $verified = [
+                'volume' => match ((int) $matches[1]) {
+                    16 => 18.0,
+                    20 => 22.0,
+                    24 => 26.0,
+                },
+                'remote_firebox' => true,
+            ];
         }
 
         foreach ($verified as $key => $value) {
