@@ -123,6 +123,28 @@ class StoveOfficialHeatingVolumeCatalogTest extends TestCase
         }
     }
 
+    public function test_praga_right_corner_variants_point_to_the_matching_official_finish(): void
+    {
+        $entries = (new StoveOfficialHeatingVolumeCatalog)->entries();
+
+        $this->assertSame(
+            'https://ecokamin.ru/catalog/kaminy/praga/14532/',
+            $entries['kamin-praga-uglovoy-pravyiy-chernyiy-shamot-chernyiy']['source_url']
+        );
+        $this->assertSame(
+            'ЭкоКамин — Прага Угловой правый, чёрный шамот',
+            $entries['kamin-praga-uglovoy-pravyiy-chernyiy-shamot-chernyiy']['source_label']
+        );
+        $this->assertSame(
+            'https://ecokamin.ru/catalog/kaminy/praga/14407/',
+            $entries['kamin-praga-uglovoy-pravyiy-chernyiy-shamot-belyiy']['source_url']
+        );
+        $this->assertSame(
+            'ЭкоКамин — Прага Угловой правый, белый шамот',
+            $entries['kamin-praga-uglovoy-pravyiy-chernyiy-shamot-belyiy']['source_label']
+        );
+    }
+
     public function test_kennet_aria_keeps_its_published_volume(): void
     {
         $entry = (new StoveOfficialHeatingVolumeCatalog)->entries()['pech-otopitelnaya-kennet-ariya-200-11429'];
