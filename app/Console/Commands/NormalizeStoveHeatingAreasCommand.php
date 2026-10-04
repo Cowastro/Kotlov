@@ -15,6 +15,7 @@ class NormalizeStoveHeatingAreasCommand extends Command
 {
     private const CATEGORY_SLUGS = [
         'pechi-kaminy',
+        'pechi',
         'peci-drovianye-otopitelnye',
         'burzhuiki-pechi',
         'dlya-dachi',
