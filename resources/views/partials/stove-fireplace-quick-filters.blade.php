@@ -105,28 +105,77 @@
         ->map(fn ($item) => $stoveFilterLink($item[0], $item[1], $item[2], $item[3]))
         ->filter()
         ->values();
+
+    $stoveGuide = match ($stoveFilterScope) {
+        'pechki' => [
+            'text' => 'Для постоянного отопления учитывайте не только площадь, но и теплопотери дома, высоту потолков, материал печи и диаметр дымохода. Чугун дольше сохраняет тепло, сталь быстрее прогревает помещение, а окончательную мощность лучше подтверждать расчётом.',
+            'aria' => 'Связанные разделы для выбора печи',
+            'links' => [
+                ['/peci-drovianye-otopitelnye', 'Дровяные отопительные печи'],
+                ['/pechi-kaminy', 'Печи-камины'],
+                ['/dymohody', 'Дымоходы для печей'],
+            ],
+        ],
+        'pechi-kaminy', 'dlya-dachi' => [
+            'text' => 'Сопоставьте мощность и площадь обогрева, материал корпуса, размер стекла и расположение выхода дымохода. Для дома с постоянным проживанием особенно важны длительность горения и возможность безопасного подключения подходящего дымохода.',
+            'aria' => 'Связанные разделы для выбора печи-камина',
+            'links' => [
+                ['/peci-drovianye-otopitelnye', 'Отопительные печи'],
+                ['/dymohody', 'Дымоходы'],
+                ['/montazh-kaminov', 'Монтаж каминов и печей'],
+            ],
+        ],
+        'pechi', 'peci-drovianye-otopitelnye', 'burzhuiki-pechi' => [
+            'text' => 'Площадь в характеристиках служит ориентиром: точный выбор зависит от утепления, высоты помещений и режима эксплуатации. Проверьте материал корпуса, заявленную мощность, длительность горения и совместимый диаметр дымохода.',
+            'aria' => 'Связанные разделы для выбора отопительной печи',
+            'links' => [
+                ['/pechi-kaminy', 'Печи-камины'],
+                ['/dymohody', 'Дымоходы для печей'],
+                ['/montazh-kaminov', 'Монтаж печей и каминов'],
+            ],
+        ],
+        'kaminy', 'topki' => [
+            'text' => 'При выборе учитывайте расчётную мощность, материал топки, размер и форму стекла, способ открывания дверцы и требования производителя к дымоходу. Монтажное решение стоит определить до покупки, чтобы согласовать размеры портала и безопасные отступы.',
+            'aria' => 'Связанные разделы для выбора камина',
+            'links' => [
+                ['/pechi-kaminy', 'Печи-камины'],
+                ['/dymohody', 'Дымоходы для каминов'],
+                ['/montazh-kaminov', 'Монтаж каминов'],
+            ],
+        ],
+        default => null,
+    };
 @endphp
 
 @include('partials.catalog-quick-filter-styles')
+@include('partials.catalog-seo-guide-styles')
 
-@if ($stoveQuickFilterConfig && $stoveQuickLinks->isNotEmpty())
-    <section class="catalog-quick-filter" aria-labelledby="stove-fireplace-quick-filter-title">
+@if ($stoveQuickFilterConfig && $stoveGuide)
+    <section class="catalog-quick-filter catalog-seo-guide" aria-labelledby="stove-fireplace-quick-filter-title">
         <div class="container">
             <div class="catalog-quick-filter__inner">
                 <div class="catalog-quick-filter__heading">
                     <strong id="stove-fireplace-quick-filter-title">{{ $stoveQuickFilterConfig['title'] }}</strong>
                     <span>{{ $stoveQuickFilterConfig['subtitle'] }}</span>
                 </div>
-                <nav class="catalog-quick-filter__items" aria-label="{{ $stoveQuickFilterConfig['aria'] }}">
-                    <span class="catalog-quick-filter__label">Быстрый выбор:</span>
-                    @foreach ($stoveQuickLinks as $link)
-                        <a href="{{ $link['url'] }}#catalog-products"
-                           class="catalog-quick-filter__item {{ $link['active'] ? 'is-active' : '' }}"
-                           @if ($link['active']) aria-current="true" @endif>
-                            <span class="catalog-quick-filter__prefix">{{ $link['prefix'] }}</span>
-                            {{ $link['label'] }}
-                            <span class="catalog-quick-filter__count">{{ $link['count'] }}</span>
-                        </a>
+                <p class="catalog-seo-guide__text">{{ $stoveGuide['text'] }}</p>
+                @if ($stoveQuickLinks->isNotEmpty())
+                    <nav class="catalog-quick-filter__items" aria-label="{{ $stoveQuickFilterConfig['aria'] }}">
+                        <span class="catalog-quick-filter__label">Быстрый выбор:</span>
+                        @foreach ($stoveQuickLinks as $link)
+                            <a href="{{ $link['url'] }}#catalog-products"
+                               class="catalog-quick-filter__item {{ $link['active'] ? 'is-active' : '' }}"
+                               @if ($link['active']) aria-current="true" @endif>
+                                <span class="catalog-quick-filter__prefix">{{ $link['prefix'] }}</span>
+                                {{ $link['label'] }}
+                                <span class="catalog-quick-filter__count">{{ $link['count'] }}</span>
+                            </a>
+                        @endforeach
+                    </nav>
+                @endif
+                <nav class="catalog-seo-guide__links" aria-label="{{ $stoveGuide['aria'] }}">
+                    @foreach ($stoveGuide['links'] as [$url, $label])
+                        <a href="{{ url($url) }}">{{ $label }}</a>
                     @endforeach
                 </nav>
             </div>

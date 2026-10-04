@@ -141,6 +141,20 @@ class SeoMetadataBuilder
             );
         }
 
+        $stoveCommercialNames = [
+            'pechki' => 'Печи для дома',
+            'pechi-kaminy' => 'Печи-камины',
+            'pechi' => 'Дровяные печи',
+            'peci-drovianye-otopitelnye' => 'Дровяные печи',
+        ];
+
+        if (isset($stoveCommercialNames[$slug])) {
+            return $this->title(
+                null,
+                $stoveCommercialNames[$slug] . ': цены, купить ' . $cityIn . ' | KOTLOV'
+            );
+        }
+
         if (isset($commercialNames[$slug])) {
             return $this->title(
                 null,

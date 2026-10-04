@@ -30,6 +30,8 @@ class StoveFireplaceQuickFiltersTest extends TestCase
         $this->assertStringContainsString('50–100 м²', $html);
         $this->assertStringContainsString('attr%5B791%5D%5B0%5D=1', $html);
         $this->assertStringContainsString('299', $html);
+        $this->assertStringContainsString('Для постоянного отопления', $html);
+        $this->assertStringContainsString('/dymohody', $html);
     }
 
     public function test_fireplace_filters_match_dash_variants_in_power_options(): void
@@ -95,6 +97,8 @@ class StoveFireplaceQuickFiltersTest extends TestCase
         $this->assertStringContainsString('чугун', $html);
         $this->assertStringContainsString('сталь', $html);
         $this->assertStringContainsString('50–100 м²', $html);
+        $this->assertStringContainsString('Площадь в характеристиках служит ориентиром', $html);
+        $this->assertStringContainsString('/montazh-kaminov', $html);
     }
 
     public function test_root_stove_page_adapts_quick_filter_heading_to_selected_subcategory(): void
@@ -111,6 +115,18 @@ class StoveFireplaceQuickFiltersTest extends TestCase
 
         $this->assertStringContainsString('Подберите отопительную печь', $html);
         $this->assertStringContainsString('35', $html);
+    }
+
+    public function test_stove_selection_guide_remains_visible_when_attributes_are_not_filled(): void
+    {
+        $category = new Category(['slug' => 'pechki']);
+        $filterAttributes = collect();
+
+        $html = view('partials.stove-fireplace-quick-filters', compact('category', 'filterAttributes'))->render();
+
+        $this->assertStringContainsString('Подберите печь для дома', $html);
+        $this->assertStringContainsString('Для постоянного отопления', $html);
+        $this->assertStringNotContainsString('Быстрый выбор:', $html);
     }
 
     private function attribute(int $id, string $name, array $options): object

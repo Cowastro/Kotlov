@@ -634,6 +634,28 @@ class CatalogController extends Controller
             ];
         }
 
+        $stoveSchemaNames = [
+            'pechki' => 'Печи для дома и дачи',
+            'pechi-kaminy' => 'Печи-камины',
+            'pechi' => 'Дровяные печи',
+            'peci-drovianye-otopitelnye' => 'Дровяные отопительные печи',
+        ];
+
+        if (isset($stoveSchemaNames[$category->slug])) {
+            $schemaNodes[] = [
+                '@context' => 'https://schema.org',
+                '@type' => 'ItemList',
+                'name' => $stoveSchemaNames[$category->slug],
+                'numberOfItems' => $products->count(),
+                'itemListElement' => $products->values()->map(fn (Product $product, int $index) => [
+                    '@type' => 'ListItem',
+                    'position' => $index + 1,
+                    'name' => $product->name,
+                    'url' => 'https://kotlov.by/'.$product->category->slug.'/'.$product->slug,
+                ])->all(),
+            ];
+        }
+
         $schemaJson = json_encode(
             count($schemaNodes) === 1 ? $schemaNodes[0] : $schemaNodes,
             JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES
@@ -652,6 +674,7 @@ class CatalogController extends Controller
             'pechki' => 'Отопительные и дровяные печи для дома и дачи. Сравните модели по мощности, площади обогрева, материалу и диаметру дымохода.',
             'pechi-kaminy' => 'Печи-камины для отопления дома с обзором пламени. Выбирайте по мощности, материалу, наличию варочной панели и подключению дымохода.',
             'pechi' => 'Дровяные печи для отопления дома, дачи и мастерской. Подберите печь по мощности, объёму помещения, материалу и диаметру дымохода.',
+            'peci-drovianye-otopitelnye' => 'Дровяные отопительные печи для дома, дачи и мастерской. Сравните модели по мощности, площади обогрева, материалу и диаметру дымохода.',
             'kaminy' => 'Камины для дома: каминные топки, электрокамины, порталы и аксессуары. Сравните тип, размер, мощность и вариант монтажа.',
             'topki' => 'Каминные топки из стали и чугуна с прямым, угловым и трёхсторонним стеклом. Сравните ширину, мощность, материал и тип открывания дверцы.',
             'dymohody' => 'Дымоходы из нержавеющей стали для котлов, печей и каминов. Моно- и сэндвич-системы, крепления и фасонные элементы с подбором по диаметру.',
