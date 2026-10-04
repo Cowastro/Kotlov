@@ -29,10 +29,18 @@ class ProductCatalogOrderTest extends TestCase
             $table->boolean('is_featured')->default(false);
             $table->decimal('rating', 3, 2)->default(0);
         });
+
+        Schema::dropIfExists('catalog_order_attribute_values');
+        Schema::create('catalog_order_attribute_values', function (Blueprint $table) {
+            $table->id();
+            $table->unsignedBigInteger('product_id');
+            $table->unsignedBigInteger('option_id');
+        });
     }
 
     protected function tearDown(): void
     {
+        Schema::dropIfExists('catalog_order_attribute_values');
         Schema::dropIfExists('catalog_order_products');
 
         parent::tearDown();
@@ -102,6 +110,27 @@ class ProductCatalogOrderTest extends TestCase
             ->all();
 
         $this->assertSame([4, 3, 2, 1], $orderedIds);
+    }
+
+    public function test_attribute_option_priority_keeps_residential_products_before_industrial_products(): void
+    {
+        DB::table('catalog_order_products')->insert([
+            ['id' => 1, 'brand_id' => 10, 'in_stock' => true, 'is_featured' => true, 'rating' => 5],
+            ['id' => 2, 'brand_id' => 20, 'in_stock' => true, 'is_featured' => false, 'rating' => 3],
+            ['id' => 3, 'brand_id' => 30, 'in_stock' => true, 'is_featured' => false, 'rating' => 4],
+        ]);
+        DB::table('catalog_order_attribute_values')->insert([
+            ['product_id' => 2, 'option_id' => 1367],
+            ['product_id' => 3, 'option_id' => 1368],
+        ]);
+
+        $orderedIds = CatalogOrderProduct::query()
+            ->prioritizeAttributeOptions([1367, 1368], 'catalog_order_attribute_values')
+            ->catalogDefaultOrder(null, true)
+            ->pluck('id')
+            ->all();
+
+        $this->assertSame([3, 2, 1], $orderedIds);
     }
 
     public function test_kotlov_heat_pump_catalog_meta_uses_product_specs(): void

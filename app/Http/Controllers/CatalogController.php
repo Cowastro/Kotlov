@@ -352,6 +352,24 @@ class CatalogController extends Controller
                     default => null,
                 };
 
+                if ($category->slug === 'tverdotoplivnye') {
+                    $residentialAreaOptionIds = $filterAttributes
+                        ->first(fn ($attribute) => $this->normalizeFilterName($attribute->name) === 'обогреваемая площадь (m2)')
+                        ?->options
+                        ?->filter(fn ($option) => in_array(
+                            $this->normalizeFilterName($option->name),
+                            ['до 150 м²', '150–300 м²'],
+                            true
+                        ))
+                        ->pluck('all_ids')
+                        ->flatten()
+                        ->unique()
+                        ->values()
+                        ->all() ?? [];
+
+                    $query->prioritizeAttributeOptions($residentialAreaOptionIds);
+                }
+
                 $query->catalogDefaultOrder(
                     $priorityBrandId,
                     $isChimneyCatalog

@@ -339,6 +339,41 @@ class Product extends Model
             ->orderByDesc('id');
     }
 
+    public function scopePrioritizeAttributeOptions(
+        $query,
+        array $optionIds,
+        string $valueTable = 'product_attribute_values'
+    )
+    {
+        $optionIds = collect($optionIds)
+            ->map(fn ($id) => (int) $id)
+            ->filter(fn (int $id) => $id > 0)
+            ->unique()
+            ->values()
+            ->all();
+
+        if ($optionIds === []) {
+            return $query;
+        }
+
+        if (! preg_match('/^[a-z0-9_]+$/i', $valueTable)) {
+            throw new \InvalidArgumentException('Invalid attribute value table name.');
+        }
+
+        $placeholders = implode(',', array_fill(0, count($optionIds), '?'));
+        $productIdColumn = $query->getModel()->qualifyColumn('id');
+
+        return $query->orderByRaw(
+            "CASE WHEN EXISTS (
+                SELECT 1
+                FROM {$valueTable} AS priority_attribute_values
+                WHERE priority_attribute_values.product_id = {$productIdColumn}
+                  AND priority_attribute_values.option_id IN ({$placeholders})
+            ) THEN 0 ELSE 1 END",
+            $optionIds
+        );
+    }
+
     public function scopeInStock($query)
     {
         return $query->where('in_stock', true);
