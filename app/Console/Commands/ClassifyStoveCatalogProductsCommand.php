@@ -104,6 +104,29 @@ class ClassifyStoveCatalogProductsCommand extends Command
 
         if ($missingTargets->isNotEmpty()) {
             $this->error('Missing target categories: '.$missingTargets->implode(', '));
+            $this->warn('Relevant production categories:');
+            $this->table(
+                ['ID', 'Name', 'Slug', 'Parent ID'],
+                Category::query()
+                    ->where(function ($query) {
+                        $query->where('name', 'like', '%бан%')
+                            ->orWhere('name', 'like', '%Бан%')
+                            ->orWhere('name', 'like', '%саун%')
+                            ->orWhere('name', 'like', '%Саун%')
+                            ->orWhere('slug', 'like', '%ban%')
+                            ->orWhere('slug', 'like', '%saun%');
+                    })
+                    ->orderBy('parent_id')
+                    ->orderBy('id')
+                    ->get(['id', 'name', 'slug', 'parent_id'])
+                    ->map(fn (Category $category) => [
+                        $category->id,
+                        $category->name,
+                        $category->slug,
+                        $category->parent_id,
+                    ])
+                    ->all()
+            );
             $this->line('No products were changed.');
 
             return self::FAILURE;
