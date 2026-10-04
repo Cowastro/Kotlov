@@ -128,7 +128,7 @@ class CatalogController extends Controller
                 ->get(['id', 'name'])
                 ->filter(fn (Attribute $attribute) => in_array(
                     $this->normalizeFilterName($attribute->name),
-                    ['номинальная мощность', 'мощность номинальная', 'мощность'],
+                    ['номинальная мощность', 'мощность номинальная', 'мощность', 'мощность, квт', 'мощность (квт)'],
                     true
                 ))
                 ->pluck('id')
