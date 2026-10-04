@@ -20,7 +20,7 @@ class ApplyOfficialStoveTechnicalSpecsCommand extends Command
     protected $signature = 'catalog:apply-official-stove-technical-specs
         {--apply : Persist manufacturer-published technical characteristics; the default is a dry run}';
 
-    protected $description = 'Update selected stove characteristics verified on official manufacturer pages';
+    protected $description = 'Update selected stove characteristics verified in manufacturer pages and catalogues';
 
     public function handle(
         StoveOfficialTechnicalSpecCatalog $catalog,
@@ -151,7 +151,12 @@ class ApplyOfficialStoveTechnicalSpecsCommand extends Command
 
     private function normalizeKey(string $key): string
     {
-        $normalized = mb_strtolower(trim((string) preg_replace('/[\s,._()×хx-]+/u', '', $key)));
+        $normalized = mb_strtolower(trim((string) preg_replace('/[\s,._()%-]+/u', '', $key)));
+        $normalized = str_replace(
+            ['ш×г×в', 'шхгхв', 'шxгxв', 'в×ш×г', 'вхшхг', 'вxшxг'],
+            ['шгв', 'шгв', 'шгв', 'вшг', 'вшг', 'вшг'],
+            $normalized,
+        );
         $normalized = preg_replace('/(?:мм|кг|квт|литр(?:а|ов)?|л)$/u', '', $normalized) ?: $normalized;
         $normalized = preg_replace('/(?:шгв|вшг|дшв)$/u', '', $normalized) ?: $normalized;
 
@@ -177,6 +182,18 @@ class ApplyOfficialStoveTechnicalSpecsCommand extends Command
 
         if (preg_match('/^(?:объёмводяногоконтура|объемводяногоконтура|объёмкотла|объемкотла)$/u', $normalized)) {
             return 'объёмводяногоконтура';
+        }
+
+        if (preg_match('/^(?:кпд|эффективность)$/u', $normalized)) {
+            return 'кпд';
+        }
+
+        if (preg_match('/^(?:диаметрдымохода|диаметрдымоходногопатрубка|диаметрпатрубка)$/u', $normalized)) {
+            return 'диаметрдымохода';
+        }
+
+        if (preg_match('/^(?:максимальнаядлинаполена|максимальнаядлинадров|длинаполена)$/u', $normalized)) {
+            return 'максимальнаядлинаполена';
         }
 
         return $normalized;

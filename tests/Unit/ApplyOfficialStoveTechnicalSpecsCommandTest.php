@@ -21,6 +21,9 @@ class ApplyOfficialStoveTechnicalSpecsCommandTest extends TestCase
         $this->assertSame('размерытопки', $normalize->invoke($command, 'Размеры топки (Ш×Г×В), мм'));
         $this->assertSame('мощностьводяногоконтура', $normalize->invoke($command, 'Мощность, переданная воде'));
         $this->assertSame('объёмводяногоконтура', $normalize->invoke($command, 'Объем котла, л'));
+        $this->assertSame('кпд', $normalize->invoke($command, 'Эффективность, %'));
+        $this->assertSame('диаметрдымохода', $normalize->invoke($command, 'Диаметр дымоходного патрубка'));
+        $this->assertSame('максимальнаядлинаполена', $normalize->invoke($command, 'Максимальная длина дров'));
     }
 
     public function test_verified_specs_replace_synonyms_but_preserve_unrelated_fields(): void

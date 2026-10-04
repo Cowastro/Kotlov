@@ -5,8 +5,9 @@ namespace App\Services;
 class StoveOfficialTechnicalSpecCatalog
 {
     /**
-     * Technical characteristics copied from the current manufacturer pages.
-     * Heated area is deliberately absent: Blist does not publish it.
+     * Technical characteristics copied from manufacturer pages and branded
+     * manufacturer catalogues. Heated area is deliberately absent unless it
+     * is explicitly published by the manufacturer.
      *
      * @return array<string, array{specs: array<int, array{key: string, value: string, unit: string}>, source_url: string, source_label: string}>
      */
@@ -45,6 +46,19 @@ class StoveOfficialTechnicalSpecCatalog
             'blist-pec-roma-e-bezevaia' => $models['roma-e'],
             'blist-pec-roma-s-bezevaia' => $models['roma-s'],
             'blist-pec-roma-g-bezevaia' => $models['roma-g'],
+            'ferguss-pec-ferguss-l-8606107095288-lawa-cook-ucenka' => [
+                'specs' => [
+                    $this->spec('Габариты (Ш×Г×В)', '535×445×926', 'мм'),
+                    $this->spec('Размеры топки (Ш×Г×В)', '410×310×270', 'мм'),
+                    $this->spec('Мощность', '12,8', 'кВт'),
+                    $this->spec('Масса', '168', 'кг'),
+                    $this->spec('КПД', '74', '%'),
+                    $this->spec('Диаметр дымохода', '120', 'мм'),
+                    $this->spec('Максимальная длина полена', '250', 'мм'),
+                ],
+                'source_url' => 'https://www.ikoma.hr/Content/product/document/ferguss-katalog-2018.pdf',
+                'source_label' => 'Ferguss — каталог 2018, EAN 8606107095288',
+            ],
         ];
     }
 
