@@ -352,6 +352,40 @@ class CatalogController extends Controller
                     default => null,
                 };
 
+                $catalogStockAlreadyOrdered = false;
+
+                if (in_array($category->slug, ['pechki', 'pechi-kaminy'], true)) {
+                    $query->orderByDesc('in_stock')
+                        ->prioritizeNamePatterns([
+                            '%Печь%',
+                            '%печь%',
+                            '%Плита на твердом топливе%',
+                            '%плита на твердом топливе%',
+                        ]);
+                    $catalogStockAlreadyOrdered = true;
+                }
+
+                if (in_array($category->slug, ['pechki', 'kaminy'], true) && ! request('subcategory')) {
+                    $accessoryCategorySlugs = $category->slug === 'pechki'
+                        ? ['pechnoe-i-kaminnoe-lite']
+                        : ['aksessuary-kaminy'];
+                    $accessoryCategoryIds = Category::query()
+                        ->whereIn('slug', $accessoryCategorySlugs)
+                        ->whereIn('id', $allCategoryIds)
+                        ->pluck('id')
+                        ->flatMap(fn (int $categoryId) => $this->collectCategoryAndDescendantIds($categoryId))
+                        ->unique()
+                        ->values()
+                        ->all();
+
+                    if (! $catalogStockAlreadyOrdered) {
+                        $query->orderByDesc('in_stock');
+                        $catalogStockAlreadyOrdered = true;
+                    }
+
+                    $query->deprioritizeCategories($accessoryCategoryIds);
+                }
+
                 if ($category->slug === 'tverdotoplivnye') {
                     $residentialAreaOptionIds = $filterAttributes
                         ->first(fn ($attribute) => $this->normalizeFilterName($attribute->name) === 'обогреваемая площадь (m2)')
@@ -372,10 +406,10 @@ class CatalogController extends Controller
 
                 $query->catalogDefaultOrder(
                     $priorityBrandId,
-                    $isChimneyCatalog
+                    ! $catalogStockAlreadyOrdered && ($isChimneyCatalog
                         || $isStoveOrFireplaceCatalog
                         || $isPipesCatalog
-                        || in_array($category->slug, ['tverdotoplivnye', 'bufernye-emkosti', 'kosvennye'], true)
+                        || in_array($category->slug, ['tverdotoplivnye', 'bufernye-emkosti', 'kosvennye'], true))
                 );
         }
 

@@ -25,6 +25,8 @@ class ProductCatalogOrderTest extends TestCase
         Schema::create('catalog_order_products', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('brand_id')->nullable();
+            $table->unsignedBigInteger('category_id')->nullable();
+            $table->string('name')->nullable();
             $table->boolean('in_stock')->default(false);
             $table->boolean('is_featured')->default(false);
             $table->decimal('rating', 3, 2)->default(0);
@@ -131,6 +133,40 @@ class ProductCatalogOrderTest extends TestCase
             ->all();
 
         $this->assertSame([3, 2, 1], $orderedIds);
+    }
+
+    public function test_product_name_priority_keeps_stoves_before_unrelated_accessories(): void
+    {
+        DB::table('catalog_order_products')->insert([
+            ['id' => 1, 'name' => 'Костровая чаша', 'in_stock' => true, 'is_featured' => true, 'rating' => 5],
+            ['id' => 2, 'name' => 'Печь-камин для дома', 'in_stock' => true, 'is_featured' => false, 'rating' => 3],
+            ['id' => 3, 'name' => 'Плита на твердом топливе', 'in_stock' => true, 'is_featured' => false, 'rating' => 4],
+        ]);
+
+        $orderedIds = CatalogOrderProduct::query()
+            ->prioritizeNamePatterns(['%Печь%', '%печь%', '%Плита на твердом топливе%'])
+            ->catalogDefaultOrder()
+            ->pluck('id')
+            ->all();
+
+        $this->assertSame([3, 2, 1], $orderedIds);
+    }
+
+    public function test_accessory_categories_are_moved_below_main_equipment(): void
+    {
+        DB::table('catalog_order_products')->insert([
+            ['id' => 1, 'category_id' => 90, 'is_featured' => false, 'rating' => 3],
+            ['id' => 2, 'category_id' => 128, 'is_featured' => true, 'rating' => 5],
+            ['id' => 3, 'category_id' => 104, 'is_featured' => false, 'rating' => 4],
+        ]);
+
+        $orderedIds = CatalogOrderProduct::query()
+            ->deprioritizeCategories([128])
+            ->catalogDefaultOrder()
+            ->pluck('id')
+            ->all();
+
+        $this->assertSame([3, 1, 2], $orderedIds);
     }
 
     public function test_kotlov_heat_pump_catalog_meta_uses_product_specs(): void

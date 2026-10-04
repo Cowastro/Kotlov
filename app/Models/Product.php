@@ -374,6 +374,48 @@ class Product extends Model
         );
     }
 
+    public function scopePrioritizeNamePatterns($query, array $patterns)
+    {
+        $patterns = collect($patterns)
+            ->map(fn ($pattern) => trim((string) $pattern))
+            ->filter()
+            ->unique()
+            ->values()
+            ->all();
+
+        if ($patterns === []) {
+            return $query;
+        }
+
+        $conditions = implode(' OR ', array_fill(0, count($patterns), $this->qualifyColumn('name').' LIKE ?'));
+
+        return $query->orderByRaw(
+            "CASE WHEN {$conditions} THEN 0 ELSE 1 END",
+            $patterns
+        );
+    }
+
+    public function scopeDeprioritizeCategories($query, array $categoryIds)
+    {
+        $categoryIds = collect($categoryIds)
+            ->map(fn ($id) => (int) $id)
+            ->filter(fn (int $id) => $id > 0)
+            ->unique()
+            ->values()
+            ->all();
+
+        if ($categoryIds === []) {
+            return $query;
+        }
+
+        $placeholders = implode(',', array_fill(0, count($categoryIds), '?'));
+
+        return $query->orderByRaw(
+            'CASE WHEN '.$this->qualifyColumn('category_id')." IN ({$placeholders}) THEN 1 ELSE 0 END",
+            $categoryIds
+        );
+    }
+
     public function scopeInStock($query)
     {
         return $query->where('in_stock', true);
