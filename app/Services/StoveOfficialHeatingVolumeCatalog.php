@@ -46,6 +46,13 @@ class StoveOfficialHeatingVolumeCatalog
             'pech-tsar-pechi-milana' => $this->entry('35–45 м³', 'https://banpechi.ru/pechi-otopitelnyie-v-minske/milana/', 'Царь-Печи — Милана'),
             'pech-tsar-pechi-yarilo' => $this->entry('40–60 м³', 'https://banpechi.ru/product/otopitelnue/yarilo/', 'Царь-Печи — Ярило'),
             'pech-tsar-pechi-yarilo-dekor' => $this->entry('40–60 м³', 'https://banpechi.ru/product/otopitelnue/yarilo/', 'Царь-Печи — Ярило Декор'),
+            'otopitelnaya-pech-pegas-termo-150' => $this->entry('до 150 м³', 'https://pegas-pech.ru/katalog/item/pech_pegas_termo_150/', 'Pegas — Термо 150'),
+            'otopitelnaya-pech-pegas-termo-150-steklo' => $this->entry('до 150 м³', 'https://pegas-pech.ru/katalog/item/pech_pegas_termo_150_steklo/', 'Pegas — Термо 150 Стекло'),
+            'otopitelnaya-pech-pegas-termo-200' => $this->entry('до 200 м³', 'https://pegas-pech.ru/katalog/katalog2/', 'Pegas — Термо 200'),
+            'pech-otopitelnaya-pegas-v6' => $this->entry('до 160 м³', 'https://pegas-pech.ru/katalog/item/pech_pegas_v6/', 'Pegas — V6'),
+            'otopitelnaya-pech-varvara-domovoy' => $this->entry('до 50 м³', 'https://pech-varvara.ru/products/otoplenie-doma/otopitelnye-pechi/domovoy/', 'Варвара — Домовой'),
+            'otopitelnaya-pech-varvara-teplyiy-dom-150' => $this->entry('до 150 м³', 'https://pech-varvara.ru/products/otoplenie-doma/otopitelnye-pechi/teplyydom/', 'Варвара — Теплый Дом 150'),
+            'otopitelnaya-pech-varvara-uyut-1-konforka' => $this->entry('до 100 м³', 'https://pech-varvara.ru/products/otoplenie-doma/otopitelnye-pechi/uyu/', 'Варвара — Уют 1 конфорка'),
         ];
     }
 
