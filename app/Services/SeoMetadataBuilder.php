@@ -106,6 +106,31 @@ class SeoMetadataBuilder
         return $this->truncate((string) $base, self::TITLE_LIMIT - mb_strlen($suffix)) . $suffix;
     }
 
+    public function categoryTitle(string $slug, string $name, string $cityIn, ?string $stored): string
+    {
+        $commercialNames = [
+            'tverdotoplivnye' => 'Твердотопливные котлы',
+            'kotly-na-pelletah' => 'Пеллетные котлы',
+            'gazovye' => 'Газовые котлы',
+            'electric' => 'Электрические водонагреватели',
+            'vodonagrevateli' => 'Водонагреватели',
+        ];
+
+        if (isset($commercialNames[$slug])) {
+            return $this->title(
+                null,
+                $commercialNames[$slug] . ' — купить ' . $cityIn . ' | KOTLOV'
+            );
+        }
+
+        $preferred = $this->replaceCity($stored, $cityIn);
+
+        return $this->title(
+            $preferred && mb_strlen($preferred) <= self::TITLE_LIMIT ? $preferred : null,
+            $name . ' — купить ' . $cityIn . ' | KOTLOV'
+        );
+    }
+
     public function description(?string $preferred, string $fallback): string
     {
         return $this->truncate(

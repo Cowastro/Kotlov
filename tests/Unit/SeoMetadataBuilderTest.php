@@ -17,6 +17,28 @@ class SeoMetadataBuilderTest extends TestCase
         $this->seo = new SeoMetadataBuilder();
     }
 
+    public function test_commercial_category_titles_keep_the_product_type(): void
+    {
+        $cases = [
+            'tverdotoplivnye' => 'Твердотопливные котлы — купить в Минске | KOTLOV',
+            'kotly-na-pelletah' => 'Пеллетные котлы — купить в Минске | KOTLOV',
+            'gazovye' => 'Газовые котлы — купить в Минске | KOTLOV',
+            'electric' => 'Электрические водонагреватели — купить в Минске | KOTLOV',
+        ];
+
+        foreach ($cases as $slug => $expected) {
+            $title = $this->seo->categoryTitle(
+                $slug,
+                'Слишком короткое имя',
+                'в Минске',
+                str_repeat('Очень длинный сохранённый заголовок ', 5),
+            );
+
+            $this->assertSame($expected, $title);
+            $this->assertLessThanOrEqual(SeoMetadataBuilder::TITLE_LIMIT, mb_strlen($title));
+        }
+    }
+
     public function test_it_does_not_repeat_brand_already_present_in_product_name(): void
     {
         $product = $this->product('Пеллетная горелка KOTLOV XO Ceramic PRO 100 кВт');

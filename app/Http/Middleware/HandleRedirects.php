@@ -127,6 +127,10 @@ class HandleRedirects
             // /kotly/teplovyie-nasosyi → /teplovyie-nasosyi (старый URL тепловых насосов)
             '~^/kotly/teplovyie-nasosyi/(.+)$~'                          => '/teplovyie-nasosyi/$1',
             '~^/kotly/teplovyie-nasosyi$~'                               => '/teplovyie-nasosyi',
+            // Старая вложенная страница пеллетных котлов больше не должна
+            // оставаться пустым дублем актуальной плоской категории.
+            '~^/kotly/tverdotoplivnye/kotly-na-pelletah$~'               => '/kotly-na-pelletah',
+            '~^/tverdotoplivnye/kotly-na-pelletah$~'                     => '/kotly-na-pelletah',
             // /kotly/{cat}/{slug} → /{cat}/{slug}
             '~^/kotly/(gazovye|tverdotoplivnye|elektricheskie)/(.+)$~'  => '/$1/$2',
             '~^/kotly/(gazovye|tverdotoplivnye|elektricheskie)$~'        => '/$1',

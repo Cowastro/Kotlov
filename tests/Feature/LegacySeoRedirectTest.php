@@ -90,6 +90,26 @@ class LegacySeoRedirectTest extends TestCase
         $response->assertRedirect('https://krugloe.kotlov.by/tsentrobejnye');
     }
 
+    public function test_old_nested_pellet_boiler_category_redirects_to_current_category(): void
+    {
+        Category::create([
+            'parent_id' => 0,
+            'name' => 'Пеллетные котлы',
+            'slug' => 'kotly-na-pelletah',
+            'is_active' => true,
+        ]);
+
+        foreach ([
+            '/tverdotoplivnye/kotly-na-pelletah',
+            '/kotly/tverdotoplivnye/kotly-na-pelletah',
+        ] as $path) {
+            $response = $this->get('https://vitebsk.kotlov.by' . $path);
+
+            $response->assertStatus(301);
+            $response->assertRedirect('https://vitebsk.kotlov.by/kotly-na-pelletah');
+        }
+    }
+
     public function test_removed_legacy_product_falls_back_to_nearest_active_category(): void
     {
         Category::create([
