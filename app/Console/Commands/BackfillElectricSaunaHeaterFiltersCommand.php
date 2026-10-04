@@ -66,6 +66,11 @@ class BackfillElectricSaunaHeaterFiltersCommand extends Command
                 ->all();
 
             $facts = $normalizer->extract($product->specs ?: [], $attributes);
+            $facts = $normalizer->withVerifiedModelFacts(
+                $product->brand?->name ?? '',
+                $product->name,
+                $facts,
+            );
             $productWrites = collect();
 
             $this->queueValue($product, $targets['power'], $normalizer->powerRange($facts['power']), 'power', $stats, $productWrites);

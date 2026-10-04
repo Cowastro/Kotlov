@@ -34,6 +34,21 @@ class ElectricSaunaHeaterFilterNormalizerTest extends TestCase
         $this->assertNull($facts['stones']);
     }
 
+    public function test_it_completes_verified_karina_nova_6e_facts(): void
+    {
+        $normalizer = new ElectricSaunaHeaterFilterNormalizer;
+
+        $facts = $normalizer->withVerifiedModelFacts(
+            'KARINA',
+            'Электрическая печь KARINA Nova 6E',
+            ['power' => null, 'volume' => null, 'stones' => null],
+        );
+
+        $this->assertSame(6.0, $facts['power']);
+        $this->assertSame(8.0, $facts['volume']);
+        $this->assertSame(100.0, $facts['stones']);
+    }
+
     #[DataProvider('rangeProvider')]
     public function test_it_maps_boundaries_consistently(float $value, string $method, string $expected): void
     {

@@ -25,6 +25,33 @@ class ElectricSaunaHeaterFilterNormalizer
         ];
     }
 
+    /**
+     * Complete facts only for an explicitly verified brand/model combination.
+     * Numbers in arbitrary product names are never treated as characteristics.
+     */
+    public function withVerifiedModelFacts(string $brand, string $name, array $facts): array
+    {
+        $brand = $this->normalize($brand);
+        $name = $this->normalize($name);
+        $verified = [];
+
+        if ($brand === 'karina' && preg_match('/\bnova\s+6e\b/u', $name)) {
+            $verified = [
+                'power' => 6.0,
+                'volume' => 8.0,
+                'stones' => 100.0,
+            ];
+        }
+
+        foreach ($verified as $key => $value) {
+            if (($facts[$key] ?? null) === null) {
+                $facts[$key] = $value;
+            }
+        }
+
+        return $facts;
+    }
+
     public function powerRange(?float $power): ?string
     {
         if ($power === null || $power <= 0 || $power > 100) {

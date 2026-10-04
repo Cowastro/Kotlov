@@ -77,7 +77,7 @@ class ScrapeBaniaSupplierCommand extends Command
             ],
             'category_map' => [
                 [
-                    'match_paths' => ['pult-upravleniia', 'blok-moshhnosti', 'termodatcik', 'paroisparitel'],
+                    'match_paths' => ['pult-upravleniia', 'blok-moshhnosti', 'termodatcik', 'paroisparitel', 'ten-dlia-elektrokamenki'],
                     'category_slugs' => ['komplektuyushchie-dlya-elektrokamenok'],
                     'category_names' => ['Комплектующие для электрокаменок'],
                 ],
