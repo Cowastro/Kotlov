@@ -25,6 +25,7 @@ class ApplyOfficialStoveTechnicalSpecsCommandTest extends TestCase
         $this->assertSame('объёмводяногоконтура', $normalize->invoke($command, 'Объем котла, л'));
         $this->assertSame('кпд', $normalize->invoke($command, 'Эффективность, %'));
         $this->assertSame('диаметрдымохода', $normalize->invoke($command, 'Диаметр дымоходного патрубка'));
+        $this->assertSame('диаметрдымохода', $normalize->invoke($command, 'Диаметр дымового патрубка (мм)'));
         $this->assertSame('максимальнаядлинаполена', $normalize->invoke($command, 'Максимальная длина дров'));
         $this->assertSame('материал', $normalize->invoke($command, 'Материал корпуса'));
         $this->assertSame('материал', $normalize->invoke($command, 'Материал топки'));

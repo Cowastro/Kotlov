@@ -217,7 +217,7 @@ class ApplyOfficialStoveTechnicalSpecsCommand extends Command
             return 'кпд';
         }
 
-        if (preg_match('/^(?:диаметрдымохода|диаметрдымоходногопатрубка|диаметрпатрубка)$/u', $normalized)) {
+        if (preg_match('/^(?:диаметрдымохода|диаметрдымоходногопатрубка|диаметрдымовогопатрубка|диаметрпатрубка)$/u', $normalized)) {
             return 'диаметрдымохода';
         }
 
