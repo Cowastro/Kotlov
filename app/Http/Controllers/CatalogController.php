@@ -604,6 +604,21 @@ class CatalogController extends Controller
             ];
         }
 
+        if ($category->slug === 'tverdotoplivnye') {
+            $schemaNodes[] = [
+                '@context' => 'https://schema.org',
+                '@type' => 'ItemList',
+                'name' => 'Твердотопливные котлы',
+                'numberOfItems' => $products->count(),
+                'itemListElement' => $products->values()->map(fn (Product $product, int $index) => [
+                    '@type' => 'ListItem',
+                    'position' => $index + 1,
+                    'name' => $product->name,
+                    'url' => 'https://kotlov.by/'.$product->category->slug.'/'.$product->slug,
+                ])->all(),
+            ];
+        }
+
         $schemaJson = json_encode(
             count($schemaNodes) === 1 ? $schemaNodes[0] : $schemaNodes,
             JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES

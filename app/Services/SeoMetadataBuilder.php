@@ -109,11 +109,17 @@ class SeoMetadataBuilder
     public function categoryTitle(string $slug, string $name, string $cityIn, ?string $stored): string
     {
         $commercialNames = [
-            'tverdotoplivnye' => 'Твердотопливные котлы',
             'gazovye' => 'Газовые котлы',
             'electric' => 'Электрические водонагреватели',
             'vodonagrevateli' => 'Водонагреватели',
         ];
+
+        if ($slug === 'tverdotoplivnye') {
+            return $this->title(
+                null,
+                'Твердотопливные котлы: цены, купить ' . $cityIn . ' | KOTLOV'
+            );
+        }
 
         if ($slug === 'kotly-na-pelletah') {
             return $this->title(

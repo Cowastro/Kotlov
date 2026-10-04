@@ -20,7 +20,7 @@ class SeoMetadataBuilderTest extends TestCase
     public function test_commercial_category_titles_keep_the_product_type(): void
     {
         $cases = [
-            'tverdotoplivnye' => 'Твердотопливные котлы — купить в Минске | KOTLOV',
+            'tverdotoplivnye' => 'Твердотопливные котлы: цены, купить в Минске | KOTLOV',
             'kotly-na-pelletah' => 'Пеллетные котлы: цены, купить в Минске | KOTLOV',
             'gazovye' => 'Газовые котлы — купить в Минске | KOTLOV',
             'electric' => 'Электрические водонагреватели — купить в Минске | KOTLOV',

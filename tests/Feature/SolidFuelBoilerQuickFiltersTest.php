@@ -22,13 +22,27 @@ class SolidFuelBoilerQuickFiltersTest extends TestCase
 
         $html = view('partials.solid-fuel-boiler-quick-filters', compact('filterAttributes'))->render();
 
-        $this->assertStringContainsString('Подберите твердотопливный котёл', $html);
+        $this->assertStringContainsString('Как выбрать твердотопливный котёл', $html);
         $this->assertStringContainsString('до 150 м²', $html);
         $this->assertStringContainsString('ручная загрузка', $html);
         $this->assertStringContainsString('автоподача', $html);
         $this->assertStringContainsString('attr%5B61%5D%5B0%5D=1367', $html);
         $this->assertStringContainsString('attr%5B60%5D%5B0%5D=73', $html);
         $this->assertStringContainsString('332', $html);
+        $this->assertStringContainsString('/kotly-na-pelletah', $html);
+        $this->assertStringContainsString('/dymohody', $html);
+        $this->assertStringContainsString('/installers', $html);
+    }
+
+    public function test_guide_and_internal_links_render_without_quick_filter_options(): void
+    {
+        $filterAttributes = collect();
+
+        $html = view('partials.solid-fuel-boiler-quick-filters', compact('filterAttributes'))->render();
+
+        $this->assertStringContainsString('Как выбрать твердотопливный котёл', $html);
+        $this->assertStringContainsString('теплопотери здания', $html);
+        $this->assertStringContainsString('/kotly-na-pelletah', $html);
     }
 
     public function test_active_quick_filter_can_be_removed_without_losing_other_query_parameters(): void

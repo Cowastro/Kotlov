@@ -52,15 +52,19 @@
 @endphp
 
 @include('partials.catalog-quick-filter-styles')
+@include('partials.catalog-seo-guide-styles')
 
-@if ($solidFuelQuickLinks->isNotEmpty())
-    <section class="catalog-quick-filter" aria-labelledby="solid-fuel-quick-filter-title">
-        <div class="container">
-            <div class="catalog-quick-filter__inner">
-                <div class="catalog-quick-filter__heading">
-                    <strong id="solid-fuel-quick-filter-title">Подберите твердотопливный котёл</strong>
-                    <span>по площади дома и способу загрузки</span>
-                </div>
+<section class="catalog-quick-filter catalog-seo-guide" aria-labelledby="solid-fuel-quick-filter-title">
+    <div class="container">
+        <div class="catalog-quick-filter__inner">
+            <div class="catalog-quick-filter__heading">
+                <strong id="solid-fuel-quick-filter-title">Как выбрать твердотопливный котёл</strong>
+                <span>для дома или котельной</span>
+            </div>
+            <p class="catalog-seo-guide__text">
+                Учитывайте теплопотери здания, доступный вид топлива, объём загрузочной камеры и требуемую автономность. Мощность котла подбирают расчётом, а не только по площади дома — это помогает избежать перерасхода топлива и работы в неэффективном режиме.
+            </p>
+            @if ($solidFuelQuickLinks->isNotEmpty())
                 <nav class="catalog-quick-filter__items" aria-label="Быстрый подбор твердотопливного котла">
                     <span class="catalog-quick-filter__label">Быстрый выбор:</span>
                     @foreach ($solidFuelQuickLinks as $link)
@@ -73,7 +77,12 @@
                         </a>
                     @endforeach
                 </nav>
-            </div>
+            @endif
+            <nav class="catalog-seo-guide__links" aria-label="Связанные разделы для отопления на твёрдом топливе">
+                <a href="{{ url('/kotly-na-pelletah') }}">Пеллетные котлы с автоподачей</a>
+                <a href="{{ url('/dymohody') }}">Дымоходы для котлов</a>
+                <a href="{{ url('/installers') }}">Монтажники систем отопления</a>
+            </nav>
         </div>
-    </section>
-@endif
+    </div>
+</section>
