@@ -72,6 +72,7 @@ class ClassifyStoveCatalogProductsCommand extends Command
                 $aliases = self::TARGET_CATEGORY_ALIASES[$slug] ?? [$slug];
                 $category = collect($aliases)
                     ->map(fn (string $alias) => $targets->get($alias))
+                    ->filter()
                     ->first();
 
                 return [$slug => $category];
