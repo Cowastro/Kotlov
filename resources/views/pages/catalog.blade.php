@@ -60,6 +60,10 @@
         @include('partials.sauna-stove-quick-filters')
     @endif
 
+    @if ($category->slug === 'elektrokamenki')
+        @include('partials.electric-sauna-heater-quick-filters')
+    @endif
+
     @if ($catalogSpotlight)
         <section class="catalog-brand-note" aria-labelledby="catalog-brand-title">
             <div class="container">

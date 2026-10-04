@@ -75,6 +75,13 @@ class ScrapeBaniaSupplierCommand extends Command
                 'pechi-dlya-bani',
                 'bani-i-sauny',
             ],
+            'category_map' => [
+                [
+                    'match_paths' => ['pult-upravleniia', 'blok-moshhnosti', 'termodatcik', 'paroisparitel'],
+                    'category_slugs' => ['komplektuyushchie-dlya-elektrokamenok'],
+                    'category_names' => ['Комплектующие для электрокаменок'],
+                ],
+            ],
         ],
         'heating' => [
             'source_path' => 'otopitelnye-pechi-dlia-doma',
