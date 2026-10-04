@@ -12,7 +12,7 @@ class StoveOfficialHeatingAreaCatalogTest extends TestCase
     {
         $entries = (new StoveOfficialHeatingAreaCatalog)->entries();
 
-        $this->assertCount(64, $entries);
+        $this->assertCount(67, $entries);
         foreach ($entries as $slug => $entry) {
             $this->assertNotSame('', $slug);
             $this->assertGreaterThan(0, $entry['area']);
@@ -29,6 +29,20 @@ class StoveOfficialHeatingAreaCatalogTest extends TestCase
         $this->assertSame(74, $entries['po-farengeit-10-antracit']['area']);
         $this->assertSame(37, $entries['po-vodogreinaia-normal-batareia-tv-to-antracit-115']['area']);
         $this->assertSame(19, $entries['po-zoluska-2016']['area']);
+    }
+
+    public function test_mbs_legacy_variants_use_the_explicit_catalogue_area_for_the_exact_model(): void
+    {
+        $entries = (new StoveOfficialHeatingAreaCatalog)->entries();
+
+        $this->assertSame(67, $entries['mbs-pec-olymp-plus-l-kremovaia']['area']);
+        foreach ([
+            'mbs-plita-na-tverdom-toplive-thermo-magnum-4d-d-s-pravyi',
+            'mbs-plita-na-tverdom-toplive-thermo-magnum-4d-l-s-levyi',
+        ] as $slug) {
+            $this->assertSame(93, $entries[$slug]['area']);
+            $this->assertStringContainsString('SD Thermo Magnum', $entries[$slug]['source_label']);
+        }
     }
 
     public function test_every_area_maps_to_a_catalog_filter_range(): void
