@@ -31,6 +31,14 @@ class AnalyticsConfigurationTest extends TestCase
         self::assertStringNotContainsString('11162428', $head.$noscript);
     }
 
+    public function test_analytics_events_are_sent_directly_to_google_and_the_owned_yandex_counter(): void
+    {
+        $events = file_get_contents(resource_path('views/partials/analytics-events.blade.php'));
+
+        self::assertStringContainsString("window.gtag('event', eventName, eventParameters)", $events);
+        self::assertStringContainsString("window.ym(113419397, 'reachGoal', eventName)", $events);
+    }
+
     public static function publicLayouts(): array
     {
         return [

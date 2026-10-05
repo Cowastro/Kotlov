@@ -5,10 +5,15 @@ document.addEventListener('DOMContentLoaded', function () {
     function pushEvent(eventName, parameters) {
         if (!/^[a-z0-9_]+$/i.test(eventName)) return;
 
-        window.dataLayer.push(Object.assign({
-            event: eventName,
+        var eventParameters = Object.assign({
             page_path: window.location.pathname
-        }, parameters || {}));
+        }, parameters || {});
+
+        window.dataLayer.push(Object.assign({event: eventName}, eventParameters));
+
+        if (typeof window.gtag === 'function') {
+            window.gtag('event', eventName, eventParameters);
+        }
 
         var metrikaGoals = [
             'order_success',
