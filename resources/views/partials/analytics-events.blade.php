@@ -9,6 +9,30 @@ document.addEventListener('DOMContentLoaded', function () {
             event: eventName,
             page_path: window.location.pathname
         }, parameters || {}));
+
+        var metrikaGoals = [
+            'order_success',
+            'install_request_success',
+            'installer_application_success',
+            'supplier_application_success',
+            'heat_pump_lead_success',
+            'fireplace_lead_success',
+            'product_engineering_calculation_success',
+            'pellet_burner_lead_success',
+            'pellet_burner_evo_lead_success',
+            'pellet_burner_hotta_lead_success'
+        ];
+
+        if (typeof window.ym === 'function' && metrikaGoals.indexOf(eventName) !== -1) {
+            window.ym(113419397, 'reachGoal', eventName);
+
+            if (eventName !== 'order_success' &&
+                eventName !== 'install_request_success' &&
+                eventName !== 'installer_application_success' &&
+                eventName !== 'supplier_application_success') {
+                window.ym(113419397, 'reachGoal', 'install_request_success');
+            }
+        }
     }
 
     document.addEventListener('click', function (event) {

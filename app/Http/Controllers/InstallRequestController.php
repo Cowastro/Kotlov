@@ -191,6 +191,7 @@ class InstallRequestController extends Controller
 
         return redirect()
             ->route('install-requests.create', $installerProfileId ? ['installer' => $installerProfileId] : [])
-            ->with('success', 'Заявка отправлена. Мы свяжемся с вами для уточнения деталей.');
+            ->with('success', 'Заявка отправлена. Мы свяжемся с вами для уточнения деталей.')
+            ->with('analytics_event', 'install_request_success');
     }
 }

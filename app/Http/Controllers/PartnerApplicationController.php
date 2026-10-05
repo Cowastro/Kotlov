@@ -41,7 +41,9 @@ class PartnerApplicationController extends Controller
             default => route('partners') . '#apply',
         };
 
-        return redirect($anchor)->with('installer_success', 'Ваша заявка отправлена! Мы свяжемся с вами в течение рабочего дня.');
+        return redirect($anchor)
+            ->with('installer_success', 'Ваша заявка отправлена! Мы свяжемся с вами в течение рабочего дня.')
+            ->with('analytics_event', 'installer_application_success');
     }
 
     public function storeSupplier(Request $request)
@@ -63,6 +65,8 @@ class PartnerApplicationController extends Controller
             ? route('suppliers') . '#apply-supplier'
             : route('partners') . '#apply';
 
-        return redirect($anchor)->with('supplier_success', 'Ваша заявка принята! Менеджер свяжется с вами в течение рабочего дня.');
+        return redirect($anchor)
+            ->with('supplier_success', 'Ваша заявка принята! Менеджер свяжется с вами в течение рабочего дня.')
+            ->with('analytics_event', 'supplier_application_success');
     }
 }

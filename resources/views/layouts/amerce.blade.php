@@ -66,7 +66,7 @@
 
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="format-detection" content="telephone=no">
-    <meta name="yandex-verification" content="7a9017a97d9459a9">
+    <meta name="yandex-verification" content="671629ab0379a34d">
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
     {{-- Google Tag Manager --}}
@@ -75,11 +75,6 @@
     j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
     'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
     })(window,document,'script','dataLayer','GTM-5G2F3ZT');</script>
-    <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
-    new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
-    j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
-    'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
-    })(window,document,'script','dataLayer','GTM-5R24LNK');</script>
 
     {{-- Google Analytics 4 + Google Ads --}}
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-7QPT1BYQQF"></script>
@@ -91,7 +86,7 @@
         gtag('config', 'AW-17488938820');
     </script>
 
-    {{-- Yandex.Metrika counter 11162428 is managed by GTM-5R24LNK. --}}
+    @include('partials.yandex-metrika-head')
 
     <link rel="stylesheet" href="{{ asset('assets/fonts/fonts.css') }}">
     <link rel="stylesheet" href="{{ asset('assets/icon/icomoon/style.css') }}">
@@ -150,7 +145,7 @@
 
     {{-- GTM noscript --}}
     <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-5G2F3ZT" height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
-    <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-5R24LNK" height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+    @include('partials.yandex-metrika-noscript')
     @include('partials.amerce-header')
 
     @yield('content')
