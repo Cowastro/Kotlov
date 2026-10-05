@@ -16,6 +16,8 @@ class AnalyticsConfigurationTest extends TestCase
         self::assertStringContainsString('partials.yandex-metrika-noscript', $contents);
         self::assertStringContainsString('671629ab0379a34d', $contents);
         self::assertStringNotContainsString('GTM-5R24LNK', $contents);
+        self::assertStringNotContainsString('GTM-5G2F3ZT', $contents);
+        self::assertStringNotContainsString('web.it-center.by/nw', $contents);
         self::assertStringNotContainsString('7a9017a97d9459a9', $contents);
     }
 
