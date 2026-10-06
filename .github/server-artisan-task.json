@@ -2,5 +2,5 @@
   "task": "health-check",
   "artisan_args": "none",
   "log_file": "storage/logs/laravel.log",
-  "run_id": "https-certificate-check-20261006"
+  "run_id": "tls-chain-config-check-20261006"
 }
