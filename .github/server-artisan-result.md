@@ -1,21 +1,21 @@
 # Server Artisan Result
 
-- Time: 2026-10-06 07:59:52 UTC
+- Time: 2026-10-06 08:01:13 UTC
 - Task: `artisan-dry-run`
 - Artisan args: `supplier:sync-stank --dry-run`
 - Log file: `storage/logs/sync-stank-rrc-2026-10-07.log`
 - Exit code: `0`
 
 ```text
-Saved working directory and index state On main: pre-artisan-queue-20261006105950
+No local changes to save
 From https://github.com/Cowastro/Kotlov
-   f060c39b..8f8b1348  main       -> origin/main
-   fda94921..f060c39b  codex/heat-pump-catalog-upgrade -> origin/codex/heat-pump-catalog-upgrade
-Updating f060c39b..8f8b1348
+   8f8b1348..54ab7150  main       -> origin/main
+Updating 8f8b1348..54ab7150
 Fast-forward
- .github/server-artisan-task.json          |   8 +-
- app/Console/Commands/SyncStankCommand.php | 434 ++++++++++++++----------------
- 2 files changed, 206 insertions(+), 236 deletions(-)
+ .github/server-artisan-result.md          | 236 ++++++++----------------------
+ .github/server-artisan-task.json          |   2 +-
+ app/Console/Commands/SyncStankCommand.php |  17 ++-
+ 3 files changed, 77 insertions(+), 178 deletions(-)
 Найдено товаров S-TANK на сервере: 46
 +-------+------------------------------------------------------------------+--------------+----------+--------------+-----------+
 | ID    | Товар                                                            | Артикул      | РРЦ BYN  | Текущая цена | Статус    |
