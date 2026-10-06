@@ -1,181 +1,73 @@
 # Server Artisan Result
 
-- Time: 2026-08-26 18:06:54 UTC
-- Task: `tail-log`
-- Artisan args: ``
-- Log file: `storage/logs/restore-remaining-2.log`
+- Time: 2026-10-06 07:59:52 UTC
+- Task: `artisan-dry-run`
+- Artisan args: `supplier:sync-stank --dry-run`
+- Log file: `storage/logs/sync-stank-rrc-2026-10-07.log`
 - Exit code: `0`
 
 ```text
-No local changes to save
+Saved working directory and index state On main: pre-artisan-queue-20261006105950
 From https://github.com/Cowastro/Kotlov
-   6860da5f..5b1b9f3f  main       -> origin/main
-Updating 6860da5f..5b1b9f3f
+   f060c39b..8f8b1348  main       -> origin/main
+   fda94921..f060c39b  codex/heat-pump-catalog-upgrade -> origin/codex/heat-pump-catalog-upgrade
+Updating f060c39b..8f8b1348
 Fast-forward
- .github/server-artisan-result.md         | 23 ++++++++++-------------
- .github/server-artisan-task.json         |  6 +++---
- public/assets/css/kotlov.css             | 24 ++++++++++++++++++++++++
- resources/views/pages/home-new.blade.php |  2 +-
- 4 files changed, 38 insertions(+), 17 deletions(-)
-[38/92] TA800L
-[39/92] TA800LB
-[40/92] TA800RB
-[41/92] TA800
-[42/92] TA800R
-[43/92] TDN900P
-[44/92] TDN900PB
-[45/92] TDN700P
-[46/92] TDN700PB
-[47/92] TBN1600P
-[48/92] TDN900B
-[49/92] TBN1000T
-[50/92] TDN900
-[51/92] TBN800TB
-[52/92] TBN800T
-[53/92] TDN800RP
-[54/92] TDNP1000R
-[55/92] TDNP1000L
-[56/92] TDN800RPB
-[57/92] TDNP1000LB
-[58/92] TDN800LP
-[59/92] TDN800LPB
-[60/92] TDNP1000RB
-[61/92] TDN800L
-[62/92] TDN800R
-[63/92] TDN800P
-[64/92] TBN1600PB
-[65/92] TDN800LB
-[66/92] TDN800RB
-[67/92] TDN800РB
-[68/92] TDN800B
-[69/92] TDN1200
-[70/92] TBN1000TB
-[71/92] TDN800
-[72/92] TDN1200B
-[73/92] TA700-1K
-[74/92] TA700-1KB
-[75/92] TA1000R
-[76/92] TA1000L
-[77/92] TA1000LB
-[78/92] TAN700-1B
-[79/92] TAN700LB
-[80/92] TAN700RB
-[81/92] TA1000
-[82/92] TAN700R
-[83/92] TAN700L
-[84/92] TAN700-1
-[85/92] TA1000B
-[86/92] TA1000RB
-[87/92] TO700
-[88/92] TP700
-[89/92] TDN800V
-[90/92] TDN800PV
-[91/92] TDN800BV
-[92/92] TDN800PВV
-+-----------------+-------+
-| metric          | count |
-+-----------------+-------+
-| created         | 6     |
-| updated         | 86    |
-| attributes      | 140   |
-| images          | 36    |
-| skipped_invicta | 0     |
-| errors          | 0     |
-+-----------------+-------+
-Exit code: 0
-
-=== Running: supplier:sync-ecokamin-stoves --apply ===
-APPLY: database will be updated.
-Supplier currency: RUB, rate to BYN: 0.039
-  Раздел: https://ecokamin.ru/catalog/pechi_kaminy/bavariya/
-  Раздел: https://ecokamin.ru/catalog/kaminy/
-Found stoves: 35 (skipped Invicta: 0)
-[1/35] PK004
-[2/35] PK168M
-[3/35] PK166M
-[4/35] PK049
-[5/35] PK123
-[6/35] PK007
-[7/35] PK165M
-[8/35] PK147
-[9/35] PK187
-[10/35] PK145
-[11/35] PK138
-[12/35] PK179
-[13/35] РК193
-[14/35] PK189
-[15/35] PK186
-[16/35] K218
-[17/35] K186B
-[18/35] K186
-[19/35] KM211B
-[20/35] KM203
-[21/35] KTS201
-[22/35] KTS200
-[23/35] KM212CB
-[24/35] KM212C
-[25/35] KPN202B
-[26/35] KPN202
-[27/35] K185
-[28/35] KP197RB
-[29/35] KP195LB
-[30/35] KP196R
-[31/35] KP194L
-[32/35] KM210LB
-[33/35] KM205L
-[34/35] KRN800BK
-[35/35] KRN800BG
-+-----------------+-------+
-| metric          | count |
-+-----------------+-------+
-| created         | 0     |
-| updated         | 35    |
-| attributes      | 0     |
-| images          | 0     |
-| skipped_invicta | 0     |
-| errors          | 0     |
-+-----------------+-------+
-Exit code: 0
-
-=== Running: supplier:sync-elicon-gas-meters --apply ===
-APPLY: database will be updated.
-Listing scrape failed: file_get_contents(https://elicon.by/product-category/bitovie_schetchiki_gaza/page/4/): Failed to open stream: HTTP request failed! HTTP/1.1 404 Not Found
-
-Exit code: 1
-
-=== Running: supplier:sync-gorodkotlov-vaillant --apply ===
-APPLY: database will be updated.
-Found 16 unique Vaillant products on gorodkotlov.by.
-[1/16] https://gorodkotlov.by/catalog/gazovye-kotly/gazovyy-kotel-vaillant-turbotec-pro-vuw-242-5-3/
-[2/16] https://gorodkotlov.by/catalog/gazovye-kotly/gazovyy-kotel-vaillant-turbotec-plus-vu-242-5-5-/
-[3/16] https://gorodkotlov.by/catalog/gazovye-kotly/kondensatsionnyy-gazovyy-kotel-vaillant-ecotec-plus-vu-35-cs-1-5/
-[4/16] https://gorodkotlov.by/catalog/gazovye-kotly/kondensatsionnyy-gazovyy-kotel-vaillant-ecotec-plus-vu-30-cs-1-5/
-[5/16] https://gorodkotlov.by/catalog/gazovye-kotly/kondensatsionnyy-gazovyy-kotel-vaillant-ecotec-plus-vu-25-cs-1-5/
-[6/16] https://gorodkotlov.by/catalog/gazovye-kotly/gazovyy-kotel-vaillant-turbotec-plus-vu-282-5-5/
-[7/16] https://gorodkotlov.by/catalog/gazovye-kotly/gazovyy-kotel-vaillant-turbotec-plus-vu-362-5-5/
-[8/16] https://gorodkotlov.by/catalog/gazovye-kotly/gazovyy-kotel-vaillant-turbofit-vuw-242-5-2/
-[9/16] https://gorodkotlov.by/catalog/gazovye-kotly/gazovyy-kotel-vaillant-turbotec-plus-vuw-282-5-5/
-[10/16] https://gorodkotlov.by/catalog/gazovye-kotly/gazovyy-kotel-vaillant-turbotec-plus-vuw-242-5-5/
-[11/16] https://gorodkotlov.by/catalog/gazovye-kotly/gazovyy-kotel-vaillant-atmotec-plus-vuw-280-5-5/
-[12/16] https://gorodkotlov.by/catalog/gazovye-kotly/gazovyy-kotel-vaillant-atmotec-plus-vuw-240-5-5/
-[13/16] https://gorodkotlov.by/catalog/gazovye-kotly/gazovyy-kotel-vaillant-atmotec-plus-vu-240_5_5/
-[14/16] https://gorodkotlov.by/catalog/gazovye-kotly/gazovyy-kotel-vaillant-atmotec-pro-vuw-280-5-3-/
-[15/16] https://gorodkotlov.by/catalog/gazovye-kotly/gazovyy_kotel_vaillant_atmotec_pro_vuw_240_5_3_/
-[16/16] https://gorodkotlov.by/catalog/gazovye-kotly/gazovyy-kotel-vaillant-turbotec-pro-vuw-282-5-3/
-+-------------+-------+
-| action      | count |
-+-------------+-------+
-| created     | 0     |
-| updated     | 4     |
-| no_change   | 12    |
-| seo         | 0     |
-| documents   | 28    |
-| promo_flags | 32    |
-| skipped     | 0     |
-| errors      | 0     |
-+-------------+-------+
-Exit code: 0
-
-Done restoring remaining supplier images.
+ .github/server-artisan-task.json          |   8 +-
+ app/Console/Commands/SyncStankCommand.php | 434 ++++++++++++++----------------
+ 2 files changed, 206 insertions(+), 236 deletions(-)
+Найдено товаров S-TANK на сервере: 46
++-------+------------------------------------------------------------------+--------------+----------+--------------+-----------+
+| ID    | Товар                                                            | Артикул      | РРЦ BYN  | Текущая цена | Статус    |
++-------+------------------------------------------------------------------+--------------+----------+--------------+-----------+
+| 2834  | Буферная емкость S-TANK Prestige AT-300                          | AT-300       | 1713.60  | 1619.97      | изменится |
+| 2871  | Буферная емкость S-TANK Prestige AT-500                          | AT-500       | 1951.20  | 1844.59      | изменится |
+| 2874  | Буферная емкость S-TANK Prestige AT-750                          | AT-750       | 2358.00  | 2229.16      | изменится |
+| 2876  | Буферная емкость S-TANK Prestige AT-1000                         | AT-1000      | 2718.00  | 2569.49      | изменится |
+| 8418  | Буферная емкость S-TANK Prestige AT-1200                         | AT-1200      | 3848.40  | 3638.13      | изменится |
+| 8419  | Буферная емкость S-TANK Prestige AT-1500                         | AT-1500      | 4096.80  | 3872.96      | изменится |
+| 8420  | Буферная емкость S-TANK Prestige AT-2000                         | AT-2000      | 6426.00  | 6074.89      | изменится |
+| 8421  | Буферная емкость S-TANK Prestige AT-3000                         | AT-3000      | 10130.40 | 9576.89      | изменится |
+| 8422  | Буферная емкость S-TANK Prestige AT-5000                         | AT-5000      | 14724.00 | 13919.50     | изменится |
+| 8423  | Буферная емкость S-TANK AT-300                                   | AT-300       | 1713.60  | 1619.97      | изменится |
+| 8424  | Буферная емкость S-TANK AT-500                                   | AT-500       | 1951.20  | 1844.59      | изменится |
+| 8425  | Буферная емкость S-TANK AT-750                                   | AT-750       | 2358.00  | 2229.16      | изменится |
+| 8426  | Буферная емкость S-TANK AT-1000                                  | AT-1000      | 2718.00  | 2569.49      | изменится |
+| 8427  | Буферная емкость S-TANK AT-1200                                  | AT-1200      | 3848.40  | 3638.13      | изменится |
+| 8428  | Буферная емкость S-TANK AT-1500                                  | AT-1500      | 4096.80  | 3872.96      | изменится |
+| 8429  | Буферная емкость S-TANK AT-2000                                  | AT-2000      | 6426.00  | 6074.89      | изменится |
+| 8430  | Буферная емкость S-TANK AT-3000                                  | AT-3000      | 10130.40 | 9576.89      | изменится |
+| 8431  | Буферная емкость S-TANK AT-5000                                  | AT-5000      | 14724.00 | 13919.50     | изменится |
+| 8432  | Буферная емкость S-TANK ET-300                                   | ET-300       | 1713.60  | 1619.97      | изменится |
+| 8433  | Буферная емкость S-TANK ET-500                                   | ET-500       | 1951.20  | 1844.59      | изменится |
+| 8434  | Буферная емкость S-TANK ET-750                                   | ET-750       | 2358.00  | 2229.16      | изменится |
+| 8435  | Буферная емкость S-TANK ET-1000                                  | ET-1000      | 2718.00  | 2569.49      | изменится |
+| 8436  | Буферная емкость S-TANK ET-1200                                  | ET-1200      | 3848.40  | 3638.13      | изменится |
+| 8437  | Буферная емкость S-TANK ET-1500                                  | ET-1500      | 4096.80  | 3872.96      | изменится |
+| 8438  | Буферная емкость S-TANK ET-2000                                  | ET-2000      | 6426.00  | 6074.89      | изменится |
+| 8439  | Буферная емкость S-TANK ET-3000                                  | ET-3000      | 10130.40 | 9576.89      | изменится |
+| 8440  | Буферная емкость S-TANK ET-5000                                  | ET-5000      | 14724.00 | 13919.50     | изменится |
+| 8443  | Косвенный водонагреватель S-TANK HFWT - 300                      | HFWT-300     | 2152.80  | 2035.17      | изменится |
+| 8444  | Косвенный водонагреватель S-TANK HFWT - 500                      | HFWT-500     | 2919.60  | 2760.08      | изменится |
+| 11423 | Буферная емкость S-TANK HFWT 1000 литров                         | HFWT-1000    | 4176.00  | 3947.83      | изменится |
+| 11983 | Электрокотёл+Бак горячей воды+теплоаккумулятор FRESH 200 S-TANK	 | FRESH-200    | 1954.80  | 1847.99      | изменится |
+| 11984 | Бак косвенного нагрева S-Tank Solar SS-150                       | SOLARSS-150  | 3758.00  | 3552.74      | изменится |
+| 11985 | Бак косвенного нагрева S-Tank Solar SS-200                       | SOLARSS-200  | 4019.00  | 3798.97      | изменится |
+| 11986 | Бак косвенного нагрева S-Tank Solar SS-300                       | SOLARSS-300  | 5666.00  | 5356.79      | изменится |
+| 11987 | Бак косвенного нагрева S-Tank Solar SS-500                       | SOLARSS-500  | 7394.00  | 6990.38      | изменится |
+| 11988 | Бак косвенного нагрева S-Tank Solar SS-750                       | SOLARSS-750  | 8968.00  | 8477.62      | изменится |
+| 11989 | Бак косвенного нагрева S-Tank Solar SS-1000                      | SOLARSS-1000 | 10598.00 | 10019.32     | изменится |
+| 11990 | Бак косвенного нагрева S-Tank Solar SS-1500                      | SOLARSS-1500 | 12971.00 | 12262.09     | изменится |
+| 11991 | Бак косвенного нагрева S-Tank Solar SS-1200                      | SOLARSS-1200 | 12582.00 | 11894.53     | изменится |
+| 11992 | Бак косвенного нагрева S-Tank BER-150                            | BER-150      | 1828.80  | 1728.88      | изменится |
+| 11993 | Бак косвенного нагрева S-Tank BER-200                            | BER-200      | 2048.40  | 1936.48      | изменится |
+| 11994 | Бак косвенного нагрева S-Tank BER-300                            | BER-300      | 3182.40  | 3008.52      | изменится |
+| 11995 | Бак косвенного нагрева S-Tank BER-400                            | BER-400      | 4582.80  | 4332.40      | изменится |
+| 11996 | Бак косвенного нагрева S-Tank BER-500                            | BER-500      | 5180.40  | 4897.35      | изменится |
+| 11997 | Бак косвенного нагрева S-Tank BER-750                            | BER-750      | 6775.20  | 6405.01      | изменится |
+| 11998 | Бак косвенного нагрева S-Tank BER-1000                           | BER-1000     | 8064.00  | 7623.39      | изменится |
++-------+------------------------------------------------------------------+--------------+----------+--------------+-----------+
+Сопоставлено: 46; по запросу: 0; несопоставлено: 0.
+[DRY-RUN] Изменения не применены.
 
 ```
