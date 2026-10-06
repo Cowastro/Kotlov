@@ -1,6 +1,6 @@
 {
-  "task": "optimize-clear",
+  "task": "ps-artisan",
   "artisan_args": "none",
   "log_file": "storage/logs/laravel.log",
-  "run_id": "recover-site-optimize-clear-20261006"
+  "run_id": "diagnose-artisan-processes-20261006"
 }
