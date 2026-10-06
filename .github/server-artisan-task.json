@@ -1,6 +1,6 @@
 {
-  "task": "tail-log",
+  "task": "optimize-clear",
   "artisan_args": "none",
   "log_file": "storage/logs/laravel.log",
-  "run_id": "diagnose-site-timeout-20261006"
+  "run_id": "recover-site-optimize-clear-20261006"
 }
