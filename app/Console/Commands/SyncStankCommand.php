@@ -20,6 +20,7 @@ class SyncStankCommand extends Command
 {
     protected $signature = 'supplier:sync-stank
         {--dry-run : Показать полное сопоставление без записи}
+        {--apply-before-effective-date : Применить цены до 07.10.2026 только по явному разрешению}
         {--only-series= : Ограничить проверку сериями через запятую, например BER,HFWT}';
 
     protected $description = 'Sync S-TANK fixed BYN retail prices from the price list effective 2026-10-07';
@@ -99,9 +100,15 @@ class SyncStankCommand extends Command
             explode(',', (string) $this->option('only-series'))
         )));
 
-        if (! $dryRun && now('Europe/Minsk')->toDateString() < self::EFFECTIVE_FROM) {
+        $applyBeforeEffectiveDate = (bool) $this->option('apply-before-effective-date');
+
+        if (! $dryRun && ! $applyBeforeEffectiveDate && now('Europe/Minsk')->toDateString() < self::EFFECTIVE_FROM) {
             $this->warn('Новые РРЦ S-TANK действуют с ' . self::EFFECTIVE_FROM . '. Запись до этой даты остановлена.');
             return self::SUCCESS;
+        }
+
+        if (! $dryRun && $applyBeforeEffectiveDate && now('Europe/Minsk')->toDateString() < self::EFFECTIVE_FROM) {
+            $this->warn('РРЦ применяются досрочно по явному разрешению пользователя.');
         }
 
         $products = DB::table('products as p')
