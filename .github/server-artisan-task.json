@@ -2,5 +2,5 @@
   "task": "artisan-dry-run",
   "artisan_args": "supplier:sync-stank --dry-run",
   "log_file": "storage/logs/sync-stank-rrc-2026-10-07.log",
-  "run_id": "sync-stank-rrc-dry-run-20261006"
+  "run_id": "sync-stank-rrc-dry-run-final-20261006"
 }
