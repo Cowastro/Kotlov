@@ -1,6 +1,6 @@
 {
-  "task": "tail-log",
-  "artisan_args": "",
-  "log_file": "storage/logs/restore-remaining-2.log",
-  "run_id": "check-remaining-2-result"
+  "task": "artisan-dry-run",
+  "artisan_args": "supplier:sync-stank --dry-run",
+  "log_file": "storage/logs/sync-stank-rrc-2026-10-07.log",
+  "run_id": "sync-stank-rrc-dry-run-20261006"
 }
