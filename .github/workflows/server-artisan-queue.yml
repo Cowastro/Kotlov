@@ -144,6 +144,10 @@ jobs:
             health-check)
               echo "== Public HTTPS =="
               curl -sS -I --max-time 15 https://kotlov.by/ || true
+              echo "== Public HTTPS without certificate verification =="
+              curl -k -sS -I --max-time 15 https://kotlov.by/ || true
+              echo "== Certificate =="
+              echo | openssl s_client -connect kotlov.by:443 -servername kotlov.by 2>/dev/null | openssl x509 -noout -subject -issuer -dates || true
               echo "== Local HTTP with Host header =="
               curl -sS -I --max-time 15 -H "Host: kotlov.by" http://127.0.0.1/ || true
               echo "== Web/PHP processes =="
