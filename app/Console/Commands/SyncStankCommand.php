@@ -235,11 +235,18 @@ class SyncStankCommand extends Command
                         ->where('product_id', $product->id)
                         ->update($supplierData);
                 } else {
-                    DB::table('supplier_products')->insert(array_merge($supplierData, [
-                        'supplier_id' => $supplier->id,
-                        'product_id' => $product->id,
-                        'created_at' => now(),
-                    ]));
+                    try {
+                        DB::table('supplier_products')->insert(array_merge($supplierData, [
+                            'supplier_id' => $supplier->id,
+                            'product_id' => $product->id,
+                            'created_at' => now(),
+                        ]));
+                    } catch (\Illuminate\Database\UniqueConstraintViolationException $exception) {
+                        // На сервере одновременно опубликованы обычные AT и Prestige AT
+                        // с одинаковыми заводскими артикулами. Обе карточки получают
+                        // одну РРЦ, но единичная связь поставщика остаётся за первой.
+                        $this->line('Артикул ' . $article . ' уже связан с другой карточкой; цена текущего товара всё равно обновится.');
+                    }
                 }
 
                 if (abs((float) $product->current_price - $storedPrice) > 0.005) {
