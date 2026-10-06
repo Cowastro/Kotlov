@@ -36,7 +36,7 @@ jobs:
           log_file="$(jq -r '.log_file // "storage/logs/server-artisan.log"' .github/server-artisan-task.json)"
 
           case "$task" in
-            optimize-clear|artisan-dry-run|artisan-apply|artisan-background|tail-log|ps-artisan|kill-pid) ;;
+            optimize-clear|artisan-dry-run|artisan-apply|artisan-background|tail-log|ps-artisan|health-check|kill-pid) ;;
             *) echo "::error::Unsupported task: $task"; exit 1 ;;
           esac
 
@@ -140,6 +140,14 @@ jobs:
               ;;
             ps-artisan)
               ps -ef | grep artisan | grep -v grep || true
+              ;;
+            health-check)
+              echo "== Public HTTPS =="
+              curl -sS -I --max-time 15 https://kotlov.by/ || true
+              echo "== Local HTTP with Host header =="
+              curl -sS -I --max-time 15 -H "Host: kotlov.by" http://127.0.0.1/ || true
+              echo "== Web/PHP processes =="
+              ps -ef | grep -E "nginx|apache|httpd|php-fpm|lsphp" | grep -v grep || true
               ;;
             kill-pid)
               kill $ARTISAN_ARGS || true
