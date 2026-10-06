@@ -1,7 +1,7 @@
 # Server Artisan Result
 
-- Time: 2026-10-06 08:44:14 UTC
-- Task: `tail-log`
+- Time: 2026-10-06 08:45:00 UTC
+- Task: `optimize-clear`
 - Artisan args: `none`
 - Log file: `storage/logs/laravel.log`
 - Exit code: `0`
@@ -9,171 +9,23 @@
 ```text
 No local changes to save
 From https://github.com/Cowastro/Kotlov
-   98fae234..cba50e35  main       -> origin/main
-Updating 98fae234..cba50e35
+   cba50e35..6284eceb  main       -> origin/main
+Updating cba50e35..6284eceb
 Fast-forward
- .github/server-artisan-result.md | 129 ++++++++++++++++++---------------------
- .github/server-artisan-task.json |   8 +--
- 2 files changed, 63 insertions(+), 74 deletions(-)
-#75 /var/www/h209767/data/www/new.kotlov.by/vendor/laravel/framework/src/Illuminate/Http/Middleware/ValidatePostSize.php(27): Illuminate\\Pipeline\\Pipeline->Illuminate\\Pipeline\\{closure}()
-#76 /var/www/h209767/data/www/new.kotlov.by/vendor/laravel/framework/src/Illuminate/Pipeline/Pipeline.php(219): Illuminate\\Http\\Middleware\\ValidatePostSize->handle()
-#77 /var/www/h209767/data/www/new.kotlov.by/vendor/laravel/framework/src/Illuminate/Foundation/Http/Middleware/PreventRequestsDuringMaintenance.php(109): Illuminate\\Pipeline\\Pipeline->Illuminate\\Pipeline\\{closure}()
-#78 /var/www/h209767/data/www/new.kotlov.by/vendor/laravel/framework/src/Illuminate/Pipeline/Pipeline.php(219): Illuminate\\Foundation\\Http\\Middleware\\PreventRequestsDuringMaintenance->handle()
-#79 /var/www/h209767/data/www/new.kotlov.by/vendor/laravel/framework/src/Illuminate/Http/Middleware/HandleCors.php(61): Illuminate\\Pipeline\\Pipeline->Illuminate\\Pipeline\\{closure}()
-#80 /var/www/h209767/data/www/new.kotlov.by/vendor/laravel/framework/src/Illuminate/Pipeline/Pipeline.php(219): Illuminate\\Http\\Middleware\\HandleCors->handle()
-#81 /var/www/h209767/data/www/new.kotlov.by/vendor/laravel/framework/src/Illuminate/Http/Middleware/TrustProxies.php(58): Illuminate\\Pipeline\\Pipeline->Illuminate\\Pipeline\\{closure}()
-#82 /var/www/h209767/data/www/new.kotlov.by/vendor/laravel/framework/src/Illuminate/Pipeline/Pipeline.php(219): Illuminate\\Http\\Middleware\\TrustProxies->handle()
-#83 /var/www/h209767/data/www/new.kotlov.by/vendor/laravel/framework/src/Illuminate/Foundation/Http/Middleware/InvokeDeferredCallbacks.php(22): Illuminate\\Pipeline\\Pipeline->Illuminate\\Pipeline\\{closure}()
-#84 /var/www/h209767/data/www/new.kotlov.by/vendor/laravel/framework/src/Illuminate/Pipeline/Pipeline.php(219): Illuminate\\Foundation\\Http\\Middleware\\InvokeDeferredCallbacks->handle()
-#85 /var/www/h209767/data/www/new.kotlov.by/vendor/laravel/framework/src/Illuminate/Http/Middleware/ValidatePathEncoding.php(28): Illuminate\\Pipeline\\Pipeline->Illuminate\\Pipeline\\{closure}()
-#86 /var/www/h209767/data/www/new.kotlov.by/vendor/laravel/framework/src/Illuminate/Pipeline/Pipeline.php(219): Illuminate\\Http\\Middleware\\ValidatePathEncoding->handle()
-#87 /var/www/h209767/data/www/new.kotlov.by/vendor/laravel/framework/src/Illuminate/Pipeline/Pipeline.php(137): Illuminate\\Pipeline\\Pipeline->Illuminate\\Pipeline\\{closure}()
-#88 /var/www/h209767/data/www/new.kotlov.by/vendor/laravel/framework/src/Illuminate/Foundation/Http/Kernel.php(175): Illuminate\\Pipeline\\Pipeline->then()
-#89 /var/www/h209767/data/www/new.kotlov.by/vendor/laravel/framework/src/Illuminate/Foundation/Http/Kernel.php(144): Illuminate\\Foundation\\Http\\Kernel->sendRequestThroughRouter()
-#90 /var/www/h209767/data/www/new.kotlov.by/vendor/laravel/framework/src/Illuminate/Foundation/Application.php(1220): Illuminate\\Foundation\\Http\\Kernel->handle()
-#91 /var/www/h209767/data/www/new.kotlov.by/public/index.php(20): Illuminate\\Foundation\\Application->handleRequest()
-#92 {main}
-"} 
-[2026-10-06 07:23:01] production.ERROR: foreach() argument must be of type array|object, string given (View: /var/www/h209767/data/www/new.kotlov.by/resources/views/pages/product.blade.php) {"exception":"[object] (Illuminate\\View\\ViewException(code: 0): foreach() argument must be of type array|object, string given (View: /var/www/h209767/data/www/new.kotlov.by/resources/views/pages/product.blade.php) at /var/www/h209767/data/www/new.kotlov.by/storage/framework/views/6d3194fde19bd9d5d9ac557701d543d7.php:79)
-[stacktrace]
-#0 /var/www/h209767/data/www/new.kotlov.by/vendor/livewire/livewire/src/Mechanisms/ExtendBlade/ExtendedCompilerEngine.php(58): Illuminate\\View\\Engines\\CompilerEngine->handleViewException()
-#1 /var/www/h209767/data/www/new.kotlov.by/vendor/laravel/framework/src/Illuminate/View/Engines/PhpEngine.php(59): Livewire\\Mechanisms\\ExtendBlade\\ExtendedCompilerEngine->handleViewException()
-#2 /var/www/h209767/data/www/new.kotlov.by/vendor/livewire/livewire/src/Mechanisms/ExtendBlade/ExtendedCompilerEngine.php(22): Illuminate\\View\\Engines\\PhpEngine->evaluatePath()
-#3 /var/www/h209767/data/www/new.kotlov.by/vendor/laravel/framework/src/Illuminate/View/Engines/CompilerEngine.php(76): Livewire\\Mechanisms\\ExtendBlade\\ExtendedCompilerEngine->evaluatePath()
-#4 /var/www/h209767/data/www/new.kotlov.by/vendor/livewire/livewire/src/Mechanisms/ExtendBlade/ExtendedCompilerEngine.php(10): Illuminate\\View\\Engines\\CompilerEngine->get()
-#5 /var/www/h209767/data/www/new.kotlov.by/vendor/laravel/framework/src/Illuminate/View/View.php(208): Livewire\\Mechanisms\\ExtendBlade\\ExtendedCompilerEngine->get()
-#6 /var/www/h209767/data/www/new.kotlov.by/vendor/laravel/framework/src/Illuminate/View/View.php(191): Illuminate\\View\\View->getContents()
-#7 /var/www/h209767/data/www/new.kotlov.by/vendor/laravel/framework/src/Illuminate/View/View.php(160): Illuminate\\View\\View->renderContents()
-#8 /var/www/h209767/data/www/new.kotlov.by/vendor/laravel/framework/src/Illuminate/Http/Response.php(78): Illuminate\\View\\View->render()
-#9 /var/www/h209767/data/www/new.kotlov.by/vendor/laravel/framework/src/Illuminate/Http/Response.php(34): Illuminate\\Http\\Response->setContent()
-#10 /var/www/h209767/data/www/new.kotlov.by/vendor/laravel/framework/src/Illuminate/Routing/Router.php(939): Illuminate\\Http\\Response->__construct()
-#11 /var/www/h209767/data/www/new.kotlov.by/vendor/laravel/framework/src/Illuminate/Routing/Router.php(906): Illuminate\\Routing\\Router::toResponse()
-#12 /var/www/h209767/data/www/new.kotlov.by/vendor/laravel/framework/src/Illuminate/Routing/Router.php(821): Illuminate\\Routing\\Router->prepareResponse()
-#13 /var/www/h209767/data/www/new.kotlov.by/vendor/laravel/framework/src/Illuminate/Pipeline/Pipeline.php(180): Illuminate\\Routing\\Router->Illuminate\\Routing\\{closure}()
-#14 /var/www/h209767/data/www/new.kotlov.by/vendor/laravel/framework/src/Illuminate/Routing/Middleware/SubstituteBindings.php(52): Illuminate\\Pipeline\\Pipeline->Illuminate\\Pipeline\\{closure}()
-#15 /var/www/h209767/data/www/new.kotlov.by/vendor/laravel/framework/src/Illuminate/Pipeline/Pipeline.php(219): Illuminate\\Routing\\Middleware\\SubstituteBindings->handle()
-#16 /var/www/h209767/data/www/new.kotlov.by/vendor/laravel/framework/src/Illuminate/Foundation/Http/Middleware/PreventRequestForgery.php(104): Illuminate\\Pipeline\\Pipeline->Illuminate\\Pipeline\\{closure}()
-#17 /var/www/h209767/data/www/new.kotlov.by/vendor/laravel/framework/src/Illuminate/Pipeline/Pipeline.php(219): Illuminate\\Foundation\\Http\\Middleware\\PreventRequestForgery->handle()
-#18 /var/www/h209767/data/www/new.kotlov.by/vendor/laravel/framework/src/Illuminate/View/Middleware/ShareErrorsFromSession.php(48): Illuminate\\Pipeline\\Pipeline->Illuminate\\Pipeline\\{closure}()
-#19 /var/www/h209767/data/www/new.kotlov.by/vendor/laravel/framework/src/Illuminate/Pipeline/Pipeline.php(219): Illuminate\\View\\Middleware\\ShareErrorsFromSession->handle()
-#20 /var/www/h209767/data/www/new.kotlov.by/vendor/laravel/framework/src/Illuminate/Session/Middleware/StartSession.php(120): Illuminate\\Pipeline\\Pipeline->Illuminate\\Pipeline\\{closure}()
-#21 /var/www/h209767/data/www/new.kotlov.by/vendor/laravel/framework/src/Illuminate/Session/Middleware/StartSession.php(63): Illuminate\\Session\\Middleware\\StartSession->handleStatefulRequest()
-#22 /var/www/h209767/data/www/new.kotlov.by/vendor/laravel/framework/src/Illuminate/Pipeline/Pipeline.php(219): Illuminate\\Session\\Middleware\\StartSession->handle()
-#23 /var/www/h209767/data/www/new.kotlov.by/vendor/laravel/framework/src/Illuminate/Cookie/Middleware/AddQueuedCookiesToResponse.php(36): Illuminate\\Pipeline\\Pipeline->Illuminate\\Pipeline\\{closure}()
-#24 /var/www/h209767/data/www/new.kotlov.by/vendor/laravel/framework/src/Illuminate/Pipeline/Pipeline.php(219): Illuminate\\Cookie\\Middleware\\AddQueuedCookiesToResponse->handle()
-#25 /var/www/h209767/data/www/new.kotlov.by/vendor/laravel/framework/src/Illuminate/Cookie/Middleware/EncryptCookies.php(74): Illuminate\\Pipeline\\Pipeline->Illuminate\\Pipeline\\{closure}()
-#26 /var/www/h209767/data/www/new.kotlov.by/vendor/laravel/framework/src/Illuminate/Pipeline/Pipeline.php(219): Illuminate\\Cookie\\Middleware\\EncryptCookies->handle()
-#27 /var/www/h209767/data/www/new.kotlov.by/vendor/laravel/framework/src/Illuminate/Pipeline/Pipeline.php(137): Illuminate\\Pipeline\\Pipeline->Illuminate\\Pipeline\\{closure}()
-#28 /var/www/h209767/data/www/new.kotlov.by/vendor/laravel/framework/src/Illuminate/Routing/Router.php(821): Illuminate\\Pipeline\\Pipeline->then()
-#29 /var/www/h209767/data/www/new.kotlov.by/vendor/laravel/framework/src/Illuminate/Routing/Router.php(800): Illuminate\\Routing\\Router->runRouteWithinStack()
-#30 /var/www/h209767/data/www/new.kotlov.by/vendor/laravel/framework/src/Illuminate/Routing/Router.php(764): Illuminate\\Routing\\Router->runRoute()
-#31 /var/www/h209767/data/www/new.kotlov.by/vendor/laravel/framework/src/Illuminate/Routing/Router.php(753): Illuminate\\Routing\\Router->dispatchToRoute()
-#32 /var/www/h209767/data/www/new.kotlov.by/vendor/laravel/framework/src/Illuminate/Foundation/Http/Kernel.php(200): Illuminate\\Routing\\Router->dispatch()
-#33 /var/www/h209767/data/www/new.kotlov.by/vendor/laravel/framework/src/Illuminate/Pipeline/Pipeline.php(180): Illuminate\\Foundation\\Http\\Kernel->Illuminate\\Foundation\\Http\\{closure}()
-#34 /var/www/h209767/data/www/new.kotlov.by/vendor/livewire/livewire/src/Features/SupportDisablingBackButtonCache/DisableBackButtonCacheMiddleware.php(19): Illuminate\\Pipeline\\Pipeline->Illuminate\\Pipeline\\{closure}()
-#35 /var/www/h209767/data/www/new.kotlov.by/vendor/laravel/framework/src/Illuminate/Pipeline/Pipeline.php(219): Livewire\\Features\\SupportDisablingBackButtonCache\\DisableBackButtonCacheMiddleware->handle()
-#36 /var/www/h209767/data/www/new.kotlov.by/app/Http/Middleware/AdminNoIndex.php(14): Illuminate\\Pipeline\\Pipeline->Illuminate\\Pipeline\\{closure}()
-#37 /var/www/h209767/data/www/new.kotlov.by/vendor/laravel/framework/src/Illuminate/Pipeline/Pipeline.php(219): App\\Http\\Middleware\\AdminNoIndex->handle()
-#38 /var/www/h209767/data/www/new.kotlov.by/app/Http/Middleware/CitySubdomain.php(48): Illuminate\\Pipeline\\Pipeline->Illuminate\\Pipeline\\{closure}()
-#39 /var/www/h209767/data/www/new.kotlov.by/vendor/laravel/framework/src/Illuminate/Pipeline/Pipeline.php(219): App\\Http\\Middleware\\CitySubdomain->handle()
-#40 /var/www/h209767/data/www/new.kotlov.by/app/Http/Middleware/HandleRedirects.php(193): Illuminate\\Pipeline\\Pipeline->Illuminate\\Pipeline\\{closure}()
-#41 /var/www/h209767/data/www/new.kotlov.by/vendor/laravel/framework/src/Illuminate/Pipeline/Pipeline.php(219): App\\Http\\Middleware\\HandleRedirects->handle()
-#42 /var/www/h209767/data/www/new.kotlov.by/vendor/laravel/framework/src/Illuminate/Foundation/Http/Middleware/TransformsRequest.php(21): Illuminate\\Pipeline\\Pipeline->Illuminate\\Pipeline\\{closure}()
-#43 /var/www/h209767/data/www/new.kotlov.by/vendor/laravel/framework/src/Illuminate/Foundation/Http/Middleware/ConvertEmptyStringsToNull.php(31): Illuminate\\Foundation\\Http\\Middleware\\TransformsRequest->handle()
-#44 /var/www/h209767/data/www/new.kotlov.by/vendor/laravel/framework/src/Illuminate/Pipeline/Pipeline.php(219): Illuminate\\Foundation\\Http\\Middleware\\ConvertEmptyStringsToNull->handle()
-#45 /var/www/h209767/data/www/new.kotlov.by/vendor/laravel/framework/src/Illuminate/Foundation/Http/Middleware/TransformsRequest.php(21): Illuminate\\Pipeline\\Pipeline->Illuminate\\Pipeline\\{closure}()
-#46 /var/www/h209767/data/www/new.kotlov.by/vendor/laravel/framework/src/Illuminate/Foundation/Http/Middleware/TrimStrings.php(51): Illuminate\\Foundation\\Http\\Middleware\\TransformsRequest->handle()
-#47 /var/www/h209767/data/www/new.kotlov.by/vendor/laravel/framework/src/Illuminate/Pipeline/Pipeline.php(219): Illuminate\\Foundation\\Http\\Middleware\\TrimStrings->handle()
-#48 /var/www/h209767/data/www/new.kotlov.by/vendor/laravel/framework/src/Illuminate/Http/Middleware/ValidatePostSize.php(27): Illuminate\\Pipeline\\Pipeline->Illuminate\\Pipeline\\{closure}()
-#49 /var/www/h209767/data/www/new.kotlov.by/vendor/laravel/framework/src/Illuminate/Pipeline/Pipeline.php(219): Illuminate\\Http\\Middleware\\ValidatePostSize->handle()
-#50 /var/www/h209767/data/www/new.kotlov.by/vendor/laravel/framework/src/Illuminate/Foundation/Http/Middleware/PreventRequestsDuringMaintenance.php(109): Illuminate\\Pipeline\\Pipeline->Illuminate\\Pipeline\\{closure}()
-#51 /var/www/h209767/data/www/new.kotlov.by/vendor/laravel/framework/src/Illuminate/Pipeline/Pipeline.php(219): Illuminate\\Foundation\\Http\\Middleware\\PreventRequestsDuringMaintenance->handle()
-#52 /var/www/h209767/data/www/new.kotlov.by/vendor/laravel/framework/src/Illuminate/Http/Middleware/HandleCors.php(61): Illuminate\\Pipeline\\Pipeline->Illuminate\\Pipeline\\{closure}()
-#53 /var/www/h209767/data/www/new.kotlov.by/vendor/laravel/framework/src/Illuminate/Pipeline/Pipeline.php(219): Illuminate\\Http\\Middleware\\HandleCors->handle()
-#54 /var/www/h209767/data/www/new.kotlov.by/vendor/laravel/framework/src/Illuminate/Http/Middleware/TrustProxies.php(58): Illuminate\\Pipeline\\Pipeline->Illuminate\\Pipeline\\{closure}()
-#55 /var/www/h209767/data/www/new.kotlov.by/vendor/laravel/framework/src/Illuminate/Pipeline/Pipeline.php(219): Illuminate\\Http\\Middleware\\TrustProxies->handle()
-#56 /var/www/h209767/data/www/new.kotlov.by/vendor/laravel/framework/src/Illuminate/Foundation/Http/Middleware/InvokeDeferredCallbacks.php(22): Illuminate\\Pipeline\\Pipeline->Illuminate\\Pipeline\\{closure}()
-#57 /var/www/h209767/data/www/new.kotlov.by/vendor/laravel/framework/src/Illuminate/Pipeline/Pipeline.php(219): Illuminate\\Foundation\\Http\\Middleware\\InvokeDeferredCallbacks->handle()
-#58 /var/www/h209767/data/www/new.kotlov.by/vendor/laravel/framework/src/Illuminate/Http/Middleware/ValidatePathEncoding.php(28): Illuminate\\Pipeline\\Pipeline->Illuminate\\Pipeline\\{closure}()
-#59 /var/www/h209767/data/www/new.kotlov.by/vendor/laravel/framework/src/Illuminate/Pipeline/Pipeline.php(219): Illuminate\\Http\\Middleware\\ValidatePathEncoding->handle()
-#60 /var/www/h209767/data/www/new.kotlov.by/vendor/laravel/framework/src/Illuminate/Pipeline/Pipeline.php(137): Illuminate\\Pipeline\\Pipeline->Illuminate\\Pipeline\\{closure}()
-#61 /var/www/h209767/data/www/new.kotlov.by/vendor/laravel/framework/src/Illuminate/Foundation/Http/Kernel.php(175): Illuminate\\Pipeline\\Pipeline->then()
-#62 /var/www/h209767/data/www/new.kotlov.by/vendor/laravel/framework/src/Illuminate/Foundation/Http/Kernel.php(144): Illuminate\\Foundation\\Http\\Kernel->sendRequestThroughRouter()
-#63 /var/www/h209767/data/www/new.kotlov.by/vendor/laravel/framework/src/Illuminate/Foundation/Application.php(1220): Illuminate\\Foundation\\Http\\Kernel->handle()
-#64 /var/www/h209767/data/www/new.kotlov.by/public/index.php(20): Illuminate\\Foundation\\Application->handleRequest()
-#65 {main}
+ .github/server-artisan-result.md | 231 ++++++++++++++++++++++++++++-----------
+ .github/server-artisan-task.json |   4 +-
+ 2 files changed, 171 insertions(+), 64 deletions(-)
 
-[previous exception] [object] (ErrorException(code: 0): foreach() argument must be of type array|object, string given at /var/www/h209767/data/www/new.kotlov.by/storage/framework/views/6d3194fde19bd9d5d9ac557701d543d7.php:79)
-[stacktrace]
-#0 /var/www/h209767/data/www/new.kotlov.by/vendor/laravel/framework/src/Illuminate/Foundation/Bootstrap/HandleExceptions.php(258): Illuminate\\Foundation\\Bootstrap\\HandleExceptions->handleError()
-#1 /var/www/h209767/data/www/new.kotlov.by/storage/framework/views/6d3194fde19bd9d5d9ac557701d543d7.php(79): Illuminate\\Foundation\\Bootstrap\\HandleExceptions->Illuminate\\Foundation\\Bootstrap\\{closure}()
-#2 /var/www/h209767/data/www/new.kotlov.by/vendor/laravel/framework/src/Illuminate/Filesystem/Filesystem.php(123): require('/var/www/h20976...')
-#3 /var/www/h209767/data/www/new.kotlov.by/vendor/laravel/framework/src/Illuminate/Filesystem/Filesystem.php(124): Illuminate\\Filesystem\\Filesystem::Illuminate\\Filesystem\\{closure}()
-#4 /var/www/h209767/data/www/new.kotlov.by/vendor/laravel/framework/src/Illuminate/View/Engines/PhpEngine.php(57): Illuminate\\Filesystem\\Filesystem->getRequire()
-#5 /var/www/h209767/data/www/new.kotlov.by/vendor/livewire/livewire/src/Mechanisms/ExtendBlade/ExtendedCompilerEngine.php(22): Illuminate\\View\\Engines\\PhpEngine->evaluatePath()
-#6 /var/www/h209767/data/www/new.kotlov.by/vendor/laravel/framework/src/Illuminate/View/Engines/CompilerEngine.php(76): Livewire\\Mechanisms\\ExtendBlade\\ExtendedCompilerEngine->evaluatePath()
-#7 /var/www/h209767/data/www/new.kotlov.by/vendor/livewire/livewire/src/Mechanisms/ExtendBlade/ExtendedCompilerEngine.php(10): Illuminate\\View\\Engines\\CompilerEngine->get()
-#8 /var/www/h209767/data/www/new.kotlov.by/vendor/laravel/framework/src/Illuminate/View/View.php(208): Livewire\\Mechanisms\\ExtendBlade\\ExtendedCompilerEngine->get()
-#9 /var/www/h209767/data/www/new.kotlov.by/vendor/laravel/framework/src/Illuminate/View/View.php(191): Illuminate\\View\\View->getContents()
-#10 /var/www/h209767/data/www/new.kotlov.by/vendor/laravel/framework/src/Illuminate/View/View.php(160): Illuminate\\View\\View->renderContents()
-#11 /var/www/h209767/data/www/new.kotlov.by/vendor/laravel/framework/src/Illuminate/Http/Response.php(78): Illuminate\\View\\View->render()
-#12 /var/www/h209767/data/www/new.kotlov.by/vendor/laravel/framework/src/Illuminate/Http/Response.php(34): Illuminate\\Http\\Response->setContent()
-#13 /var/www/h209767/data/www/new.kotlov.by/vendor/laravel/framework/src/Illuminate/Routing/Router.php(939): Illuminate\\Http\\Response->__construct()
-#14 /var/www/h209767/data/www/new.kotlov.by/vendor/laravel/framework/src/Illuminate/Routing/Router.php(906): Illuminate\\Routing\\Router::toResponse()
-#15 /var/www/h209767/data/www/new.kotlov.by/vendor/laravel/framework/src/Illuminate/Routing/Router.php(821): Illuminate\\Routing\\Router->prepareResponse()
-#16 /var/www/h209767/data/www/new.kotlov.by/vendor/laravel/framework/src/Illuminate/Pipeline/Pipeline.php(180): Illuminate\\Routing\\Router->Illuminate\\Routing\\{closure}()
-#17 /var/www/h209767/data/www/new.kotlov.by/vendor/laravel/framework/src/Illuminate/Routing/Middleware/SubstituteBindings.php(52): Illuminate\\Pipeline\\Pipeline->Illuminate\\Pipeline\\{closure}()
-#18 /var/www/h209767/data/www/new.kotlov.by/vendor/laravel/framework/src/Illuminate/Pipeline/Pipeline.php(219): Illuminate\\Routing\\Middleware\\SubstituteBindings->handle()
-#19 /var/www/h209767/data/www/new.kotlov.by/vendor/laravel/framework/src/Illuminate/Foundation/Http/Middleware/PreventRequestForgery.php(104): Illuminate\\Pipeline\\Pipeline->Illuminate\\Pipeline\\{closure}()
-#20 /var/www/h209767/data/www/new.kotlov.by/vendor/laravel/framework/src/Illuminate/Pipeline/Pipeline.php(219): Illuminate\\Foundation\\Http\\Middleware\\PreventRequestForgery->handle()
-#21 /var/www/h209767/data/www/new.kotlov.by/vendor/laravel/framework/src/Illuminate/View/Middleware/ShareErrorsFromSession.php(48): Illuminate\\Pipeline\\Pipeline->Illuminate\\Pipeline\\{closure}()
-#22 /var/www/h209767/data/www/new.kotlov.by/vendor/laravel/framework/src/Illuminate/Pipeline/Pipeline.php(219): Illuminate\\View\\Middleware\\ShareErrorsFromSession->handle()
-#23 /var/www/h209767/data/www/new.kotlov.by/vendor/laravel/framework/src/Illuminate/Session/Middleware/StartSession.php(120): Illuminate\\Pipeline\\Pipeline->Illuminate\\Pipeline\\{closure}()
-#24 /var/www/h209767/data/www/new.kotlov.by/vendor/laravel/framework/src/Illuminate/Session/Middleware/StartSession.php(63): Illuminate\\Session\\Middleware\\StartSession->handleStatefulRequest()
-#25 /var/www/h209767/data/www/new.kotlov.by/vendor/laravel/framework/src/Illuminate/Pipeline/Pipeline.php(219): Illuminate\\Session\\Middleware\\StartSession->handle()
-#26 /var/www/h209767/data/www/new.kotlov.by/vendor/laravel/framework/src/Illuminate/Cookie/Middleware/AddQueuedCookiesToResponse.php(36): Illuminate\\Pipeline\\Pipeline->Illuminate\\Pipeline\\{closure}()
-#27 /var/www/h209767/data/www/new.kotlov.by/vendor/laravel/framework/src/Illuminate/Pipeline/Pipeline.php(219): Illuminate\\Cookie\\Middleware\\AddQueuedCookiesToResponse->handle()
-#28 /var/www/h209767/data/www/new.kotlov.by/vendor/laravel/framework/src/Illuminate/Cookie/Middleware/EncryptCookies.php(74): Illuminate\\Pipeline\\Pipeline->Illuminate\\Pipeline\\{closure}()
-#29 /var/www/h209767/data/www/new.kotlov.by/vendor/laravel/framework/src/Illuminate/Pipeline/Pipeline.php(219): Illuminate\\Cookie\\Middleware\\EncryptCookies->handle()
-#30 /var/www/h209767/data/www/new.kotlov.by/vendor/laravel/framework/src/Illuminate/Pipeline/Pipeline.php(137): Illuminate\\Pipeline\\Pipeline->Illuminate\\Pipeline\\{closure}()
-#31 /var/www/h209767/data/www/new.kotlov.by/vendor/laravel/framework/src/Illuminate/Routing/Router.php(821): Illuminate\\Pipeline\\Pipeline->then()
-#32 /var/www/h209767/data/www/new.kotlov.by/vendor/laravel/framework/src/Illuminate/Routing/Router.php(800): Illuminate\\Routing\\Router->runRouteWithinStack()
-#33 /var/www/h209767/data/www/new.kotlov.by/vendor/laravel/framework/src/Illuminate/Routing/Router.php(764): Illuminate\\Routing\\Router->runRoute()
-#34 /var/www/h209767/data/www/new.kotlov.by/vendor/laravel/framework/src/Illuminate/Routing/Router.php(753): Illuminate\\Routing\\Router->dispatchToRoute()
-#35 /var/www/h209767/data/www/new.kotlov.by/vendor/laravel/framework/src/Illuminate/Foundation/Http/Kernel.php(200): Illuminate\\Routing\\Router->dispatch()
-#36 /var/www/h209767/data/www/new.kotlov.by/vendor/laravel/framework/src/Illuminate/Pipeline/Pipeline.php(180): Illuminate\\Foundation\\Http\\Kernel->Illuminate\\Foundation\\Http\\{closure}()
-#37 /var/www/h209767/data/www/new.kotlov.by/vendor/livewire/livewire/src/Features/SupportDisablingBackButtonCache/DisableBackButtonCacheMiddleware.php(19): Illuminate\\Pipeline\\Pipeline->Illuminate\\Pipeline\\{closure}()
-#38 /var/www/h209767/data/www/new.kotlov.by/vendor/laravel/framework/src/Illuminate/Pipeline/Pipeline.php(219): Livewire\\Features\\SupportDisablingBackButtonCache\\DisableBackButtonCacheMiddleware->handle()
-#39 /var/www/h209767/data/www/new.kotlov.by/app/Http/Middleware/AdminNoIndex.php(14): Illuminate\\Pipeline\\Pipeline->Illuminate\\Pipeline\\{closure}()
-#40 /var/www/h209767/data/www/new.kotlov.by/vendor/laravel/framework/src/Illuminate/Pipeline/Pipeline.php(219): App\\Http\\Middleware\\AdminNoIndex->handle()
-#41 /var/www/h209767/data/www/new.kotlov.by/app/Http/Middleware/CitySubdomain.php(48): Illuminate\\Pipeline\\Pipeline->Illuminate\\Pipeline\\{closure}()
-#42 /var/www/h209767/data/www/new.kotlov.by/vendor/laravel/framework/src/Illuminate/Pipeline/Pipeline.php(219): App\\Http\\Middleware\\CitySubdomain->handle()
-#43 /var/www/h209767/data/www/new.kotlov.by/app/Http/Middleware/HandleRedirects.php(193): Illuminate\\Pipeline\\Pipeline->Illuminate\\Pipeline\\{closure}()
-#44 /var/www/h209767/data/www/new.kotlov.by/vendor/laravel/framework/src/Illuminate/Pipeline/Pipeline.php(219): App\\Http\\Middleware\\HandleRedirects->handle()
-#45 /var/www/h209767/data/www/new.kotlov.by/vendor/laravel/framework/src/Illuminate/Foundation/Http/Middleware/TransformsRequest.php(21): Illuminate\\Pipeline\\Pipeline->Illuminate\\Pipeline\\{closure}()
-#46 /var/www/h209767/data/www/new.kotlov.by/vendor/laravel/framework/src/Illuminate/Foundation/Http/Middleware/ConvertEmptyStringsToNull.php(31): Illuminate\\Foundation\\Http\\Middleware\\TransformsRequest->handle()
-#47 /var/www/h209767/data/www/new.kotlov.by/vendor/laravel/framework/src/Illuminate/Pipeline/Pipeline.php(219): Illuminate\\Foundation\\Http\\Middleware\\ConvertEmptyStringsToNull->handle()
-#48 /var/www/h209767/data/www/new.kotlov.by/vendor/laravel/framework/src/Illuminate/Foundation/Http/Middleware/TransformsRequest.php(21): Illuminate\\Pipeline\\Pipeline->Illuminate\\Pipeline\\{closure}()
-#49 /var/www/h209767/data/www/new.kotlov.by/vendor/laravel/framework/src/Illuminate/Foundation/Http/Middleware/TrimStrings.php(51): Illuminate\\Foundation\\Http\\Middleware\\TransformsRequest->handle()
-#50 /var/www/h209767/data/www/new.kotlov.by/vendor/laravel/framework/src/Illuminate/Pipeline/Pipeline.php(219): Illuminate\\Foundation\\Http\\Middleware\\TrimStrings->handle()
-#51 /var/www/h209767/data/www/new.kotlov.by/vendor/laravel/framework/src/Illuminate/Http/Middleware/ValidatePostSize.php(27): Illuminate\\Pipeline\\Pipeline->Illuminate\\Pipeline\\{closure}()
-#52 /var/www/h209767/data/www/new.kotlov.by/vendor/laravel/framework/src/Illuminate/Pipeline/Pipeline.php(219): Illuminate\\Http\\Middleware\\ValidatePostSize->handle()
-#53 /var/www/h209767/data/www/new.kotlov.by/vendor/laravel/framework/src/Illuminate/Foundation/Http/Middleware/PreventRequestsDuringMaintenance.php(109): Illuminate\\Pipeline\\Pipeline->Illuminate\\Pipeline\\{closure}()
-#54 /var/www/h209767/data/www/new.kotlov.by/vendor/laravel/framework/src/Illuminate/Pipeline/Pipeline.php(219): Illuminate\\Foundation\\Http\\Middleware\\PreventRequestsDuringMaintenance->handle()
-#55 /var/www/h209767/data/www/new.kotlov.by/vendor/laravel/framework/src/Illuminate/Http/Middleware/HandleCors.php(61): Illuminate\\Pipeline\\Pipeline->Illuminate\\Pipeline\\{closure}()
-#56 /var/www/h209767/data/www/new.kotlov.by/vendor/laravel/framework/src/Illuminate/Pipeline/Pipeline.php(219): Illuminate\\Http\\Middleware\\HandleCors->handle()
-#57 /var/www/h209767/data/www/new.kotlov.by/vendor/laravel/framework/src/Illuminate/Http/Middleware/TrustProxies.php(58): Illuminate\\Pipeline\\Pipeline->Illuminate\\Pipeline\\{closure}()
-#58 /var/www/h209767/data/www/new.kotlov.by/vendor/laravel/framework/src/Illuminate/Pipeline/Pipeline.php(219): Illuminate\\Http\\Middleware\\TrustProxies->handle()
-#59 /var/www/h209767/data/www/new.kotlov.by/vendor/laravel/framework/src/Illuminate/Foundation/Http/Middleware/InvokeDeferredCallbacks.php(22): Illuminate\\Pipeline\\Pipeline->Illuminate\\Pipeline\\{closure}()
-#60 /var/www/h209767/data/www/new.kotlov.by/vendor/laravel/framework/src/Illuminate/Pipeline/Pipeline.php(219): Illuminate\\Foundation\\Http\\Middleware\\InvokeDeferredCallbacks->handle()
-#61 /var/www/h209767/data/www/new.kotlov.by/vendor/laravel/framework/src/Illuminate/Http/Middleware/ValidatePathEncoding.php(28): Illuminate\\Pipeline\\Pipeline->Illuminate\\Pipeline\\{closure}()
-#62 /var/www/h209767/data/www/new.kotlov.by/vendor/laravel/framework/src/Illuminate/Pipeline/Pipeline.php(219): Illuminate\\Http\\Middleware\\ValidatePathEncoding->handle()
-#63 /var/www/h209767/data/www/new.kotlov.by/vendor/laravel/framework/src/Illuminate/Pipeline/Pipeline.php(137): Illuminate\\Pipeline\\Pipeline->Illuminate\\Pipeline\\{closure}()
-#64 /var/www/h209767/data/www/new.kotlov.by/vendor/laravel/framework/src/Illuminate/Foundation/Http/Kernel.php(175): Illuminate\\Pipeline\\Pipeline->then()
-#65 /var/www/h209767/data/www/new.kotlov.by/vendor/laravel/framework/src/Illuminate/Foundation/Http/Kernel.php(144): Illuminate\\Foundation\\Http\\Kernel->sendRequestThroughRouter()
-#66 /var/www/h209767/data/www/new.kotlov.by/vendor/laravel/framework/src/Illuminate/Foundation/Application.php(1220): Illuminate\\Foundation\\Http\\Kernel->handle()
-#67 /var/www/h209767/data/www/new.kotlov.by/public/index.php(20): Illuminate\\Foundation\\Application->handleRequest()
-#68 {main}
-"} 
+   INFO  Clearing cached bootstrap files.  
+
+  config ......................................................... 0.95ms DONE
+  cache .......................................................... 6.27ms DONE
+  compiled ....................................................... 0.69ms DONE
+  events ......................................................... 0.47ms DONE
+  routes ......................................................... 0.46ms DONE
+  views .......................................................... 4.71ms DONE
+  blade-icons .................................................... 0.19ms DONE
+  filament ....................................................... 1.23ms DONE
+
 
 ```
