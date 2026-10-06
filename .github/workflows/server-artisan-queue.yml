@@ -148,6 +148,10 @@ jobs:
               curl -k -sS -I --max-time 15 https://kotlov.by/ || true
               echo "== Certificate =="
               echo | openssl s_client -connect kotlov.by:443 -servername kotlov.by 2>/dev/null | openssl x509 -noout -subject -issuer -dates || true
+              echo "== Served certificate count =="
+              echo | openssl s_client -connect kotlov.by:443 -servername kotlov.by -showcerts 2>/dev/null | grep -c "BEGIN CERTIFICATE" || true
+              echo "== Nginx certificate configuration =="
+              nginx -T 2>&1 | grep -E "server_name.*kotlov|ssl_certificate" || true
               echo "== Local HTTP with Host header =="
               curl -sS -I --max-time 15 -H "Host: kotlov.by" http://127.0.0.1/ || true
               echo "== Web/PHP processes =="
