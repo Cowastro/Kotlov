@@ -84,8 +84,36 @@ class SeoMetadataBuilderTest extends TestCase
 
         $description = $this->seo->productDescription($product, 'в Беларуси');
 
-        $this->assertStringStartsWith('Купить Пеллетная горелка KOTLOV XO Ceramic PRO 100 кВт', $description);
+        $this->assertStringStartsWith('Пеллетная горелка KOTLOV XO Ceramic PRO 100 кВт', $description);
         $this->assertLessThanOrEqual(2, substr_count(mb_strtoupper($description), 'KOTLOV'));
+    }
+
+    public function test_it_replaces_short_generic_supplier_description_with_useful_product_facts(): void
+    {
+        $product = $this->product('Пеллетный котел TIS Pellet 15');
+        $product->price = 9800;
+        $product->meta_description = 'Пеллетный котел TIS Pellet 15 — купить по лучшей цене.';
+
+        $description = $this->seo->productDescription($product, 'в Беларуси', [
+            'Мощность: 15 кВт',
+            'Отапливаемая площадь: до 150 м²',
+        ]);
+
+        $this->assertStringContainsString('Мощность: 15 кВт', $description);
+        $this->assertStringContainsString('Отапливаемая площадь: до 150 м²', $description);
+        $this->assertStringContainsString('Цена 9 800 BYN', $description);
+        $this->assertStringNotContainsString('по лучшей цене', $description);
+        $this->assertLessThanOrEqual(SeoMetadataBuilder::DESCRIPTION_LIMIT, mb_strlen($description));
+    }
+
+    public function test_it_keeps_detailed_stored_description_even_when_it_contains_commercial_phrase(): void
+    {
+        $product = $this->product('Котел TIS Pellet 25');
+        $product->meta_description = 'Котел TIS Pellet 25 с автоматической подачей топлива и погодозависимым управлением — купить в Беларуси с официальной гарантией.';
+
+        $description = $this->seo->productDescription($product, 'в Беларуси', ['Мощность: 25 кВт']);
+
+        $this->assertSame($product->meta_description, $description);
     }
 
     public function test_generic_title_keeps_site_suffix_and_stays_within_limit(): void

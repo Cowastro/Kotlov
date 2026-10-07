@@ -61,7 +61,7 @@ class SeoMetadataBuilder
         return $this->truncate($name, self::TITLE_LIMIT - mb_strlen($suffix)) . $suffix;
     }
 
-    public function productDescription(Product $product, string $cityIn): string
+    public function productDescription(Product $product, string $cityIn, iterable $highlights = []): string
     {
         $stored = $this->replaceCity($product->meta_description, $cityIn);
 
@@ -79,11 +79,26 @@ class SeoMetadataBuilder
         if ($stored
             && mb_strlen($stored) <= self::DESCRIPTION_LIMIT
             && ! $this->hasBrandSpam($stored, $brand, 1)
+            && ! $this->isWeakProductDescription($stored)
         ) {
             return $stored;
         }
 
-        $description = 'Купить ' . $this->productName($product) . ' ' . $cityIn;
+        $description = $this->productName($product) . ' ' . $cityIn;
+
+        $details = collect($highlights)
+            ->map(fn ($highlight) => $this->normalize((string) $highlight))
+            ->filter(fn (string $highlight) => $highlight !== '' && mb_strlen($highlight) <= 55)
+            ->unique(fn (string $highlight) => mb_strtolower($highlight))
+            ->take(2)
+            ->implode(', ');
+
+        if ($details !== '') {
+            $description .= '. '
+                .mb_strtoupper(mb_substr($details, 0, 1))
+                .mb_substr($details, 1);
+        }
+
         if ($product->price) {
             $description .= '. Цена ' . number_format((float) $product->price, 0, '.', ' ') . ' BYN';
         }
@@ -188,6 +203,28 @@ class SeoMetadataBuilder
 
         // One mention in the product name and one site-brand mention are acceptable.
         return count($matches[0]) > $maximumOccurrences;
+    }
+
+    private function isWeakProductDescription(string $description): bool
+    {
+        if (mb_strlen($description) >= 110) {
+            return false;
+        }
+
+        $lower = mb_strtolower($description);
+
+        foreach ([
+            'купить по лучшей цене',
+            'купить по выгодной цене',
+            'купить в беларуси',
+            'купить по хорошей цене',
+        ] as $phrase) {
+            if (str_contains($lower, $phrase)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private function normalize(string $text): string

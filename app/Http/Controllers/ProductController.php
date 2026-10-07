@@ -94,7 +94,21 @@ class ProductController extends Controller
         $brandName = trim((string) ($product->brand?->name ?? ''));
         $nameFull = $seo->productName($product);
         $title = $seo->productTitle($product, $cityIn);
-        $description = $seo->productDescription($product, $cityIn);
+        $seoHighlights = $attributeValues
+            ->map(function (ProductAttributeValue $value): ?string {
+                $name = trim((string) ($value->attribute?->name ?? ''));
+                $displayValue = trim((string) $value->display_value);
+
+                if ($name === '' || $displayValue === '') {
+                    return null;
+                }
+
+                return $name.': '.$displayValue;
+            })
+            ->filter()
+            ->values();
+
+        $description = $seo->productDescription($product, $cityIn, $seoHighlights);
 
         $keywords = $replaceCityIn($product->meta_keywords)
             ?: ($nameFull.', купить '.mb_strtolower($nameFull).', цена, '.$cityIn);
@@ -238,7 +252,11 @@ class ProductController extends Controller
         $schemaJson = json_encode($schema, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
         $breadcrumbJson = json_encode($breadcrumbSchema, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
 
-        $robots = $product->is_archived ? 'noindex, follow' : null;
+        // Historical links can still reach active rows that are deliberately
+        // hidden from both the catalogue and sitemap (no price / unavailable).
+        // Keep following their links, but do not let these low-value pages
+        // consume the product indexing budget.
+        $robots = $product->canBeOrdered() ? null : 'noindex, follow';
 
         $heatPumpGuides = collect();
         $heatPumpProfile = null;
