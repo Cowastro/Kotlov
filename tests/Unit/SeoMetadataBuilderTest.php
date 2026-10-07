@@ -141,6 +141,18 @@ class SeoMetadataBuilderTest extends TestCase
         $this->assertNull($this->seo->shortDescriptionFromContent('<p>Слишком коротко.</p>'));
     }
 
+    public function test_short_description_truncation_preserves_valid_utf8_at_cyrillic_boundary(): void
+    {
+        $content = '<p>' . str_repeat('а', 218) . 'р продолжение описания товара для проверки границы.</p>';
+
+        $short = $this->seo->shortDescriptionFromContent($content);
+
+        $this->assertNotNull($short);
+        $this->assertTrue(mb_check_encoding($short, 'UTF-8'));
+        $this->assertStringNotContainsString("\u{FFFD}", $short);
+        $this->assertStringEndsWith('…', $short);
+    }
+
     private function product(string $name): Product
     {
         $brand = new Brand(['name' => 'KOTLOV']);

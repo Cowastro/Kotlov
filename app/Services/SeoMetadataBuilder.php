@@ -266,6 +266,8 @@ class SeoMetadataBuilder
             $short = mb_substr($short, 0, $lastSpace);
         }
 
-        return rtrim($short, " \t\n\r\0\x0B—,.;:") . '…';
+        $short = preg_replace('/[\s—,.;:]+$/u', '', $short) ?? rtrim($short);
+
+        return $short . '…';
     }
 }
