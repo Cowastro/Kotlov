@@ -4,6 +4,7 @@ namespace App\Console\Commands;
 
 use App\Services\AiContentEnricher;
 use App\Services\ProductSourceEnricher;
+use App\Services\SeoMetadataBuilder;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
@@ -14,12 +15,14 @@ class SanitizeProductContentHtmlCommand extends Command
     protected $signature = 'products:sanitize-content-html
         {--apply : Write sanitized content}
         {--brand= : Brand name or slug}
+        {--category= : Category name or slug}
         {--supplier= : Supplier code filter}
         {--sku= : Single product SKU}
         {--slug-like= : Product slug substring filter}
         {--id=* : Product ID filter, can be repeated}
         {--active-only : Only active products}
         {--not-archived : Only not archived products}
+        {--orderable-only : Only products eligible for the catalogue and sitemap}
         {--with-source-only : Only products linked to supplier source URLs}
         {--created-from= : Only products created at or after this date}
         {--created-to= : Only products created at or before this date}
@@ -29,6 +32,7 @@ class SanitizeProductContentHtmlCommand extends Command
         {--missing-media-only : Only products with empty video_url or documents}
         {--rewrite-seo : Regenerate short_description, content and meta_description with AI}
         {--rewrite-seo-if-thin : With --rewrite-seo, regenerate only thin or legacy promo descriptions}
+        {--repair-short-from-content : Fill short descriptions under 80 chars from existing product content}
         {--min-content-length=180 : Minimum plain-text content length for --rewrite-seo-if-thin}
         {--show-samples=0 : Show first N rows with detected media links}
         {--show-content-samples=0 : Show first N source content snippets for audit}
@@ -38,7 +42,7 @@ class SanitizeProductContentHtmlCommand extends Command
 
     protected $description = 'Sanitize stored product HTML descriptions and remove foreign markup, images and inline styles.';
 
-    public function handle(ProductSourceEnricher $enricher, AiContentEnricher $ai): int
+    public function handle(ProductSourceEnricher $enricher, AiContentEnricher $ai, SeoMetadataBuilder $seo): int
     {
         $apply = (bool) $this->option('apply');
         $limit = max(0, (int) $this->option('limit'));
@@ -47,6 +51,7 @@ class SanitizeProductContentHtmlCommand extends Command
         $restoreTeplovSuhovMedia = (bool) $this->option('restore-teplov-suhov-media');
         $rewriteSeo = (bool) $this->option('rewrite-seo');
         $rewriteSeoIfThin = (bool) $this->option('rewrite-seo-if-thin');
+        $repairShortFromContent = (bool) $this->option('repair-short-from-content');
         $minContentLength = max(40, (int) $this->option('min-content-length'));
         $showSamples = max(0, (int) $this->option('show-samples'));
         $showContentSamples = max(0, (int) $this->option('show-content-samples'));
@@ -116,6 +121,12 @@ class SanitizeProductContentHtmlCommand extends Command
             });
         }
 
+        if ($category = trim((string) $this->option('category'))) {
+            $query->where(function ($q) use ($category) {
+                $q->where('c.name', $category)->orWhere('c.slug', $category);
+            });
+        }
+
         if ($sku = trim((string) $this->option('sku'))) {
             $query->where('p.sku', $sku);
         }
@@ -135,6 +146,26 @@ class SanitizeProductContentHtmlCommand extends Command
 
         if ((bool) $this->option('active-only') && Schema::hasColumn('products', 'is_active')) {
             $query->where('p.is_active', true);
+        }
+
+        if ((bool) $this->option('orderable-only')) {
+            $query
+                ->where('p.is_active', true)
+                ->where('p.is_archived', false)
+                ->where('p.price', '>', 0)
+                ->where(function ($availabilityQuery) {
+                    $availabilityQuery
+                        ->where('p.availability_status', 'check')
+                        ->orWhere(function ($inStockQuery) {
+                            $inStockQuery
+                                ->where('p.in_stock', true)
+                                ->where(function ($statusQuery) {
+                                    $statusQuery
+                                        ->whereNull('p.availability_status')
+                                        ->orWhere('p.availability_status', '!=', 'out_of_stock');
+                                });
+                        });
+                });
         }
 
         if ($createdFrom = trim((string) $this->option('created-from'))) {
@@ -165,6 +196,7 @@ class SanitizeProductContentHtmlCommand extends Command
             'styles_removed' => 0,
             'bad_blocks_removed' => 0,
             'legacy_buy_templates_removed' => 0,
+            'short_descriptions_repaired' => 0,
             'videos_extracted' => 0,
             'documents_extracted' => 0,
             'seo_rewritten' => 0,
@@ -234,6 +266,16 @@ class SanitizeProductContentHtmlCommand extends Command
 
             if (trim($original) !== trim($sanitized)) {
                 $updates['content'] = $sanitized;
+            }
+
+            if ($repairShortFromContent
+                && mb_strlen(trim(strip_tags((string) $row->short_description))) < 80
+            ) {
+                $shortDescription = $seo->shortDescriptionFromContent($sanitized);
+                if ($shortDescription !== null) {
+                    $updates['short_description'] = $shortDescription;
+                    $stats['short_descriptions_repaired']++;
+                }
             }
 
             if ($extractMedia && $media['video_url'] !== '' && ($overwriteMedia || trim((string) $row->video_url) === '')) {
@@ -455,6 +497,7 @@ class SanitizeProductContentHtmlCommand extends Command
     private function hasScope(): bool
     {
         return trim((string) $this->option('brand')) !== ''
+            || trim((string) $this->option('category')) !== ''
             || trim((string) $this->option('supplier')) !== ''
             || trim((string) $this->option('sku')) !== ''
             || trim((string) $this->option('slug-like')) !== ''

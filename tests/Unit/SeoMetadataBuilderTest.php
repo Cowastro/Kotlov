@@ -128,6 +128,19 @@ class SeoMetadataBuilderTest extends TestCase
         $this->assertStringEndsWith(' | KOTLOV', $title);
     }
 
+    public function test_it_builds_short_description_only_from_substantial_existing_content(): void
+    {
+        $short = $this->seo->shortDescriptionFromContent(
+            '<h2>NOVA3</h2><p>Автоматическая система подачи пеллет перемещает топливо из удалённого бункера к котлу и помогает организовать стабильную работу котельной.</p>'
+        );
+
+        $this->assertNotNull($short);
+        $this->assertStringNotContainsString('<', $short);
+        $this->assertStringContainsString('Автоматическая система подачи пеллет', $short);
+        $this->assertLessThanOrEqual(220, mb_strlen($short));
+        $this->assertNull($this->seo->shortDescriptionFromContent('<p>Слишком коротко.</p>'));
+    }
+
     private function product(string $name): Product
     {
         $brand = new Brand(['name' => 'KOTLOV']);

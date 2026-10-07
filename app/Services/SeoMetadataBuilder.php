@@ -193,6 +193,17 @@ class SeoMetadataBuilder
         );
     }
 
+    public function shortDescriptionFromContent(?string $content, int $limit = 220): ?string
+    {
+        $plain = $this->normalize(strip_tags((string) $content));
+
+        if (mb_strlen($plain) < 80) {
+            return null;
+        }
+
+        return $this->truncate($plain, max(80, $limit));
+    }
+
     private function hasBrandSpam(string $title, string $brand, int $maximumOccurrences = 2): bool
     {
         if ($brand === '') {

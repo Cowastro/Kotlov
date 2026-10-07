@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Models\Product;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
@@ -11,9 +12,11 @@ class AuditProductContentQualityCommand extends Command
 {
     protected $signature = 'products:audit-content-quality
         {--brand= : Brand name or slug}
+        {--category= : Category name or slug}
         {--slug-like= : Product slug substring filter}
         {--active-only : Only active products}
         {--not-archived : Only not archived products}
+        {--orderable-only : Only products eligible for the catalogue and sitemap}
         {--reason= : Only show products with this issue reason}
         {--limit=200 : Max sample rows to show, 0 means no samples}
         {--min-issues=1 : Show sample rows with at least this many issues}';
@@ -52,6 +55,12 @@ class AuditProductContentQualityCommand extends Command
             });
         }
 
+        if ($category = trim((string) $this->option('category'))) {
+            $query->where(function ($q) use ($category) {
+                $q->where('c.name', $category)->orWhere('c.slug', $category);
+            });
+        }
+
         if ($slugLike = trim((string) $this->option('slug-like'))) {
             $query->where('p.slug', 'like', '%' . $slugLike . '%');
         }
@@ -62,6 +71,26 @@ class AuditProductContentQualityCommand extends Command
 
         if ((bool) $this->option('active-only') && Schema::hasColumn('products', 'is_active')) {
             $query->where('p.is_active', true);
+        }
+
+        if ((bool) $this->option('orderable-only')) {
+            $query
+                ->where('p.is_active', true)
+                ->where('p.is_archived', false)
+                ->where('p.price', '>', 0)
+                ->where(function ($availabilityQuery) {
+                    $availabilityQuery
+                        ->where('p.availability_status', Product::AVAILABILITY_CHECK)
+                        ->orWhere(function ($inStockQuery) {
+                            $inStockQuery
+                                ->where('p.in_stock', true)
+                                ->where(function ($statusQuery) {
+                                    $statusQuery
+                                        ->whereNull('p.availability_status')
+                                        ->orWhere('p.availability_status', '!=', Product::AVAILABILITY_OUT_OF_STOCK);
+                                });
+                        });
+                });
         }
 
         $summary = [];
