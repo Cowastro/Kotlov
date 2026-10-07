@@ -428,15 +428,16 @@ class EnrichBaniaPriceListProductsCommand extends Command
 
             $html = $this->fetch($url);
             $pageTitle = $this->extractTitle($html);
+            $description = $this->extractDescription($html);
             $images = $this->extractImages($html, $url, $product, $this->canUseGenericProductImages($pageTitle, $product));
-            if ($images === []) {
+            if ($images === [] && (! (bool) $this->option('skip-images') || $description === '')) {
                 return null;
             }
 
             return [
                 'url' => $url,
                 'title' => $pageTitle,
-                'description' => $this->extractDescription($html),
+                'description' => $description,
                 'images' => $images,
             ];
         } finally {
