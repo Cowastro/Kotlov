@@ -24,6 +24,8 @@ class EnrichSupplierSourceProductsCommand extends Command
         {--offset=0 : Skip products}
         {--apply : Write changes to DB, default is dry-run}
         {--force : Process even products that already have photos, specs and content}
+        {--quality-issues-only : Process only products with thin or legacy content}
+        {--content-only : Update only content, short description and meta description}
         {--overwrite-images : Replace existing product images instead of appending}
         {--replace-specs : Delete existing product attributes and replace specs from source}
         {--min-specs-to-replace=0 : When replacing specs, skip replacement if fewer specs were found; 0 disables the guard}
@@ -44,6 +46,8 @@ class EnrichSupplierSourceProductsCommand extends Command
         $offset = max(0, (int) $this->option('offset'));
         $sleep = max(300, (int) $this->option('sleep'));
         $force = (bool) $this->option('force');
+        $qualityIssuesOnly = (bool) $this->option('quality-issues-only');
+        $contentOnly = (bool) $this->option('content-only');
 
         $this->line($apply
             ? '<fg=red;options=bold>APPLY: source enrichment will be written.</>'
@@ -66,6 +70,8 @@ class EnrichSupplierSourceProductsCommand extends Command
             ->select([
                 'p.id',
                 'p.name',
+                'p.content',
+                'p.short_description',
                 'b.name as brand',
                 'c.name as category',
                 's.code as supplier_code',
@@ -129,24 +135,37 @@ class EnrichSupplierSourceProductsCommand extends Command
             });
         }
 
-        $total = (clone $query)->distinct('p.id')->count('p.id');
-        $rows = $query
-            ->orderBy('p.id');
+        if ($qualityIssuesOnly) {
+            $rows = $query
+                ->orderBy('p.id')
+                ->get()
+                ->unique('id')
+                ->filter(fn ($row): bool => $this->hasContentQualityIssues(
+                    (string) ($row->content ?? ''),
+                    (string) ($row->short_description ?? '')
+                ))
+                ->values();
 
-        if ($limit > 0) {
-            $rows->limit($limit);
-        } elseif ($offset > 0) {
-            $rows->limit(2147483647);
+            $total = $rows->count();
+            if ($offset > 0 || $limit > 0) {
+                $rows = $rows->slice($offset, $limit > 0 ? $limit : null)->values();
+            }
+        } else {
+            $total = (clone $query)->distinct('p.id')->count('p.id');
+            $rows = $query->orderBy('p.id');
+
+            if ($limit > 0) {
+                $rows->limit($limit);
+            } elseif ($offset > 0) {
+                $rows->limit(2147483647);
+            }
+
+            if ($offset > 0) {
+                $rows->offset($offset);
+            }
+
+            $rows = $rows->get()->unique('id')->values();
         }
-
-        if ($offset > 0) {
-            $rows->offset($offset);
-        }
-
-        $rows = $rows
-            ->get()
-            ->unique('id')
-            ->values();
 
         $this->info(sprintf(
             'Products with source URLs: %d (processing %d, offset %d%s)',
@@ -201,15 +220,15 @@ class EnrichSupplierSourceProductsCommand extends Command
             try {
                 $result = $enricher->enrich($product, (string) $row->source_url, [
                     'preview_only' => ! $apply,
-                    'replace_images' => (bool) $this->option('overwrite-images'),
-                    'update_images' => true,
-                    'update_specs' => true,
-                    'replace_specs' => (bool) $this->option('replace-specs') || $force,
+                    'replace_images' => ! $contentOnly && (bool) $this->option('overwrite-images'),
+                    'update_images' => ! $contentOnly,
+                    'update_specs' => ! $contentOnly,
+                    'replace_specs' => ! $contentOnly && ((bool) $this->option('replace-specs') || $force),
                     'min_specs_to_replace' => max(0, (int) $this->option('min-specs-to-replace')),
-                    'update_service' => true,
-                    'update_documents' => ! (bool) $this->option('skip-documents'),
-                    'clear_documents' => (bool) $this->option('clear-documents'),
-                    'update_video' => true,
+                    'update_service' => ! $contentOnly,
+                    'update_documents' => ! $contentOnly && ! (bool) $this->option('skip-documents'),
+                    'clear_documents' => ! $contentOnly && (bool) $this->option('clear-documents'),
+                    'update_video' => ! $contentOnly,
                     'update_content' => ! (bool) $this->option('skip-ai'),
                     'source_content' => (bool) $this->option('source-content'),
                     'min_specs_for_ai' => max(0, (int) $this->option('min-specs-for-ai')),
@@ -245,6 +264,13 @@ class EnrichSupplierSourceProductsCommand extends Command
                 foreach (($result['errors'] ?? []) as $error) {
                     $this->warn('  warning: ' . $error);
                 }
+
+                if ($contentOnly && ! $apply) {
+                    $preview = trim((string) data_get($result, 'preview.description', ''));
+                    if ($preview !== '') {
+                        $this->line('  preview: ' . mb_strimwidth($preview, 0, 320, '...'));
+                    }
+                }
             } catch (\Throwable $e) {
                 $stats['errors']++;
                 $this->warn('  ERROR: ' . $e->getMessage());
@@ -261,6 +287,37 @@ class EnrichSupplierSourceProductsCommand extends Command
         ));
 
         return $stats['errors'] > 0 ? self::FAILURE : self::SUCCESS;
+    }
+
+    private function hasContentQualityIssues(string $content, string $shortDescription): bool
+    {
+        $plain = trim((string) preg_replace('/\s+/u', ' ', strip_tags($content)));
+        $short = trim((string) preg_replace('/\s+/u', ' ', strip_tags($shortDescription)));
+        $lower = mb_strtolower($plain);
+
+        if (mb_strlen($plain) < 180 || mb_strlen($short) < 80) {
+            return true;
+        }
+
+        if (preg_match('/<(?:img|a|iframe|script|object|embed|svg|canvas|picture|video|audio|form|button|input|select|textarea|table)\b/iu', $content)) {
+            return true;
+        }
+
+        foreach ([
+            'вы можете купить данный товар',
+            'купить данный товар',
+            'производитель оставляет за собой право',
+            'обращайтесь к поставщикам',
+            'у поставщиков',
+            'у дилеров',
+            'подарок при покупке',
+        ] as $phrase) {
+            if (str_contains($lower, $phrase)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private function isGenericSourceUrl(string $url): bool
