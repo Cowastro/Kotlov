@@ -87,7 +87,7 @@ class SeoMetadataBuilder
         $description = $this->productName($product) . ' ' . $cityIn;
 
         $details = collect($highlights)
-            ->map(fn ($highlight) => $this->normalize((string) $highlight))
+            ->map(fn ($highlight) => $this->normalizeProductHighlight((string) $highlight))
             ->filter(fn (string $highlight) => $highlight !== '' && mb_strlen($highlight) <= 55)
             ->unique(fn (string $highlight) => mb_strtolower($highlight))
             ->take(2)
@@ -225,6 +225,17 @@ class SeoMetadataBuilder
         }
 
         return false;
+    }
+
+    private function normalizeProductHighlight(string $highlight): string
+    {
+        $highlight = $this->normalize($highlight);
+
+        return preg_replace(
+            '/(кВт|Вт|мм|см|м²|м³|кг|л|бар|°C|%)\s+\1(?=\s|$)/ui',
+            '$1',
+            $highlight
+        ) ?: $highlight;
     }
 
     private function normalize(string $text): string

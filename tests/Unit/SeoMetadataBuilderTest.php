@@ -95,11 +95,12 @@ class SeoMetadataBuilderTest extends TestCase
         $product->meta_description = 'Пеллетный котел TIS Pellet 15 — купить по лучшей цене.';
 
         $description = $this->seo->productDescription($product, 'в Беларуси', [
-            'Мощность: 15 кВт',
+            'Мощность: 15 кВт кВт',
             'Отапливаемая площадь: до 150 м²',
         ]);
 
         $this->assertStringContainsString('Мощность: 15 кВт', $description);
+        $this->assertStringNotContainsString('кВт кВт', $description);
         $this->assertStringContainsString('Отапливаемая площадь: до 150 м²', $description);
         $this->assertStringContainsString('Цена 9 800 BYN', $description);
         $this->assertStringNotContainsString('по лучшей цене', $description);
