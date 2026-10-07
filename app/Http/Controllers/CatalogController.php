@@ -514,6 +514,7 @@ class CatalogController extends Controller
 
         if ($category->slug === 'teplovyie-nasosyi') {
             $articleOrder = [
+                'postuplenie-teplovyh-nasosov-kotlov-na-sklad',
                 'kak-vybrat-teplovoy-nasos',
                 'teplovye-nasosy-ge-r290-vysokotemperaturnye',
                 'montazh-teplovogo-nasosa-kotlov-ge-10-kvt-r290-smolevichskiy-rayon',
