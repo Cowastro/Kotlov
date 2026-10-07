@@ -58,6 +58,10 @@ class HandleRedirects
             return $next($request);
         }
 
+        if ($cityProductRedirect = $this->redirectCityProductToBaseDomain($request, $path)) {
+            return $cityProductRedirect;
+        }
+
         if ($percentRedirect = $this->redirectPercentPath($request, $path)) {
             return $percentRedirect;
         }
@@ -323,6 +327,52 @@ class HandleRedirects
         }
 
         $target = $request->getScheme() . '://' . $baseDomain . $request->getRequestUri();
+
+        return redirect()->away($target, 301);
+    }
+
+    /**
+     * Product data is identical on every city subdomain. Redirect canonical
+     * product paths to the primary domain so search engines do not crawl the
+     * whole catalogue once per city. Regional category and landing pages stay
+     * on their city hosts for local search.
+     */
+    private function redirectCityProductToBaseDomain(Request $request, string $path): ?Response
+    {
+        $host = $request->getHost();
+        $baseDomain = config('app.base_domain', 'kotlov.by');
+
+        if (! str_ends_with($host, '.'.$baseDomain)) {
+            return null;
+        }
+
+        $subdomain = str_replace('.'.$baseDomain, '', $host);
+        if ($subdomain === '' || in_array($subdomain, ['www', 'new', 'admin'], true)) {
+            return null;
+        }
+
+        $segments = array_values(array_filter(explode('/', trim($path, '/'))));
+        if (count($segments) !== 2) {
+            return null;
+        }
+
+        $product = Product::query()
+            ->where('slug', rawurldecode($segments[1]))
+            ->where(fn ($query) => $query->where('is_active', true)->orWhere('is_archived', true))
+            ->with('category:id,slug')
+            ->first();
+
+        if (! $product?->category) {
+            return null;
+        }
+
+        $canonicalPath = '/'.$product->category->slug.'/'.$product->slug;
+        if ($path !== $canonicalPath) {
+            return null;
+        }
+
+        $query = $request->getQueryString();
+        $target = 'https://'.$baseDomain.$canonicalPath.($query ? '?'.$query : '');
 
         return redirect()->away($target, 301);
     }

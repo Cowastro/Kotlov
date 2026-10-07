@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\Category;
+use App\Models\City;
 use App\Models\Product;
 use App\Http\Middleware\HandleRedirects;
 use Illuminate\Http\Request;
@@ -16,6 +17,8 @@ class LegacySeoRedirectTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+
+        config(['app.base_domain' => 'kotlov.by']);
 
         Schema::disableForeignKeyConstraints();
         Schema::dropIfExists('redirects');
@@ -142,6 +145,63 @@ class LegacySeoRedirectTest extends TestCase
         ]);
 
         $request = Request::create('/gazovye/gazovyj-kotel-test', 'GET');
+        $response = app(HandleRedirects::class)->handle(
+            $request,
+            fn () => response('', 204),
+        );
+
+        $this->assertSame(204, $response->getStatusCode());
+        $this->assertNull($response->headers->get('Location'));
+    }
+
+    public function test_city_product_page_redirects_to_primary_domain_canonical(): void
+    {
+        $category = Category::create([
+            'parent_id' => 0,
+            'name' => 'Газовые котлы',
+            'slug' => 'gazovye',
+            'is_active' => true,
+        ]);
+
+        Product::create([
+            'category_id' => $category->id,
+            'slug' => 'gazovyj-kotel-test',
+            'is_active' => true,
+            'is_archived' => false,
+        ]);
+
+        $request = Request::create(
+            'https://gomel.kotlov.by/gazovye/gazovyj-kotel-test?utm_source=test',
+            'GET',
+        );
+        $response = app(HandleRedirects::class)->handle(
+            $request,
+            fn () => response('', 204),
+        );
+
+        $this->assertSame(301, $response->getStatusCode());
+        $this->assertSame(
+            'https://kotlov.by/gazovye/gazovyj-kotel-test?utm_source=test',
+            $response->headers->get('Location'),
+        );
+    }
+
+    public function test_city_category_page_remains_regional(): void
+    {
+        Category::create([
+            'parent_id' => 0,
+            'name' => 'Газовые котлы',
+            'slug' => 'gazovye',
+            'is_active' => true,
+        ]);
+
+        City::create([
+            'name' => 'Гомель',
+            'slug' => 'gomel',
+            'is_active' => true,
+        ]);
+
+        $request = Request::create('https://gomel.kotlov.by/gazovye', 'GET');
         $response = app(HandleRedirects::class)->handle(
             $request,
             fn () => response('', 204),
