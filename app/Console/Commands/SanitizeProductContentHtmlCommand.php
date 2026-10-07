@@ -271,12 +271,14 @@ class SanitizeProductContentHtmlCommand extends Command
                 $updates['content'] = $sanitized;
 
                 if ($showChangeSamples > 0 && count($changeSampleRows) < $showChangeSamples) {
-                    [$position, $before, $after] = $this->changeContext($original, $sanitized);
+                    [$position, $beforeLength, $afterLength, $before, $after] = $this->changeContext($original, $sanitized);
                     $changeSampleRows[] = [
                         $row->id,
                         $row->sku,
                         $row->slug,
                         $position,
+                        $beforeLength,
+                        $afterLength,
                         $before,
                         $after,
                     ];
@@ -375,14 +377,14 @@ class SanitizeProductContentHtmlCommand extends Command
         }
 
         if ($changeSampleRows !== []) {
-            $this->table(['ID', 'SKU', 'Slug', 'Byte', 'Before', 'After'], $changeSampleRows);
+            $this->table(['ID', 'SKU', 'Slug', 'Byte', 'Before bytes', 'After bytes', 'Before hex', 'After hex'], $changeSampleRows);
         }
 
         return self::SUCCESS;
     }
 
     /**
-     * @return array{int,string,string}
+     * @return array{int,int,int,string,string}
      */
     private function changeContext(string $before, string $after): array
     {
@@ -396,8 +398,10 @@ class SanitizeProductContentHtmlCommand extends Command
 
         return [
             $position,
-            json_encode(substr($before, $start, 240), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?: '',
-            json_encode(substr($after, $start, 240), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?: '',
+            strlen($before),
+            strlen($after),
+            bin2hex(substr($before, $start, 120)),
+            bin2hex(substr($after, $start, 120)),
         ];
     }
 
