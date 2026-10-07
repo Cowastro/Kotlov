@@ -8,7 +8,7 @@ use App\Models\Product;
 use Illuminate\Support\Facades\Cache;
 
 Route::get('/sitemap.xml', function () {
-    $xml = Cache::remember('sitemap.xml.v3', 86400, function () {
+    $xml = Cache::remember('sitemap.xml.v4', 86400, function () {
         $baseUrl = 'https://kotlov.by';
         $urls = [];
 
@@ -51,7 +51,7 @@ Route::get('/sitemap.xml', function () {
             ->orderBy('sort_order')->orderBy('id')
             ->get(['slug', 'updated_at'])->each(fn ($c) => $addUrl($c->slug, $c->updated_at));
 
-        Product::active()->notArchived()
+        Product::orderable()
             ->with('category:id,slug,is_active')
             ->whereHas('category', fn ($q) => $q->where('is_active', true))
             ->orderBy('id')
@@ -69,7 +69,10 @@ Route::get('/sitemap.xml', function () {
                 }
             });
 
-        Brand::active()->whereNotNull('slug')->orderBy('name')
+        Brand::active()
+            ->whereNotNull('slug')
+            ->whereHas('products', fn ($q) => $q->orderable())
+            ->orderBy('name')
             ->get(['slug', 'updated_at'])->each(fn ($b) => $addUrl('brands/'.strtolower($b->slug), $b->updated_at));
 
         BlogPost::published()->whereNotNull('slug')->orderByDesc('published_at')
