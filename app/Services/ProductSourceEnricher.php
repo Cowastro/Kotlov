@@ -2860,6 +2860,12 @@ class ProductSourceEnricher
         $html = preg_replace('/<br\s*\/?>/iu', "\n", $html) ?? $html;
 
         if (! preg_match('/<(p|ul|ol|li)\b/iu', $html)) {
+            if (preg_match('/<(strong|em)\b/iu', $html)) {
+                $inlineHtml = trim((string) preg_replace('/\s+/u', ' ', $html));
+
+                return $inlineHtml === '' ? '' : '<p>' . $inlineHtml . '</p>';
+            }
+
             $paragraphs = array_values(array_filter(array_map(
                 fn (string $line) => $this->cleanText($line),
                 preg_split('/\R{2,}|\R/u', $html) ?: []

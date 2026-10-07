@@ -70,4 +70,18 @@ class ProductSourceEnricherTest extends TestCase
         $this->assertStringNotContainsString('купить оптом', mb_strtolower($parsed['short_description']));
         $this->assertLessThanOrEqual(240, mb_strlen($parsed['short_description']));
     }
+
+    public function test_sanitize_description_wraps_root_inline_formatting_without_escaping_it(): void
+    {
+        $enricher = new ProductSourceEnricher();
+        $html = '<strong>Чугунная банная печь ЭТНА 18</strong> оснащается глухой чугунной дверцей.';
+
+        $sanitized = $enricher->sanitizeDescriptionHtml($html);
+
+        $this->assertSame(
+            '<p><strong>Чугунная банная печь ЭТНА 18</strong> оснащается глухой чугунной дверцей.</p>',
+            $sanitized
+        );
+        $this->assertSame($sanitized, $enricher->sanitizeDescriptionHtml($sanitized));
+    }
 }
