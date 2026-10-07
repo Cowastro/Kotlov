@@ -17,6 +17,7 @@ class AuditBaniaFallbackBrandCommand extends Command
     private const FALLBACK_BRAND_SLUG = 'bania';
 
     private const BRAND_RULES = [
+        ['PROSEPT', 'prosept', ['prosept', 'просепт']],
         ['ASTON', 'aston', ['aston', 'астон']],
         ['DoorWood', 'doorwood', ['doorwood', 'door wood']],
         ['Везувий', 'vezuvij', ['vezuviy', 'vezuvij', 'везувий']],

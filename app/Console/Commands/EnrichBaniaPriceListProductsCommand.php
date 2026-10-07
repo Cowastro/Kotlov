@@ -24,6 +24,7 @@ class EnrichBaniaPriceListProductsCommand extends Command
         {--crawl-limit=160 : Max source pages to crawl when --source-url is used}
         {--force-images : Replace existing images}
         {--force-content : Replace existing content}
+        {--source-content : Save cleaned official source text without AI rewriting}
         {--skip-images : Do not download images}
         {--skip-content : Do not update content}
         {--missing-images-only : Process only products without any gallery images}
@@ -294,6 +295,13 @@ class EnrichBaniaPriceListProductsCommand extends Command
         }
 
         if ($this->sourceStartUrl !== '') {
+            if (count($this->sourceStartUrls) === 1) {
+                $direct = $this->sourceResultFromUrl($this->sourceStartUrl, $product);
+                if ($direct !== null && $this->isLikelyTitleMatch((string) ($direct['title'] ?? ''), $product)) {
+                    return $direct;
+                }
+            }
+
             return $this->findSourcePageInCatalog($product);
         }
 
@@ -897,6 +905,10 @@ class EnrichBaniaPriceListProductsCommand extends Command
     {
         $scraped = trim(strip_tags((string) ($result['description'] ?? '')));
 
+        if ((bool) $this->option('source-content')) {
+            return $scraped !== '' ? '<p>' . e(Str::limit($scraped, 1800, '')) . '</p>' : '';
+        }
+
         if ($this->ai->isAvailable()) {
             $text = $this->ai->enrich(
                 (string) $product->name,
@@ -920,6 +932,10 @@ class EnrichBaniaPriceListProductsCommand extends Command
     private function shortDescription(object $product, array $result): string
     {
         $scraped = trim(strip_tags((string) ($result['description'] ?? '')));
+        if ((bool) $this->option('source-content')) {
+            return Str::limit($scraped, 220, '');
+        }
+
         if ($this->ai->isAvailable()) {
             $text = $this->ai->shortDescription(
                 (string) $product->name,
