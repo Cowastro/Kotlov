@@ -159,14 +159,18 @@ jobs:
               # Teplodvor index is runtime data: it may stay dirty, and Git will
               # still refuse the pull if an incoming commit touches that file.
               tracked_changes="$(git status --porcelain --untracked-files=no)"
-              unexpected_changes="$(printf '%s\n' "$tracked_changes" | grep -vE '^ M storage/teplodvor_index\.json$' || true)"
+              # `.htaccess` may be maintained by the hosting provider for an
+              # emergency traffic/geo restriction. Preserve it just like the
+              # runtime Teplodvor index unless an incoming commit touches it.
+              unexpected_changes="$(printf '%s\n' "$tracked_changes" | grep -vE '^ M (storage/teplodvor_index\.json|\.htaccess)$' || true)"
               if [[ -n "$unexpected_changes" ]]; then
                 echo "::error::Deployment stopped: tracked server files contain local changes."
                 printf '%s\n' "$unexpected_changes"
                 exit 1
               fi
               if [[ -n "$tracked_changes" ]]; then
-                echo "Preserving runtime file: storage/teplodvor_index.json"
+                echo "Preserving approved server-managed tracked files."
+                printf '%s\n' "$tracked_changes"
               fi
 
               current_branch="$(git branch --show-current)"
