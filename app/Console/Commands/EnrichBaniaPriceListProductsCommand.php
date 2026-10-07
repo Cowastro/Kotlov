@@ -297,7 +297,8 @@ class EnrichBaniaPriceListProductsCommand extends Command
         if ($this->sourceStartUrl !== '') {
             if (count($this->sourceStartUrls) === 1) {
                 $direct = $this->sourceResultFromUrl($this->sourceStartUrl, $product);
-                if ($direct !== null && $this->isLikelyTitleMatch((string) ($direct['title'] ?? ''), $product)) {
+                $identityText = trim((string) ($direct['title'] ?? '') . ' ' . (string) ($direct['description'] ?? ''));
+                if ($direct !== null && $this->isLikelyTitleMatch($identityText, $product)) {
                     return $direct;
                 }
             }
