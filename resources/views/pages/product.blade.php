@@ -73,7 +73,7 @@
                                     data-spacing="0">
                                     <div class="swiper-wrapper">
                                         @php
-                                            $images = $product->images ?? [];
+                                            $images = $product->imagePaths();
                                             $placeholder = asset('img/products/product-placeholder.jpg');
                                         @endphp
                                         @forelse ($images as $index => $img)

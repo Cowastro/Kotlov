@@ -220,4 +220,12 @@ class LegacySeoRedirectTest extends TestCase
         $response->assertStatus(301);
         $response->assertRedirect('https://chechersk.kotlov.by/grebenki');
     }
+
+    public function test_legacy_discounts_category_redirects_to_promotions_page(): void
+    {
+        $response = $this->get('https://kotlov.by/aktsiiiskidki');
+
+        $response->assertStatus(301);
+        $response->assertRedirect('https://kotlov.by/akcii');
+    }
 }

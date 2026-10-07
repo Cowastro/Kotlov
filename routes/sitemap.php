@@ -8,7 +8,7 @@ use App\Models\Product;
 use Illuminate\Support\Facades\Cache;
 
 Route::get('/sitemap.xml', function () {
-    $xml = Cache::remember('sitemap.xml.v2', 86400, function () {
+    $xml = Cache::remember('sitemap.xml.v3', 86400, function () {
         $baseUrl = 'https://kotlov.by';
         $urls = [];
 
@@ -45,7 +45,10 @@ Route::get('/sitemap.xml', function () {
             $addUrl($path);
         }
 
-        Category::active()->whereNotNull('slug')->orderBy('sort_order')->orderBy('id')
+        Category::active()
+            ->whereNotNull('slug')
+            ->where('slug', '!=', 'aktsiiiskidki')
+            ->orderBy('sort_order')->orderBy('id')
             ->get(['slug', 'updated_at'])->each(fn ($c) => $addUrl($c->slug, $c->updated_at));
 
         Product::active()->notArchived()

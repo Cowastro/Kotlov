@@ -214,7 +214,37 @@ class Product extends Model
     // Первое фото (сырое имя/путь из БД)
     public function getMainImageAttribute(): ?string
     {
-        return $this->images[0] ?? null;
+        return $this->imagePaths()[0] ?? null;
+    }
+
+    /**
+     * Return a predictable gallery array even for legacy rows where `images`
+     * contains a JSON scalar or a plain path instead of a JSON array.
+     */
+    public function imagePaths(): array
+    {
+        $images = $this->images;
+
+        if (is_string($images)) {
+            $decoded = json_decode($images, true);
+
+            if (json_last_error() === JSON_ERROR_NONE) {
+                $images = $decoded;
+            }
+        }
+
+        if (is_string($images)) {
+            $images = [$images];
+        }
+
+        if (! is_array($images)) {
+            return [];
+        }
+
+        return array_values(array_filter(
+            $images,
+            fn ($path) => is_string($path) && trim($path) !== ''
+        ));
     }
 
     // URL первого фото через proxy (или placeholder)
@@ -228,13 +258,9 @@ class Product extends Model
     {
         $placeholder = asset('img/products/product-placeholder.jpg');
 
-        $images = $this->images;
+        $images = $this->imagePaths();
 
-        if (is_string($images)) {
-            $images = json_decode($images, true);
-        }
-
-        if (!is_array($images) || empty($images)) {
+        if (empty($images)) {
             return $placeholder;
         }
 

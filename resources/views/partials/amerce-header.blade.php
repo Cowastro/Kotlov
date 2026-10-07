@@ -1,4 +1,8 @@
 ﻿<!-- Topbar -->
+@php
+    $navCategories = $navCategories ?? collect();
+    $navBrands = $navBrands ?? collect();
+@endphp
 <div class="tf-topbar bg-dark">
     <div class="container">
         <div class="d-flex justify-content-between align-items-center text-white">
