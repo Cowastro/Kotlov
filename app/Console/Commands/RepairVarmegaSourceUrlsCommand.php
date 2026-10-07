@@ -15,6 +15,7 @@ class RepairVarmegaSourceUrlsCommand extends Command
         {--category= : Product category name filter}
         {--sitemap=https://varmega.ru/sitemap-iblock-43.xml : Varmega product sitemap URL}
         {--refresh-index : Rebuild cached article URL index}
+        {--official-only : Accept only product pages hosted on varmega.ru}
         {--rn-profi-fallback : Search rn-profi.by by article when official Varmega URL is missing}
         {--rn-profi-section-index : Crawl RN-Profi Varmega section pages and index visible article tables}
         {--rn-profi-section-url=https://rn-profi.by/varmega/truboprovodnye-sistemy-iz-nerzhaveyuschej-stali-sus-304--profil-v/ : RN-Profi Varmega section URL}
@@ -48,6 +49,7 @@ class RepairVarmegaSourceUrlsCommand extends Command
         $offset = max(0, (int) $this->option('offset'));
         $sleep = max(300, (int) $this->option('sleep'));
         $supplierCode = trim((string) $this->option('supplier')) ?: 'rn-profi';
+        $officialOnly = (bool) $this->option('official-only');
 
         $this->line($apply
             ? '<fg=red;options=bold>APPLY: Varmega official source URLs will be written.</>'
@@ -155,6 +157,9 @@ class RepairVarmegaSourceUrlsCommand extends Command
             $match ??= $article !== ''
                 ? $this->knownOfficialVarmegaSourceForArticle($article)
                 : null;
+            if (! $this->sourceIsAllowed($match, $officialOnly)) {
+                $match = null;
+            }
 
             if ($match === null) {
                 foreach ($this->extractVisibleArticleTokens((string) $row->product_name) as $nameArticle) {
@@ -162,8 +167,9 @@ class RepairVarmegaSourceUrlsCommand extends Command
                         continue;
                     }
 
-                    $match = $index[$nameArticle] ?? $this->knownOfficialVarmegaSourceForArticle($nameArticle);
-                    if ($match !== null) {
+                    $candidate = $index[$nameArticle] ?? $this->knownOfficialVarmegaSourceForArticle($nameArticle);
+                    if ($this->sourceIsAllowed($candidate, $officialOnly)) {
+                        $match = $candidate;
                         $article = $nameArticle;
                         break;
                     }
@@ -171,6 +177,7 @@ class RepairVarmegaSourceUrlsCommand extends Command
             }
 
             if ($match === null
+                && ! $officialOnly
                 && (bool) $this->option('rn-profi-fallback')
                 && $article !== ''
                 && ($rnProfiSearchLimit === 0 || $rnProfiSearches < $rnProfiSearchLimit)
@@ -179,6 +186,7 @@ class RepairVarmegaSourceUrlsCommand extends Command
             }
 
             if ($match === null
+                && ! $officialOnly
                 && (bool) $this->option('rn-profi-fallback')
                 && $article !== ''
                 && ($rnProfiSearchLimit === 0 || $rnProfiSearches < $rnProfiSearchLimit)
@@ -422,6 +430,24 @@ class RepairVarmegaSourceUrlsCommand extends Command
         }
 
         return null;
+    }
+
+    /**
+     * @param array{url?: string}|null $match
+     */
+    private function sourceIsAllowed(?array $match, bool $officialOnly): bool
+    {
+        if ($match === null || trim((string) ($match['url'] ?? '')) === '') {
+            return false;
+        }
+
+        if (! $officialOnly) {
+            return true;
+        }
+
+        $host = mb_strtolower((string) parse_url((string) $match['url'], PHP_URL_HOST));
+
+        return $host === 'varmega.ru' || $host === 'www.varmega.ru';
     }
 
     private function knownRnProfiVarmegaSourceForArticle(string $normArticle): ?array
