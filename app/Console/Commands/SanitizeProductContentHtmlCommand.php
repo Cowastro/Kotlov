@@ -235,6 +235,9 @@ class SanitizeProductContentHtmlCommand extends Command
             $legacyBuyTemplatesBefore = $this->countLegacyPhraseOccurrences($sanitized, $this->legacyPhraseNeedles()['legacy_buy_template']);
             $sanitized = $this->removeLegacyBuyTemplateText($sanitized);
             $legacyBuyTemplatesAfter = $this->countLegacyPhraseOccurrences($sanitized, $this->legacyPhraseNeedles()['legacy_buy_template']);
+            // Removing a legacy line can expose plain text at the document root.
+            // Normalize once more so a single command run produces stable HTML.
+            $sanitized = $enricher->sanitizeDescriptionHtml($sanitized);
 
             if ($showContentSamples > 0 && count($contentSampleRows) < $showContentSamples) {
                 $plain = trim((string) preg_replace('/\s+/u', ' ', strip_tags($original)));
