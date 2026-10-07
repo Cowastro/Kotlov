@@ -36,6 +36,7 @@ class SanitizeProductContentHtmlCommand extends Command
         {--min-content-length=180 : Minimum plain-text content length for --rewrite-seo-if-thin}
         {--show-samples=0 : Show first N rows with detected media links}
         {--show-content-samples=0 : Show first N source content snippets for audit}
+        {--show-change-samples=0 : Show first N before/after contexts for changed content}
         {--offset=0 : Rows to skip after filters}
         {--sleep=300 : Delay between AI requests, ms}
         {--limit=100 : Rows to process, 0 means all}';
@@ -55,6 +56,7 @@ class SanitizeProductContentHtmlCommand extends Command
         $minContentLength = max(40, (int) $this->option('min-content-length'));
         $showSamples = max(0, (int) $this->option('show-samples'));
         $showContentSamples = max(0, (int) $this->option('show-content-samples'));
+        $showChangeSamples = max(0, (int) $this->option('show-change-samples'));
         $offset = max(0, (int) $this->option('offset'));
         $sleep = max(0, (int) $this->option('sleep'));
 
@@ -204,6 +206,7 @@ class SanitizeProductContentHtmlCommand extends Command
         $changedRows = [];
         $sampleRows = [];
         $contentSampleRows = [];
+        $changeSampleRows = [];
 
         foreach ($rows as $row) {
             $stats['checked']++;
@@ -266,6 +269,18 @@ class SanitizeProductContentHtmlCommand extends Command
 
             if (trim($original) !== trim($sanitized)) {
                 $updates['content'] = $sanitized;
+
+                if ($showChangeSamples > 0 && count($changeSampleRows) < $showChangeSamples) {
+                    [$position, $before, $after] = $this->changeContext($original, $sanitized);
+                    $changeSampleRows[] = [
+                        $row->id,
+                        $row->sku,
+                        $row->slug,
+                        $position,
+                        $before,
+                        $after,
+                    ];
+                }
             }
 
             if ($repairShortFromContent
@@ -359,7 +374,31 @@ class SanitizeProductContentHtmlCommand extends Command
             $this->table(['ID', 'SKU', 'Slug', 'img', 'a', 'iframe', 'style', 'Plain snippet', 'HTML snippet'], $contentSampleRows);
         }
 
+        if ($changeSampleRows !== []) {
+            $this->table(['ID', 'SKU', 'Slug', 'Byte', 'Before', 'After'], $changeSampleRows);
+        }
+
         return self::SUCCESS;
+    }
+
+    /**
+     * @return array{int,string,string}
+     */
+    private function changeContext(string $before, string $after): array
+    {
+        $limit = min(strlen($before), strlen($after));
+        $position = 0;
+        while ($position < $limit && $before[$position] === $after[$position]) {
+            $position++;
+        }
+
+        $start = max(0, $position - 80);
+
+        return [
+            $position,
+            json_encode(substr($before, $start, 240), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?: '',
+            json_encode(substr($after, $start, 240), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?: '',
+        ];
     }
 
     /**
