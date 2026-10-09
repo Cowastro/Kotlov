@@ -931,6 +931,46 @@ XML;
         ]);
     }
 
+    public function test_rematch_links_only_exact_unresolved_items_and_keeps_ignored_items_untouched(): void
+    {
+        $product = Product::query()->create([
+            'sku' => 'EXACT-REMATCH-1',
+            'name' => 'Труба для повторного сопоставления',
+            'slug' => 'exact-rematch-product',
+        ]);
+        $source = IntegrationSource::query()->create([
+            'code' => 'onec',
+            'name' => '1С',
+        ]);
+        $candidate = IntegrationProduct::query()->create([
+            'integration_source_id' => $source->id,
+            'external_id' => 'exact-rematch-candidate',
+            'external_sku' => 'EXACT-REMATCH-1',
+            'name' => 'Товар из 1С',
+            'match_status' => 'unmatched',
+        ]);
+        $ignored = IntegrationProduct::query()->create([
+            'integration_source_id' => $source->id,
+            'external_id' => 'ignored-rematch-candidate',
+            'external_sku' => 'EXACT-REMATCH-1',
+            'name' => 'Не для сайта',
+            'match_status' => 'ignored',
+        ]);
+
+        $stats = app(CommerceMlCatalogImporter::class)->rematchSource('onec');
+
+        $this->assertSame([
+            'matched' => 1,
+            'suggested' => 0,
+            'ambiguous' => 0,
+            'unmatched' => 0,
+        ], $stats);
+        $this->assertSame($product->id, $candidate->fresh()->product_id);
+        $this->assertSame('matched', $candidate->fresh()->match_status);
+        $this->assertNull($ignored->fresh()->product_id);
+        $this->assertSame('ignored', $ignored->fresh()->match_status);
+    }
+
     public function test_clear_source_can_remove_staging_and_retained_exchange_files(): void
     {
         $source = IntegrationSource::query()->create([

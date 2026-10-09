@@ -6,7 +6,11 @@ use App\Filament\Resources\IntegrationCategories\IntegrationCategoryResource;
 use App\Filament\Resources\IntegrationProducts\IntegrationProductResource;
 use App\Models\IntegrationCategory;
 use App\Models\IntegrationProduct;
+use App\Models\IntegrationSource;
+use App\Services\Integrations\CommerceMlCatalogImporter;
 use Filament\Actions\Action;
+use Filament\Forms\Components\Select;
+use Filament\Notifications\Notification;
 use Filament\Resources\Pages\ListRecords;
 use Filament\Schemas\Components\Tabs\Tab;
 use Filament\Support\Enums\Width;
@@ -38,6 +42,52 @@ class ListIntegrationProducts extends ListRecords
     protected function getHeaderActions(): array
     {
         return [
+            Action::make('rematch')
+                ->label('Повторить автосопоставление')
+                ->icon('heroicon-o-arrow-path')
+                ->color('info')
+                ->form([
+                    Select::make('integration_source_id')
+                        ->label('Источник / поставщик')
+                        ->options(fn (): array => IntegrationSource::query()
+                            ->whereHas('products')
+                            ->orderBy('name')
+                            ->get()
+                            ->mapWithKeys(fn (IntegrationSource $source): array => [
+                                $source->id => $source->name.' · '.$source->products()->inStock()->count().' в наличии',
+                            ])
+                            ->all())
+                        ->default(fn (): ?int => IntegrationSource::query()
+                            ->whereHas('products')
+                            ->orderBy('name')
+                            ->value('id'))
+                        ->searchable()
+                        ->required()
+                        ->helperText('Привязанные и отмеченные «Не для сайта» товары не изменяются.'),
+                ])
+                ->requiresConfirmation()
+                ->modalHeading('Повторить автосопоставление')
+                ->modalDescription('Точные однозначные совпадения по артикулу, штрихкоду или коду 1С будут привязаны. Совпадения по названию останутся предложениями до ручного подтверждения.')
+                ->modalSubmitActionLabel('Запустить')
+                ->action(function (array $data): void {
+                    $source = IntegrationSource::query()->findOrFail($data['integration_source_id']);
+                    $stats = app(CommerceMlCatalogImporter::class)->rematchSource($source->code);
+                    $processed = array_sum($stats);
+
+                    $this->resetTable();
+
+                    Notification::make()
+                        ->success()
+                        ->title('Автосопоставление завершено')
+                        ->body(implode(' · ', [
+                            "Проверено: {$processed}",
+                            "Точно привязано: {$stats['matched']}",
+                            "Предложений: {$stats['suggested']}",
+                            "Нужна проверка: {$stats['ambiguous']}",
+                            "Не найдено: {$stats['unmatched']}",
+                        ]))
+                        ->send();
+                }),
             Action::make('catalogStructure')
                 ->label(fn (): string => IntegrationCategory::query()->exists()
                     ? 'Настроить группы каталога'
