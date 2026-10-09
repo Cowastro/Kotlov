@@ -12,6 +12,7 @@ use App\Models\Product;
 use App\Services\Integrations\CommerceMlCatalogImporter;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
@@ -32,7 +33,8 @@ class OneCExchangeTest extends TestCase
         Cache::flush();
         Storage::fake('local');
 
-        Schema::create('orders', function (Blueprint $table) {
+        if (! Schema::hasTable('orders')) {
+            Schema::create('orders', function (Blueprint $table) {
             $table->id();
             $table->string('number')->unique();
             $table->string('status')->default('new');
@@ -51,9 +53,11 @@ class OneCExchangeTest extends TestCase
             $table->text('comment')->nullable();
             $table->timestamp('onec_exported_at')->nullable();
             $table->timestamps();
-        });
+            });
+        }
 
-        Schema::create('order_items', function (Blueprint $table) {
+        if (! Schema::hasTable('order_items')) {
+            Schema::create('order_items', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('order_id');
             $table->unsignedBigInteger('product_id')->nullable();
@@ -63,16 +67,20 @@ class OneCExchangeTest extends TestCase
             $table->integer('quantity');
             $table->decimal('total', 10, 2);
             $table->timestamps();
-        });
+            });
+        }
 
-        Schema::create('products', function (Blueprint $table) {
+        if (! Schema::hasTable('products')) {
+            Schema::create('products', function (Blueprint $table) {
             $table->id();
             $table->string('sku')->nullable();
             $table->string('name')->nullable();
             $table->timestamps();
-        });
+            });
+        }
 
-        Schema::create('integration_sources', function (Blueprint $table) {
+        if (! Schema::hasTable('integration_sources')) {
+            Schema::create('integration_sources', function (Blueprint $table) {
             $table->id();
             $table->string('code')->unique();
             $table->string('name');
@@ -85,9 +93,11 @@ class OneCExchangeTest extends TestCase
             $table->boolean('update_stock')->default(false);
             $table->json('settings')->nullable();
             $table->timestamps();
-        });
+            });
+        }
 
-        Schema::create('integration_categories', function (Blueprint $table) {
+        if (! Schema::hasTable('integration_categories')) {
+            Schema::create('integration_categories', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('integration_source_id');
             $table->unsignedBigInteger('parent_id')->nullable();
@@ -99,9 +109,11 @@ class OneCExchangeTest extends TestCase
             $table->json('payload')->nullable();
             $table->timestamp('last_seen_at')->nullable();
             $table->timestamps();
-        });
+            });
+        }
 
-        Schema::create('integration_products', function (Blueprint $table) {
+        if (! Schema::hasTable('integration_products')) {
+            Schema::create('integration_products', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('integration_source_id');
             $table->unsignedBigInteger('integration_category_id')->nullable();
@@ -121,7 +133,14 @@ class OneCExchangeTest extends TestCase
             $table->timestamp('matched_at')->nullable();
             $table->timestamp('last_seen_at')->nullable();
             $table->timestamps();
-        });
+            });
+        }
+
+        Schema::disableForeignKeyConstraints();
+        foreach (['integration_products', 'integration_categories', 'integration_sources', 'order_items', 'orders', 'products'] as $table) {
+            DB::table($table)->delete();
+        }
+        Schema::enableForeignKeyConstraints();
     }
 
     public function test_exchange_requires_authentication(): void
