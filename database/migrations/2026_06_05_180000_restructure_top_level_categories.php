@@ -22,24 +22,30 @@ return new class extends Migration
 {
     public function up(): void
     {
+        // This migration restructures a populated production catalog by known IDs.
+        // A fresh/test database does not contain that source tree.
+        if (! DB::table('categories')->where('id', 246)->exists()) {
+            return;
+        }
+
         // ── Шаг 1. Создать категорию "Бани и сауны" ──────────────────────────
         $baniId = DB::table('categories')->insertGetId([
-            'name'       => 'Бани и сауны',
-            'slug'       => 'bani-i-sauny',
-            'parent_id'  => 0,
+            'name' => 'Бани и сауны',
+            'slug' => 'bani-i-sauny',
+            'parent_id' => 0,
             'sort_order' => 60,
-            'is_active'  => 1,
+            'is_active' => 1,
             'created_at' => now(),
             'updated_at' => now(),
         ]);
 
         // ── Шаг 2. Создать категорию "Водоснабжение" ─────────────────────────
         $vodoId = DB::table('categories')->insertGetId([
-            'name'       => 'Водоснабжение',
-            'slug'       => 'vodosnabzhenie',
-            'parent_id'  => 0,
+            'name' => 'Водоснабжение',
+            'slug' => 'vodosnabzhenie',
+            'parent_id' => 0,
             'sort_order' => 70,
-            'is_active'  => 1,
+            'is_active' => 1,
             'created_at' => now(),
             'updated_at' => now(),
         ]);
@@ -48,7 +54,7 @@ return new class extends Migration
         DB::table('categories')
             ->where('id', 286)
             ->update([
-                'parent_id'  => 0,
+                'parent_id' => 0,
                 'sort_order' => 20,
                 'updated_at' => now(),
             ]);
@@ -57,9 +63,9 @@ return new class extends Migration
         DB::table('categories')
             ->where('id', 56)
             ->update([
-                'name'       => 'Отопление',
-                'slug'       => 'otoplenie',
-                'parent_id'  => 0,
+                'name' => 'Отопление',
+                'slug' => 'otoplenie',
+                'parent_id' => 0,
                 'sort_order' => 50,
                 'updated_at' => now(),
             ]);
@@ -68,8 +74,8 @@ return new class extends Migration
         DB::table('categories')
             ->where('id', 52)
             ->update([
-                'name'       => 'Печи для бани',
-                'parent_id'  => $baniId,
+                'name' => 'Печи для бани',
+                'parent_id' => $baniId,
                 'sort_order' => 10,
                 'updated_at' => now(),
             ]);
@@ -78,8 +84,8 @@ return new class extends Migration
         DB::table('categories')
             ->where('id', 73)
             ->update([
-                'name'       => 'Аксессуары для бани',
-                'parent_id'  => $baniId,
+                'name' => 'Аксессуары для бани',
+                'parent_id' => $baniId,
                 'sort_order' => 20,
                 'updated_at' => now(),
             ]);
@@ -88,18 +94,18 @@ return new class extends Migration
         DB::table('categories')
             ->where('id', 246)
             ->update([
-                'parent_id'  => $vodoId,
+                'parent_id' => $vodoId,
                 'sort_order' => 10,
                 'updated_at' => now(),
             ]);
 
         // ── Шаг 8. Выставить sort_order верхнего уровня ──────────────────────
         $sortMap = [
-            49  => 10,  // Котлы
+            49 => 10,  // Котлы
             286 => 20,  // Тепловые насосы (уже обновлён выше, дублируем для надёжности)
-            51  => 30,  // Камины
+            51 => 30,  // Камины
             113 => 40,  // Печи
-            56  => 50,  // Отопление (уже обновлён выше)
+            56 => 50,  // Отопление (уже обновлён выше)
             // $baniId => 60  — задан при INSERT
             // $vodoId => 70  — задан при INSERT
         ];
@@ -124,9 +130,9 @@ return new class extends Migration
         DB::table('categories')
             ->where('id', 56)
             ->update([
-                'name'       => 'Для отопления',
-                'slug'       => 'otoplenie-parts',
-                'parent_id'  => 131,
+                'name' => 'Для отопления',
+                'slug' => 'otoplenie-parts',
+                'parent_id' => 131,
                 'sort_order' => 2,
                 'updated_at' => now(),
             ]);
@@ -135,8 +141,8 @@ return new class extends Migration
         DB::table('categories')
             ->where('id', 52)
             ->update([
-                'name'       => 'Для бани',
-                'parent_id'  => 113,
+                'name' => 'Для бани',
+                'parent_id' => 113,
                 'sort_order' => 4,
                 'updated_at' => now(),
             ]);
@@ -145,8 +151,8 @@ return new class extends Migration
         DB::table('categories')
             ->where('id', 73)
             ->update([
-                'name'       => 'Для печей и каминов',
-                'parent_id'  => 131,
+                'name' => 'Для печей и каминов',
+                'parent_id' => 131,
                 'sort_order' => 6,
                 'updated_at' => now(),
             ]);

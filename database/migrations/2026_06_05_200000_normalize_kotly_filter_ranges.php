@@ -104,7 +104,7 @@ return new class extends Migration
             return null; // нечисловой мусор
         }
 
-        if (is_numeric($v) && (float)$v > 0) {
+        if (is_numeric($v) && (float) $v > 0) {
             return (float) $v;
         }
 
@@ -115,6 +115,11 @@ return new class extends Migration
 
     public function up(): void
     {
+        // The fixed IDs below belong to the populated production catalog only.
+        if (! DB::table('attributes')->whereIn('id', [55, 56, 61, 62, 65, 66])->exists()) {
+            return;
+        }
+
         $report = ['normalized' => 0, 'garbage' => [], 'bound' => []];
 
         // ── Шаг 1: нормализация value-атрибутов ─────────────────────────────
@@ -132,6 +137,7 @@ return new class extends Migration
 
                 if ($clean === null) {
                     $report['garbage'][] = "attr=$aid id={$row->id} val=\"{$row->value}\"";
+
                     continue;
                 }
 
@@ -147,22 +153,22 @@ return new class extends Migration
 
         // ── Шаг 2: сохранить старые опции и привязки (для rollback) ─────────
         // Бэкап option_id перед перезаписью
-        DB::statement("
+        DB::statement('
             CREATE TABLE IF NOT EXISTS _bak_kotly_filter_options AS
             SELECT * FROM attribute_options
             WHERE attribute_id IN (55,56,61,62,65,66)
-        ");
-        DB::statement("
+        ');
+        DB::statement('
             CREATE TABLE IF NOT EXISTS _bak_kotly_pav AS
             SELECT * FROM product_attribute_values
             WHERE attribute_id IN (55,56,61,62,65,66)
-        ");
+        ');
 
         // ── Шаг 3: заменить опции и перепривязать товары ─────────────────────
         foreach ($this->config() as $key => $cfg) {
             $filterAttr = $cfg['filter_attr'];
-            $valueAttr  = $cfg['value_attr'];
-            $catId      = $cfg['cat_id'];
+            $valueAttr = $cfg['value_attr'];
+            $catId = $cfg['cat_id'];
 
             // Удаляем старые опции
             DB::table('attribute_options')->where('attribute_id', $filterAttr)->delete();
@@ -172,10 +178,10 @@ return new class extends Migration
             foreach ($cfg['ranges'] as [$name, $sort, $min, $max]) {
                 $id = DB::table('attribute_options')->insertGetId([
                     'attribute_id' => $filterAttr,
-                    'name'         => $name,
-                    'sort_order'   => $sort,
-                    'created_at'   => now(),
-                    'updated_at'   => now(),
+                    'name' => $name,
+                    'sort_order' => $sort,
+                    'created_at' => now(),
+                    'updated_at' => now(),
                 ]);
                 $optionMap[$sort] = ['id' => $id, 'min' => $min, 'max' => $max];
             }
@@ -197,26 +203,37 @@ return new class extends Migration
             $inserts = [];
             foreach ($productValues as $pv) {
                 $num = $this->normalize($pv->value);
-                if ($num === null) continue;
+                if ($num === null) {
+                    continue;
+                }
 
                 $optId = null;
                 foreach ($optionMap as $rangeData) {
                     $min = $rangeData['min'];
                     $max = $rangeData['max'];
-                    if ($min === null && $num <= $max) { $optId = $rangeData['id']; break; }
-                    if ($max === null && $num >  $min) { $optId = $rangeData['id']; break; }
-                    if ($min !== null && $max !== null && $num > $min && $num <= $max) { $optId = $rangeData['id']; break; }
+                    if ($min === null && $num <= $max) {
+                        $optId = $rangeData['id'];
+                        break;
+                    }
+                    if ($max === null && $num > $min) {
+                        $optId = $rangeData['id'];
+                        break;
+                    }
+                    if ($min !== null && $max !== null && $num > $min && $num <= $max) {
+                        $optId = $rangeData['id'];
+                        break;
+                    }
                 }
 
                 if ($optId) {
                     $inserts[] = [
-                        'product_id'   => $pv->product_id,
+                        'product_id' => $pv->product_id,
                         'attribute_id' => $filterAttr,
-                        'option_id'    => $optId,
-                        'value'        => '',
-                        'is_checked'   => 0,
-                        'created_at'   => now(),
-                        'updated_at'   => now(),
+                        'option_id' => $optId,
+                        'value' => '',
+                        'is_checked' => 0,
+                        'created_at' => now(),
+                        'updated_at' => now(),
                     ];
                     $report['bound'][$key] = ($report['bound'][$key] ?? 0) + 1;
                 }
@@ -233,9 +250,13 @@ return new class extends Migration
         echo "\n=== ОТЧЁТ МИГРАЦИИ ===\n";
         echo "Нормализовано value-записей: {$report['normalized']}\n";
         echo "Мусорные значения (не тронуты):\n";
-        foreach ($report['garbage'] as $g) echo "  $g\n";
+        foreach ($report['garbage'] as $g) {
+            echo "  $g\n";
+        }
         echo "Привязано к диапазонам:\n";
-        foreach ($report['bound'] as $k => $cnt) echo "  $k: $cnt товаров\n";
+        foreach ($report['bound'] as $k => $cnt) {
+            echo "  $k: $cnt товаров\n";
+        }
     }
 
     // ── DOWN ─────────────────────────────────────────────────────────────────
@@ -243,13 +264,13 @@ return new class extends Migration
     public function down(): void
     {
         // Восстанавливаем из бэкапа
-        DB::table('attribute_options')->whereIn('attribute_id', [55,56,61,62,65,66])->delete();
-        DB::table('product_attribute_values')->whereIn('attribute_id', [55,56,61,62,65,66])->delete();
+        DB::table('attribute_options')->whereIn('attribute_id', [55, 56, 61, 62, 65, 66])->delete();
+        DB::table('product_attribute_values')->whereIn('attribute_id', [55, 56, 61, 62, 65, 66])->delete();
 
-        DB::statement("INSERT INTO attribute_options SELECT * FROM _bak_kotly_filter_options");
-        DB::statement("INSERT INTO product_attribute_values SELECT * FROM _bak_kotly_pav");
+        DB::statement('INSERT INTO attribute_options SELECT * FROM _bak_kotly_filter_options');
+        DB::statement('INSERT INTO product_attribute_values SELECT * FROM _bak_kotly_pav');
 
-        DB::statement("DROP TABLE IF EXISTS _bak_kotly_filter_options");
-        DB::statement("DROP TABLE IF EXISTS _bak_kotly_pav");
+        DB::statement('DROP TABLE IF EXISTS _bak_kotly_filter_options');
+        DB::statement('DROP TABLE IF EXISTS _bak_kotly_pav');
     }
 };

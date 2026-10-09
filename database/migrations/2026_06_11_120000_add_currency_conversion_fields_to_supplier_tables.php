@@ -37,7 +37,9 @@ return new class extends Migration
         DB::statement('UPDATE supplier_products SET price_byn = ROUND(price * currency_rate, 2) WHERE price IS NOT NULL AND price_byn IS NULL');
 
         // Backfill: зафиксировать валюту/курс поставщика на строках прайсов.
-        DB::statement('UPDATE supplier_price_items spi JOIN suppliers s ON s.id = spi.supplier_id SET spi.currency = s.currency, spi.currency_rate = s.currency_rate');
+        if (DB::getDriverName() !== 'sqlite') {
+            DB::statement('UPDATE supplier_price_items spi JOIN suppliers s ON s.id = spi.supplier_id SET spi.currency = s.currency, spi.currency_rate = s.currency_rate');
+        }
     }
 
     public function down(): void

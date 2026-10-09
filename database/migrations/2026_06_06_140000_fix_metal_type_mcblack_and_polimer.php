@@ -7,13 +7,17 @@ return new class extends Migration
 {
     public function up(): void
     {
+        if (! DB::table('attributes')->where('id', 441)->exists()) {
+            return;
+        }
+
         // ── 1. Добавить опцию "MC Black (окрашенная нержавейка)"
         $optMcBlack = DB::table('attribute_options')->insertGetId([
             'attribute_id' => 441,
-            'name'         => 'MC Black',
-            'sort_order'   => 5,
-            'created_at'   => now(),
-            'updated_at'   => now(),
+            'name' => 'MC Black',
+            'sort_order' => 5,
+            'created_at' => now(),
+            'updated_at' => now(),
         ]);
 
         // ── 2. Переместить все MC Black товары с любой нержавейки → новая опция

@@ -24,6 +24,11 @@ return new class extends Migration
         DB::table('attribute_options')->where('id', 631)->update(['name' => '15–20 кВт']);
         // opt 643 "20 кВт и более" already correct
 
+        // This is a production-data migration. A fresh database has no catalog rows yet.
+        if (! DB::table('attributes')->where('id', 973)->exists()) {
+            return;
+        }
+
         // Attr 973 (Печи-камины): align labels to unified standard
         DB::table('attribute_options')->where('id', 867)->update(['name' => '10–15 кВт']);
         DB::table('attribute_options')->where('id', 868)->update(['name' => '15–20 кВт']);
@@ -32,10 +37,10 @@ return new class extends Migration
         // Add missing "20 кВт и более" option to attr 973
         $newOptionId = DB::table('attribute_options')->insertGetId([
             'attribute_id' => 973,
-            'name'         => '20 кВт и более',
-            'sort_order'   => 4,
-            'created_at'   => now(),
-            'updated_at'   => now(),
+            'name' => '20 кВт и более',
+            'sort_order' => 4,
+            'created_at' => now(),
+            'updated_at' => now(),
         ]);
 
         // Move products ≥20 kW (Plamen ×2, INVICTA, MBS ×2) to new option

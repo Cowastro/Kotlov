@@ -21,6 +21,11 @@ return new class extends Migration
 {
     public function up(): void
     {
+        // The operations below migrate an existing production tree by fixed IDs.
+        if (! DB::table('categories')->where('id', 78)->exists()) {
+            return;
+        }
+
         // ── Шаг 7 сначала: раздвинуть sort_order ─────────────────────────────
         // Отопление: 50→55, Бани: 60→65, Водоснабжение: 70→75
         DB::table('categories')->where('id', 56)->update(['sort_order' => 55, 'updated_at' => now()]);
@@ -29,11 +34,11 @@ return new class extends Migration
 
         // ── Шаг 1. Создать "Дымоходы" top-level ──────────────────────────────
         $dymId = DB::table('categories')->insertGetId([
-            'name'       => 'Дымоходы',
-            'slug'       => 'dymohody',
-            'parent_id'  => 0,
+            'name' => 'Дымоходы',
+            'slug' => 'dymohody',
+            'parent_id' => 0,
             'sort_order' => 45,
-            'is_active'  => 1,
+            'is_active' => 1,
             'created_at' => now(),
             'updated_at' => now(),
         ]);
@@ -42,9 +47,9 @@ return new class extends Migration
         DB::table('categories')
             ->where('id', 78)
             ->update([
-                'name'       => 'Дымоходы',
-                'slug'       => 'dymohody-nerzhaveyushchie',
-                'parent_id'  => $dymId,
+                'name' => 'Дымоходы',
+                'slug' => 'dymohody-nerzhaveyushchie',
+                'parent_id' => $dymId,
                 'sort_order' => 10,
                 'updated_at' => now(),
             ]);
@@ -53,7 +58,7 @@ return new class extends Migration
         DB::table('categories')
             ->where('id', 57)
             ->update([
-                'parent_id'  => $dymId,
+                'parent_id' => $dymId,
                 'sort_order' => 20,
                 'updated_at' => now(),
             ]);
@@ -62,9 +67,9 @@ return new class extends Migration
         DB::table('categories')
             ->where('id', 230)
             ->update([
-                'parent_id'  => $dymId,
+                'parent_id' => $dymId,
                 'sort_order' => 30,
-                'is_active'  => 1,
+                'is_active' => 1,
                 'updated_at' => now(),
             ]);
 
@@ -72,7 +77,7 @@ return new class extends Migration
         DB::table('categories')
             ->where('id', 232)
             ->update([
-                'parent_id'  => $dymId,
+                'parent_id' => $dymId,
                 'sort_order' => 40,
                 'updated_at' => now(),
             ]);
@@ -81,8 +86,8 @@ return new class extends Migration
         DB::table('categories')
             ->where('id', 237)
             ->update([
-                'parent_id'  => $dymId,
-                'is_active'  => 0,
+                'parent_id' => $dymId,
+                'is_active' => 0,
                 'updated_at' => now(),
             ]);
 
@@ -90,21 +95,21 @@ return new class extends Migration
         $redirects = [
             // id=78 slug изменился
             [
-                'from_url'    => '/dymoxody_dlia_bani',
-                'to_url'      => '/dymohody-nerzhaveyushchie',
+                'from_url' => '/dymoxody_dlia_bani',
+                'to_url' => '/dymohody-nerzhaveyushchie',
                 'status_code' => 301,
-                'is_active'   => 1,
-                'created_at'  => now(),
-                'updated_at'  => now(),
+                'is_active' => 1,
+                'created_at' => now(),
+                'updated_at' => now(),
             ],
             // id=57 URL изменился (был в /otoplenie/..., теперь /dymohody/...)
             [
-                'from_url'    => '/koaxial-dymoxod',
-                'to_url'      => '/dymohody-nerzhaveyushchie',
+                'from_url' => '/koaxial-dymoxod',
+                'to_url' => '/dymohody-nerzhaveyushchie',
                 'status_code' => 301,
-                'is_active'   => 1,
-                'created_at'  => now(),
-                'updated_at'  => now(),
+                'is_active' => 1,
+                'created_at' => now(),
+                'updated_at' => now(),
             ],
         ];
 

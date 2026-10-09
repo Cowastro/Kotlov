@@ -7,27 +7,31 @@ return new class extends Migration
 {
     public function up(): void
     {
+        if (! DB::table('attributes')->where('id', 441)->exists()) {
+            return;
+        }
+
         // ── 1. Переименовать "Низколегированная сталь" → "Черная сталь"
         DB::table('attribute_options')->where('id', 818)->update([
-            'name'       => 'Черная сталь',
+            'name' => 'Черная сталь',
             'updated_at' => now(),
         ]);
 
         // ── 2. Добавить опции: Нержавеющая сталь 430 и Нержавеющая сталь 304
         $opt430 = DB::table('attribute_options')->insertGetId([
             'attribute_id' => 441,
-            'name'         => 'Нержавеющая сталь 430',
-            'sort_order'   => 2,
-            'created_at'   => now(),
-            'updated_at'   => now(),
+            'name' => 'Нержавеющая сталь 430',
+            'sort_order' => 2,
+            'created_at' => now(),
+            'updated_at' => now(),
         ]);
 
         $opt304 = DB::table('attribute_options')->insertGetId([
             'attribute_id' => 441,
-            'name'         => 'Нержавеющая сталь 304',
-            'sort_order'   => 3,
-            'created_at'   => now(),
-            'updated_at'   => now(),
+            'name' => 'Нержавеющая сталь 304',
+            'sort_order' => 3,
+            'created_at' => now(),
+            'updated_at' => now(),
         ]);
 
         // Сдвинуть Черная сталь на sort_order=4 (была 2)
@@ -52,7 +56,7 @@ return new class extends Migration
         $products304 = DB::table('products')
             ->where(function ($q) {
                 $q->where('name', 'LIKE', '%304%')
-                  ->orWhere('name', 'LIKE', '%AISI 304%');
+                    ->orWhere('name', 'LIKE', '%AISI 304%');
             })
             ->pluck('id');
 
@@ -67,7 +71,7 @@ return new class extends Migration
         // Оставшиеся с option 817 — "Нержавеющая сталь" без маркировки (Ferrum, Darco и пр.)
         // Переименовать 817 для ясности → "Нержавеющая сталь (другие марки)"
         DB::table('attribute_options')->where('id', 817)->update([
-            'name'       => 'Нержавеющая сталь',
+            'name' => 'Нержавеющая сталь',
             'sort_order' => 1,
             'updated_at' => now(),
         ]);
