@@ -63,6 +63,41 @@ class SupplierPanelIsolationTest extends TestCase
         $this->get('/supplier/login')->assertOk();
     }
 
+    public function test_supplier_product_page_shows_actionable_tabs_and_only_own_products(): void
+    {
+        $supplier = Supplier::query()->create(['code' => 'supplier-a', 'name' => 'Поставщик А']);
+        $otherSupplier = Supplier::query()->create(['code' => 'supplier-b', 'name' => 'Поставщик Б']);
+        $user = User::factory()->create(['role' => 'supplier', 'is_active' => true]);
+        $user->suppliers()->attach($supplier);
+
+        SupplierProduct::query()->create([
+            'supplier_id' => $supplier->id,
+            'supplier_article' => 'A-ACTION',
+            'supplier_name' => 'Моя позиция без цены',
+            'price_byn' => 0,
+            'stock_quantity' => 2,
+            'last_synced_at' => now(),
+        ]);
+        SupplierProduct::query()->create([
+            'supplier_id' => $otherSupplier->id,
+            'supplier_article' => 'B-HIDDEN',
+            'supplier_name' => 'Чужая позиция без цены',
+            'price_byn' => 0,
+            'stock_quantity' => 2,
+            'last_synced_at' => now(),
+        ]);
+
+        $this->actingAs($user)
+            ->get(SupplierProductResource::getUrl('index', panel: 'supplier'))
+            ->assertOk()
+            ->assertSee('Требуют внимания')
+            ->assertSee('Не привязаны')
+            ->assertSee('Устарели')
+            ->assertSee('Моя позиция без цены')
+            ->assertSee('Без цены')
+            ->assertDontSee('Чужая позиция без цены');
+    }
+
     public function test_supplier_change_history_is_strictly_scoped_to_assigned_suppliers(): void
     {
         $supplierA = Supplier::query()->create(['code' => 'supplier-a', 'name' => 'Поставщик А']);

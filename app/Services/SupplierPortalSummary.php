@@ -8,8 +8,6 @@ use Carbon\CarbonInterface;
 
 class SupplierPortalSummary
 {
-    public const STALE_AFTER_HOURS = 24;
-
     /**
      * @param  iterable<int, int|string>  $supplierIds
      * @return array{
@@ -30,8 +28,7 @@ class SupplierPortalSummary
             ->unique()
             ->values();
         $now = CarbonImmutable::instance($now ?? now());
-        $staleBefore = $now->subHours(self::STALE_AFTER_HOURS);
-        $products = SupplierProduct::query()->whereIn('supplier_id', $ids);
+        $products = SupplierProduct::query()->forSupplierIds($ids);
         $total = (clone $products)->count();
         $lastSyncedValue = (clone $products)->max('last_synced_at');
         $lastSyncedAt = filled($lastSyncedValue)
@@ -39,15 +36,11 @@ class SupplierPortalSummary
             : null;
         $stale = $total === 0
             ? 0
-            : (clone $products)
-                ->where(fn ($query) => $query
-                    ->whereNull('last_synced_at')
-                    ->orWhere('last_synced_at', '<', $staleBefore))
-                ->count();
+            : (clone $products)->stale($now)->count();
 
         return [
             'total' => $total,
-            'in_stock' => (clone $products)->where('stock_quantity', '>', 0)->count(),
+            'in_stock' => (clone $products)->available()->count(),
             'unlinked' => (clone $products)->whereNull('product_id')->count(),
             'missing_price' => (clone $products)
                 ->where(fn ($query) => $query
