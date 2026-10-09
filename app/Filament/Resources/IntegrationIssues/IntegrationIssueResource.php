@@ -119,6 +119,7 @@ class IntegrationIssueResource extends Resource
                     'order_not_exported' => 'Заказ не передан',
                     'order_no_1c_response' => 'Нет ответа 1С',
                     'order_status_conflict' => 'Конфликт статусов заказа',
+                    'order_status_unknown' => 'Неизвестный статус 1С',
                 ]),
                 SelectFilter::make('integration_source_id')->label('Источник')
                     ->relationship('source', 'name')->searchable()->preload(),

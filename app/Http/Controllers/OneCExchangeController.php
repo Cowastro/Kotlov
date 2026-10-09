@@ -224,7 +224,7 @@ class OneCExchangeController extends Controller
                 'orders_count' => (int) $stats['matched'],
                 'items_received' => (int) $stats['documents'],
                 'items_updated' => (int) $stats['updated'],
-                'items_skipped' => (int) $stats['unchanged'] + (int) $stats['unmatched'] + (int) ($stats['conflicts'] ?? 0),
+                'items_skipped' => (int) $stats['unchanged'] + (int) $stats['unmatched'] + (int) ($stats['attention'] ?? 0),
                 'summary' => $stats,
             ]
             : [

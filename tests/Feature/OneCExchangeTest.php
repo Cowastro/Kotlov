@@ -1732,6 +1732,103 @@ XML;
         ]);
     }
 
+    public function test_unknown_onec_status_is_queued_without_changing_the_order_and_resolves_after_mapping(): void
+    {
+        $source = IntegrationSource::query()->create([
+            'code' => 'onec',
+            'name' => '1С',
+        ]);
+        $order = Order::query()->create([
+            'number' => 'ORD-2026-UNKNOWN-STATUS',
+            'status' => 'processing',
+            'customer_name' => 'Тестовый покупатель',
+            'customer_phone' => '+375291112233',
+            'delivery_type' => 'courier',
+            'payment_type' => 'cash',
+            'payment_status' => 'pending',
+            'subtotal' => 120,
+            'total' => 120,
+            'onec_exported_at' => now(),
+        ]);
+
+        $unknownXml = <<<XML
+<?xml version="1.0" encoding="UTF-8"?>
+<КоммерческаяИнформация>
+  <Документ>
+    <Ид>kotlov-order-{$order->id}</Ид>
+    <Номер>ORD-2026-UNKNOWN-STATUS</Номер>
+    <ЗначенияРеквизитов>
+      <ЗначениеРеквизита><Наименование>Статус заказа</Наименование><Значение>Передан логисту</Значение></ЗначениеРеквизита>
+    </ЗначенияРеквизитов>
+  </Документ>
+</КоммерческаяИнформация>
+XML;
+
+        $this->call(
+            'POST',
+            '/1c/exchange?type=sale&mode=file&filename=unknown-status.xml',
+            [],
+            [],
+            [],
+            ['PHP_AUTH_USER' => 'onec-test', 'PHP_AUTH_PW' => 'secret-test'],
+            $unknownXml
+        )->assertOk();
+        $this->withBasicAuth('onec-test', 'secret-test')
+            ->get('/1c/exchange?type=sale&mode=import&filename=unknown-status.xml')
+            ->assertOk();
+
+        $order->refresh();
+        $this->assertSame('processing', $order->status);
+        $this->assertSame('Передан логисту', $order->onec_status);
+        $this->assertDatabaseHas('integration_issues', [
+            'integration_source_id' => $source->id,
+            'order_id' => $order->id,
+            'type' => 'order_status_unknown',
+            'status' => 'open',
+            'severity' => 'warning',
+        ]);
+
+        $run = IntegrationExchangeRun::query()->latest('id')->firstOrFail();
+        $this->assertSame(1, (int) data_get($run->summary, 'unknown_statuses'));
+        $this->assertSame(1, (int) data_get($run->summary, 'attention'));
+        $this->assertSame(1, $run->items_skipped);
+        $this->assertSame(0, $run->items_updated);
+
+        app(IntegrationIssueDetector::class)->scan();
+        $this->assertDatabaseHas('integration_issues', [
+            'order_id' => $order->id,
+            'type' => 'order_status_unknown',
+            'status' => 'open',
+        ]);
+
+        $knownXml = str_replace('Передан логисту', 'Отправлен', $unknownXml);
+        $this->call(
+            'POST',
+            '/1c/exchange?type=sale&mode=file&filename=known-status.xml',
+            [],
+            [],
+            [],
+            ['PHP_AUTH_USER' => 'onec-test', 'PHP_AUTH_PW' => 'secret-test'],
+            $knownXml
+        )->assertOk();
+        $this->withBasicAuth('onec-test', 'secret-test')
+            ->get('/1c/exchange?type=sale&mode=import&filename=known-status.xml')
+            ->assertOk();
+
+        $this->assertSame('shipped', $order->fresh()->status);
+        $this->assertDatabaseHas('integration_issues', [
+            'order_id' => $order->id,
+            'type' => 'order_status_unknown',
+            'status' => 'resolved',
+        ]);
+        $this->assertDatabaseHas('order_status_history', [
+            'order_id' => $order->id,
+            'status_from' => 'processing',
+            'status_to' => 'shipped',
+            'comment' => 'Статус получен из 1С',
+        ]);
+    }
+
     public function test_operations_summary_reports_healthy_exchange_and_actionable_counts(): void
     {
         $source = IntegrationSource::query()->create([

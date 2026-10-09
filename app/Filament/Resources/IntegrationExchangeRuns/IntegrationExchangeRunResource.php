@@ -77,6 +77,10 @@ class IntegrationExchangeRunResource extends Resource
                     ->state(fn (IntegrationExchangeRun $record): int => (int) data_get($record->summary, 'conflicts', 0))
                     ->numeric()->alignRight()
                     ->color(fn (int $state): string => $state > 0 ? 'danger' : 'gray'),
+                TextColumn::make('unknown_statuses_count')->label('Не распознано')
+                    ->state(fn (IntegrationExchangeRun $record): int => (int) data_get($record->summary, 'unknown_statuses', 0))
+                    ->numeric()->alignRight()
+                    ->color(fn (int $state): string => $state > 0 ? 'warning' : 'gray'),
                 TextColumn::make('files_count')->label('Частей файла')->numeric()->alignRight()->toggleable(),
                 TextColumn::make('bytes_received')->label('Объём')
                     ->formatStateUsing(fn (int $state): string => self::formatBytes($state))

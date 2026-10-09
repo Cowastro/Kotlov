@@ -20,6 +20,7 @@ class IntegrationIssue extends Model
         'order_not_exported',
         'order_no_1c_response',
         'order_status_conflict',
+        'order_status_unknown',
     ];
 
     public const PERIODIC_TYPES = [

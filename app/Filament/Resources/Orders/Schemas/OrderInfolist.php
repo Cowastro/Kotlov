@@ -146,6 +146,23 @@ class OrderInfolist
                                 ->where('type', 'order_status_conflict')
                                 ->where('status', 'open')
                                 ->exists()),
+
+                        TextEntry::make('onec_unknown_status')
+                            ->label('Неизвестный статус 1С')
+                            ->state(fn (Order $record): ?string => IntegrationIssue::query()
+                                ->where('order_id', $record->id)
+                                ->where('type', 'order_status_unknown')
+                                ->where('status', 'open')
+                                ->latest('last_detected_at')
+                                ->value('message'))
+                            ->badge()
+                            ->color('warning')
+                            ->columnSpanFull()
+                            ->visible(fn (Order $record): bool => IntegrationIssue::query()
+                                ->where('order_id', $record->id)
+                                ->where('type', 'order_status_unknown')
+                                ->where('status', 'open')
+                                ->exists()),
                     ]),
 
                 // ── Клиент (1 из 3) ──────────────────────────────────────────

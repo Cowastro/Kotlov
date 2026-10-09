@@ -11,7 +11,7 @@ use SimpleXMLElement;
 
 class CommerceMlOrderImporter
 {
-    /** @return array{documents:int,matched:int,updated:int,unchanged:int,unmatched:int,conflicts:int} */
+    /** @return array{documents:int,matched:int,updated:int,unchanged:int,unmatched:int,conflicts:int,unknown_statuses:int,attention:int} */
     public function import(string $xml, ?IntegrationSource $source = null): array
     {
         $document = $this->parse($xml);
@@ -22,6 +22,8 @@ class CommerceMlOrderImporter
             'unchanged' => 0,
             'unmatched' => 0,
             'conflicts' => 0,
+            'unknown_statuses' => 0,
+            'attention' => 0,
         ];
 
         DB::transaction(function () use ($document, $source, &$stats): void {
@@ -45,6 +47,8 @@ class CommerceMlOrderImporter
                 $paymentStatus = $this->mapPaymentStatus($rawPaymentStatus);
                 $oldStatus = $order->status;
                 $oldPaymentStatus = $order->payment_status;
+                $unknownStatus = $rawStatus !== '' && $status === null;
+                $unknownPaymentStatus = $rawPaymentStatus !== '' && $paymentStatus === null;
                 $statusConflict = $status !== null
                     && $status !== $oldStatus
                     && ! $this->canApplyStatus($oldStatus, $status);
@@ -94,6 +98,27 @@ class CommerceMlOrderImporter
                         statusObserved: $status !== null,
                         paymentStatusObserved: $paymentStatus !== null,
                     );
+                }
+
+                if ($unknownStatus || $unknownPaymentStatus) {
+                    $this->recordUnknownStatus(
+                        $order,
+                        $source,
+                        $unknownStatus ? $rawStatus : null,
+                        $unknownPaymentStatus ? $rawPaymentStatus : null,
+                    );
+                    $stats['unknown_statuses']++;
+                } else {
+                    $this->resolveUnknownStatus(
+                        $order,
+                        statusObserved: $status !== null,
+                        paymentStatusObserved: $paymentStatus !== null,
+                    );
+                }
+
+                if ($statusConflict || $paymentConflict || $unknownStatus || $unknownPaymentStatus) {
+                    $stats['attention']++;
+                } else {
                     $stats[$meaningfulChange ? 'updated' : 'unchanged']++;
                 }
             }
@@ -202,6 +227,70 @@ class CommerceMlOrderImporter
             ->each(function (IntegrationIssue $issue) use ($statusObserved, $paymentStatusObserved): void {
                 $needsStatus = data_get($issue->context, 'incoming_status') !== null;
                 $needsPaymentStatus = data_get($issue->context, 'incoming_payment_status') !== null;
+
+                if (($needsStatus && ! $statusObserved) || ($needsPaymentStatus && ! $paymentStatusObserved)) {
+                    return;
+                }
+
+                $issue->update([
+                    'status' => 'resolved',
+                    'resolved_at' => now(),
+                ]);
+            });
+    }
+
+    private function recordUnknownStatus(
+        Order $order,
+        ?IntegrationSource $source,
+        ?string $unknownStatus,
+        ?string $unknownPaymentStatus,
+    ): void {
+        $parts = [];
+        if ($unknownStatus !== null) {
+            $parts[] = 'статус заказа «'.$unknownStatus.'»';
+        }
+        if ($unknownPaymentStatus !== null) {
+            $parts[] = 'статус оплаты «'.$unknownPaymentStatus.'»';
+        }
+
+        $issue = IntegrationIssue::query()->firstOrNew([
+            'fingerprint' => "order:{$order->id}:unknown-onec-status",
+        ]);
+        $wasIgnored = $issue->exists && $issue->status === 'ignored';
+        $issue->fill([
+            'integration_source_id' => $source?->id,
+            'order_id' => $order->id,
+            'type' => 'order_status_unknown',
+            'severity' => 'warning',
+            'title' => 'Не распознан статус из 1С',
+            'message' => 'Состояние заказа не изменено: '.implode('; ', $parts).'.',
+            'context' => [
+                'unknown_status' => $unknownStatus,
+                'unknown_payment_status' => $unknownPaymentStatus,
+            ],
+            'first_detected_at' => $issue->first_detected_at ?? now(),
+            'last_detected_at' => now(),
+        ]);
+        if (! $wasIgnored) {
+            $issue->status = 'open';
+            $issue->resolved_at = null;
+        }
+        $issue->save();
+    }
+
+    private function resolveUnknownStatus(
+        Order $order,
+        bool $statusObserved,
+        bool $paymentStatusObserved,
+    ): void {
+        IntegrationIssue::query()
+            ->where('order_id', $order->id)
+            ->where('type', 'order_status_unknown')
+            ->where('status', 'open')
+            ->get()
+            ->each(function (IntegrationIssue $issue) use ($statusObserved, $paymentStatusObserved): void {
+                $needsStatus = data_get($issue->context, 'unknown_status') !== null;
+                $needsPaymentStatus = data_get($issue->context, 'unknown_payment_status') !== null;
 
                 if (($needsStatus && ! $statusObserved) || ($needsPaymentStatus && ! $paymentStatusObserved)) {
                     return;
