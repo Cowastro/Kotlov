@@ -23,6 +23,8 @@ return Application::configure(basePath: dirname(__DIR__))
         // Исключаем Telegram webhook из CSRF-проверки
         $middleware->validateCsrfTokens(except: [
             'telegram/webhook',
+            '1c/exchange',
+            '1c/exchange/*',
         ]);
 
         // SSL на балансировщике — доверяем X-Forwarded-For для получения реального IP
