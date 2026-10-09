@@ -13,6 +13,7 @@ use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Product;
 use App\Services\Integrations\CommerceMlCatalogImporter;
+use App\Services\Integrations\IntegrationCatalogAudit;
 use App\Services\Integrations\IntegrationIssueDetector;
 use App\Services\Integrations\IntegrationOperationsSummary;
 use Illuminate\Database\Schema\Blueprint;
@@ -521,6 +522,27 @@ XML;
         ]);
     }
 
+    public function test_catalog_audit_exposes_group_references_for_ungrouped_products(): void
+    {
+        $source = IntegrationSource::query()->create([
+            'code' => 'audit-source',
+            'name' => 'Аудит каталога',
+        ]);
+        IntegrationProduct::query()->create([
+            'integration_source_id' => $source->id,
+            'external_id' => 'ungrouped-product',
+            'name' => 'Товар без найденной группы',
+            'stock_quantity' => 1,
+            'payload' => ['Группы' => ['Ид' => 'missing-group-id']],
+        ]);
+
+        $snapshot = app(IntegrationCatalogAudit::class)->snapshot($source);
+
+        $this->assertSame(0, $snapshot['groups']);
+        $this->assertSame(1, $snapshot['products_ungrouped']);
+        $this->assertSame(['missing-group-id'], $snapshot['ungrouped_sample'][0]['group_references']);
+    }
+
     public function test_product_category_override_has_priority_over_supplier_group_rule(): void
     {
         $source = IntegrationSource::query()->create([
@@ -887,6 +909,43 @@ XML;
         $summary = $service->snapshot();
         $this->assertSame('failed', $summary['health']);
         $this->assertSame(1, $summary['failed_runs_24h']);
+    }
+
+    public function test_operations_summary_excludes_orders_before_integration_monitoring_started(): void
+    {
+        IntegrationSource::query()->create([
+            'code' => 'summary-new-integration',
+            'name' => 'Новая 1С',
+            'is_active' => true,
+            'settings' => ['monitor_orders_from' => now()->subHour()->toIso8601String()],
+        ]);
+
+        $oldOrder = Order::query()->create([
+            'number' => 'SUMMARY-LEGACY-ORDER',
+            'status' => 'new',
+            'customer_name' => 'Старый заказ',
+            'customer_phone' => '+375290000010',
+            'delivery_type' => 'pickup',
+            'payment_type' => 'cash',
+            'payment_status' => 'pending',
+            'subtotal' => 10,
+            'total' => 10,
+        ]);
+        DB::table('orders')->where('id', $oldOrder->id)->update(['created_at' => now()->subHours(2)]);
+
+        Order::query()->create([
+            'number' => 'SUMMARY-CURRENT-ORDER',
+            'status' => 'new',
+            'customer_name' => 'Новый заказ',
+            'customer_phone' => '+375290000011',
+            'delivery_type' => 'pickup',
+            'payment_type' => 'cash',
+            'payment_status' => 'pending',
+            'subtotal' => 10,
+            'total' => 10,
+        ]);
+
+        $this->assertSame(1, app(IntegrationOperationsSummary::class)->snapshot()['awaiting_orders']);
     }
 
     public function test_issue_detector_deduplicates_and_auto_resolves_current_problems(): void

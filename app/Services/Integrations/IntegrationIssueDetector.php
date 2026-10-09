@@ -7,12 +7,12 @@ use App\Models\IntegrationIssue;
 use App\Models\IntegrationProduct;
 use App\Models\IntegrationSource;
 use App\Models\Order;
-use Carbon\CarbonInterface;
-use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 
 class IntegrationIssueDetector
 {
+    public function __construct(private readonly IntegrationMonitoringWindow $monitoringWindow) {}
+
     /** @return array{detected:int,opened:int,resolved:int} */
     public function scan(): array
     {
@@ -81,7 +81,7 @@ class IntegrationIssueDetector
                     }
                 });
 
-            $monitorOrdersFrom = $this->orderMonitoringStartsAt();
+            $monitorOrdersFrom = $this->monitoringWindow->ordersStartAt();
 
             Order::query()
                 ->whereNull('onec_exported_at')
@@ -129,29 +129,6 @@ class IntegrationIssueDetector
             ]);
 
         return ['detected' => count($seen), 'opened' => $opened, 'resolved' => $resolved];
-    }
-
-    private function orderMonitoringStartsAt(): ?CarbonInterface
-    {
-        return IntegrationSource::query()
-            ->where('is_active', true)
-            ->get()
-            ->map(function (IntegrationSource $source): ?CarbonInterface {
-                $configured = data_get($source->settings, 'monitor_orders_from');
-
-                if (filled($configured)) {
-                    try {
-                        return Carbon::parse((string) $configured);
-                    } catch (\Throwable) {
-                        // Fall back to the moment this integration source was created.
-                    }
-                }
-
-                return $source->created_at;
-            })
-            ->filter()
-            ->sortBy(fn (CarbonInterface $date): int => $date->getTimestamp())
-            ->first();
     }
 
     /** @param array<int, string> $seen */

@@ -10,6 +10,8 @@ use Carbon\CarbonInterface;
 
 class IntegrationOperationsSummary
 {
+    public function __construct(private readonly IntegrationMonitoringWindow $monitoringWindow) {}
+
     /** @return array<string, mixed> */
     public function snapshot(?CarbonInterface $now = null): array
     {
@@ -40,7 +42,13 @@ class IntegrationOperationsSummary
                 ->where('status', 'failed')
                 ->where('started_at', '>=', $now->copy()->subDay())
                 ->count(),
-            'awaiting_orders' => Order::query()->whereNull('onec_exported_at')->count(),
+            'awaiting_orders' => Order::query()
+                ->whereNull('onec_exported_at')
+                ->when(
+                    $this->monitoringWindow->ordersStartAt(),
+                    fn ($query, CarbonInterface $startAt) => $query->where('created_at', '>=', $startAt),
+                )
+                ->count(),
             'attention_products' => IntegrationProduct::query()
                 ->inStock()
                 ->whereIn('match_status', ['suggested', 'ambiguous', 'unmatched'])
