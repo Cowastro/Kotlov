@@ -815,6 +815,53 @@ XML;
         ]);
     }
 
+    public function test_order_export_excludes_orders_created_before_source_monitoring_started(): void
+    {
+        $source = IntegrationSource::query()->create([
+            'code' => 'onec',
+            'name' => '1С',
+            'settings' => ['monitor_orders_from' => now()->subHour()->toIso8601String()],
+        ]);
+        $oldOrder = Order::query()->create([
+            'number' => 'ORD-LEGACY-NOT-FOR-1C',
+            'status' => 'new',
+            'customer_name' => 'Старый покупатель',
+            'customer_phone' => '+375291110000',
+            'delivery_type' => 'pickup',
+            'payment_type' => 'cash',
+            'payment_status' => 'pending',
+            'subtotal' => 10,
+            'total' => 10,
+        ]);
+        DB::table('orders')->where('id', $oldOrder->id)->update(['created_at' => now()->subHours(2)]);
+        $currentOrder = Order::query()->create([
+            'number' => 'ORD-CURRENT-FOR-1C',
+            'status' => 'new',
+            'customer_name' => 'Новый покупатель',
+            'customer_phone' => '+375291110001',
+            'delivery_type' => 'pickup',
+            'payment_type' => 'cash',
+            'payment_status' => 'pending',
+            'subtotal' => 20,
+            'total' => 20,
+        ]);
+
+        $response = $this->withBasicAuth('onec-test', 'secret-test')
+            ->get('/1c/exchange?type=sale&mode=query');
+
+        $response->assertOk()
+            ->assertDontSee('ORD-LEGACY-NOT-FOR-1C', false)
+            ->assertSee('ORD-CURRENT-FOR-1C', false);
+
+        $this->withBasicAuth('onec-test', 'secret-test')
+            ->get('/1c/exchange?type=sale&mode=success')
+            ->assertOk();
+
+        $this->assertNull($oldOrder->fresh()->onec_exported_at);
+        $this->assertNotNull($currentOrder->fresh()->onec_exported_at);
+        $this->assertSame(1, $source->exchangeRuns()->where('operation', 'orders')->latest()->first()->orders_count);
+    }
+
     public function test_order_statuses_are_received_from_onec_and_added_to_timeline(): void
     {
         $order = Order::query()->create([

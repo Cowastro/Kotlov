@@ -9,6 +9,7 @@ use App\Models\Order;
 use App\Services\Integrations\CommerceMlCatalogImporter;
 use App\Services\Integrations\CommerceMlOrderImporter;
 use App\Services\Integrations\IntegrationExchangeJournal;
+use App\Services\Integrations\IntegrationMonitoringWindow;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
@@ -26,6 +27,7 @@ class OneCExchangeController extends Controller
         private readonly CommerceMlCatalogImporter $catalogImporter,
         private readonly CommerceMlOrderImporter $orderImporter,
         private readonly IntegrationExchangeJournal $exchangeJournal,
+        private readonly IntegrationMonitoringWindow $monitoringWindow,
     ) {}
 
     public function __invoke(Request $request, string $source = 'onec'): Response
@@ -224,6 +226,10 @@ class OneCExchangeController extends Controller
         $run = $this->startRun($request, $source, 'outbound', 'orders');
         $orders = Order::query()
             ->whereNull('onec_exported_at')
+            ->when(
+                $this->monitoringWindow->ordersStartAtFor($source),
+                fn ($query, $startAt) => $query->where('created_at', '>=', $startAt),
+            )
             ->with('items.product')
             ->orderBy('id')
             ->limit(100)

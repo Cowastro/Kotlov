@@ -13,21 +13,24 @@ class IntegrationMonitoringWindow
         return IntegrationSource::query()
             ->where('is_active', true)
             ->get()
-            ->map(function (IntegrationSource $source): ?CarbonInterface {
-                $configured = data_get($source->settings, 'monitor_orders_from');
-
-                if (filled($configured)) {
-                    try {
-                        return Carbon::parse((string) $configured);
-                    } catch (\Throwable) {
-                        // Fall back to the moment this integration source was created.
-                    }
-                }
-
-                return $source->created_at;
-            })
+            ->map(fn (IntegrationSource $source): ?CarbonInterface => $this->ordersStartAtFor($source))
             ->filter()
             ->sortBy(fn (CarbonInterface $date): int => $date->getTimestamp())
             ->first();
+    }
+
+    public function ordersStartAtFor(IntegrationSource $source): ?CarbonInterface
+    {
+        $configured = data_get($source->settings, 'monitor_orders_from');
+
+        if (filled($configured)) {
+            try {
+                return Carbon::parse((string) $configured);
+            } catch (\Throwable) {
+                // Fall back to the moment this integration source was created.
+            }
+        }
+
+        return $source->created_at;
     }
 }
