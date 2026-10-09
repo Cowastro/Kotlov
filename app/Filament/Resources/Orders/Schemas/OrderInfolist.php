@@ -12,36 +12,36 @@ class OrderInfolist
 {
     public static function configure(Schema $schema): Schema
     {
-        $paymentNames  = collect(config('shop.payment_methods',  []))->mapWithKeys(fn($m, $k) => [$k => $m['name']])->toArray();
-        $deliveryNames = collect(config('shop.delivery_methods', []))->mapWithKeys(fn($m, $k) => [$k => $m['name']])->toArray();
+        $paymentNames = collect(config('shop.payment_methods', []))->mapWithKeys(fn ($m, $k) => [$k => $m['name']])->toArray();
+        $deliveryNames = collect(config('shop.delivery_methods', []))->mapWithKeys(fn ($m, $k) => [$k => $m['name']])->toArray();
 
-        $byn = fn($state) => number_format((float) $state, 2, '.', ' ') . ' BYN';
+        $byn = fn ($state) => number_format((float) $state, 2, '.', ' ').' BYN';
 
-        $statusColor = fn(?string $state) => match($state) {
-            'new'        => 'info',
-            'confirmed'  => 'warning',
+        $statusColor = fn (?string $state) => match ($state) {
+            'new' => 'info',
+            'confirmed' => 'warning',
             'processing' => 'warning',
-            'shipped'    => 'primary',
-            'delivered'  => 'success',
-            'completed'  => 'success',
-            'cancelled'  => 'danger',
-            default      => 'gray',
+            'shipped' => 'primary',
+            'delivered' => 'success',
+            'completed' => 'success',
+            'cancelled' => 'danger',
+            default => 'gray',
         };
 
-        $paymentStatusColor = fn(?string $state) => match($state) {
-            'paid'     => 'success',
-            'pending'  => 'warning',
-            'failed'   => 'danger',
+        $paymentStatusColor = fn (?string $state) => match ($state) {
+            'paid' => 'success',
+            'pending' => 'warning',
+            'failed' => 'danger',
             'refunded' => 'info',
-            default    => 'gray',
+            default => 'gray',
         };
 
-        $paymentStatusLabel = fn(?string $state) => match($state) {
-            'paid'     => 'Оплачен',
-            'pending'  => 'Ожидает оплаты',
-            'failed'   => 'Ошибка оплаты',
+        $paymentStatusLabel = fn (?string $state) => match ($state) {
+            'paid' => 'Оплачен',
+            'pending' => 'Ожидает оплаты',
+            'failed' => 'Ошибка оплаты',
             'refunded' => 'Возврат',
-            default    => $state,
+            default => $state,
         };
 
         return $schema
@@ -63,7 +63,7 @@ class OrderInfolist
                             ->label('Статус')
                             ->badge()
                             ->color($statusColor)
-                            ->formatStateUsing(fn(string $state) => Order::STATUSES[$state] ?? $state),
+                            ->formatStateUsing(fn (string $state) => Order::STATUSES[$state] ?? $state),
 
                         TextEntry::make('created_at')
                             ->label('Создан')
@@ -75,7 +75,7 @@ class OrderInfolist
 
                         TextEntry::make('items_count')
                             ->label('Позиций')
-                            ->getStateUsing(fn($record) => $record->items->count() . ' шт.'),
+                            ->getStateUsing(fn ($record) => $record->items->count().' шт.'),
 
                         TextEntry::make('total')
                             ->label('Итого')
@@ -93,11 +93,41 @@ class OrderInfolist
                             ->label('Ответственный')
                             ->placeholder('Не назначен')
                             ->icon('heroicon-o-user-circle')
-                            ->iconColor(fn($state) => $state ? 'success' : 'gray')
-                            ->color(fn($state) => $state ? 'success' : 'gray')
-                            ->getStateUsing(fn($record) => $record->manager
-                                ? $record->manager->name . ($record->assigned_to ? ' (' . $record->assigned_to . ')' : '')
+                            ->iconColor(fn ($state) => $state ? 'success' : 'gray')
+                            ->color(fn ($state) => $state ? 'success' : 'gray')
+                            ->getStateUsing(fn ($record) => $record->manager
+                                ? $record->manager->name.($record->assigned_to ? ' ('.$record->assigned_to.')' : '')
                                 : ($record->assigned_to ?? null)),
+                    ]),
+
+                Section::make('Обмен с 1С')
+                    ->icon('heroicon-o-arrow-path-rounded-square')
+                    ->columnSpanFull()
+                    ->compact()
+                    ->columns(4)
+                    ->schema([
+                        TextEntry::make('onec_exported_at')
+                            ->label('Передан в 1С')
+                            ->dateTime('d.m.Y H:i:s', 'Europe/Minsk')
+                            ->placeholder('Ожидает передачи')
+                            ->badge()
+                            ->color(fn ($state): string => $state ? 'info' : 'warning'),
+
+                        TextEntry::make('onec_external_id')
+                            ->label('Идентификатор 1С')
+                            ->copyable()
+                            ->placeholder('Ещё не получен'),
+
+                        TextEntry::make('onec_status')
+                            ->label('Последний статус 1С')
+                            ->badge()
+                            ->color(fn ($state): string => $state ? 'success' : 'gray')
+                            ->placeholder('Нет ответа'),
+
+                        TextEntry::make('onec_status_received_at')
+                            ->label('Ответ получен')
+                            ->dateTime('d.m.Y H:i:s', 'Europe/Minsk')
+                            ->placeholder('—'),
                     ]),
 
                 // ── Клиент (1 из 3) ──────────────────────────────────────────
@@ -112,13 +142,13 @@ class OrderInfolist
                         TextEntry::make('customer_phone')
                             ->label('Телефон')
                             ->copyable()
-                            ->url(fn($state) => $state ? 'tel:' . preg_replace('/\s+/', '', $state) : null),
+                            ->url(fn ($state) => $state ? 'tel:'.preg_replace('/\s+/', '', $state) : null),
 
                         TextEntry::make('customer_email')
                             ->label('Email')
                             ->copyable()
                             ->placeholder('—')
-                            ->url(fn($state) => $state ? 'mailto:' . $state : null),
+                            ->url(fn ($state) => $state ? 'mailto:'.$state : null),
 
                         TextEntry::make('user.name')
                             ->label('Аккаунт')
@@ -127,12 +157,12 @@ class OrderInfolist
                         TextEntry::make('company_name')
                             ->label('Организация')
                             ->placeholder('—')
-                            ->visible(fn($record) => (bool) $record->company_name),
+                            ->visible(fn ($record) => (bool) $record->company_name),
 
                         TextEntry::make('company_unp')
                             ->label('УНП')
                             ->placeholder('—')
-                            ->visible(fn($record) => (bool) $record->company_unp),
+                            ->visible(fn ($record) => (bool) $record->company_unp),
                     ]),
 
                 // ── Доставка (2 из 3) ─────────────────────────────────────────
@@ -143,15 +173,16 @@ class OrderInfolist
                     ->schema([
                         TextEntry::make('delivery_type')
                             ->label('Способ')
-                            ->formatStateUsing(fn(string $state) => Order::DELIVERY_TYPES[$state] ?? $deliveryNames[$state] ?? $state),
+                            ->formatStateUsing(fn (string $state) => Order::DELIVERY_TYPES[$state] ?? $deliveryNames[$state] ?? $state),
 
                         TextEntry::make('delivery_price')
                             ->label('Стоимость')
-                            ->formatStateUsing(function($state, $record) use ($byn) {
-                                if ($record->delivery_type === 'kit' && (float)$state === 0.0) {
+                            ->formatStateUsing(function ($state, $record) use ($byn) {
+                                if ($record->delivery_type === 'kit' && (float) $state === 0.0) {
                                     return 'Уточняется';
                                 }
-                                return (float)$state === 0.0 ? 'Бесплатно' : $byn($state);
+
+                                return (float) $state === 0.0 ? 'Бесплатно' : $byn($state);
                             }),
 
                         TextEntry::make('delivery_region')
@@ -165,8 +196,8 @@ class OrderInfolist
                         TextEntry::make('delivery_address')
                             ->label('Адрес')
                             ->placeholder('—')
-                            ->url(fn($state, $record) => $state
-                                ? 'https://maps.google.com/?q=' . urlencode(implode(', ', array_filter([
+                            ->url(fn ($state, $record) => $state
+                                ? 'https://maps.google.com/?q='.urlencode(implode(', ', array_filter([
                                     $record->delivery_city,
                                     $record->delivery_address,
                                 ])))
@@ -182,7 +213,7 @@ class OrderInfolist
                     ->schema([
                         TextEntry::make('payment_type')
                             ->label('Способ')
-                            ->formatStateUsing(fn(string $state) => Order::PAYMENT_TYPES[$state] ?? $paymentNames[$state] ?? $state),
+                            ->formatStateUsing(fn (string $state) => Order::PAYMENT_TYPES[$state] ?? $paymentNames[$state] ?? $state),
 
                         TextEntry::make('payment_status')
                             ->label('Статус')
@@ -196,7 +227,7 @@ class OrderInfolist
 
                         TextEntry::make('discount')
                             ->label('Скидка')
-                            ->formatStateUsing(fn($state) => (float) $state > 0 ? $byn($state) : '—'),
+                            ->formatStateUsing(fn ($state) => (float) $state > 0 ? $byn($state) : '—'),
 
                         TextEntry::make('subtotal')
                             ->label('Товары')
@@ -222,8 +253,8 @@ class OrderInfolist
                                 TextEntry::make('product_name')
                                     ->label('Товар')
                                     ->columnSpan(2)
-                                    ->url(fn($state, $record) => $record->product?->category
-                                        ? url('/' . $record->product->category->slug . '/' . $record->product->slug)
+                                    ->url(fn ($state, $record) => $record->product?->category
+                                        ? url('/'.$record->product->category->slug.'/'.$record->product->slug)
                                         : null)
                                     ->openUrlInNewTab(),
 
@@ -287,13 +318,13 @@ class OrderInfolist
                                     ->label('Было')
                                     ->badge()
                                     ->color($statusColor)
-                                    ->formatStateUsing(fn(?string $state) => $state ? (Order::STATUSES[$state] ?? $state) : '—'),
+                                    ->formatStateUsing(fn (?string $state) => $state ? (Order::STATUSES[$state] ?? $state) : '—'),
 
                                 TextEntry::make('status_to')
                                     ->label('Стало')
                                     ->badge()
                                     ->color($statusColor)
-                                    ->formatStateUsing(fn(?string $state) => $state ? (Order::STATUSES[$state] ?? $state) : '—'),
+                                    ->formatStateUsing(fn (?string $state) => $state ? (Order::STATUSES[$state] ?? $state) : '—'),
 
                                 TextEntry::make('comment')
                                     ->label('Комментарий')

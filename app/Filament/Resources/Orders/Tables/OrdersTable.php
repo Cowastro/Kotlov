@@ -2,9 +2,9 @@
 
 namespace App\Filament\Resources\Orders\Tables;
 
+use App\Filament\Exports\OrderExporter;
 use App\Models\Order;
 use App\Models\User;
-use App\Filament\Exports\OrderExporter;
 use Filament\Actions\Action;
 use Filament\Actions\ActionGroup;
 use Filament\Actions\BulkActionGroup;
@@ -25,53 +25,53 @@ class OrdersTable
     public static function configure(Table $table): Table
     {
         $paymentNames = [
-            'cash'          => 'Наличными',
-            'card'          => 'Картой',
+            'cash' => 'Наличными',
+            'card' => 'Картой',
             'bank_transfer' => 'Безналичный расчет',
-            'installment'   => 'Рассрочка',
+            'installment' => 'Рассрочка',
             'installment_6' => 'Рассрочка',
-            'credit'        => 'Кредит',
+            'credit' => 'Кредит',
             'credit_3_years' => 'Кредит',
         ] + collect(config('shop.payment_methods', []))
-            ->mapWithKeys(fn($m, $k) => [$k => $m['name'] ?? $k])
+            ->mapWithKeys(fn ($m, $k) => [$k => $m['name'] ?? $k])
             ->toArray();
 
         $deliveryNames = [
-            'pickup'            => 'Самовывоз',
-            'courier'           => 'Курьер по Минску',
-            'courier_minsk'     => 'Курьер по Минску',
-            'transport'         => 'ТК по Беларуси',
+            'pickup' => 'Самовывоз',
+            'courier' => 'Курьер по Минску',
+            'courier_minsk' => 'Курьер по Минску',
+            'transport' => 'ТК по Беларуси',
             'transport_company' => 'ТК по Беларуси',
-            'kit'               => 'ТК КИТ / международная доставка',
+            'kit' => 'ТК КИТ / международная доставка',
         ] + collect(config('shop.delivery_methods', []))
-            ->mapWithKeys(fn($m, $k) => [$k => $m['name'] ?? $k])
+            ->mapWithKeys(fn ($m, $k) => [$k => $m['name'] ?? $k])
             ->toArray();
 
         $paymentStatuses = [
-            'pending'  => 'Ожидает оплаты',
-            'paid'     => 'Оплачен',
-            'failed'   => 'Ошибка оплаты',
+            'pending' => 'Ожидает оплаты',
+            'paid' => 'Оплачен',
+            'failed' => 'Ошибка оплаты',
             'refunded' => 'Возврат',
         ];
 
         $statusLabelOverrides = [
-            'new'             => 'Новый',
-            'confirmed'       => 'Подтвержден',
-            'processing'      => 'В обработке',
+            'new' => 'Новый',
+            'confirmed' => 'Подтвержден',
+            'processing' => 'В обработке',
             'waiting_payment' => 'Ожидает оплаты',
-            'paid'            => 'Оплачен',
-            'shipped'         => 'Отправлен',
-            'delivered'       => 'Доставлен',
-            'completed'       => 'Выполнен',
-            'cancelled'       => 'Отменен',
+            'paid' => 'Оплачен',
+            'shipped' => 'Отправлен',
+            'delivered' => 'Доставлен',
+            'completed' => 'Выполнен',
+            'cancelled' => 'Отменен',
         ];
 
         $statusNames = collect(Order::STATUSES)
-            ->mapWithKeys(fn($label, $status) => [$status => $statusLabelOverrides[$status] ?? $label])
+            ->mapWithKeys(fn ($label, $status) => [$status => $statusLabelOverrides[$status] ?? $label])
             ->toArray();
 
         return $table
-            ->modifyQueryUsing(fn(Builder $query) => $query
+            ->modifyQueryUsing(fn (Builder $query) => $query
                 ->withSum('items', 'quantity')
                 ->with(['items:id,order_id,product_name,product_sku', 'manager:id,name']))
             ->columns([
@@ -117,85 +117,106 @@ class OrdersTable
                     ->label('Доставка')
                     ->badge()
                     ->color('gray')
-                    ->formatStateUsing(fn(?string $state) => $state ? ($deliveryNames[$state] ?? $state) : '—')
+                    ->formatStateUsing(fn (?string $state) => $state ? ($deliveryNames[$state] ?? $state) : '—')
                     ->toggleable(isToggledHiddenByDefault: true),
 
                 TextColumn::make('payment_type')
                     ->label('Оплата')
                     ->badge()
                     ->color('gray')
-                    ->formatStateUsing(fn(?string $state) => $state ? ($paymentNames[$state] ?? $state) : '—')
+                    ->formatStateUsing(fn (?string $state) => $state ? ($paymentNames[$state] ?? $state) : '—')
                     ->toggleable(isToggledHiddenByDefault: true),
 
                 TextColumn::make('payment_status')
                     ->label('Статус оплаты')
                     ->badge()
-                    ->color(fn(?string $state) => match($state) {
-                        'paid'     => 'success',
-                        'pending'  => 'warning',
-                        'failed'   => 'danger',
+                    ->color(fn (?string $state) => match ($state) {
+                        'paid' => 'success',
+                        'pending' => 'warning',
+                        'failed' => 'danger',
                         'refunded' => 'info',
-                        default    => 'gray',
+                        default => 'gray',
                     })
-                    ->icon(fn(?string $state) => match($state) {
-                        'paid'     => 'heroicon-o-check-circle',
-                        'pending'  => 'heroicon-o-clock',
-                        'failed'   => 'heroicon-o-x-circle',
+                    ->icon(fn (?string $state) => match ($state) {
+                        'paid' => 'heroicon-o-check-circle',
+                        'pending' => 'heroicon-o-clock',
+                        'failed' => 'heroicon-o-x-circle',
                         'refunded' => 'heroicon-o-arrow-uturn-left',
-                        default    => null,
+                        default => null,
                     })
-                    ->formatStateUsing(fn(?string $state) => $state ? ($paymentStatuses[$state] ?? $state) : '—'),
+                    ->formatStateUsing(fn (?string $state) => $state ? ($paymentStatuses[$state] ?? $state) : '—'),
 
                 TextColumn::make('total')
                     ->label('Сумма')
                     ->sortable()
-                    ->formatStateUsing(fn($state) => number_format((float) $state, 0, '.', ' ') . ' BYN'),
+                    ->formatStateUsing(fn ($state) => number_format((float) $state, 0, '.', ' ').' BYN'),
 
                 TextColumn::make('items_sum_quantity')
                     ->label('Товаров')
-                    ->state(fn($record) => (int) ($record->items_sum_quantity ?? 0))
+                    ->state(fn ($record) => (int) ($record->items_sum_quantity ?? 0))
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
 
                 TextColumn::make('status')
                     ->label('Статус')
                     ->badge()
-                    ->color(fn(?string $state) => match($state) {
-                        'new'             => 'info',
-                        'confirmed'       => 'warning',
-                        'processing'      => 'warning',
+                    ->color(fn (?string $state) => match ($state) {
+                        'new' => 'info',
+                        'confirmed' => 'warning',
+                        'processing' => 'warning',
                         'waiting_payment' => 'warning',
-                        'paid'            => 'success',
-                        'shipped'         => 'primary',
-                        'delivered'       => 'success',
-                        'completed'       => 'success',
-                        'cancelled'       => 'danger',
-                        default           => 'gray',
+                        'paid' => 'success',
+                        'shipped' => 'primary',
+                        'delivered' => 'success',
+                        'completed' => 'success',
+                        'cancelled' => 'danger',
+                        default => 'gray',
                     })
-                    ->icon(fn(?string $state) => match($state) {
-                        'new'             => 'heroicon-o-sparkles',
-                        'confirmed'       => 'heroicon-o-check',
-                        'processing'      => 'heroicon-o-arrow-path',
+                    ->icon(fn (?string $state) => match ($state) {
+                        'new' => 'heroicon-o-sparkles',
+                        'confirmed' => 'heroicon-o-check',
+                        'processing' => 'heroicon-o-arrow-path',
                         'waiting_payment' => 'heroicon-o-clock',
-                        'paid'            => 'heroicon-o-banknotes',
-                        'shipped'         => 'heroicon-o-truck',
-                        'delivered'       => 'heroicon-o-check-circle',
-                        'completed'       => 'heroicon-o-star',
-                        'cancelled'       => 'heroicon-o-x-circle',
-                        default           => null,
+                        'paid' => 'heroicon-o-banknotes',
+                        'shipped' => 'heroicon-o-truck',
+                        'delivered' => 'heroicon-o-check-circle',
+                        'completed' => 'heroicon-o-star',
+                        'cancelled' => 'heroicon-o-x-circle',
+                        default => null,
                     })
-                    ->formatStateUsing(fn(?string $state) => $state ? ($statusNames[$state] ?? $statusLabelOverrides[$state] ?? $state) : '—'),
+                    ->formatStateUsing(fn (?string $state) => $state ? ($statusNames[$state] ?? $statusLabelOverrides[$state] ?? $state) : '—'),
+
+                TextColumn::make('onec_sync_state')
+                    ->label('1С')
+                    ->state(fn (Order $record): string => match (true) {
+                        filled($record->onec_status_received_at) => 'confirmed',
+                        filled($record->onec_exported_at) => 'sent',
+                        default => 'waiting',
+                    })
+                    ->badge()
+                    ->formatStateUsing(fn (string $state): string => match ($state) {
+                        'confirmed' => 'Ответ получен',
+                        'sent' => 'Передан',
+                        default => 'Ожидает передачи',
+                    })
+                    ->color(fn (string $state): string => match ($state) {
+                        'confirmed' => 'success',
+                        'sent' => 'info',
+                        default => 'warning',
+                    })
+                    ->description(fn (Order $record): ?string => $record->onec_status
+                        ?: $record->onec_exported_at?->timezone('Europe/Minsk')->format('d.m.Y H:i')),
 
                 TextColumn::make('responsible')
                     ->label('Ответственный')
                     ->icon('heroicon-o-user-circle')
                     ->placeholder('—')
-                    ->getStateUsing(fn($record) => $record->manager
-                        ? $record->manager->name . ($record->assigned_to ? ' (' . $record->assigned_to . ')' : '')
+                    ->getStateUsing(fn ($record) => $record->manager
+                        ? $record->manager->name.($record->assigned_to ? ' ('.$record->assigned_to.')' : '')
                         : ($record->assigned_to ?? null))
-                    ->searchable(query: fn(Builder $query, string $search) => $query
+                    ->searchable(query: fn (Builder $query, string $search) => $query
                         ->where('assigned_to', 'like', "%{$search}%")
-                        ->orWhereHas('manager', fn($q) => $q->where('name', 'like', "%{$search}%"))),
+                        ->orWhereHas('manager', fn ($q) => $q->where('name', 'like', "%{$search}%"))),
 
                 TextColumn::make('updated_at')
                     ->label('Обновлен')
@@ -205,9 +226,8 @@ class OrdersTable
 
                 TextColumn::make('items_list')
                     ->label('Товары')
-                    ->state(fn($record) => $record->items->map(fn($item) =>
-                        $item->product_name .
-                        ($item->product_sku ? ' [' . $item->product_sku . ']' : '')
+                    ->state(fn ($record) => $record->items->map(fn ($item) => $item->product_name.
+                        ($item->product_sku ? ' ['.$item->product_sku.']' : '')
                     )->filter()->join("\n"))
                     ->wrap()
                     ->lineClamp(3)
@@ -237,27 +257,43 @@ class OrdersTable
                     ->label('Доставка')
                     ->options($deliveryNames),
 
+                SelectFilter::make('onec_sync')
+                    ->label('Состояние 1С')
+                    ->options([
+                        'waiting' => 'Ожидает передачи',
+                        'sent' => 'Передан, ответа нет',
+                        'confirmed' => 'Ответ 1С получен',
+                    ])
+                    ->query(function (Builder $query, array $data): Builder {
+                        return match ($data['value'] ?? null) {
+                            'waiting' => $query->whereNull('onec_exported_at'),
+                            'sent' => $query->whereNotNull('onec_exported_at')->whereNull('onec_status_received_at'),
+                            'confirmed' => $query->whereNotNull('onec_status_received_at'),
+                            default => $query,
+                        };
+                    }),
+
                 TernaryFilter::make('assigned_to')
                     ->label('Ответственный')
                     ->placeholder('Все заказы')
                     ->trueLabel('Есть ответственный')
                     ->falseLabel('Без ответственного')
                     ->queries(
-                        true:  fn(Builder $query) => $query->whereNotNull('assigned_to'),
-                        false: fn(Builder $query) => $query->whereNull('assigned_to'),
-                        blank: fn(Builder $query) => $query,
+                        true: fn (Builder $query) => $query->whereNotNull('assigned_to'),
+                        false: fn (Builder $query) => $query->whereNull('assigned_to'),
+                        blank: fn (Builder $query) => $query,
                     ),
 
                 SelectFilter::make('manager_id')
                     ->label('Менеджер')
-                    ->options(fn() => User::whereIn('role', ['admin', 'manager', 'sales_manager'])
+                    ->options(fn () => User::whereIn('role', ['admin', 'manager', 'sales_manager'])
                         ->pluck('name', 'id')
                         ->toArray())
                     ->placeholder('Все менеджеры'),
 
                 Filter::make('my_orders')
                     ->label('Мои заказы')
-                    ->query(fn(Builder $query) => $query->where('manager_id', auth()->id()))
+                    ->query(fn (Builder $query) => $query->where('manager_id', auth()->id()))
                     ->toggle(),
 
                 Filter::make('created_at')
@@ -268,9 +304,9 @@ class OrdersTable
                         DatePicker::make('created_until')
                             ->label('По дату'),
                     ])
-                    ->query(fn(Builder $query, array $data): Builder => $query
-                        ->when($data['created_from'] ?? null, fn(Builder $query, $date) => $query->whereDate('created_at', '>=', $date))
-                        ->when($data['created_until'] ?? null, fn(Builder $query, $date) => $query->whereDate('created_at', '<=', $date))),
+                    ->query(fn (Builder $query, array $data): Builder => $query
+                        ->when($data['created_from'] ?? null, fn (Builder $query, $date) => $query->whereDate('created_at', '>=', $date))
+                        ->when($data['created_until'] ?? null, fn (Builder $query, $date) => $query->whereDate('created_at', '<=', $date))),
             ])
             ->recordActions([
                 ViewAction::make(),
