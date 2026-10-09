@@ -74,8 +74,15 @@ class IntegrationExchangeJournal
     }
 
     /** @param array<string, mixed> $metrics */
-    public function succeed(?IntegrationExchangeRun $run, array $metrics = []): void
-    {
+    public function succeed(
+        ?IntegrationExchangeRun $run,
+        array $metrics = [],
+        bool $accumulate = false,
+    ): void {
+        if ($run && $accumulate) {
+            $metrics = $this->accumulateMetrics($run->fresh() ?? $run, $metrics);
+        }
+
         $this->finish($run, 'success', $metrics);
     }
 
@@ -119,5 +126,51 @@ class IntegrationExchangeJournal
             'items_received', 'items_created', 'items_updated', 'items_skipped',
             'orders_count', 'summary', 'error_message',
         ]));
+    }
+
+    /** @param array<string, mixed> $metrics
+     * @return array<string, mixed>
+     */
+    private function accumulateMetrics(IntegrationExchangeRun $run, array $metrics): array
+    {
+        foreach (['items_received', 'items_created', 'items_updated', 'items_skipped', 'orders_count'] as $key) {
+            if (array_key_exists($key, $metrics)) {
+                $metrics[$key] = (int) $run->{$key} + (int) $metrics[$key];
+            }
+        }
+
+        if (array_key_exists('summary', $metrics)) {
+            $metrics['summary'] = $this->mergeSummary(
+                is_array($run->summary) ? $run->summary : [],
+                is_array($metrics['summary']) ? $metrics['summary'] : [],
+            );
+        }
+
+        return $metrics;
+    }
+
+    /** @param array<string, mixed> $current
+     * @param  array<string, mixed>  $incoming
+     * @return array<string, mixed>
+     */
+    private function mergeSummary(array $current, array $incoming): array
+    {
+        foreach ($incoming as $key => $value) {
+            if (is_numeric($value) && isset($current[$key]) && is_numeric($current[$key])) {
+                $current[$key] = $current[$key] + $value;
+
+                continue;
+            }
+
+            if (is_array($value) && isset($current[$key]) && is_array($current[$key])) {
+                $current[$key] = $this->mergeSummary($current[$key], $value);
+
+                continue;
+            }
+
+            $current[$key] = $value;
+        }
+
+        return $current;
     }
 }

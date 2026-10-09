@@ -529,6 +529,101 @@ XML;
         $this->assertSame(1, $secondStats['staging_updated']);
     }
 
+    public function test_retried_import_request_does_not_reprocess_the_same_uploaded_file(): void
+    {
+        $xml = <<<'XML'
+<?xml version="1.0" encoding="UTF-8"?>
+<КоммерческаяИнформация>
+  <Каталог><Товары><Товар>
+    <Ид>retry-safe-product</Ид>
+    <Артикул>RETRY-1</Артикул>
+    <Наименование>Товар с повторным подтверждением</Наименование>
+  </Товар></Товары></Каталог>
+</КоммерческаяИнформация>
+XML;
+
+        $this->withBasicAuth('onec-test', 'secret-test')
+            ->get('/1c/exchange?type=catalog&mode=init')
+            ->assertOk();
+        $this->call(
+            'POST',
+            '/1c/exchange?type=catalog&mode=file&filename=import.xml',
+            [],
+            [],
+            [],
+            ['PHP_AUTH_USER' => 'onec-test', 'PHP_AUTH_PW' => 'secret-test'],
+            $xml,
+        )->assertOk();
+
+        $url = '/1c/exchange?type=catalog&mode=import&filename=import.xml';
+        $this->withBasicAuth('onec-test', 'secret-test')->get($url)->assertOk();
+        $this->withBasicAuth('onec-test', 'secret-test')->get($url)->assertOk();
+
+        $run = IntegrationExchangeRun::query()->latest('id')->firstOrFail();
+        $this->assertSame(1, $run->items_received);
+        $this->assertSame(1, $run->items_created);
+        $this->assertSame(0, $run->items_updated);
+        $this->assertSame(1, IntegrationProduct::query()
+            ->where('external_id', 'retry-safe-product')
+            ->count());
+    }
+
+    public function test_catalog_exchange_journal_accumulates_all_uploaded_parts(): void
+    {
+        $importXml = <<<'XML'
+<?xml version="1.0" encoding="UTF-8"?>
+<КоммерческаяИнформация>
+  <Каталог><Товары><Товар>
+    <Ид>multipart-product</Ид>
+    <Артикул>MULTI-1</Артикул>
+    <Наименование>Многофайловый товар</Наименование>
+  </Товар></Товары></Каталог>
+</КоммерческаяИнформация>
+XML;
+        $offersXml = <<<'XML'
+<?xml version="1.0" encoding="UTF-8"?>
+<КоммерческаяИнформация>
+  <ПакетПредложений><Предложения><Предложение>
+    <Ид>multipart-product</Ид>
+    <Цены><Цена><ЦенаЗаЕдиницу>42.50</ЦенаЗаЕдиницу></Цена></Цены>
+    <Количество>7</Количество>
+  </Предложение></Предложения></ПакетПредложений>
+</КоммерческаяИнформация>
+XML;
+
+        $this->withBasicAuth('onec-test', 'secret-test')
+            ->get('/1c/exchange?type=catalog&mode=init')
+            ->assertOk();
+
+        foreach (['import.xml' => $importXml, 'offers.xml' => $offersXml] as $filename => $xml) {
+            $this->call(
+                'POST',
+                "/1c/exchange?type=catalog&mode=file&filename={$filename}",
+                [],
+                [],
+                [],
+                ['PHP_AUTH_USER' => 'onec-test', 'PHP_AUTH_PW' => 'secret-test'],
+                $xml,
+            )->assertOk();
+            $this->withBasicAuth('onec-test', 'secret-test')
+                ->get("/1c/exchange?type=catalog&mode=import&filename={$filename}")
+                ->assertOk();
+        }
+
+        $run = IntegrationExchangeRun::query()->latest('id')->firstOrFail();
+        $this->assertSame(2, $run->files_count);
+        $this->assertSame(2, $run->items_received);
+        $this->assertSame(1, $run->items_created);
+        $this->assertSame(1, $run->items_updated);
+        $this->assertSame(1, data_get($run->summary, 'products'));
+        $this->assertSame(1, data_get($run->summary, 'offers'));
+        $this->assertDatabaseHas('integration_products', [
+            'external_id' => 'multipart-product',
+            'price' => 42.50,
+            'stock_quantity' => 7,
+        ]);
+    }
+
     public function test_completed_catalog_snapshot_zeros_only_positive_stock_missing_from_all_offer_parts(): void
     {
         $source = IntegrationSource::query()->create([

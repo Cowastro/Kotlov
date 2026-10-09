@@ -184,6 +184,13 @@ class OneCExchangeController extends Controller
             return $this->plain("failure\nUploaded file not found");
         }
 
+        // 1C can retry mode=import after a slow response. Once the same uploaded
+        // file has been accepted, return the previous success without processing
+        // it again or inflating the session counters.
+        if ($disk->exists($path.'.received') && $disk->exists($path.'.result.json')) {
+            return $this->plain('success');
+        }
+
         $operation = match ($type) {
             'catalog' => 'catalog',
             'sale' => 'order_statuses',
@@ -226,7 +233,7 @@ class OneCExchangeController extends Controller
                 'items_updated' => (int) ($stats['staging_updated'] ?? 0),
                 'summary' => $stats,
             ];
-        $this->exchangeJournal->succeed($run, $metrics);
+        $this->exchangeJournal->succeed($run, $metrics, accumulate: true);
 
         if ($type === 'catalog' && (int) ($stats['offers'] ?? 0) > 0) {
             Cache::put($this->catalogOffersReceivedCacheKey($request, $source), true, now()->addHours(6));
