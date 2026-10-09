@@ -6,10 +6,12 @@ use App\Models\IntegrationExchangeRun;
 use App\Models\IntegrationProduct;
 use App\Models\IntegrationSource;
 use App\Models\Order;
+use App\Services\Integrations\CatalogStockSnapshotFinalizer;
 use App\Services\Integrations\CommerceMlCatalogImporter;
 use App\Services\Integrations\CommerceMlOrderImporter;
 use App\Services\Integrations\IntegrationExchangeJournal;
 use App\Services\Integrations\IntegrationMonitoringWindow;
+use Carbon\CarbonImmutable;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
@@ -26,6 +28,7 @@ class OneCExchangeController extends Controller
     public function __construct(
         private readonly CommerceMlCatalogImporter $catalogImporter,
         private readonly CommerceMlOrderImporter $orderImporter,
+        private readonly CatalogStockSnapshotFinalizer $stockSnapshotFinalizer,
         private readonly IntegrationExchangeJournal $exchangeJournal,
         private readonly IntegrationMonitoringWindow $monitoringWindow,
     ) {}
@@ -48,6 +51,9 @@ class OneCExchangeController extends Controller
             'init' => $this->initializeExchange($request, $integrationSource, $type),
             'file' => $this->receiveFile($request, $integrationSource, $type),
             'import' => $this->acknowledgeImport($request, $integrationSource, $type),
+            'complete' => $type === 'catalog'
+                ? $this->completeCatalogExchange($request, $integrationSource)
+                : $this->plain('success'),
             'query' => $type === 'sale' && $this->canExportOrders($integrationSource)
                 ? $this->exportOrders($request, $integrationSource)
                 : $this->plain("failure\nUnsupported exchange type"),
@@ -159,6 +165,8 @@ class OneCExchangeController extends Controller
 
         if ($type === 'catalog') {
             $this->startRun($request, $source, 'inbound', 'catalog');
+            Cache::put($this->catalogSnapshotStartedCacheKey($request, $source), now()->toIso8601String(), now()->addHours(6));
+            Cache::forget($this->catalogOffersReceivedCacheKey($request, $source));
         } elseif ($type === 'sale') {
             $this->startRun($request, $source, 'inbound', 'order_statuses');
         }
@@ -220,7 +228,41 @@ class OneCExchangeController extends Controller
             ];
         $this->exchangeJournal->succeed($run, $metrics);
 
+        if ($type === 'catalog' && (int) ($stats['offers'] ?? 0) > 0) {
+            Cache::put($this->catalogOffersReceivedCacheKey($request, $source), true, now()->addHours(6));
+        }
+
         return $this->plain('success');
+    }
+
+    private function completeCatalogExchange(Request $request, IntegrationSource $source): Response
+    {
+        $snapshotStartedAt = Cache::pull($this->catalogSnapshotStartedCacheKey($request, $source));
+        $offersReceived = (bool) Cache::pull($this->catalogOffersReceivedCacheKey($request, $source), false);
+
+        if (! $source->zeroMissingStockOnComplete() || ! $snapshotStartedAt || ! $offersReceived) {
+            return $this->plain('success');
+        }
+
+        $zeroed = $this->stockSnapshotFinalizer->finalize(
+            $source,
+            CarbonImmutable::parse((string) $snapshotStartedAt),
+        );
+        $run = $this->currentRun($request, $source, 'catalog');
+        $summary = array_merge($run?->summary ?? [], [
+            'stock_snapshot' => [
+                'completed_at' => now()->toIso8601String(),
+                'started_at' => $snapshotStartedAt,
+                'zeroed' => $zeroed,
+            ],
+        ]);
+
+        $this->exchangeJournal->progress($run, [
+            'items_skipped' => (int) ($run?->items_skipped ?? 0) + $zeroed,
+            'summary' => $summary,
+        ]);
+
+        return $this->plain("success\nstock_zeroed={$zeroed}");
     }
 
     private function exportOrders(Request $request, IntegrationSource $source): Response
@@ -423,6 +465,16 @@ class OneCExchangeController extends Controller
             'sha256',
             $this->sessionPath($request, $source)
         );
+    }
+
+    private function catalogSnapshotStartedCacheKey(Request $request, IntegrationSource $source): string
+    {
+        return 'integration_catalog_snapshot_started:'.hash('sha256', $this->sessionPath($request, $source));
+    }
+
+    private function catalogOffersReceivedCacheKey(Request $request, IntegrationSource $source): string
+    {
+        return 'integration_catalog_offers_received:'.hash('sha256', $this->sessionPath($request, $source));
     }
 
     private function sessionCacheKey(string $token): string

@@ -68,6 +68,10 @@ class IntegrationExchangeRunResource extends Resource
                 TextColumn::make('items_created')->label('Новых')->numeric()->alignRight()
                     ->color(fn (int $state): string => $state > 0 ? 'warning' : 'gray'),
                 TextColumn::make('items_updated')->label('Обновлено')->numeric()->alignRight(),
+                TextColumn::make('stock_zeroed')->label('Снято с наличия')
+                    ->state(fn (IntegrationExchangeRun $record): int => (int) data_get($record->summary, 'stock_snapshot.zeroed', 0))
+                    ->numeric()->alignRight()
+                    ->color(fn (int $state): string => $state > 0 ? 'warning' : 'gray'),
                 TextColumn::make('orders_count')->label('Заказов')->numeric()->alignRight(),
                 TextColumn::make('files_count')->label('Частей файла')->numeric()->alignRight()->toggleable(),
                 TextColumn::make('bytes_received')->label('Объём')

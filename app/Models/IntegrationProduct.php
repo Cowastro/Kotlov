@@ -12,7 +12,7 @@ class IntegrationProduct extends Model
         'integration_source_id', 'integration_category_id', 'target_category_id', 'product_id', 'external_id', 'external_code', 'external_sku',
         'barcode', 'name', 'price', 'stock_quantity', 'match_status',
         'match_method', 'match_confidence', 'candidates', 'payload',
-        'matched_at', 'last_seen_at',
+        'matched_at', 'last_seen_at', 'last_offer_seen_at',
     ];
 
     protected $casts = [
@@ -23,6 +23,7 @@ class IntegrationProduct extends Model
         'payload' => 'array',
         'matched_at' => 'datetime',
         'last_seen_at' => 'datetime',
+        'last_offer_seen_at' => 'datetime',
     ];
 
     public function scopeInStock(Builder $query): Builder

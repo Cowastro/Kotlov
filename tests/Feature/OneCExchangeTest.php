@@ -200,11 +200,18 @@ class OneCExchangeTest extends TestCase
                 $table->json('payload')->nullable();
                 $table->timestamp('matched_at')->nullable();
                 $table->timestamp('last_seen_at')->nullable();
+                $table->timestamp('last_offer_seen_at')->nullable();
                 $table->timestamps();
             });
         } elseif (! Schema::hasColumn('integration_products', 'target_category_id')) {
             Schema::table('integration_products', function (Blueprint $table) {
                 $table->unsignedBigInteger('target_category_id')->nullable();
+            });
+        }
+
+        if (! Schema::hasColumn('integration_products', 'last_offer_seen_at')) {
+            Schema::table('integration_products', function (Blueprint $table) {
+                $table->timestamp('last_offer_seen_at')->nullable();
             });
         }
 
@@ -501,6 +508,105 @@ XML;
         $this->assertSame(0, $firstStats['staging_updated']);
         $this->assertSame(0, $secondStats['staging_created']);
         $this->assertSame(1, $secondStats['staging_updated']);
+    }
+
+    public function test_completed_catalog_snapshot_zeros_only_positive_stock_missing_from_all_offer_parts(): void
+    {
+        $source = IntegrationSource::query()->create([
+            'code' => 'onec',
+            'name' => '1С',
+            'settings' => ['zero_missing_stock_on_complete' => true],
+        ]);
+        IntegrationProduct::query()->create([
+            'integration_source_id' => $source->id,
+            'external_id' => 'missing-offer',
+            'name' => 'Больше не в наличии',
+            'stock_quantity' => 8,
+            'last_offer_seen_at' => now()->subHour(),
+        ]);
+        IntegrationProduct::query()->create([
+            'integration_source_id' => $source->id,
+            'external_id' => 'already-zero',
+            'name' => 'Уже отсутствует',
+            'stock_quantity' => 0,
+            'last_offer_seen_at' => now()->subHour(),
+        ]);
+
+        $this->withBasicAuth('onec-test', 'secret-test')
+            ->get('/1c/exchange?type=catalog&mode=init')
+            ->assertOk();
+
+        $xml = <<<'XML'
+<?xml version="1.0" encoding="UTF-8"?>
+<КоммерческаяИнформация>
+  <ПакетПредложений><Предложения><Предложение>
+    <Ид>current-offer</Ид>
+    <Наименование>Есть в наличии</Наименование>
+    <Цены><Цена><ЦенаЗаЕдиницу>10</ЦенаЗаЕдиницу></Цена></Цены>
+    <Количество>5</Количество>
+  </Предложение></Предложения></ПакетПредложений>
+</КоммерческаяИнформация>
+XML;
+        $this->call(
+            'POST',
+            '/1c/exchange?type=catalog&mode=file&filename=offers.xml',
+            [],
+            [],
+            [],
+            ['PHP_AUTH_USER' => 'onec-test', 'PHP_AUTH_PW' => 'secret-test'],
+            $xml,
+        )->assertOk();
+        $this->withBasicAuth('onec-test', 'secret-test')
+            ->get('/1c/exchange?type=catalog&mode=import&filename=offers.xml')
+            ->assertOk();
+
+        $this->assertDatabaseHas('integration_products', [
+            'external_id' => 'missing-offer',
+            'stock_quantity' => 8,
+        ]);
+
+        $this->withBasicAuth('onec-test', 'secret-test')
+            ->get('/1c/exchange?type=catalog&mode=complete')
+            ->assertOk()
+            ->assertSeeText('stock_zeroed=1');
+
+        $this->assertDatabaseHas('integration_products', [
+            'external_id' => 'missing-offer',
+            'stock_quantity' => 0,
+        ]);
+        $this->assertDatabaseHas('integration_products', [
+            'external_id' => 'current-offer',
+            'stock_quantity' => 5,
+        ]);
+        $run = IntegrationExchangeRun::query()->latest('id')->firstOrFail();
+        $this->assertSame(1, data_get($run->summary, 'stock_snapshot.zeroed'));
+    }
+
+    public function test_catalog_complete_without_received_offers_never_zeros_stock(): void
+    {
+        $source = IntegrationSource::query()->create([
+            'code' => 'onec',
+            'name' => '1С',
+            'settings' => ['zero_missing_stock_on_complete' => true],
+        ]);
+        IntegrationProduct::query()->create([
+            'integration_source_id' => $source->id,
+            'external_id' => 'safe-without-offers',
+            'stock_quantity' => 3,
+            'last_offer_seen_at' => now()->subHour(),
+        ]);
+
+        $this->withBasicAuth('onec-test', 'secret-test')
+            ->get('/1c/exchange?type=catalog&mode=init')
+            ->assertOk();
+        $this->withBasicAuth('onec-test', 'secret-test')
+            ->get('/1c/exchange?type=catalog&mode=complete')
+            ->assertOk();
+
+        $this->assertDatabaseHas('integration_products', [
+            'external_id' => 'safe-without-offers',
+            'stock_quantity' => 3,
+        ]);
     }
 
     public function test_catalog_item_reads_onec_code_and_links_it_to_existing_sku(): void

@@ -39,6 +39,7 @@ class IntegrationSource extends Model
                 'order_interval_minutes' => 5,
                 'catalog_interval_minutes' => 10,
                 'stale_after_minutes' => 15,
+                'zero_missing_stock_on_complete' => true,
                 'monitor_orders_from' => now()->toIso8601String(),
             ], $source->settings ?? []);
         });
@@ -102,6 +103,11 @@ class IntegrationSource extends Model
     public function staleAfterMinutes(): int
     {
         return max(5, (int) data_get($this->settings, 'stale_after_minutes', 15));
+    }
+
+    public function zeroMissingStockOnComplete(): bool
+    {
+        return (bool) data_get($this->settings, 'zero_missing_stock_on_complete', true);
     }
 
     public function scheduleLabel(): string

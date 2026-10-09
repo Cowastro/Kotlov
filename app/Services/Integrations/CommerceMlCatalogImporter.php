@@ -271,6 +271,7 @@ class CommerceMlCatalogImporter
             'price' => is_numeric(str_replace(',', '.', $price)) ? str_replace(',', '.', $price) : $item->price,
             'stock_quantity' => is_numeric(str_replace(',', '.', $quantity)) ? str_replace(',', '.', $quantity) : $item->stock_quantity,
             'last_seen_at' => now(),
+            'last_offer_seen_at' => now(),
         ]);
 
         if (! $item->product_id && $item->match_status !== 'ignored') {
