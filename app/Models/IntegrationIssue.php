@@ -63,6 +63,34 @@ class IntegrationIssue extends Model
         return $query->where('type', 'product_identity_collision');
     }
 
+    public function scopePriority(Builder $query): Builder
+    {
+        return $query->where(function (Builder $query): void {
+            $query->whereIn('type', array_merge(self::ORDER_TYPES, self::EXCHANGE_TYPES, ['product_identity_collision']))
+                ->orWhere(function (Builder $query): void {
+                    $query->products()->where('context->missing_price', true);
+                });
+        });
+    }
+
+    public function scopeReadyToLink(Builder $query): Builder
+    {
+        return $query->products()
+            ->where('context->unmatched', true)
+            ->where('context->missing_price', false);
+    }
+
+    public function scopeRecommendedMatches(Builder $query): Builder
+    {
+        return $query->products()
+            ->whereHas('integrationProduct', fn (Builder $query): Builder => $query->where('match_status', 'suggested'));
+    }
+
+    public function scopeAssignedTo(Builder $query, int $userId): Builder
+    {
+        return $query->where('assigned_to_user_id', $userId);
+    }
+
     public function scopeOrders(Builder $query): Builder
     {
         return $query->whereIn('type', self::ORDER_TYPES);

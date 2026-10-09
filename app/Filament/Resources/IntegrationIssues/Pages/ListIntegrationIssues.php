@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\IntegrationIssues\Pages;
 
 use App\Filament\Resources\IntegrationIssues\IntegrationIssueResource;
+use App\Filament\Widgets\IntegrationIssueTriageOverview;
 use App\Models\IntegrationIssue;
 use App\Services\Integrations\IntegrationIssueDetector;
 use Filament\Actions\Action;
@@ -44,31 +45,41 @@ class ListIntegrationIssues extends ListRecords
         ];
     }
 
+    protected function getHeaderWidgets(): array
+    {
+        return [
+            IntegrationIssueTriageOverview::class,
+        ];
+    }
+
+    public function getDefaultActiveTab(): string|int|null
+    {
+        return 'priority';
+    }
+
     public function getTabs(): array
     {
         return [
-            'open' => Tab::make('Открытые')
-                ->modifyQueryUsing(fn (Builder $query): Builder => $query->open())
-                ->badge(IntegrationIssue::query()->open()->count())
-                ->badgeColor('warning'),
-            'danger' => Tab::make('Критичные')
-                ->modifyQueryUsing(fn (Builder $query): Builder => $query
-                    ->open()
-                    ->where('severity', 'danger'))
-                ->badge(IntegrationIssue::query()->open()->where('severity', 'danger')->count())
+            'priority' => Tab::make('Приоритет')
+                ->modifyQueryUsing(fn (Builder $query): Builder => $query->open()->priority())
+                ->badge(IntegrationIssue::query()->open()->priority()->count())
                 ->badgeColor('danger'),
-            'products' => Tab::make('Товары')
-                ->modifyQueryUsing(fn (Builder $query): Builder => $query->open()->products())
-                ->badge(IntegrationIssue::query()->open()->products()->count())
+            'mine' => Tab::make('Мои')
+                ->modifyQueryUsing(fn (Builder $query): Builder => $query->open()->assignedTo((int) auth()->id()))
+                ->badge(IntegrationIssue::query()->open()->assignedTo((int) auth()->id())->count() ?: null)
+                ->badgeColor('info'),
+            'recommended' => Tab::make('Рекомендации')
+                ->modifyQueryUsing(fn (Builder $query): Builder => $query->open()->recommendedMatches())
+                ->badge(IntegrationIssue::query()->open()->recommendedMatches()->count() ?: null)
+                ->badgeColor('info'),
+            'ready-to-link' => Tab::make('Можно привязать')
+                ->modifyQueryUsing(fn (Builder $query): Builder => $query->open()->readyToLink())
+                ->badge(IntegrationIssue::query()->open()->readyToLink()->count() ?: null)
                 ->badgeColor('warning'),
             'missing-price' => Tab::make('Без цены')
                 ->modifyQueryUsing(fn (Builder $query): Builder => $query->open()->missingPrice())
                 ->badge(IntegrationIssue::query()->open()->missingPrice()->count())
                 ->badgeColor('danger'),
-            'unmatched' => Tab::make('Не привязаны')
-                ->modifyQueryUsing(fn (Builder $query): Builder => $query->open()->unmatched())
-                ->badge(IntegrationIssue::query()->open()->unmatched()->count())
-                ->badgeColor('warning'),
             'duplicates' => Tab::make('Возможные дубли')
                 ->modifyQueryUsing(fn (Builder $query): Builder => $query->open()->possibleDuplicates())
                 ->badge(IntegrationIssue::query()->open()->possibleDuplicates()->count())
@@ -81,7 +92,7 @@ class ListIntegrationIssues extends ListRecords
                 ->modifyQueryUsing(fn (Builder $query): Builder => $query->open()->exchange())
                 ->badge(IntegrationIssue::query()->open()->exchange()->count())
                 ->badgeColor('info'),
-            'all' => Tab::make('История')
+            'all' => Tab::make('Вся история')
                 ->badge(IntegrationIssue::query()->count()),
         ];
     }

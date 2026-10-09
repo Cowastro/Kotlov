@@ -18,6 +18,7 @@ use App\Services\Integrations\IntegrationCatalogSummary;
 use App\Services\Integrations\IntegrationCategoryAdvisor;
 use App\Services\Integrations\IntegrationIssueAdvisor;
 use App\Services\Integrations\IntegrationIssueDetector;
+use App\Services\Integrations\IntegrationIssueTriageSummary;
 use App\Services\Integrations\IntegrationManualMatchRecorder;
 use App\Services\Integrations\IntegrationOperationsSummary;
 use Illuminate\Database\Schema\Blueprint;
@@ -778,6 +779,64 @@ XML;
         $this->assertSame(1, IntegrationIssue::query()->open()->unmatched()->count());
         $this->assertSame(1, IntegrationIssue::query()->open()->orders()->count());
         $this->assertSame(1, IntegrationIssue::query()->open()->exchange()->count());
+        $this->assertSame(3, IntegrationIssue::query()->open()->priority()->count());
+        $this->assertSame(0, IntegrationIssue::query()->open()->readyToLink()->count());
+    }
+
+    public function test_issue_triage_separates_priority_ready_recommendations_and_assignee(): void
+    {
+        $source = IntegrationSource::query()->create([
+            'code' => 'triage-source',
+            'name' => 'Поставщик для очереди',
+        ]);
+        $recommended = IntegrationProduct::query()->create([
+            'integration_source_id' => $source->id,
+            'external_id' => 'triage-recommended',
+            'match_status' => 'suggested',
+        ]);
+        $ready = IntegrationProduct::query()->create([
+            'integration_source_id' => $source->id,
+            'external_id' => 'triage-ready',
+            'match_status' => 'unmatched',
+        ]);
+        $userId = 77;
+
+        foreach ([
+            [
+                'fingerprint' => 'triage-priority',
+                'type' => 'product_attention',
+                'integration_product_id' => $recommended->id,
+                'context' => ['missing_price' => true, 'unmatched' => true],
+            ],
+            [
+                'fingerprint' => 'triage-ready',
+                'type' => 'product_attention',
+                'integration_product_id' => $ready->id,
+                'assigned_to_user_id' => $userId,
+                'context' => ['missing_price' => false, 'unmatched' => true],
+            ],
+            [
+                'fingerprint' => 'triage-order',
+                'type' => 'order_not_exported',
+            ],
+        ] as $issue) {
+            IntegrationIssue::query()->create($issue + [
+                'status' => 'open',
+                'severity' => 'warning',
+                'title' => 'Проверка приоритета',
+                'first_detected_at' => now(),
+                'last_detected_at' => now(),
+            ]);
+        }
+
+        $summary = app(IntegrationIssueTriageSummary::class)->snapshot($userId);
+
+        $this->assertSame(2, $summary['priority']);
+        $this->assertSame(1, $summary['missing_price']);
+        $this->assertSame(1, $summary['ready_to_link']);
+        $this->assertSame(1, $summary['recommended']);
+        $this->assertSame(1, $summary['orders']);
+        $this->assertSame(1, $summary['mine']);
     }
 
     public function test_product_category_override_has_priority_over_supplier_group_rule(): void

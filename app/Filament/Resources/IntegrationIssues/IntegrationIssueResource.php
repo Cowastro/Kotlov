@@ -121,6 +121,8 @@ class IntegrationIssueResource extends Resource
                 ]),
                 SelectFilter::make('integration_source_id')->label('Источник')
                     ->relationship('source', 'name')->searchable()->preload(),
+                SelectFilter::make('assigned_to_user_id')->label('Ответственный')
+                    ->relationship('assignee', 'name')->searchable()->preload(),
                 SelectFilter::make('status')->label('Состояние')->options([
                     'open' => 'Открыто',
                     'resolved' => 'Решено',
@@ -158,6 +160,24 @@ class IntegrationIssueResource extends Resource
                     ->label('Открыть')
                     ->icon(Heroicon::OutlinedArrowTopRightOnSquare)
                     ->url(fn (IntegrationIssue $record): ?string => self::objectUrl($record)),
+                Action::make('claim')
+                    ->label('Взять в работу')
+                    ->icon(Heroicon::OutlinedUserPlus)
+                    ->color('info')
+                    ->visible(fn (IntegrationIssue $record): bool => $record->status === 'open'
+                        && $record->assigned_to_user_id !== (int) auth()->id())
+                    ->action(fn (IntegrationIssue $record) => $record->update([
+                        'assigned_to_user_id' => auth()->id(),
+                    ])),
+                Action::make('unclaim')
+                    ->label('Снять с себя')
+                    ->icon(Heroicon::OutlinedUserMinus)
+                    ->color('gray')
+                    ->visible(fn (IntegrationIssue $record): bool => $record->status === 'open'
+                        && $record->assigned_to_user_id === (int) auth()->id())
+                    ->action(fn (IntegrationIssue $record) => $record->update([
+                        'assigned_to_user_id' => null,
+                    ])),
                 Action::make('resolve')
                     ->label('Решено')
                     ->icon(Heroicon::OutlinedCheckCircle)
@@ -188,6 +208,14 @@ class IntegrationIssueResource extends Resource
             ])
             ->toolbarActions([
                 BulkActionGroup::make([
+                    BulkAction::make('claim')
+                        ->label('Взять в работу')
+                        ->icon(Heroicon::OutlinedUserPlus)
+                        ->color('info')
+                        ->action(fn (Collection $records) => $records->each->update([
+                            'assigned_to_user_id' => auth()->id(),
+                        ]))
+                        ->deselectRecordsAfterCompletion(),
                     BulkAction::make('resolve')
                         ->label('Отметить решёнными')
                         ->icon(Heroicon::OutlinedCheckCircle)
