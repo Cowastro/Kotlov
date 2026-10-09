@@ -737,7 +737,12 @@ XML;
     public function test_issue_scopes_split_open_work_by_operational_area(): void
     {
         foreach ([
-            ['fingerprint' => 'scope-product', 'type' => 'product_attention', 'status' => 'open'],
+            [
+                'fingerprint' => 'scope-product',
+                'type' => 'product_attention',
+                'status' => 'open',
+                'context' => ['missing_price' => true, 'unmatched' => true],
+            ],
             ['fingerprint' => 'scope-order', 'type' => 'order_not_exported', 'status' => 'open'],
             ['fingerprint' => 'scope-exchange', 'type' => 'integration_stale', 'status' => 'open'],
             ['fingerprint' => 'scope-resolved', 'type' => 'product_attention', 'status' => 'resolved'],
@@ -752,6 +757,8 @@ XML;
 
         $this->assertSame(3, IntegrationIssue::query()->open()->count());
         $this->assertSame(1, IntegrationIssue::query()->open()->products()->count());
+        $this->assertSame(1, IntegrationIssue::query()->open()->missingPrice()->count());
+        $this->assertSame(1, IntegrationIssue::query()->open()->unmatched()->count());
         $this->assertSame(1, IntegrationIssue::query()->open()->orders()->count());
         $this->assertSame(1, IntegrationIssue::query()->open()->exchange()->count());
     }

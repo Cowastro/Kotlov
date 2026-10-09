@@ -61,6 +61,14 @@ class ListIntegrationIssues extends ListRecords
                 ->modifyQueryUsing(fn (Builder $query): Builder => $query->open()->products())
                 ->badge(IntegrationIssue::query()->open()->products()->count())
                 ->badgeColor('warning'),
+            'missing-price' => Tab::make('Без цены')
+                ->modifyQueryUsing(fn (Builder $query): Builder => $query->open()->missingPrice())
+                ->badge(IntegrationIssue::query()->open()->missingPrice()->count())
+                ->badgeColor('danger'),
+            'unmatched' => Tab::make('Не привязаны')
+                ->modifyQueryUsing(fn (Builder $query): Builder => $query->open()->unmatched())
+                ->badge(IntegrationIssue::query()->open()->unmatched()->count())
+                ->badgeColor('warning'),
             'orders' => Tab::make('Заказы')
                 ->modifyQueryUsing(fn (Builder $query): Builder => $query->open()->orders())
                 ->badge(IntegrationIssue::query()->open()->orders()->count())

@@ -47,6 +47,16 @@ class IntegrationIssue extends Model
         return $query->whereIn('type', self::PRODUCT_TYPES);
     }
 
+    public function scopeMissingPrice(Builder $query): Builder
+    {
+        return $query->products()->where('context->missing_price', true);
+    }
+
+    public function scopeUnmatched(Builder $query): Builder
+    {
+        return $query->products()->where('context->unmatched', true);
+    }
+
     public function scopeOrders(Builder $query): Builder
     {
         return $query->whereIn('type', self::ORDER_TYPES);
