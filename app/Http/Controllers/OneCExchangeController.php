@@ -214,8 +214,8 @@ class OneCExchangeController extends Controller
             ]
             : [
                 'items_received' => max((int) $stats['products'], (int) $stats['offers']),
-                'items_updated' => (int) $stats['matched'] + (int) $stats['suggested']
-                    + (int) $stats['ambiguous'] + (int) $stats['unmatched'],
+                'items_created' => (int) ($stats['staging_created'] ?? 0),
+                'items_updated' => (int) ($stats['staging_updated'] ?? 0),
                 'summary' => $stats,
             ];
         $this->exchangeJournal->succeed($run, $metrics);

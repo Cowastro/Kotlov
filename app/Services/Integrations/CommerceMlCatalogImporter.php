@@ -13,6 +13,12 @@ use Throwable;
 
 class CommerceMlCatalogImporter
 {
+    /** @var array<string, true> */
+    private array $createdExternalIds = [];
+
+    /** @var array<string, true> */
+    private array $updatedExternalIds = [];
+
     /** @var Collection<string, int> */
     private Collection $categoryIds;
 
@@ -34,10 +40,12 @@ class CommerceMlCatalogImporter
     /**
      * Import CommerceML into a staging catalogue. This method never mutates products.
      *
-     * @return array{categories:int, products:int, offers:int, matched:int, suggested:int, ambiguous:int, unmatched:int}
+     * @return array{categories:int, products:int, offers:int, staging_created:int, staging_updated:int, matched:int, suggested:int, ambiguous:int, unmatched:int}
      */
     public function import(string $xml, string $sourceCode = 'onec'): array
     {
+        $this->createdExternalIds = [];
+        $this->updatedExternalIds = [];
         $documents = $this->parseDocuments($xml);
 
         $source = IntegrationSource::query()->firstOrCreate(
@@ -51,6 +59,8 @@ class CommerceMlCatalogImporter
             'categories' => 0,
             'products' => 0,
             'offers' => 0,
+            'staging_created' => 0,
+            'staging_updated' => 0,
             'matched' => 0,
             'suggested' => 0,
             'ambiguous' => 0,
@@ -80,6 +90,9 @@ class CommerceMlCatalogImporter
                 }
             }
         });
+
+        $stats['staging_created'] = count($this->createdExternalIds);
+        $stats['staging_updated'] = count($this->updatedExternalIds);
 
         return $stats;
     }
@@ -204,6 +217,7 @@ class CommerceMlCatalogImporter
             'integration_source_id' => $source->id,
             'external_id' => $externalId,
         ]);
+        $alreadyExists = $item->exists;
 
         $item->fill([
             'integration_category_id' => $this->productCategoryId($node),
@@ -220,6 +234,7 @@ class CommerceMlCatalogImporter
         }
 
         $item->save();
+        $this->trackStagingRow($item->external_id, $alreadyExists);
         $stats['products']++;
         $stats[$item->match_status] = ($stats[$item->match_status] ?? 0) + 1;
     }
@@ -238,6 +253,7 @@ class CommerceMlCatalogImporter
             ->whereIn('external_id', array_unique([$externalId, $baseId]))
             ->orderByRaw('external_id = ? desc', [$externalId])
             ->first();
+        $alreadyExists = (bool) $item;
 
         if (! $item) {
             $item = new IntegrationProduct([
@@ -262,7 +278,22 @@ class CommerceMlCatalogImporter
         }
 
         $item->save();
+        $this->trackStagingRow($item->external_id, $alreadyExists);
         $stats['offers']++;
+    }
+
+    private function trackStagingRow(string $externalId, bool $alreadyExists): void
+    {
+        if (! $alreadyExists) {
+            $this->createdExternalIds[$externalId] = true;
+            unset($this->updatedExternalIds[$externalId]);
+
+            return;
+        }
+
+        if (! isset($this->createdExternalIds[$externalId])) {
+            $this->updatedExternalIds[$externalId] = true;
+        }
     }
 
     private function productCategoryId(SimpleXMLElement $node): ?int

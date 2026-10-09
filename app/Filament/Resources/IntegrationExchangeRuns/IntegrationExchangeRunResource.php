@@ -65,6 +65,9 @@ class IntegrationExchangeRunResource extends Resource
                         default => 'info',
                     }),
                 TextColumn::make('items_received')->label('Получено')->numeric()->alignRight(),
+                TextColumn::make('items_created')->label('Новых')->numeric()->alignRight()
+                    ->color(fn (int $state): string => $state > 0 ? 'warning' : 'gray'),
+                TextColumn::make('items_updated')->label('Обновлено')->numeric()->alignRight(),
                 TextColumn::make('orders_count')->label('Заказов')->numeric()->alignRight(),
                 TextColumn::make('files_count')->label('Частей файла')->numeric()->alignRight()->toggleable(),
                 TextColumn::make('bytes_received')->label('Объём')

@@ -484,8 +484,8 @@ XML;
         $second = str_replace('Первое название', 'Обновлённое название', $first);
         $importer = app(CommerceMlCatalogImporter::class);
 
-        $importer->import($first);
-        $importer->import($second);
+        $firstStats = $importer->import($first);
+        $secondStats = $importer->import($second);
 
         $source = IntegrationSource::query()->where('code', 'onec')->firstOrFail();
         $this->assertSame(1, IntegrationProduct::query()
@@ -497,6 +497,10 @@ XML;
             'external_id' => 'stable-onec-id',
             'name' => 'Обновлённое название',
         ]);
+        $this->assertSame(1, $firstStats['staging_created']);
+        $this->assertSame(0, $firstStats['staging_updated']);
+        $this->assertSame(0, $secondStats['staging_created']);
+        $this->assertSame(1, $secondStats['staging_updated']);
     }
 
     public function test_catalog_item_reads_onec_code_and_links_it_to_existing_sku(): void
