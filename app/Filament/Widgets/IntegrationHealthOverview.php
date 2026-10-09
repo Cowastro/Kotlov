@@ -6,6 +6,7 @@ use App\Filament\Resources\IntegrationExchangeRuns\IntegrationExchangeRunResourc
 use App\Filament\Resources\IntegrationProducts\IntegrationProductResource;
 use App\Filament\Resources\IntegrationSources\IntegrationSourceResource;
 use App\Filament\Resources\Orders\OrderResource;
+use App\Models\IntegrationExchangeRun;
 use App\Services\Integrations\IntegrationOperationsSummary;
 use Filament\Support\Icons\Heroicon;
 use Filament\Widgets\StatsOverviewWidget;
@@ -27,10 +28,8 @@ class IntegrationHealthOverview extends StatsOverviewWidget
         $lastSuccess = $summary['last_success'];
 
         return [
-            Stat::make('Обмен с 1С', $service->healthLabel($summary['health']))
-                ->description($lastSuccess?->finished_at
-                    ? 'Последний успех '.$lastSuccess->finished_at->timezone('Europe/Minsk')->format('d.m.Y H:i')
-                    : 'Успешных сеансов пока нет')
+            Stat::make('Обмен интеграций', $service->healthLabel($summary['health']))
+                ->description($this->healthDescription($summary, $lastSuccess))
                 ->descriptionIcon(Heroicon::OutlinedArrowPathRoundedSquare)
                 ->color($service->healthColor($summary['health']))
                 ->url(IntegrationExchangeRunResource::getUrl('index')),
@@ -49,10 +48,31 @@ class IntegrationHealthOverview extends StatsOverviewWidget
             Stat::make('Активные источники', number_format($summary['active_sources'], 0, ',', ' '))
                 ->description($summary['failed_runs_24h'] > 0
                     ? 'Ошибок за 24 часа: '.$summary['failed_runs_24h']
-                    : ($latestRun ? 'Последний сеанс: '.$latestRun->operation : 'Ожидается первый обмен'))
+                    : ($summary['active_sources'] > 0
+                        ? 'Работают: '.$summary['healthy_sources'].' · требуют внимания: '.$summary['attention_sources']
+                        : ($latestRun ? 'Последний сеанс: '.$latestRun->operation : 'Нет активных подключений')))
                 ->descriptionIcon(Heroicon::OutlinedSignal)
                 ->color($summary['failed_runs_24h'] > 0 ? 'danger' : 'info')
                 ->url(IntegrationSourceResource::getUrl('index')),
         ];
+    }
+
+    /** @param array<string, mixed> $summary */
+    private function healthDescription(array $summary, ?IntegrationExchangeRun $lastSuccess): string
+    {
+        if ($summary['attention_sources'] > 0) {
+            $names = collect($summary['attention_source_names'])->take(2)->implode(', ');
+            $more = $summary['attention_sources'] > 2 ? ' +'.($summary['attention_sources'] - 2) : '';
+
+            return 'Требуют внимания: '.$names.$more;
+        }
+
+        if ($summary['running_sources'] > 0) {
+            return 'Сейчас выполняется обмен';
+        }
+
+        return $lastSuccess?->finished_at
+            ? 'Последний успех '.$lastSuccess->finished_at->timezone('Europe/Minsk')->format('d.m.Y H:i')
+            : 'Успешных сеансов пока нет';
     }
 }

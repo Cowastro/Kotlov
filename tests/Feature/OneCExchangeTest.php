@@ -1910,6 +1910,52 @@ XML;
         $this->assertSame(1, $summary['failed_runs_24h']);
     }
 
+    public function test_operations_summary_cannot_hide_an_unhealthy_source_behind_a_healthy_one(): void
+    {
+        $healthy = IntegrationSource::query()->create([
+            'code' => 'summary-healthy',
+            'name' => 'Исправный источник',
+            'is_active' => true,
+        ]);
+        $stale = IntegrationSource::query()->create([
+            'code' => 'summary-stale',
+            'name' => 'Просроченный источник',
+            'is_active' => true,
+            'settings' => ['stale_after_minutes' => 15],
+        ]);
+        IntegrationSource::query()->create([
+            'code' => 'summary-inactive',
+            'name' => 'Выключенный источник',
+            'is_active' => false,
+        ]);
+
+        foreach ([
+            [$healthy, now()->subMinute()],
+            [$stale, now()->subMinutes(30)],
+        ] as [$source, $finishedAt]) {
+            IntegrationExchangeRun::query()->create([
+                'integration_source_id' => $source->id,
+                'direction' => 'inbound',
+                'operation' => 'catalog',
+                'status' => 'success',
+                'started_at' => $finishedAt->copy()->subMinute(),
+                'finished_at' => $finishedAt,
+            ]);
+        }
+
+        $summary = app(IntegrationOperationsSummary::class)->snapshot();
+
+        $this->assertSame('stale', $summary['health']);
+        $this->assertSame(2, $summary['active_sources']);
+        $this->assertSame(1, $summary['healthy_sources']);
+        $this->assertSame(1, $summary['attention_sources']);
+        $this->assertSame(['Просроченный источник'], $summary['attention_source_names']);
+        $this->assertSame(
+            ['summary-healthy' => 'healthy', 'summary-stale' => 'stale'],
+            collect($summary['source_healths'])->pluck('health', 'code')->all(),
+        );
+    }
+
     public function test_integration_source_exposes_schedule_and_latest_successful_exchange(): void
     {
         $source = IntegrationSource::query()->create([
