@@ -2,6 +2,7 @@
 
 namespace App\Services\Integrations;
 
+use App\Models\IntegrationCategory;
 use App\Models\IntegrationProduct;
 use App\Models\IntegrationSource;
 use App\Models\Product;
@@ -12,6 +13,9 @@ use Throwable;
 
 class CommerceMlCatalogImporter
 {
+    /** @var Collection<string, int> */
+    private Collection $categoryIds;
+
     /** @var Collection<int, Product> */
     private Collection $products;
 
@@ -30,7 +34,7 @@ class CommerceMlCatalogImporter
     /**
      * Import CommerceML into a staging catalogue. This method never mutates products.
      *
-     * @return array{products:int, offers:int, matched:int, suggested:int, ambiguous:int, unmatched:int}
+     * @return array{categories:int, products:int, offers:int, matched:int, suggested:int, ambiguous:int, unmatched:int}
      */
     public function import(string $xml, string $sourceCode = 'onec'): array
     {
@@ -48,6 +52,7 @@ class CommerceMlCatalogImporter
         $this->prepareIndexes();
 
         $stats = [
+            'categories' => 0,
             'products' => 0,
             'offers' => 0,
             'matched' => 0,
@@ -57,6 +62,14 @@ class CommerceMlCatalogImporter
         ];
 
         DB::transaction(function () use ($document, $source, &$stats): void {
+            foreach ($document->xpath('/*[local-name()="КоммерческаяИнформация"]/*[local-name()="Классификатор"]/*[local-name()="Группы"]/*[local-name()="Группа"]') ?: [] as $node) {
+                $this->stageCategory($source, $node, null, null, $stats);
+            }
+
+            $this->categoryIds = IntegrationCategory::query()
+                ->whereBelongsTo($source, 'source')
+                ->pluck('id', 'external_id');
+
             foreach ($document->xpath('//*[local-name()="Товар"]') ?: [] as $node) {
                 $this->stageProduct($source, $node, $stats);
             }
@@ -67,6 +80,42 @@ class CommerceMlCatalogImporter
         });
 
         return $stats;
+    }
+
+    /** @param array<string, int> $stats */
+    private function stageCategory(
+        IntegrationSource $source,
+        SimpleXMLElement $node,
+        ?IntegrationCategory $parent,
+        ?string $parentPath,
+        array &$stats
+    ): void {
+        $externalId = $this->text($node, './*[local-name()="Ид"]');
+        $name = $this->text($node, './*[local-name()="Наименование"]');
+        if ($externalId === '' || $name === '') {
+            return;
+        }
+
+        $category = IntegrationCategory::query()->updateOrCreate(
+            [
+                'integration_source_id' => $source->id,
+                'external_id' => $externalId,
+            ],
+            [
+                'parent_id' => $parent?->id,
+                'parent_external_id' => $parent?->external_id,
+                'name' => $name,
+                'path' => filled($parentPath) ? $parentPath.' / '.$name : $name,
+                'payload' => $this->nodePayload($node),
+                'last_seen_at' => now(),
+            ]
+        );
+
+        $stats['categories']++;
+
+        foreach ($node->xpath('./*[local-name()="Группы"]/*[local-name()="Группа"]') ?: [] as $child) {
+            $this->stageCategory($source, $child, $category, $category->path, $stats);
+        }
     }
 
     /** @param array<string, int> $stats */
@@ -83,6 +132,7 @@ class CommerceMlCatalogImporter
         ]);
 
         $item->fill([
+            'integration_category_id' => $this->productCategoryId($node),
             'external_code' => $this->requisiteValue($node, 'Код') ?: null,
             'external_sku' => $this->text($node, './*[local-name()="Артикул"]') ?: null,
             'barcode' => $this->text($node, './*[local-name()="Штрихкод"]') ?: null,
@@ -139,6 +189,18 @@ class CommerceMlCatalogImporter
 
         $item->save();
         $stats['offers']++;
+    }
+
+    private function productCategoryId(SimpleXMLElement $node): ?int
+    {
+        foreach ($node->xpath('./*[local-name()="Группы"]/*[local-name()="Ид"]') ?: [] as $groupId) {
+            $categoryId = $this->categoryIds->get(trim((string) $groupId));
+            if ($categoryId) {
+                return (int) $categoryId;
+            }
+        }
+
+        return null;
     }
 
     /** @return array<string, mixed> */

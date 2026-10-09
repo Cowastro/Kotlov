@@ -8,8 +8,8 @@ use App\Filament\Resources\IntegrationSources\Pages\ListIntegrationSources;
 use App\Models\IntegrationSource;
 use BackedEnum;
 use Filament\Actions\EditAction;
-use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Placeholder;
+use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Resources\Resource;
@@ -90,9 +90,10 @@ class IntegrationSourceResource extends Resource
                     ->copyable()
                     ->toggleable(),
                 TextColumn::make('driver')->label('Формат')->badge(),
-                TextColumn::make('products_count')->label('Получено товаров')->counts('products')->sortable(),
+                TextColumn::make('products_count')->label('Товаров в наличии')
+                    ->counts(['products' => fn ($query) => $query->inStock()])->sortable(),
                 TextColumn::make('matched_products_count')->label('Привязано')
-                    ->counts(['products' => fn ($query) => $query->where('match_status', 'matched')]),
+                    ->counts(['products' => fn ($query) => $query->inStock()->where('match_status', 'matched')]),
                 IconColumn::make('update_prices')->label('Цены')->boolean(),
                 IconColumn::make('update_stock')->label('Остатки')->boolean(),
                 IconColumn::make('is_active')->label('Активен')->boolean(),

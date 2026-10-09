@@ -4,6 +4,7 @@ namespace App\Filament\Resources\IntegrationProducts;
 
 use App\Filament\Resources\IntegrationProducts\Pages\EditIntegrationProduct;
 use App\Filament\Resources\IntegrationProducts\Pages\ListIntegrationProducts;
+use App\Models\IntegrationCategory;
 use App\Models\IntegrationProduct;
 use BackedEnum;
 use Filament\Actions\Action;
@@ -55,6 +56,9 @@ class IntegrationProductResource extends Resource
                 ->schema([
                     Placeholder::make('source_name')->label('Источник')
                         ->content(fn (?IntegrationProduct $record): string => $record?->source?->name ?? '—'),
+                    Placeholder::make('integration_category')
+                        ->label('Группа источника')
+                        ->content(fn (?IntegrationProduct $record): string => $record?->integrationCategory?->path ?? '—'),
                     TextInput::make('external_id')->label('Внешний ID')->disabled()->dehydrated(false),
                     TextInput::make('external_code')->label('Код 1С')->disabled()->dehydrated(false),
                     TextInput::make('external_sku')->label('Артикул')->disabled()->dehydrated(false),
@@ -82,6 +86,8 @@ class IntegrationProductResource extends Resource
         return $table
             ->columns([
                 TextColumn::make('source.name')->label('Источник')->badge()->sortable(),
+                TextColumn::make('integrationCategory.path')->label('Группа источника')
+                    ->searchable()->sortable()->wrap()->toggleable(),
                 TextColumn::make('name')->label('Товар во внешней системе')
                     ->searchable(['name', 'external_sku', 'external_code', 'external_id'])->wrap()
                     ->description(fn (IntegrationProduct $record): string => collect([
@@ -117,6 +123,9 @@ class IntegrationProductResource extends Resource
             ])
             ->filters([
                 SelectFilter::make('integration_source_id')->label('Источник')->relationship('source', 'name'),
+                SelectFilter::make('integration_category_id')->label('Группа источника')
+                    ->options(fn (): array => IntegrationCategory::query()->orderBy('path')->pluck('path', 'id')->all())
+                    ->searchable(),
                 SelectFilter::make('match_status')->label('Статус')->options([
                     'matched' => 'Привязан',
                     'suggested' => 'Предложение',

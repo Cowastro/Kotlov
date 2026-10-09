@@ -9,7 +9,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class IntegrationProduct extends Model
 {
     protected $fillable = [
-        'integration_source_id', 'product_id', 'external_id', 'external_code', 'external_sku',
+        'integration_source_id', 'integration_category_id', 'product_id', 'external_id', 'external_code', 'external_sku',
         'barcode', 'name', 'price', 'stock_quantity', 'match_status',
         'match_method', 'match_confidence', 'candidates', 'payload',
         'matched_at', 'last_seen_at',
@@ -33,6 +33,11 @@ class IntegrationProduct extends Model
     public function source(): BelongsTo
     {
         return $this->belongsTo(IntegrationSource::class, 'integration_source_id');
+    }
+
+    public function integrationCategory(): BelongsTo
+    {
+        return $this->belongsTo(IntegrationCategory::class);
     }
 
     public function product(): BelongsTo

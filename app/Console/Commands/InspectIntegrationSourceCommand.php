@@ -25,6 +25,7 @@ class InspectIntegrationSourceCommand extends Command
 
         $query = IntegrationProduct::query()->whereBelongsTo($source, 'source');
         $this->table(['Metric', 'Count'], [
+            ['Supplier groups', $source->categories()->count()],
             ['Staged products', (clone $query)->count()],
             ['Positive stock', (clone $query)->where('stock_quantity', '>', 0)->count()],
             ['Zero stock', (clone $query)->where('stock_quantity', 0)->count()],

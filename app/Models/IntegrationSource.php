@@ -26,4 +26,9 @@ class IntegrationSource extends Model
     {
         return $this->hasMany(IntegrationProduct::class);
     }
+
+    public function categories(): HasMany
+    {
+        return $this->hasMany(IntegrationCategory::class);
+    }
 }

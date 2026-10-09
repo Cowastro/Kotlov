@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Http\Middleware\HandleRedirects;
+use App\Models\IntegrationCategory;
 use App\Models\IntegrationProduct;
 use App\Models\IntegrationSource;
 use App\Models\Order;
@@ -86,9 +87,24 @@ class OneCExchangeTest extends TestCase
             $table->timestamps();
         });
 
+        Schema::create('integration_categories', function (Blueprint $table) {
+            $table->id();
+            $table->unsignedBigInteger('integration_source_id');
+            $table->unsignedBigInteger('parent_id')->nullable();
+            $table->unsignedBigInteger('category_id')->nullable();
+            $table->string('external_id');
+            $table->string('parent_external_id')->nullable();
+            $table->string('name');
+            $table->string('path', 1024);
+            $table->json('payload')->nullable();
+            $table->timestamp('last_seen_at')->nullable();
+            $table->timestamps();
+        });
+
         Schema::create('integration_products', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('integration_source_id');
+            $table->unsignedBigInteger('integration_category_id')->nullable();
             $table->unsignedBigInteger('product_id')->nullable();
             $table->string('external_id');
             $table->string('external_code')->nullable();
@@ -333,6 +349,44 @@ XML;
             'product_id' => $product->id,
             'match_status' => 'matched',
             'match_method' => 'onec_code_to_sku',
+        ]);
+    }
+
+    public function test_catalog_preserves_nested_onec_groups_and_assigns_products(): void
+    {
+        $xml = <<<'XML'
+<?xml version="1.0" encoding="UTF-8"?>
+<КоммерческаяИнформация xmlns="urn:1C.ru:commerceml_2">
+  <Классификатор>
+    <Группы>
+      <Группа>
+        <Ид>chimneys</Ид>
+        <Наименование>Дымоходы</Наименование>
+        <Группы>
+          <Группа>
+            <Ид>single-wall</Ид>
+            <Наименование>Одностенные</Наименование>
+          </Группа>
+        </Группы>
+      </Группа>
+    </Группы>
+  </Классификатор>
+  <Каталог><Товары><Товар>
+    <Ид>pipe-1</Ид>
+    <Наименование>Труба 1 м</Наименование>
+    <Группы><Ид>single-wall</Ид></Группы>
+  </Товар></Товары></Каталог>
+</КоммерческаяИнформация>
+XML;
+
+        $stats = app(CommerceMlCatalogImporter::class)->import($xml);
+        $child = IntegrationCategory::query()->where('external_id', 'single-wall')->firstOrFail();
+
+        $this->assertSame(2, $stats['categories']);
+        $this->assertSame('Дымоходы / Одностенные', $child->path);
+        $this->assertDatabaseHas('integration_products', [
+            'external_id' => 'pipe-1',
+            'integration_category_id' => $child->id,
         ]);
     }
 
