@@ -35,48 +35,48 @@ class OneCExchangeTest extends TestCase
 
         if (! Schema::hasTable('orders')) {
             Schema::create('orders', function (Blueprint $table) {
-            $table->id();
-            $table->string('number')->unique();
-            $table->string('status')->default('new');
-            $table->string('customer_name');
-            $table->string('customer_phone');
-            $table->string('customer_email')->nullable();
-            $table->string('company_name')->nullable();
-            $table->string('delivery_type')->default('courier');
-            $table->string('delivery_region')->nullable();
-            $table->string('delivery_city')->nullable();
-            $table->string('delivery_address')->nullable();
-            $table->string('payment_type')->default('cash');
-            $table->string('payment_status')->default('pending');
-            $table->decimal('subtotal', 10, 2)->default(0);
-            $table->decimal('total', 10, 2)->default(0);
-            $table->text('comment')->nullable();
-            $table->timestamp('onec_exported_at')->nullable();
-            $table->timestamps();
+                $table->id();
+                $table->string('number')->unique();
+                $table->string('status')->default('new');
+                $table->string('customer_name');
+                $table->string('customer_phone');
+                $table->string('customer_email')->nullable();
+                $table->string('company_name')->nullable();
+                $table->string('delivery_type')->default('courier');
+                $table->string('delivery_region')->nullable();
+                $table->string('delivery_city')->nullable();
+                $table->string('delivery_address')->nullable();
+                $table->string('payment_type')->default('cash');
+                $table->string('payment_status')->default('pending');
+                $table->decimal('subtotal', 10, 2)->default(0);
+                $table->decimal('total', 10, 2)->default(0);
+                $table->text('comment')->nullable();
+                $table->timestamp('onec_exported_at')->nullable();
+                $table->timestamps();
             });
         }
 
         if (! Schema::hasTable('order_items')) {
             Schema::create('order_items', function (Blueprint $table) {
-            $table->id();
-            $table->unsignedBigInteger('order_id');
-            $table->unsignedBigInteger('product_id')->nullable();
-            $table->string('product_name');
-            $table->string('product_sku')->nullable();
-            $table->decimal('price', 10, 2);
-            $table->integer('quantity');
-            $table->decimal('total', 10, 2);
-            $table->timestamps();
+                $table->id();
+                $table->unsignedBigInteger('order_id');
+                $table->unsignedBigInteger('product_id')->nullable();
+                $table->string('product_name');
+                $table->string('product_sku')->nullable();
+                $table->decimal('price', 10, 2);
+                $table->integer('quantity');
+                $table->decimal('total', 10, 2);
+                $table->timestamps();
             });
         }
 
         if (! Schema::hasTable('products')) {
             Schema::create('products', function (Blueprint $table) {
-            $table->id();
-            $table->string('sku')->nullable();
-            $table->string('name')->nullable();
-            $table->string('slug')->nullable();
-            $table->timestamps();
+                $table->id();
+                $table->string('sku')->nullable();
+                $table->string('name')->nullable();
+                $table->string('slug')->nullable();
+                $table->timestamps();
             });
         } else {
             Schema::table('products', function (Blueprint $table) {
@@ -91,63 +91,87 @@ class OneCExchangeTest extends TestCase
 
         if (! Schema::hasTable('integration_sources')) {
             Schema::create('integration_sources', function (Blueprint $table) {
-            $table->id();
-            $table->string('code')->unique();
-            $table->string('name');
-            $table->string('driver')->default('commerceml');
-            $table->string('username')->nullable();
-            $table->string('password_hash')->nullable();
-            $table->boolean('is_active')->default(true);
-            $table->boolean('create_products')->default(false);
-            $table->boolean('update_prices')->default(false);
-            $table->boolean('update_stock')->default(false);
-            $table->json('settings')->nullable();
-            $table->timestamps();
+                $table->id();
+                $table->string('code')->unique();
+                $table->string('name');
+                $table->string('driver')->default('commerceml');
+                $table->string('username')->nullable();
+                $table->string('password_hash')->nullable();
+                $table->boolean('is_active')->default(true);
+                $table->boolean('create_products')->default(false);
+                $table->boolean('update_prices')->default(false);
+                $table->boolean('update_stock')->default(false);
+                $table->json('settings')->nullable();
+                $table->timestamps();
             });
         }
 
         if (! Schema::hasTable('integration_categories')) {
             Schema::create('integration_categories', function (Blueprint $table) {
-            $table->id();
-            $table->unsignedBigInteger('integration_source_id');
-            $table->unsignedBigInteger('parent_id')->nullable();
-            $table->unsignedBigInteger('category_id')->nullable();
-            $table->string('external_id');
-            $table->string('parent_external_id')->nullable();
-            $table->string('name');
-            $table->string('path', 1024);
-            $table->json('payload')->nullable();
-            $table->timestamp('last_seen_at')->nullable();
-            $table->timestamps();
+                $table->id();
+                $table->unsignedBigInteger('integration_source_id');
+                $table->unsignedBigInteger('parent_id')->nullable();
+                $table->unsignedBigInteger('category_id')->nullable();
+                $table->string('external_id');
+                $table->string('parent_external_id')->nullable();
+                $table->string('name');
+                $table->string('path', 1024);
+                $table->json('payload')->nullable();
+                $table->timestamp('last_seen_at')->nullable();
+                $table->timestamps();
             });
         }
 
         if (! Schema::hasTable('integration_products')) {
             Schema::create('integration_products', function (Blueprint $table) {
-            $table->id();
-            $table->unsignedBigInteger('integration_source_id');
-            $table->unsignedBigInteger('integration_category_id')->nullable();
-            $table->unsignedBigInteger('product_id')->nullable();
-            $table->string('external_id');
-            $table->string('external_code')->nullable();
-            $table->string('external_sku')->nullable();
-            $table->string('barcode')->nullable();
-            $table->string('name')->nullable();
-            $table->decimal('price', 12, 2)->nullable();
-            $table->decimal('stock_quantity', 12, 3)->nullable();
-            $table->string('match_status')->default('unmatched');
-            $table->string('match_method')->nullable();
-            $table->decimal('match_confidence', 5, 4)->nullable();
-            $table->json('candidates')->nullable();
-            $table->json('payload')->nullable();
-            $table->timestamp('matched_at')->nullable();
-            $table->timestamp('last_seen_at')->nullable();
-            $table->timestamps();
+                $table->id();
+                $table->unsignedBigInteger('integration_source_id');
+                $table->unsignedBigInteger('integration_category_id')->nullable();
+                $table->unsignedBigInteger('product_id')->nullable();
+                $table->string('external_id');
+                $table->string('external_code')->nullable();
+                $table->string('external_sku')->nullable();
+                $table->string('barcode')->nullable();
+                $table->string('name')->nullable();
+                $table->decimal('price', 12, 2)->nullable();
+                $table->decimal('stock_quantity', 12, 3)->nullable();
+                $table->string('match_status')->default('unmatched');
+                $table->string('match_method')->nullable();
+                $table->decimal('match_confidence', 5, 4)->nullable();
+                $table->json('candidates')->nullable();
+                $table->json('payload')->nullable();
+                $table->timestamp('matched_at')->nullable();
+                $table->timestamp('last_seen_at')->nullable();
+                $table->timestamps();
+            });
+        }
+
+        if (! Schema::hasTable('integration_exchange_runs')) {
+            Schema::create('integration_exchange_runs', function (Blueprint $table) {
+                $table->id();
+                $table->unsignedBigInteger('integration_source_id');
+                $table->string('direction', 16);
+                $table->string('operation', 32);
+                $table->string('status', 24)->default('running');
+                $table->string('session_key', 64)->nullable();
+                $table->timestamp('started_at');
+                $table->timestamp('finished_at')->nullable();
+                $table->unsignedInteger('duration_ms')->nullable();
+                $table->unsignedInteger('files_count')->default(0);
+                $table->unsignedBigInteger('bytes_received')->default(0);
+                $table->unsignedInteger('items_received')->default(0);
+                $table->unsignedInteger('items_created')->default(0);
+                $table->unsignedInteger('items_updated')->default(0);
+                $table->unsignedInteger('items_skipped')->default(0);
+                $table->unsignedInteger('orders_count')->default(0);
+                $table->json('summary')->nullable();
+                $table->text('error_message')->nullable();
+                $table->timestamps();
             });
         }
 
         Schema::disableForeignKeyConstraints();
-        foreach (['integration_products', 'integration_categories', 'integration_sources', 'order_items', 'orders', 'products'] as $table) {
+        foreach (['integration_exchange_runs', 'integration_products', 'integration_categories', 'integration_sources', 'order_items', 'orders', 'products'] as $table) {
             DB::table($table)->delete();
         }
         Schema::enableForeignKeyConstraints();
@@ -348,6 +372,13 @@ XML;
         $this->assertDatabaseHas('products', [
             'id' => $product->id,
             'name' => 'Котёл тестовый 100',
+        ]);
+        $this->assertDatabaseHas('integration_exchange_runs', [
+            'direction' => 'inbound',
+            'operation' => 'catalog',
+            'status' => 'success',
+            'files_count' => 1,
+            'items_received' => 1,
         ]);
     }
 
@@ -601,5 +632,12 @@ XML;
             ->assertSeeText('success');
 
         $this->assertNotNull($order->fresh()->onec_exported_at);
+        $this->assertDatabaseHas('integration_exchange_runs', [
+            'integration_source_id' => $source->id,
+            'direction' => 'outbound',
+            'operation' => 'orders',
+            'status' => 'success',
+            'orders_count' => 1,
+        ]);
     }
 }

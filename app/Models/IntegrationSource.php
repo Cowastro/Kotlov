@@ -92,4 +92,9 @@ class IntegrationSource extends Model
     {
         return $this->hasMany(IntegrationCategory::class);
     }
+
+    public function exchangeRuns(): HasMany
+    {
+        return $this->hasMany(IntegrationExchangeRun::class);
+    }
 }

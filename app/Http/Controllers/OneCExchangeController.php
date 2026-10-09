@@ -2,10 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\IntegrationExchangeRun;
 use App\Models\IntegrationProduct;
 use App\Models\IntegrationSource;
 use App\Models\Order;
 use App\Services\Integrations\CommerceMlCatalogImporter;
+use App\Services\Integrations\IntegrationExchangeJournal;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
@@ -19,7 +21,10 @@ class OneCExchangeController extends Controller
 {
     private const SESSION_COOKIE = 'onec_exchange';
 
-    public function __construct(private readonly CommerceMlCatalogImporter $catalogImporter) {}
+    public function __construct(
+        private readonly CommerceMlCatalogImporter $catalogImporter,
+        private readonly IntegrationExchangeJournal $exchangeJournal,
+    ) {}
 
     public function __invoke(Request $request, string $source = 'onec'): Response
     {
@@ -36,9 +41,9 @@ class OneCExchangeController extends Controller
 
         return match ($mode) {
             'checkauth' => $this->checkAuth(),
-            'init' => $this->initializeExchange($request, $integrationSource),
-            'file' => $this->receiveFile($request, $integrationSource),
-            'import' => $this->acknowledgeImport($request, $integrationSource),
+            'init' => $this->initializeExchange($request, $integrationSource, $type),
+            'file' => $this->receiveFile($request, $integrationSource, $type),
+            'import' => $this->acknowledgeImport($request, $integrationSource, $type),
             'query' => $type === 'sale' && $this->canExportOrders($integrationSource)
                 ? $this->exportOrders($request, $integrationSource)
                 : $this->plain("failure\nUnsupported exchange type"),
@@ -99,7 +104,7 @@ class OneCExchangeController extends Controller
             ->withCookie(cookie(self::SESSION_COOKIE, $token, 60, '/', null, true, true, false, 'Lax'));
     }
 
-    private function receiveFile(Request $request, IntegrationSource $source): Response
+    private function receiveFile(Request $request, IntegrationSource $source, string $type): Response
     {
         $filename = basename((string) $request->query('filename'));
         if ($filename === '' || ! preg_match('/\.(xml|zip)$/i', $filename)) {
@@ -126,18 +131,28 @@ class OneCExchangeController extends Controller
 
         $disk->put($path, $existing.$contents);
 
+        if ($type === 'catalog') {
+            $run = $this->currentRun($request, $source, 'catalog')
+                ?? $this->startRun($request, $source, 'inbound', 'catalog');
+            $this->exchangeJournal->recordFile($run, strlen($contents));
+        }
+
         return $this->plain('success');
     }
 
-    private function initializeExchange(Request $request, IntegrationSource $source): Response
+    private function initializeExchange(Request $request, IntegrationSource $source, string $type): Response
     {
         Storage::disk((string) config('onec.exchange.storage_disk'))
             ->deleteDirectory($this->sessionPath($request, $source));
 
+        if ($type === 'catalog') {
+            $this->startRun($request, $source, 'inbound', 'catalog');
+        }
+
         return $this->plain("zip=no\nfile_limit=".config('onec.exchange.file_limit'));
     }
 
-    private function acknowledgeImport(Request $request, IntegrationSource $source): Response
+    private function acknowledgeImport(Request $request, IntegrationSource $source, string $type): Response
     {
         $filename = basename((string) $request->query('filename'));
         $path = $this->sessionPath($request, $source).'/'.$filename;
@@ -147,10 +162,16 @@ class OneCExchangeController extends Controller
             return $this->plain("failure\nUploaded file not found");
         }
 
+        $run = $type === 'catalog'
+            ? ($this->currentRun($request, $source, 'catalog')
+                ?? $this->startRun($request, $source, 'inbound', 'catalog'))
+            : null;
+
         try {
             $stats = $this->catalogImporter->import($disk->get($path), $source->code);
         } catch (\Throwable $exception) {
             report($exception);
+            $this->exchangeJournal->fail($run, $exception);
 
             return $this->plain("failure\nCommerceML import failed");
         }
@@ -160,17 +181,27 @@ class OneCExchangeController extends Controller
         $disk->put($path.'.received', now()->toIso8601String());
         $disk->put($path.'.result.json', json_encode($stats, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
 
+        $this->exchangeJournal->succeed($run, [
+            'items_received' => max((int) $stats['products'], (int) $stats['offers']),
+            'items_updated' => (int) $stats['matched'] + (int) $stats['suggested']
+                + (int) $stats['ambiguous'] + (int) $stats['unmatched'],
+            'summary' => $stats,
+        ]);
+
         return $this->plain('success');
     }
 
     private function exportOrders(Request $request, IntegrationSource $source): Response
     {
+        $run = $this->startRun($request, $source, 'outbound', 'orders');
         $orders = Order::query()
             ->whereNull('onec_exported_at')
             ->with('items.product')
             ->orderBy('id')
             ->limit(100)
             ->get();
+
+        $this->exchangeJournal->progress($run, ['orders_count' => $orders->count()]);
 
         Cache::put(
             $this->pendingOrdersCacheKey($request, $source),
@@ -204,12 +235,18 @@ class OneCExchangeController extends Controller
     private function confirmOrders(Request $request, IntegrationSource $source): Response
     {
         $ids = Cache::pull($this->pendingOrdersCacheKey($request, $source), []);
+        $run = $this->currentRun($request, $source, 'orders');
 
         if ($ids !== []) {
             Order::query()->whereIn('id', $ids)->whereNull('onec_exported_at')->update([
                 'onec_exported_at' => now(),
             ]);
         }
+
+        $this->exchangeJournal->succeed($run, [
+            'orders_count' => count($ids),
+            'summary' => ['confirmed_order_ids' => array_values($ids)],
+        ]);
 
         return $this->plain('success');
     }
@@ -309,6 +346,47 @@ class OneCExchangeController extends Controller
     private function pendingOrdersCacheKey(Request $request, IntegrationSource $source): string
     {
         return 'onec_exchange_pending_orders:'.hash('sha256', $this->sessionPath($request, $source));
+    }
+
+    private function startRun(
+        Request $request,
+        IntegrationSource $source,
+        string $direction,
+        string $operation,
+    ): ?IntegrationExchangeRun {
+        $run = $this->exchangeJournal->start(
+            $source,
+            $direction,
+            $operation,
+            hash('sha256', $this->sessionPath($request, $source))
+        );
+
+        if ($run) {
+            Cache::put($this->exchangeRunCacheKey($request, $source, $operation), $run->id, now()->addHour());
+        }
+
+        return $run;
+    }
+
+    private function currentRun(
+        Request $request,
+        IntegrationSource $source,
+        string $operation,
+    ): ?IntegrationExchangeRun {
+        return $this->exchangeJournal->find(
+            Cache::get($this->exchangeRunCacheKey($request, $source, $operation))
+        );
+    }
+
+    private function exchangeRunCacheKey(
+        Request $request,
+        IntegrationSource $source,
+        string $operation,
+    ): string {
+        return 'integration_exchange_run:'.$operation.':'.hash(
+            'sha256',
+            $this->sessionPath($request, $source)
+        );
     }
 
     private function sessionCacheKey(string $token): string
