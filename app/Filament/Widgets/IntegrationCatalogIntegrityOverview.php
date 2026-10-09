@@ -36,11 +36,11 @@ class IntegrationCatalogIntegrityOverview extends StatsOverviewWidget
         $priceProblems = $summary['zero_price'] + $summary['missing_price'];
 
         return [
-            Stat::make('Получено из источников', $format($summary['total']))
-                ->description($format($summary['in_stock']).' в наличии · '.$format($summary['without_stock']).' без остатка · '.$lastSeen)
+            Stat::make('Вся база интеграции', $format($summary['total']))
+                ->description($format($summary['in_stock']).' показано ниже · '.$format($summary['without_stock']).' без остатка скрыто · '.$lastSeen)
                 ->descriptionIcon(Heroicon::OutlinedArrowDownTray)
                 ->color('info'),
-            Stat::make('Уникальные ID', $format($summary['unique_external_ids']).' / '.$format($summary['total']))
+            Stat::make('Контроль дублей', $format($summary['unique_external_ids']).' уникальных из '.$format($summary['total']))
                 ->description(match (true) {
                     $summary['duplicates'] > 0 => 'Повторяющихся ID: '.$format($summary['duplicates']),
                     $summary['identity_collision_groups'] > 0 => 'ID уникальны · возможных дублей по реквизитам: '.$format($summary['identity_collision_groups']),

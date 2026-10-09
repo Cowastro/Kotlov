@@ -34,10 +34,10 @@ class ListIntegrationProducts extends ListRecords
     public function getSubheading(): ?string
     {
         if (! IntegrationCategory::query()->exists()) {
-            return '1С передала товары без папок. Организуйте каталог через «Категорию сайта»: для привязанных товаров она берётся из карточки, для остальных назначается вручную или массово.';
+            return 'Ниже показаны только товары с положительным остатком. Повторный обмен обновляет их по ID 1С и не создаёт копии. 1С передала товары без папок: организуйте каталог через «Категорию сайта».';
         }
 
-        return 'Сопоставление товаров 1С и будущих маркетплейсов с существующими карточками kotlov.by';
+        return 'Ниже показаны только товары с положительным остатком. Повторный обмен обновляет существующие строки по ID 1С и не создаёт копии; вся полученная номенклатура учитывается в сводке.';
     }
 
     protected function getHeaderActions(): array
@@ -109,7 +109,7 @@ class ListIntegrationProducts extends ListRecords
     public function getTabs(): array
     {
         return [
-            'all' => Tab::make('Все')
+            'all' => Tab::make('В наличии')
                 ->icon('heroicon-o-squares-2x2')
                 ->badge(IntegrationProduct::query()->inStock()->count()),
             'matched' => $this->statusTab('Привязаны', 'matched', 'success', 'heroicon-o-link'),

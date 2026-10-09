@@ -193,7 +193,10 @@ class IntegrationProductResource extends Resource
                         )
                         : null)
                     ->size(TextSize::Small),
-                TextColumn::make('stock_quantity')->label('Остаток 1С')->numeric()->toggleable()
+                TextColumn::make('stock_quantity')->label('Остаток 1С')
+                    ->state(fn (IntegrationProduct $record): string => $record->formattedStockQuantity())
+                    ->sortable()
+                    ->toggleable()
                     ->size(TextSize::Small),
                 TextColumn::make('last_seen_at')->label('Получен')->dateTime('d.m.Y H:i')->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
