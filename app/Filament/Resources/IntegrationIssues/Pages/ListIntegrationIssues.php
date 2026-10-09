@@ -48,16 +48,28 @@ class ListIntegrationIssues extends ListRecords
     {
         return [
             'open' => Tab::make('Открытые')
-                ->modifyQueryUsing(fn (Builder $query): Builder => $query->where('status', 'open'))
-                ->badge(IntegrationIssue::query()->where('status', 'open')->count())
+                ->modifyQueryUsing(fn (Builder $query): Builder => $query->open())
+                ->badge(IntegrationIssue::query()->open()->count())
                 ->badgeColor('warning'),
             'danger' => Tab::make('Критичные')
                 ->modifyQueryUsing(fn (Builder $query): Builder => $query
-                    ->where('status', 'open')
+                    ->open()
                     ->where('severity', 'danger'))
-                ->badge(IntegrationIssue::query()->where('status', 'open')->where('severity', 'danger')->count())
+                ->badge(IntegrationIssue::query()->open()->where('severity', 'danger')->count())
                 ->badgeColor('danger'),
-            'all' => Tab::make('Все')
+            'products' => Tab::make('Товары')
+                ->modifyQueryUsing(fn (Builder $query): Builder => $query->open()->products())
+                ->badge(IntegrationIssue::query()->open()->products()->count())
+                ->badgeColor('warning'),
+            'orders' => Tab::make('Заказы')
+                ->modifyQueryUsing(fn (Builder $query): Builder => $query->open()->orders())
+                ->badge(IntegrationIssue::query()->open()->orders()->count())
+                ->badgeColor('danger'),
+            'exchange' => Tab::make('Обмен')
+                ->modifyQueryUsing(fn (Builder $query): Builder => $query->open()->exchange())
+                ->badge(IntegrationIssue::query()->open()->exchange()->count())
+                ->badgeColor('info'),
+            'all' => Tab::make('История')
                 ->badge(IntegrationIssue::query()->count()),
         ];
     }

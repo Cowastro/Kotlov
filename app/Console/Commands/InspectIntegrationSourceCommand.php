@@ -34,7 +34,9 @@ class InspectIntegrationSourceCommand extends Command
             ['Positive stock', (clone $query)->where('stock_quantity', '>', 0)->count()],
             ['Zero stock', (clone $query)->where('stock_quantity', 0)->count()],
             ['Missing stock', (clone $query)->whereNull('stock_quantity')->count()],
-            ['With price', (clone $query)->whereNotNull('price')->count()],
+            ['Positive price', (clone $query)->where('price', '>', 0)->count()],
+            ['Zero price', (clone $query)->where('price', 0)->count()],
+            ['Missing price', (clone $query)->whereNull('price')->count()],
         ]);
 
         $disk = Storage::disk((string) config('onec.exchange.storage_disk'));

@@ -700,6 +700,62 @@ XML;
         $this->assertSame(['missing-group-id'], $snapshot['ungrouped_sample'][0]['group_references']);
     }
 
+    public function test_source_inspection_distinguishes_positive_zero_and_missing_prices(): void
+    {
+        $source = IntegrationSource::query()->create([
+            'code' => 'price-audit',
+            'name' => 'Аудит цен',
+        ]);
+        foreach ([10, 0, null] as $index => $price) {
+            IntegrationProduct::query()->create([
+                'integration_source_id' => $source->id,
+                'external_id' => 'price-audit-'.$index,
+                'price' => $price,
+                'stock_quantity' => 1,
+            ]);
+        }
+
+        $this->artisan('integration:inspect-source price-audit')
+            ->expectsTable(
+                ['Metric', 'Count'],
+                [
+                    ['Supplier groups', 0],
+                    ['Staged products', 3],
+                    ['Distinct external IDs', 3],
+                    ['Duplicate external IDs', 0],
+                    ['Positive stock', 3],
+                    ['Zero stock', 0],
+                    ['Missing stock', 0],
+                    ['Positive price', 1],
+                    ['Zero price', 1],
+                    ['Missing price', 1],
+                ],
+            )
+            ->assertExitCode(0);
+    }
+
+    public function test_issue_scopes_split_open_work_by_operational_area(): void
+    {
+        foreach ([
+            ['fingerprint' => 'scope-product', 'type' => 'product_attention', 'status' => 'open'],
+            ['fingerprint' => 'scope-order', 'type' => 'order_not_exported', 'status' => 'open'],
+            ['fingerprint' => 'scope-exchange', 'type' => 'integration_stale', 'status' => 'open'],
+            ['fingerprint' => 'scope-resolved', 'type' => 'product_attention', 'status' => 'resolved'],
+        ] as $issue) {
+            IntegrationIssue::query()->create($issue + [
+                'severity' => 'warning',
+                'title' => 'Проверка раздела',
+                'first_detected_at' => now(),
+                'last_detected_at' => now(),
+            ]);
+        }
+
+        $this->assertSame(3, IntegrationIssue::query()->open()->count());
+        $this->assertSame(1, IntegrationIssue::query()->open()->products()->count());
+        $this->assertSame(1, IntegrationIssue::query()->open()->orders()->count());
+        $this->assertSame(1, IntegrationIssue::query()->open()->exchange()->count());
+    }
+
     public function test_product_category_override_has_priority_over_supplier_group_rule(): void
     {
         $source = IntegrationSource::query()->create([
