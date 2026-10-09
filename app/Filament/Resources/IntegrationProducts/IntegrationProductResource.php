@@ -10,6 +10,7 @@ use App\Models\IntegrationProduct;
 use App\Models\IntegrationSource;
 use App\Services\Integrations\IntegrationCategoryAdvisor;
 use App\Services\Integrations\IntegrationManualMatchRecorder;
+use App\Services\Integrations\IntegrationProductMatchAdvisor;
 use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Actions\BulkAction;
@@ -261,18 +262,70 @@ class IntegrationProductResource extends Resource
                     ->label('Принять')
                     ->icon(Heroicon::OutlinedCheck)
                     ->color('success')
-                    ->visible(fn (IntegrationProduct $record): bool => $record->match_status === 'suggested'
-                        && filled($record->candidates[0]['product_id'] ?? null))
+                    ->visible(fn (IntegrationProduct $record): bool => filled(
+                        app(IntegrationProductMatchAdvisor::class)->explain($record)
+                    ))
+                    ->modalHeading('Подтвердить привязку к карточке')
+                    ->modalDescription('Проверьте рекомендацию. Она не применяется автоматически.')
+                    ->form([
+                        Placeholder::make('recommended_product')
+                            ->label('Предлагаемая карточка kotlov.by')
+                            ->content(function (IntegrationProduct $record): string {
+                                $advice = app(IntegrationProductMatchAdvisor::class)->explain($record);
+
+                                return $advice
+                                    ? collect([
+                                        $advice['product_name'],
+                                        $advice['product_sku'] ? 'SKU '.$advice['product_sku'] : null,
+                                        $advice['category_name'] ? 'Категория: '.$advice['category_name'] : null,
+                                    ])->filter()->implode(' · ')
+                                    : 'Рекомендация больше не доступна';
+                            }),
+                        Placeholder::make('recommendation_basis')
+                            ->label('Почему предложено')
+                            ->content(function (IntegrationProduct $record): string {
+                                $advice = app(IntegrationProductMatchAdvisor::class)->explain($record);
+
+                                return $advice
+                                    ? $advice['method_label'].' · '.round($advice['confidence'] * 100).'% — '.$advice['reason']
+                                    : 'Кандидат отсутствует или уже изменён.';
+                            }),
+                        Placeholder::make('confirmation_effect')
+                            ->label('Что произойдёт после подтверждения')
+                            ->content(fn (IntegrationProduct $record): string => app(IntegrationProductMatchAdvisor::class)->explain($record)['warning']
+                                ?? 'Никаких изменений не будет.'),
+                    ])
                     ->requiresConfirmation()
+                    ->modalSubmitActionLabel('Подтвердить привязку')
                     ->action(function (IntegrationProduct $record): void {
-                        $record->update([
-                            'product_id' => $record->candidates[0]['product_id'],
+                        $freshRecord = $record->fresh();
+                        $advice = $freshRecord
+                            ? app(IntegrationProductMatchAdvisor::class)->explain($freshRecord)
+                            : null;
+                        if (! $advice) {
+                            Notification::make()
+                                ->warning()
+                                ->title('Рекомендация больше не актуальна')
+                                ->body('Обновите таблицу и проверьте кандидата ещё раз.')
+                                ->send();
+
+                            return;
+                        }
+
+                        $freshRecord->update([
+                            'product_id' => $advice['product_id'],
                             'match_status' => 'matched',
                             'match_method' => 'manual_suggestion',
                             'match_confidence' => 1,
                             'matched_at' => now(),
                         ]);
-                        app(IntegrationManualMatchRecorder::class)->record($record);
+                        app(IntegrationManualMatchRecorder::class)->record($freshRecord);
+
+                        Notification::make()
+                            ->success()
+                            ->title('Привязка подтверждена')
+                            ->body('Товар связан с карточкой «'.$advice['product_name'].'». Решение сохранено для будущих синхронизаций.')
+                            ->send();
                     }),
                 Action::make('mapSourceGroup')
                     ->label('Категория группы')

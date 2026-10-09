@@ -22,6 +22,7 @@ use App\Services\Integrations\IntegrationIssueDetector;
 use App\Services\Integrations\IntegrationIssueTriageSummary;
 use App\Services\Integrations\IntegrationManualMatchRecorder;
 use App\Services\Integrations\IntegrationOperationsSummary;
+use App\Services\Integrations\IntegrationProductMatchAdvisor;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
@@ -1011,6 +1012,54 @@ XML;
         $this->assertSame($category->id, $suggestion['category_id']);
         $this->assertSame('Одностенные дымоходы', $suggestion['category_name']);
         $this->assertSame(0.75, $suggestion['confidence']);
+    }
+
+    public function test_product_match_advisor_explains_a_live_candidate_without_applying_it(): void
+    {
+        $source = IntegrationSource::query()->create([
+            'code' => 'match-advisor',
+            'name' => 'Поставщик',
+        ]);
+        $category = Category::query()->create([
+            'name' => 'Крепления дымоходов',
+            'slug' => 'match-advisor-category-'.uniqid(),
+            'parent_id' => 0,
+        ]);
+        $product = Product::query()->create([
+            'sku' => 'KOTLOV-TEST-1',
+            'name' => 'Крепление универсальное D200–210',
+            'slug' => 'match-advisor-product-'.uniqid(),
+            'category_id' => $category->id,
+        ]);
+        $item = IntegrationProduct::query()->create([
+            'integration_source_id' => $source->id,
+            'external_id' => 'match-advisor-product',
+            'name' => 'Крепление универсальное КУ D200-210',
+            'stock_quantity' => 1,
+            'match_status' => 'suggested',
+            'match_method' => 'fuzzy_name',
+            'match_confidence' => 0.94,
+            'candidates' => [[
+                'product_id' => $product->id,
+                'sku' => $product->sku,
+                'name' => $product->name,
+                'score' => 0.94,
+            ]],
+        ]);
+
+        $advice = app(IntegrationProductMatchAdvisor::class)->explain($item);
+
+        $this->assertSame($product->id, $advice['product_id']);
+        $this->assertSame($product->name, $advice['product_name']);
+        $this->assertSame('KOTLOV-TEST-1', $advice['product_sku']);
+        $this->assertSame('Крепления дымоходов', $advice['category_name']);
+        $this->assertSame(0.94, $advice['confidence']);
+        $this->assertStringContainsString('94%', $advice['reason']);
+        $this->assertNull($item->fresh()->product_id);
+        $this->assertSame('suggested', $item->fresh()->match_status);
+
+        $product->delete();
+        $this->assertNull(app(IntegrationProductMatchAdvisor::class)->explain($item->fresh()));
     }
 
     public function test_catalog_accepts_multiple_commerceml_documents_in_one_upload(): void
