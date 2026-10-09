@@ -75,11 +75,17 @@ class OneCExchangeTest extends TestCase
             $table->id();
             $table->string('sku')->nullable();
             $table->string('name')->nullable();
+            $table->string('slug')->nullable();
             $table->timestamps();
             });
-        } elseif (! Schema::hasColumn('products', 'sku')) {
+        } else {
             Schema::table('products', function (Blueprint $table) {
-                $table->string('sku')->nullable();
+                if (! Schema::hasColumn('products', 'sku')) {
+                    $table->string('sku')->nullable();
+                }
+                if (! Schema::hasColumn('products', 'name')) {
+                    $table->string('name')->nullable();
+                }
             });
         }
 
@@ -305,6 +311,7 @@ class OneCExchangeTest extends TestCase
         $product = Product::query()->create([
             'sku' => 'BOILER-100',
             'name' => 'Котёл тестовый 100',
+            'slug' => 'boiler-100',
         ]);
         $xml = <<<'XML'
 <?xml version="1.0" encoding="UTF-8"?>
@@ -349,6 +356,7 @@ XML;
         $product = Product::query()->create([
             'sku' => 'БП-00001234',
             'name' => 'Существующая карточка',
+            'slug' => 'existing-product',
         ]);
         $xml = <<<'XML'
 <?xml version="1.0" encoding="UTF-8"?>
@@ -447,6 +455,7 @@ XML;
         $product = Product::query()->create([
             'sku' => 'KOTLOV-000001',
             'name' => 'Котёл тестовый',
+            'slug' => 'kotlov-test-product',
         ]);
         $source = IntegrationSource::query()->create([
             'code' => 'onec',
