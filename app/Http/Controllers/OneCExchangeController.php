@@ -36,7 +36,7 @@ class OneCExchangeController extends Controller
 
         return match ($mode) {
             'checkauth' => $this->checkAuth(),
-            'init' => $this->plain("zip=no\nfile_limit=".config('onec.exchange.file_limit')),
+            'init' => $this->initializeExchange($request, $integrationSource),
             'file' => $this->receiveFile($request, $integrationSource),
             'import' => $this->acknowledgeImport($request, $integrationSource),
             'query' => $type === 'sale' && $this->canExportOrders($integrationSource)
@@ -110,7 +110,15 @@ class OneCExchangeController extends Controller
         $path = $this->sessionPath($request, $source).'/'.$filename;
         $disk = Storage::disk((string) config('onec.exchange.storage_disk'));
 
-        $startsNewFile = str_starts_with(ltrim($contents), '<?xml') || str_starts_with($contents, "PK\x03\x04");
+        $normalizedContents = ltrim($contents, "\xEF\xBB\xBF\x00\x09\x0A\x0D\x20");
+        $startsNewFile = str_starts_with($normalizedContents, '<?xml')
+            || str_starts_with($normalizedContents, '<КоммерческаяИнформация')
+            || str_starts_with($contents, "PK\x03\x04")
+            || $disk->exists($path.'.received');
+        if ($startsNewFile) {
+            $disk->delete([$path.'.received', $path.'.result.json']);
+        }
+
         $existing = ! $startsNewFile && $disk->exists($path) ? $disk->get($path) : '';
         if (strlen($existing) + strlen($contents) > (int) config('onec.exchange.file_limit')) {
             return $this->plain("failure\nFile is too large");
@@ -119,6 +127,14 @@ class OneCExchangeController extends Controller
         $disk->put($path, $existing.$contents);
 
         return $this->plain('success');
+    }
+
+    private function initializeExchange(Request $request, IntegrationSource $source): Response
+    {
+        Storage::disk((string) config('onec.exchange.storage_disk'))
+            ->deleteDirectory($this->sessionPath($request, $source));
+
+        return $this->plain("zip=no\nfile_limit=".config('onec.exchange.file_limit'));
     }
 
     private function acknowledgeImport(Request $request, IntegrationSource $source): Response

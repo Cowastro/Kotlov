@@ -223,6 +223,44 @@ class OneCExchangeTest extends TestCase
         $this->assertSame(0, Product::query()->count());
     }
 
+    public function test_init_removes_files_left_by_a_previous_exchange(): void
+    {
+        $session = hash('sha256', 'onec-test');
+        $directory = "onec-exchange/onec/{$session}";
+        Storage::disk('local')->put("{$directory}/import.xml", '<old-document />');
+        Storage::disk('local')->put("{$directory}/import.xml.received", 'done');
+
+        $this->withBasicAuth('onec-test', 'secret-test')
+            ->get('/1c/exchange?type=catalog&mode=init')
+            ->assertOk()
+            ->assertSeeText('zip=no', false);
+
+        Storage::disk('local')->assertMissing("{$directory}/import.xml");
+        Storage::disk('local')->assertMissing("{$directory}/import.xml.received");
+    }
+
+    public function test_new_xml_replaces_a_completed_file_even_with_utf8_bom(): void
+    {
+        $session = hash('sha256', 'onec-test');
+        $path = "onec-exchange/onec/{$session}/import.xml";
+        Storage::disk('local')->put($path, '<old-document />');
+        Storage::disk('local')->put($path.'.received', 'done');
+
+        $xml = "\xEF\xBB\xBF<КоммерческаяИнформация />";
+        $this->call(
+            'POST',
+            '/1c/exchange?type=catalog&mode=file&filename=import.xml',
+            [],
+            [],
+            [],
+            ['PHP_AUTH_USER' => 'onec-test', 'PHP_AUTH_PW' => 'secret-test'],
+            $xml
+        )->assertOk();
+
+        $this->assertSame($xml, Storage::disk('local')->get($path));
+        Storage::disk('local')->assertMissing($path.'.received');
+    }
+
     public function test_catalog_item_is_staged_and_linked_by_exact_sku(): void
     {
         $product = Product::query()->create([
