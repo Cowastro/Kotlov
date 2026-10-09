@@ -4,6 +4,7 @@ namespace App\Filament\Resources\IntegrationProducts;
 
 use App\Filament\Resources\IntegrationProducts\Pages\EditIntegrationProduct;
 use App\Filament\Resources\IntegrationProducts\Pages\ListIntegrationProducts;
+use App\Models\Category;
 use App\Models\IntegrationCategory;
 use App\Models\IntegrationProduct;
 use App\Models\IntegrationSource;
@@ -15,6 +16,7 @@ use Filament\Actions\EditAction;
 use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
+use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
@@ -50,7 +52,7 @@ class IntegrationProductResource extends Resource
     public static function getEloquentQuery(): Builder
     {
         return parent::getEloquentQuery()
-            ->with(['source', 'integrationCategory', 'product.category'])
+            ->with(['source', 'integrationCategory.siteCategory', 'product.category'])
             ->inStock();
     }
 
@@ -107,6 +109,22 @@ class IntegrationProductResource extends Resource
                     ->searchable()->sortable()->limit(45)
                     ->tooltip(fn (IntegrationProduct $record): ?string => $record->integrationCategory?->path)
                     ->toggleable(isToggledHiddenByDefault: true),
+                TextColumn::make('catalog_destination')->label('Категория сайта')
+                    ->state(fn (IntegrationProduct $record): ?string => $record->product?->category?->name
+                        ?? $record->integrationCategory?->siteCategory?->name)
+                    ->placeholder('Не назначена')
+                    ->description(fn (IntegrationProduct $record): ?string => match (true) {
+                        filled($record->product?->category_id) => 'Категория привязанной карточки',
+                        filled($record->integrationCategory?->category_id) => 'Правило группы поставщика',
+                        default => 'Назначьте категорию группе',
+                    })
+                    ->badge()
+                    ->color(fn (IntegrationProduct $record): string => match (true) {
+                        filled($record->product?->category_id) => 'success',
+                        filled($record->integrationCategory?->category_id) => 'info',
+                        default => 'warning',
+                    })
+                    ->wrap(),
                 TextColumn::make('name')->label('Товар во внешней системе')
                     ->searchable(['name', 'external_sku', 'external_code', 'external_id'])
                     ->limit(58)->lineClamp(2)->size(TextSize::Small)
@@ -193,8 +211,30 @@ class IntegrationProductResource extends Resource
                         'unmatched' => 'Не найден',
                         'ignored' => 'Не для сайта',
                     ]),
+                SelectFilter::make('site_category_id')
+                    ->label('Категория сайта')
+                    ->placeholder('Все категории сайта')
+                    ->options(fn (): array => self::siteCategoryOptions())
+                    ->searchable()
+                    ->preload()
+                    ->query(function (Builder $query, array $data): Builder {
+                        $categoryId = $data['value'] ?? null;
+
+                        if (blank($categoryId)) {
+                            return $query;
+                        }
+
+                        return $query->where(function (Builder $query) use ($categoryId): void {
+                            $query
+                                ->whereHas('product', fn (Builder $product) => $product->where('category_id', $categoryId))
+                                ->orWhere(function (Builder $query) use ($categoryId): void {
+                                    $query->whereNull('product_id')
+                                        ->whereHas('integrationCategory', fn (Builder $category) => $category->where('category_id', $categoryId));
+                                });
+                        });
+                    }),
             ], layout: FiltersLayout::AboveContent)
-            ->filtersFormColumns(3)
+            ->filtersFormColumns(4)
             ->deferFilters(false)
             ->persistFiltersInSession()
             ->defaultSort('last_seen_at', 'desc')
@@ -214,6 +254,35 @@ class IntegrationProductResource extends Resource
                             'match_confidence' => 1,
                             'matched_at' => now(),
                         ]);
+                    }),
+                Action::make('mapSourceGroup')
+                    ->label('Категория группы')
+                    ->icon(Heroicon::OutlinedFolderOpen)
+                    ->color('info')
+                    ->visible(fn (IntegrationProduct $record): bool => filled($record->integration_category_id))
+                    ->fillForm(fn (IntegrationProduct $record): array => [
+                        'category_id' => $record->integrationCategory?->category_id,
+                    ])
+                    ->form([
+                        Select::make('category_id')
+                            ->label('Категория kotlov.by для группы поставщика')
+                            ->options(fn (): array => self::siteCategoryOptions())
+                            ->searchable()
+                            ->preload()
+                            ->nullable()
+                            ->helperText('Это правило для всей папки поставщика. Уже существующие карточки сайта не перемещаются.'),
+                    ])
+                    ->modalHeading(fn (IntegrationProduct $record): string => 'Куда направлять группу «'.($record->integrationCategory?->path ?? 'Без группы').'»')
+                    ->action(function (IntegrationProduct $record, array $data): void {
+                        $record->integrationCategory?->update([
+                            'category_id' => $data['category_id'] ?? null,
+                        ]);
+
+                        Notification::make()
+                            ->success()
+                            ->title('Категория группы сохранена')
+                            ->body('Правило применяется ко всем товарам этой группы поставщика.')
+                            ->send();
                     }),
                 EditAction::make()->label('Выбрать вручную'),
             ])
@@ -286,5 +355,23 @@ class IntegrationProductResource extends Resource
         }
 
         return url('/'.$categorySlug.'/'.$productSlug);
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    private static function siteCategoryOptions(): array
+    {
+        return Category::query()
+            ->with('parent:id,name')
+            ->where('is_active', true)
+            ->orderBy('name')
+            ->get(['id', 'parent_id', 'name'])
+            ->mapWithKeys(fn (Category $category): array => [
+                $category->getKey() => $category->parent
+                    ? $category->parent->name.' → '.$category->name
+                    : $category->name,
+            ])
+            ->all();
     }
 }

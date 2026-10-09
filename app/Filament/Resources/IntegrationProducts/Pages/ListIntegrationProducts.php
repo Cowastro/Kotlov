@@ -2,8 +2,10 @@
 
 namespace App\Filament\Resources\IntegrationProducts\Pages;
 
+use App\Filament\Resources\IntegrationCategories\IntegrationCategoryResource;
 use App\Filament\Resources\IntegrationProducts\IntegrationProductResource;
 use App\Models\IntegrationProduct;
+use Filament\Actions\Action;
 use Filament\Resources\Pages\ListRecords;
 use Filament\Schemas\Components\Tabs\Tab;
 use Filament\Support\Enums\Width;
@@ -26,6 +28,17 @@ class ListIntegrationProducts extends ListRecords
     public function getSubheading(): ?string
     {
         return 'Сопоставление товаров 1С и будущих маркетплейсов с существующими карточками kotlov.by';
+    }
+
+    protected function getHeaderActions(): array
+    {
+        return [
+            Action::make('catalogStructure')
+                ->label('Настроить группы каталога')
+                ->icon('heroicon-o-folder-open')
+                ->color('gray')
+                ->url(IntegrationCategoryResource::getUrl('index')),
+        ];
     }
 
     public function getTabs(): array
