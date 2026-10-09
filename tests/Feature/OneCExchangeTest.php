@@ -450,6 +450,34 @@ XML;
         ]);
     }
 
+    public function test_clear_source_can_remove_staging_and_retained_exchange_files(): void
+    {
+        $source = IntegrationSource::query()->create([
+            'code' => 'onec',
+            'name' => '1С',
+        ]);
+        $category = IntegrationCategory::query()->create([
+            'integration_source_id' => $source->id,
+            'external_id' => 'chimneys',
+            'name' => 'Дымоходы',
+            'path' => 'Дымоходы',
+        ]);
+        IntegrationProduct::query()->create([
+            'integration_source_id' => $source->id,
+            'integration_category_id' => $category->id,
+            'external_id' => 'pipe-3',
+            'name' => 'Труба 1 м',
+        ]);
+        Storage::disk('local')->put('onec-exchange/onec/session/import.xml', '<xml />');
+
+        $this->artisan('integration:clear-source onec --force --files')
+            ->assertSuccessful();
+
+        $this->assertDatabaseMissing('integration_products', ['external_id' => 'pipe-3']);
+        $this->assertDatabaseMissing('integration_categories', ['external_id' => 'chimneys']);
+        Storage::disk('local')->assertMissing('onec-exchange/onec/session/import.xml');
+    }
+
     public function test_orders_are_exported_and_marked_only_after_success(): void
     {
         $product = Product::query()->create([
