@@ -6,12 +6,14 @@ use App\Http\Middleware\HandleRedirects;
 use App\Models\Category;
 use App\Models\IntegrationCategory;
 use App\Models\IntegrationExchangeRun;
+use App\Models\IntegrationIssue;
 use App\Models\IntegrationProduct;
 use App\Models\IntegrationSource;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Product;
 use App\Services\Integrations\CommerceMlCatalogImporter;
+use App\Services\Integrations\IntegrationIssueDetector;
 use App\Services\Integrations\IntegrationOperationsSummary;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Cache;
@@ -216,8 +218,29 @@ class OneCExchangeTest extends TestCase
             });
         }
 
+        if (! Schema::hasTable('integration_issues')) {
+            Schema::create('integration_issues', function (Blueprint $table) {
+                $table->id();
+                $table->unsignedBigInteger('integration_source_id')->nullable();
+                $table->unsignedBigInteger('integration_product_id')->nullable();
+                $table->unsignedBigInteger('order_id')->nullable();
+                $table->unsignedBigInteger('assigned_to_user_id')->nullable();
+                $table->string('fingerprint')->unique();
+                $table->string('type', 64);
+                $table->string('severity', 16)->default('warning');
+                $table->string('status', 16)->default('open');
+                $table->string('title');
+                $table->text('message')->nullable();
+                $table->json('context')->nullable();
+                $table->timestamp('first_detected_at');
+                $table->timestamp('last_detected_at');
+                $table->timestamp('resolved_at')->nullable();
+                $table->timestamps();
+            });
+        }
+
         Schema::disableForeignKeyConstraints();
-        foreach (['integration_exchange_runs', 'integration_products', 'integration_categories', 'integration_sources', 'order_status_history', 'order_items', 'orders', 'products', 'categories'] as $table) {
+        foreach (['integration_issues', 'integration_exchange_runs', 'integration_products', 'integration_categories', 'integration_sources', 'order_status_history', 'order_items', 'orders', 'products', 'categories'] as $table) {
             DB::table($table)->delete();
         }
         Schema::enableForeignKeyConstraints();
@@ -864,5 +887,63 @@ XML;
         $summary = $service->snapshot();
         $this->assertSame('failed', $summary['health']);
         $this->assertSame(1, $summary['failed_runs_24h']);
+    }
+
+    public function test_issue_detector_deduplicates_and_auto_resolves_current_problems(): void
+    {
+        $source = IntegrationSource::query()->create([
+            'code' => 'issue-source',
+            'name' => 'Поставщик с проблемами',
+            'is_active' => true,
+        ]);
+        IntegrationExchangeRun::query()->create([
+            'integration_source_id' => $source->id,
+            'direction' => 'inbound',
+            'operation' => 'catalog',
+            'status' => 'success',
+            'started_at' => now()->subMinute(),
+            'finished_at' => now(),
+        ]);
+        $product = IntegrationProduct::query()->create([
+            'integration_source_id' => $source->id,
+            'external_id' => 'issue-product',
+            'name' => 'Проблемный товар',
+            'price' => 0,
+            'stock_quantity' => 2,
+            'match_status' => 'unmatched',
+        ]);
+        $order = Order::query()->create([
+            'number' => 'ISSUE-ORDER-1',
+            'status' => 'new',
+            'customer_name' => 'Тест',
+            'customer_phone' => '+375290000000',
+            'delivery_type' => 'pickup',
+            'payment_type' => 'cash',
+            'payment_status' => 'pending',
+            'subtotal' => 10,
+            'total' => 10,
+        ]);
+        DB::table('orders')->where('id', $order->id)->update(['created_at' => now()->subMinutes(20)]);
+
+        $detector = app(IntegrationIssueDetector::class);
+        $first = $detector->scan();
+        $second = $detector->scan();
+
+        $this->assertSame(4, $first['detected']);
+        $this->assertSame(4, IntegrationIssue::query()->where('status', 'open')->count());
+        $this->assertSame(4, $second['detected']);
+        $this->assertSame(4, IntegrationIssue::query()->count());
+        $this->assertDatabaseHas('integration_issues', ['type' => 'product_unmatched']);
+        $this->assertDatabaseHas('integration_issues', ['type' => 'product_missing_category']);
+        $this->assertDatabaseHas('integration_issues', ['type' => 'product_missing_price']);
+        $this->assertDatabaseHas('integration_issues', ['type' => 'order_not_exported']);
+
+        $product->update(['match_status' => 'ignored']);
+        $order->update(['onec_exported_at' => now(), 'onec_status_received_at' => now()]);
+        $resolved = $detector->scan();
+
+        $this->assertSame(4, $resolved['resolved']);
+        $this->assertSame(0, IntegrationIssue::query()->where('status', 'open')->count());
+        $this->assertSame(4, IntegrationIssue::query()->where('status', 'resolved')->count());
     }
 }
