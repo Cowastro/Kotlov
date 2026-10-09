@@ -230,9 +230,6 @@
                                             <h4 class="price-on-sale">
                                                 {{ number_format($b2bComparison['wholesale_price'], 2, '.', ' ') }} BYN
                                             </h4>
-                                            <p class="text-caption-01 cl-text-2 mb-0">
-                                                Цена с НДС {{ number_format($b2bComparison['vat_rate'], 0) }}%
-                                            </p>
                                             @if ($b2bComparison['retail_price'] > 0)
                                                 <p class="text-caption-01 cl-text-2 mb-0">
                                                     Розничная цена: {{ number_format($b2bComparison['retail_price'], 2, '.', ' ') }} BYN
@@ -313,7 +310,7 @@
                                         <span class="stock in-stock fw-medium text-success">
                                             <i class="icon icon-CheckCircle"></i>
                                             {{ data_get($b2bOffer->source?->settings, 'warehouse_label', 'Основной') }}:
-                                            {{ number_format((float) $b2bOffer->stock_quantity, 3, '.', ' ') }}
+                                            {{ $b2bOffer->formattedStockQuantity() }}
                                         </span>
                                     @elseif ($availabilityStatus === 'in_stock')
                                         <span class="stock in-stock fw-medium text-success">

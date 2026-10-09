@@ -151,7 +151,7 @@
 
         @if ($isB2bOffer)
             <p class="text-caption-01 cl-text-2 mb-0">
-                Партнёрская цена {{ $b2bOffer->source?->partnerName() }} · с НДС
+                Партнёрская цена {{ $b2bOffer->source?->partnerName() }}
             </p>
             @if ($b2bComparison['retail_price'] > 0)
                 <p class="text-caption-01 cl-text-2 mb-0">
@@ -166,11 +166,8 @@
                     @endif
                 </p>
             @endif
-            <p class="text-caption-01 cl-text-2 mb-0">
-                Включая НДС {{ number_format($b2bComparison['vat_rate'], 0) }}%
-            </p>
             <p class="text-caption-01 text-success mb-0">
-                {{ data_get($b2bOffer->source?->settings, 'warehouse_label', 'Основной') }}: {{ number_format((float) $b2bOffer->stock_quantity, 3, '.', ' ') }}
+                {{ data_get($b2bOffer->source?->settings, 'warehouse_label', 'Основной') }}: {{ $b2bOffer->formattedStockQuantity() }}
             </p>
         @endif
 

@@ -23,10 +23,10 @@ class B2bCatalogPricingTest extends TestCase
             ->assertOk()
             ->assertSeeText('Партнёрская цена от ООО «СанБизнесГруп»')
             ->assertSeeText('96.00 BYN')
-            ->assertSeeText('Цена с НДС 20%')
+            ->assertDontSeeText('Цена с НДС')
             ->assertSeeText('Розничная цена: 120.00 BYN')
             ->assertSeeText('Ваша скидка к рознице: 24.00 BYN (20.0%)')
-            ->assertSeeText('Основной: 7.000')
+            ->assertSeeText('Основной: 7 шт.')
             ->assertSee('В корзину', false)
             ->assertSeeText('— 96.00 BYN');
     }

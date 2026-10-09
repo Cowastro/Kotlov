@@ -30,6 +30,17 @@ class IntegrationProduct extends Model
         return $query->where('stock_quantity', '>', 0);
     }
 
+    public function formattedStockQuantity(): string
+    {
+        $quantity = (float) $this->stock_quantity;
+
+        $formatted = abs($quantity - round($quantity)) < 0.0005
+            ? number_format($quantity, 0, '.', ' ')
+            : rtrim(rtrim(number_format($quantity, 3, '.', ' '), '0'), '.');
+
+        return $formatted.' шт.';
+    }
+
     public function source(): BelongsTo
     {
         return $this->belongsTo(IntegrationSource::class, 'integration_source_id');

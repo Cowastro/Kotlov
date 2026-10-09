@@ -406,7 +406,7 @@
                                             </div>
                                             @if (($item['pricing_type'] ?? null) === 'b2b')
                                                 <div class="text-caption-01 cl-text-2">
-                                                    Оптовая цена с НДС
+                                                    Партнёрская цена
                                                 </div>
                                             @endif
                                         </div>
