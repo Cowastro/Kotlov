@@ -110,6 +110,13 @@ class IntegrationSource extends Model
         return (bool) data_get($this->settings, 'zero_missing_stock_on_complete', true);
     }
 
+    public function matchingSupplierCode(): string
+    {
+        $supplierCode = trim((string) data_get($this->settings, 'matching_supplier_code'));
+
+        return $supplierCode !== '' ? $supplierCode : 'integration:'.$this->code;
+    }
+
     public function scheduleLabel(): string
     {
         return 'Заказы '.$this->orderIntervalMinutes().' мин · цены/остатки '.$this->catalogIntervalMinutes().' мин';

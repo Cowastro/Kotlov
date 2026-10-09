@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\IntegrationProducts\Pages;
 
 use App\Filament\Resources\IntegrationProducts\IntegrationProductResource;
+use App\Services\Integrations\IntegrationManualMatchRecorder;
 use Filament\Actions\Action;
 use Filament\Resources\Pages\EditRecord;
 
@@ -34,5 +35,12 @@ class EditIntegrationProduct extends EditRecord
                 ->label('К списку')
                 ->url(IntegrationProductResource::getUrl()),
         ];
+    }
+
+    protected function afterSave(): void
+    {
+        if (filled($this->record->product_id)) {
+            app(IntegrationManualMatchRecorder::class)->record($this->record);
+        }
     }
 }

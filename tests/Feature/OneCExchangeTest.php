@@ -18,6 +18,7 @@ use App\Services\Integrations\IntegrationCatalogSummary;
 use App\Services\Integrations\IntegrationCategoryAdvisor;
 use App\Services\Integrations\IntegrationIssueAdvisor;
 use App\Services\Integrations\IntegrationIssueDetector;
+use App\Services\Integrations\IntegrationManualMatchRecorder;
 use App\Services\Integrations\IntegrationOperationsSummary;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Cache;
@@ -222,7 +223,11 @@ class OneCExchangeTest extends TestCase
                 $table->string('supplier_code');
                 $table->string('supplier_article');
                 $table->unsignedBigInteger('product_id')->nullable();
+                $table->string('product_sku')->nullable();
+                $table->string('supplier_name')->nullable();
+                $table->string('confidence')->nullable();
                 $table->boolean('is_active')->default(true);
+                $table->text('notes')->nullable();
                 $table->timestamps();
             });
         }
@@ -1001,6 +1006,7 @@ XML;
         $source = IntegrationSource::query()->create([
             'code' => 'onec',
             'name' => '1С',
+            'settings' => ['matching_supplier_code' => 'reviewed-supplier'],
         ]);
         $candidate = IntegrationProduct::query()->create([
             'integration_source_id' => $source->id,
@@ -1014,8 +1020,89 @@ XML;
 
         $this->assertSame(1, $stats['matched']);
         $this->assertSame($product->id, $candidate->fresh()->product_id);
-        $this->assertSame('article_to_supplier_article', $candidate->fresh()->match_method);
+        $this->assertSame('article_to_reviewed_mapping', $candidate->fresh()->match_method);
         $this->assertSame(1.0, $candidate->fresh()->match_confidence);
+    }
+
+    public function test_reviewed_supplier_mappings_are_isolated_between_integration_sources(): void
+    {
+        $product = Product::query()->create([
+            'sku' => 'KOTLOV-ISOLATED-1',
+            'name' => 'Товар первого поставщика',
+            'slug' => 'isolated-supplier-product',
+        ]);
+        DB::table('supplier_product_mappings')->insert([
+            'supplier_code' => 'supplier-one',
+            'supplier_article' => 'COMMON-100',
+            'product_id' => $product->id,
+            'is_active' => true,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+        $source = IntegrationSource::query()->create([
+            'code' => 'supplier-two-source',
+            'name' => 'Второй источник',
+            'settings' => ['matching_supplier_code' => 'supplier-two'],
+        ]);
+        $candidate = IntegrationProduct::query()->create([
+            'integration_source_id' => $source->id,
+            'external_id' => 'isolated-candidate',
+            'external_sku' => 'COMMON-100',
+            'name' => 'Другой товар с тем же артикулом',
+            'match_status' => 'unmatched',
+        ]);
+
+        $stats = app(CommerceMlCatalogImporter::class)->rematchSource('supplier-two-source');
+
+        $this->assertSame(0, $stats['matched']);
+        $this->assertNull($candidate->fresh()->product_id);
+    }
+
+    public function test_manual_match_recorder_teaches_the_source_for_future_imports(): void
+    {
+        $product = Product::query()->create([
+            'sku' => 'KOTLOV-LEARNED-1',
+            'name' => 'Подтверждённая карточка',
+            'slug' => 'learned-mapping-product',
+        ]);
+        $source = IntegrationSource::query()->create([
+            'code' => 'learning-source',
+            'name' => 'Обучаемый источник',
+        ]);
+        $item = IntegrationProduct::query()->create([
+            'integration_source_id' => $source->id,
+            'product_id' => $product->id,
+            'external_id' => 'learned-external-id',
+            'external_sku' => 'LEARN-ME-100',
+            'name' => 'Товар из внешней системы',
+            'match_status' => 'matched',
+        ]);
+
+        $mapping = app(IntegrationManualMatchRecorder::class)->record($item);
+
+        $this->assertNotNull($mapping);
+        $this->assertDatabaseHas('supplier_product_mappings', [
+            'supplier_code' => 'integration:learning-source',
+            'supplier_article' => 'LEARN-ME-100',
+            'product_id' => $product->id,
+            'product_sku' => 'KOTLOV-LEARNED-1',
+            'confidence' => 'manual',
+            'is_active' => true,
+        ]);
+
+        $futureItem = IntegrationProduct::query()->create([
+            'integration_source_id' => $source->id,
+            'external_id' => 'future-external-id',
+            'external_sku' => 'LEARN ME 100',
+            'name' => 'Следующая выгрузка того же артикула',
+            'match_status' => 'unmatched',
+        ]);
+
+        $stats = app(CommerceMlCatalogImporter::class)->rematchSource('learning-source');
+
+        $this->assertSame(1, $stats['matched']);
+        $this->assertSame($product->id, $futureItem->fresh()->product_id);
+        $this->assertSame('article_to_reviewed_mapping', $futureItem->fresh()->match_method);
     }
 
     public function test_catalog_summary_exposes_unique_ids_stock_price_and_matching_health(): void

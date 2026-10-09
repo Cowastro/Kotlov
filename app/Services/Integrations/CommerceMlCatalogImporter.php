@@ -31,6 +31,9 @@ class CommerceMlCatalogImporter
     /** @var array<string, array<int, int>> */
     private array $supplierArticleIndex = [];
 
+    /** @var array<string, array<string, array<int, int>>> */
+    private array $reviewedSupplierArticleIndex = [];
+
     /** @var array<string, array<int, int>> */
     private array $nameIndex = [];
 
@@ -316,7 +319,7 @@ class CommerceMlCatalogImporter
             'article' => $item->external_sku,
             'barcode' => $item->barcode,
             'onec_code' => $item->external_code,
-        ])->filter()->flatMap(function (string $value, string $kind): array {
+        ])->filter()->flatMap(function (string $value, string $kind) use ($item): array {
             $identifier = $this->normalizeIdentifier($value);
             if ($identifier === '') {
                 return [];
@@ -326,6 +329,8 @@ class CommerceMlCatalogImporter
                 ->map(fn (int $id): array => ['product_id' => $id, 'method' => "{$kind}_to_sku"])
                 ->concat(collect($this->supplierArticleIndex[$identifier] ?? [])
                     ->map(fn (int $id): array => ['product_id' => $id, 'method' => "{$kind}_to_supplier_article"]))
+                ->concat(collect($this->reviewedSupplierArticleIndex[$item->source?->matchingSupplierCode()][$identifier] ?? [])
+                    ->map(fn (int $id): array => ['product_id' => $id, 'method' => "{$kind}_to_reviewed_mapping"]))
                 ->all();
         })->unique('product_id')->values();
 
@@ -422,6 +427,7 @@ class CommerceMlCatalogImporter
         $this->products = Product::query()->get(['id', 'sku', 'name'])->keyBy('id');
         $this->skuIndex = [];
         $this->supplierArticleIndex = [];
+        $this->reviewedSupplierArticleIndex = [];
         $this->nameIndex = [];
         $this->tokenIndex = [];
 
@@ -458,11 +464,12 @@ class CommerceMlCatalogImporter
             DB::table('supplier_product_mappings')
                 ->where('is_active', true)
                 ->whereNotNull('product_id')
-                ->get(['product_id', 'supplier_article'])
+                ->get(['product_id', 'supplier_code', 'supplier_article'])
                 ->each(function ($row): void {
                     $article = $this->normalizeIdentifier((string) $row->supplier_article);
-                    if ($article !== '' && $this->products->has((int) $row->product_id)) {
-                        $this->supplierArticleIndex[$article][] = (int) $row->product_id;
+                    $supplierCode = trim((string) $row->supplier_code);
+                    if ($article !== '' && $supplierCode !== '' && $this->products->has((int) $row->product_id)) {
+                        $this->reviewedSupplierArticleIndex[$supplierCode][$article][] = (int) $row->product_id;
                     }
                 });
         } catch (Throwable) {

@@ -6,6 +6,7 @@ use App\Filament\Resources\IntegrationSources\Pages\CreateIntegrationSource;
 use App\Filament\Resources\IntegrationSources\Pages\EditIntegrationSource;
 use App\Filament\Resources\IntegrationSources\Pages\ListIntegrationSources;
 use App\Models\IntegrationSource;
+use App\Models\Supplier;
 use BackedEnum;
 use Filament\Actions\EditAction;
 use Filament\Forms\Components\Placeholder;
@@ -114,6 +115,12 @@ class IntegrationSourceResource extends Resource
                         ->label('Обнулять отсутствующие остатки')
                         ->helperText('После завершения полного пакета 1С товары, которых нет в предложениях, снимаются с наличия. Порционные файлы обрабатываются безопасно.')
                         ->default(true),
+                    Select::make('settings.matching_supplier_code')
+                        ->label('База проверенных соответствий')
+                        ->options(fn (): array => Supplier::query()->orderBy('name')->pluck('name', 'code')->all())
+                        ->placeholder('Отдельные правила этого источника')
+                        ->searchable()
+                        ->helperText('Ручные привязки запоминаются в выбранной базе. Одинаковые артикулы разных поставщиков не смешиваются.'),
                 ])->columns(3),
             Section::make('Оптовые цены')
                 ->description('Единое правило: хранится исходная цена поставщика, а клиенту всегда показывается итоговая цена с НДС. Для цены без НДС система добавляет указанную ставку.')

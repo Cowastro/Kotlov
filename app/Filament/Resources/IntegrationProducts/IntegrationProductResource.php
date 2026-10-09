@@ -9,6 +9,7 @@ use App\Models\IntegrationCategory;
 use App\Models\IntegrationProduct;
 use App\Models\IntegrationSource;
 use App\Services\Integrations\IntegrationCategoryAdvisor;
+use App\Services\Integrations\IntegrationManualMatchRecorder;
 use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Actions\BulkAction;
@@ -74,7 +75,7 @@ class IntegrationProductResource extends Resource
                     TextInput::make('name')->label('Название')->disabled()->dehydrated(false)->columnSpanFull(),
                 ])->columns(2),
             Section::make('Карточка kotlov.by')
-                ->description('Выбор товара создаёт постоянную ручную привязку. Цена и остаток при этом не изменяются.')
+                ->description('Выбор товара создаёт постоянную ручную привязку. Если источник передал артикул, решение запомнится для будущих синхронизаций. Цена и остаток не изменяются.')
                 ->schema([
                     Select::make('product_id')
                         ->label('Товар сайта')
@@ -271,6 +272,7 @@ class IntegrationProductResource extends Resource
                             'match_confidence' => 1,
                             'matched_at' => now(),
                         ]);
+                        app(IntegrationManualMatchRecorder::class)->record($record);
                     }),
                 Action::make('mapSourceGroup')
                     ->label('Категория группы')
@@ -410,6 +412,7 @@ class IntegrationProductResource extends Resource
                                     'match_confidence' => 1,
                                     'matched_at' => now(),
                                 ]);
+                                app(IntegrationManualMatchRecorder::class)->record($record);
                             });
                         })
                         ->deselectRecordsAfterCompletion(),
