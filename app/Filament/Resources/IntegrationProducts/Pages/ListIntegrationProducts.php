@@ -4,6 +4,7 @@ namespace App\Filament\Resources\IntegrationProducts\Pages;
 
 use App\Filament\Resources\IntegrationCategories\IntegrationCategoryResource;
 use App\Filament\Resources\IntegrationProducts\IntegrationProductResource;
+use App\Filament\Widgets\IntegrationCatalogIntegrityOverview;
 use App\Models\IntegrationCategory;
 use App\Models\IntegrationProduct;
 use App\Models\IntegrationSource;
@@ -95,6 +96,13 @@ class ListIntegrationProducts extends ListRecords
                 ->icon('heroicon-o-folder-open')
                 ->color(fn (): string => IntegrationCategory::query()->exists() ? 'gray' : 'warning')
                 ->url(IntegrationCategoryResource::getUrl('index')),
+        ];
+    }
+
+    protected function getHeaderWidgets(): array
+    {
+        return [
+            IntegrationCatalogIntegrityOverview::class,
         ];
     }
 

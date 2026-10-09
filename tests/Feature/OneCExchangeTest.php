@@ -14,6 +14,7 @@ use App\Models\OrderItem;
 use App\Models\Product;
 use App\Services\Integrations\CommerceMlCatalogImporter;
 use App\Services\Integrations\IntegrationCatalogAudit;
+use App\Services\Integrations\IntegrationCatalogSummary;
 use App\Services\Integrations\IntegrationCategoryAdvisor;
 use App\Services\Integrations\IntegrationIssueAdvisor;
 use App\Services\Integrations\IntegrationIssueDetector;
@@ -969,6 +970,62 @@ XML;
         $this->assertSame('matched', $candidate->fresh()->match_status);
         $this->assertNull($ignored->fresh()->product_id);
         $this->assertSame('ignored', $ignored->fresh()->match_status);
+    }
+
+    public function test_catalog_summary_exposes_unique_ids_stock_price_and_matching_health(): void
+    {
+        $source = IntegrationSource::query()->create([
+            'code' => 'onec',
+            'name' => '1С',
+        ]);
+        $otherSource = IntegrationSource::query()->create([
+            'code' => 'supplier-two',
+            'name' => 'Второй поставщик',
+        ]);
+
+        IntegrationProduct::query()->create([
+            'integration_source_id' => $source->id,
+            'external_id' => 'same-external-id',
+            'name' => 'Привязанный товар',
+            'price' => 100,
+            'stock_quantity' => 3,
+            'match_status' => 'matched',
+            'last_seen_at' => now()->subMinute(),
+        ]);
+        IntegrationProduct::query()->create([
+            'integration_source_id' => $otherSource->id,
+            'external_id' => 'same-external-id',
+            'name' => 'Товар другого источника',
+            'price' => 0,
+            'stock_quantity' => 0,
+            'match_status' => 'ambiguous',
+            'last_seen_at' => now(),
+        ]);
+        IntegrationProduct::query()->create([
+            'integration_source_id' => $source->id,
+            'external_id' => 'missing-price',
+            'name' => 'Без цены',
+            'price' => null,
+            'stock_quantity' => 1,
+            'match_status' => 'unmatched',
+            'last_seen_at' => now(),
+        ]);
+
+        $summary = app(IntegrationCatalogSummary::class)->snapshot();
+
+        $this->assertSame(3, $summary['total']);
+        $this->assertSame(3, $summary['unique_external_ids']);
+        $this->assertSame(0, $summary['duplicates']);
+        $this->assertSame(2, $summary['source_count']);
+        $this->assertSame(2, $summary['in_stock']);
+        $this->assertSame(1, $summary['without_stock']);
+        $this->assertSame(1, $summary['positive_price']);
+        $this->assertSame(1, $summary['zero_price']);
+        $this->assertSame(1, $summary['missing_price']);
+        $this->assertSame(1, $summary['matched']);
+        $this->assertSame(1, $summary['ambiguous']);
+        $this->assertSame(1, $summary['unmatched']);
+        $this->assertNotNull($summary['last_seen_at']);
     }
 
     public function test_clear_source_can_remove_staging_and_retained_exchange_files(): void
