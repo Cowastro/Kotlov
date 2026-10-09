@@ -1750,8 +1750,10 @@ XML;
         $second = $detector->scan();
 
         $this->assertSame(2, $first['detected']);
+        $this->assertCount(2, $first['opened_issue_ids']);
         $this->assertSame(2, IntegrationIssue::query()->where('status', 'open')->count());
         $this->assertSame(2, $second['detected']);
+        $this->assertSame([], $second['opened_issue_ids']);
         $this->assertSame(2, IntegrationIssue::query()->count());
         $productIssue = IntegrationIssue::query()->where('type', 'product_attention')->firstOrFail();
         $this->assertTrue($productIssue->context['missing_price']);
