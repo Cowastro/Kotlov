@@ -13,6 +13,7 @@ class IntegrationIssue extends Model
         'product_unmatched',
         'product_missing_category',
         'product_missing_price',
+        'product_identity_collision',
     ];
 
     public const ORDER_TYPES = [
@@ -55,6 +56,11 @@ class IntegrationIssue extends Model
     public function scopeUnmatched(Builder $query): Builder
     {
         return $query->products()->where('context->unmatched', true);
+    }
+
+    public function scopePossibleDuplicates(Builder $query): Builder
+    {
+        return $query->where('type', 'product_identity_collision');
     }
 
     public function scopeOrders(Builder $query): Builder

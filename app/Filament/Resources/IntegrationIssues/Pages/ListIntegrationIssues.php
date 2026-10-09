@@ -69,6 +69,10 @@ class ListIntegrationIssues extends ListRecords
                 ->modifyQueryUsing(fn (Builder $query): Builder => $query->open()->unmatched())
                 ->badge(IntegrationIssue::query()->open()->unmatched()->count())
                 ->badgeColor('warning'),
+            'duplicates' => Tab::make('Возможные дубли')
+                ->modifyQueryUsing(fn (Builder $query): Builder => $query->open()->possibleDuplicates())
+                ->badge(IntegrationIssue::query()->open()->possibleDuplicates()->count())
+                ->badgeColor('warning'),
             'orders' => Tab::make('Заказы')
                 ->modifyQueryUsing(fn (Builder $query): Builder => $query->open()->orders())
                 ->badge(IntegrationIssue::query()->open()->orders()->count())

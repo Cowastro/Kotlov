@@ -9,11 +9,15 @@ use Illuminate\Support\Facades\DB;
 
 class IntegrationCatalogSummary
 {
+    public function __construct(private readonly IntegrationIdentityCollisionFinder $collisionFinder) {}
+
     /**
      * @return array{
      *     total:int,
      *     unique_external_ids:int,
      *     duplicates:int,
+     *     identity_collision_groups:int,
+     *     identity_collision_products:int,
      *     source_count:int,
      *     in_stock:int,
      *     without_stock:int,
@@ -44,11 +48,18 @@ class IntegrationCatalogSummary
             ->groupBy('match_status')
             ->pluck('aggregate', 'match_status');
         $lastSeenAt = (clone $products)->max('last_seen_at');
+        $identityCollisions = $this->collisionFinder->find($sourceId);
+        $identityCollisionProductIds = collect($identityCollisions)
+            ->flatMap(fn (array $collision): array => array_column($collision['products'], 'id'))
+            ->unique()
+            ->count();
 
         return [
             'total' => $total,
             'unique_external_ids' => $uniqueExternalIds,
             'duplicates' => max(0, $total - $uniqueExternalIds),
+            'identity_collision_groups' => count($identityCollisions),
+            'identity_collision_products' => $identityCollisionProductIds,
             'source_count' => (clone $products)->distinct()->count('integration_source_id'),
             'in_stock' => (clone $products)->inStock()->count(),
             'without_stock' => (clone $products)->where(fn (Builder $query): Builder => $query

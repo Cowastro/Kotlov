@@ -41,11 +41,19 @@ class IntegrationCatalogIntegrityOverview extends StatsOverviewWidget
                 ->descriptionIcon(Heroicon::OutlinedArrowDownTray)
                 ->color('info'),
             Stat::make('Уникальные ID', $format($summary['unique_external_ids']).' / '.$format($summary['total']))
-                ->description($summary['duplicates'] === 0
-                    ? 'Дублей нет · база защищена уникальным ключом'
-                    : 'Обнаружено дублей: '.$format($summary['duplicates']))
-                ->descriptionIcon($summary['duplicates'] === 0 ? Heroicon::OutlinedShieldCheck : Heroicon::OutlinedExclamationTriangle)
-                ->color($summary['duplicates'] === 0 ? 'success' : 'danger'),
+                ->description(match (true) {
+                    $summary['duplicates'] > 0 => 'Повторяющихся ID: '.$format($summary['duplicates']),
+                    $summary['identity_collision_groups'] > 0 => 'ID уникальны · возможных дублей по реквизитам: '.$format($summary['identity_collision_groups']),
+                    default => 'Дублей нет · проверены ID, артикулы и штрихкоды',
+                })
+                ->descriptionIcon($summary['duplicates'] === 0 && $summary['identity_collision_groups'] === 0
+                    ? Heroicon::OutlinedShieldCheck
+                    : Heroicon::OutlinedExclamationTriangle)
+                ->color(match (true) {
+                    $summary['duplicates'] > 0 => 'danger',
+                    $summary['identity_collision_groups'] > 0 => 'warning',
+                    default => 'success',
+                }),
             Stat::make('Цены готовы', $format($summary['positive_price']))
                 ->description('Не передана: '.$format($summary['missing_price']).' · нулевая: '.$format($summary['zero_price']))
                 ->descriptionIcon(Heroicon::OutlinedBanknotes)

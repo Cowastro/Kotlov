@@ -1149,6 +1149,8 @@ XML;
         $this->assertSame(3, $summary['total']);
         $this->assertSame(3, $summary['unique_external_ids']);
         $this->assertSame(0, $summary['duplicates']);
+        $this->assertSame(0, $summary['identity_collision_groups']);
+        $this->assertSame(0, $summary['identity_collision_products']);
         $this->assertSame(2, $summary['source_count']);
         $this->assertSame(2, $summary['in_stock']);
         $this->assertSame(1, $summary['without_stock']);
@@ -1187,6 +1189,41 @@ XML;
         $this->assertDatabaseMissing('integration_products', ['external_id' => 'pipe-3']);
         $this->assertDatabaseMissing('integration_categories', ['external_id' => 'chimneys']);
         Storage::disk('local')->assertMissing('onec-exchange/onec/session/import.xml');
+    }
+
+    public function test_catalog_summary_detects_reused_sku_or_barcode_only_inside_one_source(): void
+    {
+        $source = IntegrationSource::query()->create([
+            'code' => 'collision-source',
+            'name' => 'Источник с дублем',
+        ]);
+        $otherSource = IntegrationSource::query()->create([
+            'code' => 'other-collision-source',
+            'name' => 'Другой источник',
+        ]);
+
+        foreach ([
+            ['source' => $source, 'id' => 'old-id', 'sku' => 'ABC-100', 'barcode' => '481000000001'],
+            ['source' => $source, 'id' => 'new-id', 'sku' => 'ABC 100', 'barcode' => '481000000001'],
+            ['source' => $otherSource, 'id' => 'supplier-id', 'sku' => 'ABC-100', 'barcode' => '481000000001'],
+        ] as $row) {
+            IntegrationProduct::query()->create([
+                'integration_source_id' => $row['source']->id,
+                'external_id' => $row['id'],
+                'external_sku' => $row['sku'],
+                'barcode' => $row['barcode'],
+                'name' => 'Товар '.$row['id'],
+                'stock_quantity' => 1,
+            ]);
+        }
+
+        $sourceSummary = app(IntegrationCatalogSummary::class)->snapshot($source->id);
+        $allSummary = app(IntegrationCatalogSummary::class)->snapshot();
+
+        $this->assertSame(1, $sourceSummary['identity_collision_groups']);
+        $this->assertSame(2, $sourceSummary['identity_collision_products']);
+        $this->assertSame(1, $allSummary['identity_collision_groups']);
+        $this->assertSame(2, $allSummary['identity_collision_products']);
     }
 
     public function test_orders_are_exported_and_marked_only_after_success(): void
@@ -1598,6 +1635,65 @@ XML;
         $this->assertSame('Передать заказ в 1С', $orderAdvice['title']);
         $this->assertStringContainsString('success', $orderAdvice['note']);
         $this->assertFalse($productIssue->exists);
+    }
+
+    public function test_issue_detector_opens_and_auto_resolves_possible_identity_duplicate(): void
+    {
+        $source = IntegrationSource::query()->create([
+            'code' => 'duplicate-identity-source',
+            'name' => 'Источник с повторным артикулом',
+            'is_active' => true,
+        ]);
+        IntegrationExchangeRun::query()->create([
+            'integration_source_id' => $source->id,
+            'direction' => 'inbound',
+            'operation' => 'catalog',
+            'status' => 'success',
+            'started_at' => now()->subMinute(),
+            'finished_at' => now(),
+        ]);
+        $old = IntegrationProduct::query()->create([
+            'integration_source_id' => $source->id,
+            'external_id' => 'old-1c-id',
+            'external_sku' => 'DUP-100',
+            'name' => 'Старая позиция',
+            'stock_quantity' => 0,
+        ]);
+        $current = IntegrationProduct::query()->create([
+            'integration_source_id' => $source->id,
+            'external_id' => 'new-1c-id',
+            'external_sku' => 'DUP 100',
+            'name' => 'Новая позиция',
+            'stock_quantity' => 0,
+        ]);
+
+        $detector = app(IntegrationIssueDetector::class);
+        $first = $detector->scan();
+        $second = $detector->scan();
+
+        $this->assertSame(1, $first['detected']);
+        $this->assertSame(1, $second['detected']);
+        $this->assertSame(1, IntegrationIssue::query()->possibleDuplicates()->count());
+        $issue = IntegrationIssue::query()->possibleDuplicates()->firstOrFail();
+        $this->assertSame([$old->id, $current->id], $issue->context['product_ids']);
+        $this->assertStringContainsString('DUP-100', $issue->message);
+
+        $current->update(['external_sku' => 'UNIQUE-200']);
+        $resolved = $detector->scan();
+
+        $this->assertSame(1, $resolved['resolved']);
+        $this->assertSame(0, IntegrationIssue::query()->open()->possibleDuplicates()->count());
+    }
+
+    public function test_issue_advisor_explains_possible_identity_duplicate_without_auto_merge(): void
+    {
+        $issue = new IntegrationIssue(['type' => 'product_identity_collision']);
+
+        $advice = app(IntegrationIssueAdvisor::class)->advise($issue);
+
+        $this->assertSame('Проверить возможный дубль из 1С', $advice['title']);
+        $this->assertCount(3, $advice['steps']);
+        $this->assertStringContainsString('не удаляет', $advice['note']);
     }
 
     public function test_issue_detector_ignores_orders_created_before_integration_monitoring_started(): void

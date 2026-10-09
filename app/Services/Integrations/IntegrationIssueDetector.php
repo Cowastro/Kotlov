@@ -11,7 +11,10 @@ use Illuminate\Support\Facades\DB;
 
 class IntegrationIssueDetector
 {
-    public function __construct(private readonly IntegrationMonitoringWindow $monitoringWindow) {}
+    public function __construct(
+        private readonly IntegrationMonitoringWindow $monitoringWindow,
+        private readonly IntegrationIdentityCollisionFinder $collisionFinder,
+    ) {}
 
     /** @return array{detected:int,opened:int,resolved:int} */
     public function scan(): array
@@ -80,6 +83,38 @@ class IntegrationIssueDetector
                         }
                     }
                 });
+
+            foreach (IntegrationSource::query()->where('is_active', true)->get() as $source) {
+                foreach ($this->collisionFinder->find($source->id) as $collision) {
+                    $products = $collision['products'];
+                    $firstProduct = IntegrationProduct::query()->find($products[0]['id']);
+                    $identities = collect($collision['identities'])
+                        ->map(fn (array $identity): string => ($identity['kind'] === 'barcode' ? 'штрихкод' : 'артикул').' «'.$identity['value'].'»')
+                        ->implode(' и ');
+                    $externalIds = collect($products)->pluck('external_id')->take(5)->implode(', ');
+                    $fingerprintBasis = collect($products)
+                        ->pluck('external_id')
+                        ->sort()
+                        ->implode('|');
+
+                    $this->report(
+                        $seen,
+                        $opened,
+                        'product-identity:'.$source->id.':'.sha1($fingerprintBasis),
+                        'product_identity_collision',
+                        'warning',
+                        'Возможный дубль товара из 1С',
+                        ucfirst($identities).' передан у '.count($products).' позиций с разными ID: '.$externalIds.'.',
+                        source: $source,
+                        integrationProduct: $firstProduct,
+                        context: [
+                            'identities' => $collision['identities'],
+                            'product_ids' => array_column($products, 'id'),
+                            'external_ids' => array_column($products, 'external_id'),
+                        ],
+                    );
+                }
+            }
 
             $monitorOrdersFrom = $this->monitoringWindow->ordersStartAt();
 
