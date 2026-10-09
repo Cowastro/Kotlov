@@ -52,7 +52,7 @@ class IntegrationProductResource extends Resource
     public static function getEloquentQuery(): Builder
     {
         return parent::getEloquentQuery()
-            ->with(['source', 'integrationCategory.siteCategory', 'product.category'])
+            ->with(['source', 'integrationCategory.siteCategory', 'targetCategory', 'product.category'])
             ->inStock();
     }
 
@@ -81,6 +81,13 @@ class IntegrationProductResource extends Resource
                         ->getOptionLabelFromRecordUsing(fn ($record): string => "{$record->sku} — {$record->name}")
                         ->searchable(['sku', 'name'])
                         ->nullable(),
+                    Select::make('target_category_id')
+                        ->label('Категория для новой карточки')
+                        ->options(fn (): array => self::siteCategoryOptions())
+                        ->searchable()
+                        ->preload()
+                        ->nullable()
+                        ->helperText('Индивидуальное назначение имеет приоритет над правилом группы. Существующую карточку не перемещает.'),
                     TextInput::make('match_status')->label('Текущий статус')->disabled()->dehydrated(false),
                     TextInput::make('match_method')->label('Метод')->disabled()->dehydrated(false),
                     TextInput::make('match_confidence')->label('Уверенность')->disabled()->dehydrated(false),
@@ -110,17 +117,13 @@ class IntegrationProductResource extends Resource
                     ->tooltip(fn (IntegrationProduct $record): ?string => $record->integrationCategory?->path)
                     ->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('catalog_destination')->label('Категория сайта')
-                    ->state(fn (IntegrationProduct $record): ?string => $record->product?->category?->name
-                        ?? $record->integrationCategory?->siteCategory?->name)
+                    ->state(fn (IntegrationProduct $record): ?string => $record->resolvedSiteCategory()?->name)
                     ->placeholder('Не назначена')
-                    ->description(fn (IntegrationProduct $record): ?string => match (true) {
-                        filled($record->product?->category_id) => 'Категория привязанной карточки',
-                        filled($record->integrationCategory?->category_id) => 'Правило группы поставщика',
-                        default => 'Назначьте категорию группе',
-                    })
+                    ->description(fn (IntegrationProduct $record): string => $record->categoryResolutionLabel())
                     ->badge()
                     ->color(fn (IntegrationProduct $record): string => match (true) {
                         filled($record->product?->category_id) => 'success',
+                        filled($record->target_category_id) => 'primary',
                         filled($record->integrationCategory?->category_id) => 'info',
                         default => 'warning',
                     })
@@ -229,6 +232,11 @@ class IntegrationProductResource extends Resource
                                 ->whereHas('product', fn (Builder $product) => $product->where('category_id', $categoryId))
                                 ->orWhere(function (Builder $query) use ($categoryId): void {
                                     $query->whereNull('product_id')
+                                        ->where('target_category_id', $categoryId);
+                                })
+                                ->orWhere(function (Builder $query) use ($categoryId): void {
+                                    $query->whereNull('product_id')
+                                        ->whereNull('target_category_id')
                                         ->whereHas('integrationCategory', fn (Builder $category) => $category->where('category_id', $categoryId));
                                 });
                         });
@@ -284,10 +292,55 @@ class IntegrationProductResource extends Resource
                             ->body('Правило применяется ко всем товарам этой группы поставщика.')
                             ->send();
                     }),
+                Action::make('setTargetCategory')
+                    ->label('Категория товара')
+                    ->icon(Heroicon::OutlinedTag)
+                    ->color('primary')
+                    ->visible(fn (IntegrationProduct $record): bool => blank($record->product_id))
+                    ->fillForm(fn (IntegrationProduct $record): array => [
+                        'target_category_id' => $record->target_category_id,
+                    ])
+                    ->form([
+                        Select::make('target_category_id')
+                            ->label('Категория kotlov.by для этого товара')
+                            ->options(fn (): array => self::siteCategoryOptions())
+                            ->searchable()
+                            ->preload()
+                            ->nullable()
+                            ->helperText('Имеет приоритет над общей категорией группы поставщика.'),
+                    ])
+                    ->modalHeading(fn (IntegrationProduct $record): string => 'Категория для «'.$record->name.'»')
+                    ->action(function (IntegrationProduct $record, array $data): void {
+                        $record->update(['target_category_id' => $data['target_category_id'] ?? null]);
+
+                        Notification::make()
+                            ->success()
+                            ->title('Категория товара сохранена')
+                            ->send();
+                    }),
                 EditAction::make()->label('Выбрать вручную'),
             ])
             ->toolbarActions([
                 BulkActionGroup::make([
+                    BulkAction::make('assignTargetCategory')
+                        ->label('Назначить категорию сайта')
+                        ->icon(Heroicon::OutlinedTag)
+                        ->color('primary')
+                        ->form([
+                            Select::make('target_category_id')
+                                ->label('Категория kotlov.by')
+                                ->options(fn (): array => self::siteCategoryOptions())
+                                ->searchable()
+                                ->preload()
+                                ->required()
+                                ->helperText('Назначение применяется только к товарам без привязанной карточки.'),
+                        ])
+                        ->action(function (Collection $records, array $data): void {
+                            $records
+                                ->filter(fn (IntegrationProduct $record): bool => blank($record->product_id))
+                                ->each->update(['target_category_id' => $data['target_category_id']]);
+                        })
+                        ->deselectRecordsAfterCompletion(),
                     BulkAction::make('acceptSuggestions')
                         ->label('Принять выбранные предложения')
                         ->icon(Heroicon::OutlinedCheck)

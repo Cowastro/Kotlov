@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Http\Middleware\HandleRedirects;
+use App\Models\Category;
 use App\Models\IntegrationCategory;
 use App\Models\IntegrationExchangeRun;
 use App\Models\IntegrationProduct;
@@ -118,6 +119,17 @@ class OneCExchangeTest extends TestCase
             });
         }
 
+        if (! Schema::hasTable('categories')) {
+            Schema::create('categories', function (Blueprint $table) {
+                $table->id();
+                $table->unsignedBigInteger('parent_id')->default(0);
+                $table->string('name');
+                $table->string('slug')->unique();
+                $table->boolean('is_active')->default(true);
+                $table->timestamps();
+            });
+        }
+
         if (! Schema::hasTable('integration_sources')) {
             Schema::create('integration_sources', function (Blueprint $table) {
                 $table->id();
@@ -156,6 +168,7 @@ class OneCExchangeTest extends TestCase
                 $table->id();
                 $table->unsignedBigInteger('integration_source_id');
                 $table->unsignedBigInteger('integration_category_id')->nullable();
+                $table->unsignedBigInteger('target_category_id')->nullable();
                 $table->unsignedBigInteger('product_id')->nullable();
                 $table->string('external_id');
                 $table->string('external_code')->nullable();
@@ -172,6 +185,10 @@ class OneCExchangeTest extends TestCase
                 $table->timestamp('matched_at')->nullable();
                 $table->timestamp('last_seen_at')->nullable();
                 $table->timestamps();
+            });
+        } elseif (! Schema::hasColumn('integration_products', 'target_category_id')) {
+            Schema::table('integration_products', function (Blueprint $table) {
+                $table->unsignedBigInteger('target_category_id')->nullable();
             });
         }
 
@@ -200,7 +217,7 @@ class OneCExchangeTest extends TestCase
         }
 
         Schema::disableForeignKeyConstraints();
-        foreach (['integration_exchange_runs', 'integration_products', 'integration_categories', 'integration_sources', 'order_status_history', 'order_items', 'orders', 'products'] as $table) {
+        foreach (['integration_exchange_runs', 'integration_products', 'integration_categories', 'integration_sources', 'order_status_history', 'order_items', 'orders', 'products', 'categories'] as $table) {
             DB::table($table)->delete();
         }
         Schema::enableForeignKeyConstraints();
@@ -479,6 +496,42 @@ XML;
             'external_id' => 'pipe-1',
             'integration_category_id' => $child->id,
         ]);
+    }
+
+    public function test_product_category_override_has_priority_over_supplier_group_rule(): void
+    {
+        $source = IntegrationSource::query()->create([
+            'code' => 'category-priority',
+            'name' => 'Поставщик',
+        ]);
+        $groupCategory = Category::query()->create([
+            'name' => 'Группа по умолчанию',
+            'slug' => 'group-default-'.uniqid(),
+            'parent_id' => 0,
+        ]);
+        $targetCategory = Category::query()->create([
+            'name' => 'Индивидуальная категория',
+            'slug' => 'individual-target-'.uniqid(),
+            'parent_id' => 0,
+        ]);
+        $group = IntegrationCategory::query()->create([
+            'integration_source_id' => $source->id,
+            'category_id' => $groupCategory->id,
+            'external_id' => 'source-group',
+            'name' => 'Группа поставщика',
+            'path' => 'Группа поставщика',
+        ]);
+        $item = IntegrationProduct::query()->create([
+            'integration_source_id' => $source->id,
+            'integration_category_id' => $group->id,
+            'target_category_id' => $targetCategory->id,
+            'external_id' => 'category-priority-product',
+            'name' => 'Товар',
+            'stock_quantity' => 1,
+        ]);
+
+        $this->assertSame($targetCategory->id, $item->resolvedSiteCategory()?->id);
+        $this->assertSame('Индивидуальное назначение', $item->categoryResolutionLabel());
     }
 
     public function test_catalog_accepts_multiple_commerceml_documents_in_one_upload(): void

@@ -9,7 +9,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class IntegrationProduct extends Model
 {
     protected $fillable = [
-        'integration_source_id', 'integration_category_id', 'product_id', 'external_id', 'external_code', 'external_sku',
+        'integration_source_id', 'integration_category_id', 'target_category_id', 'product_id', 'external_id', 'external_code', 'external_sku',
         'barcode', 'name', 'price', 'stock_quantity', 'match_status',
         'match_method', 'match_confidence', 'candidates', 'payload',
         'matched_at', 'last_seen_at',
@@ -51,8 +51,30 @@ class IntegrationProduct extends Model
         return $this->belongsTo(IntegrationCategory::class);
     }
 
+    public function targetCategory(): BelongsTo
+    {
+        return $this->belongsTo(Category::class, 'target_category_id');
+    }
+
     public function product(): BelongsTo
     {
         return $this->belongsTo(Product::class);
+    }
+
+    public function resolvedSiteCategory(): ?Category
+    {
+        return $this->product?->category
+            ?? $this->targetCategory
+            ?? $this->integrationCategory?->siteCategory;
+    }
+
+    public function categoryResolutionLabel(): string
+    {
+        return match (true) {
+            filled($this->product?->category_id) => 'Категория привязанной карточки',
+            filled($this->target_category_id) => 'Индивидуальное назначение',
+            filled($this->integrationCategory?->category_id) => 'Правило группы поставщика',
+            default => 'Требуется назначить категорию',
+        };
     }
 }

@@ -51,6 +51,16 @@ class ListIntegrationProducts extends ListRecords
             'suggested' => $this->statusTab('Предложения', 'suggested', 'info', 'heroicon-o-light-bulb'),
             'ambiguous' => $this->statusTab('Нужна проверка', 'ambiguous', 'warning', 'heroicon-o-exclamation-triangle'),
             'unmatched' => $this->statusTab('Не найдены', 'unmatched', 'danger', 'heroicon-o-magnifying-glass'),
+            'missing_category' => Tab::make('Без категории')
+                ->icon('heroicon-o-folder-minus')
+                ->modifyQueryUsing(fn (Builder $query): Builder => $this->missingCategoryQuery($query))
+                ->badge($this->missingCategoryQuery(IntegrationProduct::query()->inStock())->count() ?: null)
+                ->badgeColor('warning'),
+            'ready_for_card' => Tab::make('Категория назначена')
+                ->icon('heroicon-o-folder-plus')
+                ->modifyQueryUsing(fn (Builder $query): Builder => $this->readyForCardQuery($query))
+                ->badge($this->readyForCardQuery(IntegrationProduct::query()->inStock())->count() ?: null)
+                ->badgeColor('info'),
             'ignored' => $this->statusTab('Не для сайта', 'ignored', 'gray', 'heroicon-o-eye-slash'),
         ];
     }
@@ -64,5 +74,30 @@ class ListIntegrationProducts extends ListRecords
             ->modifyQueryUsing(fn (Builder $query) => $query->where('match_status', $status))
             ->badge($count ?: null)
             ->badgeColor($color);
+    }
+
+    private function missingCategoryQuery(Builder $query): Builder
+    {
+        return $query
+            ->whereNull('product_id')
+            ->whereNull('target_category_id')
+            ->whereDoesntHave(
+                'integrationCategory',
+                fn (Builder $category): Builder => $category->whereNotNull('category_id')
+            );
+    }
+
+    private function readyForCardQuery(Builder $query): Builder
+    {
+        return $query
+            ->whereNull('product_id')
+            ->where(function (Builder $query): void {
+                $query
+                    ->whereNotNull('target_category_id')
+                    ->orWhereHas(
+                        'integrationCategory',
+                        fn (Builder $category): Builder => $category->whereNotNull('category_id')
+                    );
+            });
     }
 }
