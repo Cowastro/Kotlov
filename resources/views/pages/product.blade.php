@@ -187,9 +187,10 @@
                                 </div>
 
                                 @php
+                                    $b2bOffer = app(\App\Services\B2bCatalogOfferResolver::class)->forProduct($product, auth()->user());
                                     $totalSupplierStock = $product->supplierProducts->where('stock_quantity', '>', 0)->sum('stock_quantity');
                                     // Auto-determine status from supplier stock if not explicitly set
-                                    if ($totalSupplierStock > 0) {
+                                    if ($b2bOffer || $totalSupplierStock > 0) {
                                         $availabilityStatus = 'in_stock';
                                     } else {
                                         $availabilityStatus = method_exists($product, 'effectiveAvailabilityStatus')
@@ -200,9 +201,11 @@
                                             $availabilityStatus = 'check';
                                         }
                                     }
-                                    $canBuy = ! $product->is_archived
-                                        && (float) $product->price > 0
-                                        && in_array($availabilityStatus, ['in_stock', 'check']);
+                                    $canBuy = $b2bOffer
+                                        ? ! $product->is_archived && (float) $b2bOffer->stock_quantity >= 1
+                                        : (! $product->is_archived
+                                            && (float) $product->price > 0
+                                            && in_array($availabilityStatus, ['in_stock', 'check']));
                                     $availabilityLabel = method_exists($product, 'availabilityLabel')
                                         ? $product->availabilityLabel()
                                         : 'Уточняйте наличие';
@@ -212,6 +215,16 @@
                                 <div class="product-infor-price mb-12">
                                     @if ($product->is_archived)
                                         <h4 class="price-on-sale text-muted">Снят с продажи</h4>
+                                    @elseif ($b2bOffer)
+                                        <div>
+                                            <p class="text-caption-01 cl-text-2 mb-4">Ваша оптовая цена</p>
+                                            <h4 class="price-on-sale">
+                                                {{ number_format((float) $b2bOffer->price, 2, '.', ' ') }} BYN
+                                            </h4>
+                                            <p class="text-caption-01 cl-text-2 mb-0">
+                                                {{ data_get($b2bOffer->source?->settings, 'price_tax_mode', 'exclusive') === 'inclusive' ? 'Цена с НДС' : 'Цена без НДС' }}
+                                            </p>
+                                        </div>
                                     @elseif ($canBuy)
                                         <h4 class="price-on-sale">
                                             {{ number_format($product->price, 2, '.', ' ') }} BYN
@@ -272,6 +285,12 @@
                                     @if ($product->is_archived)
                                         <span class="stock out-stock fw-medium text-danger">
                                             <i class="icon icon-XCircle"></i> Снят с продажи
+                                        </span>
+                                    @elseif ($b2bOffer)
+                                        <span class="stock in-stock fw-medium text-success">
+                                            <i class="icon icon-CheckCircle"></i>
+                                            {{ data_get($b2bOffer->source?->settings, 'warehouse_label', 'Основной') }}:
+                                            {{ number_format((float) $b2bOffer->stock_quantity, 3, '.', ' ') }}
                                         </span>
                                     @elseif ($availabilityStatus === 'in_stock')
                                         <span class="stock in-stock fw-medium text-success">

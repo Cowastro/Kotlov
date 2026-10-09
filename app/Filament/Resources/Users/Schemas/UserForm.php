@@ -8,6 +8,7 @@ use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
+use App\Enums\ClientType;
 
 class UserForm
 {
@@ -79,6 +80,31 @@ class UserForm
                             ->same('password')
                             ->required(fn($record) => $record === null)
                             ->dehydrated(false),
+                    ]),
+
+                Section::make('B2B-доступ')
+                    ->description('Оптовые цены и складские остатки видны только одобренным партнёрам после входа.')
+                    ->columns(2)
+                    ->schema([
+                        Select::make('client_type')
+                            ->label('Тип клиента')
+                            ->options(collect(ClientType::cases())->mapWithKeys(
+                                fn (ClientType $type): array => [$type->value => $type->label()]
+                            )->all())
+                            ->default(ClientType::Retail->value)
+                            ->required(),
+
+                        Toggle::make('b2b_approved')
+                            ->label('B2B-доступ одобрен')
+                            ->helperText('После включения пользователь увидит оптовые цены и остатки 1С.'),
+
+                        TextInput::make('company_name')
+                            ->label('Компания')
+                            ->maxLength(255),
+
+                        TextInput::make('company_inn')
+                            ->label('УНП / ИНН')
+                            ->maxLength(50),
                     ]),
             ]);
     }

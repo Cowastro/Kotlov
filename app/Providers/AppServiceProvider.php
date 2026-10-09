@@ -6,6 +6,7 @@ use App\Models\Brand;
 use App\Models\Category;
 use App\Models\Product;
 use App\Services\SupplierSyncJournalRecorder;
+use App\Services\B2bCatalogOfferResolver;
 use Illuminate\Console\Events\CommandFinished;
 use Illuminate\Console\Events\CommandStarting;
 use Illuminate\Support\Facades\Cache;
@@ -16,6 +17,11 @@ use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
 {
+    public function register(): void
+    {
+        $this->app->scoped(B2bCatalogOfferResolver::class);
+    }
+
     public function boot(SupplierSyncJournalRecorder $syncJournal): void
     {
         if (app()->runningInConsole()) {

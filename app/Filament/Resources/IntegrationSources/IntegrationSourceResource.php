@@ -76,6 +76,22 @@ class IntegrationSourceResource extends Resource
                     Toggle::make('update_prices')->label('Обновлять цены')->default(false),
                     Toggle::make('update_stock')->label('Обновлять остатки')->default(false),
                 ])->columns(3),
+            Section::make('Оптовые цены')
+                ->description('Определяет, как показывать цены этого источника одобренным B2B-партнёрам.')
+                ->schema([
+                    Select::make('settings.price_tax_mode')
+                        ->label('Налогообложение цены')
+                        ->options([
+                            'exclusive' => 'Цена без НДС',
+                            'inclusive' => 'Цена с НДС',
+                        ])
+                        ->default('exclusive')
+                        ->required(),
+                    TextInput::make('settings.warehouse_label')
+                        ->label('Название склада')
+                        ->default('Основной')
+                        ->maxLength(100),
+                ])->columns(2),
         ]);
     }
 

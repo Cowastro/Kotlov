@@ -89,6 +89,7 @@ class AccountController extends Controller
             ],
             'company_name' => ['required', 'string', 'max:255'],
             'company_inn'  => ['nullable', 'string', 'max:50'],
+            'b2b_comment'   => ['nullable', 'string', 'max:1000'],
         ], [
             'client_type.required'  => 'Выберите тип B2B-аккаунта.',
             'client_type.in'        => 'Некорректный тип B2B-аккаунта.',
@@ -100,6 +101,7 @@ class AccountController extends Controller
             'b2b_approved' => false,
             'company_name' => $request->company_name,
             'company_inn'  => $request->company_inn,
+            'b2b_comment'   => $request->b2b_comment,
         ]);
 
         return back()

@@ -42,6 +42,16 @@ class CheckoutController extends Controller
             return redirect()->route('cart')->with('info', 'Корзина пуста.');
         }
 
+        $containsB2bPrices = collect($cart)->contains(
+            fn (array $item): bool => ($item['pricing_type'] ?? 'retail') === 'b2b'
+        );
+        if ($containsB2bPrices && ! Auth::user()?->isB2B()) {
+            return redirect()->route('cart')->with(
+                'error',
+                'Партнёрский доступ изменился. Очистите корзину и добавьте товары повторно.'
+            );
+        }
+
         // Убираем из заказа товары, снятые с продажи (могли попасть в корзину до архивации)
         $archivedIds = \App\Models\Product::whereIn('id', array_keys($cart))
             ->where('is_archived', true)
@@ -142,6 +152,9 @@ class CheckoutController extends Controller
                     'price'        => $item['price'],
                     'quantity'     => $item['quantity'],
                     'total'        => round($item['price'] * $item['quantity'], 2),
+                    'pricing_type' => $item['pricing_type'] ?? 'retail',
+                    'price_tax_mode' => $item['price_tax_mode'] ?? null,
+                    'integration_product_id' => $item['integration_product_id'] ?? null,
                 ]);
             }
 

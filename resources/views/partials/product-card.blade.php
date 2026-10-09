@@ -6,14 +6,20 @@
 
     $availabilityStatus = method_exists($product, 'effectiveAvailabilityStatus') ? $product->effectiveAvailabilityStatus() : ($product->in_stock ? 'in_stock' : 'out_of_stock');
     $availabilityLabel = method_exists($product, 'availabilityLabel') ? $product->availabilityLabel() : ($product->in_stock ? 'В наличии' : 'Нет в наличии');
-    $canBuy = method_exists($product, 'canBeOrdered') ? $product->canBeOrdered() : ($product->in_stock && $product->price > 0);
+    $b2bOffer = app(\App\Services\B2bCatalogOfferResolver::class)->forProduct($product, auth()->user());
+    $isB2bOffer = $b2bOffer !== null;
+    $canBuy = $isB2bOffer
+        ? ! $product->is_archived && (float) $b2bOffer->stock_quantity >= 1
+        : (method_exists($product, 'canBeOrdered') ? $product->canBeOrdered() : ($product->in_stock && $product->price > 0));
     $isPublicSale = method_exists($product, 'isPublicSale') ? $product->isPublicSale() : false;
 
-    $price = $canBuy
-        ? number_format($product->price, 2, '.', ' ') . ' BYN'
-        : ($availabilityStatus === 'out_of_stock' ? 'Нет в наличии' : 'Цена по запросу');
+    $price = $isB2bOffer
+        ? number_format((float) $b2bOffer->price, 2, '.', ' ') . ' BYN'
+        : ($canBuy
+            ? number_format((float) $product->price, 2, '.', ' ') . ' BYN'
+            : ($availabilityStatus === 'out_of_stock' ? 'Нет в наличии' : 'Цена по запросу'));
 
-    $priceOld = ($canBuy && $isPublicSale && $product->price_old && $product->price_old > $product->price)
+    $priceOld = (! $isB2bOffer && $canBuy && $isPublicSale && $product->price_old && $product->price_old > $product->price)
         ? number_format($product->price_old, 2, '.', ' ') . ' BYN'
         : null;
 
@@ -141,6 +147,15 @@
                 </span>
             @endif
         </div>
+
+        @if ($isB2bOffer)
+            <p class="text-caption-01 cl-text-2 mb-0">
+                Оптовая цена · {{ data_get($b2bOffer->source?->settings, 'price_tax_mode', 'exclusive') === 'inclusive' ? 'с НДС' : 'без НДС' }}
+            </p>
+            <p class="text-caption-01 text-success mb-0">
+                {{ data_get($b2bOffer->source?->settings, 'warehouse_label', 'Основной') }}: {{ number_format((float) $b2bOffer->stock_quantity, 3, '.', ' ') }}
+            </p>
+        @endif
 
     </div>
 </div>

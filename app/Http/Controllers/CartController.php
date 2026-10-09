@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Product;
+use App\Services\B2bCatalogOfferResolver;
 use Illuminate\Http\Request;
 
 class CartController extends Controller
@@ -24,7 +25,7 @@ class CartController extends Controller
     // ─────────────────────────────────────────
     // Добавить товар  POST /cart/add
     // ─────────────────────────────────────────
-    public function add(Request $request)
+    public function add(Request $request, B2bCatalogOfferResolver $offerResolver)
     {
         $request->validate([
             'product_id' => ['required', 'integer', 'exists:products,id'],
@@ -32,6 +33,7 @@ class CartController extends Controller
         ]);
 
         $product = Product::with('category:id,slug')->findOrFail($request->product_id);
+        $b2bOffer = $offerResolver->forProduct($product, $request->user());
 
         // Снятый с продажи товар нельзя заказать
         if ($product->is_archived) {
@@ -41,7 +43,11 @@ class CartController extends Controller
             return back()->with('error', 'Товар снят с продажи и недоступен для заказа.');
         }
 
-        if (! $product->canBeOrdered()) {
+        $canBeOrdered = $b2bOffer
+            ? (float) $b2bOffer->stock_quantity >= 1
+            : $product->canBeOrdered();
+
+        if (! $canBeOrdered) {
             if ($request->expectsJson()) {
                 return response()->json(['message' => 'Товар сейчас недоступен для оформления заказа.'], 422);
             }
@@ -58,9 +64,23 @@ class CartController extends Controller
         }
 
         $id = $product->id;
+        $price = $b2bOffer ? (float) $b2bOffer->price : (float) $product->price;
+        $pricing = $b2bOffer ? [
+            'pricing_type' => 'b2b',
+            'price_tax_mode' => data_get($b2bOffer->source?->settings, 'price_tax_mode', 'exclusive'),
+            'integration_product_id' => $b2bOffer->id,
+            'source_name' => $b2bOffer->source?->name,
+        ] : [
+            'pricing_type' => 'retail',
+            'price_tax_mode' => null,
+            'integration_product_id' => null,
+            'source_name' => null,
+        ];
 
         if (isset($cart[$id])) {
             $cart[$id]['quantity'] = min($cart[$id]['quantity'] + $qty, 999);
+            $cart[$id]['price'] = $price;
+            $cart[$id] = array_merge($cart[$id], $pricing);
         } else {
             $imgUrl = $product->image_url;
 
@@ -69,11 +89,11 @@ class CartController extends Controller
                 'name'           => $product->name,
                 'slug'           => $product->slug,
                 'sku'            => $product->sku,
-                'price'          => (float) $product->price,
+                'price'          => $price,
                 'image'          => $imgUrl,
                 'category_slug'  => $product->category->slug ?? 'catalog',
                 'quantity'       => $qty,
-            ];
+            ] + $pricing;
         }
 
         session([self::KEY => $cart]);

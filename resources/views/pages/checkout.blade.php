@@ -404,6 +404,11 @@
                                                     · {{ $item['sku'] }}
                                                 @endif
                                             </div>
+                                            @if (($item['pricing_type'] ?? null) === 'b2b')
+                                                <div class="text-caption-01 cl-text-2">
+                                                    Оптовая цена · {{ ($item['price_tax_mode'] ?? 'exclusive') === 'inclusive' ? 'с НДС' : 'без НДС' }}
+                                                </div>
+                                            @endif
                                         </div>
                                         <div class="quantity-price text-primary fw-semibold">
                                             {{ number_format($item['price'] * $item['quantity'], 2, '.', ' ') }} BYN

@@ -377,6 +377,28 @@
                                     </form>
                                 </div>
                             </div>
+                        @else
+                            <div id="account-tab-b2b" class="account-tab">
+                                <h4 class="account-title">B2B-доступ</h4>
+                                <div class="account-my_address setting">
+                                    @if ($user->b2b_approved)
+                                        <div class="alert alert-success mb-16">
+                                            <strong>Партнёрский доступ активен.</strong>
+                                            После входа в каталог вы видите оптовые цены и фактические остатки.
+                                        </div>
+                                        <p class="cl-text-2 mb-0">
+                                            Тип: {{ $user->client_type_label }} · Компания: {{ $user->company_name ?: 'не указана' }}
+                                        </p>
+                                    @else
+                                        <div class="alert alert-warning mb-16">
+                                            Заявка на B2B-доступ находится на проверке.
+                                        </div>
+                                        <p class="cl-text-2 mb-0">
+                                            После одобрения в каталоге появятся ваши оптовые цены и остатки склада.
+                                        </p>
+                                    @endif
+                                </div>
+                            </div>
                         @endif
 
                     </div>
