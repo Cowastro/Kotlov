@@ -7,10 +7,12 @@ use App\Filament\Resources\IntegrationProducts\IntegrationProductResource;
 use App\Filament\Resources\IntegrationSources\IntegrationSourceResource;
 use App\Filament\Resources\Orders\OrderResource;
 use App\Models\IntegrationIssue;
+use App\Services\Integrations\IntegrationIssueAdvisor;
 use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Actions\BulkAction;
 use Filament\Actions\BulkActionGroup;
+use Filament\Forms\Components\Placeholder;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
@@ -19,6 +21,7 @@ use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\HtmlString;
 
 class IntegrationIssueResource extends Resource
 {
@@ -125,6 +128,31 @@ class IntegrationIssueResource extends Resource
             ])
             ->defaultSort('last_detected_at', 'desc')
             ->recordActions([
+                Action::make('advice')
+                    ->label('Что делать')
+                    ->icon(Heroicon::OutlinedLightBulb)
+                    ->color('info')
+                    ->modalHeading(fn (IntegrationIssue $record): string => app(IntegrationIssueAdvisor::class)->advise($record)['title'])
+                    ->form([
+                        Placeholder::make('recommended_steps')
+                            ->label('Рекомендуемые шаги')
+                            ->content(function (IntegrationIssue $record): HtmlString {
+                                $advice = app(IntegrationIssueAdvisor::class)->advise($record);
+
+                                return new HtmlString(
+                                    '<ol class="list-decimal space-y-2 ps-5">'.
+                                    collect($advice['steps'])
+                                        ->map(fn (string $step): string => '<li>'.e($step).'</li>')
+                                        ->implode('').
+                                    '</ol>'
+                                );
+                            }),
+                        Placeholder::make('safety_note')
+                            ->label('Важно')
+                            ->content(fn (IntegrationIssue $record): string => app(IntegrationIssueAdvisor::class)->advise($record)['note']),
+                    ])
+                    ->modalSubmitAction(false)
+                    ->modalCancelActionLabel('Закрыть'),
                 Action::make('openObject')
                     ->label('Открыть')
                     ->icon(Heroicon::OutlinedArrowTopRightOnSquare)

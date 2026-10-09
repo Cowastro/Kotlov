@@ -15,6 +15,7 @@ use App\Models\Product;
 use App\Services\Integrations\CommerceMlCatalogImporter;
 use App\Services\Integrations\IntegrationCatalogAudit;
 use App\Services\Integrations\IntegrationCategoryAdvisor;
+use App\Services\Integrations\IntegrationIssueAdvisor;
 use App\Services\Integrations\IntegrationIssueDetector;
 use App\Services\Integrations\IntegrationOperationsSummary;
 use Illuminate\Database\Schema\Blueprint;
@@ -1129,6 +1130,30 @@ XML;
         $this->assertSame(2, $resolved['resolved']);
         $this->assertSame(0, IntegrationIssue::query()->where('status', 'open')->count());
         $this->assertSame(2, IntegrationIssue::query()->where('status', 'resolved')->count());
+    }
+
+    public function test_issue_advisor_explains_product_and_order_actions_without_mutation(): void
+    {
+        $productIssue = new IntegrationIssue([
+            'type' => 'product_attention',
+            'context' => [
+                'missing_price' => true,
+                'unmatched' => true,
+                'missing_category' => true,
+            ],
+        ]);
+        $orderIssue = new IntegrationIssue(['type' => 'order_not_exported']);
+        $advisor = app(IntegrationIssueAdvisor::class);
+
+        $productAdvice = $advisor->advise($productIssue);
+        $orderAdvice = $advisor->advise($orderIssue);
+
+        $this->assertSame('Сначала привязать товар и получить цену', $productAdvice['title']);
+        $this->assertCount(3, $productAdvice['steps']);
+        $this->assertStringContainsString('не публикуется', $productAdvice['steps'][2]);
+        $this->assertSame('Передать заказ в 1С', $orderAdvice['title']);
+        $this->assertStringContainsString('success', $orderAdvice['note']);
+        $this->assertFalse($productIssue->exists);
     }
 
     public function test_issue_detector_ignores_orders_created_before_integration_monitoring_started(): void
