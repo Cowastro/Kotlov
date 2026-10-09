@@ -77,7 +77,7 @@ class IntegrationSourceResource extends Resource
                     Toggle::make('update_stock')->label('Обновлять остатки')->default(false),
                 ])->columns(3),
             Section::make('Оптовые цены')
-                ->description('Определяет, как показывать цены этого источника одобренным B2B-партнёрам.')
+                ->description('Единое правило: хранится исходная цена поставщика, а клиенту всегда показывается итоговая цена с НДС. Для цены без НДС система добавляет указанную ставку.')
                 ->schema([
                     Select::make('settings.price_tax_mode')
                         ->label('Налогообложение цены')
@@ -114,6 +114,12 @@ class IntegrationSourceResource extends Resource
                     ->copyable()
                     ->toggleable(),
                 TextColumn::make('driver')->label('Формат')->badge(),
+                TextColumn::make('pricing_rule')->label('Правило цены')
+                    ->state(fn (IntegrationSource $record): string => $record->pricingRuleLabel())
+                    ->badge()
+                    ->color(fn (IntegrationSource $record): string => $record->priceTaxMode() === IntegrationSource::PRICE_TAX_INCLUSIVE
+                        ? 'success'
+                        : 'warning'),
                 TextColumn::make('products_count')->label('Товаров в наличии')
                     ->counts(['products' => fn ($query) => $query->inStock()])->sortable(),
                 TextColumn::make('matched_products_count')->label('Привязано')

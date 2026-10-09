@@ -27,15 +27,8 @@ class B2bCatalogOfferResolver
     public function priceWithTax(IntegrationProduct $offer): float
     {
         $price = (float) $offer->price;
-        $taxMode = data_get($offer->source?->settings, 'price_tax_mode', 'exclusive');
 
-        if ($taxMode === 'inclusive') {
-            return round($price, 2);
-        }
-
-        $taxRate = max(0, (float) data_get($offer->source?->settings, 'vat_rate', 20));
-
-        return round($price * (1 + $taxRate / 100), 2);
+        return $offer->source?->priceIncludingTax($price) ?? round($price, 2);
     }
 
     /** @return array{offer: IntegrationProduct, wholesale_price: float, retail_price: float, difference: float, difference_percent: float|null, vat_rate: float}|null */
@@ -59,7 +52,7 @@ class B2bCatalogOfferResolver
             'difference_percent' => $retailPrice > 0 && $difference > 0
                 ? round($difference / $retailPrice * 100, 1)
                 : null,
-            'vat_rate' => max(0, (float) data_get($offer->source?->settings, 'vat_rate', 20)),
+            'vat_rate' => $offer->source?->vatRate() ?? 0,
         ];
     }
 

@@ -6,6 +6,7 @@ use App\Filament\Resources\IntegrationProducts\Pages\EditIntegrationProduct;
 use App\Filament\Resources\IntegrationProducts\Pages\ListIntegrationProducts;
 use App\Models\IntegrationCategory;
 use App\Models\IntegrationProduct;
+use App\Models\IntegrationSource;
 use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Actions\BulkAction;
@@ -134,7 +135,19 @@ class IntegrationProductResource extends Resource
                 TextColumn::make('match_confidence')->label('Совпадение')->formatStateUsing(
                     fn ($state): string => $state === null ? '—' : round((float) $state * 100).'%'
                 ),
-                TextColumn::make('price')->label('Цена 1С')->money('BYN')->toggleable()
+                TextColumn::make('customer_price')->label('Цена клиенту с НДС')
+                    ->state(fn (IntegrationProduct $record): float => $record->source
+                        ? $record->source->priceIncludingTax((float) $record->price)
+                        : (float) $record->price)
+                    ->money('BYN')
+                    ->description(fn (IntegrationProduct $record): string => sprintf(
+                        'Из 1С: %s BYN %s%s',
+                        number_format((float) $record->price, 2, '.', ' '),
+                        $record->source?->sourcePriceTaxLabel() ?? 'режим не указан',
+                        $record->source?->priceTaxMode() === IntegrationSource::PRICE_TAX_EXCLUSIVE
+                            ? ' · НДС +'.number_format($record->source->vatRate(), 0).'%'
+                            : ''
+                    ))
                     ->size(TextSize::Small),
                 TextColumn::make('stock_quantity')->label('Остаток 1С')->numeric()->toggleable()
                     ->size(TextSize::Small),
