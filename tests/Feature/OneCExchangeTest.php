@@ -14,6 +14,7 @@ use App\Models\OrderItem;
 use App\Models\Product;
 use App\Services\Integrations\CommerceMlCatalogImporter;
 use App\Services\Integrations\IntegrationCatalogAudit;
+use App\Services\Integrations\IntegrationCategoryAdvisor;
 use App\Services\Integrations\IntegrationIssueDetector;
 use App\Services\Integrations\IntegrationOperationsSummary;
 use Illuminate\Database\Schema\Blueprint;
@@ -109,6 +110,7 @@ class OneCExchangeTest extends TestCase
                 $table->string('sku')->nullable();
                 $table->string('name')->nullable();
                 $table->string('slug')->nullable();
+                $table->unsignedBigInteger('category_id')->nullable();
                 $table->timestamps();
             });
         } else {
@@ -118,6 +120,9 @@ class OneCExchangeTest extends TestCase
                 }
                 if (! Schema::hasColumn('products', 'name')) {
                     $table->string('name')->nullable();
+                }
+                if (! Schema::hasColumn('products', 'category_id')) {
+                    $table->unsignedBigInteger('category_id')->nullable();
                 }
             });
         }
@@ -577,6 +582,48 @@ XML;
 
         $this->assertSame($targetCategory->id, $item->resolvedSiteCategory()?->id);
         $this->assertSame('Индивидуальное назначение', $item->categoryResolutionLabel());
+    }
+
+    public function test_category_advisor_suggests_only_when_candidates_agree(): void
+    {
+        $source = IntegrationSource::query()->create([
+            'code' => 'category-advisor',
+            'name' => 'Поставщик',
+        ]);
+        $category = Category::query()->create([
+            'name' => 'Одностенные дымоходы',
+            'slug' => 'advisor-category-'.uniqid(),
+            'parent_id' => 0,
+        ]);
+        $first = Product::query()->create([
+            'sku' => 'ADVISOR-1',
+            'name' => 'Труба 1 м',
+            'slug' => 'advisor-product-1-'.uniqid(),
+            'category_id' => $category->id,
+        ]);
+        $second = Product::query()->create([
+            'sku' => 'ADVISOR-2',
+            'name' => 'Труба 0,5 м',
+            'slug' => 'advisor-product-2-'.uniqid(),
+            'category_id' => $category->id,
+        ]);
+        $item = IntegrationProduct::query()->create([
+            'integration_source_id' => $source->id,
+            'external_id' => 'advisor-product',
+            'name' => 'Труба дымохода',
+            'stock_quantity' => 1,
+            'match_status' => 'ambiguous',
+            'candidates' => [
+                ['product_id' => $first->id, 'score' => 0.74],
+                ['product_id' => $second->id, 'score' => 0.7],
+            ],
+        ]);
+
+        $suggestion = app(IntegrationCategoryAdvisor::class)->suggest($item);
+
+        $this->assertSame($category->id, $suggestion['category_id']);
+        $this->assertSame('Одностенные дымоходы', $suggestion['category_name']);
+        $this->assertSame(0.75, $suggestion['confidence']);
     }
 
     public function test_catalog_accepts_multiple_commerceml_documents_in_one_upload(): void

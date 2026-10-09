@@ -8,6 +8,7 @@ use App\Models\Category;
 use App\Models\IntegrationCategory;
 use App\Models\IntegrationProduct;
 use App\Models\IntegrationSource;
+use App\Services\Integrations\IntegrationCategoryAdvisor;
 use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Actions\BulkAction;
@@ -298,6 +299,47 @@ class IntegrationProductResource extends Resource
                             ->success()
                             ->title('Категория группы сохранена')
                             ->body('Правило применяется ко всем товарам этой группы поставщика.')
+                            ->send();
+                    }),
+                Action::make('applyCategorySuggestion')
+                    ->label('Применить рекомендацию')
+                    ->icon(Heroicon::OutlinedLightBulb)
+                    ->color('warning')
+                    ->visible(fn (IntegrationProduct $record): bool => filled(
+                        app(IntegrationCategoryAdvisor::class)->suggest($record)
+                    ))
+                    ->modalHeading('Рекомендация категории')
+                    ->modalDescription(function (IntegrationProduct $record): string {
+                        $suggestion = app(IntegrationCategoryAdvisor::class)->suggest($record);
+
+                        return $suggestion
+                            ? $suggestion['reason'].' Уверенность: '.round($suggestion['confidence'] * 100).'%.'
+                            : 'Надёжная рекомендация для этого товара не найдена.';
+                    })
+                    ->form([
+                        Placeholder::make('suggested_category')
+                            ->label('Категория kotlov.by')
+                            ->content(fn (IntegrationProduct $record): string => app(IntegrationCategoryAdvisor::class)->suggest($record)['category_name'] ?? '—'),
+                    ])
+                    ->requiresConfirmation()
+                    ->modalSubmitActionLabel('Назначить категорию')
+                    ->action(function (IntegrationProduct $record): void {
+                        $suggestion = app(IntegrationCategoryAdvisor::class)->suggest($record);
+                        if (! $suggestion) {
+                            Notification::make()
+                                ->warning()
+                                ->title('Рекомендация больше не актуальна')
+                                ->send();
+
+                            return;
+                        }
+
+                        $record->update(['target_category_id' => $suggestion['category_id']]);
+
+                        Notification::make()
+                            ->success()
+                            ->title('Категория назначена')
+                            ->body('Применена подтверждённая рекомендация: '.$suggestion['category_name'])
                             ->send();
                     }),
                 Action::make('setTargetCategory')
