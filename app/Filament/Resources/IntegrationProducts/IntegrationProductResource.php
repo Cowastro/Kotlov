@@ -193,7 +193,7 @@ class IntegrationProductResource extends Resource
                         'unmatched' => 'Не найден',
                         'ignored' => 'Не для сайта',
                     ]),
-            ], layout: FiltersLayout::AboveContentCollapsible)
+            ], layout: FiltersLayout::AboveContent)
             ->filtersFormColumns(3)
             ->deferFilters(false)
             ->persistFiltersInSession()
