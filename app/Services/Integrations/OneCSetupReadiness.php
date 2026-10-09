@@ -7,6 +7,8 @@ use App\Models\IntegrationSource;
 
 class OneCSetupReadiness
 {
+    public function __construct(private IntegrationMonitoringWindow $monitoringWindow) {}
+
     /** @return array<string, mixed> */
     public function snapshot(IntegrationSource $source): array
     {
@@ -31,7 +33,7 @@ class OneCSetupReadiness
             ),
             $this->check(
                 'Защита старых заказов включена',
-                filled(data_get($source->settings, 'monitor_orders_from')),
+                (bool) $this->monitoringWindow->ordersStartAtFor($source),
                 'Сохраните источник: система зафиксирует дату, раньше которой заказы в 1С не отправляются.',
             ),
             $this->check(
