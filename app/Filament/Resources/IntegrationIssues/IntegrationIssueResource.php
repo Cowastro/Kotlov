@@ -87,6 +87,13 @@ class IntegrationIssueResource extends Resource
                         ?? $record->integrationProduct?->name
                         ?? $record->source?->name
                         ?? '—'),
+                TextColumn::make('recommended_action')->label('Следующий шаг')
+                    ->state(fn (IntegrationIssue $record): string => app(IntegrationIssueAdvisor::class)->advise($record)['title'])
+                    ->description(fn (IntegrationIssue $record): ?string => app(IntegrationIssueAdvisor::class)->advise($record)['steps'][0] ?? null)
+                    ->icon(Heroicon::OutlinedLightBulb)
+                    ->color('info')
+                    ->wrap()
+                    ->toggleable(),
                 TextColumn::make('status')->label('Состояние')->badge()
                     ->formatStateUsing(fn (string $state): string => match ($state) {
                         'resolved' => 'Решено',
@@ -161,6 +168,7 @@ class IntegrationIssueResource extends Resource
                 Action::make('openObject')
                     ->label('Открыть')
                     ->icon(Heroicon::OutlinedArrowTopRightOnSquare)
+                    ->visible(fn (IntegrationIssue $record): bool => filled(self::objectUrl($record)))
                     ->url(fn (IntegrationIssue $record): ?string => self::objectUrl($record)),
                 Action::make('claim')
                     ->label('Взять в работу')
