@@ -7,6 +7,8 @@ use App\Models\IntegrationIssue;
 use App\Models\IntegrationProduct;
 use App\Models\IntegrationSource;
 use App\Models\Order;
+use Carbon\CarbonInterface;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 
 class IntegrationIssueDetector
@@ -52,52 +54,38 @@ class IntegrationIssueDetector
                 ->where('match_status', '!=', 'ignored')
                 ->chunkById(250, function ($products) use (&$seen, &$opened): void {
                     foreach ($products as $product) {
-                        if (! $product->product_id) {
+                        $missingPrice = (float) $product->price <= 0;
+                        $unmatched = ! $product->product_id;
+                        $missingCategory = $unmatched
+                            && ! $product->target_category_id
+                            && ! $product->integrationCategory?->category_id;
+
+                        if ($missingPrice || $unmatched) {
                             $this->report(
                                 $seen,
                                 $opened,
-                                "product:{$product->id}:unmatched",
-                                'product_unmatched',
-                                $product->match_status === 'unmatched' ? 'danger' : 'warning',
-                                'Товар в наличии не привязан',
+                                "product:{$product->id}:attention",
+                                'product_attention',
+                                $missingPrice || $product->match_status === 'unmatched' ? 'danger' : 'warning',
+                                $missingPrice ? 'Товар в наличии без цены' : 'Товар в наличии не привязан',
                                 $product->name,
                                 source: $product->source,
                                 integrationProduct: $product,
-                            );
-
-                            if (! $product->target_category_id && ! $product->integrationCategory?->category_id) {
-                                $this->report(
-                                    $seen,
-                                    $opened,
-                                    "product:{$product->id}:missing-category",
-                                    'product_missing_category',
-                                    'warning',
-                                    'Не назначена категория сайта',
-                                    $product->name,
-                                    source: $product->source,
-                                    integrationProduct: $product,
-                                );
-                            }
-                        }
-
-                        if ((float) $product->price <= 0) {
-                            $this->report(
-                                $seen,
-                                $opened,
-                                "product:{$product->id}:missing-price",
-                                'product_missing_price',
-                                'danger',
-                                'Товар в наличии без цены',
-                                $product->name,
-                                source: $product->source,
-                                integrationProduct: $product,
+                                context: [
+                                    'missing_price' => $missingPrice,
+                                    'unmatched' => $unmatched,
+                                    'missing_category' => $missingCategory,
+                                ],
                             );
                         }
                     }
                 });
 
+            $monitorOrdersFrom = $this->orderMonitoringStartsAt();
+
             Order::query()
                 ->whereNull('onec_exported_at')
+                ->when($monitorOrdersFrom, fn ($query) => $query->where('created_at', '>=', $monitorOrdersFrom))
                 ->where('created_at', '<=', $now->copy()->subMinutes(10))
                 ->each(function (Order $order) use (&$seen, &$opened): void {
                     $this->report(
@@ -141,6 +129,29 @@ class IntegrationIssueDetector
             ]);
 
         return ['detected' => count($seen), 'opened' => $opened, 'resolved' => $resolved];
+    }
+
+    private function orderMonitoringStartsAt(): ?CarbonInterface
+    {
+        return IntegrationSource::query()
+            ->where('is_active', true)
+            ->get()
+            ->map(function (IntegrationSource $source): ?CarbonInterface {
+                $configured = data_get($source->settings, 'monitor_orders_from');
+
+                if (filled($configured)) {
+                    try {
+                        return Carbon::parse((string) $configured);
+                    } catch (\Throwable) {
+                        // Fall back to the moment this integration source was created.
+                    }
+                }
+
+                return $source->created_at;
+            })
+            ->filter()
+            ->sortBy(fn (CarbonInterface $date): int => $date->getTimestamp())
+            ->first();
     }
 
     /** @param array<int, string> $seen */

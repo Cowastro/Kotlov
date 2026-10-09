@@ -111,6 +111,7 @@ class IntegrationIssueResource extends Resource
                     'product_unmatched' => 'Товар не привязан',
                     'product_missing_category' => 'Нет категории',
                     'product_missing_price' => 'Нет цены',
+                    'product_attention' => 'Товар требует решения',
                     'order_not_exported' => 'Заказ не передан',
                     'order_no_1c_response' => 'Нет ответа 1С',
                 ]),

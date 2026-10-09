@@ -168,19 +168,27 @@ class IntegrationProductResource extends Resource
                 TextColumn::make('match_confidence')->label('Совпадение')->formatStateUsing(
                     fn ($state): string => $state === null ? '—' : round((float) $state * 100).'%'
                 ),
-                TextColumn::make('customer_price')->label('Цена клиенту с НДС')
-                    ->state(fn (IntegrationProduct $record): float => $record->source
-                        ? $record->source->priceIncludingTax((float) $record->price)
-                        : (float) $record->price)
+                TextColumn::make('customer_price')->label('Цена клиенту')
+                    ->state(function (IntegrationProduct $record): ?float {
+                        $sourcePrice = (float) $record->price;
+
+                        if ($sourcePrice <= 0) {
+                            return null;
+                        }
+
+                        return $record->source
+                            ? $record->source->priceIncludingTax($sourcePrice)
+                            : $sourcePrice;
+                    })
                     ->money('BYN')
-                    ->description(fn (IntegrationProduct $record): string => sprintf(
-                        'Из 1С: %s BYN %s%s',
-                        number_format((float) $record->price, 2, '.', ' '),
-                        $record->source?->sourcePriceTaxLabel() ?? 'режим не указан',
-                        $record->source?->priceTaxMode() === IntegrationSource::PRICE_TAX_EXCLUSIVE
-                            ? ' · НДС +'.number_format($record->source->vatRate(), 0).'%'
-                            : ''
-                    ))
+                    ->placeholder('Цена не передана')
+                    ->description(fn (IntegrationProduct $record): ?string => (float) $record->price > 0
+                        ? sprintf(
+                            'Цена 1С: %s BYN · %s',
+                            number_format((float) $record->price, 2, ',', ' '),
+                            $record->source?->sourcePriceTaxLabel() ?? 'режим НДС не указан',
+                        )
+                        : null)
                     ->size(TextSize::Small),
                 TextColumn::make('stock_quantity')->label('Остаток 1С')->numeric()->toggleable()
                     ->size(TextSize::Small),

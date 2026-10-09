@@ -34,6 +34,7 @@ class IntegrationSource extends Model
                 'vat_rate' => 20,
                 'warehouse_label' => 'Основной',
                 'b2b_enabled' => false,
+                'monitor_orders_from' => now()->toIso8601String(),
             ], $source->settings ?? []);
         });
     }

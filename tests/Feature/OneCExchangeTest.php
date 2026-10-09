@@ -895,6 +895,7 @@ XML;
             'code' => 'issue-source',
             'name' => 'Поставщик с проблемами',
             'is_active' => true,
+            'settings' => ['monitor_orders_from' => now()->subDay()->toIso8601String()],
         ]);
         IntegrationExchangeRun::query()->create([
             'integration_source_id' => $source->id,
@@ -929,21 +930,52 @@ XML;
         $first = $detector->scan();
         $second = $detector->scan();
 
-        $this->assertSame(4, $first['detected']);
-        $this->assertSame(4, IntegrationIssue::query()->where('status', 'open')->count());
-        $this->assertSame(4, $second['detected']);
-        $this->assertSame(4, IntegrationIssue::query()->count());
-        $this->assertDatabaseHas('integration_issues', ['type' => 'product_unmatched']);
-        $this->assertDatabaseHas('integration_issues', ['type' => 'product_missing_category']);
-        $this->assertDatabaseHas('integration_issues', ['type' => 'product_missing_price']);
+        $this->assertSame(2, $first['detected']);
+        $this->assertSame(2, IntegrationIssue::query()->where('status', 'open')->count());
+        $this->assertSame(2, $second['detected']);
+        $this->assertSame(2, IntegrationIssue::query()->count());
+        $productIssue = IntegrationIssue::query()->where('type', 'product_attention')->firstOrFail();
+        $this->assertTrue($productIssue->context['missing_price']);
+        $this->assertTrue($productIssue->context['unmatched']);
+        $this->assertTrue($productIssue->context['missing_category']);
         $this->assertDatabaseHas('integration_issues', ['type' => 'order_not_exported']);
 
         $product->update(['match_status' => 'ignored']);
         $order->update(['onec_exported_at' => now(), 'onec_status_received_at' => now()]);
         $resolved = $detector->scan();
 
-        $this->assertSame(4, $resolved['resolved']);
+        $this->assertSame(2, $resolved['resolved']);
         $this->assertSame(0, IntegrationIssue::query()->where('status', 'open')->count());
-        $this->assertSame(4, IntegrationIssue::query()->where('status', 'resolved')->count());
+        $this->assertSame(2, IntegrationIssue::query()->where('status', 'resolved')->count());
+    }
+
+    public function test_issue_detector_ignores_orders_created_before_integration_monitoring_started(): void
+    {
+        IntegrationSource::query()->create([
+            'code' => 'new-integration',
+            'name' => 'Новая интеграция',
+            'is_active' => true,
+            'settings' => ['monitor_orders_from' => now()->subHour()->toIso8601String()],
+        ]);
+
+        $order = Order::query()->create([
+            'number' => 'LEGACY-ORDER-1',
+            'status' => 'new',
+            'customer_name' => 'Старый заказ',
+            'customer_phone' => '+375290000001',
+            'delivery_type' => 'pickup',
+            'payment_type' => 'cash',
+            'payment_status' => 'pending',
+            'subtotal' => 10,
+            'total' => 10,
+        ]);
+        DB::table('orders')->where('id', $order->id)->update(['created_at' => now()->subHours(2)]);
+
+        app(IntegrationIssueDetector::class)->scan();
+
+        $this->assertDatabaseMissing('integration_issues', [
+            'type' => 'order_not_exported',
+            'order_id' => $order->id,
+        ]);
     }
 }
