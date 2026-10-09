@@ -958,6 +958,35 @@ XML;
         $this->assertSame(1, $summary['failed_runs_24h']);
     }
 
+    public function test_integration_source_exposes_schedule_and_latest_successful_exchange(): void
+    {
+        $source = IntegrationSource::query()->create([
+            'code' => 'scheduled-onec',
+            'name' => 'Регламентная 1С',
+            'settings' => [
+                'order_interval_minutes' => 3,
+                'catalog_interval_minutes' => 8,
+                'stale_after_minutes' => 20,
+            ],
+        ]);
+        IntegrationExchangeRun::query()->create([
+            'integration_source_id' => $source->id,
+            'direction' => 'inbound',
+            'operation' => 'catalog',
+            'status' => 'success',
+            'started_at' => now()->subMinutes(5),
+            'finished_at' => now()->subMinutes(4),
+        ]);
+
+        $source->refresh()->load('latestSuccessfulExchangeRun');
+
+        $this->assertSame(3, $source->orderIntervalMinutes());
+        $this->assertSame(8, $source->catalogIntervalMinutes());
+        $this->assertSame(20, $source->staleAfterMinutes());
+        $this->assertSame('Заказы 3 мин · цены/остатки 8 мин', $source->scheduleLabel());
+        $this->assertSame('catalog', $source->latestSuccessfulExchangeRun->operation);
+    }
+
     public function test_operations_summary_excludes_orders_before_integration_monitoring_started(): void
     {
         IntegrationSource::query()->create([

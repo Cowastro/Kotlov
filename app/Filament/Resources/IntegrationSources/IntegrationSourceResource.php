@@ -76,6 +76,41 @@ class IntegrationSourceResource extends Resource
                     Toggle::make('update_prices')->label('Обновлять цены')->default(false),
                     Toggle::make('update_stock')->label('Обновлять остатки')->default(false),
                 ])->columns(3),
+            Section::make('Автоматический обмен и контроль')
+                ->description('Регламентное задание запускается на стороне 1С. Сайт принимает каталог, цены и остатки, а при обмене заказами отдаёт новые заказы и принимает их статусы.')
+                ->schema([
+                    Placeholder::make('automation_notice')
+                        ->label('Как работает автоматизация')
+                        ->content('В 1С настройте запуск обмена каждые 5 минут. Полный каталог достаточно отправлять ночью или вручную; цены, остатки, новые заказы и статусы — в каждом регулярном цикле.')
+                        ->columnSpanFull(),
+                    TextInput::make('settings.order_interval_minutes')
+                        ->label('Ожидаемый интервал заказов')
+                        ->numeric()
+                        ->minValue(2)
+                        ->maxValue(60)
+                        ->suffix('мин')
+                        ->default(5)
+                        ->required(),
+                    TextInput::make('settings.catalog_interval_minutes')
+                        ->label('Ожидаемый интервал цен и остатков')
+                        ->numeric()
+                        ->minValue(5)
+                        ->maxValue(1440)
+                        ->suffix('мин')
+                        ->default(10)
+                        ->required(),
+                    TextInput::make('settings.stale_after_minutes')
+                        ->label('Считать обмен просроченным через')
+                        ->numeric()
+                        ->minValue(5)
+                        ->maxValue(1440)
+                        ->suffix('мин')
+                        ->default(15)
+                        ->required(),
+                    Toggle::make('settings.allow_order_export')
+                        ->label('Отдавать новые заказы этому источнику')
+                        ->helperText('Для основного источника onec включено протоколом автоматически.'),
+                ])->columns(3),
             Section::make('Оптовые цены')
                 ->description('Единое правило: хранится исходная цена поставщика, а клиенту всегда показывается итоговая цена с НДС. Для цены без НДС система добавляет указанную ставку.')
                 ->schema([
@@ -114,6 +149,10 @@ class IntegrationSourceResource extends Resource
     public static function table(Table $table): Table
     {
         return $table
+            ->modifyQueryUsing(fn ($query) => $query->with([
+                'latestExchangeRun',
+                'latestSuccessfulExchangeRun',
+            ]))
             ->columns([
                 TextColumn::make('name')->label('Источник')->searchable()->sortable(),
                 TextColumn::make('code')->label('Код')->badge()->copyable(),
@@ -122,6 +161,29 @@ class IntegrationSourceResource extends Resource
                     ->copyable()
                     ->toggleable(),
                 TextColumn::make('driver')->label('Формат')->badge(),
+                TextColumn::make('exchange_health')->label('Обмен')
+                    ->state(fn (IntegrationSource $record): string => match (true) {
+                        $record->latestExchangeRun?->status === 'failed' => 'Ошибка',
+                        $record->latestExchangeRun?->status === 'running' => 'Выполняется',
+                        ! $record->latestSuccessfulExchangeRun => 'Ещё не было',
+                        $record->latestSuccessfulExchangeRun->finished_at?->lt(now()->subMinutes($record->staleAfterMinutes())) => 'Просрочен',
+                        default => 'Работает',
+                    })
+                    ->description(fn (IntegrationSource $record): string => $record->latestSuccessfulExchangeRun?->finished_at
+                        ? 'Успешно '.$record->latestSuccessfulExchangeRun->finished_at->timezone('Europe/Minsk')->format('d.m.Y H:i')
+                        : 'Ожидается первый автоматический цикл')
+                    ->badge()
+                    ->color(fn (IntegrationSource $record): string => match (true) {
+                        $record->latestExchangeRun?->status === 'failed' => 'danger',
+                        $record->latestExchangeRun?->status === 'running' => 'info',
+                        ! $record->latestSuccessfulExchangeRun => 'warning',
+                        $record->latestSuccessfulExchangeRun->finished_at?->lt(now()->subMinutes($record->staleAfterMinutes())) => 'warning',
+                        default => 'success',
+                    }),
+                TextColumn::make('schedule')->label('Ожидаемая частота')
+                    ->state(fn (IntegrationSource $record): string => $record->scheduleLabel())
+                    ->wrap()
+                    ->toggleable(),
                 TextColumn::make('pricing_rule')->label('Правило цены')
                     ->state(fn (IntegrationSource $record): string => $record->pricingRuleLabel())
                     ->badge()

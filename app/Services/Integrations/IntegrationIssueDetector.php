@@ -29,7 +29,7 @@ class IntegrationIssueDetector
                         ->where('status', 'success')
                         ->latest('finished_at')
                         ->first();
-                    $staleMinutes = max(5, (int) data_get($source->settings, 'stale_after_minutes', 15));
+                    $staleMinutes = $source->staleAfterMinutes();
 
                     if (! $lastSuccess || $lastSuccess->finished_at?->lt($now->copy()->subMinutes($staleMinutes))) {
                         $this->report(

@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class IntegrationSource extends Model
 {
@@ -34,6 +35,9 @@ class IntegrationSource extends Model
                 'vat_rate' => 20,
                 'warehouse_label' => 'Основной',
                 'b2b_enabled' => false,
+                'order_interval_minutes' => 5,
+                'catalog_interval_minutes' => 10,
+                'stale_after_minutes' => 15,
                 'monitor_orders_from' => now()->toIso8601String(),
             ], $source->settings ?? []);
         });
@@ -84,6 +88,26 @@ class IntegrationSource extends Model
             : 'Без НДС → +'.number_format($this->vatRate(), 0).'%';
     }
 
+    public function orderIntervalMinutes(): int
+    {
+        return max(2, (int) data_get($this->settings, 'order_interval_minutes', 5));
+    }
+
+    public function catalogIntervalMinutes(): int
+    {
+        return max(5, (int) data_get($this->settings, 'catalog_interval_minutes', 10));
+    }
+
+    public function staleAfterMinutes(): int
+    {
+        return max(5, (int) data_get($this->settings, 'stale_after_minutes', 15));
+    }
+
+    public function scheduleLabel(): string
+    {
+        return 'Заказы '.$this->orderIntervalMinutes().' мин · цены/остатки '.$this->catalogIntervalMinutes().' мин';
+    }
+
     public function products(): HasMany
     {
         return $this->hasMany(IntegrationProduct::class);
@@ -97,5 +121,18 @@ class IntegrationSource extends Model
     public function exchangeRuns(): HasMany
     {
         return $this->hasMany(IntegrationExchangeRun::class);
+    }
+
+    public function latestExchangeRun(): HasOne
+    {
+        return $this->hasOne(IntegrationExchangeRun::class)->latestOfMany('started_at');
+    }
+
+    public function latestSuccessfulExchangeRun(): HasOne
+    {
+        return $this->hasOne(IntegrationExchangeRun::class)->ofMany(
+            ['finished_at' => 'max', 'id' => 'max'],
+            fn ($query) => $query->where('status', 'success'),
+        );
     }
 }
