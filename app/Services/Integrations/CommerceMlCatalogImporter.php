@@ -84,6 +84,35 @@ class CommerceMlCatalogImporter
         return $stats;
     }
 
+    /** @return array{matched:int,suggested:int,ambiguous:int,unmatched:int} */
+    public function rematchSource(string $sourceCode): array
+    {
+        $source = IntegrationSource::query()->where('code', $sourceCode)->firstOrFail();
+        $this->prepareIndexes();
+
+        $stats = [
+            'matched' => 0,
+            'suggested' => 0,
+            'ambiguous' => 0,
+            'unmatched' => 0,
+        ];
+
+        IntegrationProduct::query()
+            ->whereBelongsTo($source, 'source')
+            ->whereNull('product_id')
+            ->where('match_status', '!=', 'ignored')
+            ->orderBy('id')
+            ->chunkById(250, function (Collection $items) use (&$stats): void {
+                foreach ($items as $item) {
+                    $item->fill($this->match($item));
+                    $item->save();
+                    $stats[$item->match_status]++;
+                }
+            });
+
+        return $stats;
+    }
+
     /** @return array<int, SimpleXMLElement> */
     private function parseDocuments(string $xml): array
     {
@@ -315,6 +344,10 @@ class CommerceMlCatalogImporter
         $candidates = $candidateIds
             ->map(fn (int $id): ?Product => $this->products->get($id))
             ->filter()
+            ->filter(fn (Product $product): bool => $this->hasCompatibleDimensions(
+                (string) $item->name,
+                (string) $product->name,
+            ))
             ->map(function (Product $product) use ($normalizedName): array {
                 similar_text($normalizedName, $this->normalizeName($product->name), $score);
 
@@ -398,6 +431,60 @@ class CommerceMlCatalogImporter
             ->unique()
             ->values()
             ->all();
+    }
+
+    private function hasCompatibleDimensions(string $sourceName, string $productName): bool
+    {
+        $sourceDiameters = $this->diameters($sourceName);
+        if ($sourceDiameters !== [] && $sourceDiameters !== $this->diameters($productName)) {
+            return false;
+        }
+
+        $sourceMeasurements = $this->measurementsInMillimetres($sourceName);
+
+        return $sourceMeasurements === [] || $sourceMeasurements === $this->measurementsInMillimetres($productName);
+    }
+
+    /** @return array<int, int> */
+    private function diameters(string $name): array
+    {
+        preg_match_all(
+            '/(?<![\p{L}\p{N}])(?:dn|d|ф|ø|⌀)\s*[-:]?\s*(\d{2,4})(?!\d)/iu',
+            mb_strtolower($name),
+            $matches,
+        );
+
+        $values = array_map('intval', $matches[1] ?? []);
+        sort($values);
+
+        return array_values(array_unique($values));
+    }
+
+    /** @return array<int, int> */
+    private function measurementsInMillimetres(string $name): array
+    {
+        preg_match_all(
+            '/(?<![\p{L}\p{N}])(\d+(?:[.,]\d+)?)\s*(мм|mm|см|cm|мп|метр(?:а|ов)?|м|m)(?!\p{L})/iu',
+            mb_strtolower($name),
+            $matches,
+            PREG_SET_ORDER,
+        );
+
+        $values = [];
+        foreach ($matches as $match) {
+            $value = (float) str_replace(',', '.', $match[1]);
+            $unit = mb_strtolower($match[2]);
+            $multiplier = match ($unit) {
+                'см', 'cm' => 10,
+                'м', 'm', 'мп', 'метр', 'метра', 'метров' => 1000,
+                default => 1,
+            };
+            $values[] = (int) round($value * $multiplier);
+        }
+
+        sort($values);
+
+        return array_values(array_unique($values));
     }
 
     /** @return array<string, mixed> */

@@ -450,6 +450,67 @@ XML;
         ]);
     }
 
+    public function test_fuzzy_matching_rejects_a_different_diameter(): void
+    {
+        Product::query()->create([
+            'sku' => 'PS-011.849',
+            'name' => 'КПД ЧЕРНЫЙ Труба 250мм 2мм ф150',
+            'slug' => 'black-pipe-250-150',
+        ]);
+        $xml = <<<'XML'
+<?xml version="1.0" encoding="UTF-8"?>
+<КоммерческаяИнформация>
+  <Каталог><Товары><Товар>
+    <Ид>wrong-diameter</Ид>
+    <Наименование>КПД ЧЕРНЫЙ Труба 250мм 2мм ф120</Наименование>
+  </Товар></Товары></Каталог>
+</КоммерческаяИнформация>
+XML;
+
+        app(CommerceMlCatalogImporter::class)->import($xml);
+
+        $this->assertDatabaseHas('integration_products', [
+            'external_id' => 'wrong-diameter',
+            'product_id' => null,
+            'match_status' => 'unmatched',
+        ]);
+    }
+
+    public function test_fuzzy_matching_rejects_a_missing_diameter_and_rematch_updates_old_suggestion(): void
+    {
+        $product = Product::query()->create([
+            'sku' => 'PS-011.842',
+            'name' => 'Лист потолочный Угловой разборный ЛПУР 20-45°',
+            'slug' => 'ceiling-sheet-lpur',
+        ]);
+        $source = IntegrationSource::query()->create([
+            'code' => 'onec',
+            'name' => '1С',
+        ]);
+        IntegrationProduct::query()->create([
+            'integration_source_id' => $source->id,
+            'external_id' => 'missing-diameter',
+            'name' => 'Лист потолочный Угловой разборный ЛПУР 20-45° D250',
+            'match_status' => 'suggested',
+            'match_method' => 'fuzzy_name',
+            'match_confidence' => 0.97,
+            'candidates' => [[
+                'product_id' => $product->id,
+                'sku' => $product->sku,
+                'name' => $product->name,
+                'score' => 0.97,
+            ]],
+        ]);
+
+        $this->artisan('integration:rematch-source onec')->assertSuccessful();
+
+        $this->assertDatabaseHas('integration_products', [
+            'external_id' => 'missing-diameter',
+            'product_id' => null,
+            'match_status' => 'unmatched',
+        ]);
+    }
+
     public function test_clear_source_can_remove_staging_and_retained_exchange_files(): void
     {
         $source = IntegrationSource::query()->create([
