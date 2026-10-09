@@ -6,6 +6,7 @@ use App\Enums\ClientType;
 use Filament\Models\Contracts\FilamentUser;
 use Filament\Panel;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
@@ -41,17 +42,17 @@ class User extends Authenticatable implements FilamentUser
 
     protected $casts = [
         'email_verified_at' => 'datetime',
-        'password'          => 'hashed',
-        'is_active'         => 'boolean',
-        'b2b_approved'      => 'boolean',
-        'client_type'       => ClientType::class,
+        'password' => 'hashed',
+        'is_active' => 'boolean',
+        'b2b_approved' => 'boolean',
+        'client_type' => ClientType::class,
     ];
 
     public const ROLES = [
-        'admin'     => 'Администратор',
-        'supplier'  => 'Поставщик',
+        'admin' => 'Администратор',
+        'supplier' => 'Поставщик',
         'installer' => 'Монтажник',
-        'client'    => 'Клиент',
+        'client' => 'Клиент',
     ];
 
     public function isAdmin(): bool
@@ -90,14 +91,10 @@ class User extends Authenticatable implements FilamentUser
         return $this->client_type === ClientType::Wholesale;
     }
 
-  
-
     public function isInstallerClient(): bool
     {
         return $this->client_type === ClientType::Installer;
     }
-
-   
 
     public function getClientTypeLabelAttribute(): string
     {
@@ -106,7 +103,15 @@ class User extends Authenticatable implements FilamentUser
 
     public function canAccessPanel(Panel $panel): bool
     {
-        return $this->isAdmin() && $this->is_active;
+        if (! $this->is_active) {
+            return false;
+        }
+
+        return match ($panel->getId()) {
+            'admin' => $this->isAdmin(),
+            'supplier' => $this->isSupplier() && $this->suppliers()->where('is_active', true)->exists(),
+            default => false,
+        };
     }
 
     public function isManager(): bool
@@ -132,6 +137,11 @@ class User extends Authenticatable implements FilamentUser
     public function supplierProfile(): HasOne
     {
         return $this->hasOne(SupplierProfile::class);
+    }
+
+    public function suppliers(): BelongsToMany
+    {
+        return $this->belongsToMany(Supplier::class)->withTimestamps();
     }
 
     public function installerProfile(): HasOne

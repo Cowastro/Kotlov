@@ -21,16 +21,23 @@ use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 
 class SupplierResource extends Resource
 {
     protected static ?string $model = Supplier::class;
+
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedTruck;
+
     protected static ?string $navigationLabel = 'Поставщики';
+
     protected static ?string $modelLabel = 'поставщик';
+
     protected static ?string $pluralModelLabel = 'Поставщики';
+
     protected static ?string $recordTitleAttribute = 'name';
+
     protected static ?int $navigationSort = 5;
 
     public static function getNavigationGroup(): ?string
@@ -82,6 +89,21 @@ class SupplierResource extends Resource
             TextInput::make('contact')
                 ->label('Контакт / сайт')
                 ->maxLength(255),
+
+            Select::make('users')
+                ->label('Пользователи кабинета')
+                ->relationship(
+                    name: 'users',
+                    titleAttribute: 'email',
+                    modifyQueryUsing: fn ($query) => $query
+                        ->where('role', 'supplier')
+                        ->where('is_active', true)
+                        ->orderBy('name'),
+                )
+                ->multiple()
+                ->searchable(['name', 'email'])
+                ->preload()
+                ->helperText('Каждый пользователь увидит только данные назначенных ему поставщиков.'),
 
             Toggle::make('is_active')
                 ->label('Активен')
@@ -145,38 +167,39 @@ class SupplierResource extends Resource
                     ->tooltip('Загрузить официальный курс НБРБ и пересчитать BYN цены')
                     ->visible(fn (Supplier $record) => $record->currency !== CurrencyPriceConverter::BASE_CURRENCY)
                     ->action(function (Supplier $record) {
-                        $url  = 'https://api.nbrb.by/exrates/rates/' . $record->currency . '?parammode=2';
+                        $url = 'https://api.nbrb.by/exrates/rates/'.$record->currency.'?parammode=2';
                         $resp = Http::timeout(10)->get($url);
-                        if (!$resp->ok() || !($rate = $resp->json('Cur_OfficialRate'))) {
+                        if (! $resp->ok() || ! ($rate = $resp->json('Cur_OfficialRate'))) {
                             Notification::make()
                                 ->title('Ошибка НБРБ')
-                                ->body('Не удалось получить курс ' . $record->currency)
+                                ->body('Не удалось получить курс '.$record->currency)
                                 ->danger()
                                 ->send();
+
                             return;
                         }
                         $rate = round((float) $rate, 4);
                         $record->update(['currency_rate' => $rate]);
 
                         // Пересчитать price_byn в supplier_products
-                        \Illuminate\Support\Facades\DB::table('supplier_products')
+                        DB::table('supplier_products')
                             ->where('supplier_id', $record->id)
                             ->where('currency', $record->currency)
                             ->update([
                                 'currency_rate' => $rate,
-                                'price_byn'     => \Illuminate\Support\Facades\DB::raw("ROUND(price * {$rate}, 2)"),
-                                'updated_at'    => now(),
+                                'price_byn' => DB::raw("ROUND(price * {$rate}, 2)"),
+                                'updated_at' => now(),
                             ]);
 
                         // Обновить products.price
-                        $sps = \Illuminate\Support\Facades\DB::table('supplier_products')
+                        $sps = DB::table('supplier_products')
                             ->where('supplier_id', $record->id)
                             ->whereNotNull('product_id')
                             ->get(['product_id', 'price_byn']);
 
                         foreach ($sps as $sp) {
                             if ($sp->price_byn > 0) {
-                                \Illuminate\Support\Facades\DB::table('products')
+                                DB::table('products')
                                     ->where('id', $sp->product_id)
                                     ->update(['price' => $sp->price_byn, 'updated_at' => now()]);
                             }

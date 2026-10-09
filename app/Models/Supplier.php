@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Supplier extends Model
@@ -13,7 +14,7 @@ class Supplier extends Model
     ];
 
     protected $casts = [
-        'is_active'     => 'boolean',
+        'is_active' => 'boolean',
         'currency_rate' => 'float',
     ];
 
@@ -40,5 +41,10 @@ class Supplier extends Model
     public function sources(): HasMany
     {
         return $this->hasMany(SupplierSource::class);
+    }
+
+    public function users(): BelongsToMany
+    {
+        return $this->belongsToMany(User::class)->withTimestamps();
     }
 }
