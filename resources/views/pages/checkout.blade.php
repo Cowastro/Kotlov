@@ -406,7 +406,7 @@
                                             </div>
                                             @if (($item['pricing_type'] ?? null) === 'b2b')
                                                 <div class="text-caption-01 cl-text-2">
-                                                    Оптовая цена · {{ ($item['price_tax_mode'] ?? 'exclusive') === 'inclusive' ? 'с НДС' : 'без НДС' }}
+                                                    Оптовая цена с НДС
                                                 </div>
                                             @endif
                                         </div>

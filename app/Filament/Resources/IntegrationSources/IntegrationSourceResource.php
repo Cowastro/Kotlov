@@ -87,11 +87,19 @@ class IntegrationSourceResource extends Resource
                         ])
                         ->default('exclusive')
                         ->required(),
+                    TextInput::make('settings.vat_rate')
+                        ->label('Ставка НДС')
+                        ->numeric()
+                        ->minValue(0)
+                        ->maxValue(100)
+                        ->suffix('%')
+                        ->default(20)
+                        ->required(),
                     TextInput::make('settings.warehouse_label')
                         ->label('Название склада')
                         ->default('Основной')
                         ->maxLength(100),
-                ])->columns(2),
+                ])->columns(3),
         ]);
     }
 

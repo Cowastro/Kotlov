@@ -187,7 +187,8 @@
                                 </div>
 
                                 @php
-                                    $b2bOffer = app(\App\Services\B2bCatalogOfferResolver::class)->forProduct($product, auth()->user());
+                                    $b2bComparison = app(\App\Services\B2bCatalogOfferResolver::class)->comparison($product, auth()->user());
+                                    $b2bOffer = $b2bComparison['offer'] ?? null;
                                     $totalSupplierStock = $product->supplierProducts->where('stock_quantity', '>', 0)->sum('stock_quantity');
                                     // Auto-determine status from supplier stock if not explicitly set
                                     if ($b2bOffer || $totalSupplierStock > 0) {
@@ -219,11 +220,25 @@
                                         <div>
                                             <p class="text-caption-01 cl-text-2 mb-4">Ваша оптовая цена</p>
                                             <h4 class="price-on-sale">
-                                                {{ number_format((float) $b2bOffer->price, 2, '.', ' ') }} BYN
+                                                {{ number_format($b2bComparison['wholesale_price'], 2, '.', ' ') }} BYN
                                             </h4>
                                             <p class="text-caption-01 cl-text-2 mb-0">
-                                                {{ data_get($b2bOffer->source?->settings, 'price_tax_mode', 'exclusive') === 'inclusive' ? 'Цена с НДС' : 'Цена без НДС' }}
+                                                Цена с НДС {{ number_format($b2bComparison['vat_rate'], 0) }}%
                                             </p>
+                                            @if ($b2bComparison['retail_price'] > 0)
+                                                <p class="text-caption-01 cl-text-2 mb-0">
+                                                    Розничная цена: {{ number_format($b2bComparison['retail_price'], 2, '.', ' ') }} BYN
+                                                </p>
+                                            @endif
+                                            @if ($b2bComparison['difference'] > 0)
+                                                <p class="text-caption-01 text-success mb-0">
+                                                    Ваша скидка к рознице:
+                                                    {{ number_format($b2bComparison['difference'], 2, '.', ' ') }} BYN
+                                                    @if ($b2bComparison['difference_percent'] !== null)
+                                                        ({{ number_format($b2bComparison['difference_percent'], 1, '.', ' ') }}%)
+                                                    @endif
+                                                </p>
+                                            @endif
                                         </div>
                                     @elseif ($canBuy)
                                         <h4 class="price-on-sale">

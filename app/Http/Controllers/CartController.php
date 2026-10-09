@@ -64,10 +64,10 @@ class CartController extends Controller
         }
 
         $id = $product->id;
-        $price = $b2bOffer ? (float) $b2bOffer->price : (float) $product->price;
+        $price = $b2bOffer ? $offerResolver->priceWithTax($b2bOffer) : (float) $product->price;
         $pricing = $b2bOffer ? [
             'pricing_type' => 'b2b',
-            'price_tax_mode' => data_get($b2bOffer->source?->settings, 'price_tax_mode', 'exclusive'),
+            'price_tax_mode' => 'inclusive',
             'integration_product_id' => $b2bOffer->id,
             'source_name' => $b2bOffer->source?->name,
         ] : [

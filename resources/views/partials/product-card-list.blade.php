@@ -8,7 +8,8 @@
 
     $availabilityStatus = method_exists($product, 'effectiveAvailabilityStatus') ? $product->effectiveAvailabilityStatus() : ($product->in_stock ? 'in_stock' : 'out_of_stock');
     $availabilityLabel = method_exists($product, 'availabilityLabel') ? $product->availabilityLabel() : ($product->in_stock ? 'В наличии' : 'Нет в наличии');
-    $b2bOffer = app(\App\Services\B2bCatalogOfferResolver::class)->forProduct($product, auth()->user());
+    $b2bComparison = app(\App\Services\B2bCatalogOfferResolver::class)->comparison($product, auth()->user());
+    $b2bOffer = $b2bComparison['offer'] ?? null;
     $isB2bOffer = $b2bOffer !== null;
     $canBuy = $isB2bOffer
         ? ! $product->is_archived && (float) $b2bOffer->stock_quantity >= 1
@@ -16,7 +17,7 @@
     $isPublicSale = method_exists($product, 'isPublicSale') ? $product->isPublicSale() : false;
 
     $price = $isB2bOffer
-        ? number_format((float) $b2bOffer->price, 2, '.', ' ') . ' BYN'
+        ? number_format($b2bComparison['wholesale_price'], 2, '.', ' ') . ' BYN'
         : ($canBuy
             ? number_format((float) $product->price, 2, '.', ' ') . ' BYN'
             : ($availabilityStatus === 'out_of_stock' ? 'Нет в наличии' : 'Цена по запросу'));
@@ -100,8 +101,21 @@
 
         @if ($isB2bOffer)
             <p class="text-caption-01 cl-text-2 mb-4">
-                Оптовая цена · {{ data_get($b2bOffer->source?->settings, 'price_tax_mode', 'exclusive') === 'inclusive' ? 'с НДС' : 'без НДС' }}
+                Ваша оптовая цена с НДС
             </p>
+            @if ($b2bComparison['retail_price'] > 0)
+                <p class="text-caption-01 cl-text-2 mb-0">
+                    Розничная: {{ number_format($b2bComparison['retail_price'], 2, '.', ' ') }} BYN
+                </p>
+            @endif
+            @if ($b2bComparison['difference'] > 0)
+                <p class="text-caption-01 text-success mb-4">
+                    Ваша скидка к рознице: {{ number_format($b2bComparison['difference'], 2, '.', ' ') }} BYN
+                    @if ($b2bComparison['difference_percent'] !== null)
+                        ({{ number_format($b2bComparison['difference_percent'], 1, '.', ' ') }}%)
+                    @endif
+                </p>
+            @endif
         @endif
 
         {{-- Краткое описание --}}

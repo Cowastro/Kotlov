@@ -87,7 +87,7 @@
                                                 {{ number_format($item['price'], 2, '.', ' ') }} BYN
                                                 @if (($item['pricing_type'] ?? null) === 'b2b')
                                                     <small class="d-block cl-text-2 fw-normal">
-                                                        Оптовая цена · {{ ($item['price_tax_mode'] ?? 'exclusive') === 'inclusive' ? 'с НДС' : 'без НДС' }}
+                                                        Оптовая цена с НДС
                                                     </small>
                                                 @endif
                                             </td>

@@ -14,6 +14,7 @@ return new class extends Migration
 
         $settings = json_decode((string) ($source->settings ?? ''), true) ?: [];
         $settings['price_tax_mode'] = 'exclusive';
+        $settings['vat_rate'] = 20;
         $settings['warehouse_label'] = 'Основной';
 
         DB::table('integration_sources')->where('id', $source->id)->update([
@@ -30,7 +31,7 @@ return new class extends Migration
         }
 
         $settings = json_decode((string) ($source->settings ?? ''), true) ?: [];
-        unset($settings['price_tax_mode'], $settings['warehouse_label']);
+        unset($settings['price_tax_mode'], $settings['vat_rate'], $settings['warehouse_label']);
 
         DB::table('integration_sources')->where('id', $source->id)->update([
             'settings' => $settings === [] ? null : json_encode($settings, JSON_UNESCAPED_UNICODE),

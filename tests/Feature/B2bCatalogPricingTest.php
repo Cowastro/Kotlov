@@ -14,7 +14,7 @@ class B2bCatalogPricingTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_approved_wholesale_user_sees_net_wholesale_price_and_stock(): void
+    public function test_approved_wholesale_user_sees_wholesale_price_with_tax_retail_difference_and_stock(): void
     {
         [$product, $user] = $this->catalogFixture(approved: true);
 
@@ -22,8 +22,10 @@ class B2bCatalogPricingTest extends TestCase
             ->get('/'.$product->category->slug.'/'.$product->slug)
             ->assertOk()
             ->assertSeeText('Ваша оптовая цена')
-            ->assertSeeText('80.00 BYN')
-            ->assertSeeText('Цена без НДС')
+            ->assertSeeText('96.00 BYN')
+            ->assertSeeText('Цена с НДС 20%')
+            ->assertSeeText('Розничная цена: 120.00 BYN')
+            ->assertSeeText('Ваша скидка к рознице: 24.00 BYN (20.0%)')
             ->assertSeeText('Основной: 7.000');
     }
 
@@ -35,7 +37,7 @@ class B2bCatalogPricingTest extends TestCase
             ->get('/'.$product->category->slug.'/'.$product->slug)
             ->assertOk()
             ->assertDontSeeText('Ваша оптовая цена')
-            ->assertDontSeeText('80.00 BYN')
+            ->assertDontSeeText('96.00 BYN')
             ->assertSeeText('120.00 BYN');
     }
 
@@ -46,12 +48,12 @@ class B2bCatalogPricingTest extends TestCase
         $this->actingAs($user)
             ->postJson('/cart/add', ['product_id' => $product->id, 'quantity' => 2])
             ->assertOk()
-            ->assertJsonPath('subtotal', 160);
+            ->assertJsonPath('subtotal', 192);
 
         $item = session('cart')[$product->id];
-        $this->assertSame(80.0, $item['price']);
+        $this->assertSame(96.0, $item['price']);
         $this->assertSame('b2b', $item['pricing_type']);
-        $this->assertSame('exclusive', $item['price_tax_mode']);
+        $this->assertSame('inclusive', $item['price_tax_mode']);
         $this->assertNotNull($item['integration_product_id']);
     }
 
@@ -73,15 +75,18 @@ class B2bCatalogPricingTest extends TestCase
             'is_archived' => false,
             'in_stock' => true,
         ]);
-        $source = IntegrationSource::query()->create([
-            'code' => 'onec',
-            'name' => '1С',
-            'is_active' => true,
-            'settings' => [
-                'price_tax_mode' => 'exclusive',
-                'warehouse_label' => 'Основной',
+        $source = IntegrationSource::query()->updateOrCreate(
+            ['code' => 'onec'],
+            [
+                'name' => '1С',
+                'is_active' => true,
+                'settings' => [
+                    'price_tax_mode' => 'exclusive',
+                    'vat_rate' => 20,
+                    'warehouse_label' => 'Основной',
+                ],
             ],
-        ]);
+        );
         IntegrationProduct::query()->create([
             'integration_source_id' => $source->id,
             'product_id' => $product->id,
