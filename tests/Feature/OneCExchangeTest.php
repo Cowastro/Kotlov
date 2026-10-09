@@ -12,6 +12,7 @@ use App\Models\IntegrationSource;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Product;
+use App\Models\User;
 use App\Services\Integrations\CommerceMlCatalogImporter;
 use App\Services\Integrations\IntegrationCatalogAudit;
 use App\Services\Integrations\IntegrationCatalogSummary;
@@ -799,7 +800,7 @@ XML;
             'external_id' => 'triage-ready',
             'match_status' => 'unmatched',
         ]);
-        $userId = 77;
+        $userId = Schema::hasTable('users') ? User::factory()->create()->id : 77;
 
         foreach ([
             [
