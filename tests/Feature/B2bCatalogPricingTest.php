@@ -74,6 +74,13 @@ class B2bCatalogPricingTest extends TestCase
             ->assertOk()
             ->assertSeeText('Предпросмотр карточки для одобренного B2B-партнёра')
             ->assertSeeText('96.00 BYN');
+
+        $this->actingAs($admin)
+            ->get('/account?b2b-preview=1')
+            ->assertOk()
+            ->assertSeeText('Предпросмотр кабинета одобренного B2B-партнёра')
+            ->assertSeeText('Группы товаров с партнёрскими ценами')
+            ->assertSeeText('Дымоходы');
     }
 
     public function test_partner_account_groups_available_products_from_sanbusinessgroup(): void

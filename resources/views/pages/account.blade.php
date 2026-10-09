@@ -1,7 +1,11 @@
 @extends('layouts.amerce')
 
 @section('content')
-@php $clientTypeLabel = $user->client_type_label ?? 'Розничный клиент'; @endphp
+@php
+    $clientTypeLabel = $user->client_type_label ?? 'Розничный клиент';
+    $isB2bPreview = $user->isAdmin() && request()->boolean('b2b-preview');
+    $isPartnerView = $user->isB2B() || $isB2bPreview;
+@endphp
 
 {{-- Кнопка открытия сайдбара на мобиле --}}
 <div class="btn-sidebar-mb d-lg-none left">
@@ -91,7 +95,7 @@
                                 data-tab="b2b" onclick="showAccountTab('b2b'); return false;">
                                 <i class="icon icon-GearSix"></i>
                                 <span class="text h6 fw-medium">
-                                    {{ $user->isB2B() ? 'Партнёрские цены' : ($user->isRetailClient() ? 'Спецусловия' : 'B2B-доступ') }}
+                                    {{ $isPartnerView ? 'Партнёрские цены' : ($user->isRetailClient() ? 'Спецусловия' : 'B2B-доступ') }}
                                 </span>
                             </a>
                             <a href="/wishlist" class="link-account">
@@ -304,7 +308,7 @@
                         </div>
 
                         {{-- СПЕЦУСЛОВИЯ B2B --}}
-                        @if ($user->isRetailClient())
+                        @if ($user->isRetailClient() && ! $isB2bPreview)
                             <div id="account-tab-b2b" class="account-tab">
                                 <h4 class="account-title">Специальные условия</h4>
                                 <div class="account-my_address setting">
@@ -381,7 +385,12 @@
                             <div id="account-tab-b2b" class="account-tab">
                                 <h4 class="account-title">B2B-доступ</h4>
                                 <div class="account-my_address setting">
-                                    @if ($user->b2b_approved)
+                                    @if ($user->b2b_approved || $isB2bPreview)
+                                        @if ($isB2bPreview)
+                                            <div class="alert alert-warning mb-16">
+                                                Предпросмотр кабинета одобренного B2B-партнёра
+                                            </div>
+                                        @endif
                                         <div class="b2b-access-hero mb-24">
                                             <span class="b2b-access-hero__mark">B2B</span>
                                             <div>
@@ -406,7 +415,7 @@
                                         @if ($b2bCatalogGroups->isNotEmpty())
                                             <div class="b2b-catalog-groups">
                                                 @foreach ($b2bCatalogGroups as $group)
-                                                    <a href="/{{ $group['slug'] }}" class="b2b-catalog-group">
+                                                    <a href="/{{ $group['slug'] }}{{ $isB2bPreview ? '?b2b-preview=1' : '' }}" class="b2b-catalog-group">
                                                         <span>
                                                             <strong>{{ $group['name'] }}</strong>
                                                             <small>{{ $group['count'] }} позиций в наличии</small>
@@ -482,7 +491,7 @@
                     onclick="showAccountTab('b2b'); bootstrap.Offcanvas.getInstance(document.getElementById('mbSidebar')).hide(); return false;">
                     <i class="icon icon-GearSix"></i>
                     <span class="text h6 fw-medium">
-                        {{ $user->isB2B() ? 'Партнёрские цены' : ($user->isRetailClient() ? 'Спецусловия' : 'B2B-доступ') }}
+                        {{ $isPartnerView ? 'Партнёрские цены' : ($user->isRetailClient() ? 'Спецусловия' : 'B2B-доступ') }}
                     </span>
                 </a>
                 <a href="/wishlist" class="link-account">
