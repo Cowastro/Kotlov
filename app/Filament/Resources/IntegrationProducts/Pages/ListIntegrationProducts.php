@@ -25,7 +25,7 @@ class ListIntegrationProducts extends ListRecords
     public function getTabs(): array
     {
         return [
-            'all' => Tab::make('Все')->badge(IntegrationProduct::query()->count()),
+            'all' => Tab::make('Все')->badge(IntegrationProduct::query()->inStock()->count()),
             'matched' => $this->statusTab('Привязаны', 'matched', 'success'),
             'suggested' => $this->statusTab('Предложения', 'suggested', 'info'),
             'ambiguous' => $this->statusTab('Нужна проверка', 'ambiguous', 'warning'),
@@ -36,7 +36,7 @@ class ListIntegrationProducts extends ListRecords
 
     private function statusTab(string $label, string $status, string $color): Tab
     {
-        $count = IntegrationProduct::query()->where('match_status', $status)->count();
+        $count = IntegrationProduct::query()->inStock()->where('match_status', $status)->count();
 
         return Tab::make($label)
             ->modifyQueryUsing(fn (Builder $query) => $query->where('match_status', $status))

@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -23,6 +24,11 @@ class IntegrationProduct extends Model
         'matched_at' => 'datetime',
         'last_seen_at' => 'datetime',
     ];
+
+    public function scopeInStock(Builder $query): Builder
+    {
+        return $query->where('stock_quantity', '>', 0);
+    }
 
     public function source(): BelongsTo
     {
