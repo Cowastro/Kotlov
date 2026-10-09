@@ -81,6 +81,9 @@ class IntegrationCategoryResource extends Resource
                 SelectFilter::make('integration_source_id')->label('Источник')->relationship('source', 'name'),
                 SelectFilter::make('category_id')->label('Категория kotlov.by')->relationship('siteCategory', 'name'),
             ])
+            ->emptyStateIcon(Heroicon::OutlinedFolderMinus)
+            ->emptyStateHeading('1С не передала группы номенклатуры')
+            ->emptyStateDescription('Товары получены без ссылок на папки. Это не мешает привязке: используйте «Категорию сайта» в разделе «Привязка товаров». Если нужна исходная структура 1С, включите выгрузку групп номенклатуры и повторите обмен.')
             ->defaultSort('path')
             ->recordActions([
                 EditAction::make()->label('Сопоставить'),

@@ -4,6 +4,7 @@ namespace App\Filament\Resources\IntegrationProducts\Pages;
 
 use App\Filament\Resources\IntegrationCategories\IntegrationCategoryResource;
 use App\Filament\Resources\IntegrationProducts\IntegrationProductResource;
+use App\Models\IntegrationCategory;
 use App\Models\IntegrationProduct;
 use Filament\Actions\Action;
 use Filament\Resources\Pages\ListRecords;
@@ -27,6 +28,10 @@ class ListIntegrationProducts extends ListRecords
 
     public function getSubheading(): ?string
     {
+        if (! IntegrationCategory::query()->exists()) {
+            return '1С передала товары без папок. Организуйте каталог через «Категорию сайта»: для привязанных товаров она берётся из карточки, для остальных назначается вручную или массово.';
+        }
+
         return 'Сопоставление товаров 1С и будущих маркетплейсов с существующими карточками kotlov.by';
     }
 
@@ -34,9 +39,11 @@ class ListIntegrationProducts extends ListRecords
     {
         return [
             Action::make('catalogStructure')
-                ->label('Настроить группы каталога')
+                ->label(fn (): string => IntegrationCategory::query()->exists()
+                    ? 'Настроить группы каталога'
+                    : 'Группы 1С не переданы')
                 ->icon('heroicon-o-folder-open')
-                ->color('gray')
+                ->color(fn (): string => IntegrationCategory::query()->exists() ? 'gray' : 'warning')
                 ->url(IntegrationCategoryResource::getUrl('index')),
         ];
     }
