@@ -161,6 +161,7 @@ class IntegrationIssueDetector
 
         $resolved = IntegrationIssue::query()
             ->where('status', 'open')
+            ->whereIn('type', IntegrationIssue::PERIODIC_TYPES)
             ->when($seen !== [], fn ($query) => $query->whereNotIn('fingerprint', $seen))
             ->when($seen === [], fn ($query) => $query)
             ->update([

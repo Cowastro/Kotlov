@@ -2,6 +2,8 @@
 
 namespace App\Services\Integrations;
 
+use App\Models\IntegrationIssue;
+use App\Models\IntegrationSource;
 use App\Models\Order;
 use App\Models\OrderStatusHistory;
 use Illuminate\Support\Facades\DB;
@@ -9,8 +11,8 @@ use SimpleXMLElement;
 
 class CommerceMlOrderImporter
 {
-    /** @return array{documents:int,matched:int,updated:int,unchanged:int,unmatched:int} */
-    public function import(string $xml): array
+    /** @return array{documents:int,matched:int,updated:int,unchanged:int,unmatched:int,conflicts:int} */
+    public function import(string $xml, ?IntegrationSource $source = null): array
     {
         $document = $this->parse($xml);
         $stats = [
@@ -19,9 +21,10 @@ class CommerceMlOrderImporter
             'updated' => 0,
             'unchanged' => 0,
             'unmatched' => 0,
+            'conflicts' => 0,
         ];
 
-        DB::transaction(function () use ($document, &$stats): void {
+        DB::transaction(function () use ($document, $source, &$stats): void {
             foreach ($document->xpath('//*[local-name()="Документ"]') ?: [] as $node) {
                 $stats['documents']++;
                 $externalId = $this->text($node, './*[local-name()="Ид"]');
@@ -41,22 +44,29 @@ class CommerceMlOrderImporter
                 $status = $this->mapStatus($rawStatus);
                 $paymentStatus = $this->mapPaymentStatus($rawPaymentStatus);
                 $oldStatus = $order->status;
+                $oldPaymentStatus = $order->payment_status;
+                $statusConflict = $status !== null
+                    && $status !== $oldStatus
+                    && ! $this->canApplyStatus($oldStatus, $status);
+                $paymentConflict = $paymentStatus !== null
+                    && $paymentStatus !== $oldPaymentStatus
+                    && ! $this->canApplyPaymentStatus($oldPaymentStatus, $paymentStatus);
 
                 $changes = array_filter([
                     'onec_external_id' => $externalId ?: null,
                     'onec_status' => $rawStatus ?: null,
                     'onec_status_received_at' => now(),
-                    'status' => $status,
-                    'payment_status' => $paymentStatus,
+                    'status' => $statusConflict ? null : $status,
+                    'payment_status' => $paymentConflict ? null : $paymentStatus,
                 ], static fn (mixed $value): bool => $value !== null);
 
-                $meaningfulChange = ($status !== null && $status !== $order->status)
-                    || ($paymentStatus !== null && $paymentStatus !== $order->payment_status)
+                $meaningfulChange = ($status !== null && ! $statusConflict && $status !== $order->status)
+                    || ($paymentStatus !== null && ! $paymentConflict && $paymentStatus !== $order->payment_status)
                     || ($rawStatus !== '' && $rawStatus !== $order->onec_status);
 
                 Order::withoutEvents(fn () => $order->update($changes));
 
-                if ($status !== null && $status !== $oldStatus) {
+                if ($status !== null && ! $statusConflict && $status !== $oldStatus) {
                     OrderStatusHistory::query()->create([
                         'order_id' => $order->id,
                         'user_id' => null,
@@ -66,11 +76,142 @@ class CommerceMlOrderImporter
                     ]);
                 }
 
-                $stats[$meaningfulChange ? 'updated' : 'unchanged']++;
+                if ($statusConflict || $paymentConflict) {
+                    $this->recordConflict(
+                        $order,
+                        $source,
+                        $oldStatus,
+                        $statusConflict ? $status : null,
+                        $rawStatus,
+                        $oldPaymentStatus,
+                        $paymentConflict ? $paymentStatus : null,
+                        $rawPaymentStatus,
+                    );
+                    $stats['conflicts']++;
+                } else {
+                    $this->resolveConflict(
+                        $order,
+                        statusObserved: $status !== null,
+                        paymentStatusObserved: $paymentStatus !== null,
+                    );
+                    $stats[$meaningfulChange ? 'updated' : 'unchanged']++;
+                }
             }
         });
 
         return $stats;
+    }
+
+    private function canApplyStatus(string $current, string $incoming): bool
+    {
+        if ($current === $incoming) {
+            return true;
+        }
+
+        if ($current === 'delivered' || $current === 'cancelled') {
+            return false;
+        }
+
+        if ($incoming === 'cancelled') {
+            return true;
+        }
+
+        $progress = [
+            'new' => 0,
+            'confirmed' => 1,
+            'processing' => 2,
+            'shipped' => 3,
+            'delivered' => 4,
+        ];
+
+        return isset($progress[$current], $progress[$incoming])
+            && $progress[$incoming] > $progress[$current];
+    }
+
+    private function canApplyPaymentStatus(string $current, string $incoming): bool
+    {
+        if ($current === $incoming) {
+            return true;
+        }
+
+        return match ($current) {
+            'paid' => $incoming === 'refunded',
+            'refunded' => false,
+            default => true,
+        };
+    }
+
+    private function recordConflict(
+        Order $order,
+        ?IntegrationSource $source,
+        string $currentStatus,
+        ?string $incomingStatus,
+        string $rawStatus,
+        string $currentPaymentStatus,
+        ?string $incomingPaymentStatus,
+        string $rawPaymentStatus,
+    ): void {
+        $parts = [];
+        if ($incomingStatus !== null) {
+            $parts[] = 'статус заказа «'.(Order::STATUSES[$currentStatus] ?? $currentStatus)
+                .'» → «'.(Order::STATUSES[$incomingStatus] ?? $incomingStatus).'»';
+        }
+        if ($incomingPaymentStatus !== null) {
+            $parts[] = 'статус оплаты «'.$currentPaymentStatus.'» → «'.$incomingPaymentStatus.'»';
+        }
+
+        $issue = IntegrationIssue::query()->firstOrNew([
+            'fingerprint' => "order:{$order->id}:status-conflict",
+        ]);
+        $wasIgnored = $issue->exists && $issue->status === 'ignored';
+        $issue->fill([
+            'integration_source_id' => $source?->id,
+            'order_id' => $order->id,
+            'type' => 'order_status_conflict',
+            'severity' => 'danger',
+            'title' => '1С пытается откатить состояние заказа',
+            'message' => 'Автоматическое изменение заблокировано: '.implode('; ', $parts).'.',
+            'context' => [
+                'current_status' => $currentStatus,
+                'incoming_status' => $incomingStatus,
+                'raw_status' => $rawStatus,
+                'current_payment_status' => $currentPaymentStatus,
+                'incoming_payment_status' => $incomingPaymentStatus,
+                'raw_payment_status' => $rawPaymentStatus,
+            ],
+            'first_detected_at' => $issue->first_detected_at ?? now(),
+            'last_detected_at' => now(),
+        ]);
+        if (! $wasIgnored) {
+            $issue->status = 'open';
+            $issue->resolved_at = null;
+        }
+        $issue->save();
+    }
+
+    private function resolveConflict(
+        Order $order,
+        bool $statusObserved,
+        bool $paymentStatusObserved,
+    ): void {
+        IntegrationIssue::query()
+            ->where('order_id', $order->id)
+            ->where('type', 'order_status_conflict')
+            ->where('status', 'open')
+            ->get()
+            ->each(function (IntegrationIssue $issue) use ($statusObserved, $paymentStatusObserved): void {
+                $needsStatus = data_get($issue->context, 'incoming_status') !== null;
+                $needsPaymentStatus = data_get($issue->context, 'incoming_payment_status') !== null;
+
+                if (($needsStatus && ! $statusObserved) || ($needsPaymentStatus && ! $paymentStatusObserved)) {
+                    return;
+                }
+
+                $issue->update([
+                    'status' => 'resolved',
+                    'resolved_at' => now(),
+                ]);
+            });
     }
 
     private function parse(string $xml): SimpleXMLElement

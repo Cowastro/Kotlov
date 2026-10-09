@@ -19,6 +19,15 @@ class IntegrationIssue extends Model
     public const ORDER_TYPES = [
         'order_not_exported',
         'order_no_1c_response',
+        'order_status_conflict',
+    ];
+
+    public const PERIODIC_TYPES = [
+        'integration_stale',
+        'product_attention',
+        'product_identity_collision',
+        'order_not_exported',
+        'order_no_1c_response',
     ];
 
     public const EXCHANGE_TYPES = [

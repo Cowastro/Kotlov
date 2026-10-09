@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Orders\Schemas;
 
+use App\Models\IntegrationIssue;
 use App\Models\Order;
 use Filament\Infolists\Components\RepeatableEntry;
 use Filament\Infolists\Components\TextEntry;
@@ -128,6 +129,23 @@ class OrderInfolist
                             ->label('Ответ получен')
                             ->dateTime('d.m.Y H:i:s', 'Europe/Minsk')
                             ->placeholder('—'),
+
+                        TextEntry::make('onec_sync_conflict')
+                            ->label('Защита от отката')
+                            ->state(fn (Order $record): ?string => IntegrationIssue::query()
+                                ->where('order_id', $record->id)
+                                ->where('type', 'order_status_conflict')
+                                ->where('status', 'open')
+                                ->latest('last_detected_at')
+                                ->value('message'))
+                            ->badge()
+                            ->color('danger')
+                            ->columnSpanFull()
+                            ->visible(fn (Order $record): bool => IntegrationIssue::query()
+                                ->where('order_id', $record->id)
+                                ->where('type', 'order_status_conflict')
+                                ->where('status', 'open')
+                                ->exists()),
                     ]),
 
                 // ── Клиент (1 из 3) ──────────────────────────────────────────

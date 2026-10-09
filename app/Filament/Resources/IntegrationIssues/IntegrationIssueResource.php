@@ -118,6 +118,7 @@ class IntegrationIssueResource extends Resource
                     'product_identity_collision' => 'Возможный дубль товара',
                     'order_not_exported' => 'Заказ не передан',
                     'order_no_1c_response' => 'Нет ответа 1С',
+                    'order_status_conflict' => 'Конфликт статусов заказа',
                 ]),
                 SelectFilter::make('integration_source_id')->label('Источник')
                     ->relationship('source', 'name')->searchable()->preload(),

@@ -1610,6 +1610,128 @@ XML;
         ]);
     }
 
+    public function test_stale_onec_status_cannot_roll_an_order_back_and_opens_a_resolvable_issue(): void
+    {
+        $source = IntegrationSource::query()->create([
+            'code' => 'onec',
+            'name' => '1С',
+        ]);
+        $order = Order::query()->create([
+            'number' => 'ORD-2026-STATUS-CONFLICT',
+            'status' => 'delivered',
+            'customer_name' => 'Тестовый покупатель',
+            'customer_phone' => '+375291112233',
+            'delivery_type' => 'courier',
+            'payment_type' => 'cash',
+            'payment_status' => 'paid',
+            'subtotal' => 120,
+            'total' => 120,
+            'onec_exported_at' => now(),
+        ]);
+
+        $staleXml = <<<XML
+<?xml version="1.0" encoding="UTF-8"?>
+<КоммерческаяИнформация>
+  <Документ>
+    <Ид>kotlov-order-{$order->id}</Ид>
+    <Номер>ORD-2026-STATUS-CONFLICT</Номер>
+    <ЗначенияРеквизитов>
+      <ЗначениеРеквизита><Наименование>Статус заказа</Наименование><Значение>Новый</Значение></ЗначениеРеквизита>
+      <ЗначениеРеквизита><Наименование>Статус оплаты</Наименование><Значение>Ожидает оплаты</Значение></ЗначениеРеквизита>
+    </ЗначенияРеквизитов>
+  </Документ>
+</КоммерческаяИнформация>
+XML;
+
+        $this->call(
+            'POST',
+            '/1c/exchange?type=sale&mode=file&filename=stale-status.xml',
+            [],
+            [],
+            [],
+            ['PHP_AUTH_USER' => 'onec-test', 'PHP_AUTH_PW' => 'secret-test'],
+            $staleXml
+        )->assertOk();
+
+        $this->withBasicAuth('onec-test', 'secret-test')
+            ->get('/1c/exchange?type=sale&mode=import&filename=stale-status.xml')
+            ->assertOk()
+            ->assertSeeText('success');
+
+        $order->refresh();
+        $this->assertSame('delivered', $order->status);
+        $this->assertSame('paid', $order->payment_status);
+        $this->assertSame('Новый', $order->onec_status);
+        $this->assertDatabaseMissing('order_status_history', [
+            'order_id' => $order->id,
+            'status_from' => 'delivered',
+            'status_to' => 'new',
+        ]);
+        $this->assertDatabaseHas('integration_issues', [
+            'integration_source_id' => $source->id,
+            'order_id' => $order->id,
+            'type' => 'order_status_conflict',
+            'status' => 'open',
+            'severity' => 'danger',
+        ]);
+
+        $run = IntegrationExchangeRun::query()->latest('id')->firstOrFail();
+        $this->assertSame(1, (int) data_get($run->summary, 'conflicts'));
+        $this->assertSame(1, $run->items_skipped);
+        $this->assertSame(0, $run->items_updated);
+
+        $withoutStatusesXml = <<<XML
+<?xml version="1.0" encoding="UTF-8"?>
+<КоммерческаяИнформация>
+  <Документ>
+    <Ид>kotlov-order-{$order->id}</Ид>
+    <Номер>ORD-2026-STATUS-CONFLICT</Номер>
+  </Документ>
+</КоммерческаяИнформация>
+XML;
+        $this->call(
+            'POST',
+            '/1c/exchange?type=sale&mode=file&filename=without-statuses.xml',
+            [],
+            [],
+            [],
+            ['PHP_AUTH_USER' => 'onec-test', 'PHP_AUTH_PW' => 'secret-test'],
+            $withoutStatusesXml
+        )->assertOk();
+        $this->withBasicAuth('onec-test', 'secret-test')
+            ->get('/1c/exchange?type=sale&mode=import&filename=without-statuses.xml')
+            ->assertOk();
+        $this->assertDatabaseHas('integration_issues', [
+            'order_id' => $order->id,
+            'type' => 'order_status_conflict',
+            'status' => 'open',
+        ]);
+
+        $currentXml = str_replace(
+            ['<Значение>Новый</Значение>', '<Значение>Ожидает оплаты</Значение>'],
+            ['<Значение>Доставлен</Значение>', '<Значение>Оплачен</Значение>'],
+            $staleXml,
+        );
+        $this->call(
+            'POST',
+            '/1c/exchange?type=sale&mode=file&filename=current-status.xml',
+            [],
+            [],
+            [],
+            ['PHP_AUTH_USER' => 'onec-test', 'PHP_AUTH_PW' => 'secret-test'],
+            $currentXml
+        )->assertOk();
+        $this->withBasicAuth('onec-test', 'secret-test')
+            ->get('/1c/exchange?type=sale&mode=import&filename=current-status.xml')
+            ->assertOk();
+
+        $this->assertDatabaseHas('integration_issues', [
+            'order_id' => $order->id,
+            'type' => 'order_status_conflict',
+            'status' => 'resolved',
+        ]);
+    }
+
     public function test_operations_summary_reports_healthy_exchange_and_actionable_counts(): void
     {
         $source = IntegrationSource::query()->create([

@@ -114,6 +114,11 @@ class Order extends Model
         return $this->hasMany(OrderStatusHistory::class);
     }
 
+    public function integrationIssues(): HasMany
+    {
+        return $this->hasMany(IntegrationIssue::class);
+    }
+
     public function getStatusLabelAttribute(): string
     {
         return self::STATUSES[$this->status] ?? $this->status;

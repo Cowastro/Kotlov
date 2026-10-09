@@ -205,7 +205,7 @@ class OneCExchangeController extends Controller
 
         try {
             $stats = $type === 'sale'
-                ? $this->orderImporter->import($disk->get($path))
+                ? $this->orderImporter->import($disk->get($path), $source)
                 : $this->catalogImporter->import($disk->get($path), $source->code);
         } catch (\Throwable $exception) {
             report($exception);
@@ -224,7 +224,7 @@ class OneCExchangeController extends Controller
                 'orders_count' => (int) $stats['matched'],
                 'items_received' => (int) $stats['documents'],
                 'items_updated' => (int) $stats['updated'],
-                'items_skipped' => (int) $stats['unchanged'] + (int) $stats['unmatched'],
+                'items_skipped' => (int) $stats['unchanged'] + (int) $stats['unmatched'] + (int) ($stats['conflicts'] ?? 0),
                 'summary' => $stats,
             ]
             : [
