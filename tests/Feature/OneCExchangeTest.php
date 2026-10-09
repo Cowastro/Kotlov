@@ -216,6 +216,17 @@ class OneCExchangeTest extends TestCase
             });
         }
 
+        if (! Schema::hasTable('supplier_product_mappings')) {
+            Schema::create('supplier_product_mappings', function (Blueprint $table) {
+                $table->id();
+                $table->string('supplier_code');
+                $table->string('supplier_article');
+                $table->unsignedBigInteger('product_id')->nullable();
+                $table->boolean('is_active')->default(true);
+                $table->timestamps();
+            });
+        }
+
         if (! Schema::hasTable('integration_exchange_runs')) {
             Schema::create('integration_exchange_runs', function (Blueprint $table) {
                 $table->id();
@@ -262,7 +273,7 @@ class OneCExchangeTest extends TestCase
         }
 
         Schema::disableForeignKeyConstraints();
-        foreach (['integration_issues', 'integration_exchange_runs', 'integration_products', 'integration_categories', 'integration_sources', 'order_status_history', 'order_items', 'orders', 'products', 'categories'] as $table) {
+        foreach (['integration_issues', 'integration_exchange_runs', 'integration_products', 'integration_categories', 'integration_sources', 'supplier_product_mappings', 'order_status_history', 'order_items', 'orders', 'products', 'categories'] as $table) {
             DB::table($table)->delete();
         }
         Schema::enableForeignKeyConstraints();
@@ -970,6 +981,41 @@ XML;
         $this->assertSame('matched', $candidate->fresh()->match_status);
         $this->assertNull($ignored->fresh()->product_id);
         $this->assertSame('ignored', $ignored->fresh()->match_status);
+    }
+
+    public function test_rematch_uses_an_active_reviewed_supplier_mapping_as_an_exact_identifier(): void
+    {
+        $product = Product::query()->create([
+            'sku' => 'KOTLOV-MAPPED-1',
+            'name' => 'Карточка с ручным соответствием',
+            'slug' => 'manually-mapped-product',
+        ]);
+        DB::table('supplier_product_mappings')->insert([
+            'supplier_code' => 'reviewed-supplier',
+            'supplier_article' => 'TS-MAP.123',
+            'product_id' => $product->id,
+            'is_active' => true,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+        $source = IntegrationSource::query()->create([
+            'code' => 'onec',
+            'name' => '1С',
+        ]);
+        $candidate = IntegrationProduct::query()->create([
+            'integration_source_id' => $source->id,
+            'external_id' => 'reviewed-mapping-candidate',
+            'external_sku' => 'TS MAP 123',
+            'name' => 'Товар из 1С с другим названием',
+            'match_status' => 'unmatched',
+        ]);
+
+        $stats = app(CommerceMlCatalogImporter::class)->rematchSource('onec');
+
+        $this->assertSame(1, $stats['matched']);
+        $this->assertSame($product->id, $candidate->fresh()->product_id);
+        $this->assertSame('article_to_supplier_article', $candidate->fresh()->match_method);
+        $this->assertSame(1.0, $candidate->fresh()->match_confidence);
     }
 
     public function test_catalog_summary_exposes_unique_ids_stock_price_and_matching_health(): void

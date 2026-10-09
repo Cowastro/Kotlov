@@ -453,6 +453,21 @@ class CommerceMlCatalogImporter
         } catch (Throwable) {
             // A minimal installation can run without the supplier catalogue.
         }
+
+        try {
+            DB::table('supplier_product_mappings')
+                ->where('is_active', true)
+                ->whereNotNull('product_id')
+                ->get(['product_id', 'supplier_article'])
+                ->each(function ($row): void {
+                    $article = $this->normalizeIdentifier((string) $row->supplier_article);
+                    if ($article !== '' && $this->products->has((int) $row->product_id)) {
+                        $this->supplierArticleIndex[$article][] = (int) $row->product_id;
+                    }
+                });
+        } catch (Throwable) {
+            // Legacy manual mappings are optional in a minimal installation.
+        }
     }
 
     /** @return array<int, string> */
