@@ -22,6 +22,7 @@ class OneCSetupReadinessTest extends TestCase
             'username' => 'exchange',
             'password_hash' => 'secret-hash',
             'is_active' => true,
+            'last_authenticated_at' => now(),
         ]);
 
         foreach ([
@@ -42,7 +43,7 @@ class OneCSetupReadinessTest extends TestCase
         $snapshot = app(OneCSetupReadiness::class)->snapshot($source);
 
         $this->assertTrue($snapshot['ready']);
-        $this->assertSame(6, $snapshot['completed']);
+        $this->assertSame(7, $snapshot['completed']);
         $this->assertSame('catalog', $snapshot['latest_catalog']->operation);
         $this->assertSame('orders', $snapshot['latest_orders']->operation);
         $this->assertSame('order_statuses', $snapshot['latest_statuses']->operation);

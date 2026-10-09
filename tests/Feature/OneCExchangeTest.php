@@ -148,11 +148,18 @@ class OneCExchangeTest extends TestCase
                 $table->string('username')->nullable();
                 $table->string('password_hash')->nullable();
                 $table->boolean('is_active')->default(true);
+                $table->timestamp('last_authenticated_at')->nullable();
                 $table->boolean('create_products')->default(false);
                 $table->boolean('update_prices')->default(false);
                 $table->boolean('update_stock')->default(false);
                 $table->json('settings')->nullable();
                 $table->timestamps();
+            });
+        }
+
+        if (! Schema::hasColumn('integration_sources', 'last_authenticated_at')) {
+            Schema::table('integration_sources', function (Blueprint $table) {
+                $table->timestamp('last_authenticated_at')->nullable();
             });
         }
 
@@ -266,6 +273,10 @@ class OneCExchangeTest extends TestCase
             ->get('/1c/exchange?type=catalog&mode=checkauth')
             ->assertOk()
             ->assertSeeText("success\nonec_exchange\n", false);
+
+        $this->assertNotNull(
+            IntegrationSource::query()->where('code', 'onec')->firstOrFail()->last_authenticated_at
+        );
 
         $this->withBasicAuth('onec-test', 'secret-test')
             ->get('/1c/exchange?type=catalog&mode=init')

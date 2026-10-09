@@ -14,7 +14,7 @@ class IntegrationSource extends Model
 
     protected $fillable = [
         'code', 'name', 'driver', 'username', 'password_hash', 'is_active', 'create_products',
-        'update_prices', 'update_stock', 'settings',
+        'update_prices', 'update_stock', 'settings', 'last_authenticated_at',
     ];
 
     protected $hidden = ['password_hash'];
@@ -25,6 +25,7 @@ class IntegrationSource extends Model
         'update_prices' => 'boolean',
         'update_stock' => 'boolean',
         'settings' => 'array',
+        'last_authenticated_at' => 'datetime',
     ];
 
     protected static function booted(): void

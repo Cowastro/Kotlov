@@ -44,7 +44,7 @@ class OneCExchangeController extends Controller
         $mode = Str::lower((string) $request->query('mode'));
 
         return match ($mode) {
-            'checkauth' => $this->checkAuth(),
+            'checkauth' => $this->checkAuth($integrationSource),
             'init' => $this->initializeExchange($request, $integrationSource, $type),
             'file' => $this->receiveFile($request, $integrationSource, $type),
             'import' => $this->acknowledgeImport($request, $integrationSource, $type),
@@ -99,8 +99,10 @@ class OneCExchangeController extends Controller
         return $token !== '' && Cache::has($this->sessionCacheKey($token));
     }
 
-    private function checkAuth(): Response
+    private function checkAuth(IntegrationSource $source): Response
     {
+        $source->forceFill(['last_authenticated_at' => now()])->saveQuietly();
+
         $token = Str::random(48);
         Cache::put($this->sessionCacheKey($token), true, now()->addHour());
 

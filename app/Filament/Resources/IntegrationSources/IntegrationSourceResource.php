@@ -180,6 +180,11 @@ class IntegrationSourceResource extends Resource
                         $record->latestSuccessfulExchangeRun->finished_at?->lt(now()->subMinutes($record->staleAfterMinutes())) => 'warning',
                         default => 'success',
                     }),
+                TextColumn::make('last_authenticated_at')->label('Авторизация 1С')
+                    ->dateTime('d.m.Y H:i:s', 'Europe/Minsk')
+                    ->placeholder('Ещё не подключалась')
+                    ->sortable()
+                    ->toggleable(),
                 TextColumn::make('schedule')->label('Ожидаемая частота')
                     ->state(fn (IntegrationSource $record): string => $record->scheduleLabel())
                     ->wrap()
