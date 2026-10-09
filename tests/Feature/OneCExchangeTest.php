@@ -4,12 +4,14 @@ namespace Tests\Feature;
 
 use App\Http\Middleware\HandleRedirects;
 use App\Models\IntegrationCategory;
+use App\Models\IntegrationExchangeRun;
 use App\Models\IntegrationProduct;
 use App\Models\IntegrationSource;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Product;
 use App\Services\Integrations\CommerceMlCatalogImporter;
+use App\Services\Integrations\IntegrationOperationsSummary;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
@@ -639,5 +641,86 @@ XML;
             'status' => 'success',
             'orders_count' => 1,
         ]);
+    }
+
+    public function test_operations_summary_reports_healthy_exchange_and_actionable_counts(): void
+    {
+        $source = IntegrationSource::query()->create([
+            'code' => 'summary-onec',
+            'name' => 'Тестовая 1С',
+            'is_active' => true,
+        ]);
+
+        IntegrationExchangeRun::query()->create([
+            'integration_source_id' => $source->id,
+            'direction' => 'inbound',
+            'operation' => 'catalog',
+            'status' => 'success',
+            'started_at' => now()->subMinutes(2),
+            'finished_at' => now()->subMinute(),
+        ]);
+
+        IntegrationProduct::query()->create([
+            'integration_source_id' => $source->id,
+            'external_id' => 'attention-product',
+            'name' => 'Товар без привязки',
+            'stock_quantity' => 3,
+            'match_status' => 'unmatched',
+        ]);
+
+        Order::query()->create([
+            'number' => 'SUMMARY-ORDER-1',
+            'status' => 'new',
+            'customer_name' => 'Тест',
+            'customer_phone' => '+375290000000',
+            'delivery_type' => 'pickup',
+            'payment_type' => 'cash',
+            'payment_status' => 'pending',
+            'subtotal' => 10,
+            'total' => 10,
+        ]);
+
+        $summary = app(IntegrationOperationsSummary::class)->snapshot();
+
+        $this->assertSame('healthy', $summary['health']);
+        $this->assertSame(1, $summary['active_sources']);
+        $this->assertSame(1, $summary['attention_products']);
+        $this->assertSame(1, $summary['awaiting_orders']);
+        $this->assertSame(0, $summary['failed_runs_24h']);
+    }
+
+    public function test_operations_summary_reports_stale_and_failed_exchanges(): void
+    {
+        $source = IntegrationSource::query()->create([
+            'code' => 'summary-failure',
+            'name' => 'Тестовая 1С',
+            'is_active' => true,
+        ]);
+
+        IntegrationExchangeRun::query()->create([
+            'integration_source_id' => $source->id,
+            'direction' => 'inbound',
+            'operation' => 'catalog',
+            'status' => 'success',
+            'started_at' => now()->subMinutes(40),
+            'finished_at' => now()->subMinutes(39),
+        ]);
+
+        $service = app(IntegrationOperationsSummary::class);
+        $this->assertSame('stale', $service->snapshot()['health']);
+
+        IntegrationExchangeRun::query()->create([
+            'integration_source_id' => $source->id,
+            'direction' => 'outbound',
+            'operation' => 'orders',
+            'status' => 'failed',
+            'started_at' => now(),
+            'finished_at' => now(),
+            'error_message' => 'Connection failed',
+        ]);
+
+        $summary = $service->snapshot();
+        $this->assertSame('failed', $summary['health']);
+        $this->assertSame(1, $summary['failed_runs_24h']);
     }
 }
