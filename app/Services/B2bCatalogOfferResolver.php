@@ -14,7 +14,7 @@ class B2bCatalogOfferResolver
 
     public function forProduct(Product $product, ?User $user = null): ?IntegrationProduct
     {
-        if (! $user?->isB2B()) {
+        if (! $this->canViewPartnerPrices($user)) {
             return null;
         }
 
@@ -22,6 +22,44 @@ class B2bCatalogOfferResolver
             ->where('product_id', $product->id)
             ->sortBy(fn (IntegrationProduct $offer): float => (float) $offer->price)
             ->first();
+    }
+
+    public function canViewPartnerPrices(?User $user): bool
+    {
+        return (bool) ($user?->isB2B()
+            || ($user?->isAdmin() && request()->boolean('b2b-preview')));
+    }
+
+    /** @return Collection<int, array{name:string,slug:string,count:int}> */
+    public function catalogGroups(?User $user): Collection
+    {
+        if (! $this->canViewPartnerPrices($user)) {
+            return collect();
+        }
+
+        return $this->offers()
+            ->filter(fn (IntegrationProduct $offer): bool => filled($offer->product?->category?->slug))
+            ->groupBy(fn (IntegrationProduct $offer): int => (int) $offer->product->category_id)
+            ->map(fn (Collection $offers): array => [
+                'name' => (string) $offers->first()->product->category->name,
+                'slug' => (string) $offers->first()->product->category->slug,
+                'count' => $offers->pluck('product_id')->unique()->count(),
+            ])
+            ->sortBy('name')
+            ->values();
+    }
+
+    /** @return Collection<int, string> */
+    public function partnerNames(?User $user): Collection
+    {
+        if (! $this->canViewPartnerPrices($user)) {
+            return collect();
+        }
+
+        return $this->offers()
+            ->map(fn (IntegrationProduct $offer): string => $offer->source->partnerName())
+            ->unique()
+            ->values();
     }
 
     public function priceWithTax(IntegrationProduct $offer): float
@@ -60,12 +98,14 @@ class B2bCatalogOfferResolver
     private function offers(): Collection
     {
         return $this->offers ??= IntegrationProduct::query()
-            ->with('source')
+            ->with(['source', 'product.category'])
             ->whereNotNull('product_id')
             ->where('match_status', 'matched')
             ->where('price', '>', 0)
             ->where('stock_quantity', '>', 0)
             ->whereHas('source', fn ($query) => $query->where('is_active', true))
-            ->get();
+            ->get()
+            ->filter(fn (IntegrationProduct $offer): bool => $offer->source?->isB2bEnabled() === true)
+            ->values();
     }
 }

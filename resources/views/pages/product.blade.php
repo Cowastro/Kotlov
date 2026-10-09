@@ -218,7 +218,14 @@
                                         <h4 class="price-on-sale text-muted">Снят с продажи</h4>
                                     @elseif ($b2bOffer)
                                         <div>
-                                            <p class="text-caption-01 cl-text-2 mb-4">Ваша оптовая цена</p>
+                                            @if (auth()->user()?->isAdmin() && request()->boolean('b2b-preview'))
+                                                <div class="alert alert-warning py-2 mb-12">
+                                                    Предпросмотр карточки для одобренного B2B-партнёра
+                                                </div>
+                                            @endif
+                                            <p class="text-caption-01 cl-text-2 mb-4">
+                                                Партнёрская цена от {{ $b2bOffer->source?->partnerName() }}
+                                            </p>
                                             <h4 class="price-on-sale">
                                                 {{ number_format($b2bComparison['wholesale_price'], 2, '.', ' ') }} BYN
                                             </h4>

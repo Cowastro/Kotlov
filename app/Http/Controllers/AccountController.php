@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Enums\ClientType;
+use App\Services\B2bCatalogOfferResolver;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -11,7 +12,7 @@ use Illuminate\Validation\Rules;
 
 class AccountController extends Controller
 {
-    public function index()
+    public function index(B2bCatalogOfferResolver $offerResolver)
     {
         $user = Auth::user();
 
@@ -21,8 +22,16 @@ class AccountController extends Controller
             ->paginate(10);
 
         $installerProfile = $user->installerProfile;
+        $b2bCatalogGroups = $offerResolver->catalogGroups($user);
+        $b2bPartnerNames = $offerResolver->partnerNames($user);
 
-        return view('pages.account', compact('user', 'orders', 'installerProfile'));
+        return view('pages.account', compact(
+            'user',
+            'orders',
+            'installerProfile',
+            'b2bCatalogGroups',
+            'b2bPartnerNames',
+        ));
     }
 
     public function updateProfile(Request $request)

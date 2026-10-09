@@ -21,7 +21,7 @@ class B2bCatalogPricingTest extends TestCase
         $this->actingAs($user)
             ->get('/'.$product->category->slug.'/'.$product->slug)
             ->assertOk()
-            ->assertSeeText('Ваша оптовая цена')
+            ->assertSeeText('Партнёрская цена от ООО «СанБизнесГруп»')
             ->assertSeeText('96.00 BYN')
             ->assertSeeText('Цена с НДС 20%')
             ->assertSeeText('Розничная цена: 120.00 BYN')
@@ -57,6 +57,37 @@ class B2bCatalogPricingTest extends TestCase
         $this->assertNotNull($item['integration_product_id']);
     }
 
+    public function test_admin_can_preview_partner_card_without_changing_their_account(): void
+    {
+        [$product] = $this->catalogFixture(approved: false);
+        $admin = User::factory()->create([
+            'role' => 'admin',
+            'client_type' => 'retail',
+            'b2b_approved' => false,
+            'is_active' => true,
+        ]);
+
+        $this->actingAs($admin)
+            ->get('/'.$product->category->slug.'/'.$product->slug.'?b2b-preview=1')
+            ->assertOk()
+            ->assertSeeText('Предпросмотр карточки для одобренного B2B-партнёра')
+            ->assertSeeText('96.00 BYN');
+    }
+
+    public function test_partner_account_groups_available_products_from_sanbusinessgroup(): void
+    {
+        [, $user] = $this->catalogFixture(approved: true);
+
+        $this->actingAs($user)
+            ->get('/account')
+            ->assertOk()
+            ->assertSeeText('Партнёрские цены активны')
+            ->assertSeeText('Поставщик: ООО «СанБизнесГруп»')
+            ->assertSeeText('Группы товаров с партнёрскими ценами')
+            ->assertSeeText('Дымоходы')
+            ->assertSeeText('1 позиций в наличии');
+    }
+
     /** @return array{Product, User} */
     private function catalogFixture(bool $approved): array
     {
@@ -84,6 +115,8 @@ class B2bCatalogPricingTest extends TestCase
                     'price_tax_mode' => 'exclusive',
                     'vat_rate' => 20,
                     'warehouse_label' => 'Основной',
+                    'b2b_enabled' => true,
+                    'partner_name' => 'ООО «СанБизнесГруп»',
                 ],
             ],
         );

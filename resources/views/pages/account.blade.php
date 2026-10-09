@@ -87,13 +87,13 @@
                                 <i class="icon icon-ShieldCheck"></i>
                                 <span class="text h6 fw-medium">Безопасность</span>
                             </a>
-                            @if ($user->isRetailClient())
-                                <a href="#" class="link-account"
-                                    data-tab="b2b" onclick="showAccountTab('b2b'); return false;">
-                                    <i class="icon icon-GearSix"></i>
-                                    <span class="text h6 fw-medium">Спецусловия</span>
-                                </a>
-                            @endif
+                            <a href="#" class="link-account"
+                                data-tab="b2b" onclick="showAccountTab('b2b'); return false;">
+                                <i class="icon icon-GearSix"></i>
+                                <span class="text h6 fw-medium">
+                                    {{ $user->isB2B() ? 'Партнёрские цены' : ($user->isRetailClient() ? 'Спецусловия' : 'B2B-доступ') }}
+                                </span>
+                            </a>
                             <a href="/wishlist" class="link-account">
                                 <i class="icon icon-HeartStraight"></i>
                                 <span class="text h6 fw-medium">Избранное</span>
@@ -382,13 +382,44 @@
                                 <h4 class="account-title">B2B-доступ</h4>
                                 <div class="account-my_address setting">
                                     @if ($user->b2b_approved)
-                                        <div class="alert alert-success mb-16">
-                                            <strong>Партнёрский доступ активен.</strong>
-                                            После входа в каталог вы видите оптовые цены и фактические остатки.
+                                        <div class="b2b-access-hero mb-24">
+                                            <span class="b2b-access-hero__mark">B2B</span>
+                                            <div>
+                                                <h5 class="mb-4">Партнёрские цены активны</h5>
+                                                <p class="mb-0">
+                                                    Поставщик: {{ $b2bPartnerNames->join(', ') ?: 'не указан' }} · цены показаны с НДС · фактический остаток склада
+                                                </p>
+                                            </div>
                                         </div>
-                                        <p class="cl-text-2 mb-0">
+                                        <p class="cl-text-2 mb-20">
                                             Тип: {{ $user->client_type_label }} · Компания: {{ $user->company_name ?: 'не указана' }}
                                         </p>
+
+                                        <div class="d-flex align-items-end justify-content-between gap-12 mb-12">
+                                            <div>
+                                                <p class="text-caption-01 cl-text-3 mb-2">Доступный ассортимент</p>
+                                                <h5 class="mb-0">Группы товаров с партнёрскими ценами</h5>
+                                            </div>
+                                            <span class="b2b-groups-count">{{ $b2bCatalogGroups->sum('count') }} товаров</span>
+                                        </div>
+
+                                        @if ($b2bCatalogGroups->isNotEmpty())
+                                            <div class="b2b-catalog-groups">
+                                                @foreach ($b2bCatalogGroups as $group)
+                                                    <a href="/{{ $group['slug'] }}" class="b2b-catalog-group">
+                                                        <span>
+                                                            <strong>{{ $group['name'] }}</strong>
+                                                            <small>{{ $group['count'] }} позиций в наличии</small>
+                                                        </span>
+                                                        <i class="icon icon-CaretRight"></i>
+                                                    </a>
+                                                @endforeach
+                                            </div>
+                                        @else
+                                            <div class="alert alert-warning mb-0">
+                                                Сейчас нет сопоставленных товаров с положительным остатком.
+                                            </div>
+                                        @endif
                                     @else
                                         <div class="alert alert-warning mb-16">
                                             Заявка на B2B-доступ находится на проверке.
@@ -447,13 +478,13 @@
                     <i class="icon icon-ShieldCheck"></i>
                     <span class="text h6 fw-medium">Безопасность</span>
                 </a>
-                @if ($user->isRetailClient())
-                    <a href="#" class="link-account" data-tab="b2b"
-                        onclick="showAccountTab('b2b'); bootstrap.Offcanvas.getInstance(document.getElementById('mbSidebar')).hide(); return false;">
-                        <i class="icon icon-GearSix"></i>
-                        <span class="text h6 fw-medium">Спецусловия</span>
-                    </a>
-                @endif
+                <a href="#" class="link-account" data-tab="b2b"
+                    onclick="showAccountTab('b2b'); bootstrap.Offcanvas.getInstance(document.getElementById('mbSidebar')).hide(); return false;">
+                    <i class="icon icon-GearSix"></i>
+                    <span class="text h6 fw-medium">
+                        {{ $user->isB2B() ? 'Партнёрские цены' : ($user->isRetailClient() ? 'Спецусловия' : 'B2B-доступ') }}
+                    </span>
+                </a>
                 <a href="/wishlist" class="link-account">
                     <i class="icon icon-HeartStraight"></i>
                     <span class="text h6 fw-medium">Избранное</span>
@@ -494,6 +525,30 @@
     background: #fafafa; border: 1px solid #eee;
     border-radius: 10px; padding: 14px 16px;
 }
+.b2b-access-hero {
+    display: flex; align-items: center; gap: 16px;
+    padding: 20px; border-radius: 14px;
+    background: linear-gradient(135deg, #111 0%, #2a2a2a 100%); color: #fff;
+}
+.b2b-access-hero__mark {
+    display: inline-flex; align-items: center; justify-content: center;
+    min-width: 58px; height: 42px; padding: 0 12px; border-radius: 9px;
+    background: #f4c430; color: #111; font-weight: 800; letter-spacing: .08em;
+}
+.b2b-access-hero p { color: rgba(255,255,255,.74); }
+.b2b-groups-count {
+    white-space: nowrap; padding: 6px 10px; border-radius: 999px;
+    background: #f4f4f4; color: #555; font-size: 12px; font-weight: 600;
+}
+.b2b-catalog-groups { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.b2b-catalog-group {
+    display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    padding: 15px 16px; border: 1px solid #e6e6e6; border-radius: 12px;
+    color: #111; transition: .2s;
+}
+.b2b-catalog-group:hover { border-color: #111; transform: translateY(-1px); }
+.b2b-catalog-group strong, .b2b-catalog-group small { display: block; }
+.b2b-catalog-group small { margin-top: 3px; color: #777; }
 .tb-order_status.stt-pending    { background: #fef9c3; color: #854d0e; }
 .tb-order_status.stt-processing { background: #dbeafe; color: #1e40af; }
 .tb-order_status.stt-completed  { background: #dcfce7; color: #166534; }
@@ -504,6 +559,7 @@
 }
 @media (max-width: 575px) {
     .b2b-choice { grid-template-columns: 1fr; }
+    .b2b-catalog-groups { grid-template-columns: 1fr; }
 }
 </style>
 @endpush

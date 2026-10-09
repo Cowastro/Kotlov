@@ -79,6 +79,14 @@ class IntegrationSourceResource extends Resource
             Section::make('Оптовые цены')
                 ->description('Единое правило: хранится исходная цена поставщика, а клиенту всегда показывается итоговая цена с НДС. Для цены без НДС система добавляет указанную ставку.')
                 ->schema([
+                    Toggle::make('settings.b2b_enabled')
+                        ->label('Публиковать партнёрские цены')
+                        ->helperText('Только включённые источники участвуют в B2B-каталоге.')
+                        ->default(false),
+                    TextInput::make('settings.partner_name')
+                        ->label('Поставщик для партнёра')
+                        ->placeholder('ООО «СанБизнесГруп»')
+                        ->maxLength(255),
                     Select::make('settings.price_tax_mode')
                         ->label('Налогообложение цены')
                         ->options([
@@ -99,7 +107,7 @@ class IntegrationSourceResource extends Resource
                         ->label('Название склада')
                         ->default('Основной')
                         ->maxLength(100),
-                ])->columns(3),
+                ])->columns(2),
         ]);
     }
 
@@ -120,6 +128,9 @@ class IntegrationSourceResource extends Resource
                     ->color(fn (IntegrationSource $record): string => $record->priceTaxMode() === IntegrationSource::PRICE_TAX_INCLUSIVE
                         ? 'success'
                         : 'warning'),
+                IconColumn::make('partner_prices_enabled')->label('B2B-цены')
+                    ->state(fn (IntegrationSource $record): bool => $record->isB2bEnabled())
+                    ->boolean(),
                 TextColumn::make('products_count')->label('Товаров в наличии')
                     ->counts(['products' => fn ($query) => $query->inStock()])->sortable(),
                 TextColumn::make('matched_products_count')->label('Привязано')

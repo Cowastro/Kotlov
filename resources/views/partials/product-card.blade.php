@@ -151,7 +151,7 @@
 
         @if ($isB2bOffer)
             <p class="text-caption-01 cl-text-2 mb-0">
-                Ваша оптовая цена с НДС
+                Партнёрская цена {{ $b2bOffer->source?->partnerName() }} · с НДС
             </p>
             @if ($b2bComparison['retail_price'] > 0)
                 <p class="text-caption-01 cl-text-2 mb-0">

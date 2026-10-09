@@ -33,8 +33,19 @@ class IntegrationSource extends Model
                 'price_tax_mode' => self::PRICE_TAX_EXCLUSIVE,
                 'vat_rate' => 20,
                 'warehouse_label' => 'Основной',
+                'b2b_enabled' => false,
             ], $source->settings ?? []);
         });
+    }
+
+    public function isB2bEnabled(): bool
+    {
+        return (bool) data_get($this->settings, 'b2b_enabled', false);
+    }
+
+    public function partnerName(): string
+    {
+        return (string) data_get($this->settings, 'partner_name', $this->name);
     }
 
     public function priceTaxMode(): string
