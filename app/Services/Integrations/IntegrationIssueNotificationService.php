@@ -71,7 +71,10 @@ class IntegrationIssueNotificationService
             ]);
 
         $hasDanger ? $notification->danger() : $notification->warning();
-        $notification->sendToDatabase($admins);
+        // Monitoring must stay reliable even on hosting without a persistent
+        // queue worker. This is one small database notification per admin and
+        // only for newly opened high-signal issues, so send it synchronously.
+        $admins->each(fn (User $admin) => $admin->notifyNow($notification->toDatabase()));
 
         return $issues->count();
     }
