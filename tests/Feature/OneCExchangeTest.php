@@ -77,6 +77,10 @@ class OneCExchangeTest extends TestCase
             $table->string('name')->nullable();
             $table->timestamps();
             });
+        } elseif (! Schema::hasColumn('products', 'sku')) {
+            Schema::table('products', function (Blueprint $table) {
+                $table->string('sku')->nullable();
+            });
         }
 
         if (! Schema::hasTable('integration_sources')) {
