@@ -21,6 +21,7 @@ use Filament\Schemas\Schema;
 use Filament\Support\Enums\TextSize;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Enums\FiltersLayout;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
@@ -89,7 +90,18 @@ class IntegrationProductResource extends Resource
     {
         return $table
             ->columns([
-                TextColumn::make('source.name')->label('Источник')->badge()->sortable()
+                TextColumn::make('source_partner')->label('Поставщик')
+                    ->state(fn (IntegrationProduct $record): string => $record->source?->partnerName() ?? 'Источник не указан')
+                    ->description(fn (IntegrationProduct $record): ?string => $record->source?->name)
+                    ->badge()
+                    ->color('warning')
+                    ->sortable(query: fn (Builder $query, string $direction): Builder => $query
+                        ->orderBy(
+                            IntegrationSource::query()
+                                ->select('name')
+                                ->whereColumn('integration_sources.id', 'integration_products.integration_source_id'),
+                            $direction
+                        ))
                     ->size(TextSize::ExtraSmall),
                 TextColumn::make('integrationCategory.path')->label('Группа источника')
                     ->searchable()->sortable()->limit(45)
@@ -155,18 +167,36 @@ class IntegrationProductResource extends Resource
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
-                SelectFilter::make('integration_source_id')->label('Источник')->relationship('source', 'name'),
-                SelectFilter::make('integration_category_id')->label('Группа источника')
+                SelectFilter::make('integration_source_id')
+                    ->label('Поставщик / источник')
+                    ->placeholder('Все поставщики')
+                    ->options(fn (): array => IntegrationSource::query()
+                        ->orderBy('name')
+                        ->get()
+                        ->mapWithKeys(fn (IntegrationSource $source): array => [
+                            $source->getKey() => $source->partnerName().' — '.$source->name,
+                        ])
+                        ->all())
+                    ->searchable()
+                    ->preload(),
+                SelectFilter::make('integration_category_id')->label('Группа поставщика')
+                    ->placeholder('Все группы')
                     ->options(fn (): array => IntegrationCategory::query()->orderBy('path')->pluck('path', 'id')->all())
                     ->searchable(),
-                SelectFilter::make('match_status')->label('Статус')->options([
-                    'matched' => 'Привязан',
-                    'suggested' => 'Предложение',
-                    'ambiguous' => 'Несколько вариантов',
-                    'unmatched' => 'Не найден',
-                    'ignored' => 'Игнорируется',
-                ]),
-            ])
+                SelectFilter::make('match_status')
+                    ->label('Статус привязки')
+                    ->placeholder('Все статусы')
+                    ->options([
+                        'matched' => 'Привязан',
+                        'suggested' => 'Предложение',
+                        'ambiguous' => 'Несколько вариантов',
+                        'unmatched' => 'Не найден',
+                        'ignored' => 'Не для сайта',
+                    ]),
+            ], layout: FiltersLayout::AboveContentCollapsible)
+            ->filtersFormColumns(3)
+            ->deferFilters(false)
+            ->persistFiltersInSession()
             ->defaultSort('last_seen_at', 'desc')
             ->recordActions([
                 Action::make('acceptSuggestion')
