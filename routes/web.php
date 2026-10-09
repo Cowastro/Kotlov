@@ -16,6 +16,7 @@ use App\Http\Controllers\HeatPumpLandingController;
 use App\Http\Controllers\InstallerAccountController;
 use App\Http\Controllers\InstallerController;
 use App\Http\Controllers\InstallRequestController;
+use App\Http\Controllers\OneCExchangeController;
 use App\Http\Controllers\PartnerApplicationController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\PromotionController;
@@ -39,6 +40,15 @@ use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Route;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
+
+Route::match(['get', 'post'], '/1c/exchange', OneCExchangeController::class)
+    ->withoutMiddleware([PreventRequestForgery::class, ValidateCsrfToken::class])
+    ->name('onec.exchange');
+
+Route::match(['get', 'post'], '/1c/exchange/{source}', OneCExchangeController::class)
+    ->where('source', '[a-z0-9][a-z0-9_-]{1,99}')
+    ->withoutMiddleware([PreventRequestForgery::class, ValidateCsrfToken::class])
+    ->name('onec.exchange.source');
 
 Route::get('/robots.txt', function (Request $request) {
     if ($request->getHost() === 'admin.'.config('app.base_domain', 'kotlov.by')) {

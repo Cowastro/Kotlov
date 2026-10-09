@@ -19,7 +19,7 @@ class Order extends Model
         'coupon_code', 'discount',
         'subtotal', 'total',
         'comment', 'admin_comment',
-        'assigned_to', 'telegram_message_id', 'manager_id',
+        'assigned_to', 'telegram_message_id', 'manager_id', 'onec_exported_at',
     ];
 
     protected $casts = [
@@ -27,6 +27,7 @@ class Order extends Model
         'total'          => 'decimal:2',
         'delivery_price' => 'decimal:2',
         'discount'       => 'decimal:2',
+        'onec_exported_at' => 'datetime',
     ];
 
     // Статусы для отображения
