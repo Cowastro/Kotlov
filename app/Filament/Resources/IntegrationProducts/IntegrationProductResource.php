@@ -17,6 +17,7 @@ use Filament\Forms\Components\TextInput;
 use Filament\Resources\Resource;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
+use Filament\Support\Enums\TextSize;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
@@ -46,7 +47,9 @@ class IntegrationProductResource extends Resource
 
     public static function getEloquentQuery(): Builder
     {
-        return parent::getEloquentQuery()->inStock();
+        return parent::getEloquentQuery()
+            ->with(['source', 'integrationCategory', 'product.category'])
+            ->inStock();
     }
 
     public static function form(Schema $schema): Schema
@@ -85,18 +88,32 @@ class IntegrationProductResource extends Resource
     {
         return $table
             ->columns([
-                TextColumn::make('source.name')->label('Источник')->badge()->sortable(),
+                TextColumn::make('source.name')->label('Источник')->badge()->sortable()
+                    ->size(TextSize::ExtraSmall),
                 TextColumn::make('integrationCategory.path')->label('Группа источника')
-                    ->searchable()->sortable()->wrap()->toggleable(),
+                    ->searchable()->sortable()->limit(45)
+                    ->tooltip(fn (IntegrationProduct $record): ?string => $record->integrationCategory?->path)
+                    ->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('name')->label('Товар во внешней системе')
-                    ->searchable(['name', 'external_sku', 'external_code', 'external_id'])->wrap()
+                    ->searchable(['name', 'external_sku', 'external_code', 'external_id'])
+                    ->limit(58)->lineClamp(2)->size(TextSize::Small)
+                    ->tooltip(fn (IntegrationProduct $record): string => $record->name)
                     ->description(fn (IntegrationProduct $record): string => collect([
                         $record->external_sku ? "арт. {$record->external_sku}" : null,
                         $record->external_code ? "код {$record->external_code}" : null,
                     ])->filter()->implode(' · ') ?: $record->external_id),
-                TextColumn::make('product.name')->label('Карточка сайта')->searchable()->wrap()
+                TextColumn::make('product.name')->label('Карточка сайта')->searchable()
                     ->state(fn (IntegrationProduct $record): ?string => $record->product?->name
                         ?? ($record->candidates[0]['name'] ?? null))
+                    ->limit(48)->lineClamp(2)->size(TextSize::Small)
+                    ->tooltip(fn (IntegrationProduct $record): ?string => $record->product?->name
+                        ?? ($record->candidates[0]['name'] ?? null))
+                    ->url(fn (IntegrationProduct $record): ?string => self::productUrl($record))
+                    ->openUrlInNewTab()
+                    ->icon(fn (IntegrationProduct $record): ?string => $record->product
+                        ? 'heroicon-o-arrow-top-right-on-square'
+                        : null)
+                    ->color(fn (IntegrationProduct $record): string => $record->product ? 'primary' : 'gray')
                     ->description(fn (IntegrationProduct $record): ?string => $record->product?->sku
                         ?? ($record->candidates[0]['sku'] ?? null)),
                 TextColumn::make('match_status')->label('Статус')->badge()
@@ -117,9 +134,12 @@ class IntegrationProductResource extends Resource
                 TextColumn::make('match_confidence')->label('Совпадение')->formatStateUsing(
                     fn ($state): string => $state === null ? '—' : round((float) $state * 100).'%'
                 ),
-                TextColumn::make('price')->label('Цена 1С')->money('BYN')->toggleable(),
-                TextColumn::make('stock_quantity')->label('Остаток 1С')->numeric()->toggleable(),
-                TextColumn::make('last_seen_at')->label('Получен')->dateTime('d.m.Y H:i')->sortable(),
+                TextColumn::make('price')->label('Цена 1С')->money('BYN')->toggleable()
+                    ->size(TextSize::Small),
+                TextColumn::make('stock_quantity')->label('Остаток 1С')->numeric()->toggleable()
+                    ->size(TextSize::Small),
+                TextColumn::make('last_seen_at')->label('Получен')->dateTime('d.m.Y H:i')->sortable()
+                    ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
                 SelectFilter::make('integration_source_id')->label('Источник')->relationship('source', 'name'),
@@ -211,5 +231,17 @@ class IntegrationProductResource extends Resource
             'index' => ListIntegrationProducts::route('/'),
             'edit' => EditIntegrationProduct::route('/{record}/edit'),
         ];
+    }
+
+    private static function productUrl(IntegrationProduct $record): ?string
+    {
+        $categorySlug = $record->product?->category?->slug;
+        $productSlug = $record->product?->slug;
+
+        if (! $categorySlug || ! $productSlug) {
+            return null;
+        }
+
+        return url('/'.$categorySlug.'/'.$productSlug);
     }
 }
