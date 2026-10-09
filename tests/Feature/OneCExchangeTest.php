@@ -469,6 +469,36 @@ XML;
         ]);
     }
 
+    public function test_repeated_catalog_import_updates_the_same_staging_product_without_duplicates(): void
+    {
+        $first = <<<'XML'
+<?xml version="1.0" encoding="UTF-8"?>
+<КоммерческаяИнформация>
+  <Каталог><Товары><Товар>
+    <Ид>stable-onec-id</Ид>
+    <Артикул>STABLE-1</Артикул>
+    <Наименование>Первое название</Наименование>
+  </Товар></Товары></Каталог>
+</КоммерческаяИнформация>
+XML;
+        $second = str_replace('Первое название', 'Обновлённое название', $first);
+        $importer = app(CommerceMlCatalogImporter::class);
+
+        $importer->import($first);
+        $importer->import($second);
+
+        $source = IntegrationSource::query()->where('code', 'onec')->firstOrFail();
+        $this->assertSame(1, IntegrationProduct::query()
+            ->where('integration_source_id', $source->id)
+            ->where('external_id', 'stable-onec-id')
+            ->count());
+        $this->assertDatabaseHas('integration_products', [
+            'integration_source_id' => $source->id,
+            'external_id' => 'stable-onec-id',
+            'name' => 'Обновлённое название',
+        ]);
+    }
+
     public function test_catalog_item_reads_onec_code_and_links_it_to_existing_sku(): void
     {
         $product = Product::query()->create([

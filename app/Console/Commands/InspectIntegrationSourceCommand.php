@@ -24,9 +24,13 @@ class InspectIntegrationSourceCommand extends Command
         }
 
         $query = IntegrationProduct::query()->whereBelongsTo($source, 'source');
+        $total = (clone $query)->count();
+        $distinctExternalIds = (clone $query)->distinct()->count('external_id');
         $this->table(['Metric', 'Count'], [
             ['Supplier groups', $source->categories()->count()],
-            ['Staged products', (clone $query)->count()],
+            ['Staged products', $total],
+            ['Distinct external IDs', $distinctExternalIds],
+            ['Duplicate external IDs', max(0, $total - $distinctExternalIds)],
             ['Positive stock', (clone $query)->where('stock_quantity', '>', 0)->count()],
             ['Zero stock', (clone $query)->where('stock_quantity', 0)->count()],
             ['Missing stock', (clone $query)->whereNull('stock_quantity')->count()],
