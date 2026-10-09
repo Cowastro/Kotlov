@@ -210,6 +210,7 @@
                                     $availabilityLabel = method_exists($product, 'availabilityLabel')
                                         ? $product->availabilityLabel()
                                         : 'Уточняйте наличие';
+                                    $displayPrice = $b2bComparison['wholesale_price'] ?? (float) $product->price;
                                 @endphp
 
                                 {{-- Цена --}}
@@ -358,10 +359,10 @@
                                                 data-product-id="{{ $product->id }}"
                                                 data-qty-input=".product-main-qty">
                                                 В корзину
-                                                @if ($product->price > 0)
+                                                @if ($displayPrice > 0)
                                                     <span class="d-none d-sm-block d-md-none d-lg-block">&nbsp;—&nbsp;</span>
                                                     <span class="d-none d-sm-block d-md-none d-lg-block">
-                                                        {{ number_format($product->price, 2, '.', ' ') }} BYN
+                                                        {{ number_format($displayPrice, 2, '.', ' ') }} BYN
                                                     </span>
                                                 @endif
                                             </a>
@@ -503,9 +504,9 @@
                             @if ($product->brand)
                                 <p class="distribute__prd text-caption-01 cl-text-3">{{ $product->brand->name }}</p>
                             @endif
-                            @if ($product->price > 0)
+                            @if ($displayPrice > 0)
                                 <p class="price__prd fw-semibold">
-                                    {{ number_format($product->price, 2, '.', ' ') }} BYN
+                                    {{ number_format($displayPrice, 2, '.', ' ') }} BYN
                                 </p>
                             @endif
                         </div>
@@ -528,8 +529,8 @@
                         class="tf-btn animate-btn btn-add-to-cart"
                         data-product-id="{{ $product->id }}">
                         В корзину
-                        @if ($product->price > 0)
-                            — {{ number_format($product->price, 2, '.', ' ') }} BYN
+                        @if ($displayPrice > 0)
+                            — {{ number_format($displayPrice, 2, '.', ' ') }} BYN
                         @endif
                     </a>
                 </div>
