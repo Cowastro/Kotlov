@@ -30,4 +30,19 @@ class SupplierSyncChange extends Model
     {
         return $this->belongsTo(SupplierSyncRun::class, 'supplier_sync_run_id');
     }
+
+    public function supplier(): BelongsTo
+    {
+        return $this->belongsTo(Supplier::class);
+    }
+
+    public function supplierProduct(): BelongsTo
+    {
+        return $this->belongsTo(SupplierProduct::class);
+    }
+
+    public function product(): BelongsTo
+    {
+        return $this->belongsTo(Product::class);
+    }
 }

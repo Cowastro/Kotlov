@@ -3,8 +3,11 @@
 namespace Tests\Feature;
 
 use App\Filament\Supplier\Resources\SupplierProducts\SupplierProductResource;
+use App\Filament\Supplier\Resources\SupplierSyncChanges\SupplierSyncChangeResource;
 use App\Models\Supplier;
 use App\Models\SupplierProduct;
+use App\Models\SupplierSyncChange;
+use App\Models\SupplierSyncRun;
 use App\Models\User;
 use Filament\Panel;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -58,5 +61,87 @@ class SupplierPanelIsolationTest extends TestCase
     public function test_supplier_panel_routes_are_registered(): void
     {
         $this->get('/supplier/login')->assertOk();
+    }
+
+    public function test_supplier_change_history_is_strictly_scoped_to_assigned_suppliers(): void
+    {
+        $supplierA = Supplier::query()->create(['code' => 'supplier-a', 'name' => 'Поставщик А']);
+        $supplierB = Supplier::query()->create(['code' => 'supplier-b', 'name' => 'Поставщик Б']);
+        $user = User::factory()->create(['role' => 'supplier', 'is_active' => true]);
+        $user->suppliers()->attach($supplierA);
+        $run = SupplierSyncRun::query()->create([
+            'command' => 'supplier:sync-example',
+            'status' => 'success',
+            'started_at' => now(),
+        ]);
+
+        $visible = SupplierSyncChange::query()->create([
+            'supplier_sync_run_id' => $run->id,
+            'supplier_id' => $supplierA->id,
+            'supplier_name' => $supplierA->name,
+            'supplier_article' => 'A-1',
+            'product_name' => 'Доступное изменение',
+            'change_flags' => ['supplier_price'],
+            'supplier_price_before' => 10,
+            'supplier_price_after' => 12,
+            'created_at' => now(),
+        ]);
+        SupplierSyncChange::query()->create([
+            'supplier_sync_run_id' => $run->id,
+            'supplier_id' => $supplierB->id,
+            'supplier_name' => $supplierB->name,
+            'supplier_article' => 'B-1',
+            'product_name' => 'Чужое изменение',
+            'change_flags' => ['stock_quantity'],
+            'stock_quantity_before' => 2,
+            'stock_quantity_after' => 9,
+            'created_at' => now(),
+        ]);
+
+        $this->actingAs($user);
+
+        $this->assertSame([$visible->id], SupplierSyncChangeResource::getEloquentQuery()->pluck('id')->all());
+    }
+
+    public function test_supplier_can_open_its_change_history_page(): void
+    {
+        $supplier = Supplier::query()->create(['code' => 'supplier-a', 'name' => 'Поставщик А']);
+        $otherSupplier = Supplier::query()->create(['code' => 'supplier-b', 'name' => 'Поставщик Б']);
+        $user = User::factory()->create(['role' => 'supplier', 'is_active' => true]);
+        $user->suppliers()->attach($supplier);
+        $run = SupplierSyncRun::query()->create([
+            'command' => 'supplier:sync-example',
+            'status' => 'success',
+            'started_at' => now(),
+        ]);
+        SupplierSyncChange::query()->create([
+            'supplier_sync_run_id' => $run->id,
+            'supplier_id' => $supplier->id,
+            'supplier_name' => $supplier->name,
+            'supplier_article' => 'A-1',
+            'product_name' => 'Мой изменённый товар',
+            'change_flags' => ['supplier_price', 'stock_quantity'],
+            'supplier_price_before' => 10,
+            'supplier_price_after' => 12,
+            'stock_quantity_before' => 2,
+            'stock_quantity_after' => 3,
+            'created_at' => now(),
+        ]);
+        SupplierSyncChange::query()->create([
+            'supplier_sync_run_id' => $run->id,
+            'supplier_id' => $otherSupplier->id,
+            'supplier_name' => $otherSupplier->name,
+            'supplier_article' => 'B-1',
+            'product_name' => 'Чужой изменённый товар',
+            'change_flags' => ['supplier_price'],
+            'created_at' => now(),
+        ]);
+
+        $this->actingAs($user)
+            ->get(SupplierSyncChangeResource::getUrl('index', panel: 'supplier'))
+            ->assertOk()
+            ->assertSee('История изменений')
+            ->assertSee('Мой изменённый товар')
+            ->assertDontSee('Чужой изменённый товар');
     }
 }
