@@ -1,0 +1,162 @@
+<?php
+
+namespace App\Services\Integrations;
+
+use App\Models\Order;
+use App\Models\OrderStatusHistory;
+use Illuminate\Support\Facades\DB;
+use SimpleXMLElement;
+
+class CommerceMlOrderImporter
+{
+    /** @return array{documents:int,matched:int,updated:int,unchanged:int,unmatched:int} */
+    public function import(string $xml): array
+    {
+        $document = $this->parse($xml);
+        $stats = [
+            'documents' => 0,
+            'matched' => 0,
+            'updated' => 0,
+            'unchanged' => 0,
+            'unmatched' => 0,
+        ];
+
+        DB::transaction(function () use ($document, &$stats): void {
+            foreach ($document->xpath('//*[local-name()="Документ"]') ?: [] as $node) {
+                $stats['documents']++;
+                $externalId = $this->text($node, './*[local-name()="Ид"]');
+                $number = $this->text($node, './*[local-name()="Номер"]');
+                $order = $this->findOrder($externalId, $number);
+
+                if (! $order) {
+                    $stats['unmatched']++;
+
+                    continue;
+                }
+
+                $stats['matched']++;
+                $rawStatus = $this->text($node, './*[local-name()="Статус"]')
+                    ?: $this->requisite($node, ['Статус заказа', 'Статус']);
+                $rawPaymentStatus = $this->requisite($node, ['Статус оплаты', 'Оплата']);
+                $status = $this->mapStatus($rawStatus);
+                $paymentStatus = $this->mapPaymentStatus($rawPaymentStatus);
+                $oldStatus = $order->status;
+
+                $changes = array_filter([
+                    'onec_external_id' => $externalId ?: null,
+                    'onec_status' => $rawStatus ?: null,
+                    'onec_status_received_at' => now(),
+                    'status' => $status,
+                    'payment_status' => $paymentStatus,
+                ], static fn (mixed $value): bool => $value !== null);
+
+                $meaningfulChange = ($status !== null && $status !== $order->status)
+                    || ($paymentStatus !== null && $paymentStatus !== $order->payment_status)
+                    || ($rawStatus !== '' && $rawStatus !== $order->onec_status);
+
+                Order::withoutEvents(fn () => $order->update($changes));
+
+                if ($status !== null && $status !== $oldStatus) {
+                    OrderStatusHistory::query()->create([
+                        'order_id' => $order->id,
+                        'user_id' => null,
+                        'status_from' => $oldStatus,
+                        'status_to' => $status,
+                        'comment' => 'Статус получен из 1С',
+                    ]);
+                }
+
+                $stats[$meaningfulChange ? 'updated' : 'unchanged']++;
+            }
+        });
+
+        return $stats;
+    }
+
+    private function parse(string $xml): SimpleXMLElement
+    {
+        $xml = ltrim($xml, "\xEF\xBB\xBF\x00\x09\x0A\x0D\x20");
+        $previous = libxml_use_internal_errors(true);
+
+        try {
+            libxml_clear_errors();
+            $document = simplexml_load_string($xml, SimpleXMLElement::class, LIBXML_NONET | LIBXML_NOCDATA);
+            if ($document === false) {
+                throw new \InvalidArgumentException('Invalid CommerceML order XML.');
+            }
+
+            return $document;
+        } finally {
+            libxml_clear_errors();
+            libxml_use_internal_errors($previous);
+        }
+    }
+
+    private function findOrder(string $externalId, string $number): ?Order
+    {
+        if ($externalId === '' && $number === '') {
+            return null;
+        }
+
+        if (preg_match('/^kotlov-order-(\d+)$/', $externalId, $matches)) {
+            $order = Order::query()->find((int) $matches[1]);
+            if ($order) {
+                return $order;
+            }
+        }
+
+        return Order::query()
+            ->when($number !== '', fn ($query) => $query->where('number', $number))
+            ->when($number === '' && $externalId !== '', fn ($query) => $query->where('onec_external_id', $externalId))
+            ->first();
+    }
+
+    private function mapStatus(string $status): ?string
+    {
+        $status = mb_strtolower(trim($status));
+
+        return match (true) {
+            $status === '' => null,
+            str_contains($status, 'отмен') => 'cancelled',
+            str_contains($status, 'достав'), str_contains($status, 'выполн'), str_contains($status, 'заверш') => 'delivered',
+            str_contains($status, 'отгруж'), str_contains($status, 'отправ') => 'shipped',
+            str_contains($status, 'обработ'), str_contains($status, 'сбор'), str_contains($status, 'комплект') => 'processing',
+            str_contains($status, 'подтверж'), str_contains($status, 'принят') => 'confirmed',
+            str_contains($status, 'нов') => 'new',
+            default => null,
+        };
+    }
+
+    private function mapPaymentStatus(string $status): ?string
+    {
+        $status = mb_strtolower(trim($status));
+
+        return match (true) {
+            $status === '' => null,
+            str_contains($status, 'не опла'), str_contains($status, 'ожида') => 'pending',
+            str_contains($status, 'возврат') => 'refunded',
+            str_contains($status, 'опла') => 'paid',
+            default => null,
+        };
+    }
+
+    /** @param array<int, string> $names */
+    private function requisite(SimpleXMLElement $node, array $names): string
+    {
+        foreach ($node->xpath('.//*[local-name()="ЗначениеРеквизита"]') ?: [] as $requisite) {
+            $name = $this->text($requisite, './*[local-name()="Наименование"]');
+            if (in_array($name, $names, true)) {
+                return $this->text($requisite, './*[local-name()="Значение"]');
+            }
+        }
+
+        return '';
+    }
+
+    private function text(SimpleXMLElement $node, string $xpath): string
+    {
+        $result = $node->xpath($xpath);
+
+        return trim((string) ($result[0] ?? ''));
+    }
+}

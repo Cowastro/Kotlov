@@ -50,6 +50,7 @@ class IntegrationExchangeRunResource extends Resource
                     ->formatStateUsing(fn (string $state): string => match ($state) {
                         'catalog' => 'Каталог, цены и остатки',
                         'orders' => 'Заказы',
+                        'order_statuses' => 'Статусы заказов',
                         default => $state,
                     }),
                 TextColumn::make('status')->label('Статус')->badge()
@@ -88,6 +89,7 @@ class IntegrationExchangeRunResource extends Resource
                 SelectFilter::make('operation')->label('Данные')->options([
                     'catalog' => 'Каталог, цены и остатки',
                     'orders' => 'Заказы',
+                    'order_statuses' => 'Статусы заказов',
                 ]),
                 SelectFilter::make('status')->label('Статус')->options([
                     'running' => 'Выполняется',

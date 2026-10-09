@@ -27,7 +27,11 @@ class RecentIntegrationRuns extends TableWidget
                     ->formatStateUsing(fn (string $state): string => $state === 'inbound' ? '1С → сайт' : 'Сайт → 1С')
                     ->color(fn (string $state): string => $state === 'inbound' ? 'info' : 'warning'),
                 TextColumn::make('operation')->label('Данные')
-                    ->formatStateUsing(fn (string $state): string => $state === 'orders' ? 'Заказы' : 'Каталог'),
+                    ->formatStateUsing(fn (string $state): string => match ($state) {
+                        'orders' => 'Заказы',
+                        'order_statuses' => 'Статусы заказов',
+                        default => 'Каталог',
+                    }),
                 TextColumn::make('status')->label('Статус')->badge()
                     ->formatStateUsing(fn (string $state): string => match ($state) {
                         'success' => 'Успешно',

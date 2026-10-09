@@ -54,7 +54,22 @@ class OneCExchangeTest extends TestCase
                 $table->decimal('total', 10, 2)->default(0);
                 $table->text('comment')->nullable();
                 $table->timestamp('onec_exported_at')->nullable();
+                $table->string('onec_external_id')->nullable();
+                $table->string('onec_status')->nullable();
+                $table->timestamp('onec_status_received_at')->nullable();
                 $table->timestamps();
+            });
+        } else {
+            Schema::table('orders', function (Blueprint $table) {
+                if (! Schema::hasColumn('orders', 'onec_external_id')) {
+                    $table->string('onec_external_id')->nullable();
+                }
+                if (! Schema::hasColumn('orders', 'onec_status')) {
+                    $table->string('onec_status')->nullable();
+                }
+                if (! Schema::hasColumn('orders', 'onec_status_received_at')) {
+                    $table->timestamp('onec_status_received_at')->nullable();
+                }
             });
         }
 
@@ -68,6 +83,18 @@ class OneCExchangeTest extends TestCase
                 $table->decimal('price', 10, 2);
                 $table->integer('quantity');
                 $table->decimal('total', 10, 2);
+                $table->timestamps();
+            });
+        }
+
+        if (! Schema::hasTable('order_status_history')) {
+            Schema::create('order_status_history', function (Blueprint $table) {
+                $table->id();
+                $table->unsignedBigInteger('order_id');
+                $table->unsignedBigInteger('user_id')->nullable();
+                $table->string('status_from')->nullable();
+                $table->string('status_to');
+                $table->text('comment')->nullable();
                 $table->timestamps();
             });
         }
@@ -173,7 +200,7 @@ class OneCExchangeTest extends TestCase
         }
 
         Schema::disableForeignKeyConstraints();
-        foreach (['integration_exchange_runs', 'integration_products', 'integration_categories', 'integration_sources', 'order_items', 'orders', 'products'] as $table) {
+        foreach (['integration_exchange_runs', 'integration_products', 'integration_categories', 'integration_sources', 'order_status_history', 'order_items', 'orders', 'products'] as $table) {
             DB::table($table)->delete();
         }
         Schema::enableForeignKeyConstraints();
@@ -638,6 +665,68 @@ XML;
             'integration_source_id' => $source->id,
             'direction' => 'outbound',
             'operation' => 'orders',
+            'status' => 'success',
+            'orders_count' => 1,
+        ]);
+    }
+
+    public function test_order_statuses_are_received_from_onec_and_added_to_timeline(): void
+    {
+        $order = Order::query()->create([
+            'number' => 'ORD-2026-STATUS-1',
+            'status' => 'new',
+            'customer_name' => 'Тестовый покупатель',
+            'customer_phone' => '+375291112233',
+            'delivery_type' => 'courier',
+            'payment_type' => 'cash',
+            'payment_status' => 'pending',
+            'subtotal' => 120,
+            'total' => 120,
+            'onec_exported_at' => now(),
+        ]);
+        $xml = <<<XML
+<?xml version="1.0" encoding="UTF-8"?>
+<КоммерческаяИнформация>
+  <Документ>
+    <Ид>kotlov-order-{$order->id}</Ид>
+    <Номер>ORD-2026-STATUS-1</Номер>
+    <ЗначенияРеквизитов>
+      <ЗначениеРеквизита><Наименование>Статус заказа</Наименование><Значение>Подтверждён</Значение></ЗначениеРеквизита>
+      <ЗначениеРеквизита><Наименование>Статус оплаты</Наименование><Значение>Оплачен</Значение></ЗначениеРеквизита>
+    </ЗначенияРеквизитов>
+  </Документ>
+</КоммерческаяИнформация>
+XML;
+
+        $this->call(
+            'POST',
+            '/1c/exchange?type=sale&mode=file&filename=orders.xml',
+            [],
+            [],
+            [],
+            ['PHP_AUTH_USER' => 'onec-test', 'PHP_AUTH_PW' => 'secret-test'],
+            $xml
+        )->assertOk();
+
+        $this->withBasicAuth('onec-test', 'secret-test')
+            ->get('/1c/exchange?type=sale&mode=import&filename=orders.xml')
+            ->assertOk()
+            ->assertSeeText('success');
+
+        $order->refresh();
+        $this->assertSame('confirmed', $order->status);
+        $this->assertSame('paid', $order->payment_status);
+        $this->assertSame('Подтверждён', $order->onec_status);
+        $this->assertNotNull($order->onec_status_received_at);
+        $this->assertDatabaseHas('order_status_history', [
+            'order_id' => $order->id,
+            'status_from' => 'new',
+            'status_to' => 'confirmed',
+            'comment' => 'Статус получен из 1С',
+        ]);
+        $this->assertDatabaseHas('integration_exchange_runs', [
+            'operation' => 'order_statuses',
+            'direction' => 'inbound',
             'status' => 'success',
             'orders_count' => 1,
         ]);

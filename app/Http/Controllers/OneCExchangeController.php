@@ -7,6 +7,7 @@ use App\Models\IntegrationProduct;
 use App\Models\IntegrationSource;
 use App\Models\Order;
 use App\Services\Integrations\CommerceMlCatalogImporter;
+use App\Services\Integrations\CommerceMlOrderImporter;
 use App\Services\Integrations\IntegrationExchangeJournal;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
@@ -23,6 +24,7 @@ class OneCExchangeController extends Controller
 
     public function __construct(
         private readonly CommerceMlCatalogImporter $catalogImporter,
+        private readonly CommerceMlOrderImporter $orderImporter,
         private readonly IntegrationExchangeJournal $exchangeJournal,
     ) {}
 
@@ -131,9 +133,15 @@ class OneCExchangeController extends Controller
 
         $disk->put($path, $existing.$contents);
 
-        if ($type === 'catalog') {
-            $run = $this->currentRun($request, $source, 'catalog')
-                ?? $this->startRun($request, $source, 'inbound', 'catalog');
+        $operation = match ($type) {
+            'catalog' => 'catalog',
+            'sale' => 'order_statuses',
+            default => null,
+        };
+
+        if ($operation) {
+            $run = $this->currentRun($request, $source, $operation)
+                ?? $this->startRun($request, $source, 'inbound', $operation);
             $this->exchangeJournal->recordFile($run, strlen($contents));
         }
 
@@ -147,6 +155,8 @@ class OneCExchangeController extends Controller
 
         if ($type === 'catalog') {
             $this->startRun($request, $source, 'inbound', 'catalog');
+        } elseif ($type === 'sale') {
+            $this->startRun($request, $source, 'inbound', 'order_statuses');
         }
 
         return $this->plain("zip=no\nfile_limit=".config('onec.exchange.file_limit'));
@@ -162,13 +172,22 @@ class OneCExchangeController extends Controller
             return $this->plain("failure\nUploaded file not found");
         }
 
-        $run = $type === 'catalog'
-            ? ($this->currentRun($request, $source, 'catalog')
-                ?? $this->startRun($request, $source, 'inbound', 'catalog'))
-            : null;
+        $operation = match ($type) {
+            'catalog' => 'catalog',
+            'sale' => 'order_statuses',
+            default => null,
+        };
+        if (! $operation) {
+            return $this->plain("failure\nUnsupported exchange type");
+        }
+
+        $run = $this->currentRun($request, $source, $operation)
+            ?? $this->startRun($request, $source, 'inbound', $operation);
 
         try {
-            $stats = $this->catalogImporter->import($disk->get($path), $source->code);
+            $stats = $type === 'sale'
+                ? $this->orderImporter->import($disk->get($path))
+                : $this->catalogImporter->import($disk->get($path), $source->code);
         } catch (\Throwable $exception) {
             report($exception);
             $this->exchangeJournal->fail($run, $exception);
@@ -181,12 +200,21 @@ class OneCExchangeController extends Controller
         $disk->put($path.'.received', now()->toIso8601String());
         $disk->put($path.'.result.json', json_encode($stats, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
 
-        $this->exchangeJournal->succeed($run, [
-            'items_received' => max((int) $stats['products'], (int) $stats['offers']),
-            'items_updated' => (int) $stats['matched'] + (int) $stats['suggested']
-                + (int) $stats['ambiguous'] + (int) $stats['unmatched'],
-            'summary' => $stats,
-        ]);
+        $metrics = $type === 'sale'
+            ? [
+                'orders_count' => (int) $stats['matched'],
+                'items_received' => (int) $stats['documents'],
+                'items_updated' => (int) $stats['updated'],
+                'items_skipped' => (int) $stats['unchanged'] + (int) $stats['unmatched'],
+                'summary' => $stats,
+            ]
+            : [
+                'items_received' => max((int) $stats['products'], (int) $stats['offers']),
+                'items_updated' => (int) $stats['matched'] + (int) $stats['suggested']
+                    + (int) $stats['ambiguous'] + (int) $stats['unmatched'],
+                'summary' => $stats,
+            ];
+        $this->exchangeJournal->succeed($run, $metrics);
 
         return $this->plain('success');
     }
