@@ -7,6 +7,7 @@ use App\Filament\Resources\IntegrationProducts\IntegrationProductResource;
 use App\Filament\Resources\IntegrationSources\IntegrationSourceResource;
 use App\Filament\Resources\Orders\OrderResource;
 use App\Models\IntegrationIssue;
+use App\Services\Integrations\IntegrationIssueAiAdvisor;
 use App\Services\Integrations\IntegrationIssueAdvisor;
 use BackedEnum;
 use Filament\Actions\Action;
@@ -88,10 +89,12 @@ class IntegrationIssueResource extends Resource
                         ?? $record->source?->name
                         ?? '—'),
                 TextColumn::make('recommended_action')->label('Следующий шаг')
-                    ->state(fn (IntegrationIssue $record): string => app(IntegrationIssueAdvisor::class)->advise($record)['title'])
-                    ->description(fn (IntegrationIssue $record): ?string => app(IntegrationIssueAdvisor::class)->advise($record)['steps'][0] ?? null)
+                    ->state(fn (IntegrationIssue $record): string => self::displayAdvice($record)['title'])
+                    ->description(fn (IntegrationIssue $record): ?string => self::displayAdvice($record)['steps'][0] ?? null)
                     ->icon(Heroicon::OutlinedLightBulb)
-                    ->color('info')
+                    ->color(fn (IntegrationIssue $record): string => data_get($record->context, 'ai_advice.source') === 'ai'
+                        ? 'primary'
+                        : 'info')
                     ->wrap()
                     ->toggleable(),
                 TextColumn::make('status')->label('Состояние')->badge()
@@ -165,6 +168,31 @@ class IntegrationIssueResource extends Resource
                     ])
                     ->modalSubmitAction(false)
                     ->modalCancelActionLabel('Закрыть'),
+                Action::make('aiAdvice')
+                    ->label('ИИ-разбор')
+                    ->icon(Heroicon::OutlinedSparkles)
+                    ->color('primary')
+                    ->requiresConfirmation()
+                    ->modalHeading('Подготовить контекстную подсказку')
+                    ->modalDescription(fn (): string => app(IntegrationIssueAiAdvisor::class)->isAvailable()
+                        ? 'AI получит только технические поля проблемы — без имени, телефона, email и адреса клиента. Товары, заказы и привязки не изменятся.'
+                        : 'AI-провайдер не настроен. Будет сохранён безопасный план локальных правил; товары, заказы и привязки не изменятся.')
+                    ->modalSubmitActionLabel('Подготовить')
+                    ->action(function (IntegrationIssue $record): void {
+                        $advice = app(IntegrationIssueAiAdvisor::class)->advise($record);
+                        $context = $record->context ?? [];
+                        $context['ai_advice'] = [
+                            ...$advice,
+                            'generated_at' => now()->toIso8601String(),
+                        ];
+                        $record->update(['context' => $context]);
+
+                        \Filament\Notifications\Notification::make()
+                            ->success()
+                            ->title($advice['source'] === 'ai' ? 'ИИ-подсказка готова' : 'Локальная подсказка обновлена')
+                            ->body($advice['title'].' — '.($advice['steps'][0] ?? $advice['note']))
+                            ->send();
+                    }),
                 Action::make('openObject')
                     ->label('Открыть')
                     ->icon(Heroicon::OutlinedArrowTopRightOnSquare)
@@ -273,5 +301,21 @@ class IntegrationIssueResource extends Resource
             filled($issue->integration_source_id) => IntegrationSourceResource::getUrl('edit', ['record' => $issue->integration_source_id]),
             default => null,
         };
+    }
+
+    /** @return array{title:string,steps:array<int,string>,note:string} */
+    private static function displayAdvice(IntegrationIssue $issue): array
+    {
+        $cached = data_get($issue->context, 'ai_advice');
+
+        if (is_array($cached) && filled($cached['title'] ?? null) && is_array($cached['steps'] ?? null)) {
+            return [
+                'title' => (string) $cached['title'],
+                'steps' => array_values(array_filter($cached['steps'], 'is_string')),
+                'note' => (string) ($cached['note'] ?? ''),
+            ];
+        }
+
+        return app(IntegrationIssueAdvisor::class)->advise($issue);
     }
 }

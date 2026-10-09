@@ -44,6 +44,7 @@ class IntegrationIssueAdminTest extends TestCase
             ->assertSeeText('Восстановить автоматический обмен')
             ->assertSeeText('Откройте регламентное задание обмена на стороне 1С.')
             ->assertSeeText('Что делать')
+            ->assertSeeText('ИИ-разбор')
             ->assertSeeText('Открыть');
     }
 }
