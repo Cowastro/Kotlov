@@ -390,6 +390,35 @@ XML;
         ]);
     }
 
+    public function test_catalog_accepts_multiple_commerceml_documents_in_one_upload(): void
+    {
+        $xml = <<<'XML'
+<?xml version="1.0" encoding="UTF-8"?>
+<КоммерческаяИнформация xmlns="urn:1C.ru:commerceml_2">
+  <Классификатор><Группы><Группа>
+    <Ид>chimneys</Ид><Наименование>Дымоходы</Наименование>
+  </Группа></Группы></Классификатор>
+</КоммерческаяИнформация>
+<?xml version="1.0" encoding="UTF-8"?>
+<КоммерческаяИнформация xmlns="urn:1C.ru:commerceml_2">
+  <Каталог><Товары><Товар>
+    <Ид>pipe-2</Ид><Наименование>Труба 0,5 м</Наименование>
+    <Группы><Ид>chimneys</Ид></Группы>
+  </Товар></Товары></Каталог>
+</КоммерческаяИнформация>
+XML;
+
+        $stats = app(CommerceMlCatalogImporter::class)->import($xml);
+        $category = IntegrationCategory::query()->where('external_id', 'chimneys')->firstOrFail();
+
+        $this->assertSame(1, $stats['categories']);
+        $this->assertSame(1, $stats['products']);
+        $this->assertDatabaseHas('integration_products', [
+            'external_id' => 'pipe-2',
+            'integration_category_id' => $category->id,
+        ]);
+    }
+
     public function test_orders_are_exported_and_marked_only_after_success(): void
     {
         $product = Product::query()->create([

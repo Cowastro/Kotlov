@@ -38,11 +38,7 @@ class CommerceMlCatalogImporter
      */
     public function import(string $xml, string $sourceCode = 'onec'): array
     {
-        $document = simplexml_load_string($xml, SimpleXMLElement::class, LIBXML_NONET | LIBXML_NOCDATA);
-
-        if ($document === false) {
-            throw new \InvalidArgumentException('Invalid CommerceML XML.');
-        }
+        $documents = $this->parseDocuments($xml);
 
         $source = IntegrationSource::query()->firstOrCreate(
             ['code' => $sourceCode],
@@ -61,25 +57,74 @@ class CommerceMlCatalogImporter
             'unmatched' => 0,
         ];
 
-        DB::transaction(function () use ($document, $source, &$stats): void {
-            foreach ($document->xpath('/*[local-name()="КоммерческаяИнформация"]/*[local-name()="Классификатор"]/*[local-name()="Группы"]/*[local-name()="Группа"]') ?: [] as $node) {
-                $this->stageCategory($source, $node, null, null, $stats);
+        DB::transaction(function () use ($documents, $source, &$stats): void {
+            foreach ($documents as $document) {
+                foreach ($document->xpath('/*[local-name()="КоммерческаяИнформация"]/*[local-name()="Классификатор"]/*[local-name()="Группы"]/*[local-name()="Группа"]') ?: [] as $node) {
+                    $this->stageCategory($source, $node, null, null, $stats);
+                }
             }
 
             $this->categoryIds = IntegrationCategory::query()
                 ->whereBelongsTo($source, 'source')
                 ->pluck('id', 'external_id');
 
-            foreach ($document->xpath('//*[local-name()="Товар"]') ?: [] as $node) {
-                $this->stageProduct($source, $node, $stats);
+            foreach ($documents as $document) {
+                foreach ($document->xpath('//*[local-name()="Товар"]') ?: [] as $node) {
+                    $this->stageProduct($source, $node, $stats);
+                }
             }
 
-            foreach ($document->xpath('//*[local-name()="Предложение"]') ?: [] as $node) {
-                $this->stageOffer($source, $node, $stats);
+            foreach ($documents as $document) {
+                foreach ($document->xpath('//*[local-name()="Предложение"]') ?: [] as $node) {
+                    $this->stageOffer($source, $node, $stats);
+                }
             }
         });
 
         return $stats;
+    }
+
+    /** @return array<int, SimpleXMLElement> */
+    private function parseDocuments(string $xml): array
+    {
+        $xml = ltrim($xml, "\xEF\xBB\xBF\x00\x09\x0A\x0D\x20");
+        $previous = libxml_use_internal_errors(true);
+
+        try {
+            libxml_clear_errors();
+            $document = simplexml_load_string($xml, SimpleXMLElement::class, LIBXML_NONET | LIBXML_NOCDATA);
+            if ($document !== false) {
+                return [$document];
+            }
+
+            preg_match_all(
+                '/(?:<\?xml[^>]*>\s*)?<КоммерческаяИнформация\b.*?<\/КоммерческаяИнформация>/us',
+                $xml,
+                $matches
+            );
+            $parts = $matches[0] ?? [];
+
+            $documents = [];
+            foreach ($parts as $part) {
+                libxml_clear_errors();
+                $part = ltrim($part, "\xEF\xBB\xBF\x00\x09\x0A\x0D\x20");
+                $parsed = simplexml_load_string($part, SimpleXMLElement::class, LIBXML_NONET | LIBXML_NOCDATA);
+                if ($parsed === false) {
+                    throw new \InvalidArgumentException('Invalid CommerceML XML package.');
+                }
+
+                $documents[] = $parsed;
+            }
+
+            if (count($documents) < 2) {
+                throw new \InvalidArgumentException('Invalid CommerceML XML.');
+            }
+
+            return $documents;
+        } finally {
+            libxml_clear_errors();
+            libxml_use_internal_errors($previous);
+        }
     }
 
     /** @param array<string, int> $stats */
