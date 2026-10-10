@@ -606,7 +606,7 @@ class OrderInfolist
                     ]),
 
                 Section::make('Заявки поставщикам')
-                    ->description('Внутренние черновики по подтверждённым маршрутам. Статус «Черновик» означает, что поставщику ничего не отправлено.')
+                    ->description('Статус «Черновик» означает, что поставщику ничего не отправлено. Передача выполняется только отдельным подтверждённым действием; ответы поставщика сохраняются независимо по каждой заявке.')
                     ->icon('heroicon-o-document-duplicate')
                     ->columnSpanFull()
                     ->compact()
@@ -614,7 +614,7 @@ class OrderInfolist
                     ->schema([
                         RepeatableEntry::make('supplierOrderRequests')
                             ->hiddenLabel()
-                            ->columns(7)
+                            ->columns(8)
                             ->schema([
                                 TextEntry::make('number')->label('Номер')->copyable()->columnSpan(2),
                                 TextEntry::make('supplier_name')->label('Поставщик'),
@@ -638,7 +638,18 @@ class OrderInfolist
                                 TextEntry::make('supplier_contact')->label('Контакт поставщика')->copyable()->columnSpan(3),
                                 TextEntry::make('creator.name')->label('Сформировал')->placeholder('Система'),
                                 TextEntry::make('created_at')->label('Создана')->dateTime('d.m.Y H:i', 'Europe/Minsk'),
-                                TextEntry::make('note')->label('Комментарий')->placeholder('—')->columnSpan(2),
+                                TextEntry::make('sent_at')
+                                    ->label('Передана')
+                                    ->dateTime('d.m.Y H:i:s', 'Europe/Minsk')
+                                    ->placeholder('Не передана'),
+                                TextEntry::make('sentBy.name')->label('Передал')->placeholder('—'),
+                                TextEntry::make('status_updated_at')
+                                    ->label('Ответ обновлён')
+                                    ->dateTime('d.m.Y H:i:s', 'Europe/Minsk')
+                                    ->placeholder('Ответа нет'),
+                                TextEntry::make('statusUpdatedBy.name')->label('Кто ответил')->placeholder('—'),
+                                TextEntry::make('note')->label('Комментарий KOTLOV')->placeholder('—')->columnSpan(2),
+                                TextEntry::make('supplier_response_note')->label('Ответ поставщика')->placeholder('—')->columnSpan(3),
                             ]),
                     ]),
 

@@ -80,6 +80,7 @@ class OrdersTable
                     'items.product.supplierProducts.supplier',
                     'manager:id,name',
                     'placedEconomicSnapshot',
+                    'supplierOrderRequests:id,order_id,status',
                     'integrationIssues' => fn ($query) => $query
                         ->open()
                         ->orders()
@@ -332,9 +333,17 @@ class OrdersTable
                             $parts[] = 'Без маршрута: '.$summary['unresolved_count'];
                         }
 
+                        if ($requestSummary = $record->supplierRequestStatusSummary()) {
+                            $parts[] = 'Заявки: '.$requestSummary;
+                        }
+
                         return $parts !== [] ? implode(' · ', $parts) : 'Маршрут рассчитан по текущим связям';
                     })
-                    ->color(fn (Order $record): string => $record->supplySummary()['unresolved_count'] > 0 ? 'danger' : 'success')
+                    ->color(fn (Order $record): string => match (true) {
+                        $record->supplierOrderRequests->contains('status', 'rejected') => 'danger',
+                        $record->supplySummary()['unresolved_count'] > 0 => 'danger',
+                        default => 'success',
+                    })
                     ->wrap(),
 
                 TextColumn::make('responsible')

@@ -6,8 +6,10 @@ use App\Filament\Resources\Orders\OrderResource;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Supplier;
+use App\Models\SupplierOrderRequest;
 use App\Services\Orders\OrderItemFulfillmentManager;
 use App\Services\Orders\SupplierOrderRequestBuilder;
+use App\Services\Orders\SupplierOrderRequestWorkflow;
 use Filament\Actions\Action;
 use Filament\Actions\EditAction;
 use Filament\Forms\Components\Select;
@@ -33,6 +35,8 @@ class ViewOrder extends ViewRecord
             'fulfillmentHistory.user',
             'supplierOrderRequests.items',
             'supplierOrderRequests.creator',
+            'supplierOrderRequests.sentBy',
+            'supplierOrderRequests.statusUpdatedBy',
             'statusHistory.user',
             'user',
             'manager',
@@ -131,6 +135,52 @@ class ViewOrder extends ViewRecord
                         ->success()
                         ->title('Черновики заявок сформированы')
                         ->body('Создано или обновлено заявок: '.$requests->count().'. Автоматической отправки не было.')
+                        ->send();
+                }),
+            Action::make('publishSupplierRequest')
+                ->label('Передать поставщику')
+                ->icon('heroicon-o-paper-airplane')
+                ->color('success')
+                ->visible(fn (): bool => $this->record->supplierOrderRequests->contains('status', 'draft'))
+                ->modalHeading('Передать заявку в кабинет поставщика?')
+                ->modalDescription('После подтверждения заявка станет видна только пользователям выбранного поставщика. Внешнее письмо или сообщение автоматически не отправляется.')
+                ->schema([
+                    Select::make('supplier_order_request_id')
+                        ->label('Черновик заявки')
+                        ->options(fn (): array => $this->record->supplierOrderRequests
+                            ->where('status', 'draft')
+                            ->mapWithKeys(fn (SupplierOrderRequest $request): array => [
+                                $request->id => $request->number.' · '.$request->supplier_name.' · '.$request->item_count.' поз.',
+                            ])->all())
+                        ->required(),
+                    Textarea::make('note')
+                        ->label('Комментарий поставщику')
+                        ->rows(3)
+                        ->maxLength(2000),
+                ])
+                ->modalSubmitActionLabel('Подтвердить передачу')
+                ->action(function (array $data): void {
+                    $request = $this->record->supplierOrderRequests()
+                        ->where('status', 'draft')
+                        ->findOrFail($data['supplier_order_request_id']);
+
+                    app(SupplierOrderRequestWorkflow::class)->publish(
+                        $request,
+                        auth()->user(),
+                        $data['note'] ?? null,
+                    );
+
+                    $this->record->refresh()->load([
+                        'supplierOrderRequests.items',
+                        'supplierOrderRequests.creator',
+                        'supplierOrderRequests.sentBy',
+                        'supplierOrderRequests.statusUpdatedBy',
+                    ]);
+
+                    Notification::make()
+                        ->success()
+                        ->title('Заявка передана поставщику')
+                        ->body('Она опубликована в изолированном кабинете поставщика. Автоматического письма не отправлялось.')
                         ->send();
                 }),
             EditAction::make(),

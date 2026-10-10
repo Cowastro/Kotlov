@@ -56,6 +56,14 @@ class SupplierOrderRequestBuilder
                         'purchase_total' => $pricesComplete
                             ? $items->sum(fn (OrderItem $item): float => (float) $item->fulfillment_purchase_price * $item->quantity)
                             : null,
+                        'sent_at' => null,
+                        'sent_by' => null,
+                        'acknowledged_at' => null,
+                        'supplier_response_note' => null,
+                        'rejected_at' => null,
+                        'fulfilled_at' => null,
+                        'status_updated_by' => null,
+                        'status_updated_at' => null,
                     ])->save();
 
                     foreach ($items as $item) {

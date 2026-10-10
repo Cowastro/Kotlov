@@ -41,6 +41,7 @@ class Order extends Model
         'mixed_suppliers' => 'Несколько поставщиков',
         'unassigned' => 'Без ответственного',
         'sync_problem' => 'Проблема обмена',
+        'supplier_request_rejected' => 'Поставщик отклонил заявку',
         'payment_failed' => 'Ошибка оплаты',
     ];
 
@@ -249,6 +250,10 @@ class Order extends Model
                 'integrationIssues',
                 fn (Builder $issues): Builder => $issues->open()->orders(),
             ),
+            'supplier_request_rejected' => $query->whereHas(
+                'supplierOrderRequests',
+                fn (Builder $requests): Builder => $requests->where('status', 'rejected'),
+            ),
             'payment_failed' => $query->where('payment_status', 'failed'),
             'needs_attention' => $query->where(function (Builder $attention): void {
                 foreach (array_keys(array_diff_key(self::OPERATIONAL_PROBLEMS, ['needs_attention' => true])) as $problem) {
@@ -314,6 +319,15 @@ class Order extends Model
         if ($this->payment_status === 'failed') {
             $problems->push(['severity' => 'critical', 'label' => 'Ошибка оплаты']);
         }
+        $rejectedSupplierRequests = $this->relationLoaded('supplierOrderRequests')
+            ? $this->supplierOrderRequests->where('status', 'rejected')->count()
+            : $this->supplierOrderRequests()->where('status', 'rejected')->count();
+        if ($rejectedSupplierRequests > 0) {
+            $problems->push([
+                'severity' => 'critical',
+                'label' => 'Поставщик отклонил заявок: '.$rejectedSupplierRequests,
+            ]);
+        }
 
         $severity = match (true) {
             $problems->contains('severity', 'critical') => 'critical',
@@ -331,6 +345,23 @@ class Order extends Model
                 default => 'Готов к работе',
             },
         ];
+    }
+
+    public function supplierRequestStatusSummary(): ?string
+    {
+        $requests = $this->relationLoaded('supplierOrderRequests')
+            ? $this->supplierOrderRequests
+            : $this->supplierOrderRequests()->get();
+
+        if ($requests->isEmpty()) {
+            return null;
+        }
+
+        return $requests
+            ->groupBy('status')
+            ->map(fn (Collection $group, string $status): string => (SupplierOrderRequest::STATUSES[$status] ?? $status).': '.$group->count())
+            ->values()
+            ->implode(' · ');
     }
 
     public function onecSyncState(): string
