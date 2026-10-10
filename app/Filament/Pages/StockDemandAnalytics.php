@@ -191,8 +191,8 @@ class StockDemandAnalytics extends Page
         return [
             ['label' => 'Подтверждённый дефицит', 'value' => $rows->filter(fn (array $row): bool => ($row['recommended_purchase'] ?? 0) > 0)->count(), 'suffix' => '', 'tone' => 'warning'],
             ['label' => 'Нужно проверить остаток', 'value' => $rows->filter(fn (array $row): bool => ! $row['stock_data_ready'] && $row['quantity_recent'] > 0)->count(), 'suffix' => '', 'tone' => 'danger'],
-            ['label' => 'К закупке подтверждено', 'value' => (int) $rows->sum(fn (array $row): int => $row['recommended_purchase'] ?? 0), 'suffix' => ' шт.', 'tone' => 'info'],
-            ['label' => 'Спрос за период', 'value' => (int) $rows->sum('quantity_recent'), 'suffix' => ' шт.', 'tone' => 'info'],
+            ['label' => 'Подтверждённый спрос', 'value' => (int) $rows->sum('quantity_recent'), 'suffix' => ' шт.', 'tone' => 'info'],
+            ['label' => 'Неподтверждённые заявки', 'value' => (int) $rows->sum('interest_quantity_recent'), 'suffix' => ' шт.', 'tone' => 'muted'],
         ];
     }
 
@@ -229,7 +229,8 @@ class StockDemandAnalytics extends Page
                 ->filter(fn (array $row): bool => ! $row['stock_data_ready']))
             ->when($this->purchaseOnly, fn (Collection $rows): Collection => $rows
                 ->filter(fn (array $row): bool => ($row['recommended_purchase'] ?? 0) > 0
-                    || (! $row['stock_data_ready'] && $row['quantity_recent'] > 0)))
+                    || (! $row['stock_data_ready'] && $row['quantity_recent'] > 0)
+                    || $row['interest_quantity_recent'] > 0))
             ->when($search !== '', fn (Collection $rows): Collection => $rows
                 ->filter(fn (array $row): bool => str_contains(
                     mb_strtolower(($row['sku'] ?? '').' '.($row['name'] ?? '')),

@@ -84,13 +84,17 @@
             <div class="stock-table-wrap">
                 <table class="stock-table">
                     <thead><tr>
-                        <th>Товар</th><th>Заказы / продажи</th><th>Спрос / мес.</th><th>Склад</th><th>Данные склада</th><th>Покрытие</th><th>Цель</th><th>Пополнить</th><th>Последний спрос</th><th>Почему</th>
+                        <th>Товар</th><th>Подтверждено / заявки</th><th>Спрос / мес.</th><th>Склад</th><th>Данные склада</th><th>Покрытие</th><th>Цель</th><th>Пополнить</th><th>Последняя активность</th><th>Почему</th>
                     </tr></thead>
                     <tbody>
                     @forelse ($rows as $row)
                         <tr>
                             <td class="stock-product">{{ $row['name'] }}<div class="stock-muted">{{ $row['sku'] ?: 'SKU не указан' }}</div></td>
-                            <td class="stock-number">{{ $row['orders_recent'] }} / {{ $row['quantity_recent'] }} шт.<div class="stock-muted">Всего: {{ $row['orders_all'] }} / {{ $row['quantity_all'] }} шт.</div></td>
+                            <td class="stock-number">
+                                {{ $row['orders_recent'] }} / {{ $row['quantity_recent'] }} шт.
+                                <div class="stock-muted">Новые заявки: {{ $row['interest_orders_recent'] }} / {{ $row['interest_quantity_recent'] }} шт.</div>
+                                <div class="stock-muted">Всего подтверждено: {{ $row['orders_all'] }} / {{ $row['quantity_all'] }} шт.</div>
+                            </td>
                             <td class="stock-number">{{ number_format($row['monthly_velocity'], 2, ',', ' ') }} шт.</td>
                             <td class="stock-number">{{ $row['current_own_stock'] === null ? '—' : rtrim(rtrim(number_format($row['current_own_stock'], 3, ',', ' '), '0'), ',') }}</td>
                             <td class="stock-evidence">
@@ -108,13 +112,18 @@
                             <td class="stock-number">{{ $row['stock_coverage_days'] === null ? '—' : number_format($row['stock_coverage_days'], 0, ',', ' ') . ' дн.' }}</td>
                             <td class="stock-number">{{ $row['target_stock'] }}</td>
                             <td class="stock-number">
-                                @if ($row['recommended_purchase'] === null)
+                                @if ($row['quantity_recent'] === 0 && $row['interest_quantity_recent'] > 0)
+                                    <span class="stock-pending">После подтверждения</span>
+                                @elseif ($row['recommended_purchase'] === null)
                                     <span class="stock-pending">После проверки</span>
                                 @else
                                     <span class="{{ $row['recommended_purchase'] > 0 ? 'stock-recommend' : 'stock-ok' }}">{{ $row['recommended_purchase'] > 0 ? '+' . $row['recommended_purchase'] : 'Достаточно' }}</span>
                                 @endif
                             </td>
-                            <td class="stock-number">{{ $row['last_ordered_at']?->timezone('Europe/Minsk')->format('d.m.Y') ?? '—' }}</td>
+                            <td class="stock-number">
+                                {{ $row['last_ordered_at']?->timezone('Europe/Minsk')->format('d.m.Y') ?? '—' }}
+                                @if ($row['last_interest_at'])<div class="stock-muted">заявка: {{ $row['last_interest_at']->timezone('Europe/Minsk')->format('d.m.Y') }}</div>@endif
+                            </td>
                             <td class="stock-explanation">{{ $row['explanation'] }}</td>
                         </tr>
                     @empty
@@ -136,8 +145,8 @@
         </div>
 
         <div class="stock-card stock-footer">
-            <span>Формула цели: крупнейший заказ за период или двухмесячный спрос — выбирается большее. Решение рассчитывается только по свежему подтверждённому остатку 1С.</span>
-            <strong>Нет привязки или актуального остатка — закупка блокируется до проверки.</strong>
+            <span>Формула цели использует только оплаченные или подтверждённые менеджером заказы: крупнейший заказ за период либо двухмесячный спрос — выбирается большее.</span>
+            <strong>Новые неоплаченные заявки показаны отдельно и не влияют на закупку. Нет актуального остатка 1С — закупка блокируется.</strong>
         </div>
     </div>
 </x-filament-panels::page>
