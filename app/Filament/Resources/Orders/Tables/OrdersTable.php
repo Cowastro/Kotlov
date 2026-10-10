@@ -7,18 +7,21 @@ use App\Models\Order;
 use App\Models\User;
 use Filament\Actions\Action;
 use Filament\Actions\ActionGroup;
+use Filament\Actions\BulkAction;
 use Filament\Actions\BulkActionGroup;
-use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Actions\ExportAction;
 use Filament\Actions\ViewAction;
 use Filament\Forms\Components\DatePicker;
+use Filament\Forms\Components\Textarea;
+use Filament\Notifications\Notification;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\Filter;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Collection;
 
 class OrdersTable
 {
@@ -98,6 +101,10 @@ class OrdersTable
                 TextColumn::make('created_at')
                     ->label('Дата')
                     ->dateTime('d.m.Y H:i')
+                    ->description(fn (Order $record): ?string => $record->isStaleUnprocessed()
+                        ? 'Без реакции '.(int) $record->created_at->diffInDays(now()).' дн.'
+                        : null)
+                    ->color(fn (Order $record): ?string => $record->isStaleUnprocessed() ? 'warning' : null)
                     ->sortable(),
 
                 TextColumn::make('customer_name')
@@ -383,12 +390,36 @@ class OrdersTable
                 SelectFilter::make('operational_problem')
                     ->label('Проблема / следующий шаг')
                     ->options(Order::OPERATIONAL_PROBLEMS)
-                    ->query(fn (Builder $query, array $data): Builder => $query
-                        ->withOperationalProblem($data['value'] ?? null)),
+                    ->query(function (Builder $query, array $data): Builder {
+                        $problem = $data['value'] ?? null;
+
+                        return filled($problem)
+                            ? $query->operationallyActive()->withOperationalProblem($problem)
+                            : $query;
+                    }),
 
                 SelectFilter::make('status')
                     ->label('Статус заказа')
                     ->options($statusNames),
+
+                SelectFilter::make('lead_relevance')
+                    ->label('Актуальность заявки')
+                    ->options([
+                        'stale' => 'Старая без реакции',
+                        'current' => 'Новая до '.Order::staleLeadDays().' дней',
+                    ])
+                    ->query(function (Builder $query, array $data): Builder {
+                        return match ($data['value'] ?? null) {
+                            'stale' => $query->staleUnprocessed(),
+                            'current' => $query
+                                ->where('status', 'new')
+                                ->where(fn (Builder $payment): Builder => $payment
+                                    ->whereNull('payment_status')
+                                    ->orWhere('payment_status', '!=', 'paid'))
+                                ->where('created_at', '>', now()->subDays(Order::staleLeadDays())),
+                            default => $query,
+                        };
+                    }),
 
                 SelectFilter::make('payment_type')
                     ->label('Способ оплаты')
@@ -485,6 +516,23 @@ class OrdersTable
                         ->color('success')
                         ->visible(fn ($record) => in_array($record->status, ['new', 'confirmed', 'processing', 'shipped']))
                         ->action(fn ($record) => $record->update(['status' => 'delivered'])),
+                    Action::make('markIrrelevant')
+                        ->label('Неактуальна')
+                        ->icon('heroicon-o-archive-box')
+                        ->color('gray')
+                        ->visible(fn (Order $record): bool => $record->status === 'new' && $record->payment_status !== 'paid')
+                        ->form([
+                            Textarea::make('reason')
+                                ->label('Почему заявка неактуальна')
+                                ->placeholder('Например: клиент отказался, не удалось связаться, тестовая заявка')
+                                ->rows(3)
+                                ->minLength(3)
+                                ->maxLength(1000)
+                                ->required(),
+                        ])
+                        ->modalHeading('Отметить заявку неактуальной')
+                        ->modalDescription('Заказ не удаляется: он перейдёт в статус «Отменён», а причина и автор сохранятся в истории.')
+                        ->action(fn (Order $record, array $data) => self::markIrrelevant($record, $data['reason'])),
                     EditAction::make(),
                 ]),
             ])
@@ -493,8 +541,54 @@ class OrdersTable
                     ->label('Экспорт')
                     ->exporter(OrderExporter::class),
                 BulkActionGroup::make([
-                    DeleteBulkAction::make(),
+                    BulkAction::make('markIrrelevant')
+                        ->label('Отметить неактуальными')
+                        ->icon('heroicon-o-archive-box')
+                        ->color('gray')
+                        ->form([
+                            Textarea::make('reason')
+                                ->label('Общая причина')
+                                ->helperText('Будут изменены только новые неоплаченные заявки. Остальные выбранные заказы система пропустит.')
+                                ->rows(3)
+                                ->minLength(3)
+                                ->maxLength(1000)
+                                ->required(),
+                        ])
+                        ->requiresConfirmation()
+                        ->action(function (Collection $records, array $data): void {
+                            $changed = 0;
+                            $skipped = 0;
+
+                            $records->each(function (Order $record) use ($data, &$changed, &$skipped): void {
+                                if ($record->status !== 'new' || $record->payment_status === 'paid') {
+                                    $skipped++;
+
+                                    return;
+                                }
+
+                                self::markIrrelevant($record, $data['reason']);
+                                $changed++;
+                            });
+
+                            Notification::make()
+                                ->title('Заявки обработаны')
+                                ->body("Отмечено неактуальными: {$changed}. Пропущено: {$skipped}.")
+                                ->color($skipped > 0 ? 'warning' : 'success')
+                                ->send();
+                        })
+                        ->deselectRecordsAfterCompletion(),
                 ]),
             ]);
+    }
+
+    private static function markIrrelevant(Order $order, string $reason): void
+    {
+        $reason = trim($reason);
+        $note = '['.now()->timezone('Europe/Minsk')->format('d.m.Y H:i').'] Неактуальная заявка: '.$reason;
+        $adminComment = filled($order->admin_comment)
+            ? rtrim($order->admin_comment)."\n\n".$note
+            : $note;
+
+        $order->transitionTo('cancelled', $reason, ['admin_comment' => $adminComment]);
     }
 }

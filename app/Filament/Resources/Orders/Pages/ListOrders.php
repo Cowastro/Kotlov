@@ -38,16 +38,24 @@ class ListOrders extends ListRecords
             'cancelled' => 'danger',
         ];
 
-        $unassigned = Order::whereNull('assigned_to')->count();
+        $unassigned = Order::query()
+            ->operationallyActive()
+            ->whereNull('manager_id')
+            ->where(fn (Builder $query): Builder => $query
+                ->whereNull('assigned_to')
+                ->orWhere('assigned_to', ''))
+            ->count();
         $myCount = Order::where('manager_id', auth()->id())->count();
         $attentionCount = Order::query()->withOperationalProblem('needs_attention')->count();
-        $missingPriceCount = Order::query()->withOperationalProblem('missing_price')->count();
-        $missingSupplierCount = Order::query()->withOperationalProblem('missing_supplier')->count();
+        $missingPriceCount = Order::query()->operationallyActive()->withOperationalProblem('missing_price')->count();
+        $missingSupplierCount = Order::query()->operationallyActive()->withOperationalProblem('missing_supplier')->count();
         $marginRiskCount = Order::query()
+            ->operationallyActive()
             ->where(fn (Builder $query): Builder => $query
                 ->withOperationalProblem('negative_margin')
                 ->orWhere(fn (Builder $part): Builder => $part->withOperationalProblem('low_margin')))
             ->count();
+        $staleLeadCount = Order::query()->staleUnprocessed()->count();
 
         $tabs = [
             'all' => Tab::make('Все')
@@ -59,21 +67,28 @@ class ListOrders extends ListRecords
                 ->badge($attentionCount ?: null)
                 ->badgeColor('danger'),
 
+            'stale_leads' => Tab::make('Старые без реакции')
+                ->icon('heroicon-o-clock')
+                ->modifyQueryUsing(fn (Builder $query) => $query->staleUnprocessed())
+                ->badge($staleLeadCount ?: null)
+                ->badgeColor('warning'),
+
             'missing_price' => Tab::make('Без входной цены')
                 ->icon('heroicon-o-banknotes')
-                ->modifyQueryUsing(fn (Builder $query) => $query->withOperationalProblem('missing_price'))
+                ->modifyQueryUsing(fn (Builder $query) => $query->operationallyActive()->withOperationalProblem('missing_price'))
                 ->badge($missingPriceCount ?: null)
                 ->badgeColor('danger'),
 
             'missing_supplier' => Tab::make('Без поставщика')
                 ->icon('heroicon-o-truck')
-                ->modifyQueryUsing(fn (Builder $query) => $query->withOperationalProblem('missing_supplier'))
+                ->modifyQueryUsing(fn (Builder $query) => $query->operationallyActive()->withOperationalProblem('missing_supplier'))
                 ->badge($missingSupplierCount ?: null)
                 ->badgeColor('danger'),
 
             'margin_risk' => Tab::make('Маржа под риском')
                 ->icon('heroicon-o-chart-bar')
                 ->modifyQueryUsing(fn (Builder $query): Builder => $query
+                    ->operationallyActive()
                     ->where(fn (Builder $part): Builder => $part
                         ->withOperationalProblem('negative_margin')
                         ->orWhere(fn (Builder $lowMargin): Builder => $lowMargin->withOperationalProblem('low_margin'))))
@@ -88,7 +103,12 @@ class ListOrders extends ListRecords
 
             'unassigned' => Tab::make('Без ответственного')
                 ->icon('heroicon-o-user-minus')
-                ->modifyQueryUsing(fn (Builder $query) => $query->whereNull('assigned_to'))
+                ->modifyQueryUsing(fn (Builder $query) => $query
+                    ->operationallyActive()
+                    ->whereNull('manager_id')
+                    ->where(fn (Builder $owner): Builder => $owner
+                        ->whereNull('assigned_to')
+                        ->orWhere('assigned_to', '')))
                 ->badge($unassigned ?: null)
                 ->badgeColor('danger'),
         ];

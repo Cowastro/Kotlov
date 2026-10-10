@@ -15,6 +15,8 @@ use Illuminate\Support\Facades\DB;
 
 class Order extends Model
 {
+    private ?string $pendingStatusHistoryComment = null;
+
     /** @var array<string, mixed>|null */
     private ?array $supplySummaryCache = null;
 
@@ -120,9 +122,52 @@ class Order extends Model
                     'user_id' => $userId,
                     'status_from' => $order->getOriginal('status'),
                     'status_to' => $order->status,
+                    'comment' => $order->pendingStatusHistoryComment,
                 ]);
             }
         });
+    }
+
+    public static function staleLeadDays(): int
+    {
+        return max(1, (int) config('shop.order_management.stale_lead_days', 30));
+    }
+
+    public function scopeStaleUnprocessed(Builder $query, ?int $days = null): Builder
+    {
+        $days ??= self::staleLeadDays();
+
+        return $query
+            ->where('status', 'new')
+            ->where(fn (Builder $payment): Builder => $payment
+                ->whereNull('payment_status')
+                ->orWhere('payment_status', '!=', 'paid'))
+            ->where('created_at', '<=', now()->subDays($days));
+    }
+
+    public function scopeOperationallyActive(Builder $query): Builder
+    {
+        return $query->whereNotIn('status', ['delivered', 'completed', 'cancelled']);
+    }
+
+    public function isStaleUnprocessed(?int $days = null): bool
+    {
+        $days ??= self::staleLeadDays();
+
+        return $this->status === 'new'
+            && $this->payment_status !== 'paid'
+            && $this->created_at?->lte(now()->subDays($days)) === true;
+    }
+
+    public function transitionTo(string $status, ?string $historyComment = null, array $attributes = []): bool
+    {
+        $this->pendingStatusHistoryComment = $historyComment;
+
+        try {
+            return $this->update([...$attributes, 'status' => $status]);
+        } finally {
+            $this->pendingStatusHistoryComment = null;
+        }
     }
 
     public function user(): BelongsTo
@@ -241,7 +286,7 @@ class Order extends Model
                 '(select count(distinct snapshot_items.supply_supplier_id) from order_items as snapshot_items where snapshot_items.order_id = orders.id and snapshot_items.supply_captured_at is not null and snapshot_items.supply_supplier_id is not null) > 1',
             ),
             'unassigned' => $query
-                ->whereNotIn('status', ['delivered', 'completed', 'cancelled'])
+                ->operationallyActive()
                 ->whereNull('manager_id')
                 ->where(fn (Builder $owner): Builder => $owner
                     ->whereNull('assigned_to')
@@ -255,11 +300,13 @@ class Order extends Model
                 fn (Builder $requests): Builder => $requests->where('status', 'rejected'),
             ),
             'payment_failed' => $query->where('payment_status', 'failed'),
-            'needs_attention' => $query->where(function (Builder $attention): void {
-                foreach (array_keys(array_diff_key(self::OPERATIONAL_PROBLEMS, ['needs_attention' => true])) as $problem) {
-                    $attention->orWhere(fn (Builder $part): Builder => $part->withOperationalProblem($problem));
-                }
-            }),
+            'needs_attention' => $query
+                ->operationallyActive()
+                ->where(function (Builder $attention): void {
+                    foreach (array_keys(array_diff_key(self::OPERATIONAL_PROBLEMS, ['needs_attention' => true])) as $problem) {
+                        $attention->orWhere(fn (Builder $part): Builder => $part->withOperationalProblem($problem));
+                    }
+                }),
             default => $query,
         };
     }
