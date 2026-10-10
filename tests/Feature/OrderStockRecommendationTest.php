@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Filament\Pages\StockDemandAnalytics;
+use App\Filament\Resources\IntegrationProducts\IntegrationProductResource;
 use App\Models\Category;
 use App\Models\IntegrationProduct;
 use App\Models\IntegrationSource;
@@ -174,18 +175,34 @@ class OrderStockRecommendationTest extends TestCase
         $this->assertNull($notLinkedRow['current_own_stock']);
         $this->assertNull($notLinkedRow['recommended_purchase']);
         $this->assertSame('not_linked', $notLinkedRow['stock_data_status']);
+        $this->assertNull($notLinkedRow['stock_integration_product_id']);
         $this->assertStringContainsString('Решение о закупке заблокировано', $notLinkedRow['explanation']);
         $this->assertSame(0.0, $staleRow['current_own_stock']);
         $this->assertNull($staleRow['recommended_purchase']);
         $this->assertSame('stale', $staleRow['stock_data_status']);
+        $this->assertSame(
+            IntegrationProduct::query()->where('external_id', 'stale-onec-offer')->value('id'),
+            $staleRow['stock_integration_product_id'],
+        );
 
         $manager = User::factory()->create(['role' => 'manager', 'is_active' => true]);
+        $expectedSearchUrl = IntegrationProductResource::getUrl('index', [
+            'tab' => 'all',
+            'tableSearch' => $notLinked->sku,
+        ]);
+        $expectedEditUrl = IntegrationProductResource::getUrl('edit', [
+            'record' => $staleRow['stock_integration_product_id'],
+        ]);
         $this->actingAs($manager)
             ->get(StockDemandAnalytics::getUrl(panel: 'admin'))
             ->assertOk()
             ->assertSeeText('Нет привязки к 1С')
             ->assertSeeText('Данные остатка устарели')
-            ->assertSeeText('После проверки');
+            ->assertSeeText('После проверки')
+            ->assertSeeText('Найти и привязать')
+            ->assertSeeText('Открыть связь 1С')
+            ->assertSee($expectedSearchUrl)
+            ->assertSee($expectedEditUrl);
     }
 
     private function orderWithItem(

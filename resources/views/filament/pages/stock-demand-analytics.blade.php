@@ -37,6 +37,8 @@
         .stock-badge { display: inline-flex; align-items: center; border: 1px solid currentColor; border-radius: 999px; padding: 2px 7px; font-size: 10px; font-weight: 800; white-space: nowrap; }
         .stock-badge[data-ready="1"] { color: #16a34a; }
         .stock-badge[data-ready="0"] { color: #d97706; }
+        .stock-link { display: inline-flex; margin-top: 5px; color: #2563eb; font-size: 11px; font-weight: 800; text-decoration: none; }
+        .stock-link:hover { text-decoration: underline; }
         .stock-explanation { min-width: 360px; max-width: 520px; line-height: 1.4; }
         .stock-footer { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 11px 15px; color: var(--sa-muted); font-size: 12px; }
         .stock-pager { display: flex; align-items: center; gap: 8px; }
@@ -97,6 +99,11 @@
                                     {{ $row['stock_confirmed_at']?->timezone('Europe/Minsk')->format('d.m.Y H:i') ?? 'нет времени подтверждения' }}
                                     @if ($row['stock_offer_count'] > 1) · {{ $row['stock_offer_count'] }} позиций 1С @endif
                                 </div>
+                                @if (! $row['stock_data_ready'])
+                                    <a class="stock-link" href="{{ $this->matchingUrl($row) }}" target="_blank" rel="noopener">
+                                        {{ $this->matchingActionLabel($row) }} ↗
+                                    </a>
+                                @endif
                             </td>
                             <td class="stock-number">{{ $row['stock_coverage_days'] === null ? '—' : number_format($row['stock_coverage_days'], 0, ',', ' ') . ' дн.' }}</td>
                             <td class="stock-number">{{ $row['target_stock'] }}</td>

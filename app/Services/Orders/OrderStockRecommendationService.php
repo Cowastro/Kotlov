@@ -49,6 +49,7 @@ class OrderStockRecommendationService
                     'label' => $source ? 'Нет привязки к 1С' : 'Источник не найден',
                     'confirmed_at' => null,
                     'offer_count' => 0,
+                    'integration_product_id' => null,
                 ]);
                 $currentStock = $stockEvidence['quantity'];
                 $stockCoverageDays = $dailyVelocity > 0 && $currentStock !== null
@@ -93,6 +94,7 @@ class OrderStockRecommendationService
                     'stock_data_ready' => $stockDataReady,
                     'stock_confirmed_at' => $stockEvidence['confirmed_at'],
                     'stock_offer_count' => $stockEvidence['offer_count'],
+                    'stock_integration_product_id' => $stockEvidence['integration_product_id'],
                     'target_stock' => $targetStock,
                     'recommended_purchase' => $recommendedPurchase,
                     'stock_state' => $stockState,
@@ -153,7 +155,7 @@ class OrderStockRecommendationService
         return "За {$recentDays} дней: {$recentOrders} заказ(а), {$recentQuantity} шт.; {$demand} шт./мес. Цель {$targetStock} шт. — {$basis}. На складе {$stock} шт.; рекомендуется добавить {$recommendedPurchase} шт.";
     }
 
-    /** @return Collection<int, array{quantity:?float,status:string,label:string,confirmed_at:mixed,offer_count:int}> */
+    /** @return Collection<int, array{quantity:?float,status:string,label:string,confirmed_at:mixed,offer_count:int,integration_product_id:?int}> */
     private function ownStockEvidenceByProduct(?IntegrationSource $source): Collection
     {
         if (! $source) {
@@ -164,7 +166,7 @@ class OrderStockRecommendationService
             ->where('integration_source_id', $source->id)
             ->where('match_status', 'matched')
             ->whereNotNull('product_id')
-            ->get(['product_id', 'stock_quantity', 'stock_confirmed_at'])
+            ->get(['id', 'product_id', 'stock_quantity', 'stock_confirmed_at'])
             ->groupBy('product_id')
             ->map(function (Collection $offers) use ($source): array {
                 $hasMissingStock = $offers->contains(fn (IntegrationProduct $offer): bool => $offer->stock_quantity === null);
@@ -186,6 +188,9 @@ class OrderStockRecommendationService
                     'label' => $label,
                     'confirmed_at' => $offers->max('stock_confirmed_at'),
                     'offer_count' => $offers->count(),
+                    'integration_product_id' => $offers->count() === 1
+                        ? (int) $offers->first()->getKey()
+                        : null,
                 ];
             });
     }

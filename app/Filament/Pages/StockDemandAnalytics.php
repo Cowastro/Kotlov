@@ -2,6 +2,7 @@
 
 namespace App\Filament\Pages;
 
+use App\Filament\Resources\IntegrationProducts\IntegrationProductResource;
 use App\Models\IntegrationSource;
 use App\Services\Orders\OrderStockRecommendationService;
 use BackedEnum;
@@ -135,6 +136,29 @@ class StockDemandAnalytics extends Page
             'confirmed' => 'Подтверждено 1С',
             'problems' => 'Нужно проверить',
         ];
+    }
+
+    public function matchingUrl(array $row): string
+    {
+        if (filled($row['stock_integration_product_id'] ?? null)) {
+            return IntegrationProductResource::getUrl('edit', [
+                'record' => $row['stock_integration_product_id'],
+            ]);
+        }
+
+        $search = trim((string) ($row['sku'] ?: $row['name']));
+
+        return IntegrationProductResource::getUrl('index', [
+            'tab' => 'all',
+            'tableSearch' => $search,
+        ]);
+    }
+
+    public function matchingActionLabel(array $row): string
+    {
+        return filled($row['stock_integration_product_id'] ?? null)
+            ? 'Открыть связь 1С'
+            : 'Найти и привязать';
     }
 
     public function summary(): array
