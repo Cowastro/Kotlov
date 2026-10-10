@@ -40,6 +40,7 @@ class IntegrationSource extends Model
                 'price_tax_mode' => self::PRICE_TAX_EXCLUSIVE,
                 'vat_rate' => 20,
                 'warehouse_label' => 'Основной',
+                'warehouse_external_id' => null,
                 'b2b_enabled' => false,
                 'b2b_category_ids' => [],
                 'order_interval_minutes' => 5,
@@ -219,6 +220,20 @@ class IntegrationSource extends Model
         return max(0, (int) data_get($this->settings, 'all_stock_positive_warning_min_products', 20));
     }
 
+    public function warehouseExternalId(): ?string
+    {
+        $externalId = trim((string) data_get($this->settings, 'warehouse_external_id'));
+
+        return $externalId !== '' ? $externalId : null;
+    }
+
+    public function warehouseLabel(): string
+    {
+        $label = trim((string) data_get($this->settings, 'warehouse_label', 'Основной'));
+
+        return $label !== '' ? $label : 'Основной';
+    }
+
     public function matchingSupplierCode(): string
     {
         $supplierCode = trim((string) data_get($this->settings, 'matching_supplier_code'));
@@ -264,6 +279,11 @@ class IntegrationSource extends Model
     public function exchangeRuns(): HasMany
     {
         return $this->hasMany(IntegrationExchangeRun::class);
+    }
+
+    public function warehouses(): HasMany
+    {
+        return $this->hasMany(IntegrationWarehouse::class);
     }
 
     public function orderDeliveries(): HasMany

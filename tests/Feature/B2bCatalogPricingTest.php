@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\Category;
 use App\Models\IntegrationProduct;
 use App\Models\IntegrationSource;
+use App\Models\IntegrationWarehouse;
 use App\Models\Product;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -155,6 +156,12 @@ class B2bCatalogPricingTest extends TestCase
     {
         [$product, $user] = $this->catalogFixture(approved: true);
         $source = IntegrationProduct::query()->where('product_id', $product->id)->firstOrFail()->source;
+        IntegrationWarehouse::query()->create([
+            'integration_source_id' => $source->id,
+            'external_id' => 'main-warehouse-id',
+            'name' => 'Основной',
+            'last_seen_at' => now(),
+        ]);
         $settings = $source->settings;
         $settings['b2b_category_ids'] = [];
         $source->updateQuietly(['settings' => $settings]);
@@ -241,7 +248,11 @@ class B2bCatalogPricingTest extends TestCase
             ->get('/admin/integration-sources/'.$source->id.'/edit')
             ->assertOk()
             ->assertSeeText('Разрешённые категории партнёрского каталога')
-            ->assertSeeText('Пустой список ничего не публикует');
+            ->assertSeeText('Пустой список ничего не публикует')
+            ->assertSeeText('Остатки и склад')
+            ->assertSeeText('Склад из CommerceML')
+            ->assertSeeText('Склады, найденные в последних обменах')
+            ->assertSeeText('При нескольких складах выберите точный ID');
     }
 
     public function test_pilot_migration_selects_chimney_branch_without_overwriting_manual_scope(): void

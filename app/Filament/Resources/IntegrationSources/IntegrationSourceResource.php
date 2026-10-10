@@ -232,10 +232,55 @@ class IntegrationSourceResource extends Resource
                         ->suffix('%')
                         ->default(20)
                         ->required(),
+                ])->columns(2)
+                ->columnSpan([
+                    'default' => 1,
+                    'xl' => 4,
+                ]),
+            Section::make('Остатки и склад')
+                ->description('Сайт не суммирует склады 1С. Если предложение содержит складскую детализацию, используется только выбранный склад; при неоднозначности остаток становится неизвестным и не публикуется в B2B.')
+                ->schema([
                     TextInput::make('settings.warehouse_label')
-                        ->label('Название склада')
+                        ->label('Название основного склада')
                         ->default('Основной')
-                        ->maxLength(100),
+                        ->maxLength(100)
+                        ->helperText('Используется для понятного отображения и автоматического выбора склада с таким же названием.'),
+                    Select::make('settings.warehouse_external_id')
+                        ->label('Склад из CommerceML')
+                        ->options(fn (?IntegrationSource $record): array => $record
+                            ? $record->warehouses()
+                                ->orderBy('name')
+                                ->get()
+                                ->mapWithKeys(fn ($warehouse): array => [
+                                    $warehouse->external_id => filled($warehouse->name)
+                                        ? $warehouse->name.' · '.$warehouse->external_id
+                                        : $warehouse->external_id,
+                                ])
+                                ->all()
+                            : [])
+                        ->searchable()
+                        ->placeholder('Автоматически по названию или единственный склад')
+                        ->helperText('Оставьте пустым только если 1С уже выгружает один склад. При нескольких складах выберите точный ID после первого обмена.'),
+                    Placeholder::make('observed_warehouses')
+                        ->label('Склады, найденные в последних обменах')
+                        ->content(function (?IntegrationSource $record): string {
+                            if (! $record) {
+                                return 'Появятся после первого обмена CommerceML.';
+                            }
+
+                            $warehouses = $record->warehouses()
+                                ->orderBy('name')
+                                ->get()
+                                ->map(fn ($warehouse): string => filled($warehouse->name)
+                                    ? $warehouse->name.' ['.$warehouse->external_id.']'
+                                    : $warehouse->external_id)
+                                ->all();
+
+                            return $warehouses === []
+                                ? '1С пока не передала складскую детализацию. Используется общее количество из выгрузки.'
+                                : implode(' · ', $warehouses);
+                        })
+                        ->columnSpanFull(),
                 ])->columns(2)
                 ->columnSpan([
                     'default' => 1,

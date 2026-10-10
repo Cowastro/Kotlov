@@ -139,6 +139,7 @@ class IntegrationIssueResource extends Resource
                     'product_attention' => 'Товар требует решения',
                     'product_identity_collision' => 'Возможный дубль товара',
                     'catalog_all_stock_positive' => 'Все товары числятся в наличии',
+                    'catalog_warehouse_unresolved' => 'Не выбран склад остатков',
                     'order_not_exported' => 'Заказ не передан',
                     'order_no_1c_response' => 'Нет ответа 1С',
                     'order_status_conflict' => 'Конфликт статусов заказа',

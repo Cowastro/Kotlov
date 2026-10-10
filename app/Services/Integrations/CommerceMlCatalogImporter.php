@@ -5,6 +5,7 @@ namespace App\Services\Integrations;
 use App\Models\IntegrationCategory;
 use App\Models\IntegrationProduct;
 use App\Models\IntegrationSource;
+use App\Models\IntegrationWarehouse;
 use App\Models\Product;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -40,6 +41,13 @@ class CommerceMlCatalogImporter
     /** @var array<string, array<int, int>> */
     private array $tokenIndex = [];
 
+    /** @var array<string, string|null> */
+    private array $warehouseNamesById = [];
+
+    private ?string $selectedWarehouseExternalId = null;
+
+    private bool $strictWarehouseSelection = false;
+
     /**
      * Import CommerceML into a staging catalogue. This method never mutates products.
      *
@@ -49,6 +57,9 @@ class CommerceMlCatalogImporter
     {
         $this->createdExternalIds = [];
         $this->updatedExternalIds = [];
+        $this->warehouseNamesById = [];
+        $this->selectedWarehouseExternalId = null;
+        $this->strictWarehouseSelection = false;
         $documents = $this->parseDocuments($xml);
 
         $source = IntegrationSource::query()->firstOrCreate(
@@ -68,9 +79,16 @@ class CommerceMlCatalogImporter
             'suggested' => 0,
             'ambiguous' => 0,
             'unmatched' => 0,
+            'warehouses_detected' => 0,
+            'warehouse_stock_selected' => 0,
+            'warehouse_stock_feed_total' => 0,
+            'warehouse_stock_unresolved' => 0,
+            'warehouse_stock_omitted' => 0,
         ];
 
         DB::transaction(function () use ($documents, $source, &$stats): void {
+            $this->discoverWarehouses($source, $documents, $stats);
+
             foreach ($documents as $document) {
                 foreach ($document->xpath('/*[local-name()="КоммерческаяИнформация"]/*[local-name()="Классификатор"]/*[local-name()="Группы"]/*[local-name()="Группа"]') ?: [] as $node) {
                     $this->stageCategory($source, $node, null, null, $stats);
@@ -269,16 +287,21 @@ class CommerceMlCatalogImporter
         $price = $this->text($node, './/*[local-name()="ЦенаЗаЕдиницу"]');
         $normalizedPrice = str_replace(',', '.', $price);
         $hasPrice = is_numeric($normalizedPrice);
-        $quantity = $this->text($node, './*[local-name()="Количество"]');
-        $normalizedQuantity = str_replace(',', '.', $quantity);
-        $hasQuantity = is_numeric($normalizedQuantity);
+        $stock = $this->offerStock($node);
+        $hasQuantity = $stock['resolved'];
+        $normalizedQuantity = $stock['quantity'];
+        $stats[$stock['counter']]++;
         $attributes = [
             'external_sku' => $item->external_sku ?: ($this->text($node, './*[local-name()="Артикул"]') ?: null),
             'name' => $item->name ?: ($this->text($node, './*[local-name()="Наименование"]') ?: null),
-            'stock_quantity' => $hasQuantity ? $normalizedQuantity : $item->stock_quantity,
+            'stock_quantity' => $hasQuantity
+                ? $normalizedQuantity
+                : ($stock['invalidate'] ? null : $item->stock_quantity),
             'last_seen_at' => now(),
             'last_offer_seen_at' => now(),
-            'stock_confirmed_at' => $hasQuantity ? now() : $item->stock_confirmed_at,
+            'stock_confirmed_at' => $hasQuantity
+                ? now()
+                : ($stock['invalidate'] ? null : $item->stock_confirmed_at),
         ];
 
         if ($hasPrice) {
@@ -296,6 +319,154 @@ class CommerceMlCatalogImporter
         $item->save();
         $this->trackStagingRow($item->external_id, $alreadyExists);
         $stats['offers']++;
+    }
+
+    /**
+     * @param  array<int, SimpleXMLElement>  $documents
+     * @param  array<string, int>  $stats
+     */
+    private function discoverWarehouses(IntegrationSource $source, array $documents, array &$stats): void
+    {
+        foreach ($documents as $document) {
+            foreach ($document->xpath('//*[local-name()="Склады"]/*[local-name()="Склад"]') ?: [] as $warehouse) {
+                $externalId = $this->warehouseExternalId($warehouse);
+                if ($externalId === '') {
+                    continue;
+                }
+
+                $name = $this->text($warehouse, './*[local-name()="Наименование"]') ?: null;
+                if (! array_key_exists($externalId, $this->warehouseNamesById) || $name !== null) {
+                    $this->warehouseNamesById[$externalId] = $name;
+                }
+            }
+        }
+
+        foreach ($this->warehouseNamesById as $externalId => $name) {
+            $warehouse = IntegrationWarehouse::query()->firstOrNew([
+                'integration_source_id' => $source->id,
+                'external_id' => $externalId,
+            ]);
+            if ($name !== null || ! $warehouse->exists) {
+                $warehouse->name = $name;
+            }
+            $warehouse->last_seen_at = now();
+            $warehouse->save();
+        }
+
+        $stats['warehouses_detected'] = count($this->warehouseNamesById);
+        $this->selectedWarehouseExternalId = $source->warehouseExternalId()
+            ?? $this->warehouseIdByLabel($source->warehouseLabel())
+            ?? (count($this->warehouseNamesById) === 1
+                ? array_key_first($this->warehouseNamesById)
+                : null);
+        $this->strictWarehouseSelection = $source->warehouseExternalId() !== null
+            || count($this->warehouseNamesById) > 1;
+    }
+
+    private function warehouseIdByLabel(string $label): ?string
+    {
+        $normalizedLabel = mb_strtolower(trim($label));
+        if ($normalizedLabel === '') {
+            return null;
+        }
+
+        $matches = array_keys(array_filter(
+            $this->warehouseNamesById,
+            fn (?string $name): bool => $name !== null
+                && mb_strtolower(trim($name)) === $normalizedLabel,
+        ));
+
+        return count($matches) === 1 ? $matches[0] : null;
+    }
+
+    /** @return array{resolved:bool,quantity:?float,counter:string,invalidate:bool} */
+    private function offerStock(SimpleXMLElement $node): array
+    {
+        $warehouseQuantities = [];
+        foreach ($node->xpath('./*[local-name()="Склады"]/*[local-name()="Склад"]') ?: [] as $warehouse) {
+            $externalId = $this->warehouseExternalId($warehouse);
+            $quantity = $this->warehouseQuantity($warehouse);
+            if ($externalId !== '' && $quantity !== null) {
+                $warehouseQuantities[$externalId] = ($warehouseQuantities[$externalId] ?? 0) + $quantity;
+            }
+        }
+
+        if ($warehouseQuantities !== []) {
+            if ($this->selectedWarehouseExternalId === null) {
+                return [
+                    'resolved' => false,
+                    'quantity' => null,
+                    'counter' => 'warehouse_stock_unresolved',
+                    'invalidate' => true,
+                ];
+            }
+
+            return [
+                'resolved' => true,
+                'quantity' => (float) ($warehouseQuantities[$this->selectedWarehouseExternalId] ?? 0),
+                'counter' => 'warehouse_stock_selected',
+                'invalidate' => false,
+            ];
+        }
+
+        $quantity = $this->numeric($this->text($node, './*[local-name()="Количество"]'));
+
+        if ($quantity !== null && $this->strictWarehouseSelection) {
+            return [
+                'resolved' => false,
+                'quantity' => null,
+                'counter' => 'warehouse_stock_unresolved',
+                'invalidate' => true,
+            ];
+        }
+
+        return $quantity === null
+            ? [
+                'resolved' => false,
+                'quantity' => null,
+                'counter' => 'warehouse_stock_omitted',
+                'invalidate' => false,
+            ]
+            : [
+                'resolved' => true,
+                'quantity' => $quantity,
+                'counter' => 'warehouse_stock_feed_total',
+                'invalidate' => false,
+            ];
+    }
+
+    private function warehouseExternalId(SimpleXMLElement $warehouse): string
+    {
+        return $this->attribute($warehouse, 'ИдСклада')
+            ?: $this->text($warehouse, './*[local-name()="ИдСклада"]')
+            ?: $this->text($warehouse, './*[local-name()="Ид"]');
+    }
+
+    private function warehouseQuantity(SimpleXMLElement $warehouse): ?float
+    {
+        return $this->numeric(
+            $this->attribute($warehouse, 'КоличествоНаСкладе')
+                ?: $this->text($warehouse, './*[local-name()="КоличествоНаСкладе"]')
+                ?: $this->text($warehouse, './*[local-name()="Количество"]'),
+        );
+    }
+
+    private function attribute(SimpleXMLElement $node, string $name): string
+    {
+        foreach ($node->attributes() as $attributeName => $value) {
+            if ((string) $attributeName === $name) {
+                return trim((string) $value);
+            }
+        }
+
+        return '';
+    }
+
+    private function numeric(string $value): ?float
+    {
+        $normalized = str_replace(',', '.', trim($value));
+
+        return is_numeric($normalized) ? (float) $normalized : null;
     }
 
     private function trackStagingRow(string $externalId, bool $alreadyExists): void

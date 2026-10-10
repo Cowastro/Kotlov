@@ -64,6 +64,7 @@ class IntegrationIssueDetector
                     }
 
                     $this->detectAllPositiveStock($source, $seen, $opened, $openedIssueIds);
+                    $this->detectUnresolvedWarehouseStock($source, $seen, $opened, $openedIssueIds);
 
                     if ($source->exportsOrders()) {
                         $this->detectOrderDeliveryProblems($source, $now, $seen, $opened, $openedIssueIds);
@@ -339,6 +340,44 @@ class IntegrationIssueDetector
         return abs($quantity - round($quantity)) < 0.0005
             ? number_format($quantity, 0, ',', ' ')
             : rtrim(rtrim(number_format($quantity, 3, ',', ' '), '0'), ',');
+    }
+
+    /** @param array<int, string> $seen */
+    private function detectUnresolvedWarehouseStock(
+        IntegrationSource $source,
+        array &$seen,
+        int &$opened,
+        array &$openedIssueIds,
+    ): void {
+        $run = $source->exchangeRuns()
+            ->where('direction', 'inbound')
+            ->where('operation', 'catalog')
+            ->where('status', 'success')
+            ->latest('finished_at')
+            ->latest('id')
+            ->first();
+        $count = (int) data_get($run?->summary, 'warehouse_stock_unresolved', 0);
+        if ($count === 0) {
+            return;
+        }
+
+        $this->report(
+            $seen,
+            $opened,
+            $openedIssueIds,
+            "source:{$source->id}:warehouse-unresolved",
+            'catalog_warehouse_unresolved',
+            'danger',
+            'Не определён склад для остатков',
+            $source->partnerName().": {$count} предложений не получили подтверждённый остаток, потому что складская детализация неоднозначна.",
+            source: $source,
+            context: [
+                'unresolved_offers' => $count,
+                'warehouse_label' => $source->warehouseLabel(),
+                'warehouse_external_id' => $source->warehouseExternalId(),
+                'run_id' => $run?->id,
+            ],
+        );
     }
 
     /** @param array<int, string> $seen */

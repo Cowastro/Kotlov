@@ -9,6 +9,7 @@ use App\Models\IntegrationExchangeRun;
 use App\Models\IntegrationIssue;
 use App\Models\IntegrationProduct;
 use App\Models\IntegrationSource;
+use App\Models\IntegrationWarehouse;
 use App\Models\Order;
 use App\Models\OrderIntegrationDelivery;
 use App\Models\OrderItem;
@@ -280,6 +281,18 @@ class OneCExchangeTest extends TestCase
             });
         }
 
+        if (! Schema::hasTable('integration_warehouses')) {
+            Schema::create('integration_warehouses', function (Blueprint $table) {
+                $table->id();
+                $table->unsignedBigInteger('integration_source_id');
+                $table->string('external_id');
+                $table->string('name')->nullable();
+                $table->timestamp('last_seen_at')->nullable();
+                $table->timestamps();
+                $table->unique(['integration_source_id', 'external_id']);
+            });
+        }
+
         if (! Schema::hasTable('supplier_product_mappings')) {
             Schema::create('supplier_product_mappings', function (Blueprint $table) {
                 $table->id();
@@ -341,7 +354,7 @@ class OneCExchangeTest extends TestCase
         }
 
         Schema::disableForeignKeyConstraints();
-        foreach (['integration_issues', 'integration_exchange_runs', 'order_integration_deliveries', 'integration_products', 'integration_categories', 'integration_sources', 'supplier_product_mappings', 'order_status_history', 'order_items', 'orders', 'products', 'categories'] as $table) {
+        foreach (['integration_issues', 'integration_exchange_runs', 'order_integration_deliveries', 'integration_products', 'integration_categories', 'integration_warehouses', 'integration_sources', 'supplier_product_mappings', 'order_status_history', 'order_items', 'orders', 'products', 'categories'] as $table) {
             DB::table($table)->delete();
         }
         Schema::enableForeignKeyConstraints();
@@ -769,6 +782,159 @@ XML;
             ->value('stock_confirmed_at'));
         $run = IntegrationExchangeRun::query()->latest('id')->firstOrFail();
         $this->assertSame(1, data_get($run->summary, 'stock_snapshot.zeroed'));
+    }
+
+    public function test_catalog_import_uses_only_the_explicitly_selected_commerceml_warehouse(): void
+    {
+        IntegrationSource::query()->create([
+            'code' => 'warehouse-explicit',
+            'name' => 'Складской источник',
+            'settings' => [
+                'warehouse_label' => 'Основной',
+                'warehouse_external_id' => 'warehouse-main',
+            ],
+        ]);
+
+        $xml = <<<'XML'
+<?xml version="1.0" encoding="UTF-8"?>
+<КоммерческаяИнформация>
+  <ПакетПредложений>
+    <Склады>
+      <Склад><Ид>warehouse-main</Ид><Наименование>Основной</Наименование></Склад>
+      <Склад><Ид>warehouse-reserve</Ид><Наименование>Резервный</Наименование></Склад>
+    </Склады>
+    <Предложения><Предложение>
+      <Ид>warehouse-product</Ид>
+      <Наименование>Товар по складам</Наименование>
+      <Количество>101</Количество>
+      <Склады>
+        <Склад ИдСклада="warehouse-main" КоличествоНаСкладе="2" />
+        <Склад ИдСклада="warehouse-reserve" КоличествоНаСкладе="99" />
+      </Склады>
+    </Предложение></Предложения>
+  </ПакетПредложений>
+</КоммерческаяИнформация>
+XML;
+
+        $stats = app(CommerceMlCatalogImporter::class)->import($xml, 'warehouse-explicit');
+
+        $this->assertDatabaseHas('integration_products', [
+            'external_id' => 'warehouse-product',
+            'stock_quantity' => 2,
+        ]);
+        $this->assertSame(2, $stats['warehouses_detected']);
+        $this->assertSame(1, $stats['warehouse_stock_selected']);
+        $this->assertSame(0, $stats['warehouse_stock_feed_total']);
+        $this->assertDatabaseHas('integration_warehouses', [
+            'external_id' => 'warehouse-main',
+            'name' => 'Основной',
+        ]);
+        $this->assertDatabaseHas('integration_warehouses', [
+            'external_id' => 'warehouse-reserve',
+            'name' => 'Резервный',
+        ]);
+    }
+
+    public function test_catalog_import_resolves_the_main_warehouse_by_its_name(): void
+    {
+        IntegrationSource::query()->create([
+            'code' => 'warehouse-by-name',
+            'name' => 'Источник с именами складов',
+            'settings' => ['warehouse_label' => 'Основной'],
+        ]);
+
+        $xml = <<<'XML'
+<?xml version="1.0" encoding="UTF-8"?>
+<КоммерческаяИнформация>
+  <ПакетПредложений>
+    <Склады>
+      <Склад><Ид>main-id</Ид><Наименование>Основной</Наименование></Склад>
+      <Склад><Ид>other-id</Ид><Наименование>Другой</Наименование></Склад>
+    </Склады>
+    <Предложения><Предложение>
+      <Ид>named-warehouse-product</Ид>
+      <Склады>
+        <Склад ИдСклада="main-id" КоличествоНаСкладе="3" />
+        <Склад ИдСклада="other-id" КоличествоНаСкладе="10" />
+      </Склады>
+    </Предложение></Предложения>
+  </ПакетПредложений>
+</КоммерческаяИнформация>
+XML;
+
+        $stats = app(CommerceMlCatalogImporter::class)->import($xml, 'warehouse-by-name');
+
+        $this->assertSame(3.0, (float) IntegrationProduct::query()
+            ->where('external_id', 'named-warehouse-product')
+            ->value('stock_quantity'));
+        $this->assertSame(1, $stats['warehouse_stock_selected']);
+    }
+
+    public function test_ambiguous_multiwarehouse_stock_is_unknown_instead_of_using_the_total(): void
+    {
+        IntegrationSource::query()->create([
+            'code' => 'warehouse-ambiguous',
+            'name' => 'Источник без выбранного склада',
+            'settings' => ['warehouse_label' => 'Основной'],
+        ]);
+
+        $xml = <<<'XML'
+<?xml version="1.0" encoding="UTF-8"?>
+<КоммерческаяИнформация>
+  <ПакетПредложений><Предложения><Предложение>
+    <Ид>ambiguous-warehouse-product</Ид>
+    <Количество>12</Количество>
+    <Склады>
+      <Склад ИдСклада="first" КоличествоНаСкладе="5" />
+      <Склад ИдСклада="second" КоличествоНаСкладе="7" />
+    </Склады>
+  </Предложение></Предложения></ПакетПредложений>
+</КоммерческаяИнформация>
+XML;
+
+        $stats = app(CommerceMlCatalogImporter::class)->import($xml, 'warehouse-ambiguous');
+        $product = IntegrationProduct::query()
+            ->where('external_id', 'ambiguous-warehouse-product')
+            ->firstOrFail();
+
+        $this->assertNull($product->stock_quantity);
+        $this->assertNull($product->stock_confirmed_at);
+        $this->assertSame(1, $stats['warehouse_stock_unresolved']);
+        $this->assertSame(0, $stats['warehouse_stock_feed_total']);
+        $this->assertSame(2, IntegrationWarehouse::query()
+            ->where('integration_source_id', $product->integration_source_id)
+            ->count());
+    }
+
+    public function test_explicit_warehouse_never_falls_back_to_an_unscoped_total(): void
+    {
+        IntegrationSource::query()->create([
+            'code' => 'warehouse-strict',
+            'name' => 'Источник со строгим складом',
+            'settings' => [
+                'warehouse_label' => 'Основной',
+                'warehouse_external_id' => 'main-id',
+            ],
+        ]);
+
+        $xml = <<<'XML'
+<?xml version="1.0" encoding="UTF-8"?>
+<КоммерческаяИнформация>
+  <ПакетПредложений><Предложения><Предложение>
+    <Ид>unscoped-total-product</Ид>
+    <Количество>50</Количество>
+  </Предложение></Предложения></ПакетПредложений>
+</КоммерческаяИнформация>
+XML;
+
+        $stats = app(CommerceMlCatalogImporter::class)->import($xml, 'warehouse-strict');
+        $product = IntegrationProduct::query()
+            ->where('external_id', 'unscoped-total-product')
+            ->firstOrFail();
+
+        $this->assertNull($product->stock_quantity);
+        $this->assertNull($product->stock_confirmed_at);
+        $this->assertSame(1, $stats['warehouse_stock_unresolved']);
     }
 
     public function test_catalog_complete_without_received_offers_never_zeros_stock(): void
@@ -3074,6 +3240,43 @@ XML;
         $resolved = $detector->scan();
 
         $this->assertSame(1, $resolved['resolved']);
+        $this->assertSame('resolved', $issue->fresh()->status);
+    }
+
+    public function test_issue_detector_opens_and_resolves_an_ambiguous_warehouse_warning(): void
+    {
+        $source = IntegrationSource::query()->create([
+            'code' => 'warehouse-issue-source',
+            'name' => 'Источник с неоднозначным складом',
+            'is_active' => true,
+            'settings' => [
+                'warehouse_label' => 'Основной',
+                'all_stock_positive_warning_min_products' => 0,
+            ],
+        ]);
+        $run = IntegrationExchangeRun::query()->create([
+            'integration_source_id' => $source->id,
+            'direction' => 'inbound',
+            'operation' => 'catalog',
+            'status' => 'success',
+            'started_at' => now()->subMinute(),
+            'finished_at' => now(),
+            'summary' => ['warehouse_stock_unresolved' => 2],
+        ]);
+
+        app(IntegrationIssueDetector::class)->scan();
+
+        $issue = IntegrationIssue::query()
+            ->where('type', 'catalog_warehouse_unresolved')
+            ->firstOrFail();
+        $this->assertSame('open', $issue->status);
+        $this->assertSame(2, $issue->context['unresolved_offers']);
+        $this->assertSame('Основной', $issue->context['warehouse_label']);
+        $this->assertSame('Выбрать точный склад CommerceML', app(IntegrationIssueAdvisor::class)->advise($issue)['title']);
+
+        $run->update(['summary' => ['warehouse_stock_unresolved' => 0]]);
+        app(IntegrationIssueDetector::class)->scan();
+
         $this->assertSame('resolved', $issue->fresh()->status);
     }
 
