@@ -22,8 +22,8 @@ return new class extends Migration
             $table->text('notes')->nullable();
             $table->timestamps();
 
-            $table->index(['supplier_id', 'created_at']);
-            $table->index(['integration_source_id', 'created_at']);
+            $table->index(['supplier_id', 'created_at'], 'channel_transition_supplier_created_idx');
+            $table->index(['integration_source_id', 'created_at'], 'channel_transition_source_created_idx');
         });
     }
 
