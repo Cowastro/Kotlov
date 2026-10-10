@@ -2,9 +2,12 @@
 
 namespace Tests\Feature;
 
+use App\Filament\Resources\IntegrationExchangeRuns\IntegrationExchangeRunResource;
 use App\Filament\Widgets\IntegrationHealthOverview;
+use App\Filament\Widgets\RecentIntegrationRuns;
 use App\Models\IntegrationExchangeRun;
 use App\Models\IntegrationMonitorHeartbeat;
+use App\Models\IntegrationProduct;
 use App\Models\IntegrationSource;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -65,5 +68,61 @@ class IntegrationHealthOverviewTest extends TestCase
             ->assertSeeText('Работают: 1 · требуют внимания: 1')
             ->assertSeeText('Монитор очереди')
             ->assertSeeText('Очередь проверяется каждую минуту');
+    }
+
+    public function test_widget_distinguishes_legacy_staging_from_an_empty_integration(): void
+    {
+        $admin = User::factory()->create([
+            'role' => 'admin',
+            'is_active' => true,
+        ]);
+        IntegrationSource::query()->update(['is_active' => false]);
+        $source = IntegrationSource::query()->create([
+            'code' => 'legacy-staging-widget-source',
+            'name' => 'Историческая 1С',
+            'is_active' => true,
+        ]);
+        IntegrationProduct::query()->create([
+            'integration_source_id' => $source->id,
+            'external_id' => 'legacy-widget-product',
+            'name' => 'Ранее полученный товар',
+            'last_seen_at' => now()->subHour(),
+        ]);
+
+        $this->actingAs($admin);
+
+        Livewire::test(IntegrationHealthOverview::class)
+            ->assertSeeText('Ожидает контрольный цикл')
+            ->assertSeeText('Позиций в буфере: 1 · запустите новый обмен для журнала')
+            ->assertDontSeeText('Обмен интеграций Нет данных');
+    }
+
+    public function test_empty_exchange_journal_explains_existing_staged_catalog(): void
+    {
+        $admin = User::factory()->create([
+            'role' => 'admin',
+            'is_active' => true,
+        ]);
+        $source = IntegrationSource::query()->create([
+            'code' => 'legacy-journal-source',
+            'name' => 'Историческая загрузка',
+            'is_active' => true,
+        ]);
+        IntegrationProduct::query()->create([
+            'integration_source_id' => $source->id,
+            'external_id' => 'legacy-journal-product',
+            'name' => 'Товар из прежней загрузки',
+        ]);
+
+        $this->actingAs($admin);
+
+        Livewire::test(RecentIntegrationRuns::class)
+            ->assertSeeText('Контролируемых сеансов ещё нет')
+            ->assertSeeText('Позиций в буфере прежней загрузки: 1');
+
+        $this->get(IntegrationExchangeRunResource::getUrl('index', panel: 'admin'))
+            ->assertOk()
+            ->assertSeeText('Контролируемых сеансов ещё нет')
+            ->assertSeeText('Позиций в буфере прежней загрузки: 1');
     }
 }

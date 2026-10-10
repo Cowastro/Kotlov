@@ -6,6 +6,7 @@ use App\Models\IntegrationExchangeRun;
 use App\Models\IntegrationProduct;
 use App\Models\IntegrationSource;
 use App\Models\Order;
+use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
 
 class IntegrationOperationsSummary
@@ -48,6 +49,13 @@ class IntegrationOperationsSummary
             ->where('status', 'success')
             ->latest('finished_at')
             ->first();
+        $stagedProductsCount = IntegrationProduct::query()
+            ->whereIn('integration_source_id', $activeSources->pluck('id'))
+            ->count();
+        $latestStagedAt = IntegrationProduct::query()
+            ->whereIn('integration_source_id', $activeSources->pluck('id'))
+            ->whereNotNull('last_seen_at')
+            ->max('last_seen_at');
 
         $health = $this->aggregateHealth($sourceHealths->pluck('health')->all());
         $attentionSources = $sourceHealths
@@ -63,6 +71,9 @@ class IntegrationOperationsSummary
             'attention_source_names' => $attentionSources->pluck('name')->all(),
             'latest_run' => $latestRun,
             'last_success' => $lastSuccess,
+            'staged_products_count' => $stagedProductsCount,
+            'latest_staged_at' => $latestStagedAt ? CarbonImmutable::parse($latestStagedAt) : null,
+            'has_unjournaled_staging' => ! $latestRun && $stagedProductsCount > 0,
             'active_sources' => $activeSources->count(),
             'failed_runs_24h' => IntegrationExchangeRun::query()
                 ->where('status', 'failed')

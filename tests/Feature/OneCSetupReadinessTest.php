@@ -213,7 +213,7 @@ class OneCSetupReadinessTest extends TestCase
         $this->actingAs($admin)
             ->get('/admin/one-c-setup')
             ->assertOk()
-            ->assertSeeText('Промежуточный каталог: 1 позиций')
+            ->assertSeeText('Позиций в промежуточном каталоге: 1')
             ->assertSeeText('Данные были получены до включения журнала или вне текущего узла')
             ->assertDontSeeText('Обмен готов');
     }

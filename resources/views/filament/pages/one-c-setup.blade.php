@@ -80,7 +80,7 @@
                         </div>
                         @if ($item['staged_products_count'] > 0)
                             <div class="onec-setup-muted">
-                                Промежуточный каталог: {{ number_format($item['staged_products_count'], 0, ',', ' ') }} позиций
+                                Позиций в промежуточном каталоге: {{ number_format($item['staged_products_count'], 0, ',', ' ') }}
                                 @if ($item['latest_staged_at'])
                                     · данные обновлялись {{ $item['latest_staged_at']->timezone('Europe/Minsk')->format('d.m.Y H:i:s') }}
                                 @endif

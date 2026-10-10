@@ -4,6 +4,7 @@ namespace App\Filament\Widgets;
 
 use App\Filament\Resources\IntegrationExchangeRuns\IntegrationExchangeRunResource;
 use App\Models\IntegrationExchangeRun;
+use App\Models\IntegrationProduct;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use Filament\Widgets\TableWidget;
@@ -52,6 +53,14 @@ class RecentIntegrationRuns extends TableWidget
                     ->alignRight(),
             ])
             ->recordUrl(fn (IntegrationExchangeRun $record): string => IntegrationExchangeRunResource::getUrl('index'))
+            ->emptyStateHeading('Контролируемых сеансов ещё нет')
+            ->emptyStateDescription(function (): string {
+                $count = IntegrationProduct::query()->count();
+
+                return $count > 0
+                    ? 'Позиций в буфере прежней загрузки: '.$count.'. Запустите новый обмен из 1С — он появится здесь с временем, результатом и показателями.'
+                    : 'Запустите первый обмен из 1С. Здесь появятся время, направление, результат и показатели каждого сеанса.';
+            })
             ->paginated([5, 10, 25])
             ->defaultPaginationPageOption(5)
             ->poll('30s');

@@ -29,7 +29,9 @@ class IntegrationHealthOverview extends StatsOverviewWidget
         $lastSuccess = $summary['last_success'];
 
         return [
-            Stat::make('Обмен интеграций', $service->healthLabel($summary['health']))
+            Stat::make('Обмен интеграций', $summary['has_unjournaled_staging']
+                ? 'Ожидает контрольный цикл'
+                : $service->healthLabel($summary['health']))
                 ->description($this->healthDescription($summary, $lastSuccess))
                 ->descriptionIcon(Heroicon::OutlinedArrowPathRoundedSquare)
                 ->color($service->healthColor($summary['health']))
@@ -66,6 +68,11 @@ class IntegrationHealthOverview extends StatsOverviewWidget
     /** @param array<string, mixed> $summary */
     private function healthDescription(array $summary, ?IntegrationExchangeRun $lastSuccess): string
     {
+        if ($summary['has_unjournaled_staging']) {
+            return 'Позиций в буфере: '.number_format($summary['staged_products_count'], 0, ',', ' ')
+                .' · запустите новый обмен для журнала';
+        }
+
         if ($summary['attention_sources'] > 0) {
             $names = collect($summary['attention_source_names'])->take(2)->implode(', ');
             $more = $summary['attention_sources'] > 2 ? ' +'.($summary['attention_sources'] - 2) : '';

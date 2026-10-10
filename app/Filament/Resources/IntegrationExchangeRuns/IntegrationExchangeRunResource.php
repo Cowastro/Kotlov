@@ -4,6 +4,7 @@ namespace App\Filament\Resources\IntegrationExchangeRuns;
 
 use App\Filament\Resources\IntegrationExchangeRuns\Pages\ListIntegrationExchangeRuns;
 use App\Models\IntegrationExchangeRun;
+use App\Models\IntegrationProduct;
 use BackedEnum;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
@@ -112,6 +113,14 @@ class IntegrationExchangeRunResource extends Resource
                     'failed' => 'Ошибка',
                 ]),
             ])
+            ->emptyStateHeading('Контролируемых сеансов ещё нет')
+            ->emptyStateDescription(function (): string {
+                $count = IntegrationProduct::query()->count();
+
+                return $count > 0
+                    ? 'Позиций в буфере прежней загрузки: '.$count.'. Выполните новый цикл обмена из 1С, чтобы зафиксировать его в журнале.'
+                    : 'Выполните первый цикл обмена из 1С, чтобы увидеть его результат и показатели.';
+            })
             ->defaultSort('started_at', 'desc')
             ->poll('30s');
     }
