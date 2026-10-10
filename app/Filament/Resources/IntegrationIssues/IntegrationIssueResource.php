@@ -7,13 +7,17 @@ use App\Filament\Resources\IntegrationProducts\IntegrationProductResource;
 use App\Filament\Resources\IntegrationSources\IntegrationSourceResource;
 use App\Filament\Resources\Orders\OrderResource;
 use App\Models\IntegrationIssue;
+use App\Models\Order;
 use App\Services\Integrations\IntegrationIssueAdvisor;
 use App\Services\Integrations\IntegrationIssueAiAdvisor;
+use App\Services\Integrations\IntegrationOrderStatusMapper;
+use App\Services\Integrations\IntegrationOrderStatusRuleManager;
 use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Actions\BulkAction;
 use Filament\Actions\BulkActionGroup;
 use Filament\Forms\Components\Placeholder;
+use Filament\Forms\Components\Select;
 use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
@@ -196,6 +200,65 @@ class IntegrationIssueResource extends Resource
                             ->success()
                             ->title($advice['source'] === 'ai' ? 'ИИ-подсказка готова' : 'Локальная подсказка обновлена')
                             ->body($advice['title'].' — '.($advice['steps'][0] ?? $advice['note']))
+                            ->send();
+                    }),
+                Action::make('mapUnknownStatus')
+                    ->label('Добавить правило')
+                    ->icon(Heroicon::OutlinedArrowsRightLeft)
+                    ->color('warning')
+                    ->visible(fn (IntegrationIssue $record): bool => $record->type === 'order_status_unknown'
+                        && filled($record->integration_source_id)
+                        && (filled(data_get($record->context, 'unknown_status'))
+                            || filled(data_get($record->context, 'unknown_payment_status'))))
+                    ->modalHeading('Сопоставить неизвестный статус')
+                    ->modalDescription(fn (IntegrationIssue $record): string => 'Правило сохранится только для источника «'
+                        .($record->source?->partnerName() ?? $record->source?->name ?? 'не указан').'». Текущий заказ изменится только после следующего обмена.')
+                    ->form([
+                        Placeholder::make('raw_order_status')
+                            ->label('Статус заказа из источника')
+                            ->content(fn (IntegrationIssue $record): string => (string) data_get($record->context, 'unknown_status', '—'))
+                            ->visible(fn (IntegrationIssue $record): bool => filled(data_get($record->context, 'unknown_status'))),
+                        Select::make('order_target')
+                            ->label('Статус заказа KOTLOV')
+                            ->options(Order::STATUSES)
+                            ->required(fn (IntegrationIssue $record): bool => filled(data_get($record->context, 'unknown_status')))
+                            ->visible(fn (IntegrationIssue $record): bool => filled(data_get($record->context, 'unknown_status'))),
+                        Placeholder::make('raw_payment_status')
+                            ->label('Статус оплаты из источника')
+                            ->content(fn (IntegrationIssue $record): string => (string) data_get($record->context, 'unknown_payment_status', '—'))
+                            ->visible(fn (IntegrationIssue $record): bool => filled(data_get($record->context, 'unknown_payment_status'))),
+                        Select::make('payment_target')
+                            ->label('Статус оплаты KOTLOV')
+                            ->options(IntegrationOrderStatusMapper::PAYMENT_STATUSES)
+                            ->required(fn (IntegrationIssue $record): bool => filled(data_get($record->context, 'unknown_payment_status')))
+                            ->visible(fn (IntegrationIssue $record): bool => filled(data_get($record->context, 'unknown_payment_status'))),
+                    ])
+                    ->requiresConfirmation()
+                    ->modalSubmitActionLabel('Сохранить правило')
+                    ->action(function (IntegrationIssue $record, array $data): void {
+                        $source = $record->source;
+                        if (! $source) {
+                            Notification::make()
+                                ->danger()
+                                ->title('Источник интеграции не найден')
+                                ->body('Правило не сохранено. Обновите очередь проблем и проверьте источник.')
+                                ->send();
+
+                            return;
+                        }
+
+                        app(IntegrationOrderStatusRuleManager::class)->store(
+                            $source,
+                            data_get($record->context, 'unknown_status'),
+                            $data['order_target'] ?? null,
+                            data_get($record->context, 'unknown_payment_status'),
+                            $data['payment_target'] ?? null,
+                        );
+
+                        Notification::make()
+                            ->success()
+                            ->title('Правило сопоставления сохранено')
+                            ->body('Запустите повторный обмен статусами. Задача закроется автоматически после успешного применения.')
                             ->send();
                     }),
                 Action::make('openObject')
