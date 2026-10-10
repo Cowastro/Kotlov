@@ -2,8 +2,13 @@
 
 namespace Tests\Feature;
 
+use App\Models\IntegrationExchangeRun;
+use App\Models\IntegrationIssue;
+use App\Models\IntegrationProduct;
+use App\Models\IntegrationSource;
 use App\Models\Supplier;
 use App\Models\SupplierProduct;
+use App\Services\SupplierIntegrationSummary;
 use App\Services\SupplierPortalSummary;
 use App\Services\SupplierProductHealth;
 use Carbon\CarbonImmutable;
@@ -191,5 +196,97 @@ class SupplierPortalSummaryTest extends TestCase
         $this->assertSame('healthy', $health->describe($healthy, $now)['key']);
         $this->assertSame('healthy', $health->describe($flagOnly, $now)['key']);
         $this->assertTrue(SupplierProduct::query()->available()->whereKey($flagOnly->id)->exists());
+    }
+
+    public function test_integration_summary_is_strictly_scoped_and_reports_exchange_health(): void
+    {
+        $now = CarbonImmutable::parse('2026-10-10 12:00:00', 'UTC');
+        $supplier = Supplier::query()->create(['code' => 'portal-source', 'name' => 'Мой источник']);
+        $other = Supplier::query()->create(['code' => 'foreign-source', 'name' => 'Чужой источник']);
+        $source = IntegrationSource::query()->create([
+            'supplier_id' => $supplier->id,
+            'code' => 'portal-commerce-ml',
+            'name' => 'Моя 1С',
+            'driver' => 'commerceml',
+            'is_active' => true,
+        ]);
+        $foreignSource = IntegrationSource::query()->create([
+            'supplier_id' => $other->id,
+            'code' => 'foreign-commerce-ml',
+            'name' => 'Чужая 1С',
+            'driver' => 'commerceml',
+            'is_active' => true,
+        ]);
+
+        IntegrationExchangeRun::query()->create([
+            'integration_source_id' => $source->id,
+            'direction' => 'inbound',
+            'operation' => 'catalog',
+            'status' => 'success',
+            'started_at' => $now->subMinutes(2),
+            'finished_at' => $now->subMinute(),
+        ]);
+        IntegrationExchangeRun::query()->create([
+            'integration_source_id' => $foreignSource->id,
+            'direction' => 'inbound',
+            'operation' => 'catalog',
+            'status' => 'failed',
+            'started_at' => $now,
+            'finished_at' => $now,
+        ]);
+        IntegrationProduct::query()->create([
+            'integration_source_id' => $source->id,
+            'external_id' => 'mine-ready',
+            'name' => 'Моя позиция',
+            'price' => 25,
+            'stock_quantity' => 4,
+        ]);
+        IntegrationProduct::query()->create([
+            'integration_source_id' => $source->id,
+            'external_id' => 'mine-missing-price',
+            'name' => 'Моя позиция без цены',
+            'price' => 0,
+            'stock_quantity' => 1,
+        ]);
+        IntegrationProduct::query()->create([
+            'integration_source_id' => $foreignSource->id,
+            'external_id' => 'foreign',
+            'name' => 'Чужая позиция',
+            'price' => 0,
+            'stock_quantity' => 99,
+        ]);
+        IntegrationIssue::query()->create([
+            'integration_source_id' => $source->id,
+            'fingerprint' => 'mine-issue',
+            'type' => 'product_missing_price',
+            'severity' => 'warning',
+            'status' => 'open',
+            'title' => 'Нет цены',
+            'first_detected_at' => $now,
+            'last_detected_at' => $now,
+        ]);
+        IntegrationIssue::query()->create([
+            'integration_source_id' => $foreignSource->id,
+            'fingerprint' => 'foreign-issue',
+            'type' => 'integration_catalog_stale',
+            'severity' => 'danger',
+            'status' => 'open',
+            'title' => 'Чужая ошибка',
+            'first_detected_at' => $now,
+            'last_detected_at' => $now,
+        ]);
+
+        $summary = app(SupplierIntegrationSummary::class)->forSupplierIds([$supplier->id], $now);
+
+        $this->assertSame(1, $summary['source_count']);
+        $this->assertSame(1, $summary['active_source_count']);
+        $this->assertSame(2, $summary['total']);
+        $this->assertSame(2, $summary['in_stock']);
+        $this->assertSame(2, $summary['unlinked']);
+        $this->assertSame(1, $summary['missing_price']);
+        $this->assertSame(1, $summary['open_issues']);
+        $this->assertSame('healthy', $summary['health']);
+        $this->assertTrue($summary['last_success_at']?->equalTo($now->subMinute()));
+        $this->assertSame([$source->id], $summary['sources']->pluck('id')->all());
     }
 }

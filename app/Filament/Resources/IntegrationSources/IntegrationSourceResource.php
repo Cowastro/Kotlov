@@ -58,6 +58,12 @@ class IntegrationSourceResource extends Resource
                         'file' => 'Файл/прайс',
                     ])->required()->default('commerceml'),
                     Toggle::make('is_active')->label('Подключение активно')->default(true),
+                    Select::make('supplier_id')
+                        ->label('Поставщик-владелец')
+                        ->relationship('supplier', 'name')
+                        ->searchable()
+                        ->preload()
+                        ->helperText('Определяет, кто увидит этот источник и его товары в кабинете поставщика.'),
                     TextInput::make('username')->label('Пользователь обмена')->maxLength(255)
                         ->helperText('Для 1С задайте отдельного пользователя, не логин администратора.'),
                     TextInput::make('password_hash')->label('Новый пароль')->password()->revealable()
@@ -164,6 +170,10 @@ class IntegrationSourceResource extends Resource
         return $table
             ->columns([
                 TextColumn::make('name')->label('Источник')->searchable()->sortable(),
+                TextColumn::make('supplier.name')->label('Поставщик-владелец')
+                    ->placeholder('Не назначен')
+                    ->badge()
+                    ->sortable(),
                 TextColumn::make('code')->label('Код')->badge()->copyable(),
                 TextColumn::make('exchange_url')->label('Адрес 1С')
                     ->state(fn (IntegrationSource $record): string => url('/1c/exchange/'.$record->code))

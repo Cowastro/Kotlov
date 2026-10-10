@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 
@@ -13,7 +14,7 @@ class IntegrationSource extends Model
     public const PRICE_TAX_INCLUSIVE = 'inclusive';
 
     protected $fillable = [
-        'code', 'name', 'driver', 'username', 'password_hash', 'is_active', 'create_products',
+        'supplier_id', 'code', 'name', 'driver', 'username', 'password_hash', 'is_active', 'create_products',
         'update_prices', 'update_stock', 'settings', 'last_authenticated_at',
     ];
 
@@ -130,6 +131,11 @@ class IntegrationSource extends Model
     public function products(): HasMany
     {
         return $this->hasMany(IntegrationProduct::class);
+    }
+
+    public function supplier(): BelongsTo
+    {
+        return $this->belongsTo(Supplier::class);
     }
 
     public function categories(): HasMany

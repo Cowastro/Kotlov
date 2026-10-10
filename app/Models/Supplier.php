@@ -43,6 +43,11 @@ class Supplier extends Model
         return $this->hasMany(SupplierSource::class);
     }
 
+    public function integrationSources(): HasMany
+    {
+        return $this->hasMany(IntegrationSource::class);
+    }
+
     public function users(): BelongsToMany
     {
         return $this->belongsToMany(User::class)->withTimestamps();

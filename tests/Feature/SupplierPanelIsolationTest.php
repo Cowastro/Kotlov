@@ -2,8 +2,12 @@
 
 namespace Tests\Feature;
 
+use App\Filament\Supplier\Resources\IntegrationProducts\IntegrationProductResource;
 use App\Filament\Supplier\Resources\SupplierProducts\SupplierProductResource;
 use App\Filament\Supplier\Resources\SupplierSyncChanges\SupplierSyncChangeResource;
+use App\Filament\Supplier\Widgets\SupplierIntegrationOverview;
+use App\Models\IntegrationProduct;
+use App\Models\IntegrationSource;
 use App\Models\Supplier;
 use App\Models\SupplierProduct;
 use App\Models\SupplierSyncChange;
@@ -11,6 +15,7 @@ use App\Models\SupplierSyncRun;
 use App\Models\User;
 use Filament\Panel;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Livewire\Livewire;
 use Tests\TestCase;
 
 class SupplierPanelIsolationTest extends TestCase
@@ -178,5 +183,99 @@ class SupplierPanelIsolationTest extends TestCase
             ->assertSee('История изменений')
             ->assertSee('Мой изменённый товар')
             ->assertDontSee('Чужой изменённый товар');
+    }
+
+    public function test_supplier_integration_catalog_is_scoped_to_explicitly_assigned_sources(): void
+    {
+        $supplier = Supplier::query()->create(['code' => 'supplier-integration-a', 'name' => 'Поставщик А']);
+        $otherSupplier = Supplier::query()->create(['code' => 'supplier-integration-b', 'name' => 'Поставщик Б']);
+        $user = User::factory()->create(['role' => 'supplier', 'is_active' => true]);
+        $user->suppliers()->attach($supplier);
+        $source = IntegrationSource::query()->create([
+            'supplier_id' => $supplier->id,
+            'code' => 'supplier-a-onec',
+            'name' => '1С поставщика А',
+            'driver' => 'commerceml',
+            'is_active' => true,
+        ]);
+        $otherSource = IntegrationSource::query()->create([
+            'supplier_id' => $otherSupplier->id,
+            'code' => 'supplier-b-onec',
+            'name' => '1С поставщика Б',
+            'driver' => 'commerceml',
+            'is_active' => true,
+        ]);
+        $visible = IntegrationProduct::query()->create([
+            'integration_source_id' => $source->id,
+            'external_id' => 'visible-integration-item',
+            'name' => 'Мой товар из 1С',
+            'price' => 10,
+            'stock_quantity' => 3,
+        ]);
+        IntegrationProduct::query()->create([
+            'integration_source_id' => $otherSource->id,
+            'external_id' => 'hidden-integration-item',
+            'name' => 'Чужой товар из 1С',
+            'price' => 10,
+            'stock_quantity' => 3,
+        ]);
+
+        $this->actingAs($user);
+
+        $this->assertSame([$visible->id], IntegrationProductResource::getEloquentQuery()->pluck('id')->all());
+
+        $this->get(IntegrationProductResource::getUrl('index', panel: 'supplier'))
+            ->assertOk()
+            ->assertSeeText('Товары из 1С / API')
+            ->assertSeeText('Мой товар из 1С')
+            ->assertSeeText('Не найден')
+            ->assertDontSeeText('Чужой товар из 1С');
+    }
+
+    public function test_supplier_dashboard_shows_only_its_integration_operational_summary(): void
+    {
+        $supplier = Supplier::query()->create(['code' => 'dashboard-supplier', 'name' => 'Поставщик кабинета']);
+        $otherSupplier = Supplier::query()->create(['code' => 'dashboard-foreign', 'name' => 'Чужой поставщик']);
+        $user = User::factory()->create(['role' => 'supplier', 'is_active' => true]);
+        $user->suppliers()->attach($supplier);
+        $source = IntegrationSource::query()->create([
+            'supplier_id' => $supplier->id,
+            'code' => 'dashboard-onec',
+            'name' => 'Моя интеграция',
+            'driver' => 'commerceml',
+            'is_active' => true,
+        ]);
+        $foreignSource = IntegrationSource::query()->create([
+            'supplier_id' => $otherSupplier->id,
+            'code' => 'dashboard-foreign-onec',
+            'name' => 'Чужая интеграция',
+            'driver' => 'commerceml',
+            'is_active' => true,
+        ]);
+        IntegrationProduct::query()->create([
+            'integration_source_id' => $source->id,
+            'external_id' => 'dashboard-own-product',
+            'price' => 15,
+            'stock_quantity' => 2,
+        ]);
+        IntegrationProduct::query()->create([
+            'integration_source_id' => $foreignSource->id,
+            'external_id' => 'dashboard-foreign-product',
+            'price' => 0,
+            'stock_quantity' => 100,
+        ]);
+
+        $this->actingAs($user)
+            ->get('/supplier')
+            ->assertOk()
+            ->assertSeeText('Сводка поставщика')
+            ->assertSeeText('Товары из 1С / API');
+
+        Livewire::actingAs($user)
+            ->test(SupplierIntegrationOverview::class)
+            ->assertSeeText('Товары из интеграций')
+            ->assertSeeText('Нет успешного цикла')
+            ->assertSeeText('В наличии: 1')
+            ->assertSeeText('Без цены: 0');
     }
 }
