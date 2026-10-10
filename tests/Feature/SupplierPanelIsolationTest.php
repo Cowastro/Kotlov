@@ -17,6 +17,7 @@ use App\Models\SupplierProduct;
 use App\Models\SupplierSyncChange;
 use App\Models\SupplierSyncRun;
 use App\Models\User;
+use App\Services\Integrations\SupplierIntegrationIssueAdvisor;
 use Filament\Panel;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
@@ -345,12 +346,72 @@ class SupplierPanelIsolationTest extends TestCase
         $this->assertSame([$visible->id], IntegrationIssueResource::getEloquentQuery()->pluck('id')->all());
         $this->assertFalse(IntegrationIssueResource::canEdit($visible));
         $this->assertFalse(IntegrationIssueResource::canDelete($visible));
+        $this->assertSame('Поставщик', app(SupplierIntegrationIssueAdvisor::class)->advise($visible)['owner']);
+
+        IntegrationIssue::query()->create([
+            'integration_source_id' => $source->id,
+            'fingerprint' => 'supplier-kotlov-owned-issue',
+            'type' => 'product_missing_category',
+            'severity' => 'warning',
+            'status' => 'open',
+            'title' => 'Нужно назначить категорию',
+            'context' => ['missing_category' => true],
+            'first_detected_at' => now(),
+            'last_detected_at' => now(),
+        ]);
+        IntegrationIssue::query()->create([
+            'integration_source_id' => $source->id,
+            'fingerprint' => 'supplier-shared-issue',
+            'type' => 'product_attention',
+            'severity' => 'warning',
+            'status' => 'open',
+            'title' => 'Нет цены и привязки',
+            'context' => [
+                'missing_price' => true,
+                'unmatched' => true,
+                'missing_category' => true,
+            ],
+            'first_detected_at' => now(),
+            'last_detected_at' => now(),
+        ]);
 
         $this->get(IntegrationIssueResource::getUrl('index', panel: 'supplier'))
             ->assertOk()
             ->assertSeeText('Мой обмен остановился')
             ->assertSeeText('Следующий шаг')
+            ->assertSeeText('Кто исправляет')
+            ->assertSeeText('Поставщик')
+            ->assertSeeText('KOTLOV')
+            ->assertSeeText('Совместно')
+            ->assertSeeText('Запустить обмен из 1С / API')
+            ->assertSeeText('Назначить категорию сайта')
+            ->assertSeeText('Передать цену и подготовить привязку')
             ->assertDontSeeText('Чужая проблема');
+    }
+
+    public function test_supplier_issue_advice_assigns_the_next_step_to_the_correct_party_without_mutation(): void
+    {
+        $advisor = app(SupplierIntegrationIssueAdvisor::class);
+        $cases = [
+            ['integration_catalog_stale', [], 'Поставщик'],
+            ['product_missing_price', ['missing_price' => true], 'Поставщик'],
+            ['product_unmatched', ['unmatched' => true], 'KOTLOV'],
+            ['product_attention', ['missing_price' => true, 'unmatched' => true], 'Совместно'],
+            ['order_status_conflict', [], 'Совместно'],
+        ];
+
+        foreach ($cases as [$type, $context, $owner]) {
+            $issue = new IntegrationIssue([
+                'type' => $type,
+                'context' => $context,
+            ]);
+            $advice = $advisor->advise($issue);
+
+            $this->assertSame($owner, $advice['owner']);
+            $this->assertNotSame('', $advice['title']);
+            $this->assertNotEmpty($advice['steps']);
+            $this->assertFalse($issue->exists);
+        }
     }
 
     /** @return array{User, IntegrationSource, IntegrationSource} */

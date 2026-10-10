@@ -5,7 +5,7 @@ namespace App\Filament\Supplier\Resources\IntegrationIssues;
 use App\Filament\Supplier\Resources\IntegrationIssues\Pages\ListIntegrationIssues;
 use App\Models\IntegrationIssue;
 use App\Models\IntegrationSource;
-use App\Services\Integrations\IntegrationIssueAdvisor;
+use App\Services\Integrations\SupplierIntegrationIssueAdvisor;
 use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Placeholder;
@@ -88,11 +88,20 @@ class IntegrationIssueResource extends Resource
                     ->wrap(),
                 TextColumn::make('recommended_action')
                     ->label('Следующий шаг')
-                    ->state(fn (IntegrationIssue $record): string => app(IntegrationIssueAdvisor::class)->advise($record)['title'])
-                    ->description(fn (IntegrationIssue $record): ?string => app(IntegrationIssueAdvisor::class)->advise($record)['steps'][0] ?? null)
+                    ->state(fn (IntegrationIssue $record): string => self::advice($record)['title'])
+                    ->description(fn (IntegrationIssue $record): ?string => self::advice($record)['steps'][0] ?? null)
                     ->icon(Heroicon::OutlinedLightBulb)
                     ->color('info')
                     ->wrap(),
+                TextColumn::make('next_step_owner')
+                    ->label('Кто исправляет')
+                    ->state(fn (IntegrationIssue $record): string => self::advice($record)['owner'])
+                    ->badge()
+                    ->color(fn (string $state): string => match ($state) {
+                        'Поставщик' => 'warning',
+                        'KOTLOV' => 'info',
+                        default => 'primary',
+                    }),
                 TextColumn::make('status')
                     ->label('Состояние')
                     ->badge()
@@ -137,12 +146,15 @@ class IntegrationIssueResource extends Resource
                     ->label('Что делать')
                     ->icon(Heroicon::OutlinedLightBulb)
                     ->color('info')
-                    ->modalHeading(fn (IntegrationIssue $record): string => app(IntegrationIssueAdvisor::class)->advise($record)['title'])
+                    ->modalHeading(fn (IntegrationIssue $record): string => self::advice($record)['title'])
                     ->form([
+                        Placeholder::make('responsible_party')
+                            ->label('Ответственный за следующий шаг')
+                            ->content(fn (IntegrationIssue $record): string => self::advice($record)['owner']),
                         Placeholder::make('recommended_steps')
                             ->label('Рекомендуемые шаги')
                             ->content(function (IntegrationIssue $record): HtmlString {
-                                $advice = app(IntegrationIssueAdvisor::class)->advise($record);
+                                $advice = self::advice($record);
 
                                 return new HtmlString(
                                     '<ol class="list-decimal space-y-2 ps-5">'.
@@ -154,7 +166,7 @@ class IntegrationIssueResource extends Resource
                             }),
                         Placeholder::make('safety_note')
                             ->label('Важно')
-                            ->content(fn (IntegrationIssue $record): string => app(IntegrationIssueAdvisor::class)->advise($record)['note']),
+                            ->content(fn (IntegrationIssue $record): string => self::advice($record)['note']),
                     ])
                     ->modalSubmitAction(false)
                     ->modalCancelActionLabel('Закрыть'),
@@ -196,5 +208,11 @@ class IntegrationIssueResource extends Resource
         $supplierIds = auth()->user()?->suppliers()->pluck('suppliers.id') ?? collect();
 
         return IntegrationSource::query()->whereIn('supplier_id', $supplierIds);
+    }
+
+    /** @return array{owner:string,title:string,steps:array<int,string>,note:string} */
+    private static function advice(IntegrationIssue $issue): array
+    {
+        return app(SupplierIntegrationIssueAdvisor::class)->advise($issue);
     }
 }

@@ -19,7 +19,7 @@ class ListIntegrationIssues extends ListRecords
 
     public function getSubheading(): ?string
     {
-        return 'Проблемы ваших источников с безопасными подсказками. Решение и изменение данных выполняет администратор KOTLOV.';
+        return 'Проблемы только ваших источников: видно, кто выполняет следующий шаг — поставщик, KOTLOV или обе стороны. Изменение карточек остаётся за администратором KOTLOV.';
     }
 
     public function getDefaultActiveTab(): string|int|null
