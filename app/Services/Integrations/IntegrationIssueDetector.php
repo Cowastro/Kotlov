@@ -60,6 +60,8 @@ class IntegrationIssueDetector
                             ],
                         );
                     }
+
+                    $this->detectAllPositiveStock($source, $seen, $opened, $openedIssueIds);
                 });
 
             IntegrationProduct::query()
@@ -204,6 +206,65 @@ class IntegrationIssueDetector
                 'title' => 'Не поступают каталог, цены и остатки: '.$sourceName,
             ],
         };
+    }
+
+    /** @param array<int, string> $seen */
+    private function detectAllPositiveStock(
+        IntegrationSource $source,
+        array &$seen,
+        int &$opened,
+        array &$openedIssueIds,
+    ): void {
+        $minimum = $source->allStockPositiveWarningMinimum();
+        if ($minimum === 0 || ! $source->exchangeRuns()
+            ->where('direction', 'inbound')
+            ->where('operation', 'catalog')
+            ->where('status', 'success')
+            ->exists()) {
+            return;
+        }
+
+        $stock = $source->products()
+            ->selectRaw('COUNT(*) as total')
+            ->selectRaw('SUM(CASE WHEN stock_quantity > 0 THEN 1 ELSE 0 END) as positive')
+            ->selectRaw('MIN(stock_quantity) as minimum_quantity')
+            ->selectRaw('MAX(stock_quantity) as maximum_quantity')
+            ->first();
+        $total = (int) ($stock?->total ?? 0);
+        $positive = (int) ($stock?->positive ?? 0);
+
+        if ($total < $minimum || $positive !== $total) {
+            return;
+        }
+
+        $minimumQuantity = (float) $stock->minimum_quantity;
+        $maximumQuantity = (float) $stock->maximum_quantity;
+        $this->report(
+            $seen,
+            $opened,
+            $openedIssueIds,
+            "source:{$source->id}:all-stock-positive",
+            'catalog_all_stock_positive',
+            'warning',
+            'Все товары источника переданы с положительным остатком',
+            $source->partnerName().": {$total} из {$total} позиций доступны; диапазон "
+                .$this->formatQuantity($minimumQuantity).'–'.$this->formatQuantity($maximumQuantity).' шт.',
+            source: $source,
+            context: [
+                'total' => $total,
+                'positive_stock' => $positive,
+                'minimum_quantity' => $minimumQuantity,
+                'maximum_quantity' => $maximumQuantity,
+                'warehouse_label' => data_get($source->settings, 'warehouse_label', 'Основной'),
+            ],
+        );
+    }
+
+    private function formatQuantity(float $quantity): string
+    {
+        return abs($quantity - round($quantity)) < 0.0005
+            ? number_format($quantity, 0, ',', ' ')
+            : rtrim(rtrim(number_format($quantity, 3, ',', ' '), '0'), ',');
     }
 
     /** @param array<int, string> $seen */

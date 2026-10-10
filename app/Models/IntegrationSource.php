@@ -41,6 +41,7 @@ class IntegrationSource extends Model
                 'catalog_interval_minutes' => 10,
                 'stale_after_minutes' => 15,
                 'zero_missing_stock_on_complete' => true,
+                'all_stock_positive_warning_min_products' => 20,
                 'monitor_orders_from' => now()->toIso8601String(),
             ], $source->settings ?? []);
         });
@@ -114,6 +115,11 @@ class IntegrationSource extends Model
     public function zeroMissingStockOnComplete(): bool
     {
         return (bool) data_get($this->settings, 'zero_missing_stock_on_complete', true);
+    }
+
+    public function allStockPositiveWarningMinimum(): int
+    {
+        return max(0, (int) data_get($this->settings, 'all_stock_positive_warning_min_products', 20));
     }
 
     public function matchingSupplierCode(): string

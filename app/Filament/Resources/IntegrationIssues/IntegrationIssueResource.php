@@ -7,13 +7,14 @@ use App\Filament\Resources\IntegrationProducts\IntegrationProductResource;
 use App\Filament\Resources\IntegrationSources\IntegrationSourceResource;
 use App\Filament\Resources\Orders\OrderResource;
 use App\Models\IntegrationIssue;
-use App\Services\Integrations\IntegrationIssueAiAdvisor;
 use App\Services\Integrations\IntegrationIssueAdvisor;
+use App\Services\Integrations\IntegrationIssueAiAdvisor;
 use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Actions\BulkAction;
 use Filament\Actions\BulkActionGroup;
 use Filament\Forms\Components\Placeholder;
+use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
@@ -129,6 +130,7 @@ class IntegrationIssueResource extends Resource
                     'product_missing_price' => 'Нет цены',
                     'product_attention' => 'Товар требует решения',
                     'product_identity_collision' => 'Возможный дубль товара',
+                    'catalog_all_stock_positive' => 'Все товары числятся в наличии',
                     'order_not_exported' => 'Заказ не передан',
                     'order_no_1c_response' => 'Нет ответа 1С',
                     'order_status_conflict' => 'Конфликт статусов заказа',
@@ -190,7 +192,7 @@ class IntegrationIssueResource extends Resource
                         ];
                         $record->update(['context' => $context]);
 
-                        \Filament\Notifications\Notification::make()
+                        Notification::make()
                             ->success()
                             ->title($advice['source'] === 'ai' ? 'ИИ-подсказка готова' : 'Локальная подсказка обновлена')
                             ->body($advice['title'].' — '.($advice['steps'][0] ?? $advice['note']))

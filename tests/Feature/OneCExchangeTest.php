@@ -2426,6 +2426,65 @@ XML;
         $this->assertStringContainsString('не удаляет', $advice['note']);
     }
 
+    public function test_issue_detector_opens_and_auto_resolves_an_all_positive_stock_warning(): void
+    {
+        $source = IntegrationSource::query()->create([
+            'code' => 'all-positive-stock-source',
+            'name' => 'Источник с подозрительным наличием',
+            'is_active' => true,
+            'settings' => [
+                'warehouse_label' => 'Основной',
+                'all_stock_positive_warning_min_products' => 3,
+            ],
+        ]);
+        IntegrationExchangeRun::query()->create([
+            'integration_source_id' => $source->id,
+            'direction' => 'inbound',
+            'operation' => 'catalog',
+            'status' => 'success',
+            'started_at' => now()->subMinute(),
+            'finished_at' => now(),
+        ]);
+
+        foreach ([0.01, 1, 870] as $index => $quantity) {
+            IntegrationProduct::query()->create([
+                'integration_source_id' => $source->id,
+                'external_id' => 'all-positive-'.$index,
+                'name' => 'Товар '.($index + 1),
+                'price' => 1,
+                'stock_quantity' => $quantity,
+                'match_status' => 'ignored',
+            ]);
+        }
+
+        $detector = app(IntegrationIssueDetector::class);
+        $first = $detector->scan();
+
+        $this->assertSame(1, $first['detected']);
+        $issue = IntegrationIssue::query()->where('type', 'catalog_all_stock_positive')->firstOrFail();
+        $this->assertSame('open', $issue->status);
+        $this->assertSame(3, $issue->context['total']);
+        $this->assertEqualsWithDelta(0.01, $issue->context['minimum_quantity'], 0.001);
+        $this->assertEqualsWithDelta(870, $issue->context['maximum_quantity'], 0.001);
+        $this->assertSame('Основной', $issue->context['warehouse_label']);
+        $this->assertStringContainsString('0,01–870 шт.', $issue->message);
+
+        $advice = app(IntegrationIssueAdvisor::class)->advise($issue);
+        $this->assertSame('Проверить склад и отбор наличия в 1С', $advice['title']);
+        $this->assertStringContainsString('Основной', $advice['steps'][0]);
+        $this->assertStringContainsString('не меняет', $advice['note']);
+
+        IntegrationProduct::query()
+            ->where('integration_source_id', $source->id)
+            ->orderBy('id')
+            ->firstOrFail()
+            ->update(['stock_quantity' => 0]);
+        $resolved = $detector->scan();
+
+        $this->assertSame(1, $resolved['resolved']);
+        $this->assertSame('resolved', $issue->fresh()->status);
+    }
+
     public function test_issue_detector_ignores_orders_created_before_integration_monitoring_started(): void
     {
         IntegrationSource::query()->create([

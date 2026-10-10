@@ -19,6 +19,7 @@ class IntegrationIssueNotificationService
         'order_not_exported',
         'order_no_1c_response',
         'product_identity_collision',
+        'catalog_all_stock_positive',
     ];
 
     /** @param array<int, int> $issueIds */

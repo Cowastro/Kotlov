@@ -30,6 +30,7 @@ class IntegrationIssue extends Model
         'integration_statuses_stale',
         'product_attention',
         'product_identity_collision',
+        'catalog_all_stock_positive',
         'order_not_exported',
         'order_no_1c_response',
     ];
@@ -39,6 +40,7 @@ class IntegrationIssue extends Model
         'integration_catalog_stale',
         'integration_orders_stale',
         'integration_statuses_stale',
+        'catalog_all_stock_positive',
     ];
 
     protected $fillable = [

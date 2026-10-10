@@ -394,6 +394,7 @@ class SupplierPanelIsolationTest extends TestCase
         $advisor = app(SupplierIntegrationIssueAdvisor::class);
         $cases = [
             ['integration_catalog_stale', [], 'Поставщик'],
+            ['catalog_all_stock_positive', ['warehouse_label' => 'Основной'], 'Поставщик'],
             ['product_missing_price', ['missing_price' => true], 'Поставщик'],
             ['product_unmatched', ['unmatched' => true], 'KOTLOV'],
             ['product_attention', ['missing_price' => true, 'unmatched' => true], 'Совместно'],
