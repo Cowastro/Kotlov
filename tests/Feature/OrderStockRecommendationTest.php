@@ -2,12 +2,14 @@
 
 namespace Tests\Feature;
 
+use App\Filament\Pages\StockDemandAnalytics;
 use App\Models\Category;
 use App\Models\IntegrationProduct;
 use App\Models\IntegrationSource;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Product;
+use App\Models\User;
 use App\Services\Orders\OrderStockRecommendationService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
@@ -69,6 +71,9 @@ class OrderStockRecommendationTest extends TestCase
         $this->assertSame(1.0, $popularRow['current_own_stock']);
         $this->assertSame(3, $popularRow['target_stock']);
         $this->assertSame(2, $popularRow['recommended_purchase']);
+        $this->assertSame(36.0, $popularRow['stock_coverage_days']);
+        $this->assertSame('below_target', $popularRow['stock_state']);
+        $this->assertStringContainsString('рекомендуется добавить 2 шт.', $popularRow['explanation']);
         $this->assertSame(1, $oldRow['orders_all']);
         $this->assertSame(0, $oldRow['quantity_recent']);
         $this->assertSame(0, $oldRow['recommended_purchase']);
@@ -76,6 +81,53 @@ class OrderStockRecommendationTest extends TestCase
         $this->artisan('orders:recommend-stock', ['--days' => 180, '--top' => 10])
             ->expectsOutputToContain('Рекомендации рассчитаны без изменения')
             ->assertSuccessful();
+    }
+
+    public function test_manager_can_use_read_only_stock_demand_screen_while_client_cannot(): void
+    {
+        Carbon::setTestNow('2026-10-10 12:00:00');
+        $category = Category::query()->create([
+            'name' => 'Категория экрана спроса',
+            'slug' => 'stock-demand-screen',
+            'parent_id' => 0,
+        ]);
+        $product = Product::query()->create([
+            'category_id' => $category->id,
+            'name' => 'Товар для пополнения склада',
+            'slug' => 'stock-demand-product',
+            'sku' => 'DEMAND-1',
+        ]);
+        $source = IntegrationSource::query()->where('code', 'onec')->firstOrFail();
+        IntegrationProduct::query()->create([
+            'integration_source_id' => $source->id,
+            'product_id' => $product->id,
+            'external_id' => 'demand-screen-onec',
+            'name' => $product->name,
+            'price' => 50,
+            'stock_quantity' => 0,
+            'match_status' => 'matched',
+        ]);
+        $this->orderWithItem('ORD-DEMAND-SCREEN', $product, 4, 100, now()->subDays(10));
+
+        $manager = User::factory()->create(['role' => 'manager', 'is_active' => true]);
+        $client = User::factory()->create(['role' => 'client', 'is_active' => true]);
+        $url = StockDemandAnalytics::getUrl(panel: 'admin');
+
+        $this->actingAs($manager)
+            ->get($url)
+            ->assertOk()
+            ->assertSeeText('Спрос и собственный склад')
+            ->assertSeeText('Товар для пополнения склада')
+            ->assertSeeText('рекомендуется добавить 4 шт.')
+            ->assertSeeText('Только аналитика: склад автоматически не меняется.');
+
+        $this->actingAs($client)
+            ->get($url)
+            ->assertForbidden();
+
+        $this->assertSame(0.0, (float) IntegrationProduct::query()->findOrFail(
+            IntegrationProduct::query()->where('external_id', 'demand-screen-onec')->value('id'),
+        )->stock_quantity);
     }
 
     private function orderWithItem(
