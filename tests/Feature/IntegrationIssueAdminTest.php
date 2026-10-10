@@ -165,7 +165,7 @@ class IntegrationIssueAdminTest extends TestCase
         $this
             ->get(IntegrationIssueResource::getUrl('index', panel: 'admin'))
             ->assertOk()
-            ->assertSeeText('Добавить правило');
+            ->assertSee('Добавить правило статуса');
     }
 
     public function test_admin_can_link_an_unmatched_product_directly_from_issue_queue(): void

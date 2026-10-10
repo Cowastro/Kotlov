@@ -17,6 +17,7 @@ use App\Services\Integrations\IntegrationProductIssueResolver;
 use App\Services\Integrations\IntegrationProductMatchAdvisor;
 use BackedEnum;
 use Filament\Actions\Action;
+use Filament\Actions\ActionGroup;
 use Filament\Actions\BulkAction;
 use Filament\Actions\BulkActionGroup;
 use Filament\Forms\Components\Placeholder;
@@ -155,68 +156,11 @@ class IntegrationIssueResource extends Resource
             ])
             ->defaultSort('last_detected_at', 'desc')
             ->recordActions([
-                Action::make('advice')
-                    ->label('Что делать')
-                    ->icon(Heroicon::OutlinedLightBulb)
-                    ->color('info')
-                    ->modalHeading(fn (IntegrationIssue $record): string => self::displayAdvice($record)['title'])
-                    ->form([
-                        Placeholder::make('advice_source')
-                            ->label('Источник подсказки')
-                            ->content(function (IntegrationIssue $record): string {
-                                $advice = self::displayAdvice($record);
-
-                                return $advice['source'] === 'ai'
-                                    ? 'ИИ · '.$advice['provider']
-                                    : 'Локальные правила';
-                            }),
-                        Placeholder::make('recommended_steps')
-                            ->label('Рекомендуемые шаги')
-                            ->content(function (IntegrationIssue $record): HtmlString {
-                                $advice = self::displayAdvice($record);
-
-                                return new HtmlString(
-                                    '<ol class="list-decimal space-y-2 ps-5">'.
-                                    collect($advice['steps'])
-                                        ->map(fn (string $step): string => '<li>'.e($step).'</li>')
-                                        ->implode('').
-                                    '</ol>'
-                                );
-                            }),
-                        Placeholder::make('safety_note')
-                            ->label('Важно')
-                            ->content(fn (IntegrationIssue $record): string => self::displayAdvice($record)['note']),
-                    ])
-                    ->modalSubmitAction(false)
-                    ->modalCancelActionLabel('Закрыть'),
-                Action::make('aiAdvice')
-                    ->label('ИИ-разбор')
-                    ->icon(Heroicon::OutlinedSparkles)
-                    ->color('primary')
-                    ->requiresConfirmation()
-                    ->modalHeading('Подготовить контекстную подсказку')
-                    ->modalDescription(fn (): string => app(IntegrationIssueAiAdvisor::class)->isAvailable()
-                        ? 'AI получит только технические поля проблемы — без имени, телефона, email и адреса клиента. Товары, заказы и привязки не изменятся.'
-                        : 'AI-провайдер не настроен. Будет сохранён безопасный план локальных правил; товары, заказы и привязки не изменятся.')
-                    ->modalSubmitActionLabel('Подготовить')
-                    ->action(function (IntegrationIssue $record): void {
-                        $advice = app(IntegrationIssueAiAdvisor::class)->advise($record);
-                        $context = $record->context ?? [];
-                        $context['ai_advice'] = [
-                            ...$advice,
-                            'generated_at' => now()->toIso8601String(),
-                        ];
-                        $record->update(['context' => $context]);
-
-                        Notification::make()
-                            ->success()
-                            ->title($advice['source'] === 'ai' ? 'ИИ-подсказка готова' : 'Локальная подсказка обновлена')
-                            ->body($advice['title'].' — '.($advice['steps'][0] ?? $advice['note']))
-                            ->send();
-                    }),
                 Action::make('mapUnknownStatus')
                     ->label('Добавить правило')
                     ->icon(Heroicon::OutlinedArrowsRightLeft)
+                    ->iconButton()
+                    ->tooltip('Добавить правило статуса')
                     ->color('warning')
                     ->visible(fn (IntegrationIssue $record): bool => $record->type === 'order_status_unknown'
                         && filled($record->integration_source_id)
@@ -276,6 +220,8 @@ class IntegrationIssueResource extends Resource
                 Action::make('linkExistingProduct')
                     ->label('Привязать карточку')
                     ->icon(Heroicon::OutlinedLink)
+                    ->iconButton()
+                    ->tooltip('Привязать карточку')
                     ->color('success')
                     ->visible(fn (IntegrationIssue $record): bool => $record->status === 'open'
                         && filled($record->integration_product_id)
@@ -349,14 +295,11 @@ class IntegrationIssueResource extends Resource
                             ->send();
                     })
                     ->successRedirectUrl(fn (): string => self::getUrl('index', ['tab' => 'ready-to-link'])),
-                Action::make('openObject')
-                    ->label('Открыть')
-                    ->icon(Heroicon::OutlinedArrowTopRightOnSquare)
-                    ->visible(fn (IntegrationIssue $record): bool => filled(self::objectUrl($record)))
-                    ->url(fn (IntegrationIssue $record): ?string => self::objectUrl($record)),
                 Action::make('claim')
                     ->label('Взять в работу')
                     ->icon(Heroicon::OutlinedUserPlus)
+                    ->iconButton()
+                    ->tooltip('Взять в работу')
                     ->color('info')
                     ->visible(fn (IntegrationIssue $record): bool => $record->status === 'open'
                         && $record->assigned_to_user_id !== (int) auth()->id())
@@ -366,39 +309,110 @@ class IntegrationIssueResource extends Resource
                 Action::make('unclaim')
                     ->label('Снять с себя')
                     ->icon(Heroicon::OutlinedUserMinus)
+                    ->iconButton()
+                    ->tooltip('Снять с себя')
                     ->color('gray')
                     ->visible(fn (IntegrationIssue $record): bool => $record->status === 'open'
                         && $record->assigned_to_user_id === (int) auth()->id())
                     ->action(fn (IntegrationIssue $record) => $record->update([
                         'assigned_to_user_id' => null,
                     ])),
-                Action::make('resolve')
-                    ->label('Решено')
-                    ->icon(Heroicon::OutlinedCheckCircle)
-                    ->color('success')
-                    ->visible(fn (IntegrationIssue $record): bool => $record->status === 'open')
-                    ->action(fn (IntegrationIssue $record) => $record->update([
-                        'status' => 'resolved',
-                        'resolved_at' => now(),
-                    ])),
-                Action::make('ignore')
-                    ->label('Игнорировать')
-                    ->icon(Heroicon::OutlinedEyeSlash)
-                    ->color('gray')
-                    ->visible(fn (IntegrationIssue $record): bool => $record->status !== 'ignored')
-                    ->requiresConfirmation()
-                    ->action(fn (IntegrationIssue $record) => $record->update([
-                        'status' => 'ignored',
-                        'resolved_at' => now(),
-                    ])),
-                Action::make('reopen')
-                    ->label('Вернуть в работу')
-                    ->icon(Heroicon::OutlinedArrowUturnLeft)
-                    ->visible(fn (IntegrationIssue $record): bool => $record->status !== 'open')
-                    ->action(fn (IntegrationIssue $record) => $record->update([
-                        'status' => 'open',
-                        'resolved_at' => null,
-                    ])),
+                ActionGroup::make([
+                    Action::make('advice')
+                        ->label('Что делать')
+                        ->icon(Heroicon::OutlinedLightBulb)
+                        ->color('info')
+                        ->modalHeading(fn (IntegrationIssue $record): string => self::displayAdvice($record)['title'])
+                        ->form([
+                            Placeholder::make('advice_source')
+                                ->label('Источник подсказки')
+                                ->content(function (IntegrationIssue $record): string {
+                                    $advice = self::displayAdvice($record);
+
+                                    return $advice['source'] === 'ai'
+                                        ? 'ИИ · '.$advice['provider']
+                                        : 'Локальные правила';
+                                }),
+                            Placeholder::make('recommended_steps')
+                                ->label('Рекомендуемые шаги')
+                                ->content(function (IntegrationIssue $record): HtmlString {
+                                    $advice = self::displayAdvice($record);
+
+                                    return new HtmlString(
+                                        '<ol class="list-decimal space-y-2 ps-5">'.
+                                        collect($advice['steps'])
+                                            ->map(fn (string $step): string => '<li>'.e($step).'</li>')
+                                            ->implode('').
+                                        '</ol>'
+                                    );
+                                }),
+                            Placeholder::make('safety_note')
+                                ->label('Важно')
+                                ->content(fn (IntegrationIssue $record): string => self::displayAdvice($record)['note']),
+                        ])
+                        ->modalSubmitAction(false)
+                        ->modalCancelActionLabel('Закрыть'),
+                    Action::make('aiAdvice')
+                        ->label('ИИ-разбор')
+                        ->icon(Heroicon::OutlinedSparkles)
+                        ->color('primary')
+                        ->requiresConfirmation()
+                        ->modalHeading('Подготовить контекстную подсказку')
+                        ->modalDescription(fn (): string => app(IntegrationIssueAiAdvisor::class)->isAvailable()
+                            ? 'AI получит только технические поля проблемы — без имени, телефона, email и адреса клиента. Товары, заказы и привязки не изменятся.'
+                            : 'AI-провайдер не настроен. Будет сохранён безопасный план локальных правил; товары, заказы и привязки не изменятся.')
+                        ->modalSubmitActionLabel('Подготовить')
+                        ->action(function (IntegrationIssue $record): void {
+                            $advice = app(IntegrationIssueAiAdvisor::class)->advise($record);
+                            $context = $record->context ?? [];
+                            $context['ai_advice'] = [
+                                ...$advice,
+                                'generated_at' => now()->toIso8601String(),
+                            ];
+                            $record->update(['context' => $context]);
+
+                            Notification::make()
+                                ->success()
+                                ->title($advice['source'] === 'ai' ? 'ИИ-подсказка готова' : 'Локальная подсказка обновлена')
+                                ->body($advice['title'].' — '.($advice['steps'][0] ?? $advice['note']))
+                                ->send();
+                        }),
+                    Action::make('openObject')
+                        ->label('Открыть объект')
+                        ->icon(Heroicon::OutlinedArrowTopRightOnSquare)
+                        ->visible(fn (IntegrationIssue $record): bool => filled(self::objectUrl($record)))
+                        ->url(fn (IntegrationIssue $record): ?string => self::objectUrl($record)),
+                    Action::make('resolve')
+                        ->label('Отметить решённым')
+                        ->icon(Heroicon::OutlinedCheckCircle)
+                        ->color('success')
+                        ->visible(fn (IntegrationIssue $record): bool => $record->status === 'open')
+                        ->action(fn (IntegrationIssue $record) => $record->update([
+                            'status' => 'resolved',
+                            'resolved_at' => now(),
+                        ])),
+                    Action::make('ignore')
+                        ->label('Игнорировать')
+                        ->icon(Heroicon::OutlinedEyeSlash)
+                        ->color('gray')
+                        ->visible(fn (IntegrationIssue $record): bool => $record->status !== 'ignored')
+                        ->requiresConfirmation()
+                        ->action(fn (IntegrationIssue $record) => $record->update([
+                            'status' => 'ignored',
+                            'resolved_at' => now(),
+                        ])),
+                    Action::make('reopen')
+                        ->label('Вернуть в работу')
+                        ->icon(Heroicon::OutlinedArrowUturnLeft)
+                        ->visible(fn (IntegrationIssue $record): bool => $record->status !== 'open')
+                        ->action(fn (IntegrationIssue $record) => $record->update([
+                            'status' => 'open',
+                            'resolved_at' => null,
+                        ])),
+                ])
+                    ->icon(Heroicon::OutlinedEllipsisVertical)
+                    ->iconButton()
+                    ->tooltip('Другие действия'),
             ])
             ->toolbarActions([
                 BulkActionGroup::make([
