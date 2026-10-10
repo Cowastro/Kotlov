@@ -79,6 +79,7 @@ class OrdersTable
                     'items.product.integrationProducts.source.supplier',
                     'items.product.supplierProducts.supplier',
                     'manager:id,name',
+                    'placedEconomicSnapshot',
                     'integrationIssues' => fn ($query) => $query
                         ->open()
                         ->orders()
@@ -169,6 +170,26 @@ class OrdersTable
                     ->label('Экономика')
                     ->state(fn (Order $record): string => 'Заказ '.number_format((float) $record->total, 2, '.', ' ').' BYN')
                     ->description(function (Order $record): string {
+                        $snapshot = $record->placedEconomicSnapshot;
+                        if ($snapshot) {
+                            $goods = 'Снимок: товары '.number_format((float) $snapshot->goods_sale_total, 2, '.', ' ').' BYN';
+
+                            if ($snapshot->purchase_total === null) {
+                                $known = $snapshot->priced_items_count > 0
+                                    ? 'известный вход '.number_format((float) $snapshot->known_purchase_total, 2, '.', ' ').' BYN'
+                                    : 'входная стоимость не определена';
+
+                                return $goods.' · '.$known.' · без цены: '.$snapshot->missing_purchase_price_count;
+                            }
+
+                            return $goods
+                                .' · вход '.number_format((float) $snapshot->purchase_total, 2, '.', ' ').' BYN'
+                                .' · валовая маржа '.number_format((float) $snapshot->goods_margin_total, 2, '.', ' ').' BYN'
+                                .($snapshot->goods_margin_percent !== null
+                                    ? ' / '.number_format((float) $snapshot->goods_margin_percent, 1, '.', ' ').'%'
+                                    : '');
+                        }
+
                         $summary = $record->managementSummary();
                         $goods = 'Товары '.number_format($summary['sale_total'], 2, '.', ' ').' BYN';
 
@@ -188,13 +209,20 @@ class OrdersTable
                         return $goods.' · Вход ≈ '.number_format($summary['purchase_total'], 2, '.', ' ').' BYN · Маржа ≈ '.$margin.$percent;
                     })
                     ->color(fn (Order $record): string => match (true) {
+                        $record->placedEconomicSnapshot?->purchase_total === null
+                            && $record->placedEconomicSnapshot !== null => 'warning',
+                        $record->placedEconomicSnapshot?->goods_margin_total < 0 => 'danger',
+                        $record->placedEconomicSnapshot?->goods_margin_percent !== null
+                            && (float) $record->placedEconomicSnapshot->goods_margin_percent < (float) config('shop.order_management.minimum_margin_percent', 10) => 'warning',
                         $record->managementSummary()['negative_margin_count'] > 0 => 'danger',
                         $record->managementSummary()['missing_price_count'] > 0,
                         $record->managementSummary()['low_margin_count'] > 0 => 'warning',
                         default => 'success',
                     })
                     ->icon('heroicon-o-calculator')
-                    ->tooltip('Текущий расчёт. Входная стоимость берётся из подтверждённой связи поставщика; неизвестная цена не считается нулевой.')
+                    ->tooltip(fn (Order $record): string => $record->placedEconomicSnapshot
+                        ? 'Неизменяемый снимок на момент оформления. Неизвестные расходы не считаются нулевыми.'
+                        : 'Исторический заказ без снимка: показана текущая оценка. Неизвестная цена не считается нулевой.')
                     ->wrap()
                     ->sortable(query: fn (Builder $query, string $direction): Builder => $query->orderBy('total', $direction)),
 

@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasManyThrough;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -172,15 +173,51 @@ class Order extends Model
         return $this->hasMany(SupplierOrderRequest::class);
     }
 
+    public function economicSnapshots(): HasMany
+    {
+        return $this->hasMany(OrderEconomicSnapshot::class);
+    }
+
+    public function placedEconomicSnapshot(): HasOne
+    {
+        return $this->hasOne(OrderEconomicSnapshot::class)
+            ->where('kind', OrderEconomicSnapshot::KIND_PLACED);
+    }
+
     public function scopeWithOperationalProblem(Builder $query, ?string $problem): Builder
     {
+        $eligibleIntegrationOffer = fn (Builder $offers): Builder => $offers
+            ->where('match_status', 'matched')
+            ->where('price', '>', 0)
+            ->whereHas('source', fn (Builder $source): Builder => $source->where('is_active', true));
+        $eligibleLegacyOffer = fn (Builder $offers): Builder => $offers
+            ->where('price_byn', '>', 0)
+            ->whereHas('supplier', fn (Builder $supplier): Builder => $supplier->where('is_active', true));
+
         return match ($problem) {
             'missing_supplier' => $query->whereHas('items', fn (Builder $items): Builder => $items
-                ->whereNotNull('supply_captured_at')
-                ->whereNull('supply_supplier_id')),
+                ->where(fn (Builder $problemItems): Builder => $problemItems
+                    ->where(fn (Builder $snapshot): Builder => $snapshot
+                        ->whereNotNull('supply_captured_at')
+                        ->where('supply_status', 'unresolved'))
+                    ->orWhere(fn (Builder $legacy): Builder => $legacy
+                        ->whereNull('supply_captured_at')
+                        ->whereNull('integration_product_id')
+                        ->whereDoesntHave('product.integrationProducts', $eligibleIntegrationOffer)
+                        ->whereDoesntHave('product.supplierProducts', $eligibleLegacyOffer)))),
             'missing_price' => $query->whereHas('items', fn (Builder $items): Builder => $items
-                ->whereNotNull('supply_captured_at')
-                ->whereNull('supply_purchase_price')),
+                ->where(fn (Builder $problemItems): Builder => $problemItems
+                    ->where(fn (Builder $snapshot): Builder => $snapshot
+                        ->whereNotNull('supply_captured_at')
+                        ->whereNull('supply_purchase_price'))
+                    ->orWhere(fn (Builder $legacy): Builder => $legacy
+                        ->whereNull('supply_captured_at')
+                        ->where(fn (Builder $source): Builder => $source
+                            ->whereHas('integrationProduct', fn (Builder $offer): Builder => $offer->where('price', '<=', 0))
+                            ->orWhere(fn (Builder $recommendation): Builder => $recommendation
+                                ->whereNull('integration_product_id')
+                                ->whereDoesntHave('product.integrationProducts', $eligibleIntegrationOffer)
+                                ->whereDoesntHave('product.supplierProducts', $eligibleLegacyOffer)))))),
             'no_stock' => $query->whereHas('items', fn (Builder $items): Builder => $items
                 ->whereNotNull('supply_captured_at')
                 ->where(fn (Builder $stock): Builder => $stock

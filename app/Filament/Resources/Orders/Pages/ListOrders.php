@@ -41,6 +41,13 @@ class ListOrders extends ListRecords
         $unassigned = Order::whereNull('assigned_to')->count();
         $myCount = Order::where('manager_id', auth()->id())->count();
         $attentionCount = Order::query()->withOperationalProblem('needs_attention')->count();
+        $missingPriceCount = Order::query()->withOperationalProblem('missing_price')->count();
+        $missingSupplierCount = Order::query()->withOperationalProblem('missing_supplier')->count();
+        $marginRiskCount = Order::query()
+            ->where(fn (Builder $query): Builder => $query
+                ->withOperationalProblem('negative_margin')
+                ->orWhere(fn (Builder $part): Builder => $part->withOperationalProblem('low_margin')))
+            ->count();
 
         $tabs = [
             'all' => Tab::make('Все')
@@ -51,6 +58,27 @@ class ListOrders extends ListRecords
                 ->modifyQueryUsing(fn (Builder $query) => $query->withOperationalProblem('needs_attention'))
                 ->badge($attentionCount ?: null)
                 ->badgeColor('danger'),
+
+            'missing_price' => Tab::make('Без входной цены')
+                ->icon('heroicon-o-banknotes')
+                ->modifyQueryUsing(fn (Builder $query) => $query->withOperationalProblem('missing_price'))
+                ->badge($missingPriceCount ?: null)
+                ->badgeColor('danger'),
+
+            'missing_supplier' => Tab::make('Без поставщика')
+                ->icon('heroicon-o-truck')
+                ->modifyQueryUsing(fn (Builder $query) => $query->withOperationalProblem('missing_supplier'))
+                ->badge($missingSupplierCount ?: null)
+                ->badgeColor('danger'),
+
+            'margin_risk' => Tab::make('Маржа под риском')
+                ->icon('heroicon-o-chart-bar')
+                ->modifyQueryUsing(fn (Builder $query): Builder => $query
+                    ->where(fn (Builder $part): Builder => $part
+                        ->withOperationalProblem('negative_margin')
+                        ->orWhere(fn (Builder $lowMargin): Builder => $lowMargin->withOperationalProblem('low_margin'))))
+                ->badge($marginRiskCount ?: null)
+                ->badgeColor('warning'),
 
             'my' => Tab::make('Мои заказы')
                 ->icon('heroicon-o-user')

@@ -4,6 +4,7 @@ namespace App\Filament\Resources\Orders\Schemas;
 
 use App\Models\IntegrationIssue;
 use App\Models\Order;
+use App\Models\OrderEconomicSnapshot;
 use App\Models\OrderIntegrationDelivery;
 use App\Models\OrderItem;
 use App\Models\SupplierOrderRequest;
@@ -318,6 +319,104 @@ class OrderInfolist
                             ->weight('bold')
                             ->color('primary')
                             ->formatStateUsing($byn),
+                    ]),
+
+                Section::make('Экономический снимок при оформлении')
+                    ->description('Неизменяемые значения на момент заказа. Неизвестная входная цена или расход не подменяется нулём.')
+                    ->icon('heroicon-o-calculator')
+                    ->columnSpanFull()
+                    ->compact()
+                    ->columns(8)
+                    ->schema([
+                        TextEntry::make('economic_snapshot_status')
+                            ->label('Полнота')
+                            ->state(fn (Order $record): string => $record->placedEconomicSnapshot?->statusLabel()
+                                ?? 'Снимок отсутствует — старый заказ')
+                            ->badge()
+                            ->color(fn (Order $record): string => match ($record->placedEconomicSnapshot?->status) {
+                                OrderEconomicSnapshot::STATUS_COMPLETE => 'success',
+                                null => 'gray',
+                                default => 'warning',
+                            })
+                            ->columnSpan(2),
+
+                        TextEntry::make('economic_snapshot_captured_at')
+                            ->label('Зафиксировано')
+                            ->state(fn (Order $record) => $record->placedEconomicSnapshot?->captured_at)
+                            ->dateTime('d.m.Y H:i:s', 'Europe/Minsk')
+                            ->placeholder('Не фиксировалось'),
+
+                        TextEntry::make('economic_snapshot_sale')
+                            ->label('Продажа товаров')
+                            ->state(fn (Order $record): ?string => $record->placedEconomicSnapshot
+                                ? $byn($record->placedEconomicSnapshot->goods_sale_total)
+                                : null)
+                            ->placeholder('Нет снимка'),
+
+                        TextEntry::make('economic_snapshot_purchase')
+                            ->label('Входная стоимость')
+                            ->state(function (Order $record) use ($byn): ?string {
+                                $snapshot = $record->placedEconomicSnapshot;
+                                if (! $snapshot) {
+                                    return null;
+                                }
+
+                                return $snapshot->purchase_total !== null
+                                    ? $byn($snapshot->purchase_total)
+                                    : ($snapshot->priced_items_count > 0
+                                        ? $byn($snapshot->known_purchase_total).' известно; без цены: '.$snapshot->missing_purchase_price_count
+                                        : 'Не определена');
+                            })
+                            ->placeholder('Нет снимка')
+                            ->color(fn (Order $record): string => $record->placedEconomicSnapshot?->purchase_total === null ? 'warning' : 'success')
+                            ->columnSpan(2),
+
+                        TextEntry::make('economic_snapshot_margin')
+                            ->label('Валовая маржа товаров')
+                            ->state(function (Order $record) use ($byn): ?string {
+                                $snapshot = $record->placedEconomicSnapshot;
+                                if (! $snapshot) {
+                                    return null;
+                                }
+                                if ($snapshot->goods_margin_total === null) {
+                                    return 'Не рассчитана полностью';
+                                }
+
+                                return $byn($snapshot->goods_margin_total)
+                                    .($snapshot->goods_margin_percent !== null
+                                        ? ' / '.number_format((float) $snapshot->goods_margin_percent, 1, '.', ' ').'%'
+                                        : '');
+                            })
+                            ->placeholder('Нет снимка')
+                            ->color(fn (Order $record): string => match (true) {
+                                $record->placedEconomicSnapshot?->goods_margin_total === null => 'warning',
+                                (float) $record->placedEconomicSnapshot->goods_margin_total < 0 => 'danger',
+                                default => 'success',
+                            })
+                            ->columnSpan(2),
+
+                        TextEntry::make('economic_snapshot_delivery')
+                            ->label('Доставка с клиента')
+                            ->state(fn (Order $record): ?string => $record->placedEconomicSnapshot
+                                ? $byn($record->placedEconomicSnapshot->delivery_revenue)
+                                : null)
+                            ->placeholder('Нет снимка'),
+
+                        TextEntry::make('economic_snapshot_costs')
+                            ->label('Расходы доставки / оплаты / комиссия')
+                            ->state(fn (Order $record): string => $record->placedEconomicSnapshot
+                                ? 'Не подтверждены'
+                                : 'Нет снимка')
+                            ->color('warning')
+                            ->columnSpan(3),
+
+                        TextEntry::make('economic_snapshot_profit')
+                            ->label('Итоговая прибыль')
+                            ->state(fn (Order $record): ?string => $record->placedEconomicSnapshot?->net_profit !== null
+                                ? $byn($record->placedEconomicSnapshot->net_profit)
+                                : 'Не рассчитана до подтверждения расходов')
+                            ->color('warning')
+                            ->columnSpan(2),
                     ]),
 
                 // ── Товары заказа: полная ширина ──────────────────────────────

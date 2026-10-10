@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Events\NewOrderCreated;
 use App\Models\Order;
 use App\Models\OrderItem;
+use App\Services\Orders\OrderEconomicSnapshotRecorder;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -157,6 +158,8 @@ class CheckoutController extends Controller
                     'integration_product_id' => $item['integration_product_id'] ?? null,
                 ]);
             }
+
+            app(OrderEconomicSnapshotRecorder::class)->capturePlaced($order->load('items'));
 
             return $order;
         });
