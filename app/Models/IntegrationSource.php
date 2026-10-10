@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Services\Integrations\IntegrationSourcePricingAuditRecorder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -48,6 +49,10 @@ class IntegrationSource extends Model
                 'order_status_rules' => [],
                 'payment_status_rules' => [],
             ], $source->settings ?? []);
+        });
+
+        static::updated(function (IntegrationSource $source): void {
+            app(IntegrationSourcePricingAuditRecorder::class)->recordUpdatedSource($source);
         });
     }
 
@@ -199,6 +204,11 @@ class IntegrationSource extends Model
     public function channelTransitions(): HasMany
     {
         return $this->hasMany(SupplierChannelTransition::class);
+    }
+
+    public function pricingChanges(): HasMany
+    {
+        return $this->hasMany(IntegrationSourcePricingChange::class);
     }
 
     public function latestChannelTransition(): HasOne

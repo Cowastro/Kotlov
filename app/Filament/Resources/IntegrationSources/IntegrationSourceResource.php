@@ -5,6 +5,7 @@ namespace App\Filament\Resources\IntegrationSources;
 use App\Filament\Resources\IntegrationSources\Pages\CreateIntegrationSource;
 use App\Filament\Resources\IntegrationSources\Pages\EditIntegrationSource;
 use App\Filament\Resources\IntegrationSources\Pages\ListIntegrationSources;
+use App\Filament\Resources\IntegrationSources\RelationManagers\PricingChangesRelationManager;
 use App\Models\IntegrationSource;
 use App\Models\Order;
 use App\Models\Supplier;
@@ -383,6 +384,13 @@ class IntegrationSourceResource extends Resource
             'index' => ListIntegrationSources::route('/'),
             'create' => CreateIntegrationSource::route('/create'),
             'edit' => EditIntegrationSource::route('/{record}/edit'),
+        ];
+    }
+
+    public static function getRelations(): array
+    {
+        return [
+            PricingChangesRelationManager::class,
         ];
     }
 }
