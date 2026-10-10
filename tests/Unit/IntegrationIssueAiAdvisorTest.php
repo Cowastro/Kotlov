@@ -100,7 +100,11 @@ class IntegrationIssueAiAdvisorTest extends TestCase
         $issue->setRelation('order', null);
 
         $original = $advisor->basisHash($issue);
-        $issue->context = [...$issue->context, 'ai_advice' => ['title' => 'Старая подсказка']];
+        $issue->context = [
+            'unmatched' => true,
+            'missing_price' => false,
+            'ai_advice' => ['title' => 'Старая подсказка'],
+        ];
         $this->assertSame($original, $advisor->basisHash($issue));
 
         $product->price = 12;

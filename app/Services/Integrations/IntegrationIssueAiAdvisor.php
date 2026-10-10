@@ -94,9 +94,24 @@ PROMPT;
         }
 
         return hash('sha256', (string) json_encode(
-            $this->technicalContext($issue),
+            $this->canonicalize($this->technicalContext($issue)),
             JSON_UNESCAPED_UNICODE | JSON_PRESERVE_ZERO_FRACTION,
         ));
+    }
+
+    private function canonicalize(mixed $value): mixed
+    {
+        if (! is_array($value)) {
+            return $value;
+        }
+
+        $value = array_map(fn (mixed $item): mixed => $this->canonicalize($item), $value);
+
+        if (! array_is_list($value)) {
+            ksort($value);
+        }
+
+        return $value;
     }
 
     /** @return array<string, mixed> */
