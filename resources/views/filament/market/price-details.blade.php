@@ -24,6 +24,7 @@
     .market-details__stat-label { font-size: .7rem; color: #71717a; }
     .market-details__stat-value { margin-top: .25rem; font-size: .875rem; font-weight: 650; color: #18181b; }
     .market-details__warning { padding: .75rem 1rem; border-top: 1px solid #fde68a; background: #fffbeb; color: #a16207; font-size: .875rem; }
+    .market-details__warning + .market-details__warning { border-top-style: dashed; }
     .market-details__table-wrap { overflow-x: auto; }
     .market-details__table { width: 100%; min-width: 760px; border-collapse: collapse; text-align: left; font-size: .82rem; }
     .market-details__table th { padding: .65rem 1rem; background: #f4f4f5; color: #71717a; font-size: .7rem; font-weight: 650; }
@@ -108,9 +109,13 @@
                 <div class="market-details__stat"><div class="market-details__stat-label">Проверено</div><div class="market-details__stat-value">{{ $checkedAt?->timezone('Europe/Minsk')->format('d.m.Y H:i') ?? 'Нет данных' }}</div></div>
             </div>
 
-            @if ($indicator['status'] !== 'ready')
-                <div class="market-details__warning">{{ $indicator['reason'] }}</div>
-            @endif
+            @forelse ($indicator['warnings'] ?? [] as $warning)
+                <div class="market-details__warning"><strong>{{ $warning['label'] }}.</strong> {{ $warning['description'] }}</div>
+            @empty
+                @if ($indicator['status'] !== 'ready')
+                    <div class="market-details__warning">{{ $indicator['reason'] }}</div>
+                @endif
+            @endforelse
 
             @if ($indicator['evidence']->isNotEmpty())
                 <div class="market-details__table-wrap">

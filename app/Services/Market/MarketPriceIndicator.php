@@ -16,6 +16,8 @@ class MarketPriceIndicator
     {
         $summary = $this->summaries->forProduct($product, $asOf);
         $checkedAt = $summary['last_checked_at'] ?? $summary['latest_observed_at'];
+        $warnings = $this->warnings($summary);
+        $primaryWarning = $warnings->first();
 
         if ($summary['status'] !== 'ready') {
             $sourceProgress = $summary['sources_count'].'/'.MarketPriceSummary::MINIMUM_SOURCES.' источника';
@@ -29,6 +31,8 @@ class MarketPriceIndicator
                 'indicator_tooltip' => $summary['reason'],
                 'indicator_color' => $summary['evidence']->isNotEmpty() ? 'warning' : 'gray',
                 'indicator_icon' => 'heroicon-o-question-mark-circle',
+                'warnings' => $warnings,
+                'primary_warning' => $primaryWarning,
             ];
         }
 
@@ -54,6 +58,8 @@ class MarketPriceIndicator
                 'below' => 'heroicon-o-arrow-trending-down',
                 default => 'heroicon-o-scale',
             },
+            'warnings' => $warnings,
+            'primary_warning' => $primaryWarning,
         ];
     }
 
@@ -68,6 +74,27 @@ class MarketPriceIndicator
                     ? $this->forProduct($item->product, $asOf)
                     : $this->missingProductIndicator();
 
+                if ($item->product) {
+                    $warnings = $indicator['warnings'];
+                    $supply = $item->supplyContext();
+                    $minimumMargin = (float) config('shop.order_management.minimum_margin_percent', 10);
+
+                    if ($supply['has_purchase_price']
+                        && $supply['margin_percent'] !== null
+                        && (float) $supply['margin_percent'] < $minimumMargin) {
+                        $warnings->prepend([
+                            'code' => 'margin_below_minimum',
+                            'label' => 'Маржа ниже '.number_format($minimumMargin, 0, ',', ' ').'%',
+                            'description' => 'Позиция даёт '.number_format((float) $supply['margin_percent'], 1, ',', ' ').'% при входной цене '
+                                .number_format((float) $supply['wholesale_price'], 2, ',', ' ').' BYN. Снижать цену без пересчёта нельзя.',
+                            'color' => (float) $supply['margin_percent'] < 0 ? 'danger' : 'warning',
+                        ]);
+                    }
+
+                    $indicator['warnings'] = $warnings;
+                    $indicator['primary_warning'] = $warnings->first();
+                }
+
                 return [
                     'item' => $item,
                     'product' => $item->product,
@@ -80,8 +107,10 @@ class MarketPriceIndicator
         $aboveCount = $ready->where('indicator.position', 'above')->count();
         $belowCount = $ready->where('indicator.position', 'below')->count();
         $insufficientCount = $rows->count() - $ready->count();
+        $warningCount = $rows->filter(fn (array $row): bool => $row['indicator']['warnings']->isNotEmpty())->count();
 
         [$label, $color, $icon] = match (true) {
+            $warningCount > 0 => ['Требует внимания: '.$warningCount, 'danger', 'heroicon-o-exclamation-triangle'],
             $aboveCount > 0 => ['Выше рынка: '.$aboveCount, 'danger', 'heroicon-o-arrow-trending-up'],
             $ready->isNotEmpty() => ['Рынок проверен', 'success', 'heroicon-o-scale'],
             default => ['Недостаточно данных', 'gray', 'heroicon-o-question-mark-circle'],
@@ -109,7 +138,59 @@ class MarketPriceIndicator
             'above_count' => $aboveCount,
             'below_count' => $belowCount,
             'insufficient_count' => $insufficientCount,
+            'warning_count' => $warningCount,
         ];
+    }
+
+    /** @param array<string, mixed> $summary
+     * @return Collection<int, array{code:string,label:string,description:string,color:string}>
+     */
+    private function warnings(array $summary): Collection
+    {
+        $warnings = collect();
+
+        if ($summary['status'] === 'ready' && $summary['position'] === 'above') {
+            $warnings->push([
+                'code' => 'above_market',
+                'label' => 'Цена выше рынка',
+                'description' => 'Наша цена выше медианы на '.number_format(abs((float) $summary['delta_percent']), 1, ',', ' ').'%.',
+                'color' => 'danger',
+            ]);
+        }
+
+        $suspiciousLowThreshold = (float) config('shop.market_intelligence.suspicious_low_percent', 5);
+        if ($summary['status'] === 'ready'
+            && $summary['position'] === 'below'
+            && (float) $summary['minimum'] > 0
+            && (float) $summary['our_price'] < (float) $summary['minimum'] * (1 - $suspiciousLowThreshold / 100)) {
+            $belowMinimum = round(((float) $summary['minimum'] - (float) $summary['our_price']) / (float) $summary['minimum'] * 100, 1);
+            $warnings->push([
+                'code' => 'suspicious_low_price',
+                'label' => 'Подозрительно низкая цена',
+                'description' => 'Наша цена на '.$belowMinimum.'% ниже минимального свежего предложения. Проверьте комплектацию и маржу.',
+                'color' => 'warning',
+            ]);
+        }
+
+        if ($summary['evidence']->contains(fn (array $evidence): bool => $evidence['code'] === 'stale')) {
+            $warnings->push([
+                'code' => 'stale_data',
+                'label' => 'Есть устаревшие данные',
+                'description' => 'Один или несколько источников нужно проверить заново.',
+                'color' => 'warning',
+            ]);
+        }
+
+        if ((int) $summary['sources_count'] < MarketPriceSummary::MINIMUM_SOURCES) {
+            $warnings->push([
+                'code' => 'insufficient_sources',
+                'label' => 'Мало источников',
+                'description' => 'Подтверждено '.$summary['sources_count'].' из '.MarketPriceSummary::MINIMUM_SOURCES.' необходимых независимых источников.',
+                'color' => 'warning',
+            ]);
+        }
+
+        return $warnings;
     }
 
     /** @return array<string, mixed> */
@@ -137,6 +218,18 @@ class MarketPriceIndicator
             'indicator_tooltip' => 'Сначала сопоставьте позицию заказа с карточкой товара.',
             'indicator_color' => 'gray',
             'indicator_icon' => 'heroicon-o-question-mark-circle',
+            'warnings' => collect([[
+                'code' => 'missing_product_link',
+                'label' => 'Нет связи с карточкой',
+                'description' => 'Сначала сопоставьте позицию заказа с карточкой kotlov.by.',
+                'color' => 'warning',
+            ]]),
+            'primary_warning' => [
+                'code' => 'missing_product_link',
+                'label' => 'Нет связи с карточкой',
+                'description' => 'Сначала сопоставьте позицию заказа с карточкой kotlov.by.',
+                'color' => 'warning',
+            ],
         ];
     }
 }

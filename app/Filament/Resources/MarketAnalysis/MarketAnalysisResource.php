@@ -6,6 +6,7 @@ use App\Filament\Resources\MarketAnalysis\Pages\ListMarketAnalysis;
 use App\Filament\Resources\MarketPriceObservations\MarketPriceObservationResource;
 use App\Models\MarketPriceSource;
 use App\Models\Product;
+use App\Services\Market\MarketPriceIndicator;
 use App\Services\Market\MarketPriceSummary;
 use BackedEnum;
 use Filament\Actions\Action;
@@ -35,6 +36,9 @@ class MarketAnalysisResource extends Resource
 
     /** @var array<int, array<string, mixed>> */
     private static array $summaryCache = [];
+
+    /** @var array<int, array<string, mixed>> */
+    private static array $indicatorCache = [];
 
     public static function getNavigationGroup(): ?string
     {
@@ -119,6 +123,13 @@ class MarketAnalysisResource extends Resource
                         'market' => 'success',
                         default => 'gray',
                     }),
+                TextColumn::make('manager_warning')
+                    ->label('Сигнал менеджеру')
+                    ->state(fn (Product $record): string => self::indicator($record)['primary_warning']['label'] ?? 'Без рыночных рисков')
+                    ->description(fn (Product $record): string => self::indicator($record)['primary_warning']['description'] ?? 'Цена находится в подтверждённом рыночном коридоре.')
+                    ->badge()
+                    ->color(fn (Product $record): string => self::indicator($record)['primary_warning']['color'] ?? 'success')
+                    ->wrap(),
                 TextColumn::make('market_checked_at')
                     ->label('Проверено')
                     ->state(fn (Product $record): string => self::summary($record)['latest_observed_at']?->diffForHumans() ?? 'Нет свежих данных')
@@ -193,5 +204,12 @@ class MarketAnalysisResource extends Resource
     {
         return self::$summaryCache[$product->id]
             ??= app(MarketPriceSummary::class)->forProduct($product);
+    }
+
+    /** @return array<string, mixed> */
+    private static function indicator(Product $product): array
+    {
+        return self::$indicatorCache[$product->id]
+            ??= app(MarketPriceIndicator::class)->forProduct($product);
     }
 }

@@ -115,7 +115,8 @@ class MarketPriceIntelligenceTest extends TestCase
         $this->get(MarketAnalysisResource::getUrl('index', panel: 'admin'))
             ->assertOk()
             ->assertSeeText('Рынок и цены')
-            ->assertSeeText('Недостаточно данных');
+            ->assertSeeText('Недостаточно данных')
+            ->assertSeeText('Сигнал менеджеру');
         $this->get(MarketPriceObservationResource::getUrl('index', panel: 'admin'))
             ->assertOk()
             ->assertSeeText($product->name)
@@ -144,6 +145,7 @@ class MarketPriceIntelligenceTest extends TestCase
         $this->assertStringContainsString('Наша 120,00 BYN', $indicator['indicator_description']);
         $this->assertStringContainsString('медиана 100,00 BYN', $indicator['indicator_description']);
         $this->assertSame('danger', $indicator['indicator_color']);
+        $this->assertSame('above_market', $indicator['primary_warning']['code']);
         $this->assertTrue($indicator['evidence']->every(fn (array $evidence): bool => $evidence['eligible']));
 
         [$staleProduct, $staleSource] = $this->fixture('stale-indicator');
@@ -156,6 +158,60 @@ class MarketPriceIntelligenceTest extends TestCase
         $this->assertSame('stale', $stale['evidence']->first()['code']);
         $this->assertNotNull($stale['last_checked_at']);
         $this->assertSame('warning', $stale['indicator_color']);
+        $this->assertSame(['stale_data', 'insufficient_sources'], $stale['warnings']->pluck('code')->all());
+    }
+
+    public function test_indicator_flags_a_price_below_every_fresh_market_offer(): void
+    {
+        [$product] = $this->fixture('suspicious-low', productPrice: 80);
+        foreach ([100, 110, 120] as $index => $price) {
+            $this->record($this->source('suspicious-low-'.$index), $product, $price, now()->subHour());
+        }
+
+        $indicator = app(MarketPriceIndicator::class)->forProduct($product->fresh());
+
+        $this->assertSame('below', $indicator['position']);
+        $this->assertSame('suspicious_low_price', $indicator['primary_warning']['code']);
+        $this->assertStringContainsString('ниже минимального', $indicator['primary_warning']['description']);
+    }
+
+    public function test_order_market_warning_prioritizes_the_margin_floor_without_changing_price(): void
+    {
+        [$product] = $this->fixture('margin-warning', productPrice: 100);
+        foreach ([95, 100, 105] as $index => $price) {
+            $this->record($this->source('margin-warning-'.$index), $product, $price, now()->subHour());
+        }
+
+        $order = Order::query()->create([
+            'number' => 'MARKET-MARGIN-1',
+            'status' => 'new',
+            'customer_name' => 'Тестовый клиент',
+            'customer_phone' => '+375290000009',
+            'delivery_type' => 'pickup',
+            'payment_type' => 'cash',
+            'payment_status' => 'pending',
+            'subtotal' => 100,
+            'total' => 100,
+        ]);
+        $item = OrderItem::query()->create([
+            'order_id' => $order->id,
+            'product_id' => $product->id,
+            'product_name' => $product->name,
+            'product_sku' => $product->sku,
+            'price' => 100,
+            'quantity' => 1,
+            'total' => 100,
+            'supply_status' => 'supplier_purchase',
+            'supply_purchase_price' => 95,
+            'supply_captured_at' => now(),
+        ]);
+
+        $indicator = app(MarketPriceIndicator::class)->forOrder($order->fresh());
+
+        $this->assertSame('margin_below_minimum', $indicator['rows'][0]['indicator']['primary_warning']['code']);
+        $this->assertSame('Требует внимания: 1', $indicator['label']);
+        $this->assertSame('100.00', $item->fresh()->price);
+        $this->assertSame('95.00', $item->fresh()->supply_purchase_price);
     }
 
     public function test_order_indicator_aggregates_products_without_inventing_market_conclusions(): void
@@ -192,7 +248,7 @@ class MarketPriceIntelligenceTest extends TestCase
 
         $indicator = app(MarketPriceIndicator::class)->forOrder($order->fresh());
 
-        $this->assertSame('Выше рынка: 1', $indicator['label']);
+        $this->assertSame('Требует внимания: 2', $indicator['label']);
         $this->assertSame(1, $indicator['ready_count']);
         $this->assertSame(1, $indicator['above_count']);
         $this->assertSame(1, $indicator['insufficient_count']);
@@ -224,6 +280,7 @@ class MarketPriceIntelligenceTest extends TestCase
         $this->assertStringContainsString('Проверено', $html);
         $this->assertStringContainsString('https://market-source-details-0.example/offer', $html);
         $this->assertStringContainsString('Учитывается', $html);
+        $this->assertStringContainsString('Цена выше рынка', $html);
     }
 
     public function test_product_and_order_workbenches_show_the_same_market_indicator(): void
@@ -265,7 +322,7 @@ class MarketPriceIntelligenceTest extends TestCase
         $this->get(OrderResource::getUrl('index', panel: 'admin'))
             ->assertOk()
             ->assertSeeText('Рынок')
-            ->assertSeeText('Выше рынка: 1');
+            ->assertSeeText('Требует внимания: 1');
     }
 
     /** @return array{Product, MarketPriceSource} */
