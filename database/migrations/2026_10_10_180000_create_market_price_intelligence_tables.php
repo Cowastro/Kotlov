@@ -55,10 +55,10 @@ return new class extends Migration
             $table->timestamp('observed_at');
             $table->timestamps();
 
-            $table->index(['product_id', 'observed_at']);
-            $table->index(['market_price_source_id', 'observed_at']);
-            $table->index(['product_id', 'is_confirmed', 'is_comparable']);
-            $table->index(['url_hash', 'observed_at']);
+            $table->index(['product_id', 'observed_at'], 'market_obs_product_seen_idx');
+            $table->index(['market_price_source_id', 'observed_at'], 'market_obs_source_seen_idx');
+            $table->index(['product_id', 'is_confirmed', 'is_comparable'], 'market_obs_product_quality_idx');
+            $table->index(['url_hash', 'observed_at'], 'market_obs_url_seen_idx');
         });
     }
 
