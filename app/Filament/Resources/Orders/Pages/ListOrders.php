@@ -4,7 +4,10 @@ namespace App\Filament\Resources\Orders\Pages;
 
 use App\Filament\Resources\Orders\OrderResource;
 use App\Models\Order;
+use Filament\Actions\Action;
 use Filament\Actions\CreateAction;
+use Filament\Forms\Components\Textarea;
+use Filament\Notifications\Notification;
 use Filament\Resources\Pages\ListRecords;
 use Filament\Schemas\Components\Tabs\Tab;
 use Filament\Support\Enums\Width;
@@ -22,6 +25,46 @@ class ListOrders extends ListRecords
     protected function getHeaderActions(): array
     {
         return [
+            Action::make('archiveHistorical')
+                ->label(fn (): string => 'Закрыть все исторические ('.Order::query()->historicalUnprocessed()->count().')')
+                ->icon('heroicon-o-archive-box-arrow-down')
+                ->color('gray')
+                ->visible(fn (): bool => $this->activeTab === 'historical_leads'
+                    && Order::query()->historicalUnprocessed()->exists())
+                ->form([
+                    Textarea::make('reason')
+                        ->label('Общая причина закрытия')
+                        ->helperText('Причина и автор сохранятся в истории каждого заказа. Сами заказы не удаляются.')
+                        ->default('Архивная заявка до запуска нового рабочего процесса')
+                        ->rows(3)
+                        ->minLength(3)
+                        ->maxLength(1000)
+                        ->required(),
+                ])
+                ->requiresConfirmation()
+                ->modalHeading('Закрыть все исторические заявки')
+                ->modalDescription(fn (): string => 'Будут отмечены неактуальными '.Order::query()->historicalUnprocessed()->count().' новых неоплаченных заявок. Отменить это массовое действие автоматически нельзя.')
+                ->modalSubmitActionLabel('Закрыть все как неактуальные')
+                ->action(function (array $data): void {
+                    $changed = 0;
+
+                    Order::query()
+                        ->historicalUnprocessed()
+                        ->orderBy('id')
+                        ->chunkById(100, function ($orders) use ($data, &$changed): void {
+                            foreach ($orders as $order) {
+                                if ($order->markIrrelevant($data['reason'])) {
+                                    $changed++;
+                                }
+                            }
+                        });
+
+                    Notification::make()
+                        ->title('Исторические заявки закрыты')
+                        ->body("Отмечено неактуальными: {$changed}. Заказы и история сохранены.")
+                        ->success()
+                        ->send();
+                }),
             CreateAction::make(),
         ];
     }

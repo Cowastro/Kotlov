@@ -97,6 +97,32 @@ class OrderLegacyLeadQueueTest extends TestCase
         ]);
     }
 
+    public function test_manager_can_close_the_entire_historical_queue_without_deleting_orders(): void
+    {
+        Carbon::setTestNow('2026-10-10 12:00:00');
+        config()->set('shop.order_management.operations_started_at', '2026-10-10 00:00:00');
+        $manager = User::factory()->create(['role' => 'manager', 'is_active' => true]);
+        $historicalOne = $this->order('ORD-HISTORY-ONE', 'new', 'pending', now()->subDays(10));
+        $historicalTwo = $this->order('ORD-HISTORY-TWO', 'new', 'pending', now()->subDay());
+        $current = $this->order('ORD-CURRENT-KEEP', 'new', 'pending', now()->subHour());
+
+        Livewire::actingAs($manager)
+            ->test(ListOrders::class)
+            ->set('activeTab', 'historical_leads')
+            ->callAction('archiveHistorical', [
+                'reason' => 'Архивная заявка до запуска нового рабочего процесса',
+            ])
+            ->assertHasNoActionErrors();
+
+        $this->assertSame('cancelled', $historicalOne->fresh()->status);
+        $this->assertSame('cancelled', $historicalTwo->fresh()->status);
+        $this->assertSame('new', $current->fresh()->status);
+        $this->assertDatabaseHas('orders', ['id' => $historicalOne->id]);
+        $this->assertDatabaseHas('orders', ['id' => $historicalTwo->id]);
+        $this->assertDatabaseCount('order_status_history', 2);
+        $this->assertSame(0, Order::query()->historicalUnprocessed()->count());
+    }
+
     public function test_bulk_action_skips_paid_and_already_processed_orders(): void
     {
         Carbon::setTestNow('2026-10-10 12:00:00');

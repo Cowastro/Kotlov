@@ -9,7 +9,6 @@ use App\Services\Market\MarketPriceIndicator;
 use Filament\Actions\Action;
 use Filament\Actions\ActionGroup;
 use Filament\Actions\BulkAction;
-use Filament\Actions\BulkActionGroup;
 use Filament\Actions\EditAction;
 use Filament\Actions\ExportAction;
 use Filament\Actions\ViewAction;
@@ -569,7 +568,7 @@ class OrdersTable
                         ])
                         ->modalHeading('Отметить заявку неактуальной')
                         ->modalDescription('Заказ не удаляется: он перейдёт в статус «Отменён», а причина и автор сохранятся в истории.')
-                        ->action(fn (Order $record, array $data) => self::markIrrelevant($record, $data['reason'])),
+                        ->action(fn (Order $record, array $data) => $record->markIrrelevant($data['reason'])),
                     EditAction::make(),
                 ]),
             ])
@@ -577,56 +576,43 @@ class OrdersTable
                 ExportAction::make()
                     ->label('Экспорт')
                     ->exporter(OrderExporter::class),
-                BulkActionGroup::make([
-                    BulkAction::make('markIrrelevant')
-                        ->label('Отметить неактуальными')
-                        ->icon('heroicon-o-archive-box')
-                        ->color('gray')
-                        ->form([
-                            Textarea::make('reason')
-                                ->label('Общая причина')
-                                ->helperText('Будут изменены только новые неоплаченные заявки. Остальные выбранные заказы система пропустит.')
-                                ->rows(3)
-                                ->minLength(3)
-                                ->maxLength(1000)
-                                ->required(),
-                        ])
-                        ->requiresConfirmation()
-                        ->action(function (Collection $records, array $data): void {
-                            $changed = 0;
-                            $skipped = 0;
+                BulkAction::make('markIrrelevant')
+                    ->label('Отметить выбранные неактуальными')
+                    ->icon('heroicon-o-archive-box')
+                    ->color('gray')
+                    ->form([
+                        Textarea::make('reason')
+                            ->label('Общая причина')
+                            ->helperText('Можно выбрать текущую страницу или нажать «Выбрать все». Изменятся только новые неоплаченные заявки.')
+                            ->rows(3)
+                            ->minLength(3)
+                            ->maxLength(1000)
+                            ->required(),
+                    ])
+                    ->requiresConfirmation()
+                    ->modalSubmitActionLabel('Отметить выбранные неактуальными')
+                    ->action(function (Collection $records, array $data): void {
+                        $changed = 0;
+                        $skipped = 0;
 
-                            $records->each(function (Order $record) use ($data, &$changed, &$skipped): void {
-                                if ($record->status !== 'new' || $record->payment_status === 'paid') {
-                                    $skipped++;
+                        $records->each(function (Order $record) use ($data, &$changed, &$skipped): void {
+                            if (! $record->markIrrelevant($data['reason'])) {
+                                $skipped++;
 
-                                    return;
-                                }
+                                return;
+                            }
 
-                                self::markIrrelevant($record, $data['reason']);
-                                $changed++;
-                            });
+                            $changed++;
+                        });
 
-                            Notification::make()
-                                ->title('Заявки обработаны')
-                                ->body("Отмечено неактуальными: {$changed}. Пропущено: {$skipped}.")
-                                ->color($skipped > 0 ? 'warning' : 'success')
-                                ->send();
-                        })
-                        ->deselectRecordsAfterCompletion(),
-                ]),
+                        Notification::make()
+                            ->title('Заявки обработаны')
+                            ->body("Отмечено неактуальными: {$changed}. Пропущено: {$skipped}.")
+                            ->color($skipped > 0 ? 'warning' : 'success')
+                            ->send();
+                    })
+                    ->deselectRecordsAfterCompletion(),
             ]);
-    }
-
-    private static function markIrrelevant(Order $order, string $reason): void
-    {
-        $reason = trim($reason);
-        $note = '['.now()->timezone('Europe/Minsk')->format('d.m.Y H:i').'] Неактуальная заявка: '.$reason;
-        $adminComment = filled($order->admin_comment)
-            ? rtrim($order->admin_comment)."\n\n".$note
-            : $note;
-
-        $order->transitionTo('cancelled', $reason, ['admin_comment' => $adminComment]);
     }
 
     /** @return array<string, mixed> */

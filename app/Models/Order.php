@@ -227,6 +227,22 @@ class Order extends Model
         }
     }
 
+    public function markIrrelevant(string $reason): bool
+    {
+        if ($this->status !== 'new' || $this->payment_status === 'paid') {
+            return false;
+        }
+
+        $reason = trim($reason);
+        $timezone = config('app.display_timezone', 'Europe/Minsk');
+        $note = '['.now()->timezone($timezone)->format('d.m.Y H:i').'] Неактуальная заявка: '.$reason;
+        $adminComment = filled($this->admin_comment)
+            ? rtrim($this->admin_comment)."\n\n".$note
+            : $note;
+
+        return $this->transitionTo('cancelled', $reason, ['admin_comment' => $adminComment]);
+    }
+
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
