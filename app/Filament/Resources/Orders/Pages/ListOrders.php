@@ -26,9 +26,9 @@ class ListOrders extends ListRecords
     {
         return [
             Action::make('archiveHistorical')
-                ->label(fn (): string => 'В архив все старые ('.Order::query()->historicalUnprocessed()->count().')')
+                ->label(fn (): string => 'Закрыть все старые: '.Order::query()->historicalUnprocessed()->count())
                 ->icon('heroicon-o-archive-box-arrow-down')
-                ->color('gray')
+                ->color('warning')
                 ->visible(fn (): bool => Order::query()->historicalUnprocessed()->exists())
                 ->form([
                     Textarea::make('reason')
@@ -42,8 +42,8 @@ class ListOrders extends ListRecords
                 ])
                 ->requiresConfirmation()
                 ->modalHeading('Архивировать все старые заявки')
-                ->modalDescription(fn (): string => 'В архив попадут '.Order::query()->historicalUnprocessed()->count().' новых неоплаченных заявок старше границы рабочего периода. Новые, оплаченные и уже обработанные заказы не изменятся.')
-                ->modalSubmitActionLabel('В архив как неактуальные')
+                ->modalDescription(fn (): string => 'Будут закрыты '.Order::query()->historicalUnprocessed()->count().' новых неоплаченных заявок из очереди «Исторические заявки». Новые, оплаченные и уже обработанные заказы не изменятся.')
+                ->modalSubmitActionLabel('Присвоить «Неактуально» и архивировать')
                 ->action(function (array $data): void {
                     $changed = 0;
 

@@ -9,7 +9,6 @@ use App\Services\Market\MarketPriceIndicator;
 use Filament\Actions\Action;
 use Filament\Actions\ActionGroup;
 use Filament\Actions\BulkAction;
-use Filament\Actions\BulkActionGroup;
 use Filament\Actions\EditAction;
 use Filament\Actions\ExportAction;
 use Filament\Actions\ViewAction;
@@ -595,51 +594,47 @@ class OrdersTable
                 ExportAction::make()
                     ->label('Экспорт')
                     ->exporter(OrderExporter::class),
-                BulkActionGroup::make([
-                    BulkAction::make('markIrrelevant')
-                        ->label('В архив как неактуальные')
-                        ->icon('heroicon-o-archive-box-arrow-down')
-                        ->color('gray')
-                        ->form([
-                            Textarea::make('reason')
-                                ->label('Общая причина')
-                                ->helperText('Можно выбрать текущую страницу или затем нажать «Выбрать все». Новые, оплаченные и уже обработанные заказы защищены от изменения.')
-                                ->default('Архивная заявка до запуска нового рабочего процесса')
-                                ->rows(3)
-                                ->minLength(3)
-                                ->maxLength(1000)
-                                ->required(),
-                        ])
-                        ->requiresConfirmation()
-                        ->modalHeading('Архивировать выбранные заявки')
-                        ->modalDescription('Заявки не удаляются. Они получат статус «Неактуален · архив», а причина, время и автор сохранятся.')
-                        ->modalSubmitActionLabel('Архивировать выбранные')
-                        ->action(function (Collection $records, array $data): void {
-                            $changed = 0;
-                            $skipped = 0;
-
-                            $records->each(function (Order $record) use ($data, &$changed, &$skipped): void {
-                                if (! $record->markIrrelevant($data['reason'])) {
-                                    $skipped++;
-
-                                    return;
-                                }
-
-                                $changed++;
-                            });
-
-                            Notification::make()
-                                ->title('Заявки перемещены в архив')
-                                ->body("В архиве: {$changed}. Защищено и пропущено: {$skipped}.")
-                                ->color($skipped > 0 ? 'warning' : 'success')
-                                ->send();
-                        })
-                        ->deselectRecordsAfterCompletion(),
-                ])
-                    ->label('Массовые действия')
-                    ->icon('heroicon-o-queue-list')
+                BulkAction::make('markIrrelevant')
+                    ->label('В архив выбранные')
+                    ->icon('heroicon-o-archive-box-arrow-down')
                     ->color('warning')
-                    ->button(),
+                    ->button()
+                    ->tooltip('Сначала отметьте строки. Для всей очереди отметьте страницу и нажмите «Выбрать все» над таблицей.')
+                    ->form([
+                        Textarea::make('reason')
+                            ->label('Общая причина')
+                            ->helperText('Вы можете обработать строки на странице или весь отфильтрованный список через ссылку «Выбрать все». Новые, оплаченные и уже обработанные заказы защищены от изменения.')
+                            ->default('Архивная заявка до запуска нового рабочего процесса')
+                            ->rows(3)
+                            ->minLength(3)
+                            ->maxLength(1000)
+                            ->required(),
+                    ])
+                    ->requiresConfirmation()
+                    ->modalHeading('Архивировать выбранные заявки')
+                    ->modalDescription('Заявки не удаляются. Они получат статус «Неактуален · архив», а причина, время и автор сохранятся.')
+                    ->modalSubmitActionLabel('Архивировать выбранные')
+                    ->action(function (Collection $records, array $data): void {
+                        $changed = 0;
+                        $skipped = 0;
+
+                        $records->each(function (Order $record) use ($data, &$changed, &$skipped): void {
+                            if (! $record->markIrrelevant($data['reason'])) {
+                                $skipped++;
+
+                                return;
+                            }
+
+                            $changed++;
+                        });
+
+                        Notification::make()
+                            ->title('Заявки перемещены в архив')
+                            ->body("В архиве: {$changed}. Защищено и пропущено: {$skipped}.")
+                            ->color($skipped > 0 ? 'warning' : 'success')
+                            ->send();
+                    })
+                    ->deselectRecordsAfterCompletion(),
             ]);
     }
 

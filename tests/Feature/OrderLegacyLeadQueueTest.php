@@ -139,6 +139,8 @@ class OrderLegacyLeadQueueTest extends TestCase
         Livewire::actingAs($manager)
             ->test(ListOrders::class)
             ->set('activeTab', 'all')
+            ->assertTableBulkActionHasLabel('markIrrelevant', 'В архив выбранные')
+            ->assertTableBulkActionHasIcon('markIrrelevant', 'heroicon-o-archive-box-arrow-down')
             ->callTableBulkAction('markIrrelevant', [$lead, $paid, $confirmed], [
                 'reason' => 'Архивная заявка до запуска рабочего процесса',
             ])
