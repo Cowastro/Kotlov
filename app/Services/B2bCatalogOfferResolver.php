@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\Category;
 use App\Models\IntegrationProduct;
 use App\Models\Product;
 use App\Models\User;
@@ -11,6 +12,9 @@ class B2bCatalogOfferResolver
 {
     /** @var Collection<int, IntegrationProduct>|null */
     private ?Collection $offers = null;
+
+    /** @var array<int, int>|null */
+    private ?array $categoryParents = null;
 
     public function forProduct(Product $product, ?User $user = null): ?IntegrationProduct
     {
@@ -110,7 +114,36 @@ class B2bCatalogOfferResolver
             ->whereHas('source', fn ($query) => $query->where('is_active', true))
             ->get()
             ->filter(fn (IntegrationProduct $offer): bool => $offer->source?->isB2bEnabled() === true
-                && $offer->normalizedPriceByn() !== null)
+                && $offer->normalizedPriceByn() !== null
+                && $this->sourceAllowsCategory($offer))
             ->values();
+    }
+
+    private function sourceAllowsCategory(IntegrationProduct $offer): bool
+    {
+        $allowed = $offer->source?->b2bCategoryIds() ?? [];
+        $categoryId = (int) ($offer->product?->category_id ?? 0);
+
+        if ($allowed === [] || $categoryId <= 0) {
+            return false;
+        }
+
+        $allowedLookup = array_fill_keys($allowed, true);
+        $parents = $this->categoryParents ??= Category::query()
+            ->pluck('parent_id', 'id')
+            ->map(fn (mixed $parentId): int => (int) $parentId)
+            ->all();
+
+        $visited = [];
+        while ($categoryId > 0 && ! isset($visited[$categoryId])) {
+            if (isset($allowedLookup[$categoryId])) {
+                return true;
+            }
+
+            $visited[$categoryId] = true;
+            $categoryId = (int) ($parents[$categoryId] ?? 0);
+        }
+
+        return false;
     }
 }

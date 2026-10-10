@@ -8,6 +8,7 @@ use App\Models\IntegrationSource;
 use App\Models\Product;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
 class B2bCatalogPricingTest extends TestCase
@@ -150,6 +151,127 @@ class B2bCatalogPricingTest extends TestCase
         );
     }
 
+    public function test_partner_catalog_is_deny_by_default_without_allowed_categories(): void
+    {
+        [$product, $user] = $this->catalogFixture(approved: true);
+        $source = IntegrationProduct::query()->where('product_id', $product->id)->firstOrFail()->source;
+        $settings = $source->settings;
+        $settings['b2b_category_ids'] = [];
+        $source->updateQuietly(['settings' => $settings]);
+
+        $this->actingAs($user)
+            ->get('/'.$product->category->slug.'/'.$product->slug)
+            ->assertOk()
+            ->assertDontSeeText('Партнёрская цена от ООО «СанБизнесГруп»')
+            ->assertSeeText('120.00 BYN');
+
+        $this->actingAs($user)
+            ->get('/account')
+            ->assertOk()
+            ->assertDontSeeText('Дымоходы');
+    }
+
+    public function test_allowed_parent_category_includes_children_but_excludes_other_branches(): void
+    {
+        [$product, $user] = $this->catalogFixture(approved: true);
+        $source = IntegrationProduct::query()->where('product_id', $product->id)->firstOrFail()->source;
+        $root = Category::query()->create([
+            'name' => 'Разрешённая ветка',
+            'slug' => 'allowed-b2b-root',
+            'is_active' => true,
+        ]);
+        $product->category->update(['parent_id' => $root->id]);
+        $settings = $source->settings;
+        $settings['b2b_category_ids'] = [$root->id];
+        $source->updateQuietly(['settings' => $settings]);
+
+        $blockedCategory = Category::query()->create([
+            'name' => 'Котлы вне пилота',
+            'slug' => 'blocked-b2b-category',
+            'is_active' => true,
+        ]);
+        $blockedProduct = Product::query()->create([
+            'category_id' => $blockedCategory->id,
+            'name' => 'Товар вне разрешённой ветки',
+            'slug' => 'blocked-b2b-product',
+            'sku' => 'BLOCKED-B2B',
+            'price' => 200,
+            'is_active' => true,
+            'is_archived' => false,
+            'in_stock' => true,
+        ]);
+        IntegrationProduct::query()->create([
+            'integration_source_id' => $source->id,
+            'product_id' => $blockedProduct->id,
+            'external_id' => 'onec-blocked-b2b',
+            'name' => 'Товар вне разрешённой ветки',
+            'price' => 100,
+            'stock_quantity' => 5,
+            'match_status' => 'matched',
+        ]);
+
+        $this->actingAs($user)
+            ->get('/'.$product->category->slug.'/'.$product->slug)
+            ->assertOk()
+            ->assertSeeText('Партнёрская цена от ООО «СанБизнесГруп»');
+
+        $this->actingAs($user)
+            ->get('/'.$blockedCategory->slug.'/'.$blockedProduct->slug)
+            ->assertOk()
+            ->assertDontSeeText('Партнёрская цена от ООО «СанБизнесГруп»')
+            ->assertSeeText('200.00 BYN');
+
+        $this->actingAs($user)
+            ->get('/account')
+            ->assertOk()
+            ->assertSeeText('Дымоходы')
+            ->assertDontSeeText('Котлы вне пилота');
+    }
+
+    public function test_source_edit_explains_required_partner_catalog_scope(): void
+    {
+        [$product] = $this->catalogFixture(approved: false);
+        $source = IntegrationProduct::query()->where('product_id', $product->id)->firstOrFail()->source;
+        $admin = User::factory()->create([
+            'role' => 'admin',
+            'is_active' => true,
+        ]);
+
+        $this->actingAs($admin)
+            ->get('/admin/integration-sources/'.$source->id.'/edit')
+            ->assertOk()
+            ->assertSeeText('Разрешённые категории партнёрского каталога')
+            ->assertSeeText('Пустой список ничего не публикует');
+    }
+
+    public function test_pilot_migration_selects_chimney_branch_without_overwriting_manual_scope(): void
+    {
+        $root = Category::query()->firstOrCreate(
+            ['slug' => 'dymohody'],
+            ['name' => 'Дымоходы', 'is_active' => true],
+        );
+        $source = IntegrationSource::query()->where('code', 'onec')->firstOrFail();
+        $settings = $source->settings ?? [];
+        unset($settings['b2b_category_ids']);
+        DB::table('integration_sources')->where('id', $source->id)->update([
+            'settings' => json_encode($settings, JSON_UNESCAPED_UNICODE),
+        ]);
+
+        $migration = require database_path('migrations/2026_10_10_201000_configure_onec_b2b_category_allowlist.php');
+        $migration->up();
+
+        $this->assertSame([$root->id], $source->fresh()->b2bCategoryIds());
+
+        $settings = $source->fresh()->settings;
+        $settings['b2b_category_ids'] = [999];
+        DB::table('integration_sources')->where('id', $source->id)->update([
+            'settings' => json_encode($settings, JSON_UNESCAPED_UNICODE),
+        ]);
+        $migration->up();
+
+        $this->assertSame([999], $source->fresh()->b2bCategoryIds());
+    }
+
     /** @return array{Product, User} */
     private function catalogFixture(bool $approved): array
     {
@@ -178,6 +300,7 @@ class B2bCatalogPricingTest extends TestCase
                     'vat_rate' => 20,
                     'warehouse_label' => 'Основной',
                     'b2b_enabled' => true,
+                    'b2b_category_ids' => [$category->id],
                     'partner_name' => 'ООО «СанБизнесГруп»',
                 ],
             ],

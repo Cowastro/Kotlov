@@ -36,6 +36,7 @@ class IntegrationSourcePricingAuditTest extends TestCase
         $settings['price_tax_mode'] = 'inclusive';
         $settings['vat_rate'] = 10;
         $settings['b2b_enabled'] = true;
+        $settings['b2b_category_ids'] = [9, 4, 9];
         $settings['partner_name'] = 'Партнёрский поставщик';
         $source->update([
             'update_prices' => true,
@@ -52,6 +53,7 @@ class IntegrationSourcePricingAuditTest extends TestCase
             'settings.price_tax_mode',
             'settings.vat_rate',
             'settings.b2b_enabled',
+            'settings.b2b_category_ids',
             'settings.partner_name',
         ], $change->changed_fields);
         $this->assertFalse($change->before_values['update_prices']);
@@ -60,6 +62,10 @@ class IntegrationSourcePricingAuditTest extends TestCase
         $this->assertSame('inclusive', $change->after_values['settings.price_tax_mode']);
         $this->assertSame(20, $change->before_values['settings.vat_rate']);
         $this->assertSame(10, $change->after_values['settings.vat_rate']);
+        $this->assertSame([], $change->before_values['settings.b2b_category_ids']);
+        $this->assertSame([4, 9], $change->after_values['settings.b2b_category_ids']);
+        $this->assertStringContainsString('Разрешённые категории B2B', $change->changeSummary());
+        $this->assertStringContainsString('ID категорий: 4, 9', $change->valuesSummary('after_values'));
     }
 
     public function test_unrelated_source_settings_do_not_create_pricing_history(): void

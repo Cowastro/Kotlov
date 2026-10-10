@@ -17,6 +17,7 @@ class IntegrationSourcePricingAuditRecorder
         'settings.price_tax_mode',
         'settings.vat_rate',
         'settings.b2b_enabled',
+        'settings.b2b_category_ids',
         'settings.partner_name',
     ];
 
@@ -49,7 +50,7 @@ class IntegrationSourcePricingAuditRecorder
         ]);
     }
 
-    /** @return array<string, bool|float|string|null> */
+    /** @return array<string, array<int>|bool|float|string|null> */
     private function snapshot(IntegrationSource $source, bool $original): array
     {
         $settings = $original
@@ -71,6 +72,13 @@ class IntegrationSourcePricingAuditRecorder
                 : IntegrationSource::PRICE_TAX_EXCLUSIVE,
             'settings.vat_rate' => round(max(0, (float) data_get($settings, 'vat_rate', 20)), 4),
             'settings.b2b_enabled' => (bool) data_get($settings, 'b2b_enabled', false),
+            'settings.b2b_category_ids' => collect(data_get($settings, 'b2b_category_ids', []))
+                ->map(fn (mixed $id): int => (int) $id)
+                ->filter(fn (int $id): bool => $id > 0)
+                ->unique()
+                ->sort()
+                ->values()
+                ->all(),
             'settings.partner_name' => filled(data_get($settings, 'partner_name'))
                 ? trim((string) data_get($settings, 'partner_name'))
                 : null,

@@ -15,6 +15,7 @@ class IntegrationSourcePricingChange extends Model
         'settings.price_tax_mode' => 'Режим НДС',
         'settings.vat_rate' => 'Ставка НДС',
         'settings.b2b_enabled' => 'Партнёрские цены',
+        'settings.b2b_category_ids' => 'Разрешённые категории B2B',
         'settings.partner_name' => 'Название поставщика для партнёра',
     ];
 
@@ -68,6 +69,12 @@ class IntegrationSourcePricingChange extends Model
 
     private function formatValue(string $field, mixed $value): string
     {
+        if ($field === 'settings.b2b_category_ids') {
+            return is_array($value) && $value !== []
+                ? 'ID категорий: '.implode(', ', $value)
+                : 'ничего не публиковать';
+        }
+
         return match ($field) {
             'update_prices', 'settings.b2b_enabled' => $value ? 'включено' : 'выключено',
             'settings.price_tax_mode' => $value === IntegrationSource::PRICE_TAX_INCLUSIVE

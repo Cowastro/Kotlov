@@ -6,6 +6,7 @@ use App\Filament\Resources\IntegrationSources\Pages\CreateIntegrationSource;
 use App\Filament\Resources\IntegrationSources\Pages\EditIntegrationSource;
 use App\Filament\Resources\IntegrationSources\Pages\ListIntegrationSources;
 use App\Filament\Resources\IntegrationSources\RelationManagers\PricingChangesRelationManager;
+use App\Models\Category;
 use App\Models\IntegrationSource;
 use App\Models\Order;
 use App\Models\Supplier;
@@ -177,6 +178,19 @@ class IntegrationSourceResource extends Resource
                         ->label('Поставщик для партнёра')
                         ->placeholder('ООО «СанБизнесГруп»')
                         ->maxLength(255),
+                    Select::make('settings.b2b_category_ids')
+                        ->label('Разрешённые категории партнёрского каталога')
+                        ->options(fn (): array => Category::query()
+                            ->active()
+                            ->orderBy('name')
+                            ->pluck('name', 'id')
+                            ->all())
+                        ->multiple()
+                        ->searchable()
+                        ->preload()
+                        ->required(fn (callable $get): bool => (bool) $get('settings.b2b_enabled'))
+                        ->helperText('Пустой список ничего не публикует. Выбор родительской категории разрешает также все её дочерние разделы.')
+                        ->columnSpanFull(),
                     Select::make('price_currency')
                         ->label('Валюта входной цены')
                         ->options(array_combine(

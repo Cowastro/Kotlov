@@ -41,6 +41,7 @@ class IntegrationSource extends Model
                 'vat_rate' => 20,
                 'warehouse_label' => 'Основной',
                 'b2b_enabled' => false,
+                'b2b_category_ids' => [],
                 'order_interval_minutes' => 5,
                 'order_dispatch_delay_minutes' => 10,
                 'order_response_timeout_minutes' => 15,
@@ -67,6 +68,24 @@ class IntegrationSource extends Model
     public function partnerName(): string
     {
         return (string) data_get($this->settings, 'partner_name', $this->name);
+    }
+
+    /** @return list<int> */
+    public function b2bCategoryIds(): array
+    {
+        $ids = data_get($this->settings, 'b2b_category_ids', []);
+
+        if (! is_array($ids)) {
+            return [];
+        }
+
+        return collect($ids)
+            ->map(fn (mixed $id): int => (int) $id)
+            ->filter(fn (int $id): bool => $id > 0)
+            ->unique()
+            ->sort()
+            ->values()
+            ->all();
     }
 
     public function priceTaxMode(): string
