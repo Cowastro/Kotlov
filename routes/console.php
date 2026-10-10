@@ -9,6 +9,14 @@ Schedule::command('integration:scan-issues')
     ->withoutOverlapping(5)
     ->runInBackground();
 
+// Рыночные цены: команда сама выбирает только активные, явно разрешённые и
+// наступившие по расписанию источники. Без адаптера или разрешения запросов нет.
+Schedule::command('market:collect-prices')
+    ->everyFifteenMinutes()
+    ->withoutOverlapping(20)
+    ->runInBackground()
+    ->appendOutputTo(storage_path('logs/market-price-collection.log'));
+
 Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
 })->purpose('Display an inspiring quote');

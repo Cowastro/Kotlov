@@ -23,7 +23,7 @@ class MarketPriceSource extends Model
     ];
 
     protected $fillable = [
-        'code', 'name', 'kind', 'collection_method', 'base_url', 'currency',
+        'code', 'name', 'kind', 'collection_method', 'adapter_key', 'collection_settings', 'base_url', 'currency',
         'region', 'freshness_hours', 'collection_interval_minutes',
         'max_requests_per_run', 'max_requests_per_day', 'allowed_path_prefixes',
         'respect_robots_txt', 'collection_authorized', 'last_collection_at',
@@ -36,6 +36,7 @@ class MarketPriceSource extends Model
         'max_requests_per_run' => 'integer',
         'max_requests_per_day' => 'integer',
         'allowed_path_prefixes' => 'array',
+        'collection_settings' => 'array',
         'respect_robots_txt' => 'boolean',
         'collection_authorized' => 'boolean',
         'last_collection_at' => 'datetime',

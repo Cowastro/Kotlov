@@ -7,6 +7,7 @@ use App\Filament\Resources\MarketPriceSources\Pages\EditMarketPriceSource;
 use App\Filament\Resources\MarketPriceSources\Pages\ListMarketPriceSources;
 use App\Models\MarketPriceCollectionRun;
 use App\Models\MarketPriceSource;
+use App\Services\Market\MarketPriceAdapterRegistry;
 use BackedEnum;
 use Filament\Actions\EditAction;
 use Filament\Forms\Components\Select;
@@ -63,6 +64,11 @@ class MarketPriceSourceResource extends Resource
                 ->options(MarketPriceSource::COLLECTION_METHODS)
                 ->default('manual')
                 ->required(),
+            Select::make('adapter_key')
+                ->label('Адаптер источника')
+                ->options(MarketPriceAdapterRegistry::LABELS)
+                ->placeholder('Не подключён')
+                ->helperText('Адаптер определяет формат данных. Без него автоматические запросы не выполняются.'),
             TextInput::make('base_url')
                 ->label('Адрес сайта')
                 ->url()
@@ -106,6 +112,20 @@ class MarketPriceSourceResource extends Resource
                 ->maxValue(50000)
                 ->default(500)
                 ->required(),
+            TextInput::make('collection_settings.endpoint_path')
+                ->label('Путь JSON endpoint')
+                ->helperText('Только путь на разрешённом домене, например /api/market-prices.')
+                ->placeholder('/api/market-prices'),
+            TextInput::make('collection_settings.items_path')
+                ->label('Путь к массиву в JSON')
+                ->helperText('Например items или data.items. Пустое значение — корневой массив.')
+                ->default('items'),
+            TextInput::make('collection_settings.max_items_per_run')
+                ->label('Максимум предложений за запуск')
+                ->numeric()
+                ->minValue(1)
+                ->maxValue(5000)
+                ->default(500),
             TagsInput::make('allowed_path_prefixes')
                 ->label('Разрешённые пути сайта')
                 ->helperText('Например: /catalog/ и /products/. Пустое поле разрешает весь указанный домен.')
@@ -152,13 +172,17 @@ class MarketPriceSourceResource extends Resource
                     ->formatStateUsing(fn (string $state): string => MarketPriceSource::COLLECTION_METHODS[$state] ?? $state)
                     ->badge()
                     ->color('info'),
+                TextColumn::make('adapter_key')->label('Адаптер')
+                    ->formatStateUsing(fn (?string $state): string => MarketPriceAdapterRegistry::LABELS[$state] ?? 'Не подключён')
+                    ->badge()
+                    ->color(fn (?string $state): string => $state ? 'info' : 'gray'),
                 TextColumn::make('region')->label('Регион'),
                 TextColumn::make('freshness_hours')->label('Свежесть')->suffix(' ч')->alignRight(),
                 TextColumn::make('collection_schedule')->label('Режим сбора')
                     ->state(fn (MarketPriceSource $record): string => $record->collectionScheduleLabel())
                     ->wrap(),
                 IconColumn::make('collection_authorized')->label('Автосбор')->boolean(),
-                TextColumn::make('last_collection_at')->label('Последний сбор')
+                TextColumn::make('last_collection_at')->label('Последняя попытка')
                     ->dateTime('d.m.Y H:i', 'Europe/Minsk')->placeholder('Не запускался')->sortable(),
                 TextColumn::make('latestCollectionRun.status')->label('Последний результат')
                     ->formatStateUsing(fn (?string $state): string => MarketPriceCollectionRun::STATUSES[$state] ?? 'Нет запусков')

@@ -37,8 +37,16 @@ class MarketPriceCollectionPolicy
                 return $this->denied('unsafe_base_url', 'Укажите безопасный публичный HTTP(S)-адрес источника.');
             }
 
-            if (! $source->respect_robots_txt) {
+            if ($source->collection_method === 'scrape' && ! $source->respect_robots_txt) {
                 return $this->denied('robots_policy_required', 'Для автоматического сбора обязательно соблюдение robots.txt.');
+            }
+
+            $running = $source->collectionRuns()
+                ->where('status', 'running')
+                ->where('started_at', '>=', $now->copy()->subHour())
+                ->exists();
+            if ($running) {
+                return $this->denied('collection_in_progress', 'Для источника уже выполняется другой запуск сбора.');
             }
         }
 
@@ -54,8 +62,13 @@ class MarketPriceCollectionPolicy
     }
 
     /** @return array{allowed:bool,code:?string,message:?string} */
-    public function canRequest(MarketPriceSource $source, MarketPriceCollectionRun $run, string $url, CarbonInterface $now): array
-    {
+    public function canRequest(
+        MarketPriceSource $source,
+        MarketPriceCollectionRun $run,
+        string $url,
+        CarbonInterface $now,
+        bool $robotsTxt = false,
+    ): array {
         if ($run->status !== 'running') {
             return $this->denied('run_not_active', 'Сессия сбора уже завершена или заблокирована.');
         }
@@ -72,6 +85,12 @@ class MarketPriceCollectionPolicy
             return $this->denied('daily_limit_reached', 'Достигнут дневной лимит запросов.');
         }
 
+        return $this->canUseUrl($source, $url, $robotsTxt);
+    }
+
+    /** @return array{allowed:bool,code:?string,message:?string} */
+    public function canUseUrl(MarketPriceSource $source, string $url, bool $robotsTxt = false): array
+    {
         $target = $this->parseHttpUrl($url);
         $base = $this->parseHttpUrl((string) $source->base_url);
 
@@ -83,12 +102,16 @@ class MarketPriceCollectionPolicy
             return $this->denied('host_not_allowed', 'URL предложения находится вне разрешённого домена источника.');
         }
 
+        if ($target['scheme'] !== $base['scheme'] || $target['port'] !== $base['port']) {
+            return $this->denied('origin_not_allowed', 'URL должен использовать тот же протокол и порт, что и источник.');
+        }
+
         $prefixes = collect($source->allowed_path_prefixes)
             ->map(fn (mixed $prefix): string => '/'.ltrim(trim((string) $prefix), '/'))
             ->filter(fn (string $prefix): bool => $prefix !== '/')
             ->values();
 
-        if ($prefixes->isNotEmpty() && ! $prefixes->contains(
+        if (! $robotsTxt && $prefixes->isNotEmpty() && ! $prefixes->contains(
             fn (string $prefix): bool => str_starts_with($target['path'], $prefix),
         )) {
             return $this->denied('path_not_allowed', 'Путь URL не входит в разрешённые разделы источника.');
@@ -97,7 +120,7 @@ class MarketPriceCollectionPolicy
         return ['allowed' => true, 'code' => null, 'message' => null];
     }
 
-    /** @return array{scheme:string,host:string,path:string}|null */
+    /** @return array{scheme:string,host:string,port:int,path:string}|null */
     private function parseHttpUrl(string $url): ?array
     {
         $parts = parse_url(trim($url));
@@ -111,6 +134,7 @@ class MarketPriceCollectionPolicy
         return [
             'scheme' => strtolower((string) $parts['scheme']),
             'host' => strtolower((string) $parts['host']),
+            'port' => (int) ($parts['port'] ?? (strtolower((string) $parts['scheme']) === 'https' ? 443 : 80)),
             'path' => '/'.ltrim((string) ($parts['path'] ?? ''), '/'),
         ];
     }

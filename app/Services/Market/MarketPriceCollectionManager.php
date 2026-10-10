@@ -56,11 +56,57 @@ class MarketPriceCollectionManager
         $now ??= now();
         $url = trim((string) ($data['url'] ?? ''));
 
-        return DB::transaction(function () use ($run, $product, $data, $now, $url): ?MarketPriceObservation {
+        if (! $this->reserveRequest($run, $url, $now)) {
+            return null;
+        }
+
+        return $this->recordFetched($run, $product, $data, $now);
+    }
+
+    public function reserveRequest(
+        MarketPriceCollectionRun $run,
+        string $url,
+        ?CarbonInterface $now = null,
+        bool $robotsTxt = false,
+    ): bool {
+        $now ??= now();
+
+        return DB::transaction(function () use ($run, $url, $now, $robotsTxt): bool {
             /** @var MarketPriceCollectionRun $lockedRun */
             $lockedRun = MarketPriceCollectionRun::query()->lockForUpdate()->with('source')->findOrFail($run->id);
             $source = $lockedRun->source;
-            $decision = $this->policy->canRequest($source, $lockedRun, $url, $now);
+            $decision = $this->policy->canRequest($source, $lockedRun, $url, $now, $robotsTxt);
+
+            if (! $decision['allowed']) {
+                $this->appendEvent($lockedRun, 'error', $decision['code'], $decision['message'], $now);
+                $lockedRun->increment('skipped_count');
+                $lockedRun->increment('error_count');
+
+                return false;
+            }
+
+            $lockedRun->increment('requested_count');
+
+            return true;
+        });
+    }
+
+    public function recordFetched(
+        MarketPriceCollectionRun $run,
+        Product $product,
+        array $data,
+        ?CarbonInterface $now = null,
+    ): ?MarketPriceObservation {
+        $now ??= now();
+
+        return DB::transaction(function () use ($run, $product, $data, $now): ?MarketPriceObservation {
+            /** @var MarketPriceCollectionRun $lockedRun */
+            $lockedRun = MarketPriceCollectionRun::query()->lockForUpdate()->with('source')->findOrFail($run->id);
+            if ($lockedRun->status !== 'running') {
+                return null;
+            }
+
+            $decision = $this->policy->canUseUrl($lockedRun->source, trim((string) ($data['url'] ?? '')));
 
             if (! $decision['allowed']) {
                 $this->appendEvent($lockedRun, 'error', $decision['code'], $decision['message'], $now);
@@ -70,10 +116,8 @@ class MarketPriceCollectionManager
                 return null;
             }
 
-            $lockedRun->increment('requested_count');
-
             try {
-                $observation = $this->recorder->record($source, $product, $data);
+                $observation = $this->recorder->record($lockedRun->source, $product, $data);
                 $lockedRun->increment('recorded_count');
 
                 return $observation;
@@ -83,6 +127,33 @@ class MarketPriceCollectionManager
 
                 return null;
             }
+        });
+    }
+
+    public function skip(MarketPriceCollectionRun $run, string $code, string $message, ?CarbonInterface $now = null): void
+    {
+        DB::transaction(function () use ($run, $code, $message, $now): void {
+            $lockedRun = MarketPriceCollectionRun::query()->lockForUpdate()->findOrFail($run->id);
+            if ($lockedRun->status !== 'running') {
+                return;
+            }
+
+            $lockedRun->increment('skipped_count');
+            $lockedRun->increment('warning_count');
+            $this->appendEvent($lockedRun, 'warning', $code, $message, $now ?? now());
+        });
+    }
+
+    public function fail(MarketPriceCollectionRun $run, string $code, string $message, ?CarbonInterface $now = null): void
+    {
+        DB::transaction(function () use ($run, $code, $message, $now): void {
+            $lockedRun = MarketPriceCollectionRun::query()->lockForUpdate()->findOrFail($run->id);
+            if ($lockedRun->status !== 'running') {
+                return;
+            }
+
+            $lockedRun->increment('error_count');
+            $this->appendEvent($lockedRun, 'error', $code, $message, $now ?? now());
         });
     }
 

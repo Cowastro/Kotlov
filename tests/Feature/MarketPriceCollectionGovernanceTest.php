@@ -9,8 +9,11 @@ use App\Models\MarketPriceSource;
 use App\Models\Product;
 use App\Models\User;
 use App\Services\Market\MarketPriceCollectionManager;
+use App\Services\Market\MarketPriceCollector;
+use App\Services\Market\MarketPublicHostGuard;
 use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
 
 class MarketPriceCollectionGovernanceTest extends TestCase
@@ -126,6 +129,107 @@ class MarketPriceCollectionGovernanceTest extends TestCase
             ->assertOk()
             ->assertSeeText('Журнал сбора рынка')
             ->assertSeeText('Контролируемый источник');
+    }
+
+    public function test_json_feed_adapter_updates_only_existing_exact_skus_as_unconfirmed_evidence(): void
+    {
+        $product = $this->product();
+        $source = $this->source([
+            'adapter_key' => 'json_feed_v1',
+            'collection_settings' => [
+                'endpoint_path' => '/catalog/feed.json',
+                'items_path' => 'data.items',
+                'max_items_per_run' => 100,
+            ],
+        ]);
+        $this->mock(MarketPublicHostGuard::class)
+            ->shouldReceive('allows')->once()->andReturnTrue();
+        Http::fake([
+            'https://prices.example.by/catalog/feed.json' => Http::response([
+                'data' => ['items' => [
+                    [
+                        'product_sku' => $product->sku,
+                        'url' => 'https://prices.example.by/catalog/item',
+                        'name' => 'Рыночное предложение',
+                        'price' => 99.90,
+                        'currency' => 'BYN',
+                        'availability_status' => 'in_stock',
+                        'observed_at' => '2026-10-10 12:00:00',
+                    ],
+                    [
+                        'product_sku' => 'UNKNOWN-SKU',
+                        'url' => 'https://prices.example.by/catalog/unknown',
+                        'price' => 10,
+                    ],
+                ]],
+            ]),
+        ]);
+
+        $run = app(MarketPriceCollector::class)->collect($source, 'api');
+
+        $this->assertSame('warning', $run->status);
+        $this->assertSame(1, $run->requested_count);
+        $this->assertSame(1, $run->recorded_count);
+        $this->assertSame(1, $run->skipped_count);
+        $this->assertSame(1, $run->warning_count);
+        $observation = MarketPriceObservation::query()->sole();
+        $this->assertSame($product->id, $observation->product_id);
+        $this->assertFalse($observation->is_confirmed);
+        $this->assertFalse($observation->is_comparable);
+        $this->assertSame(['requires_human_confirmation'], $observation->validation_flags);
+        $this->assertSame('product_not_found', collect($run->events)->last()['code']);
+    }
+
+    public function test_scrape_adapter_stops_before_feed_when_robots_disallows_endpoint(): void
+    {
+        $source = $this->source([
+            'collection_method' => 'scrape',
+            'adapter_key' => 'json_feed_v1',
+            'collection_settings' => ['endpoint_path' => '/catalog/feed.json'],
+        ]);
+        $this->mock(MarketPublicHostGuard::class)
+            ->shouldReceive('allows')->once()->andReturnTrue();
+        Http::fake([
+            'https://prices.example.by/robots.txt' => Http::response("User-agent: *\nDisallow: /catalog/", 200),
+            '*' => Http::response(['items' => []]),
+        ]);
+
+        $run = app(MarketPriceCollector::class)->collect($source, 'api');
+
+        $this->assertSame('failed', $run->status);
+        $this->assertSame(1, $run->requested_count);
+        $this->assertSame(0, $run->recorded_count);
+        $this->assertSame('robots_disallowed', collect($run->events)->last()['code']);
+        Http::assertSentCount(1);
+    }
+
+    public function test_feed_redirect_is_not_followed_and_is_recorded_as_a_failure(): void
+    {
+        $source = $this->source([
+            'adapter_key' => 'json_feed_v1',
+            'collection_settings' => ['endpoint_path' => '/catalog/feed.json'],
+        ]);
+        $this->mock(MarketPublicHostGuard::class)
+            ->shouldReceive('allows')->once()->andReturnTrue();
+        Http::fake([
+            'https://prices.example.by/catalog/feed.json' => Http::response('', 302, [
+                'Location' => 'http://127.0.0.1/private',
+            ]),
+        ]);
+
+        $run = app(MarketPriceCollector::class)->collect($source, 'api');
+
+        $this->assertSame('failed', $run->status);
+        $this->assertSame(1, $run->requested_count);
+        $this->assertSame('redirect_blocked', collect($run->events)->last()['code']);
+        Http::assertSentCount(1);
+    }
+
+    public function test_scheduled_command_is_a_no_op_without_due_authorized_sources(): void
+    {
+        $this->artisan('market:collect-prices')
+            ->expectsOutput('Источников: 0 · успешно: 0 · с предупреждениями: 0 · ошибок/блокировок: 0')
+            ->assertSuccessful();
     }
 
     private function source(array $overrides = []): MarketPriceSource
