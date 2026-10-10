@@ -144,7 +144,7 @@ class OrderStockRecommendationTest extends TestCase
         ]);
         $notLinked = Product::query()->create([
             'category_id' => $category->id,
-            'name' => 'Нет привязки к 1С',
+            'name' => 'Шина Varfix VM36302 без привязки',
             'slug' => 'stock-not-linked',
             'sku' => 'NOT-LINKED',
         ]);
@@ -188,7 +188,7 @@ class OrderStockRecommendationTest extends TestCase
         $manager = User::factory()->create(['role' => 'manager', 'is_active' => true]);
         $expectedSearchUrl = IntegrationProductResource::getUrl('index', [
             'tab' => 'all',
-            'tableSearch' => $notLinked->sku,
+            'search' => 'VM36302',
         ]);
         $expectedEditUrl = IntegrationProductResource::getUrl('edit', [
             'record' => $staleRow['stock_integration_product_id'],
@@ -203,6 +203,9 @@ class OrderStockRecommendationTest extends TestCase
             ->assertSeeText('Открыть связь 1С')
             ->assertSee($expectedSearchUrl)
             ->assertSee($expectedEditUrl);
+
+        $this->assertStringContainsString('search=VM36302', $expectedSearchUrl);
+        $this->assertStringNotContainsString('tableSearch=', $expectedSearchUrl);
     }
 
     private function orderWithItem(

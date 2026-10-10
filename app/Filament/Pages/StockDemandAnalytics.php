@@ -146,11 +146,11 @@ class StockDemandAnalytics extends Page
             ]);
         }
 
-        $search = trim((string) ($row['sku'] ?: $row['name']));
+        $search = $this->matchingSearchTerm($row);
 
         return IntegrationProductResource::getUrl('index', [
             'tab' => 'all',
-            'tableSearch' => $search,
+            'search' => $search,
         ]);
     }
 
@@ -159,6 +159,29 @@ class StockDemandAnalytics extends Page
         return filled($row['stock_integration_product_id'] ?? null)
             ? 'Открыть связь 1С'
             : 'Найти и привязать';
+    }
+
+    public function matchingSearchTerm(array $row): string
+    {
+        $name = trim((string) ($row['name'] ?? ''));
+        preg_match_all('/[\p{L}\d][\p{L}\d._,\/-]{3,}/u', $name, $matches);
+
+        $modelToken = collect($matches[0] ?? [])
+            ->filter(fn (string $token): bool => preg_match('/\d/u', $token) === 1
+                && preg_match('/\p{L}/u', $token) === 1)
+            ->sortByDesc(fn (string $token): int => mb_strlen($token))
+            ->first();
+
+        if (filled($modelToken)) {
+            return $modelToken;
+        }
+
+        $sku = trim((string) ($row['sku'] ?? ''));
+        if ($sku !== '' && preg_match('/^(?:KOTLOV|PS)-/i', $sku) !== 1) {
+            return $sku;
+        }
+
+        return $name;
     }
 
     public function summary(): array
