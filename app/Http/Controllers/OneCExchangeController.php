@@ -15,6 +15,7 @@ use Carbon\CarbonImmutable;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -274,25 +275,12 @@ class OneCExchangeController extends Controller
 
     private function exportOrders(Request $request, IntegrationSource $source): Response
     {
-        $run = $this->startRun($request, $source, 'outbound', 'orders');
+        $batch = $this->prepareOrderBatch($request, $source);
         $orders = Order::query()
-            ->whereNull('onec_exported_at')
-            ->when(
-                $this->monitoringWindow->ordersStartAtFor($source),
-                fn ($query, $startAt) => $query->where('created_at', '>=', $startAt),
-            )
+            ->whereIn('id', $batch['order_ids'])
             ->with('items.product')
             ->orderBy('id')
-            ->limit(100)
             ->get();
-
-        $this->exchangeJournal->progress($run, ['orders_count' => $orders->count()]);
-
-        Cache::put(
-            $this->pendingOrdersCacheKey($request, $source),
-            $orders->pluck('id')->all(),
-            now()->addHour()
-        );
 
         $externalIds = IntegrationProduct::query()
             ->whereNotNull('product_id')
@@ -319,21 +307,200 @@ class OneCExchangeController extends Controller
 
     private function confirmOrders(Request $request, IntegrationSource $source): Response
     {
-        $ids = Cache::pull($this->pendingOrdersCacheKey($request, $source), []);
-        $run = $this->currentRun($request, $source, 'orders');
+        DB::transaction(function () use ($request, $source): void {
+            IntegrationSource::query()->whereKey($source->id)->lockForUpdate()->first();
 
-        if ($ids !== []) {
-            Order::query()->whereIn('id', $ids)->whereNull('onec_exported_at')->update([
-                'onec_exported_at' => now(),
+            $running = $this->runningOrderRuns($source);
+            $run = $running->first(fn (IntegrationExchangeRun $candidate): bool => $this->orderIdsFromRun($candidate) !== null)
+                ?? $running->first();
+            if (! $run) {
+                // CommerceML may retry mode=success after a lost response. It is
+                // intentionally idempotent: acknowledge it without creating a
+                // second journal entry or touching any later orders.
+                return;
+            }
+
+            $ids = $this->orderIdsFromRun($run);
+            if ($ids === null) {
+                $ids = $this->legacyPendingOrderIds($request, $source);
+            }
+
+            if ($ids === null) {
+                $this->exchangeJournal->fail(
+                    $run,
+                    'Не удалось восстановить состав ожидающего подтверждения пакета заказов.'
+                );
+
+                return;
+            }
+
+            $this->failSupersededOrderRuns($running, $run);
+
+            $updated = $ids === [] ? 0 : Order::query()
+                ->whereIn('id', $ids)
+                ->whereNull('onec_exported_at')
+                ->update(['onec_exported_at' => now()]);
+
+            $this->exchangeJournal->succeed($run, [
+                'orders_count' => count($ids),
+                'summary' => array_merge($run->summary ?? [], [
+                    'confirmed_order_ids' => array_values($ids),
+                    'confirmed_at' => now()->toIso8601String(),
+                    'marked_exported_count' => $updated,
+                ]),
             ]);
-        }
 
-        $this->exchangeJournal->succeed($run, [
-            'orders_count' => count($ids),
-            'summary' => ['confirmed_order_ids' => array_values($ids)],
-        ]);
+            Cache::forget($this->pendingOrdersCacheKey($request, $source));
+        });
 
         return $this->plain('success');
+    }
+
+    /**
+     * Keep the outbound order batch in the database journal until 1C confirms it.
+     * This gives mode=query at-least-once delivery semantics across retries,
+     * application restarts and a renewed 1C authentication session.
+     *
+     * @return array{run: IntegrationExchangeRun|null, order_ids: array<int, int>}
+     */
+    private function prepareOrderBatch(Request $request, IntegrationSource $source): array
+    {
+        return DB::transaction(function () use ($request, $source): array {
+            IntegrationSource::query()->whereKey($source->id)->lockForUpdate()->first();
+
+            $running = $this->runningOrderRuns($source);
+            $run = $running->first(fn (IntegrationExchangeRun $candidate): bool => $this->orderIdsFromRun($candidate) !== null);
+
+            if ($run) {
+                $ids = $this->orderIdsFromRun($run) ?? [];
+                if ($ids !== []) {
+                    $this->failSupersededOrderRuns($running, $run);
+
+                    return ['run' => $run, 'order_ids' => $ids];
+                }
+
+                // An empty query needs no acknowledgement. Closing it here means
+                // a later order is visible on the very next polling request even
+                // when 1C does not send mode=success for an empty response.
+                $this->completeEmptyOrderBatch($run);
+                $running = $running->reject(fn (IntegrationExchangeRun $candidate): bool => $candidate->is($run));
+            }
+
+            $legacyIds = $this->legacyPendingOrderIds($request, $source);
+            if ($legacyIds !== null && $running->isNotEmpty()) {
+                $run = $running->first();
+                $this->storeOrderBatch($run, $legacyIds, recovered: true);
+                $this->failSupersededOrderRuns($running, $run);
+
+                return ['run' => $run, 'order_ids' => $legacyIds];
+            }
+
+            foreach ($running as $orphanedRun) {
+                $this->exchangeJournal->fail(
+                    $orphanedRun,
+                    'Незавершённый пакет не содержал состава заказов и был безопасно сформирован заново.'
+                );
+            }
+
+            $ids = Order::query()
+                ->whereNull('onec_exported_at')
+                ->when(
+                    $this->monitoringWindow->ordersStartAtFor($source),
+                    fn ($query, $startAt) => $query->where('created_at', '>=', $startAt),
+                )
+                ->orderBy('id')
+                ->limit(100)
+                ->pluck('id')
+                ->map(fn ($id): int => (int) $id)
+                ->all();
+
+            $run = $this->startRun($request, $source, 'outbound', 'orders');
+            $this->storeOrderBatch($run, $ids);
+            Cache::forget($this->pendingOrdersCacheKey($request, $source));
+
+            if ($ids === []) {
+                $this->completeEmptyOrderBatch($run);
+            }
+
+            return ['run' => $run, 'order_ids' => $ids];
+        });
+    }
+
+    /** @return Collection<int, IntegrationExchangeRun> */
+    private function runningOrderRuns(IntegrationSource $source): Collection
+    {
+        return IntegrationExchangeRun::query()
+            ->where('integration_source_id', $source->id)
+            ->where('direction', 'outbound')
+            ->where('operation', 'orders')
+            ->where('status', 'running')
+            ->latest('id')
+            ->lockForUpdate()
+            ->get();
+    }
+
+    /** @param array<int, int> $ids */
+    private function storeOrderBatch(?IntegrationExchangeRun $run, array $ids, bool $recovered = false): void
+    {
+        $this->exchangeJournal->progress($run, [
+            'orders_count' => count($ids),
+            'summary' => [
+                'batch_id' => (string) Str::uuid(),
+                'pending_order_ids' => array_values($ids),
+                'prepared_at' => now()->toIso8601String(),
+                'recovered_from_legacy_cache' => $recovered,
+            ],
+        ]);
+    }
+
+    private function completeEmptyOrderBatch(?IntegrationExchangeRun $run): void
+    {
+        $this->exchangeJournal->succeed($run, [
+            'orders_count' => 0,
+            'summary' => array_merge($run?->summary ?? [], [
+                'auto_completed_empty' => true,
+                'confirmed_at' => now()->toIso8601String(),
+                'confirmed_order_ids' => [],
+                'marked_exported_count' => 0,
+            ]),
+        ]);
+    }
+
+    /** @return array<int, int>|null */
+    private function orderIdsFromRun(IntegrationExchangeRun $run): ?array
+    {
+        $ids = data_get($run->summary, 'pending_order_ids');
+        if (! is_array($ids)) {
+            return null;
+        }
+
+        return array_values(array_map('intval', $ids));
+    }
+
+    /** @return array<int, int>|null */
+    private function legacyPendingOrderIds(Request $request, IntegrationSource $source): ?array
+    {
+        $ids = Cache::get($this->pendingOrdersCacheKey($request, $source));
+        if (! is_array($ids) || ! array_is_list($ids)) {
+            return null;
+        }
+
+        return array_values(array_map('intval', $ids));
+    }
+
+    /** @param Collection<int, IntegrationExchangeRun> $running */
+    private function failSupersededOrderRuns(Collection $running, IntegrationExchangeRun $active): void
+    {
+        foreach ($running as $run) {
+            if ($run->is($active)) {
+                continue;
+            }
+
+            $this->exchangeJournal->fail(
+                $run,
+                'Запуск заменён единым восстанавливаемым пакетом заказов.'
+            );
+        }
     }
 
     /** @param Collection<int, string> $externalIds */

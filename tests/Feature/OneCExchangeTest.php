@@ -1567,6 +1567,124 @@ XML;
         ]);
     }
 
+    public function test_retried_order_query_reuses_the_same_persistent_batch_until_success(): void
+    {
+        $source = IntegrationSource::query()->create([
+            'code' => 'onec',
+            'name' => '1С',
+        ]);
+        $firstOrder = Order::query()->create([
+            'number' => 'ORD-PERSISTENT-BATCH-1',
+            'status' => 'new',
+            'customer_name' => 'Первый покупатель',
+            'customer_phone' => '+375291110001',
+            'delivery_type' => 'pickup',
+            'payment_type' => 'cash',
+            'payment_status' => 'pending',
+            'subtotal' => 10,
+            'total' => 10,
+        ]);
+
+        $firstResponse = $this->withBasicAuth('onec-test', 'secret-test')
+            ->get('/1c/exchange?type=sale&mode=query');
+        $firstResponse->assertOk()->assertSee('ORD-PERSISTENT-BATCH-1', false);
+
+        $run = $source->exchangeRuns()->where('operation', 'orders')->firstOrFail();
+        $batchId = $run->summary['batch_id'];
+        $this->assertSame([$firstOrder->id], $run->summary['pending_order_ids']);
+
+        $secondOrder = Order::query()->create([
+            'number' => 'ORD-PERSISTENT-BATCH-2',
+            'status' => 'new',
+            'customer_name' => 'Второй покупатель',
+            'customer_phone' => '+375291110002',
+            'delivery_type' => 'pickup',
+            'payment_type' => 'cash',
+            'payment_status' => 'pending',
+            'subtotal' => 20,
+            'total' => 20,
+        ]);
+
+        // Simulate an application restart or cache loss between CommerceML
+        // retries. The journal remains the authoritative delivery state.
+        Cache::flush();
+
+        $retryResponse = $this->withBasicAuth('onec-test', 'secret-test')
+            ->get('/1c/exchange?type=sale&mode=query');
+        $retryResponse->assertOk()
+            ->assertSee('ORD-PERSISTENT-BATCH-1', false)
+            ->assertDontSee('ORD-PERSISTENT-BATCH-2', false);
+
+        $this->assertSame(1, $source->exchangeRuns()->where('operation', 'orders')->count());
+        $this->assertSame($batchId, $run->fresh()->summary['batch_id']);
+
+        $this->withBasicAuth('onec-test', 'secret-test')
+            ->get('/1c/exchange?type=sale&mode=success')
+            ->assertOk()
+            ->assertSeeText('success');
+
+        $this->assertNotNull($firstOrder->fresh()->onec_exported_at);
+        $this->assertNull($secondOrder->fresh()->onec_exported_at);
+        $this->assertSame('success', $run->fresh()->status);
+        $this->assertSame(1, $run->fresh()->summary['marked_exported_count']);
+
+        // A repeated acknowledgement must not confirm a later order or create
+        // a misleading second successful exchange run.
+        $this->withBasicAuth('onec-test', 'secret-test')
+            ->get('/1c/exchange?type=sale&mode=success')
+            ->assertOk();
+        $this->assertNull($secondOrder->fresh()->onec_exported_at);
+        $this->assertSame(1, $source->exchangeRuns()->where('operation', 'orders')->count());
+
+        $nextResponse = $this->withBasicAuth('onec-test', 'secret-test')
+            ->get('/1c/exchange?type=sale&mode=query');
+        $nextResponse->assertOk()
+            ->assertDontSee('ORD-PERSISTENT-BATCH-1', false)
+            ->assertSee('ORD-PERSISTENT-BATCH-2', false);
+        $this->assertSame(2, $source->exchangeRuns()->where('operation', 'orders')->count());
+    }
+
+    public function test_empty_order_query_does_not_block_orders_created_before_the_next_poll(): void
+    {
+        $source = IntegrationSource::query()->create([
+            'code' => 'onec',
+            'name' => '1С',
+        ]);
+
+        $this->withBasicAuth('onec-test', 'secret-test')
+            ->get('/1c/exchange?type=sale&mode=query')
+            ->assertOk()
+            ->assertDontSee('<Документ>', false);
+
+        $emptyRun = $source->exchangeRuns()->where('operation', 'orders')->firstOrFail();
+        $this->assertSame('success', $emptyRun->status);
+        $this->assertTrue($emptyRun->summary['auto_completed_empty']);
+
+        $order = Order::query()->create([
+            'number' => 'ORD-AFTER-EMPTY-POLL',
+            'status' => 'new',
+            'customer_name' => 'Новый покупатель',
+            'customer_phone' => '+375291110003',
+            'delivery_type' => 'pickup',
+            'payment_type' => 'cash',
+            'payment_status' => 'pending',
+            'subtotal' => 30,
+            'total' => 30,
+        ]);
+
+        $this->withBasicAuth('onec-test', 'secret-test')
+            ->get('/1c/exchange?type=sale&mode=query')
+            ->assertOk()
+            ->assertSee('ORD-AFTER-EMPTY-POLL', false);
+
+        $this->assertNull($order->fresh()->onec_exported_at);
+        $this->assertSame(2, $source->exchangeRuns()->where('operation', 'orders')->count());
+        $this->assertSame(
+            'running',
+            $source->exchangeRuns()->where('operation', 'orders')->latest('id')->firstOrFail()->status
+        );
+    }
+
     public function test_order_export_excludes_orders_created_before_source_monitoring_started(): void
     {
         $source = IntegrationSource::query()->create([
