@@ -9,7 +9,6 @@ use App\Models\IntegrationCategory;
 use App\Models\IntegrationProduct;
 use App\Models\IntegrationSource;
 use App\Services\Integrations\IntegrationCategoryAdvisor;
-use App\Services\Integrations\IntegrationManualMatchRecorder;
 use App\Services\Integrations\IntegrationProductMatchAdvisor;
 use App\Services\Integrations\IntegrationProductMatchDecision;
 use BackedEnum;
@@ -362,11 +361,9 @@ class IntegrationProductResource extends Resource
                     ->requiresConfirmation()
                     ->modalSubmitActionLabel('Подтвердить привязку')
                     ->action(function (IntegrationProduct $record): void {
-                        $freshRecord = $record->fresh();
-                        $advice = $freshRecord
-                            ? app(IntegrationProductMatchAdvisor::class)->explain($freshRecord)
-                            : null;
-                        if (! $advice) {
+                        $product = app(IntegrationProductMatchDecision::class)
+                            ->confirmSuggestion($record);
+                        if (! $product) {
                             Notification::make()
                                 ->warning()
                                 ->title('Рекомендация больше не актуальна')
@@ -376,19 +373,10 @@ class IntegrationProductResource extends Resource
                             return;
                         }
 
-                        $freshRecord->update([
-                            'product_id' => $advice['product_id'],
-                            'match_status' => 'matched',
-                            'match_method' => 'manual_suggestion',
-                            'match_confidence' => 1,
-                            'matched_at' => now(),
-                        ]);
-                        app(IntegrationManualMatchRecorder::class)->record($freshRecord);
-
                         Notification::make()
                             ->success()
                             ->title('Привязка подтверждена')
-                            ->body('Товар связан с карточкой «'.$advice['product_name'].'». Решение сохранено для будущих синхронизаций.')
+                            ->body('Товар связан с карточкой «'.$product->name.'». Решение сохранено для будущих синхронизаций.')
                             ->send();
                     }),
                 Action::make('mapSourceGroup')
@@ -516,21 +504,21 @@ class IntegrationProductResource extends Resource
                         ->color('success')
                         ->requiresConfirmation()
                         ->action(function (Collection $records): void {
-                            $records->each(function (IntegrationProduct $record): void {
-                                $productId = $record->candidates[0]['product_id'] ?? null;
-                                if ($record->match_status !== 'suggested' || ! $productId) {
-                                    return;
-                                }
+                            $applied = 0;
+                            $skipped = 0;
 
-                                $record->update([
-                                    'product_id' => $productId,
-                                    'match_status' => 'matched',
-                                    'match_method' => 'manual_suggestion',
-                                    'match_confidence' => 1,
-                                    'matched_at' => now(),
-                                ]);
-                                app(IntegrationManualMatchRecorder::class)->record($record);
+                            $records->each(function (IntegrationProduct $record) use (&$applied, &$skipped): void {
+                                $product = app(IntegrationProductMatchDecision::class)
+                                    ->confirmSuggestion($record);
+
+                                $product ? $applied++ : $skipped++;
                             });
+
+                            Notification::make()
+                                ->title('Массовая привязка завершена')
+                                ->body("Привязано: {$applied}. Пропущено после проверки: {$skipped}.")
+                                ->color($skipped > 0 ? 'warning' : 'success')
+                                ->send();
                         })
                         ->deselectRecordsAfterCompletion(),
                     BulkAction::make('ignore')

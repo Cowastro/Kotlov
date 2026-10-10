@@ -4,11 +4,15 @@ namespace Tests\Feature;
 
 use App\Filament\Resources\IntegrationIssues\IntegrationIssueResource;
 use App\Filament\Resources\IntegrationIssues\Pages\ListIntegrationIssues;
+use App\Models\Category;
 use App\Models\IntegrationIssue;
+use App\Models\IntegrationProduct;
 use App\Models\IntegrationSource;
 use App\Models\Order;
+use App\Models\Product;
 use App\Models\User;
 use App\Services\Integrations\IntegrationOrderStatusMapper;
+use App\Services\Integrations\IntegrationProductIssueResolver;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
 use Tests\TestCase;
@@ -107,5 +111,131 @@ class IntegrationIssueAdminTest extends TestCase
             ->get(IntegrationIssueResource::getUrl('index', panel: 'admin'))
             ->assertOk()
             ->assertSeeText('Добавить правило');
+    }
+
+    public function test_admin_can_link_an_unmatched_product_directly_from_issue_queue(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin', 'is_active' => true]);
+        $source = IntegrationSource::query()->create([
+            'code' => 'product-issue-source',
+            'name' => '1С поставщика',
+        ]);
+        $category = Category::query()->create([
+            'name' => 'Дымоходы',
+            'slug' => 'issue-link-chimneys',
+            'parent_id' => 0,
+        ]);
+        $product = Product::query()->create([
+            'category_id' => $category->id,
+            'name' => 'Труба дымохода D150',
+            'slug' => 'issue-link-pipe-d150',
+            'sku' => 'KOTLOV-D150',
+            'price' => 150,
+            'stock_qty' => 8,
+        ]);
+        $item = IntegrationProduct::query()->create([
+            'integration_source_id' => $source->id,
+            'external_id' => 'onec-pipe-d150',
+            'external_sku' => 'SUP-D150',
+            'name' => 'Труба нерж. D150',
+            'price' => 100,
+            'stock_quantity' => 3,
+            'match_status' => 'unmatched',
+        ]);
+        $issue = IntegrationIssue::query()->create([
+            'integration_source_id' => $source->id,
+            'integration_product_id' => $item->id,
+            'fingerprint' => 'product-issue-link-directly',
+            'type' => 'product_attention',
+            'severity' => 'warning',
+            'status' => 'open',
+            'title' => 'Товар требует привязки',
+            'message' => 'Карточка сайта не найдена.',
+            'context' => ['unmatched' => true, 'missing_price' => false],
+            'first_detected_at' => now(),
+            'last_detected_at' => now(),
+        ]);
+
+        Livewire::actingAs($admin)
+            ->test(ListIntegrationIssues::class)
+            ->set('activeTab', 'ready-to-link')
+            ->assertTableActionExists('linkExistingProduct', record: $issue)
+            ->callTableAction('linkExistingProduct', $issue, ['product_id' => $product->id])
+            ->assertHasNoTableActionErrors();
+
+        $this->assertDatabaseHas('integration_products', [
+            'id' => $item->id,
+            'product_id' => $product->id,
+            'match_status' => 'matched',
+            'match_method' => 'manual_search',
+        ]);
+        $this->assertDatabaseHas('integration_issues', [
+            'id' => $issue->id,
+            'status' => 'resolved',
+        ]);
+        $this->assertDatabaseHas('products', [
+            'id' => $product->id,
+            'name' => 'Труба дымохода D150',
+            'price' => 150,
+            'stock_qty' => 8,
+        ]);
+        $this->assertDatabaseHas('supplier_product_mappings', [
+            'product_id' => $product->id,
+            'supplier_article' => 'SUP-D150',
+            'confidence' => 'manual',
+        ]);
+    }
+
+    public function test_stale_product_issue_cannot_replace_an_existing_link(): void
+    {
+        $source = IntegrationSource::query()->create([
+            'code' => 'stale-product-issue-source',
+            'name' => '1С поставщика',
+        ]);
+        $category = Category::query()->create([
+            'name' => 'Категория защиты привязки',
+            'slug' => 'stale-link-protection',
+            'parent_id' => 0,
+        ]);
+        $original = Product::query()->create([
+            'category_id' => $category->id,
+            'name' => 'Уже привязанная карточка',
+            'slug' => 'already-linked-product',
+            'sku' => 'ALREADY-LINKED',
+        ]);
+        $replacement = Product::query()->create([
+            'category_id' => $category->id,
+            'name' => 'Другая карточка',
+            'slug' => 'replacement-product',
+            'sku' => 'REPLACEMENT',
+        ]);
+        $item = IntegrationProduct::query()->create([
+            'integration_source_id' => $source->id,
+            'product_id' => $original->id,
+            'external_id' => 'already-linked-external',
+            'name' => 'Уже обработанный товар',
+            'stock_quantity' => 1,
+            'match_status' => 'matched',
+        ]);
+        $issue = IntegrationIssue::query()->create([
+            'integration_source_id' => $source->id,
+            'integration_product_id' => $item->id,
+            'fingerprint' => 'stale-product-issue',
+            'type' => 'product_attention',
+            'severity' => 'warning',
+            'status' => 'open',
+            'title' => 'Устаревшая задача',
+            'message' => 'Товар уже был обработан другим оператором.',
+            'context' => ['unmatched' => true, 'missing_price' => false],
+            'first_detected_at' => now(),
+            'last_detected_at' => now(),
+        ]);
+
+        $result = app(IntegrationProductIssueResolver::class)
+            ->linkExistingProduct($issue, $replacement->id);
+
+        $this->assertNull($result);
+        $this->assertSame($original->id, $item->fresh()->product_id);
+        $this->assertSame('open', $issue->fresh()->status);
     }
 }

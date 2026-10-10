@@ -181,4 +181,63 @@ class IntegrationProductAdminClarityTest extends TestCase
             ->assertSee('проверьте склад выгрузки')
             ->assertSeeHtml('tab=identity_collisions');
     }
+
+    public function test_bulk_acceptance_rechecks_each_suggestion_and_skips_stale_candidates(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin', 'is_active' => true]);
+        $source = IntegrationSource::query()->create([
+            'code' => 'bulk-suggestion-source',
+            'name' => 'Источник рекомендаций',
+        ]);
+        $category = Category::query()->create([
+            'name' => 'Карточки для рекомендаций',
+            'slug' => 'bulk-suggestion-category',
+            'parent_id' => 0,
+        ]);
+        $product = Product::query()->create([
+            'category_id' => $category->id,
+            'name' => 'Действующая карточка',
+            'slug' => 'bulk-suggestion-product',
+            'sku' => 'BULK-VALID',
+        ]);
+        $valid = IntegrationProduct::query()->create([
+            'integration_source_id' => $source->id,
+            'external_id' => 'bulk-valid',
+            'external_sku' => 'SUP-BULK-VALID',
+            'name' => 'Товар с действующей рекомендацией',
+            'stock_quantity' => 2,
+            'match_status' => 'suggested',
+            'match_method' => 'exact_name',
+            'match_confidence' => 0.95,
+            'candidates' => [['product_id' => $product->id, 'score' => 0.95]],
+        ]);
+        $stale = IntegrationProduct::query()->create([
+            'integration_source_id' => $source->id,
+            'external_id' => 'bulk-stale',
+            'external_sku' => 'SUP-BULK-STALE',
+            'name' => 'Товар с устаревшей рекомендацией',
+            'stock_quantity' => 1,
+            'match_status' => 'suggested',
+            'match_method' => 'fuzzy_name',
+            'match_confidence' => 0.9,
+            'candidates' => [['product_id' => 999999, 'score' => 0.9]],
+        ]);
+
+        Livewire::actingAs($admin)
+            ->test(ListIntegrationProducts::class)
+            ->callTableBulkAction('acceptSuggestions', [$valid, $stale])
+            ->assertHasNoTableBulkActionErrors();
+
+        $this->assertDatabaseHas('integration_products', [
+            'id' => $valid->id,
+            'product_id' => $product->id,
+            'match_status' => 'matched',
+            'match_method' => 'manual_suggestion',
+        ]);
+        $this->assertDatabaseHas('integration_products', [
+            'id' => $stale->id,
+            'product_id' => null,
+            'match_status' => 'suggested',
+        ]);
+    }
 }

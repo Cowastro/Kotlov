@@ -8,10 +8,12 @@ use App\Filament\Resources\IntegrationSources\IntegrationSourceResource;
 use App\Filament\Resources\Orders\OrderResource;
 use App\Models\IntegrationIssue;
 use App\Models\Order;
+use App\Models\Product;
 use App\Services\Integrations\IntegrationIssueAdvisor;
 use App\Services\Integrations\IntegrationIssueAiAdvisor;
 use App\Services\Integrations\IntegrationOrderStatusMapper;
 use App\Services\Integrations\IntegrationOrderStatusRuleManager;
+use App\Services\Integrations\IntegrationProductIssueResolver;
 use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Actions\BulkAction;
@@ -261,6 +263,78 @@ class IntegrationIssueResource extends Resource
                             ->body('Запустите повторный обмен статусами. Задача закроется автоматически после успешного применения.')
                             ->send();
                     }),
+                Action::make('linkExistingProduct')
+                    ->label('Привязать карточку')
+                    ->icon(Heroicon::OutlinedLink)
+                    ->color('success')
+                    ->visible(fn (IntegrationIssue $record): bool => $record->status === 'open'
+                        && filled($record->integration_product_id)
+                        && data_get($record->context, 'unmatched') === true
+                        && blank($record->integrationProduct?->product_id))
+                    ->modalHeading('Привязать товар к существующей карточке')
+                    ->modalDescription('Найдите карточку kotlov.by по названию или SKU. Связь сохранится для следующих обменов с этим поставщиком.')
+                    ->form([
+                        Placeholder::make('external_product')
+                            ->label('Товар из внешней системы')
+                            ->content(fn (IntegrationIssue $record): string => collect([
+                                $record->integrationProduct?->name,
+                                $record->integrationProduct?->external_sku
+                                    ? 'арт. '.$record->integrationProduct->external_sku
+                                    : null,
+                                $record->integrationProduct?->price !== null
+                                    ? number_format((float) $record->integrationProduct->price, 2, ',', ' ').' BYN'
+                                    : 'цена не передана',
+                                $record->integrationProduct?->formattedStockQuantity(),
+                            ])->filter()->implode(' · ')),
+                        Select::make('product_id')
+                            ->label('Карточка kotlov.by')
+                            ->searchable()
+                            ->getSearchResultsUsing(fn (string $search): array => Product::query()
+                                ->where(function ($query) use ($search): void {
+                                    $query->where('name', 'like', '%'.$search.'%')
+                                        ->orWhere('sku', 'like', '%'.$search.'%');
+                                })
+                                ->orderBy('name')
+                                ->limit(50)
+                                ->get(['id', 'sku', 'name'])
+                                ->mapWithKeys(fn (Product $product): array => [
+                                    $product->id => self::productOptionLabel($product),
+                                ])
+                                ->all())
+                            ->getOptionLabelUsing(function (mixed $value): ?string {
+                                $product = Product::query()->find($value, ['id', 'sku', 'name']);
+
+                                return $product ? self::productOptionLabel($product) : null;
+                            })
+                            ->required()
+                            ->helperText('Введите часть названия или SKU. Выбранная карточка сайта не будет изменена.'),
+                        Placeholder::make('link_safety_note')
+                            ->label('Что изменится')
+                            ->content('Будет сохранена только постоянная привязка и закрыта эта задача. Название, категория, цена и остаток карточки сайта останутся без изменений.'),
+                    ])
+                    ->requiresConfirmation()
+                    ->modalSubmitActionLabel('Подтвердить привязку')
+                    ->action(function (IntegrationIssue $record, array $data): void {
+                        $product = app(IntegrationProductIssueResolver::class)
+                            ->linkExistingProduct($record, (int) $data['product_id']);
+
+                        if (! $product) {
+                            Notification::make()
+                                ->warning()
+                                ->title('Задача или товар уже изменились')
+                                ->body('Обновите очередь и проверьте привязку ещё раз.')
+                                ->send();
+
+                            return;
+                        }
+
+                        Notification::make()
+                            ->success()
+                            ->title('Товар привязан, задача закрыта')
+                            ->body('Связь с карточкой «'.$product->name.'» сохранена для следующих синхронизаций.')
+                            ->send();
+                    })
+                    ->successRedirectUrl(fn (): string => self::getUrl('index', ['tab' => 'ready-to-link'])),
                 Action::make('openObject')
                     ->label('Открыть')
                     ->icon(Heroicon::OutlinedArrowTopRightOnSquare)
@@ -369,6 +443,14 @@ class IntegrationIssueResource extends Resource
             filled($issue->integration_source_id) => IntegrationSourceResource::getUrl('edit', ['record' => $issue->integration_source_id]),
             default => null,
         };
+    }
+
+    private static function productOptionLabel(Product $product): string
+    {
+        return collect([
+            $product->sku ? 'SKU '.$product->sku : null,
+            $product->name,
+        ])->filter()->implode(' — ');
     }
 
     /** @return array{title:string,steps:array<int,string>,note:string} */
