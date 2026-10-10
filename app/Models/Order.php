@@ -25,6 +25,7 @@ class Order extends Model
     private ?array $managementSummaryCache = null;
 
     public const ONEC_SYNC_STATES = [
+        'historical' => 'Вне рабочего обмена',
         'conflict' => 'Конфликт статусов',
         'unknown' => 'Неизвестный статус',
         'no_response' => 'Нет ответа 1С',
@@ -478,6 +479,10 @@ class Order extends Model
 
     public function onecSyncState(): string
     {
+        if ($this->isHistoricalUnprocessed()) {
+            return 'historical';
+        }
+
         $issueType = $this->activeOnecSyncIssue()?->type;
 
         return match ($issueType) {
@@ -503,6 +508,10 @@ class Order extends Model
 
     public function onecSyncDescription(): ?string
     {
+        if ($this->isHistoricalUnprocessed()) {
+            return 'Сохранена для истории и не требует передачи в текущем процессе';
+        }
+
         $issue = $this->activeOnecSyncIssue();
         if ($issue) {
             return collect([$issue->source?->partnerName(), $issue->message ?: $issue->title])

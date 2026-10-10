@@ -57,6 +57,9 @@ class OrderLegacyLeadQueueTest extends TestCase
         $this->assertSame('historical', $historical->managementSummary()['severity']);
         $this->assertSame('Историческая заявка', $historical->managementSummary()['attention_label']);
         $this->assertSame(0, $historical->managementSummary()['problem_count']);
+        $this->assertSame('historical', $historical->onecSyncState());
+        $this->assertSame('Вне рабочего обмена', $historical->onecSyncLabel());
+        $this->assertStringContainsString('не требует передачи', $historical->onecSyncDescription());
         $this->assertFalse(Order::query()->operationallyActive()->whereKey($historical)->exists());
         $this->assertTrue(Order::query()->operationallyActive()->whereKey($current)->exists());
         $this->assertFalse(Order::query()->withOperationalProblem('needs_attention')->whereKey($historical)->exists());

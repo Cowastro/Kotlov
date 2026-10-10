@@ -295,6 +295,7 @@ class OrdersTable
                         'unknown', 'no_response', 'delayed' => 'warning',
                         'confirmed' => 'success',
                         'sent' => 'info',
+                        'historical' => 'gray',
                         default => 'warning',
                     })
                     ->icon(fn (string $state): string => match ($state) {
@@ -302,6 +303,7 @@ class OrdersTable
                         'unknown', 'no_response', 'delayed' => 'heroicon-o-exclamation-triangle',
                         'confirmed' => 'heroicon-o-check-circle',
                         'sent' => 'heroicon-o-arrow-up-tray',
+                        'historical' => 'heroicon-o-archive-box',
                         default => 'heroicon-o-clock',
                     })
                     ->description(fn (Order $record): ?string => $record->onecSyncDescription())
