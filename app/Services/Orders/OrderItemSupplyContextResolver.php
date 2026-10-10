@@ -70,7 +70,8 @@ class OrderItemSupplyContextResolver
      * @return array{
      *     supplier_names: Collection<int, string>, unresolved_count: int,
      *     missing_price_count: int, unavailable_count: int,
-     *     negative_margin_count: int, sale_total: float, purchase_total: float,
+     *     negative_margin_count: int, low_margin_count: int,
+     *     minimum_margin_percent: float, sale_total: float, purchase_total: float,
      *     priced_sale_total: float, margin_total: float, margin_percent: float|null,
      *     items_count: int, priced_items_count: int
      * }
@@ -94,6 +95,7 @@ class OrderItemSupplyContextResolver
         ), 2);
         $pricedSaleTotal = round((float) $pricedContexts->sum('sale_total'), 2);
         $marginTotal = round((float) $pricedContexts->sum('margin_total'), 2);
+        $minimumMarginPercent = (float) config('shop.order_management.minimum_margin_percent', 10);
 
         return [
             'supplier_names' => $contexts->pluck('supplier_name')->filter()->unique()->values(),
@@ -103,6 +105,12 @@ class OrderItemSupplyContextResolver
             'negative_margin_count' => $pricedContexts->filter(
                 fn (array $context): bool => (float) $context['margin_total'] < 0,
             )->count(),
+            'low_margin_count' => $pricedContexts->filter(
+                fn (array $context): bool => (float) $context['margin_total'] >= 0
+                    && $context['margin_percent'] !== null
+                    && (float) $context['margin_percent'] < $minimumMarginPercent,
+            )->count(),
+            'minimum_margin_percent' => $minimumMarginPercent,
             'sale_total' => $saleTotal,
             'purchase_total' => $purchaseTotal,
             'priced_sale_total' => $pricedSaleTotal,

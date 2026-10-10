@@ -172,6 +172,12 @@ class Order extends Model
         if ($supply['negative_margin_count'] > 0) {
             $problems->push(['severity' => 'critical', 'label' => 'Убыточных позиций: '.$supply['negative_margin_count']]);
         }
+        if ($supply['low_margin_count'] > 0) {
+            $problems->push([
+                'severity' => 'warning',
+                'label' => 'Маржа ниже '.number_format($supply['minimum_margin_percent'], 0).'%: '.$supply['low_margin_count'],
+            ]);
+        }
         if ($supply['unavailable_count'] > 0) {
             $problems->push(['severity' => 'warning', 'label' => 'Нет подтверждённого остатка: '.$supply['unavailable_count']]);
         }

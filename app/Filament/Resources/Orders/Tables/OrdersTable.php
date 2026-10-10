@@ -167,16 +167,17 @@ class OrdersTable
 
                 TextColumn::make('economics')
                     ->label('Экономика')
-                    ->state(fn (Order $record): string => 'Продажа '.number_format((float) $record->total, 2, '.', ' ').' BYN')
+                    ->state(fn (Order $record): string => 'Заказ '.number_format((float) $record->total, 2, '.', ' ').' BYN')
                     ->description(function (Order $record): string {
                         $summary = $record->managementSummary();
+                        $goods = 'Товары '.number_format($summary['sale_total'], 2, '.', ' ').' BYN';
 
                         if ($summary['missing_price_count'] > 0) {
                             $known = $summary['priced_items_count'] > 0
                                 ? 'Известный вход ≈ '.number_format($summary['purchase_total'], 2, '.', ' ').' BYN'
                                 : 'Входная стоимость не рассчитана';
 
-                            return $known.' · Без цены: '.$summary['missing_price_count'];
+                            return $goods.' · '.$known.' · Без цены: '.$summary['missing_price_count'];
                         }
 
                         $margin = number_format($summary['margin_total'], 2, '.', ' ').' BYN';
@@ -184,11 +185,12 @@ class OrdersTable
                             ? ' / '.number_format($summary['margin_percent'], 1, '.', ' ').'%'
                             : '';
 
-                        return 'Вход ≈ '.number_format($summary['purchase_total'], 2, '.', ' ').' BYN · Маржа ≈ '.$margin.$percent;
+                        return $goods.' · Вход ≈ '.number_format($summary['purchase_total'], 2, '.', ' ').' BYN · Маржа ≈ '.$margin.$percent;
                     })
                     ->color(fn (Order $record): string => match (true) {
                         $record->managementSummary()['negative_margin_count'] > 0 => 'danger',
-                        $record->managementSummary()['missing_price_count'] > 0 => 'warning',
+                        $record->managementSummary()['missing_price_count'] > 0,
+                        $record->managementSummary()['low_margin_count'] > 0 => 'warning',
                         default => 'success',
                     })
                     ->icon('heroicon-o-calculator')

@@ -46,6 +46,7 @@ class OrderSupplyRoutingTest extends TestCase
         $this->assertSame(48.0, $summary['margin_total']);
         $this->assertSame(20.0, $summary['margin_percent']);
         $this->assertSame(0, $summary['missing_price_count']);
+        $this->assertSame(0, $summary['low_margin_count']);
         $this->assertSame('warning', $summary['severity']);
         $this->assertSame('Проверить', $summary['attention_label']);
         $this->assertTrue($summary['problems']->pluck('label')->contains('Не назначен менеджер'));
@@ -62,8 +63,8 @@ class OrderSupplyRoutingTest extends TestCase
             ->assertSeeText('Поставка')
             ->assertSeeText('ООО «СанБизнесГруп»')
             ->assertSeeText('Экономика')
-            ->assertSeeText('Продажа 240.00 BYN')
-            ->assertSeeText('Вход ≈ 192.00 BYN · Маржа ≈ 48.00 BYN / 20.0%')
+            ->assertSeeText('Заказ 240.00 BYN')
+            ->assertSeeText('Товары 240.00 BYN · Вход ≈ 192.00 BYN · Маржа ≈ 48.00 BYN / 20.0%')
             ->assertSeeText('Контроль')
             ->assertSeeText('Проверить · 1')
             ->assertSeeText('Не назначен менеджер');
@@ -126,6 +127,21 @@ class OrderSupplyRoutingTest extends TestCase
         $this->assertSame('critical', $summary['severity']);
         $this->assertTrue($summary['problems']->pluck('label')->contains('Нет входной цены: 1'));
         $this->assertTrue($summary['problems']->pluck('label')->contains('Не определён поставщик: 1'));
+    }
+
+    public function test_low_margin_is_an_explicit_manager_warning(): void
+    {
+        $fixture = $this->fixture();
+        $offer = IntegrationProduct::query()->where('external_id', 'route-onec-1')->firstOrFail();
+        $offer->update(['price' => 100]);
+
+        $summary = $fixture['order']->fresh()->managementSummary();
+
+        $this->assertSame(0.0, $summary['margin_total']);
+        $this->assertSame(0.0, $summary['margin_percent']);
+        $this->assertSame(1, $summary['low_margin_count']);
+        $this->assertSame('warning', $summary['severity']);
+        $this->assertTrue($summary['problems']->pluck('label')->contains('Маржа ниже 10%: 1'));
     }
 
     /** @return array{order: Order, item: OrderItem} */
