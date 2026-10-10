@@ -47,7 +47,8 @@ class IntegrationIssueNotificationTest extends TestCase
             DatabaseNotification::class,
             fn (DatabaseNotification $notification): bool => $notification->data['title'] === 'Заказ не передан в 1С'
                 && str_contains((string) $notification->data['body'], 'заказы: 1')
-                && count($notification->data['actions']) === 1,
+                && count($notification->data['actions']) === 1
+                && str_contains((string) data_get($notification->data, 'actions.0.url'), 'tab=priority'),
         );
         Notification::assertNotSentTo($inactiveAdmin, DatabaseNotification::class);
     }

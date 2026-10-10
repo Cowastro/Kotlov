@@ -6,6 +6,17 @@ use App\Models\IntegrationProduct;
 
 class IntegrationIdentityCollisionFinder
 {
+    /** @return array<int, int> */
+    public function productIds(?int $sourceId = null): array
+    {
+        return collect($this->find($sourceId))
+            ->flatMap(fn (array $collision): array => array_column($collision['products'], 'id'))
+            ->map(fn (mixed $id): int => (int) $id)
+            ->unique()
+            ->values()
+            ->all();
+    }
+
     /**
      * @return array<int, array{
      *     source_id:int,

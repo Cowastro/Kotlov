@@ -36,24 +36,24 @@ class IntegrationIssueTriageOverview extends StatsOverviewWidget
                 ->description('Цены: '.$format($summary['missing_price']).' · заказы: '.$format($summary['orders']).' · обмен: '.$format($summary['exchange']))
                 ->descriptionIcon(Heroicon::OutlinedExclamationTriangle)
                 ->color($summary['priority'] > 0 ? 'danger' : 'success')
-                ->url(IntegrationIssueResource::getUrl('index', ['activeTab' => 'priority'])),
+                ->url(IntegrationIssueResource::getUrl('index', ['tab' => 'priority'])),
             Stat::make('Можно привязать', $format($summary['ready_to_link']))
                 ->description('Цена уже есть — требуется решение администратора')
                 ->descriptionIcon(Heroicon::OutlinedLink)
                 ->color($summary['ready_to_link'] > 0 ? 'warning' : 'success')
-                ->url(IntegrationIssueResource::getUrl('index', ['activeTab' => 'ready-to-link'])),
+                ->url(IntegrationIssueResource::getUrl('index', ['tab' => 'ready-to-link'])),
             Stat::make('Готовые рекомендации', $format($summary['recommended']))
                 ->description('Предложено точное или близкое соответствие')
                 ->descriptionIcon(Heroicon::OutlinedLightBulb)
                 ->color($summary['recommended'] > 0 ? 'info' : 'success')
-                ->url(IntegrationIssueResource::getUrl('index', ['activeTab' => 'recommended'])),
+                ->url(IntegrationIssueResource::getUrl('index', ['tab' => 'recommended'])),
             Stat::make('Мои задачи', $format($summary['mine']))
                 ->description($summary['possible_duplicates'] > 0
                     ? 'Возможных дублей: '.$format($summary['possible_duplicates'])
                     : 'Возможных дублей нет')
                 ->descriptionIcon(Heroicon::OutlinedUserCircle)
                 ->color($summary['mine'] > 0 ? 'info' : 'gray')
-                ->url(IntegrationIssueResource::getUrl('index', ['activeTab' => 'mine'])),
+                ->url(IntegrationIssueResource::getUrl('index', ['tab' => 'mine'])),
         ];
     }
 }

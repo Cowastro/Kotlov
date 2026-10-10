@@ -9,6 +9,7 @@ use App\Models\IntegrationCategory;
 use App\Models\IntegrationProduct;
 use App\Models\IntegrationSource;
 use App\Services\Integrations\CommerceMlCatalogImporter;
+use App\Services\Integrations\IntegrationIdentityCollisionFinder;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Select;
 use Filament\Notifications\Notification;
@@ -126,6 +127,11 @@ class ListIntegrationProducts extends ListRecords
                 ->modifyQueryUsing(fn (Builder $query): Builder => $this->readyForCardQuery($query))
                 ->badge($this->readyForCardQuery(IntegrationProduct::query()->inStock())->count() ?: null)
                 ->badgeColor('info'),
+            'identity_collisions' => Tab::make('Возможные дубли')
+                ->icon('heroicon-o-document-duplicate')
+                ->modifyQueryUsing(fn (Builder $query): Builder => $this->identityCollisionQuery($query))
+                ->badge($this->identityCollisionQuery(IntegrationProduct::query()->inStock())->count() ?: null)
+                ->badgeColor('warning'),
             'ignored' => $this->statusTab('Не для сайта', 'ignored', 'gray', 'heroicon-o-eye-slash'),
         ];
     }
@@ -164,5 +170,14 @@ class ListIntegrationProducts extends ListRecords
                         fn (Builder $category): Builder => $category->whereNotNull('category_id')
                     );
             });
+    }
+
+    private function identityCollisionQuery(Builder $query): Builder
+    {
+        $productIds = app(IntegrationIdentityCollisionFinder::class)->productIds();
+
+        return $productIds === []
+            ? $query->whereRaw('1 = 0')
+            : $query->whereKey($productIds);
     }
 }

@@ -2,6 +2,7 @@
 
 namespace App\Filament\Widgets;
 
+use App\Filament\Resources\IntegrationProducts\IntegrationProductResource;
 use App\Services\Integrations\IntegrationCatalogSummary;
 use Filament\Support\Icons\Heroicon;
 use Filament\Widgets\StatsOverviewWidget;
@@ -53,7 +54,10 @@ class IntegrationCatalogIntegrityOverview extends StatsOverviewWidget
                     $summary['duplicates'] > 0 => 'danger',
                     $summary['identity_collision_groups'] > 0 => 'warning',
                     default => 'success',
-                }),
+                })
+                ->url($summary['identity_collision_groups'] > 0
+                    ? IntegrationProductResource::getUrl('index', ['tab' => 'identity_collisions'])
+                    : null),
             Stat::make('Цены готовы', $format($summary['positive_price']))
                 ->description('Не передана: '.$format($summary['missing_price']).' · нулевая: '.$format($summary['zero_price']))
                 ->descriptionIcon(Heroicon::OutlinedBanknotes)

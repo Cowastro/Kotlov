@@ -69,7 +69,7 @@ class IntegrationIssueNotificationService
             ->actions([
                 Action::make('openIntegrationIssues')
                     ->label('Открыть очередь')
-                    ->url(IntegrationIssueResource::getUrl('index', ['activeTab' => 'priority']))
+                    ->url(IntegrationIssueResource::getUrl('index', ['tab' => 'priority']))
                     ->markAsRead(),
             ]);
 

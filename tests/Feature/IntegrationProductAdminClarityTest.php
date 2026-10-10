@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Filament\Resources\IntegrationProducts\IntegrationProductResource;
+use App\Filament\Resources\IntegrationProducts\Pages\ListIntegrationProducts;
 use App\Filament\Widgets\IntegrationCatalogIntegrityOverview;
 use App\Models\Category;
 use App\Models\IntegrationProduct;
@@ -99,5 +100,52 @@ class IntegrationProductAdminClarityTest extends TestCase
             ->assertSeeText('Карточка-кандидат D150')
             ->assertSeeText('кандидат · CANDIDATE-UI')
             ->assertSeeText('Сравнить варианты');
+    }
+
+    public function test_admin_can_open_a_safe_list_of_possible_identity_duplicates(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin', 'is_active' => true]);
+        $source = IntegrationSource::query()->create([
+            'code' => 'duplicate-review-source',
+            'name' => 'Источник для проверки дублей',
+        ]);
+
+        $first = IntegrationProduct::query()->create([
+            'integration_source_id' => $source->id,
+            'external_id' => 'duplicate-review-a',
+            'external_sku' => 'DUPLICATE-500',
+            'name' => 'Первая позиция',
+            'stock_quantity' => 2,
+        ]);
+        $second = IntegrationProduct::query()->create([
+            'integration_source_id' => $source->id,
+            'external_id' => 'duplicate-review-b',
+            'external_sku' => 'duplicate 500',
+            'name' => 'Вторая позиция',
+            'stock_quantity' => 1,
+        ]);
+        $unrelated = IntegrationProduct::query()->create([
+            'integration_source_id' => $source->id,
+            'external_id' => 'unrelated-review-item',
+            'external_sku' => 'UNIQUE-900',
+            'name' => 'Отдельная позиция',
+            'stock_quantity' => 3,
+        ]);
+
+        $this->actingAs($admin)
+            ->get(IntegrationProductResource::getUrl('index', panel: 'admin'))
+            ->assertOk()
+            ->assertSeeText('Возможные дубли');
+
+        Livewire::actingAs($admin)
+            ->test(ListIntegrationProducts::class)
+            ->set('activeTab', 'identity_collisions')
+            ->assertCanSeeTableRecords([$first, $second])
+            ->assertCanNotSeeTableRecords([$unrelated]);
+
+        Livewire::actingAs($admin)
+            ->test(IntegrationCatalogIntegrityOverview::class)
+            ->assertSee('возможных дублей по реквизитам: 1')
+            ->assertSeeHtml('tab=identity_collisions');
     }
 }
