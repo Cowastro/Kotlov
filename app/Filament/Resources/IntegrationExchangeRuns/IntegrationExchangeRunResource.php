@@ -65,10 +65,14 @@ class IntegrationExchangeRunResource extends Resource
                         'failed' => 'danger',
                         default => 'info',
                     }),
-                TextColumn::make('items_received')->label('Получено')->numeric()->alignRight(),
-                TextColumn::make('items_created')->label('Новых')->numeric()->alignRight()
-                    ->color(fn (int $state): string => $state > 0 ? 'warning' : 'gray'),
-                TextColumn::make('items_updated')->label('Обновлено')->numeric()->alignRight(),
+                TextColumn::make('items_received')->label('Товары: получено')->numeric()->alignRight()
+                    ->description(fn (IntegrationExchangeRun $record): ?string => $record->operation === 'catalog'
+                        ? 'новых '.number_format((int) $record->items_created, 0, ',', ' ')
+                            .' · обновлено '.number_format((int) $record->items_updated, 0, ',', ' ')
+                            .((int) $record->items_skipped > 0
+                                ? ' · пропущено '.number_format((int) $record->items_skipped, 0, ',', ' ')
+                                : '')
+                        : null),
                 TextColumn::make('stock_zeroed')->label('Снято с наличия')
                     ->state(fn (IntegrationExchangeRun $record): int => (int) data_get($record->summary, 'stock_snapshot.zeroed', 0))
                     ->numeric()->alignRight()

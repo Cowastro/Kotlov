@@ -125,4 +125,34 @@ class IntegrationHealthOverviewTest extends TestCase
             ->assertSeeText('Контролируемых сеансов ещё нет')
             ->assertSeeText('Позиций в буфере прежней загрузки: 1');
     }
+
+    public function test_recent_exchange_widget_separates_created_and_updated_catalog_rows(): void
+    {
+        $admin = User::factory()->create([
+            'role' => 'admin',
+            'is_active' => true,
+        ]);
+        $source = IntegrationSource::query()->create([
+            'code' => 'journal-result-source',
+            'name' => 'Источник результата',
+        ]);
+        IntegrationExchangeRun::query()->create([
+            'integration_source_id' => $source->id,
+            'direction' => 'inbound',
+            'operation' => 'catalog',
+            'status' => 'success',
+            'started_at' => now(),
+            'finished_at' => now(),
+            'items_received' => 705,
+            'items_created' => 5,
+            'items_updated' => 698,
+            'items_skipped' => 2,
+        ]);
+
+        Livewire::actingAs($admin)
+            ->test(RecentIntegrationRuns::class)
+            ->assertSeeText('Товары: получено')
+            ->assertSeeText('705')
+            ->assertSeeText('новых 5 · обновлено 698 · пропущено 2');
+    }
 }

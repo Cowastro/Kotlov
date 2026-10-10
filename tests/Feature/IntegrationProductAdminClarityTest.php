@@ -6,6 +6,7 @@ use App\Filament\Resources\IntegrationProducts\IntegrationProductResource;
 use App\Filament\Resources\IntegrationProducts\Pages\ListIntegrationProducts;
 use App\Filament\Widgets\IntegrationCatalogIntegrityOverview;
 use App\Models\Category;
+use App\Models\IntegrationExchangeRun;
 use App\Models\IntegrationProduct;
 use App\Models\IntegrationSource;
 use App\Models\Product;
@@ -100,6 +101,35 @@ class IntegrationProductAdminClarityTest extends TestCase
             ->assertSeeText('Карточка-кандидат D150')
             ->assertSeeText('кандидат · CANDIDATE-UI')
             ->assertSeeText('Сравнить варианты');
+    }
+
+    public function test_integrity_overview_explains_what_the_latest_catalog_sync_created_and_updated(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin', 'is_active' => true]);
+        $source = IntegrationSource::query()->create([
+            'code' => 'latest-import-source',
+            'name' => '1С СанБизнесГруп',
+            'settings' => ['partner_name' => 'СанБизнесГруп'],
+        ]);
+        IntegrationExchangeRun::query()->create([
+            'integration_source_id' => $source->id,
+            'direction' => 'inbound',
+            'operation' => 'catalog',
+            'status' => 'success',
+            'started_at' => now(),
+            'finished_at' => now(),
+            'items_received' => 705,
+            'items_created' => 5,
+            'items_updated' => 700,
+        ]);
+
+        Livewire::actingAs($admin)
+            ->test(IntegrationCatalogIntegrityOverview::class)
+            ->assertSee('Последний импорт')
+            ->assertSee('СанБизнесГруп')
+            ->assertSee('получено 705')
+            ->assertSee('новых 5')
+            ->assertSee('обновлено 700');
     }
 
     public function test_admin_can_open_a_safe_list_of_possible_identity_duplicates(): void

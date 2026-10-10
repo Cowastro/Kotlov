@@ -2,7 +2,9 @@
 
 namespace App\Filament\Widgets;
 
+use App\Filament\Resources\IntegrationExchangeRuns\IntegrationExchangeRunResource;
 use App\Filament\Resources\IntegrationProducts\IntegrationProductResource;
+use App\Models\IntegrationExchangeRun;
 use App\Services\Integrations\IntegrationCatalogSummary;
 use Filament\Support\Icons\Heroicon;
 use Filament\Widgets\StatsOverviewWidget;
@@ -22,7 +24,7 @@ class IntegrationCatalogIntegrityOverview extends StatsOverviewWidget
     {
         return [
             'md' => 2,
-            'xl' => 4,
+            'xl' => 5,
         ];
     }
 
@@ -38,6 +40,12 @@ class IntegrationCatalogIntegrityOverview extends StatsOverviewWidget
         $stockRange = $summary['stock_min'] === null
             ? 'нет данных'
             : $this->formatQuantity($summary['stock_min']).'–'.$this->formatQuantity($summary['stock_max']).' шт.';
+        $latestCatalogRun = IntegrationExchangeRun::query()
+            ->with('source')
+            ->where('direction', 'inbound')
+            ->where('operation', 'catalog')
+            ->latest('started_at')
+            ->first();
 
         return [
             Stat::make('Вся номенклатура 1С', $format($summary['total']))
@@ -73,6 +81,30 @@ class IntegrationCatalogIntegrityOverview extends StatsOverviewWidget
                 ->description('Предложений: '.$format($summary['suggested']).' · проверить: '.$format($summary['ambiguous']).' · не найдено: '.$format($summary['unmatched']))
                 ->descriptionIcon(Heroicon::OutlinedLink)
                 ->color($needsDecision > 0 ? 'warning' : 'success'),
+            Stat::make('Последний импорт', $latestCatalogRun?->started_at
+                ? $latestCatalogRun->started_at->timezone('Europe/Minsk')->format('d.m.Y H:i')
+                : 'Нет записи')
+                ->description($latestCatalogRun
+                    ? collect([
+                        $latestCatalogRun->source?->partnerName(),
+                        'получено '.$format((int) $latestCatalogRun->items_received),
+                        'новых '.$format((int) $latestCatalogRun->items_created),
+                        'обновлено '.$format((int) $latestCatalogRun->items_updated),
+                    ])->filter()->implode(' · ')
+                    : ($summary['total'] > 0
+                        ? 'Текущие '.$format($summary['total']).' строк относятся к прежней загрузке'
+                        : 'Ожидается первый обмен'))
+                ->descriptionIcon(match ($latestCatalogRun?->status) {
+                    'success' => Heroicon::OutlinedCheckCircle,
+                    'failed' => Heroicon::OutlinedExclamationTriangle,
+                    default => Heroicon::OutlinedClock,
+                })
+                ->color(match ($latestCatalogRun?->status) {
+                    'success' => 'success',
+                    'failed' => 'danger',
+                    default => 'gray',
+                })
+                ->url(IntegrationExchangeRunResource::getUrl('index')),
         ];
     }
 

@@ -79,17 +79,16 @@ class IntegrationExchangeRunResource extends Resource
                         default => 'info',
                     }),
                 TextColumn::make('items_received')
-                    ->label('Получено')
+                    ->label('Товары: получено')
                     ->numeric()
-                    ->alignRight(),
-                TextColumn::make('items_updated')
-                    ->label('Обновлено')
-                    ->numeric()
-                    ->alignRight(),
-                TextColumn::make('items_skipped')
-                    ->label('Пропущено')
-                    ->numeric()
-                    ->alignRight(),
+                    ->alignRight()
+                    ->description(fn (IntegrationExchangeRun $record): ?string => $record->operation === 'catalog'
+                        ? 'новых '.number_format((int) $record->items_created, 0, ',', ' ')
+                            .' · обновлено '.number_format((int) $record->items_updated, 0, ',', ' ')
+                            .((int) $record->items_skipped > 0
+                                ? ' · пропущено '.number_format((int) $record->items_skipped, 0, ',', ' ')
+                                : '')
+                        : null),
                 TextColumn::make('orders_count')
                     ->label('Заказов')
                     ->numeric()
