@@ -19,7 +19,11 @@ return new class extends Migration
 
         Schema::create('supplier_order_request_status_histories', function (Blueprint $table): void {
             $table->id();
-            $table->foreignId('supplier_order_request_id')->constrained()->cascadeOnDelete();
+            $table->unsignedBigInteger('supplier_order_request_id');
+            $table->foreign('supplier_order_request_id', 'supplier_request_history_request_fk')
+                ->references('id')
+                ->on('supplier_order_requests')
+                ->cascadeOnDelete();
             $table->foreignId('user_id')->nullable()->constrained('users')->nullOnDelete();
             $table->string('actor_name')->nullable();
             $table->string('actor_scope', 24);
