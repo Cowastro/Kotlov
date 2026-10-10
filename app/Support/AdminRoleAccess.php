@@ -20,6 +20,8 @@ use App\Models\IntegrationExchangeRun;
 use App\Models\IntegrationIssue;
 use App\Models\IntegrationProduct;
 use App\Models\IntegrationSource;
+use App\Models\MarketPriceObservation;
+use App\Models\MarketPriceSource;
 use App\Models\Order;
 use App\Models\Page;
 use App\Models\Product;
@@ -45,6 +47,7 @@ final class AdminRoleAccess
         ContactRequest::class => ['viewAny', 'view', 'update'],
         InstallRequest::class => ['viewAny', 'view', 'update'],
         Review::class => ['viewAny', 'view', 'update'],
+        MarketPriceObservation::class => ['viewAny', 'view'],
     ];
 
     /** @var list<class-string<Model>> */
@@ -67,6 +70,8 @@ final class AdminRoleAccess
         IntegrationIssue::class,
         IntegrationProduct::class,
         IntegrationSource::class,
+        MarketPriceObservation::class,
+        MarketPriceSource::class,
         Order::class,
         Page::class,
         Product::class,

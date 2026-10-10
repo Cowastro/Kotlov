@@ -491,4 +491,9 @@ class Product extends Model
     {
         return $this->hasMany(IntegrationProduct::class);
     }
+
+    public function marketPriceObservations(): HasMany
+    {
+        return $this->hasMany(MarketPriceObservation::class);
+    }
 }
