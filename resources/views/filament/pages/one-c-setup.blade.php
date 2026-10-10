@@ -16,8 +16,11 @@
         .onec-setup-checks { display: grid; gap: 8px; }
         .onec-setup-check { display: grid; grid-template-columns: 24px minmax(180px,.7fr) minmax(260px,1.3fr); gap: 10px; align-items: start; padding: 11px 12px; border-radius: 9px; background: rgba(255,255,255,.03); }
         .onec-setup-check-icon { font-weight: 900; color: rgb(251,191,36); }
-        .onec-setup-check.complete .onec-setup-check-icon { color: rgb(74,222,128); }
+        .onec-setup-check.success .onec-setup-check-icon { color: rgb(74,222,128); }
         .onec-setup-check.warning .onec-setup-check-icon { color: rgb(251,191,36); }
+        .onec-setup-check.failed .onec-setup-check-icon { color: rgb(248,113,113); }
+        .onec-setup-check.running .onec-setup-check-icon { color: rgb(96,165,250); }
+        .onec-setup-check.disabled .onec-setup-check-icon { color: rgb(148,163,184); }
         .onec-setup-next { color: rgb(148,163,184); font-size: 13px; }
         .onec-setup-actions { display: flex; flex-wrap: wrap; gap: 10px; padding: 0 18px 18px; }
         @media (max-width: 900px) {
@@ -68,8 +71,8 @@
                         <div class="onec-setup-label">Контроль готовности</div>
                         <div class="onec-setup-checks">
                             @foreach ($item['checks'] as $check)
-                                <div class="onec-setup-check {{ $check['complete'] ? 'complete' : $check['status'] }}">
-                                    <span class="onec-setup-check-icon">{{ $check['complete'] ? '✓' : '!' }}</span>
+                                <div class="onec-setup-check {{ $check['status'] }}">
+                                    <span class="onec-setup-check-icon">{{ $check['icon'] }}</span>
                                     <strong>{{ $check['label'] }}</strong>
                                     <span class="onec-setup-next">{{ $check['next_step'] }}</span>
                                 </div>

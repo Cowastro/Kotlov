@@ -2,23 +2,25 @@
 
 namespace App\Services\Integrations;
 
-use App\Models\IntegrationExchangeRun;
 use App\Models\IntegrationSource;
 
 class OneCSetupReadiness
 {
-    public function __construct(private IntegrationMonitoringWindow $monitoringWindow) {}
+    public function __construct(
+        private IntegrationMonitoringWindow $monitoringWindow,
+        private IntegrationFlowHealth $flowHealth,
+    ) {}
 
     /** @return array<string, mixed> */
     public function snapshot(IntegrationSource $source): array
     {
-        $latestCatalog = $this->latestSuccessfulRun($source, 'inbound', 'catalog');
-        $latestOrders = $this->latestSuccessfulRun($source, 'outbound', 'orders');
-        $latestStatuses = $this->latestSuccessfulRun($source, 'inbound', 'order_statuses');
+        $flowSnapshot = $this->flowHealth->snapshot($source);
+        $flows = $flowSnapshot['flows'];
+        $latestCatalog = $flows['catalog']['latest_success'];
+        $latestOrders = $flows['orders']['latest_success'];
+        $latestStatuses = $flows['order_statuses']['latest_success'];
         $latestRun = $source->exchangeRuns()->latest('started_at')->first();
-        $catalogFresh = $latestCatalog?->finished_at?->gte(
-            now()->subMinutes($source->staleAfterMinutes())
-        ) ?? false;
+        $catalogFresh = $flows['catalog']['status'] === 'healthy';
 
         $checks = [
             $this->check(
@@ -41,20 +43,19 @@ class OneCSetupReadiness
                 (bool) $this->monitoringWindow->ordersStartAtFor($source),
                 'Сохраните источник: система зафиксирует дату, раньше которой заказы в 1С не отправляются.',
             ),
-            $this->check(
+            $this->flowCheck(
                 'Каталог, цены и остатки поступают',
-                (bool) $latestCatalog,
+                $flows['catalog'],
                 'Запустите обмен товарами в 1С и дождитесь успешной записи в журнале.',
-                $catalogFresh ? 'success' : ($latestCatalog ? 'warning' : 'pending'),
             ),
-            $this->check(
+            $this->flowCheck(
                 'Новые заказы запрашиваются из 1С',
-                (bool) $latestOrders,
+                $flows['orders'],
                 'Включите обмен заказами в узле 1С и выполните один контрольный цикл.',
             ),
-            $this->check(
+            $this->flowCheck(
                 'Статусы заказов возвращаются на сайт',
-                (bool) $latestStatuses,
+                $flows['order_statuses'],
                 'После загрузки заказа отправьте из 1С его статус в том же регулярном обмене.',
             ),
         ];
@@ -73,23 +74,11 @@ class OneCSetupReadiness
             'latest_orders' => $latestOrders,
             'latest_statuses' => $latestStatuses,
             'catalog_fresh' => $catalogFresh,
+            'flow_health' => $flowSnapshot['health'],
         ];
     }
 
-    private function latestSuccessfulRun(
-        IntegrationSource $source,
-        string $direction,
-        string $operation,
-    ): ?IntegrationExchangeRun {
-        return $source->exchangeRuns()
-            ->where('direction', $direction)
-            ->where('operation', $operation)
-            ->where('status', 'success')
-            ->latest('finished_at')
-            ->first();
-    }
-
-    /** @return array{label: string, complete: bool, status: string, next_step: string} */
+    /** @return array{label: string, complete: bool, status: string, icon: string, next_step: string} */
     private function check(
         string $label,
         bool $complete,
@@ -100,7 +89,60 @@ class OneCSetupReadiness
             'label' => $label,
             'complete' => $complete,
             'status' => $status ?? ($complete ? 'success' : 'pending'),
+            'icon' => $complete ? '✓' : '!',
             'next_step' => $complete ? 'Готово' : $nextStep,
         ];
+    }
+
+    /**
+     * @param  array<string, mixed>  $flow
+     * @return array{label: string, complete: bool, status: string, icon: string, next_step: string}
+     */
+    private function flowCheck(string $label, array $flow, string $firstRunStep): array
+    {
+        return match ($flow['status']) {
+            'healthy' => [
+                'label' => $label,
+                'complete' => true,
+                'status' => 'success',
+                'icon' => '✓',
+                'next_step' => 'Готово — обмен укладывается в заданный интервал.',
+            ],
+            'disabled' => [
+                'label' => $label,
+                'complete' => true,
+                'status' => 'disabled',
+                'icon' => '—',
+                'next_step' => 'Не используется для этого источника.',
+            ],
+            'running' => [
+                'label' => $label,
+                'complete' => false,
+                'status' => 'running',
+                'icon' => '↻',
+                'next_step' => 'Обмен выполняется. Дождитесь завершения и обновите страницу.',
+            ],
+            'failed' => [
+                'label' => $label,
+                'complete' => false,
+                'status' => 'failed',
+                'icon' => '×',
+                'next_step' => 'Последняя попытка завершилась ошибкой. Откройте журнал, устраните причину и повторите обмен.',
+            ],
+            'stale' => [
+                'label' => $label,
+                'complete' => false,
+                'status' => 'warning',
+                'icon' => '!',
+                'next_step' => 'Последний успешный обмен устарел. Проверьте регламентное задание и запустите контрольный цикл.',
+            ],
+            default => [
+                'label' => $label,
+                'complete' => false,
+                'status' => 'pending',
+                'icon' => '!',
+                'next_step' => $firstRunStep,
+            ],
+        };
     }
 }

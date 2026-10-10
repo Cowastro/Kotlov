@@ -7,12 +7,20 @@ use App\Models\IntegrationExchangeRun;
 use App\Models\IntegrationSource;
 use App\Models\User;
 use App\Services\Integrations\OneCSetupReadiness;
+use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 class OneCSetupReadinessTest extends TestCase
 {
     use RefreshDatabase;
+
+    protected function tearDown(): void
+    {
+        CarbonImmutable::setTestNow();
+
+        parent::tearDown();
+    }
 
     public function test_readiness_reports_each_exchange_direction_without_exposing_credentials(): void
     {
@@ -24,6 +32,7 @@ class OneCSetupReadinessTest extends TestCase
             'password_hash' => 'secret-hash',
             'is_active' => true,
             'last_authenticated_at' => now(),
+            'settings' => ['allow_order_export' => true],
         ]);
 
         foreach ([
@@ -49,6 +58,95 @@ class OneCSetupReadinessTest extends TestCase
         $this->assertSame('orders', $snapshot['latest_orders']->operation);
         $this->assertSame('order_statuses', $snapshot['latest_statuses']->operation);
         $this->assertArrayNotHasKey('password_hash', $snapshot);
+    }
+
+    public function test_historical_successes_do_not_mark_stale_exchange_flows_as_ready(): void
+    {
+        CarbonImmutable::setTestNow('2026-10-10 12:00:00');
+
+        $source = IntegrationSource::query()->create([
+            'code' => 'onec-stale',
+            'name' => 'Просроченная 1С',
+            'driver' => 'commerceml',
+            'username' => 'exchange',
+            'password_hash' => 'secret-hash',
+            'is_active' => true,
+            'last_authenticated_at' => now()->subHour(),
+            'settings' => [
+                'order_interval_minutes' => 5,
+                'catalog_interval_minutes' => 10,
+                'stale_after_minutes' => 15,
+                'allow_order_export' => true,
+            ],
+        ]);
+
+        foreach ([
+            ['inbound', 'catalog'],
+            ['outbound', 'orders'],
+            ['inbound', 'order_statuses'],
+        ] as [$direction, $operation]) {
+            IntegrationExchangeRun::query()->create([
+                'integration_source_id' => $source->id,
+                'direction' => $direction,
+                'operation' => $operation,
+                'status' => 'success',
+                'started_at' => now()->subHours(2),
+                'finished_at' => now()->subHours(2),
+            ]);
+        }
+
+        $snapshot = app(OneCSetupReadiness::class)->snapshot($source);
+        $flowChecks = collect($snapshot['checks'])->slice(4)->values();
+
+        $this->assertFalse($snapshot['ready']);
+        $this->assertSame(4, $snapshot['completed']);
+        $this->assertSame('stale', $snapshot['flow_health']);
+        $this->assertFalse($snapshot['catalog_fresh']);
+        $this->assertSame(['warning', 'warning', 'warning'], $flowChecks->pluck('status')->all());
+        $this->assertTrue($flowChecks->every(
+            fn (array $check): bool => $check['next_step'] !== 'Готово'
+                && str_contains($check['next_step'], 'устарел')
+        ));
+    }
+
+    public function test_latest_failed_attempt_overrides_an_earlier_success_in_setup_readiness(): void
+    {
+        $source = IntegrationSource::query()->create([
+            'code' => 'onec-failed',
+            'name' => '1С с ошибкой',
+            'driver' => 'commerceml',
+            'username' => 'exchange',
+            'password_hash' => 'secret-hash',
+            'is_active' => true,
+            'last_authenticated_at' => now(),
+            'settings' => ['allow_order_export' => true],
+        ]);
+        IntegrationExchangeRun::query()->create([
+            'integration_source_id' => $source->id,
+            'direction' => 'inbound',
+            'operation' => 'catalog',
+            'status' => 'success',
+            'started_at' => now()->subMinutes(2),
+            'finished_at' => now()->subMinute(),
+        ]);
+        IntegrationExchangeRun::query()->create([
+            'integration_source_id' => $source->id,
+            'direction' => 'inbound',
+            'operation' => 'catalog',
+            'status' => 'failed',
+            'started_at' => now(),
+            'finished_at' => now(),
+            'error_message' => 'connection reset',
+        ]);
+
+        $snapshot = app(OneCSetupReadiness::class)->snapshot($source);
+        $catalogCheck = $snapshot['checks'][4];
+
+        $this->assertFalse($snapshot['ready']);
+        $this->assertSame('failed', $snapshot['flow_health']);
+        $this->assertSame('failed', $catalogCheck['status']);
+        $this->assertSame('×', $catalogCheck['icon']);
+        $this->assertStringContainsString('ошибкой', $catalogCheck['next_step']);
     }
 
     public function test_admin_can_open_one_c_setup_page_and_see_next_steps(): void
