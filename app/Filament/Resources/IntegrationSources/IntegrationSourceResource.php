@@ -12,6 +12,7 @@ use App\Services\Integrations\IntegrationFlowHealth;
 use App\Services\Integrations\IntegrationOperationsSummary;
 use App\Services\Integrations\IntegrationOrderStatusMapper;
 use App\Services\Integrations\OrderIntegrationMonitoring;
+use App\Services\Integrations\SupplierChannelTransitionPlanner;
 use BackedEnum;
 use Filament\Actions\EditAction;
 use Filament\Forms\Components\Placeholder;
@@ -198,6 +199,40 @@ class IntegrationSourceResource extends Resource
                     'default' => 1,
                     'xl' => 4,
                 ]),
+            Section::make('Переход со старого канала на 1С')
+                ->description('Сначала сохраните контрольный снимок. Он ничего не перепривязывает и не удаляет: показывает покрытие старых связей, непривязанные остатки, цены и возможные дубли.')
+                ->schema([
+                    Placeholder::make('transition_preview')
+                        ->label('Текущее состояние')
+                        ->content(fn (?IntegrationSource $record): string => $record
+                            ? app(SupplierChannelTransitionPlanner::class)->summary($record)
+                            : 'Появится после сохранения источника.'),
+                    Placeholder::make('transition_next_step')
+                        ->label('Следующий безопасный шаг')
+                        ->content(function (?IntegrationSource $record): string {
+                            if (! $record) {
+                                return 'Сохраните источник и назначьте поставщика-владельца.';
+                            }
+
+                            if (! $record->supplier_id) {
+                                return 'Назначьте поставщика-владельца. Без него сравнение со старым каналом невозможно.';
+                            }
+
+                            $preview = app(SupplierChannelTransitionPlanner::class)->preview($record);
+
+                            return $preview['can_start_control_exchange']
+                                ? 'Сохраните предпросмотр и выполните новый контрольный обмен 1С. Старый канал пока остаётся включён.'
+                                : 'Устраните перечисленные в предпросмотре блокировки. Старый канал отключить нельзя.';
+                        }),
+                    Placeholder::make('transition_journal')
+                        ->label('Последняя запись журнала')
+                        ->content(fn (?IntegrationSource $record): string => $record
+                            ? app(SupplierChannelTransitionPlanner::class)->latestStatusLabel($record)
+                            : 'Проверка ещё не сохранялась.')
+                        ->columnSpanFull(),
+                ])
+                ->columns(2)
+                ->columnSpanFull(),
             Section::make('Сопоставление статусов заказов')
                 ->description('Для нестандартных названий из конкретной 1С или API. Точное правило имеет приоритет над общим распознаванием; неизвестное значение не меняет заказ и остаётся в очереди проблем.')
                 ->schema([

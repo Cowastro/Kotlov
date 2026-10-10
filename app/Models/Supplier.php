@@ -48,6 +48,11 @@ class Supplier extends Model
         return $this->hasMany(IntegrationSource::class);
     }
 
+    public function channelTransitions(): HasMany
+    {
+        return $this->hasMany(SupplierChannelTransition::class);
+    }
+
     public function users(): BelongsToMany
     {
         return $this->belongsToMany(User::class)->withTimestamps();

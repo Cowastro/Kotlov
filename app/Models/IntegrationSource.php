@@ -196,6 +196,16 @@ class IntegrationSource extends Model
         return $this->hasMany(OrderIntegrationDelivery::class);
     }
 
+    public function channelTransitions(): HasMany
+    {
+        return $this->hasMany(SupplierChannelTransition::class);
+    }
+
+    public function latestChannelTransition(): HasOne
+    {
+        return $this->hasOne(SupplierChannelTransition::class)->latestOfMany();
+    }
+
     public function latestExchangeRun(): HasOne
     {
         return $this->hasOne(IntegrationExchangeRun::class)->latestOfMany('started_at');

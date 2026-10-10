@@ -13,6 +13,7 @@ use App\Services\Integrations\CommerceMlOrderImporter;
 use App\Services\Integrations\IntegrationExchangeJournal;
 use App\Services\Integrations\IntegrationMonitoringWindow;
 use App\Services\Integrations\OrderIntegrationRouter;
+use App\Services\Integrations\SupplierChannelTransitionPlanner;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
@@ -35,6 +36,7 @@ class OneCExchangeController extends Controller
         private readonly IntegrationExchangeJournal $exchangeJournal,
         private readonly IntegrationMonitoringWindow $monitoringWindow,
         private readonly OrderIntegrationRouter $orderRouter,
+        private readonly SupplierChannelTransitionPlanner $transitionPlanner,
     ) {}
 
     public function __invoke(Request $request, string $source = 'onec'): Response
@@ -274,6 +276,7 @@ class OneCExchangeController extends Controller
             'items_skipped' => (int) ($run?->items_skipped ?? 0) + $zeroed,
             'summary' => $summary,
         ]);
+        $this->transitionPlanner->refreshLatestReadiness($source);
 
         return $this->plain("success\nstock_zeroed={$zeroed}");
     }
