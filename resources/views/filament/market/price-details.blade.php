@@ -26,7 +26,7 @@
     .market-details__warning { padding: .75rem 1rem; border-top: 1px solid #fde68a; background: #fffbeb; color: #a16207; font-size: .875rem; }
     .market-details__warning + .market-details__warning { border-top-style: dashed; }
     .market-details__table-wrap { overflow-x: auto; }
-    .market-details__table { width: 100%; min-width: 760px; border-collapse: collapse; text-align: left; font-size: .82rem; }
+    .market-details__table { width: 100%; min-width: 920px; border-collapse: collapse; text-align: left; font-size: .82rem; }
     .market-details__table th { padding: .65rem 1rem; background: #f4f4f5; color: #71717a; font-size: .7rem; font-weight: 650; }
     .market-details__table td { padding: .8rem 1rem; border-top: 1px solid #e4e4e7; vertical-align: top; }
     .market-details__table-source { font-weight: 650; color: #18181b; }
@@ -122,7 +122,7 @@
                     <table class="market-details__table">
                         <thead>
                             <tr>
-                                <th>Источник</th><th>Предложение</th><th>Цена</th><th>Наличие</th><th>Сопоставление</th><th>Проверено</th>
+                                <th>Источник</th><th>Предложение</th><th>Цена</th><th>Наличие</th><th>Доставка</th><th>Сопоставление</th><th>Проверено</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -136,6 +136,15 @@
                                     </td>
                                     <td class="market-details__nowrap">{{ $formatMoney($observation->price_byn) }}</td>
                                     <td>{{ $observation->availabilityLabel() }}</td>
+                                    <td>
+                                        <div>{{ $observation->delivery_terms ?: 'Условия не указаны' }}</div>
+                                        <div class="market-details__sub">
+                                            {{ collect([
+                                                $observation->region,
+                                                $observation->delivery_price_byn !== null ? $formatMoney($observation->delivery_price_byn) : null,
+                                            ])->filter()->implode(' · ') }}
+                                        </div>
+                                    </td>
                                     <td><div>{{ $evidence['label'] }}</div><div class="market-details__sub">Уверенность {{ number_format((float) $observation->match_confidence * 100, 0) }}%</div></td>
                                     <td class="market-details__nowrap">{{ $observation->observed_at?->timezone('Europe/Minsk')->format('d.m.Y H:i') ?? '—' }}</td>
                                 </tr>

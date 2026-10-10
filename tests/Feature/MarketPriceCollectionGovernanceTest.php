@@ -153,6 +153,7 @@ class MarketPriceCollectionGovernanceTest extends TestCase
                         'name' => 'Рыночное предложение',
                         'price' => 99.90,
                         'currency' => 'BYN',
+                        'delivery_terms' => 'Курьером по Беларуси за 1–2 дня',
                         'availability_status' => 'in_stock',
                         'observed_at' => '2026-10-10 12:00:00',
                     ],
@@ -176,6 +177,7 @@ class MarketPriceCollectionGovernanceTest extends TestCase
         $this->assertSame($product->id, $observation->product_id);
         $this->assertFalse($observation->is_confirmed);
         $this->assertFalse($observation->is_comparable);
+        $this->assertSame('Курьером по Беларуси за 1–2 дня', $observation->delivery_terms);
         $this->assertSame(['requires_human_confirmation'], $observation->validation_flags);
         $this->assertSame('product_not_found', collect($run->events)->last()['code']);
     }

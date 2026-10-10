@@ -12,6 +12,7 @@ use Filament\Actions\EditAction;
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TagsInput;
+use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Resources\Resource;
@@ -88,6 +89,12 @@ class MarketPriceObservationResource extends Resource
                 ->default(1)
                 ->required(),
             TextInput::make('delivery_price_byn')->label('Доставка, BYN')->numeric()->minValue(0),
+            Textarea::make('delivery_terms')
+                ->label('Условия и срок доставки')
+                ->placeholder('Например: 2–3 рабочих дня, до терминала перевозчика')
+                ->maxLength(1000)
+                ->rows(2)
+                ->columnSpanFull(),
             Select::make('price_includes_vat')
                 ->label('НДС в рыночной цене')
                 ->options([1 => 'Включён', 0 => 'Не включён'])
@@ -165,6 +172,18 @@ class MarketPriceObservationResource extends Resource
                         'order' => 'warning',
                         default => 'gray',
                     }),
+                TextColumn::make('delivery_terms')
+                    ->label('Доставка')
+                    ->placeholder('Условия не указаны')
+                    ->description(fn (MarketPriceObservation $record): string => collect([
+                        $record->region,
+                        $record->delivery_price_byn !== null
+                            ? number_format((float) $record->delivery_price_byn, 2, ',', ' ').' BYN'
+                            : null,
+                    ])->filter()->implode(' · '))
+                    ->limit(45)
+                    ->wrap()
+                    ->toggleable(),
                 TextColumn::make('match_confidence')
                     ->label('Совпадение')
                     ->formatStateUsing(fn ($state): string => number_format((float) $state * 100, 0).'%')

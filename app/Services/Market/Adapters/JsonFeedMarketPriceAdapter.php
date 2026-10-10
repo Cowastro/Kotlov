@@ -88,6 +88,7 @@ class JsonFeedMarketPriceAdapter implements MarketPriceSourceAdapter
                 'price_includes_vat' => Arr::get($item, 'price_includes_vat'),
                 'vat_rate' => Arr::get($item, 'vat_rate'),
                 'delivery_price_byn' => Arr::get($item, 'delivery_price_byn'),
+                'delivery_terms' => Arr::get($item, 'delivery_terms'),
                 'region' => Arr::get($item, 'region', $source->region),
                 'availability_status' => Arr::get($item, 'availability_status', 'unknown'),
                 'match_method' => 'exact_sku',

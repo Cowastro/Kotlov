@@ -23,6 +23,7 @@ use App\Services\Market\MarketPriceObservationRecorder;
 use App\Services\Market\MarketPriceRecommendation;
 use App\Services\Market\MarketPriceSummary;
 use Carbon\CarbonImmutable;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -42,6 +43,7 @@ class MarketPriceIntelligenceTest extends TestCase
             'match_confidence' => 0.95,
             'is_confirmed' => true,
             'is_comparable' => true,
+            'delivery_terms' => '2–3 рабочих дня до терминала перевозчика',
         ];
 
         $first = app(MarketPriceObservationRecorder::class)->record($source, $product, $payload);
@@ -54,6 +56,7 @@ class MarketPriceIntelligenceTest extends TestCase
         $this->assertSame(1, MarketPriceObservation::query()->count());
         $this->assertSame('357.00', $second->fresh()->price_byn);
         $this->assertSame('EUR', $second->fresh()->currency);
+        $this->assertSame('2–3 рабочих дня до терминала перевозчика', $second->fresh()->delivery_terms);
     }
 
     public function test_market_corridor_uses_one_latest_fresh_confirmed_comparable_offer_per_source(): void
@@ -107,7 +110,8 @@ class MarketPriceIntelligenceTest extends TestCase
     public function test_manager_can_read_market_evidence_but_cannot_manage_sources_or_observations(): void
     {
         [$product, $source] = $this->fixture('access', productPrice: 120);
-        $this->record($source, $product, 100, now()->subHour());
+        $observation = $this->record($source, $product, 100, now()->subHour());
+        $observation->update(['delivery_terms' => 'Самовывоз или доставка за 2 дня']);
         $manager = User::factory()->create(['role' => 'manager', 'is_active' => true]);
         $admin = User::factory()->create(['role' => 'admin', 'is_active' => true]);
 
@@ -125,7 +129,8 @@ class MarketPriceIntelligenceTest extends TestCase
         $this->get(MarketPriceObservationResource::getUrl('index', panel: 'admin'))
             ->assertOk()
             ->assertSeeText($product->name)
-            ->assertSeeText($source->name);
+            ->assertSeeText($source->name)
+            ->assertSeeText('Самовывоз или доставка за 2 дня');
         $this->get(MarketPriceObservationResource::getUrl('create', panel: 'admin'))->assertForbidden();
         $this->get(MarketPriceSourceResource::getUrl('index', panel: 'admin'))->assertForbidden();
 
@@ -267,6 +272,10 @@ class MarketPriceIntelligenceTest extends TestCase
         foreach ([90, 100, 110] as $index => $price) {
             $this->record($this->source('details-'.$index), $product, $price, now()->subHour());
         }
+        MarketPriceObservation::query()->firstOrFail()->update([
+            'delivery_terms' => 'Доставка курьером за 2 дня',
+            'delivery_price_byn' => 15,
+        ]);
 
         $indicator = app(MarketPriceIndicator::class)->forProduct($product->fresh());
         $html = view('filament.market.price-details', [
@@ -286,6 +295,8 @@ class MarketPriceIntelligenceTest extends TestCase
         $this->assertStringContainsString('https://market-source-details-0.example/offer', $html);
         $this->assertStringContainsString('Учитывается', $html);
         $this->assertStringContainsString('Цена выше рынка', $html);
+        $this->assertStringContainsString('Доставка курьером за 2 дня', $html);
+        $this->assertStringContainsString('15,00 BYN', $html);
     }
 
     public function test_product_and_order_workbenches_show_the_same_market_indicator(): void
@@ -379,7 +390,7 @@ class MarketPriceIntelligenceTest extends TestCase
         try {
             $service->apply($product, $manager, 'Менеджер пытается изменить цену');
             $this->fail('Manager unexpectedly changed a product price.');
-        } catch (\Illuminate\Auth\Access\AuthorizationException) {
+        } catch (AuthorizationException) {
             $this->assertSame('130.00', $product->fresh()->price);
         }
 

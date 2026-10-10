@@ -26,7 +26,7 @@ class MarketPriceObservation extends Model
         'product_id', 'market_price_source_id', 'fingerprint', 'url', 'url_hash',
         'external_name', 'external_sku', 'model', 'package', 'unit',
         'observed_price', 'currency', 'exchange_rate_to_byn', 'price_byn',
-        'price_includes_vat', 'vat_rate', 'delivery_price_byn', 'region',
+        'price_includes_vat', 'vat_rate', 'delivery_price_byn', 'delivery_terms', 'region',
         'availability_status', 'match_method', 'match_confidence',
         'is_confirmed', 'is_comparable', 'validation_flags', 'observed_at',
     ];

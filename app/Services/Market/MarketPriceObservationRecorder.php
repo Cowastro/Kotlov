@@ -39,7 +39,7 @@ class MarketPriceObservationRecorder
         $attributes = [
             ...Arr::only($data, [
                 'external_name', 'external_sku', 'model', 'package', 'unit',
-                'price_includes_vat', 'vat_rate', 'delivery_price_byn', 'region',
+                'price_includes_vat', 'vat_rate', 'delivery_price_byn', 'delivery_terms', 'region',
                 'availability_status', 'match_method', 'match_confidence',
                 'is_confirmed', 'is_comparable', 'validation_flags',
             ]),
