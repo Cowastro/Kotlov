@@ -2437,15 +2437,6 @@ XML;
                 'all_stock_positive_warning_min_products' => 3,
             ],
         ]);
-        IntegrationExchangeRun::query()->create([
-            'integration_source_id' => $source->id,
-            'direction' => 'inbound',
-            'operation' => 'catalog',
-            'status' => 'success',
-            'started_at' => now()->subMinute(),
-            'finished_at' => now(),
-        ]);
-
         foreach ([0.01, 1, 870] as $index => $quantity) {
             IntegrationProduct::query()->create([
                 'integration_source_id' => $source->id,
@@ -2454,13 +2445,16 @@ XML;
                 'price' => 1,
                 'stock_quantity' => $quantity,
                 'match_status' => 'ignored',
+                'last_offer_seen_at' => now(),
             ]);
         }
 
         $detector = app(IntegrationIssueDetector::class);
         $first = $detector->scan();
 
-        $this->assertSame(1, $first['detected']);
+        // The source also has a flow-health issue because this intentionally
+        // models a manual first import without a recorded successful run.
+        $this->assertSame(2, $first['detected']);
         $issue = IntegrationIssue::query()->where('type', 'catalog_all_stock_positive')->firstOrFail();
         $this->assertSame('open', $issue->status);
         $this->assertSame(3, $issue->context['total']);

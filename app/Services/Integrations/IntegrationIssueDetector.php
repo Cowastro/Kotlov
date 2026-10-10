@@ -216,11 +216,20 @@ class IntegrationIssueDetector
         array &$openedIssueIds,
     ): void {
         $minimum = $source->allStockPositiveWarningMinimum();
-        if ($minimum === 0 || ! $source->exchangeRuns()
+        if ($minimum === 0) {
+            return;
+        }
+
+        $hasReceivedOffers = $source->products()
+            ->whereNotNull('last_offer_seen_at')
+            ->exists();
+        $hasSuccessfulCatalogRun = $source->exchangeRuns()
             ->where('direction', 'inbound')
             ->where('operation', 'catalog')
             ->where('status', 'success')
-            ->exists()) {
+            ->exists();
+
+        if (! $hasReceivedOffers && ! $hasSuccessfulCatalogRun) {
             return;
         }
 
