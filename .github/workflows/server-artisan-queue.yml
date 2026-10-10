@@ -60,6 +60,12 @@ jobs:
             exit 1
           fi
 
+          normalized_args="${artisan_args,,}"
+          if [[ "$normalized_args" == *"@"* || "$normalized_args" =~ --(email|phone|address|customer|client|contact|name)= ]]; then
+            echo "::error::Personal-data arguments are forbidden in GitHub Actions. Run this diagnostic directly on the server."
+            exit 1
+          fi
+
           if [[ "$task" == "tail-log" && "$log_file" != storage/logs/* ]]; then
             echo "::error::tail-log is limited to storage/logs/*."
             exit 1
@@ -112,56 +118,69 @@ jobs:
           remote_script=$(cat <<'SCRIPT'
           set -euo pipefail
           cd "$SERVER_PATH"
-          # Keep production media directories in place.  Queued tasks used to
-          # stash untracked files with `--include-untracked`, which removed
-          # restored supplier images from the checkout until they were manually
-          # recovered.  Stash tracked edits only; ignored media must stay put.
-          git stash push -m "pre-artisan-queue-$(date +%Y%m%d%H%M%S)" || true
-          git pull --ff-only
-          git checkout -- public/icons
+          IFS=' ' read -r -a ARTISAN_ARGV <<< "$ARTISAN_ARGS"
+          for i in "${!ARTISAN_ARGV[@]}"; do
+            ARTISAN_ARGV[$i]="${ARTISAN_ARGV[$i]//%20/ }"
+          done
 
-          case "$TASK" in
-            optimize-clear)
-              "$PHP_BIN" artisan optimize:clear
-              ;;
-            artisan-dry-run)
-              "$PHP_BIN" artisan $ARTISAN_ARGS
-              ;;
-            artisan-apply)
-              "$PHP_BIN" artisan $ARTISAN_ARGS
-              ;;
-            artisan-background)
-              mkdir -p "$(dirname "$LOG_FILE")"
-              nohup "$PHP_BIN" artisan $ARTISAN_ARGS > "$LOG_FILE" 2>&1 &
-              echo "started pid=$!"
-              ;;
-            tail-log)
-              tail -n 160 "$LOG_FILE"
-              ;;
-            ps-artisan)
-              ps -ef | grep artisan | grep -v grep || true
-              ;;
-            health-check)
-              echo "== Public HTTPS =="
-              curl -sS -I --max-time 15 https://kotlov.by/ || true
-              echo "== Public HTTPS without certificate verification =="
-              curl -k -sS -I --max-time 15 https://kotlov.by/ || true
-              echo "== Certificate =="
-              echo | openssl s_client -connect kotlov.by:443 -servername kotlov.by 2>/dev/null | openssl x509 -noout -subject -issuer -dates || true
-              echo "== Served certificate count =="
-              echo | openssl s_client -connect kotlov.by:443 -servername kotlov.by -showcerts 2>/dev/null | grep -c "BEGIN CERTIFICATE" || true
-              echo "== Nginx certificate configuration =="
-              nginx -T 2>&1 | grep -E "server_name.*kotlov|ssl_certificate" || true
-              echo "== Local HTTP with Host header =="
-              curl -sS -I --max-time 15 -H "Host: kotlov.by" http://127.0.0.1/ || true
-              echo "== Web/PHP processes =="
-              ps -ef | grep -E "nginx|apache|httpd|php-fpm|lsphp" | grep -v grep || true
-              ;;
-            kill-pid)
-              kill $ARTISAN_ARGS || true
-              ps -ef | grep artisan | grep -v grep || true
-              ;;
-          esac
+          detail_log="storage/logs/github-actions-${TASK}.log"
+          mkdir -p "$(dirname "$detail_log")"
+
+          # Keep complete diagnostic output on the host. The workflow receives
+          # only aggregates, never log messages, HTTP headers or process lines.
+          set +e
+          (
+            set -euo pipefail
+            # Keep production media directories in place. Stash tracked edits
+            # only; ignored media must stay put.
+            git stash push -m "pre-artisan-queue-$(date +%Y%m%d%H%M%S)" || true
+            git pull --ff-only
+            git checkout -- public/icons
+
+            case "$TASK" in
+              optimize-clear)
+                "$PHP_BIN" artisan optimize:clear
+                ;;
+              artisan-dry-run|artisan-apply)
+                "$PHP_BIN" artisan "${ARTISAN_ARGV[@]}"
+                ;;
+              artisan-background)
+                mkdir -p "$(dirname "$LOG_FILE")"
+                nohup "$PHP_BIN" artisan "${ARTISAN_ARGV[@]}" > "$LOG_FILE" 2>&1 &
+                echo "background_started=1"
+                ;;
+              tail-log)
+                test -f "$LOG_FILE"
+                echo "source_lines=$(wc -l < "$LOG_FILE" | tr -d ' ')"
+                echo "source_bytes=$(wc -c < "$LOG_FILE" | tr -d ' ')"
+                echo "source_errors=$(grep -Eic 'error|exception|failed|critical' "$LOG_FILE" || true)"
+                echo "source_warnings=$(grep -Eic 'warning|warn' "$LOG_FILE" || true)"
+                ;;
+              ps-artisan)
+                echo "artisan_processes=$(pgrep -fc '[a]rtisan' || true)"
+                ;;
+              health-check)
+                curl --fail --silent --show-error --output /dev/null --max-time 15 https://kotlov.by/
+                echo | openssl s_client -connect kotlov.by:443 -servername kotlov.by 2>/dev/null | openssl x509 -noout -dates
+                curl --fail --silent --show-error --output /dev/null --max-time 15 -H "Host: kotlov.by" http://127.0.0.1/
+                ;;
+              kill-pid)
+                kill "${ARTISAN_ARGV[@]}" || true
+                echo "artisan_processes_after=$(pgrep -fc '[a]rtisan' || true)"
+                ;;
+            esac
+          ) > "$detail_log" 2>&1
+          status=$?
+          set -e
+
+          echo "task=$TASK"
+          echo "status=$status"
+          echo "output_lines=$(wc -l < "$detail_log" | tr -d ' ')"
+          echo "output_bytes=$(wc -c < "$detail_log" | tr -d ' ')"
+          echo "error_lines=$(grep -Eic 'error|exception|failed|critical' "$detail_log" || true)"
+          echo "warning_lines=$(grep -Eic 'warning|warn' "$detail_log" || true)"
+          echo "detail_log=$detail_log"
+          exit "$status"
           SCRIPT
           )
 
@@ -172,18 +191,19 @@ jobs:
           status=${PIPESTATUS[0]}
           set -e
 
+          safe_summary="$(grep -E '^(task|status|output_lines|output_bytes|error_lines|warning_lines|detail_log)=[A-Za-z0-9_./-]+$' "$output_file" || true)"
+
           {
             echo "# Server Artisan Result"
             echo
             echo "- Time: $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
             echo "- Task: \`$TASK\`"
-            echo "- Artisan args: \`$ARTISAN_ARGS\`"
-            echo "- Log file: \`$LOG_FILE\`"
             echo "- Exit code: \`$status\`"
             echo
-            echo '```text'
-            tail -c 60000 "$output_file"
+            echo "Only aggregate diagnostics are stored here. Detailed output remains in the server-local log."
             echo
+            echo '```text'
+            printf '%s\n' "$safe_summary"
             echo '```'
           } > .github/server-artisan-result.md
 

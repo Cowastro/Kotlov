@@ -68,6 +68,12 @@ jobs:
             exit 1
           fi
 
+          normalized_args="${ARTISAN_ARGS,,}"
+          if [[ "$normalized_args" == *"@"* || "$normalized_args" =~ --(email|phone|address|customer|client|contact|name)= ]]; then
+            echo "::error::Personal-data arguments are forbidden in GitHub Actions. Run this diagnostic directly on the server."
+            exit 1
+          fi
+
           if [[ "$TASK" == "tail-log" && "$LOG_FILE" != storage/logs/* ]]; then
             echo "::error::tail-log is limited to storage/logs/*."
             exit 1
@@ -122,38 +128,48 @@ jobs:
             ARTISAN_ARGV[$i]="${ARTISAN_ARGV[$i]//%20/ }"
           done
 
-          case "$TASK" in
-            optimize-clear)
-              git pull
-              git checkout -- public/icons
-              "$PHP_BIN" artisan optimize:clear
-              ;;
-            artisan-dry-run)
-              "$PHP_BIN" artisan "${ARTISAN_ARGV[@]}"
-              ;;
-            artisan-apply)
-              "$PHP_BIN" artisan "${ARTISAN_ARGV[@]}"
-              ;;
-            artisan-background)
-              mkdir -p "$(dirname "$LOG_FILE")"
-              nohup "$PHP_BIN" artisan "${ARTISAN_ARGV[@]}" > "$LOG_FILE" 2>&1 &
-              echo "started pid=$!"
-              ;;
-            tail-log)
-              tail -n 120 "$LOG_FILE"
-              ;;
-            ps-artisan)
-              ps -ef | grep artisan | grep -v grep || true
-              ;;
-            stop-varmega-image-repair)
-              pkill -f 'artisan catalog:repair-product-images --brand=Varmega' || true
-              ps -ef | grep artisan | grep -v grep || true
-              ;;
-            stop-product-image-repair)
-              pkill -f 'artisan catalog:repair-product-images' || true
-              ps -ef | grep artisan | grep -v grep || true
-              ;;
-            deploy-safe)
+          detail_log="storage/logs/github-actions-${TASK}.log"
+          mkdir -p "$(dirname "$detail_log")"
+
+          # Full output stays on the production host. GitHub Actions receives
+          # only numeric aggregates and a server-local diagnostic path, so a
+          # command or Laravel log cannot publish customer data or secrets.
+          set +e
+          (
+            set -euo pipefail
+            case "$TASK" in
+              optimize-clear)
+                git pull
+                git checkout -- public/icons
+                "$PHP_BIN" artisan optimize:clear
+                ;;
+              artisan-dry-run|artisan-apply)
+                "$PHP_BIN" artisan "${ARTISAN_ARGV[@]}"
+                ;;
+              artisan-background)
+                mkdir -p "$(dirname "$LOG_FILE")"
+                nohup "$PHP_BIN" artisan "${ARTISAN_ARGV[@]}" > "$LOG_FILE" 2>&1 &
+                echo "background_started=1"
+                ;;
+              tail-log)
+                test -f "$LOG_FILE"
+                echo "source_lines=$(wc -l < "$LOG_FILE" | tr -d ' ')"
+                echo "source_bytes=$(wc -c < "$LOG_FILE" | tr -d ' ')"
+                echo "source_errors=$(grep -Eic 'error|exception|failed|critical' "$LOG_FILE" || true)"
+                echo "source_warnings=$(grep -Eic 'warning|warn' "$LOG_FILE" || true)"
+                ;;
+              ps-artisan)
+                echo "artisan_processes=$(pgrep -fc '[a]rtisan' || true)"
+                ;;
+              stop-varmega-image-repair)
+                pkill -f 'artisan catalog:repair-product-images --brand=Varmega' || true
+                echo "artisan_processes_after=$(pgrep -fc '[a]rtisan' || true)"
+                ;;
+              stop-product-image-repair)
+                pkill -f 'artisan catalog:repair-product-images' || true
+                echo "artisan_processes_after=$(pgrep -fc '[a]rtisan' || true)"
+                ;;
+              deploy-safe)
               # Never discard production changes. A dirty tracked worktree is a
               # hard stop so an operator can inspect and preserve it first. The
               # Teplodvor index is runtime data: it may stay dirty, and Git will
@@ -184,14 +200,26 @@ jobs:
               git pull --ff-only origin main
               "$PHP_BIN" artisan migrate --force
               "$PHP_BIN" artisan optimize:clear
-              ;;
-            deploy-recover)
-              git merge --abort || true
-              git pull --ff-only
-              git checkout -- public/icons
-              "$PHP_BIN" artisan optimize:clear
-              ;;
-          esac
+                ;;
+              deploy-recover)
+                git merge --abort || true
+                git pull --ff-only
+                git checkout -- public/icons
+                "$PHP_BIN" artisan optimize:clear
+                ;;
+            esac
+          ) > "$detail_log" 2>&1
+          status=$?
+          set -e
+
+          echo "task=$TASK"
+          echo "status=$status"
+          echo "output_lines=$(wc -l < "$detail_log" | tr -d ' ')"
+          echo "output_bytes=$(wc -c < "$detail_log" | tr -d ' ')"
+          echo "error_lines=$(grep -Eic 'error|exception|failed|critical' "$detail_log" || true)"
+          echo "warning_lines=$(grep -Eic 'warning|warn' "$detail_log" || true)"
+          echo "detail_log=$detail_log"
+          exit "$status"
           SCRIPT
           )
 
