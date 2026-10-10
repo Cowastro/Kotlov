@@ -61,6 +61,7 @@ class Order extends Model
         'comment', 'admin_comment',
         'assigned_to', 'telegram_message_id', 'manager_id', 'onec_exported_at',
         'onec_external_id', 'onec_status', 'onec_status_received_at',
+        'archived_at', 'archived_by', 'archive_reason',
     ];
 
     protected $casts = [
@@ -70,6 +71,7 @@ class Order extends Model
         'discount' => 'decimal:2',
         'onec_exported_at' => 'datetime',
         'onec_status_received_at' => 'datetime',
+        'archived_at' => 'datetime',
     ];
 
     // Статусы для отображения
@@ -165,6 +167,7 @@ class Order extends Model
     public function scopeHistoricalUnprocessed(Builder $query): Builder
     {
         return $query
+            ->whereNull('archived_at')
             ->where('status', 'new')
             ->where(fn (Builder $payment): Builder => $payment
                 ->whereNull('payment_status')
@@ -189,6 +192,7 @@ class Order extends Model
     public function scopeOperationallyActive(Builder $query): Builder
     {
         return $query
+            ->whereNull('archived_at')
             ->whereNotIn('status', ['delivered', 'completed', 'cancelled'])
             ->where(function (Builder $current): void {
                 $current
@@ -229,7 +233,7 @@ class Order extends Model
 
     public function markIrrelevant(string $reason): bool
     {
-        if ($this->status !== 'new' || $this->payment_status === 'paid') {
+        if ($this->status !== 'new' || $this->payment_status === 'paid' || $this->archived_at !== null) {
             return false;
         }
 
@@ -240,7 +244,22 @@ class Order extends Model
             ? rtrim($this->admin_comment)."\n\n".$note
             : $note;
 
-        return $this->transitionTo('cancelled', $reason, ['admin_comment' => $adminComment]);
+        return $this->transitionTo('cancelled', $reason, [
+            'admin_comment' => $adminComment,
+            'archived_at' => now(),
+            'archived_by' => Auth::id(),
+            'archive_reason' => $reason,
+        ]);
+    }
+
+    public function scopeArchived(Builder $query): Builder
+    {
+        return $query->whereNotNull('archived_at');
+    }
+
+    public function isArchivedAsIrrelevant(): bool
+    {
+        return $this->archived_at !== null && filled($this->archive_reason);
     }
 
     public function user(): BelongsTo
@@ -255,6 +274,11 @@ class Order extends Model
     public function manager(): BelongsTo
     {
         return $this->belongsTo(User::class, 'manager_id');
+    }
+
+    public function archivedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'archived_by');
     }
 
     public function items(): HasMany

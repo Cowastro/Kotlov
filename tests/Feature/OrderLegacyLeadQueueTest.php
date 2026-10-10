@@ -86,6 +86,9 @@ class OrderLegacyLeadQueueTest extends TestCase
 
         $lead->refresh();
         $this->assertSame('cancelled', $lead->status);
+        $this->assertNotNull($lead->archived_at);
+        $this->assertSame($manager->id, $lead->archived_by);
+        $this->assertSame('Клиент подтвердил, что заявка больше не актуальна', $lead->archive_reason);
         $this->assertStringContainsString('Неактуальная заявка:', (string) $lead->admin_comment);
         $this->assertDatabaseHas('orders', ['id' => $lead->id]);
         $this->assertDatabaseHas('order_status_history', [
@@ -116,6 +119,8 @@ class OrderLegacyLeadQueueTest extends TestCase
 
         $this->assertSame('cancelled', $historicalOne->fresh()->status);
         $this->assertSame('cancelled', $historicalTwo->fresh()->status);
+        $this->assertNotNull($historicalOne->fresh()->archived_at);
+        $this->assertNotNull($historicalTwo->fresh()->archived_at);
         $this->assertSame('new', $current->fresh()->status);
         $this->assertDatabaseHas('orders', ['id' => $historicalOne->id]);
         $this->assertDatabaseHas('orders', ['id' => $historicalTwo->id]);
@@ -140,6 +145,7 @@ class OrderLegacyLeadQueueTest extends TestCase
             ->assertHasNoTableBulkActionErrors();
 
         $this->assertSame('cancelled', $lead->fresh()->status);
+        $this->assertNotNull($lead->fresh()->archived_at);
         $this->assertSame('new', $paid->fresh()->status);
         $this->assertSame('confirmed', $confirmed->fresh()->status);
         $this->assertDatabaseHas('orders', ['id' => $lead->id]);
@@ -152,6 +158,26 @@ class OrderLegacyLeadQueueTest extends TestCase
         ]);
         $this->assertDatabaseMissing('order_status_history', ['order_id' => $paid->id]);
         $this->assertDatabaseMissing('order_status_history', ['order_id' => $confirmed->id]);
+    }
+
+    public function test_archived_leads_have_a_separate_queue_and_cannot_be_archived_twice(): void
+    {
+        Carbon::setTestNow('2026-10-10 12:00:00');
+        $manager = User::factory()->create(['role' => 'manager', 'is_active' => true]);
+        $lead = $this->order('ORD-ARCHIVE-QUEUE', 'new', 'pending', now()->subDays(50));
+
+        $this->actingAs($manager);
+        $this->assertTrue($lead->markIrrelevant('Старая заявка, клиенту уже не требуется товар'));
+        $this->assertFalse($lead->fresh()->markIrrelevant('Повторное архивирование'));
+
+        Livewire::actingAs($manager)
+            ->test(ListOrders::class)
+            ->set('activeTab', 'archived')
+            ->assertCanSeeTableRecords([$lead]);
+
+        $this->assertSame(1, Order::query()->archived()->count());
+        $this->assertSame(0, Order::query()->historicalUnprocessed()->count());
+        $this->assertDatabaseCount('order_status_history', 1);
     }
 
     private function order(string $number, string $status, string $paymentStatus, Carbon $createdAt): Order

@@ -9,6 +9,7 @@ use App\Services\Market\MarketPriceIndicator;
 use Filament\Actions\Action;
 use Filament\Actions\ActionGroup;
 use Filament\Actions\BulkAction;
+use Filament\Actions\BulkActionGroup;
 use Filament\Actions\EditAction;
 use Filament\Actions\ExportAction;
 use Filament\Actions\ViewAction;
@@ -86,6 +87,7 @@ class OrdersTable
                     'items.product.supplierProducts.supplier',
                     'items.product.marketPriceObservations.source',
                     'manager:id,name',
+                    'archivedBy:id,name',
                     'placedEconomicSnapshot',
                     'supplierOrderRequests:id,order_id,status',
                     'integrationIssues' => fn ($query) => $query
@@ -258,7 +260,7 @@ class OrdersTable
                 TextColumn::make('status')
                     ->label('Статус')
                     ->badge()
-                    ->color(fn (?string $state) => match ($state) {
+                    ->color(fn (?string $state, Order $record) => $record->isArchivedAsIrrelevant() ? 'gray' : match ($state) {
                         'new' => 'info',
                         'confirmed' => 'warning',
                         'processing' => 'warning',
@@ -270,7 +272,7 @@ class OrdersTable
                         'cancelled' => 'danger',
                         default => 'gray',
                     })
-                    ->icon(fn (?string $state) => match ($state) {
+                    ->icon(fn (?string $state, Order $record) => $record->isArchivedAsIrrelevant() ? 'heroicon-o-archive-box' : match ($state) {
                         'new' => 'heroicon-o-sparkles',
                         'confirmed' => 'heroicon-o-check',
                         'processing' => 'heroicon-o-arrow-path',
@@ -282,7 +284,18 @@ class OrdersTable
                         'cancelled' => 'heroicon-o-x-circle',
                         default => null,
                     })
-                    ->formatStateUsing(fn (?string $state) => $state ? ($statusNames[$state] ?? $statusLabelOverrides[$state] ?? $state) : '—'),
+                    ->formatStateUsing(fn (?string $state, Order $record) => $record->isArchivedAsIrrelevant()
+                        ? 'Неактуален · архив'
+                        : ($state ? ($statusNames[$state] ?? $statusLabelOverrides[$state] ?? $state) : '—'))
+                    ->description(fn (Order $record): ?string => $record->isArchivedAsIrrelevant()
+                        ? collect([
+                            $record->archived_at?->format('d.m.Y H:i'),
+                            $record->archivedBy?->name,
+                        ])->filter()->implode(' · ')
+                        : null)
+                    ->tooltip(fn (Order $record): ?string => $record->isArchivedAsIrrelevant()
+                        ? $record->archive_reason
+                        : null),
 
                 TextColumn::make('onec_sync_state')
                     ->label('Обмен')
@@ -426,16 +439,19 @@ class OrdersTable
                     ->options([
                         'historical' => 'Историческая, вне рабочей очереди',
                         'current' => 'Текущая рабочая заявка',
+                        'archived' => 'Неактуальная, в архиве',
                     ])
                     ->query(function (Builder $query, array $data): Builder {
                         return match ($data['value'] ?? null) {
                             'historical' => $query->historicalUnprocessed(),
                             'current' => $query
+                                ->whereNull('archived_at')
                                 ->where('status', 'new')
                                 ->where(fn (Builder $payment): Builder => $payment
                                     ->whereNull('payment_status')
                                     ->orWhere('payment_status', '!=', 'paid'))
                                 ->where('created_at', '>', Order::historicalLeadCutoff()),
+                            'archived' => $query->archived(),
                             default => $query,
                         };
                     }),
@@ -572,46 +588,58 @@ class OrdersTable
                     EditAction::make(),
                 ]),
             ])
+            ->checkIfRecordIsSelectableUsing(fn (Order $record): bool => $record->status === 'new'
+                && $record->payment_status !== 'paid'
+                && $record->archived_at === null)
             ->toolbarActions([
                 ExportAction::make()
                     ->label('Экспорт')
                     ->exporter(OrderExporter::class),
-                BulkAction::make('markIrrelevant')
-                    ->label('Отметить выбранные неактуальными')
-                    ->icon('heroicon-o-archive-box')
-                    ->color('gray')
-                    ->form([
-                        Textarea::make('reason')
-                            ->label('Общая причина')
-                            ->helperText('Можно выбрать текущую страницу или нажать «Выбрать все». Изменятся только новые неоплаченные заявки.')
-                            ->rows(3)
-                            ->minLength(3)
-                            ->maxLength(1000)
-                            ->required(),
-                    ])
-                    ->requiresConfirmation()
-                    ->modalSubmitActionLabel('Отметить выбранные неактуальными')
-                    ->action(function (Collection $records, array $data): void {
-                        $changed = 0;
-                        $skipped = 0;
+                BulkActionGroup::make([
+                    BulkAction::make('markIrrelevant')
+                        ->label('В архив как неактуальные')
+                        ->icon('heroicon-o-archive-box-arrow-down')
+                        ->color('gray')
+                        ->form([
+                            Textarea::make('reason')
+                                ->label('Общая причина')
+                                ->helperText('Можно выбрать текущую страницу или затем нажать «Выбрать все». Новые, оплаченные и уже обработанные заказы защищены от изменения.')
+                                ->default('Архивная заявка до запуска нового рабочего процесса')
+                                ->rows(3)
+                                ->minLength(3)
+                                ->maxLength(1000)
+                                ->required(),
+                        ])
+                        ->requiresConfirmation()
+                        ->modalHeading('Архивировать выбранные заявки')
+                        ->modalDescription('Заявки не удаляются. Они получат статус «Неактуален · архив», а причина, время и автор сохранятся.')
+                        ->modalSubmitActionLabel('Архивировать выбранные')
+                        ->action(function (Collection $records, array $data): void {
+                            $changed = 0;
+                            $skipped = 0;
 
-                        $records->each(function (Order $record) use ($data, &$changed, &$skipped): void {
-                            if (! $record->markIrrelevant($data['reason'])) {
-                                $skipped++;
+                            $records->each(function (Order $record) use ($data, &$changed, &$skipped): void {
+                                if (! $record->markIrrelevant($data['reason'])) {
+                                    $skipped++;
 
-                                return;
-                            }
+                                    return;
+                                }
 
-                            $changed++;
-                        });
+                                $changed++;
+                            });
 
-                        Notification::make()
-                            ->title('Заявки обработаны')
-                            ->body("Отмечено неактуальными: {$changed}. Пропущено: {$skipped}.")
-                            ->color($skipped > 0 ? 'warning' : 'success')
-                            ->send();
-                    })
-                    ->deselectRecordsAfterCompletion(),
+                            Notification::make()
+                                ->title('Заявки перемещены в архив')
+                                ->body("В архиве: {$changed}. Защищено и пропущено: {$skipped}.")
+                                ->color($skipped > 0 ? 'warning' : 'success')
+                                ->send();
+                        })
+                        ->deselectRecordsAfterCompletion(),
+                ])
+                    ->label('Массовые действия')
+                    ->icon('heroicon-o-queue-list')
+                    ->color('warning')
+                    ->button(),
             ]);
     }
 
