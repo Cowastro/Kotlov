@@ -4,6 +4,7 @@ namespace App\Filament\Resources\Orders\Schemas;
 
 use App\Models\IntegrationIssue;
 use App\Models\Order;
+use App\Models\OrderIntegrationDelivery;
 use Filament\Infolists\Components\RepeatableEntry;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Schemas\Components\Section;
@@ -163,6 +164,48 @@ class OrderInfolist
                                 ->where('type', 'order_status_unknown')
                                 ->where('status', 'open')
                                 ->exists()),
+                    ]),
+
+                Section::make('Маршрутизация по источникам')
+                    ->description('Каждый поставщик и каждая 1С подтверждают только свою часть смешанного заказа.')
+                    ->icon('heroicon-o-arrows-right-left')
+                    ->columnSpanFull()
+                    ->compact()
+                    ->visible(fn (Order $record): bool => $record->integrationDeliveries->isNotEmpty())
+                    ->schema([
+                        RepeatableEntry::make('integrationDeliveries')
+                            ->hiddenLabel()
+                            ->columns(6)
+                            ->schema([
+                                TextEntry::make('source.name')
+                                    ->label('Источник')
+                                    ->badge(),
+                                TextEntry::make('status')
+                                    ->label('Состояние')
+                                    ->badge()
+                                    ->formatStateUsing(fn (string $state, OrderIntegrationDelivery $record): string => $record->statusLabel())
+                                    ->color(fn (string $state): string => match ($state) {
+                                        OrderIntegrationDelivery::STATUS_ACKNOWLEDGED => 'success',
+                                        OrderIntegrationDelivery::STATUS_SENT => 'info',
+                                        OrderIntegrationDelivery::STATUS_FAILED => 'danger',
+                                        default => 'warning',
+                                    }),
+                                TextEntry::make('last_attempted_at')
+                                    ->label('Последняя попытка')
+                                    ->dateTime('d.m.Y H:i:s', 'Europe/Minsk')
+                                    ->placeholder('—'),
+                                TextEntry::make('exported_at')
+                                    ->label('Передан')
+                                    ->dateTime('d.m.Y H:i:s', 'Europe/Minsk')
+                                    ->placeholder('Ожидает'),
+                                TextEntry::make('remote_status')
+                                    ->label('Статус источника')
+                                    ->placeholder('Ответа нет'),
+                                TextEntry::make('status_received_at')
+                                    ->label('Ответ получен')
+                                    ->dateTime('d.m.Y H:i:s', 'Europe/Minsk')
+                                    ->placeholder('—'),
+                            ]),
                     ]),
 
                 // ── Клиент (1 из 3) ──────────────────────────────────────────

@@ -10,6 +10,7 @@ use App\Models\IntegrationIssue;
 use App\Models\IntegrationProduct;
 use App\Models\IntegrationSource;
 use App\Models\Order;
+use App\Models\OrderIntegrationDelivery;
 use App\Models\OrderItem;
 use App\Models\Product;
 use App\Models\User;
@@ -99,6 +100,14 @@ class OneCExchangeTest extends TestCase
             });
         }
 
+        if (! Schema::hasColumn('order_items', 'integration_product_id')) {
+            Schema::table('order_items', function (Blueprint $table) {
+                $table->string('pricing_type')->default('retail');
+                $table->string('price_tax_mode')->nullable();
+                $table->unsignedBigInteger('integration_product_id')->nullable();
+            });
+        }
+
         if (! Schema::hasTable('order_status_history')) {
             Schema::create('order_status_history', function (Blueprint $table) {
                 $table->id();
@@ -108,6 +117,24 @@ class OneCExchangeTest extends TestCase
                 $table->string('status_to');
                 $table->text('comment')->nullable();
                 $table->timestamps();
+            });
+        }
+
+        if (! Schema::hasTable('order_integration_deliveries')) {
+            Schema::create('order_integration_deliveries', function (Blueprint $table) {
+                $table->id();
+                $table->unsignedBigInteger('order_id');
+                $table->unsignedBigInteger('integration_source_id');
+                $table->string('status', 24)->default('pending');
+                $table->string('external_id')->nullable();
+                $table->string('remote_status')->nullable();
+                $table->timestamp('last_attempted_at')->nullable();
+                $table->timestamp('exported_at')->nullable();
+                $table->timestamp('status_received_at')->nullable();
+                $table->text('last_error')->nullable();
+                $table->json('metadata')->nullable();
+                $table->timestamps();
+                $table->unique(['order_id', 'integration_source_id']);
             });
         }
 
@@ -282,7 +309,7 @@ class OneCExchangeTest extends TestCase
         }
 
         Schema::disableForeignKeyConstraints();
-        foreach (['integration_issues', 'integration_exchange_runs', 'integration_products', 'integration_categories', 'integration_sources', 'supplier_product_mappings', 'order_status_history', 'order_items', 'orders', 'products', 'categories'] as $table) {
+        foreach (['integration_issues', 'integration_exchange_runs', 'order_integration_deliveries', 'integration_products', 'integration_categories', 'integration_sources', 'supplier_product_mappings', 'order_status_history', 'order_items', 'orders', 'products', 'categories'] as $table) {
             DB::table($table)->delete();
         }
         Schema::enableForeignKeyConstraints();
@@ -1568,6 +1595,187 @@ XML;
             'operation' => 'orders',
             'status' => 'success',
             'orders_count' => 1,
+        ]);
+    }
+
+    public function test_mixed_order_is_split_and_tracked_independently_for_each_source(): void
+    {
+        $productA = Product::query()->create([
+            'sku' => 'SOURCE-A-SKU',
+            'name' => 'Товар источника А',
+            'slug' => 'source-a-product',
+        ]);
+        $productB = Product::query()->create([
+            'sku' => 'SOURCE-B-SKU',
+            'name' => 'Товар источника Б',
+            'slug' => 'source-b-product',
+        ]);
+        $sourceA = IntegrationSource::query()->create([
+            'code' => 'onec',
+            'name' => 'Центральная 1С',
+        ]);
+        $sourceB = IntegrationSource::query()->create([
+            'code' => 'supplier-b',
+            'name' => '1С поставщика Б',
+            'username' => 'supplier-b-user',
+            'password_hash' => Hash::make('supplier-b-secret'),
+            'settings' => ['allow_order_export' => true],
+        ]);
+        $integrationA = IntegrationProduct::query()->create([
+            'integration_source_id' => $sourceA->id,
+            'product_id' => $productA->id,
+            'external_id' => 'source-a-external-id',
+            'name' => 'Товар источника А',
+            'match_status' => 'matched',
+        ]);
+        $integrationB = IntegrationProduct::query()->create([
+            'integration_source_id' => $sourceB->id,
+            'product_id' => $productB->id,
+            'external_id' => 'source-b-external-id',
+            'name' => 'Товар источника Б',
+            'match_status' => 'matched',
+        ]);
+        $order = Order::query()->create([
+            'number' => 'ORD-MULTI-SOURCE',
+            'status' => 'new',
+            'customer_name' => 'Покупатель маркетплейса',
+            'customer_phone' => '+375291234567',
+            'delivery_type' => 'pickup',
+            'payment_type' => 'cash',
+            'payment_status' => 'pending',
+            'subtotal' => 124,
+            'total' => 124,
+        ]);
+        OrderItem::query()->create([
+            'order_id' => $order->id,
+            'product_id' => $productA->id,
+            'integration_product_id' => $integrationA->id,
+            'product_name' => 'Строка только для источника А',
+            'product_sku' => 'SOURCE-A-SKU',
+            'price' => 12,
+            'quantity' => 2,
+            'total' => 24,
+        ]);
+        OrderItem::query()->create([
+            'order_id' => $order->id,
+            'product_id' => $productB->id,
+            'integration_product_id' => $integrationB->id,
+            'product_name' => 'Строка только для источника Б',
+            'product_sku' => 'SOURCE-B-SKU',
+            'price' => 100,
+            'quantity' => 1,
+            'total' => 100,
+        ]);
+        $legacyRetailOrder = Order::query()->create([
+            'number' => 'ORD-LEGACY-CENTRAL',
+            'status' => 'new',
+            'customer_name' => 'Розничный покупатель',
+            'customer_phone' => '+375291234568',
+            'delivery_type' => 'pickup',
+            'payment_type' => 'cash',
+            'payment_status' => 'pending',
+            'subtotal' => 50,
+            'total' => 50,
+        ]);
+        OrderItem::query()->create([
+            'order_id' => $legacyRetailOrder->id,
+            'product_id' => $productB->id,
+            'integration_product_id' => null,
+            'product_name' => 'Старая розничная строка остаётся в KOTLOV',
+            'product_sku' => 'LEGACY-RETAIL-SKU',
+            'price' => 50,
+            'quantity' => 1,
+            'total' => 50,
+        ]);
+
+        $sourceAResponse = $this->withBasicAuth('onec-test', 'secret-test')
+            ->get('/1c/exchange?type=sale&mode=query');
+
+        $sourceAResponse->assertOk()
+            ->assertSee('ORD-MULTI-SOURCE', false)
+            ->assertSee('Строка только для источника А', false)
+            ->assertSee('Старая розничная строка остаётся в KOTLOV', false)
+            ->assertSee('<Сумма>24.00</Сумма>', false)
+            ->assertDontSee('Строка только для источника Б', false)
+            ->assertDontSee('<Сумма>124.00</Сумма>', false);
+
+        $this->withBasicAuth('onec-test', 'secret-test')
+            ->get('/1c/exchange?type=sale&mode=success')
+            ->assertOk();
+
+        $this->assertDatabaseHas('order_integration_deliveries', [
+            'order_id' => $order->id,
+            'integration_source_id' => $sourceA->id,
+            'status' => OrderIntegrationDelivery::STATUS_SENT,
+        ]);
+        $this->assertDatabaseHas('order_integration_deliveries', [
+            'order_id' => $legacyRetailOrder->id,
+            'integration_source_id' => $sourceA->id,
+            'status' => OrderIntegrationDelivery::STATUS_SENT,
+        ]);
+        $this->assertNotNull($order->fresh()->onec_exported_at);
+        $this->assertNotNull($legacyRetailOrder->fresh()->onec_exported_at);
+
+        $sourceBResponse = $this->withBasicAuth('supplier-b-user', 'supplier-b-secret')
+            ->get('/1c/exchange/supplier-b?type=sale&mode=query');
+
+        $sourceBResponse->assertOk()
+            ->assertSee('ORD-MULTI-SOURCE', false)
+            ->assertSee('Строка только для источника Б', false)
+            ->assertSee('<Сумма>100.00</Сумма>', false)
+            ->assertDontSee('Строка только для источника А', false)
+            ->assertDontSee('Старая розничная строка остаётся в KOTLOV', false)
+            ->assertDontSee('<Сумма>124.00</Сумма>', false);
+
+        $this->withBasicAuth('supplier-b-user', 'supplier-b-secret')
+            ->get('/1c/exchange/supplier-b?type=sale&mode=success')
+            ->assertOk();
+
+        $this->assertDatabaseHas('order_integration_deliveries', [
+            'order_id' => $order->id,
+            'integration_source_id' => $sourceB->id,
+            'status' => OrderIntegrationDelivery::STATUS_SENT,
+        ]);
+        $this->assertDatabaseMissing('order_integration_deliveries', [
+            'order_id' => $legacyRetailOrder->id,
+            'integration_source_id' => $sourceB->id,
+        ]);
+        $this->assertSame(2, $order->integrationDeliveries()->count());
+
+        $statusXml = <<<XML
+<?xml version="1.0" encoding="UTF-8"?>
+<КоммерческаяИнформация>
+  <Документ>
+    <Ид>kotlov-order-{$order->id}</Ид>
+    <Номер>ORD-MULTI-SOURCE</Номер>
+    <ЗначенияРеквизитов>
+      <ЗначениеРеквизита><Наименование>Статус заказа</Наименование><Значение>Отправлен</Значение></ЗначениеРеквизита>
+    </ЗначенияРеквизитов>
+  </Документ>
+</КоммерческаяИнформация>
+XML;
+
+        $this->call(
+            'POST',
+            '/1c/exchange/supplier-b?type=sale&mode=file&filename=supplier-b-status.xml',
+            [],
+            [],
+            [],
+            ['PHP_AUTH_USER' => 'supplier-b-user', 'PHP_AUTH_PW' => 'supplier-b-secret'],
+            $statusXml,
+        )->assertOk();
+        $this->withBasicAuth('supplier-b-user', 'supplier-b-secret')
+            ->get('/1c/exchange/supplier-b?type=sale&mode=import&filename=supplier-b-status.xml')
+            ->assertOk();
+
+        $order->refresh();
+        $this->assertSame('new', $order->status);
+        $this->assertNull($order->onec_status);
+        $this->assertDatabaseHas('order_integration_deliveries', [
+            'order_id' => $order->id,
+            'integration_source_id' => $sourceB->id,
+            'status' => OrderIntegrationDelivery::STATUS_ACKNOWLEDGED,
+            'remote_status' => 'Отправлен',
         ]);
     }
 

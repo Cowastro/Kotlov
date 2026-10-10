@@ -5,12 +5,17 @@ namespace App\Services\Integrations;
 use App\Models\IntegrationIssue;
 use App\Models\IntegrationSource;
 use App\Models\Order;
+use App\Models\OrderIntegrationDelivery;
 use App\Models\OrderStatusHistory;
 use Illuminate\Support\Facades\DB;
 use SimpleXMLElement;
 
 class CommerceMlOrderImporter
 {
+    public function __construct(
+        private readonly OrderIntegrationRouter $orderRouter,
+    ) {}
+
     /** @return array{documents:int,matched:int,updated:int,unchanged:int,unmatched:int,conflicts:int,unknown_statuses:int,attention:int} */
     public function import(string $xml, ?IntegrationSource $source = null): array
     {
@@ -31,7 +36,7 @@ class CommerceMlOrderImporter
                 $stats['documents']++;
                 $externalId = $this->text($node, './*[local-name()="Ид"]');
                 $number = $this->text($node, './*[local-name()="Номер"]');
-                $order = $this->findOrder($externalId, $number);
+                $order = $this->findOrder($externalId, $number, $source);
 
                 if (! $order) {
                     $stats['unmatched']++;
@@ -40,6 +45,11 @@ class CommerceMlOrderImporter
                 }
 
                 $stats['matched']++;
+                $delivery = $source ? OrderIntegrationDelivery::query()->firstOrNew([
+                    'order_id' => $order->id,
+                    'integration_source_id' => $source->id,
+                ]) : null;
+                $oldRemoteStatus = $delivery?->remote_status;
                 $rawStatus = $this->text($node, './*[local-name()="Статус"]')
                     ?: $this->requisite($node, ['Статус заказа', 'Статус']);
                 $rawPaymentStatus = $this->requisite($node, ['Статус оплаты', 'Оплата']);
@@ -47,30 +57,45 @@ class CommerceMlOrderImporter
                 $paymentStatus = $this->mapPaymentStatus($rawPaymentStatus);
                 $oldStatus = $order->status;
                 $oldPaymentStatus = $order->payment_status;
+                $updatesCentralOrder = ! $source || $source->code === 'onec';
                 $unknownStatus = $rawStatus !== '' && $status === null;
                 $unknownPaymentStatus = $rawPaymentStatus !== '' && $paymentStatus === null;
-                $statusConflict = $status !== null
+                $statusConflict = $updatesCentralOrder && $status !== null
                     && $status !== $oldStatus
                     && ! $this->canApplyStatus($oldStatus, $status);
-                $paymentConflict = $paymentStatus !== null
+                $paymentConflict = $updatesCentralOrder && $paymentStatus !== null
                     && $paymentStatus !== $oldPaymentStatus
                     && ! $this->canApplyPaymentStatus($oldPaymentStatus, $paymentStatus);
 
-                $changes = array_filter([
+                $changes = $updatesCentralOrder ? array_filter([
                     'onec_external_id' => $externalId ?: null,
                     'onec_status' => $rawStatus ?: null,
                     'onec_status_received_at' => now(),
                     'status' => $statusConflict ? null : $status,
                     'payment_status' => $paymentConflict ? null : $paymentStatus,
-                ], static fn (mixed $value): bool => $value !== null);
+                ], static fn (mixed $value): bool => $value !== null) : [];
 
-                $meaningfulChange = ($status !== null && ! $statusConflict && $status !== $order->status)
-                    || ($paymentStatus !== null && ! $paymentConflict && $paymentStatus !== $order->payment_status)
-                    || ($rawStatus !== '' && $rawStatus !== $order->onec_status);
+                $meaningfulChange = $updatesCentralOrder
+                    ? (($status !== null && ! $statusConflict && $status !== $order->status)
+                        || ($paymentStatus !== null && ! $paymentConflict && $paymentStatus !== $order->payment_status)
+                        || ($rawStatus !== '' && $rawStatus !== $order->onec_status))
+                    : ($rawStatus !== '' && $rawStatus !== $oldRemoteStatus);
 
-                Order::withoutEvents(fn () => $order->update($changes));
+                if ($changes !== []) {
+                    Order::withoutEvents(fn () => $order->update($changes));
+                }
 
-                if ($status !== null && ! $statusConflict && $status !== $oldStatus) {
+                if ($delivery) {
+                    $delivery->fill([
+                        'status' => OrderIntegrationDelivery::STATUS_ACKNOWLEDGED,
+                        'external_id' => $externalId ?: $delivery->external_id,
+                        'remote_status' => $rawStatus ?: $delivery->remote_status,
+                        'status_received_at' => now(),
+                        'last_error' => null,
+                    ])->save();
+                }
+
+                if ($updatesCentralOrder && $status !== null && ! $statusConflict && $status !== $oldStatus) {
                     OrderStatusHistory::query()->create([
                         'order_id' => $order->id,
                         'user_id' => null,
@@ -80,7 +105,7 @@ class CommerceMlOrderImporter
                     ]);
                 }
 
-                if ($statusConflict || $paymentConflict) {
+                if ($updatesCentralOrder && ($statusConflict || $paymentConflict)) {
                     $this->recordConflict(
                         $order,
                         $source,
@@ -92,7 +117,7 @@ class CommerceMlOrderImporter
                         $rawPaymentStatus,
                     );
                     $stats['conflicts']++;
-                } else {
+                } elseif ($updatesCentralOrder) {
                     $this->resolveConflict(
                         $order,
                         statusObserved: $status !== null,
@@ -111,6 +136,7 @@ class CommerceMlOrderImporter
                 } else {
                     $this->resolveUnknownStatus(
                         $order,
+                        $source,
                         statusObserved: $status !== null,
                         paymentStatusObserved: $paymentStatus !== null,
                     );
@@ -253,8 +279,9 @@ class CommerceMlOrderImporter
             $parts[] = 'статус оплаты «'.$unknownPaymentStatus.'»';
         }
 
+        $sourceFingerprint = $source && $source->code !== 'onec' ? ":source:{$source->id}" : '';
         $issue = IntegrationIssue::query()->firstOrNew([
-            'fingerprint' => "order:{$order->id}:unknown-onec-status",
+            'fingerprint' => "order:{$order->id}{$sourceFingerprint}:unknown-onec-status",
         ]);
         $wasIgnored = $issue->exists && $issue->status === 'ignored';
         $issue->fill([
@@ -280,6 +307,7 @@ class CommerceMlOrderImporter
 
     private function resolveUnknownStatus(
         Order $order,
+        ?IntegrationSource $source,
         bool $statusObserved,
         bool $paymentStatusObserved,
     ): void {
@@ -287,6 +315,7 @@ class CommerceMlOrderImporter
             ->where('order_id', $order->id)
             ->where('type', 'order_status_unknown')
             ->where('status', 'open')
+            ->when($source, fn ($query) => $query->where('integration_source_id', $source->id))
             ->get()
             ->each(function (IntegrationIssue $issue) use ($statusObserved, $paymentStatusObserved): void {
                 $needsStatus = data_get($issue->context, 'unknown_status') !== null;
@@ -322,23 +351,41 @@ class CommerceMlOrderImporter
         }
     }
 
-    private function findOrder(string $externalId, string $number): ?Order
-    {
+    private function findOrder(
+        string $externalId,
+        string $number,
+        ?IntegrationSource $source,
+    ): ?Order {
         if ($externalId === '' && $number === '') {
             return null;
         }
 
-        if (preg_match('/^kotlov-order-(\d+)$/', $externalId, $matches)) {
-            $order = Order::query()->find((int) $matches[1]);
-            if ($order) {
-                return $order;
+        if ($source && $externalId !== '') {
+            $deliveryOrder = Order::query()
+                ->whereHas('integrationDeliveries', fn ($query) => $query
+                    ->where('integration_source_id', $source->id)
+                    ->where('external_id', $externalId))
+                ->first();
+            if ($deliveryOrder) {
+                return $deliveryOrder;
             }
         }
 
-        return Order::query()
+        $order = null;
+        if (preg_match('/^kotlov-order-(\d+)$/', $externalId, $matches)) {
+            $order = Order::query()->find((int) $matches[1]);
+        }
+
+        $order ??= Order::query()
             ->when($number !== '', fn ($query) => $query->where('number', $number))
             ->when($number === '' && $externalId !== '', fn ($query) => $query->where('onec_external_id', $externalId))
             ->first();
+
+        if ($order && $source && ! $this->orderRouter->orderBelongsToSource($order, $source)) {
+            return null;
+        }
+
+        return $order;
     }
 
     private function mapStatus(string $status): ?string

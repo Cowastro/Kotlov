@@ -14,6 +14,7 @@ use App\Models\IntegrationIssue;
 use App\Models\IntegrationProduct;
 use App\Models\IntegrationSource;
 use App\Models\Order;
+use App\Models\OrderIntegrationDelivery;
 use App\Models\OrderItem;
 use App\Models\Supplier;
 use App\Models\SupplierProduct;
@@ -137,6 +138,23 @@ class SupplierPanelIsolationTest extends TestCase
             'price_tax_mode' => 'inclusive',
             'integration_product_id' => $productB->id,
         ]);
+        OrderIntegrationDelivery::query()->create([
+            'order_id' => $mixedOrder->id,
+            'integration_source_id' => $sourceA->id,
+            'status' => OrderIntegrationDelivery::STATUS_ACKNOWLEDGED,
+            'external_id' => 'supplier-a-order',
+            'remote_status' => 'Принят поставщиком А',
+            'exported_at' => now()->subMinute(),
+            'status_received_at' => now(),
+        ]);
+        OrderIntegrationDelivery::query()->create([
+            'order_id' => $mixedOrder->id,
+            'integration_source_id' => $sourceB->id,
+            'status' => OrderIntegrationDelivery::STATUS_SENT,
+            'external_id' => 'supplier-b-order',
+            'remote_status' => 'Собирает поставщик Б',
+            'exported_at' => now(),
+        ]);
 
         $foreignOrder = Order::query()->create([
             'number' => 'ORD-SUPPLIER-FOREIGN',
@@ -168,6 +186,7 @@ class SupplierPanelIsolationTest extends TestCase
         $this->assertSame(1, $visible->first()->supplier_items_count);
         $this->assertSame(24.0, (float) $visible->first()->supplier_subtotal);
         $this->assertSame(['Свой товар в смешанном заказе'], $visible->first()->items->pluck('product_name')->all());
+        $this->assertSame([$sourceA->id], $visible->first()->integrationDeliveries->pluck('integration_source_id')->all());
 
         $this->get(SupplierOrderResource::getUrl('index', panel: 'supplier'))
             ->assertOk()
@@ -178,8 +197,10 @@ class SupplierPanelIsolationTest extends TestCase
             ->assertOk()
             ->assertSeeText('Свой товар в смешанном заказе')
             ->assertSeeText('24,00 BYN')
+            ->assertSeeText('Принят поставщиком А')
             ->assertDontSeeText('Чужой товар в смешанном заказе')
-            ->assertDontSeeText('FOREIGN-ORDER-LINE');
+            ->assertDontSeeText('FOREIGN-ORDER-LINE')
+            ->assertDontSeeText('Собирает поставщик Б');
 
         $this->get(SupplierOrderResource::getUrl('view', ['record' => $foreignOrder], panel: 'supplier'))
             ->assertNotFound();

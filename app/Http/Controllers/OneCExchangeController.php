@@ -6,11 +6,13 @@ use App\Models\IntegrationExchangeRun;
 use App\Models\IntegrationProduct;
 use App\Models\IntegrationSource;
 use App\Models\Order;
+use App\Models\OrderIntegrationDelivery;
 use App\Services\Integrations\CatalogStockSnapshotFinalizer;
 use App\Services\Integrations\CommerceMlCatalogImporter;
 use App\Services\Integrations\CommerceMlOrderImporter;
 use App\Services\Integrations\IntegrationExchangeJournal;
 use App\Services\Integrations\IntegrationMonitoringWindow;
+use App\Services\Integrations\OrderIntegrationRouter;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
@@ -32,6 +34,7 @@ class OneCExchangeController extends Controller
         private readonly CatalogStockSnapshotFinalizer $stockSnapshotFinalizer,
         private readonly IntegrationExchangeJournal $exchangeJournal,
         private readonly IntegrationMonitoringWindow $monitoringWindow,
+        private readonly OrderIntegrationRouter $orderRouter,
     ) {}
 
     public function __invoke(Request $request, string $source = 'onec'): Response
@@ -278,9 +281,12 @@ class OneCExchangeController extends Controller
     private function exportOrders(Request $request, IntegrationSource $source): Response
     {
         $batch = $this->prepareOrderBatch($request, $source);
+        $this->markOrderBatchAttempt($batch['order_ids'], $source);
         $orders = Order::query()
             ->whereIn('id', $batch['order_ids'])
-            ->with('items.product')
+            ->with([
+                'items.integrationProduct',
+            ])
             ->orderBy('id')
             ->get();
 
@@ -298,7 +304,9 @@ class OneCExchangeController extends Controller
         $xml->writeAttribute('ДатаФормирования', now()->format('Y-m-d\TH:i:s'));
 
         foreach ($orders as $order) {
-            $this->writeOrder($xml, $order, $externalIds);
+            $sourceItems = $this->orderRouter->itemsForSource($order, $source);
+            $order->setRelation('items', $sourceItems);
+            $this->writeOrder($xml, $order, $externalIds, $source);
         }
 
         $xml->endElement();
@@ -337,11 +345,28 @@ class OneCExchangeController extends Controller
             }
 
             $this->failSupersededOrderRuns($running, $run);
+            // A package may have been prepared immediately before this feature
+            // was deployed. Recreate its per-source rows before acknowledging
+            // it so a late mode=success cannot leave the new journal incomplete.
+            $this->markOrderBatchAttempt($ids, $source);
 
-            $updated = $ids === [] ? 0 : Order::query()
-                ->whereIn('id', $ids)
-                ->whereNull('onec_exported_at')
-                ->update(['onec_exported_at' => now()]);
+            $updated = $ids === [] ? 0 : OrderIntegrationDelivery::query()
+                ->where('integration_source_id', $source->id)
+                ->whereIn('order_id', $ids)
+                ->whereNull('exported_at')
+                ->update([
+                    'status' => OrderIntegrationDelivery::STATUS_SENT,
+                    'exported_at' => now(),
+                    'last_error' => null,
+                    'updated_at' => now(),
+                ]);
+
+            if ($source->code === 'onec' && $ids !== []) {
+                Order::query()
+                    ->whereIn('id', $ids)
+                    ->whereNull('onec_exported_at')
+                    ->update(['onec_exported_at' => now()]);
+            }
 
             $this->exchangeJournal->succeed($run, [
                 'orders_count' => count($ids),
@@ -404,8 +429,7 @@ class OneCExchangeController extends Controller
                 );
             }
 
-            $ids = Order::query()
-                ->whereNull('onec_exported_at')
+            $ids = $this->orderRouter->eligibleOrders($source)
                 ->when(
                     $this->monitoringWindow->ordersStartAtFor($source),
                     fn ($query, $startAt) => $query->where('created_at', '>=', $startAt),
@@ -453,6 +477,25 @@ class OneCExchangeController extends Controller
                 'recovered_from_legacy_cache' => $recovered,
             ],
         ]);
+    }
+
+    /** @param array<int, int> $ids */
+    private function markOrderBatchAttempt(array $ids, IntegrationSource $source): void
+    {
+        foreach ($ids as $orderId) {
+            OrderIntegrationDelivery::query()->updateOrCreate(
+                [
+                    'order_id' => $orderId,
+                    'integration_source_id' => $source->id,
+                ],
+                [
+                    'status' => OrderIntegrationDelivery::STATUS_PENDING,
+                    'external_id' => 'kotlov-order-'.$orderId,
+                    'last_attempted_at' => now(),
+                    'last_error' => null,
+                ],
+            );
+        }
     }
 
     private function completeEmptyOrderBatch(?IntegrationExchangeRun $run): void
@@ -506,8 +549,12 @@ class OneCExchangeController extends Controller
     }
 
     /** @param Collection<int, string> $externalIds */
-    private function writeOrder(XMLWriter $xml, Order $order, Collection $externalIds): void
-    {
+    private function writeOrder(
+        XMLWriter $xml,
+        Order $order,
+        Collection $externalIds,
+        IntegrationSource $source,
+    ): void {
         $xml->startElement('Документ');
         $this->element($xml, 'Ид', 'kotlov-order-'.$order->id);
         $this->element($xml, 'Номер', $order->number);
@@ -516,7 +563,10 @@ class OneCExchangeController extends Controller
         $this->element($xml, 'Роль', 'Продавец');
         $this->element($xml, 'Валюта', 'BYN');
         $this->element($xml, 'Курс', '1');
-        $this->element($xml, 'Сумма', number_format((float) $order->total, 2, '.', ''));
+        $sourceTotal = $order->items->isEmpty()
+            ? (float) $order->total
+            : (float) $order->items->sum('total');
+        $this->element($xml, 'Сумма', number_format($sourceTotal, 2, '.', ''));
 
         $xml->startElement('Контрагенты');
         $xml->startElement('Контрагент');
@@ -534,7 +584,9 @@ class OneCExchangeController extends Controller
         $xml->startElement('Товары');
         foreach ($order->items as $item) {
             $xml->startElement('Товар');
-            $externalId = $externalIds->get($item->product_id);
+            $externalId = (int) $item->integrationProduct?->integration_source_id === (int) $source->id
+                ? $item->integrationProduct->external_id
+                : $externalIds->get($item->product_id);
             $this->element($xml, 'Ид', $externalId ?: ($item->product_sku ?: 'kotlov-product-'.$item->product_id));
             $this->element($xml, 'Артикул', $item->product_sku ?: '');
             $this->element($xml, 'Наименование', $item->product_name);

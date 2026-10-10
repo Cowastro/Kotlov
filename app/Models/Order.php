@@ -129,6 +129,11 @@ class Order extends Model
         return $this->hasMany(IntegrationIssue::class);
     }
 
+    public function integrationDeliveries(): HasMany
+    {
+        return $this->hasMany(OrderIntegrationDelivery::class);
+    }
+
     public function onecSyncState(): string
     {
         $issueType = $this->activeOnecSyncIssue()?->type;

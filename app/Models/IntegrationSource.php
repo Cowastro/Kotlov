@@ -154,6 +154,11 @@ class IntegrationSource extends Model
         return $this->hasMany(IntegrationExchangeRun::class);
     }
 
+    public function orderDeliveries(): HasMany
+    {
+        return $this->hasMany(OrderIntegrationDelivery::class);
+    }
+
     public function latestExchangeRun(): HasOne
     {
         return $this->hasOne(IntegrationExchangeRun::class)->latestOfMany('started_at');

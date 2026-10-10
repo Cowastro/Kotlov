@@ -4,7 +4,9 @@ namespace App\Filament\Supplier\Resources\Orders;
 
 use App\Filament\Supplier\Resources\Orders\Pages\ListOrders;
 use App\Filament\Supplier\Resources\Orders\Pages\ViewOrder;
+use App\Models\IntegrationSource;
 use App\Models\Order;
+use App\Models\OrderIntegrationDelivery;
 use BackedEnum;
 use Filament\Actions\ViewAction;
 use Filament\Infolists\Components\RepeatableEntry;
@@ -125,6 +127,43 @@ class OrderResource extends Resource
                             ]),
                     ]),
 
+                Section::make('Обмен с вашей системой')
+                    ->description('Отдельное состояние передачи и ответа для каждого назначенного вам источника.')
+                    ->columnSpanFull()
+                    ->compact()
+                    ->visible(fn (Order $record): bool => $record->integrationDeliveries->isNotEmpty())
+                    ->schema([
+                        RepeatableEntry::make('integrationDeliveries')
+                            ->hiddenLabel()
+                            ->columns(5)
+                            ->schema([
+                                TextEntry::make('source.name')
+                                    ->label('Источник')
+                                    ->badge(),
+                                TextEntry::make('status')
+                                    ->label('Состояние')
+                                    ->badge()
+                                    ->formatStateUsing(fn (string $state, OrderIntegrationDelivery $record): string => $record->statusLabel())
+                                    ->color(fn (string $state): string => match ($state) {
+                                        OrderIntegrationDelivery::STATUS_ACKNOWLEDGED => 'success',
+                                        OrderIntegrationDelivery::STATUS_SENT => 'info',
+                                        OrderIntegrationDelivery::STATUS_FAILED => 'danger',
+                                        default => 'warning',
+                                    }),
+                                TextEntry::make('exported_at')
+                                    ->label('Передан')
+                                    ->dateTime('d.m.Y H:i:s', 'Europe/Minsk')
+                                    ->placeholder('Ожидает'),
+                                TextEntry::make('remote_status')
+                                    ->label('Статус источника')
+                                    ->placeholder('Ответа нет'),
+                                TextEntry::make('status_received_at')
+                                    ->label('Ответ получен')
+                                    ->dateTime('d.m.Y H:i:s', 'Europe/Minsk')
+                                    ->placeholder('—'),
+                            ]),
+                    ]),
+
                 Section::make('Доставка')
                     ->description('Контактные данные покупателя остаются у KOTLOV до назначения поставщику отдельного сценария исполнения.')
                     ->columnSpanFull()
@@ -178,6 +217,22 @@ class OrderResource extends Resource
                     ->money('BYN')
                     ->alignRight()
                     ->weight('bold'),
+                TextColumn::make('integrationDeliveries.status')
+                    ->label('Обмен')
+                    ->badge()
+                    ->formatStateUsing(fn (string $state): string => match ($state) {
+                        OrderIntegrationDelivery::STATUS_ACKNOWLEDGED => 'Ответ получен',
+                        OrderIntegrationDelivery::STATUS_SENT => 'Передан',
+                        OrderIntegrationDelivery::STATUS_FAILED => 'Ошибка',
+                        default => 'Ожидает',
+                    })
+                    ->color(fn (string $state): string => match ($state) {
+                        OrderIntegrationDelivery::STATUS_ACKNOWLEDGED => 'success',
+                        OrderIntegrationDelivery::STATUS_SENT => 'info',
+                        OrderIntegrationDelivery::STATUS_FAILED => 'danger',
+                        default => 'warning',
+                    })
+                    ->listWithLineBreaks(),
                 TextColumn::make('delivery_city')
                     ->label('Город')
                     ->placeholder('—'),
@@ -203,6 +258,10 @@ class OrderResource extends Resource
     public static function getEloquentQuery(): Builder
     {
         $supplierIds = static::supplierIds();
+        $sourceIds = IntegrationSource::query()
+            ->whereIn('supplier_id', $supplierIds)
+            ->pluck('id')
+            ->all();
         $supplierItems = fn ($query) => $query
             ->whereHas('integrationProduct.source', fn (Builder $query): Builder => $query
                 ->whereIn('supplier_id', $supplierIds));
@@ -212,6 +271,9 @@ class OrderResource extends Resource
             ->with([
                 'items' => fn ($query) => $supplierItems($query)
                     ->with(['integrationProduct.source']),
+                'integrationDeliveries' => fn ($query) => $query
+                    ->whereIn('integration_source_id', $sourceIds)
+                    ->with('source'),
             ])
             ->withCount(['items as supplier_items_count' => $supplierItems])
             ->withSum(['items as supplier_subtotal' => $supplierItems], 'total');
