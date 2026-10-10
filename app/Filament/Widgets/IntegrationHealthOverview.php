@@ -3,6 +3,7 @@
 namespace App\Filament\Widgets;
 
 use App\Filament\Resources\IntegrationExchangeRuns\IntegrationExchangeRunResource;
+use App\Filament\Resources\IntegrationIssues\IntegrationIssueResource;
 use App\Filament\Resources\IntegrationProducts\IntegrationProductResource;
 use App\Filament\Resources\IntegrationSources\IntegrationSourceResource;
 use App\Filament\Resources\Orders\OrderResource;
@@ -54,6 +55,11 @@ class IntegrationHealthOverview extends StatsOverviewWidget
                 ->descriptionIcon(Heroicon::OutlinedSignal)
                 ->color($summary['failed_runs_24h'] > 0 ? 'danger' : 'info')
                 ->url(IntegrationSourceResource::getUrl('index')),
+            Stat::make('Монитор очереди', $this->monitorLabel($summary['issue_monitor']['health']))
+                ->description($this->monitorDescription($summary['issue_monitor']))
+                ->descriptionIcon(Heroicon::OutlinedShieldCheck)
+                ->color($this->monitorColor($summary['issue_monitor']['health']))
+                ->url(IntegrationIssueResource::getUrl('index')),
         ];
     }
 
@@ -74,5 +80,36 @@ class IntegrationHealthOverview extends StatsOverviewWidget
         return $lastSuccess?->finished_at
             ? 'Последний успех '.$lastSuccess->finished_at->timezone('Europe/Minsk')->format('d.m.Y H:i')
             : 'Успешных сеансов пока нет';
+    }
+
+    private function monitorLabel(string $health): string
+    {
+        return match ($health) {
+            'healthy' => 'Работает',
+            'running' => 'Выполняется',
+            'failed' => 'Ошибка',
+            'stale' => 'Нет heartbeat',
+            default => 'Нет данных',
+        };
+    }
+
+    /** @param array<string, mixed> $monitor */
+    private function monitorDescription(array $monitor): string
+    {
+        $finishedAt = $monitor['heartbeat']?->finished_at;
+
+        return $finishedAt
+            ? $monitor['message'].' · '.$finishedAt->timezone('Europe/Minsk')->format('d.m.Y H:i:s')
+            : $monitor['message'];
+    }
+
+    private function monitorColor(string $health): string
+    {
+        return match ($health) {
+            'healthy' => 'success',
+            'running' => 'info',
+            'failed' => 'danger',
+            default => 'warning',
+        };
     }
 }

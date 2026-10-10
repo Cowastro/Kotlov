@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Filament\Widgets\IntegrationHealthOverview;
 use App\Models\IntegrationExchangeRun;
+use App\Models\IntegrationMonitorHeartbeat;
 use App\Models\IntegrationSource;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -47,12 +48,22 @@ class IntegrationHealthOverviewTest extends TestCase
             ]);
         }
 
+        IntegrationMonitorHeartbeat::query()->create([
+            'name' => IntegrationMonitorHeartbeat::ISSUE_SCANNER,
+            'status' => 'success',
+            'started_at' => now()->subSeconds(10),
+            'finished_at' => now()->subSeconds(5),
+            'summary' => ['detected' => 1],
+        ]);
+
         $this->actingAs($admin);
 
         Livewire::test(IntegrationHealthOverview::class)
             ->assertSeeText('Обмен интеграций')
             ->assertSeeText('Задержка')
             ->assertSeeText('Требуют внимания: Просроченный источник')
-            ->assertSeeText('Работают: 1 · требуют внимания: 1');
+            ->assertSeeText('Работают: 1 · требуют внимания: 1')
+            ->assertSeeText('Монитор очереди')
+            ->assertSeeText('Очередь проверяется каждую минуту');
     }
 }

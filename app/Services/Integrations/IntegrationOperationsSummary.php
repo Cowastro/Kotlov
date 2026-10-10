@@ -13,6 +13,7 @@ class IntegrationOperationsSummary
     public function __construct(
         private readonly IntegrationMonitoringWindow $monitoringWindow,
         private readonly IntegrationFlowHealth $flowHealth,
+        private readonly IntegrationMonitorHealth $monitorHealth,
     ) {}
 
     /** @return array<string, mixed> */
@@ -78,6 +79,7 @@ class IntegrationOperationsSummary
                 ->inStock()
                 ->whereIn('match_status', ['suggested', 'ambiguous', 'unmatched'])
                 ->count(),
+            'issue_monitor' => $this->monitorHealth->snapshot($now),
         ];
     }
 
