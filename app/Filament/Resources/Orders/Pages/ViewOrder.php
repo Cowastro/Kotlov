@@ -7,10 +7,12 @@ use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Supplier;
 use App\Services\Orders\OrderItemFulfillmentManager;
+use App\Services\Orders\SupplierOrderRequestBuilder;
 use Filament\Actions\Action;
 use Filament\Actions\EditAction;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
+use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\ViewRecord;
 use Filament\Support\Enums\Width;
@@ -29,6 +31,8 @@ class ViewOrder extends ViewRecord
             'items.fulfillmentConfirmedBy',
             'fulfillmentHistory.item',
             'fulfillmentHistory.user',
+            'supplierOrderRequests.items',
+            'supplierOrderRequests.creator',
             'statusHistory.user',
             'user',
             'manager',
@@ -72,6 +76,11 @@ class ViewOrder extends ViewRecord
                             ->all())
                         ->searchable()
                         ->helperText('Обязателен для закупки и прямой передачи. Для нашего склада можно не выбирать.'),
+                    TextInput::make('purchase_price')
+                        ->label('Подтверждённая входная цена за единицу, BYN')
+                        ->numeric()
+                        ->minValue(0)
+                        ->helperText('Если выбран рекомендованный поставщик, пустое поле наследует цену снимка заказа. Для другого поставщика цену нужно указать вручную.'),
                     Textarea::make('note')
                         ->label('Комментарий менеджера')
                         ->rows(3)
@@ -89,6 +98,7 @@ class ViewOrder extends ViewRecord
                         $supplier,
                         auth()->user(),
                         $data['note'] ?? null,
+                        filled($data['purchase_price'] ?? null) ? (float) $data['purchase_price'] : null,
                     );
 
                     $this->record->refresh();
@@ -97,6 +107,30 @@ class ViewOrder extends ViewRecord
                         ->success()
                         ->title('Исполнитель позиции подтверждён')
                         ->body('Решение сохранено в истории заказа.')
+                        ->send();
+                }),
+            Action::make('buildSupplierRequests')
+                ->label('Сформировать заявки')
+                ->icon('heroicon-o-document-duplicate')
+                ->color('primary')
+                ->visible(fn (): bool => $this->record->items->contains(
+                    fn (OrderItem $item): bool => in_array($item->fulfillment_route, ['supplier_purchase', 'direct_supplier'], true)
+                        && $item->fulfillment_supplier_id !== null,
+                ))
+                ->requiresConfirmation()
+                ->modalHeading('Сформировать черновики заявок поставщикам?')
+                ->modalDescription('Позиции будут разделены по подтверждённому поставщику и способу исполнения. Ничего не отправляется поставщикам автоматически.')
+                ->modalSubmitActionLabel('Сформировать черновики')
+                ->action(function (): void {
+                    $requests = app(SupplierOrderRequestBuilder::class)
+                        ->buildDrafts($this->record, auth()->user());
+
+                    $this->record->refresh();
+
+                    Notification::make()
+                        ->success()
+                        ->title('Черновики заявок сформированы')
+                        ->body('Создано или обновлено заявок: '.$requests->count().'. Автоматической отправки не было.')
                         ->send();
                 }),
             EditAction::make(),

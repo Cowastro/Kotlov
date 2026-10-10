@@ -14,6 +14,7 @@ use App\Models\SupplierProduct;
 use App\Models\User;
 use App\Services\Orders\OrderItemFulfillmentManager;
 use App\Services\Orders\OrderItemSupplyContextResolver;
+use App\Services\Orders\SupplierOrderRequestBuilder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Validation\ValidationException;
 use Tests\TestCase;
@@ -215,6 +216,7 @@ class OrderSupplyRoutingTest extends TestCase
         $this->assertSame($supplier->id, $item->fulfillment_supplier_id);
         $this->assertSame('Внешний поставщик', $item->fulfillment_supplier_name);
         $this->assertSame('Передать поставщику напрямую', $item->fulfillmentRouteLabel());
+        $this->assertNull($item->fulfillment_purchase_price);
         $this->assertSame('own_stock', $item->supply_status);
         $this->assertSame('ООО «СанБизнесГруп»', $item->supply_supplier_name);
         $this->assertDatabaseHas('order_item_fulfillment_histories', [
@@ -246,6 +248,69 @@ class OrderSupplyRoutingTest extends TestCase
             null,
             null,
         );
+    }
+
+    public function test_confirmed_external_items_are_split_into_idempotent_supplier_request_drafts(): void
+    {
+        $fixture = $this->fixture();
+        $manager = User::factory()->create(['role' => 'admin', 'is_active' => true]);
+        $ownSupplier = Supplier::query()->where('code', 'sanbusinessgroup')->firstOrFail();
+        $externalSupplier = Supplier::query()->where('code', 'legacy-route-supplier-1')->firstOrFail();
+
+        app(OrderItemFulfillmentManager::class)->confirm(
+            $fixture['item'],
+            'supplier_purchase',
+            $ownSupplier,
+            $manager,
+            'Забрать на наш склад.',
+        );
+
+        $secondItem = OrderItem::query()->create([
+            'order_id' => $fixture['order']->id,
+            'product_id' => $fixture['item']->product_id,
+            'product_name' => 'Вторая позиция смешанного заказа',
+            'product_sku' => 'ROUTE-SECOND',
+            'price' => 100,
+            'quantity' => 1,
+            'total' => 100,
+        ]);
+        app(OrderItemFulfillmentManager::class)->confirm(
+            $secondItem,
+            'direct_supplier',
+            $externalSupplier,
+            $manager,
+            'Прямая доставка.',
+            70,
+        );
+
+        $firstBuild = app(SupplierOrderRequestBuilder::class)->buildDrafts($fixture['order']->fresh(), $manager);
+        $secondBuild = app(SupplierOrderRequestBuilder::class)->buildDrafts($fixture['order']->fresh(), $manager);
+
+        $this->assertCount(2, $firstBuild);
+        $this->assertCount(2, $secondBuild);
+        $this->assertDatabaseCount('supplier_order_requests', 2);
+        $this->assertDatabaseCount('supplier_order_request_items', 2);
+        $this->assertDatabaseHas('supplier_order_requests', [
+            'order_id' => $fixture['order']->id,
+            'supplier_id' => $ownSupplier->id,
+            'route' => 'supplier_purchase',
+            'status' => 'draft',
+            'purchase_total' => 192,
+        ]);
+        $this->assertDatabaseHas('supplier_order_requests', [
+            'order_id' => $fixture['order']->id,
+            'supplier_id' => $externalSupplier->id,
+            'route' => 'direct_supplier',
+            'status' => 'draft',
+            'purchase_total' => 70,
+        ]);
+
+        $this->actingAs($manager)
+            ->get(OrderResource::getUrl('view', ['record' => $fixture['order']], panel: 'admin'))
+            ->assertOk()
+            ->assertSeeText('Заявки поставщикам')
+            ->assertSeeText('Черновик')
+            ->assertSeeText('поставщику ничего не отправлено');
     }
 
     /** @return array{order: Order, item: OrderItem} */

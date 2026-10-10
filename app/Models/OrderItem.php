@@ -6,6 +6,7 @@ use App\Services\Orders\OrderItemSupplyContextResolver;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Support\Facades\Schema;
 
 class OrderItem extends Model
@@ -30,7 +31,7 @@ class OrderItem extends Model
         'supply_price_tax_mode', 'supply_vat_rate', 'supply_stock_quantity',
         'supply_is_available', 'supply_candidate_count', 'supply_captured_at',
         'fulfillment_route', 'fulfillment_supplier_id', 'fulfillment_supplier_name',
-        'fulfillment_supplier_contact', 'fulfillment_confirmed_by',
+        'fulfillment_supplier_contact', 'fulfillment_purchase_price', 'fulfillment_confirmed_by',
         'fulfillment_confirmed_at', 'fulfillment_note',
     ];
 
@@ -44,6 +45,7 @@ class OrderItem extends Model
         'supply_candidate_count' => 'integer',
         'supply_captured_at' => 'datetime',
         'fulfillment_confirmed_at' => 'datetime',
+        'fulfillment_purchase_price' => 'decimal:2',
     ];
 
     protected static function booted(): void
@@ -103,6 +105,11 @@ class OrderItem extends Model
     public function fulfillmentHistory(): HasMany
     {
         return $this->hasMany(OrderItemFulfillmentHistory::class)->latest();
+    }
+
+    public function supplierOrderRequestItem(): HasOne
+    {
+        return $this->hasOne(SupplierOrderRequestItem::class);
     }
 
     public function fulfillmentRouteLabel(): ?string

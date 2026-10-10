@@ -17,6 +17,7 @@ class OrderItemFulfillmentManager
         ?Supplier $supplier,
         ?User $user,
         ?string $note = null,
+        ?float $purchasePrice = null,
     ): OrderItem {
         if (! array_key_exists($route, OrderItem::FULFILLMENT_ROUTES)) {
             throw ValidationException::withMessages([
@@ -30,12 +31,22 @@ class OrderItemFulfillmentManager
             ]);
         }
 
-        return DB::transaction(function () use ($item, $route, $supplier, $user, $note): OrderItem {
+        return DB::transaction(function () use ($item, $route, $supplier, $user, $note, $purchasePrice): OrderItem {
+            $confirmedPrice = $purchasePrice;
+            if ($confirmedPrice === null && $supplier?->id === $item->supply_supplier_id) {
+                $confirmedPrice = $item->supply_purchase_price !== null
+                    ? (float) $item->supply_purchase_price
+                    : null;
+            }
+
             $item->forceFill([
                 'fulfillment_route' => $route,
                 'fulfillment_supplier_id' => $supplier?->id,
                 'fulfillment_supplier_name' => $supplier?->name,
                 'fulfillment_supplier_contact' => $supplier?->contact,
+                'fulfillment_purchase_price' => $route === 'own_stock'
+                    ? ($purchasePrice ?? ($item->supply_purchase_price !== null ? (float) $item->supply_purchase_price : null))
+                    : $confirmedPrice,
                 'fulfillment_confirmed_by' => $user?->id,
                 'fulfillment_confirmed_at' => now(),
                 'fulfillment_note' => filled($note) ? trim($note) : null,
@@ -48,6 +59,7 @@ class OrderItemFulfillmentManager
                 'supplier_id' => $supplier?->id,
                 'supplier_name' => $supplier?->name,
                 'supplier_contact' => $supplier?->contact,
+                'purchase_price' => $item->fulfillment_purchase_price,
                 'note' => filled($note) ? trim($note) : null,
             ]);
 

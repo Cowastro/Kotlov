@@ -53,6 +53,11 @@ class Supplier extends Model
         return $this->hasMany(SupplierChannelTransition::class);
     }
 
+    public function orderRequests(): HasMany
+    {
+        return $this->hasMany(SupplierOrderRequest::class);
+    }
+
     public function users(): BelongsToMany
     {
         return $this->belongsToMany(User::class)->withTimestamps();

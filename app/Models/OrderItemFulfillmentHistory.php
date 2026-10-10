@@ -9,7 +9,11 @@ class OrderItemFulfillmentHistory extends Model
 {
     protected $fillable = [
         'order_item_id', 'user_id', 'route', 'supplier_id',
-        'supplier_name', 'supplier_contact', 'note',
+        'supplier_name', 'supplier_contact', 'purchase_price', 'note',
+    ];
+
+    protected $casts = [
+        'purchase_price' => 'decimal:2',
     ];
 
     public function item(): BelongsTo

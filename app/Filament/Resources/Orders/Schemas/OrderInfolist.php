@@ -6,6 +6,7 @@ use App\Models\IntegrationIssue;
 use App\Models\Order;
 use App\Models\OrderIntegrationDelivery;
 use App\Models\OrderItem;
+use App\Models\SupplierOrderRequest;
 use Filament\Infolists\Components\RepeatableEntry;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Schemas\Components\Section;
@@ -467,6 +468,12 @@ class OrderInfolist
                                         : null)
                                     ->placeholder('Ожидает решения'),
 
+                                TextEntry::make('fulfillment_purchase_price')
+                                    ->label('Подтверждённая входная цена')
+                                    ->columnSpan(3)
+                                    ->formatStateUsing(fn ($state): string => $state === null ? 'Не указана' : $byn($state))
+                                    ->color(fn ($state): string => $state === null ? 'warning' : 'success'),
+
                                 TextEntry::make('fulfillment_note')
                                     ->label('Комментарий к маршруту')
                                     ->columnSpan(3)
@@ -495,6 +502,43 @@ class OrderInfolist
                                 TextEntry::make('supplier_name')->label('Исполнитель')->placeholder('Собственный склад'),
                                 TextEntry::make('user.name')->label('Кто подтвердил')->placeholder('Система'),
                                 TextEntry::make('note')->label('Комментарий')->placeholder('—')->columnSpanFull(),
+                            ]),
+                    ]),
+
+                Section::make('Заявки поставщикам')
+                    ->description('Внутренние черновики по подтверждённым маршрутам. Статус «Черновик» означает, что поставщику ничего не отправлено.')
+                    ->icon('heroicon-o-document-duplicate')
+                    ->columnSpanFull()
+                    ->compact()
+                    ->visible(fn (Order $record): bool => $record->supplierOrderRequests->isNotEmpty())
+                    ->schema([
+                        RepeatableEntry::make('supplierOrderRequests')
+                            ->hiddenLabel()
+                            ->columns(7)
+                            ->schema([
+                                TextEntry::make('number')->label('Номер')->copyable()->columnSpan(2),
+                                TextEntry::make('supplier_name')->label('Поставщик'),
+                                TextEntry::make('route')
+                                    ->label('Маршрут')
+                                    ->formatStateUsing(fn (string $state): string => OrderItem::FULFILLMENT_ROUTES[$state] ?? $state),
+                                TextEntry::make('item_count')->label('Позиций')->suffix(' шт.'),
+                                TextEntry::make('purchase_total')
+                                    ->label('Закупка')
+                                    ->formatStateUsing(fn ($state): string => $state === null ? 'Не рассчитана' : $byn($state)),
+                                TextEntry::make('status')
+                                    ->label('Статус')
+                                    ->badge()
+                                    ->formatStateUsing(fn (string $state): string => SupplierOrderRequest::STATUSES[$state] ?? $state)
+                                    ->color(fn (string $state): string => match ($state) {
+                                        'acknowledged', 'fulfilled' => 'success',
+                                        'sent' => 'info',
+                                        'rejected', 'cancelled' => 'danger',
+                                        default => 'warning',
+                                    }),
+                                TextEntry::make('supplier_contact')->label('Контакт поставщика')->copyable()->columnSpan(3),
+                                TextEntry::make('creator.name')->label('Сформировал')->placeholder('Система'),
+                                TextEntry::make('created_at')->label('Создана')->dateTime('d.m.Y H:i', 'Europe/Minsk'),
+                                TextEntry::make('note')->label('Комментарий')->placeholder('—')->columnSpan(2),
                             ]),
                     ]),
 

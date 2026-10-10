@@ -167,6 +167,11 @@ class Order extends Model
         return $this->hasMany(OrderIntegrationDelivery::class);
     }
 
+    public function supplierOrderRequests(): HasMany
+    {
+        return $this->hasMany(SupplierOrderRequest::class);
+    }
+
     public function scopeWithOperationalProblem(Builder $query, ?string $problem): Builder
     {
         return match ($problem) {
