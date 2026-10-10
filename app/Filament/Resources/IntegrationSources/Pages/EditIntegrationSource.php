@@ -3,8 +3,10 @@
 namespace App\Filament\Resources\IntegrationSources\Pages;
 
 use App\Filament\Resources\IntegrationSources\IntegrationSourceResource;
+use App\Models\SupplierChannelTransition;
 use App\Services\Integrations\SupplierChannelTransitionPlanner;
 use Filament\Actions\Action;
+use Filament\Forms\Components\Textarea;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\EditRecord;
 use Filament\Support\Enums\Width;
@@ -53,6 +55,69 @@ class EditIntegrationSource extends EditRecord
                             : "Обнаружено блокировок: {$blockers}. Старый канал не изменён.")
                         ->color($blockers === 0 ? 'success' : 'warning')
                         ->send();
+                }),
+            Action::make('confirmTransition')
+                ->label('Переключить рабочий канал на 1С')
+                ->icon('heroicon-o-arrow-path-rounded-square')
+                ->color('danger')
+                ->visible(fn (): bool => app(SupplierChannelTransitionPlanner::class)
+                    ->latest($this->record)?->status === SupplierChannelTransition::STATUS_READY)
+                ->requiresConfirmation()
+                ->modalHeading('Подтвердить переход на 1С')
+                ->modalDescription('После подтверждения операционный подбор цен, остатков и поставщика перестанет использовать старый канал этого поставщика. Старые связи не удаляются и доступны для отката.')
+                ->modalSubmitActionLabel('Переключить на 1С')
+                ->action(function (): void {
+                    try {
+                        app(SupplierChannelTransitionPlanner::class)
+                            ->confirmSwitch($this->record, auth()->id());
+
+                        Notification::make()
+                            ->success()
+                            ->title('Рабочий канал переключён на 1С')
+                            ->body('Старые связи сохранены, но исключены из операционного подбора. При необходимости доступен журналируемый откат.')
+                            ->send();
+                    } catch (Throwable $exception) {
+                        Notification::make()
+                            ->danger()
+                            ->title('Переключение заблокировано')
+                            ->body($exception->getMessage())
+                            ->send();
+                    }
+                }),
+            Action::make('rollbackTransition')
+                ->label('Вернуть старый канал')
+                ->icon('heroicon-o-arrow-uturn-left')
+                ->color('warning')
+                ->visible(fn (): bool => app(SupplierChannelTransitionPlanner::class)
+                    ->latest($this->record)?->status === SupplierChannelTransition::STATUS_LEGACY_DISABLED)
+                ->schema([
+                    Textarea::make('reason')
+                        ->label('Причина отката')
+                        ->helperText('Причина сохранится в журнале перехода.')
+                        ->required()
+                        ->maxLength(1000),
+                ])
+                ->requiresConfirmation()
+                ->modalHeading('Вернуть старый канал в операционный подбор?')
+                ->modalDescription('Связи 1С сохранятся. До нового подтверждённого перехода система снова сможет использовать предложения старого канала.')
+                ->modalSubmitActionLabel('Выполнить откат')
+                ->action(function (array $data): void {
+                    try {
+                        app(SupplierChannelTransitionPlanner::class)
+                            ->rollback($this->record, auth()->id(), (string) ($data['reason'] ?? ''));
+
+                        Notification::make()
+                            ->warning()
+                            ->title('Старый канал возвращён')
+                            ->body('Откат записан в журнал. Связи 1С не изменены.')
+                            ->send();
+                    } catch (Throwable $exception) {
+                        Notification::make()
+                            ->danger()
+                            ->title('Откат не выполнен')
+                            ->body($exception->getMessage())
+                            ->send();
+                    }
                 }),
         ];
     }

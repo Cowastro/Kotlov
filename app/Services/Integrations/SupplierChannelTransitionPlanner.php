@@ -7,6 +7,7 @@ use App\Models\SupplierChannelTransition;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use InvalidArgumentException;
+use RuntimeException;
 
 class SupplierChannelTransitionPlanner
 {
@@ -93,6 +94,10 @@ class SupplierChannelTransitionPlanner
 
     public function recordPreview(IntegrationSource $source, ?int $userId): SupplierChannelTransition
     {
+        if ($source->supplier && ! $source->supplier->usesLegacyChannel()) {
+            throw new InvalidArgumentException('Рабочий канал уже переключён на 1С. Для новой проверки сначала выполните журналируемый откат.');
+        }
+
         $snapshot = $this->preview($source);
 
         return SupplierChannelTransition::query()->create([
@@ -157,6 +162,93 @@ class SupplierChannelTransitionPlanner
         return $transition->fresh();
     }
 
+    public function latest(IntegrationSource $source): ?SupplierChannelTransition
+    {
+        if (! Schema::hasTable('supplier_channel_transitions')) {
+            return null;
+        }
+
+        return SupplierChannelTransition::query()
+            ->where('integration_source_id', $source->id)
+            ->latest('id')
+            ->first();
+    }
+
+    public function confirmSwitch(IntegrationSource $source, ?int $userId): SupplierChannelTransition
+    {
+        return DB::transaction(function () use ($source, $userId): SupplierChannelTransition {
+            $transition = SupplierChannelTransition::query()
+                ->where('integration_source_id', $source->id)
+                ->latest('id')
+                ->lockForUpdate()
+                ->first();
+
+            if (! $transition || $transition->status !== SupplierChannelTransition::STATUS_READY) {
+                throw new RuntimeException('Переключение недоступно: сначала сохраните чистый предпросмотр и выполните новый контрольный обмен 1С.');
+            }
+
+            if ((int) $transition->supplier_id !== (int) $source->supplier_id) {
+                throw new RuntimeException('Поставщик источника изменился после предпросмотра. Выполните проверку заново.');
+            }
+
+            $livePreview = $this->preview($source);
+            if ($livePreview['blockers'] !== []) {
+                throw new RuntimeException('После контрольного обмена появились блокировки. Выполните предпросмотр заново.');
+            }
+
+            $controlRun = $transition->controlExchangeRun()->first();
+            $controlCompletedAt = data_get($controlRun?->summary, 'stock_snapshot.completed_at');
+            if (! $controlRun
+                || $controlRun->operation !== 'catalog'
+                || $controlRun->status !== 'success'
+                || ! $controlRun->finished_at?->isAfter($transition->created_at)
+                || blank($controlCompletedAt)) {
+                throw new RuntimeException('Контрольный обмен больше не подтверждает полноту каталога. Повторите проверку и обмен.');
+            }
+
+            $transition->update([
+                'status' => SupplierChannelTransition::STATUS_LEGACY_DISABLED,
+                'confirmed_by' => $userId,
+                'confirmed_at' => now(),
+                'legacy_disabled_at' => now(),
+                'snapshot' => array_merge($transition->snapshot ?? [], [
+                    'confirmation_preview' => $livePreview,
+                ]),
+            ]);
+
+            return $transition->fresh();
+        });
+    }
+
+    public function rollback(IntegrationSource $source, ?int $userId, string $reason): SupplierChannelTransition
+    {
+        return DB::transaction(function () use ($source, $userId, $reason): SupplierChannelTransition {
+            $transition = SupplierChannelTransition::query()
+                ->where('integration_source_id', $source->id)
+                ->latest('id')
+                ->lockForUpdate()
+                ->first();
+
+            if (! $transition || $transition->status !== SupplierChannelTransition::STATUS_LEGACY_DISABLED) {
+                throw new RuntimeException('Откат недоступен: этот источник сейчас не является подтверждённым рабочим каналом.');
+            }
+
+            $reason = trim($reason);
+            if ($reason === '') {
+                throw new InvalidArgumentException('Укажите причину отката для журнала.');
+            }
+
+            $transition->update([
+                'status' => SupplierChannelTransition::STATUS_ROLLED_BACK,
+                'rolled_back_by' => $userId,
+                'rolled_back_at' => now(),
+                'rollback_reason' => $reason,
+            ]);
+
+            return $transition->fresh();
+        });
+    }
+
     public function latestStatusLabel(IntegrationSource $source): string
     {
         $transition = SupplierChannelTransition::query()
@@ -168,11 +260,17 @@ class SupplierChannelTransitionPlanner
             return 'Проверка ещё не сохранялась.';
         }
 
-        $date = $transition->created_at->timezone('Europe/Minsk')->format('d.m.Y H:i');
+        $date = (match ($transition->status) {
+            SupplierChannelTransition::STATUS_LEGACY_DISABLED => $transition->confirmed_at ?? $transition->created_at,
+            SupplierChannelTransition::STATUS_ROLLED_BACK => $transition->rolled_back_at ?? $transition->created_at,
+            SupplierChannelTransition::STATUS_READY => $transition->ready_at ?? $transition->created_at,
+            default => $transition->created_at,
+        })->timezone('Europe/Minsk')->format('d.m.Y H:i');
 
         return match ($transition->status) {
             SupplierChannelTransition::STATUS_READY => "Контрольный обмен пройден · {$date}",
             SupplierChannelTransition::STATUS_LEGACY_DISABLED => "Старый канал отключён · {$date}",
+            SupplierChannelTransition::STATUS_ROLLED_BACK => "Выполнен откат на старый канал · {$date}",
             default => "Предпросмотр сохранён · {$date}",
         };
     }

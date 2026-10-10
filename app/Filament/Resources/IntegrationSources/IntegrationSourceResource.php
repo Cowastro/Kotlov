@@ -8,6 +8,7 @@ use App\Filament\Resources\IntegrationSources\Pages\ListIntegrationSources;
 use App\Models\IntegrationSource;
 use App\Models\Order;
 use App\Models\Supplier;
+use App\Models\SupplierChannelTransition;
 use App\Services\Integrations\IntegrationFlowHealth;
 use App\Services\Integrations\IntegrationOperationsSummary;
 use App\Services\Integrations\IntegrationOrderStatusMapper;
@@ -216,6 +217,17 @@ class IntegrationSourceResource extends Resource
 
                             if (! $record->supplier_id) {
                                 return 'Назначьте поставщика-владельца. Без него сравнение со старым каналом невозможно.';
+                            }
+
+                            $transition = app(SupplierChannelTransitionPlanner::class)->latest($record);
+                            if ($transition?->status === SupplierChannelTransition::STATUS_LEGACY_DISABLED) {
+                                return 'Рабочий канал — 1С. Старые связи сохранены только для контролируемого отката.';
+                            }
+                            if ($transition?->status === SupplierChannelTransition::STATUS_READY) {
+                                return 'Контрольный обмен пройден. Проверьте итоговый снимок и подтвердите переключение рабочей логики на 1С.';
+                            }
+                            if ($transition?->status === SupplierChannelTransition::STATUS_ROLLED_BACK) {
+                                return 'Старый канал возвращён. Для нового перехода сохраните свежий предпросмотр и повторите контрольный обмен.';
                             }
 
                             $preview = app(SupplierChannelTransitionPlanner::class)->preview($record);

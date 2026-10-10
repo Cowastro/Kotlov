@@ -16,6 +16,7 @@ use App\Models\User;
 use App\Services\Integrations\SupplierChannelTransitionPlanner;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
+use RuntimeException;
 use Tests\TestCase;
 
 class SupplierChannelTransitionTest extends TestCase
@@ -150,6 +151,126 @@ class SupplierChannelTransitionTest extends TestCase
         $this->assertSame(1, SupplierProduct::query()
             ->where('supplier_id', $source->supplier_id)
             ->count());
+    }
+
+    public function test_ready_transition_can_be_confirmed_without_deleting_old_or_new_links(): void
+    {
+        [$source, $product] = $this->transitionFixture(oneLegacyProduct: true);
+        $admin = User::factory()->create(['role' => 'admin', 'is_active' => true]);
+        IntegrationProduct::query()->create([
+            'integration_source_id' => $source->id,
+            'product_id' => $product->id,
+            'external_id' => 'confirmed-switch',
+            'match_status' => 'matched',
+            'price' => 90,
+            'stock_quantity' => 5,
+        ]);
+
+        $planner = app(SupplierChannelTransitionPlanner::class);
+        $transition = $planner->recordPreview($source, $admin->id);
+        $run = IntegrationExchangeRun::query()->create([
+            'integration_source_id' => $source->id,
+            'direction' => 'inbound',
+            'operation' => 'catalog',
+            'status' => 'success',
+            'started_at' => $transition->created_at->addSecond(),
+            'finished_at' => $transition->created_at->addSeconds(2),
+            'summary' => ['stock_snapshot' => ['completed_at' => now()->toIso8601String()]],
+        ]);
+        $planner->refreshLatestReadiness($source);
+
+        $legacyCount = SupplierProduct::query()->count();
+        $integrationCount = IntegrationProduct::query()->count();
+        Livewire::actingAs($admin)
+            ->test(EditIntegrationSource::class, ['record' => $source->getRouteKey()])
+            ->assertActionVisible('confirmTransition')
+            ->callAction('confirmTransition')
+            ->assertHasNoActionErrors();
+        $confirmed = $transition->fresh();
+
+        $this->assertSame(SupplierChannelTransition::STATUS_LEGACY_DISABLED, $confirmed->status);
+        $this->assertSame($admin->id, $confirmed->confirmed_by);
+        $this->assertSame($run->id, $confirmed->control_exchange_run_id);
+        $this->assertNotNull($confirmed->confirmed_at);
+        $this->assertNotNull($confirmed->legacy_disabled_at);
+        $this->assertFalse($source->supplier->fresh()->usesLegacyChannel());
+        $this->assertSame($legacyCount, SupplierProduct::query()->count());
+        $this->assertSame($integrationCount, IntegrationProduct::query()->count());
+
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('уже переключён на 1С');
+
+        $planner->recordPreview($source->fresh(), $admin->id);
+    }
+
+    public function test_switch_is_blocked_when_live_catalog_no_longer_matches_preview(): void
+    {
+        [$source, $product] = $this->transitionFixture(oneLegacyProduct: true);
+        $integrationProduct = IntegrationProduct::query()->create([
+            'integration_source_id' => $source->id,
+            'product_id' => $product->id,
+            'external_id' => 'became-invalid',
+            'match_status' => 'matched',
+            'price' => 90,
+            'stock_quantity' => 5,
+        ]);
+        $planner = app(SupplierChannelTransitionPlanner::class);
+        $transition = $planner->recordPreview($source, null);
+        IntegrationExchangeRun::query()->create([
+            'integration_source_id' => $source->id,
+            'direction' => 'inbound',
+            'operation' => 'catalog',
+            'status' => 'success',
+            'started_at' => $transition->created_at->addSecond(),
+            'finished_at' => $transition->created_at->addSeconds(2),
+            'summary' => ['stock_snapshot' => ['completed_at' => now()->toIso8601String()]],
+        ]);
+        $planner->refreshLatestReadiness($source);
+        $integrationProduct->update(['price' => 0]);
+
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('появились блокировки');
+
+        $planner->confirmSwitch($source, null);
+    }
+
+    public function test_confirmed_switch_can_be_rolled_back_with_audited_reason(): void
+    {
+        [$source, $product] = $this->transitionFixture(oneLegacyProduct: true);
+        $admin = User::factory()->create(['role' => 'admin', 'is_active' => true]);
+        IntegrationProduct::query()->create([
+            'integration_source_id' => $source->id,
+            'product_id' => $product->id,
+            'external_id' => 'rollback-switch',
+            'match_status' => 'matched',
+            'price' => 90,
+            'stock_quantity' => 5,
+        ]);
+        $planner = app(SupplierChannelTransitionPlanner::class);
+        $transition = $planner->recordPreview($source, $admin->id);
+        IntegrationExchangeRun::query()->create([
+            'integration_source_id' => $source->id,
+            'direction' => 'inbound',
+            'operation' => 'catalog',
+            'status' => 'success',
+            'started_at' => $transition->created_at->addSecond(),
+            'finished_at' => $transition->created_at->addSeconds(2),
+            'summary' => ['stock_snapshot' => ['completed_at' => now()->toIso8601String()]],
+        ]);
+        $planner->refreshLatestReadiness($source);
+        $planner->confirmSwitch($source, $admin->id);
+        $legacyCount = SupplierProduct::query()->count();
+        $integrationCount = IntegrationProduct::query()->count();
+
+        $rolledBack = $planner->rollback($source, $admin->id, 'Контрольная проверка выявила расхождение.');
+
+        $this->assertSame(SupplierChannelTransition::STATUS_ROLLED_BACK, $rolledBack->status);
+        $this->assertSame($admin->id, $rolledBack->rolled_back_by);
+        $this->assertSame('Контрольная проверка выявила расхождение.', $rolledBack->rollback_reason);
+        $this->assertNotNull($rolledBack->rolled_back_at);
+        $this->assertTrue($source->supplier->fresh()->usesLegacyChannel());
+        $this->assertSame($legacyCount, SupplierProduct::query()->count());
+        $this->assertSame($integrationCount, IntegrationProduct::query()->count());
     }
 
     /** @return array{IntegrationSource, Product, Product|null} */

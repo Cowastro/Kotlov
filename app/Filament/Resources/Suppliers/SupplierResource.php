@@ -54,6 +54,7 @@ class SupplierResource extends Resource
     {
         return parent::getEloquentQuery()
             ->withCount('supplierProducts')
+            ->with('latestChannelTransition')
             ->with([
                 'integrationSources' => fn ($query) => $query
                     ->withCount(['products as linked_products_count' => fn ($products) => $products
@@ -283,6 +284,10 @@ class SupplierResource extends Resource
         $hasLegacy = (int) $supplier->supplier_products_count > 0;
         $activeSources = $supplier->integrationSources->where('is_active', true);
         $hasIntegration = $activeSources->isNotEmpty();
+
+        if ($hasIntegration && ! $supplier->usesLegacyChannel()) {
+            return $activeSources->contains('driver', 'commerceml') ? '1С' : 'API / файл';
+        }
 
         return match (true) {
             $hasLegacy && $hasIntegration => 'Смешанный',

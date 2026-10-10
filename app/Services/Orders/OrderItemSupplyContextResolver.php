@@ -26,8 +26,8 @@ class OrderItemSupplyContextResolver
 
         $item->loadMissing([
             'integrationProduct.source.supplier',
-            'product.integrationProducts.source.supplier',
-            'product.supplierProducts.supplier',
+            'product.integrationProducts.source.supplier.latestChannelTransition',
+            'product.supplierProducts.supplier.latestChannelTransition',
         ]);
 
         if ($item->integrationProduct) {
@@ -90,9 +90,9 @@ class OrderItemSupplyContextResolver
     public function summarize(Order $order): array
     {
         $order->loadMissing([
-            'items.integrationProduct.source.supplier',
-            'items.product.integrationProducts.source.supplier',
-            'items.product.supplierProducts.supplier',
+            'items.integrationProduct.source.supplier.latestChannelTransition',
+            'items.product.integrationProducts.source.supplier.latestChannelTransition',
+            'items.product.supplierProducts.supplier.latestChannelTransition',
         ]);
 
         $contexts = $order->items->map(fn (OrderItem $item): array => $this->resolve($item));
@@ -154,7 +154,8 @@ class OrderItemSupplyContextResolver
     {
         return collect($item->product?->supplierProducts)
             ->filter(fn (SupplierProduct $offer): bool => (float) $offer->price_byn > 0
-                && $offer->supplier?->is_active === true)
+                && $offer->supplier?->is_active === true
+                && $offer->supplier->usesLegacyChannel())
             ->sortBy([
                 fn (SupplierProduct $offer): int => $this->legacyOfferAvailable($offer) ? 0 : 1,
                 fn (SupplierProduct $offer): float => (float) $offer->price_byn,

@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Supplier extends Model
 {
@@ -51,6 +52,26 @@ class Supplier extends Model
     public function channelTransitions(): HasMany
     {
         return $this->hasMany(SupplierChannelTransition::class);
+    }
+
+    public function latestChannelTransition(): HasOne
+    {
+        return $this->hasOne(SupplierChannelTransition::class)->ofMany(
+            ['id' => 'max'],
+            fn ($query) => $query->whereIn('status', [
+                SupplierChannelTransition::STATUS_LEGACY_DISABLED,
+                SupplierChannelTransition::STATUS_ROLLED_BACK,
+            ]),
+        );
+    }
+
+    public function usesLegacyChannel(): bool
+    {
+        $transition = $this->relationLoaded('latestChannelTransition')
+            ? $this->latestChannelTransition
+            : $this->latestChannelTransition()->first();
+
+        return $transition?->status !== SupplierChannelTransition::STATUS_LEGACY_DISABLED;
     }
 
     public function orderRequests(): HasMany
