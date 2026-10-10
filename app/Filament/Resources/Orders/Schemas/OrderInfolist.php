@@ -320,17 +320,18 @@ class OrderInfolist
 
                 // ── Товары заказа: полная ширина ──────────────────────────────
                 Section::make('Товары заказа')
+                    ->description('Поставка рассчитана по текущим связям. Для старых заказов это рекомендация, а не зафиксированное состояние на дату продажи.')
                     ->icon('heroicon-o-shopping-bag')
                     ->columnSpanFull()
                     ->compact()
                     ->schema([
                         RepeatableEntry::make('items')
                             ->hiddenLabel()
-                            ->columns(6)
+                            ->columns(12)
                             ->schema([
                                 TextEntry::make('product_name')
                                     ->label('Товар')
-                                    ->columnSpan(2)
+                                    ->columnSpan(3)
                                     ->url(fn ($state, $record) => $record->product?->category
                                         ? url('/'.$record->product->category->slug.'/'.$record->product->slug)
                                         : null)
@@ -338,6 +339,7 @@ class OrderInfolist
 
                                 TextEntry::make('product_sku')
                                     ->label('Артикул')
+                                    ->columnSpan(2)
                                     ->placeholder('—')
                                     ->fontFamily('mono')
                                     ->copyable(),
@@ -347,7 +349,7 @@ class OrderInfolist
                                     ->suffix(' шт.'),
 
                                 TextEntry::make('price')
-                                    ->label('Цена')
+                                    ->label('Продажа / шт.')
                                     ->formatStateUsing($byn),
 
                                 TextEntry::make('total')
@@ -355,6 +357,89 @@ class OrderInfolist
                                     ->weight('bold')
                                     ->color('primary')
                                     ->formatStateUsing($byn),
+
+                                TextEntry::make('supply_supplier')
+                                    ->label('Поставщик')
+                                    ->columnSpan(2)
+                                    ->state(fn ($record): ?string => $record->supplyContext()['supplier_name'])
+                                    ->placeholder('Не определён')
+                                    ->weight('bold'),
+
+                                TextEntry::make('supply_contact')
+                                    ->label('Контакты поставщика')
+                                    ->columnSpan(2)
+                                    ->state(fn ($record): ?string => $record->supplyContext()['supplier_contact'])
+                                    ->placeholder('Не заполнены')
+                                    ->copyable(),
+
+                                TextEntry::make('supply_route')
+                                    ->label('Маршрут')
+                                    ->columnSpan(2)
+                                    ->state(fn ($record): string => $record->supplyContext()['route_label'])
+                                    ->badge()
+                                    ->color(fn ($record): string => match ($record->supplyContext()['status']) {
+                                        'own_stock' => 'success',
+                                        'supplier_purchase' => 'warning',
+                                        default => 'danger',
+                                    }),
+
+                                TextEntry::make('supply_wholesale_price')
+                                    ->label('Оптовая / закупочная')
+                                    ->columnSpan(2)
+                                    ->state(fn ($record): ?float => $record->supplyContext()['wholesale_price'])
+                                    ->formatStateUsing(fn ($state): string => $state === null ? '—' : $byn($state))
+                                    ->helperText(fn ($record): string => $record->supplyContext()['wholesale_price_label']),
+
+                                TextEntry::make('supply_margin')
+                                    ->label('Расчётная маржа')
+                                    ->columnSpan(2)
+                                    ->state(function ($record) use ($byn): string {
+                                        $context = $record->supplyContext();
+                                        if ($context['margin_total'] === null) {
+                                            return 'Не рассчитана';
+                                        }
+
+                                        return $byn($context['margin_total'])
+                                            .($context['margin_percent'] !== null ? ' / '.number_format($context['margin_percent'], 1, '.', ' ').'%' : '');
+                                    })
+                                    ->color(fn ($record): string => match (true) {
+                                        $record->supplyContext()['margin_total'] === null => 'gray',
+                                        $record->supplyContext()['margin_total'] < 0 => 'danger',
+                                        $record->supplyContext()['margin_total'] == 0 => 'warning',
+                                        default => 'success',
+                                    }),
+
+                                TextEntry::make('supply_stock')
+                                    ->label('Текущее наличие')
+                                    ->columnSpan(2)
+                                    ->state(fn ($record): string => $record->supplyContext()['stock_label']),
+
+                                TextEntry::make('supply_source')
+                                    ->label('Источник данных')
+                                    ->columnSpan(2)
+                                    ->state(fn ($record): ?string => $record->supplyContext()['source_label'])
+                                    ->placeholder('Нет источника'),
+
+                                TextEntry::make('supply_confidence')
+                                    ->label('Надёжность маршрута')
+                                    ->columnSpan(2)
+                                    ->state(function ($record): string {
+                                        $context = $record->supplyContext();
+
+                                        return match (true) {
+                                            $context['is_explicit'] => 'Зафиксирован при заказе',
+                                            $context['candidate_count'] > 1 => 'Рекомендация · вариантов: '.$context['candidate_count'],
+                                            $context['candidate_count'] === 1 => 'Текущая рекомендация',
+                                            default => 'Нужна ручная маршрутизация',
+                                        };
+                                    })
+                                    ->badge()
+                                    ->color(fn ($record): string => match (true) {
+                                        $record->supplyContext()['is_explicit'] => 'success',
+                                        $record->supplyContext()['candidate_count'] > 1 => 'warning',
+                                        $record->supplyContext()['candidate_count'] === 1 => 'info',
+                                        default => 'danger',
+                                    }),
                             ]),
                     ]),
 

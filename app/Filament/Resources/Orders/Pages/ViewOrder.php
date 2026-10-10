@@ -16,6 +16,9 @@ class ViewOrder extends ViewRecord
     {
         return Order::with([
             'items.product.category',
+            'items.product.supplierProducts.supplier',
+            'items.product.integrationProducts.source.supplier',
+            'items.integrationProduct.source.supplier',
             'statusHistory.user',
             'user',
             'manager',

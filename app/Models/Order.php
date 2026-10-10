@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Services\Orders\OrderItemSupplyContextResolver;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -11,6 +12,9 @@ use Illuminate\Support\Facades\DB;
 
 class Order extends Model
 {
+    /** @var array<string, mixed>|null */
+    private ?array $supplySummaryCache = null;
+
     public const ONEC_SYNC_STATES = [
         'conflict' => 'Конфликт статусов',
         'unknown' => 'Неизвестный статус',
@@ -133,6 +137,12 @@ class Order extends Model
     public function integrationDeliveries(): HasMany
     {
         return $this->hasMany(OrderIntegrationDelivery::class);
+    }
+
+    /** @return array<string, mixed> */
+    public function supplySummary(): array
+    {
+        return $this->supplySummaryCache ??= app(OrderItemSupplyContextResolver::class)->summarize($this);
     }
 
     public function onecSyncState(): string

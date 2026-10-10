@@ -1,0 +1,187 @@
+<?php
+
+namespace App\Services\Orders;
+
+use App\Models\IntegrationProduct;
+use App\Models\Order;
+use App\Models\OrderItem;
+use App\Models\SupplierProduct;
+use Illuminate\Support\Collection;
+
+class OrderItemSupplyContextResolver
+{
+    /**
+     * Resolve a current operational recommendation without changing the order.
+     * Historical orders do not contain a supplier snapshot yet, so every value
+     * returned here is explicitly a current recommendation.
+     *
+     * @return array<string, mixed>
+     */
+    public function resolve(OrderItem $item): array
+    {
+        $item->loadMissing([
+            'integrationProduct.source.supplier',
+            'product.integrationProducts.source.supplier',
+            'product.supplierProducts.supplier',
+        ]);
+
+        if ($item->integrationProduct) {
+            return $this->fromIntegrationProduct($item, $item->integrationProduct, true);
+        }
+
+        $integrationOffers = $this->integrationOffers($item);
+        $legacyOffers = $this->legacyOffers($item);
+        $candidateCount = $integrationOffers->count() + $legacyOffers->count();
+
+        $recommendedIntegration = $integrationOffers->first();
+        if ($recommendedIntegration) {
+            return $this->fromIntegrationProduct($item, $recommendedIntegration, false, $candidateCount);
+        }
+
+        $recommendedLegacy = $legacyOffers->first();
+        if ($recommendedLegacy) {
+            return $this->fromSupplierProduct($item, $recommendedLegacy, $candidateCount);
+        }
+
+        return [
+            'status' => 'unresolved',
+            'route_label' => 'Поставщик не определён',
+            'supplier_id' => null,
+            'supplier_name' => null,
+            'supplier_contact' => null,
+            'source_label' => null,
+            'wholesale_price' => null,
+            'wholesale_price_label' => 'Нет закупочной цены',
+            'margin_unit' => null,
+            'margin_total' => null,
+            'margin_percent' => null,
+            'stock_label' => 'Наличие неизвестно',
+            'candidate_count' => 0,
+            'is_explicit' => false,
+            'is_current_recommendation' => true,
+        ];
+    }
+
+    /** @return array{supplier_names: Collection<int, string>, unresolved_count: int, margin_total: float, items_count: int} */
+    public function summarize(Order $order): array
+    {
+        $order->loadMissing([
+            'items.integrationProduct.source.supplier',
+            'items.product.integrationProducts.source.supplier',
+            'items.product.supplierProducts.supplier',
+        ]);
+
+        $contexts = $order->items->map(fn (OrderItem $item): array => $this->resolve($item));
+
+        return [
+            'supplier_names' => $contexts->pluck('supplier_name')->filter()->unique()->values(),
+            'unresolved_count' => $contexts->where('status', 'unresolved')->count(),
+            'margin_total' => round((float) $contexts->sum('margin_total'), 2),
+            'items_count' => $contexts->count(),
+        ];
+    }
+
+    /** @return Collection<int, IntegrationProduct> */
+    private function integrationOffers(OrderItem $item): Collection
+    {
+        return collect($item->product?->integrationProducts)
+            ->filter(fn (IntegrationProduct $offer): bool => $offer->match_status === 'matched'
+                && (float) $offer->price > 0
+                && $offer->source?->is_active === true)
+            ->sortBy([
+                fn (IntegrationProduct $offer): int => (float) $offer->stock_quantity > 0 ? 0 : 1,
+                fn (IntegrationProduct $offer): int => $offer->source?->code === 'onec' ? 0 : 1,
+                fn (IntegrationProduct $offer): float => $this->integrationWholesalePrice($offer),
+            ])
+            ->values();
+    }
+
+    /** @return Collection<int, SupplierProduct> */
+    private function legacyOffers(OrderItem $item): Collection
+    {
+        return collect($item->product?->supplierProducts)
+            ->filter(fn (SupplierProduct $offer): bool => (float) $offer->price_byn > 0
+                && $offer->supplier?->is_active === true)
+            ->sortBy([
+                fn (SupplierProduct $offer): int => $this->legacyOfferAvailable($offer) ? 0 : 1,
+                fn (SupplierProduct $offer): float => (float) $offer->price_byn,
+            ])
+            ->values();
+    }
+
+    /** @return array<string, mixed> */
+    private function fromIntegrationProduct(
+        OrderItem $item,
+        IntegrationProduct $offer,
+        bool $explicit,
+        int $candidateCount = 1,
+    ): array {
+        $source = $offer->source;
+        $supplier = $source?->supplier;
+        $wholesalePrice = $this->integrationWholesalePrice($offer);
+        $isOwnStock = $source?->code === 'onec' || $supplier?->code === 'sanbusinessgroup';
+
+        return $this->pricedContext($item, $wholesalePrice, [
+            'status' => $isOwnStock ? 'own_stock' : 'supplier_purchase',
+            'route_label' => $isOwnStock ? 'Наш склад / 1С' : 'Закупка у поставщика',
+            'supplier_id' => $supplier?->id,
+            'supplier_name' => $supplier?->name ?? $source?->partnerName(),
+            'supplier_contact' => $supplier?->contact,
+            'source_label' => $source?->name,
+            'wholesale_price_label' => 'Оптовая цена с НДС',
+            'stock_label' => (float) $offer->stock_quantity > 0
+                ? $offer->formattedStockQuantity()
+                : 'Сейчас нет в наличии',
+            'candidate_count' => $candidateCount,
+            'is_explicit' => $explicit,
+            'is_current_recommendation' => ! $explicit,
+        ]);
+    }
+
+    /** @return array<string, mixed> */
+    private function fromSupplierProduct(OrderItem $item, SupplierProduct $offer, int $candidateCount): array
+    {
+        return $this->pricedContext($item, (float) $offer->price_byn, [
+            'status' => 'supplier_purchase',
+            'route_label' => 'Закупка у поставщика',
+            'supplier_id' => $offer->supplier?->id,
+            'supplier_name' => $offer->supplier?->name,
+            'supplier_contact' => $offer->supplier?->contact,
+            'source_label' => 'Старый канал поставщика',
+            'wholesale_price_label' => 'Закупочная цена · НДС не указан',
+            'stock_label' => $this->legacyOfferAvailable($offer)
+                ? ($offer->stock_quantity !== null ? number_format((int) $offer->stock_quantity, 0, '.', ' ').' шт.' : 'Есть в наличии')
+                : 'Сейчас нет в наличии',
+            'candidate_count' => $candidateCount,
+            'is_explicit' => false,
+            'is_current_recommendation' => true,
+        ]);
+    }
+
+    /** @param array<string, mixed> $context
+     * @return array<string, mixed>
+     */
+    private function pricedContext(OrderItem $item, float $wholesalePrice, array $context): array
+    {
+        $salePrice = (float) $item->price;
+        $marginUnit = round($salePrice - $wholesalePrice, 2);
+
+        return $context + [
+            'wholesale_price' => round($wholesalePrice, 2),
+            'margin_unit' => $marginUnit,
+            'margin_total' => round($marginUnit * (int) $item->quantity, 2),
+            'margin_percent' => $salePrice > 0 ? round($marginUnit / $salePrice * 100, 1) : null,
+        ];
+    }
+
+    private function integrationWholesalePrice(IntegrationProduct $offer): float
+    {
+        return $offer->source?->priceIncludingTax((float) $offer->price)
+            ?? round((float) $offer->price, 2);
+    }
+
+    private function legacyOfferAvailable(SupplierProduct $offer): bool
+    {
+        return $offer->in_stock === true || (int) $offer->stock_quantity > 0;
+    }
+}

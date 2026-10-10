@@ -74,7 +74,10 @@ class OrdersTable
             ->modifyQueryUsing(fn (Builder $query) => $query
                 ->withSum('items', 'quantity')
                 ->with([
-                    'items:id,order_id,product_name,product_sku',
+                    'items:id,order_id,product_id,integration_product_id,product_name,product_sku,price,quantity,total',
+                    'items.integrationProduct.source.supplier',
+                    'items.product.integrationProducts.source.supplier',
+                    'items.product.supplierProducts.supplier',
                     'manager:id,name',
                     'integrationIssues' => fn ($query) => $query
                         ->open()
@@ -215,6 +218,31 @@ class OrdersTable
                         default => 'heroicon-o-clock',
                     })
                     ->description(fn (Order $record): ?string => $record->onecSyncDescription())
+                    ->wrap(),
+
+                TextColumn::make('supply_route')
+                    ->label('Поставка')
+                    ->state(function (Order $record): string {
+                        $summary = $record->supplySummary();
+
+                        return $summary['supplier_names']->isNotEmpty()
+                            ? $summary['supplier_names']->implode(', ')
+                            : 'Поставщик не определён';
+                    })
+                    ->description(function (Order $record): string {
+                        $summary = $record->supplySummary();
+                        $parts = [];
+
+                        if ($summary['unresolved_count'] > 0) {
+                            $parts[] = 'Без маршрута: '.$summary['unresolved_count'];
+                        }
+                        if ($summary['margin_total'] !== 0.0) {
+                            $parts[] = 'Маржа ≈ '.number_format($summary['margin_total'], 2, '.', ' ').' BYN';
+                        }
+
+                        return $parts !== [] ? implode(' · ', $parts) : 'Маршрут рассчитан по текущим связям';
+                    })
+                    ->color(fn (Order $record): string => $record->supplySummary()['unresolved_count'] > 0 ? 'danger' : 'success')
                     ->wrap(),
 
                 TextColumn::make('responsible')

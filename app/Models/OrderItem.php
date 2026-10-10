@@ -2,11 +2,15 @@
 
 namespace App\Models;
 
+use App\Services\Orders\OrderItemSupplyContextResolver;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class OrderItem extends Model
 {
+    /** @var array<string, mixed>|null */
+    private ?array $supplyContextCache = null;
+
     protected $fillable = [
         'order_id', 'product_id',
         'product_name', 'product_sku',
@@ -32,5 +36,11 @@ class OrderItem extends Model
     public function integrationProduct(): BelongsTo
     {
         return $this->belongsTo(IntegrationProduct::class);
+    }
+
+    /** @return array<string, mixed> */
+    public function supplyContext(): array
+    {
+        return $this->supplyContextCache ??= app(OrderItemSupplyContextResolver::class)->resolve($this);
     }
 }
