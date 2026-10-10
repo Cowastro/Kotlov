@@ -73,7 +73,14 @@ class OrdersTable
         return $table
             ->modifyQueryUsing(fn (Builder $query) => $query
                 ->withSum('items', 'quantity')
-                ->with(['items:id,order_id,product_name,product_sku', 'manager:id,name']))
+                ->with([
+                    'items:id,order_id,product_name,product_sku',
+                    'manager:id,name',
+                    'integrationIssues' => fn ($query) => $query
+                        ->open()
+                        ->orders()
+                        ->latest('last_detected_at'),
+                ]))
             ->columns([
                 TextColumn::make('number')
                     ->label('№ заказа')
@@ -188,24 +195,25 @@ class OrdersTable
 
                 TextColumn::make('onec_sync_state')
                     ->label('1С')
-                    ->state(fn (Order $record): string => match (true) {
-                        filled($record->onec_status_received_at) => 'confirmed',
-                        filled($record->onec_exported_at) => 'sent',
-                        default => 'waiting',
-                    })
+                    ->state(fn (Order $record): string => $record->onecSyncState())
                     ->badge()
-                    ->formatStateUsing(fn (string $state): string => match ($state) {
-                        'confirmed' => 'Ответ получен',
-                        'sent' => 'Передан',
-                        default => 'Ожидает передачи',
-                    })
+                    ->formatStateUsing(fn (string $state): string => Order::ONEC_SYNC_STATES[$state] ?? $state)
                     ->color(fn (string $state): string => match ($state) {
+                        'conflict' => 'danger',
+                        'unknown', 'no_response', 'delayed' => 'warning',
                         'confirmed' => 'success',
                         'sent' => 'info',
                         default => 'warning',
                     })
-                    ->description(fn (Order $record): ?string => $record->onec_status
-                        ?: $record->onec_exported_at?->timezone('Europe/Minsk')->format('d.m.Y H:i')),
+                    ->icon(fn (string $state): string => match ($state) {
+                        'conflict' => 'heroicon-o-shield-exclamation',
+                        'unknown', 'no_response', 'delayed' => 'heroicon-o-exclamation-triangle',
+                        'confirmed' => 'heroicon-o-check-circle',
+                        'sent' => 'heroicon-o-arrow-up-tray',
+                        default => 'heroicon-o-clock',
+                    })
+                    ->description(fn (Order $record): ?string => $record->onecSyncDescription())
+                    ->wrap(),
 
                 TextColumn::make('responsible')
                     ->label('Ответственный')
@@ -260,15 +268,20 @@ class OrdersTable
                 SelectFilter::make('onec_sync')
                     ->label('Состояние 1С')
                     ->options([
-                        'waiting' => 'Ожидает передачи',
+                        'waiting' => 'Не передан в 1С',
                         'sent' => 'Передан, ответа нет',
                         'confirmed' => 'Ответ 1С получен',
+                        'problem' => 'Есть открытая проблема',
                     ])
                     ->query(function (Builder $query, array $data): Builder {
                         return match ($data['value'] ?? null) {
                             'waiting' => $query->whereNull('onec_exported_at'),
                             'sent' => $query->whereNotNull('onec_exported_at')->whereNull('onec_status_received_at'),
                             'confirmed' => $query->whereNotNull('onec_status_received_at'),
+                            'problem' => $query->whereHas(
+                                'integrationIssues',
+                                fn (Builder $query): Builder => $query->open()->orders(),
+                            ),
                             default => $query,
                         };
                     }),

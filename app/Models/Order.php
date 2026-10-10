@@ -10,6 +10,16 @@ use Illuminate\Support\Facades\DB;
 
 class Order extends Model
 {
+    public const ONEC_SYNC_STATES = [
+        'conflict' => 'Конфликт статусов',
+        'unknown' => 'Неизвестный статус',
+        'no_response' => 'Нет ответа 1С',
+        'delayed' => 'Передача задержана',
+        'confirmed' => 'Ответ получен',
+        'sent' => 'Передан',
+        'waiting' => 'Ожидает передачи',
+    ];
+
     protected $fillable = [
         'user_id', 'number', 'status',
         'customer_name', 'customer_phone', 'customer_email',
@@ -117,6 +127,71 @@ class Order extends Model
     public function integrationIssues(): HasMany
     {
         return $this->hasMany(IntegrationIssue::class);
+    }
+
+    public function onecSyncState(): string
+    {
+        $issueType = $this->activeOnecSyncIssue()?->type;
+
+        return match ($issueType) {
+            'order_status_conflict' => 'conflict',
+            'order_status_unknown' => 'unknown',
+            'order_no_1c_response' => 'no_response',
+            'order_not_exported' => 'delayed',
+            default => match (true) {
+                filled($this->onec_status_received_at) => 'confirmed',
+                filled($this->onec_exported_at) => 'sent',
+                default => 'waiting',
+            },
+        };
+    }
+
+    public function onecSyncLabel(): string
+    {
+        return self::ONEC_SYNC_STATES[$this->onecSyncState()] ?? 'Состояние неизвестно';
+    }
+
+    public function onecSyncDescription(): ?string
+    {
+        $issue = $this->activeOnecSyncIssue();
+        if ($issue) {
+            return $issue->message ?: $issue->title;
+        }
+
+        if ($this->onec_status_received_at) {
+            return collect([
+                $this->onec_status,
+                $this->onec_status_received_at->timezone('Europe/Minsk')->format('d.m.Y H:i'),
+            ])->filter()->implode(' · ');
+        }
+
+        return $this->onec_exported_at?->timezone('Europe/Minsk')->format('d.m.Y H:i');
+    }
+
+    public function activeOnecSyncIssue(): ?IntegrationIssue
+    {
+        $issues = $this->relationLoaded('integrationIssues')
+            ? $this->integrationIssues
+            : $this->integrationIssues()->open()->orders()->get();
+
+        $priorities = [
+            'order_status_conflict' => 1,
+            'order_status_unknown' => 2,
+            'order_no_1c_response' => 3,
+            'order_not_exported' => 4,
+        ];
+
+        return $issues
+            ->where('status', 'open')
+            ->filter(fn (IntegrationIssue $issue): bool => match ($issue->type) {
+                'order_status_conflict', 'order_status_unknown' => true,
+                'order_no_1c_response' => filled($this->onec_exported_at)
+                    && blank($this->onec_status_received_at),
+                'order_not_exported' => blank($this->onec_exported_at),
+                default => false,
+            })
+            ->sortBy(fn (IntegrationIssue $issue): int => $priorities[$issue->type] ?? 99)
+            ->first();
     }
 
     public function getStatusLabelAttribute(): string
