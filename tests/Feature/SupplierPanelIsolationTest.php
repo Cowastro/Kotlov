@@ -2,10 +2,14 @@
 
 namespace Tests\Feature;
 
+use App\Filament\Supplier\Resources\IntegrationExchangeRuns\IntegrationExchangeRunResource;
+use App\Filament\Supplier\Resources\IntegrationIssues\IntegrationIssueResource;
 use App\Filament\Supplier\Resources\IntegrationProducts\IntegrationProductResource;
 use App\Filament\Supplier\Resources\SupplierProducts\SupplierProductResource;
 use App\Filament\Supplier\Resources\SupplierSyncChanges\SupplierSyncChangeResource;
 use App\Filament\Supplier\Widgets\SupplierIntegrationOverview;
+use App\Models\IntegrationExchangeRun;
+use App\Models\IntegrationIssue;
 use App\Models\IntegrationProduct;
 use App\Models\IntegrationSource;
 use App\Models\Supplier;
@@ -277,5 +281,100 @@ class SupplierPanelIsolationTest extends TestCase
             ->assertSeeText('Нет успешного цикла')
             ->assertSeeText('В наличии: 1')
             ->assertSeeText('Без цены: 0');
+    }
+
+    public function test_supplier_exchange_journal_is_strictly_scoped_to_assigned_sources(): void
+    {
+        [$user, $source, $foreignSource] = $this->integrationAccessFixture();
+        $visible = IntegrationExchangeRun::query()->create([
+            'integration_source_id' => $source->id,
+            'direction' => 'inbound',
+            'operation' => 'catalog',
+            'status' => 'success',
+            'started_at' => now(),
+            'finished_at' => now(),
+        ]);
+        IntegrationExchangeRun::query()->create([
+            'integration_source_id' => $foreignSource->id,
+            'direction' => 'inbound',
+            'operation' => 'catalog',
+            'status' => 'failed',
+            'started_at' => now(),
+            'error_message' => 'Чужая ошибка обмена',
+        ]);
+
+        $this->actingAs($user);
+
+        $this->assertSame([$visible->id], IntegrationExchangeRunResource::getEloquentQuery()->pluck('id')->all());
+
+        $this->get(IntegrationExchangeRunResource::getUrl('index', panel: 'supplier'))
+            ->assertOk()
+            ->assertSeeText('История получения каталога')
+            ->assertSeeText('Каталог, цены и остатки')
+            ->assertDontSeeText('Чужая ошибка обмена');
+    }
+
+    public function test_supplier_issue_queue_is_read_only_and_strictly_scoped_to_assigned_sources(): void
+    {
+        [$user, $source, $foreignSource] = $this->integrationAccessFixture();
+        $visible = IntegrationIssue::query()->create([
+            'integration_source_id' => $source->id,
+            'fingerprint' => 'supplier-visible-issue',
+            'type' => 'integration_catalog_stale',
+            'severity' => 'danger',
+            'status' => 'open',
+            'title' => 'Мой обмен остановился',
+            'message' => 'Каталог давно не обновлялся.',
+            'first_detected_at' => now(),
+            'last_detected_at' => now(),
+        ]);
+        IntegrationIssue::query()->create([
+            'integration_source_id' => $foreignSource->id,
+            'fingerprint' => 'supplier-hidden-issue',
+            'type' => 'integration_catalog_stale',
+            'severity' => 'danger',
+            'status' => 'open',
+            'title' => 'Чужая проблема',
+            'message' => 'Поставщик не должен это увидеть.',
+            'first_detected_at' => now(),
+            'last_detected_at' => now(),
+        ]);
+
+        $this->actingAs($user);
+
+        $this->assertSame([$visible->id], IntegrationIssueResource::getEloquentQuery()->pluck('id')->all());
+        $this->assertFalse(IntegrationIssueResource::canEdit($visible));
+        $this->assertFalse(IntegrationIssueResource::canDelete($visible));
+
+        $this->get(IntegrationIssueResource::getUrl('index', panel: 'supplier'))
+            ->assertOk()
+            ->assertSeeText('Мой обмен остановился')
+            ->assertSeeText('Следующий шаг')
+            ->assertDontSeeText('Чужая проблема');
+    }
+
+    /** @return array{User, IntegrationSource, IntegrationSource} */
+    private function integrationAccessFixture(): array
+    {
+        $supplier = Supplier::query()->create(['code' => 'fixture-supplier', 'name' => 'Мой поставщик']);
+        $otherSupplier = Supplier::query()->create(['code' => 'fixture-foreign', 'name' => 'Чужой поставщик']);
+        $user = User::factory()->create(['role' => 'supplier', 'is_active' => true]);
+        $user->suppliers()->attach($supplier);
+        $source = IntegrationSource::query()->create([
+            'supplier_id' => $supplier->id,
+            'code' => 'fixture-own-source',
+            'name' => 'Мой источник',
+            'driver' => 'commerceml',
+            'is_active' => true,
+        ]);
+        $foreignSource = IntegrationSource::query()->create([
+            'supplier_id' => $otherSupplier->id,
+            'code' => 'fixture-foreign-source',
+            'name' => 'Чужой источник',
+            'driver' => 'commerceml',
+            'is_active' => true,
+        ]);
+
+        return [$user, $source, $foreignSource];
     }
 }

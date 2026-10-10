@@ -2,6 +2,9 @@
 
 namespace App\Filament\Supplier\Widgets;
 
+use App\Filament\Supplier\Resources\IntegrationExchangeRuns\IntegrationExchangeRunResource;
+use App\Filament\Supplier\Resources\IntegrationIssues\IntegrationIssueResource;
+use App\Filament\Supplier\Resources\IntegrationProducts\IntegrationProductResource;
 use App\Services\SupplierIntegrationSummary;
 use Filament\Widgets\StatsOverviewWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
@@ -21,15 +24,19 @@ class SupplierIntegrationOverview extends StatsOverviewWidget
                 ->color($summary['source_count'] === $summary['active_source_count'] ? 'success' : 'warning'),
             Stat::make('Обмен', $this->healthLabel($summary['health']))
                 ->description($this->healthDescription($summary))
-                ->color($this->healthColor($summary['health'])),
+                ->color($this->healthColor($summary['health']))
+                ->url(IntegrationExchangeRunResource::getUrl('index', panel: 'supplier')),
             Stat::make('Товары из интеграций', $summary['total'])
-                ->description('В наличии: '.$summary['in_stock']),
+                ->description('В наличии: '.$summary['in_stock'])
+                ->url(IntegrationProductResource::getUrl('index', panel: 'supplier')),
             Stat::make('Привязано к KOTLOV', $summary['linked'])
                 ->description('Не привязано: '.$summary['unlinked'])
-                ->color($summary['unlinked'] > 0 ? 'warning' : 'success'),
+                ->color($summary['unlinked'] > 0 ? 'warning' : 'success')
+                ->url(IntegrationProductResource::getUrl('index', panel: 'supplier')),
             Stat::make('Проблемы данных', $summary['open_issues'])
                 ->description('Без цены: '.$summary['missing_price'])
-                ->color($summary['open_issues'] > 0 || $summary['missing_price'] > 0 ? 'danger' : 'success'),
+                ->color($summary['open_issues'] > 0 || $summary['missing_price'] > 0 ? 'danger' : 'success')
+                ->url(IntegrationIssueResource::getUrl('index', panel: 'supplier')),
         ];
     }
 
