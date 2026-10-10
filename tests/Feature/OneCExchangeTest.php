@@ -482,7 +482,7 @@ class OneCExchangeTest extends TestCase
 
     public function test_catalog_item_is_staged_and_linked_by_exact_sku(): void
     {
-        $product = Product::query()->create([
+        $product = $this->createProduct([
             'sku' => 'BOILER-100',
             'name' => 'Котёл тестовый 100',
             'slug' => 'boiler-100',
@@ -771,7 +771,7 @@ XML;
 
     public function test_catalog_item_reads_onec_code_and_links_it_to_existing_sku(): void
     {
-        $product = Product::query()->create([
+        $product = $this->createProduct([
             'sku' => 'БП-00001234',
             'name' => 'Существующая карточка',
             'slug' => 'existing-product',
@@ -1028,13 +1028,13 @@ XML;
             'slug' => 'advisor-category-'.uniqid(),
             'parent_id' => 0,
         ]);
-        $first = Product::query()->create([
+        $first = $this->createProduct([
             'sku' => 'ADVISOR-1',
             'name' => 'Труба 1 м',
             'slug' => 'advisor-product-1-'.uniqid(),
             'category_id' => $category->id,
         ]);
-        $second = Product::query()->create([
+        $second = $this->createProduct([
             'sku' => 'ADVISOR-2',
             'name' => 'Труба 0,5 м',
             'slug' => 'advisor-product-2-'.uniqid(),
@@ -1070,7 +1070,7 @@ XML;
             'slug' => 'match-advisor-category-'.uniqid(),
             'parent_id' => 0,
         ]);
-        $product = Product::query()->create([
+        $product = $this->createProduct([
             'sku' => 'KOTLOV-TEST-1',
             'name' => 'Крепление универсальное D200–210',
             'slug' => 'match-advisor-product-'.uniqid(),
@@ -1119,13 +1119,13 @@ XML;
             'slug' => 'candidate-review-category',
             'parent_id' => 0,
         ]);
-        $first = Product::query()->create([
+        $first = $this->createProduct([
             'sku' => 'CANDIDATE-1',
             'name' => 'Труба моно 500 D150',
             'slug' => 'candidate-one',
             'category_id' => $category->id,
         ]);
-        $second = Product::query()->create([
+        $second = $this->createProduct([
             'sku' => 'CANDIDATE-2',
             'name' => 'Труба моно 1000 D150',
             'slug' => 'candidate-two',
@@ -1203,7 +1203,7 @@ XML;
 
     public function test_fuzzy_matching_rejects_a_different_diameter(): void
     {
-        Product::query()->create([
+        $this->createProduct([
             'sku' => 'PS-011.849',
             'name' => 'КПД ЧЕРНЫЙ Труба 250мм 2мм ф150',
             'slug' => 'black-pipe-250-150',
@@ -1229,7 +1229,7 @@ XML;
 
     public function test_fuzzy_matching_rejects_a_missing_diameter_and_rematch_updates_old_suggestion(): void
     {
-        $product = Product::query()->create([
+        $product = $this->createProduct([
             'sku' => 'PS-011.842',
             'name' => 'Лист потолочный Угловой разборный ЛПУР 20-45°',
             'slug' => 'ceiling-sheet-lpur',
@@ -1264,7 +1264,7 @@ XML;
 
     public function test_rematch_links_only_exact_unresolved_items_and_keeps_ignored_items_untouched(): void
     {
-        $product = Product::query()->create([
+        $product = $this->createProduct([
             'sku' => 'EXACT-REMATCH-1',
             'name' => 'Труба для повторного сопоставления',
             'slug' => 'exact-rematch-product',
@@ -1304,7 +1304,7 @@ XML;
 
     public function test_rematch_uses_an_active_reviewed_supplier_mapping_as_an_exact_identifier(): void
     {
-        $product = Product::query()->create([
+        $product = $this->createProduct([
             'sku' => 'KOTLOV-MAPPED-1',
             'name' => 'Карточка с ручным соответствием',
             'slug' => 'manually-mapped-product',
@@ -1340,7 +1340,7 @@ XML;
 
     public function test_reviewed_supplier_mappings_are_isolated_between_integration_sources(): void
     {
-        $product = Product::query()->create([
+        $product = $this->createProduct([
             'sku' => 'KOTLOV-ISOLATED-1',
             'name' => 'Товар первого поставщика',
             'slug' => 'isolated-supplier-product',
@@ -1374,7 +1374,7 @@ XML;
 
     public function test_manual_match_recorder_teaches_the_source_for_future_imports(): void
     {
-        $product = Product::query()->create([
+        $product = $this->createProduct([
             'sku' => 'KOTLOV-LEARNED-1',
             'name' => 'Подтверждённая карточка',
             'slug' => 'learned-mapping-product',
@@ -1546,7 +1546,7 @@ XML;
 
     public function test_orders_are_exported_and_marked_only_after_success(): void
     {
-        $product = Product::query()->create([
+        $product = $this->createProduct([
             'sku' => 'KOTLOV-000001',
             'name' => 'Котёл тестовый',
             'slug' => 'kotlov-test-product',
@@ -1617,12 +1617,12 @@ XML;
 
     public function test_mixed_order_is_split_and_tracked_independently_for_each_source(): void
     {
-        $productA = Product::query()->create([
+        $productA = $this->createProduct([
             'sku' => 'SOURCE-A-SKU',
             'name' => 'Товар источника А',
             'slug' => 'source-a-product',
         ]);
-        $productB = Product::query()->create([
+        $productB = $this->createProduct([
             'sku' => 'SOURCE-B-SKU',
             'name' => 'Товар источника Б',
             'slug' => 'source-b-product',
@@ -2745,12 +2745,12 @@ XML;
             }
         }
 
-        $centralProduct = Product::query()->create([
+        $centralProduct = $this->createProduct([
             'sku' => 'MONITOR-CENTRAL',
             'name' => 'Центральный товар',
             'slug' => 'monitor-central-product',
         ]);
-        $supplierProduct = Product::query()->create([
+        $supplierProduct = $this->createProduct([
             'sku' => 'MONITOR-SUPPLIER',
             'name' => 'Товар поставщика',
             'slug' => 'monitor-supplier-product',
@@ -3075,6 +3075,23 @@ XML;
         $this->assertDatabaseMissing('integration_issues', [
             'type' => 'order_not_exported',
             'order_id' => $order->id,
+        ]);
+    }
+
+    private function createProduct(array $attributes): Product
+    {
+        $category = Category::query()->firstOrCreate(
+            ['slug' => 'onec-exchange-test'],
+            [
+                'parent_id' => 0,
+                'name' => 'Тестовая категория обмена 1С',
+                'is_active' => true,
+            ],
+        );
+
+        return Product::query()->create([
+            'category_id' => $category->id,
+            ...$attributes,
         ]);
     }
 }
