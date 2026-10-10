@@ -23,6 +23,11 @@ class OneCSetup extends Page
 
     protected string $view = 'filament.pages.one-c-setup';
 
+    public static function canAccess(): bool
+    {
+        return auth()->user()?->isAdmin() === true;
+    }
+
     public static function getNavigationGroup(): ?string
     {
         return 'Интеграции';

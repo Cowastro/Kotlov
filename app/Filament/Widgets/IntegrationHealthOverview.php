@@ -35,7 +35,9 @@ class IntegrationHealthOverview extends StatsOverviewWidget
                 ->description($this->healthDescription($summary, $lastSuccess))
                 ->descriptionIcon(Heroicon::OutlinedArrowPathRoundedSquare)
                 ->color($service->healthColor($summary['health']))
-                ->url(IntegrationExchangeRunResource::getUrl('index')),
+                ->url(auth()->user()?->isAdmin() === true
+                    ? IntegrationExchangeRunResource::getUrl('index')
+                    : null),
             Stat::make('Заказы ждут обмена', number_format($summary['awaiting_orders'], 0, ',', ' '))
                 ->description($summary['awaiting_order_routes'] > 0 || $summary['awaiting_order_responses'] > 0
                     ? 'Передать: '.number_format($summary['awaiting_order_routes'], 0, ',', ' ')
@@ -50,7 +52,9 @@ class IntegrationHealthOverview extends StatsOverviewWidget
                 ->description('Есть остаток, но нет подтверждённой привязки')
                 ->descriptionIcon(Heroicon::OutlinedExclamationTriangle)
                 ->color($summary['attention_products'] > 0 ? 'warning' : 'success')
-                ->url(IntegrationProductResource::getUrl('index')),
+                ->url(auth()->user()?->isAdmin() === true
+                    ? IntegrationProductResource::getUrl('index')
+                    : null),
             Stat::make('Активные источники', number_format($summary['active_sources'], 0, ',', ' '))
                 ->description($summary['failed_runs_24h'] > 0
                     ? 'Ошибок за 24 часа: '.$summary['failed_runs_24h']
@@ -59,12 +63,16 @@ class IntegrationHealthOverview extends StatsOverviewWidget
                         : ($latestRun ? 'Последний сеанс: '.$latestRun->operation : 'Нет активных подключений')))
                 ->descriptionIcon(Heroicon::OutlinedSignal)
                 ->color($summary['failed_runs_24h'] > 0 ? 'danger' : 'info')
-                ->url(IntegrationSourceResource::getUrl('index')),
+                ->url(auth()->user()?->isAdmin() === true
+                    ? IntegrationSourceResource::getUrl('index')
+                    : null),
             Stat::make('Монитор очереди', $this->monitorLabel($summary['issue_monitor']['health']))
                 ->description($this->monitorDescription($summary['issue_monitor']))
                 ->descriptionIcon(Heroicon::OutlinedShieldCheck)
                 ->color($this->monitorColor($summary['issue_monitor']['health']))
-                ->url(IntegrationIssueResource::getUrl('index')),
+                ->url(auth()->user()?->isAdmin() === true
+                    ? IntegrationIssueResource::getUrl('index')
+                    : null),
         ];
     }
 

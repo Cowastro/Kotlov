@@ -7,10 +7,12 @@ use App\Models\Category;
 use App\Models\Product;
 use App\Services\SupplierSyncJournalRecorder;
 use App\Services\B2bCatalogOfferResolver;
+use App\Support\AdminRoleAccess;
 use Illuminate\Console\Events\CommandFinished;
 use Illuminate\Console\Events\CommandStarting;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
@@ -24,6 +26,9 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(SupplierSyncJournalRecorder $syncJournal): void
     {
+        Gate::before(fn (\App\Models\User $user, string $ability, array $arguments): ?bool =>
+            AdminRoleAccess::authorize($user, $ability, $arguments));
+
         if (app()->runningInConsole()) {
             Event::listen(CommandStarting::class, function (CommandStarting $event) use ($syncJournal): void {
                 $syncJournal->start($event->command, $event->input);

@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Users\Tables;
 
+use App\Models\User;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
@@ -42,6 +43,7 @@ class UsersTable
                     ->badge()
                     ->color(fn(string $state) => match($state) {
                         'admin'     => 'danger',
+                        'manager', 'sales_manager' => 'info',
                         'supplier'  => 'warning',
                         'installer' => 'info',
                         'client'    => 'success',
@@ -49,6 +51,7 @@ class UsersTable
                     })
                     ->formatStateUsing(fn(string $state) => match($state) {
                         'admin'     => 'Администратор',
+                        'manager', 'sales_manager' => 'Менеджер',
                         'supplier'  => 'Поставщик',
                         'installer' => 'Монтажник',
                         'client'    => 'Клиент',
@@ -94,12 +97,7 @@ class UsersTable
             ->filters([
                 SelectFilter::make('role')
                     ->label('Роль')
-                    ->options([
-                        'admin'     => 'Администратор',
-                        'supplier'  => 'Поставщик',
-                        'installer' => 'Монтажник',
-                        'client'    => 'Клиент',
-                    ]),
+                    ->options(User::ROLES),
 
                 TernaryFilter::make('is_active')
                     ->label('Активность'),

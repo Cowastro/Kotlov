@@ -30,6 +30,11 @@ class AiAssistant extends Page
     protected static ?int $navigationSort = 6;
     protected string $view = 'filament.pages.ai-assistant';
 
+    public static function canAccess(): bool
+    {
+        return auth()->user()?->isAdmin() === true;
+    }
+
     public int $decisionsPerPage = 10;
     public string $decisionSearch = '';
     public string $decisionStatus = SupplierReviewDecision::STATUS_PENDING;

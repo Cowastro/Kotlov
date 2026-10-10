@@ -59,7 +59,9 @@ class RecentIntegrationRuns extends TableWidget
                         : number_format($state / 1000, 1, ',', ' ').' с')
                     ->alignRight(),
             ])
-            ->recordUrl(fn (IntegrationExchangeRun $record): string => IntegrationExchangeRunResource::getUrl('index'))
+            ->recordUrl(fn (IntegrationExchangeRun $record): ?string => auth()->user()?->isAdmin() === true
+                ? IntegrationExchangeRunResource::getUrl('index')
+                : null)
             ->emptyStateHeading('Контролируемых сеансов ещё нет')
             ->emptyStateDescription(function (): string {
                 $count = IntegrationProduct::query()->count();

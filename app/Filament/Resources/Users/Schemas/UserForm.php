@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Users\Schemas;
 
+use App\Models\User;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
@@ -42,12 +43,7 @@ class UserForm
 
                         Select::make('role')
                             ->label('Роль')
-                            ->options([
-                                'admin'     => 'Администратор',
-                                'supplier'  => 'Поставщик',
-                                'installer' => 'Монтажник',
-                                'client'    => 'Клиент',
-                            ])
+                            ->options(User::ROLES)
                             ->default('client')
                             ->required(),
 

@@ -22,6 +22,11 @@ class ImportReports extends Page
     protected static ?int $navigationSort = 5;
     protected string $view = 'filament.pages.import-reports';
 
+    public static function canAccess(): bool
+    {
+        return auth()->user()?->isAdmin() === true;
+    }
+
     public string $supplier = '';
     public string $type = '';
     public string $search = '';

@@ -50,6 +50,7 @@ class User extends Authenticatable implements FilamentUser
 
     public const ROLES = [
         'admin' => 'Администратор',
+        'manager' => 'Менеджер',
         'supplier' => 'Поставщик',
         'installer' => 'Монтажник',
         'client' => 'Клиент',
@@ -108,7 +109,7 @@ class User extends Authenticatable implements FilamentUser
         }
 
         return match ($panel->getId()) {
-            'admin' => $this->isAdmin(),
+            'admin' => $this->isManager(),
             'supplier' => $this->isSupplier() && $this->suppliers()->where('is_active', true)->exists(),
             default => false,
         };
@@ -117,6 +118,11 @@ class User extends Authenticatable implements FilamentUser
     public function isManager(): bool
     {
         return in_array($this->role, ['admin', 'manager', 'sales_manager']);
+    }
+
+    public function isOperationalManager(): bool
+    {
+        return in_array($this->role, ['manager', 'sales_manager'], true);
     }
 
     public function orders(): HasMany
