@@ -13,6 +13,9 @@ class IntegrationIssueNotificationService
     /** @var array<int, string> */
     private const NOTIFIABLE_TYPES = [
         'integration_stale',
+        'integration_catalog_stale',
+        'integration_orders_stale',
+        'integration_statuses_stale',
         'order_not_exported',
         'order_no_1c_response',
         'product_identity_collision',

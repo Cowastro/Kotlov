@@ -10,7 +10,10 @@ use Carbon\CarbonInterface;
 
 class IntegrationOperationsSummary
 {
-    public function __construct(private readonly IntegrationMonitoringWindow $monitoringWindow) {}
+    public function __construct(
+        private readonly IntegrationMonitoringWindow $monitoringWindow,
+        private readonly IntegrationFlowHealth $flowHealth,
+    ) {}
 
     /** @return array<string, mixed> */
     public function snapshot(?CarbonInterface $now = null): array
@@ -22,14 +25,19 @@ class IntegrationOperationsSummary
             ->orderBy('name')
             ->get();
         $sourceHealths = $activeSources
-            ->map(fn (IntegrationSource $source): array => [
-                'id' => $source->id,
-                'code' => $source->code,
-                'name' => $source->name,
-                'health' => $this->sourceHealth($source, $now),
-                'last_run_at' => $source->latestExchangeRun?->started_at,
-                'last_success_at' => $source->latestSuccessfulExchangeRun?->finished_at,
-            ])
+            ->map(function (IntegrationSource $source) use ($now): array {
+                $flowSnapshot = $this->flowHealth->snapshot($source, $now);
+
+                return [
+                    'id' => $source->id,
+                    'code' => $source->code,
+                    'name' => $source->name,
+                    'health' => $flowSnapshot['health'],
+                    'flows' => $flowSnapshot['flows'],
+                    'last_run_at' => $source->latestExchangeRun?->started_at,
+                    'last_success_at' => $source->latestSuccessfulExchangeRun?->finished_at,
+                ];
+            })
             ->values();
         $latestRun = IntegrationExchangeRun::query()
             ->with('source')
@@ -77,15 +85,7 @@ class IntegrationOperationsSummary
     {
         $now ??= now();
 
-        return match (true) {
-            $source->latestExchangeRun?->status === 'failed' => 'failed',
-            $source->latestExchangeRun?->status === 'running' => 'running',
-            ! $source->latestSuccessfulExchangeRun => 'unknown',
-            $source->latestSuccessfulExchangeRun->finished_at?->lt(
-                $now->copy()->subMinutes($source->staleAfterMinutes())
-            ) => 'stale',
-            default => 'healthy',
-        };
+        return $this->flowHealth->snapshot($source, $now)['health'];
     }
 
     /** @param array<int, string> $healths */

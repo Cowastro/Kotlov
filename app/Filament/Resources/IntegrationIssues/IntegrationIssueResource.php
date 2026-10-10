@@ -121,6 +121,9 @@ class IntegrationIssueResource extends Resource
                 ]),
                 SelectFilter::make('type')->label('Тип')->options([
                     'integration_stale' => 'Нет свежего обмена',
+                    'integration_catalog_stale' => 'Нет каталога/остатков',
+                    'integration_orders_stale' => '1С не забирает заказы',
+                    'integration_statuses_stale' => 'Нет статусов из 1С',
                     'product_unmatched' => 'Товар не привязан',
                     'product_missing_category' => 'Нет категории',
                     'product_missing_price' => 'Нет цены',

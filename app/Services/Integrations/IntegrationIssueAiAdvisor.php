@@ -114,7 +114,8 @@ PROMPT;
                 ->only([
                     'missing_price', 'unmatched', 'missing_category', 'stale_after_minutes',
                     'incoming_status', 'incoming_payment_status', 'unknown_status',
-                    'unknown_payment_status', 'external_ids', 'identities',
+                    'unknown_payment_status', 'external_ids', 'identities', 'flow',
+                    'direction', 'operation', 'last_run_status', 'last_success_at',
                 ])
                 ->all(),
         ], fn (mixed $value): bool => $value !== null && $value !== [] && $value !== '');

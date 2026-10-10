@@ -1956,6 +1956,77 @@ XML;
         );
     }
 
+    public function test_each_one_c_flow_is_monitored_and_resolved_independently(): void
+    {
+        $source = IntegrationSource::query()->create([
+            'code' => 'onec',
+            'name' => 'Основная 1С',
+            'is_active' => true,
+            'settings' => [
+                'order_interval_minutes' => 5,
+                'catalog_interval_minutes' => 10,
+                'stale_after_minutes' => 15,
+            ],
+        ]);
+
+        foreach ([
+            ['inbound', 'catalog', now()->subMinute()],
+            ['outbound', 'orders', now()->subMinutes(31)],
+            ['inbound', 'order_statuses', now()->subMinute()],
+        ] as [$direction, $operation, $finishedAt]) {
+            IntegrationExchangeRun::query()->create([
+                'integration_source_id' => $source->id,
+                'direction' => $direction,
+                'operation' => $operation,
+                'status' => 'success',
+                'started_at' => $finishedAt->copy()->subMinute(),
+                'finished_at' => $finishedAt,
+            ]);
+        }
+
+        $summary = app(IntegrationOperationsSummary::class)->snapshot();
+        $flows = collect($summary['source_healths'])->firstWhere('code', 'onec')['flows'];
+
+        $this->assertTrue($source->exportsOrders());
+        $this->assertSame('stale', $summary['health']);
+        $this->assertSame('healthy', $flows['catalog']['status']);
+        $this->assertSame('stale', $flows['orders']['status']);
+        $this->assertSame('healthy', $flows['order_statuses']['status']);
+
+        $detector = app(IntegrationIssueDetector::class);
+        $first = $detector->scan();
+
+        $this->assertSame(1, $first['detected']);
+        $this->assertDatabaseHas('integration_issues', [
+            'integration_source_id' => $source->id,
+            'type' => 'integration_orders_stale',
+            'status' => 'open',
+        ]);
+        $this->assertDatabaseMissing('integration_issues', [
+            'integration_source_id' => $source->id,
+            'type' => 'integration_catalog_stale',
+            'status' => 'open',
+        ]);
+
+        IntegrationExchangeRun::query()->create([
+            'integration_source_id' => $source->id,
+            'direction' => 'outbound',
+            'operation' => 'orders',
+            'status' => 'success',
+            'started_at' => now()->subMinute(),
+            'finished_at' => now(),
+        ]);
+
+        $resolved = $detector->scan();
+
+        $this->assertSame(1, $resolved['resolved']);
+        $this->assertDatabaseHas('integration_issues', [
+            'integration_source_id' => $source->id,
+            'type' => 'integration_orders_stale',
+            'status' => 'resolved',
+        ]);
+    }
+
     public function test_integration_source_exposes_schedule_and_latest_successful_exchange(): void
     {
         $source = IntegrationSource::query()->create([

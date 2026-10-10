@@ -25,6 +25,9 @@ class IntegrationIssue extends Model
 
     public const PERIODIC_TYPES = [
         'integration_stale',
+        'integration_catalog_stale',
+        'integration_orders_stale',
+        'integration_statuses_stale',
         'product_attention',
         'product_identity_collision',
         'order_not_exported',
@@ -33,6 +36,9 @@ class IntegrationIssue extends Model
 
     public const EXCHANGE_TYPES = [
         'integration_stale',
+        'integration_catalog_stale',
+        'integration_orders_stale',
+        'integration_statuses_stale',
     ];
 
     protected $fillable = [

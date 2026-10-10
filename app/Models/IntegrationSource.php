@@ -105,6 +105,11 @@ class IntegrationSource extends Model
         return max(5, (int) data_get($this->settings, 'stale_after_minutes', 15));
     }
 
+    public function exportsOrders(): bool
+    {
+        return $this->code === 'onec' || (bool) data_get($this->settings, 'allow_order_export', false);
+    }
+
     public function zeroMissingStockOnComplete(): bool
     {
         return (bool) data_get($this->settings, 'zero_missing_stock_on_complete', true);

@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Filament\Resources\IntegrationSources\IntegrationSourceResource;
 use App\Models\IntegrationExchangeRun;
 use App\Models\IntegrationSource;
 use App\Models\User;
@@ -68,5 +69,34 @@ class OneCSetupReadinessTest extends TestCase
             ->assertSee('Настройка автоматического обмена 1С')
             ->assertSee(url('/1c/exchange/onec'))
             ->assertSee('Каталог, цены и остатки поступают');
+    }
+
+    public function test_source_list_uses_the_same_flow_health_as_the_operations_dashboard(): void
+    {
+        $admin = User::factory()->create([
+            'role' => 'admin',
+            'is_active' => true,
+        ]);
+        $source = IntegrationSource::query()->create([
+            'code' => 'source-list-health',
+            'name' => 'Источник для списка',
+            'driver' => 'commerceml',
+            'is_active' => true,
+        ]);
+        IntegrationExchangeRun::query()->create([
+            'integration_source_id' => $source->id,
+            'direction' => 'inbound',
+            'operation' => 'catalog',
+            'status' => 'success',
+            'started_at' => now()->subMinutes(2),
+            'finished_at' => now()->subMinute(),
+        ]);
+
+        $this->actingAs($admin)
+            ->get(IntegrationSourceResource::getUrl('index', panel: 'admin'))
+            ->assertOk()
+            ->assertSeeText('Источник для списка')
+            ->assertSeeText('Работает')
+            ->assertSeeText('Отдельно проверяются каталог, заказы и статусы');
     }
 }

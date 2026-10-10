@@ -7,6 +7,8 @@ use App\Filament\Resources\IntegrationSources\Pages\EditIntegrationSource;
 use App\Filament\Resources\IntegrationSources\Pages\ListIntegrationSources;
 use App\Models\IntegrationSource;
 use App\Models\Supplier;
+use App\Services\Integrations\IntegrationFlowHealth;
+use App\Services\Integrations\IntegrationOperationsSummary;
 use BackedEnum;
 use Filament\Actions\EditAction;
 use Filament\Forms\Components\Placeholder;
@@ -160,10 +162,6 @@ class IntegrationSourceResource extends Resource
     public static function table(Table $table): Table
     {
         return $table
-            ->modifyQueryUsing(fn ($query) => $query->with([
-                'latestExchangeRun',
-                'latestSuccessfulExchangeRun',
-            ]))
             ->columns([
                 TextColumn::make('name')->label('Источник')->searchable()->sortable(),
                 TextColumn::make('code')->label('Код')->badge()->copyable(),
@@ -173,23 +171,15 @@ class IntegrationSourceResource extends Resource
                     ->toggleable(),
                 TextColumn::make('driver')->label('Формат')->badge(),
                 TextColumn::make('exchange_health')->label('Обмен')
-                    ->state(fn (IntegrationSource $record): string => match (true) {
-                        $record->latestExchangeRun?->status === 'failed' => 'Ошибка',
-                        $record->latestExchangeRun?->status === 'running' => 'Выполняется',
-                        ! $record->latestSuccessfulExchangeRun => 'Ещё не было',
-                        $record->latestSuccessfulExchangeRun->finished_at?->lt(now()->subMinutes($record->staleAfterMinutes())) => 'Просрочен',
-                        default => 'Работает',
-                    })
-                    ->description(fn (IntegrationSource $record): string => $record->latestSuccessfulExchangeRun?->finished_at
-                        ? 'Успешно '.$record->latestSuccessfulExchangeRun->finished_at->timezone('Europe/Minsk')->format('d.m.Y H:i')
-                        : 'Ожидается первый автоматический цикл')
+                    ->state(fn (IntegrationSource $record): string => app(IntegrationOperationsSummary::class)
+                        ->healthLabel(app(IntegrationFlowHealth::class)->snapshot($record)['health']))
+                    ->description('Отдельно проверяются каталог, заказы и статусы')
                     ->badge()
-                    ->color(fn (IntegrationSource $record): string => match (true) {
-                        $record->latestExchangeRun?->status === 'failed' => 'danger',
-                        $record->latestExchangeRun?->status === 'running' => 'info',
-                        ! $record->latestSuccessfulExchangeRun => 'warning',
-                        $record->latestSuccessfulExchangeRun->finished_at?->lt(now()->subMinutes($record->staleAfterMinutes())) => 'warning',
-                        default => 'success',
+                    ->color(fn (string $state): string => match ($state) {
+                        'Работает' => 'success',
+                        'Выполняется' => 'info',
+                        'Ошибка' => 'danger',
+                        default => 'warning',
                     }),
                 TextColumn::make('last_authenticated_at')->label('Авторизация 1С')
                     ->dateTime('d.m.Y H:i:s', 'Europe/Minsk')

@@ -2,7 +2,6 @@
 
 namespace App\Services\Integrations;
 
-use App\Models\IntegrationExchangeRun;
 use App\Models\IntegrationIssue;
 use App\Models\IntegrationProduct;
 use App\Models\IntegrationSource;
@@ -14,6 +13,7 @@ class IntegrationIssueDetector
     public function __construct(
         private readonly IntegrationMonitoringWindow $monitoringWindow,
         private readonly IntegrationIdentityCollisionFinder $collisionFinder,
+        private readonly IntegrationFlowHealth $flowHealth,
     ) {}
 
     /** @return array{detected:int,opened:int,resolved:int,opened_issue_ids:array<int, int>} */
@@ -28,27 +28,36 @@ class IntegrationIssueDetector
             IntegrationSource::query()
                 ->where('is_active', true)
                 ->each(function (IntegrationSource $source) use ($now, &$seen, &$opened, &$openedIssueIds): void {
-                    $lastSuccess = IntegrationExchangeRun::query()
-                        ->whereBelongsTo($source, 'source')
-                        ->where('status', 'success')
-                        ->latest('finished_at')
-                        ->first();
-                    $staleMinutes = $source->staleAfterMinutes();
-
-                    if (! $lastSuccess || $lastSuccess->finished_at?->lt($now->copy()->subMinutes($staleMinutes))) {
+                    foreach ($this->flowHealth->snapshot($source, $now)['flows'] as $key => $flow) {
+                        if ((! $flow['expected'] && $flow['status'] !== 'failed')
+                            || ! in_array($flow['status'], ['failed', 'stale', 'unknown'], true)) {
+                            continue;
+                        }
+                        $latestSuccess = $flow['latest_success'];
+                        $latestRun = $flow['latest_run'];
+                        $issue = $this->flowIssue($key, $source->partnerName());
                         $this->report(
                             $seen,
                             $opened,
                             $openedIssueIds,
-                            "source:{$source->id}:stale",
-                            'integration_stale',
+                            "source:{$source->id}:{$key}:stale",
+                            $issue['type'],
                             'danger',
-                            'Нет свежего обмена с '.$source->partnerName(),
-                            $lastSuccess?->finished_at
-                                ? 'Последний успешный обмен: '.$lastSuccess->finished_at->timezone('Europe/Minsk')->format('d.m.Y H:i:s')
-                                : 'Успешных сеансов обмена ещё не было.',
+                            $issue['title'],
+                            $latestSuccess?->finished_at
+                                ? 'Последний успешный цикл: '.$latestSuccess->finished_at->timezone('Europe/Minsk')->format('d.m.Y H:i:s')
+                                : ($latestRun?->status === 'failed'
+                                    ? 'Последний цикл завершился ошибкой: '.($latestRun->error_message ?: 'текст ошибки не указан').'.'
+                                    : 'Успешных циклов этого направления ещё не было.'),
                             source: $source,
-                            context: ['stale_after_minutes' => $staleMinutes],
+                            context: [
+                                'flow' => $key,
+                                'direction' => $flow['direction'],
+                                'operation' => $flow['operation'],
+                                'stale_after_minutes' => $flow['stale_after_minutes'],
+                                'last_run_status' => $latestRun?->status,
+                                'last_success_at' => $latestSuccess?->finished_at?->toIso8601String(),
+                            ],
                         );
                     }
                 });
@@ -176,6 +185,25 @@ class IntegrationIssueDetector
             'resolved' => $resolved,
             'opened_issue_ids' => $openedIssueIds,
         ];
+    }
+
+    /** @return array{type:string,title:string} */
+    private function flowIssue(string $flow, string $sourceName): array
+    {
+        return match ($flow) {
+            'orders' => [
+                'type' => 'integration_orders_stale',
+                'title' => '1С не забирает новые заказы: '.$sourceName,
+            ],
+            'order_statuses' => [
+                'type' => 'integration_statuses_stale',
+                'title' => '1С не возвращает статусы заказов: '.$sourceName,
+            ],
+            default => [
+                'type' => 'integration_catalog_stale',
+                'title' => 'Не поступают каталог, цены и остатки: '.$sourceName,
+            ],
+        };
     }
 
     /** @param array<int, string> $seen */
