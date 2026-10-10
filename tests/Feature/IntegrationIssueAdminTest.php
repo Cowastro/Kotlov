@@ -140,7 +140,13 @@ class IntegrationIssueAdminTest extends TestCase
             'name' => 'Труба нерж. D150',
             'price' => 100,
             'stock_quantity' => 3,
-            'match_status' => 'unmatched',
+            'match_status' => 'ambiguous',
+            'match_method' => 'fuzzy_name',
+            'match_confidence' => 0.87,
+            'candidates' => [[
+                'product_id' => $product->id,
+                'score' => 0.87,
+            ]],
         ]);
         $issue = IntegrationIssue::query()->create([
             'integration_source_id' => $source->id,

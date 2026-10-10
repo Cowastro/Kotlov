@@ -14,6 +14,7 @@ use App\Services\Integrations\IntegrationIssueAiAdvisor;
 use App\Services\Integrations\IntegrationOrderStatusMapper;
 use App\Services\Integrations\IntegrationOrderStatusRuleManager;
 use App\Services\Integrations\IntegrationProductIssueResolver;
+use App\Services\Integrations\IntegrationProductMatchAdvisor;
 use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Actions\BulkAction;
@@ -286,8 +287,12 @@ class IntegrationIssueResource extends Resource
                                     : 'цена не передана',
                                 $record->integrationProduct?->formattedStockQuantity(),
                             ])->filter()->implode(' · ')),
+                        Placeholder::make('automatic_candidates')
+                            ->label('Найденные варианты')
+                            ->content(fn (IntegrationIssue $record): HtmlString => self::candidateList($record)),
                         Select::make('product_id')
                             ->label('Карточка kotlov.by')
+                            ->options(fn (IntegrationIssue $record): array => self::candidateOptions($record))
                             ->searchable()
                             ->getSearchResultsUsing(fn (string $search): array => Product::query()
                                 ->where(function ($query) use ($search): void {
@@ -451,6 +456,54 @@ class IntegrationIssueResource extends Resource
             $product->sku ? 'SKU '.$product->sku : null,
             $product->name,
         ])->filter()->implode(' — ');
+    }
+
+    /** @return array<int, string> */
+    private static function candidateOptions(IntegrationIssue $issue): array
+    {
+        if (! $issue->integrationProduct) {
+            return [];
+        }
+
+        return collect(app(IntegrationProductMatchAdvisor::class)->candidates($issue->integrationProduct))
+            ->mapWithKeys(fn (array $candidate): array => [
+                $candidate['product_id'] => collect([
+                    round($candidate['confidence'] * 100).'%',
+                    filled($candidate['product_sku']) ? 'SKU '.$candidate['product_sku'] : null,
+                    $candidate['product_name'],
+                    filled($candidate['category_name']) ? '('.$candidate['category_name'].')' : null,
+                ])->filter()->implode(' · '),
+            ])
+            ->all();
+    }
+
+    private static function candidateList(IntegrationIssue $issue): HtmlString
+    {
+        if (! $issue->integrationProduct) {
+            return new HtmlString('<p class="text-sm text-gray-500">Внешний товар больше не найден.</p>');
+        }
+
+        $candidates = app(IntegrationProductMatchAdvisor::class)->candidates($issue->integrationProduct);
+        if ($candidates === []) {
+            return new HtmlString('<p class="text-sm text-gray-500">Автоматические варианты не найдены. Используйте поиск по названию или SKU ниже.</p>');
+        }
+
+        $items = collect($candidates)->map(function (array $candidate): string {
+            $label = collect([
+                '<strong>'.e(round($candidate['confidence'] * 100).'%').'</strong>',
+                filled($candidate['product_sku']) ? 'SKU '.e($candidate['product_sku']) : null,
+                e($candidate['product_name']),
+                filled($candidate['category_name']) ? 'Категория: '.e($candidate['category_name']) : null,
+            ])->filter()->implode(' · ');
+
+            if (filled($candidate['public_url'])) {
+                $label .= ' · <a class="text-primary-600 underline" href="'.e($candidate['public_url']).'" target="_blank" rel="noopener noreferrer">открыть карточку</a>';
+            }
+
+            return '<li class="rounded-lg border border-gray-200 p-3 dark:border-white/10">'.$label.'</li>';
+        })->implode('');
+
+        return new HtmlString('<ol class="space-y-2">'.$items.'</ol>');
     }
 
     /** @return array{title:string,steps:array<int,string>,note:string} */
