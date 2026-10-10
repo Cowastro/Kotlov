@@ -5,8 +5,8 @@ namespace App\Filament\Resources\Orders\Pages;
 use App\Filament\Resources\Orders\OrderResource;
 use App\Models\Order;
 use Filament\Actions\CreateAction;
-use Filament\Schemas\Components\Tabs\Tab;
 use Filament\Resources\Pages\ListRecords;
+use Filament\Schemas\Components\Tabs\Tab;
 use Filament\Support\Enums\Width;
 use Illuminate\Database\Eloquent\Builder;
 
@@ -29,31 +29,38 @@ class ListOrders extends ListRecords
     public function getTabs(): array
     {
         $colors = [
-            'new'        => 'info',
-            'confirmed'  => 'warning',
+            'new' => 'info',
+            'confirmed' => 'warning',
             'processing' => 'warning',
-            'shipped'    => 'primary',
-            'delivered'  => 'success',
-            'completed'  => 'success',
-            'cancelled'  => 'danger',
+            'shipped' => 'primary',
+            'delivered' => 'success',
+            'completed' => 'success',
+            'cancelled' => 'danger',
         ];
 
         $unassigned = Order::whereNull('assigned_to')->count();
-        $myCount    = Order::where('manager_id', auth()->id())->count();
+        $myCount = Order::where('manager_id', auth()->id())->count();
+        $attentionCount = Order::query()->withOperationalProblem('needs_attention')->count();
 
         $tabs = [
             'all' => Tab::make('Все')
                 ->badge(Order::count()),
 
+            'attention' => Tab::make('Нужна реакция')
+                ->icon('heroicon-o-exclamation-triangle')
+                ->modifyQueryUsing(fn (Builder $query) => $query->withOperationalProblem('needs_attention'))
+                ->badge($attentionCount ?: null)
+                ->badgeColor('danger'),
+
             'my' => Tab::make('Мои заказы')
                 ->icon('heroicon-o-user')
-                ->modifyQueryUsing(fn(Builder $query) => $query->where('manager_id', auth()->id()))
+                ->modifyQueryUsing(fn (Builder $query) => $query->where('manager_id', auth()->id()))
                 ->badge($myCount ?: null)
                 ->badgeColor('info'),
 
             'unassigned' => Tab::make('Без ответственного')
                 ->icon('heroicon-o-user-minus')
-                ->modifyQueryUsing(fn(Builder $query) => $query->whereNull('assigned_to'))
+                ->modifyQueryUsing(fn (Builder $query) => $query->whereNull('assigned_to'))
                 ->badge($unassigned ?: null)
                 ->badgeColor('danger'),
         ];
@@ -61,7 +68,7 @@ class ListOrders extends ListRecords
         foreach (Order::STATUSES as $key => $label) {
             $count = Order::where('status', $key)->count();
             $tabs[$key] = Tab::make($label)
-                ->modifyQueryUsing(fn(Builder $query) => $query->where('status', $key))
+                ->modifyQueryUsing(fn (Builder $query) => $query->where('status', $key))
                 ->badge($count ?: null)
                 ->badgeColor($colors[$key] ?? 'gray');
         }

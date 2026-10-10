@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Services\Orders\OrderItemSupplyContextResolver;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -26,6 +27,19 @@ class Order extends Model
         'confirmed' => 'Ответ получен',
         'sent' => 'Передан',
         'waiting' => 'Ожидает передачи',
+    ];
+
+    public const OPERATIONAL_PROBLEMS = [
+        'needs_attention' => 'Нужна реакция',
+        'missing_supplier' => 'Поставщик не определён',
+        'missing_price' => 'Нет входной цены',
+        'no_stock' => 'Нет подтверждённого остатка',
+        'negative_margin' => 'Отрицательная маржа',
+        'low_margin' => 'Низкая маржа',
+        'mixed_suppliers' => 'Несколько поставщиков',
+        'unassigned' => 'Без ответственного',
+        'sync_problem' => 'Проблема обмена',
+        'payment_failed' => 'Ошибка оплаты',
     ];
 
     protected $fillable = [
@@ -140,6 +154,56 @@ class Order extends Model
     public function integrationDeliveries(): HasMany
     {
         return $this->hasMany(OrderIntegrationDelivery::class);
+    }
+
+    public function scopeWithOperationalProblem(Builder $query, ?string $problem): Builder
+    {
+        return match ($problem) {
+            'missing_supplier' => $query->whereHas('items', fn (Builder $items): Builder => $items
+                ->whereNotNull('supply_captured_at')
+                ->whereNull('supply_supplier_id')),
+            'missing_price' => $query->whereHas('items', fn (Builder $items): Builder => $items
+                ->whereNotNull('supply_captured_at')
+                ->whereNull('supply_purchase_price')),
+            'no_stock' => $query->whereHas('items', fn (Builder $items): Builder => $items
+                ->whereNotNull('supply_captured_at')
+                ->where(fn (Builder $stock): Builder => $stock
+                    ->whereNull('supply_is_available')
+                    ->orWhere('supply_is_available', false))),
+            'negative_margin' => $query->whereHas('items', fn (Builder $items): Builder => $items
+                ->whereNotNull('supply_captured_at')
+                ->whereNotNull('supply_purchase_price')
+                ->whereColumn('supply_purchase_price', '>', 'price')),
+            'low_margin' => $query->whereHas('items', function (Builder $items): Builder {
+                $factor = 1 - min(100, max(0, (float) config('shop.order_management.minimum_margin_percent', 10))) / 100;
+
+                return $items
+                    ->whereNotNull('supply_captured_at')
+                    ->whereNotNull('supply_purchase_price')
+                    ->whereColumn('supply_purchase_price', '<=', 'price')
+                    ->whereRaw('supply_purchase_price > price * ?', [$factor]);
+            }),
+            'mixed_suppliers' => $query->whereRaw(
+                '(select count(distinct snapshot_items.supply_supplier_id) from order_items as snapshot_items where snapshot_items.order_id = orders.id and snapshot_items.supply_captured_at is not null and snapshot_items.supply_supplier_id is not null) > 1',
+            ),
+            'unassigned' => $query
+                ->whereNotIn('status', ['delivered', 'completed', 'cancelled'])
+                ->whereNull('manager_id')
+                ->where(fn (Builder $owner): Builder => $owner
+                    ->whereNull('assigned_to')
+                    ->orWhere('assigned_to', '')),
+            'sync_problem' => $query->whereHas(
+                'integrationIssues',
+                fn (Builder $issues): Builder => $issues->open()->orders(),
+            ),
+            'payment_failed' => $query->where('payment_status', 'failed'),
+            'needs_attention' => $query->where(function (Builder $attention): void {
+                foreach (array_keys(array_diff_key(self::OPERATIONAL_PROBLEMS, ['needs_attention' => true])) as $problem) {
+                    $attention->orWhere(fn (Builder $part): Builder => $part->withOperationalProblem($problem));
+                }
+            }),
+            default => $query,
+        };
     }
 
     /** @return array<string, mixed> */

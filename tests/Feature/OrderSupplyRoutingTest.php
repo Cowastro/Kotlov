@@ -20,7 +20,7 @@ class OrderSupplyRoutingTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_order_item_recommends_own_onec_stock_and_explains_current_margin_without_mutation(): void
+    public function test_order_item_captures_own_onec_stock_and_order_margin_without_extra_records(): void
     {
         $fixture = $this->fixture();
         $beforeItems = OrderItem::query()->count();
@@ -36,7 +36,12 @@ class OrderSupplyRoutingTest extends TestCase
         $this->assertSame(48.0, $context['margin_total']);
         $this->assertSame(20.0, $context['margin_percent']);
         $this->assertSame(2, $context['candidate_count']);
-        $this->assertFalse($context['is_explicit']);
+        $this->assertTrue($context['is_explicit']);
+        $this->assertTrue($context['is_snapshot']);
+        $this->assertFalse($context['is_current_recommendation']);
+        $this->assertSame('exclusive', $context['price_tax_mode']);
+        $this->assertSame(20.0, $context['vat_rate']);
+        $this->assertSame(7.0, $context['stock_quantity']);
         $this->assertSame($beforeItems, OrderItem::query()->count());
         $this->assertSame($beforeLinks, IntegrationProduct::query()->count() + SupplierProduct::query()->count());
 
@@ -79,8 +84,8 @@ class OrderSupplyRoutingTest extends TestCase
             ->assertSeeText('Расчётная маржа')
             ->assertSeeText('48.00 BYN / 20.0%')
             ->assertSeeText('Наш склад / 1С')
-            ->assertSeeText('Рекомендация · вариантов: 2')
-            ->assertSeeText('Для старых заказов это рекомендация');
+            ->assertSeeText('Снимок заказа')
+            ->assertSeeText('Новые заказы сохраняют поставщика, входную цену, НДС, остаток и контакт на момент оформления');
     }
 
     public function test_unknown_purchase_price_is_reported_instead_of_being_treated_as_zero_cost(): void
@@ -131,9 +136,7 @@ class OrderSupplyRoutingTest extends TestCase
 
     public function test_low_margin_is_an_explicit_manager_warning(): void
     {
-        $fixture = $this->fixture();
-        $offer = IntegrationProduct::query()->where('external_id', 'route-onec-1')->firstOrFail();
-        $offer->update(['price' => 100]);
+        $fixture = $this->fixture(100);
 
         $summary = $fixture['order']->fresh()->managementSummary();
 
@@ -144,19 +147,65 @@ class OrderSupplyRoutingTest extends TestCase
         $this->assertTrue($summary['problems']->pluck('label')->contains('Маржа ниже 10%: 1'));
     }
 
+    public function test_order_snapshot_does_not_change_when_supplier_offer_or_contact_changes(): void
+    {
+        $fixture = $this->fixture();
+
+        IntegrationProduct::query()->where('external_id', 'route-onec-1')->firstOrFail()->update([
+            'price' => 110,
+            'stock_quantity' => 0,
+        ]);
+        Supplier::query()->where('code', 'sanbusinessgroup')->firstOrFail()->update([
+            'name' => 'Новое имя поставщика',
+            'contact' => '+375 00 000-00-00',
+        ]);
+
+        $context = app(OrderItemSupplyContextResolver::class)->resolve($fixture['item']->fresh());
+
+        $this->assertSame('ООО «СанБизнесГруп»', $context['supplier_name']);
+        $this->assertSame('+375 29 100-20-30', $context['supplier_contact']);
+        $this->assertSame(96.0, $context['wholesale_price']);
+        $this->assertSame(7.0, $context['stock_quantity']);
+        $this->assertTrue($context['is_available']);
+        $this->assertTrue($context['is_snapshot']);
+    }
+
+    public function test_orders_can_be_filtered_by_snapshot_problem(): void
+    {
+        $fixture = $this->fixture(100);
+        $healthy = $this->fixture(80, 'HEALTHY');
+        $healthy['order']->update([
+            'manager_id' => User::factory()->create(['role' => 'admin'])->id,
+            'assigned_to' => '@manager',
+        ]);
+
+        $this->assertTrue(Order::query()
+            ->withOperationalProblem('low_margin')
+            ->whereKey($fixture['order']->id)
+            ->exists());
+        $this->assertFalse(Order::query()
+            ->withOperationalProblem('low_margin')
+            ->whereKey($healthy['order']->id)
+            ->exists());
+        $this->assertTrue(Order::query()
+            ->withOperationalProblem('needs_attention')
+            ->whereKey($fixture['order']->id)
+            ->exists());
+    }
+
     /** @return array{order: Order, item: OrderItem} */
-    private function fixture(): array
+    private function fixture(float $onecPrice = 80, string $suffix = '1'): array
     {
         $category = Category::query()->create([
             'name' => 'Тестовая категория поставки',
-            'slug' => 'order-supply-routing',
+            'slug' => 'order-supply-routing-'.strtolower($suffix),
             'parent_id' => 0,
         ]);
         $product = Product::query()->create([
             'category_id' => $category->id,
             'name' => 'Товар для маршрутизации',
-            'slug' => 'order-supply-routing-product',
-            'sku' => 'ROUTE-1',
+            'slug' => 'order-supply-routing-product-'.strtolower($suffix),
+            'sku' => 'ROUTE-'.$suffix,
             'price' => 120,
         ]);
         $ownSupplier = Supplier::query()->where('code', 'sanbusinessgroup')->firstOrFail();
@@ -175,26 +224,26 @@ class OrderSupplyRoutingTest extends TestCase
         IntegrationProduct::query()->create([
             'integration_source_id' => $source->id,
             'product_id' => $product->id,
-            'external_id' => 'route-onec-1',
+            'external_id' => 'route-onec-'.$suffix,
             'name' => $product->name,
-            'price' => 80,
+            'price' => $onecPrice,
             'stock_quantity' => 7,
             'match_status' => 'matched',
         ]);
         $legacySupplier = Supplier::query()->create([
-            'code' => 'legacy-route-supplier',
+            'code' => 'legacy-route-supplier-'.strtolower($suffix),
             'name' => 'Внешний поставщик',
             'contact' => 'sales@example.test',
         ]);
         SupplierProduct::query()->create([
             'supplier_id' => $legacySupplier->id,
             'product_id' => $product->id,
-            'supplier_article' => 'LEGACY-ROUTE-1',
+            'supplier_article' => 'LEGACY-ROUTE-'.$suffix,
             'price_byn' => 70,
             'in_stock' => true,
         ]);
         $order = Order::query()->create([
-            'number' => 'ORD-SUPPLY-1',
+            'number' => 'ORD-SUPPLY-'.$suffix,
             'status' => 'new',
             'customer_name' => 'Покупатель',
             'customer_phone' => '+375291110000',

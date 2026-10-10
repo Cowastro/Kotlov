@@ -320,7 +320,7 @@ class OrderInfolist
 
                 // ── Товары заказа: полная ширина ──────────────────────────────
                 Section::make('Товары заказа')
-                    ->description('Поставка рассчитана по текущим связям. Для старых заказов это рекомендация, а не зафиксированное состояние на дату продажи.')
+                    ->description('Новые заказы сохраняют поставщика, входную цену, НДС, остаток и контакт на момент оформления. Для старых заказов без снимка показана текущая рекомендация.')
                     ->icon('heroicon-o-shopping-bag')
                     ->columnSpanFull()
                     ->compact()
@@ -410,7 +410,7 @@ class OrderInfolist
                                     }),
 
                                 TextEntry::make('supply_stock')
-                                    ->label('Текущее наличие')
+                                    ->label('Наличие')
                                     ->columnSpan(2)
                                     ->state(fn ($record): string => $record->supplyContext()['stock_label']),
 
@@ -427,7 +427,8 @@ class OrderInfolist
                                         $context = $record->supplyContext();
 
                                         return match (true) {
-                                            $context['is_explicit'] => 'Зафиксирован при заказе',
+                                            $context['is_snapshot'] => 'Снимок заказа · '.optional($record->supply_captured_at)->timezone('Europe/Minsk')->format('d.m.Y H:i'),
+                                            $context['is_explicit'] => 'Явная связь товара',
                                             $context['candidate_count'] > 1 => 'Рекомендация · вариантов: '.$context['candidate_count'],
                                             $context['candidate_count'] === 1 => 'Текущая рекомендация',
                                             default => 'Нужна ручная маршрутизация',

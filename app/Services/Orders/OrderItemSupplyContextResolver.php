@@ -3,6 +3,7 @@
 namespace App\Services\Orders;
 
 use App\Models\IntegrationProduct;
+use App\Models\IntegrationSource;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\SupplierProduct;
@@ -19,6 +20,10 @@ class OrderItemSupplyContextResolver
      */
     public function resolve(OrderItem $item): array
     {
+        if ($item->supply_captured_at) {
+            return $this->fromSnapshot($item);
+        }
+
         $item->loadMissing([
             'integrationProduct.source.supplier',
             'product.integrationProducts.source.supplier',
@@ -50,8 +55,13 @@ class OrderItemSupplyContextResolver
             'supplier_name' => null,
             'supplier_contact' => null,
             'source_label' => null,
+            'integration_source_id' => null,
+            'channel' => 'unresolved',
             'wholesale_price' => null,
             'wholesale_price_label' => 'Нет закупочной цены',
+            'price_tax_mode' => null,
+            'vat_rate' => null,
+            'stock_quantity' => null,
             'margin_unit' => null,
             'margin_total' => null,
             'margin_percent' => null,
@@ -63,6 +73,7 @@ class OrderItemSupplyContextResolver
             'candidate_count' => 0,
             'is_explicit' => false,
             'is_current_recommendation' => true,
+            'is_snapshot' => false,
         ];
     }
 
@@ -170,7 +181,12 @@ class OrderItemSupplyContextResolver
             'supplier_name' => $supplier?->name ?? $source?->partnerName(),
             'supplier_contact' => $supplier?->contact,
             'source_label' => $source?->name,
+            'integration_source_id' => $source?->id,
+            'channel' => 'integration',
             'wholesale_price_label' => 'Оптовая цена с НДС',
+            'price_tax_mode' => $source?->priceTaxMode(),
+            'vat_rate' => $source?->vatRate(),
+            'stock_quantity' => (float) $offer->stock_quantity,
             'stock_label' => (float) $offer->stock_quantity > 0
                 ? $offer->formattedStockQuantity()
                 : 'Сейчас нет в наличии',
@@ -178,6 +194,7 @@ class OrderItemSupplyContextResolver
             'candidate_count' => $candidateCount,
             'is_explicit' => $explicit,
             'is_current_recommendation' => ! $explicit,
+            'is_snapshot' => false,
         ]);
     }
 
@@ -191,7 +208,12 @@ class OrderItemSupplyContextResolver
             'supplier_name' => $offer->supplier?->name,
             'supplier_contact' => $offer->supplier?->contact,
             'source_label' => 'Старый канал поставщика',
+            'integration_source_id' => null,
+            'channel' => 'legacy',
             'wholesale_price_label' => 'Закупочная цена · НДС не указан',
+            'price_tax_mode' => 'unknown',
+            'vat_rate' => null,
+            'stock_quantity' => $offer->stock_quantity !== null ? (float) $offer->stock_quantity : null,
             'stock_label' => $this->legacyOfferAvailable($offer)
                 ? ($offer->stock_quantity !== null ? number_format((int) $offer->stock_quantity, 0, '.', ' ').' шт.' : 'Есть в наличии')
                 : 'Сейчас нет в наличии',
@@ -199,7 +221,62 @@ class OrderItemSupplyContextResolver
             'candidate_count' => $candidateCount,
             'is_explicit' => false,
             'is_current_recommendation' => true,
+            'is_snapshot' => false,
         ]);
+    }
+
+    /** @return array<string, mixed> */
+    private function fromSnapshot(OrderItem $item): array
+    {
+        $taxLabel = match ($item->supply_price_tax_mode) {
+            IntegrationSource::PRICE_TAX_EXCLUSIVE => 'Источник без НДС → +'.number_format((float) $item->supply_vat_rate, 0).'%',
+            IntegrationSource::PRICE_TAX_INCLUSIVE => 'Источник передал цену с НДС',
+            'unknown' => 'НДС источника не указан',
+            default => 'Правило НДС не зафиксировано',
+        };
+
+        return $this->pricedContext($item, (float) $item->supply_purchase_price, [
+            'status' => $item->supply_status ?? 'unresolved',
+            'route_label' => $item->supply_route_label ?? 'Поставщик не определён',
+            'supplier_id' => $item->supply_supplier_id,
+            'supplier_name' => $item->supply_supplier_name,
+            'supplier_contact' => $item->supply_supplier_contact,
+            'source_label' => $item->supply_source_label,
+            'integration_source_id' => $item->supply_integration_source_id,
+            'channel' => $item->supply_channel ?? 'unresolved',
+            'wholesale_price_label' => 'Зафиксировано при заказе · '.$taxLabel,
+            'price_tax_mode' => $item->supply_price_tax_mode,
+            'vat_rate' => $item->supply_vat_rate !== null ? (float) $item->supply_vat_rate : null,
+            'stock_quantity' => $item->supply_stock_quantity !== null ? (float) $item->supply_stock_quantity : null,
+            'stock_label' => $this->snapshotStockLabel($item),
+            'is_available' => $item->supply_is_available,
+            'candidate_count' => (int) $item->supply_candidate_count,
+            'is_explicit' => true,
+            'is_current_recommendation' => false,
+            'is_snapshot' => true,
+        ]);
+    }
+
+    private function snapshotStockLabel(OrderItem $item): string
+    {
+        if ($item->supply_is_available === null) {
+            return 'Наличие не было известно';
+        }
+
+        if (! $item->supply_is_available) {
+            return 'Не было в наличии при заказе';
+        }
+
+        if ($item->supply_stock_quantity === null) {
+            return 'Было в наличии при заказе';
+        }
+
+        $quantity = (float) $item->supply_stock_quantity;
+        $formatted = abs($quantity - round($quantity)) < 0.0005
+            ? number_format($quantity, 0, '.', ' ')
+            : rtrim(rtrim(number_format($quantity, 3, '.', ' '), '0'), '.');
+
+        return $formatted.' шт. при заказе';
     }
 
     /** @param array<string, mixed> $context

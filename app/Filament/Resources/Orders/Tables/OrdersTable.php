@@ -74,7 +74,7 @@ class OrdersTable
             ->modifyQueryUsing(fn (Builder $query) => $query
                 ->withSum('items', 'quantity')
                 ->with([
-                    'items:id,order_id,product_id,integration_product_id,product_name,product_sku,price,quantity,total',
+                    'items:id,order_id,product_id,integration_product_id,product_name,product_sku,price,quantity,total,supply_status,supply_route_label,supply_supplier_id,supply_integration_source_id,supply_channel,supply_supplier_name,supply_supplier_contact,supply_source_label,supply_purchase_price,supply_price_tax_mode,supply_vat_rate,supply_stock_quantity,supply_is_available,supply_candidate_count,supply_captured_at',
                     'items.integrationProduct.source.supplier',
                     'items.product.integrationProducts.source.supplier',
                     'items.product.supplierProducts.supplier',
@@ -343,6 +343,12 @@ class OrdersTable
             ])
             ->defaultSort('created_at', 'desc')
             ->filters([
+                SelectFilter::make('operational_problem')
+                    ->label('Проблема / следующий шаг')
+                    ->options(Order::OPERATIONAL_PROBLEMS)
+                    ->query(fn (Builder $query, array $data): Builder => $query
+                        ->withOperationalProblem($data['value'] ?? null)),
+
                 SelectFilter::make('status')
                     ->label('Статус заказа')
                     ->options($statusNames),
