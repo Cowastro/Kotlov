@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Filament\Resources\IntegrationSources\Pages\CreateIntegrationSource;
+use App\Filament\Resources\Products\ProductResource;
 use App\Filament\Resources\Products\Tables\ProductsTable;
 use App\Filament\Resources\Suppliers\Pages\ListSuppliers;
 use App\Filament\Resources\Suppliers\SupplierResource;
@@ -162,6 +163,50 @@ class SupplierIntegrationAdminTest extends TestCase
 
         $this->assertSame($beforeLegacyLinks, SupplierProduct::query()->count());
         $this->assertSame($beforeIntegrationLinks, IntegrationProduct::query()->count());
+    }
+
+    public function test_product_list_renders_mixed_supplier_channels_without_treating_labels_as_models(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin', 'is_active' => true]);
+        $supplier = Supplier::query()->create([
+            'code' => 'mixed-product-list-supplier',
+            'name' => 'Поставщик смешанного товара',
+        ]);
+        $category = Category::query()->create([
+            'name' => 'Категория списка товаров',
+            'slug' => 'mixed-product-list-category',
+            'parent_id' => 0,
+        ]);
+        $product = Product::query()->create([
+            'category_id' => $category->id,
+            'sku' => 'MIXED-LIST-1',
+            'name' => 'Товар с двумя каналами',
+            'slug' => 'mixed-list-product',
+        ]);
+        SupplierProduct::query()->create([
+            'supplier_id' => $supplier->id,
+            'product_id' => $product->id,
+            'supplier_article' => 'LEGACY-MIXED-LIST-1',
+        ]);
+        $source = IntegrationSource::query()->create([
+            'supplier_id' => $supplier->id,
+            'code' => 'mixed-product-list-1c',
+            'name' => '1С смешанного товара',
+            'driver' => 'commerceml',
+        ]);
+        IntegrationProduct::query()->create([
+            'integration_source_id' => $source->id,
+            'product_id' => $product->id,
+            'external_id' => 'mixed-product-list-external',
+            'match_status' => 'matched',
+        ]);
+
+        $this->actingAs($admin)
+            ->get(ProductResource::getUrl('index', panel: 'admin'))
+            ->assertOk()
+            ->assertSeeText('Товар с двумя каналами')
+            ->assertSeeText('Поставщик смешанного товара')
+            ->assertSeeText('1С + Старый канал');
     }
 
     public function test_connect_1c_action_can_prefill_supplier_without_saving_anything(): void

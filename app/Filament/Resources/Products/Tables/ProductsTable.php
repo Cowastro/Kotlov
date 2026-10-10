@@ -163,9 +163,11 @@ class ProductsTable
                     ->label('Поставщик')
                     ->getStateUsing(fn ($record): string => $record->supplierProducts
                         ->map(fn ($sp) => $sp->supplier?->name)
+                        ->toBase()
                         ->merge($record->integrationProducts
                             ->where('match_status', 'matched')
-                            ->map(fn ($item) => $item->source?->supplier?->name))
+                            ->map(fn ($item) => $item->source?->supplier?->name)
+                            ->toBase())
                         ->filter()
                         ->unique()
                         ->implode(', ') ?: '—'
@@ -190,7 +192,8 @@ class ProductsTable
                                 'file' => 'Файл',
                                 default => $item->source?->name,
                             })
-                            ->filter();
+                            ->filter()
+                            ->toBase();
 
                         if ($record->supplierProducts->isNotEmpty()) {
                             $channels->push('Старый канал');
