@@ -6,6 +6,7 @@ use App\Filament\Exports\OrderExporter;
 use App\Models\Order;
 use App\Models\User;
 use App\Services\Market\MarketPriceIndicator;
+use App\Services\Orders\OrderSettlementManager;
 use Filament\Actions\Action;
 use Filament\Actions\ActionGroup;
 use Filament\Actions\BulkAction;
@@ -80,7 +81,8 @@ class OrdersTable
             ->modifyQueryUsing(fn (Builder $query) => $query
                 ->withSum('items', 'quantity')
                 ->with([
-                    'items:id,order_id,product_id,integration_product_id,product_name,product_sku,price,quantity,total,supply_status,supply_route_label,supply_supplier_id,supply_integration_source_id,supply_channel,supply_supplier_name,supply_supplier_contact,supply_source_label,supply_purchase_price,supply_price_tax_mode,supply_vat_rate,supply_stock_quantity,supply_is_available,supply_candidate_count,supply_captured_at',
+                    'items:id,order_id,product_id,integration_product_id,product_name,product_sku,price,quantity,total,supply_status,supply_route_label,supply_supplier_id,supply_integration_source_id,supply_channel,supply_supplier_name,supply_supplier_contact,supply_source_label,supply_purchase_price,supply_price_tax_mode,supply_vat_rate,supply_stock_quantity,supply_is_available,supply_candidate_count,supply_captured_at,fulfillment_route,fulfillment_supplier_id,fulfillment_supplier_name,fulfillment_supplier_contact,fulfillment_purchase_price',
+                    'items.fulfillmentSupplier:id,name,contact,marketplace_commission_rate',
                     'items.integrationProduct.source.supplier',
                     'items.product.integrationProducts.source.supplier',
                     'items.product.supplierProducts.supplier',
@@ -88,6 +90,7 @@ class OrdersTable
                     'manager:id,name',
                     'archivedBy:id,name',
                     'placedEconomicSnapshot',
+                    'latestSettlement',
                     'supplierOrderRequests:id,order_id,status',
                     'integrationIssues' => fn ($query) => $query
                         ->open()
@@ -183,6 +186,14 @@ class OrdersTable
                     ->label('Экономика')
                     ->state(fn (Order $record): string => 'Заказ '.number_format((float) $record->total, 2, '.', ' ').' BYN')
                     ->description(function (Order $record): string {
+                        if ($settlement = $record->latestSettlement) {
+                            $current = app(OrderSettlementManager::class)->isCurrent($settlement, $record);
+
+                            return 'Взаиморасчёт №'.(int) $settlement->version
+                                .' · прибыль '.number_format((float) $settlement->net_profit, 2, '.', ' ').' BYN'
+                                .' · '.($current ? 'актуален' : 'маршрут изменён');
+                        }
+
                         $snapshot = $record->placedEconomicSnapshot;
                         if ($snapshot) {
                             $goods = 'Снимок: товары '.number_format((float) $snapshot->goods_sale_total, 2, '.', ' ').' BYN';
@@ -223,6 +234,11 @@ class OrdersTable
                     })
                     ->color(fn (Order $record): string => match (true) {
                         $record->isHistoricalUnprocessed() => 'gray',
+                        $record->latestSettlement !== null
+                            && ! app(OrderSettlementManager::class)->isCurrent($record->latestSettlement, $record) => 'warning',
+                        $record->latestSettlement !== null
+                            && (float) $record->latestSettlement->net_profit < 0 => 'danger',
+                        $record->latestSettlement !== null => 'success',
                         $record->placedEconomicSnapshot?->purchase_total === null
                             && $record->placedEconomicSnapshot !== null => 'warning',
                         $record->placedEconomicSnapshot?->goods_margin_total < 0 => 'danger',

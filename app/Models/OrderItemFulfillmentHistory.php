@@ -8,11 +8,13 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class OrderItemFulfillmentHistory extends Model
 {
     protected $fillable = [
-        'order_item_id', 'user_id', 'route', 'supplier_id',
+        'order_item_id', 'user_id', 'previous_route', 'previous_supplier_id',
+        'previous_supplier_name', 'previous_purchase_price', 'route', 'supplier_id',
         'supplier_name', 'supplier_contact', 'purchase_price', 'note',
     ];
 
     protected $casts = [
+        'previous_purchase_price' => 'decimal:2',
         'purchase_price' => 'decimal:2',
     ];
 
@@ -29,5 +31,10 @@ class OrderItemFulfillmentHistory extends Model
     public function supplier(): BelongsTo
     {
         return $this->belongsTo(Supplier::class);
+    }
+
+    public function previousSupplier(): BelongsTo
+    {
+        return $this->belongsTo(Supplier::class, 'previous_supplier_id');
     }
 }

@@ -11,12 +11,15 @@ class Supplier extends Model
 {
     protected $fillable = [
         'code', 'name', 'currency', 'currency_rate',
+        'marketplace_commission_rate', 'settlement_terms_days', 'settlement_notes',
         'contact', 'notes', 'is_active',
     ];
 
     protected $casts = [
         'is_active' => 'boolean',
         'currency_rate' => 'float',
+        'marketplace_commission_rate' => 'decimal:4',
+        'settlement_terms_days' => 'integer',
     ];
 
     public function imports(): HasMany

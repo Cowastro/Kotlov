@@ -8,6 +8,7 @@ use App\Models\OrderEconomicSnapshot;
 use App\Models\OrderIntegrationDelivery;
 use App\Models\OrderItem;
 use App\Models\SupplierOrderRequest;
+use App\Services\Orders\OrderSettlementManager;
 use Filament\Infolists\Components\RepeatableEntry;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Schemas\Components\Section;
@@ -419,6 +420,76 @@ class OrderInfolist
                             ->columnSpan(2),
                     ]),
 
+                Section::make('Подтверждённые взаиморасчёты')
+                    ->description('Версионный неизменяемый расчёт после подтверждения маршрутов и расходов. Изменение маршрута не переписывает историю — текущая версия помечается устаревшей.')
+                    ->icon('heroicon-o-banknotes')
+                    ->columnSpanFull()
+                    ->compact()
+                    ->visible(fn (Order $record): bool => $record->latestSettlement !== null)
+                    ->columns(8)
+                    ->schema([
+                        TextEntry::make('settlement_version')
+                            ->label('Версия')
+                            ->state(fn (Order $record): string => '№ '.(int) $record->latestSettlement->version)
+                            ->badge(),
+                        TextEntry::make('settlement_state')
+                            ->label('Актуальность')
+                            ->state(fn (Order $record): string => app(OrderSettlementManager::class)
+                                ->isCurrent($record->latestSettlement, $record) ? 'Актуальна' : 'Маршрут изменён')
+                            ->badge()
+                            ->color(fn (Order $record): string => app(OrderSettlementManager::class)
+                                ->isCurrent($record->latestSettlement, $record) ? 'success' : 'warning'),
+                        TextEntry::make('latestSettlement.confirmed_at')
+                            ->label('Подтверждено')
+                            ->dateTime('d.m.Y H:i:s', 'Europe/Minsk'),
+                        TextEntry::make('latestSettlement.confirmer.name')
+                            ->label('Подтвердил')
+                            ->placeholder('Система'),
+                        TextEntry::make('latestSettlement.supplier_payable_total')
+                            ->label('К выплате поставщикам')
+                            ->formatStateUsing($byn),
+                        TextEntry::make('latestSettlement.marketplace_commission_total')
+                            ->label('Комиссия маркетплейса')
+                            ->formatStateUsing($byn),
+                        TextEntry::make('latestSettlement.reseller_margin_total')
+                            ->label('Маржа перепродажи')
+                            ->formatStateUsing($byn),
+                        TextEntry::make('latestSettlement.net_profit')
+                            ->label('Итоговая прибыль')
+                            ->weight('bold')
+                            ->formatStateUsing($byn)
+                            ->color(fn ($state): string => (float) $state < 0 ? 'danger' : 'success'),
+                        TextEntry::make('settlement_expenses')
+                            ->label('Скидка / доставка / оплата / возвраты')
+                            ->state(fn (Order $record): string => $byn($record->latestSettlement->discount_total)
+                                .' / '.$byn($record->latestSettlement->delivery_cost)
+                                .' / '.$byn($record->latestSettlement->payment_fee)
+                                .' / '.$byn($record->latestSettlement->refund_total))
+                            ->columnSpan(2),
+                        TextEntry::make('latestSettlement.note')
+                            ->label('Основание')
+                            ->placeholder('Без комментария')
+                            ->columnSpan(6),
+                        RepeatableEntry::make('latestSettlement.lines')
+                            ->label('Расчёт по позициям')
+                            ->columnSpanFull()
+                            ->columns(8)
+                            ->schema([
+                                TextEntry::make('product_name')->label('Позиция')->columnSpan(2),
+                                TextEntry::make('route')
+                                    ->label('Маршрут')
+                                    ->formatStateUsing(fn (string $state): string => OrderItem::FULFILLMENT_ROUTES[$state] ?? $state),
+                                TextEntry::make('supplier_name')->label('Поставщик')->placeholder('Наш склад'),
+                                TextEntry::make('sale_total')->label('Продажа')->formatStateUsing($byn),
+                                TextEntry::make('supplier_payable')->label('Поставщику')->formatStateUsing($byn),
+                                TextEntry::make('commission_amount')
+                                    ->label('Комиссия')
+                                    ->formatStateUsing(fn ($state, $record): string => $byn($state)
+                                        .($record->commission_rate !== null ? ' · '.rtrim(rtrim(number_format((float) $record->commission_rate, 4, '.', ' '), '0'), '.').'%' : '')),
+                                TextEntry::make('platform_margin')->label('Доход платформы')->formatStateUsing($byn),
+                            ]),
+                    ]),
+
                 // ── Товары заказа: полная ширина ──────────────────────────────
                 Section::make('Товары заказа')
                     ->description('Новые заказы сохраняют поставщика, входную цену, НДС, остаток и контакт на момент оформления. Для старых заказов без снимка показана текущая рекомендация.')
@@ -596,11 +667,25 @@ class OrderInfolist
                                 TextEntry::make('created_at')->label('Дата')->dateTime('d.m.Y H:i', 'Europe/Minsk'),
                                 TextEntry::make('item.product_name')->label('Позиция')->columnSpan(2),
                                 TextEntry::make('route')
-                                    ->label('Решение')
+                                    ->label('Новое решение')
                                     ->badge()
                                     ->formatStateUsing(fn (string $state): string => OrderItem::FULFILLMENT_ROUTES[$state] ?? $state),
+                                TextEntry::make('previous_route')
+                                    ->label('Было')
+                                    ->formatStateUsing(fn (?string $state): string => $state
+                                        ? (OrderItem::FULFILLMENT_ROUTES[$state] ?? $state)
+                                        : 'Не подтверждено')
+                                    ->color('gray'),
                                 TextEntry::make('supplier_name')->label('Исполнитель')->placeholder('Собственный склад'),
                                 TextEntry::make('user.name')->label('Кто подтвердил')->placeholder('Система'),
+                                TextEntry::make('route_change')
+                                    ->label('Изменение поставщика / цены')
+                                    ->state(fn ($record): string => collect([
+                                        ($record->previous_supplier_name ?: 'Наш склад').' → '.($record->supplier_name ?: 'Наш склад'),
+                                        ($record->previous_purchase_price !== null ? $byn($record->previous_purchase_price) : 'цена не задана')
+                                            .' → '.($record->purchase_price !== null ? $byn($record->purchase_price) : 'цена не задана'),
+                                    ])->implode(' · '))
+                                    ->columnSpan(3),
                                 TextEntry::make('note')->label('Комментарий')->placeholder('—')->columnSpanFull(),
                             ]),
                     ]),

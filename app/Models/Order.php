@@ -327,6 +327,16 @@ class Order extends Model
             ->where('kind', OrderEconomicSnapshot::KIND_PLACED);
     }
 
+    public function settlements(): HasMany
+    {
+        return $this->hasMany(OrderSettlement::class);
+    }
+
+    public function latestSettlement(): HasOne
+    {
+        return $this->hasOne(OrderSettlement::class)->ofMany('version', 'max');
+    }
+
     public function scopeWithOperationalProblem(Builder $query, ?string $problem): Builder
     {
         $eligibleIntegrationOffer = fn (Builder $offers): Builder => $offers

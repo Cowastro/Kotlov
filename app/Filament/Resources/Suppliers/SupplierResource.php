@@ -108,6 +108,25 @@ class SupplierResource extends Resource
                 ->label('Контакт / сайт')
                 ->maxLength(255),
 
+            TextInput::make('marketplace_commission_rate')
+                ->label('Комиссия прямой продажи')
+                ->helperText('Процент KOTLOV.BY при прямой передаче заказа поставщику. Пустое значение блокирует подтверждение взаиморасчёта, а не считается 0%.')
+                ->numeric()
+                ->minValue(0)
+                ->maxValue(100)
+                ->step('0.0001')
+                ->suffix('%'),
+
+            TextInput::make('settlement_terms_days')
+                ->label('Срок взаиморасчёта')
+                ->helperText('Через сколько календарных дней производится расчёт с поставщиком.')
+                ->numeric()
+                ->integer()
+                ->minValue(0)
+                ->maxValue(365)
+                ->default(14)
+                ->suffix('дн.'),
+
             Select::make('users')
                 ->label('Пользователи кабинета')
                 ->relationship(
@@ -129,6 +148,12 @@ class SupplierResource extends Resource
 
             Textarea::make('notes')
                 ->label('Заметки')
+                ->rows(3)
+                ->columnSpanFull(),
+
+            Textarea::make('settlement_notes')
+                ->label('Условия взаиморасчётов')
+                ->helperText('Внутренняя памятка: комиссия, порядок возвратов, документы и особые договорённости.')
                 ->rows(3)
                 ->columnSpanFull(),
         ])->columns(2);
@@ -185,6 +210,15 @@ class SupplierResource extends Resource
                     ->state(fn (Supplier $record): string => 'Старые: '.number_format((int) $record->supplier_products_count, 0, ',', ' '))
                     ->description(fn (Supplier $record): string => '1С: '.number_format(self::linkedIntegrationProductsCount($record), 0, ',', ' '))
                     ->alignRight(),
+
+                TextColumn::make('marketplace_commission_rate')
+                    ->label('Комиссия')
+                    ->formatStateUsing(fn ($state): string => $state !== null
+                        ? rtrim(rtrim(number_format((float) $state, 4, '.', ' '), '0'), '.').' %'
+                        : 'Не задана')
+                    ->color(fn ($state): string => $state === null ? 'warning' : 'success')
+                    ->description(fn (Supplier $record): string => 'Расчёт через '.(int) $record->settlement_terms_days.' дн.')
+                    ->toggleable(),
 
                 IconColumn::make('is_active')
                     ->label('Активен')

@@ -32,6 +32,12 @@ class OrderItemFulfillmentManager
         }
 
         return DB::transaction(function () use ($item, $route, $supplier, $user, $note, $purchasePrice): OrderItem {
+            $item = OrderItem::query()->lockForUpdate()->findOrFail($item->getKey());
+            $previousRoute = $item->fulfillment_route;
+            $previousSupplierId = $item->fulfillment_supplier_id;
+            $previousSupplierName = $item->fulfillment_supplier_name;
+            $previousPurchasePrice = $item->fulfillment_purchase_price;
+
             $confirmedPrice = $purchasePrice;
             if ($confirmedPrice === null && $supplier?->id === $item->supply_supplier_id) {
                 $confirmedPrice = $item->supply_purchase_price !== null
@@ -55,6 +61,10 @@ class OrderItemFulfillmentManager
             OrderItemFulfillmentHistory::query()->create([
                 'order_item_id' => $item->id,
                 'user_id' => $user?->id,
+                'previous_route' => $previousRoute,
+                'previous_supplier_id' => $previousSupplierId,
+                'previous_supplier_name' => $previousSupplierName,
+                'previous_purchase_price' => $previousPurchasePrice,
                 'route' => $route,
                 'supplier_id' => $supplier?->id,
                 'supplier_name' => $supplier?->name,

@@ -8,6 +8,7 @@ use App\Models\OrderItem;
 use App\Models\Supplier;
 use App\Models\SupplierOrderRequest;
 use App\Services\Orders\OrderItemFulfillmentManager;
+use App\Services\Orders\OrderSettlementManager;
 use App\Services\Orders\SupplierOrderRequestBuilder;
 use App\Services\Orders\SupplierOrderRequestWorkflow;
 use Filament\Actions\Action;
@@ -31,8 +32,13 @@ class ViewOrder extends ViewRecord
             'items.product.integrationProducts.source.supplier',
             'items.integrationProduct.source.supplier',
             'items.fulfillmentConfirmedBy',
+            'items.fulfillmentSupplier',
             'fulfillmentHistory.item',
             'fulfillmentHistory.user',
+            'fulfillmentHistory.previousSupplier',
+            'latestSettlement.lines.orderItem',
+            'latestSettlement.lines.supplier',
+            'latestSettlement.confirmer',
             'supplierOrderRequests.items',
             'supplierOrderRequests.creator',
             'supplierOrderRequests.sentBy',
@@ -135,6 +141,64 @@ class ViewOrder extends ViewRecord
                         ->success()
                         ->title('Черновики заявок сформированы')
                         ->body('Создано или обновлено заявок: '.$requests->count().'. Автоматической отправки не было.')
+                        ->send();
+                }),
+            Action::make('confirmSettlement')
+                ->label('Зафиксировать взаиморасчёт')
+                ->icon('heroicon-o-banknotes')
+                ->color('success')
+                ->modalHeading('Подтверждение экономики и взаиморасчётов')
+                ->modalDescription('Будет создана неизменяемая версия расчёта. Если маршрут, поставщик, цена или комиссия изменятся, текущая версия останется в истории и потребуется новая.')
+                ->schema([
+                    TextInput::make('delivery_cost')
+                        ->label('Фактический расход на доставку, BYN')
+                        ->numeric()
+                        ->minValue(0)
+                        ->default(0)
+                        ->required()
+                        ->helperText('Введите 0 явно, если расхода нет.'),
+                    TextInput::make('payment_fee')
+                        ->label('Эквайринг / комиссия оплаты, BYN')
+                        ->numeric()
+                        ->minValue(0)
+                        ->default(0)
+                        ->required()
+                        ->helperText('Введите 0 явно, если расхода нет.'),
+                    TextInput::make('refund_total')
+                        ->label('Возвраты и компенсации, BYN')
+                        ->numeric()
+                        ->minValue(0)
+                        ->default(0)
+                        ->required()
+                        ->helperText('Введите 0 явно, если возвратов нет.'),
+                    Textarea::make('note')
+                        ->label('Основание / комментарий')
+                        ->rows(3)
+                        ->maxLength(2000),
+                ])
+                ->requiresConfirmation()
+                ->modalSubmitActionLabel('Зафиксировать новую версию')
+                ->action(function (array $data): void {
+                    $settlement = app(OrderSettlementManager::class)->confirm(
+                        $this->record,
+                        (float) $data['delivery_cost'],
+                        (float) $data['payment_fee'],
+                        (float) $data['refund_total'],
+                        auth()->user(),
+                        $data['note'] ?? null,
+                    );
+
+                    $this->record->refresh()->load([
+                        'items.fulfillmentSupplier',
+                        'latestSettlement.lines.orderItem',
+                        'latestSettlement.lines.supplier',
+                        'latestSettlement.confirmer',
+                    ]);
+
+                    Notification::make()
+                        ->success()
+                        ->title('Взаиморасчёт зафиксирован')
+                        ->body('Версия '.$settlement->version.' · прибыль '.number_format((float) $settlement->net_profit, 2, '.', ' ').' BYN.')
                         ->send();
                 }),
             Action::make('publishSupplierRequest')
