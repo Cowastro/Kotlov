@@ -22,11 +22,25 @@
         .onec-setup-check.running .onec-setup-check-icon { color: rgb(96,165,250); }
         .onec-setup-check.disabled .onec-setup-check-icon { color: rgb(148,163,184); }
         .onec-setup-next { color: rgb(148,163,184); font-size: 13px; }
+        .onec-flow-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+        .onec-flow-card { display: grid; gap: 7px; min-width: 0; padding: 12px; border: 1px solid rgba(148,163,184,.14); border-radius: 10px; background: rgba(15,23,42,.42); }
+        .onec-flow-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
+        .onec-flow-title { font-size: 13px; font-weight: 700; }
+        .onec-flow-badge { border-radius: 999px; padding: 3px 7px; font-size: 10px; font-weight: 800; white-space: nowrap; }
+        .onec-flow-badge.success { background: rgba(34,197,94,.16); color: rgb(74,222,128); }
+        .onec-flow-badge.warning, .onec-flow-badge.pending { background: rgba(245,158,11,.16); color: rgb(251,191,36); }
+        .onec-flow-badge.failed { background: rgba(239,68,68,.16); color: rgb(248,113,113); }
+        .onec-flow-badge.running { background: rgba(59,130,246,.16); color: rgb(96,165,250); }
+        .onec-flow-badge.disabled { background: rgba(148,163,184,.13); color: rgb(148,163,184); }
+        .onec-flow-protocol { color: rgb(148,163,184); font-family: ui-monospace, monospace; font-size: 11px; overflow-wrap: anywhere; }
+        .onec-flow-result { color: rgb(203,213,225); font-size: 12px; }
+        .onec-flow-time { color: rgb(148,163,184); font-size: 11px; line-height: 1.45; }
         .onec-setup-actions { display: flex; flex-wrap: wrap; gap: 10px; padding: 0 18px 18px; }
         @media (max-width: 900px) {
             .onec-setup-grid { grid-template-columns: 1fr; }
             .onec-setup-check { grid-template-columns: 24px 1fr; }
             .onec-setup-next { grid-column: 2; }
+            .onec-flow-grid { grid-template-columns: 1fr; }
         }
     </style>
 
@@ -56,6 +70,12 @@
                     <div class="onec-setup-section">
                         <div class="onec-setup-label">Адрес узла для 1С</div>
                         <div class="onec-setup-endpoint">{{ $item['endpoint'] }}</div>
+                        <div class="onec-setup-muted">
+                            Последняя авторизация:
+                            {{ $item['last_authenticated_at']
+                                ? $item['last_authenticated_at']->timezone('Europe/Minsk')->format('d.m.Y H:i:s')
+                                : 'ещё не выполнялась' }}
+                        </div>
 
                         <div class="onec-setup-label">Настройка в 1С</div>
                         <ol class="onec-setup-steps">
@@ -68,6 +88,33 @@
                     </div>
 
                     <div class="onec-setup-section">
+                        <div class="onec-setup-label">Обмен по направлениям</div>
+                        <div class="onec-flow-grid">
+                            @foreach ($item['flow_cards'] as $flow)
+                                <div class="onec-flow-card">
+                                    <div class="onec-flow-head">
+                                        <div>
+                                            <div class="onec-flow-title">{{ $flow['label'] }}</div>
+                                            <div class="onec-setup-muted">{{ $flow['direction'] }}</div>
+                                        </div>
+                                        <span class="onec-flow-badge {{ $flow['tone'] }}">{{ $flow['status_label'] }}</span>
+                                    </div>
+                                    <div class="onec-flow-protocol">{{ $flow['protocol'] }}</div>
+                                    <div class="onec-flow-result">{{ $flow['result'] }}</div>
+                                    <div class="onec-flow-time">
+                                        Последняя попытка:
+                                        {{ $flow['latest_attempt_at']
+                                            ? $flow['latest_attempt_at']->timezone('Europe/Minsk')->format('d.m.Y H:i:s')
+                                            : 'нет' }}<br>
+                                        Последний успех:
+                                        {{ $flow['latest_success_at']
+                                            ? $flow['latest_success_at']->timezone('Europe/Minsk')->format('d.m.Y H:i:s')
+                                            : 'нет' }}
+                                    </div>
+                                </div>
+                            @endforeach
+                        </div>
+
                         <div class="onec-setup-label">Контроль готовности</div>
                         <div class="onec-setup-checks">
                             @foreach ($item['checks'] as $check)

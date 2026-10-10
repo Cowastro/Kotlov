@@ -58,6 +58,14 @@ class OneCSetupReadinessTest extends TestCase
         $this->assertSame('catalog', $snapshot['latest_catalog']->operation);
         $this->assertSame('orders', $snapshot['latest_orders']->operation);
         $this->assertSame('order_statuses', $snapshot['latest_statuses']->operation);
+        $this->assertSame(
+            ['Работает', 'Работает', 'Работает'],
+            collect($snapshot['flow_cards'])->pluck('status_label')->all(),
+        );
+        $this->assertSame(
+            ['1С → сайт', 'Сайт → 1С', '1С → сайт'],
+            collect($snapshot['flow_cards'])->pluck('direction')->all(),
+        );
         $this->assertArrayNotHasKey('password_hash', $snapshot);
     }
 
@@ -190,7 +198,11 @@ class OneCSetupReadinessTest extends TestCase
             ->assertOk()
             ->assertSee('Настройка автоматического обмена 1С')
             ->assertSee(url('/1c/exchange/onec'))
-            ->assertSee('Каталог, цены и остатки поступают');
+            ->assertSee('Каталог, цены и остатки поступают')
+            ->assertSeeText('Обмен по направлениям')
+            ->assertSeeText('type=sale · query/success')
+            ->assertSeeText('Обращений ещё не было')
+            ->assertSeeText('Последняя авторизация: ещё не выполнялась');
     }
 
     public function test_setup_page_explains_historical_staging_without_claiming_a_successful_cycle(): void

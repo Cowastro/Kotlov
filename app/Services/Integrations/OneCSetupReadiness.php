@@ -2,6 +2,7 @@
 
 namespace App\Services\Integrations;
 
+use App\Models\IntegrationExchangeRun;
 use App\Models\IntegrationSource;
 
 class OneCSetupReadiness
@@ -71,7 +72,12 @@ class OneCSetupReadiness
         return [
             'source' => $source,
             'endpoint' => url('/1c/exchange/'.$source->code),
+            'last_authenticated_at' => $source->last_authenticated_at,
             'checks' => $checks,
+            'flow_cards' => collect($flows)
+                ->map(fn (array $flow, string $key): array => $this->flowCard($key, $flow))
+                ->values()
+                ->all(),
             'completed' => $completed,
             'total' => count($checks),
             'ready' => $completed === count($checks),
@@ -151,6 +157,68 @@ class OneCSetupReadiness
                 'icon' => '!',
                 'next_step' => $firstRunStep,
             ],
+        };
+    }
+
+    /**
+     * @param  array<string, mixed>  $flow
+     * @return array<string, mixed>
+     */
+    private function flowCard(string $key, array $flow): array
+    {
+        $latestRun = $flow['latest_run'];
+        $latestSuccess = $flow['latest_success'];
+
+        return [
+            'key' => $key,
+            'label' => $flow['label'],
+            'direction' => match ($key) {
+                'orders' => 'Сайт → 1С',
+                default => '1С → сайт',
+            },
+            'protocol' => match ($key) {
+                'catalog' => 'type=catalog · file/import',
+                'orders' => 'type=sale · query/success',
+                'order_statuses' => 'type=sale · file/import',
+                default => '',
+            },
+            'status' => $flow['status'],
+            'tone' => match ($flow['status']) {
+                'healthy' => 'success',
+                'failed' => 'failed',
+                'stale' => 'warning',
+                'running' => 'running',
+                'disabled' => 'disabled',
+                default => 'pending',
+            },
+            'status_label' => match ($flow['status']) {
+                'healthy' => 'Работает',
+                'failed' => 'Ошибка',
+                'stale' => 'Просрочено',
+                'running' => 'Выполняется',
+                'disabled' => 'Не используется',
+                default => 'Не запускалось',
+            },
+            'latest_attempt_at' => $latestRun?->started_at,
+            'latest_success_at' => $latestSuccess?->finished_at,
+            'result' => $this->flowResult($key, $latestRun),
+        ];
+    }
+
+    private function flowResult(string $key, ?IntegrationExchangeRun $run): string
+    {
+        if (! $run) {
+            return 'Обращений ещё не было';
+        }
+
+        return match ($key) {
+            'catalog' => 'Получено: '.number_format((int) $run->items_received, 0, ',', ' ')
+                .' · новых: '.number_format((int) $run->items_created, 0, ',', ' ')
+                .' · обновлено: '.number_format((int) $run->items_updated, 0, ',', ' '),
+            'orders' => 'Заказов в пакете: '.number_format((int) $run->orders_count, 0, ',', ' '),
+            'order_statuses' => 'Документов: '.number_format((int) $run->items_received, 0, ',', ' ')
+                .' · обновлено заказов: '.number_format((int) $run->items_updated, 0, ',', ' '),
+            default => 'Попытка записана в журнале',
         };
     }
 }
