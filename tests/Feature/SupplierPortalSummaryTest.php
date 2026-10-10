@@ -6,6 +6,9 @@ use App\Models\IntegrationExchangeRun;
 use App\Models\IntegrationIssue;
 use App\Models\IntegrationProduct;
 use App\Models\IntegrationSource;
+use App\Models\Order;
+use App\Models\OrderIntegrationDelivery;
+use App\Models\OrderItem;
 use App\Models\Supplier;
 use App\Models\SupplierProduct;
 use App\Services\SupplierIntegrationSummary;
@@ -234,7 +237,7 @@ class SupplierPortalSummaryTest extends TestCase
             'started_at' => $now,
             'finished_at' => $now,
         ]);
-        IntegrationProduct::query()->create([
+        $ownProduct = IntegrationProduct::query()->create([
             'integration_source_id' => $source->id,
             'external_id' => 'mine-ready',
             'name' => 'Моя позиция',
@@ -248,7 +251,7 @@ class SupplierPortalSummaryTest extends TestCase
             'price' => 0,
             'stock_quantity' => 1,
         ]);
-        IntegrationProduct::query()->create([
+        $foreignProduct = IntegrationProduct::query()->create([
             'integration_source_id' => $foreignSource->id,
             'external_id' => 'foreign',
             'name' => 'Чужая позиция',
@@ -276,6 +279,56 @@ class SupplierPortalSummaryTest extends TestCase
             'last_detected_at' => $now,
         ]);
 
+        $ownOrder = Order::query()->create([
+            'number' => 'ORD-SUMMARY-OWN',
+            'customer_name' => 'Свой покупатель',
+            'customer_phone' => '+375290000001',
+            'status' => 'new',
+            'delivery_type' => 'pickup',
+            'payment_type' => 'cash',
+            'payment_status' => 'pending',
+            'subtotal' => 25,
+            'total' => 25,
+        ]);
+        OrderItem::query()->create([
+            'order_id' => $ownOrder->id,
+            'integration_product_id' => $ownProduct->id,
+            'product_name' => 'Моя позиция',
+            'price' => 25,
+            'quantity' => 1,
+            'total' => 25,
+        ]);
+        OrderIntegrationDelivery::query()->create([
+            'order_id' => $ownOrder->id,
+            'integration_source_id' => $source->id,
+            'status' => OrderIntegrationDelivery::STATUS_PENDING,
+        ]);
+
+        $foreignOrder = Order::query()->create([
+            'number' => 'ORD-SUMMARY-FOREIGN',
+            'customer_name' => 'Чужой покупатель',
+            'customer_phone' => '+375290000002',
+            'status' => 'new',
+            'delivery_type' => 'pickup',
+            'payment_type' => 'cash',
+            'payment_status' => 'pending',
+            'subtotal' => 50,
+            'total' => 50,
+        ]);
+        OrderItem::query()->create([
+            'order_id' => $foreignOrder->id,
+            'integration_product_id' => $foreignProduct->id,
+            'product_name' => 'Чужая позиция',
+            'price' => 50,
+            'quantity' => 1,
+            'total' => 50,
+        ]);
+        OrderIntegrationDelivery::query()->create([
+            'order_id' => $foreignOrder->id,
+            'integration_source_id' => $foreignSource->id,
+            'status' => OrderIntegrationDelivery::STATUS_FAILED,
+        ]);
+
         $summary = app(SupplierIntegrationSummary::class)->forSupplierIds([$supplier->id], $now);
 
         $this->assertSame(1, $summary['source_count']);
@@ -285,6 +338,10 @@ class SupplierPortalSummaryTest extends TestCase
         $this->assertSame(2, $summary['unlinked']);
         $this->assertSame(1, $summary['missing_price']);
         $this->assertSame(1, $summary['open_issues']);
+        $this->assertSame(1, $summary['active_orders']);
+        $this->assertSame(1, $summary['pending_order_deliveries']);
+        $this->assertSame(0, $summary['awaiting_order_responses']);
+        $this->assertSame(0, $summary['failed_order_deliveries']);
         $this->assertSame('healthy', $summary['health']);
         $this->assertTrue($summary['last_success_at']?->equalTo($now->subMinute()));
         $this->assertSame([$source->id], $summary['sources']->pluck('id')->all());

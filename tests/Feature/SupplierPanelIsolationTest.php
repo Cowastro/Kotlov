@@ -416,6 +416,8 @@ class SupplierPanelIsolationTest extends TestCase
 
         Livewire::actingAs($user)
             ->test(SupplierIntegrationOverview::class)
+            ->assertSeeText('Заказы')
+            ->assertSeeText('К передаче: 0 · ждут ответа: 0 · ошибок: 0')
             ->assertSeeText('Товары из интеграций')
             ->assertSeeText('Нет успешного цикла')
             ->assertSeeText('В наличии: 1')

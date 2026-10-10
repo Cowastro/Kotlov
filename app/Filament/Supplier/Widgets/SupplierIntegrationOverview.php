@@ -5,6 +5,7 @@ namespace App\Filament\Supplier\Widgets;
 use App\Filament\Supplier\Resources\IntegrationExchangeRuns\IntegrationExchangeRunResource;
 use App\Filament\Supplier\Resources\IntegrationIssues\IntegrationIssueResource;
 use App\Filament\Supplier\Resources\IntegrationProducts\IntegrationProductResource;
+use App\Filament\Supplier\Resources\Orders\OrderResource;
 use App\Services\SupplierIntegrationSummary;
 use Filament\Widgets\StatsOverviewWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
@@ -26,6 +27,16 @@ class SupplierIntegrationOverview extends StatsOverviewWidget
                 ->description($this->healthDescription($summary))
                 ->color($this->healthColor($summary['health']))
                 ->url(IntegrationExchangeRunResource::getUrl('index', panel: 'supplier')),
+            Stat::make('Заказы', $summary['active_orders'])
+                ->description('К передаче: '.$summary['pending_order_deliveries']
+                    .' · ждут ответа: '.$summary['awaiting_order_responses']
+                    .' · ошибок: '.$summary['failed_order_deliveries'])
+                ->color(match (true) {
+                    $summary['failed_order_deliveries'] > 0 => 'danger',
+                    $summary['pending_order_deliveries'] > 0 || $summary['awaiting_order_responses'] > 0 => 'warning',
+                    default => 'success',
+                })
+                ->url(OrderResource::getUrl('index', panel: 'supplier')),
             Stat::make('Товары из интеграций', $summary['total'])
                 ->description('В наличии: '.$summary['in_stock'])
                 ->url(IntegrationProductResource::getUrl('index', panel: 'supplier')),
