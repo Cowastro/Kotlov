@@ -168,9 +168,11 @@ class OneCExchangeController extends Controller
             $this->startRun($request, $source, 'inbound', 'catalog');
             Cache::put($this->catalogSnapshotStartedCacheKey($request, $source), now()->toIso8601String(), now()->addHours(6));
             Cache::forget($this->catalogOffersReceivedCacheKey($request, $source));
-        } elseif ($type === 'sale') {
-            $this->startRun($request, $source, 'inbound', 'order_statuses');
         }
+
+        // A CommerceML sale session can continue in either direction: mode=query
+        // exports new orders, while mode=file imports statuses. Defer creating a
+        // journal run until that next request reveals the actual direction.
 
         return $this->plain("zip=no\nfile_limit=".config('onec.exchange.file_limit'));
     }

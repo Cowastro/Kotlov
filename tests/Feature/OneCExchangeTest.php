@@ -1571,6 +1571,58 @@ XML;
         ]);
     }
 
+    public function test_sale_init_defers_journal_direction_until_query_or_file(): void
+    {
+        $source = IntegrationSource::query()->create([
+            'code' => 'onec',
+            'name' => '1С',
+        ]);
+
+        $this->withBasicAuth('onec-test', 'secret-test')
+            ->get('/1c/exchange?type=sale&mode=init')
+            ->assertOk()
+            ->assertSeeText('zip=no');
+
+        $this->assertSame(0, $source->exchangeRuns()->count());
+
+        $this->withBasicAuth('onec-test', 'secret-test')
+            ->get('/1c/exchange?type=sale&mode=query')
+            ->assertOk();
+
+        $this->assertDatabaseHas('integration_exchange_runs', [
+            'integration_source_id' => $source->id,
+            'direction' => 'outbound',
+            'operation' => 'orders',
+            'status' => 'success',
+        ]);
+        $this->assertDatabaseMissing('integration_exchange_runs', [
+            'integration_source_id' => $source->id,
+            'direction' => 'inbound',
+            'operation' => 'order_statuses',
+        ]);
+
+        $xml = '<?xml version="1.0" encoding="UTF-8"?><КоммерческаяИнформация />';
+        $this->call(
+            'POST',
+            '/1c/exchange?type=sale&mode=file&filename=empty-status.xml',
+            [],
+            [],
+            [],
+            ['PHP_AUTH_USER' => 'onec-test', 'PHP_AUTH_PW' => 'secret-test'],
+            $xml,
+        )->assertOk();
+        $this->withBasicAuth('onec-test', 'secret-test')
+            ->get('/1c/exchange?type=sale&mode=import&filename=empty-status.xml')
+            ->assertOk();
+
+        $this->assertDatabaseHas('integration_exchange_runs', [
+            'integration_source_id' => $source->id,
+            'direction' => 'inbound',
+            'operation' => 'order_statuses',
+            'status' => 'success',
+        ]);
+    }
+
     public function test_retried_order_query_reuses_the_same_persistent_batch_until_success(): void
     {
         $source = IntegrationSource::query()->create([
