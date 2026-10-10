@@ -9,6 +9,15 @@ Schedule::command('integration:scan-issues')
     ->withoutOverlapping(5)
     ->runInBackground();
 
+// Черновики попадают в кабинет только у поставщиков, для которых администратор
+// отдельно включил автоматическую передачу после успешного контрольного периода.
+// У всех существующих поставщиков настройка по умолчанию выключена.
+Schedule::command('orders:auto-publish-supplier-requests --apply')
+    ->everyTwoMinutes()
+    ->withoutOverlapping(5)
+    ->runInBackground()
+    ->appendOutputTo(storage_path('logs/supplier-order-auto-transfer.log'));
+
 // Рыночные цены: команда сама выбирает только активные, явно разрешённые и
 // наступившие по расписанию источники. Без адаптера или разрешения запросов нет.
 Schedule::command('market:collect-prices')

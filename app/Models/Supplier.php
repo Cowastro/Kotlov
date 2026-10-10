@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
@@ -12,6 +13,8 @@ class Supplier extends Model
     protected $fillable = [
         'code', 'name', 'currency', 'currency_rate',
         'marketplace_commission_rate', 'settlement_terms_days', 'settlement_notes',
+        'automatic_order_transfer_enabled', 'automatic_order_transfer_approved_at',
+        'automatic_order_transfer_approved_by', 'automatic_order_transfer_note',
         'contact', 'notes', 'is_active',
     ];
 
@@ -20,6 +23,8 @@ class Supplier extends Model
         'currency_rate' => 'float',
         'marketplace_commission_rate' => 'decimal:4',
         'settlement_terms_days' => 'integer',
+        'automatic_order_transfer_enabled' => 'boolean',
+        'automatic_order_transfer_approved_at' => 'datetime',
     ];
 
     public function imports(): HasMany
@@ -80,6 +85,16 @@ class Supplier extends Model
     public function orderRequests(): HasMany
     {
         return $this->hasMany(SupplierOrderRequest::class);
+    }
+
+    public function autoTransferDecisions(): HasMany
+    {
+        return $this->hasMany(SupplierAutoTransferDecision::class);
+    }
+
+    public function automaticOrderTransferApprover(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'automatic_order_transfer_approved_by');
     }
 
     public function users(): BelongsToMany

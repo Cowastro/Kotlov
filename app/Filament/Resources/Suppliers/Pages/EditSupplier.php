@@ -13,6 +13,7 @@ class EditSupplier extends EditRecord
     protected function getHeaderActions(): array
     {
         return [
+            SupplierResource::automaticOrderTransferAction(),
             DeleteAction::make(),
         ];
     }

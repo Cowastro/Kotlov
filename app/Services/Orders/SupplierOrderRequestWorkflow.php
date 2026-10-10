@@ -17,7 +17,28 @@ class SupplierOrderRequestWorkflow
             ]);
         }
 
-        return DB::transaction(function () use ($request, $user, $note): SupplierOrderRequest {
+        return $this->publishRequest($request, $user, 'manual', null, $note);
+    }
+
+    public function publishAutomatically(SupplierOrderRequest $request, string $runUuid): SupplierOrderRequest
+    {
+        return $this->publishRequest(
+            $request,
+            null,
+            'automatic',
+            $runUuid,
+            'Автоматически передано после подтверждённого контрольного периода.',
+        );
+    }
+
+    private function publishRequest(
+        SupplierOrderRequest $request,
+        ?User $user,
+        string $mode,
+        ?string $runUuid,
+        ?string $note,
+    ): SupplierOrderRequest {
+        return DB::transaction(function () use ($request, $user, $mode, $runUuid, $note): SupplierOrderRequest {
             $locked = SupplierOrderRequest::query()
                 ->with(['supplier.users', 'items'])
                 ->lockForUpdate()
@@ -38,6 +59,14 @@ class SupplierOrderRequestWorkflow
                     'request' => 'Поставщик отключён. Сначала проверьте его настройки.',
                 ]);
             }
+            if ($mode === 'automatic') {
+                $readiness = app(SupplierAutoTransferReadiness::class)->snapshot($locked->supplier);
+                if (! $locked->supplier->automatic_order_transfer_enabled || ! $readiness['ready']) {
+                    throw ValidationException::withMessages([
+                        'request' => 'Автоматическая передача поставщику отключена или контрольный период больше не соответствует требованиям.',
+                    ]);
+                }
+            }
             if (! $locked->supplier->users->contains(
                 fn (User $supplierUser): bool => $supplierUser->isSupplier() && $supplierUser->is_active,
             )) {
@@ -49,14 +78,24 @@ class SupplierOrderRequestWorkflow
             $from = $locked->status;
             $locked->forceFill([
                 'status' => 'sent',
+                'transfer_mode' => $mode,
+                'automatic_transfer_run_uuid' => $mode === 'automatic' ? $runUuid : null,
                 'sent_at' => now(),
-                'sent_by' => $user->id,
-                'status_updated_by' => $user->id,
+                'sent_by' => $user?->id,
+                'status_updated_by' => $user?->id,
                 'status_updated_at' => now(),
                 'note' => filled($note) ? trim($note) : $locked->note,
             ])->save();
 
-            $this->recordHistory($locked, $user, 'manager', $from, 'sent', $note);
+            $this->recordHistory(
+                $locked,
+                $user,
+                $mode === 'automatic' ? 'system' : 'manager',
+                $from,
+                'sent',
+                $note,
+                $runUuid,
+            );
 
             return $locked->fresh(['supplier', 'items', 'statusHistories']);
         });
@@ -114,16 +153,18 @@ class SupplierOrderRequestWorkflow
 
     private function recordHistory(
         SupplierOrderRequest $request,
-        User $user,
+        ?User $user,
         string $scope,
         ?string $from,
         string $to,
         ?string $note,
+        ?string $runUuid = null,
     ): void {
         $request->statusHistories()->create([
-            'user_id' => $user->id,
-            'actor_name' => $user->name,
+            'user_id' => $user?->id,
+            'actor_name' => $user?->name ?? 'Автоматическая передача',
             'actor_scope' => $scope,
+            'run_uuid' => $runUuid,
             'status_from' => $from,
             'status_to' => $to,
             'note' => filled($note) ? trim($note) : null,

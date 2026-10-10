@@ -11,6 +11,15 @@ return [
         'operations_started_at' => env('ORDER_OPERATIONS_STARTED_AT', '2026-10-10 00:00:00'),
     ],
 
+    // Автоматическая передача заявок поставщику всегда выключена по умолчанию.
+    // Администратор может включить её отдельно только после успешной ручной выборки.
+    'supplier_auto_transfer' => [
+        'minimum_successful_requests' => 3,
+        'minimum_control_days' => 7,
+        'sample_size' => 5,
+        'batch_size' => 100,
+    ],
+
     // Пороги read-only рыночных сигналов. Они никогда не меняют цену автоматически.
     'market_intelligence' => [
         'suspicious_low_percent' => 5,

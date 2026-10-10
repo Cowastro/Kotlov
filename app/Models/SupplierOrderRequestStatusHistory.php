@@ -9,7 +9,7 @@ class SupplierOrderRequestStatusHistory extends Model
 {
     protected $fillable = [
         'supplier_order_request_id', 'user_id', 'actor_name', 'actor_scope',
-        'status_from', 'status_to', 'note',
+        'run_uuid', 'status_from', 'status_to', 'note',
     ];
 
     public function request(): BelongsTo

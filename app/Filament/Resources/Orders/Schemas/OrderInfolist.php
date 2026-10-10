@@ -720,6 +720,16 @@ class OrderInfolist
                                         'rejected', 'cancelled' => 'danger',
                                         default => 'warning',
                                     }),
+                                TextEntry::make('transfer_mode')
+                                    ->label('Передача')
+                                    ->badge()
+                                    ->formatStateUsing(fn (?string $state): string => $state === 'automatic'
+                                        ? 'Автоматически'
+                                        : 'Менеджером')
+                                    ->color(fn (?string $state): string => $state === 'automatic' ? 'info' : 'gray')
+                                    ->tooltip(fn ($record): ?string => $record->automatic_transfer_run_uuid
+                                        ? 'Запуск '.$record->automatic_transfer_run_uuid
+                                        : null),
                                 TextEntry::make('supplier_contact')->label('Контакт поставщика')->copyable()->columnSpan(3),
                                 TextEntry::make('creator.name')->label('Сформировал')->placeholder('Система'),
                                 TextEntry::make('created_at')->label('Создана')->dateTime('d.m.Y H:i', 'Europe/Minsk'),

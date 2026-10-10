@@ -19,6 +19,7 @@ class SupplierOrderRequest extends Model
 
     protected $fillable = [
         'order_id', 'supplier_id', 'created_by', 'number', 'route', 'status',
+        'transfer_mode', 'automatic_transfer_run_uuid',
         'supplier_name', 'supplier_contact', 'item_count', 'purchase_total',
         'sent_at', 'sent_by', 'acknowledged_at', 'supplier_response_note',
         'rejected_at', 'fulfilled_at', 'status_updated_by', 'status_updated_at', 'note',

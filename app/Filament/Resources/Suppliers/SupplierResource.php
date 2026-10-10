@@ -10,10 +10,13 @@ use App\Models\IntegrationSource;
 use App\Models\Supplier;
 use App\Services\Integrations\IntegrationFlowHealth;
 use App\Services\Integrations\IntegrationOperationsSummary;
+use App\Services\Orders\SupplierAutoTransferManager;
+use App\Services\Orders\SupplierAutoTransferReadiness;
 use App\Services\Pricing\CurrencyPriceConverter;
 use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Actions\EditAction;
+use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
@@ -31,6 +34,9 @@ use Illuminate\Support\Facades\Http;
 
 class SupplierResource extends Resource
 {
+    /** @var \WeakMap<Supplier, array<string, mixed>>|null */
+    private static ?\WeakMap $autoTransferReadinessCache = null;
+
     protected static ?string $model = Supplier::class;
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedTruck;
@@ -156,6 +162,14 @@ class SupplierResource extends Resource
                 ->helperText('Внутренняя памятка: комиссия, порядок возвратов, документы и особые договорённости.')
                 ->rows(3)
                 ->columnSpanFull(),
+
+            Placeholder::make('automatic_transfer_status')
+                ->label('Автоматическая передача заказов')
+                ->content(fn (?Supplier $record): string => $record
+                    ? self::autoTransferReadinessLabel($record)
+                    : 'Выключена до завершения контрольного периода')
+                ->helperText('Настройка меняется отдельным подтверждаемым действием администратора. Пустые или новые поставщики никогда не включаются автоматически.')
+                ->columnSpanFull(),
         ])->columns(2);
     }
 
@@ -219,6 +233,19 @@ class SupplierResource extends Resource
                     ->color(fn ($state): string => $state === null ? 'warning' : 'success')
                     ->description(fn (Supplier $record): string => 'Расчёт через '.(int) $record->settlement_terms_days.' дн.')
                     ->toggleable(),
+
+                TextColumn::make('automatic_order_transfer_enabled')
+                    ->label('Автопередача')
+                    ->state(fn (Supplier $record): string => self::autoTransferReadinessLabel($record))
+                    ->description(fn (Supplier $record): string => self::autoTransferReadinessDescription($record))
+                    ->badge()
+                    ->color(fn (Supplier $record): string => match (true) {
+                        $record->automatic_order_transfer_enabled && self::autoTransferReadiness($record)['ready'] => 'success',
+                        $record->automatic_order_transfer_enabled => 'warning',
+                        self::autoTransferReadiness($record)['ready'] => 'info',
+                        default => 'gray',
+                    })
+                    ->wrap(),
 
                 IconColumn::make('is_active')
                     ->label('Активен')
@@ -299,6 +326,8 @@ class SupplierResource extends Resource
                             ? IntegrationSourceResource::getUrl('edit', ['record' => $source])
                             : IntegrationSourceResource::getUrl('create', ['supplier_id' => $record->id]);
                     }),
+
+                self::automaticOrderTransferAction(),
 
                 EditAction::make(),
             ]);
@@ -395,5 +424,90 @@ class SupplierResource extends Resource
             ->where('driver', 'commerceml')
             ->sortByDesc('is_active')
             ->first();
+    }
+
+    public static function automaticOrderTransferAction(): Action
+    {
+        return Action::make('automaticOrderTransfer')
+            ->label(fn (Supplier $record): string => $record->automatic_order_transfer_enabled
+                ? 'Отключить автопередачу'
+                : 'Включить автопередачу')
+            ->icon(fn (Supplier $record): string => $record->automatic_order_transfer_enabled
+                ? 'heroicon-o-pause-circle'
+                : 'heroicon-o-play-circle')
+            ->color(fn (Supplier $record): string => $record->automatic_order_transfer_enabled ? 'danger' : 'success')
+            ->visible(fn (): bool => auth()->user()?->isAdmin() === true)
+            ->disabled(fn (Supplier $record): bool => ! $record->automatic_order_transfer_enabled
+                && ! self::autoTransferReadiness($record)['ready'])
+            ->tooltip(fn (Supplier $record): string => self::autoTransferReadinessDescription($record))
+            ->requiresConfirmation()
+            ->modalHeading(fn (Supplier $record): string => $record->automatic_order_transfer_enabled
+                ? 'Отключить автоматическую передачу?'
+                : 'Включить автоматическую передачу?')
+            ->modalDescription(fn (Supplier $record): string => self::autoTransferReadinessDescription($record))
+            ->schema([
+                Textarea::make('note')
+                    ->label('Причина решения')
+                    ->rows(3)
+                    ->minLength(3)
+                    ->maxLength(1000)
+                    ->required(),
+            ])
+            ->action(function (Supplier $record, array $data): void {
+                $enabled = ! $record->automatic_order_transfer_enabled;
+                app(SupplierAutoTransferManager::class)->setEnabled(
+                    $record,
+                    $enabled,
+                    auth()->user(),
+                    $data['note'],
+                );
+                self::$autoTransferReadinessCache = null;
+
+                Notification::make()
+                    ->title($enabled ? 'Автоматическая передача включена' : 'Автоматическая передача отключена')
+                    ->body('Решение сохранено в неизменяемом журнале поставщика.')
+                    ->color($enabled ? 'success' : 'warning')
+                    ->send();
+            });
+    }
+
+    /** @return array<string, mixed> */
+    private static function autoTransferReadiness(Supplier $supplier): array
+    {
+        self::$autoTransferReadinessCache ??= new \WeakMap;
+
+        return self::$autoTransferReadinessCache[$supplier]
+            ??= app(SupplierAutoTransferReadiness::class)->snapshot($supplier);
+    }
+
+    private static function autoTransferReadinessLabel(Supplier $supplier): string
+    {
+        $readiness = self::autoTransferReadiness($supplier);
+
+        return match (true) {
+            $supplier->automatic_order_transfer_enabled && $readiness['ready'] => 'Включена',
+            $supplier->automatic_order_transfer_enabled => 'Приостановлена системой',
+            $readiness['ready'] => 'Готова к включению',
+            default => 'Контроль '.$readiness['successful_count'].'/'.$readiness['minimum_successful_requests'],
+        };
+    }
+
+    private static function autoTransferReadinessDescription(Supplier $supplier): string
+    {
+        $readiness = self::autoTransferReadiness($supplier);
+        if ($supplier->automatic_order_transfer_enabled && $readiness['ready']) {
+            return collect([
+                'Одобрено '.$supplier->automatic_order_transfer_approved_at?->timezone('Europe/Minsk')->format('d.m.Y H:i'),
+                $supplier->automatic_order_transfer_note,
+            ])->filter()->implode(' · ');
+        }
+        if ($supplier->automatic_order_transfer_enabled) {
+            return 'Новые заявки не передаются: '.implode(' · ', $readiness['blockers']);
+        }
+        if ($readiness['ready']) {
+            return 'Контрольный период успешно завершён. Включение всё равно требует отдельного подтверждения администратора.';
+        }
+
+        return implode(' · ', $readiness['blockers']);
     }
 }

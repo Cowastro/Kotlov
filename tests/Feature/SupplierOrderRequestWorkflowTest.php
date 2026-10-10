@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Filament\Resources\Orders\Pages\ViewOrder as AdminViewOrder;
+use App\Filament\Resources\Suppliers\SupplierResource;
 use App\Filament\Supplier\Resources\SupplierOrderRequests\SupplierOrderRequestResource;
 use App\Models\Order;
 use App\Models\OrderItem;
@@ -10,6 +11,8 @@ use App\Models\Supplier;
 use App\Models\SupplierOrderRequest;
 use App\Models\SupplierOrderRequestItem;
 use App\Models\User;
+use App\Services\Orders\SupplierAutoTransferManager;
+use App\Services\Orders\SupplierAutoTransferReadiness;
 use App\Services\Orders\SupplierOrderRequestWorkflow;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Validation\ValidationException;
@@ -146,6 +149,98 @@ class SupplierOrderRequestWorkflowTest extends TestCase
             fn (array $problem): bool => $problem['label'] === 'Поставщик отклонил заявок: 1',
         ));
         $this->assertStringContainsString('Отклонена: 1', $order->supplierRequestStatusSummary());
+    }
+
+    public function test_automatic_transfer_is_disabled_by_default_and_cannot_bypass_control_period(): void
+    {
+        [$admin, $supplier] = $this->requestFixture('AUTO-BLOCKED');
+        $manager = User::factory()->create(['role' => 'manager', 'is_active' => true]);
+        $readiness = app(SupplierAutoTransferReadiness::class)->snapshot($supplier);
+
+        $this->assertFalse((bool) $supplier->automatic_order_transfer_enabled);
+        $this->assertFalse($readiness['ready']);
+        $this->assertContains('Успешных контрольных заявок: 0 из 3', $readiness['blockers']);
+
+        try {
+            app(SupplierAutoTransferManager::class)->setEnabled($supplier, true, $manager, 'Попытка менеджера');
+            $this->fail('Менеджер не должен включать автоматическую передачу.');
+        } catch (ValidationException) {
+            $this->assertFalse($supplier->fresh()->automatic_order_transfer_enabled);
+        }
+
+        $this->expectException(ValidationException::class);
+        app(SupplierAutoTransferManager::class)->setEnabled($supplier, true, $admin, 'Контроль ещё не пройден');
+    }
+
+    public function test_admin_enables_automatic_transfer_after_control_period_and_command_is_idempotent(): void
+    {
+        $this->travelTo(now()->startOfDay());
+        [$admin, $supplier, $supplierUser, $first] = $this->requestFixture('AUTO-1');
+        [, , , $second] = $this->requestFixture('AUTO-2', $admin, $supplier, $supplierUser);
+        [, , , $third] = $this->requestFixture('AUTO-3', $admin, $supplier, $supplierUser);
+
+        foreach ([$first, $second, $third] as $index => $request) {
+            $request->forceFill([
+                'status' => 'fulfilled',
+                'transfer_mode' => 'manual',
+                'sent_at' => now()->subDays(9 - $index),
+                'acknowledged_at' => now()->subDays(8 - $index),
+                'fulfilled_at' => now()->subDays(7 - $index),
+            ])->save();
+        }
+
+        $readiness = app(SupplierAutoTransferReadiness::class)->snapshot($supplier);
+        $this->assertTrue($readiness['ready']);
+        $this->assertSame(3, $readiness['successful_count']);
+        $this->assertSame(0, $readiness['rejected_count']);
+
+        app(SupplierAutoTransferManager::class)->setEnabled(
+            $supplier,
+            true,
+            $admin,
+            'Три успешные ручные заявки за контрольный период.',
+        );
+        $this->assertTrue($supplier->fresh()->automatic_order_transfer_enabled);
+        $this->assertDatabaseHas('supplier_auto_transfer_decisions', [
+            'supplier_id' => $supplier->id,
+            'user_id' => $admin->id,
+            'enabled' => true,
+        ]);
+
+        [, , , $automaticDraft] = $this->requestFixture('AUTO-NEXT', $admin, $supplier, $supplierUser);
+        [, $disabledSupplier, , $disabledDraft] = $this->requestFixture('AUTO-DISABLED', $admin);
+
+        $this->artisan('orders:auto-publish-supplier-requests')->assertSuccessful();
+        $this->assertSame('draft', $automaticDraft->fresh()->status);
+
+        $this->artisan('orders:auto-publish-supplier-requests --apply')->assertSuccessful();
+        $automaticDraft->refresh();
+        $this->assertSame('sent', $automaticDraft->status);
+        $this->assertSame('automatic', $automaticDraft->transfer_mode);
+        $this->assertNotNull($automaticDraft->automatic_transfer_run_uuid);
+        $this->assertNull($automaticDraft->sent_by);
+        $this->assertSame('draft', $disabledDraft->fresh()->status);
+        $this->assertFalse((bool) $disabledSupplier->automatic_order_transfer_enabled);
+        $this->assertDatabaseHas('supplier_order_request_status_histories', [
+            'supplier_order_request_id' => $automaticDraft->id,
+            'actor_scope' => 'system',
+            'status_from' => 'draft',
+            'status_to' => 'sent',
+            'run_uuid' => $automaticDraft->automatic_transfer_run_uuid,
+        ]);
+
+        $historyCount = $automaticDraft->statusHistories()->count();
+        $this->artisan('orders:auto-publish-supplier-requests --apply')->assertSuccessful();
+        $this->assertSame($historyCount, $automaticDraft->statusHistories()->count());
+
+        $this->actingAs($admin)
+            ->get(SupplierResource::getUrl('edit', ['record' => $supplier], panel: 'admin'))
+            ->assertOk()
+            ->assertSeeText('Автоматическая передача заказов')
+            ->assertSeeText('Включена')
+            ->assertSeeText('Отключить автопередачу');
+
+        $this->travelBack();
     }
 
     /** @return array{User, Supplier, User, SupplierOrderRequest} */
