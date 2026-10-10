@@ -18,7 +18,7 @@ class IntegrationIssueAiAdvisor
         return $this->ai->isAvailable();
     }
 
-    /** @return array{title:string,steps:array<int,string>,note:string,source:string,provider:string} */
+    /** @return array{title:string,steps:array<int,string>,note:string,source:string,provider:string,basis_hash:string} */
     public function advise(IntegrationIssue $issue): array
     {
         $fallback = $this->fallback($issue);
@@ -83,32 +83,55 @@ PROMPT;
             ),
             'source' => 'ai',
             'provider' => $this->ai->providerName(),
+            'basis_hash' => $this->basisHash($issue),
         ];
+    }
+
+    public function basisHash(IntegrationIssue $issue): string
+    {
+        if ($issue->exists) {
+            $issue->loadMissing(['source', 'integrationProduct', 'order']);
+        }
+
+        return hash('sha256', (string) json_encode(
+            $this->technicalContext($issue),
+            JSON_UNESCAPED_UNICODE | JSON_PRESERVE_ZERO_FRACTION,
+        ));
     }
 
     /** @return array<string, mixed> */
     private function technicalContext(IntegrationIssue $issue): array
     {
+        $source = $issue->relationLoaded('source')
+            ? $issue->getRelation('source')
+            : ($issue->exists ? $issue->source : null);
+        $product = $issue->relationLoaded('integrationProduct')
+            ? $issue->getRelation('integrationProduct')
+            : ($issue->exists ? $issue->integrationProduct : null);
+        $order = $issue->relationLoaded('order')
+            ? $issue->getRelation('order')
+            : ($issue->exists ? $issue->order : null);
+
         return array_filter([
             'issue_type' => $issue->type,
             'severity' => $issue->severity,
             'issue_title' => $issue->title,
-            'source' => $issue->source?->name,
-            'product' => $issue->integrationProduct ? [
-                'external_id' => $issue->integrationProduct->external_id,
-                'external_sku' => $issue->integrationProduct->external_sku,
-                'name' => $issue->integrationProduct->name,
-                'price' => $issue->integrationProduct->price,
-                'stock_quantity' => $issue->integrationProduct->stock_quantity,
-                'match_status' => $issue->integrationProduct->match_status,
+            'source' => $source?->name,
+            'product' => $product ? [
+                'external_id' => $product->external_id,
+                'external_sku' => $product->external_sku,
+                'name' => $product->name,
+                'price' => $product->price,
+                'stock_quantity' => $product->stock_quantity,
+                'match_status' => $product->match_status,
             ] : null,
-            'order' => $issue->order ? [
-                'number' => $issue->order->number,
-                'status' => $issue->order->status,
-                'payment_status' => $issue->order->payment_status,
-                'onec_status' => $issue->order->onec_status,
-                'onec_status_received_at' => $issue->order->onec_status_received_at?->toIso8601String(),
-                'onec_exported_at' => $issue->order->onec_exported_at?->toIso8601String(),
+            'order' => $order ? [
+                'number' => $order->number,
+                'status' => $order->status,
+                'payment_status' => $order->payment_status,
+                'onec_status' => $order->onec_status,
+                'onec_status_received_at' => $order->onec_status_received_at?->toIso8601String(),
+                'onec_exported_at' => $order->onec_exported_at?->toIso8601String(),
             ] : null,
             'detector_context' => collect($issue->context ?? [])
                 ->only([
@@ -123,13 +146,14 @@ PROMPT;
         ], fn (mixed $value): bool => $value !== null && $value !== [] && $value !== '');
     }
 
-    /** @return array{title:string,steps:array<int,string>,note:string,source:string,provider:string} */
+    /** @return array{title:string,steps:array<int,string>,note:string,source:string,provider:string,basis_hash:string} */
     private function fallback(IntegrationIssue $issue): array
     {
         return [
             ...$this->rules->advise($issue),
             'source' => 'rules',
             'provider' => 'Локальные правила',
+            'basis_hash' => $this->basisHash($issue),
         ];
     }
 

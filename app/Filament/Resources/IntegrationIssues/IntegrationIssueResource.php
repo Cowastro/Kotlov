@@ -100,7 +100,7 @@ class IntegrationIssueResource extends Resource
                     ->state(fn (IntegrationIssue $record): string => self::displayAdvice($record)['title'])
                     ->description(fn (IntegrationIssue $record): ?string => self::displayAdvice($record)['steps'][0] ?? null)
                     ->icon(Heroicon::OutlinedLightBulb)
-                    ->color(fn (IntegrationIssue $record): string => data_get($record->context, 'ai_advice.source') === 'ai'
+                    ->color(fn (IntegrationIssue $record): string => self::displayAdvice($record)['source'] === 'ai'
                         ? 'primary'
                         : 'info')
                     ->wrap()
@@ -159,12 +159,21 @@ class IntegrationIssueResource extends Resource
                     ->label('Что делать')
                     ->icon(Heroicon::OutlinedLightBulb)
                     ->color('info')
-                    ->modalHeading(fn (IntegrationIssue $record): string => app(IntegrationIssueAdvisor::class)->advise($record)['title'])
+                    ->modalHeading(fn (IntegrationIssue $record): string => self::displayAdvice($record)['title'])
                     ->form([
+                        Placeholder::make('advice_source')
+                            ->label('Источник подсказки')
+                            ->content(function (IntegrationIssue $record): string {
+                                $advice = self::displayAdvice($record);
+
+                                return $advice['source'] === 'ai'
+                                    ? 'ИИ · '.$advice['provider']
+                                    : 'Локальные правила';
+                            }),
                         Placeholder::make('recommended_steps')
                             ->label('Рекомендуемые шаги')
                             ->content(function (IntegrationIssue $record): HtmlString {
-                                $advice = app(IntegrationIssueAdvisor::class)->advise($record);
+                                $advice = self::displayAdvice($record);
 
                                 return new HtmlString(
                                     '<ol class="list-decimal space-y-2 ps-5">'.
@@ -176,7 +185,7 @@ class IntegrationIssueResource extends Resource
                             }),
                         Placeholder::make('safety_note')
                             ->label('Важно')
-                            ->content(fn (IntegrationIssue $record): string => app(IntegrationIssueAdvisor::class)->advise($record)['note']),
+                            ->content(fn (IntegrationIssue $record): string => self::displayAdvice($record)['note']),
                     ])
                     ->modalSubmitAction(false)
                     ->modalCancelActionLabel('Закрыть'),
@@ -506,19 +515,30 @@ class IntegrationIssueResource extends Resource
         return new HtmlString('<ol class="space-y-2">'.$items.'</ol>');
     }
 
-    /** @return array{title:string,steps:array<int,string>,note:string} */
+    /** @return array{title:string,steps:array<int,string>,note:string,source:string,provider:string} */
     private static function displayAdvice(IntegrationIssue $issue): array
     {
         $cached = data_get($issue->context, 'ai_advice');
+        $advisor = app(IntegrationIssueAiAdvisor::class);
 
-        if (is_array($cached) && filled($cached['title'] ?? null) && is_array($cached['steps'] ?? null)) {
+        if (is_array($cached)
+            && filled($cached['title'] ?? null)
+            && is_array($cached['steps'] ?? null)
+            && is_string($cached['basis_hash'] ?? null)
+            && hash_equals($cached['basis_hash'], $advisor->basisHash($issue))) {
             return [
                 'title' => (string) $cached['title'],
                 'steps' => array_values(array_filter($cached['steps'], 'is_string')),
                 'note' => (string) ($cached['note'] ?? ''),
+                'source' => (string) ($cached['source'] ?? 'rules'),
+                'provider' => (string) ($cached['provider'] ?? 'Локальные правила'),
             ];
         }
 
-        return app(IntegrationIssueAdvisor::class)->advise($issue);
+        return [
+            ...app(IntegrationIssueAdvisor::class)->advise($issue),
+            'source' => 'rules',
+            'provider' => 'Локальные правила',
+        ];
     }
 }

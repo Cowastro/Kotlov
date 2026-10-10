@@ -11,6 +11,7 @@ use App\Models\IntegrationSource;
 use App\Models\Order;
 use App\Models\Product;
 use App\Models\User;
+use App\Services\Integrations\IntegrationIssueAiAdvisor;
 use App\Services\Integrations\IntegrationOrderStatusMapper;
 use App\Services\Integrations\IntegrationProductIssueResolver;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -54,6 +55,60 @@ class IntegrationIssueAdminTest extends TestCase
             ->assertSeeText('Что делать')
             ->assertSeeText('ИИ-разбор')
             ->assertSeeText('Открыть');
+    }
+
+    public function test_issue_queue_uses_cached_ai_advice_only_while_technical_facts_match(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin', 'is_active' => true]);
+        $source = IntegrationSource::query()->create([
+            'code' => 'ai-advice-source',
+            'name' => 'Источник ИИ-проверки',
+        ]);
+        $product = IntegrationProduct::query()->create([
+            'integration_source_id' => $source->id,
+            'external_id' => 'ai-advice-product',
+            'name' => 'Товар для ИИ-проверки',
+            'price' => 10,
+            'stock_quantity' => 2,
+            'match_status' => 'unmatched',
+        ]);
+        $issue = IntegrationIssue::query()->create([
+            'integration_source_id' => $source->id,
+            'integration_product_id' => $product->id,
+            'fingerprint' => 'ai-advice-validity',
+            'type' => 'product_attention',
+            'severity' => 'warning',
+            'status' => 'open',
+            'title' => 'Товар требует решения',
+            'context' => ['missing_price' => false, 'unmatched' => true, 'missing_category' => false],
+            'first_detected_at' => now(),
+            'last_detected_at' => now(),
+        ]);
+        $basisHash = app(IntegrationIssueAiAdvisor::class)->basisHash($issue);
+        $issue->update(['context' => [
+            ...$issue->context,
+            'ai_advice' => [
+                'title' => 'Актуальная ИИ-подсказка',
+                'steps' => ['Сверить технические данные'],
+                'note' => 'Не применять автоматически',
+                'source' => 'ai',
+                'provider' => 'test-model',
+                'basis_hash' => $basisHash,
+            ],
+        ]]);
+
+        $this->actingAs($admin)
+            ->get(IntegrationIssueResource::getUrl('index', ['tab' => 'ready-to-link'], panel: 'admin'))
+            ->assertOk()
+            ->assertSeeText('Актуальная ИИ-подсказка')
+            ->assertSeeText('Сверить технические данные');
+
+        $product->update(['price' => 12]);
+
+        $this->get(IntegrationIssueResource::getUrl('index', ['tab' => 'ready-to-link'], panel: 'admin'))
+            ->assertOk()
+            ->assertDontSeeText('Актуальная ИИ-подсказка')
+            ->assertSeeText('Подтвердить привязку товара');
     }
 
     public function test_unknown_order_status_offers_a_direct_safe_mapping_action(): void

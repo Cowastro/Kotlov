@@ -2949,6 +2949,19 @@ XML;
         $this->assertSame([$old->id, $current->id], $issue->context['product_ids']);
         $this->assertStringContainsString('DUP-100', $issue->message);
 
+        $context = $issue->context;
+        $context['ai_advice'] = [
+            'title' => 'Проверить реквизиты двух позиций',
+            'steps' => ['Сравнить внешний ID и артикул'],
+            'note' => 'Не объединять автоматически',
+            'source' => 'ai',
+            'provider' => 'test-model',
+            'basis_hash' => 'test-hash',
+        ];
+        $issue->update(['context' => $context]);
+        $detector->scan();
+        $this->assertSame('test-hash', data_get($issue->fresh()->context, 'ai_advice.basis_hash'));
+
         $current->update(['external_sku' => 'UNIQUE-200']);
         $resolved = $detector->scan();
 

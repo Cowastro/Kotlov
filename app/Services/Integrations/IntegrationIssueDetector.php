@@ -359,6 +359,11 @@ class IntegrationIssueDetector
         $seen[] = $fingerprint;
         $issue = IntegrationIssue::query()->firstOrNew(['fingerprint' => $fingerprint]);
         $wasOpen = $issue->exists && $issue->status === 'open';
+        $cachedAdvice = data_get($issue->context, 'ai_advice');
+
+        if (is_array($cachedAdvice)) {
+            $context['ai_advice'] = $cachedAdvice;
+        }
 
         $issue->fill([
             'integration_source_id' => $source?->id,
