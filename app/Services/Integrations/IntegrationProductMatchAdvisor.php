@@ -63,4 +63,56 @@ class IntegrationProductMatchAdvisor
             'warning' => 'Это только рекомендация. Цена, остаток и название карточки не изменятся; будет сохранена постоянная ручная привязка.',
         ];
     }
+
+    /**
+     * @return array<int, array{
+     *     product_id:int,
+     *     product_name:string,
+     *     product_sku:?string,
+     *     category_name:?string,
+     *     confidence:float,
+     *     public_url:?string
+     * }>
+     */
+    public function candidates(IntegrationProduct $item): array
+    {
+        if ($item->product_id || ! in_array($item->match_status, ['suggested', 'ambiguous'], true)) {
+            return [];
+        }
+
+        $ranked = collect($item->candidates ?? [])
+            ->filter(fn (array $candidate): bool => (int) ($candidate['product_id'] ?? 0) > 0)
+            ->unique(fn (array $candidate): int => (int) $candidate['product_id'])
+            ->take(5)
+            ->values();
+        $products = Product::query()
+            ->with('category:id,name,slug')
+            ->whereIn('id', $ranked->pluck('product_id')->map(fn (mixed $id): int => (int) $id))
+            ->get(['id', 'category_id', 'sku', 'name', 'slug'])
+            ->keyBy('id');
+
+        return $ranked
+            ->map(function (array $candidate) use ($products): ?array {
+                $product = $products->get((int) $candidate['product_id']);
+                if (! $product) {
+                    return null;
+                }
+
+                $categorySlug = $product->category?->slug;
+
+                return [
+                    'product_id' => (int) $product->id,
+                    'product_name' => $product->name,
+                    'product_sku' => $product->sku,
+                    'category_name' => $product->category?->name,
+                    'confidence' => round(min(1, max(0, (float) ($candidate['score'] ?? 0))), 4),
+                    'public_url' => $categorySlug && $product->slug
+                        ? url('/'.$categorySlug.'/'.$product->slug)
+                        : null,
+                ];
+            })
+            ->filter()
+            ->values()
+            ->all();
+    }
 }

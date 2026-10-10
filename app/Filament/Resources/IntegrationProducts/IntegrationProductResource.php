@@ -11,6 +11,7 @@ use App\Models\IntegrationSource;
 use App\Services\Integrations\IntegrationCategoryAdvisor;
 use App\Services\Integrations\IntegrationManualMatchRecorder;
 use App\Services\Integrations\IntegrationProductMatchAdvisor;
+use App\Services\Integrations\IntegrationProductMatchDecision;
 use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Actions\BulkAction;
@@ -145,14 +146,20 @@ class IntegrationProductResource extends Resource
                     ->limit(48)->lineClamp(2)->size(TextSize::Small)
                     ->tooltip(fn (IntegrationProduct $record): ?string => $record->product?->name
                         ?? ($record->candidates[0]['name'] ?? null))
-                    ->url(fn (IntegrationProduct $record): ?string => self::productUrl($record))
+                    ->url(fn (IntegrationProduct $record): ?string => self::productUrl($record)
+                        ?? (app(IntegrationProductMatchAdvisor::class)->candidates($record)[0]['public_url'] ?? null))
                     ->openUrlInNewTab()
                     ->icon(fn (IntegrationProduct $record): ?string => $record->product
-                        ? 'heroicon-o-arrow-top-right-on-square'
-                        : null)
-                    ->color(fn (IntegrationProduct $record): string => $record->product ? 'primary' : 'gray')
+                        || filled($record->candidates[0]['product_id'] ?? null)
+                            ? 'heroicon-o-arrow-top-right-on-square'
+                            : null)
+                    ->color(fn (IntegrationProduct $record): string => $record->product
+                        ? 'primary'
+                        : (filled($record->candidates[0]['product_id'] ?? null) ? 'info' : 'gray'))
                     ->description(fn (IntegrationProduct $record): ?string => $record->product?->sku
-                        ?? ($record->candidates[0]['sku'] ?? null)),
+                        ?? (filled($record->candidates[0]['sku'] ?? null)
+                            ? 'кандидат · '.$record->candidates[0]['sku']
+                            : null)),
                 TextColumn::make('match_status')->label('Статус')->badge()
                     ->formatStateUsing(fn (string $state): string => match ($state) {
                         'matched' => 'Привязан',
@@ -261,6 +268,60 @@ class IntegrationProductResource extends Resource
             ->persistFiltersInSession()
             ->defaultSort('last_seen_at', 'desc')
             ->recordActions([
+                Action::make('reviewCandidates')
+                    ->label('Сравнить варианты')
+                    ->icon(Heroicon::OutlinedArrowsRightLeft)
+                    ->color('warning')
+                    ->visible(fn (IntegrationProduct $record): bool => $record->match_status === 'ambiguous'
+                        && filled($record->candidates[0]['product_id'] ?? null))
+                    ->modalHeading('Выбрать существующую карточку kotlov.by')
+                    ->modalDescription(fn (IntegrationProduct $record): string => 'Для «'.$record->name.'» найдено несколько похожих карточек. Сверьте модель, диаметр, размер и артикул.')
+                    ->form([
+                        Select::make('product_id')
+                            ->label('Подходящая карточка сайта')
+                            ->options(function (IntegrationProduct $record): array {
+                                return collect(app(IntegrationProductMatchAdvisor::class)->candidates($record))
+                                    ->mapWithKeys(fn (array $candidate): array => [
+                                        $candidate['product_id'] => collect([
+                                            round($candidate['confidence'] * 100).'%',
+                                            $candidate['product_sku'] ? 'SKU '.$candidate['product_sku'] : null,
+                                            $candidate['product_name'],
+                                            $candidate['category_name'] ? '('.$candidate['category_name'].')' : null,
+                                        ])->filter()->implode(' · '),
+                                    ])
+                                    ->all();
+                            })
+                            ->default(fn (IntegrationProduct $record): ?int => app(IntegrationProductMatchAdvisor::class)
+                                ->candidates($record)[0]['product_id'] ?? null)
+                            ->searchable()
+                            ->required()
+                            ->helperText('Показываются только кандидаты текущего расчёта. Решение будет сохранено для следующих обменов.'),
+                        Placeholder::make('safety_note')
+                            ->label('Что изменится')
+                            ->content('Будет создана только постоянная связь с выбранной карточкой. Название, категория, цена и остаток карточки сайта не изменятся.'),
+                    ])
+                    ->requiresConfirmation()
+                    ->modalSubmitActionLabel('Подтвердить привязку')
+                    ->action(function (IntegrationProduct $record, array $data): void {
+                        $product = app(IntegrationProductMatchDecision::class)
+                            ->confirmCandidate($record, (int) $data['product_id']);
+
+                        if (! $product) {
+                            Notification::make()
+                                ->warning()
+                                ->title('Кандидат больше не актуален')
+                                ->body('Обновите таблицу и повторите проверку вариантов.')
+                                ->send();
+
+                            return;
+                        }
+
+                        Notification::make()
+                            ->success()
+                            ->title('Привязка подтверждена')
+                            ->body('Товар связан с карточкой «'.$product->name.'». Решение сохранено для будущих синхронизаций.')
+                            ->send();
+                    }),
                 Action::make('acceptSuggestion')
                     ->label('Принять')
                     ->icon(Heroicon::OutlinedCheck)

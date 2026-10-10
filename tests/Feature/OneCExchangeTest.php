@@ -23,6 +23,7 @@ use App\Services\Integrations\IntegrationIssueTriageSummary;
 use App\Services\Integrations\IntegrationManualMatchRecorder;
 use App\Services\Integrations\IntegrationOperationsSummary;
 use App\Services\Integrations\IntegrationProductMatchAdvisor;
+use App\Services\Integrations\IntegrationProductMatchDecision;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
@@ -1060,6 +1061,71 @@ XML;
 
         $product->delete();
         $this->assertNull(app(IntegrationProductMatchAdvisor::class)->explain($item->fresh()));
+    }
+
+    public function test_operator_can_review_and_confirm_only_a_live_ranked_candidate(): void
+    {
+        $source = IntegrationSource::query()->create([
+            'code' => 'candidate-review-source',
+            'name' => 'Поставщик кандидатов',
+            'settings' => ['matching_supplier_code' => 'candidate-review-supplier'],
+        ]);
+        $category = Category::query()->create([
+            'name' => 'Кандидаты дымоходов',
+            'slug' => 'candidate-review-category',
+            'parent_id' => 0,
+        ]);
+        $first = Product::query()->create([
+            'sku' => 'CANDIDATE-1',
+            'name' => 'Труба моно 500 D150',
+            'slug' => 'candidate-one',
+            'category_id' => $category->id,
+        ]);
+        $second = Product::query()->create([
+            'sku' => 'CANDIDATE-2',
+            'name' => 'Труба моно 1000 D150',
+            'slug' => 'candidate-two',
+            'category_id' => $category->id,
+        ]);
+        $item = IntegrationProduct::query()->create([
+            'integration_source_id' => $source->id,
+            'external_id' => 'candidate-review-item',
+            'external_sku' => 'SOURCE-CANDIDATE',
+            'name' => 'Труба моно D150',
+            'stock_quantity' => 2,
+            'match_status' => 'ambiguous',
+            'match_method' => 'fuzzy_name',
+            'match_confidence' => 0.84,
+            'candidates' => [
+                ['product_id' => $first->id, 'score' => 0.84],
+                ['product_id' => $second->id, 'score' => 0.81],
+            ],
+        ]);
+
+        $candidates = app(IntegrationProductMatchAdvisor::class)->candidates($item);
+
+        $this->assertCount(2, $candidates);
+        $this->assertSame($first->id, $candidates[0]['product_id']);
+        $this->assertSame('Кандидаты дымоходов', $candidates[0]['category_name']);
+        $this->assertStringContainsString('/candidate-review-category/candidate-one', $candidates[0]['public_url']);
+        $this->assertNull(app(IntegrationProductMatchDecision::class)->confirmCandidate($item, 999999));
+
+        $confirmed = app(IntegrationProductMatchDecision::class)->confirmCandidate($item, $second->id);
+
+        $this->assertSame($second->id, $confirmed->id);
+        $this->assertDatabaseHas('integration_products', [
+            'id' => $item->id,
+            'product_id' => $second->id,
+            'match_status' => 'matched',
+            'match_method' => 'manual_candidate',
+        ]);
+        $this->assertDatabaseHas('supplier_product_mappings', [
+            'supplier_code' => 'candidate-review-supplier',
+            'supplier_article' => 'SOURCE-CANDIDATE',
+            'product_id' => $second->id,
+            'confidence' => 'manual',
+            'is_active' => true,
+        ]);
     }
 
     public function test_catalog_accepts_multiple_commerceml_documents_in_one_upload(): void
