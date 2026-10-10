@@ -57,9 +57,7 @@ class SupplierIntegrationSummary
             'in_stock' => (clone $products)->inStock()->count(),
             'linked' => (clone $products)->whereNotNull('product_id')->count(),
             'unlinked' => (clone $products)->whereNull('product_id')->count(),
-            'missing_price' => (clone $products)
-                ->where(fn ($query) => $query->whereNull('price')->orWhere('price', '<=', 0))
-                ->count(),
+            'missing_price' => (clone $products)->withoutUsablePrice()->count(),
             'open_issues' => IntegrationIssue::query()
                 ->whereIn('integration_source_id', $sourceIds)
                 ->open()

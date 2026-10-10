@@ -76,7 +76,7 @@ class IntegrationIssueDetector
                 ->where('match_status', '!=', 'ignored')
                 ->chunkById(250, function ($products) use (&$seen, &$opened, &$openedIssueIds): void {
                     foreach ($products as $product) {
-                        $missingPrice = (float) $product->price <= 0;
+                        $missingPrice = $product->normalizedPriceByn() === null;
                         $unmatched = ! $product->product_id;
                         $missingCategory = $unmatched
                             && ! $product->target_category_id

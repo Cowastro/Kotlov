@@ -77,6 +77,31 @@ class IntegrationSourcePricingAuditTest extends TestCase
         $this->assertDatabaseCount('integration_source_pricing_changes', 0);
     }
 
+    public function test_currency_and_rate_changes_are_recorded(): void
+    {
+        $source = IntegrationSource::query()->create([
+            'code' => 'pricing-audit-currency',
+            'name' => 'Валютный источник',
+            'price_currency' => 'BYN',
+            'price_currency_rate' => 1,
+        ]);
+
+        $source->update([
+            'price_currency' => 'EUR',
+            'price_currency_rate' => 3.45,
+        ]);
+
+        $change = IntegrationSourcePricingChange::query()->sole();
+
+        $this->assertSame(['price_currency', 'price_currency_rate'], $change->changed_fields);
+        $this->assertSame('BYN', $change->before_values['price_currency']);
+        $this->assertSame('EUR', $change->after_values['price_currency']);
+        $this->assertEquals(1.0, $change->before_values['price_currency_rate']);
+        $this->assertEquals(3.45, $change->after_values['price_currency_rate']);
+        $this->assertStringContainsString('Валюта входной цены', $change->changeSummary());
+        $this->assertStringContainsString('Курс к BYN', $change->changeSummary());
+    }
+
     public function test_pricing_history_is_immutable(): void
     {
         $source = IntegrationSource::query()->create([
@@ -114,7 +139,10 @@ class IntegrationSourcePricingAuditTest extends TestCase
         $source->update(['update_prices' => true]);
 
         $this->get(IntegrationSourceResource::getUrl('edit', ['record' => $source], panel: 'admin'))
-            ->assertOk();
+            ->assertOk()
+            ->assertSeeText('Валюта входной цены')
+            ->assertSeeText('Курс к BYN')
+            ->assertSeeText('не переписывает историю молча');
 
         Livewire::actingAs($admin)
             ->test(PricingChangesRelationManager::class, [

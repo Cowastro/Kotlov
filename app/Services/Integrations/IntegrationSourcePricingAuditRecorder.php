@@ -12,6 +12,8 @@ class IntegrationSourcePricingAuditRecorder
     /** @var list<string> */
     private const TRACKED_FIELDS = [
         'update_prices',
+        'price_currency',
+        'price_currency_rate',
         'settings.price_tax_mode',
         'settings.vat_rate',
         'settings.b2b_enabled',
@@ -58,6 +60,12 @@ class IntegrationSourcePricingAuditRecorder
             'update_prices' => (bool) ($original
                 ? $source->getRawOriginal('update_prices')
                 : $source->update_prices),
+            'price_currency' => mb_strtoupper(trim((string) ($original
+                ? $source->getRawOriginal('price_currency')
+                : $source->price_currency))) ?: 'BYN',
+            'price_currency_rate' => round((float) ($original
+                ? $source->getRawOriginal('price_currency_rate')
+                : $source->price_currency_rate), 6),
             'settings.price_tax_mode' => data_get($settings, 'price_tax_mode') === IntegrationSource::PRICE_TAX_INCLUSIVE
                 ? IntegrationSource::PRICE_TAX_INCLUSIVE
                 : IntegrationSource::PRICE_TAX_EXCLUSIVE,

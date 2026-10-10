@@ -32,8 +32,7 @@ class ListIntegrationProducts extends ListRecords
         return IntegrationProductResource::getEloquentQuery()
             ->where(fn (Builder $query): Builder => $query
                 ->whereNull('product_id')
-                ->orWhereNull('price')
-                ->orWhere('price', '<=', 0))
+                ->orWhere(fn (Builder $query): Builder => $query->withoutUsablePrice()))
             ->exists() ? 'attention' : 'all';
     }
 
@@ -42,8 +41,7 @@ class ListIntegrationProducts extends ListRecords
         $query = fn (): Builder => IntegrationProductResource::getEloquentQuery();
         $attention = fn (Builder $query): Builder => $query->where(fn (Builder $query): Builder => $query
             ->whereNull('product_id')
-            ->orWhereNull('price')
-            ->orWhere('price', '<=', 0));
+            ->orWhere(fn (Builder $query): Builder => $query->withoutUsablePrice()));
 
         return [
             'attention' => Tab::make('Требуют внимания')
@@ -64,9 +62,8 @@ class ListIntegrationProducts extends ListRecords
                 ->badge($query()->whereNull('product_id')->count())
                 ->badgeColor('warning'),
             'missing-price' => Tab::make('Без цены')
-                ->modifyQueryUsing(fn (Builder $query): Builder => $query
-                    ->where(fn (Builder $query): Builder => $query->whereNull('price')->orWhere('price', '<=', 0)))
-                ->badge($query()->where(fn (Builder $query): Builder => $query->whereNull('price')->orWhere('price', '<=', 0))->count())
+                ->modifyQueryUsing(fn (Builder $query): Builder => $query->withoutUsablePrice())
+                ->badge($query()->withoutUsablePrice()->count())
                 ->badgeColor('danger'),
         ];
     }

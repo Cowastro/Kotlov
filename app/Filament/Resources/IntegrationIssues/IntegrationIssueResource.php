@@ -238,7 +238,8 @@ class IntegrationIssueResource extends Resource
                                     ? 'арт. '.$record->integrationProduct->external_sku
                                     : null,
                                 $record->integrationProduct?->price !== null
-                                    ? number_format((float) $record->integrationProduct->price, 2, ',', ' ').' BYN'
+                                    ? number_format((float) $record->integrationProduct->price, 2, ',', ' ').' '
+                                        .$record->integrationProduct->effectivePriceCurrency()
                                     : 'цена не передана',
                                 $record->integrationProduct?->formattedStockQuantity(),
                             ])->filter()->implode(' · ')),

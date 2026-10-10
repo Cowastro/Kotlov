@@ -267,18 +267,27 @@ class CommerceMlCatalogImporter
         }
 
         $price = $this->text($node, './/*[local-name()="ЦенаЗаЕдиницу"]');
+        $normalizedPrice = str_replace(',', '.', $price);
+        $hasPrice = is_numeric($normalizedPrice);
         $quantity = $this->text($node, './*[local-name()="Количество"]');
         $normalizedQuantity = str_replace(',', '.', $quantity);
         $hasQuantity = is_numeric($normalizedQuantity);
-        $item->fill([
+        $attributes = [
             'external_sku' => $item->external_sku ?: ($this->text($node, './*[local-name()="Артикул"]') ?: null),
             'name' => $item->name ?: ($this->text($node, './*[local-name()="Наименование"]') ?: null),
-            'price' => is_numeric(str_replace(',', '.', $price)) ? str_replace(',', '.', $price) : $item->price,
             'stock_quantity' => $hasQuantity ? $normalizedQuantity : $item->stock_quantity,
             'last_seen_at' => now(),
             'last_offer_seen_at' => now(),
             'stock_confirmed_at' => $hasQuantity ? now() : $item->stock_confirmed_at,
-        ]);
+        ];
+
+        if ($hasPrice) {
+            $rawPrice = (float) $normalizedPrice;
+            $attributes['price'] = $rawPrice;
+            $attributes = array_merge($attributes, $source->priceSnapshot($rawPrice));
+        }
+
+        $item->fill($attributes);
 
         if (! $item->product_id && $item->match_status !== 'ignored') {
             $item->fill($this->match($item));

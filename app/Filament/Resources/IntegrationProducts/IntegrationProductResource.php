@@ -178,24 +178,17 @@ class IntegrationProductResource extends Resource
                     fn ($state): string => $state === null ? '—' : round((float) $state * 100).'%'
                 ),
                 TextColumn::make('customer_price')->label('Цена клиенту')
-                    ->state(function (IntegrationProduct $record): ?float {
-                        $sourcePrice = (float) $record->price;
-
-                        if ($sourcePrice <= 0) {
-                            return null;
-                        }
-
-                        return $record->source
-                            ? $record->source->priceIncludingTax($sourcePrice)
-                            : $sourcePrice;
-                    })
+                    ->state(fn (IntegrationProduct $record): ?float => $record->normalizedPriceByn())
                     ->money('BYN')
-                    ->placeholder('Цена не передана')
+                    ->placeholder('Цена BYN не рассчитана')
                     ->description(fn (IntegrationProduct $record): ?string => (float) $record->price > 0
                         ? sprintf(
-                            'Цена 1С: %s BYN · %s',
+                            'Исходная: %s %s · %s',
                             number_format((float) $record->price, 2, ',', ' '),
-                            $record->source?->sourcePriceTaxLabel() ?? 'режим НДС не указан',
+                            $record->effectivePriceCurrency(),
+                            $record->effectivePriceTaxMode() === IntegrationSource::PRICE_TAX_INCLUSIVE
+                                ? 'с НДС'
+                                : 'без НДС · +'.number_format($record->effectiveVatRate(), 0).'%',
                         )
                         : null)
                     ->size(TextSize::Small),

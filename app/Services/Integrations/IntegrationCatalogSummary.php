@@ -78,9 +78,11 @@ class IntegrationCatalogSummary
             'stock_max' => $stockMax === null ? null : (float) $stockMax,
             'stock_average' => $stockAverage === null ? null : (float) $stockAverage,
             'all_stock_positive' => $total > 0 && $inStock === $total && $withoutStock === 0,
-            'positive_price' => (clone $products)->where('price', '>', 0)->count(),
+            'positive_price' => (clone $products)->withUsablePrice()->count(),
             'zero_price' => (clone $products)->whereNotNull('price')->where('price', '<=', 0)->count(),
-            'missing_price' => (clone $products)->whereNull('price')->count(),
+            'missing_price' => (clone $products)->withoutUsablePrice()->where(function (Builder $query): void {
+                $query->whereNull('price')->orWhere('price', '>', 0);
+            })->count(),
             'matched' => (int) ($statusCounts['matched'] ?? 0),
             'suggested' => (int) ($statusCounts['suggested'] ?? 0),
             'ambiguous' => (int) ($statusCounts['ambiguous'] ?? 0),

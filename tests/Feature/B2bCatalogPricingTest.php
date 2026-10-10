@@ -97,6 +97,59 @@ class B2bCatalogPricingTest extends TestCase
             ->assertSeeText('1 позиций в наличии');
     }
 
+    public function test_imported_price_snapshot_does_not_change_when_source_rule_changes(): void
+    {
+        [$product, $user] = $this->catalogFixture(approved: true);
+        $offer = IntegrationProduct::query()->where('product_id', $product->id)->firstOrFail();
+        $offer->update([
+            'price_currency' => 'BYN',
+            'price_currency_rate' => 1,
+            'price_tax_mode' => 'exclusive',
+            'price_vat_rate' => 20,
+            'price_byn' => 96,
+        ]);
+
+        $source = $offer->source;
+        $settings = $source->settings;
+        $settings['price_tax_mode'] = 'inclusive';
+        $settings['vat_rate'] = 0;
+        $source->update([
+            'price_currency' => 'EUR',
+            'price_currency_rate' => 4,
+            'settings' => $settings,
+        ]);
+
+        $this->actingAs($user)
+            ->get('/'.$product->category->slug.'/'.$product->slug)
+            ->assertOk()
+            ->assertSeeText('96.00 BYN')
+            ->assertSeeText('Ваша скидка к рознице: 24.00 BYN (20.0%)');
+
+        $this->assertSame(96.0, $offer->fresh()->normalizedPriceByn());
+    }
+
+    public function test_foreign_offer_without_rate_is_not_exposed_as_zero_partner_price(): void
+    {
+        [$product, $user] = $this->catalogFixture(approved: true);
+        IntegrationProduct::query()->where('product_id', $product->id)->update([
+            'price_currency' => 'EUR',
+            'price_currency_rate' => null,
+            'price_tax_mode' => 'inclusive',
+            'price_vat_rate' => 20,
+            'price_byn' => null,
+        ]);
+
+        $this->actingAs($user)
+            ->get('/'.$product->category->slug.'/'.$product->slug)
+            ->assertOk()
+            ->assertDontSeeText('Партнёрская цена от ООО «СанБизнесГруп»')
+            ->assertSeeText('120.00 BYN');
+
+        $this->assertNull(
+            IntegrationProduct::query()->where('product_id', $product->id)->firstOrFail()->normalizedPriceByn(),
+        );
+    }
+
     /** @return array{Product, User} */
     private function catalogFixture(bool $approved): array
     {

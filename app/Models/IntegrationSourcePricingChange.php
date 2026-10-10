@@ -10,6 +10,8 @@ class IntegrationSourcePricingChange extends Model
 {
     public const FIELD_LABELS = [
         'update_prices' => 'Обновление цен из источника',
+        'price_currency' => 'Валюта входной цены',
+        'price_currency_rate' => 'Курс к BYN',
         'settings.price_tax_mode' => 'Режим НДС',
         'settings.vat_rate' => 'Ставка НДС',
         'settings.b2b_enabled' => 'Партнёрские цены',
@@ -72,6 +74,7 @@ class IntegrationSourcePricingChange extends Model
                 ? 'цена с НДС'
                 : 'цена без НДС',
             'settings.vat_rate' => number_format((float) $value, 2, ',', ' ').'%',
+            'price_currency_rate' => rtrim(rtrim(number_format((float) $value, 6, ',', ' '), '0'), ','),
             default => filled($value) ? (string) $value : 'не задано',
         };
     }

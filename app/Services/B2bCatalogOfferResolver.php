@@ -20,7 +20,7 @@ class B2bCatalogOfferResolver
 
         return $this->offers()
             ->where('product_id', $product->id)
-            ->sortBy(fn (IntegrationProduct $offer): float => (float) $offer->price)
+            ->sortBy(fn (IntegrationProduct $offer): float => $offer->normalizedPriceByn() ?? PHP_FLOAT_MAX)
             ->first();
     }
 
@@ -64,9 +64,13 @@ class B2bCatalogOfferResolver
 
     public function priceWithTax(IntegrationProduct $offer): float
     {
-        $price = (float) $offer->price;
+        $price = $offer->normalizedPriceByn();
 
-        return $offer->source?->priceIncludingTax($price) ?? round($price, 2);
+        if ($price === null) {
+            throw new \LogicException('Для предложения не рассчитана итоговая цена в BYN.');
+        }
+
+        return $price;
     }
 
     /** @return array{offer: IntegrationProduct, wholesale_price: float, retail_price: float, difference: float, difference_percent: float|null, vat_rate: float}|null */
@@ -90,7 +94,7 @@ class B2bCatalogOfferResolver
             'difference_percent' => $retailPrice > 0 && $difference > 0
                 ? round($difference / $retailPrice * 100, 1)
                 : null,
-            'vat_rate' => $offer->source?->vatRate() ?? 0,
+            'vat_rate' => $offer->effectiveVatRate(),
         ];
     }
 
@@ -101,11 +105,12 @@ class B2bCatalogOfferResolver
             ->with(['source', 'product.category'])
             ->whereNotNull('product_id')
             ->where('match_status', 'matched')
-            ->where('price', '>', 0)
+            ->withUsablePrice()
             ->where('stock_quantity', '>', 0)
             ->whereHas('source', fn ($query) => $query->where('is_active', true))
             ->get()
-            ->filter(fn (IntegrationProduct $offer): bool => $offer->source?->isB2bEnabled() === true)
+            ->filter(fn (IntegrationProduct $offer): bool => $offer->source?->isB2bEnabled() === true
+                && $offer->normalizedPriceByn() !== null)
             ->values();
     }
 }

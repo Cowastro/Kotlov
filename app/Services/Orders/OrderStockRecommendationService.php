@@ -202,7 +202,10 @@ class OrderStockRecommendationService
             ->where('integration_source_id', $source->id)
             ->where('match_status', 'matched')
             ->whereNotNull('product_id')
-            ->get(['id', 'product_id', 'price', 'stock_quantity', 'stock_confirmed_at'])
+            ->get([
+                'id', 'integration_source_id', 'product_id', 'price', 'price_currency', 'price_currency_rate',
+                'price_tax_mode', 'price_vat_rate', 'price_byn', 'stock_quantity', 'stock_confirmed_at',
+            ])
             ->groupBy('product_id')
             ->map(function (Collection $offers) use ($source): array {
                 $hasMissingStock = $offers->contains(fn (IntegrationProduct $offer): bool => $offer->stock_quantity === null);
@@ -227,11 +230,15 @@ class OrderStockRecommendationService
                     'integration_product_id' => $offers->count() === 1
                         ? (int) $offers->first()->getKey()
                         : null,
-                    'unit_purchase_price' => $offers->count() === 1 && $offers->first()->price !== null
-                        ? $source->priceIncludingTax((float) $offers->first()->price)
+                    'unit_purchase_price' => $offers->count() === 1
+                        ? $offers->first()->normalizedPriceByn()
                         : null,
-                    'price_tax_mode' => $source->priceTaxMode(),
-                    'vat_rate' => $source->vatRate(),
+                    'price_tax_mode' => $offers->count() === 1
+                        ? $offers->first()->effectivePriceTaxMode()
+                        : $source->priceTaxMode(),
+                    'vat_rate' => $offers->count() === 1
+                        ? $offers->first()->effectiveVatRate()
+                        : $source->vatRate(),
                 ];
             });
     }

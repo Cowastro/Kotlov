@@ -2,6 +2,7 @@
 
 namespace App\Services\Integrations;
 
+use App\Models\IntegrationProduct;
 use App\Models\IntegrationSource;
 use App\Models\SupplierChannelTransition;
 use Illuminate\Support\Facades\DB;
@@ -40,12 +41,10 @@ class SupplierChannelTransitionPlanner
                 $query->whereNull('product_id')->orWhere('match_status', '!=', 'matched');
             })
             ->count();
-        $missingPriceInStock = DB::table('integration_products')
+        $missingPriceInStock = IntegrationProduct::query()
             ->where('integration_source_id', $source->id)
             ->where('stock_quantity', '>', 0)
-            ->where(function ($query): void {
-                $query->whereNull('price')->orWhere('price', '<=', 0);
-            })
+            ->withoutUsablePrice()
             ->count();
         $duplicateTargets = DB::query()
             ->fromSub(

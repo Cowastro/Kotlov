@@ -139,7 +139,7 @@ class OrderItemSupplyContextResolver
     {
         return collect($item->product?->integrationProducts)
             ->filter(fn (IntegrationProduct $offer): bool => $offer->match_status === 'matched'
-                && (float) $offer->price > 0
+                && $offer->normalizedPriceByn() !== null
                 && $offer->source?->is_active === true)
             ->sortBy([
                 fn (IntegrationProduct $offer): int => (float) $offer->stock_quantity > 0 ? 0 : 1,
@@ -185,8 +185,8 @@ class OrderItemSupplyContextResolver
             'integration_source_id' => $source?->id,
             'channel' => 'integration',
             'wholesale_price_label' => 'Оптовая цена с НДС',
-            'price_tax_mode' => $source?->priceTaxMode(),
-            'vat_rate' => $source?->vatRate(),
+            'price_tax_mode' => $offer->effectivePriceTaxMode(),
+            'vat_rate' => $offer->effectiveVatRate(),
             'stock_quantity' => (float) $offer->stock_quantity,
             'stock_label' => (float) $offer->stock_quantity > 0
                 ? $offer->formattedStockQuantity()
@@ -308,8 +308,7 @@ class OrderItemSupplyContextResolver
 
     private function integrationWholesalePrice(IntegrationProduct $offer): float
     {
-        return $offer->source?->priceIncludingTax((float) $offer->price)
-            ?? round((float) $offer->price, 2);
+        return $offer->normalizedPriceByn() ?? 0.0;
     }
 
     private function legacyOfferAvailable(SupplierProduct $offer): bool

@@ -15,6 +15,7 @@ use App\Services\Integrations\IntegrationOperationsSummary;
 use App\Services\Integrations\IntegrationOrderStatusMapper;
 use App\Services\Integrations\OrderIntegrationMonitoring;
 use App\Services\Integrations\SupplierChannelTransitionPlanner;
+use App\Services\Pricing\CurrencyPriceConverter;
 use BackedEnum;
 use Filament\Actions\EditAction;
 use Filament\Forms\Components\Placeholder;
@@ -166,7 +167,7 @@ class IntegrationSourceResource extends Resource
                     'xl' => 8,
                 ]),
             Section::make('Оптовые цены')
-                ->description('Единое правило: хранится исходная цена поставщика, а клиенту всегда показывается итоговая цена с НДС. Для цены без НДС система добавляет указанную ставку.')
+                ->description('Единое правило: исходная цена сохраняется вместе со снимком валюты, курса и НДС, а рабочая цена рассчитывается в BYN. Изменённое правило применяется к следующей переданной цене и не переписывает историю молча.')
                 ->schema([
                     Toggle::make('settings.b2b_enabled')
                         ->label('Публиковать партнёрские цены')
@@ -176,6 +177,31 @@ class IntegrationSourceResource extends Resource
                         ->label('Поставщик для партнёра')
                         ->placeholder('ООО «СанБизнесГруп»')
                         ->maxLength(255),
+                    Select::make('price_currency')
+                        ->label('Валюта входной цены')
+                        ->options(array_combine(
+                            CurrencyPriceConverter::SUPPORTED_CURRENCIES,
+                            CurrencyPriceConverter::SUPPORTED_CURRENCIES,
+                        ))
+                        ->default(CurrencyPriceConverter::BASE_CURRENCY)
+                        ->required()
+                        ->live()
+                        ->afterStateUpdated(function ($state, callable $set): void {
+                            $set(
+                                'price_currency_rate',
+                                $state === CurrencyPriceConverter::BASE_CURRENCY ? 1 : null,
+                            );
+                        }),
+                    TextInput::make('price_currency_rate')
+                        ->label('Курс к BYN')
+                        ->helperText('Исходная цена × курс = BYN до применения НДС. Для BYN курс всегда 1.')
+                        ->numeric()
+                        ->step('0.000001')
+                        ->minValue(0.000001)
+                        ->default(1)
+                        ->required()
+                        ->disabled(fn (callable $get): bool => $get('price_currency') === CurrencyPriceConverter::BASE_CURRENCY)
+                        ->dehydrated(),
                     Select::make('settings.price_tax_mode')
                         ->label('Налогообложение цены')
                         ->options([

@@ -173,6 +173,38 @@ class OrderSupplyRoutingTest extends TestCase
         $this->assertTrue($context['is_snapshot']);
     }
 
+    public function test_current_order_recommendation_uses_imported_price_snapshot_not_later_source_rules(): void
+    {
+        $fixture = $this->fixture();
+        $offer = IntegrationProduct::query()->where('external_id', 'route-onec-1')->firstOrFail();
+        $offer->update([
+            'price_currency' => 'BYN',
+            'price_currency_rate' => 1,
+            'price_tax_mode' => 'exclusive',
+            'price_vat_rate' => 20,
+            'price_byn' => 96,
+        ]);
+
+        $source = $offer->source;
+        $settings = $source->settings;
+        $settings['price_tax_mode'] = 'inclusive';
+        $settings['vat_rate'] = 0;
+        $source->update([
+            'price_currency' => 'EUR',
+            'price_currency_rate' => 4,
+            'settings' => $settings,
+        ]);
+
+        $item = $fixture['item']->fresh();
+        $item->forceFill(['supply_captured_at' => null])->saveQuietly();
+        $context = app(OrderItemSupplyContextResolver::class)->resolve($item->fresh());
+
+        $this->assertSame(96.0, $context['wholesale_price']);
+        $this->assertSame('exclusive', $context['price_tax_mode']);
+        $this->assertSame(20.0, $context['vat_rate']);
+        $this->assertTrue($context['has_purchase_price']);
+    }
+
     public function test_orders_can_be_filtered_by_snapshot_problem(): void
     {
         $fixture = $this->fixture(100);

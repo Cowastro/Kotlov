@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Services\Integrations\IntegrationSourcePricingAuditRecorder;
+use App\Services\Pricing\CurrencyPriceConverter;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -15,7 +16,8 @@ class IntegrationSource extends Model
     public const PRICE_TAX_INCLUSIVE = 'inclusive';
 
     protected $fillable = [
-        'supplier_id', 'code', 'name', 'driver', 'username', 'password_hash', 'is_active', 'create_products',
+        'supplier_id', 'code', 'name', 'driver', 'price_currency', 'price_currency_rate',
+        'username', 'password_hash', 'is_active', 'create_products',
         'update_prices', 'update_stock', 'settings', 'last_authenticated_at',
     ];
 
@@ -26,6 +28,7 @@ class IntegrationSource extends Model
         'create_products' => 'boolean',
         'update_prices' => 'boolean',
         'update_stock' => 'boolean',
+        'price_currency_rate' => 'float',
         'settings' => 'array',
         'last_authenticated_at' => 'datetime',
     ];
@@ -87,6 +90,44 @@ class IntegrationSource extends Model
         return round($price * (1 + $this->vatRate() / 100), 2);
     }
 
+    public function priceCurrency(): string
+    {
+        return CurrencyPriceConverter::normalizeCurrency($this->price_currency);
+    }
+
+    public function priceCurrencyRate(): ?float
+    {
+        if ($this->priceCurrency() === CurrencyPriceConverter::BASE_CURRENCY) {
+            return 1.0;
+        }
+
+        $rate = (float) $this->price_currency_rate;
+
+        return $rate > 0 ? $rate : null;
+    }
+
+    public function normalizePriceToByn(float $price): ?float
+    {
+        $rate = $this->priceCurrencyRate();
+        if ($price <= 0 || $rate === null) {
+            return null;
+        }
+
+        return $this->priceIncludingTax($price * $rate);
+    }
+
+    /** @return array{price_currency:string,price_currency_rate:?float,price_tax_mode:string,price_vat_rate:float,price_byn:?float} */
+    public function priceSnapshot(float $price): array
+    {
+        return [
+            'price_currency' => $this->priceCurrency(),
+            'price_currency_rate' => $this->priceCurrencyRate(),
+            'price_tax_mode' => $this->priceTaxMode(),
+            'price_vat_rate' => $this->vatRate(),
+            'price_byn' => $this->normalizePriceToByn($price),
+        ];
+    }
+
     public function sourcePriceTaxLabel(): string
     {
         return $this->priceTaxMode() === self::PRICE_TAX_INCLUSIVE
@@ -96,9 +137,19 @@ class IntegrationSource extends Model
 
     public function pricingRuleLabel(): string
     {
-        return $this->priceTaxMode() === self::PRICE_TAX_INCLUSIVE
+        $tax = $this->priceTaxMode() === self::PRICE_TAX_INCLUSIVE
             ? 'Передаётся с НДС'
             : 'Без НДС → +'.number_format($this->vatRate(), 0).'%';
+
+        $currency = $this->priceCurrency();
+        $rate = $this->priceCurrencyRate();
+        $currencyRule = $currency === CurrencyPriceConverter::BASE_CURRENCY
+            ? 'BYN'
+            : ($rate === null
+                ? $currency.' · курс не задан'
+                : $currency.' × '.rtrim(rtrim(number_format($rate, 6, '.', ''), '0'), '.'));
+
+        return $currencyRule.' · '.$tax;
     }
 
     public function orderIntervalMinutes(): int

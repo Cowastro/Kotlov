@@ -179,6 +179,8 @@ class OneCExchangeTest extends TestCase
                 $table->string('code')->unique();
                 $table->string('name');
                 $table->string('driver')->default('commerceml');
+                $table->string('price_currency', 3)->default('BYN');
+                $table->decimal('price_currency_rate', 14, 6)->nullable()->default(1);
                 $table->string('username')->nullable();
                 $table->string('password_hash')->nullable();
                 $table->boolean('is_active')->default(true);
@@ -194,6 +196,13 @@ class OneCExchangeTest extends TestCase
         if (! Schema::hasColumn('integration_sources', 'last_authenticated_at')) {
             Schema::table('integration_sources', function (Blueprint $table) {
                 $table->timestamp('last_authenticated_at')->nullable();
+            });
+        }
+
+        if (! Schema::hasColumn('integration_sources', 'price_currency')) {
+            Schema::table('integration_sources', function (Blueprint $table) {
+                $table->string('price_currency', 3)->default('BYN');
+                $table->decimal('price_currency_rate', 14, 6)->nullable()->default(1);
             });
         }
 
@@ -226,6 +235,11 @@ class OneCExchangeTest extends TestCase
                 $table->string('barcode')->nullable();
                 $table->string('name')->nullable();
                 $table->decimal('price', 12, 2)->nullable();
+                $table->string('price_currency', 3)->nullable();
+                $table->decimal('price_currency_rate', 14, 6)->nullable();
+                $table->string('price_tax_mode', 16)->nullable();
+                $table->decimal('price_vat_rate', 7, 4)->nullable();
+                $table->decimal('price_byn', 14, 2)->nullable();
                 $table->decimal('stock_quantity', 12, 3)->nullable();
                 $table->string('match_status')->default('unmatched');
                 $table->string('match_method')->nullable();
@@ -247,6 +261,16 @@ class OneCExchangeTest extends TestCase
         if (! Schema::hasColumn('integration_products', 'last_offer_seen_at')) {
             Schema::table('integration_products', function (Blueprint $table) {
                 $table->timestamp('last_offer_seen_at')->nullable();
+            });
+        }
+
+        if (! Schema::hasColumn('integration_products', 'price_byn')) {
+            Schema::table('integration_products', function (Blueprint $table) {
+                $table->string('price_currency', 3)->nullable();
+                $table->decimal('price_currency_rate', 14, 6)->nullable();
+                $table->string('price_tax_mode', 16)->nullable();
+                $table->decimal('price_vat_rate', 7, 4)->nullable();
+                $table->decimal('price_byn', 14, 2)->nullable();
             });
         }
 
@@ -657,6 +681,11 @@ XML;
         $this->assertDatabaseHas('integration_products', [
             'external_id' => 'multipart-product',
             'price' => 42.50,
+            'price_currency' => 'BYN',
+            'price_currency_rate' => 1,
+            'price_tax_mode' => 'exclusive',
+            'price_vat_rate' => 20,
+            'price_byn' => 51.00,
             'stock_quantity' => 7,
         ]);
     }

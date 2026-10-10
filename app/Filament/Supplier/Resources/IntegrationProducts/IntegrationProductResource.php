@@ -80,15 +80,17 @@ class IntegrationProductResource extends Resource
                     }),
                 TextColumn::make('partner_price')
                     ->label('Цена партнёру, BYN')
-                    ->state(fn (IntegrationProduct $record): ?float => $record->price === null
-                        ? null
-                        : $record->source?->priceIncludingTax((float) $record->price))
+                    ->state(fn (IntegrationProduct $record): ?float => $record->normalizedPriceByn())
                     ->money('BYN')
-                    ->placeholder('Не передана')
+                    ->placeholder('Не рассчитана')
                     ->alignRight()
                     ->description(fn (IntegrationProduct $record): ?string => $record->price === null
                         ? null
-                        : 'Исходная: '.number_format((float) $record->price, 2, ',', ' ').' BYN '.$record->source?->sourcePriceTaxLabel()),
+                        : 'Исходная: '.number_format((float) $record->price, 2, ',', ' ').' '
+                            .$record->effectivePriceCurrency().' '
+                            .($record->effectivePriceTaxMode() === IntegrationSource::PRICE_TAX_INCLUSIVE
+                                ? 'с НДС'
+                                : 'без НДС · +'.number_format($record->effectiveVatRate(), 0).'%')),
                 TextColumn::make('stock_quantity')
                     ->label('Остаток')
                     ->state(fn (IntegrationProduct $record): ?string => $record->stock_quantity === null
