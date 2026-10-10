@@ -53,6 +53,7 @@ class ProductResource extends Resource
                 'integrationProducts:id,product_id,integration_source_id,external_sku,match_status',
                 'integrationProducts.source:id,supplier_id,name,driver,is_active',
                 'integrationProducts.source.supplier:id,name',
+                'marketPriceObservations.source',
             ]);
     }
 

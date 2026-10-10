@@ -34,6 +34,13 @@ class MarketPriceSummary
             ->filter(fn (MarketPriceObservation $observation): bool => $this->isEligible($observation, $asOf))
             ->values();
 
+        $evidence = $latestBySource
+            ->values()
+            ->map(fn (MarketPriceObservation $observation): array => [
+                'observation' => $observation,
+                ...$this->assessment($observation, $asOf),
+            ]);
+
         $base = [
             'status' => 'insufficient',
             'label' => 'Недостаточно данных',
@@ -47,7 +54,9 @@ class MarketPriceSummary
             'delta_percent' => null,
             'position' => null,
             'latest_observed_at' => $eligible->max('observed_at'),
+            'last_checked_at' => $latestBySource->max('observed_at'),
             'observations' => $eligible,
+            'evidence' => $evidence,
         ];
 
         if ($eligible->count() < self::MINIMUM_SOURCES) {
@@ -99,17 +108,28 @@ class MarketPriceSummary
 
     private function isEligible(MarketPriceObservation $observation, CarbonInterface $asOf): bool
     {
+        return $this->assessment($observation, $asOf)['eligible'];
+    }
+
+    /** @return array{eligible: bool, code: string, label: string, color: string} */
+    private function assessment(MarketPriceObservation $observation, CarbonInterface $asOf): array
+    {
         $source = $observation->source;
         $flags = array_values(array_filter((array) $observation->validation_flags));
 
-        return $source !== null
-            && $observation->is_confirmed
-            && $observation->is_comparable
-            && (float) $observation->price_byn > 0
-            && (float) $observation->match_confidence >= (float) $source->minimum_match_confidence
-            && $flags === []
-            && $observation->observed_at !== null
-            && $observation->observed_at->gte($asOf->copy()->subHours($source->freshness_hours));
+        [$eligible, $code, $label, $color] = match (true) {
+            $source === null => [false, 'missing_source', 'Источник недоступен', 'danger'],
+            ! $observation->is_confirmed => [false, 'unconfirmed', 'Не подтверждено', 'warning'],
+            ! $observation->is_comparable => [false, 'not_comparable', 'Не сопоставимо', 'warning'],
+            (float) $observation->price_byn <= 0 => [false, 'invalid_price', 'Некорректная цена', 'danger'],
+            (float) $observation->match_confidence < (float) $source->minimum_match_confidence => [false, 'low_confidence', 'Низкая уверенность', 'warning'],
+            $flags !== [] => [false, 'validation_flags', 'Требует проверки', 'warning'],
+            $observation->observed_at === null => [false, 'missing_date', 'Нет времени проверки', 'danger'],
+            $observation->observed_at->lt($asOf->copy()->subHours($source->freshness_hours)) => [false, 'stale', 'Данные устарели', 'warning'],
+            default => [true, 'eligible', 'Учитывается', 'success'],
+        };
+
+        return compact('eligible', 'code', 'label', 'color');
     }
 
     /** @param Collection<int, float> $values */

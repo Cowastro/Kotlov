@@ -2,6 +2,8 @@
 
 namespace App\Filament\Resources\Products\Schemas;
 
+use App\Models\Product;
+use App\Services\Market\MarketPriceIndicator;
 use Filament\Infolists\Components\IconEntry;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Schemas\Components\Grid;
@@ -10,6 +12,9 @@ use Filament\Schemas\Schema;
 
 class ProductInfolist
 {
+    /** @var \WeakMap<Product, array<string, mixed>>|null */
+    private static ?\WeakMap $marketIndicatorCache = null;
+
     public static function configure(Schema $schema): Schema
     {
         return $schema
@@ -101,6 +106,22 @@ class ProductInfolist
 
                                 TextEntry::make('warranty')
                                     ->label('Гарантия')
+                                    ->placeholder('—'),
+                            ]),
+
+                        Section::make('Рынок и цены')
+                            ->description('Розничный рынок отделён от закупочных цен поставщиков.')
+                            ->schema([
+                                TextEntry::make('market_position')
+                                    ->label('Позиция')
+                                    ->state(fn (Product $record): string => self::marketIndicator($record)['indicator_label'])
+                                    ->description(fn (Product $record): string => self::marketIndicator($record)['indicator_description'])
+                                    ->badge()
+                                    ->color(fn (Product $record): string => self::marketIndicator($record)['indicator_color'])
+                                    ->icon(fn (Product $record): string => self::marketIndicator($record)['indicator_icon']),
+                                TextEntry::make('market_reason')
+                                    ->label('Основание')
+                                    ->state(fn (Product $record): string => self::marketIndicator($record)['indicator_tooltip'])
                                     ->placeholder('—'),
                             ]),
 
@@ -292,5 +313,14 @@ class ProductInfolist
         }
 
         return url('/' . $categorySlug . '/' . $record->slug);
+    }
+
+    /** @return array<string, mixed> */
+    private static function marketIndicator(Product $product): array
+    {
+        self::$marketIndicatorCache ??= new \WeakMap;
+
+        return self::$marketIndicatorCache[$product]
+            ??= app(MarketPriceIndicator::class)->forProduct($product);
     }
 }

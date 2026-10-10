@@ -5,11 +5,16 @@ namespace Tests\Feature;
 use App\Filament\Resources\MarketAnalysis\MarketAnalysisResource;
 use App\Filament\Resources\MarketPriceObservations\MarketPriceObservationResource;
 use App\Filament\Resources\MarketPriceSources\MarketPriceSourceResource;
+use App\Filament\Resources\Orders\OrderResource;
+use App\Filament\Resources\Products\ProductResource;
 use App\Models\Category;
 use App\Models\MarketPriceObservation;
 use App\Models\MarketPriceSource;
+use App\Models\Order;
+use App\Models\OrderItem;
 use App\Models\Product;
 use App\Models\User;
+use App\Services\Market\MarketPriceIndicator;
 use App\Services\Market\MarketPriceObservationRecorder;
 use App\Services\Market\MarketPriceSummary;
 use Carbon\CarbonImmutable;
@@ -122,6 +127,145 @@ class MarketPriceIntelligenceTest extends TestCase
             ->get(MarketPriceSourceResource::getUrl('index', panel: 'admin'))
             ->assertOk()
             ->assertSeeText($source->name);
+    }
+
+    public function test_indicator_explains_ready_and_stale_market_evidence(): void
+    {
+        [$product] = $this->fixture('indicator', productPrice: 120);
+        $asOf = CarbonImmutable::parse('2026-10-10 12:00:00');
+
+        foreach ([90, 100, 110] as $index => $price) {
+            $this->record($this->source('indicator-'.$index), $product, $price, $asOf->subHour());
+        }
+
+        $indicator = app(MarketPriceIndicator::class)->forProduct($product->fresh(), $asOf);
+
+        $this->assertSame('Выше рынка +20,0%', $indicator['indicator_label']);
+        $this->assertStringContainsString('Наша 120,00 BYN', $indicator['indicator_description']);
+        $this->assertStringContainsString('медиана 100,00 BYN', $indicator['indicator_description']);
+        $this->assertSame('danger', $indicator['indicator_color']);
+        $this->assertTrue($indicator['evidence']->every(fn (array $evidence): bool => $evidence['eligible']));
+
+        [$staleProduct, $staleSource] = $this->fixture('stale-indicator');
+        $staleSource->update(['freshness_hours' => 1]);
+        $this->record($staleSource, $staleProduct, 95, $asOf->subHours(2));
+
+        $stale = app(MarketPriceIndicator::class)->forProduct($staleProduct->fresh(), $asOf);
+
+        $this->assertSame('Недостаточно данных', $stale['indicator_label']);
+        $this->assertSame('stale', $stale['evidence']->first()['code']);
+        $this->assertNotNull($stale['last_checked_at']);
+        $this->assertSame('warning', $stale['indicator_color']);
+    }
+
+    public function test_order_indicator_aggregates_products_without_inventing_market_conclusions(): void
+    {
+        [$pricedProduct] = $this->fixture('order-priced', productPrice: 120);
+        [$unknownProduct] = $this->fixture('order-unknown', productPrice: 80);
+
+        foreach ([90, 100, 110] as $index => $price) {
+            $this->record($this->source('order-'.$index), $pricedProduct, $price, now()->subHour());
+        }
+
+        $order = Order::query()->create([
+            'number' => 'MARKET-ORDER-1',
+            'status' => 'new',
+            'customer_name' => 'Тестовый клиент',
+            'customer_phone' => '+375290000000',
+            'delivery_type' => 'pickup',
+            'payment_type' => 'cash',
+            'payment_status' => 'pending',
+            'subtotal' => 200,
+            'total' => 200,
+        ]);
+        foreach ([$pricedProduct, $unknownProduct] as $product) {
+            OrderItem::query()->create([
+                'order_id' => $order->id,
+                'product_id' => $product->id,
+                'product_name' => $product->name,
+                'product_sku' => $product->sku,
+                'price' => $product->price,
+                'quantity' => 1,
+                'total' => $product->price,
+            ]);
+        }
+
+        $indicator = app(MarketPriceIndicator::class)->forOrder($order->fresh());
+
+        $this->assertSame('Выше рынка: 1', $indicator['label']);
+        $this->assertSame(1, $indicator['ready_count']);
+        $this->assertSame(1, $indicator['above_count']);
+        $this->assertSame(1, $indicator['insufficient_count']);
+        $this->assertStringContainsString('проверено 1 из 2 позиций', $indicator['description']);
+        $this->assertSame('Недостаточно данных', $indicator['rows'][1]['indicator']['indicator_label']);
+    }
+
+    public function test_market_details_panel_renders_evidence_links_and_check_time(): void
+    {
+        [$product] = $this->fixture('details-panel', productPrice: 120);
+        foreach ([90, 100, 110] as $index => $price) {
+            $this->record($this->source('details-'.$index), $product, $price, now()->subHour());
+        }
+
+        $indicator = app(MarketPriceIndicator::class)->forProduct($product->fresh());
+        $html = view('filament.market.price-details', [
+            'overview' => [
+                'label' => $indicator['indicator_label'],
+                'description' => $indicator['indicator_description'],
+            ],
+            'rows' => collect([[
+                'item' => null,
+                'product' => $product,
+                'indicator' => $indicator,
+            ]]),
+        ])->render();
+
+        $this->assertStringContainsString('Рыночные предложения не являются закупочными ценами', $html);
+        $this->assertStringContainsString('Проверено', $html);
+        $this->assertStringContainsString('https://market-source-details-0.example/offer', $html);
+        $this->assertStringContainsString('Учитывается', $html);
+    }
+
+    public function test_product_and_order_workbenches_show_the_same_market_indicator(): void
+    {
+        [$product] = $this->fixture('workbench', productPrice: 120);
+        foreach ([90, 100, 110] as $index => $price) {
+            $this->record($this->source('workbench-'.$index), $product, $price, now()->subHour());
+        }
+
+        $order = Order::query()->create([
+            'number' => 'MARKET-WORKBENCH-1',
+            'status' => 'new',
+            'customer_name' => 'Тестовый клиент',
+            'customer_phone' => '+375290000001',
+            'delivery_type' => 'pickup',
+            'payment_type' => 'cash',
+            'payment_status' => 'pending',
+            'subtotal' => 120,
+            'total' => 120,
+        ]);
+        OrderItem::query()->create([
+            'order_id' => $order->id,
+            'product_id' => $product->id,
+            'product_name' => $product->name,
+            'product_sku' => $product->sku,
+            'price' => 120,
+            'quantity' => 1,
+            'total' => 120,
+        ]);
+
+        $admin = User::factory()->create(['role' => 'admin', 'is_active' => true]);
+        $this->actingAs($admin);
+
+        $this->get(ProductResource::getUrl('index', panel: 'admin'))
+            ->assertOk()
+            ->assertSeeText('Рынок')
+            ->assertSeeText('Выше рынка +20,0%');
+
+        $this->get(OrderResource::getUrl('index', panel: 'admin'))
+            ->assertOk()
+            ->assertSeeText('Рынок')
+            ->assertSeeText('Выше рынка: 1');
     }
 
     /** @return array{Product, MarketPriceSource} */

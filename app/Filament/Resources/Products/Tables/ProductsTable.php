@@ -9,6 +9,7 @@ use App\Models\Category;
 use App\Models\Product;
 use App\Models\Supplier;
 use App\Models\User;
+use App\Services\Market\MarketPriceIndicator;
 use Filament\Actions\Action;
 use Filament\Actions\ActionGroup;
 use Filament\Actions\BulkAction;
@@ -32,6 +33,9 @@ use Illuminate\Database\Eloquent\Collection;
 
 class ProductsTable
 {
+    /** @var \WeakMap<Product, array<string, mixed>>|null */
+    private static ?\WeakMap $marketIndicatorCache = null;
+
     public static function configure(Table $table): Table
     {
         return $table
@@ -123,6 +127,16 @@ class ProductsTable
                         : '<span class="text-danger-500 font-bold">— не задана</span>'
                     )
                     ->html(),
+
+                TextColumn::make('market_price_indicator')
+                    ->label('Рынок')
+                    ->state(fn (Product $record): string => self::marketIndicator($record)['indicator_label'])
+                    ->description(fn (Product $record): string => self::marketIndicator($record)['indicator_description'])
+                    ->tooltip(fn (Product $record): string => self::marketIndicator($record)['indicator_tooltip'])
+                    ->badge()
+                    ->color(fn (Product $record): string => self::marketIndicator($record)['indicator_color'])
+                    ->icon(fn (Product $record): string => self::marketIndicator($record)['indicator_icon'])
+                    ->wrap(),
 
                 TextColumn::make('margin_min')
                     ->label('Маржа мин.')
@@ -350,6 +364,30 @@ class ProductsTable
             ])
             ->recordActions([
                 ActionGroup::make([
+                    Action::make('market_price_details')
+                        ->label('Рынок и цены')
+                        ->icon('heroicon-o-presentation-chart-line')
+                        ->color('info')
+                        ->slideOver()
+                        ->modalWidth('7xl')
+                        ->modalHeading(fn (Product $record): string => 'Рынок: '.$record->name)
+                        ->modalSubmitAction(false)
+                        ->modalCancelActionLabel('Закрыть')
+                        ->modalContent(function (Product $record) {
+                            $indicator = self::marketIndicator($record);
+
+                            return view('filament.market.price-details', [
+                                'overview' => [
+                                    'label' => $indicator['indicator_label'],
+                                    'description' => $indicator['indicator_description'],
+                                ],
+                                'rows' => collect([[
+                                    'item' => null,
+                                    'product' => $record,
+                                    'indicator' => $indicator,
+                                ]]),
+                            ]);
+                        }),
                     Action::make('preview_source_enrichment')
                         ->label('Проверить из ссылки')
                         ->icon('heroicon-o-magnifying-glass')
@@ -614,6 +652,15 @@ class ProductsTable
                     DeleteBulkAction::make(),
                 ]),
             ]);
+    }
+
+    /** @return array<string, mixed> */
+    private static function marketIndicator(Product $product): array
+    {
+        self::$marketIndicatorCache ??= new \WeakMap;
+
+        return self::$marketIndicatorCache[$product]
+            ??= app(MarketPriceIndicator::class)->forProduct($product);
     }
 
     public static function applySupplierFilter(Builder $query, int $supplierId): Builder
