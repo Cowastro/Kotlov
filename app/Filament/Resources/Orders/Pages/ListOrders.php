@@ -38,6 +38,7 @@ class ListOrders extends ListRecords
             'cancelled' => 'danger',
         ];
 
+        $workQueueCount = Order::query()->operationallyActive()->count();
         $unassigned = Order::query()
             ->operationallyActive()
             ->whereNull('manager_id')
@@ -55,11 +56,14 @@ class ListOrders extends ListRecords
                 ->withOperationalProblem('negative_margin')
                 ->orWhere(fn (Builder $part): Builder => $part->withOperationalProblem('low_margin')))
             ->count();
-        $staleLeadCount = Order::query()->staleUnprocessed()->count();
+        $historicalLeadCount = Order::query()->historicalUnprocessed()->count();
 
         $tabs = [
-            'all' => Tab::make('Все')
-                ->badge(Order::count()),
+            'work_queue' => Tab::make('В работе')
+                ->icon('heroicon-o-briefcase')
+                ->modifyQueryUsing(fn (Builder $query) => $query->operationallyActive())
+                ->badge($workQueueCount ?: null)
+                ->badgeColor('info'),
 
             'attention' => Tab::make('Нужна реакция')
                 ->icon('heroicon-o-exclamation-triangle')
@@ -67,11 +71,11 @@ class ListOrders extends ListRecords
                 ->badge($attentionCount ?: null)
                 ->badgeColor('danger'),
 
-            'stale_leads' => Tab::make('Старые без реакции')
-                ->icon('heroicon-o-clock')
-                ->modifyQueryUsing(fn (Builder $query) => $query->staleUnprocessed())
-                ->badge($staleLeadCount ?: null)
-                ->badgeColor('warning'),
+            'historical_leads' => Tab::make('Исторические заявки')
+                ->icon('heroicon-o-archive-box')
+                ->modifyQueryUsing(fn (Builder $query) => $query->historicalUnprocessed())
+                ->badge($historicalLeadCount ?: null)
+                ->badgeColor('gray'),
 
             'missing_price' => Tab::make('Без входной цены')
                 ->icon('heroicon-o-banknotes')
@@ -111,6 +115,9 @@ class ListOrders extends ListRecords
                         ->orWhere('assigned_to', '')))
                 ->badge($unassigned ?: null)
                 ->badgeColor('danger'),
+
+            'all' => Tab::make('Все заказы')
+                ->badge(Order::count()),
         ];
 
         foreach (Order::STATUSES as $key => $label) {

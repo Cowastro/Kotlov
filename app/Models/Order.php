@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -133,26 +134,81 @@ class Order extends Model
         return max(1, (int) config('shop.order_management.stale_lead_days', 30));
     }
 
-    public function scopeStaleUnprocessed(Builder $query, ?int $days = null): Builder
+    public static function operationsStartedAt(): ?Carbon
     {
-        $days ??= self::staleLeadDays();
+        $configured = config('shop.order_management.operations_started_at');
 
+        if (blank($configured)) {
+            return null;
+        }
+
+        try {
+            $startedAt = Carbon::parse((string) $configured, config('app.timezone', 'UTC'));
+
+            return $startedAt->isFuture() ? null : $startedAt;
+        } catch (\Throwable) {
+            return null;
+        }
+    }
+
+    public static function historicalLeadCutoff(): Carbon
+    {
+        $ageCutoff = now()->subDays(self::staleLeadDays());
+        $operationsStartedAt = self::operationsStartedAt();
+
+        return $operationsStartedAt?->greaterThan($ageCutoff)
+            ? $operationsStartedAt
+            : $ageCutoff;
+    }
+
+    public function scopeHistoricalUnprocessed(Builder $query): Builder
+    {
         return $query
             ->where('status', 'new')
             ->where(fn (Builder $payment): Builder => $payment
                 ->whereNull('payment_status')
                 ->orWhere('payment_status', '!=', 'paid'))
-            ->where('created_at', '<=', now()->subDays($days));
+            ->where('created_at', '<=', self::historicalLeadCutoff());
+    }
+
+    public function scopeStaleUnprocessed(Builder $query, ?int $days = null): Builder
+    {
+        if ($days !== null) {
+            return $query
+                ->where('status', 'new')
+                ->where(fn (Builder $payment): Builder => $payment
+                    ->whereNull('payment_status')
+                    ->orWhere('payment_status', '!=', 'paid'))
+                ->where('created_at', '<=', now()->subDays($days));
+        }
+
+        return $query->historicalUnprocessed();
     }
 
     public function scopeOperationallyActive(Builder $query): Builder
     {
-        return $query->whereNotIn('status', ['delivered', 'completed', 'cancelled']);
+        return $query
+            ->whereNotIn('status', ['delivered', 'completed', 'cancelled'])
+            ->where(function (Builder $current): void {
+                $current
+                    ->where('status', '!=', 'new')
+                    ->orWhere('payment_status', 'paid')
+                    ->orWhere('created_at', '>', self::historicalLeadCutoff());
+            });
+    }
+
+    public function isHistoricalUnprocessed(): bool
+    {
+        return $this->status === 'new'
+            && $this->payment_status !== 'paid'
+            && $this->created_at?->lte(self::historicalLeadCutoff()) === true;
     }
 
     public function isStaleUnprocessed(?int $days = null): bool
     {
-        $days ??= self::staleLeadDays();
+        if ($days === null) {
+            return $this->isHistoricalUnprocessed();
+        }
 
         return $this->status === 'new'
             && $this->payment_status !== 'paid'
@@ -331,6 +387,15 @@ class Order extends Model
 
         $supply = $this->supplySummary();
         $problems = collect();
+
+        if ($this->isHistoricalUnprocessed()) {
+            return $this->managementSummaryCache = $supply + [
+                'problems' => $problems,
+                'problem_count' => 0,
+                'severity' => 'historical',
+                'attention_label' => 'Историческая заявка',
+            ];
+        }
 
         if ($supply['unresolved_count'] > 0) {
             $problems->push(['severity' => 'critical', 'label' => 'Не определён поставщик: '.$supply['unresolved_count']]);

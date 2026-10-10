@@ -106,10 +106,10 @@ class OrdersTable
                 TextColumn::make('created_at')
                     ->label('Дата')
                     ->dateTime('d.m.Y H:i')
-                    ->description(fn (Order $record): ?string => $record->isStaleUnprocessed()
-                        ? 'Без реакции '.(int) $record->created_at->diffInDays(now()).' дн.'
+                    ->description(fn (Order $record): ?string => $record->isHistoricalUnprocessed()
+                        ? 'Историческая заявка · '.(int) $record->created_at->diffInDays(now()).' дн.'
                         : null)
-                    ->color(fn (Order $record): ?string => $record->isStaleUnprocessed() ? 'warning' : null)
+                    ->color(fn (Order $record): ?string => $record->isHistoricalUnprocessed() ? 'gray' : null)
                     ->sortable(),
 
                 TextColumn::make('customer_name')
@@ -222,6 +222,7 @@ class OrdersTable
                         return $goods.' · Вход ≈ '.number_format($summary['purchase_total'], 2, '.', ' ').' BYN · Маржа ≈ '.$margin.$percent;
                     })
                     ->color(fn (Order $record): string => match (true) {
+                        $record->isHistoricalUnprocessed() => 'gray',
                         $record->placedEconomicSnapshot?->purchase_total === null
                             && $record->placedEconomicSnapshot !== null => 'warning',
                         $record->placedEconomicSnapshot?->goods_margin_total < 0 => 'danger',
@@ -326,11 +327,13 @@ class OrdersTable
                     ->color(fn (Order $record): string => match ($record->managementSummary()['severity']) {
                         'critical' => 'danger',
                         'warning' => 'warning',
+                        'historical' => 'gray',
                         default => 'success',
                     })
                     ->icon(fn (Order $record): string => match ($record->managementSummary()['severity']) {
                         'critical' => 'heroicon-o-exclamation-triangle',
                         'warning' => 'heroicon-o-eye',
+                        'historical' => 'heroicon-o-archive-box',
                         default => 'heroicon-o-check-circle',
                     })
                     ->wrap(),
@@ -420,18 +423,18 @@ class OrdersTable
                 SelectFilter::make('lead_relevance')
                     ->label('Актуальность заявки')
                     ->options([
-                        'stale' => 'Старая без реакции',
-                        'current' => 'Новая до '.Order::staleLeadDays().' дней',
+                        'historical' => 'Историческая, вне рабочей очереди',
+                        'current' => 'Текущая рабочая заявка',
                     ])
                     ->query(function (Builder $query, array $data): Builder {
                         return match ($data['value'] ?? null) {
-                            'stale' => $query->staleUnprocessed(),
+                            'historical' => $query->historicalUnprocessed(),
                             'current' => $query
                                 ->where('status', 'new')
                                 ->where(fn (Builder $payment): Builder => $payment
                                     ->whereNull('payment_status')
                                     ->orWhere('payment_status', '!=', 'paid'))
-                                ->where('created_at', '>', now()->subDays(Order::staleLeadDays())),
+                                ->where('created_at', '>', Order::historicalLeadCutoff()),
                             default => $query,
                         };
                     }),
