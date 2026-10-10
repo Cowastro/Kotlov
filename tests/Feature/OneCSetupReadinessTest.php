@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Filament\Resources\IntegrationSources\IntegrationSourceResource;
 use App\Models\IntegrationExchangeRun;
+use App\Models\IntegrationProduct;
 use App\Models\IntegrationSource;
 use App\Models\User;
 use App\Services\Integrations\OneCSetupReadiness;
@@ -149,6 +150,29 @@ class OneCSetupReadinessTest extends TestCase
         $this->assertStringContainsString('ошибкой', $catalogCheck['next_step']);
     }
 
+    public function test_setup_distinguishes_existing_staging_data_from_a_monitored_exchange_run(): void
+    {
+        $source = IntegrationSource::query()->create([
+            'code' => 'onec-historical',
+            'name' => 'Исторический импорт',
+            'driver' => 'commerceml',
+            'is_active' => true,
+        ]);
+        IntegrationProduct::query()->create([
+            'integration_source_id' => $source->id,
+            'external_id' => 'historical-1',
+            'name' => 'Ранее полученный товар',
+            'last_seen_at' => now()->subDay(),
+        ]);
+
+        $snapshot = app(OneCSetupReadiness::class)->snapshot($source);
+
+        $this->assertSame(1, $snapshot['staged_products_count']);
+        $this->assertNotNull($snapshot['latest_staged_at']);
+        $this->assertNull($snapshot['latest_run']);
+        $this->assertFalse($snapshot['ready']);
+    }
+
     public function test_admin_can_open_one_c_setup_page_and_see_next_steps(): void
     {
         $admin = User::factory()->create([
@@ -167,6 +191,31 @@ class OneCSetupReadinessTest extends TestCase
             ->assertSee('Настройка автоматического обмена 1С')
             ->assertSee(url('/1c/exchange/onec'))
             ->assertSee('Каталог, цены и остатки поступают');
+    }
+
+    public function test_setup_page_explains_historical_staging_without_claiming_a_successful_cycle(): void
+    {
+        $admin = User::factory()->create([
+            'role' => 'admin',
+            'is_active' => true,
+        ]);
+        $source = IntegrationSource::query()->updateOrCreate(['code' => 'onec'], [
+            'name' => 'СанБизнесГруп',
+            'driver' => 'commerceml',
+            'is_active' => true,
+        ]);
+        IntegrationProduct::query()->create([
+            'integration_source_id' => $source->id,
+            'external_id' => 'old-import',
+            'last_seen_at' => now()->subHour(),
+        ]);
+
+        $this->actingAs($admin)
+            ->get('/admin/one-c-setup')
+            ->assertOk()
+            ->assertSeeText('Промежуточный каталог: 1 позиций')
+            ->assertSeeText('Данные были получены до включения журнала или вне текущего узла')
+            ->assertDontSeeText('Обмен готов');
     }
 
     public function test_source_list_uses_the_same_flow_health_as_the_operations_dashboard(): void

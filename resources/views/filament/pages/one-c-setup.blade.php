@@ -78,13 +78,27 @@
                                 </div>
                             @endforeach
                         </div>
+                        @if ($item['staged_products_count'] > 0)
+                            <div class="onec-setup-muted">
+                                Промежуточный каталог: {{ number_format($item['staged_products_count'], 0, ',', ' ') }} позиций
+                                @if ($item['latest_staged_at'])
+                                    · данные обновлялись {{ $item['latest_staged_at']->timezone('Europe/Minsk')->format('d.m.Y H:i:s') }}
+                                @endif
+                            </div>
+                        @endif
                         @if ($item['latest_run'])
                             <div class="onec-setup-muted">
                                 Последняя попытка: {{ $item['latest_run']->started_at?->timezone('Europe/Minsk')->format('d.m.Y H:i:s') }} ·
                                 {{ $item['latest_run']->status === 'success' ? 'успешно' : ($item['latest_run']->status === 'failed' ? 'ошибка' : 'выполняется') }}
                             </div>
                         @else
-                            <div class="onec-setup-muted">Сайт ещё не зафиксировал ни одного цикла этого подключения.</div>
+                            <div class="onec-setup-muted">
+                                @if ($item['staged_products_count'] > 0)
+                                    Данные были получены до включения журнала или вне текущего узла. Выполните новый цикл из 1С — он появится здесь как контролируемый обмен.
+                                @else
+                                    Сайт ещё не зафиксировал ни одного цикла этого подключения.
+                                @endif
+                            </div>
                         @endif
                     </div>
                 </div>

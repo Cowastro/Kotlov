@@ -21,6 +21,12 @@ class OneCSetupReadiness
         $latestStatuses = $flows['order_statuses']['latest_success'];
         $latestRun = $source->exchangeRuns()->latest('started_at')->first();
         $catalogFresh = $flows['catalog']['status'] === 'healthy';
+        $stagedProductsCount = $source->products()->count();
+        $latestStagedAt = $source->products()
+            ->whereNotNull('last_seen_at')
+            ->latest('last_seen_at')
+            ->first(['last_seen_at'])
+            ?->last_seen_at;
 
         $checks = [
             $this->check(
@@ -75,6 +81,8 @@ class OneCSetupReadiness
             'latest_statuses' => $latestStatuses,
             'catalog_fresh' => $catalogFresh,
             'flow_health' => $flowSnapshot['health'],
+            'staged_products_count' => $stagedProductsCount,
+            'latest_staged_at' => $latestStagedAt,
         ];
     }
 
