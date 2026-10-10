@@ -56,13 +56,25 @@ class OrderItemSupplyContextResolver
             'margin_total' => null,
             'margin_percent' => null,
             'stock_label' => 'Наличие неизвестно',
+            'is_available' => null,
+            'has_purchase_price' => false,
+            'quantity' => (int) $item->quantity,
+            'sale_total' => round((float) $item->price * (int) $item->quantity, 2),
             'candidate_count' => 0,
             'is_explicit' => false,
             'is_current_recommendation' => true,
         ];
     }
 
-    /** @return array{supplier_names: Collection<int, string>, unresolved_count: int, margin_total: float, items_count: int} */
+    /**
+     * @return array{
+     *     supplier_names: Collection<int, string>, unresolved_count: int,
+     *     missing_price_count: int, unavailable_count: int,
+     *     negative_margin_count: int, sale_total: float, purchase_total: float,
+     *     priced_sale_total: float, margin_total: float, margin_percent: float|null,
+     *     items_count: int, priced_items_count: int
+     * }
+     */
     public function summarize(Order $order): array
     {
         $order->loadMissing([
@@ -73,11 +85,33 @@ class OrderItemSupplyContextResolver
 
         $contexts = $order->items->map(fn (OrderItem $item): array => $this->resolve($item));
 
+        $pricedContexts = $contexts->where('has_purchase_price', true);
+        $saleTotal = round((float) $order->items->sum(
+            fn (OrderItem $item): float => (float) ($item->total ?? ((float) $item->price * (int) $item->quantity)),
+        ), 2);
+        $purchaseTotal = round((float) $pricedContexts->sum(
+            fn (array $context): float => (float) $context['wholesale_price'] * (int) $context['quantity'],
+        ), 2);
+        $pricedSaleTotal = round((float) $pricedContexts->sum('sale_total'), 2);
+        $marginTotal = round((float) $pricedContexts->sum('margin_total'), 2);
+
         return [
             'supplier_names' => $contexts->pluck('supplier_name')->filter()->unique()->values(),
             'unresolved_count' => $contexts->where('status', 'unresolved')->count(),
-            'margin_total' => round((float) $contexts->sum('margin_total'), 2),
+            'missing_price_count' => $contexts->where('has_purchase_price', false)->count(),
+            'unavailable_count' => $contexts->where('is_available', false)->count(),
+            'negative_margin_count' => $pricedContexts->filter(
+                fn (array $context): bool => (float) $context['margin_total'] < 0,
+            )->count(),
+            'sale_total' => $saleTotal,
+            'purchase_total' => $purchaseTotal,
+            'priced_sale_total' => $pricedSaleTotal,
+            'margin_total' => $marginTotal,
+            'margin_percent' => $pricedSaleTotal > 0
+                ? round($marginTotal / $pricedSaleTotal * 100, 1)
+                : null,
             'items_count' => $contexts->count(),
+            'priced_items_count' => $pricedContexts->count(),
         ];
     }
 
@@ -132,6 +166,7 @@ class OrderItemSupplyContextResolver
             'stock_label' => (float) $offer->stock_quantity > 0
                 ? $offer->formattedStockQuantity()
                 : 'Сейчас нет в наличии',
+            'is_available' => (float) $offer->stock_quantity > 0,
             'candidate_count' => $candidateCount,
             'is_explicit' => $explicit,
             'is_current_recommendation' => ! $explicit,
@@ -152,6 +187,7 @@ class OrderItemSupplyContextResolver
             'stock_label' => $this->legacyOfferAvailable($offer)
                 ? ($offer->stock_quantity !== null ? number_format((int) $offer->stock_quantity, 0, '.', ' ').' шт.' : 'Есть в наличии')
                 : 'Сейчас нет в наличии',
+            'is_available' => $this->legacyOfferAvailable($offer),
             'candidate_count' => $candidateCount,
             'is_explicit' => false,
             'is_current_recommendation' => true,
@@ -164,13 +200,23 @@ class OrderItemSupplyContextResolver
     private function pricedContext(OrderItem $item, float $wholesalePrice, array $context): array
     {
         $salePrice = (float) $item->price;
+        $quantity = (int) $item->quantity;
+        $hasPurchasePrice = $wholesalePrice > 0;
         $marginUnit = round($salePrice - $wholesalePrice, 2);
 
         return $context + [
-            'wholesale_price' => round($wholesalePrice, 2),
-            'margin_unit' => $marginUnit,
-            'margin_total' => round($marginUnit * (int) $item->quantity, 2),
-            'margin_percent' => $salePrice > 0 ? round($marginUnit / $salePrice * 100, 1) : null,
+            'wholesale_price' => $hasPurchasePrice ? round($wholesalePrice, 2) : null,
+            'wholesale_price_label' => $hasPurchasePrice
+                ? $context['wholesale_price_label']
+                : 'Нет закупочной цены',
+            'has_purchase_price' => $hasPurchasePrice,
+            'quantity' => $quantity,
+            'sale_total' => round($salePrice * $quantity, 2),
+            'margin_unit' => $hasPurchasePrice ? $marginUnit : null,
+            'margin_total' => $hasPurchasePrice ? round($marginUnit * $quantity, 2) : null,
+            'margin_percent' => $hasPurchasePrice && $salePrice > 0
+                ? round($marginUnit / $salePrice * 100, 1)
+                : null,
         ];
     }
 

@@ -100,11 +100,17 @@ class OrdersTable
 
                 TextColumn::make('customer_name')
                     ->label('Клиент')
-                    ->searchable(),
+                    ->searchable()
+                    ->description(fn (Order $record): string => collect([
+                        $record->customer_phone,
+                        $record->delivery_city,
+                    ])->filter()->implode(' · ') ?: 'Контакты не указаны')
+                    ->wrap(),
 
                 TextColumn::make('customer_phone')
                     ->label('Телефон')
-                    ->searchable(),
+                    ->searchable()
+                    ->toggleable(isToggledHiddenByDefault: true),
 
                 TextColumn::make('customer_email')
                     ->label('Email')
@@ -116,7 +122,8 @@ class OrdersTable
                 TextColumn::make('delivery_city')
                     ->label('Город')
                     ->searchable()
-                    ->placeholder('—'),
+                    ->placeholder('—')
+                    ->toggleable(isToggledHiddenByDefault: true),
 
                 TextColumn::make('delivery_address')
                     ->label('Адрес')
@@ -158,10 +165,36 @@ class OrdersTable
                     })
                     ->formatStateUsing(fn (?string $state) => $state ? ($paymentStatuses[$state] ?? $state) : '—'),
 
-                TextColumn::make('total')
-                    ->label('Сумма')
-                    ->sortable()
-                    ->formatStateUsing(fn ($state) => number_format((float) $state, 0, '.', ' ').' BYN'),
+                TextColumn::make('economics')
+                    ->label('Экономика')
+                    ->state(fn (Order $record): string => 'Продажа '.number_format((float) $record->total, 2, '.', ' ').' BYN')
+                    ->description(function (Order $record): string {
+                        $summary = $record->managementSummary();
+
+                        if ($summary['missing_price_count'] > 0) {
+                            $known = $summary['priced_items_count'] > 0
+                                ? 'Известный вход ≈ '.number_format($summary['purchase_total'], 2, '.', ' ').' BYN'
+                                : 'Входная стоимость не рассчитана';
+
+                            return $known.' · Без цены: '.$summary['missing_price_count'];
+                        }
+
+                        $margin = number_format($summary['margin_total'], 2, '.', ' ').' BYN';
+                        $percent = $summary['margin_percent'] !== null
+                            ? ' / '.number_format($summary['margin_percent'], 1, '.', ' ').'%'
+                            : '';
+
+                        return 'Вход ≈ '.number_format($summary['purchase_total'], 2, '.', ' ').' BYN · Маржа ≈ '.$margin.$percent;
+                    })
+                    ->color(fn (Order $record): string => match (true) {
+                        $record->managementSummary()['negative_margin_count'] > 0 => 'danger',
+                        $record->managementSummary()['missing_price_count'] > 0 => 'warning',
+                        default => 'success',
+                    })
+                    ->icon('heroicon-o-calculator')
+                    ->tooltip('Текущий расчёт. Входная стоимость берётся из подтверждённой связи поставщика; неизвестная цена не считается нулевой.')
+                    ->wrap()
+                    ->sortable(query: fn (Builder $query, string $direction): Builder => $query->orderBy('total', $direction)),
 
                 TextColumn::make('items_sum_quantity')
                     ->label('Товаров')
@@ -220,6 +253,35 @@ class OrdersTable
                     ->description(fn (Order $record): ?string => $record->onecSyncDescription())
                     ->wrap(),
 
+                TextColumn::make('management_attention')
+                    ->label('Контроль')
+                    ->state(function (Order $record): string {
+                        $summary = $record->managementSummary();
+
+                        return $summary['problem_count'] > 0
+                            ? $summary['attention_label'].' · '.$summary['problem_count']
+                            : $summary['attention_label'];
+                    })
+                    ->description(fn (Order $record): string => $record->managementSummary()['problems']
+                        ->pluck('label')
+                        ->take(2)
+                        ->implode(' · ') ?: 'Критичных сигналов нет')
+                    ->tooltip(fn (Order $record): string => $record->managementSummary()['problems']
+                        ->pluck('label')
+                        ->implode("\n") ?: 'Критичных сигналов нет')
+                    ->badge()
+                    ->color(fn (Order $record): string => match ($record->managementSummary()['severity']) {
+                        'critical' => 'danger',
+                        'warning' => 'warning',
+                        default => 'success',
+                    })
+                    ->icon(fn (Order $record): string => match ($record->managementSummary()['severity']) {
+                        'critical' => 'heroicon-o-exclamation-triangle',
+                        'warning' => 'heroicon-o-eye',
+                        default => 'heroicon-o-check-circle',
+                    })
+                    ->wrap(),
+
                 TextColumn::make('supply_route')
                     ->label('Поставка')
                     ->state(function (Order $record): string {
@@ -233,11 +295,11 @@ class OrdersTable
                         $summary = $record->supplySummary();
                         $parts = [];
 
+                        if ($summary['supplier_names']->count() > 1) {
+                            $parts[] = 'Смешанная поставка';
+                        }
                         if ($summary['unresolved_count'] > 0) {
                             $parts[] = 'Без маршрута: '.$summary['unresolved_count'];
-                        }
-                        if ($summary['margin_total'] !== 0.0) {
-                            $parts[] = 'Маржа ≈ '.number_format($summary['margin_total'], 2, '.', ' ').' BYN';
                         }
 
                         return $parts !== [] ? implode(' · ', $parts) : 'Маршрут рассчитан по текущим связям';
@@ -268,7 +330,7 @@ class OrdersTable
                         ($item->product_sku ? ' ['.$item->product_sku.']' : '')
                     )->filter()->join("\n"))
                     ->wrap()
-                    ->lineClamp(3)
+                    ->lineClamp(2)
                     ->searchable(query: function (Builder $query, string $search): Builder {
                         return $query->orWhereHas('items', function (Builder $itemsQuery) use ($search): void {
                             $itemsQuery

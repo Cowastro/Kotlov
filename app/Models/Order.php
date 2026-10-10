@@ -15,6 +15,9 @@ class Order extends Model
     /** @var array<string, mixed>|null */
     private ?array $supplySummaryCache = null;
 
+    /** @var array<string, mixed>|null */
+    private ?array $managementSummaryCache = null;
+
     public const ONEC_SYNC_STATES = [
         'conflict' => 'Конфликт статусов',
         'unknown' => 'Неизвестный статус',
@@ -143,6 +146,68 @@ class Order extends Model
     public function supplySummary(): array
     {
         return $this->supplySummaryCache ??= app(OrderItemSupplyContextResolver::class)->summarize($this);
+    }
+
+    /**
+     * Read-only operational summary for the manager's order queue.
+     * Financial values are current estimates until route snapshots are introduced.
+     *
+     * @return array<string, mixed>
+     */
+    public function managementSummary(): array
+    {
+        if ($this->managementSummaryCache !== null) {
+            return $this->managementSummaryCache;
+        }
+
+        $supply = $this->supplySummary();
+        $problems = collect();
+
+        if ($supply['unresolved_count'] > 0) {
+            $problems->push(['severity' => 'critical', 'label' => 'Не определён поставщик: '.$supply['unresolved_count']]);
+        }
+        if ($supply['missing_price_count'] > 0) {
+            $problems->push(['severity' => 'critical', 'label' => 'Нет входной цены: '.$supply['missing_price_count']]);
+        }
+        if ($supply['negative_margin_count'] > 0) {
+            $problems->push(['severity' => 'critical', 'label' => 'Убыточных позиций: '.$supply['negative_margin_count']]);
+        }
+        if ($supply['unavailable_count'] > 0) {
+            $problems->push(['severity' => 'warning', 'label' => 'Нет подтверждённого остатка: '.$supply['unavailable_count']]);
+        }
+
+        $isActive = ! in_array($this->status, ['delivered', 'completed', 'cancelled'], true);
+        if ($isActive && ! $this->manager_id && blank($this->assigned_to)) {
+            $problems->push(['severity' => 'warning', 'label' => 'Не назначен менеджер']);
+        }
+
+        $syncState = $this->onecSyncState();
+        if (in_array($syncState, ['conflict', 'unknown', 'no_response', 'delayed'], true)) {
+            $problems->push([
+                'severity' => $syncState === 'conflict' ? 'critical' : 'warning',
+                'label' => $this->onecSyncLabel(),
+            ]);
+        }
+        if ($this->payment_status === 'failed') {
+            $problems->push(['severity' => 'critical', 'label' => 'Ошибка оплаты']);
+        }
+
+        $severity = match (true) {
+            $problems->contains('severity', 'critical') => 'critical',
+            $problems->isNotEmpty() => 'warning',
+            default => 'ok',
+        };
+
+        return $this->managementSummaryCache = $supply + [
+            'problems' => $problems,
+            'problem_count' => $problems->count(),
+            'severity' => $severity,
+            'attention_label' => match ($severity) {
+                'critical' => 'Нужна реакция',
+                'warning' => 'Проверить',
+                default => 'Готов к работе',
+            },
+        ];
     }
 
     public function onecSyncState(): string

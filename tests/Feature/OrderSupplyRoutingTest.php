@@ -39,6 +39,16 @@ class OrderSupplyRoutingTest extends TestCase
         $this->assertFalse($context['is_explicit']);
         $this->assertSame($beforeItems, OrderItem::query()->count());
         $this->assertSame($beforeLinks, IntegrationProduct::query()->count() + SupplierProduct::query()->count());
+
+        $summary = $fixture['order']->fresh()->managementSummary();
+        $this->assertSame(240.0, $summary['sale_total']);
+        $this->assertSame(192.0, $summary['purchase_total']);
+        $this->assertSame(48.0, $summary['margin_total']);
+        $this->assertSame(20.0, $summary['margin_percent']);
+        $this->assertSame(0, $summary['missing_price_count']);
+        $this->assertSame('warning', $summary['severity']);
+        $this->assertSame('Проверить', $summary['attention_label']);
+        $this->assertTrue($summary['problems']->pluck('label')->contains('Не назначен менеджер'));
     }
 
     public function test_admin_order_pages_show_supplier_contact_wholesale_margin_and_route(): void
@@ -51,7 +61,12 @@ class OrderSupplyRoutingTest extends TestCase
             ->assertOk()
             ->assertSeeText('Поставка')
             ->assertSeeText('ООО «СанБизнесГруп»')
-            ->assertSeeText('Маржа ≈ 48.00 BYN');
+            ->assertSeeText('Экономика')
+            ->assertSeeText('Продажа 240.00 BYN')
+            ->assertSeeText('Вход ≈ 192.00 BYN · Маржа ≈ 48.00 BYN / 20.0%')
+            ->assertSeeText('Контроль')
+            ->assertSeeText('Проверить · 1')
+            ->assertSeeText('Не назначен менеджер');
 
         $this->actingAs($admin)
             ->get(OrderResource::getUrl('view', ['record' => $fixture['order']], panel: 'admin'))
@@ -65,6 +80,52 @@ class OrderSupplyRoutingTest extends TestCase
             ->assertSeeText('Наш склад / 1С')
             ->assertSeeText('Рекомендация · вариантов: 2')
             ->assertSeeText('Для старых заказов это рекомендация');
+    }
+
+    public function test_unknown_purchase_price_is_reported_instead_of_being_treated_as_zero_cost(): void
+    {
+        $category = Category::query()->create([
+            'name' => 'Категория без поставщика',
+            'slug' => 'order-without-supplier',
+            'parent_id' => 0,
+        ]);
+        $product = Product::query()->create([
+            'category_id' => $category->id,
+            'name' => 'Товар без входной цены',
+            'slug' => 'order-product-without-cost',
+            'sku' => 'NO-COST-1',
+            'price' => 150,
+        ]);
+        $order = Order::query()->create([
+            'number' => 'ORD-NO-COST-1',
+            'status' => 'new',
+            'customer_name' => 'Покупатель',
+            'customer_phone' => '+375291110001',
+            'delivery_type' => 'pickup',
+            'payment_type' => 'cash',
+            'payment_status' => 'pending',
+            'subtotal' => 150,
+            'total' => 150,
+        ]);
+        OrderItem::query()->create([
+            'order_id' => $order->id,
+            'product_id' => $product->id,
+            'product_name' => $product->name,
+            'product_sku' => $product->sku,
+            'price' => 150,
+            'quantity' => 1,
+            'total' => 150,
+        ]);
+
+        $summary = $order->fresh()->managementSummary();
+
+        $this->assertSame(0.0, $summary['purchase_total']);
+        $this->assertSame(0.0, $summary['margin_total']);
+        $this->assertNull($summary['margin_percent']);
+        $this->assertSame(1, $summary['missing_price_count']);
+        $this->assertSame('critical', $summary['severity']);
+        $this->assertTrue($summary['problems']->pluck('label')->contains('Нет входной цены: 1'));
+        $this->assertTrue($summary['problems']->pluck('label')->contains('Не определён поставщик: 1'));
     }
 
     /** @return array{order: Order, item: OrderItem} */
