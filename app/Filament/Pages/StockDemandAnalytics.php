@@ -4,13 +4,17 @@ namespace App\Filament\Pages;
 
 use App\Filament\Resources\IntegrationProducts\IntegrationProductResource;
 use App\Models\IntegrationSource;
+use App\Models\PurchasePlan;
 use App\Services\Orders\OrderStockRecommendationService;
+use App\Services\Orders\PurchasePlanManager;
 use BackedEnum;
+use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Filament\Support\Enums\Width;
 use Filament\Support\Icons\Heroicon;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
+use Illuminate\Validation\ValidationException;
 use Livewire\WithPagination;
 
 class StockDemandAnalytics extends Page
@@ -40,6 +44,9 @@ class StockDemandAnalytics extends Page
     public bool $purchaseOnly = true;
 
     public int $perPage = 25;
+
+    /** @var array<int, int|string> */
+    public array $selectedProductIds = [];
 
     private ?Collection $rowsCache = null;
 
@@ -184,6 +191,85 @@ class StockDemandAnalytics extends Page
         return $name;
     }
 
+    public function selectRecommended(): void
+    {
+        $this->selectedProductIds = $this->filteredRows()
+            ->filter(fn (array $row): bool => ($row['recommended_purchase'] ?? 0) > 0
+                && ($row['stock_data_ready'] ?? false) === true)
+            ->pluck('product_id')
+            ->map(fn ($id): int => (int) $id)
+            ->values()
+            ->all();
+    }
+
+    public function clearSelection(): void
+    {
+        $this->selectedProductIds = [];
+    }
+
+    public function createPurchasePlan(): void
+    {
+        abort_unless(auth()->user()?->isManager() === true, 403);
+
+        $source = IntegrationSource::query()->where('code', $this->sourceCode)->first();
+        if (! $source) {
+            Notification::make()->title('Источник не найден')->danger()->send();
+
+            return;
+        }
+
+        $selected = collect($this->selectedProductIds)->map(fn ($id): int => (int) $id)->unique();
+        $recommendations = app(OrderStockRecommendationService::class)
+            ->recommendations($this->period, $this->sourceCode)
+            ->whereIn('product_id', $selected);
+
+        try {
+            $result = app(PurchasePlanManager::class)->createDraft(
+                $recommendations,
+                $source,
+                $this->period,
+                auth()->user(),
+            );
+        } catch (ValidationException $exception) {
+            Notification::make()
+                ->title('План не создан')
+                ->body((string) collect($exception->errors())->flatten()->first())
+                ->danger()
+                ->send();
+
+            return;
+        }
+
+        $this->selectedProductIds = [];
+        $plan = $result['plan'];
+        Notification::make()
+            ->title($result['created'] ? "Создан черновик {$plan->number}" : "Черновик {$plan->number} уже существует")
+            ->body('До отдельного подтверждения это только снимок рекомендации. Остатки не изменены.')
+            ->success()
+            ->send();
+    }
+
+    public function confirmPurchasePlan(int $planId): void
+    {
+        abort_unless(auth()->user()?->isManager() === true, 403);
+        $this->transitionPurchasePlan($planId, 'confirm');
+    }
+
+    public function cancelPurchasePlan(int $planId): void
+    {
+        abort_unless(auth()->user()?->isManager() === true, 403);
+        $this->transitionPurchasePlan($planId, 'cancel');
+    }
+
+    public function recentPlans(): Collection
+    {
+        return PurchasePlan::query()
+            ->with(['creator:id,name', 'items:id,purchase_plan_id,product_name,planned_quantity'])
+            ->latest()
+            ->limit(6)
+            ->get();
+    }
+
     public function summary(): array
     {
         $rows = $this->filteredRows();
@@ -242,6 +328,32 @@ class StockDemandAnalytics extends Page
     private function resetAnalysis(): void
     {
         $this->rowsCache = null;
+        $this->selectedProductIds = [];
         $this->resetPage('stockPage');
+    }
+
+    private function transitionPurchasePlan(int $planId, string $transition): void
+    {
+        $plan = PurchasePlan::query()->with('items')->findOrFail($planId);
+
+        try {
+            $plan = $transition === 'confirm'
+                ? app(PurchasePlanManager::class)->confirm($plan, auth()->user())
+                : app(PurchasePlanManager::class)->cancel($plan, auth()->user());
+        } catch (ValidationException $exception) {
+            Notification::make()
+                ->title('План не изменён')
+                ->body((string) collect($exception->errors())->flatten()->first())
+                ->danger()
+                ->send();
+
+            return;
+        }
+
+        Notification::make()
+            ->title($transition === 'confirm' ? "План {$plan->number} подтверждён" : "Черновик {$plan->number} отменён")
+            ->body('Остатки 1С и карточки товаров не изменялись.')
+            ->success()
+            ->send();
     }
 }

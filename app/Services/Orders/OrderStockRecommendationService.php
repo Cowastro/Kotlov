@@ -59,6 +59,9 @@ class OrderStockRecommendationService
                     'confirmed_at' => null,
                     'offer_count' => 0,
                     'integration_product_id' => null,
+                    'unit_purchase_price' => null,
+                    'price_tax_mode' => null,
+                    'vat_rate' => null,
                 ]);
                 $currentStock = $stockEvidence['quantity'];
                 $stockCoverageDays = $dailyVelocity > 0 && $currentStock !== null
@@ -111,6 +114,9 @@ class OrderStockRecommendationService
                     'stock_confirmed_at' => $stockEvidence['confirmed_at'],
                     'stock_offer_count' => $stockEvidence['offer_count'],
                     'stock_integration_product_id' => $stockEvidence['integration_product_id'],
+                    'unit_purchase_price' => $stockEvidence['unit_purchase_price'],
+                    'price_tax_mode' => $stockEvidence['price_tax_mode'],
+                    'vat_rate' => $stockEvidence['vat_rate'],
                     'target_stock' => $targetStock,
                     'recommended_purchase' => $recommendedPurchase,
                     'stock_state' => $stockState,
@@ -185,7 +191,7 @@ class OrderStockRecommendationService
         return "За {$recentDays} дней подтверждено: {$recentOrders} заказ(а), {$recentQuantity} шт.; {$demand} шт./мес. Цель {$targetStock} шт. — {$basis}. На складе {$stock} шт.; рекомендуется добавить {$recommendedPurchase} шт.".$interestNote;
     }
 
-    /** @return Collection<int, array{quantity:?float,status:string,label:string,confirmed_at:mixed,offer_count:int,integration_product_id:?int}> */
+    /** @return Collection<int, array{quantity:?float,status:string,label:string,confirmed_at:mixed,offer_count:int,integration_product_id:?int,unit_purchase_price:?float,price_tax_mode:?string,vat_rate:?float}> */
     private function ownStockEvidenceByProduct(?IntegrationSource $source): Collection
     {
         if (! $source) {
@@ -196,7 +202,7 @@ class OrderStockRecommendationService
             ->where('integration_source_id', $source->id)
             ->where('match_status', 'matched')
             ->whereNotNull('product_id')
-            ->get(['id', 'product_id', 'stock_quantity', 'stock_confirmed_at'])
+            ->get(['id', 'product_id', 'price', 'stock_quantity', 'stock_confirmed_at'])
             ->groupBy('product_id')
             ->map(function (Collection $offers) use ($source): array {
                 $hasMissingStock = $offers->contains(fn (IntegrationProduct $offer): bool => $offer->stock_quantity === null);
@@ -221,6 +227,11 @@ class OrderStockRecommendationService
                     'integration_product_id' => $offers->count() === 1
                         ? (int) $offers->first()->getKey()
                         : null,
+                    'unit_purchase_price' => $offers->count() === 1 && $offers->first()->price !== null
+                        ? $source->priceIncludingTax((float) $offers->first()->price)
+                        : null,
+                    'price_tax_mode' => $source->priceTaxMode(),
+                    'vat_rate' => $source->vatRate(),
                 ];
             });
     }

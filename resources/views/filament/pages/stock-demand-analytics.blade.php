@@ -5,6 +5,7 @@
         $periods = $this->periodOptions();
         $sources = $this->sourceOptions();
         $stockDataOptions = $this->stockDataOptions();
+        $recentPlans = $this->recentPlans();
     @endphp
 
     <style>
@@ -19,6 +20,8 @@
         .stock-metric[data-tone="danger"] strong { color: #dc2626; }
         .stock-metric[data-tone="info"] strong { color: #2563eb; }
         .stock-tools { display: grid; grid-template-columns: 150px minmax(200px,1fr) 170px minmax(220px,1.2fr) auto; gap: 10px; align-items: end; padding: 13px 15px; }
+        .stock-plan-tools { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 15px; border-top: 1px solid var(--sa-border); }
+        .stock-plan-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
         .stock-field { display: grid; gap: 5px; color: var(--sa-muted); font-size: 11px; font-weight: 700; text-transform: uppercase; }
         .stock-input { min-height: 34px; border: 1px solid var(--sa-border); border-radius: 7px; padding: 5px 10px; background: transparent; color: inherit; font-size: 13px; text-transform: none; }
         .stock-toggle { display: inline-flex; align-items: center; gap: 7px; min-height: 34px; font-size: 12px; font-weight: 700; white-space: nowrap; }
@@ -44,6 +47,12 @@
         .stock-pager { display: flex; align-items: center; gap: 8px; }
         .stock-button { border: 1px solid var(--sa-border); border-radius: 6px; padding: 6px 10px; font-weight: 700; color: inherit; }
         .stock-button:disabled { opacity: .4; }
+        .stock-button-primary { border-color: #d97706; background: #d97706; color: #fff; }
+        .stock-button-danger { color: #dc2626; }
+        .stock-plan-list { display: grid; gap: 0; }
+        .stock-plan-row { display: grid; grid-template-columns: 155px 105px minmax(210px,1fr) 120px 160px auto; gap: 12px; align-items: center; padding: 11px 15px; border-top: 1px solid var(--sa-border); font-size: 12px; }
+        .stock-plan-row:first-child { border-top: 0; }
+        .stock-plan-title { padding: 12px 15px; border-bottom: 1px solid var(--sa-border); }
         @media(max-width:900px){ .stock-summary{grid-template-columns:repeat(2,minmax(0,1fr));}.stock-tools{grid-template-columns:1fr 1fr;} }
         @media(max-width:600px){ .stock-summary,.stock-tools{grid-template-columns:1fr;} }
     </style>
@@ -81,14 +90,36 @@
                 <label class="stock-toggle"><input type="checkbox" wire:model.live="purchaseOnly"> Только требующие решения</label>
             </div>
 
+            <div class="stock-plan-tools">
+                <div>
+                    <strong>План закупки</strong>
+                    <div class="stock-muted">Можно выбрать только подтверждённый дефицит. Черновик не меняет остатки.</div>
+                </div>
+                <div class="stock-plan-actions">
+                    <button class="stock-button" wire:click="selectRecommended">Выбрать рекомендации</button>
+                    <button class="stock-button" wire:click="clearSelection" @disabled(count($this->selectedProductIds) === 0)>Снять выбор</button>
+                    <button
+                        class="stock-button stock-button-primary"
+                        wire:click="createPurchasePlan"
+                        wire:confirm="Создать черновик плана из выбранных рекомендаций? Остатки и товары не изменятся."
+                        @disabled(count($this->selectedProductIds) === 0)
+                    >Создать черновик ({{ count($this->selectedProductIds) }})</button>
+                </div>
+            </div>
+
             <div class="stock-table-wrap">
                 <table class="stock-table">
                     <thead><tr>
-                        <th>Товар</th><th>Подтверждено / заявки</th><th>Спрос / мес.</th><th>Склад</th><th>Данные склада</th><th>Покрытие</th><th>Цель</th><th>Пополнить</th><th>Последняя активность</th><th>Почему</th>
+                        <th></th><th>Товар</th><th>Подтверждено / заявки</th><th>Спрос / мес.</th><th>Склад</th><th>Данные склада</th><th>Покрытие</th><th>Цель</th><th>Пополнить</th><th>Последняя активность</th><th>Почему</th>
                     </tr></thead>
                     <tbody>
                     @forelse ($rows as $row)
                         <tr>
+                            <td>
+                                @if (($row['recommended_purchase'] ?? 0) > 0 && $row['stock_data_ready'])
+                                    <input type="checkbox" value="{{ $row['product_id'] }}" wire:model.live="selectedProductIds" aria-label="Добавить {{ $row['name'] }} в план закупки">
+                                @endif
+                            </td>
                             <td class="stock-product">{{ $row['name'] }}<div class="stock-muted">{{ $row['sku'] ?: 'SKU не указан' }}</div></td>
                             <td class="stock-number">
                                 {{ $row['orders_recent'] }} / {{ $row['quantity_recent'] }} шт.
@@ -127,7 +158,7 @@
                             <td class="stock-explanation">{{ $row['explanation'] }}</td>
                         </tr>
                     @empty
-                        <tr><td colspan="10">Нет товаров, соответствующих фильтрам. Расчёт не изменяет заказы и остатки.</td></tr>
+                        <tr><td colspan="11">Нет товаров, соответствующих фильтрам. Расчёт не изменяет заказы и остатки.</td></tr>
                     @endforelse
                     </tbody>
                 </table>
@@ -141,6 +172,38 @@
                     <span>{{ $rows->currentPage() }} / {{ max(1, $rows->lastPage()) }}</span>
                     <button class="stock-button" wire:click="nextPage('stockPage')" @disabled(! $rows->hasMorePages())>Вперёд</button>
                 </div>
+            </div>
+        </div>
+
+        <div class="stock-card">
+            <div class="stock-plan-title">
+                <strong>Последние планы закупки</strong>
+                <div class="stock-muted">Подтверждение фиксирует решение менеджера, но не проводит приход и не меняет остаток 1С.</div>
+            </div>
+            <div class="stock-plan-list">
+                @forelse ($recentPlans as $plan)
+                    <div class="stock-plan-row">
+                        <strong>{{ $plan->number }}</strong>
+                        <span class="stock-badge" data-ready="{{ $plan->status === 'confirmed' ? '1' : '0' }}">{{ $plan->statusLabel() }}</span>
+                        <span>
+                            {{ $plan->items_count }} поз. / {{ rtrim(rtrim(number_format((float) $plan->total_quantity, 3, ',', ' '), '0'), ',') }} шт.
+                            <div class="stock-muted">{{ $plan->items->pluck('product_name')->take(3)->implode(' · ') }}{{ $plan->items_count > 3 ? ' · ещё ' . ($plan->items_count - 3) : '' }}</div>
+                            <div class="stock-muted">{{ $plan->source_name }} · {{ $plan->period_days }} дней</div>
+                        </span>
+                        <span>{{ $plan->purchase_total === null ? 'Стоимость неполная' : number_format((float) $plan->purchase_total, 2, ',', ' ') . ' BYN' }}</span>
+                        <span>{{ $plan->creator?->name ?? 'Система' }}<div class="stock-muted">{{ $plan->created_at->timezone('Europe/Minsk')->format('d.m.Y H:i') }}</div></span>
+                        <div class="stock-plan-actions">
+                            @if ($plan->status === 'draft')
+                                <button class="stock-button stock-button-primary" wire:click="confirmPurchasePlan({{ $plan->id }})" wire:confirm="Подтвердить план {{ $plan->number }} по текущим остаткам?">Подтвердить</button>
+                                <button class="stock-button stock-button-danger" wire:click="cancelPurchasePlan({{ $plan->id }})" wire:confirm="Отменить черновик {{ $plan->number }}?">Отменить</button>
+                            @else
+                                <span class="stock-muted">{{ $plan->confirmed_at?->timezone('Europe/Minsk')->format('d.m.Y H:i') ?? $plan->cancelled_at?->timezone('Europe/Minsk')->format('d.m.Y H:i') }}</span>
+                            @endif
+                        </div>
+                    </div>
+                @empty
+                    <div class="stock-footer">Планов ещё нет. Выберите подтверждённые рекомендации выше.</div>
+                @endforelse
             </div>
         </div>
 
