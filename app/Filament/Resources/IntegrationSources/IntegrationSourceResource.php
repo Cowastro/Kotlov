@@ -81,14 +81,22 @@ class IntegrationSourceResource extends Resource
                             ? url('/1c/exchange/'.$record->code)
                             : 'Появится после сохранения источника')
                         ->columnSpanFull(),
-                ])->columns(2),
+                ])->columns(2)
+                ->columnSpan([
+                    'default' => 1,
+                    'xl' => 8,
+                ]),
             Section::make('Разрешённые изменения')
                 ->description('Для первой выгрузки оставьте всё выключенным: данные попадут только в буфер сопоставления.')
                 ->schema([
                     Toggle::make('create_products')->label('Создавать новые карточки')->default(false),
                     Toggle::make('update_prices')->label('Обновлять цены')->default(false),
                     Toggle::make('update_stock')->label('Обновлять остатки')->default(false),
-                ])->columns(3),
+                ])->columns(3)
+                ->columnSpan([
+                    'default' => 1,
+                    'xl' => 4,
+                ]),
             Section::make('Автоматический обмен и контроль')
                 ->description('Регламентное задание запускается на стороне 1С. Сайт принимает каталог, цены и остатки, а при обмене заказами отдаёт новые заказы и принимает их статусы.')
                 ->schema([
@@ -149,7 +157,47 @@ class IntegrationSourceResource extends Resource
                         ->placeholder('Отдельные правила этого источника')
                         ->searchable()
                         ->helperText('Ручные привязки запоминаются в выбранной базе. Одинаковые артикулы разных поставщиков не смешиваются.'),
-                ])->columns(3),
+                ])->columns(3)
+                ->columnSpan([
+                    'default' => 1,
+                    'xl' => 8,
+                ]),
+            Section::make('Оптовые цены')
+                ->description('Единое правило: хранится исходная цена поставщика, а клиенту всегда показывается итоговая цена с НДС. Для цены без НДС система добавляет указанную ставку.')
+                ->schema([
+                    Toggle::make('settings.b2b_enabled')
+                        ->label('Публиковать партнёрские цены')
+                        ->helperText('Только включённые источники участвуют в B2B-каталоге.')
+                        ->default(false),
+                    TextInput::make('settings.partner_name')
+                        ->label('Поставщик для партнёра')
+                        ->placeholder('ООО «СанБизнесГруп»')
+                        ->maxLength(255),
+                    Select::make('settings.price_tax_mode')
+                        ->label('Налогообложение цены')
+                        ->options([
+                            'exclusive' => 'Цена без НДС',
+                            'inclusive' => 'Цена с НДС',
+                        ])
+                        ->default('exclusive')
+                        ->required(),
+                    TextInput::make('settings.vat_rate')
+                        ->label('Ставка НДС')
+                        ->numeric()
+                        ->minValue(0)
+                        ->maxValue(100)
+                        ->suffix('%')
+                        ->default(20)
+                        ->required(),
+                    TextInput::make('settings.warehouse_label')
+                        ->label('Название склада')
+                        ->default('Основной')
+                        ->maxLength(100),
+                ])->columns(2)
+                ->columnSpan([
+                    'default' => 1,
+                    'xl' => 4,
+                ]),
             Section::make('Сопоставление статусов заказов')
                 ->description('Для нестандартных названий из конкретной 1С или API. Точное правило имеет приоритет над общим распознаванием; неизвестное значение не меняет заказ и остаётся в очереди проблем.')
                 ->schema([
@@ -187,39 +235,11 @@ class IntegrationSourceResource extends Resource
                         ->addActionLabel('Добавить статус оплаты'),
                 ])
                 ->columns(2)
+                ->columnSpanFull()
                 ->collapsed(),
-            Section::make('Оптовые цены')
-                ->description('Единое правило: хранится исходная цена поставщика, а клиенту всегда показывается итоговая цена с НДС. Для цены без НДС система добавляет указанную ставку.')
-                ->schema([
-                    Toggle::make('settings.b2b_enabled')
-                        ->label('Публиковать партнёрские цены')
-                        ->helperText('Только включённые источники участвуют в B2B-каталоге.')
-                        ->default(false),
-                    TextInput::make('settings.partner_name')
-                        ->label('Поставщик для партнёра')
-                        ->placeholder('ООО «СанБизнесГруп»')
-                        ->maxLength(255),
-                    Select::make('settings.price_tax_mode')
-                        ->label('Налогообложение цены')
-                        ->options([
-                            'exclusive' => 'Цена без НДС',
-                            'inclusive' => 'Цена с НДС',
-                        ])
-                        ->default('exclusive')
-                        ->required(),
-                    TextInput::make('settings.vat_rate')
-                        ->label('Ставка НДС')
-                        ->numeric()
-                        ->minValue(0)
-                        ->maxValue(100)
-                        ->suffix('%')
-                        ->default(20)
-                        ->required(),
-                    TextInput::make('settings.warehouse_label')
-                        ->label('Название склада')
-                        ->default('Основной')
-                        ->maxLength(100),
-                ])->columns(2),
+        ])->columns([
+            'default' => 1,
+            'xl' => 12,
         ]);
     }
 
