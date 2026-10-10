@@ -22,7 +22,7 @@
         .onec-setup-check.running .onec-setup-check-icon { color: rgb(96,165,250); }
         .onec-setup-check.disabled .onec-setup-check-icon { color: rgb(148,163,184); }
         .onec-setup-next { color: rgb(148,163,184); font-size: 13px; }
-        .onec-flow-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+        .onec-flow-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px; }
         .onec-flow-card { display: grid; gap: 7px; min-width: 0; padding: 12px; border: 1px solid rgba(148,163,184,.14); border-radius: 10px; background: rgba(15,23,42,.42); }
         .onec-flow-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
         .onec-flow-title { font-size: 13px; font-weight: 700; }
