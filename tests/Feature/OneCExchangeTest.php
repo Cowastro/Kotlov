@@ -2445,7 +2445,6 @@ XML;
                 'price' => 1,
                 'stock_quantity' => $quantity,
                 'match_status' => 'ignored',
-                'last_offer_seen_at' => now(),
             ]);
         }
 
@@ -2453,7 +2452,7 @@ XML;
         $first = $detector->scan();
 
         // The source also has a flow-health issue because this intentionally
-        // models a manual first import without a recorded successful run.
+        // models legacy staged data without a recorded successful run.
         $this->assertSame(2, $first['detected']);
         $issue = IntegrationIssue::query()->where('type', 'catalog_all_stock_positive')->firstOrFail();
         $this->assertSame('open', $issue->status);

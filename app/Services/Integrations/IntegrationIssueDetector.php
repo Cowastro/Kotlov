@@ -220,19 +220,6 @@ class IntegrationIssueDetector
             return;
         }
 
-        $hasReceivedOffers = $source->products()
-            ->whereNotNull('last_offer_seen_at')
-            ->exists();
-        $hasSuccessfulCatalogRun = $source->exchangeRuns()
-            ->where('direction', 'inbound')
-            ->where('operation', 'catalog')
-            ->where('status', 'success')
-            ->exists();
-
-        if (! $hasReceivedOffers && ! $hasSuccessfulCatalogRun) {
-            return;
-        }
-
         $stock = $source->products()
             ->selectRaw('COUNT(*) as total')
             ->selectRaw('SUM(CASE WHEN stock_quantity > 0 THEN 1 ELSE 0 END) as positive')
