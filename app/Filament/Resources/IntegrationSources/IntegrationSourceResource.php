@@ -6,13 +6,16 @@ use App\Filament\Resources\IntegrationSources\Pages\CreateIntegrationSource;
 use App\Filament\Resources\IntegrationSources\Pages\EditIntegrationSource;
 use App\Filament\Resources\IntegrationSources\Pages\ListIntegrationSources;
 use App\Models\IntegrationSource;
+use App\Models\Order;
 use App\Models\Supplier;
 use App\Services\Integrations\IntegrationFlowHealth;
 use App\Services\Integrations\IntegrationOperationsSummary;
+use App\Services\Integrations\IntegrationOrderStatusMapper;
 use App\Services\Integrations\OrderIntegrationMonitoring;
 use BackedEnum;
 use Filament\Actions\EditAction;
 use Filament\Forms\Components\Placeholder;
+use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
@@ -147,6 +150,44 @@ class IntegrationSourceResource extends Resource
                         ->searchable()
                         ->helperText('Ручные привязки запоминаются в выбранной базе. Одинаковые артикулы разных поставщиков не смешиваются.'),
                 ])->columns(3),
+            Section::make('Сопоставление статусов заказов')
+                ->description('Для нестандартных названий из конкретной 1С или API. Точное правило имеет приоритет над общим распознаванием; неизвестное значение не меняет заказ и остаётся в очереди проблем.')
+                ->schema([
+                    Repeater::make('settings.order_status_rules')
+                        ->label('Статусы заказа')
+                        ->schema([
+                            TextInput::make('source')
+                                ->label('Значение в 1С / API')
+                                ->placeholder('Передан логисту')
+                                ->required()
+                                ->maxLength(255),
+                            Select::make('target')
+                                ->label('Статус KOTLOV')
+                                ->options(Order::STATUSES)
+                                ->required(),
+                        ])
+                        ->columns(2)
+                        ->defaultItems(0)
+                        ->addActionLabel('Добавить статус заказа'),
+                    Repeater::make('settings.payment_status_rules')
+                        ->label('Статусы оплаты')
+                        ->schema([
+                            TextInput::make('source')
+                                ->label('Значение в 1С / API')
+                                ->placeholder('Оплата подтверждена')
+                                ->required()
+                                ->maxLength(255),
+                            Select::make('target')
+                                ->label('Статус оплаты KOTLOV')
+                                ->options(IntegrationOrderStatusMapper::PAYMENT_STATUSES)
+                                ->required(),
+                        ])
+                        ->columns(2)
+                        ->defaultItems(0)
+                        ->addActionLabel('Добавить статус оплаты'),
+                ])
+                ->columns(2)
+                ->collapsed(),
             Section::make('Оптовые цены')
                 ->description('Единое правило: хранится исходная цена поставщика, а клиенту всегда показывается итоговая цена с НДС. Для цены без НДС система добавляет указанную ставку.')
                 ->schema([
@@ -240,6 +281,14 @@ class IntegrationSourceResource extends Resource
                     })
                     ->badge()
                     ->color(fn (string $state): string => $state === 'Не используются' ? 'gray' : 'info')
+                    ->toggleable(),
+                TextColumn::make('status_rules')->label('Правила статусов')
+                    ->state(fn (IntegrationSource $record): string => $record->statusRulesCount() > 0
+                        ? $record->statusRulesCount().' настроено'
+                        : 'Общие правила')
+                    ->description('Неизвестные значения блокируются')
+                    ->badge()
+                    ->color(fn (IntegrationSource $record): string => $record->statusRulesCount() > 0 ? 'success' : 'gray')
                     ->toggleable(),
                 TextColumn::make('pricing_rule')->label('Правило цены')
                     ->state(fn (IntegrationSource $record): string => $record->pricingRuleLabel())

@@ -15,6 +15,7 @@ use App\Models\OrderItem;
 use App\Models\Product;
 use App\Models\User;
 use App\Services\Integrations\CommerceMlCatalogImporter;
+use App\Services\Integrations\CommerceMlOrderImporter;
 use App\Services\Integrations\IntegrationCatalogAudit;
 use App\Services\Integrations\IntegrationCatalogSummary;
 use App\Services\Integrations\IntegrationCategoryAdvisor;
@@ -2274,6 +2275,72 @@ XML;
             'status_from' => 'processing',
             'status_to' => 'shipped',
             'comment' => 'Статус получен из 1С',
+        ]);
+    }
+
+    public function test_source_status_rule_resolves_an_unknown_value_on_the_next_exchange(): void
+    {
+        $source = IntegrationSource::query()->create([
+            'code' => 'onec',
+            'name' => '1С с собственными статусами',
+        ]);
+        $order = Order::query()->create([
+            'number' => 'ORD-2026-CUSTOM-STATUS',
+            'status' => 'processing',
+            'customer_name' => 'Тестовый покупатель',
+            'customer_phone' => '+375291112233',
+            'delivery_type' => 'courier',
+            'payment_type' => 'cash',
+            'payment_status' => 'pending',
+            'subtotal' => 120,
+            'total' => 120,
+            'onec_exported_at' => now(),
+        ]);
+        $xml = <<<XML
+<?xml version="1.0" encoding="UTF-8"?>
+<КоммерческаяИнформация>
+  <Документ>
+    <Ид>kotlov-order-{$order->id}</Ид>
+    <Номер>ORD-2026-CUSTOM-STATUS</Номер>
+    <ЗначенияРеквизитов>
+      <ЗначениеРеквизита><Наименование>Статус заказа</Наименование><Значение>Передан логисту</Значение></ЗначениеРеквизита>
+      <ЗначениеРеквизита><Наименование>Статус оплаты</Наименование><Значение>Проведена кассой</Значение></ЗначениеРеквизита>
+    </ЗначенияРеквизитов>
+  </Документ>
+</КоммерческаяИнформация>
+XML;
+
+        $first = app(CommerceMlOrderImporter::class)->import($xml, $source);
+
+        $this->assertSame(1, $first['unknown_statuses']);
+        $this->assertSame('processing', $order->fresh()->status);
+        $this->assertSame('pending', $order->fresh()->payment_status);
+        $this->assertDatabaseHas('integration_issues', [
+            'order_id' => $order->id,
+            'type' => 'order_status_unknown',
+            'status' => 'open',
+        ]);
+
+        $source->update([
+            'settings' => [
+                'order_status_rules' => [
+                    ['source' => 'Передан логисту', 'target' => 'shipped'],
+                ],
+                'payment_status_rules' => [
+                    ['source' => 'Проведена кассой', 'target' => 'paid'],
+                ],
+            ],
+        ]);
+        $second = app(CommerceMlOrderImporter::class)->import($xml, $source->fresh());
+
+        $this->assertSame(1, $second['updated']);
+        $this->assertSame(0, $second['unknown_statuses']);
+        $this->assertSame('shipped', $order->fresh()->status);
+        $this->assertSame('paid', $order->fresh()->payment_status);
+        $this->assertDatabaseHas('integration_issues', [
+            'order_id' => $order->id,
+            'type' => 'order_status_unknown',
+            'status' => 'resolved',
         ]);
     }
 

@@ -45,6 +45,8 @@ class IntegrationSource extends Model
                 'zero_missing_stock_on_complete' => true,
                 'all_stock_positive_warning_min_products' => 20,
                 'monitor_orders_from' => now()->toIso8601String(),
+                'order_status_rules' => [],
+                'payment_status_rules' => [],
             ], $source->settings ?? []);
         });
     }
@@ -152,6 +154,21 @@ class IntegrationSource extends Model
     public function scheduleLabel(): string
     {
         return 'Заказы '.$this->orderIntervalMinutes().' мин · цены/остатки '.$this->catalogIntervalMinutes().' мин';
+    }
+
+    public function statusRulesCount(): int
+    {
+        return $this->countStatusRules(data_get($this->settings, 'order_status_rules', []))
+            + $this->countStatusRules(data_get($this->settings, 'payment_status_rules', []));
+    }
+
+    private function countStatusRules(mixed $rules): int
+    {
+        if (! is_array($rules)) {
+            return 0;
+        }
+
+        return count(array_filter($rules, array_is_list($rules) ? 'is_array' : 'is_string'));
     }
 
     public function products(): HasMany

@@ -14,6 +14,7 @@ class CommerceMlOrderImporter
 {
     public function __construct(
         private readonly OrderIntegrationRouter $orderRouter,
+        private readonly IntegrationOrderStatusMapper $statusMapper,
     ) {}
 
     /** @return array{documents:int,matched:int,updated:int,unchanged:int,unmatched:int,conflicts:int,unknown_statuses:int,attention:int} */
@@ -53,8 +54,8 @@ class CommerceMlOrderImporter
                 $rawStatus = $this->text($node, './*[local-name()="Статус"]')
                     ?: $this->requisite($node, ['Статус заказа', 'Статус']);
                 $rawPaymentStatus = $this->requisite($node, ['Статус оплаты', 'Оплата']);
-                $status = $this->mapStatus($rawStatus);
-                $paymentStatus = $this->mapPaymentStatus($rawPaymentStatus);
+                $status = $this->statusMapper->orderStatus($rawStatus, $source);
+                $paymentStatus = $this->statusMapper->paymentStatus($rawPaymentStatus, $source);
                 $oldStatus = $order->status;
                 $oldPaymentStatus = $order->payment_status;
                 $updatesCentralOrder = ! $source || $source->code === 'onec';
@@ -386,35 +387,6 @@ class CommerceMlOrderImporter
         }
 
         return $order;
-    }
-
-    private function mapStatus(string $status): ?string
-    {
-        $status = mb_strtolower(trim($status));
-
-        return match (true) {
-            $status === '' => null,
-            str_contains($status, 'отмен') => 'cancelled',
-            str_contains($status, 'достав'), str_contains($status, 'выполн'), str_contains($status, 'заверш') => 'delivered',
-            str_contains($status, 'отгруж'), str_contains($status, 'отправ') => 'shipped',
-            str_contains($status, 'обработ'), str_contains($status, 'сбор'), str_contains($status, 'комплект') => 'processing',
-            str_contains($status, 'подтверж'), str_contains($status, 'принят') => 'confirmed',
-            str_contains($status, 'нов') => 'new',
-            default => null,
-        };
-    }
-
-    private function mapPaymentStatus(string $status): ?string
-    {
-        $status = mb_strtolower(trim($status));
-
-        return match (true) {
-            $status === '' => null,
-            str_contains($status, 'не опла'), str_contains($status, 'ожида') => 'pending',
-            str_contains($status, 'возврат') => 'refunded',
-            str_contains($status, 'опла') => 'paid',
-            default => null,
-        };
     }
 
     /** @param array<int, string> $names */
