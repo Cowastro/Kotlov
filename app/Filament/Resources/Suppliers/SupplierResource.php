@@ -2,10 +2,14 @@
 
 namespace App\Filament\Resources\Suppliers;
 
+use App\Filament\Resources\IntegrationSources\IntegrationSourceResource;
 use App\Filament\Resources\Suppliers\Pages\CreateSupplier;
 use App\Filament\Resources\Suppliers\Pages\EditSupplier;
 use App\Filament\Resources\Suppliers\Pages\ListSuppliers;
+use App\Models\IntegrationSource;
 use App\Models\Supplier;
+use App\Services\Integrations\IntegrationFlowHealth;
+use App\Services\Integrations\IntegrationOperationsSummary;
 use App\Services\Pricing\CurrencyPriceConverter;
 use BackedEnum;
 use Filament\Actions\Action;
@@ -21,6 +25,7 @@ use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 
@@ -43,6 +48,18 @@ class SupplierResource extends Resource
     public static function getNavigationGroup(): ?string
     {
         return 'Каталог';
+    }
+
+    public static function getEloquentQuery(): Builder
+    {
+        return parent::getEloquentQuery()
+            ->withCount('supplierProducts')
+            ->with([
+                'integrationSources' => fn ($query) => $query
+                    ->withCount(['products as linked_products_count' => fn ($products) => $products
+                        ->where('match_status', 'matched')])
+                    ->with(['latestExchangeRun', 'latestSuccessfulExchangeRun']),
+            ]);
     }
 
     public static function form(Schema $schema): Schema
@@ -143,9 +160,29 @@ class SupplierResource extends Resource
                     ->alignRight()
                     ->formatStateUsing(fn ($state) => rtrim(rtrim(number_format((float) $state, 4, '.', ' '), '0'), '.')),
 
+                TextColumn::make('data_channel')
+                    ->label('Канал данных')
+                    ->state(fn (Supplier $record): string => self::dataChannelLabel($record))
+                    ->description(fn (Supplier $record): ?string => self::integrationSourceNames($record))
+                    ->badge()
+                    ->color(fn (string $state): string => match ($state) {
+                        '1С' => 'success',
+                        'Смешанный' => 'warning',
+                        'Старый канал' => 'gray',
+                        default => 'info',
+                    }),
+
+                TextColumn::make('integration_health')
+                    ->label('Статус 1С')
+                    ->state(fn (Supplier $record): string => self::integrationHealthLabel($record))
+                    ->description(fn (Supplier $record): ?string => self::lastSuccessfulExchangeLabel($record))
+                    ->badge()
+                    ->color(fn (Supplier $record): string => self::integrationHealthColor($record)),
+
                 TextColumn::make('supplier_products_count')
                     ->label('Связок товаров')
-                    ->counts('supplierProducts')
+                    ->state(fn (Supplier $record): string => 'Старые: '.number_format((int) $record->supplier_products_count, 0, ',', ' '))
+                    ->description(fn (Supplier $record): string => '1С: '.number_format(self::linkedIntegrationProductsCount($record), 0, ',', ' '))
                     ->alignRight(),
 
                 IconColumn::make('is_active')
@@ -212,6 +249,22 @@ class SupplierResource extends Resource
                             ->send();
                     }),
 
+                Action::make('integration')
+                    ->label(fn (Supplier $record): string => $record->integrationSources->isEmpty()
+                        ? 'Подключить 1С'
+                        : 'Настроить интеграцию')
+                    ->icon(Heroicon::OutlinedSignal)
+                    ->color('info')
+                    ->url(function (Supplier $record): string {
+                        $source = $record->integrationSources
+                            ->firstWhere('driver', 'commerceml')
+                            ?? $record->integrationSources->first();
+
+                        return $source
+                            ? IntegrationSourceResource::getUrl('edit', ['record' => $source])
+                            : IntegrationSourceResource::getUrl('create', ['supplier_id' => $record->id]);
+                    }),
+
                 EditAction::make(),
             ]);
     }
@@ -223,5 +276,85 @@ class SupplierResource extends Resource
             'create' => CreateSupplier::route('/create'),
             'edit' => EditSupplier::route('/{record}/edit'),
         ];
+    }
+
+    private static function dataChannelLabel(Supplier $supplier): string
+    {
+        $hasLegacy = (int) $supplier->supplier_products_count > 0;
+        $activeSources = $supplier->integrationSources->where('is_active', true);
+        $hasIntegration = $activeSources->isNotEmpty();
+
+        return match (true) {
+            $hasLegacy && $hasIntegration => 'Смешанный',
+            $activeSources->contains('driver', 'commerceml') => '1С',
+            $hasIntegration => 'API / файл',
+            $hasLegacy => 'Старый канал',
+            default => 'Не настроен',
+        };
+    }
+
+    private static function integrationSourceNames(Supplier $supplier): ?string
+    {
+        $names = $supplier->integrationSources->pluck('name')->filter()->implode(', ');
+
+        return $names !== '' ? $names : null;
+    }
+
+    private static function integrationHealthLabel(Supplier $supplier): string
+    {
+        $source = self::oneCSource($supplier);
+        if (! $source) {
+            return 'Не подключена';
+        }
+        if (! $source->is_active) {
+            return 'Отключена';
+        }
+
+        $health = app(IntegrationFlowHealth::class)->snapshot($source)['health'];
+
+        return app(IntegrationOperationsSummary::class)->healthLabel($health);
+    }
+
+    private static function integrationHealthColor(Supplier $supplier): string
+    {
+        $source = self::oneCSource($supplier);
+        if (! $source || ! $source->is_active) {
+            return 'gray';
+        }
+
+        return app(IntegrationOperationsSummary::class)->healthColor(
+            app(IntegrationFlowHealth::class)->snapshot($source)['health'],
+        );
+    }
+
+    private static function lastSuccessfulExchangeLabel(Supplier $supplier): ?string
+    {
+        $lastSuccess = $supplier->integrationSources
+            ->where('driver', 'commerceml')
+            ->pluck('latestSuccessfulExchangeRun')
+            ->filter()
+            ->sortByDesc('finished_at')
+            ->first()?->finished_at;
+
+        return $lastSuccess
+            ? 'Последний успешный: '.$lastSuccess->timezone('Europe/Minsk')->format('d.m.Y H:i')
+            : null;
+    }
+
+    private static function linkedIntegrationProductsCount(Supplier $supplier): int
+    {
+        return (int) $supplier->integrationSources
+            ->where('driver', 'commerceml')
+            ->sum(
+                fn ($source): int => (int) ($source->linked_products_count ?? 0),
+            );
+    }
+
+    private static function oneCSource(Supplier $supplier): ?IntegrationSource
+    {
+        return $supplier->integrationSources
+            ->where('driver', 'commerceml')
+            ->sortByDesc('is_active')
+            ->first();
     }
 }

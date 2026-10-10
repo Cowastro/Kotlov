@@ -14,22 +14,31 @@ use App\Filament\Resources\Products\Tables\ProductsTable;
 use App\Models\Product;
 use BackedEnum;
 use Filament\Resources\Resource;
-use Illuminate\Database\Eloquent\Builder;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 
 class ProductResource extends Resource
 {
     protected static ?string $model = Product::class;
+
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedShoppingBag;
+
     protected static ?string $navigationLabel = 'Товары';
+
     protected static ?string $modelLabel = 'Товар';
+
     protected static ?string $pluralModelLabel = 'Товары';
+
     protected static ?string $recordTitleAttribute = 'name';
+
     protected static ?int $navigationSort = 3;
 
-    public static function getNavigationGroup(): ?string { return 'Каталог'; }
+    public static function getNavigationGroup(): ?string
+    {
+        return 'Каталог';
+    }
 
     // Eager load связей чтобы избежать N+1 в таблице
     public static function getEloquentQuery(): Builder
@@ -41,11 +50,27 @@ class ProductResource extends Resource
                 'supplier:id,name',
                 'supplierProducts:id,product_id,supplier_id,supplier_article,price_byn,stock_quantity,stock_status',
                 'supplierProducts.supplier:id,name',
+                'integrationProducts:id,product_id,integration_source_id,external_sku,match_status',
+                'integrationProducts.source:id,supplier_id,name,driver,is_active',
+                'integrationProducts.source.supplier:id,name',
             ]);
     }
-    public static function form(Schema $schema): Schema { return ProductForm::configure($schema); }
-    public static function infolist(Schema $schema): Schema { return ProductInfolist::configure($schema); }
-    public static function table(Table $table): Table { return ProductsTable::configure($table); }
+
+    public static function form(Schema $schema): Schema
+    {
+        return ProductForm::configure($schema);
+    }
+
+    public static function infolist(Schema $schema): Schema
+    {
+        return ProductInfolist::configure($schema);
+    }
+
+    public static function table(Table $table): Table
+    {
+        return ProductsTable::configure($table);
+    }
+
     public static function getRelations(): array
     {
         return [
@@ -53,13 +78,14 @@ class ProductResource extends Resource
             AttributeValuesRelationManager::class,
         ];
     }
+
     public static function getPages(): array
     {
         return [
-            'index'  => ListProducts::route('/'),
+            'index' => ListProducts::route('/'),
             'create' => CreateProduct::route('/create'),
-            'view'   => ViewProduct::route('/{record}'),
-            'edit'   => EditProduct::route('/{record}/edit'),
+            'view' => ViewProduct::route('/{record}'),
+            'edit' => EditProduct::route('/{record}/edit'),
         ];
     }
 }

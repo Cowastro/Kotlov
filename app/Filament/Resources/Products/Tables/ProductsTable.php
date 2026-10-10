@@ -38,7 +38,7 @@ class ProductsTable
             ->columns([
                 ImageColumn::make('images')
                     ->label('Фото')
-                    ->getStateUsing(fn($record) => url($record->imageUrl(0)))
+                    ->getStateUsing(fn ($record) => url($record->imageUrl(0)))
                     ->square()
                     ->height(48)
                     ->width(48),
@@ -49,14 +49,14 @@ class ProductsTable
                     ->sortable()
                     ->weight('bold')
                     ->limit(60)
-                    ->tooltip(fn($record) => $record->name)
+                    ->tooltip(fn ($record) => $record->name)
                     ->wrap()
-                    ->description(fn($record) => $record->sku ? 'SKU: ' . $record->sku : null),
+                    ->description(fn ($record) => $record->sku ? 'SKU: '.$record->sku : null),
 
                 TextColumn::make('frontend_url')
                     ->label('Сайт')
                     ->state('Открыть')
-                    ->url(fn($record) => self::productUrl($record))
+                    ->url(fn ($record) => self::productUrl($record))
                     ->openUrlInNewTab()
                     ->icon('heroicon-o-arrow-top-right-on-square')
                     ->toggleable(),
@@ -91,6 +91,7 @@ class ProductsTable
                             ->filter()
                             ->unique()
                             ->values();
+
                         return $articles->isNotEmpty() ? $articles->implode(' / ') : '—';
                     })
                     ->copyable()
@@ -109,15 +110,16 @@ class ProductsTable
                     ->label('Закупка мин.')
                     ->getStateUsing(function ($record): string {
                         $min = $record->supplierProducts->min('price_byn');
-                        return $min ? number_format((float) $min, 2) . ' BYN' : '—';
+
+                        return $min ? number_format((float) $min, 2).' BYN' : '—';
                     })
                     ->toggleable(),
 
                 TextColumn::make('price')
                     ->label('Розница сайта')
                     ->sortable()
-                    ->formatStateUsing(fn($state, $record) => $state > 0
-                        ? number_format((float) $state, 2) . ' ' . ($record->currency ?: 'BYN')
+                    ->formatStateUsing(fn ($state, $record) => $state > 0
+                        ? number_format((float) $state, 2).' '.($record->currency ?: 'BYN')
                         : '<span class="text-danger-500 font-bold">— не задана</span>'
                     )
                     ->html(),
@@ -136,7 +138,7 @@ class ProductsTable
                         $margin = $retail - $cost;
                         $percent = $retail > 0 ? ($margin / $retail) * 100 : 0;
 
-                        return number_format($margin, 2) . ' BYN / ' . number_format($percent, 1) . '%';
+                        return number_format($margin, 2).' BYN / '.number_format($percent, 1).'%';
                     })
                     ->badge()
                     ->color(function ($record): string {
@@ -161,21 +163,54 @@ class ProductsTable
                     ->label('Поставщик')
                     ->getStateUsing(fn ($record): string => $record->supplierProducts
                         ->map(fn ($sp) => $sp->supplier?->name)
+                        ->merge($record->integrationProducts
+                            ->where('match_status', 'matched')
+                            ->map(fn ($item) => $item->source?->supplier?->name))
                         ->filter()
                         ->unique()
                         ->implode(', ') ?: '—'
                     )
-                    ->searchable(query: fn (Builder $query, string $search) => $query->whereHas(
-                        'supplierProducts', fn ($q) => $q->whereHas(
-                            'supplier', fn ($q2) => $q2->where('name', 'like', "%{$search}%")
-                        )
+                    ->searchable(query: fn (Builder $query, string $search) => $query->where(
+                        fn (Builder $query) => $query
+                            ->whereHas('supplierProducts.supplier', fn ($supplier) => $supplier->where('name', 'like', "%{$search}%"))
+                            ->orWhereHas('integrationProducts', fn ($integrationProducts) => $integrationProducts
+                                ->where('match_status', 'matched')
+                                ->whereHas('source.supplier', fn ($supplier) => $supplier->where('name', 'like', "%{$search}%")))
                     ))
+                    ->toggleable(),
+
+                TextColumn::make('supplier_channels')
+                    ->label('Канал данных')
+                    ->getStateUsing(function ($record): string {
+                        $channels = $record->integrationProducts
+                            ->where('match_status', 'matched')
+                            ->map(fn ($item): ?string => match ($item->source?->driver) {
+                                'commerceml' => '1С',
+                                'api' => 'API',
+                                'file' => 'Файл',
+                                default => $item->source?->name,
+                            })
+                            ->filter();
+
+                        if ($record->supplierProducts->isNotEmpty()) {
+                            $channels->push('Старый канал');
+                        }
+
+                        return $channels->unique()->implode(' + ') ?: 'Не настроен';
+                    })
+                    ->badge()
+                    ->color(fn (string $state): string => match (true) {
+                        str_contains($state, '+') => 'warning',
+                        $state === '1С' => 'success',
+                        $state === 'Не настроен' => 'gray',
+                        default => 'info',
+                    })
                     ->toggleable(),
 
                 TextColumn::make('price_old')
                     ->label('Старая цена')
                     ->sortable()
-                    ->formatStateUsing(fn($state) => $state ? number_format($state, 2) . ' BYN' : '—')
+                    ->formatStateUsing(fn ($state) => $state ? number_format($state, 2).' BYN' : '—')
                     ->toggleable(isToggledHiddenByDefault: true),
 
                 TextColumn::make('currency')
@@ -184,7 +219,7 @@ class ProductsTable
 
                 IconColumn::make('in_stock')
                     ->label('Наличие')
-                    ->getStateUsing(fn($record) => $record->in_stock || $record->supplierProducts->sum('stock_quantity') > 0)
+                    ->getStateUsing(fn ($record) => $record->in_stock || $record->supplierProducts->sum('stock_quantity') > 0)
                     ->boolean(),
 
                 IconColumn::make('is_active')
@@ -291,23 +326,23 @@ class ProductsTable
                     ->options(fn () => Supplier::orderBy('name')->pluck('name', 'id'))
                     ->searchable()
                     ->query(fn (Builder $query, array $data) => $data['value']
-                        ? $query->whereHas('supplierProducts', fn ($q) => $q->where('supplier_id', $data['value']))
+                        ? self::applySupplierFilter($query, (int) $data['value'])
                         : $query
                     ),
 
                 Filter::make('without_photo')
                     ->label('Без фото')
-                    ->query(fn(Builder $query) => $query->where(function ($q) {
+                    ->query(fn (Builder $query) => $query->where(function ($q) {
                         $q->whereNull('images')
-                          ->orWhere('images', '[]')
-                          ->orWhere('images', '""')
-                          ->orWhereRaw("JSON_LENGTH(images) = 0");
+                            ->orWhere('images', '[]')
+                            ->orWhere('images', '""')
+                            ->orWhereRaw('JSON_LENGTH(images) = 0');
                     }))
                     ->toggle(),
 
                 Filter::make('without_price')
                     ->label('Без цены')
-                    ->query(fn(Builder $query) => $query->where('price', 0)->orWhereNull('price'))
+                    ->query(fn (Builder $query) => $query->where('price', 0)->orWhereNull('price'))
                     ->toggle(),
             ])
             ->recordActions([
@@ -343,84 +378,84 @@ class ProductsTable
                         ->label('Активировать')
                         ->icon('heroicon-o-check-circle')
                         ->color('success')
-                        ->action(fn(Collection $records) => $records->each->update(['is_active' => true]))
+                        ->action(fn (Collection $records) => $records->each->update(['is_active' => true]))
                         ->deselectRecordsAfterCompletion(),
 
                     BulkAction::make('deactivate')
                         ->label('Деактивировать')
                         ->icon('heroicon-o-x-circle')
                         ->color('warning')
-                        ->action(fn(Collection $records) => $records->each->update(['is_active' => false]))
+                        ->action(fn (Collection $records) => $records->each->update(['is_active' => false]))
                         ->deselectRecordsAfterCompletion(),
 
                     BulkAction::make('set_in_stock')
                         ->label('В наличии')
                         ->icon('heroicon-o-archive-box')
                         ->color('success')
-                        ->action(fn(Collection $records) => $records->each->update(['in_stock' => true]))
+                        ->action(fn (Collection $records) => $records->each->update(['in_stock' => true]))
                         ->deselectRecordsAfterCompletion(),
 
                     BulkAction::make('set_out_of_stock')
                         ->label('Нет в наличии')
                         ->icon('heroicon-o-archive-box-x-mark')
                         ->color('danger')
-                        ->action(fn(Collection $records) => $records->each->update(['in_stock' => false]))
+                        ->action(fn (Collection $records) => $records->each->update(['in_stock' => false]))
                         ->deselectRecordsAfterCompletion(),
 
                     BulkAction::make('mark_featured')
                         ->label('Отметить хитом')
                         ->icon('heroicon-o-fire')
                         ->color('warning')
-                        ->action(fn(Collection $records) => $records->each->update(['is_featured' => true]))
+                        ->action(fn (Collection $records) => $records->each->update(['is_featured' => true]))
                         ->deselectRecordsAfterCompletion(),
 
                     BulkAction::make('unmark_featured')
                         ->label('Снять хит')
                         ->icon('heroicon-o-fire')
                         ->color('gray')
-                        ->action(fn(Collection $records) => $records->each->update(['is_featured' => false]))
+                        ->action(fn (Collection $records) => $records->each->update(['is_featured' => false]))
                         ->deselectRecordsAfterCompletion(),
 
                     BulkAction::make('mark_new')
                         ->label('Отметить новинкой')
                         ->icon('heroicon-o-sparkles')
                         ->color('info')
-                        ->action(fn(Collection $records) => $records->each->update(['is_new' => true]))
+                        ->action(fn (Collection $records) => $records->each->update(['is_new' => true]))
                         ->deselectRecordsAfterCompletion(),
 
                     BulkAction::make('unmark_new')
                         ->label('Снять новинку')
                         ->icon('heroicon-o-sparkles')
                         ->color('gray')
-                        ->action(fn(Collection $records) => $records->each->update(['is_new' => false]))
+                        ->action(fn (Collection $records) => $records->each->update(['is_new' => false]))
                         ->deselectRecordsAfterCompletion(),
 
                     BulkAction::make('mark_sale')
                         ->label('Отметить акцией')
                         ->icon('heroicon-o-tag')
                         ->color('danger')
-                        ->action(fn(Collection $records) => $records->each->update(['is_sale' => true]))
+                        ->action(fn (Collection $records) => $records->each->update(['is_sale' => true]))
                         ->deselectRecordsAfterCompletion(),
 
                     BulkAction::make('unmark_sale')
                         ->label('Снять акцию')
                         ->icon('heroicon-o-tag')
                         ->color('gray')
-                        ->action(fn(Collection $records) => $records->each->update(['is_sale' => false]))
+                        ->action(fn (Collection $records) => $records->each->update(['is_sale' => false]))
                         ->deselectRecordsAfterCompletion(),
 
                     BulkAction::make('archive')
                         ->label('Архивировать')
                         ->icon('heroicon-o-archive-box')
                         ->color('warning')
-                        ->action(fn(Collection $records) => $records->each->update(['is_archived' => true]))
+                        ->action(fn (Collection $records) => $records->each->update(['is_archived' => true]))
                         ->deselectRecordsAfterCompletion(),
 
                     BulkAction::make('unarchive')
                         ->label('Разархивировать')
                         ->icon('heroicon-o-archive-box-x-mark')
                         ->color('success')
-                        ->action(fn(Collection $records) => $records->each->update(['is_archived' => false]))
+                        ->action(fn (Collection $records) => $records->each->update(['is_archived' => false]))
                         ->deselectRecordsAfterCompletion(),
 
                     BulkAction::make('change_brand')
@@ -440,7 +475,7 @@ class ProductsTable
                         ])
                         ->requiresConfirmation()
                         ->modalHeading('Сменить бренд у выбранных товаров')
-                        ->action(fn(Collection $records, array $data) => $records->each->update([
+                        ->action(fn (Collection $records, array $data) => $records->each->update([
                             'brand_id' => $data['brand_id'] ?? null,
                         ]))
                         ->deselectRecordsAfterCompletion(),
@@ -461,7 +496,7 @@ class ProductsTable
                         ])
                         ->requiresConfirmation()
                         ->modalHeading('Сменить категорию у выбранных товаров')
-                        ->action(fn(Collection $records, array $data) => $records->each->update([
+                        ->action(fn (Collection $records, array $data) => $records->each->update([
                             'category_id' => $data['category_id'],
                         ]))
                         ->deselectRecordsAfterCompletion(),
@@ -504,7 +539,7 @@ class ProductsTable
                         ->form([
                             FormSelect::make('supplier_id')
                                 ->label('Поставщик')
-                                ->options(fn() => User::query()
+                                ->options(fn () => User::query()
                                     ->where('role', 'supplier')
                                     ->orderBy('name')
                                     ->pluck('name', 'id'))
@@ -512,7 +547,7 @@ class ProductsTable
                                 ->preload()
                                 ->nullable(),
                         ])
-                        ->action(fn(Collection $records, array $data) => $records->each->update([
+                        ->action(fn (Collection $records, array $data) => $records->each->update([
                             'supplier_id' => $data['supplier_id'] ?? null,
                         ]))
                         ->deselectRecordsAfterCompletion(),
@@ -522,15 +557,15 @@ class ProductsTable
                         ->icon('heroicon-o-arrow-down-tray')
                         ->color('gray')
                         ->action(function (Collection $records) {
-                            $filename = 'products_' . now()->format('Ymd_His') . '.csv';
+                            $filename = 'products_'.now()->format('Ymd_His').'.csv';
                             $headers = [
-                                'Content-Type'        => 'text/csv; charset=UTF-8',
+                                'Content-Type' => 'text/csv; charset=UTF-8',
                                 'Content-Disposition' => "attachment; filename=\"{$filename}\"",
                             ];
 
                             $callback = function () use ($records) {
                                 $out = fopen('php://output', 'w');
-                                fputs($out, "\xEF\xBB\xBF"); // BOM для Excel
+                                fwrite($out, "\xEF\xBB\xBF"); // BOM для Excel
 
                                 fputcsv($out, [
                                     'id',
@@ -576,6 +611,17 @@ class ProductsTable
                     DeleteBulkAction::make(),
                 ]),
             ]);
+    }
+
+    public static function applySupplierFilter(Builder $query, int $supplierId): Builder
+    {
+        return $query->where(fn (Builder $query): Builder => $query
+            ->whereHas('supplierProducts', fn (Builder $supplierProducts): Builder => $supplierProducts
+                ->where('supplier_id', $supplierId))
+            ->orWhereHas('integrationProducts', fn (Builder $integrationProducts): Builder => $integrationProducts
+                ->where('match_status', 'matched')
+                ->whereHas('source', fn (Builder $source): Builder => $source
+                    ->where('supplier_id', $supplierId))));
     }
 
     private static function sourceEnrichmentForm(bool $includePreviewToggle): array
@@ -649,7 +695,7 @@ class ProductsTable
         self::sendAdminNotification(Notification::make()
             ->success()
             ->title($previewOnly ? 'Проверка поставлена в очередь' : 'Обновление поставлено в очередь')
-            ->body('Товаров в задаче: ' . count($productIds) . ".\nРезультат появится в уведомлениях после выполнения очереди."));
+            ->body('Товаров в задаче: '.count($productIds).".\nРезультат появится в уведомлениях после выполнения очереди."));
     }
 
     private static function queueCatalogAiReview(iterable $records, bool $useAi): void
@@ -673,7 +719,7 @@ class ProductsTable
         self::sendAdminNotification(Notification::make()
             ->success()
             ->title('AI-разбор поставлен в очередь')
-            ->body('Товаров в задаче: ' . count($productIds) . ".\nРезультат и команды проверки появятся в уведомлениях."));
+            ->body('Товаров в задаче: '.count($productIds).".\nРезультат и команды проверки появятся в уведомлениях."));
     }
 
     private static function hasProductImages(Product $record): bool
@@ -699,10 +745,10 @@ class ProductsTable
     {
         $categorySlug = $record->category?->slug;
 
-        if (!$categorySlug || !$record->slug) {
+        if (! $categorySlug || ! $record->slug) {
             return null;
         }
 
-        return url('/' . $categorySlug . '/' . $record->slug);
+        return url('/'.$categorySlug.'/'.$record->slug);
     }
 }

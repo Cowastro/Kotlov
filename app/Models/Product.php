@@ -10,8 +10,11 @@ use Illuminate\Database\Eloquent\Relations\MorphMany;
 class Product extends Model
 {
     public const AVAILABILITY_IN_STOCK = 'in_stock';
+
     public const AVAILABILITY_CHECK = 'check';
+
     public const AVAILABILITY_OUT_OF_STOCK = 'out_of_stock';
+
     public const PUBLIC_SALE_SLUGS = [
         'pelletnaya-gorelka-kotlov-xo-ceramic-pro-100-kvt',
         'pelletnaya-gorelka-kotlov-xo-evo-18-kvt-eb140',
@@ -48,19 +51,19 @@ class Product extends Model
     ];
 
     protected $casts = [
-        'images'      => 'array',
-        'specs'       => 'array',
+        'images' => 'array',
+        'specs' => 'array',
         'service_info' => 'array',
-        'documents'   => 'array',
+        'documents' => 'array',
         'promo_flags' => 'array',
-        'is_active'   => 'boolean',
+        'is_active' => 'boolean',
         'is_archived' => 'boolean',
-        'in_stock'    => 'boolean',
+        'in_stock' => 'boolean',
         'is_featured' => 'boolean',
-        'is_new'      => 'boolean',
-        'is_sale'     => 'boolean',
-        'price'       => 'decimal:2',
-        'price_old'   => 'decimal:2',
+        'is_new' => 'boolean',
+        'is_sale' => 'boolean',
+        'price' => 'decimal:2',
+        'price_old' => 'decimal:2',
     ];
 
     public static function availabilityStatusOptions(): array
@@ -126,9 +129,9 @@ class Product extends Model
         $temperature = null;
 
         if ($waterTemperature && preg_match('/отоплен\S*\s+до\s*(\d+)/ui', $waterTemperature, $match)) {
-            $temperature = 'до ' . $match[1] . ' °C';
+            $temperature = 'до '.$match[1].' °C';
         } elseif ($waterTemperature && preg_match('/до\s*(\d+)/ui', $waterTemperature, $match)) {
-            $temperature = 'до ' . $match[1] . ' °C';
+            $temperature = 'до '.$match[1].' °C';
         }
 
         $chips = collect([$refrigerant, $power, $temperature])
@@ -195,7 +198,7 @@ class Product extends Model
     {
         return $this->hasMany(ProductAttributeValue::class)
             ->with(['attribute', 'option'])
-            ->whereHas('attribute', fn($q) => $q
+            ->whereHas('attribute', fn ($q) => $q
                 ->where('in_product', true)
                 ->whereNotIn('name', self::SUPPLIER_TECHNICAL_ATTRIBUTES))
             ->orderBy('attribute_id');
@@ -205,7 +208,7 @@ class Product extends Model
     {
         return $this->hasMany(ProductAttributeValue::class)
             ->with(['attribute', 'option'])
-            ->whereHas('attribute', fn($q) => $q
+            ->whereHas('attribute', fn ($q) => $q
                 ->where('in_brief', true)
                 ->whereNotIn('name', self::SUPPLIER_TECHNICAL_ATTRIBUTES))
             ->orderBy('attribute_id');
@@ -266,7 +269,7 @@ class Product extends Model
 
         $path = $images[$index] ?? $images[0] ?? null;
 
-        if (!$path) {
+        if (! $path) {
             return $placeholder;
         }
 
@@ -276,21 +279,21 @@ class Product extends Model
         }
 
         if (str_starts_with($path, 'img/') || str_starts_with($path, '/img/')) {
-            return '/' . ltrim($path, '/');
+            return '/'.ltrim($path, '/');
         }
 
         // Загружено вручную через FileUpload → public storage
         if (str_starts_with($path, 'products/')) {
-            return asset('storage/' . $path);
+            return asset('storage/'.$path);
         }
 
         if (str_starts_with($path, 'product/')) {
-            return '/proxy-image/' . $path;
+            return '/proxy-image/'.$path;
         }
 
         // 000/000065/file.jpg — путь с двумя слешами
         if (substr_count($path, '/') >= 2) {
-            return '/proxy-image/product/' . $path;
+            return '/proxy-image/product/'.$path;
         }
 
         // Просто имя файла — сначала пробуем SKU (PS-010.397 → 0010/010397)
@@ -303,7 +306,8 @@ class Product extends Model
             $n1 = (int) $firstRaw;
             $dir1 = sprintf('00%d', $n1);
             $dir2 = sprintf('%s%03d', str_pad($n1, 3, '0', STR_PAD_LEFT), (int) $secondRaw);
-            return '/proxy-image/product/' . $dir1 . '/' . $dir2 . '/' . $path;
+
+            return '/proxy-image/product/'.$dir1.'/'.$dir2.'/'.$path;
         }
 
         // Нестандартный SKU — строим путь по ID (sprintf для совместимости с форматом)
@@ -312,7 +316,8 @@ class Product extends Model
             $n1 = (int) floor($id / 1000);
             $dir1 = sprintf('00%d', $n1);
             $dir2 = str_pad($id, 6, '0', STR_PAD_LEFT);
-            return '/proxy-image/product/' . $dir1 . '/' . $dir2 . '/' . $path;
+
+            return '/proxy-image/product/'.$dir1.'/'.$dir2.'/'.$path;
         }
 
         return $placeholder;
@@ -324,6 +329,7 @@ class Product extends Model
         if ($this->isPublicSale() && $this->price_old && $this->price_old > $this->price) {
             return round((1 - $this->price / $this->price_old) * 100);
         }
+
         return null;
     }
 
@@ -346,8 +352,7 @@ class Product extends Model
         $query,
         ?int $priorityBrandId = null,
         bool $prioritizeStock = false
-    )
-    {
+    ) {
         if ($priorityBrandId) {
             $query->orderByRaw(
                 'CASE WHEN brand_id = ? THEN 0 ELSE 1 END',
@@ -377,8 +382,7 @@ class Product extends Model
         $query,
         array $optionIds,
         string $valueTable = 'product_attribute_values'
-    )
-    {
+    ) {
         $optionIds = collect($optionIds)
             ->map(fn ($id) => (int) $id)
             ->filter(fn (int $id) => $id > 0)
@@ -481,5 +485,10 @@ class Product extends Model
     public function supplierProducts(): HasMany
     {
         return $this->hasMany(SupplierProduct::class);
+    }
+
+    public function integrationProducts(): HasMany
+    {
+        return $this->hasMany(IntegrationProduct::class);
     }
 }
