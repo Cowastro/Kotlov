@@ -34,6 +34,8 @@ class StockDemandAnalytics extends Page
 
     public string $search = '';
 
+    public string $stockDataFilter = 'all';
+
     public bool $purchaseOnly = true;
 
     public int $perPage = 25;
@@ -81,6 +83,15 @@ class StockDemandAnalytics extends Page
         $this->resetAnalysis();
     }
 
+    public function updatedStockDataFilter(): void
+    {
+        if (! array_key_exists($this->stockDataFilter, $this->stockDataOptions())) {
+            $this->stockDataFilter = 'all';
+        }
+
+        $this->resetAnalysis();
+    }
+
     public function updatedPurchaseOnly(): void
     {
         $this->resetAnalysis();
@@ -117,14 +128,23 @@ class StockDemandAnalytics extends Page
             ->all();
     }
 
+    public function stockDataOptions(): array
+    {
+        return [
+            'all' => 'Все состояния',
+            'confirmed' => 'Подтверждено 1С',
+            'problems' => 'Нужно проверить',
+        ];
+    }
+
     public function summary(): array
     {
         $rows = $this->filteredRows();
 
         return [
-            ['label' => 'Позиций в анализе', 'value' => $rows->count(), 'suffix' => '', 'tone' => 'neutral'],
-            ['label' => 'Нужно пополнить', 'value' => $rows->where('recommended_purchase', '>', 0)->count(), 'suffix' => '', 'tone' => 'warning'],
-            ['label' => 'Рекомендовано единиц', 'value' => (int) $rows->sum('recommended_purchase'), 'suffix' => ' шт.', 'tone' => 'danger'],
+            ['label' => 'Подтверждённый дефицит', 'value' => $rows->filter(fn (array $row): bool => ($row['recommended_purchase'] ?? 0) > 0)->count(), 'suffix' => '', 'tone' => 'warning'],
+            ['label' => 'Нужно проверить остаток', 'value' => $rows->filter(fn (array $row): bool => ! $row['stock_data_ready'] && $row['quantity_recent'] > 0)->count(), 'suffix' => '', 'tone' => 'danger'],
+            ['label' => 'К закупке подтверждено', 'value' => (int) $rows->sum(fn (array $row): int => $row['recommended_purchase'] ?? 0), 'suffix' => ' шт.', 'tone' => 'info'],
             ['label' => 'Спрос за период', 'value' => (int) $rows->sum('quantity_recent'), 'suffix' => ' шт.', 'tone' => 'info'],
         ];
     }
@@ -156,8 +176,13 @@ class StockDemandAnalytics extends Page
 
         return $this->rowsCache = app(OrderStockRecommendationService::class)
             ->recommendations($this->period, $this->sourceCode)
+            ->when($this->stockDataFilter === 'confirmed', fn (Collection $rows): Collection => $rows
+                ->filter(fn (array $row): bool => $row['stock_data_ready']))
+            ->when($this->stockDataFilter === 'problems', fn (Collection $rows): Collection => $rows
+                ->filter(fn (array $row): bool => ! $row['stock_data_ready']))
             ->when($this->purchaseOnly, fn (Collection $rows): Collection => $rows
-                ->filter(fn (array $row): bool => $row['recommended_purchase'] > 0))
+                ->filter(fn (array $row): bool => ($row['recommended_purchase'] ?? 0) > 0
+                    || (! $row['stock_data_ready'] && $row['quantity_recent'] > 0)))
             ->when($search !== '', fn (Collection $rows): Collection => $rows
                 ->filter(fn (array $row): bool => str_contains(
                     mb_strtolower(($row['sku'] ?? '').' '.($row['name'] ?? '')),

@@ -235,6 +235,7 @@ class OneCExchangeTest extends TestCase
                 $table->timestamp('matched_at')->nullable();
                 $table->timestamp('last_seen_at')->nullable();
                 $table->timestamp('last_offer_seen_at')->nullable();
+                $table->timestamp('stock_confirmed_at')->nullable();
                 $table->timestamps();
             });
         } elseif (! Schema::hasColumn('integration_products', 'target_category_id')) {
@@ -246,6 +247,12 @@ class OneCExchangeTest extends TestCase
         if (! Schema::hasColumn('integration_products', 'last_offer_seen_at')) {
             Schema::table('integration_products', function (Blueprint $table) {
                 $table->timestamp('last_offer_seen_at')->nullable();
+            });
+        }
+
+        if (! Schema::hasColumn('integration_products', 'stock_confirmed_at')) {
+            Schema::table('integration_products', function (Blueprint $table) {
+                $table->timestamp('stock_confirmed_at')->nullable();
             });
         }
 
@@ -722,6 +729,15 @@ XML;
             'external_id' => 'current-offer',
             'stock_quantity' => 5,
         ]);
+        $this->assertNotNull(IntegrationProduct::query()
+            ->where('external_id', 'missing-offer')
+            ->value('stock_confirmed_at'));
+        $this->assertNotNull(IntegrationProduct::query()
+            ->where('external_id', 'already-zero')
+            ->value('stock_confirmed_at'));
+        $this->assertNotNull(IntegrationProduct::query()
+            ->where('external_id', 'current-offer')
+            ->value('stock_confirmed_at'));
         $run = IntegrationExchangeRun::query()->latest('id')->firstOrFail();
         $this->assertSame(1, data_get($run->summary, 'stock_snapshot.zeroed'));
     }

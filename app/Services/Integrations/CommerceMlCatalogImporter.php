@@ -268,13 +268,16 @@ class CommerceMlCatalogImporter
 
         $price = $this->text($node, './/*[local-name()="ЦенаЗаЕдиницу"]');
         $quantity = $this->text($node, './*[local-name()="Количество"]');
+        $normalizedQuantity = str_replace(',', '.', $quantity);
+        $hasQuantity = is_numeric($normalizedQuantity);
         $item->fill([
             'external_sku' => $item->external_sku ?: ($this->text($node, './*[local-name()="Артикул"]') ?: null),
             'name' => $item->name ?: ($this->text($node, './*[local-name()="Наименование"]') ?: null),
             'price' => is_numeric(str_replace(',', '.', $price)) ? str_replace(',', '.', $price) : $item->price,
-            'stock_quantity' => is_numeric(str_replace(',', '.', $quantity)) ? str_replace(',', '.', $quantity) : $item->stock_quantity,
+            'stock_quantity' => $hasQuantity ? $normalizedQuantity : $item->stock_quantity,
             'last_seen_at' => now(),
             'last_offer_seen_at' => now(),
+            'stock_confirmed_at' => $hasQuantity ? now() : $item->stock_confirmed_at,
         ]);
 
         if (! $item->product_id && $item->match_status !== 'ignored') {

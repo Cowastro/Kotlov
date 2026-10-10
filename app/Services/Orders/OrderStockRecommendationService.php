@@ -21,7 +21,7 @@ class OrderStockRecommendationService
         $recentDays = max(30, $recentDays);
         $cutoff = now()->subDays($recentDays);
         $source = IntegrationSource::query()->where('code', $sourceCode)->first();
-        $ownStock = $this->ownStockByProduct($source);
+        $ownStock = $this->ownStockEvidenceByProduct($source);
 
         return OrderItem::query()
             ->with(['order:id,status,created_at', 'product:id,name,sku'])
@@ -29,7 +29,7 @@ class OrderStockRecommendationService
             ->whereHas('order', fn ($query) => $query->where('status', '!=', 'cancelled'))
             ->get()
             ->groupBy('product_id')
-            ->map(function (Collection $items, int|string $productId) use ($cutoff, $recentDays, $ownStock): array {
+            ->map(function (Collection $items, int|string $productId) use ($cutoff, $recentDays, $ownStock, $source): array {
                 $recent = $items->filter(fn (OrderItem $item): bool => $item->order?->created_at?->gte($cutoff) === true);
                 $product = $items->first()->product;
                 $allOrders = $items->pluck('order_id')->unique()->count();
@@ -43,16 +43,29 @@ class OrderStockRecommendationService
                 $targetStock = $recentQuantity > 0
                     ? max($largestRecentOrder, (int) ceil($monthlyVelocity * 2))
                     : 0;
-                $currentStock = (float) ($ownStock[(int) $productId] ?? 0);
-                $stockCoverageDays = $dailyVelocity > 0
+                $stockEvidence = $ownStock->get((int) $productId, [
+                    'quantity' => null,
+                    'status' => $source ? 'not_linked' : 'source_missing',
+                    'label' => $source ? 'Нет привязки к 1С' : 'Источник не найден',
+                    'confirmed_at' => null,
+                    'offer_count' => 0,
+                ]);
+                $currentStock = $stockEvidence['quantity'];
+                $stockCoverageDays = $dailyVelocity > 0 && $currentStock !== null
                     ? round($currentStock / $dailyVelocity, 1)
                     : null;
                 $lastOrderedAt = $items->max(fn (OrderItem $item) => $item->order?->created_at);
                 $recencyBoost = $lastOrderedAt?->gte(now()->subDays(30)) ? 20 : ($lastOrderedAt?->gte(now()->subDays(90)) ? 8 : 0);
                 $priorityScore = round($recentOrders * 10 + $recentQuantity * 3 + $allOrders + $recencyBoost, 1);
-                $recommendedPurchase = max(0, (int) ceil($targetStock - $currentStock));
+                $stockDataReady = $stockEvidence['status'] === 'confirmed';
+                $recommendedPurchase = $targetStock === 0
+                    ? 0
+                    : ($stockDataReady
+                        ? max(0, (int) ceil($targetStock - $currentStock))
+                        : null);
                 $stockState = match (true) {
                     $recentQuantity === 0 => 'no_recent_demand',
+                    ! $stockDataReady => 'stock_unverified',
                     $currentStock <= 0 => 'out_of_stock',
                     $recommendedPurchase > 0 => 'below_target',
                     default => 'enough',
@@ -75,6 +88,11 @@ class OrderStockRecommendationService
                     'last_ordered_at' => $lastOrderedAt,
                     'current_own_stock' => $currentStock,
                     'stock_coverage_days' => $stockCoverageDays,
+                    'stock_data_status' => $stockEvidence['status'],
+                    'stock_data_label' => $stockEvidence['label'],
+                    'stock_data_ready' => $stockDataReady,
+                    'stock_confirmed_at' => $stockEvidence['confirmed_at'],
+                    'stock_offer_count' => $stockEvidence['offer_count'],
                     'target_stock' => $targetStock,
                     'recommended_purchase' => $recommendedPurchase,
                     'stock_state' => $stockState,
@@ -87,13 +105,15 @@ class OrderStockRecommendationService
                         $targetBasis,
                         $currentStock,
                         $recommendedPurchase,
+                        $stockEvidence['status'],
+                        $stockEvidence['label'],
                     ),
                     'priority_score' => $priorityScore,
                 ];
             })
             ->filter(fn (array $row): bool => $row['orders_all'] > 0)
             ->sortByDesc(fn (array $row): array => [
-                $row['recommended_purchase'] > 0 ? 1 : 0,
+                ($row['recommended_purchase'] ?? 0) > 0 ? 2 : ($row['quantity_recent'] > 0 && ! $row['stock_data_ready'] ? 1 : 0),
                 $row['priority_score'],
                 $row['quantity_all'],
             ])
@@ -107,17 +127,24 @@ class OrderStockRecommendationService
         float $monthlyVelocity,
         int $largestRecentOrder,
         int $targetStock,
-        float $currentStock,
-        int $recommendedPurchase,
+        ?float $currentStock,
+        ?int $recommendedPurchase,
+        string $stockDataStatus,
+        string $stockDataLabel,
     ): string {
         if ($recentQuantity === 0) {
             return "За последние {$recentDays} дней спроса не было. Целевой запас не формируется.";
         }
 
         $demand = number_format($monthlyVelocity, 2, ',', ' ');
-        $stock = number_format($currentStock, 3, ',', ' ');
-        $stock = rtrim(rtrim($stock, '0'), ',');
         $basis = "максимум из крупнейшего заказа ({$largestRecentOrder} шт.) и двух месяцев спроса";
+
+        if ($stockDataStatus !== 'confirmed') {
+            return "За {$recentDays} дней: {$recentOrders} заказ(а), {$recentQuantity} шт.; {$demand} шт./мес. Цель {$targetStock} шт. — {$basis}. Решение о закупке заблокировано: {$stockDataLabel}.";
+        }
+
+        $stock = number_format((float) $currentStock, 3, ',', ' ');
+        $stock = rtrim(rtrim($stock, '0'), ',');
 
         if ($recommendedPurchase === 0) {
             return "За {$recentDays} дней: {$recentOrders} заказ(а), {$recentQuantity} шт.; {$demand} шт./мес. Цель {$targetStock} шт. — {$basis}. На складе {$stock} шт., пополнение не требуется.";
@@ -126,8 +153,8 @@ class OrderStockRecommendationService
         return "За {$recentDays} дней: {$recentOrders} заказ(а), {$recentQuantity} шт.; {$demand} шт./мес. Цель {$targetStock} шт. — {$basis}. На складе {$stock} шт.; рекомендуется добавить {$recommendedPurchase} шт.";
     }
 
-    /** @return Collection<int, float> */
-    private function ownStockByProduct(?IntegrationSource $source): Collection
+    /** @return Collection<int, array{quantity:?float,status:string,label:string,confirmed_at:mixed,offer_count:int}> */
+    private function ownStockEvidenceByProduct(?IntegrationSource $source): Collection
     {
         if (! $source) {
             return collect();
@@ -137,8 +164,29 @@ class OrderStockRecommendationService
             ->where('integration_source_id', $source->id)
             ->where('match_status', 'matched')
             ->whereNotNull('product_id')
-            ->get(['product_id', 'stock_quantity'])
+            ->get(['product_id', 'stock_quantity', 'stock_confirmed_at'])
             ->groupBy('product_id')
-            ->map(fn (Collection $offers): float => round((float) $offers->sum('stock_quantity'), 3));
+            ->map(function (Collection $offers) use ($source): array {
+                $hasMissingStock = $offers->contains(fn (IntegrationProduct $offer): bool => $offer->stock_quantity === null);
+                $hasMissingConfirmation = $offers->contains(fn (IntegrationProduct $offer): bool => $offer->stock_confirmed_at === null);
+                $freshAfter = now()->subMinutes($source->staleAfterMinutes());
+                $hasStaleConfirmation = $offers->contains(
+                    fn (IntegrationProduct $offer): bool => $offer->stock_confirmed_at?->lt($freshAfter) === true,
+                );
+                [$status, $label] = match (true) {
+                    $hasMissingStock => ['missing_stock', 'Остаток не передан'],
+                    $hasMissingConfirmation => ['unconfirmed', 'Остаток не подтверждён обменом'],
+                    $hasStaleConfirmation => ['stale', 'Данные остатка устарели'],
+                    default => ['confirmed', 'Подтверждено 1С'],
+                };
+
+                return [
+                    'quantity' => $hasMissingStock ? null : round((float) $offers->sum('stock_quantity'), 3),
+                    'status' => $status,
+                    'label' => $label,
+                    'confirmed_at' => $offers->max('stock_confirmed_at'),
+                    'offer_count' => $offers->count(),
+                ];
+            });
     }
 }

@@ -4,6 +4,7 @@
         $rows = $this->rows();
         $periods = $this->periodOptions();
         $sources = $this->sourceOptions();
+        $stockDataOptions = $this->stockDataOptions();
     @endphp
 
     <style>
@@ -17,7 +18,7 @@
         .stock-metric[data-tone="warning"] strong { color: #d97706; }
         .stock-metric[data-tone="danger"] strong { color: #dc2626; }
         .stock-metric[data-tone="info"] strong { color: #2563eb; }
-        .stock-tools { display: grid; grid-template-columns: 170px minmax(220px,1fr) minmax(220px,1.3fr) auto; gap: 10px; align-items: end; padding: 13px 15px; }
+        .stock-tools { display: grid; grid-template-columns: 150px minmax(200px,1fr) 170px minmax(220px,1.2fr) auto; gap: 10px; align-items: end; padding: 13px 15px; }
         .stock-field { display: grid; gap: 5px; color: var(--sa-muted); font-size: 11px; font-weight: 700; text-transform: uppercase; }
         .stock-input { min-height: 34px; border: 1px solid var(--sa-border); border-radius: 7px; padding: 5px 10px; background: transparent; color: inherit; font-size: 13px; text-transform: none; }
         .stock-toggle { display: inline-flex; align-items: center; gap: 7px; min-height: 34px; font-size: 12px; font-weight: 700; white-space: nowrap; }
@@ -31,6 +32,11 @@
         .stock-number { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
         .stock-recommend { color: #dc2626; font-size: 15px; font-weight: 800; }
         .stock-ok { color: #16a34a; font-weight: 700; }
+        .stock-pending { color: #d97706; font-weight: 800; }
+        .stock-evidence { min-width: 150px; }
+        .stock-badge { display: inline-flex; align-items: center; border: 1px solid currentColor; border-radius: 999px; padding: 2px 7px; font-size: 10px; font-weight: 800; white-space: nowrap; }
+        .stock-badge[data-ready="1"] { color: #16a34a; }
+        .stock-badge[data-ready="0"] { color: #d97706; }
         .stock-explanation { min-width: 360px; max-width: 520px; line-height: 1.4; }
         .stock-footer { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 11px 15px; color: var(--sa-muted); font-size: 12px; }
         .stock-pager { display: flex; align-items: center; gap: 8px; }
@@ -62,16 +68,21 @@
                         @foreach ($sources as $value => $label)<option value="{{ $value }}">{{ $label }}</option>@endforeach
                     </select>
                 </label>
+                <label class="stock-field">Достоверность остатка
+                    <select class="stock-input" wire:model.live="stockDataFilter">
+                        @foreach ($stockDataOptions as $value => $label)<option value="{{ $value }}">{{ $label }}</option>@endforeach
+                    </select>
+                </label>
                 <label class="stock-field">Поиск по товару или SKU
                     <input class="stock-input" type="search" wire:model.live.debounce.350ms="search" placeholder="Название или артикул">
                 </label>
-                <label class="stock-toggle"><input type="checkbox" wire:model.live="purchaseOnly"> Только к пополнению</label>
+                <label class="stock-toggle"><input type="checkbox" wire:model.live="purchaseOnly"> Только требующие решения</label>
             </div>
 
             <div class="stock-table-wrap">
                 <table class="stock-table">
                     <thead><tr>
-                        <th>Товар</th><th>Заказы / продажи</th><th>Спрос / мес.</th><th>Склад</th><th>Покрытие</th><th>Цель</th><th>Пополнить</th><th>Последний спрос</th><th>Почему</th>
+                        <th>Товар</th><th>Заказы / продажи</th><th>Спрос / мес.</th><th>Склад</th><th>Данные склада</th><th>Покрытие</th><th>Цель</th><th>Пополнить</th><th>Последний спрос</th><th>Почему</th>
                     </tr></thead>
                     <tbody>
                     @forelse ($rows as $row)
@@ -79,15 +90,28 @@
                             <td class="stock-product">{{ $row['name'] }}<div class="stock-muted">{{ $row['sku'] ?: 'SKU не указан' }}</div></td>
                             <td class="stock-number">{{ $row['orders_recent'] }} / {{ $row['quantity_recent'] }} шт.<div class="stock-muted">Всего: {{ $row['orders_all'] }} / {{ $row['quantity_all'] }} шт.</div></td>
                             <td class="stock-number">{{ number_format($row['monthly_velocity'], 2, ',', ' ') }} шт.</td>
-                            <td class="stock-number">{{ number_format($row['current_own_stock'], 3, ',', ' ') }}</td>
+                            <td class="stock-number">{{ $row['current_own_stock'] === null ? '—' : rtrim(rtrim(number_format($row['current_own_stock'], 3, ',', ' '), '0'), ',') }}</td>
+                            <td class="stock-evidence">
+                                <span class="stock-badge" data-ready="{{ $row['stock_data_ready'] ? '1' : '0' }}">{{ $row['stock_data_label'] }}</span>
+                                <div class="stock-muted">
+                                    {{ $row['stock_confirmed_at']?->timezone('Europe/Minsk')->format('d.m.Y H:i') ?? 'нет времени подтверждения' }}
+                                    @if ($row['stock_offer_count'] > 1) · {{ $row['stock_offer_count'] }} позиций 1С @endif
+                                </div>
+                            </td>
                             <td class="stock-number">{{ $row['stock_coverage_days'] === null ? '—' : number_format($row['stock_coverage_days'], 0, ',', ' ') . ' дн.' }}</td>
                             <td class="stock-number">{{ $row['target_stock'] }}</td>
-                            <td class="stock-number"><span class="{{ $row['recommended_purchase'] > 0 ? 'stock-recommend' : 'stock-ok' }}">{{ $row['recommended_purchase'] > 0 ? '+' . $row['recommended_purchase'] : 'Достаточно' }}</span></td>
+                            <td class="stock-number">
+                                @if ($row['recommended_purchase'] === null)
+                                    <span class="stock-pending">После проверки</span>
+                                @else
+                                    <span class="{{ $row['recommended_purchase'] > 0 ? 'stock-recommend' : 'stock-ok' }}">{{ $row['recommended_purchase'] > 0 ? '+' . $row['recommended_purchase'] : 'Достаточно' }}</span>
+                                @endif
+                            </td>
                             <td class="stock-number">{{ $row['last_ordered_at']?->timezone('Europe/Minsk')->format('d.m.Y') ?? '—' }}</td>
                             <td class="stock-explanation">{{ $row['explanation'] }}</td>
                         </tr>
                     @empty
-                        <tr><td colspan="9">Нет товаров, соответствующих фильтрам. Расчёт не изменяет заказы и остатки.</td></tr>
+                        <tr><td colspan="10">Нет товаров, соответствующих фильтрам. Расчёт не изменяет заказы и остатки.</td></tr>
                     @endforelse
                     </tbody>
                 </table>
@@ -105,8 +129,8 @@
         </div>
 
         <div class="stock-card stock-footer">
-            <span>Формула цели: крупнейший заказ за период или двухмесячный спрос — выбирается большее. Отменённые заказы исключены.</span>
-            <strong>Только аналитика: склад автоматически не меняется.</strong>
+            <span>Формула цели: крупнейший заказ за период или двухмесячный спрос — выбирается большее. Решение рассчитывается только по свежему подтверждённому остатку 1С.</span>
+            <strong>Нет привязки или актуального остатка — закупка блокируется до проверки.</strong>
         </div>
     </div>
 </x-filament-panels::page>

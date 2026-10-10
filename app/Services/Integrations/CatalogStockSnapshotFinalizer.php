@@ -17,13 +17,20 @@ class CatalogStockSnapshotFinalizer
      */
     public function finalize(IntegrationSource $source, CarbonInterface $snapshotStartedAt): int
     {
-        return IntegrationProduct::query()
+        $omitted = IntegrationProduct::query()
             ->whereBelongsTo($source, 'source')
-            ->where('stock_quantity', '>', 0)
             ->where(function ($query) use ($snapshotStartedAt): void {
                 $query->whereNull('last_offer_seen_at')
                     ->orWhere('last_offer_seen_at', '<', $snapshotStartedAt);
-            })
-            ->update(['stock_quantity' => 0]);
+            });
+
+        $zeroed = (clone $omitted)->where('stock_quantity', '>', 0)->count();
+
+        $omitted->update([
+            'stock_quantity' => 0,
+            'stock_confirmed_at' => now(),
+        ]);
+
+        return $zeroed;
     }
 }

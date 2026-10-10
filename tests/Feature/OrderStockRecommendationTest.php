@@ -54,6 +54,7 @@ class OrderStockRecommendationTest extends TestCase
             'price' => 50,
             'stock_quantity' => 1,
             'match_status' => 'matched',
+            'stock_confirmed_at' => now(),
         ]);
 
         $this->orderWithItem('ORD-ANALYTICS-1', $popular, 3, 100, now()->subDays(10));
@@ -106,6 +107,7 @@ class OrderStockRecommendationTest extends TestCase
             'price' => 50,
             'stock_quantity' => 0,
             'match_status' => 'matched',
+            'stock_confirmed_at' => now(),
         ]);
         $this->orderWithItem('ORD-DEMAND-SCREEN', $product, 4, 100, now()->subDays(10));
 
@@ -119,7 +121,8 @@ class OrderStockRecommendationTest extends TestCase
             ->assertSeeText('Спрос и собственный склад')
             ->assertSeeText('Товар для пополнения склада')
             ->assertSeeText('рекомендуется добавить 4 шт.')
-            ->assertSeeText('Только аналитика: склад автоматически не меняется.');
+            ->assertSeeText('Решение рассчитывается только по свежему подтверждённому остатку 1С.')
+            ->assertSeeText('Подтверждено 1С');
 
         $this->actingAs($client)
             ->get($url)
@@ -128,6 +131,61 @@ class OrderStockRecommendationTest extends TestCase
         $this->assertSame(0.0, (float) IntegrationProduct::query()->findOrFail(
             IntegrationProduct::query()->where('external_id', 'demand-screen-onec')->value('id'),
         )->stock_quantity);
+    }
+
+    public function test_missing_or_stale_stock_evidence_never_becomes_a_zero_stock_purchase_recommendation(): void
+    {
+        Carbon::setTestNow('2026-10-10 12:00:00');
+        $category = Category::query()->create([
+            'name' => 'Контроль достоверности склада',
+            'slug' => 'stock-evidence',
+            'parent_id' => 0,
+        ]);
+        $notLinked = Product::query()->create([
+            'category_id' => $category->id,
+            'name' => 'Нет привязки к 1С',
+            'slug' => 'stock-not-linked',
+            'sku' => 'NOT-LINKED',
+        ]);
+        $stale = Product::query()->create([
+            'category_id' => $category->id,
+            'name' => 'Устаревший остаток',
+            'slug' => 'stock-stale',
+            'sku' => 'STALE-STOCK',
+        ]);
+        $source = IntegrationSource::query()->where('code', 'onec')->firstOrFail();
+        IntegrationProduct::query()->create([
+            'integration_source_id' => $source->id,
+            'product_id' => $stale->id,
+            'external_id' => 'stale-onec-offer',
+            'name' => $stale->name,
+            'price' => 40,
+            'stock_quantity' => 0,
+            'match_status' => 'matched',
+            'stock_confirmed_at' => now()->subHour(),
+        ]);
+        $this->orderWithItem('ORD-NOT-LINKED', $notLinked, 3, 100, now()->subDays(5));
+        $this->orderWithItem('ORD-STALE-STOCK', $stale, 2, 100, now()->subDays(5));
+
+        $rows = app(OrderStockRecommendationService::class)->recommendations(180);
+        $notLinkedRow = $rows->firstWhere('product_id', $notLinked->id);
+        $staleRow = $rows->firstWhere('product_id', $stale->id);
+
+        $this->assertNull($notLinkedRow['current_own_stock']);
+        $this->assertNull($notLinkedRow['recommended_purchase']);
+        $this->assertSame('not_linked', $notLinkedRow['stock_data_status']);
+        $this->assertStringContainsString('Решение о закупке заблокировано', $notLinkedRow['explanation']);
+        $this->assertSame(0.0, $staleRow['current_own_stock']);
+        $this->assertNull($staleRow['recommended_purchase']);
+        $this->assertSame('stale', $staleRow['stock_data_status']);
+
+        $manager = User::factory()->create(['role' => 'manager', 'is_active' => true]);
+        $this->actingAs($manager)
+            ->get(StockDemandAnalytics::getUrl(panel: 'admin'))
+            ->assertOk()
+            ->assertSeeText('Нет привязки к 1С')
+            ->assertSeeText('Данные остатка устарели')
+            ->assertSeeText('После проверки');
     }
 
     private function orderWithItem(
