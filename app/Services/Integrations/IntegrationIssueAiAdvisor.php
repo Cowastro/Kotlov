@@ -116,6 +116,8 @@ PROMPT;
                     'incoming_status', 'incoming_payment_status', 'unknown_status',
                     'unknown_payment_status', 'external_ids', 'identities', 'flow',
                     'direction', 'operation', 'last_run_status', 'last_success_at',
+                    'route_status', 'last_attempted_at', 'delay_minutes', 'exported_at',
+                    'response_timeout_minutes',
                 ])
                 ->all(),
         ], fn (mixed $value): bool => $value !== null && $value !== [] && $value !== '');

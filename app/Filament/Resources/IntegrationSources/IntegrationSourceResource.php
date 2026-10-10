@@ -9,6 +9,7 @@ use App\Models\IntegrationSource;
 use App\Models\Supplier;
 use App\Services\Integrations\IntegrationFlowHealth;
 use App\Services\Integrations\IntegrationOperationsSummary;
+use App\Services\Integrations\OrderIntegrationMonitoring;
 use BackedEnum;
 use Filament\Actions\EditAction;
 use Filament\Forms\Components\Placeholder;
@@ -116,6 +117,22 @@ class IntegrationSourceResource extends Resource
                         ->suffix('мин')
                         ->default(15)
                         ->required(),
+                    TextInput::make('settings.order_dispatch_delay_minutes')
+                        ->label('Заказ задержан через')
+                        ->numeric()
+                        ->minValue(5)
+                        ->maxValue(1440)
+                        ->suffix('мин')
+                        ->default(10)
+                        ->required(),
+                    TextInput::make('settings.order_response_timeout_minutes')
+                        ->label('Ответ по заказу просрочен через')
+                        ->numeric()
+                        ->minValue(5)
+                        ->maxValue(10080)
+                        ->suffix('мин')
+                        ->default(15)
+                        ->required(),
                     Toggle::make('settings.allow_order_export')
                         ->label('Отдавать новые заказы этому источнику')
                         ->helperText('Для основного источника onec включено протоколом автоматически.'),
@@ -199,6 +216,30 @@ class IntegrationSourceResource extends Resource
                 TextColumn::make('schedule')->label('Ожидаемая частота')
                     ->state(fn (IntegrationSource $record): string => $record->scheduleLabel())
                     ->wrap()
+                    ->toggleable(),
+                TextColumn::make('order_queue')->label('Маршруты заказов')
+                    ->state(function (IntegrationSource $record): string {
+                        if (! $record->exportsOrders()) {
+                            return 'Не используются';
+                        }
+
+                        $orders = app(OrderIntegrationMonitoring::class)->snapshot($record);
+
+                        return 'Передать '.$orders['pending_routes'].' · статусы '.$orders['awaiting_responses'];
+                    })
+                    ->description(function (IntegrationSource $record): ?string {
+                        if (! $record->exportsOrders()) {
+                            return null;
+                        }
+
+                        $orders = app(OrderIntegrationMonitoring::class)->snapshot($record);
+
+                        return $orders['delayed_routes'] > 0 || $orders['overdue_responses'] > 0
+                            ? 'Просрочено: '.($orders['delayed_routes'] + $orders['overdue_responses'])
+                            : 'Просрочек нет';
+                    })
+                    ->badge()
+                    ->color(fn (string $state): string => $state === 'Не используются' ? 'gray' : 'info')
                     ->toggleable(),
                 TextColumn::make('pricing_rule')->label('Правило цены')
                     ->state(fn (IntegrationSource $record): string => $record->pricingRuleLabel())

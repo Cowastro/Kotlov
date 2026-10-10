@@ -5,16 +5,15 @@ namespace App\Services\Integrations;
 use App\Models\IntegrationExchangeRun;
 use App\Models\IntegrationProduct;
 use App\Models\IntegrationSource;
-use App\Models\Order;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
 
 class IntegrationOperationsSummary
 {
     public function __construct(
-        private readonly IntegrationMonitoringWindow $monitoringWindow,
         private readonly IntegrationFlowHealth $flowHealth,
         private readonly IntegrationMonitorHealth $monitorHealth,
+        private readonly OrderIntegrationMonitoring $orderMonitoring,
     ) {}
 
     /** @return array<string, mixed> */
@@ -26,9 +25,20 @@ class IntegrationOperationsSummary
             ->with(['latestExchangeRun', 'latestSuccessfulExchangeRun'])
             ->orderBy('name')
             ->get();
+        $orderRoutes = $activeSources
+            ->filter(fn (IntegrationSource $source): bool => $source->exportsOrders())
+            ->mapWithKeys(fn (IntegrationSource $source): array => [
+                $source->id => $this->orderMonitoring->snapshot($source, $now),
+            ]);
         $sourceHealths = $activeSources
-            ->map(function (IntegrationSource $source) use ($now): array {
+            ->map(function (IntegrationSource $source) use ($now, $orderRoutes): array {
                 $flowSnapshot = $this->flowHealth->snapshot($source, $now);
+                $orders = $orderRoutes->get($source->id, [
+                    'pending_routes' => 0,
+                    'awaiting_responses' => 0,
+                    'delayed_routes' => 0,
+                    'overdue_responses' => 0,
+                ]);
 
                 return [
                     'id' => $source->id,
@@ -38,6 +48,10 @@ class IntegrationOperationsSummary
                     'flows' => $flowSnapshot['flows'],
                     'last_run_at' => $source->latestExchangeRun?->started_at,
                     'last_success_at' => $source->latestSuccessfulExchangeRun?->finished_at,
+                    'pending_order_routes' => $orders['pending_routes'],
+                    'awaiting_order_responses' => $orders['awaiting_responses'],
+                    'delayed_order_routes' => $orders['delayed_routes'],
+                    'overdue_order_responses' => $orders['overdue_responses'],
                 ];
             })
             ->values();
@@ -79,13 +93,14 @@ class IntegrationOperationsSummary
                 ->where('status', 'failed')
                 ->where('started_at', '>=', $now->copy()->subDay())
                 ->count(),
-            'awaiting_orders' => Order::query()
-                ->whereNull('onec_exported_at')
-                ->when(
-                    $this->monitoringWindow->ordersStartAt(),
-                    fn ($query, CarbonInterface $startAt) => $query->where('created_at', '>=', $startAt),
-                )
+            'awaiting_orders' => $orderRoutes
+                ->flatMap(fn (array $snapshot): array => $snapshot['pending_order_ids'])
+                ->unique()
                 ->count(),
+            'awaiting_order_routes' => $orderRoutes->sum('pending_routes'),
+            'awaiting_order_responses' => $orderRoutes->sum('awaiting_responses'),
+            'delayed_order_routes' => $orderRoutes->sum('delayed_routes'),
+            'overdue_order_responses' => $orderRoutes->sum('overdue_responses'),
             'attention_products' => IntegrationProduct::query()
                 ->inStock()
                 ->whereIn('match_status', ['suggested', 'ambiguous', 'unmatched'])

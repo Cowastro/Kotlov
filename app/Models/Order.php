@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 
@@ -144,6 +145,9 @@ class Order extends Model
             'order_no_1c_response' => 'no_response',
             'order_not_exported' => 'delayed',
             default => match (true) {
+                $this->currentIntegrationDeliveries()->contains(fn (OrderIntegrationDelivery $delivery): bool => blank($delivery->exported_at)) => 'waiting',
+                $this->currentIntegrationDeliveries()->contains(fn (OrderIntegrationDelivery $delivery): bool => blank($delivery->status_received_at)) => 'sent',
+                $this->currentIntegrationDeliveries()->isNotEmpty() => 'confirmed',
                 filled($this->onec_status_received_at) => 'confirmed',
                 filled($this->onec_exported_at) => 'sent',
                 default => 'waiting',
@@ -160,7 +164,16 @@ class Order extends Model
     {
         $issue = $this->activeOnecSyncIssue();
         if ($issue) {
-            return $issue->message ?: $issue->title;
+            return collect([$issue->source?->partnerName(), $issue->message ?: $issue->title])
+                ->filter()
+                ->implode(' · ');
+        }
+
+        $deliveries = $this->currentIntegrationDeliveries();
+        if ($deliveries->isNotEmpty()) {
+            $received = $deliveries->whereNotNull('status_received_at')->count();
+
+            return $received.' из '.$deliveries->count().' источников вернули статус';
         }
 
         if ($this->onec_status_received_at) {
@@ -188,15 +201,47 @@ class Order extends Model
 
         return $issues
             ->where('status', 'open')
-            ->filter(fn (IntegrationIssue $issue): bool => match ($issue->type) {
-                'order_status_conflict', 'order_status_unknown' => true,
-                'order_no_1c_response' => filled($this->onec_exported_at)
-                    && blank($this->onec_status_received_at),
-                'order_not_exported' => blank($this->onec_exported_at),
-                default => false,
-            })
+            ->filter(fn (IntegrationIssue $issue): bool => $this->integrationIssueIsCurrent($issue))
             ->sortBy(fn (IntegrationIssue $issue): int => $priorities[$issue->type] ?? 99)
             ->first();
+    }
+
+    private function integrationIssueIsCurrent(IntegrationIssue $issue): bool
+    {
+        if (in_array($issue->type, ['order_status_conflict', 'order_status_unknown'], true)) {
+            return true;
+        }
+
+        if (! $issue->integration_source_id) {
+            return match ($issue->type) {
+                'order_no_1c_response' => filled($this->onec_exported_at) && blank($this->onec_status_received_at),
+                'order_not_exported' => blank($this->onec_exported_at),
+                default => false,
+            };
+        }
+
+        $delivery = $this->currentIntegrationDeliveries()
+            ->firstWhere('integration_source_id', $issue->integration_source_id);
+
+        return match ($issue->type) {
+            'order_no_1c_response' => $delivery
+                ? filled($delivery->exported_at) && blank($delivery->status_received_at)
+                : $issue->source?->code === 'onec'
+                    && filled($this->onec_exported_at)
+                    && blank($this->onec_status_received_at),
+            'order_not_exported' => ! $delivery || blank($delivery->exported_at),
+            default => false,
+        };
+    }
+
+    /** @return Collection<int, OrderIntegrationDelivery> */
+    private function currentIntegrationDeliveries(): Collection
+    {
+        if (! $this->relationLoaded('integrationDeliveries')) {
+            $this->setRelation('integrationDeliveries', $this->integrationDeliveries()->get());
+        }
+
+        return $this->integrationDeliveries;
     }
 
     public function getStatusLabelAttribute(): string

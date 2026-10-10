@@ -79,7 +79,9 @@ class OrdersTable
                     'integrationIssues' => fn ($query) => $query
                         ->open()
                         ->orders()
+                        ->with('source')
                         ->latest('last_detected_at'),
+                    'integrationDeliveries',
                 ]))
             ->columns([
                 TextColumn::make('number')
@@ -194,7 +196,7 @@ class OrdersTable
                     ->formatStateUsing(fn (?string $state) => $state ? ($statusNames[$state] ?? $statusLabelOverrides[$state] ?? $state) : '—'),
 
                 TextColumn::make('onec_sync_state')
-                    ->label('1С')
+                    ->label('Обмен')
                     ->state(fn (Order $record): string => $record->onecSyncState())
                     ->badge()
                     ->formatStateUsing(fn (string $state): string => Order::ONEC_SYNC_STATES[$state] ?? $state)

@@ -36,12 +36,15 @@ class IntegrationHealthOverview extends StatsOverviewWidget
                 ->descriptionIcon(Heroicon::OutlinedArrowPathRoundedSquare)
                 ->color($service->healthColor($summary['health']))
                 ->url(IntegrationExchangeRunResource::getUrl('index')),
-            Stat::make('Заказы ожидают 1С', number_format($summary['awaiting_orders'], 0, ',', ' '))
-                ->description($summary['awaiting_orders'] > 0
-                    ? 'Нужно получить и подтвердить в 1С'
-                    : 'Все заказы переданы')
+            Stat::make('Заказы ждут обмена', number_format($summary['awaiting_orders'], 0, ',', ' '))
+                ->description($summary['awaiting_order_routes'] > 0 || $summary['awaiting_order_responses'] > 0
+                    ? 'Передать: '.number_format($summary['awaiting_order_routes'], 0, ',', ' ')
+                        .' · ждут статуса: '.number_format($summary['awaiting_order_responses'], 0, ',', ' ')
+                    : 'Все маршруты подтверждены')
                 ->descriptionIcon(Heroicon::OutlinedShoppingCart)
-                ->color($summary['awaiting_orders'] > 0 ? 'warning' : 'success')
+                ->color($summary['delayed_order_routes'] > 0 || $summary['overdue_order_responses'] > 0
+                    ? 'danger'
+                    : ($summary['awaiting_order_routes'] > 0 || $summary['awaiting_order_responses'] > 0 ? 'warning' : 'success'))
                 ->url(OrderResource::getUrl('index')),
             Stat::make('Товары требуют решения', number_format($summary['attention_products'], 0, ',', ' '))
                 ->description('Есть остаток, но нет подтверждённой привязки')

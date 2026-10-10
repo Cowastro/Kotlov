@@ -2280,7 +2280,7 @@ XML;
     public function test_operations_summary_reports_healthy_exchange_and_actionable_counts(): void
     {
         $source = IntegrationSource::query()->create([
-            'code' => 'summary-onec',
+            'code' => 'onec',
             'name' => 'Тестовая 1С',
             'is_active' => true,
         ]);
@@ -2293,6 +2293,16 @@ XML;
             'started_at' => now()->subMinutes(2),
             'finished_at' => now()->subMinute(),
         ]);
+        foreach ([['outbound', 'orders'], ['inbound', 'order_statuses']] as [$direction, $operation]) {
+            IntegrationExchangeRun::query()->create([
+                'integration_source_id' => $source->id,
+                'direction' => $direction,
+                'operation' => $operation,
+                'status' => 'success',
+                'started_at' => now()->subMinutes(2),
+                'finished_at' => now()->subMinute(),
+            ]);
+        }
 
         IntegrationProduct::query()->create([
             'integration_source_id' => $source->id,
@@ -2320,6 +2330,8 @@ XML;
         $this->assertSame(1, $summary['active_sources']);
         $this->assertSame(1, $summary['attention_products']);
         $this->assertSame(1, $summary['awaiting_orders']);
+        $this->assertSame(1, $summary['awaiting_order_routes']);
+        $this->assertSame(0, $summary['awaiting_order_responses']);
         $this->assertSame(0, $summary['failed_runs_24h']);
     }
 
@@ -2507,7 +2519,7 @@ XML;
     public function test_operations_summary_excludes_orders_before_integration_monitoring_started(): void
     {
         IntegrationSource::query()->create([
-            'code' => 'summary-new-integration',
+            'code' => 'onec',
             'name' => 'Новая 1С',
             'is_active' => true,
             'settings' => ['monitor_orders_from' => now()->subHour()->toIso8601String()],
@@ -2544,7 +2556,7 @@ XML;
     public function test_issue_detector_deduplicates_and_auto_resolves_current_problems(): void
     {
         $source = IntegrationSource::query()->create([
-            'code' => 'issue-source',
+            'code' => 'onec',
             'name' => 'Поставщик с проблемами',
             'is_active' => true,
             'settings' => ['monitor_orders_from' => now()->subDay()->toIso8601String()],
@@ -2557,6 +2569,16 @@ XML;
             'started_at' => now()->subMinute(),
             'finished_at' => now(),
         ]);
+        foreach ([['outbound', 'orders'], ['inbound', 'order_statuses']] as [$direction, $operation]) {
+            IntegrationExchangeRun::query()->create([
+                'integration_source_id' => $source->id,
+                'direction' => $direction,
+                'operation' => $operation,
+                'status' => 'success',
+                'started_at' => now()->subMinute(),
+                'finished_at' => now(),
+            ]);
+        }
         $product = IntegrationProduct::query()->create([
             'integration_source_id' => $source->id,
             'external_id' => 'issue-product',
@@ -2601,6 +2623,198 @@ XML;
         $this->assertSame(2, $resolved['resolved']);
         $this->assertSame(0, IntegrationIssue::query()->where('status', 'open')->count());
         $this->assertSame(2, IntegrationIssue::query()->where('status', 'resolved')->count());
+    }
+
+    public function test_order_delivery_monitor_tracks_each_source_and_resolves_routes_independently(): void
+    {
+        $central = IntegrationSource::query()->create([
+            'code' => 'onec',
+            'name' => 'Центральная 1С',
+            'is_active' => true,
+            'settings' => [
+                'monitor_orders_from' => now()->subDay()->toIso8601String(),
+                'order_dispatch_delay_minutes' => 10,
+                'order_response_timeout_minutes' => 15,
+            ],
+        ]);
+        $supplier = IntegrationSource::query()->create([
+            'code' => 'supplier-monitor',
+            'name' => '1С поставщика',
+            'is_active' => true,
+            'settings' => [
+                'allow_order_export' => true,
+                'monitor_orders_from' => now()->subDay()->toIso8601String(),
+                'order_dispatch_delay_minutes' => 10,
+                'order_response_timeout_minutes' => 15,
+            ],
+        ]);
+
+        foreach ([$central, $supplier] as $source) {
+            foreach ([['inbound', 'catalog'], ['outbound', 'orders'], ['inbound', 'order_statuses']] as [$direction, $operation]) {
+                IntegrationExchangeRun::query()->create([
+                    'integration_source_id' => $source->id,
+                    'direction' => $direction,
+                    'operation' => $operation,
+                    'status' => 'success',
+                    'started_at' => now()->subMinutes(2),
+                    'finished_at' => now()->subMinute(),
+                ]);
+            }
+        }
+
+        $centralProduct = Product::query()->create([
+            'sku' => 'MONITOR-CENTRAL',
+            'name' => 'Центральный товар',
+            'slug' => 'monitor-central-product',
+        ]);
+        $supplierProduct = Product::query()->create([
+            'sku' => 'MONITOR-SUPPLIER',
+            'name' => 'Товар поставщика',
+            'slug' => 'monitor-supplier-product',
+        ]);
+        $centralIntegration = IntegrationProduct::query()->create([
+            'integration_source_id' => $central->id,
+            'product_id' => $centralProduct->id,
+            'external_id' => 'monitor-central-external',
+            'name' => 'Центральный товар',
+            'match_status' => 'matched',
+        ]);
+        $supplierIntegration = IntegrationProduct::query()->create([
+            'integration_source_id' => $supplier->id,
+            'product_id' => $supplierProduct->id,
+            'external_id' => 'monitor-supplier-external',
+            'name' => 'Товар поставщика',
+            'match_status' => 'matched',
+        ]);
+        $order = Order::query()->create([
+            'number' => 'ORDER-SOURCE-MONITOR',
+            'status' => 'new',
+            'customer_name' => 'Контроль маршрутов',
+            'customer_phone' => '+375290000099',
+            'delivery_type' => 'pickup',
+            'payment_type' => 'cash',
+            'payment_status' => 'pending',
+            'subtotal' => 30,
+            'total' => 30,
+            'onec_exported_at' => now()->subMinutes(20),
+        ]);
+        foreach ([
+            [$centralProduct, $centralIntegration, 10],
+            [$supplierProduct, $supplierIntegration, 20],
+        ] as [$product, $integration, $total]) {
+            OrderItem::query()->create([
+                'order_id' => $order->id,
+                'product_id' => $product->id,
+                'integration_product_id' => $integration->id,
+                'product_name' => $product->name,
+                'product_sku' => $product->sku,
+                'price' => $total,
+                'quantity' => 1,
+                'total' => $total,
+            ]);
+        }
+        $centralDelivery = OrderIntegrationDelivery::query()->create([
+            'order_id' => $order->id,
+            'integration_source_id' => $central->id,
+            'status' => OrderIntegrationDelivery::STATUS_SENT,
+            'external_id' => 'kotlov-order-'.$order->id,
+            'last_attempted_at' => now()->subMinutes(21),
+            'exported_at' => now()->subMinutes(20),
+        ]);
+        DB::table('orders')->where('id', $order->id)->update(['created_at' => now()->subMinutes(30)]);
+
+        $summary = app(IntegrationOperationsSummary::class)->snapshot();
+        $this->assertSame(1, $summary['awaiting_orders']);
+        $this->assertSame(1, $summary['awaiting_order_routes']);
+        $this->assertSame(1, $summary['awaiting_order_responses']);
+        $this->assertSame(1, $summary['delayed_order_routes']);
+        $this->assertSame(1, $summary['overdue_order_responses']);
+
+        $detector = app(IntegrationIssueDetector::class);
+        $first = $detector->scan();
+
+        $this->assertSame(2, $first['detected']);
+        $this->assertDatabaseHas('integration_issues', [
+            'integration_source_id' => $central->id,
+            'order_id' => $order->id,
+            'type' => 'order_no_1c_response',
+            'status' => 'open',
+        ]);
+        $this->assertDatabaseHas('integration_issues', [
+            'integration_source_id' => $supplier->id,
+            'order_id' => $order->id,
+            'type' => 'order_not_exported',
+            'status' => 'open',
+        ]);
+        $this->assertSame(2, IntegrationIssue::query()->where('order_id', $order->id)->distinct('fingerprint')->count('fingerprint'));
+
+        $centralDelivery->update([
+            'status' => OrderIntegrationDelivery::STATUS_ACKNOWLEDGED,
+            'remote_status' => 'Принят',
+            'status_received_at' => now(),
+        ]);
+        OrderIntegrationDelivery::query()->create([
+            'order_id' => $order->id,
+            'integration_source_id' => $supplier->id,
+            'status' => OrderIntegrationDelivery::STATUS_ACKNOWLEDGED,
+            'external_id' => 'kotlov-order-'.$order->id,
+            'last_attempted_at' => now(),
+            'exported_at' => now(),
+            'remote_status' => 'Принят',
+            'status_received_at' => now(),
+        ]);
+
+        $resolved = $detector->scan();
+        $after = app(IntegrationOperationsSummary::class)->snapshot();
+
+        $this->assertSame(2, $resolved['resolved']);
+        $this->assertSame(0, IntegrationIssue::query()->open()->orders()->count());
+        $this->assertSame(0, $after['awaiting_orders']);
+        $this->assertSame(0, $after['awaiting_order_routes']);
+        $this->assertSame(0, $after['awaiting_order_responses']);
+        $this->assertSame('confirmed', $order->fresh()->onecSyncState());
+    }
+
+    public function test_recent_order_export_attempt_gets_a_confirmation_grace_period(): void
+    {
+        $source = IntegrationSource::query()->create([
+            'code' => 'onec',
+            'name' => 'Центральная 1С',
+            'is_active' => true,
+            'settings' => [
+                'monitor_orders_from' => now()->subDay()->toIso8601String(),
+                'order_dispatch_delay_minutes' => 10,
+            ],
+        ]);
+        $order = Order::query()->create([
+            'number' => 'ORDER-RECENT-ATTEMPT',
+            'status' => 'new',
+            'customer_name' => 'Контроль подтверждения',
+            'customer_phone' => '+375290000098',
+            'delivery_type' => 'pickup',
+            'payment_type' => 'cash',
+            'payment_status' => 'pending',
+            'subtotal' => 10,
+            'total' => 10,
+        ]);
+        DB::table('orders')->where('id', $order->id)->update(['created_at' => now()->subHour()]);
+        OrderIntegrationDelivery::query()->create([
+            'order_id' => $order->id,
+            'integration_source_id' => $source->id,
+            'status' => OrderIntegrationDelivery::STATUS_PENDING,
+            'external_id' => 'kotlov-order-'.$order->id,
+            'last_attempted_at' => now(),
+        ]);
+
+        $summary = app(IntegrationOperationsSummary::class)->snapshot();
+        app(IntegrationIssueDetector::class)->scan();
+
+        $this->assertSame(1, $summary['awaiting_order_routes']);
+        $this->assertSame(0, $summary['delayed_order_routes']);
+        $this->assertDatabaseMissing('integration_issues', [
+            'order_id' => $order->id,
+            'type' => 'order_not_exported',
+        ]);
     }
 
     public function test_issue_advisor_explains_product_and_order_actions_without_mutation(): void
@@ -2741,7 +2955,7 @@ XML;
     public function test_issue_detector_ignores_orders_created_before_integration_monitoring_started(): void
     {
         IntegrationSource::query()->create([
-            'code' => 'new-integration',
+            'code' => 'onec',
             'name' => 'Новая интеграция',
             'is_active' => true,
             'settings' => ['monitor_orders_from' => now()->subHour()->toIso8601String()],

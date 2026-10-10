@@ -38,6 +38,8 @@ class IntegrationSource extends Model
                 'warehouse_label' => 'Основной',
                 'b2b_enabled' => false,
                 'order_interval_minutes' => 5,
+                'order_dispatch_delay_minutes' => 10,
+                'order_response_timeout_minutes' => 15,
                 'catalog_interval_minutes' => 10,
                 'stale_after_minutes' => 15,
                 'zero_missing_stock_on_complete' => true,
@@ -95,6 +97,24 @@ class IntegrationSource extends Model
     public function orderIntervalMinutes(): int
     {
         return max(2, (int) data_get($this->settings, 'order_interval_minutes', 5));
+    }
+
+    public function orderDispatchDelayMinutes(): int
+    {
+        return max(5, (int) data_get(
+            $this->settings,
+            'order_dispatch_delay_minutes',
+            max(10, $this->orderIntervalMinutes() * 2),
+        ));
+    }
+
+    public function orderResponseTimeoutMinutes(): int
+    {
+        return max(5, (int) data_get(
+            $this->settings,
+            'order_response_timeout_minutes',
+            max(15, $this->orderIntervalMinutes() * 3),
+        ));
     }
 
     public function catalogIntervalMinutes(): int

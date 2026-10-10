@@ -6,14 +6,16 @@ use App\Models\IntegrationIssue;
 use App\Models\IntegrationProduct;
 use App\Models\IntegrationSource;
 use App\Models\Order;
+use App\Models\OrderIntegrationDelivery;
+use Carbon\CarbonInterface;
 use Illuminate\Support\Facades\DB;
 
 class IntegrationIssueDetector
 {
     public function __construct(
-        private readonly IntegrationMonitoringWindow $monitoringWindow,
         private readonly IntegrationIdentityCollisionFinder $collisionFinder,
         private readonly IntegrationFlowHealth $flowHealth,
+        private readonly OrderIntegrationMonitoring $orderMonitoring,
     ) {}
 
     /** @return array{detected:int,opened:int,resolved:int,opened_issue_ids:array<int, int>} */
@@ -62,6 +64,10 @@ class IntegrationIssueDetector
                     }
 
                     $this->detectAllPositiveStock($source, $seen, $opened, $openedIssueIds);
+
+                    if ($source->exportsOrders()) {
+                        $this->detectOrderDeliveryProblems($source, $now, $seen, $opened, $openedIssueIds);
+                    }
                 });
 
             IntegrationProduct::query()
@@ -131,43 +137,6 @@ class IntegrationIssueDetector
                 }
             }
 
-            $monitorOrdersFrom = $this->monitoringWindow->ordersStartAt();
-
-            Order::query()
-                ->whereNull('onec_exported_at')
-                ->when($monitorOrdersFrom, fn ($query) => $query->where('created_at', '>=', $monitorOrdersFrom))
-                ->where('created_at', '<=', $now->copy()->subMinutes(10))
-                ->each(function (Order $order) use (&$seen, &$opened, &$openedIssueIds): void {
-                    $this->report(
-                        $seen,
-                        $opened,
-                        $openedIssueIds,
-                        "order:{$order->id}:not-exported",
-                        'order_not_exported',
-                        'danger',
-                        'Заказ не передан в 1С',
-                        $order->number.' создан '.$order->created_at->timezone('Europe/Minsk')->format('d.m.Y H:i'),
-                        order: $order,
-                    );
-                });
-
-            Order::query()
-                ->whereNotNull('onec_exported_at')
-                ->whereNull('onec_status_received_at')
-                ->where('onec_exported_at', '<=', $now->copy()->subMinutes(15))
-                ->each(function (Order $order) use (&$seen, &$opened, &$openedIssueIds): void {
-                    $this->report(
-                        $seen,
-                        $opened,
-                        $openedIssueIds,
-                        "order:{$order->id}:no-response",
-                        'order_no_1c_response',
-                        'warning',
-                        'Нет подтверждения заказа от 1С',
-                        $order->number.' передан '.$order->onec_exported_at->timezone('Europe/Minsk')->format('d.m.Y H:i'),
-                        order: $order,
-                    );
-                });
         });
 
         $resolved = IntegrationIssue::query()
@@ -187,6 +156,115 @@ class IntegrationIssueDetector
             'resolved' => $resolved,
             'opened_issue_ids' => $openedIssueIds,
         ];
+    }
+
+    /** @param array<int, string> $seen */
+    private function detectOrderDeliveryProblems(
+        IntegrationSource $source,
+        CarbonInterface $now,
+        array &$seen,
+        int &$opened,
+        array &$openedIssueIds,
+    ): void {
+        $this->orderMonitoring
+            ->delayedDispatchQuery($source, $now)
+            ->with(['integrationDeliveries' => fn ($query) => $query
+                ->where('integration_source_id', $source->id)])
+            ->each(function (Order $order) use ($source, &$seen, &$opened, &$openedIssueIds): void {
+                $delivery = $order->integrationDeliveries->first();
+                $message = $delivery?->last_attempted_at
+                    ? $order->number.' сформирован для передачи '.$delivery->last_attempted_at
+                        ->timezone('Europe/Minsk')->format('d.m.Y H:i').', но подтверждение success не получено.'
+                    : $order->number.' создан '.$order->created_at->timezone('Europe/Minsk')->format('d.m.Y H:i')
+                        .' и ещё не запрошен источником.';
+
+                $this->report(
+                    $seen,
+                    $opened,
+                    $openedIssueIds,
+                    $this->orderIssueFingerprint($source, $order, 'not-exported'),
+                    'order_not_exported',
+                    'danger',
+                    'Заказ не передан: '.$source->partnerName(),
+                    $message,
+                    source: $source,
+                    order: $order,
+                    context: [
+                        'route_status' => $delivery?->status ?? 'not_requested',
+                        'last_attempted_at' => $delivery?->last_attempted_at?->toIso8601String(),
+                        'delay_minutes' => $source->orderDispatchDelayMinutes(),
+                    ],
+                );
+            });
+
+        $this->orderMonitoring
+            ->awaitingResponseQuery($source, $now)
+            ->with('order')
+            ->each(function (OrderIntegrationDelivery $delivery) use ($source, &$seen, &$opened, &$openedIssueIds): void {
+                if (! $delivery->order) {
+                    return;
+                }
+
+                $this->reportMissingOrderResponse(
+                    $source,
+                    $delivery->order,
+                    $delivery->exported_at,
+                    $seen,
+                    $opened,
+                    $openedIssueIds,
+                    $delivery,
+                );
+            });
+
+        $this->orderMonitoring
+            ->legacyAwaitingResponseQuery($source, $now)
+            ?->each(function (Order $order) use ($source, &$seen, &$opened, &$openedIssueIds): void {
+                $this->reportMissingOrderResponse(
+                    $source,
+                    $order,
+                    $order->onec_exported_at,
+                    $seen,
+                    $opened,
+                    $openedIssueIds,
+                );
+            });
+    }
+
+    /** @param array<int, string> $seen */
+    private function reportMissingOrderResponse(
+        IntegrationSource $source,
+        Order $order,
+        ?CarbonInterface $exportedAt,
+        array &$seen,
+        int &$opened,
+        array &$openedIssueIds,
+        ?OrderIntegrationDelivery $delivery = null,
+    ): void {
+        $this->report(
+            $seen,
+            $opened,
+            $openedIssueIds,
+            $this->orderIssueFingerprint($source, $order, 'no-response'),
+            'order_no_1c_response',
+            'warning',
+            'Нет статуса заказа: '.$source->partnerName(),
+            $order->number.' передан '.($exportedAt?->timezone('Europe/Minsk')->format('d.m.Y H:i') ?? '—')
+                .', но источник ещё не вернул статус.',
+            source: $source,
+            order: $order,
+            context: [
+                'route_status' => $delivery?->status ?? 'legacy_sent',
+                'exported_at' => $exportedAt?->toIso8601String(),
+                'response_timeout_minutes' => $source->orderResponseTimeoutMinutes(),
+            ],
+        );
+    }
+
+    private function orderIssueFingerprint(IntegrationSource $source, Order $order, string $suffix): string
+    {
+        return $source->code === 'onec'
+            ? "order:{$order->id}:{$suffix}"
+            : "source:{$source->id}:order:{$order->id}:{$suffix}";
     }
 
     /** @return array{type:string,title:string} */

@@ -4,7 +4,9 @@ namespace Tests\Feature;
 
 use App\Filament\Resources\Orders\OrderResource;
 use App\Models\IntegrationIssue;
+use App\Models\IntegrationSource;
 use App\Models\Order;
+use App\Models\OrderIntegrationDelivery;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -78,6 +80,48 @@ class OrderOneCSyncAdminTest extends TestCase
 
         $this->assertSame('sent', $exported->onecSyncState());
         $this->assertSame('confirmed', $confirmed->onecSyncState());
+    }
+
+    public function test_order_state_uses_the_specific_source_delivery_and_hides_recovered_issue(): void
+    {
+        $source = IntegrationSource::query()->create([
+            'code' => 'supplier-order-state',
+            'name' => '1С поставщика',
+        ]);
+        $order = $this->createOrder('ORD-SOURCE-STATE');
+        $delivery = OrderIntegrationDelivery::query()->create([
+            'order_id' => $order->id,
+            'integration_source_id' => $source->id,
+            'status' => OrderIntegrationDelivery::STATUS_SENT,
+            'external_id' => 'supplier-order-state-id',
+            'exported_at' => now()->subMinutes(20),
+        ]);
+        IntegrationIssue::query()->create([
+            'integration_source_id' => $source->id,
+            'order_id' => $order->id,
+            'fingerprint' => 'source-order-state-no-response',
+            'type' => 'order_no_1c_response',
+            'severity' => 'warning',
+            'status' => 'open',
+            'title' => 'Нет статуса заказа: 1С поставщика',
+            'message' => 'Источник ещё не вернул статус.',
+            'first_detected_at' => now(),
+            'last_detected_at' => now(),
+        ]);
+
+        $order->load(['integrationIssues.source', 'integrationDeliveries']);
+        $this->assertSame('no_response', $order->onecSyncState());
+        $this->assertStringContainsString('1С поставщика', $order->onecSyncDescription());
+
+        $delivery->update([
+            'status' => OrderIntegrationDelivery::STATUS_ACKNOWLEDGED,
+            'remote_status' => 'Принят',
+            'status_received_at' => now(),
+        ]);
+        $order->unsetRelation('integrationDeliveries');
+
+        $this->assertSame('confirmed', $order->onecSyncState());
+        $this->assertStringNotContainsString('Источник ещё не вернул статус.', $order->onecSyncDescription());
     }
 
     /** @param array<string, mixed> $overrides */
