@@ -28,4 +28,9 @@ class OrderItem extends Model
     {
         return $this->belongsTo(Product::class);
     }
+
+    public function integrationProduct(): BelongsTo
+    {
+        return $this->belongsTo(IntegrationProduct::class);
+    }
 }

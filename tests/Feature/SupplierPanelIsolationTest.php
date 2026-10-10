@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Filament\Supplier\Resources\IntegrationExchangeRuns\IntegrationExchangeRunResource;
 use App\Filament\Supplier\Resources\IntegrationIssues\IntegrationIssueResource;
 use App\Filament\Supplier\Resources\IntegrationProducts\IntegrationProductResource;
+use App\Filament\Supplier\Resources\Orders\OrderResource as SupplierOrderResource;
 use App\Filament\Supplier\Resources\SupplierProducts\SupplierProductResource;
 use App\Filament\Supplier\Resources\SupplierSyncChanges\SupplierSyncChangeResource;
 use App\Filament\Supplier\Widgets\SupplierIntegrationOverview;
@@ -12,6 +13,8 @@ use App\Models\IntegrationExchangeRun;
 use App\Models\IntegrationIssue;
 use App\Models\IntegrationProduct;
 use App\Models\IntegrationSource;
+use App\Models\Order;
+use App\Models\OrderItem;
 use App\Models\Supplier;
 use App\Models\SupplierProduct;
 use App\Models\SupplierSyncChange;
@@ -66,6 +69,120 @@ class SupplierPanelIsolationTest extends TestCase
         $this->actingAs($user);
 
         $this->assertSame([$visible->id], SupplierProductResource::getEloquentQuery()->pluck('id')->all());
+    }
+
+    public function test_supplier_orders_expose_only_assigned_supplier_lines_and_subtotal(): void
+    {
+        $supplierA = Supplier::query()->create(['code' => 'orders-a', 'name' => 'Поставщик А']);
+        $supplierB = Supplier::query()->create(['code' => 'orders-b', 'name' => 'Поставщик Б']);
+        $user = User::factory()->create(['role' => 'supplier', 'is_active' => true]);
+        $user->suppliers()->attach($supplierA);
+
+        $sourceA = IntegrationSource::query()->create([
+            'supplier_id' => $supplierA->id,
+            'code' => 'orders-source-a',
+            'name' => '1С поставщика А',
+            'driver' => 'commerceml',
+            'is_active' => true,
+        ]);
+        $sourceB = IntegrationSource::query()->create([
+            'supplier_id' => $supplierB->id,
+            'code' => 'orders-source-b',
+            'name' => '1С поставщика Б',
+            'driver' => 'commerceml',
+            'is_active' => true,
+        ]);
+        $productA = IntegrationProduct::query()->create([
+            'integration_source_id' => $sourceA->id,
+            'external_id' => 'order-product-a',
+            'name' => 'Позиция поставщика А',
+        ]);
+        $productB = IntegrationProduct::query()->create([
+            'integration_source_id' => $sourceB->id,
+            'external_id' => 'order-product-b',
+            'name' => 'Позиция поставщика Б',
+        ]);
+
+        $mixedOrder = Order::query()->create([
+            'number' => 'ORD-SUPPLIER-MIXED',
+            'customer_name' => 'Покупатель',
+            'customer_phone' => '+375290000000',
+            'status' => 'new',
+            'delivery_type' => 'pickup',
+            'delivery_city' => 'Минск',
+            'payment_type' => 'cash',
+            'payment_status' => 'pending',
+            'subtotal' => 124,
+            'total' => 124,
+        ]);
+        OrderItem::query()->create([
+            'order_id' => $mixedOrder->id,
+            'product_name' => 'Свой товар в смешанном заказе',
+            'product_sku' => 'OWN-ORDER-LINE',
+            'price' => 12,
+            'quantity' => 2,
+            'total' => 24,
+            'pricing_type' => 'b2b',
+            'price_tax_mode' => 'inclusive',
+            'integration_product_id' => $productA->id,
+        ]);
+        OrderItem::query()->create([
+            'order_id' => $mixedOrder->id,
+            'product_name' => 'Чужой товар в смешанном заказе',
+            'product_sku' => 'FOREIGN-ORDER-LINE',
+            'price' => 100,
+            'quantity' => 1,
+            'total' => 100,
+            'pricing_type' => 'b2b',
+            'price_tax_mode' => 'inclusive',
+            'integration_product_id' => $productB->id,
+        ]);
+
+        $foreignOrder = Order::query()->create([
+            'number' => 'ORD-SUPPLIER-FOREIGN',
+            'customer_name' => 'Другой покупатель',
+            'customer_phone' => '+375291111111',
+            'status' => 'new',
+            'delivery_type' => 'pickup',
+            'payment_type' => 'cash',
+            'payment_status' => 'pending',
+            'subtotal' => 100,
+            'total' => 100,
+        ]);
+        OrderItem::query()->create([
+            'order_id' => $foreignOrder->id,
+            'product_name' => 'Товар только чужого поставщика',
+            'price' => 100,
+            'quantity' => 1,
+            'total' => 100,
+            'pricing_type' => 'b2b',
+            'price_tax_mode' => 'inclusive',
+            'integration_product_id' => $productB->id,
+        ]);
+
+        $this->actingAs($user);
+
+        $visible = SupplierOrderResource::getEloquentQuery()->get();
+
+        $this->assertSame([$mixedOrder->id], $visible->pluck('id')->all());
+        $this->assertSame(1, $visible->first()->supplier_items_count);
+        $this->assertSame(24.0, (float) $visible->first()->supplier_subtotal);
+        $this->assertSame(['Свой товар в смешанном заказе'], $visible->first()->items->pluck('product_name')->all());
+
+        $this->get(SupplierOrderResource::getUrl('index', panel: 'supplier'))
+            ->assertOk()
+            ->assertSeeText('ORD-SUPPLIER-MIXED')
+            ->assertDontSeeText('ORD-SUPPLIER-FOREIGN');
+
+        $this->get(SupplierOrderResource::getUrl('view', ['record' => $mixedOrder], panel: 'supplier'))
+            ->assertOk()
+            ->assertSeeText('Свой товар в смешанном заказе')
+            ->assertSeeText('24,00 BYN')
+            ->assertDontSeeText('Чужой товар в смешанном заказе')
+            ->assertDontSeeText('FOREIGN-ORDER-LINE');
+
+        $this->get(SupplierOrderResource::getUrl('view', ['record' => $foreignOrder], panel: 'supplier'))
+            ->assertNotFound();
     }
 
     public function test_supplier_panel_routes_are_registered(): void
