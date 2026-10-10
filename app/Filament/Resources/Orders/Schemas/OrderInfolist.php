@@ -471,6 +471,7 @@ class OrderInfolist
                                 TextEntry::make('fulfillment_purchase_price')
                                     ->label('Подтверждённая входная цена')
                                     ->columnSpan(3)
+                                    ->placeholder('Не указана')
                                     ->formatStateUsing(fn ($state): string => $state === null ? 'Не указана' : $byn($state))
                                     ->color(fn ($state): string => $state === null ? 'warning' : 'success'),
 
