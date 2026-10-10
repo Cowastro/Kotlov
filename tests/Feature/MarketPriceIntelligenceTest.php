@@ -7,15 +7,20 @@ use App\Filament\Resources\MarketPriceObservations\MarketPriceObservationResourc
 use App\Filament\Resources\MarketPriceSources\MarketPriceSourceResource;
 use App\Filament\Resources\Orders\OrderResource;
 use App\Filament\Resources\Products\ProductResource;
+use App\Models\ActivityLog;
 use App\Models\Category;
+use App\Models\IntegrationProduct;
+use App\Models\IntegrationSource;
 use App\Models\MarketPriceObservation;
 use App\Models\MarketPriceSource;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Product;
+use App\Models\Supplier;
 use App\Models\User;
 use App\Services\Market\MarketPriceIndicator;
 use App\Services\Market\MarketPriceObservationRecorder;
+use App\Services\Market\MarketPriceRecommendation;
 use App\Services\Market\MarketPriceSummary;
 use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -325,6 +330,94 @@ class MarketPriceIntelligenceTest extends TestCase
             ->assertSeeText('Требует внимания: 1');
     }
 
+    public function test_price_recommendation_uses_market_median_and_explains_margin_impact(): void
+    {
+        [$product] = $this->fixture('recommendation', productPrice: 130);
+        foreach ([95, 100, 105] as $index => $price) {
+            $this->record($this->source('recommendation-'.$index), $product, $price, now()->subHour());
+        }
+        $this->attachIntegrationCost($product, 80);
+
+        $recommendation = app(MarketPriceRecommendation::class)->forProduct($product->fresh());
+
+        $this->assertSame('ready', $recommendation['status']);
+        $this->assertSame(100.0, $recommendation['recommended_price']);
+        $this->assertSame(-30.0, $recommendation['price_change']);
+        $this->assertSame(80.0, $recommendation['purchase_price']);
+        $this->assertSame(38.5, $recommendation['current_margin_percent']);
+        $this->assertSame(20.0, $recommendation['recommended_margin_percent']);
+        $this->assertTrue($recommendation['can_apply']);
+    }
+
+    public function test_price_recommendation_refuses_a_market_price_that_breaks_minimum_margin(): void
+    {
+        [$product] = $this->fixture('margin-conflict', productPrice: 120);
+        foreach ([95, 100, 105] as $index => $price) {
+            $this->record($this->source('margin-conflict-'.$index), $product, $price, now()->subHour());
+        }
+        $this->attachIntegrationCost($product, 95);
+
+        $recommendation = app(MarketPriceRecommendation::class)->forProduct($product->fresh());
+
+        $this->assertSame('margin_conflict', $recommendation['status']);
+        $this->assertNull($recommendation['recommended_price']);
+        $this->assertFalse($recommendation['can_apply']);
+        $this->assertStringContainsString('выше подтверждённого рыночного коридора', $recommendation['reason']);
+    }
+
+    public function test_only_admin_can_apply_recommendation_and_every_change_is_audited(): void
+    {
+        [$product] = $this->fixture('recommendation-audit', productPrice: 130);
+        foreach ([95, 100, 105] as $index => $price) {
+            $this->record($this->source('recommendation-audit-'.$index), $product, $price, now()->subHour());
+        }
+        $this->attachIntegrationCost($product, 80);
+        $manager = User::factory()->create(['role' => 'manager', 'is_active' => true]);
+        $admin = User::factory()->create(['role' => 'admin', 'is_active' => true]);
+        $service = app(MarketPriceRecommendation::class);
+
+        try {
+            $service->apply($product, $manager, 'Менеджер пытается изменить цену');
+            $this->fail('Manager unexpectedly changed a product price.');
+        } catch (\Illuminate\Auth\Access\AuthorizationException) {
+            $this->assertSame('130.00', $product->fresh()->price);
+        }
+
+        $result = $service->apply(
+            $product,
+            $admin,
+            'Подтверждена цена по свежему рынку',
+            '127.0.0.1',
+            'Feature test',
+        );
+
+        $this->assertSame('100.00', $result['product']->price);
+        $this->assertSame('market_price_recommendation_applied', $result['audit']->action);
+        $this->assertSame(130.0, (float) $result['audit']->old_values['price']);
+        $this->assertSame(100.0, (float) $result['audit']->new_values['price']);
+        $this->assertSame(100.0, (float) $result['audit']->new_values['market_median']);
+        $this->assertSame(3, $result['audit']->new_values['market_sources_count']);
+        $this->assertSame($admin->id, $result['audit']->user_id);
+        $this->assertSame(1, ActivityLog::query()->where('action', 'market_price_recommendation_applied')->count());
+    }
+
+    public function test_market_workbench_shows_recommendation_but_manager_cannot_apply_it(): void
+    {
+        [$product] = $this->fixture('recommendation-ui', productPrice: 130);
+        foreach ([95, 100, 105] as $index => $price) {
+            $this->record($this->source('recommendation-ui-'.$index), $product, $price, now()->subHour());
+        }
+        $this->attachIntegrationCost($product, 80);
+        $manager = User::factory()->create(['role' => 'manager', 'is_active' => true]);
+
+        $this->actingAs($manager)
+            ->get(MarketAnalysisResource::getUrl('index', panel: 'admin'))
+            ->assertOk()
+            ->assertSeeText('Рекомендация готова')
+            ->assertSeeText('100,00 BYN · маржа 20,0%')
+            ->assertDontSeeText('Применить рекомендованную цену');
+    }
+
     /** @return array{Product, MarketPriceSource} */
     private function fixture(string $suffix, float $productPrice = 100): array
     {
@@ -357,6 +450,39 @@ class MarketPriceIntelligenceTest extends TestCase
             'freshness_hours' => $freshnessHours,
             'minimum_match_confidence' => 0.85,
             'is_active' => true,
+        ]);
+    }
+
+    private function attachIntegrationCost(Product $product, float $price): IntegrationProduct
+    {
+        $supplier = Supplier::query()->create([
+            'code' => 'price-cost-'.$product->id,
+            'name' => 'Поставщик входной цены',
+            'is_active' => true,
+        ]);
+        $source = IntegrationSource::query()->create([
+            'supplier_id' => $supplier->id,
+            'code' => 'price-cost-source-'.$product->id,
+            'name' => 'Учётная система поставщика',
+            'driver' => 'commerceml',
+            'is_active' => true,
+            'settings' => [
+                'price_tax_mode' => IntegrationSource::PRICE_TAX_INCLUSIVE,
+                'vat_rate' => 20,
+            ],
+        ]);
+
+        return IntegrationProduct::query()->create([
+            'integration_source_id' => $source->id,
+            'product_id' => $product->id,
+            'external_id' => 'price-cost-product-'.$product->id,
+            'name' => $product->name,
+            'price' => $price,
+            'stock_quantity' => 5,
+            'match_status' => 'matched',
+            'match_method' => 'manual',
+            'match_confidence' => 1,
+            'matched_at' => now(),
         ]);
     }
 
