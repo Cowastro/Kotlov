@@ -54,9 +54,9 @@ class IntegrationProductAdminClarityTest extends TestCase
 
         Livewire::actingAs($admin)
             ->test(IntegrationCatalogIntegrityOverview::class)
-            ->assertSee('Вся база интеграции')
+            ->assertSee('Вся номенклатура 1С')
             ->assertSee('Контроль дублей')
-            ->assertSee('1 показано ниже')
+            ->assertSee('1 в наличии')
             ->assertSee('1 без остатка скрыто');
     }
 
@@ -146,6 +146,9 @@ class IntegrationProductAdminClarityTest extends TestCase
         Livewire::actingAs($admin)
             ->test(IntegrationCatalogIntegrityOverview::class)
             ->assertSee('возможных дублей по реквизитам: 1')
+            ->assertSee('Все позиции помечены 1С как доступные')
+            ->assertSee('диапазон 1–3 шт.')
+            ->assertSee('проверьте склад выгрузки')
             ->assertSeeHtml('tab=identity_collisions');
     }
 }

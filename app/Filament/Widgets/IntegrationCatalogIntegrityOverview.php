@@ -35,12 +35,19 @@ class IntegrationCatalogIntegrityOverview extends StatsOverviewWidget
             : 'обмена ещё не было';
         $needsDecision = $summary['suggested'] + $summary['ambiguous'] + $summary['unmatched'];
         $priceProblems = $summary['zero_price'] + $summary['missing_price'];
+        $stockRange = $summary['stock_min'] === null
+            ? 'нет данных'
+            : $this->formatQuantity($summary['stock_min']).'–'.$this->formatQuantity($summary['stock_max']).' шт.';
 
         return [
-            Stat::make('Вся база интеграции', $format($summary['total']))
-                ->description($format($summary['in_stock']).' показано ниже · '.$format($summary['without_stock']).' без остатка скрыто · '.$lastSeen)
-                ->descriptionIcon(Heroicon::OutlinedArrowDownTray)
-                ->color('info'),
+            Stat::make('Вся номенклатура 1С', $format($summary['total']))
+                ->description($summary['all_stock_positive']
+                    ? 'Все позиции помечены 1С как доступные · диапазон '.$stockRange.' · проверьте склад выгрузки'
+                    : $format($summary['in_stock']).' в наличии · '.$format($summary['without_stock']).' без остатка скрыто · диапазон '.$stockRange.' · '.$lastSeen)
+                ->descriptionIcon($summary['all_stock_positive']
+                    ? Heroicon::OutlinedExclamationTriangle
+                    : Heroicon::OutlinedArrowDownTray)
+                ->color($summary['all_stock_positive'] ? 'warning' : 'info'),
             Stat::make('Контроль дублей', $format($summary['unique_external_ids']).' уникальных из '.$format($summary['total']))
                 ->description(match (true) {
                     $summary['duplicates'] > 0 => 'Повторяющихся ID: '.$format($summary['duplicates']),
@@ -67,5 +74,16 @@ class IntegrationCatalogIntegrityOverview extends StatsOverviewWidget
                 ->descriptionIcon(Heroicon::OutlinedLink)
                 ->color($needsDecision > 0 ? 'warning' : 'success'),
         ];
+    }
+
+    private function formatQuantity(?float $quantity): string
+    {
+        if ($quantity === null) {
+            return '—';
+        }
+
+        return abs($quantity - round($quantity)) < 0.0005
+            ? number_format($quantity, 0, ',', ' ')
+            : rtrim(rtrim(number_format($quantity, 3, ',', ' '), '0'), ',');
     }
 }

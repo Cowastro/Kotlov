@@ -21,6 +21,10 @@ class IntegrationCatalogSummary
      *     source_count:int,
      *     in_stock:int,
      *     without_stock:int,
+     *     stock_min:?float,
+     *     stock_max:?float,
+     *     stock_average:?float,
+     *     all_stock_positive:bool,
      *     positive_price:int,
      *     zero_price:int,
      *     missing_price:int,
@@ -48,6 +52,13 @@ class IntegrationCatalogSummary
             ->groupBy('match_status')
             ->pluck('aggregate', 'match_status');
         $lastSeenAt = (clone $products)->max('last_seen_at');
+        $stockMin = (clone $products)->min('stock_quantity');
+        $stockMax = (clone $products)->max('stock_quantity');
+        $stockAverage = (clone $products)->avg('stock_quantity');
+        $inStock = (clone $products)->inStock()->count();
+        $withoutStock = (clone $products)->where(fn (Builder $query): Builder => $query
+            ->whereNull('stock_quantity')
+            ->orWhere('stock_quantity', '<=', 0))->count();
         $identityCollisions = $this->collisionFinder->find($sourceId);
         $identityCollisionProductIds = collect($identityCollisions)
             ->flatMap(fn (array $collision): array => array_column($collision['products'], 'id'))
@@ -61,10 +72,12 @@ class IntegrationCatalogSummary
             'identity_collision_groups' => count($identityCollisions),
             'identity_collision_products' => $identityCollisionProductIds,
             'source_count' => (clone $products)->distinct()->count('integration_source_id'),
-            'in_stock' => (clone $products)->inStock()->count(),
-            'without_stock' => (clone $products)->where(fn (Builder $query): Builder => $query
-                ->whereNull('stock_quantity')
-                ->orWhere('stock_quantity', '<=', 0))->count(),
+            'in_stock' => $inStock,
+            'without_stock' => $withoutStock,
+            'stock_min' => $stockMin === null ? null : (float) $stockMin,
+            'stock_max' => $stockMax === null ? null : (float) $stockMax,
+            'stock_average' => $stockAverage === null ? null : (float) $stockAverage,
+            'all_stock_positive' => $total > 0 && $inStock === $total && $withoutStock === 0,
             'positive_price' => (clone $products)->where('price', '>', 0)->count(),
             'zero_price' => (clone $products)->whereNotNull('price')->where('price', '<=', 0)->count(),
             'missing_price' => (clone $products)->whereNull('price')->count(),
