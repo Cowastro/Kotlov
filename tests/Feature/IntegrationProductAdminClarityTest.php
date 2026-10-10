@@ -2,14 +2,17 @@
 
 namespace Tests\Feature;
 
+use App\Filament\Resources\IntegrationCategories\IntegrationCategoryResource;
 use App\Filament\Resources\IntegrationProducts\IntegrationProductResource;
 use App\Filament\Resources\IntegrationProducts\Pages\ListIntegrationProducts;
 use App\Filament\Widgets\IntegrationCatalogIntegrityOverview;
 use App\Models\Category;
+use App\Models\IntegrationCategory;
 use App\Models\IntegrationExchangeRun;
 use App\Models\IntegrationProduct;
 use App\Models\IntegrationSource;
 use App\Models\Product;
+use App\Models\Supplier;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
@@ -239,5 +242,150 @@ class IntegrationProductAdminClarityTest extends TestCase
             'product_id' => null,
             'match_status' => 'suggested',
         ]);
+    }
+
+    public function test_group_screen_explains_supplier_channel_and_links_back_to_filtered_workbench(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin', 'is_active' => true]);
+        $supplier = Supplier::query()->create([
+            'code' => 'group-ui-supplier',
+            'name' => 'Поставщик групп',
+        ]);
+        $source = IntegrationSource::query()->create([
+            'supplier_id' => $supplier->id,
+            'code' => 'group-ui-source',
+            'name' => 'Учётная база поставщика',
+            'driver' => 'commerceml',
+            'settings' => ['partner_name' => 'Поставщик групп'],
+        ]);
+        $group = IntegrationCategory::query()->create([
+            'integration_source_id' => $source->id,
+            'external_id' => 'group-ui-external',
+            'name' => 'Дымоходы',
+            'path' => 'Каталог / Дымоходы',
+        ]);
+        IntegrationProduct::query()->create([
+            'integration_source_id' => $source->id,
+            'integration_category_id' => $group->id,
+            'external_id' => 'group-ui-product',
+            'name' => 'Товар исходной группы',
+            'stock_quantity' => 3,
+        ]);
+
+        $this->actingAs($admin)
+            ->get(IntegrationCategoryResource::getUrl('index', panel: 'admin'))
+            ->assertOk()
+            ->assertSeeText('Поставщик групп')
+            ->assertSeeText('1С / CommerceML · Учётная база поставщика')
+            ->assertSeeText('Каталог / Дымоходы')
+            ->assertSeeText('Структуру сайта не меняет')
+            ->assertSeeText('Товары группы');
+    }
+
+    public function test_bulk_group_rule_updates_only_groups_of_one_selected_source_without_moving_site_cards(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin', 'is_active' => true]);
+        $source = IntegrationSource::query()->create([
+            'code' => 'bulk-group-source',
+            'name' => 'Источник массовых правил',
+            'driver' => 'commerceml',
+        ]);
+        $siteCategory = Category::query()->create([
+            'name' => 'Категория назначения правил',
+            'slug' => 'bulk-group-rule-target',
+            'parent_id' => 0,
+        ]);
+        $existingCategory = Category::query()->create([
+            'name' => 'Категория существующей карточки',
+            'slug' => 'bulk-group-existing-card',
+            'parent_id' => 0,
+        ]);
+        $product = Product::query()->create([
+            'category_id' => $existingCategory->id,
+            'name' => 'Существующая карточка не перемещается',
+            'slug' => 'bulk-group-existing-product',
+            'sku' => 'GROUP-EXISTING',
+        ]);
+        $firstGroup = IntegrationCategory::query()->create([
+            'integration_source_id' => $source->id,
+            'external_id' => 'bulk-group-1',
+            'name' => 'Первая группа',
+            'path' => 'Каталог / Первая группа',
+        ]);
+        $secondGroup = IntegrationCategory::query()->create([
+            'integration_source_id' => $source->id,
+            'external_id' => 'bulk-group-2',
+            'name' => 'Вторая группа',
+            'path' => 'Каталог / Вторая группа',
+        ]);
+        $first = IntegrationProduct::query()->create([
+            'integration_source_id' => $source->id,
+            'integration_category_id' => $firstGroup->id,
+            'product_id' => $product->id,
+            'external_id' => 'bulk-group-product-1',
+            'name' => 'Привязанный товар',
+            'stock_quantity' => 2,
+            'match_status' => 'matched',
+        ]);
+        $second = IntegrationProduct::query()->create([
+            'integration_source_id' => $source->id,
+            'integration_category_id' => $secondGroup->id,
+            'external_id' => 'bulk-group-product-2',
+            'name' => 'Непривязанный товар',
+            'stock_quantity' => 1,
+        ]);
+
+        Livewire::actingAs($admin)
+            ->test(ListIntegrationProducts::class)
+            ->callTableBulkAction('assignSourceGroupCategory', [$first, $second], [
+                'category_id' => $siteCategory->id,
+            ])
+            ->assertHasNoTableBulkActionErrors();
+
+        $this->assertSame($siteCategory->id, $firstGroup->fresh()->category_id);
+        $this->assertSame($siteCategory->id, $secondGroup->fresh()->category_id);
+        $this->assertSame($existingCategory->id, $product->fresh()->category_id);
+        $this->assertSame($product->id, $first->fresh()->product_id);
+        $this->assertNull($second->fresh()->product_id);
+    }
+
+    public function test_bulk_group_rule_rejects_mixed_sources_without_partial_changes(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin', 'is_active' => true]);
+        $siteCategory = Category::query()->create([
+            'name' => 'Запрещённое смешанное назначение',
+            'slug' => 'mixed-group-rule-target',
+            'parent_id' => 0,
+        ]);
+        $records = collect(['A', 'B'])->map(function (string $suffix): IntegrationProduct {
+            $source = IntegrationSource::query()->create([
+                'code' => 'mixed-group-source-'.strtolower($suffix),
+                'name' => 'Источник '.$suffix,
+                'driver' => 'commerceml',
+            ]);
+            $group = IntegrationCategory::query()->create([
+                'integration_source_id' => $source->id,
+                'external_id' => 'mixed-group-'.$suffix,
+                'name' => 'Группа '.$suffix,
+                'path' => 'Каталог / Группа '.$suffix,
+            ]);
+
+            return IntegrationProduct::query()->create([
+                'integration_source_id' => $source->id,
+                'integration_category_id' => $group->id,
+                'external_id' => 'mixed-group-product-'.$suffix,
+                'name' => 'Товар '.$suffix,
+                'stock_quantity' => 1,
+            ]);
+        });
+
+        Livewire::actingAs($admin)
+            ->test(ListIntegrationProducts::class)
+            ->callTableBulkAction('assignSourceGroupCategory', $records, [
+                'category_id' => $siteCategory->id,
+            ])
+            ->assertHasNoTableBulkActionErrors();
+
+        $this->assertSame(0, IntegrationCategory::query()->whereNotNull('category_id')->count());
     }
 }

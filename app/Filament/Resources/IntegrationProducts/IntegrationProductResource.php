@@ -222,7 +222,18 @@ class IntegrationProductResource extends Resource
                     ->preload(),
                 SelectFilter::make('integration_category_id')->label('Группа поставщика')
                     ->placeholder('Все группы')
-                    ->options(fn (): array => IntegrationCategory::query()->orderBy('path')->pluck('path', 'id')->all())
+                    ->options(fn (): array => IntegrationCategory::query()
+                        ->with(['source.supplier'])
+                        ->orderBy('path')
+                        ->get()
+                        ->mapWithKeys(fn (IntegrationCategory $category): array => [
+                            $category->id => collect([
+                                $category->source?->partnerName(),
+                                $category->source?->name,
+                                $category->path,
+                            ])->filter()->implode(' — '),
+                        ])
+                        ->all())
                     ->searchable(),
                 SelectFilter::make('match_status')
                     ->label('Статус привязки')
@@ -492,10 +503,64 @@ class IntegrationProductResource extends Resource
                                 ->required()
                                 ->helperText('Назначение применяется только к товарам без привязанной карточки.'),
                         ])
+                        ->requiresConfirmation()
+                        ->modalHeading('Назначить индивидуальную категорию выбранным товарам?')
+                        ->modalDescription('Изменятся только позиции источника без привязанной карточки. Категории существующих карточек сайта останутся прежними.')
                         ->action(function (Collection $records, array $data): void {
-                            $records
-                                ->filter(fn (IntegrationProduct $record): bool => blank($record->product_id))
-                                ->each->update(['target_category_id' => $data['target_category_id']]);
+                            $eligible = $records->filter(fn (IntegrationProduct $record): bool => blank($record->product_id));
+                            $eligible->each->update(['target_category_id' => $data['target_category_id']]);
+
+                            Notification::make()
+                                ->success()
+                                ->title('Индивидуальные категории назначены')
+                                ->body('Изменено: '.$eligible->count().'. Пропущено привязанных карточек: '.($records->count() - $eligible->count()).'.')
+                                ->send();
+                        })
+                        ->deselectRecordsAfterCompletion(),
+                    BulkAction::make('assignSourceGroupCategory')
+                        ->label('Назначить правило выбранным группам')
+                        ->icon(Heroicon::OutlinedFolderOpen)
+                        ->color('info')
+                        ->form([
+                            Select::make('category_id')
+                                ->label('Категория kotlov.by')
+                                ->options(fn (): array => self::siteCategoryOptions())
+                                ->searchable()
+                                ->preload()
+                                ->required()
+                                ->helperText('Выберите товары только одного поставщика/источника. Правило сохранится для их исходных групп.'),
+                        ])
+                        ->requiresConfirmation()
+                        ->modalHeading('Назначить правило группам поставщика?')
+                        ->modalDescription('Существующие карточки сайта не перемещаются. Правило действует только как направление для непривязанных позиций без индивидуального назначения.')
+                        ->action(function (Collection $records, array $data): void {
+                            $withGroups = $records->filter(fn (IntegrationProduct $record): bool => filled($record->integration_category_id));
+                            $sourceIds = $withGroups->pluck('integration_source_id')->unique();
+
+                            if ($sourceIds->count() !== 1) {
+                                Notification::make()
+                                    ->warning()
+                                    ->title('Правило не применено')
+                                    ->body('Выберите товары с группами только одного поставщика/источника. Смешанные источники не изменены.')
+                                    ->send();
+
+                                return;
+                            }
+
+                            $groupIds = $withGroups->pluck('integration_category_id')->unique()->values();
+                            IntegrationCategory::query()
+                                ->where('integration_source_id', $sourceIds->first())
+                                ->whereKey($groupIds->all())
+                                ->update([
+                                    'category_id' => $data['category_id'],
+                                    'updated_at' => now(),
+                                ]);
+
+                            Notification::make()
+                                ->success()
+                                ->title('Правила групп назначены')
+                                ->body('Обновлено групп: '.$groupIds->count().'. Карточки сайта и товарные привязки не изменялись.')
+                                ->send();
                         })
                         ->deselectRecordsAfterCompletion(),
                     BulkAction::make('acceptSuggestions')

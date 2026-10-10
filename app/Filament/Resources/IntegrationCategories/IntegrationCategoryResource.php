@@ -4,8 +4,11 @@ namespace App\Filament\Resources\IntegrationCategories;
 
 use App\Filament\Resources\IntegrationCategories\Pages\EditIntegrationCategory;
 use App\Filament\Resources\IntegrationCategories\Pages\ListIntegrationCategories;
+use App\Filament\Resources\IntegrationProducts\IntegrationProductResource;
 use App\Models\IntegrationCategory;
+use App\Models\IntegrationSource;
 use BackedEnum;
+use Filament\Actions\Action;
 use Filament\Actions\EditAction;
 use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Select;
@@ -67,18 +70,44 @@ class IntegrationCategoryResource extends Resource
     public static function table(Table $table): Table
     {
         return $table
-            ->modifyQueryUsing(fn (Builder $query) => $query->withCount([
-                'products as in_stock_products_count' => fn (Builder $products) => $products->inStock(),
-            ]))
+            ->modifyQueryUsing(fn (Builder $query) => $query
+                ->with(['source.supplier', 'siteCategory'])
+                ->withCount([
+                    'products as in_stock_products_count' => fn (Builder $products) => $products->inStock(),
+                ]))
             ->columns([
-                TextColumn::make('source.name')->label('Источник')->badge()->sortable(),
+                TextColumn::make('source_partner')->label('Поставщик')
+                    ->state(fn (IntegrationCategory $record): string => $record->source?->partnerName() ?? 'Источник не указан')
+                    ->description(fn (IntegrationCategory $record): ?string => $record->source
+                        ? self::channelLabel($record->source).' · '.$record->source->name
+                        : null)
+                    ->badge()
+                    ->color('warning'),
                 TextColumn::make('path')->label('Путь в каталоге поставщика')->searchable()->sortable()->wrap(),
                 TextColumn::make('in_stock_products_count')->label('В наличии')->numeric()->sortable(),
-                TextColumn::make('siteCategory.name')->label('Категория kotlov.by')->placeholder('Не назначена')->wrap(),
+                TextColumn::make('catalog_rule')->label('Правило kotlov.by')
+                    ->state(fn (IntegrationCategory $record): string => $record->siteCategory?->name ?? 'Не назначено')
+                    ->description(fn (IntegrationCategory $record): string => $record->category_id
+                        ? 'Применяется только к непривязанным позициям без индивидуальной категории'
+                        : 'Структуру сайта не меняет')
+                    ->badge()
+                    ->color(fn (IntegrationCategory $record): string => $record->category_id ? 'success' : 'gray')
+                    ->wrap(),
                 TextColumn::make('last_seen_at')->label('Получена')->dateTime('d.m.Y H:i')->sortable(),
             ])
             ->filters([
-                SelectFilter::make('integration_source_id')->label('Источник')->relationship('source', 'name'),
+                SelectFilter::make('integration_source_id')
+                    ->label('Поставщик / источник')
+                    ->options(fn (): array => IntegrationSource::query()
+                        ->with('supplier')
+                        ->orderBy('name')
+                        ->get()
+                        ->mapWithKeys(fn (IntegrationSource $source): array => [
+                            $source->id => $source->partnerName().' — '.self::channelLabel($source).' · '.$source->name,
+                        ])
+                        ->all())
+                    ->searchable()
+                    ->preload(),
                 SelectFilter::make('category_id')->label('Категория kotlov.by')->relationship('siteCategory', 'name'),
             ])
             ->emptyStateIcon(Heroicon::OutlinedFolderMinus)
@@ -86,6 +115,16 @@ class IntegrationCategoryResource extends Resource
             ->emptyStateDescription('Товары получены без ссылок на папки. Это не мешает привязке: используйте «Категорию сайта» в разделе «Привязка товаров». Если нужна исходная структура 1С, включите выгрузку групп номенклатуры и повторите обмен.')
             ->defaultSort('path')
             ->recordActions([
+                Action::make('products')
+                    ->label('Товары группы')
+                    ->icon(Heroicon::OutlinedArrowsRightLeft)
+                    ->color('info')
+                    ->url(fn (IntegrationCategory $record): string => IntegrationProductResource::getUrl('index', [
+                        'filters' => [
+                            'integration_source_id' => ['value' => $record->integration_source_id],
+                            'integration_category_id' => ['value' => $record->id],
+                        ],
+                    ])),
                 EditAction::make()->label('Сопоставить'),
             ]);
     }
@@ -106,5 +145,15 @@ class IntegrationCategoryResource extends Resource
             'index' => ListIntegrationCategories::route('/'),
             'edit' => EditIntegrationCategory::route('/{record}/edit'),
         ];
+    }
+
+    private static function channelLabel(IntegrationSource $source): string
+    {
+        return match ($source->driver) {
+            'commerceml' => '1С / CommerceML',
+            'api' => 'API',
+            'file' => 'Файл / прайс',
+            default => strtoupper((string) $source->driver),
+        };
     }
 }

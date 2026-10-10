@@ -4,10 +4,16 @@ namespace App\Filament\Resources\IntegrationCategories\Pages;
 
 use App\Filament\Resources\IntegrationCategories\IntegrationCategoryResource;
 use Filament\Resources\Pages\ListRecords;
+use Filament\Support\Enums\Width;
 
 class ListIntegrationCategories extends ListRecords
 {
     protected static string $resource = IntegrationCategoryResource::class;
+
+    public function getMaxContentWidth(): Width|string|null
+    {
+        return Width::Full;
+    }
 
     public function getTitle(): string
     {
