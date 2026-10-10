@@ -93,7 +93,7 @@ class IntegrationHealthOverviewTest extends TestCase
 
         Livewire::test(IntegrationHealthOverview::class)
             ->assertSeeText('Ожидает контрольный цикл')
-            ->assertSeeText('Позиций в буфере: 1 · запустите новый обмен для журнала')
+            ->assertSeeText('Буфер прежней загрузки: 1 · уникальных: 1 · повторов ID: 0')
             ->assertDontSeeText('Обмен интеграций Нет данных');
     }
 

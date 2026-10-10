@@ -72,8 +72,9 @@ class IntegrationHealthOverview extends StatsOverviewWidget
     private function healthDescription(array $summary, ?IntegrationExchangeRun $lastSuccess): string
     {
         if ($summary['has_unjournaled_staging']) {
-            return 'Позиций в буфере: '.number_format($summary['staged_products_count'], 0, ',', ' ')
-                .' · запустите новый обмен для журнала';
+            return 'Буфер прежней загрузки: '.number_format($summary['staged_products_count'], 0, ',', ' ')
+                .' · уникальных: '.number_format($summary['staged_unique_products_count'], 0, ',', ' ')
+                .' · повторов ID: '.number_format($summary['staged_duplicate_products_count'], 0, ',', ' ');
         }
 
         if ($summary['attention_sources'] > 0) {

@@ -7,6 +7,7 @@ use App\Models\IntegrationProduct;
 use App\Models\IntegrationSource;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
+use Illuminate\Support\Facades\DB;
 
 class IntegrationOperationsSummary
 {
@@ -63,8 +64,16 @@ class IntegrationOperationsSummary
             ->where('status', 'success')
             ->latest('finished_at')
             ->first();
-        $stagedProductsCount = IntegrationProduct::query()
-            ->whereIn('integration_source_id', $activeSources->pluck('id'))
+        $stagedProducts = IntegrationProduct::query()
+            ->whereIn('integration_source_id', $activeSources->pluck('id'));
+        $stagedProductsCount = (clone $stagedProducts)->count();
+        $stagedUniqueProductsCount = DB::query()
+            ->fromSub(
+                (clone $stagedProducts)
+                    ->select(['integration_source_id', 'external_id'])
+                    ->distinct(),
+                'integration_operations_unique_products',
+            )
             ->count();
         $latestStagedAt = IntegrationProduct::query()
             ->whereIn('integration_source_id', $activeSources->pluck('id'))
@@ -86,6 +95,8 @@ class IntegrationOperationsSummary
             'latest_run' => $latestRun,
             'last_success' => $lastSuccess,
             'staged_products_count' => $stagedProductsCount,
+            'staged_unique_products_count' => $stagedUniqueProductsCount,
+            'staged_duplicate_products_count' => max(0, $stagedProductsCount - $stagedUniqueProductsCount),
             'latest_staged_at' => $latestStagedAt ? CarbonImmutable::parse($latestStagedAt) : null,
             'has_unjournaled_staging' => ! $latestRun && $stagedProductsCount > 0,
             'active_sources' => $activeSources->count(),
