@@ -7,83 +7,26 @@ use App\Models\City;
 use App\Models\Product;
 use App\Http\Middleware\HandleRedirects;
 use Illuminate\Http\Request;
-use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Schema;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 class LegacySeoRedirectTest extends TestCase
 {
+    use RefreshDatabase;
+
     protected function setUp(): void
     {
         parent::setUp();
 
         config(['app.base_domain' => 'kotlov.by']);
-
-        Schema::disableForeignKeyConstraints();
-        Schema::dropIfExists('redirects');
-        Schema::dropIfExists('products');
-        Schema::dropIfExists('brands');
-        Schema::dropIfExists('cities');
-        Schema::dropIfExists('categories');
-        Schema::enableForeignKeyConstraints();
-
-        Schema::create('categories', function (Blueprint $table) {
-            $table->id();
-            $table->unsignedBigInteger('parent_id')->default(0);
-            $table->string('name');
-            $table->string('slug')->unique();
-            $table->boolean('is_active')->default(true);
-            $table->integer('sort_order')->default(0);
-            $table->timestamps();
-        });
-
-        Schema::create('products', function (Blueprint $table) {
-            $table->id();
-            $table->unsignedBigInteger('category_id')->nullable();
-            $table->string('slug')->unique();
-            $table->decimal('price', 10, 2)->default(0);
-            $table->boolean('is_active')->default(true);
-            $table->boolean('is_archived')->default(false);
-            $table->string('availability_status')->default('check');
-            $table->boolean('in_stock')->default(false);
-            $table->timestamps();
-        });
-
-        Schema::create('cities', function (Blueprint $table) {
-            $table->id();
-            $table->string('name')->nullable();
-            $table->string('slug')->unique();
-            $table->boolean('is_active')->default(true);
-            $table->integer('sort_order')->default(0);
-            $table->timestamps();
-        });
-
-        Schema::create('brands', function (Blueprint $table) {
-            $table->id();
-            $table->string('name')->nullable();
-            $table->string('slug')->unique();
-            $table->boolean('is_active')->default(true);
-            $table->integer('sort_order')->default(0);
-            $table->timestamps();
-        });
-
-        Schema::create('redirects', function (Blueprint $table) {
-            $table->id();
-            $table->string('from_url')->unique();
-            $table->string('to_url');
-            $table->unsignedSmallInteger('status_code')->default(301);
-            $table->boolean('is_active')->default(true);
-            $table->timestamps();
-        });
     }
 
     public function test_nested_legacy_category_redirects_to_current_flat_url(): void
     {
-        Category::create([
+        Category::query()->firstOrCreate(['slug' => 'tsentrobejnye'], [
             'parent_id' => 0,
             'name' => 'Центробежные насосы',
-            'slug' => 'tsentrobejnye',
             'is_active' => true,
         ]);
 
@@ -95,10 +38,9 @@ class LegacySeoRedirectTest extends TestCase
 
     public function test_old_nested_pellet_boiler_category_redirects_to_current_category(): void
     {
-        Category::create([
+        Category::query()->firstOrCreate(['slug' => 'kotly-na-pelletah'], [
             'parent_id' => 0,
             'name' => 'Пеллетные котлы',
-            'slug' => 'kotly-na-pelletah',
             'is_active' => true,
         ]);
 
@@ -115,10 +57,9 @@ class LegacySeoRedirectTest extends TestCase
 
     public function test_removed_legacy_product_falls_back_to_nearest_active_category(): void
     {
-        Category::create([
+        Category::query()->firstOrCreate(['slug' => 'pogrujnye'], [
             'parent_id' => 0,
             'name' => 'Погружные насосы',
-            'slug' => 'pogrujnye',
             'is_active' => true,
         ]);
 
@@ -130,15 +71,15 @@ class LegacySeoRedirectTest extends TestCase
 
     public function test_canonical_product_path_is_not_collapsed_to_its_category(): void
     {
-        $category = Category::create([
+        $category = Category::query()->firstOrCreate(['slug' => 'gazovye'], [
             'parent_id' => 0,
             'name' => 'Газовые котлы',
-            'slug' => 'gazovye',
             'is_active' => true,
         ]);
 
         Product::create([
             'category_id' => $category->id,
+            'name' => 'Газовый котёл тест',
             'slug' => 'gazovyj-kotel-test',
             'is_active' => true,
             'is_archived' => false,
@@ -156,15 +97,15 @@ class LegacySeoRedirectTest extends TestCase
 
     public function test_city_product_page_redirects_to_primary_domain_canonical(): void
     {
-        $category = Category::create([
+        $category = Category::query()->firstOrCreate(['slug' => 'gazovye'], [
             'parent_id' => 0,
             'name' => 'Газовые котлы',
-            'slug' => 'gazovye',
             'is_active' => true,
         ]);
 
         Product::create([
             'category_id' => $category->id,
+            'name' => 'Газовый котёл тест',
             'slug' => 'gazovyj-kotel-test',
             'is_active' => true,
             'is_archived' => false,
@@ -188,16 +129,16 @@ class LegacySeoRedirectTest extends TestCase
 
     public function test_city_category_page_remains_regional(): void
     {
-        Category::create([
+        Category::query()->firstOrCreate(['slug' => 'gazovye'], [
             'parent_id' => 0,
             'name' => 'Газовые котлы',
-            'slug' => 'gazovye',
             'is_active' => true,
         ]);
 
-        City::create([
+        City::query()->firstOrCreate(['slug' => 'gomel'], [
             'name' => 'Гомель',
-            'slug' => 'gomel',
+            'name_in' => 'в Гомеле',
+            'name_title' => 'Гомеле',
             'is_active' => true,
         ]);
 
@@ -213,15 +154,15 @@ class LegacySeoRedirectTest extends TestCase
 
     public function test_exact_product_redirect_wins_over_broad_legacy_rules(): void
     {
-        $category = Category::create([
+        $category = Category::query()->firstOrCreate(['slug' => 'teplovyie-nasosyi'], [
             'parent_id' => 0,
             'name' => 'Тепловые насосы',
-            'slug' => 'teplovyie-nasosyi',
             'is_active' => true,
         ]);
 
         Product::create([
             'category_id' => $category->id,
+            'name' => 'Тепловой насос KOTLOV GE',
             'slug' => 'kotlov-ge-flm30-r32-10-kvt',
             'is_active' => true,
             'is_archived' => false,
@@ -244,15 +185,15 @@ class LegacySeoRedirectTest extends TestCase
 
     public function test_exact_redirect_replaces_an_archived_duplicate_product_url(): void
     {
-        $category = Category::create([
+        $category = Category::query()->firstOrCreate(['slug' => 'teplovyie-nasosyi'], [
             'parent_id' => 0,
             'name' => 'Тепловые насосы',
-            'slug' => 'teplovyie-nasosyi',
             'is_active' => true,
         ]);
 
         Product::create([
             'category_id' => $category->id,
+            'name' => 'Архивный тепловой насос',
             'slug' => 'old-duplicate-heat-pump',
             'is_active' => false,
             'is_archived' => true,
