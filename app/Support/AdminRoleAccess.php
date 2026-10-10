@@ -20,6 +20,7 @@ use App\Models\IntegrationExchangeRun;
 use App\Models\IntegrationIssue;
 use App\Models\IntegrationProduct;
 use App\Models\IntegrationSource;
+use App\Models\MarketPriceCollectionRun;
 use App\Models\MarketPriceObservation;
 use App\Models\MarketPriceSource;
 use App\Models\Order;
@@ -48,6 +49,7 @@ final class AdminRoleAccess
         InstallRequest::class => ['viewAny', 'view', 'update'],
         Review::class => ['viewAny', 'view', 'update'],
         MarketPriceObservation::class => ['viewAny', 'view'],
+        MarketPriceCollectionRun::class => ['viewAny', 'view'],
     ];
 
     /** @var list<class-string<Model>> */
@@ -71,6 +73,7 @@ final class AdminRoleAccess
         IntegrationProduct::class,
         IntegrationSource::class,
         MarketPriceObservation::class,
+        MarketPriceCollectionRun::class,
         MarketPriceSource::class,
         Order::class,
         Page::class,

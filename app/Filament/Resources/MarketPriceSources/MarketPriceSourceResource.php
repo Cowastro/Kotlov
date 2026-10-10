@@ -5,10 +5,12 @@ namespace App\Filament\Resources\MarketPriceSources;
 use App\Filament\Resources\MarketPriceSources\Pages\CreateMarketPriceSource;
 use App\Filament\Resources\MarketPriceSources\Pages\EditMarketPriceSource;
 use App\Filament\Resources\MarketPriceSources\Pages\ListMarketPriceSources;
+use App\Models\MarketPriceCollectionRun;
 use App\Models\MarketPriceSource;
 use BackedEnum;
 use Filament\Actions\EditAction;
 use Filament\Forms\Components\Select;
+use Filament\Forms\Components\TagsInput;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
@@ -82,6 +84,41 @@ class MarketPriceSourceResource extends Resource
                 ->maxValue(720)
                 ->default(48)
                 ->required(),
+            TextInput::make('collection_interval_minutes')
+                ->label('Интервал сбора, минут')
+                ->helperText('Для API и разрешённого автоматического сбора. Не запускает сбор чаще указанного интервала.')
+                ->numeric()
+                ->minValue(15)
+                ->maxValue(10080)
+                ->default(360)
+                ->required(),
+            TextInput::make('max_requests_per_run')
+                ->label('Лимит за один запуск')
+                ->numeric()
+                ->minValue(1)
+                ->maxValue(5000)
+                ->default(100)
+                ->required(),
+            TextInput::make('max_requests_per_day')
+                ->label('Лимит запросов в сутки')
+                ->numeric()
+                ->minValue(1)
+                ->maxValue(50000)
+                ->default(500)
+                ->required(),
+            TagsInput::make('allowed_path_prefixes')
+                ->label('Разрешённые пути сайта')
+                ->helperText('Например: /catalog/ и /products/. Пустое поле разрешает весь указанный домен.')
+                ->placeholder('/catalog/')
+                ->columnSpanFull(),
+            Toggle::make('respect_robots_txt')
+                ->label('Соблюдать robots.txt')
+                ->helperText('Обязательное правило для автоматического сбора с сайтов.')
+                ->default(true),
+            Toggle::make('collection_authorized')
+                ->label('Автоматический сбор подтверждён')
+                ->helperText('Включайте только после проверки прав, условий источника, домена и допустимой нагрузки. Без этого API/сбор не запустится.')
+                ->default(false),
             TextInput::make('minimum_match_confidence')
                 ->label('Минимальная уверенность')
                 ->helperText('От 0 до 1. Например, 0.85 означает 85%.')
@@ -117,6 +154,22 @@ class MarketPriceSourceResource extends Resource
                     ->color('info'),
                 TextColumn::make('region')->label('Регион'),
                 TextColumn::make('freshness_hours')->label('Свежесть')->suffix(' ч')->alignRight(),
+                TextColumn::make('collection_schedule')->label('Режим сбора')
+                    ->state(fn (MarketPriceSource $record): string => $record->collectionScheduleLabel())
+                    ->wrap(),
+                IconColumn::make('collection_authorized')->label('Автосбор')->boolean(),
+                TextColumn::make('last_collection_at')->label('Последний сбор')
+                    ->dateTime('d.m.Y H:i', 'Europe/Minsk')->placeholder('Не запускался')->sortable(),
+                TextColumn::make('latestCollectionRun.status')->label('Последний результат')
+                    ->formatStateUsing(fn (?string $state): string => MarketPriceCollectionRun::STATUSES[$state] ?? 'Нет запусков')
+                    ->badge()
+                    ->color(fn (?string $state): string => match ($state) {
+                        'success' => 'success',
+                        'warning' => 'warning',
+                        'failed', 'blocked' => 'danger',
+                        'running' => 'info',
+                        default => 'gray',
+                    }),
                 TextColumn::make('minimum_match_confidence')->label('Порог')
                     ->formatStateUsing(fn ($state): string => number_format((float) $state * 100, 0).'%')
                     ->alignRight(),
