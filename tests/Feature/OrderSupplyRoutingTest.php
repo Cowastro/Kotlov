@@ -12,8 +12,10 @@ use App\Models\Product;
 use App\Models\Supplier;
 use App\Models\SupplierProduct;
 use App\Models\User;
+use App\Services\Orders\OrderItemFulfillmentManager;
 use App\Services\Orders\OrderItemSupplyContextResolver;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Validation\ValidationException;
 use Tests\TestCase;
 
 class OrderSupplyRoutingTest extends TestCase
@@ -191,6 +193,59 @@ class OrderSupplyRoutingTest extends TestCase
             ->withOperationalProblem('needs_attention')
             ->whereKey($fixture['order']->id)
             ->exists());
+    }
+
+    public function test_manager_can_confirm_and_audit_item_fulfillment_without_changing_recommendation_snapshot(): void
+    {
+        $fixture = $this->fixture();
+        $manager = User::factory()->create(['role' => 'admin', 'is_active' => true]);
+        $supplier = Supplier::query()->where('code', 'legacy-route-supplier-1')->firstOrFail();
+
+        app(OrderItemFulfillmentManager::class)->confirm(
+            $fixture['item'],
+            'direct_supplier',
+            $supplier,
+            $manager,
+            'Поставщик доставляет клиенту напрямую.',
+        );
+
+        $item = $fixture['item']->fresh();
+
+        $this->assertSame('direct_supplier', $item->fulfillment_route);
+        $this->assertSame($supplier->id, $item->fulfillment_supplier_id);
+        $this->assertSame('Внешний поставщик', $item->fulfillment_supplier_name);
+        $this->assertSame('Передать поставщику напрямую', $item->fulfillmentRouteLabel());
+        $this->assertSame('own_stock', $item->supply_status);
+        $this->assertSame('ООО «СанБизнесГруп»', $item->supply_supplier_name);
+        $this->assertDatabaseHas('order_item_fulfillment_histories', [
+            'order_item_id' => $item->id,
+            'user_id' => $manager->id,
+            'route' => 'direct_supplier',
+            'supplier_id' => $supplier->id,
+        ]);
+
+        $this->actingAs($manager)
+            ->get(OrderResource::getUrl('view', ['record' => $fixture['order']], panel: 'admin'))
+            ->assertOk()
+            ->assertSeeText('Подтвердить исполнение')
+            ->assertSeeText('Решение менеджера')
+            ->assertSeeText('Передать поставщику напрямую')
+            ->assertSeeText('История решений по исполнению')
+            ->assertSeeText('Поставщик доставляет клиенту напрямую.');
+    }
+
+    public function test_supplier_is_required_for_external_fulfillment_routes(): void
+    {
+        $fixture = $this->fixture();
+
+        $this->expectException(ValidationException::class);
+
+        app(OrderItemFulfillmentManager::class)->confirm(
+            $fixture['item'],
+            'supplier_purchase',
+            null,
+            null,
+        );
     }
 
     /** @return array{order: Order, item: OrderItem} */

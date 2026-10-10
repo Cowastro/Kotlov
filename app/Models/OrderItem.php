@@ -5,10 +5,17 @@ namespace App\Models;
 use App\Services\Orders\OrderItemSupplyContextResolver;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Facades\Schema;
 
 class OrderItem extends Model
 {
+    public const FULFILLMENT_ROUTES = [
+        'own_stock' => 'Наш склад',
+        'supplier_purchase' => 'Закупить у поставщика',
+        'direct_supplier' => 'Передать поставщику напрямую',
+    ];
+
     /** @var array<string, mixed>|null */
     private ?array $supplyContextCache = null;
 
@@ -22,6 +29,9 @@ class OrderItem extends Model
         'supply_supplier_contact', 'supply_source_label', 'supply_purchase_price',
         'supply_price_tax_mode', 'supply_vat_rate', 'supply_stock_quantity',
         'supply_is_available', 'supply_candidate_count', 'supply_captured_at',
+        'fulfillment_route', 'fulfillment_supplier_id', 'fulfillment_supplier_name',
+        'fulfillment_supplier_contact', 'fulfillment_confirmed_by',
+        'fulfillment_confirmed_at', 'fulfillment_note',
     ];
 
     protected $casts = [
@@ -33,6 +43,7 @@ class OrderItem extends Model
         'supply_is_available' => 'boolean',
         'supply_candidate_count' => 'integer',
         'supply_captured_at' => 'datetime',
+        'fulfillment_confirmed_at' => 'datetime',
     ];
 
     protected static function booted(): void
@@ -77,6 +88,28 @@ class OrderItem extends Model
     public function integrationProduct(): BelongsTo
     {
         return $this->belongsTo(IntegrationProduct::class);
+    }
+
+    public function fulfillmentSupplier(): BelongsTo
+    {
+        return $this->belongsTo(Supplier::class, 'fulfillment_supplier_id');
+    }
+
+    public function fulfillmentConfirmedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'fulfillment_confirmed_by');
+    }
+
+    public function fulfillmentHistory(): HasMany
+    {
+        return $this->hasMany(OrderItemFulfillmentHistory::class)->latest();
+    }
+
+    public function fulfillmentRouteLabel(): ?string
+    {
+        return $this->fulfillment_route
+            ? (self::FULFILLMENT_ROUTES[$this->fulfillment_route] ?? $this->fulfillment_route)
+            : null;
     }
 
     /** @return array<string, mixed> */

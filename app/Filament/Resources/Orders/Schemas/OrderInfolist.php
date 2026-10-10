@@ -5,6 +5,7 @@ namespace App\Filament\Resources\Orders\Schemas;
 use App\Models\IntegrationIssue;
 use App\Models\Order;
 use App\Models\OrderIntegrationDelivery;
+use App\Models\OrderItem;
 use Filament\Infolists\Components\RepeatableEntry;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Schemas\Components\Section;
@@ -441,6 +442,59 @@ class OrderInfolist
                                         $record->supplyContext()['candidate_count'] === 1 => 'info',
                                         default => 'danger',
                                     }),
+
+                                TextEntry::make('fulfillment_decision')
+                                    ->label('Решение менеджера')
+                                    ->columnSpan(3)
+                                    ->state(fn ($record): ?string => $record->fulfillmentRouteLabel())
+                                    ->placeholder('Не подтверждено')
+                                    ->badge()
+                                    ->color(fn ($record): string => $record->fulfillment_route ? 'success' : 'warning'),
+
+                                TextEntry::make('fulfillment_executor')
+                                    ->label('Исполнитель')
+                                    ->columnSpan(3)
+                                    ->state(fn ($record): ?string => $record->fulfillment_supplier_name)
+                                    ->placeholder(fn ($record): string => $record->fulfillment_route === 'own_stock'
+                                        ? 'Собственный склад'
+                                        : 'Не выбран'),
+
+                                TextEntry::make('fulfillment_confirmation')
+                                    ->label('Подтвердил')
+                                    ->columnSpan(3)
+                                    ->state(fn ($record): ?string => $record->fulfillment_confirmed_at
+                                        ? (($record->fulfillmentConfirmedBy?->name ?? 'Система').' · '.$record->fulfillment_confirmed_at->timezone('Europe/Minsk')->format('d.m.Y H:i'))
+                                        : null)
+                                    ->placeholder('Ожидает решения'),
+
+                                TextEntry::make('fulfillment_note')
+                                    ->label('Комментарий к маршруту')
+                                    ->columnSpan(3)
+                                    ->placeholder('—'),
+                            ]),
+                    ]),
+
+                Section::make('История решений по исполнению')
+                    ->description('Каждое изменение маршрута сохраняется отдельно: кто, когда и какого исполнителя выбрал.')
+                    ->icon('heroicon-o-clipboard-document-check')
+                    ->columnSpanFull()
+                    ->compact()
+                    ->visible(fn (Order $record): bool => $record->fulfillmentHistory->isNotEmpty())
+                    ->schema([
+                        RepeatableEntry::make('fulfillmentHistory')
+                            ->hiddenLabel()
+                            ->columns(6)
+                            ->contained(false)
+                            ->schema([
+                                TextEntry::make('created_at')->label('Дата')->dateTime('d.m.Y H:i', 'Europe/Minsk'),
+                                TextEntry::make('item.product_name')->label('Позиция')->columnSpan(2),
+                                TextEntry::make('route')
+                                    ->label('Решение')
+                                    ->badge()
+                                    ->formatStateUsing(fn (string $state): string => OrderItem::FULFILLMENT_ROUTES[$state] ?? $state),
+                                TextEntry::make('supplier_name')->label('Исполнитель')->placeholder('Собственный склад'),
+                                TextEntry::make('user.name')->label('Кто подтвердил')->placeholder('Система'),
+                                TextEntry::make('note')->label('Комментарий')->placeholder('—')->columnSpanFull(),
                             ]),
                     ]),
 

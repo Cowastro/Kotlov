@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -144,6 +145,16 @@ class Order extends Model
     public function statusHistory(): HasMany
     {
         return $this->hasMany(OrderStatusHistory::class);
+    }
+
+    public function fulfillmentHistory(): HasManyThrough
+    {
+        return $this->hasManyThrough(
+            OrderItemFulfillmentHistory::class,
+            OrderItem::class,
+            'order_id',
+            'order_item_id',
+        )->latest('order_item_fulfillment_histories.created_at');
     }
 
     public function integrationIssues(): HasMany
