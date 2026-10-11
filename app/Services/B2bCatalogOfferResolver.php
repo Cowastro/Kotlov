@@ -77,6 +77,17 @@ class B2bCatalogOfferResolver
         return $price;
     }
 
+    public function hasFreshStock(IntegrationProduct $offer): bool
+    {
+        $confirmedAt = $offer->stock_confirmed_at;
+        $source = $offer->source;
+
+        return $source !== null
+            && $confirmedAt !== null
+            && $confirmedAt->gte(now()->subMinutes($source->staleAfterMinutes()))
+            && (float) $offer->stock_quantity > 0;
+    }
+
     /** @return array{offer: IntegrationProduct, wholesale_price: float, retail_price: float, difference: float, difference_percent: float|null, vat_rate: float}|null */
     public function comparison(Product $product, ?User $user = null): ?array
     {
@@ -115,6 +126,7 @@ class B2bCatalogOfferResolver
             ->get()
             ->filter(fn (IntegrationProduct $offer): bool => $offer->source?->isB2bEnabled() === true
                 && $offer->normalizedPriceByn() !== null
+                && $this->hasFreshStock($offer)
                 && $this->sourceAllowsCategory($offer))
             ->values();
     }

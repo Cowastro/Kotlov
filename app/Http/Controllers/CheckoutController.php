@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use App\Events\NewOrderCreated;
 use App\Models\Order;
 use App\Models\OrderItem;
+use App\Models\Product;
+use App\Services\B2bCatalogOfferResolver;
 use App\Services\Orders\OrderEconomicSnapshotRecorder;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -25,8 +27,8 @@ class CheckoutController extends Controller
             return redirect()->route('cart')->with('info', 'Корзина пуста.');
         }
 
-        $subtotal  = $this->calcSubtotal($cart);
-        $user      = Auth::user();
+        $subtotal = $this->calcSubtotal($cart);
+        $user = Auth::user();
         $threshold = (float) config('shop.free_delivery_threshold', 400);
 
         return view('pages.checkout', compact('cart', 'subtotal', 'user', 'threshold'));
@@ -35,7 +37,7 @@ class CheckoutController extends Controller
     // ─────────────────────────────────────────
     // Создать заказ  POST /checkout
     // ─────────────────────────────────────────
-    public function store(Request $request)
+    public function store(Request $request, B2bCatalogOfferResolver $offerResolver)
     {
         $cart = session(self::CART_KEY, []);
 
@@ -53,13 +55,37 @@ class CheckoutController extends Controller
             );
         }
 
+        if ($containsB2bPrices) {
+            $products = Product::query()
+                ->whereIn('id', array_keys($cart))
+                ->get()
+                ->keyBy('id');
+
+            foreach ($cart as $item) {
+                if (($item['pricing_type'] ?? 'retail') !== 'b2b') {
+                    continue;
+                }
+
+                $product = $products->get((int) $item['id']);
+                $offer = $product ? $offerResolver->forProduct($product, Auth::user()) : null;
+                if (! $offer
+                    || (int) ($item['integration_product_id'] ?? 0) !== (int) $offer->id
+                    || (int) $item['quantity'] > (float) $offer->stock_quantity) {
+                    return redirect()->route('cart')->with(
+                        'error',
+                        'B2B-заказ не создан: одна из позиций потеряла привязку или свежий подтверждённый остаток 1С.'
+                    );
+                }
+            }
+        }
+
         // Убираем из заказа товары, снятые с продажи (могли попасть в корзину до архивации)
-        $archivedIds = \App\Models\Product::whereIn('id', array_keys($cart))
+        $archivedIds = Product::whereIn('id', array_keys($cart))
             ->where('is_archived', true)
             ->pluck('id')
             ->all();
 
-        if (!empty($archivedIds)) {
+        if (! empty($archivedIds)) {
             foreach ($archivedIds as $aid) {
                 unset($cart[$aid]);
             }
@@ -74,85 +100,85 @@ class CheckoutController extends Controller
 
         // Защита от двойного сабмита — один токен = один заказ
         $token = $request->input('order_token');
-        if (!$token || session('order_token_used_' . $token)) {
+        if (! $token || session('order_token_used_'.$token)) {
             return redirect()->route('checkout')->with('info', 'Заказ уже был отправлен. Проверьте список заказов.');
         }
-        session(['order_token_used_' . $token => true]);
+        session(['order_token_used_'.$token => true]);
 
         $request->validate([
-            'customer_name'    => ['required', 'string', 'max:255'],
-            'customer_phone'   => ['required', 'string', 'max:30', 'regex:/^[\d\s\+\(\)\-]{7,}$/'],
-            'customer_email'   => ['nullable', 'email', 'max:255'],
-            'delivery_type'    => ['required', 'in:' . implode(',', array_keys(config('shop.delivery_methods', [])))],
-            'delivery_region'  => ['required_unless:delivery_type,pickup', 'nullable', 'string', 'max:255'],
-            'delivery_city'    => ['required_unless:delivery_type,pickup', 'nullable', 'string', 'max:255'],
+            'customer_name' => ['required', 'string', 'max:255'],
+            'customer_phone' => ['required', 'string', 'max:30', 'regex:/^[\d\s\+\(\)\-]{7,}$/'],
+            'customer_email' => ['nullable', 'email', 'max:255'],
+            'delivery_type' => ['required', 'in:'.implode(',', array_keys(config('shop.delivery_methods', [])))],
+            'delivery_region' => ['required_unless:delivery_type,pickup', 'nullable', 'string', 'max:255'],
+            'delivery_city' => ['required_unless:delivery_type,pickup', 'nullable', 'string', 'max:255'],
             'delivery_address' => ['required_unless:delivery_type,pickup', 'nullable', 'string', 'max:500'],
-            'payment_type'     => ['required', 'in:' . implode(',', array_keys(config('shop.payment_methods', [])))],
-            'comment'          => ['nullable', 'string', 'max:1000'],
+            'payment_type' => ['required', 'in:'.implode(',', array_keys(config('shop.payment_methods', [])))],
+            'comment' => ['nullable', 'string', 'max:1000'],
             // Реквизиты для счёта
-            'company_name'     => ['required_if:payment_type,invoice', 'nullable', 'string', 'max:255'],
-            'company_unp'      => ['nullable', 'string', 'max:50'],
-            'company_address'  => ['nullable', 'string', 'max:500'],
-            'company_email'    => ['nullable', 'email', 'max:255'],
+            'company_name' => ['required_if:payment_type,invoice', 'nullable', 'string', 'max:255'],
+            'company_unp' => ['nullable', 'string', 'max:50'],
+            'company_address' => ['nullable', 'string', 'max:500'],
+            'company_email' => ['nullable', 'email', 'max:255'],
         ], [
-            'customer_name.required'         => 'Введите имя.',
-            'customer_phone.required'        => 'Введите телефон.',
-            'customer_phone.regex'           => 'Введите корректный номер телефона.',
-            'delivery_type.required'         => 'Выберите способ доставки.',
-            'payment_type.required'          => 'Выберите способ оплаты.',
+            'customer_name.required' => 'Введите имя.',
+            'customer_phone.required' => 'Введите телефон.',
+            'customer_phone.regex' => 'Введите корректный номер телефона.',
+            'delivery_type.required' => 'Выберите способ доставки.',
+            'payment_type.required' => 'Выберите способ оплаты.',
             'delivery_region.required_unless' => 'Выберите область / регион доставки.',
-            'delivery_city.required_unless'   => 'Укажите город доставки.',
+            'delivery_city.required_unless' => 'Укажите город доставки.',
             'delivery_address.required_unless' => 'Укажите адрес доставки.',
-            'company_name.required_if'        => 'Введите название организации для оплаты по счёту.',
+            'company_name.required_if' => 'Введите название организации для оплаты по счёту.',
         ]);
 
-        $subtotal      = $this->calcSubtotal($cart);
+        $subtotal = $this->calcSubtotal($cart);
         $deliveryPrice = self::calcDelivery($request->delivery_type, $subtotal) ?? 0;
-        $total         = $subtotal + $deliveryPrice;
+        $total = $subtotal + $deliveryPrice;
 
         $order = DB::transaction(function () use ($request, $cart, $subtotal, $deliveryPrice, $total) {
 
             $order = Order::create([
-                'user_id'          => Auth::id(),
-                'number'           => Order::generateNumber(),
-                'status'           => 'new',
+                'user_id' => Auth::id(),
+                'number' => Order::generateNumber(),
+                'status' => 'new',
 
-                'customer_name'    => $request->customer_name,
-                'customer_phone'   => $request->customer_phone,
-                'customer_email'   => $request->customer_email,
+                'customer_name' => $request->customer_name,
+                'customer_phone' => $request->customer_phone,
+                'customer_email' => $request->customer_email,
 
-                'delivery_type'    => $request->delivery_type,
-                'delivery_region'  => $request->delivery_region,
-                'delivery_city'    => $request->delivery_city,
+                'delivery_type' => $request->delivery_type,
+                'delivery_region' => $request->delivery_region,
+                'delivery_city' => $request->delivery_city,
                 'delivery_address' => $request->delivery_address,
-                'delivery_price'   => $deliveryPrice,
+                'delivery_price' => $deliveryPrice,
 
-                'payment_type'     => $request->payment_type,
-                'payment_status'   => 'pending',
+                'payment_type' => $request->payment_type,
+                'payment_status' => 'pending',
 
                 // Реквизиты для счёта (только если выбран invoice)
-                'company_name'     => $request->payment_type === 'invoice' ? $request->company_name    : null,
-                'company_unp'      => $request->payment_type === 'invoice' ? $request->company_unp     : null,
-                'company_address'  => $request->payment_type === 'invoice' ? $request->company_address : null,
-                'company_email'    => $request->payment_type === 'invoice' ? $request->company_email   : null,
+                'company_name' => $request->payment_type === 'invoice' ? $request->company_name : null,
+                'company_unp' => $request->payment_type === 'invoice' ? $request->company_unp : null,
+                'company_address' => $request->payment_type === 'invoice' ? $request->company_address : null,
+                'company_email' => $request->payment_type === 'invoice' ? $request->company_email : null,
 
-                'subtotal'         => $subtotal,
-                'discount'         => 0,
-                'total'            => $total,
+                'subtotal' => $subtotal,
+                'discount' => 0,
+                'total' => $total,
 
                 // comment: что пользователь написал в форме; если поле пустое — null
-                'comment'          => $request->filled('comment') ? $request->comment : null,
+                'comment' => $request->filled('comment') ? $request->comment : null,
             ]);
 
             foreach ($cart as $item) {
                 OrderItem::create([
-                    'order_id'     => $order->id,
-                    'product_id'   => $item['id'],
+                    'order_id' => $order->id,
+                    'product_id' => $item['id'],
                     'product_name' => $item['name'],
-                    'product_sku'  => $item['sku'] ?? null,
-                    'price'        => $item['price'],
-                    'quantity'     => $item['quantity'],
-                    'total'        => round($item['price'] * $item['quantity'], 2),
+                    'product_sku' => $item['sku'] ?? null,
+                    'price' => $item['price'],
+                    'quantity' => $item['quantity'],
+                    'total' => round($item['price'] * $item['quantity'], 2),
                     'pricing_type' => $item['pricing_type'] ?? 'retail',
                     'price_tax_mode' => $item['price_tax_mode'] ?? null,
                     'integration_product_id' => $item['integration_product_id'] ?? null,
@@ -209,13 +235,13 @@ class CheckoutController extends Controller
     public static function calcDelivery(string $deliveryType, float $subtotal): ?float
     {
         $methods = config('shop.delivery_methods', []);
-        $method  = $methods[$deliveryType] ?? null;
+        $method = $methods[$deliveryType] ?? null;
 
-        if (!$method) {
+        if (! $method) {
             return null; // неизвестный тип — уточняется
         }
 
-        $price    = $method['price'];    // float|null
+        $price = $method['price'];    // float|null
         $freeFrom = $method['free_from']; // float|null
 
         // null price = рассчитывается отдельно (КИТ и т.п.)
@@ -239,7 +265,7 @@ class CheckoutController extends Controller
     private function calcSubtotal(array $items): float
     {
         return round(array_sum(array_map(
-            fn($i) => $i['price'] * $i['quantity'],
+            fn ($i) => $i['price'] * $i['quantity'],
             $items
         )), 2);
     }

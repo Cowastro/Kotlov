@@ -16,7 +16,7 @@ class CartController extends Controller
     // ─────────────────────────────────────────
     public function index()
     {
-        $items    = $this->getItems();
+        $items = $this->getItems();
         $subtotal = $this->calcSubtotal($items);
 
         return view('pages.cart', compact('items', 'subtotal'));
@@ -29,17 +29,26 @@ class CartController extends Controller
     {
         $request->validate([
             'product_id' => ['required', 'integer', 'exists:products,id'],
-            'quantity'   => ['sometimes', 'integer', 'min:1', 'max:999'],
+            'quantity' => ['sometimes', 'integer', 'min:1', 'max:999'],
         ]);
 
         $product = Product::with('category:id,slug')->findOrFail($request->product_id);
         $b2bOffer = $offerResolver->forProduct($product, $request->user());
+
+        if ($request->user()?->isB2B() && ! $b2bOffer) {
+            $message = 'Товар недоступен для B2B-заказа: требуется подтверждённая привязка, цена и свежий остаток 1С.';
+
+            return $request->expectsJson()
+                ? response()->json(['message' => $message], 422)
+                : back()->with('error', $message);
+        }
 
         // Снятый с продажи товар нельзя заказать
         if ($product->is_archived) {
             if ($request->expectsJson()) {
                 return response()->json(['message' => 'Товар снят с продажи и недоступен для заказа.'], 422);
             }
+
             return back()->with('error', 'Товар снят с продажи и недоступен для заказа.');
         }
 
@@ -51,10 +60,19 @@ class CartController extends Controller
             if ($request->expectsJson()) {
                 return response()->json(['message' => 'Товар сейчас недоступен для оформления заказа.'], 422);
             }
+
             return back()->with('error', 'Товар сейчас недоступен для оформления заказа.');
         }
 
-        $qty     = max(1, (int) $request->input('quantity', 1));
+        $qty = max(1, (int) $request->input('quantity', 1));
+
+        if ($b2bOffer && $qty > (float) $b2bOffer->stock_quantity) {
+            $message = 'Запрошенное количество превышает подтверждённый остаток 1С.';
+
+            return $request->expectsJson()
+                ? response()->json(['message' => $message], 422)
+                : back()->with('error', $message);
+        }
 
         $cart = session(self::KEY, []);
 
@@ -85,14 +103,14 @@ class CartController extends Controller
             $imgUrl = $product->image_url;
 
             $cart[$id] = [
-                'id'             => $id,
-                'name'           => $product->name,
-                'slug'           => $product->slug,
-                'sku'            => $product->sku,
-                'price'          => $price,
-                'image'          => $imgUrl,
-                'category_slug'  => $product->category->slug ?? 'catalog',
-                'quantity'       => $qty,
+                'id' => $id,
+                'name' => $product->name,
+                'slug' => $product->slug,
+                'sku' => $product->sku,
+                'price' => $price,
+                'image' => $imgUrl,
+                'category_slug' => $product->category->slug ?? 'catalog',
+                'quantity' => $qty,
             ] + $pricing;
         }
 
@@ -101,8 +119,8 @@ class CartController extends Controller
         if ($request->expectsJson()) {
             return response()->json([
                 'message' => 'added',
-                'count'   => $this->totalQty($cart),
-                'subtotal'=> $this->calcSubtotal($cart),
+                'count' => $this->totalQty($cart),
+                'subtotal' => $this->calcSubtotal($cart),
             ]);
         }
 
@@ -112,27 +130,44 @@ class CartController extends Controller
     // ─────────────────────────────────────────
     // Изменить количество  POST /cart/update
     // ─────────────────────────────────────────
-    public function update(Request $request)
+    public function update(Request $request, B2bCatalogOfferResolver $offerResolver)
     {
         $request->validate([
             'product_id' => ['required', 'integer'],
-            'quantity'   => ['required', 'integer', 'min:1', 'max:999'],
+            'quantity' => ['required', 'integer', 'min:1', 'max:999'],
         ]);
 
         $cart = session(self::KEY, []);
-        $id   = (int) $request->product_id;
+        $id = (int) $request->product_id;
 
         if (isset($cart[$id])) {
+            if (($cart[$id]['pricing_type'] ?? 'retail') === 'b2b') {
+                $product = Product::query()->find($id);
+                $offer = $product ? $offerResolver->forProduct($product, $request->user()) : null;
+                $quantity = (int) $request->quantity;
+
+                if (! $offer
+                    || (int) ($cart[$id]['integration_product_id'] ?? 0) !== (int) $offer->id
+                    || $quantity > (float) $offer->stock_quantity) {
+                    $message = 'B2B-позиция изменилась или её остаток 1С уже недостаточен. Обновите корзину.';
+
+                    return $request->expectsJson()
+                        ? response()->json(['message' => $message], 422)
+                        : back()->with('error', $message);
+                }
+            }
+
             $cart[$id]['quantity'] = (int) $request->quantity;
             session([self::KEY => $cart]);
         }
 
         if ($request->expectsJson()) {
             $items = $this->getItems();
+
             return response()->json([
-                'count'        => $this->totalQty($cart),
-                'subtotal'     => $this->calcSubtotal($cart),
-                'item_total'   => isset($cart[$id])
+                'count' => $this->totalQty($cart),
+                'subtotal' => $this->calcSubtotal($cart),
+                'item_total' => isset($cart[$id])
                     ? round($cart[$id]['price'] * $cart[$id]['quantity'], 2)
                     : 0,
             ]);
@@ -159,8 +194,8 @@ class CartController extends Controller
 
         if ($request->expectsJson()) {
             return response()->json([
-                'message'  => 'removed',
-                'count'    => $this->totalQty($cart),
+                'message' => 'removed',
+                'count' => $this->totalQty($cart),
                 'subtotal' => $this->calcSubtotal($cart),
             ]);
         }
@@ -188,21 +223,21 @@ class CartController extends Controller
     // ─────────────────────────────────────────
     public function data()
     {
-        $items     = $this->getItems();
-        $subtotal  = $this->calcSubtotal($items);
+        $items = $this->getItems();
+        $subtotal = $this->calcSubtotal($items);
         $threshold = (float) config('shop.free_delivery_threshold', 400);
         $remaining = max(0, $threshold - $subtotal);
-        $progress  = $threshold > 0 ? min(100, round($subtotal / $threshold * 100)) : 100;
+        $progress = $threshold > 0 ? min(100, round($subtotal / $threshold * 100)) : 100;
 
         return response()->json([
-            'items'     => array_values($items),
-            'count'     => $this->totalQty($items),
-            'subtotal'  => $subtotal,
+            'items' => array_values($items),
+            'count' => $this->totalQty($items),
+            'subtotal' => $subtotal,
             'threshold' => $threshold,
             'remaining' => $remaining,
-            'progress'  => $progress,
-            'note'      => session('cart_note', ''),
-            'coupon'    => session('cart_coupon', ''),
+            'progress' => $progress,
+            'note' => session('cart_note', ''),
+            'coupon' => session('cart_coupon', ''),
         ]);
     }
 
@@ -217,6 +252,7 @@ class CartController extends Controller
         if ($request->expectsJson()) {
             return response()->json(['message' => 'saved']);
         }
+
         return back();
     }
 
@@ -227,16 +263,17 @@ class CartController extends Controller
     {
         $request->validate([
             'delivery_region' => ['nullable', 'string', 'max:100'],
-            'delivery_city'   => ['nullable', 'string', 'max:100'],
+            'delivery_city' => ['nullable', 'string', 'max:100'],
         ]);
         session([
             'cart_delivery_region' => $request->input('delivery_region', ''),
-            'cart_delivery_city'   => $request->input('delivery_city', ''),
+            'cart_delivery_city' => $request->input('delivery_city', ''),
         ]);
 
         if ($request->expectsJson()) {
             return response()->json(['message' => 'saved']);
         }
+
         return back();
     }
 
@@ -252,9 +289,10 @@ class CartController extends Controller
         if ($request->expectsJson()) {
             return response()->json([
                 'message' => 'saved',
-                'coupon'  => $code,
+                'coupon' => $code,
             ]);
         }
+
         return back();
     }
 
@@ -272,6 +310,7 @@ class CartController extends Controller
             'cart_delivery_city',
         ]);
     }
+
     private function getItems(): array
     {
         return session(self::KEY, []);
@@ -280,7 +319,7 @@ class CartController extends Controller
     private function calcSubtotal(array $items): float
     {
         return round(array_sum(array_map(
-            fn($i) => $i['price'] * $i['quantity'],
+            fn ($i) => $i['price'] * $i['quantity'],
             $items
         )), 2);
     }

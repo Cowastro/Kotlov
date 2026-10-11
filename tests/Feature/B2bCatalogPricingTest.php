@@ -6,6 +6,7 @@ use App\Models\Category;
 use App\Models\IntegrationProduct;
 use App\Models\IntegrationSource;
 use App\Models\IntegrationWarehouse;
+use App\Models\Order;
 use App\Models\Product;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -59,6 +60,61 @@ class B2bCatalogPricingTest extends TestCase
         $this->assertSame('b2b', $item['pricing_type']);
         $this->assertSame('inclusive', $item['price_tax_mode']);
         $this->assertNotNull($item['integration_product_id']);
+    }
+
+    public function test_stale_one_c_stock_is_hidden_and_rejected_for_b2b_ordering(): void
+    {
+        [$product, $user] = $this->catalogFixture(approved: true);
+        IntegrationProduct::query()->where('product_id', $product->id)->update([
+            'stock_confirmed_at' => now()->subMinutes(16),
+        ]);
+
+        $this->actingAs($user)
+            ->get('/'.$product->category->slug.'/'.$product->slug)
+            ->assertOk()
+            ->assertDontSeeText('Партнёрская цена от ООО «СанБизнесГруп»');
+
+        $this->actingAs($user)
+            ->postJson('/cart/add', ['product_id' => $product->id, 'quantity' => 1])
+            ->assertStatus(422)
+            ->assertJsonPath('message', 'Товар недоступен для B2B-заказа: требуется подтверждённая привязка, цена и свежий остаток 1С.');
+    }
+
+    public function test_b2b_cart_rejects_quantity_above_confirmed_one_c_stock(): void
+    {
+        [$product, $user] = $this->catalogFixture(approved: true);
+
+        $this->actingAs($user)
+            ->postJson('/cart/add', ['product_id' => $product->id, 'quantity' => 8])
+            ->assertStatus(422)
+            ->assertJsonPath('message', 'Запрошенное количество превышает подтверждённый остаток 1С.');
+    }
+
+    public function test_checkout_revalidates_b2b_stock_after_item_was_added_to_cart(): void
+    {
+        [$product, $user] = $this->catalogFixture(approved: true);
+
+        $this->actingAs($user)
+            ->postJson('/cart/add', ['product_id' => $product->id, 'quantity' => 2])
+            ->assertOk();
+
+        IntegrationProduct::query()->where('product_id', $product->id)->update([
+            'stock_confirmed_at' => now()->subMinutes(16),
+        ]);
+        $this->app->forgetScopedInstances();
+
+        $this->withHeader('User-Agent', 'Mozilla/5.0')
+            ->post(route('checkout.store'), [
+                'order_token' => 'stale-b2b-stock',
+                'customer_name' => 'СБГ.BY',
+                'customer_phone' => '+375291112233',
+                'delivery_type' => 'pickup',
+                'payment_type' => 'cash',
+            ])
+            ->assertRedirect(route('cart'))
+            ->assertSessionHas('error', 'B2B-заказ не создан: одна из позиций потеряла привязку или свежий подтверждённый остаток 1С.');
+
+        $this->assertDatabaseCount((new Order)->getTable(), 0);
     }
 
     public function test_admin_can_preview_partner_card_without_changing_their_account(): void
@@ -323,6 +379,7 @@ class B2bCatalogPricingTest extends TestCase
             'name' => 'Труба дымохода D115',
             'price' => 80,
             'stock_quantity' => 7,
+            'stock_confirmed_at' => now(),
             'match_status' => 'matched',
         ]);
         $user = User::factory()->create([
