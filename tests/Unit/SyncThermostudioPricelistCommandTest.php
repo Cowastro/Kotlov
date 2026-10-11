@@ -56,6 +56,44 @@ class SyncThermostudioPricelistCommandTest extends TestCase
         $this->assertSame(556, $result[2]['matched_product_id']);
     }
 
+    public function test_it_keeps_coaxial_chimneys_in_their_own_category(): void
+    {
+        $this->setCategoryMap([
+            'koaxial-dymoxod' => 57,
+            'gazovye' => 53,
+            'truby-mono' => 309,
+            'prochie-dymohod' => 322,
+        ]);
+
+        $this->assertSame(57, $this->invoke('categoryId', [[
+            'sheet' => 'Газовые котлы',
+            'section' => 'Дымоходы',
+            'supplier_article' => '',
+            'supplier_article_raw' => '',
+            'name' => 'Ferroli Коаксиальный дымоход 60/100 универсальный',
+            'description' => '',
+        ]]));
+    }
+
+    public function test_it_excludes_the_blist_half_metre_serbian_pipe_from_import(): void
+    {
+        $row = [
+            'brand' => 'Blist',
+            'sheet' => 'Дымоходы',
+            'section' => 'Одностенные дымоходы',
+            'supplier_article' => '',
+            'supplier_article_raw' => '',
+            'name' => 'Blist Труба 0,5м, Сербия',
+            'description' => '',
+        ];
+
+        $classified = $this->invoke('classify', [$row]);
+
+        $this->assertSame('excluded_archive', $classified['action']);
+        $this->assertNull($classified['matched_product_id']);
+        $this->assertNull($classified['category_id']);
+    }
+
     private ?SyncThermostudioPricelistCommand $instance = null;
 
     private function command(): SyncThermostudioPricelistCommand
@@ -69,5 +107,11 @@ class SyncThermostudioPricelistCommandTest extends TestCase
         $target = $reflection->getMethod($method);
 
         return $target->invokeArgs($this->command(), $arguments);
+    }
+
+    private function setCategoryMap(array $categories): void
+    {
+        $reflection = new ReflectionClass($this->command());
+        $reflection->getProperty('categoryBySlug')->setValue($this->command(), $categories);
     }
 }

@@ -642,6 +642,16 @@ class SyncThermostudioPricelistCommand extends Command
 
     private function classify(array $row): array
     {
+        if ($this->isCatalogExcluded($row)) {
+            return $row + [
+                'brand_id' => null,
+                'category_id' => null,
+                'matched_product_id' => null,
+                'match_confidence' => null,
+                'action' => 'excluded_archive',
+            ];
+        }
+
         $brandId = $this->brandByKey[$this->brandKey($row['brand'])] ?? null;
         $match = $this->match($row, $brandId);
         $categoryId = $this->categoryId($row);
@@ -660,6 +670,19 @@ class SyncThermostudioPricelistCommand extends Command
             'match_confidence' => $match['confidence'] ?? null,
             'action' => $action,
         ];
+    }
+
+    private function isCatalogExcluded(array $row): bool
+    {
+        $text = mb_strtolower(implode(' ', [
+            (string) ($row['brand'] ?? ''),
+            (string) ($row['name'] ?? ''),
+            (string) ($row['description'] ?? ''),
+        ]));
+
+        return str_contains($text, 'blist')
+            && str_contains($text, 'серби')
+            && preg_match('/труб[а-я]*\s*0[\s,.]*5\s*м/u', $text) === 1;
     }
 
     private function match(array $row, ?int $brandId): ?array
@@ -1233,6 +1256,13 @@ class SyncThermostudioPricelistCommand extends Command
         $rawText = mb_strtolower(($row['sheet'] ?? '') . ' ' . $row['section'] . ' ' . ($row['supplier_article'] ?? '') . ' ' . ($row['supplier_article_raw'] ?? '') . ' ' . $row['name'] . ' ' . $row['description']);
         $text = $this->nameKey($rawText);
 
+        // Coaxial flues are a separate product family. Check them before the
+        // broad gas-boiler and chimney rules, because supplier descriptions
+        // often contain both "газовый котёл" and "коаксиальный дымоход".
+        if (str_contains($text, 'koaks') || str_contains($text, 'коакс')) {
+            return $this->categoryBySlug['koaxial-dymoxod'] ?? null;
+        }
+
         if (preg_match('/\x{044D}\x{0432}\x{043D}/u', $rawText)) {
             return $this->categoryBySlug['vodonagrevateli'] ?? $this->categoryBySlug['electric'] ?? null;
         }
@@ -1248,7 +1278,11 @@ class SyncThermostudioPricelistCommand extends Command
         }
 
         if (str_contains($text, 'dymohod') || str_contains($text, 'дымоход')) {
-            return $this->categoryBySlug['dymohody-nerzhaveyushchie'] ?? $this->categoryBySlug['koaxial-dymoxod'] ?? null;
+            if (str_contains($text, 'trub') || str_contains($text, 'труб')) {
+                return $this->categoryBySlug['truby-mono'] ?? $this->categoryBySlug['prochie-dymohod'] ?? null;
+            }
+
+            return $this->categoryBySlug['prochie-dymohod'] ?? null;
         }
 
         if (str_contains($text, 'radiator') || str_contains($text, 'радиатор')) {
