@@ -68,6 +68,21 @@ class OneCExchangeTest extends TestCase
                 $table->rememberToken();
                 $table->timestamps();
             });
+        } else {
+            Schema::table('users', function (Blueprint $table) {
+                if (! Schema::hasColumn('users', 'client_type')) {
+                    $table->string('client_type')->default('retail');
+                }
+                if (! Schema::hasColumn('users', 'b2b_approved')) {
+                    $table->boolean('b2b_approved')->default(false);
+                }
+                if (! Schema::hasColumn('users', 'company_name')) {
+                    $table->string('company_name')->nullable();
+                }
+                if (! Schema::hasColumn('users', 'company_inn')) {
+                    $table->string('company_inn')->nullable();
+                }
+            });
         }
 
         if (! Schema::hasTable('orders')) {
