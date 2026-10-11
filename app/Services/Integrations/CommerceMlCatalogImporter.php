@@ -271,15 +271,26 @@ class CommerceMlCatalogImporter
         $baseId = explode('#', $externalId, 2)[0];
         $item = IntegrationProduct::query()
             ->where('integration_source_id', $source->id)
-            ->whereIn('external_id', array_unique([$externalId, $baseId]))
-            ->orderByRaw('external_id = ? desc', [$externalId])
+            ->where('external_id', $externalId)
             ->first();
         $alreadyExists = (bool) $item;
 
         if (! $item) {
+            $baseItem = $externalId !== $baseId
+                ? IntegrationProduct::query()
+                    ->where('integration_source_id', $source->id)
+                    ->where('external_id', $baseId)
+                    ->first()
+                : null;
+
             $item = new IntegrationProduct([
                 'integration_source_id' => $source->id,
                 'external_id' => $externalId,
+                'integration_category_id' => $baseItem?->integration_category_id,
+                'target_category_id' => $baseItem?->target_category_id,
+                'external_code' => $baseItem?->external_code,
+                'barcode' => $baseItem?->barcode,
+                'name' => $baseItem?->name,
                 'match_status' => 'unmatched',
             ]);
         }

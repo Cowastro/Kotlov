@@ -1035,6 +1035,62 @@ XML;
         ]);
     }
 
+    public function test_offers_with_characteristics_keep_separate_one_to_one_links(): void
+    {
+        $first = $this->createProduct([
+            'sku' => 'TS.TEST.PIPE.100',
+            'name' => 'Труба D100',
+            'slug' => 'test-pipe-100',
+        ]);
+        $second = $this->createProduct([
+            'sku' => 'TS.TEST.PIPE.120',
+            'name' => 'Труба D120',
+            'slug' => 'test-pipe-120',
+        ]);
+        $xml = <<<'XML'
+<?xml version="1.0" encoding="UTF-8"?>
+<КоммерческаяИнформация xmlns="urn:1C.ru:commerceml_2">
+  <Каталог><Товары><Товар>
+    <Ид>aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa</Ид>
+    <Наименование>Труба с характеристиками</Наименование>
+  </Товар></Товары></Каталог>
+  <ПакетПредложений><Предложения>
+    <Предложение>
+      <Ид>aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa#11111111-1111-1111-1111-111111111111</Ид>
+      <Артикул>TS.TEST.PIPE.100</Артикул>
+      <Наименование>Труба D100</Наименование>
+      <Цены><Цена><ЦенаЗаЕдиницу>10</ЦенаЗаЕдиницу></Цена></Цены>
+    </Предложение>
+    <Предложение>
+      <Ид>aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa#22222222-2222-2222-2222-222222222222</Ид>
+      <Артикул>TS.TEST.PIPE.120</Артикул>
+      <Наименование>Труба D120</Наименование>
+      <Цены><Цена><ЦенаЗаЕдиницу>12</ЦенаЗаЕдиницу></Цена></Цены>
+    </Предложение>
+  </Предложения></ПакетПредложений>
+</КоммерческаяИнформация>
+XML;
+
+        $stats = app(CommerceMlCatalogImporter::class)->import($xml, 'characteristic-test');
+
+        $this->assertSame(2, $stats['offers']);
+        $this->assertDatabaseHas('integration_products', [
+            'external_id' => 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa#11111111-1111-1111-1111-111111111111',
+            'external_sku' => 'TS.TEST.PIPE.100',
+            'product_id' => $first->id,
+            'match_status' => 'matched',
+        ]);
+        $this->assertDatabaseHas('integration_products', [
+            'external_id' => 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa#22222222-2222-2222-2222-222222222222',
+            'external_sku' => 'TS.TEST.PIPE.120',
+            'product_id' => $second->id,
+            'match_status' => 'matched',
+        ]);
+        $this->assertSame(3, IntegrationProduct::query()
+            ->whereHas('source', fn ($query) => $query->where('code', 'characteristic-test'))
+            ->count());
+    }
+
     public function test_catalog_preserves_nested_onec_groups_and_assigns_products(): void
     {
         $xml = <<<'XML'
