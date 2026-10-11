@@ -51,6 +51,8 @@ class IntegrationSource extends Model
                 'zero_missing_stock_on_complete' => true,
                 'all_stock_positive_warning_min_products' => 20,
                 'monitor_orders_from' => now()->toIso8601String(),
+                'order_pricing_types' => ['retail', 'b2b'],
+                'require_linked_order_products' => false,
                 'order_status_rules' => [],
                 'payment_status_rules' => [],
             ], $source->settings ?? []);
@@ -208,6 +210,30 @@ class IntegrationSource extends Model
     public function exportsOrders(): bool
     {
         return $this->code === 'onec' || (bool) data_get($this->settings, 'allow_order_export', false);
+    }
+
+    /** @return list<string> */
+    public function orderPricingTypes(): array
+    {
+        $types = data_get($this->settings, 'order_pricing_types', ['retail', 'b2b']);
+
+        if (! is_array($types)) {
+            return ['retail', 'b2b'];
+        }
+
+        $allowed = collect($types)
+            ->map(fn (mixed $type): string => (string) $type)
+            ->filter(fn (string $type): bool => in_array($type, ['retail', 'b2b'], true))
+            ->unique()
+            ->values()
+            ->all();
+
+        return $allowed === [] ? ['retail', 'b2b'] : $allowed;
+    }
+
+    public function requiresLinkedOrderProducts(): bool
+    {
+        return (bool) data_get($this->settings, 'require_linked_order_products', false);
     }
 
     public function zeroMissingStockOnComplete(): bool

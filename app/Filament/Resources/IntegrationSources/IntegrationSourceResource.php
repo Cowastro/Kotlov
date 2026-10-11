@@ -152,6 +152,20 @@ class IntegrationSourceResource extends Resource
                     Toggle::make('settings.allow_order_export')
                         ->label('Отдавать новые заказы этому источнику')
                         ->helperText('Для основного источника onec включено протоколом автоматически.'),
+                    Select::make('settings.order_pricing_types')
+                        ->label('Каналы заказов')
+                        ->options([
+                            'b2b' => 'B2B / оптовые',
+                            'retail' => 'Розничные',
+                        ])
+                        ->multiple()
+                        ->required()
+                        ->default(['retail', 'b2b'])
+                        ->helperText('Источник получает только строки выбранного канала. Для СанБизнесГруп оставьте только B2B.'),
+                    Toggle::make('settings.require_linked_order_products')
+                        ->label('Только сопоставленные товары')
+                        ->default(false)
+                        ->helperText('Не передавать товар в 1С, пока его карточка не подтверждена в «Привязке товаров».'),
                     Toggle::make('settings.zero_missing_stock_on_complete')
                         ->label('Обнулять отсутствующие остатки')
                         ->helperText('После завершения полного пакета 1С товары, которых нет в предложениях, снимаются с наличия. Порционные файлы обрабатываются безопасно.')

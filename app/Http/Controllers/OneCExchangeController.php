@@ -7,6 +7,7 @@ use App\Models\IntegrationProduct;
 use App\Models\IntegrationSource;
 use App\Models\Order;
 use App\Models\OrderIntegrationDelivery;
+use App\Models\OrderItem;
 use App\Services\Integrations\CatalogStockSnapshotFinalizer;
 use App\Services\Integrations\CommerceMlCatalogImporter;
 use App\Services\Integrations\CommerceMlOrderImporter;
@@ -289,6 +290,7 @@ class OneCExchangeController extends Controller
             ->whereIn('id', $batch['order_ids'])
             ->with([
                 'items.integrationProduct',
+                'user',
             ])
             ->orderBy('id')
             ->get();
@@ -573,9 +575,25 @@ class OneCExchangeController extends Controller
 
         $xml->startElement('Контрагенты');
         $xml->startElement('Контрагент');
-        $this->element($xml, 'Ид', 'kotlov-customer-'.$order->id);
-        $this->element($xml, 'Наименование', $order->customer_name);
-        $this->element($xml, 'ПолноеНаименование', $order->company_name ?: $order->customer_name);
+        $isB2bPartner = $order->user?->isB2B() === true
+            && $order->items->contains(fn (OrderItem $item): bool => $item->pricing_type === 'b2b');
+        $partnerExternalId = $isB2bPartner
+            ? 'kotlov-b2b-user-'.$order->user_id
+            : 'kotlov-customer-'.$order->id;
+        $partnerName = $isB2bPartner
+            ? ($order->user?->company_name ?: $order->company_name ?: $order->customer_name)
+            : $order->customer_name;
+        $partnerFullName = $order->company_name
+            ?: $order->user?->company_name
+            ?: $order->customer_name;
+        $partnerTaxId = trim((string) ($order->company_unp ?: $order->user?->company_inn));
+
+        $this->element($xml, 'Ид', $partnerExternalId);
+        $this->element($xml, 'Наименование', $partnerName);
+        $this->element($xml, 'ПолноеНаименование', $partnerFullName);
+        if ($partnerTaxId !== '') {
+            $this->element($xml, 'ИНН', $partnerTaxId);
+        }
         $this->element($xml, 'Роль', 'Покупатель');
         $xml->startElement('Контакты');
         $this->writeContact($xml, 'Телефон рабочий', $order->customer_phone);
@@ -610,6 +628,10 @@ class OneCExchangeController extends Controller
             $order->delivery_address,
         ]))));
         $this->writeRequisite($xml, 'Комментарий', $order->comment ?: '');
+        if ($isB2bPartner) {
+            $this->writeRequisite($xml, 'Канал заказа', 'B2B KOTLOV.BY');
+            $this->writeRequisite($xml, 'ID партнёра KOTLOV', $partnerExternalId);
+        }
         $xml->endElement();
         $xml->endElement();
     }

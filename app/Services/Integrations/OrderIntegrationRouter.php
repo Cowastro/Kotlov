@@ -26,7 +26,7 @@ class OrderIntegrationRouter
             ->where(function (Builder $query) use ($source): void {
                 $query->whereHas('items', fn (Builder $query): Builder => $this->ownedItemsQuery($query, $source));
 
-                if ($source->code === 'onec') {
+                if ($source->code === 'onec' && ! $source->requiresLinkedOrderProducts()) {
                     // Preserve central accounting for legacy/manual orders that
                     // were created without item rows.
                     $query->orWhereDoesntHave('items');
@@ -59,20 +59,26 @@ class OrderIntegrationRouter
 
     public function sourceOwnsItem(OrderItem $item, IntegrationSource $source): bool
     {
+        if (! in_array($item->pricing_type, $source->orderPricingTypes(), true)) {
+            return false;
+        }
+
         if ($item->integration_product_id) {
             return (int) $item->integrationProduct?->integration_source_id === (int) $source->id;
         }
 
-        return $source->code === 'onec';
+        return $source->code === 'onec' && ! $source->requiresLinkedOrderProducts();
     }
 
     private function ownedItemsQuery(Builder $query, IntegrationSource $source): Builder
     {
-        return $query->where(function (Builder $query) use ($source): void {
+        return $query
+            ->whereIn('pricing_type', $source->orderPricingTypes())
+            ->where(function (Builder $query) use ($source): void {
             $query->whereHas('integrationProduct', fn (Builder $query): Builder => $query
                 ->where('integration_source_id', $source->id));
 
-            if ($source->code === 'onec') {
+            if ($source->code === 'onec' && ! $source->requiresLinkedOrderProducts()) {
                 $query->orWhereNull('integration_product_id');
             }
         });

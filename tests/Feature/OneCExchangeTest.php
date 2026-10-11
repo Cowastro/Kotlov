@@ -50,15 +50,39 @@ class OneCExchangeTest extends TestCase
         Cache::flush();
         Storage::fake('local');
 
+        if (! Schema::hasTable('users')) {
+            Schema::create('users', function (Blueprint $table) {
+                $table->id();
+                $table->string('name');
+                $table->string('email')->unique();
+                $table->timestamp('email_verified_at')->nullable();
+                $table->string('password')->nullable();
+                $table->string('role')->default('client');
+                $table->string('client_type')->default('retail');
+                $table->string('phone')->nullable();
+                $table->boolean('b2b_approved')->default(false);
+                $table->string('company_name')->nullable();
+                $table->string('company_inn')->nullable();
+                $table->text('b2b_comment')->nullable();
+                $table->boolean('is_active')->default(true);
+                $table->rememberToken();
+                $table->timestamps();
+            });
+        }
+
         if (! Schema::hasTable('orders')) {
             Schema::create('orders', function (Blueprint $table) {
                 $table->id();
+                $table->unsignedBigInteger('user_id')->nullable();
                 $table->string('number')->unique();
                 $table->string('status')->default('new');
                 $table->string('customer_name');
                 $table->string('customer_phone');
                 $table->string('customer_email')->nullable();
                 $table->string('company_name')->nullable();
+                $table->string('company_unp')->nullable();
+                $table->string('company_address')->nullable();
+                $table->string('company_email')->nullable();
                 $table->string('delivery_type')->default('courier');
                 $table->string('delivery_region')->nullable();
                 $table->string('delivery_city')->nullable();
@@ -354,7 +378,7 @@ class OneCExchangeTest extends TestCase
         }
 
         Schema::disableForeignKeyConstraints();
-        foreach (['integration_issues', 'integration_exchange_runs', 'order_integration_deliveries', 'integration_products', 'integration_categories', 'integration_warehouses', 'integration_sources', 'supplier_product_mappings', 'order_status_history', 'order_items', 'orders', 'products', 'categories'] as $table) {
+        foreach (['integration_issues', 'integration_exchange_runs', 'order_integration_deliveries', 'integration_products', 'integration_categories', 'integration_warehouses', 'integration_sources', 'supplier_product_mappings', 'order_status_history', 'order_items', 'orders', 'products', 'categories', 'users'] as $table) {
             DB::table($table)->delete();
         }
         Schema::enableForeignKeyConstraints();
@@ -1808,6 +1832,98 @@ XML;
             'status' => 'success',
             'orders_count' => 1,
         ]);
+    }
+
+    public function test_wholesale_onec_exports_only_linked_b2b_items(): void
+    {
+        $partner = User::factory()->create([
+            'client_type' => 'wholesale',
+            'b2b_approved' => true,
+            'company_name' => 'ООО «Оптовый партнёр»',
+            'company_inn' => '193000001',
+        ]);
+        $linkedB2b = $this->createProduct([
+            'sku' => 'B2B-LINKED',
+            'name' => 'Сопоставленный оптовый товар',
+            'slug' => 'b2b-linked',
+        ]);
+        $linkedRetail = $this->createProduct([
+            'sku' => 'RETAIL-LINKED',
+            'name' => 'Сопоставленный розничный товар',
+            'slug' => 'retail-linked',
+        ]);
+        $unlinkedB2b = $this->createProduct([
+            'sku' => 'B2B-UNLINKED',
+            'name' => 'Несопоставленный оптовый товар',
+            'slug' => 'b2b-unlinked',
+        ]);
+        $source = IntegrationSource::query()->create([
+            'code' => 'onec',
+            'name' => 'СанБизнесГруп 1С',
+            'settings' => [
+                'order_pricing_types' => ['b2b'],
+                'require_linked_order_products' => true,
+            ],
+        ]);
+        $b2bOffer = IntegrationProduct::query()->create([
+            'integration_source_id' => $source->id,
+            'product_id' => $linkedB2b->id,
+            'external_id' => 'onec-b2b-linked',
+            'name' => $linkedB2b->name,
+            'match_status' => 'matched',
+        ]);
+        $retailOffer = IntegrationProduct::query()->create([
+            'integration_source_id' => $source->id,
+            'product_id' => $linkedRetail->id,
+            'external_id' => 'onec-retail-linked',
+            'name' => $linkedRetail->name,
+            'match_status' => 'matched',
+        ]);
+        $order = Order::query()->create([
+            'user_id' => $partner->id,
+            'number' => 'ORD-B2B-SCOPED',
+            'status' => 'new',
+            'customer_name' => 'Оптовый покупатель',
+            'customer_phone' => '+375291234500',
+            'delivery_type' => 'pickup',
+            'payment_type' => 'invoice',
+            'payment_status' => 'pending',
+            'subtotal' => 60,
+            'total' => 60,
+        ]);
+
+        foreach ([
+            [$linkedB2b, $b2bOffer, 'b2b', 10],
+            [$linkedRetail, $retailOffer, 'retail', 20],
+            [$unlinkedB2b, null, 'b2b', 30],
+        ] as [$product, $offer, $pricingType, $price]) {
+            OrderItem::query()->create([
+                'order_id' => $order->id,
+                'product_id' => $product->id,
+                'integration_product_id' => $offer?->id,
+                'product_name' => $product->name,
+                'product_sku' => $product->sku,
+                'pricing_type' => $pricingType,
+                'price' => $price,
+                'quantity' => 1,
+                'total' => $price,
+            ]);
+        }
+
+        $this->withBasicAuth('onec-test', 'secret-test')
+            ->get('/1c/exchange?type=sale&mode=query')
+            ->assertOk()
+            ->assertSee('ORD-B2B-SCOPED', false)
+            ->assertSee('Сопоставленный оптовый товар', false)
+            ->assertSee('onec-b2b-linked', false)
+            ->assertSee('kotlov-b2b-user-'.$partner->id, false)
+            ->assertSee('ООО «Оптовый партнёр»', false)
+            ->assertSee('<ИНН>193000001</ИНН>', false)
+            ->assertSee('B2B KOTLOV.BY', false)
+            ->assertSee('<Сумма>10.00</Сумма>', false)
+            ->assertDontSee('Сопоставленный розничный товар', false)
+            ->assertDontSee('Несопоставленный оптовый товар', false)
+            ->assertDontSee('onec-retail-linked', false);
     }
 
     public function test_mixed_order_is_split_and_tracked_independently_for_each_source(): void
