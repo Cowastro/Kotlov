@@ -475,7 +475,8 @@ class ProductForm
 
         $suppliers = $product->supplierProducts->pluck('supplier')
             ->merge($product->integrationProducts->pluck('source.supplier'))
-            ->filter(fn ($supplier): bool => $supplier instanceof Supplier)
+            ->filter(fn ($supplier): bool => $supplier instanceof Supplier
+                && $supplier->code !== 'manual-source')
             ->unique('id')
             ->values();
 
