@@ -62,6 +62,17 @@ class ResolveBaniaCollisionsCommand extends Command
                     continue;
                 }
 
+                $targetLink = DB::table('supplier_products')
+                    ->where('supplier_id', $supplierId)
+                    ->where('supplier_article_normalized', $this->normalizeArticle($repair['article']))
+                    ->first(['id', 'product_id']);
+                if ($targetLink && $targetLink->product_id !== null && (int) $targetLink->product_id !== (int) $product->id) {
+                    $stats['link_repairs']--;
+                    $stats['guard_skips']++;
+                    $this->warn($sku . ': target supplier article is already linked to another product; skipped.');
+                    continue;
+                }
+
                 $linkUpdates = [
                     'supplier_article' => $repair['article'],
                     'supplier_article_normalized' => $this->normalizeArticle($repair['article']),
@@ -83,7 +94,16 @@ class ResolveBaniaCollisionsCommand extends Command
                         'stock_status' => 'out_of_stock',
                     ];
                 }
-                DB::table('supplier_products')->where('id', $link->id)->update($linkUpdates);
+                if ($targetLink) {
+                    DB::table('supplier_products')->where('id', $link->id)->update([
+                        'product_id' => null,
+                        'updated_at' => $now,
+                    ]);
+                    $linkUpdates['product_id'] = $product->id;
+                    DB::table('supplier_products')->where('id', $targetLink->id)->update($linkUpdates);
+                } else {
+                    DB::table('supplier_products')->where('id', $link->id)->update($linkUpdates);
+                }
                 DB::table('products')->where('id', $product->id)->update([
                     'price' => $repair['retail'],
                     'in_stock' => $repair['cost'] !== null,
