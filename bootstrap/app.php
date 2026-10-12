@@ -25,6 +25,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'telegram/webhook',
             '1c/exchange',
             '1c/exchange/*',
+            'integrations/a1/telephony/*',
         ]);
 
         // SSL на балансировщике — доверяем X-Forwarded-For для получения реального IP

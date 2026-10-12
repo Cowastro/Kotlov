@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\A1TelephonyWebhookController;
 use App\Http\Controllers\AccountController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\BlogController;
@@ -268,6 +269,13 @@ Route::get('/brands/{slug}', [BrandController::class, 'show'])->name('brand.show
 
 // ===== Telegram Webhook =====
 Route::post('/telegram/webhook', [TelegramWebhookController::class, 'handle']);
+
+// ===== ВАТС A1 =====
+// Секрет находится в пути, поскольку Webhook A1 не подписывает запросы.
+Route::match(['get', 'post'], '/integrations/a1/telephony/{secret}', A1TelephonyWebhookController::class)
+    ->where('secret', '[A-Za-z0-9_-]{24,128}')
+    ->withoutMiddleware([PreventRequestForgery::class, ValidateCsrfToken::class])
+    ->name('telephony.a1.webhook');
 
 // sitemap.xml — вынесен в routes/sitemap.php без session middleware
 

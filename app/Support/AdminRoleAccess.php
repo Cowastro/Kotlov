@@ -32,6 +32,9 @@ use App\Models\Supplier;
 use App\Models\SupplierApplication;
 use App\Models\SupplierSync;
 use App\Models\SupplierSyncRun;
+use App\Models\TelephonyCall;
+use App\Models\TelephonyConnection;
+use App\Models\TelephonyEmployee;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Model;
 
@@ -50,6 +53,8 @@ final class AdminRoleAccess
         Review::class => ['viewAny', 'view', 'update'],
         MarketPriceObservation::class => ['viewAny', 'view'],
         MarketPriceCollectionRun::class => ['viewAny', 'view'],
+        TelephonyCall::class => ['viewAny', 'view', 'update'],
+        TelephonyEmployee::class => ['viewAny', 'view'],
     ];
 
     /** @var list<class-string<Model>> */
@@ -84,6 +89,9 @@ final class AdminRoleAccess
         SupplierApplication::class,
         SupplierSync::class,
         SupplierSyncRun::class,
+        TelephonyCall::class,
+        TelephonyConnection::class,
+        TelephonyEmployee::class,
         User::class,
     ];
 

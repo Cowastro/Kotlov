@@ -9,6 +9,12 @@ Schedule::command('integration:scan-issues')
     ->withoutOverlapping(5)
     ->runInBackground();
 
+Schedule::command('telephony:sync-a1')
+    ->everyFiveMinutes()
+    ->withoutOverlapping(10)
+    ->runInBackground()
+    ->appendOutputTo(storage_path('logs/a1-telephony-sync.log'));
+
 // Черновики попадают в кабинет только у поставщиков, для которых администратор
 // отдельно включил автоматическую передачу после успешного контрольного периода.
 // У всех существующих поставщиков настройка по умолчанию выключена.
