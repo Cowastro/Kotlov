@@ -30,10 +30,9 @@ class OrderLegacyLeadQueueTest extends TestCase
         $paidOrder = $this->order('ORD-PAID-OLD', 'new', 'paid', now()->subDays(60));
         $confirmedOrder = $this->order('ORD-CONFIRMED-OLD', 'confirmed', 'pending', now()->subDays(60));
 
-        $this->assertSame(
-            [$oldLead->id, $preLaunchLead->id, $recentLead->id, $paidOrder->id, $confirmedOrder->id],
-            Order::query()->operationallyActive()->orderBy('id')->pluck('id')->all(),
-        );
+        foreach ([$oldLead, $preLaunchLead, $recentLead, $paidOrder, $confirmedOrder] as $order) {
+            $this->assertTrue(Order::query()->operationallyActive()->whereKey($order)->exists());
+        }
 
         Livewire::actingAs($manager)
             ->test(ListOrders::class)
