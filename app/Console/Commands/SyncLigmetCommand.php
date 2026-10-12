@@ -51,22 +51,28 @@ class SyncLigmetCommand extends Command
     protected $description = 'Sync Лигмет prices & stock (stoves/fireplaces) into supplier_products; retail from the price list.';
 
     private const SUPPLIER_CODE = 'ligmet';
+
     private const SUPPLIER_NAME = 'Лигмет';
-    private const SYNC_KEY      = 'ligmet_stock';
-    private const FILE_ID       = '1r-DPkj-20kCDfxlkDngB7IP25M6Mhje_';
-    private const FOLDER_ID     = '1pQQRGMKBEHHEjUF3AYsi_dTvlxxTFxzz';
-    private const SOURCE_URL    = 'https://ligmet.by/';
+
+    private const SYNC_KEY = 'ligmet_stock';
+
+    private const FILE_ID = '1r-DPkj-20kCDfxlkDngB7IP25M6Mhje_';
+
+    private const FOLDER_ID = '1pQQRGMKBEHHEjUF3AYsi_dTvlxxTFxzz';
+
+    private const SOURCE_URL = 'https://ligmet.by/';
+
     private const DEFAULT_SHEET_URL = 'https://docs.google.com/spreadsheets/d/1r-DPkj-20kCDfxlkDngB7IP25M6Mhje_/edit?gid=411235644';
 
     /** Fixed column layout — header row 9: B..H (0-based A=0). */
     private const COLS = [
         'article' => 1,  // B  Код
-        'qty'     => 2,  // C  Количество
-        'name'    => 3,  // D  Наименование
-        'unit'    => 4,  // E  Ед.изм.
-        'status'  => 5,  // F  Доступно
-        'price'   => 6,  // G  Цена Опт (закупка)
-        'retail'  => 7,  // H  Цена розница
+        'qty' => 2,  // C  Количество
+        'name' => 3,  // D  Наименование
+        'unit' => 4,  // E  Ед.изм.
+        'status' => 5,  // F  Доступно
+        'price' => 6,  // G  Цена Опт (закупка)
+        'retail' => 7,  // H  Цена розница
     ];
 
     /**
@@ -75,33 +81,35 @@ class SyncLigmetCommand extends Command
      * (LLdnord intentionally omitted — absent from this price list.)
      */
     private const BRAND_MAP = [
-        'ермак'    => 'Ермак',
-        'кпд'      => 'КПД',
-        'blist'    => 'Blist',
-        'fireway'  => 'FireWay',
-        'ferrum'   => 'Ferrum',
-        'fergus'   => 'Ferguss',   // matches «Fergus» and «Ferguss»
-        'invicta'  => 'Invicta',
-        'kratki'   => 'Kratki',
-        'mbs'      => 'MBS',
+        'ермак' => 'Ермак',
+        'кпд' => 'КПД',
+        'blist' => 'Blist',
+        'fireway' => 'FireWay',
+        'ferrum' => 'Ferrum',
+        'fergus' => 'Ferguss',   // matches «Fergus» and «Ferguss»
+        'invicta' => 'Invicta',
+        'kratki' => 'Kratki',
+        'mbs' => 'MBS',
         'nordflam' => 'Nordflam',
         'panadero' => 'Panadero',
+        'пегас' => 'Пегас',
+        'pegas' => 'Пегас',
     ];
 
     /** Section-path keyword → KOTLOV category_id (checked in order). */
     private const CATEGORY_MAP = [
-        'топк'        => 90,  // Каминные топки
+        'топк' => 90,  // Каминные топки
         'печи-камины' => 61,  // Печи-камины
-        'печь-камин'  => 61,
-        'двери'       => 287, // Печное и каминное литьё (двери)
-        'литье'       => 287,
-        'литьё'       => 287,
-        'аксессуар'   => 291, // Дровницы и каминные принадлежности
+        'печь-камин' => 61,
+        'двери' => 287, // Печное и каминное литьё (двери)
+        'литье' => 287,
+        'литьё' => 287,
+        'аксессуар' => 291, // Дровницы и каминные принадлежности
         'комплектующ' => 291,
-        'бан'         => 69,  // Дровяные печи (для бани)
-        'дымоход'     => 78,  // Дымоходы
-        'камин'       => 90,  // прочие КАМИНЫ → топки
-        'печ'         => 61,  // прочие ПЕЧИ → печи-камины
+        'бан' => 69,  // Дровяные печи (для бани)
+        'дымоход' => 78,  // Дымоходы
+        'камин' => 90,  // прочие КАМИНЫ → топки
+        'печ' => 61,  // прочие ПЕЧИ → печи-камины
     ];
 
     private const DEFAULT_CATEGORY = 61;
@@ -131,20 +139,26 @@ class SyncLigmetCommand extends Command
     ];
 
     private array $indexBySupplierArticle = [];
+
     private array $indexByBrandModel = [];
+
     private array $activeProductsByBrand = [];
+
     private array $brandById = [];
+
     private array $brandByName = [];
+
     /** product ids excluded from matching because they'll be archived */
     private array $excludeIds = [];
+
     /** created products for redirect mapping: [brand_id][model] => ['id'=>,'slug'=>] */
     private array $createdByBrandModel = [];
 
     public function handle(): int
     {
-        $apply     = (bool) $this->option('apply') && ! $this->option('dry-run');
+        $apply = (bool) $this->option('apply') && ! $this->option('dry-run');
         $createNew = (bool) $this->option('create-new');
-        $limit     = $this->option('limit') !== null ? (int) $this->option('limit') : null;
+        $limit = $this->option('limit') !== null ? (int) $this->option('limit') : null;
 
         $this->line($apply
             ? '<fg=red;options=bold>APPLY: database will be updated.</>'
@@ -155,6 +169,7 @@ class SyncLigmetCommand extends Command
             $rows = $this->parseWorkbook($path);
         } catch (\RuntimeException $e) {
             $this->error($e->getMessage());
+
             return self::FAILURE;
         }
 
@@ -165,6 +180,7 @@ class SyncLigmetCommand extends Command
         }
         if ($rows === []) {
             $this->warn('No rows for the requested brands — check the section/brand mapping.');
+
             return self::SUCCESS;
         }
 
@@ -189,11 +205,12 @@ class SyncLigmetCommand extends Command
         if ($this->option('redirects') && $archived !== []) {
             $this->buildRedirects($archived);
         }
+
         return $result;
     }
 
     /**
-     * @param array<int,array<string,mixed>> $rows
+     * @param  array<int,array<string,mixed>>  $rows
      * @return array<int,array<string,mixed>>
      */
     private function filterRows(array $rows): array
@@ -219,7 +236,7 @@ class SyncLigmetCommand extends Command
     }
 
     /**
-     * @param array<int,array<string,mixed>> $rows
+     * @param  array<int,array<string,mixed>>  $rows
      * @return array<int,array<string,mixed>>
      */
     private function filterClassifiedRows(array $rows): array
@@ -286,7 +303,7 @@ class SyncLigmetCommand extends Command
         if (! is_dir($dir)) {
             mkdir($dir, 0755, true);
         }
-        $csv = $dir . '/archived-' . date('Ymd-His') . '.csv';
+        $csv = $dir.'/archived-'.date('Ymd-His').'.csv';
         $fh = fopen($csv, 'w');
         fputcsv($fh, ['id', 'sku', 'slug', 'name', 'brand_id', 'category_id']);
         foreach ($rows as $r) {
@@ -313,7 +330,7 @@ class SyncLigmetCommand extends Command
         if (! is_dir($dir)) {
             mkdir($dir, 0755, true);
         }
-        $csv = $dir . '/redirects-' . date('Ymd-His') . '.csv';
+        $csv = $dir.'/redirects-'.date('Ymd-His').'.csv';
         $fh = fopen($csv, 'w');
         fputcsv($fh, ['old_id', 'old_slug', 'new_id', 'new_slug', 'brand_id', 'model']);
         $mapped = 0;
@@ -340,6 +357,7 @@ class SyncLigmetCommand extends Command
             if (! file_exists($file)) {
                 throw new \RuntimeException("File not found: {$file}");
             }
+
             return $file;
         }
 
@@ -354,7 +372,7 @@ class SyncLigmetCommand extends Command
             $url = $this->option('sheet-url') ?: self::DEFAULT_SHEET_URL;
         }
 
-        $id  = self::FILE_ID;
+        $id = self::FILE_ID;
         $gid = null;
         if ($url !== null && preg_match('#/d/([a-zA-Z0-9_-]+)#', $url, $m)) {
             $id = $m[1];
@@ -366,7 +384,7 @@ class SyncLigmetCommand extends Command
         // Google exports the selected gid as a single-sheet XLSX.  Without the
         // gid it returns the whole workbook and parseWorkbook() would always
         // read sheet1, silently ignoring a supplier's linked tab.
-        $gidQuery = $gid !== null ? '&gid=' . $gid : '';
+        $gidQuery = $gid !== null ? '&gid='.$gid : '';
 
         foreach ([
             "https://docs.google.com/spreadsheets/d/{$id}/export?format=xlsx{$gidQuery}",
@@ -374,8 +392,9 @@ class SyncLigmetCommand extends Command
         ] as $u) {
             $bin = @file_get_contents($u, false, $ctx);
             if ($bin !== false && strlen($bin) > 10000 && substr($bin, 0, 2) === 'PK') {
-                $tmp = tempnam(sys_get_temp_dir(), 'lig') . '.xlsx';
+                $tmp = tempnam(sys_get_temp_dir(), 'lig').'.xlsx';
                 file_put_contents($tmp, $bin);
+
                 return $tmp;
             }
         }
@@ -419,7 +438,7 @@ class SyncLigmetCommand extends Command
 
         $matches = [];
         preg_match_all(
-            '/\["([a-zA-Z0-9_-]{20,})",\["' . preg_quote($folderId, '/') . '"\],"([^"]+\.(?:xls|xlsx))","application\/(?:vnd\.ms-excel|vnd\.openxmlformats-officedocument\.spreadsheetml\.sheet)"/u',
+            '/\["([a-zA-Z0-9_-]{20,})",\["'.preg_quote($folderId, '/').'"\],"([^"]+\.(?:xls|xlsx))","application\/(?:vnd\.ms-excel|vnd\.openxmlformats-officedocument\.spreadsheetml\.sheet)"/u',
             $payload,
             $matches,
             PREG_SET_ORDER
@@ -439,7 +458,7 @@ class SyncLigmetCommand extends Command
     private function dateKeyFromFileName(string $name): string
     {
         if (preg_match('/(\d{4})-(\d{2})-(\d{2})-(\d{2})-(\d{2})-(\d{2})/', $name, $m)) {
-            return $m[1] . $m[2] . $m[3] . $m[4] . $m[5] . $m[6];
+            return $m[1].$m[2].$m[3].$m[4].$m[5].$m[6];
         }
 
         return $name;
@@ -448,7 +467,7 @@ class SyncLigmetCommand extends Command
     /** @return array<int,array<string,mixed>> product rows with derived brand/category */
     private function parseWorkbook(string $path): array
     {
-        $zip = new \ZipArchive();
+        $zip = new \ZipArchive;
         if ($zip->open($path) !== true) {
             throw new \RuntimeException('Cannot open workbook archive.');
         }
@@ -460,7 +479,7 @@ class SyncLigmetCommand extends Command
         }
 
         $c = self::COLS;
-        $reader = new \XMLReader();
+        $reader = new \XMLReader;
         $reader->XML($sheetXml);
         $curRow = 0;
         $cells = [];
@@ -474,10 +493,10 @@ class SyncLigmetCommand extends Command
                 $curRow = (int) $reader->getAttribute('r');
             }
             if ($reader->nodeType === \XMLReader::ELEMENT && $reader->name === 'c') {
-                $ref  = (string) $reader->getAttribute('r');
+                $ref = (string) $reader->getAttribute('r');
                 $type = $reader->getAttribute('t');
-                $xml  = $reader->readOuterXML();
-                $val  = preg_match('/<v>(.*?)<\/v>/s', $xml, $vm) ? $vm[1] : '';
+                $xml = $reader->readOuterXML();
+                $val = preg_match('/<v>(.*?)<\/v>/s', $xml, $vm) ? $vm[1] : '';
                 if ($type === 's') {
                     $val = $shared[(int) $val] ?? '';
                 }
@@ -494,21 +513,19 @@ class SyncLigmetCommand extends Command
         $items = [];
         foreach ($rowsRaw as $row) {
             $article = trim((string) ($row[$c['article']] ?? ''));
-            $name    = trim((string) ($row[$c['name']] ?? ''));
+            $name = trim((string) ($row[$c['name']] ?? ''));
             $priceRaw = (string) ($row[$c['price']] ?? '');
 
             // Section header: text in col B, but no name and no price.
             if ($article !== '' && $name === '' && trim($priceRaw) === '') {
                 $section = $article;
+
                 continue;
             }
             if ($name === '') {
                 continue;
             }
             $price = $this->num($priceRaw);
-            if ($price === null) {
-                continue; // not a priced product row
-            }
             $brand = $this->brandFromSection($section);
             if ($brand === null) {
                 continue; // not one of the requested brands
@@ -519,17 +536,19 @@ class SyncLigmetCommand extends Command
             }
 
             $items[] = [
-                'article'      => $article !== '' ? $article : ('LIG-' . substr(md5($section . $name), 0, 10)),
+                'article' => $article !== '' ? $article : ('LIG-'.substr(md5($section.$name), 0, 10)),
                 'norm_article' => $this->normArticle($article),
-                'brand'        => $brand,
-                'name'         => $name,
-                'section'      => $section,
-                'price'        => $price,                                   // Цена Опт (закупка)
+                'brand' => $brand,
+                'name' => $name,
+                'section' => $section,
+                'qty' => $this->num((string) ($row[$c['qty']] ?? '')),
+                'price' => $price,                                   // Цена Опт (закупка)
                 'retail_price' => $this->num((string) ($row[$c['retail']] ?? '')), // Цена розница
-                'status_text'  => trim((string) ($row[$c['status']] ?? '')),
-                'category_id'  => $category,
+                'status_text' => trim((string) ($row[$c['status']] ?? '')),
+                'category_id' => $category,
             ];
         }
+
         return $items;
     }
 
@@ -540,7 +559,7 @@ class SyncLigmetCommand extends Command
             return [];
         }
         $out = [];
-        $reader = new \XMLReader();
+        $reader = new \XMLReader;
         $reader->XML($xml);
         while ($reader->read()) {
             if ($reader->nodeType === \XMLReader::ELEMENT && $reader->name === 'si') {
@@ -553,6 +572,7 @@ class SyncLigmetCommand extends Command
             }
         }
         $reader->close();
+
         return $out;
     }
 
@@ -562,6 +582,7 @@ class SyncLigmetCommand extends Command
         foreach (str_split($letters) as $ch) {
             $n = $n * 26 + (ord($ch) - 64);
         }
+
         return $n - 1;
     }
 
@@ -575,6 +596,7 @@ class SyncLigmetCommand extends Command
                 return $canonical;
             }
         }
+
         return null;
     }
 
@@ -586,30 +608,48 @@ class SyncLigmetCommand extends Command
                 return $cat;
             }
         }
+
         return self::DEFAULT_CATEGORY;
     }
 
     // ── Stock ─────────────────────────────────────────────────────────────────────
 
-    private function stock(string $text): array
+    private function stock(?float $quantity, string $text): array
     {
         $t = mb_strtolower(trim($text));
+
+        if ($quantity !== null) {
+            $quantity = max(0, (int) floor($quantity));
+
+            if ($quantity === 0) {
+                return ['status' => 'out_of_stock', 'in_stock' => false, 'quantity' => 0, 'delivery_days' => null];
+            }
+
+            return [
+                'status' => str_contains($t, 'заканч') ? 'low_stock' : 'in_stock',
+                'in_stock' => true,
+                'quantity' => $quantity,
+                'delivery_days' => 0,
+            ];
+        }
+
         if ($t === '') {
-            return ['status' => 'unknown', 'in_stock' => false, 'delivery_days' => null];
+            return ['status' => 'unknown', 'in_stock' => false, 'quantity' => null, 'delivery_days' => null];
         }
         if (str_contains($t, 'заканч')) {
-            return ['status' => 'low_stock', 'in_stock' => true, 'delivery_days' => 0];
+            return ['status' => 'low_stock', 'in_stock' => true, 'quantity' => null, 'delivery_days' => 0];
         }
         if (str_contains($t, 'налич') || str_contains($t, 'склад') || str_contains($t, 'есть')) {
-            return ['status' => 'in_stock', 'in_stock' => true, 'delivery_days' => 0];
+            return ['status' => 'in_stock', 'in_stock' => true, 'quantity' => null, 'delivery_days' => 0];
         }
         if (str_contains($t, 'заказ')) {
-            return ['status' => 'preorder', 'in_stock' => false, 'delivery_days' => 14];
+            return ['status' => 'preorder', 'in_stock' => false, 'quantity' => null, 'delivery_days' => 14];
         }
         if (str_contains($t, 'нет') || str_contains($t, 'отсут')) {
-            return ['status' => 'out_of_stock', 'in_stock' => false, 'delivery_days' => null];
+            return ['status' => 'out_of_stock', 'in_stock' => false, 'quantity' => null, 'delivery_days' => null];
         }
-        return ['status' => 'unknown', 'in_stock' => false, 'delivery_days' => null];
+
+        return ['status' => 'unknown', 'in_stock' => false, 'quantity' => null, 'delivery_days' => null];
     }
 
     // ── Index & matching ──────────────────────────────────────────────────────────
@@ -655,8 +695,8 @@ class SyncLigmetCommand extends Command
     private function classify(array $row): array
     {
         $brandId = $this->resolveBrand($row['brand']);
-        $stock   = $this->stock($row['status_text']);
-        $match   = $this->match($row, $brandId);
+        $stock = $this->stock($row['qty'], $row['status_text']);
+        $match = $this->match($row, $brandId);
         if ($match === null && (bool) $this->option('link-existing-suggestions')) {
             $suggestion = $this->bestExistingSuggestion($row + ['resolved_brand_id' => $brandId]);
             $minScore = (float) ($this->option('min-suggestion-score') ?? 99.9);
@@ -671,17 +711,17 @@ class SyncLigmetCommand extends Command
 
         $action = match (true) {
             $match !== null => 'matched',
-            default         => 'create_candidate',
+            default => 'create_candidate',
         };
 
         return $row + [
-            'matched_product_id'   => $match['product_id'] ?? null,
-            'matched_sku'          => $match['sku'] ?? null,
-            'confidence'           => $match['confidence'] ?? null,
-            'resolved_brand_id'    => $brandId,
+            'matched_product_id' => $match['product_id'] ?? null,
+            'matched_sku' => $match['sku'] ?? null,
+            'confidence' => $match['confidence'] ?? null,
+            'resolved_brand_id' => $brandId,
             'resolved_category_id' => $row['category_id'],
-            'stock'                => $stock,
-            'action'               => $action,
+            'stock' => $stock,
+            'action' => $action,
         ];
     }
 
@@ -689,21 +729,25 @@ class SyncLigmetCommand extends Command
     {
         if (isset($this->indexBySupplierArticle[$row['norm_article']]) && $row['norm_article'] !== '') {
             $pid = $this->indexBySupplierArticle[$row['norm_article']];
+
             return ['product_id' => $pid, 'sku' => $this->sku($pid), 'confidence' => 'exact_supplier_article'];
         }
         if ($brandId !== null && ! empty($this->indexByBrandModel[$brandId])) {
             $model = $this->model($row['name'], $this->brandById[$brandId] ?? '');
             if ($model !== '' && isset($this->indexByBrandModel[$brandId][$model])) {
                 $pid = $this->indexByBrandModel[$brandId][$model];
+
                 return ['product_id' => $pid, 'sku' => $this->sku($pid), 'confidence' => 'brand_model'];
             }
         }
+
         return null;
     }
 
     private function resolveBrand(string $name): ?int
     {
         $key = mb_strtolower(trim($name));
+
         return $this->brandByName[$key] ?? null;
     }
 
@@ -713,6 +757,7 @@ class SyncLigmetCommand extends Command
         if ($existing) {
             return (int) $existing;
         }
+
         return (int) DB::table('brands')->insertGetId([
             'name' => $name, 'slug' => Str::slug($name) ?: Str::random(8),
             'h1' => $name, 'is_active' => true, 'created_at' => now(), 'updated_at' => now(),
@@ -724,12 +769,12 @@ class SyncLigmetCommand extends Command
     private function showDryRun(array $rows): int
     {
         $actions = [];
-        $brands  = [];
-        $cats    = [];
-        $conf    = [];
+        $brands = [];
+        $cats = [];
+        $conf = [];
         foreach ($rows as $r) {
             $actions[$r['action']] = ($actions[$r['action']] ?? 0) + 1;
-            $brands[$r['brand']]   = ($brands[$r['brand']] ?? 0) + 1;
+            $brands[$r['brand']] = ($brands[$r['brand']] ?? 0) + 1;
             $cats[$r['resolved_category_id']] = ($cats[$r['resolved_category_id']] ?? 0) + 1;
             if ($r['action'] === 'matched') {
                 $conf[$r['confidence']] = ($conf[$r['confidence']] ?? 0) + 1;
@@ -760,11 +805,12 @@ class SyncLigmetCommand extends Command
         $examples = max(0, (int) ($this->option('examples') ?? 12));
         $this->info("Примеры ({$examples}):");
         $this->table(
-            ['article', 'brand', 'name', 'опт', 'розн', 'наличие', 'action', 'matched_sku'],
+            ['article', 'brand', 'name', 'опт', 'розн', 'остаток', 'наличие', 'action', 'matched_sku'],
             array_map(fn ($r) => [
                 mb_substr($r['article'], 0, 14), $r['brand'], mb_substr($r['name'], 0, 34),
-                number_format($r['price'], 2),
+                $r['price'] !== null ? number_format($r['price'], 2) : '—',
                 $r['retail_price'] !== null ? number_format($r['retail_price'], 2) : '—',
+                $r['stock']['quantity'] ?? '—',
                 $r['stock']['status'], $r['action'], $r['matched_sku'] ?? '—',
             ], $examples > 0 ? array_slice($rows, 0, $examples) : [])
         );
@@ -781,6 +827,7 @@ class SyncLigmetCommand extends Command
 
         $this->newLine();
         $this->line('Запусти с <fg=green>--apply</> (и <fg=green>--create-new</> для новых).');
+
         return self::SUCCESS;
     }
 
@@ -873,6 +920,7 @@ class SyncLigmetCommand extends Command
         $numbers = array_map(static function (string $number): string {
             $number = str_replace(',', '.', $number);
             $number = rtrim(rtrim($number, '0'), '.');
+
             return $number === '' ? '0' : $number;
         }, $matches[0] ?? []);
         sort($numbers, SORT_NATURAL);
@@ -885,6 +933,7 @@ class SyncLigmetCommand extends Command
         $candidates = array_values(array_filter($rows, fn (array $row): bool => $row['action'] === 'create_candidate'));
         if ($candidates === []) {
             $this->info('Candidate report skipped: no create_candidate rows.');
+
             return;
         }
 
@@ -896,11 +945,12 @@ class SyncLigmetCommand extends Command
 
         $handle = fopen($path, 'w');
         if ($handle === false) {
-            $this->warn('Candidate report failed: cannot write ' . $path);
+            $this->warn('Candidate report failed: cannot write '.$path);
+
             return;
         }
 
-        fputcsv($handle, ['article', 'brand', 'category_id', 'section', 'name', 'opt_byn', 'retail_byn', 'stock_status', 'stock_text']);
+        fputcsv($handle, ['article', 'brand', 'category_id', 'section', 'name', 'opt_byn', 'retail_byn', 'stock_quantity', 'stock_status', 'stock_text']);
         foreach ($candidates as $row) {
             fputcsv($handle, [
                 $row['article'],
@@ -910,6 +960,7 @@ class SyncLigmetCommand extends Command
                 $row['name'],
                 $row['price'],
                 $row['retail_price'],
+                $row['stock']['quantity'] ?? null,
                 $row['stock']['status'] ?? '',
                 $row['status_text'],
             ]);
@@ -966,7 +1017,7 @@ class SyncLigmetCommand extends Command
                 }
             } catch (\Throwable $e) {
                 $stats['errors']++;
-                $this->warn("[error] {$r['article']}: " . $e->getMessage());
+                $this->warn("[error] {$r['article']}: ".$e->getMessage());
             }
         }
 
@@ -974,6 +1025,7 @@ class SyncLigmetCommand extends Command
 
         $this->newLine();
         $this->table(['метрика', 'кол-во'], array_map(fn ($k, $v) => [$k, $v], array_keys($stats), array_values($stats)));
+
         return $stats['errors'] > 0 ? self::FAILURE : self::SUCCESS;
     }
 
@@ -990,32 +1042,39 @@ class SyncLigmetCommand extends Command
     private function upsertSupplierProduct(array $r, int $pid, string $sku, int $sid, ?int $syncId, $now): void
     {
         $payload = [
-            'supplier_article'            => $r['norm_article'] !== '' ? $r['norm_article'] : $r['article'],
+            'supplier_article' => $r['norm_article'] !== '' ? $r['norm_article'] : $r['article'],
             'supplier_article_normalized' => $r['norm_article'],
             'supplier_sync_id' => $syncId,
-            'product_id'   => $pid,
-            'product_sku'  => $sku,
-            'supplier_name' => trim($r['brand'] . ' ' . $r['name']),
-            'source_url'   => self::SOURCE_URL,
-            'price'        => $r['price'],          // Цена Опт — закупка
-            'currency'     => 'BYN',
+            'product_id' => $pid,
+            'product_sku' => $sku,
+            'supplier_name' => trim($r['brand'].' '.$r['name']),
+            'source_url' => self::SOURCE_URL,
+            'currency' => 'BYN',
             'currency_rate' => 1.0,
-            'price_byn'    => $r['price'],
-            'in_stock'     => $r['stock']['in_stock'],
+            'in_stock' => $r['stock']['in_stock'],
+            'stock_quantity' => $r['stock']['quantity'],
             'stock_status' => $r['stock']['status'],
-            'stock_text'   => $r['status_text'] !== '' ? $r['status_text'] : null,
+            'stock_text' => $r['status_text'] !== '' ? $r['status_text'] : null,
             'delivery_days' => $r['stock']['delivery_days'],
             'match_status' => 'matched',
             'match_confidence' => $r['confidence'] ?? 'created',
-            'raw'          => json_encode(['code' => $r['article'], 'section' => $r['section'], 'retail' => $r['retail_price']], JSON_UNESCAPED_UNICODE),
+            'raw' => json_encode(['code' => $r['article'], 'section' => $r['section'], 'quantity' => $r['qty'], 'retail' => $r['retail_price']], JSON_UNESCAPED_UNICODE),
             'last_synced_at' => $now,
             'last_stock_synced_at' => $now,
-            'updated_at'   => $now,
+            'updated_at' => $now,
         ];
+
+        // A blank wholesale cell must not erase the last valid purchase price;
+        // stock and retail are still refreshed for such rows.
+        if ($r['price'] !== null && $r['price'] > 0) {
+            $payload['price'] = $r['price'];
+            $payload['price_byn'] = $r['price'];
+        }
 
         $existing = DB::table('supplier_products')->where('supplier_id', $sid)->where('product_id', $pid)->value('id');
         if ($existing) {
             DB::table('supplier_products')->where('id', $existing)->update($payload);
+
             return;
         }
         DB::table('supplier_products')->updateOrInsert(
@@ -1026,28 +1085,29 @@ class SyncLigmetCommand extends Command
 
     private function createProduct(array $r, $now): int
     {
-        $name = trim($r['brand'] . ' ' . $r['name']);
+        $name = trim($r['brand'].' '.$r['name']);
         $retail = $r['retail_price'] ?? 0;
+
         return (int) DB::table('products')->insertGetId([
             'category_id' => (int) $r['resolved_category_id'],
-            'brand_id'    => (int) $r['resolved_brand_id'],
-            'name'        => $name,
-            'h1'          => $name,
-            'sku'         => $this->nextSku(),
-            'slug'        => $this->uniqueSlug($name),
-            'price'       => $retail,
-            'currency'    => 'BYN',
-            'images'      => json_encode([]),
-            'specs'       => json_encode([]),
-            'unit'        => 'шт',
-            'is_active'   => true,
+            'brand_id' => (int) $r['resolved_brand_id'],
+            'name' => $name,
+            'h1' => $name,
+            'sku' => $this->nextSku(),
+            'slug' => $this->uniqueSlug($name),
+            'price' => $retail,
+            'currency' => 'BYN',
+            'images' => json_encode([]),
+            'specs' => json_encode([]),
+            'unit' => 'шт',
+            'is_active' => true,
             'is_archived' => false,
-            'in_stock'    => $r['stock']['in_stock'],
-            'is_new'      => true,
-            'meta_title'  => $name . ' купить в %city%',
-            'meta_description' => $name . ' — купить по выгодной цене в Беларуси.',
-            'created_at'  => $now,
-            'updated_at'  => $now,
+            'in_stock' => $r['stock']['in_stock'],
+            'is_new' => true,
+            'meta_title' => $name.' купить в %city%',
+            'meta_description' => $name.' — купить по выгодной цене в Беларуси.',
+            'created_at' => $now,
+            'updated_at' => $now,
         ]);
     }
 
@@ -1060,8 +1120,10 @@ class SyncLigmetCommand extends Command
             DB::table('suppliers')->where('id', $existing->id)->update([
                 'name' => self::SUPPLIER_NAME, 'is_active' => true, 'updated_at' => $now,
             ]);
+
             return (int) $existing->id;
         }
+
         return (int) DB::table('suppliers')->insertGetId([
             'code' => self::SUPPLIER_CODE, 'name' => self::SUPPLIER_NAME, 'currency' => 'BYN',
             'currency_rate' => 1, 'contact' => self::SOURCE_URL,
@@ -1078,11 +1140,12 @@ class SyncLigmetCommand extends Command
         DB::table('supplier_syncs')->updateOrInsert(
             ['key' => self::SYNC_KEY],
             ['name' => self::SUPPLIER_NAME, 'code' => self::SUPPLIER_CODE, 'title' => 'Лигмет: цены и наличие',
-             'description' => 'Цены/наличие из прайса Лигмет. Цена Опт = закупка; Цена розница = розница.',
-             'command' => 'supplier:sync-ligmet', 'source_url' => self::SOURCE_URL,
-             'image_disk_path' => 'img/products/ligmet', 'is_active' => true,
-             'last_run_at' => $now, 'updated_at' => $now, 'created_at' => $now]
+                'description' => 'Цены/наличие из прайса Лигмет. Цена Опт = закупка; Цена розница = розница.',
+                'command' => 'supplier:sync-ligmet', 'source_url' => self::SOURCE_URL,
+                'image_disk_path' => 'img/products/ligmet', 'is_active' => true,
+                'last_run_at' => $now, 'updated_at' => $now, 'created_at' => $now]
         );
+
         return (int) DB::table('supplier_syncs')->where('key', self::SYNC_KEY)->value('id');
     }
 
@@ -1090,6 +1153,7 @@ class SyncLigmetCommand extends Command
     {
         static $id = null;
         $id ??= (int) (DB::table('suppliers')->where('code', self::SUPPLIER_CODE)->value('id') ?? 0);
+
         return $id;
     }
 
@@ -1113,16 +1177,19 @@ class SyncLigmetCommand extends Command
         do {
             $sku = sprintf('KOTLOV-%06d', $next++);
         } while (DB::table('products')->where('sku', $sku)->exists());
+
         return $sku;
     }
 
     private function uniqueSlug(string $name): string
     {
         $base = Str::slug($name) ?: 'ligmet';
-        $slug = $base; $i = 2;
+        $slug = $base;
+        $i = 2;
         while (DB::table('products')->where('slug', $slug)->exists()) {
-            $slug = $base . '-' . $i++;
+            $slug = $base.'-'.$i++;
         }
+
         return $slug;
     }
 
@@ -1135,13 +1202,14 @@ class SyncLigmetCommand extends Command
     {
         $n = mb_strtoupper($productName);
         if ($brand !== '') {
-            $n = preg_replace('/' . preg_quote(mb_strtoupper($brand), '/') . '/u', '', $n) ?? $n;
+            $n = preg_replace('/'.preg_quote(mb_strtoupper($brand), '/').'/u', '', $n) ?? $n;
         }
         $n = preg_replace('/[^А-ЯЁA-Z0-9\-\/.]/u', ' ', $n) ?? $n;
         $toks = array_filter(
             preg_split('/\s+/u', trim($n)) ?: [],
             fn ($t) => $t !== '' && ! in_array($t, self::MODEL_STOPWORDS, true)
         );
+
         return implode(' ', $toks);
     }
 
@@ -1154,6 +1222,7 @@ class SyncLigmetCommand extends Command
         if (! preg_match('/-?\d+(?:\.\d+)?/', $clean, $m)) {
             return null;
         }
+
         return (float) $m[0];
     }
 
@@ -1161,6 +1230,7 @@ class SyncLigmetCommand extends Command
     {
         $v = html_entity_decode($v, ENT_QUOTES | ENT_HTML5, 'UTF-8');
         $v = str_replace("\u{A0}", ' ', $v);
+
         return trim(preg_replace('/\s+/u', ' ', $v) ?? $v);
     }
 }
