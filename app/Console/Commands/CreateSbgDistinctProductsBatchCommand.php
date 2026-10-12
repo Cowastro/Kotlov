@@ -474,6 +474,37 @@ class CreateSbgDistinctProductsBatchCommand extends Command
         ],
     ];
 
+    private const BATCH_RESEARCHED_PRICED_20261013_R = [
+        'УТ-00000857' => [
+            'template' => 'KOTLOV-022512',
+            'category_slug' => 'stekla-dlya-pechey-i-kaminov',
+            'fragments' => ['Стекло термостойкое', '430х330х4'],
+            'brand' => [
+                'name' => 'ROBAX',
+                'slug' => 'robax',
+                'country' => 'Германия',
+                'content' => '<p><strong>ROBAX</strong> — жаростойкая стеклокерамика SCHOTT для дверок печей, каминов и другого оборудования, работающего при высокой температуре.</p>',
+            ],
+            'name' => 'ROBAX Стекло огнеупорное МЕТА-БЕЛ Енисей-2 фронтальное, 430×330×4 мм',
+            'retail' => 215.00,
+            'images' => ['https://banipechi.by/image/cache/cc7abf71f3dc2a31850213ff1f397865.jpg'],
+            'source_url' => 'https://banipechi.by/robax',
+            'short' => 'Фронтальное огнеупорное стекло ROBAX размером 430×330 мм и толщиной 4 мм для печи-камина МЕТА-БЕЛ Енисей-2.',
+            'content' => '<p><strong>ROBAX 430×330×4 мм</strong> — фронтальное жаростойкое стекло для печи-камина МЕТА-БЕЛ Енисей-2. Стеклокерамика сохраняет прозрачность и геометрию при длительной работе рядом с пламенем.</p><p>Перед установкой необходимо сверить размеры посадочного места. Стекло устанавливают через термостойкий уплотнитель без жёсткой затяжки крепежа, чтобы компенсировать расширение металлической дверцы.</p>',
+            'specs' => [
+                ['key' => 'Тип', 'value' => 'Огнеупорное стекло'],
+                ['key' => 'Материал', 'value' => 'Жаростойкая стеклокерамика ROBAX'],
+                ['key' => 'Ширина', 'value' => '430 мм'],
+                ['key' => 'Высота', 'value' => '330 мм'],
+                ['key' => 'Толщина', 'value' => '4 мм'],
+                ['key' => 'Исполнение', 'value' => 'Фронтальное, прямое'],
+                ['key' => 'Совместимость', 'value' => 'МЕТА-БЕЛ Енисей-2'],
+                ['key' => 'Рабочая температура', 'value' => 'до 750 °C'],
+                ['key' => 'Страна производства стеклокерамики', 'value' => 'Германия'],
+            ],
+        ],
+    ];
+
     public function handle(IntegrationProductCreator $creator): int
     {
         $rows = match ($this->option('batch')) {
@@ -494,6 +525,7 @@ class CreateSbgDistinctProductsBatchCommand extends Command
             'researched-priced-20261013-o' => self::BATCH_RESEARCHED_PRICED_20261013_O,
             'researched-priced-20261013-p' => self::BATCH_RESEARCHED_PRICED_20261013_P,
             'researched-priced-20261013-q' => self::BATCH_RESEARCHED_PRICED_20261013_Q,
+            'researched-priced-20261013-r' => self::BATCH_RESEARCHED_PRICED_20261013_R,
             default => null,
         };
 

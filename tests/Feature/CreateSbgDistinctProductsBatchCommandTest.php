@@ -818,4 +818,61 @@ class CreateSbgDistinctProductsBatchCommandTest extends TestCase
         $this->assertStringContainsString('minskgas.by/product/shlang-gazovyj-rezinovyj', $product->content_source_url);
         $this->assertSame('manual_created', $item->fresh()->match_method);
     }
+
+    public function test_it_creates_the_exact_enisey_two_front_glass_in_a_dedicated_category(): void
+    {
+        $source = IntegrationSource::query()->create([
+            'code' => 'onec-sbg-robax-enisey-2-front',
+            'name' => '1С СанБизнесГруп',
+            'settings' => ['partner_name' => 'ООО «СанБизнесГруп»'],
+            'is_active' => true,
+            'update_stock' => true,
+        ]);
+        $wrongCategory = Category::query()->create(['name' => 'Дровницы', 'slug' => 'firewood-glass-test', 'parent_id' => 0]);
+        $category = Category::query()->firstOrCreate(
+            ['slug' => 'stekla-dlya-pechey-i-kaminov'],
+            ['name' => 'Стекло для печей и каминов', 'h1' => 'Стекло для печей и каминов', 'parent_id' => 0, 'type' => 'main-child', 'is_active' => true],
+        );
+        $mbs = Brand::query()->create(['name' => 'MBS', 'slug' => 'mbs-glass-test']);
+        $wrongSizeCandidate = Product::query()->create([
+            'category_id' => $wrongCategory->id,
+            'brand_id' => $mbs->id,
+            'sku' => 'KOTLOV-022512',
+            'name' => 'MBS Стекло термостойкое 183 х 171 MBS',
+            'slug' => 'mbs-glass-183-171-template',
+            'price' => 44,
+            'images' => ['product/mbs/glass-183-171.jpg'],
+        ]);
+        $item = IntegrationProduct::query()->create([
+            'integration_source_id' => $source->id,
+            'external_id' => 'robax-enisey-2-front-430-330',
+            'external_code' => 'УТ-00000857',
+            'name' => 'Стекло термостойкое 430х330х4 мм',
+            'price_byn' => null,
+            'stock_quantity' => 1,
+            'match_status' => 'ambiguous',
+            'candidates' => [['product_id' => $wrongSizeCandidate->id, 'score' => 0.76]],
+        ]);
+
+        $this->artisan('integration:create-sbg-distinct-products', [
+            '--batch' => 'researched-priced-20261013-r',
+            '--code' => ['УТ-00000857'],
+            '--apply' => true,
+        ])->assertSuccessful();
+
+        $brand = Brand::query()->where('slug', 'robax')->firstOrFail();
+        $product = $item->fresh()->product;
+        $this->assertNotNull($product);
+        $this->assertNotSame($wrongSizeCandidate->id, $product->id);
+        $this->assertSame($category->id, $product->category_id);
+        $this->assertSame($brand->id, $product->brand_id);
+        $this->assertSame('ROBAX Стекло огнеупорное МЕТА-БЕЛ Енисей-2 фронтальное, 430×330×4 мм', $product->name);
+        $this->assertSame('215.00', $product->price);
+        $this->assertSame('1', (string) $product->stock_qty);
+        $this->assertNull($item->fresh()->normalizedPriceByn());
+        $this->assertSame('430 мм', collect($product->specs)->firstWhere('key', 'Ширина')['value']);
+        $this->assertSame('330 мм', collect($product->specs)->firstWhere('key', 'Высота')['value']);
+        $this->assertSame('4 мм', collect($product->specs)->firstWhere('key', 'Толщина')['value']);
+        $this->assertSame('manual_created', $item->fresh()->match_method);
+    }
 }
