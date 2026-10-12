@@ -41,7 +41,7 @@ class ResolveBaniaCollisionsCommand extends Command
 
         DB::transaction(function () use ($apply, $supplierId, $now, &$stats): void {
             foreach (self::LINK_REPAIRS as $sku => $repair) {
-                $product = DB::table('products')->where('sku', $sku)->first(['id']);
+                $product = $this->findActiveProductBySku($sku);
                 if (! $product) {
                     $stats['guard_skips']++;
                     continue;
@@ -127,7 +127,7 @@ class ResolveBaniaCollisionsCommand extends Command
                 ]);
             }
 
-            $scratcher = DB::table('products')->where('sku', 'KOTLOV-004402')->first(['id']);
+            $scratcher = $this->findActiveProductBySku('KOTLOV-004402');
             $scratcherLink = $scratcher ? DB::table('supplier_products')
                 ->where('supplier_id', $supplierId)
                 ->where('product_id', $scratcher->id)
@@ -144,7 +144,7 @@ class ResolveBaniaCollisionsCommand extends Command
             }
 
             foreach (self::ARCHIVE_SKUS as $sku) {
-                $product = DB::table('products')->where('sku', $sku)->first(['id']);
+                $product = $this->findActiveProductBySku($sku);
                 if (! $product) {
                     $stats['guard_skips']++;
                     continue;
@@ -197,5 +197,15 @@ class ResolveBaniaCollisionsCommand extends Command
     private function normalizeArticle(string $value): string
     {
         return mb_strtoupper(preg_replace('/[^0-9A-ZА-ЯЁ]+/u', '', trim($value)) ?? '');
+    }
+
+    private function findActiveProductBySku(string $sku): ?object
+    {
+        return DB::table('products')
+            ->where('sku', $sku)
+            ->orderBy('is_archived')
+            ->orderByDesc('is_active')
+            ->orderByDesc('id')
+            ->first(['id']);
     }
 }
