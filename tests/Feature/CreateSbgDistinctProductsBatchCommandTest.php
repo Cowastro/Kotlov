@@ -122,4 +122,59 @@ class CreateSbgDistinctProductsBatchCommandTest extends TestCase
         $this->assertSame('2 мм', collect($product->specs)->firstWhere('key', 'Толщина стали')['value']);
         $this->assertStringContainsString('ca2d77af23ce0eed739d5bb6a99e2b48', $product->images[0]);
     }
+
+    public function test_it_creates_a_missing_verified_brand_for_a_researched_product(): void
+    {
+        $source = IntegrationSource::query()->create([
+            'code' => 'onec-sbg-elcon',
+            'name' => '1С СанБизнесГруп',
+            'settings' => ['partner_name' => 'ООО «СанБизнесГруп»'],
+            'is_active' => true,
+            'update_stock' => true,
+        ]);
+        $category = Category::query()->create(['name' => 'Герметики и монтажные материалы', 'slug' => 'sealants', 'parent_id' => 0]);
+        $certa = Brand::query()->create(['name' => 'Certa', 'slug' => 'certa']);
+        $template = Product::query()->create([
+            'category_id' => $category->id,
+            'brand_id' => $certa->id,
+            'sku' => 'PS-007.697',
+            'name' => 'Краска термостойкая (эмаль) Certa черная (520мл)',
+            'slug' => 'certa-template',
+            'price' => 12,
+            'images' => ['product/007/007697/CAM01115.jpg'],
+        ]);
+        $item = IntegrationProduct::query()->create([
+            'integration_source_id' => $source->id,
+            'external_id' => 'elcon-max-therm-520',
+            'external_code' => 'УТ-00001178',
+            'name' => 'Эмаль термостойкая ELCON 520 мл аэрозоль черная',
+            'price_byn' => 14.40,
+            'stock_quantity' => 15,
+            'match_status' => 'ambiguous',
+            'candidates' => [['product_id' => $template->id, 'score' => 0.66]],
+        ]);
+
+        $this->artisan('integration:create-sbg-distinct-products', [
+            '--batch' => 'researched-priced-20261012-f',
+            '--code' => ['УТ-00001178'],
+        ])->assertSuccessful();
+        $this->assertDatabaseMissing('brands', ['slug' => 'elcon']);
+
+        $this->artisan('integration:create-sbg-distinct-products', [
+            '--batch' => 'researched-priced-20261012-f',
+            '--code' => ['УТ-00001178'],
+            '--apply' => true,
+        ])->assertSuccessful();
+
+        $brand = Brand::query()->where('slug', 'elcon')->firstOrFail();
+        $product = $item->fresh()->product;
+        $this->assertNotNull($product);
+        $this->assertSame('ELCON', $brand->name);
+        $this->assertSame('Россия', $brand->country);
+        $this->assertSame($brand->id, $product->brand_id);
+        $this->assertSame('20.60', $product->price);
+        $this->assertStringContainsString('elcon-mangal', $product->content_source_url);
+        $this->assertSame('до 1000 °C', collect($product->specs)->firstWhere('key', 'Термостойкость')['value']);
+        $this->assertStringContainsString('ei9ai7nmri8olju0ojfiespb506bxm6a', $product->images[0]);
+    }
 }

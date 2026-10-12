@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Models\Brand;
 use App\Models\IntegrationProduct;
 use App\Models\Product;
 use App\Services\Integrations\IntegrationProductCreator;
@@ -132,6 +133,35 @@ class CreateSbgDistinctProductsBatchCommand extends Command
         ],
     ];
 
+    private const BATCH_RESEARCHED_PRICED_20261012_F = [
+        'УТ-00001178' => [
+            'template' => 'PS-007.697', 'fragments' => ['ELCON', '520 мл', 'аэрозоль', 'черная'],
+            'brand' => [
+                'name' => 'ELCON',
+                'slug' => 'elcon',
+                'country' => 'Россия',
+                'content' => '<p><strong>ELCON</strong> — российский разработчик и производитель специальных лакокрасочных материалов, включая термостойкие покрытия для печей, каминов, мангалов и дымоходов.</p>',
+            ],
+            'name' => 'ELCON Max Therm эмаль термостойкая чёрная, аэрозоль 520 мл, до 1000 °C',
+            'images' => ['https://elcon.ru/upload/iblock/f6e/ei9ai7nmri8olju0ojfiespb506bxm6a.webp'],
+            'source_url' => 'https://elcon.ru/production/emali-i-grunty-po-metallu/elcon-mangal/',
+            'short' => 'Чёрная матовая термостойкая эмаль ELCON Max Therm в аэрозоле 520 мл для поверхностей, нагревающихся до 1000 °C.',
+            'content' => '<p><strong>ELCON Max Therm</strong> — чёрная термостойкая аэрозольная эмаль для защитно-декоративной окраски мангалов, печей, банного оборудования, радиаторов, дымовых труб и других нагреваемых поверхностей.</p><p>Покрытие выдерживает температуру от −60 до +1000 °C, не требует предварительного грунтования и подходит для металла, бетона и кирпича. Аэрозольная упаковка объёмом 520 мл удобна для равномерного нанесения на детали сложной формы.</p>',
+            'specs' => [
+                ['key' => 'Тип', 'value' => 'Термостойкая аэрозольная эмаль'],
+                ['key' => 'Серия', 'value' => 'Max Therm'],
+                ['key' => 'Объём', 'value' => '520 мл'],
+                ['key' => 'Цвет', 'value' => 'Чёрный (RAL 9005)'],
+                ['key' => 'Степень блеска', 'value' => 'Матовая'],
+                ['key' => 'Термостойкость', 'value' => 'до 1000 °C'],
+                ['key' => 'Температура нанесения', 'value' => 'от −30 до +40 °C'],
+                ['key' => 'Расход на 1 слой', 'value' => '120–160 г/м²'],
+                ['key' => 'Предварительное грунтование', 'value' => 'Не требуется'],
+                ['key' => 'Страна производства', 'value' => 'Россия'],
+            ],
+        ],
+    ];
+
     public function handle(IntegrationProductCreator $creator): int
     {
         $rows = match ($this->option('batch')) {
@@ -140,6 +170,7 @@ class CreateSbgDistinctProductsBatchCommand extends Command
             'chimney-priced-20261012-c' => self::BATCH_CHIMNEY_PRICED_20261012_C,
             'chimney-priced-20261012-d' => self::BATCH_CHIMNEY_PRICED_20261012_D,
             'researched-priced-20261012-e' => self::BATCH_RESEARCHED_PRICED_20261012_E,
+            'researched-priced-20261012-f' => self::BATCH_RESEARCHED_PRICED_20261012_F,
             default => null,
         };
 
@@ -155,7 +186,7 @@ class CreateSbgDistinctProductsBatchCommand extends Command
         }
 
         $apply = (bool) $this->option('apply');
-        $stats = array_fill_keys(['configured', 'ready', 'created', 'already', 'blocked'], 0);
+        $stats = array_fill_keys(['configured', 'ready', 'created', 'brands_created', 'already', 'blocked'], 0);
         $stats['configured'] = count($rows);
         $details = [];
 
@@ -186,15 +217,17 @@ class CreateSbgDistinctProductsBatchCommand extends Command
             }
 
             $candidateIds = collect($item->candidates)->pluck('product_id')->map(fn ($id): int => (int) $id);
-            $brand = trim((string) $template->brand?->name);
-            $name = $rule['name'] ?? $this->productName($brand, $item->name);
+            $configuredBrand = $rule['brand'] ?? null;
+            $brand = $configuredBrand ? $this->findBrand($configuredBrand) : $template->brand;
+            $brandName = trim((string) ($configuredBrand['name'] ?? $brand?->name));
+            $name = $rule['name'] ?? $this->productName($brandName, $item->name);
             $valid = $item->source?->name === self::SOURCE_NAME
                 && $item->source?->partnerName() === self::PARTNER_NAME
                 && $item->match_status === 'ambiguous'
                 && (float) $item->stock_quantity > 0
                 && $item->normalizedPriceByn()
                 && $template->category_id
-                && $template->brand_id
+                && ($brand || $configuredBrand)
                 && $portableImages !== []
                 && $candidateIds->contains((int) $expectedCandidate->id)
                 && $this->containsAll($item->name, $rule['fragments'])
@@ -211,11 +244,16 @@ class CreateSbgDistinctProductsBatchCommand extends Command
             $retail = $this->retailPrice((float) $item->normalizedPriceByn(), (float) $template->price);
 
             if ($apply) {
+                if (! $brand && $configuredBrand) {
+                    $brand = $this->createBrand($configuredBrand);
+                    $stats['brands_created']++;
+                }
+
                 $product = $creator->createAndLink($item, [
                     'name' => $name,
                     'category_id' => $template->category_id,
                     'retail_price' => $retail,
-                    'brand_id' => $template->brand_id,
+                    'brand_id' => $brand?->id,
                     'h1' => $name,
                     'short_description' => $rule['short'] ?? $this->shortDescription($name),
                     'content' => $rule['content'] ?? $this->content($name, (string) $item->external_sku),
@@ -245,6 +283,32 @@ class CreateSbgDistinctProductsBatchCommand extends Command
         $this->table(['metric', 'count'], collect($stats)->map(fn ($count, $metric) => [$metric, $count])->values()->all());
 
         return $stats['blocked'] === 0 ? self::SUCCESS : self::FAILURE;
+    }
+
+    /** @param array{name:string,slug:string} $config */
+    private function findBrand(array $config): ?Brand
+    {
+        return Brand::query()
+            ->where('slug', $config['slug'])
+            ->orWhereRaw('LOWER(name) = ?', [mb_strtolower($config['name'])])
+            ->first();
+    }
+
+    /** @param array{name:string,slug:string,country?:string,content?:string} $config */
+    private function createBrand(array $config): Brand
+    {
+        return Brand::query()->create([
+            'name' => $config['name'],
+            'slug' => $config['slug'],
+            'h1' => $config['name'],
+            'country' => $config['country'] ?? null,
+            'content' => $config['content'] ?? null,
+            'meta_title' => $config['name'].' — официальный каталог бренда | KOTLOV',
+            'meta_description' => 'Товары бренда '.$config['name'].' в каталоге KOTLOV: характеристики, актуальные цены и доставка по Беларуси.',
+            'is_active' => true,
+            'is_featured' => false,
+            'sort_order' => 0,
+        ]);
     }
 
     private function retailPrice(float $wholesale, float $templateRetail): float
