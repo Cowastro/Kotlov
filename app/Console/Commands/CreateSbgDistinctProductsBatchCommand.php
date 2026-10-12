@@ -307,6 +307,34 @@ class CreateSbgDistinctProductsBatchCommand extends Command
         ],
     ];
 
+    private const BATCH_RESEARCHED_PRICED_20261012_L = [
+        'УТ-00003214' => [
+            'template' => 'KOTLOV-022597',
+            'candidate' => 'PS-004.961',
+            'fragments' => ['Крепление подвес', 'КП 700'],
+            'name' => 'Теплов и Сухов Крепление-подвес КП 700',
+            'retail' => 59.00,
+            'images' => ['https://woodson.ru/upload/resize_cache/webp/iblock/56a/ijo8z5kglz1ipkakkic2apd1u2vs6ssu.webp'],
+            'source_url' => 'https://woodson.ru/catalog/dymokhody/tis/komplektuyushchie/kreplenie_podves_kp_700/',
+            'short' => 'Нержавеющее крепление-подвес Теплов и Сухов КП 700 длиной 700 мм для фиксации дымохода на расстоянии от стены.',
+            'content' => '<p><strong>Теплов и Сухов КП 700</strong> — крепление-подвес из нержавеющей стали для удержания элементов дымохода в вертикальном положении на заданном расстоянии от стены.</p><p>Подвижная пластина позволяет регулировать положение дымохода по горизонтали. Крепление используют совместно с универсальным креплением. КП 700 поддерживает конфигурацию трассы, но не является разгружающим элементом: основной вес дымохода должна принимать монтажная площадка или опора.</p>',
+            'specs' => [
+                ['key' => 'Тип', 'value' => 'Крепление-подвес'],
+                ['key' => 'Модель', 'value' => 'КП 700'],
+                ['key' => 'Длина', 'value' => '700 мм'],
+                ['key' => 'Габариты', 'value' => '700×35×150 мм'],
+                ['key' => 'Материал', 'value' => 'Нержавеющая сталь'],
+                ['key' => 'Цвет', 'value' => 'Серебристый'],
+                ['key' => 'Масса', 'value' => '1,47 кг'],
+                ['key' => 'Назначение', 'value' => 'Фиксация дымохода в вертикальном положении'],
+                ['key' => 'Разгружающий элемент', 'value' => 'Нет'],
+                ['key' => 'Артикул производителя', 'value' => 'TS.KMP.KRP.0000.66354'],
+                ['key' => 'Штрихкод', 'value' => '4680205277191'],
+                ['key' => 'Страна производства', 'value' => 'Россия'],
+            ],
+        ],
+    ];
+
     public function handle(IntegrationProductCreator $creator): int
     {
         $rows = match ($this->option('batch')) {
@@ -321,6 +349,7 @@ class CreateSbgDistinctProductsBatchCommand extends Command
             'researched-priced-20261012-i' => self::BATCH_RESEARCHED_PRICED_20261012_I,
             'researched-priced-20261012-j' => self::BATCH_RESEARCHED_PRICED_20261012_J,
             'researched-priced-20261012-k' => self::BATCH_RESEARCHED_PRICED_20261012_K,
+            'researched-priced-20261012-l' => self::BATCH_RESEARCHED_PRICED_20261012_L,
             default => null,
         };
 

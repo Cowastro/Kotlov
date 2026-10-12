@@ -459,4 +459,66 @@ class CreateSbgDistinctProductsBatchCommandTest extends TestCase
         $this->assertStringContainsString('qWnXfn-N0ofrsIuLPQmKrA', $product->images[0]);
         $this->assertSame('manual_created', $item->fresh()->match_method);
     }
+
+    public function test_it_creates_the_exact_stainless_kp_700_mount_as_a_distinct_product(): void
+    {
+        $source = IntegrationSource::query()->create([
+            'code' => 'onec-sbg-kp-700',
+            'name' => '1С СанБизнесГруп',
+            'settings' => ['partner_name' => 'ООО «СанБизнесГруп»'],
+            'is_active' => true,
+            'update_stock' => true,
+        ]);
+        $category = Category::query()->create(['name' => 'Крепления и монтаж', 'slug' => 'chimney-mounting', 'parent_id' => 0]);
+        $brand = Brand::query()->create(['name' => 'Теплов и Сухов', 'slug' => 'teplov-i-suhov']);
+        $template = Product::query()->create([
+            'category_id' => $category->id,
+            'brand_id' => $brand->id,
+            'sku' => 'KOTLOV-022597',
+            'name' => 'Теплов и Сухов Крепление-подвес КП 350, комплект 2 шт.',
+            'slug' => 'kp-350-template',
+            'price' => 47.20,
+            'images' => ['product/kp-350.jpg'],
+        ]);
+        $wrongCandidate = Product::query()->create([
+            'category_id' => $category->id,
+            'sku' => 'PS-004.961',
+            'name' => 'Крепление коллектора Buderus WMS3',
+            'slug' => 'buderus-wms3',
+        ]);
+        $item = IntegrationProduct::query()->create([
+            'integration_source_id' => $source->id,
+            'external_id' => '1888a166-41d0-11ea-a232-1c1b0d1de7c2',
+            'external_code' => 'УТ-00003214',
+            'external_sku' => 'TS.KMP.KRP.0000.66354',
+            'barcode' => '4680205277191',
+            'name' => 'Крепление подвес КП 700',
+            'price_byn' => 47.86,
+            'stock_quantity' => 1,
+            'match_status' => 'ambiguous',
+            'candidates' => [['product_id' => $wrongCandidate->id, 'score' => 0.6522]],
+        ]);
+
+        $this->artisan('integration:create-sbg-distinct-products', [
+            '--batch' => 'researched-priced-20261012-l',
+            '--code' => ['УТ-00003214'],
+            '--apply' => true,
+        ])->assertSuccessful();
+
+        $product = $item->fresh()->product;
+        $this->assertNotNull($product);
+        $this->assertNotSame($template->id, $product->id);
+        $this->assertNotSame($wrongCandidate->id, $product->id);
+        $this->assertSame($category->id, $product->category_id);
+        $this->assertSame($brand->id, $product->brand_id);
+        $this->assertSame('Теплов и Сухов Крепление-подвес КП 700', $product->name);
+        $this->assertSame('59.00', $product->price);
+        $this->assertSame('1', (string) $product->stock_qty);
+        $this->assertSame('700 мм', collect($product->specs)->firstWhere('key', 'Длина')['value']);
+        $this->assertSame('1,47 кг', collect($product->specs)->firstWhere('key', 'Масса')['value']);
+        $this->assertSame('TS.KMP.KRP.0000.66354', collect($product->specs)->firstWhere('key', 'Артикул производителя')['value']);
+        $this->assertStringContainsString('kreplenie_podves_kp_700', $product->content_source_url);
+        $this->assertStringContainsString('ijo8z5kglz1ipkakkic2apd1u2vs6ssu', $product->images[0]);
+        $this->assertSame('manual_created', $item->fresh()->match_method);
+    }
 }
