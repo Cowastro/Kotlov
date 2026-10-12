@@ -521,4 +521,68 @@ class CreateSbgDistinctProductsBatchCommandTest extends TestCase
         $this->assertStringContainsString('ijo8z5kglz1ipkakkic2apd1u2vs6ssu', $product->images[0]);
         $this->assertSame('manual_created', $item->fresh()->match_method);
     }
+
+    public function test_it_creates_the_exact_unpainted_d115_200_thermo_cap_as_a_distinct_product(): void
+    {
+        $source = IntegrationSource::query()->create([
+            'code' => 'onec-sbg-zkt-115-200',
+            'name' => '1С СанБизнесГруп',
+            'settings' => ['partner_name' => 'ООО «СанБизнесГруп»'],
+            'is_active' => true,
+            'update_stock' => true,
+        ]);
+        $category = Category::query()->create(['name' => 'Зонты и дефлекторы', 'slug' => 'chimney-caps', 'parent_id' => 0]);
+        $brand = Brand::query()->create(['name' => 'Теплов и Сухов', 'slug' => 'teplov-i-suhov']);
+        $template = Product::query()->create([
+            'category_id' => $category->id,
+            'brand_id' => $brand->id,
+            'sku' => 'KOTLOV-008041',
+            'name' => 'Теплов и Сухов Зонт-Конус Термо MC Black D115/200',
+            'slug' => 'zkt-115-200-black-template',
+            'price' => 104.32,
+            'images' => ['product/zkt-black.jpg'],
+        ]);
+        $wrongCandidate = Product::query()->create([
+            'category_id' => $category->id,
+            'brand_id' => $brand->id,
+            'sku' => 'KOTLOV-008042',
+            'name' => 'Теплов и Сухов Конус Термо КТ-Р MC Black D115/200',
+            'slug' => 'kt-115-200-black-candidate',
+            'price' => 60.60,
+            'images' => ['product/kt-black.jpg'],
+        ]);
+        $item = IntegrationProduct::query()->create([
+            'integration_source_id' => $source->id,
+            'external_id' => 'zkt-115-200-unpainted',
+            'external_code' => 'УТ-00008824',
+            'external_sku' => 'TS.FRT.ZKN.0115.74700',
+            'name' => 'Зонт-Конус Термо ЗКТ-Р 430-0.5/430 D115/200* У',
+            'price_byn' => 48.89,
+            'stock_quantity' => 12,
+            'match_status' => 'ambiguous',
+            'candidates' => [['product_id' => $wrongCandidate->id, 'score' => 0.65]],
+        ]);
+
+        $this->artisan('integration:create-sbg-distinct-products', [
+            '--batch' => 'researched-priced-20261012-m',
+            '--code' => ['УТ-00008824'],
+            '--apply' => true,
+        ])->assertSuccessful();
+
+        $product = $item->fresh()->product;
+        $this->assertNotNull($product);
+        $this->assertNotSame($template->id, $product->id);
+        $this->assertNotSame($wrongCandidate->id, $product->id);
+        $this->assertSame($category->id, $product->category_id);
+        $this->assertSame($brand->id, $product->brand_id);
+        $this->assertSame('Теплов и Сухов Зонт-Конус Термо ЗКТ-Р 430-0.5/430 D115/200 (У)', $product->name);
+        $this->assertSame('55.00', $product->price);
+        $this->assertSame('12', (string) $product->stock_qty);
+        $this->assertSame('115 мм', collect($product->specs)->firstWhere('key', 'Внутренний диаметр')['value']);
+        $this->assertSame('200 мм', collect($product->specs)->firstWhere('key', 'Наружный диаметр')['value']);
+        $this->assertSame('TS.FRT.ZKN.0115.74700', collect($product->specs)->firstWhere('key', 'Артикул производителя')['value']);
+        $this->assertStringContainsString('zont-konus-termo-zkt-r-430-0-5-430-d115-200', $product->content_source_url);
+        $this->assertStringContainsString('51984593.jpg', $product->images[0]);
+        $this->assertSame('manual_created', $item->fresh()->match_method);
+    }
 }

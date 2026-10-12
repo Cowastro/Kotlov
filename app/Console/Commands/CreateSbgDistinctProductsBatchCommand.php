@@ -335,6 +335,35 @@ class CreateSbgDistinctProductsBatchCommand extends Command
         ],
     ];
 
+    private const BATCH_RESEARCHED_PRICED_20261012_M = [
+        'УТ-00008824' => [
+            'template' => 'KOTLOV-008041',
+            'candidate' => 'KOTLOV-008042',
+            'fragments' => ['Зонт-Конус Термо', '430-0.5/430', 'D115/200', 'У'],
+            'name' => 'Теплов и Сухов Зонт-Конус Термо ЗКТ-Р 430-0.5/430 D115/200 (У)',
+            'retail' => 55.00,
+            'images' => ['https://cdn.vseinstrumenti.ru/images/goods/santehnicheskoe-oborudovanie/komplektuyuschie-i-rashodnye-materialy-dlya-santehniki/1417503/560x504/51984593.jpg'],
+            'source_url' => 'https://www.vseinstrumenti.ru/product/zont-konus-termo-zkt-r-430-0-5-430-d115-200-teplovisuhov-u-ts-frt-zkn-0115-74700-1417503/',
+            'short' => 'Зонт-конус Теплов и Сухов ЗКТ-Р для сэндвич-дымохода Ø115/200 мм из нержавеющей стали AISI 430 толщиной 0,5 мм.',
+            'content' => '<p><strong>Теплов и Сухов ЗКТ-Р 115/200</strong> совмещает конус и защитный зонт: закрывает утеплитель сэндвич-трубы и препятствует попаданию осадков в дымовой канал.</p><p>Элемент устанавливается на завершение дымохода Термо с внутренним диаметром 115 мм и наружным диаметром 200 мм. Обе стенки изготовлены из нержавеющей стали AISI 430 толщиной 0,5 мм; исполнение без окрашенного покрытия.</p>',
+            'specs' => [
+                ['key' => 'Тип', 'value' => 'Зонт-конус Термо'],
+                ['key' => 'Модель', 'value' => 'ЗКТ-Р'],
+                ['key' => 'Внутренний диаметр', 'value' => '115 мм'],
+                ['key' => 'Наружный диаметр', 'value' => '200 мм'],
+                ['key' => 'Диаметр колпака', 'value' => '260 мм'],
+                ['key' => 'Общая высота', 'value' => '190 мм'],
+                ['key' => 'Материал', 'value' => 'Нержавеющая сталь'],
+                ['key' => 'Марка стали', 'value' => 'AISI 430'],
+                ['key' => 'Толщина стали', 'value' => '0,5 мм'],
+                ['key' => 'Покрытие', 'value' => 'Без окрашенного покрытия'],
+                ['key' => 'Масса нетто', 'value' => '0,628 кг'],
+                ['key' => 'Артикул производителя', 'value' => 'TS.FRT.ZKN.0115.74700'],
+                ['key' => 'Страна производства', 'value' => 'Россия'],
+            ],
+        ],
+    ];
+
     public function handle(IntegrationProductCreator $creator): int
     {
         $rows = match ($this->option('batch')) {
@@ -350,6 +379,7 @@ class CreateSbgDistinctProductsBatchCommand extends Command
             'researched-priced-20261012-j' => self::BATCH_RESEARCHED_PRICED_20261012_J,
             'researched-priced-20261012-k' => self::BATCH_RESEARCHED_PRICED_20261012_K,
             'researched-priced-20261012-l' => self::BATCH_RESEARCHED_PRICED_20261012_L,
+            'researched-priced-20261012-m' => self::BATCH_RESEARCHED_PRICED_20261012_M,
             default => null,
         };
 
