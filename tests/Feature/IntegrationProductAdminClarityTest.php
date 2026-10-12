@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Filament\Resources\IntegrationCategories\IntegrationCategoryResource;
 use App\Filament\Resources\IntegrationProducts\IntegrationProductResource;
+use App\Filament\Resources\IntegrationProducts\Pages\EditIntegrationProduct;
 use App\Filament\Resources\IntegrationProducts\Pages\ListIntegrationProducts;
 use App\Filament\Widgets\IntegrationCatalogIntegrityOverview;
 use App\Models\Category;
@@ -21,6 +22,50 @@ use Tests\TestCase;
 class IntegrationProductAdminClarityTest extends TestCase
 {
     use RefreshDatabase;
+
+    public function test_individual_category_moves_the_linked_site_product(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin', 'is_active' => true]);
+        $oldCategory = Category::query()->create([
+            'name' => 'Старая категория карточки',
+            'slug' => 'old-linked-product-category',
+            'parent_id' => 0,
+        ]);
+        $newCategory = Category::query()->create([
+            'name' => 'Крепления и монтаж',
+            'slug' => 'new-linked-product-category',
+            'parent_id' => 0,
+        ]);
+        $product = Product::query()->create([
+            'category_id' => $oldCategory->id,
+            'name' => 'Привязанная карточка для переноса',
+            'slug' => 'linked-product-category-move',
+            'sku' => 'LINKED-CATEGORY-1',
+        ]);
+        $source = IntegrationSource::query()->create([
+            'code' => 'linked-category-source',
+            'name' => 'Источник переноса категории',
+        ]);
+        $item = IntegrationProduct::query()->create([
+            'integration_source_id' => $source->id,
+            'product_id' => $product->id,
+            'external_id' => 'linked-category-external',
+            'name' => 'Позиция 1С для переноса',
+            'stock_quantity' => 1,
+            'match_status' => 'matched',
+        ]);
+
+        Livewire::actingAs($admin)
+            ->test(EditIntegrationProduct::class, ['record' => $item->getRouteKey()])
+            ->assertSeeText('Категория карточки сайта')
+            ->fillForm(['target_category_id' => $newCategory->id])
+            ->call('save')
+            ->assertHasNoFormErrors();
+
+        $this->assertSame($newCategory->id, $item->fresh()->target_category_id);
+        $this->assertSame($newCategory->id, $product->fresh()->category_id);
+        $this->assertSame('Крепления и монтаж', $item->fresh()->resolvedSiteCategory()?->name);
+    }
 
     public function test_admin_page_explains_full_staging_catalog_and_lists_only_positive_stock(): void
     {

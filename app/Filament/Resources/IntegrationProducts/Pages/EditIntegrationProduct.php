@@ -5,6 +5,7 @@ namespace App\Filament\Resources\IntegrationProducts\Pages;
 use App\Filament\Resources\IntegrationProducts\IntegrationProductResource;
 use App\Services\Integrations\IntegrationManualMatchRecorder;
 use Filament\Actions\Action;
+use Filament\Notifications\Notification;
 use Filament\Resources\Pages\EditRecord;
 
 class EditIntegrationProduct extends EditRecord
@@ -41,6 +42,20 @@ class EditIntegrationProduct extends EditRecord
     {
         if (filled($this->record->product_id)) {
             app(IntegrationManualMatchRecorder::class)->record($this->record);
+
+            if (filled($this->record->target_category_id)) {
+                $product = $this->record->product()->first();
+                if ($product && (int) $product->category_id !== (int) $this->record->target_category_id) {
+                    $product->update(['category_id' => $this->record->target_category_id]);
+                    $this->record->unsetRelation('product');
+
+                    Notification::make()
+                        ->success()
+                        ->title('Категория карточки обновлена')
+                        ->body('Привязанный товар перемещён в выбранную категорию сайта.')
+                        ->send();
+                }
+            }
         }
     }
 }

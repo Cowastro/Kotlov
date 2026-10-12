@@ -85,12 +85,16 @@ class IntegrationProductResource extends Resource
                         ->searchable(['sku', 'name'])
                         ->nullable(),
                     Select::make('target_category_id')
-                        ->label('Категория для новой карточки')
+                        ->label(fn (?IntegrationProduct $record): string => filled($record?->product_id)
+                            ? 'Категория карточки сайта'
+                            : 'Категория для новой карточки')
                         ->options(fn (): array => self::siteCategoryOptions())
                         ->searchable()
                         ->preload()
                         ->nullable()
-                        ->helperText('Индивидуальное назначение имеет приоритет над правилом группы. Существующую карточку не перемещает.'),
+                        ->helperText(fn (?IntegrationProduct $record): string => filled($record?->product_id)
+                            ? 'При сохранении привязанная карточка сайта будет перемещена в выбранную категорию.'
+                            : 'Индивидуальное назначение имеет приоритет над правилом группы.'),
                     TextInput::make('match_status')->label('Текущий статус')->disabled()->dehydrated(false),
                     TextInput::make('match_method')->label('Метод')->disabled()->dehydrated(false),
                     TextInput::make('match_confidence')->label('Уверенность')->disabled()->dehydrated(false),
