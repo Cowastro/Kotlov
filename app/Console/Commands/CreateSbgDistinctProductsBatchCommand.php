@@ -442,6 +442,36 @@ class CreateSbgDistinctProductsBatchCommand extends Command
         ],
     ];
 
+    private const BATCH_RESEARCHED_PRICED_20261013_Q = [
+        'УТ-00001151' => [
+            'template' => 'PS-006.071',
+            'fragments' => ['Шланг газовый', 'ШГ-Ш1/2', '1,0', 'Г1/2'],
+            'brand' => [
+                'name' => 'ТАиМ',
+                'slug' => 'taim',
+                'country' => 'Беларусь',
+                'content' => '<p><strong>ТАиМ</strong> — белорусский производитель компонентов для транспортных средств, гидравлических и пневматических систем, а также соединительных рукавов.</p>',
+            ],
+            'name' => 'ТАиМ Шланг газовый резиновый 1/2″, 1,0 м, штуцер–гайка',
+            'retail' => 11.00,
+            'images' => ['https://minskgas.by/wp-content/uploads/2023/03/shlang-gazovyj-rezinovyj-1-2-dlina-50m-shtuczer-gajka-600x600.jpg'],
+            'source_url' => 'https://minskgas.by/product/shlang-gazovyj-rezinovyj-1-2-dlina-10m-shtuczer-gajka/',
+            'short' => 'Резиновый газовый шланг ТАиМ длиной 1,0 м с соединением штуцер–гайка 1/2″ для подключения бытовых газовых приборов.',
+            'content' => '<p><strong>ТАиМ ШГ, 1,0 м</strong> — гибкий резиновый шланг для присоединения бытовых газовых приборов к газопроводу или газовому баллону. На концах установлены штуцер и накидная гайка с резьбой 1/2″.</p><p>Шланг рассчитан на метан и сжиженный пропан-бутан при давлении до 0,05 МПа. Монтаж газового оборудования должен выполнять квалифицированный специалист с соблюдением требований паспорта изделия.</p>',
+            'specs' => [
+                ['key' => 'Тип', 'value' => 'Газовый шланг'],
+                ['key' => 'Материал', 'value' => 'Резина'],
+                ['key' => 'Длина', 'value' => '1,0 м'],
+                ['key' => 'Диаметр', 'value' => '15 мм'],
+                ['key' => 'Присоединение', 'value' => 'Штуцер–гайка 1/2″ × 1/2″'],
+                ['key' => 'Рабочая среда', 'value' => 'Метан, пропан-бутан (СПБТ)'],
+                ['key' => 'Максимальное давление', 'value' => '0,05 МПа'],
+                ['key' => 'Комплектация', 'value' => 'Шланг, паспорт, уплотнительная прокладка'],
+                ['key' => 'Страна производства', 'value' => 'Беларусь'],
+            ],
+        ],
+    ];
+
     public function handle(IntegrationProductCreator $creator): int
     {
         $rows = match ($this->option('batch')) {
@@ -461,6 +491,7 @@ class CreateSbgDistinctProductsBatchCommand extends Command
             'researched-priced-20261012-n' => self::BATCH_RESEARCHED_PRICED_20261012_N,
             'researched-priced-20261013-o' => self::BATCH_RESEARCHED_PRICED_20261013_O,
             'researched-priced-20261013-p' => self::BATCH_RESEARCHED_PRICED_20261013_P,
+            'researched-priced-20261013-q' => self::BATCH_RESEARCHED_PRICED_20261013_Q,
             default => null,
         };
 

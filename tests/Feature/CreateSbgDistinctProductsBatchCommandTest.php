@@ -761,4 +761,57 @@ class CreateSbgDistinctProductsBatchCommandTest extends TestCase
         $this->assertSame('TS.FRT.O87.0130.75385', collect($product->specs)->firstWhere('key', 'Артикул производителя')['value']);
         $this->assertSame('manual_created', $item->fresh()->match_method);
     }
+
+    public function test_it_creates_the_exact_one_metre_taim_gas_hose_without_linking_the_one_and_a_half_metre_candidate(): void
+    {
+        $source = IntegrationSource::query()->create([
+            'code' => 'onec-sbg-taim-gas-hose-100',
+            'name' => '1С СанБизнесГруп',
+            'settings' => ['partner_name' => 'ООО «СанБизнесГруп»'],
+            'is_active' => true,
+            'update_stock' => true,
+        ]);
+        $category = Category::query()->create(['name' => 'Газовые шланги', 'slug' => 'gas-hoses', 'parent_id' => 0]);
+        $grand = Brand::query()->create(['name' => 'Гранд', 'slug' => 'grand']);
+        $wrongLengthCandidate = Product::query()->create([
+            'category_id' => $category->id,
+            'brand_id' => $grand->id,
+            'sku' => 'PS-006.071',
+            'name' => 'Шланг для газа Гранд Г-Ш 1/2x1/2 150',
+            'slug' => 'grand-gas-hose-150-template',
+            'price' => 15,
+            'images' => ['product/006/006071/hose.jpg'],
+        ]);
+        $item = IntegrationProduct::query()->create([
+            'integration_source_id' => $source->id,
+            'external_id' => 'taim-gas-hose-100',
+            'external_code' => 'УТ-00001151',
+            'name' => 'Шланг газовый ШГ-Ш1/2-1,0-Г1/2*',
+            'price_byn' => null,
+            'stock_quantity' => 80,
+            'match_status' => 'ambiguous',
+            'candidates' => [['product_id' => $wrongLengthCandidate->id, 'score' => 0.65]],
+        ]);
+
+        $this->artisan('integration:create-sbg-distinct-products', [
+            '--batch' => 'researched-priced-20261013-q',
+            '--code' => ['УТ-00001151'],
+            '--apply' => true,
+        ])->assertSuccessful();
+
+        $brand = Brand::query()->where('slug', 'taim')->firstOrFail();
+        $product = $item->fresh()->product;
+        $this->assertNotNull($product);
+        $this->assertNotSame($wrongLengthCandidate->id, $product->id);
+        $this->assertSame($category->id, $product->category_id);
+        $this->assertSame($brand->id, $product->brand_id);
+        $this->assertSame('ТАиМ Шланг газовый резиновый 1/2″, 1,0 м, штуцер–гайка', $product->name);
+        $this->assertSame('11.00', $product->price);
+        $this->assertSame('80', (string) $product->stock_qty);
+        $this->assertNull($item->fresh()->normalizedPriceByn());
+        $this->assertSame('1,0 м', collect($product->specs)->firstWhere('key', 'Длина')['value']);
+        $this->assertSame('Штуцер–гайка 1/2″ × 1/2″', collect($product->specs)->firstWhere('key', 'Присоединение')['value']);
+        $this->assertStringContainsString('minskgas.by/product/shlang-gazovyj-rezinovyj', $product->content_source_url);
+        $this->assertSame('manual_created', $item->fresh()->match_method);
+    }
 }
