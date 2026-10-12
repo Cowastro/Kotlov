@@ -75,8 +75,17 @@ class ProductForm
 
                         Select::make('supplier_id')
                             ->label('Поставщик')
-                            ->relationship('supplier', 'name', fn ($query) => $query->where('role', 'supplier'))
-                            ->searchable(),
+                            // Product::supplier() is a legacy relation to a supplier user.
+                            // Catalog imports store the real supplier ID from `suppliers`,
+                            // so relationship() rendered a bare numeric ID and rejected it
+                            // during save when a matching user did not exist.
+                            ->options(fn (): array => Supplier::query()
+                                ->where('is_active', true)
+                                ->orderBy('name')
+                                ->pluck('name', 'id')
+                                ->all())
+                            ->searchable()
+                            ->preload(),
 
                         Placeholder::make('supplier_contacts_summary')
                             ->label('Контакты поставщика')
