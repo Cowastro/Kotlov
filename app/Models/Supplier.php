@@ -89,6 +89,18 @@ class Supplier extends Model
             ->all();
     }
 
+    public function contactSummary(): ?string
+    {
+        $contacts = collect([
+            ...$this->contactPhoneNumbers(),
+            ...$this->contactEmailAddresses(),
+        ])->filter()->unique()->values();
+
+        return $contacts->isNotEmpty()
+            ? $contacts->implode(' · ')
+            : (filled($this->contact) ? trim((string) $this->contact) : null);
+    }
+
     public function priceItems(): HasMany
     {
         return $this->hasMany(SupplierPriceItem::class);

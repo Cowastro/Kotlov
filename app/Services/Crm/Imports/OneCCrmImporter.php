@@ -9,6 +9,7 @@ use App\Models\CrmImportConflict;
 use App\Models\CrmImportRun;
 use App\Models\TelephonyCall;
 use App\Services\Crm\CrmContactMatcher;
+use App\Services\Crm\SupplierCrmLinker;
 use App\Services\Telephony\PhoneNumber;
 use Illuminate\Support\Facades\DB;
 use RuntimeException;
@@ -24,6 +25,7 @@ class OneCCrmImporter
     public function __construct(
         private readonly OneCMxlParser $parser,
         private readonly CrmContactMatcher $callMatcher,
+        private readonly SupplierCrmLinker $supplierLinker,
     ) {}
 
     /** @return array<string, int|string> */
@@ -40,7 +42,7 @@ class OneCCrmImporter
 
         $summary = [
             'rows' => count($rows), 'created' => 0, 'matched' => 0, 'conflicts' => 0,
-            'identities' => 0, 'contact_points' => 0, 'calls_matched' => 0,
+            'identities' => 0, 'contact_points' => 0, 'calls_matched' => 0, 'suppliers_linked' => 0,
         ];
 
         $run = $dryRun ? null : CrmImportRun::query()->create([
@@ -113,6 +115,8 @@ class OneCCrmImporter
                     $summary['contact_points'] += $this->syncContactPoints($counterparty, $row);
                 }
             }
+
+            $summary['suppliers_linked'] = $this->supplierLinker->reconcile(apply: true)['linked'];
 
             if ($dryRun) {
                 DB::rollBack();

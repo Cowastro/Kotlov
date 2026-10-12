@@ -70,6 +70,7 @@ class ListCrmCounterparties extends ListRecords
                                 "Новых карточек: {$summary['created']}",
                                 "Совпадений: {$summary['matched']}",
                                 "Телефонов и e-mail: {$summary['contact_points']}",
+                                "Связано поставщиков: {$summary['suppliers_linked']}",
                                 "Требуют разбора: {$summary['conflicts']}",
                                 "Распознано старых звонков: {$summary['calls_matched']}",
                                 $dryRun ? 'Данные не сохранены.' : 'Данные сохранены в CRM.',

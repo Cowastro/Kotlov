@@ -129,4 +129,14 @@ class OrderItem extends Model
     {
         return $this->supplyContextCache ??= app(OrderItemSupplyContextResolver::class)->resolve($this);
     }
+
+    public function currentSupplyContact(): ?string
+    {
+        $supplier = $this->fulfillmentSupplier ?: $this->supplySupplier;
+        $current = $supplier?->contactSummary();
+
+        return filled($current)
+            ? $current
+            : ($this->fulfillment_supplier_contact ?: $this->supply_supplier_contact);
+    }
 }

@@ -13,6 +13,7 @@ use Filament\Infolists\Components\RepeatableEntry;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
+use Illuminate\Support\HtmlString;
 
 class OrderInfolist
 {
@@ -540,7 +541,8 @@ class OrderInfolist
                                 TextEntry::make('supply_contact')
                                     ->label('Контакты поставщика')
                                     ->columnSpan(2)
-                                    ->state(fn ($record): ?string => $record->supplyContext()['supplier_contact'])
+                                    ->state(fn ($record): ?string => $record->currentSupplyContact())
+                                    ->formatStateUsing(fn (?string $state): HtmlString|string => self::contactLinks($state))
                                     ->placeholder('Не заполнены')
                                     ->copyable(),
 
@@ -801,5 +803,28 @@ class OrderInfolist
                     ]),
 
             ]);
+    }
+
+    private static function contactLinks(?string $contact): HtmlString|string
+    {
+        if (blank($contact)) {
+            return '';
+        }
+
+        $escaped = e($contact);
+        $escaped = preg_replace_callback(
+            '/(?<!\w)(?:\+?\d[\d\s().\-]{5,}\d)(?!\w)/u',
+            fn (array $match): string => '<a class="text-primary-600 hover:underline" href="tel:'
+                .e(preg_replace('/[^\d+]/', '', $match[0])).'">☎ '.e(trim($match[0])).'</a>',
+            $escaped,
+        ) ?? $escaped;
+        $escaped = preg_replace_callback(
+            '/[A-Z0-9._%+\-]+@[A-Z0-9.\-]+\.[A-Z]{2,}/iu',
+            fn (array $match): string => '<a class="text-primary-600 hover:underline" href="mailto:'
+                .e($match[0]).'">✉ '.e($match[0]).'</a>',
+            $escaped,
+        ) ?? $escaped;
+
+        return new HtmlString($escaped);
     }
 }

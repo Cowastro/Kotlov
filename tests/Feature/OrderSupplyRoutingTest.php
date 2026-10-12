@@ -37,7 +37,7 @@ class OrderSupplyRoutingTest extends TestCase
         $this->assertSame('own_stock', $context['status']);
         $this->assertSame('Наш склад / 1С', $context['route_label']);
         $this->assertSame('ООО «СанБизнесГруп»', $context['supplier_name']);
-        $this->assertSame('+375 29 100-20-30', $context['supplier_contact']);
+        $this->assertSame('+375 29 100-20-30 · orders@sanbusiness.test', $context['supplier_contact']);
         $this->assertSame(96.0, $context['wholesale_price']);
         $this->assertSame(48.0, $context['margin_total']);
         $this->assertSame(20.0, $context['margin_percent']);
@@ -92,6 +92,9 @@ class OrderSupplyRoutingTest extends TestCase
             ->assertOk()
             ->assertSeeText('Контакты поставщика')
             ->assertSeeText('+375 29 100-20-30')
+            ->assertSeeText('orders@sanbusiness.test')
+            ->assertSee('tel:+375291002030', false)
+            ->assertSee('mailto:orders@sanbusiness.test', false)
             ->assertSeeText('Оптовая / закупочная')
             ->assertSeeText('96.00 BYN')
             ->assertSeeText('Расчётная маржа')
@@ -176,7 +179,7 @@ class OrderSupplyRoutingTest extends TestCase
         $context = app(OrderItemSupplyContextResolver::class)->resolve($fixture['item']->fresh());
 
         $this->assertSame('ООО «СанБизнесГруп»', $context['supplier_name']);
-        $this->assertSame('+375 29 100-20-30', $context['supplier_contact']);
+        $this->assertSame('+375 29 100-20-30 · orders@sanbusiness.test', $context['supplier_contact']);
         $this->assertSame(96.0, $context['wholesale_price']);
         $this->assertSame(7.0, $context['stock_quantity']);
         $this->assertTrue($context['is_available']);

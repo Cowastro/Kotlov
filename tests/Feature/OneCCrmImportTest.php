@@ -9,6 +9,7 @@ use App\Models\CrmCounterparty;
 use App\Models\CrmExternalIdentity;
 use App\Models\CrmImportConflict;
 use App\Models\CrmImportRun;
+use App\Models\Supplier;
 use App\Models\TelephonyCall;
 use App\Models\User;
 use App\Services\Crm\Imports\OneCCrmImporter;
@@ -21,6 +22,10 @@ class OneCCrmImportTest extends TestCase
 
     public function test_trade_contact_report_import_is_safe_idempotent_and_matches_old_calls(): void
     {
+        $supplier = Supplier::query()->create([
+            'code' => 'test-supplier',
+            'name' => 'Тестовый партнёр',
+        ]);
         $path = $this->tradeContactReport([
             1 => 'ООО Тестовый партнёр',
             2 => 'Тестовый партнёр',
@@ -49,20 +54,25 @@ class OneCCrmImportTest extends TestCase
 
         $this->assertSame(1, $preview['rows']);
         $this->assertSame(1, $preview['created']);
+        $this->assertSame(1, $preview['suppliers_linked']);
         $this->assertDatabaseCount('crm_counterparties', 0);
         $this->assertDatabaseCount('crm_import_runs', 0);
+        $this->assertNull($supplier->fresh()->crm_counterparty_id);
 
         $summary = $importer->import('trade_contacts', $path, false);
 
         $this->assertSame(1, $summary['created']);
         $this->assertSame(2, $summary['contact_points']);
         $this->assertSame(1, $summary['calls_matched']);
+        $this->assertSame(1, $summary['suppliers_linked']);
         $this->assertDatabaseCount('crm_counterparties', 1);
         $this->assertDatabaseCount('crm_contact_points', 2);
         $this->assertDatabaseCount('crm_external_identities', 1);
         $this->assertDatabaseCount('crm_import_runs', 1);
 
         $counterparty = CrmCounterparty::query()->firstOrFail();
+        $this->assertSame($counterparty->id, $supplier->fresh()->crm_counterparty_id);
+        $this->assertSame('supplier', $counterparty->fresh()->classification);
         $this->assertSame('ООО Тестовый партнёр', $counterparty->name);
         $this->assertSame('Минск', $counterparty->business_region);
         $this->assertSame('Иванова Анна', $counterparty->one_c_manager_name);
