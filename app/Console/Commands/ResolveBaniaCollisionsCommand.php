@@ -50,8 +50,9 @@ class ResolveBaniaCollisionsCommand extends Command
                 $link = DB::table('supplier_products')
                     ->where('supplier_id', $supplierId)
                     ->where('product_id', $product->id)
-                    ->first(['id', 'supplier_article']);
-                if (! $link || $this->normalizeArticle((string) $link->supplier_article) !== $this->normalizeArticle($repair['old'])) {
+                    ->get(['id', 'supplier_article'])
+                    ->first(fn (object $candidate): bool => $this->normalizeArticle((string) $candidate->supplier_article) === $this->normalizeArticle($repair['old']));
+                if (! $link) {
                     $stats['guard_skips']++;
                     continue;
                 }
@@ -64,7 +65,10 @@ class ResolveBaniaCollisionsCommand extends Command
 
                 $targetLink = DB::table('supplier_products')
                     ->where('supplier_id', $supplierId)
-                    ->where('supplier_article_normalized', $this->normalizeArticle($repair['article']))
+                    ->where(function ($query) use ($repair): void {
+                        $query->where('supplier_article', $repair['article'])
+                            ->orWhere('supplier_article_normalized', $this->normalizeArticle($repair['article']));
+                    })
                     ->first(['id', 'product_id']);
                 if ($targetLink && $targetLink->product_id !== null && (int) $targetLink->product_id !== (int) $product->id) {
                     $stats['link_repairs']--;
@@ -146,12 +150,12 @@ class ResolveBaniaCollisionsCommand extends Command
                     continue;
                 }
 
-                $hasGenericEtnaLink = DB::table('supplier_products')
+                $genericEtnaLink = DB::table('supplier_products')
                     ->where('supplier_id', $supplierId)
                     ->where('product_id', $product->id)
-                    ->where('supplier_article_normalized', 'ЭТНА')
-                    ->exists();
-                if (! $hasGenericEtnaLink) {
+                    ->get(['id', 'supplier_article'])
+                    ->first(fn (object $candidate): bool => $this->normalizeArticle((string) $candidate->supplier_article) === 'ЭТНА');
+                if (! $genericEtnaLink) {
                     $stats['guard_skips']++;
                     continue;
                 }
