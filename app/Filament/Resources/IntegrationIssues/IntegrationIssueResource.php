@@ -78,7 +78,12 @@ class IntegrationIssueResource extends Resource
     public static function table(Table $table): Table
     {
         return $table
-            ->modifyQueryUsing(fn ($query) => $query->with(['source', 'integrationProduct', 'order', 'assignee']))
+            ->modifyQueryUsing(fn ($query) => $query->with([
+                'source',
+                'integrationProduct.product.category',
+                'order',
+                'assignee',
+            ]))
             ->columns([
                 TextColumn::make('severity')->label('Важность')->badge()
                     ->formatStateUsing(fn (string $state): string => match ($state) {
@@ -101,29 +106,42 @@ class IntegrationIssueResource extends Resource
                         ?? $record->source?->name
                         ?? '—'),
                 TextColumn::make('site_candidate')->label('Карточка сайта')
-                    ->state(fn (IntegrationIssue $record): ?string => self::candidatePreview($record)['product_name'] ?? null)
+                    ->state(fn (IntegrationIssue $record): ?string => self::siteProductPreview($record)['product_name'] ?? null)
                     ->placeholder('Кандидат не найден')
                     ->description(function (IntegrationIssue $record): ?string {
-                        $candidate = self::candidatePreview($record);
-                        if (! $candidate) {
+                        $preview = self::siteProductPreview($record);
+                        if (! $preview) {
                             return null;
                         }
 
                         return collect([
-                            round((float) $candidate['confidence'] * 100).'% совпадение',
-                            filled($candidate['product_sku']) ? 'SKU '.$candidate['product_sku'] : null,
-                            $candidate['category_name'] ?? null,
+                            $preview['linked']
+                                ? 'Фактически привязан'
+                                : round((float) $preview['confidence'] * 100).'% совпадение',
+                            filled($preview['product_sku']) ? 'SKU '.$preview['product_sku'] : null,
+                            $preview['category_name'] ?? null,
                         ])->filter()->implode(' · ');
                     })
-                    ->tooltip(fn (IntegrationIssue $record): ?string => self::candidatePreview($record)['product_name'] ?? null)
-                    ->url(fn (IntegrationIssue $record): ?string => self::candidatePreview($record)['public_url'] ?? null)
+                    ->tooltip(fn (IntegrationIssue $record): ?string => self::siteProductPreview($record)['product_name'] ?? null)
+                    ->url(fn (IntegrationIssue $record): ?string => self::siteProductPreview($record)['public_url'] ?? null)
                     ->openUrlInNewTab()
-                    ->icon(fn (IntegrationIssue $record): ?string => self::candidatePreview($record)
+                    ->icon(fn (IntegrationIssue $record): ?string => self::siteProductPreview($record)
                         ? 'heroicon-o-arrow-top-right-on-square'
                         : null)
-                    ->color(fn (IntegrationIssue $record): string => self::candidatePreview($record) ? 'info' : 'gray')
+                    ->color(fn (IntegrationIssue $record): string => match (self::siteProductPreview($record)['linked'] ?? null) {
+                        true => 'success',
+                        false => 'info',
+                        default => 'gray',
+                    })
                     ->limit(52)
                     ->lineClamp(2)
+                    ->wrap(),
+                TextColumn::make('integration_link_status')->label('Привязка и наличие')
+                    ->state(fn (IntegrationIssue $record): ?string => self::linkStatusLabel($record))
+                    ->placeholder('Не относится к товару')
+                    ->badge()
+                    ->color(fn (IntegrationIssue $record): string => self::linkStatusColor($record))
+                    ->description(fn (IntegrationIssue $record): ?string => self::availabilitySummary($record))
                     ->wrap(),
                 TextColumn::make('recommended_action')->label('Следующий шаг')
                     ->state(fn (IntegrationIssue $record): string => self::displayAdvice($record)['title'])
@@ -306,7 +324,7 @@ class IntegrationIssueResource extends Resource
                     ->modalSubmitActionLabel('Подтвердить привязку')
                     ->action(function (IntegrationIssue $record, array $data): void {
                         $product = app(IntegrationProductIssueResolver::class)
-                            ->linkExistingProduct($record, (int) $data['product_id']);
+                            ->linkExistingProduct($record, (int) $data['product_id'], (int) auth()->id());
 
                         if (! $product) {
                             Notification::make()
@@ -324,7 +342,7 @@ class IntegrationIssueResource extends Resource
                             ->body('Связь с карточкой «'.$product->name.'» сохранена для следующих синхронизаций.')
                             ->send();
                     })
-                    ->successRedirectUrl(fn (): string => self::getUrl('index', ['tab' => 'ready-to-link'])),
+                    ->successRedirectUrl(fn (): string => self::getUrl('index', ['tab' => 'linked'])),
                 Action::make('claim')
                     ->label('Взять в работу')
                     ->icon(Heroicon::OutlinedUserPlus)
@@ -509,6 +527,92 @@ class IntegrationIssueResource extends Resource
             $product->sku ? 'SKU '.$product->sku : null,
             $product->name,
         ])->filter()->implode(' — ');
+    }
+
+    /** @return array<string, mixed>|null */
+    private static function siteProductPreview(IntegrationIssue $issue): ?array
+    {
+        $integrationProduct = $issue->integrationProduct;
+        $product = $integrationProduct?->product;
+
+        if ($product) {
+            return [
+                'product_id' => (int) $product->id,
+                'product_name' => $product->name,
+                'product_sku' => $product->sku,
+                'category_name' => $product->category?->name,
+                'confidence' => 1.0,
+                'public_url' => self::publicProductUrl($product),
+                'linked' => true,
+            ];
+        }
+
+        $candidate = self::candidatePreview($issue);
+
+        return $candidate ? [...$candidate, 'linked' => false] : null;
+    }
+
+    private static function publicProductUrl(Product $product): ?string
+    {
+        $categorySlug = $product->category?->slug;
+
+        return $categorySlug && $product->slug
+            ? url('/'.$categorySlug.'/'.$product->slug)
+            : null;
+    }
+
+    private static function linkStatusLabel(IntegrationIssue $issue): ?string
+    {
+        $item = $issue->integrationProduct;
+        if (! $item) {
+            return null;
+        }
+
+        return match ($item->match_status) {
+            'matched' => 'Привязан',
+            'suggested' => 'Есть рекомендация',
+            'ambiguous' => 'Нужно выбрать',
+            'ignored' => 'Не для сайта',
+            default => 'Не привязан',
+        };
+    }
+
+    private static function linkStatusColor(IntegrationIssue $issue): string
+    {
+        return match ($issue->integrationProduct?->match_status) {
+            'matched' => 'success',
+            'suggested' => 'info',
+            'ambiguous' => 'warning',
+            'ignored' => 'gray',
+            default => 'danger',
+        };
+    }
+
+    private static function availabilitySummary(IntegrationIssue $issue): ?string
+    {
+        $item = $issue->integrationProduct;
+        if (! $item) {
+            return null;
+        }
+
+        $sourceStock = $item->stock_quantity === null
+            ? 'остаток не передан'
+            : $item->formattedStockQuantity();
+        $product = $item->product;
+
+        if (! $product) {
+            return '1С: '.$sourceStock.' · карточка сайта не выбрана';
+        }
+
+        $siteStock = $product->stock_qty === null
+            ? null
+            : 'остаток '.number_format((float) $product->stock_qty, 0, ',', ' ').' шт.';
+
+        return collect([
+            '1С: '.$sourceStock,
+            'Сайт: '.$product->availabilityLabel(),
+            $siteStock,
+        ])->filter()->implode(' · ');
     }
 
     /** @return array<string, mixed>|null */

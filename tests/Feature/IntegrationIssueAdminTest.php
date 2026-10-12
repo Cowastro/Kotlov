@@ -242,6 +242,10 @@ class IntegrationIssueAdminTest extends TestCase
             'id' => $issue->id,
             'status' => 'resolved',
         ]);
+        $issue->refresh();
+        $this->assertSame('linked_product', data_get($issue->context, 'resolution.type'));
+        $this->assertSame($product->id, data_get($issue->context, 'resolution.product_id'));
+        $this->assertSame($admin->id, data_get($issue->context, 'resolution.resolved_by_user_id'));
         $this->assertDatabaseHas('products', [
             'id' => $product->id,
             'name' => 'Труба дымохода D150',
@@ -253,6 +257,15 @@ class IntegrationIssueAdminTest extends TestCase
             'supplier_article' => 'SUP-D150',
             'confidence' => 'manual',
         ]);
+
+        $this->actingAs($admin)
+            ->get(IntegrationIssueResource::getUrl('index', ['tab' => 'linked'], panel: 'admin'))
+            ->assertOk()
+            ->assertSeeText('История привязок')
+            ->assertSeeText('Труба дымохода D150')
+            ->assertSeeText('Фактически привязан')
+            ->assertSeeText('Привязан')
+            ->assertSeeText('1С: 3 шт. · Сайт: В наличии · остаток 8 шт.');
     }
 
     public function test_stale_product_issue_cannot_replace_an_existing_link(): void
