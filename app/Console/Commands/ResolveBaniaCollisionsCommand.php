@@ -15,16 +15,17 @@ class ResolveBaniaCollisionsCommand extends Command
 
     private const LINK_REPAIRS = [
         'KOTLOV-004144' => ['old' => 'ОПТИМУМ', 'article' => '4610094778165', 'retail' => 934.00, 'cost' => 771.93],
-        'KOTLOV-004321' => ['old' => 'КУППЕРПРАКТИК', 'article' => 'ОК.68.000.00', 'retail' => 1430.00, 'cost' => 1241.93],
-        'KOTLOV-004322' => ['old' => 'КУППЕРПРАКТИК', 'article' => 'ОК.59.000.00', 'retail' => 1755.00, 'cost' => 1521.27],
-        'KOTLOV-003915' => ['old' => 'КУППЕРПРАКТИК', 'article' => 'ОК.71.000.00', 'retail' => 2005.00, 'cost' => 1739.14],
-        'PS-003.824' => ['old' => 'АВРОРАINOX', 'article' => '34000', 'retail' => 1265.00, 'cost' => null],
     ];
 
-    private const ARCHIVE_SKUS = [
-        'KOTLOV-004271',
-        'KOTLOV-004270',
-        'KOTLOV-004180',
+    /** Reviewed obsolete cards; ID + SKU is the destructive-operation guard. */
+    private const ARCHIVE_PRODUCTS = [
+        3824 => 'PS-003.824',
+        16193 => 'KOTLOV-003915',
+        16458 => 'KOTLOV-004180',
+        16548 => 'KOTLOV-004270',
+        16549 => 'KOTLOV-004271',
+        16599 => 'KOTLOV-004321',
+        16600 => 'KOTLOV-004322',
     ];
 
     public function handle(): int
@@ -143,25 +144,18 @@ class ResolveBaniaCollisionsCommand extends Command
                 $stats['guard_skips']++;
             }
 
-            foreach (self::ARCHIVE_SKUS as $sku) {
-                $product = $this->findActiveProductBySku($sku);
-                if (! $product) {
-                    $stats['guard_skips']++;
-                    continue;
-                }
-
-                $genericEtnaLink = DB::table('supplier_products')
-                    ->where('supplier_id', $supplierId)
-                    ->where('product_id', $product->id)
-                    ->get(['id', 'supplier_article'])
-                    ->first(fn (object $candidate): bool => $this->normalizeArticle((string) $candidate->supplier_article) === 'ЭТНА');
-                if (! $genericEtnaLink) {
+            foreach (self::ARCHIVE_PRODUCTS as $productId => $sku) {
+                $product = DB::table('products')
+                    ->where('id', $productId)
+                    ->where('sku', $sku)
+                    ->first(['id', 'is_archived']);
+                if (! $product || (bool) $product->is_archived) {
                     $stats['guard_skips']++;
                     continue;
                 }
 
                 $stats['archived']++;
-                $this->line($sku . ': archive obsolete generic-article ETNA card.');
+                $this->line(sprintf('%s (id=%d): archive reviewed obsolete duplicate card.', $sku, $productId));
                 if (! $apply) {
                     continue;
                 }
@@ -173,7 +167,6 @@ class ResolveBaniaCollisionsCommand extends Command
                     'updated_at' => $now,
                 ]);
                 DB::table('supplier_products')
-                    ->where('supplier_id', $supplierId)
                     ->where('product_id', $product->id)
                     ->update([
                         'in_stock' => false,
