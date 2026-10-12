@@ -26,7 +26,7 @@ class ResolveSbgAmbiguousBatchCommand extends Command
      * The command still refuses to apply it unless both names and the current
      * candidate set keep confirming the same exact product identity.
      *
-     * @var array<string, array{sku:string,item:list<string>,product:list<string>}>
+     * @var array<string, array{sku:string,item:list<string>,product:list<string>,search?:bool}>
      */
     private const BATCH_EXACT_20261012_A = [
         'УТ-00000567' => ['sku' => 'KOTLOV-007963', 'item' => ['Отвод 45', '430-0.5', 'D80', '2S'], 'product' => ['Отвод 45', '430-0.5', 'D80', '2S']],
@@ -98,6 +98,7 @@ class ResolveSbgAmbiguousBatchCommand extends Command
     private const BATCH_EXACT_20261012_D = [
         'УТ-00000051' => ['sku' => 'PS-008.991', 'item' => ['Адаптер переход', '430-0.8', 'D110/120'], 'product' => ['Теплов и Сухов', 'Адаптер-переход', '430-0.8', '110/120']],
         'УТ-00007784' => ['sku' => 'PS-011.560', 'item' => ['Топка каминная', 'ТКТ 10.0-05', '5161'], 'product' => ['Топка каминная', 'ТКТ 10.0-05', 'Аврора М']],
+        'УТ-00006963' => ['sku' => 'PS-011.131', 'item' => ['Шибер-задвижка', '430-0.8', 'D120'], 'product' => ['Шибер-задвижка', 'Теплов и Сухов', 'ф120'], 'search' => true],
     ];
 
     public function handle(IntegrationProductMatchDecision $decision): int
@@ -178,7 +179,7 @@ class ResolveSbgAmbiguousBatchCommand extends Command
             }
 
             $candidateIds = collect($item->candidates)->pluck('product_id')->map(fn ($id): int => (int) $id);
-            if (! $candidateIds->contains((int) $product->id)) {
+            if (! ($rule['search'] ?? false) && ! $candidateIds->contains((int) $product->id)) {
                 $stats['not_candidate']++;
                 $details[] = [$code, $rule['sku'], 'blocked', 'product is no longer a current candidate'];
 
@@ -187,7 +188,9 @@ class ResolveSbgAmbiguousBatchCommand extends Command
 
             $stats['ready']++;
             if ($apply) {
-                $linked = $decision->confirmCandidate($item, (int) $product->id);
+                $linked = ($rule['search'] ?? false)
+                    ? $decision->linkSelectedProduct($item, (int) $product->id)
+                    : $decision->confirmCandidate($item, (int) $product->id);
                 if (! $linked) {
                     $stats['conflict']++;
                     $details[] = [$code, $rule['sku'], 'blocked', 'candidate changed during apply'];
