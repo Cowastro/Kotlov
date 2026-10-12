@@ -3,6 +3,7 @@
 namespace App\Console\Commands;
 
 use App\Models\Brand;
+use App\Models\Category;
 use App\Models\IntegrationProduct;
 use App\Models\Product;
 use App\Services\Integrations\IntegrationProductCreator;
@@ -445,6 +446,7 @@ class CreateSbgDistinctProductsBatchCommand extends Command
     private const BATCH_RESEARCHED_PRICED_20261013_Q = [
         'УТ-00001151' => [
             'template' => 'PS-006.071',
+            'category_slug' => 'gazovye-shlangi',
             'fragments' => ['Шланг газовый', 'ШГ-Ш1/2', '1,0', 'Г1/2'],
             'brand' => [
                 'name' => 'ТАиМ',
@@ -541,6 +543,9 @@ class CreateSbgDistinctProductsBatchCommand extends Command
             $normalizedPrice = $item->normalizedPriceByn();
             $configuredBrand = $rule['brand'] ?? null;
             $brand = $configuredBrand ? $this->findBrand($configuredBrand) : $template->brand;
+            $category = isset($rule['category_slug'])
+                ? Category::query()->where('slug', $rule['category_slug'])->first()
+                : $template->category;
             $brandName = trim((string) ($configuredBrand['name'] ?? $brand?->name));
             $name = $rule['name'] ?? $this->productName($brandName, $item->name);
             $valid = $item->source?->name === self::SOURCE_NAME
@@ -548,7 +553,7 @@ class CreateSbgDistinctProductsBatchCommand extends Command
                 && $item->match_status === 'ambiguous'
                 && (float) $item->stock_quantity > 0
                 && ($normalizedPrice !== null || isset($rule['retail']))
-                && $template->category_id
+                && $category
                 && ($brand || $configuredBrand || ($rule['allow_brandless'] ?? false))
                 && $portableImages !== []
                 && $candidateIds->contains((int) $expectedCandidate->id)
@@ -583,7 +588,7 @@ class CreateSbgDistinctProductsBatchCommand extends Command
 
                 $product = $creator->createAndLink($item, [
                     'name' => $name,
-                    'category_id' => $template->category_id,
+                    'category_id' => $category->id,
                     'retail_price' => $retail,
                     'brand_id' => $brand?->id,
                     'h1' => $name,

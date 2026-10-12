@@ -771,10 +771,14 @@ class CreateSbgDistinctProductsBatchCommandTest extends TestCase
             'is_active' => true,
             'update_stock' => true,
         ]);
-        $category = Category::query()->create(['name' => 'Газовые шланги', 'slug' => 'gas-hoses', 'parent_id' => 0]);
+        $wrongCategory = Category::query()->create(['name' => 'Счётчики газа', 'slug' => 'gas-meters-hose-test', 'parent_id' => 0]);
+        $category = Category::query()->firstOrCreate(
+            ['slug' => 'gazovye-shlangi'],
+            ['name' => 'Газовые шланги', 'h1' => 'Газовые шланги', 'parent_id' => 0, 'type' => 'main-child', 'is_active' => true],
+        );
         $grand = Brand::query()->create(['name' => 'Гранд', 'slug' => 'grand']);
         $wrongLengthCandidate = Product::query()->create([
-            'category_id' => $category->id,
+            'category_id' => $wrongCategory->id,
             'brand_id' => $grand->id,
             'sku' => 'PS-006.071',
             'name' => 'Шланг для газа Гранд Г-Ш 1/2x1/2 150',
