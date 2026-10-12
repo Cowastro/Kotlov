@@ -43,7 +43,6 @@ class ListCrmCounterparties extends ListRecords
                         ->helperText('Сначала выполните пробный запуск. Для УТ используйте отчёт «Контактная информация по партнёрам».')
                         ->disk('local')
                         ->directory('crm-imports')
-                        ->acceptedFileTypes(['application/octet-stream', 'application/vnd.1c.mxl', 'text/plain'])
                         ->maxSize(20480)
                         ->required(),
                     Toggle::make('dry_run')
