@@ -88,7 +88,7 @@ class ProductsTable
                     ->toggleable(isToggledHiddenByDefault: true),
 
                 TextColumn::make('supplier_article')
-                    ->label('Арт. пост.')
+                    ->label('Код / слаг поставщика')
                     ->getStateUsing(function ($record): string {
                         $articles = $record->supplierProducts
                             ->map(function ($sp): string {
