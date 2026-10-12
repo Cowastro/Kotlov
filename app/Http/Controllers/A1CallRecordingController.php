@@ -12,7 +12,9 @@ class A1CallRecordingController extends Controller
 {
     public function __invoke(Request $request, TelephonyCall $telephonyCall, A1OpenApiClient $client): Response
     {
-        abort_unless($request->user()?->can('view', $telephonyCall), 403);
+        $user = $request->user();
+
+        abort_unless($user?->is_active && $user->isManager(), 403);
         abort_if(blank($telephonyCall->record_name), 404);
 
         $connection = TelephonyConnection::query()

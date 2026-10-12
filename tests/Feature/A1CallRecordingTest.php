@@ -15,6 +15,36 @@ class A1CallRecordingTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_admin_can_securely_stream_a1_recording(): void
+    {
+        Sleep::fake();
+        Http::fake([
+            'https://vats.a1.by/crm-api/open-api/v1/record*' => Http::response('admin-audio-bytes', 200, ['Content-Type' => 'audio/mpeg']),
+        ]);
+
+        TelephonyConnection::query()->create([
+            'provider' => 'a1',
+            'company_id' => '3493',
+            'access_token' => 'secret-access-token',
+            'access_token_expires_at' => now()->addHour(),
+            'is_enabled' => true,
+        ]);
+        $call = TelephonyCall::query()->create([
+            'provider' => 'a1',
+            'external_uuid' => 'admin-recording-call',
+            'direction' => 'inbound',
+            'status' => 'answered',
+            'handling_status' => 'unprocessed',
+            'record_name' => 'admin-recording-file',
+        ]);
+        $admin = User::factory()->create(['role' => 'admin', 'is_active' => true]);
+
+        $this->actingAs($admin)
+            ->get(route('telephony.a1.recording', $call))
+            ->assertOk()
+            ->assertContent('admin-audio-bytes');
+    }
+
     public function test_manager_can_securely_stream_a1_recording_without_exposing_token(): void
     {
         Sleep::fake();
