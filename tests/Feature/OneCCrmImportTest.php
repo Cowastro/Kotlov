@@ -13,6 +13,7 @@ use App\Models\Supplier;
 use App\Models\TelephonyCall;
 use App\Models\User;
 use App\Services\Crm\Imports\OneCCrmImporter;
+use App\Services\Crm\SupplierCrmLinker;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -114,6 +115,27 @@ class OneCCrmImportTest extends TestCase
         $this->actingAs($admin)
             ->get(CrmImportConflictResource::getUrl('index', panel: 'admin'))
             ->assertOk();
+    }
+
+    public function test_verified_supplier_trade_name_alias_links_to_legal_counterparty_and_sets_supplier_status(): void
+    {
+        $supplier = Supplier::query()->where('code', 'bania')->firstOrFail();
+        $supplier->update(['name' => 'BANIA.by', 'crm_counterparty_id' => null]);
+        $counterparty = CrmCounterparty::query()->create([
+            'name' => 'БАНЬКА',
+            'legal_name' => 'ООО "БАНЬКА"',
+            'unp' => '191110714',
+            'classification' => 'unclassified',
+            'business_unit' => 'wholesale',
+            'status' => 'active',
+            'source' => '1c_trade',
+        ]);
+
+        $summary = app(SupplierCrmLinker::class)->reconcile(apply: true);
+
+        $this->assertSame(1, $summary['linked']);
+        $this->assertSame($counterparty->id, $supplier->fresh()->crm_counterparty_id);
+        $this->assertSame('supplier', $counterparty->fresh()->classification);
     }
 
     /** @param array<int, string> $columns */

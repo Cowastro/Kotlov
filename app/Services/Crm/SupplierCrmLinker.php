@@ -8,6 +8,16 @@ use App\Services\Crm\Imports\CrmNameNormalizer;
 
 class SupplierCrmLinker
 {
+    /**
+     * Verified trading-name aliases whose legal 1C name is different.
+     * Keep this list explicit: supplier links must never be based on fuzzy matching.
+     *
+     * @var array<string, list<string>>
+     */
+    private const VERIFIED_NAME_ALIASES = [
+        'bania' => ['БАНЬКА'],
+    ];
+
     /** @return array{linked:int,already_linked:int,unmatched:int,ambiguous:int} */
     public function reconcile(bool $apply = false): array
     {
@@ -25,7 +35,7 @@ class SupplierCrmLinker
 
         $summary = ['linked' => 0, 'already_linked' => 0, 'unmatched' => 0, 'ambiguous' => 0];
 
-        Supplier::query()->select(['id', 'crm_counterparty_id', 'name'])->each(
+        Supplier::query()->select(['id', 'crm_counterparty_id', 'code', 'name'])->each(
             function (Supplier $supplier) use (&$summary, $index, $apply): void {
                 if ($supplier->crm_counterparty_id) {
                     $summary['already_linked']++;
@@ -33,8 +43,16 @@ class SupplierCrmLinker
                     return;
                 }
 
-                $key = CrmNameNormalizer::organizationKey($supplier->name);
-                $candidateIds = array_keys($index[$key] ?? []);
+                $keys = [CrmNameNormalizer::organizationKey($supplier->name)];
+                foreach (self::VERIFIED_NAME_ALIASES[mb_strtolower((string) $supplier->code)] ?? [] as $alias) {
+                    $keys[] = CrmNameNormalizer::organizationKey($alias);
+                }
+
+                $candidateIds = [];
+                foreach (array_unique(array_filter($keys)) as $key) {
+                    $candidateIds = array_merge($candidateIds, array_keys($index[$key] ?? []));
+                }
+                $candidateIds = array_values(array_unique($candidateIds));
                 if ($candidateIds === []) {
                     $summary['unmatched']++;
 
