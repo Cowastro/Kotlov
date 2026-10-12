@@ -119,7 +119,10 @@ class OneCCrmImportTest extends TestCase
 
     public function test_verified_supplier_trade_name_alias_links_to_legal_counterparty_and_sets_supplier_status(): void
     {
-        $supplier = Supplier::query()->where('code', 'bania')->firstOrFail();
+        $supplier = Supplier::query()->firstOrCreate(
+            ['code' => 'bania'],
+            ['name' => 'BANIA.by'],
+        );
         $supplier->update(['name' => 'BANIA.by', 'crm_counterparty_id' => null]);
         $counterparty = CrmCounterparty::query()->create([
             'name' => 'БАНЬКА',
