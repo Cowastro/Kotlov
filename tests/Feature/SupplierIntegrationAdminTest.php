@@ -207,7 +207,7 @@ class SupplierIntegrationAdminTest extends TestCase
             ->get(ProductResource::getUrl('index', panel: 'admin'))
             ->assertOk()
             ->assertSeeText('Товар с двумя каналами')
-            ->assertSeeText('Поставщик смешанного товара')
+            ->assertSeeText('Поставщик смешанного')
             ->assertSeeText('Цена опт')
             ->assertSeeText('100,00 BYN')
             ->assertSeeText('Розница')

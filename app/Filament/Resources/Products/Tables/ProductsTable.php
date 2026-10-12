@@ -44,17 +44,18 @@ class ProductsTable
                     ->label('Фото')
                     ->getStateUsing(fn ($record) => url($record->imageUrl(0)))
                     ->square()
-                    ->height(36)
-                    ->width(36)
-                    ->toggleable(isToggledHiddenByDefault: true),
+                    ->height(40)
+                    ->width(40),
 
                 TextColumn::make('name')
                     ->label('Товар')
                     ->searchable()
                     ->sortable()
                     ->weight('bold')
-                    ->limit(48)
-                    ->lineClamp(1)
+                    ->limit(44)
+                    ->lineClamp(2)
+                    ->width('14rem')
+                    ->grow(false)
                     ->tooltip(fn ($record) => $record->name)
                     ->url(fn ($record) => self::productUrl($record))
                     ->openUrlInNewTab(),
@@ -71,54 +72,43 @@ class ProductsTable
                     ->label('Артикул')
                     ->searchable()
                     ->copyable()
-                    ->toggleable(isToggledHiddenByDefault: true),
+                    ->width('7.5rem')
+                    ->grow(false)
+                    ->toggleable(),
 
                 TextColumn::make('category.name')
                     ->label('Категория')
                     ->sortable()
                     ->badge()
-                    ->limit(28)
+                    ->limit(22)
+                    ->width('9rem')
+                    ->grow(false)
                     ->tooltip(fn ($record): ?string => $record->category?->name)
-                    ->toggleable(isToggledHiddenByDefault: true),
+                    ->toggleable(),
 
                 TextColumn::make('brand.name')
                     ->label('Бренд')
                     ->sortable()
                     ->placeholder('—')
-                    ->toggleable(isToggledHiddenByDefault: true),
-
-                TextColumn::make('supplier_article')
-                    ->label('Код / слаг поставщика')
-                    ->getStateUsing(function ($record): string {
-                        $articles = $record->supplierProducts
-                            ->map(function ($sp): string {
-                                $article = trim((string) $sp->supplier_article);
-
-                                return preg_replace('/-[0-9a-f]{6,8}$/i', '', $article) ?: $article;
-                            })
-                            ->filter()
-                            ->unique()
-                            ->values();
-
-                        return $articles->isNotEmpty() ? $articles->implode(' / ') : '—';
-                    })
-                    ->copyable()
-                    ->searchable(query: fn (Builder $query, string $search) => $query->whereHas(
-                        'supplierProducts',
-                        fn ($q) => $q->where('supplier_article', 'like', "%{$search}%")
-                    ))
-                    ->toggleable(isToggledHiddenByDefault: true),
+                    ->width('6.5rem')
+                    ->grow(false)
+                    ->toggleable(),
 
                 TextColumn::make('supplier_stock')
-                    ->label('Кол-во (пост.)')
-                    ->getStateUsing(fn ($record): int => (int) $record->supplierProducts->sum('stock_quantity'))
-                    ->toggleable(isToggledHiddenByDefault: true),
+                    ->label('Остаток')
+                    ->getStateUsing(fn ($record): int => self::supplierStock($record))
+                    ->alignCenter()
+                    ->width('5.5rem')
+                    ->grow(false)
+                    ->toggleable(),
 
                 TextColumn::make('supplier_price')
                     ->label('Цена опт')
                     ->getStateUsing(fn ($record): string => ($price = self::wholesalePrice($record))
                         ? number_format($price, 2, ',', ' ').' BYN'
                         : '—')
+                    ->width('7rem')
+                    ->grow(false)
                     ->toggleable(),
 
                 TextColumn::make('price')
@@ -128,6 +118,8 @@ class ProductsTable
                         ? number_format((float) $state, 2).' '.($record->currency ?: 'BYN')
                         : '<span class="text-danger-500 font-bold">— не задана</span>'
                     )
+                    ->width('7rem')
+                    ->grow(false)
                     ->html(),
 
                 TextColumn::make('market_price_indicator')
@@ -172,7 +164,9 @@ class ProductsTable
                             default => 'success',
                         };
                     })
-                    ->toggleable(isToggledHiddenByDefault: true),
+                    ->width('8rem')
+                    ->grow(false)
+                    ->toggleable(),
 
                 TextColumn::make('suppliers_list')
                     ->label('Поставщик')
@@ -187,7 +181,9 @@ class ProductsTable
                         ->unique()
                         ->implode(', ') ?: '—'
                     )
-                    ->limit(28)
+                    ->limit(22)
+                    ->width('9rem')
+                    ->grow(false)
                     ->tooltip(fn ($record): string => $record->supplierProducts
                         ->map(fn ($sp) => $sp->supplier?->name)
                         ->toBase()
@@ -851,12 +847,18 @@ class ProductsTable
         return $prices->isEmpty() ? null : (float) $prices->min();
     }
 
-    private static function availabilityDescription(Product $record): string
+    private static function supplierStock(object $record): int
     {
         $integrationItems = $record->integrationProducts->where('match_status', 'matched');
-        $supplierStock = $integrationItems->isNotEmpty()
+
+        return (int) ($integrationItems->isNotEmpty()
             ? $integrationItems->sum(fn ($item): float => (float) $item->stock_quantity)
-            : (float) $record->supplierProducts->sum('stock_quantity');
+            : $record->supplierProducts->sum('stock_quantity'));
+    }
+
+    private static function availabilityDescription(Product $record): string
+    {
+        $supplierStock = self::supplierStock($record);
 
         return collect([
             'Поставщик: '.number_format($supplierStock, 0, ',', ' ').' шт.',
