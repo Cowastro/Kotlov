@@ -228,6 +228,43 @@ class SupplierIntegrationAdminTest extends TestCase
             ->assertDontSeeText('1С + Старый канал');
     }
 
+    public function test_product_list_does_not_show_unknown_supplier_quantity_as_zero(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin', 'is_active' => true]);
+        $supplier = Supplier::query()->create([
+            'code' => 'status-only-supplier',
+            'name' => 'Поставщик без точного остатка',
+        ]);
+        $category = Category::query()->create([
+            'name' => 'Категория статусного остатка',
+            'slug' => 'status-only-stock-category',
+            'parent_id' => 0,
+        ]);
+        $product = Product::query()->create([
+            'category_id' => $category->id,
+            'sku' => 'STATUS-ONLY-1',
+            'name' => 'Товар со статусом без количества',
+            'slug' => 'status-only-stock-product',
+            'in_stock' => true,
+            'stock_qty' => null,
+        ]);
+        SupplierProduct::query()->create([
+            'supplier_id' => $supplier->id,
+            'product_id' => $product->id,
+            'supplier_article' => 'STATUS-ONLY-SUPPLIER-1',
+            'in_stock' => true,
+            'stock_quantity' => null,
+            'stock_status' => 'in_stock',
+        ]);
+
+        $this->actingAs($admin)
+            ->get(ProductResource::getUrl('index', panel: 'admin'))
+            ->assertOk()
+            ->assertSeeText('Товар со статусом без количества')
+            ->assertSeeText('Количество не указано')
+            ->assertDontSeeText('Остаток: 0 шт.');
+    }
+
     public function test_connect_1c_action_can_prefill_supplier_without_saving_anything(): void
     {
         $admin = User::factory()->create(['role' => 'admin', 'is_active' => true]);

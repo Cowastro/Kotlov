@@ -94,7 +94,9 @@ class ProductsTable
 
                 TextColumn::make('supplier_stock')
                     ->label('Остаток')
-                    ->getStateUsing(fn ($record): int => self::supplierStock($record))
+                    ->getStateUsing(fn ($record): string => ($stock = self::supplierStock($record)) === null
+                        ? '—'
+                        : number_format($stock, 0, ',', ' '))
                     ->alignCenter()
                     ->width('5.5rem')
                     ->grow(false)
@@ -825,13 +827,16 @@ class ProductsTable
         return $prices->isEmpty() ? null : (float) $prices->min();
     }
 
-    private static function supplierStock(object $record): int
+    private static function supplierStock(object $record): ?int
     {
         $integrationItems = self::activeIntegrationItems($record);
+        $stockItems = $integrationItems->isNotEmpty()
+            ? $integrationItems->filter(fn ($item): bool => $item->stock_quantity !== null)
+            : $record->supplierProducts->filter(fn ($item): bool => $item->stock_quantity !== null);
 
-        return (int) ($integrationItems->isNotEmpty()
-            ? $integrationItems->sum(fn ($item): float => (float) $item->stock_quantity)
-            : $record->supplierProducts->sum('stock_quantity'));
+        return $stockItems->isEmpty()
+            ? null
+            : (int) $stockItems->sum(fn ($item): float => (float) $item->stock_quantity);
     }
 
     private static function supplierNames(object $record): string
@@ -849,7 +854,7 @@ class ProductsTable
     {
         $integrationItems = self::activeIntegrationItems($record);
         if ($integrationItems->isNotEmpty()) {
-            return self::supplierStock($record) > 0
+            return (self::supplierStock($record) ?? 0) > 0
                 ? Product::AVAILABILITY_IN_STOCK
                 : Product::AVAILABILITY_CHECK;
         }
@@ -870,6 +875,10 @@ class ProductsTable
         $stock = $record->stock_qty === null
             ? $supplierStock
             : (float) $record->stock_qty;
+
+        if ($stock === null) {
+            return 'Количество не указано';
+        }
 
         return 'Остаток: '.number_format($stock, 0, ',', ' ').' шт.';
     }
