@@ -1127,7 +1127,10 @@ class SyncLigmetCommand extends Command
             'images' => json_encode([]),
             'specs' => json_encode([]),
             'unit' => 'шт',
-            'is_active' => true,
+            // A price list has no photos or full product content. Keep newly
+            // discovered catalogue cards unpublished until enrichment/review;
+            // the supplier link, prices and availability still stay current.
+            'is_active' => false,
             'is_archived' => false,
             'in_stock' => $r['stock']['in_stock'],
             'is_new' => true,

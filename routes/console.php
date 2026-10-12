@@ -102,8 +102,9 @@ Schedule::command('supplier:sync-akvatermex --apply --only-linked --sync-retail-
 
 // Лигмет: ежедневно обновляем цены и остатки всего каталога.
 // Поставщик заменяет файл в общей папке, поэтому каждый запуск сам выбирает
-// самый свежий XLS/XLSX. Новые товары автоматически не создаются.
-Schedule::command('supplier:sync-ligmet --apply --all-categories --folder-url=https://drive.google.com/drive/folders/1pQQRGMKBEHHEjUF3AYsi_dTvlxxTFxzz')
+// самый свежий XLS/XLSX. Новые позиции получают непубличные карточки и
+// постоянную связь по артикулу; публикация — после фото и проверки контента.
+Schedule::command('supplier:sync-ligmet --apply --all-categories --create-new --link-existing-suggestions --min-suggestion-score=99.9 --folder-url=https://drive.google.com/drive/folders/1pQQRGMKBEHHEjUF3AYsi_dTvlxxTFxzz')
     ->dailyAt('08:10')
     ->timezone($supplierSyncTimezone)
     ->withoutOverlapping()
