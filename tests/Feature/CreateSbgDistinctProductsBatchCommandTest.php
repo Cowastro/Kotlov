@@ -340,4 +340,57 @@ class CreateSbgDistinctProductsBatchCommandTest extends TestCase
         $this->assertStringContainsString('ts-frt-akl-0130-32856', $product->content_source_url);
         $this->assertStringContainsString('51404470.jpg', $product->images[0]);
     }
+
+    public function test_it_creates_the_verified_teplov_110_adapter_instead_of_the_ferrum_candidate(): void
+    {
+        $source = IntegrationSource::query()->create([
+            'code' => 'onec-sbg-adapter-mm-110',
+            'name' => '1С СанБизнесГруп',
+            'settings' => ['partner_name' => 'ООО «СанБизнесГруп»'],
+            'is_active' => true,
+            'update_stock' => true,
+        ]);
+        $category = Category::query()->create(['name' => 'Переходы и адаптеры', 'slug' => 'chimney-adapters', 'parent_id' => 0]);
+        $ferrum = Brand::query()->create(['name' => 'Ferrum', 'slug' => 'ferrum']);
+        $teplov = Brand::query()->create(['name' => 'Теплов и Сухов', 'slug' => 'teplov-i-suhov']);
+        $template = Product::query()->create([
+            'category_id' => $category->id,
+            'brand_id' => $ferrum->id,
+            'sku' => 'PS-007.944',
+            'name' => 'Адаптер ММ FERRUM (430/0,8мм) Ф110',
+            'slug' => 'ferrum-adapter-mm-110',
+            'price' => 16,
+            'images' => ['product/007/007944/adapter.jpg'],
+        ]);
+        $item = IntegrationProduct::query()->create([
+            'integration_source_id' => $source->id,
+            'external_id' => 'teplov-adapter-mm-110',
+            'external_code' => 'УТ-00000044',
+            'external_sku' => 'TS.FRT.AKL.0110.83435',
+            'barcode' => '4680205039478',
+            'name' => 'Адаптер Моно М-М 430-0.8 D110 (У)',
+            'price_byn' => 9.56,
+            'stock_quantity' => 51,
+            'match_status' => 'ambiguous',
+            'candidates' => [['product_id' => $template->id, 'score' => 0.7191]],
+        ]);
+
+        $this->artisan('integration:create-sbg-distinct-products', [
+            '--batch' => 'researched-priced-20261012-j',
+            '--code' => ['УТ-00000044'],
+            '--apply' => true,
+        ])->assertSuccessful();
+
+        $product = $item->fresh()->product;
+        $this->assertNotNull($product);
+        $this->assertSame($category->id, $product->category_id);
+        $this->assertSame($teplov->id, $product->brand_id);
+        $this->assertSame('Теплов и Сухов Адаптер Моно М-М 430-0.8 D110 (У)', $product->name);
+        $this->assertSame('16.00', $product->price);
+        $this->assertSame('51', (string) $product->stock_qty);
+        $this->assertSame('110 мм', collect($product->specs)->firstWhere('key', 'Диаметр')['value']);
+        $this->assertSame('4680205039478', collect($product->specs)->firstWhere('key', 'Штрихкод')['value']);
+        $this->assertStringContainsString('adapter-mono-m-m-430-0-8-d110-u', $product->content_source_url);
+        $this->assertStringContainsString('IMG17586c5773810e092068ef5f09ad9950', $product->images[0]);
+    }
 }

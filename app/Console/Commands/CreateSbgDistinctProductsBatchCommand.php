@@ -242,6 +242,36 @@ class CreateSbgDistinctProductsBatchCommand extends Command
         ],
     ];
 
+    private const BATCH_RESEARCHED_PRICED_20261012_J = [
+        'УТ-00000044' => [
+            'template' => 'PS-007.944',
+            'fragments' => ['Адаптер Моно М-М', '430-0.8', 'D110'],
+            'brand' => [
+                'name' => 'Теплов и Сухов',
+                'slug' => 'teplov-i-suhov',
+                'country' => 'Россия',
+                'content' => '<p><strong>Теплов и Сухов</strong> — российский производитель модульных дымоходов и комплектующих из нержавеющей стали.</p>',
+            ],
+            'name' => 'Теплов и Сухов Адаптер Моно М-М 430-0.8 D110 (У)',
+            'images' => ['https://kaminchi.ru/image/cache/data/teplov-suhov/dymoxody-modulnye-iz-nerzhaveyushhej-stali/IMG17586c5773810e092068ef5f09ad9950-1024x768.jpg'],
+            'source_url' => 'https://kaminchi.ru/dimohod/dymoxody-modulnye-iz-nerzhaveyushhej-stali/adapter-mono-m-m-430-0-8-d110-u',
+            'short' => 'Одноконтурный адаптер Моно М-М Теплов и Сухов Ø110 мм из нержавеющей стали AISI 430 толщиной 0,8 мм.',
+            'content' => '<p><strong>Теплов и Сухов Адаптер Моно М-М 430-0.8 D110</strong> — одноконтурный элемент для соединения выходного патрубка теплогенерирующего аппарата с дымоходом диаметром 110 мм.</p><p>Адаптер изготовлен из нержавеющей стали AISI 430 толщиной 0,8 мм. Исполнение М-М предназначено для стыковки элементов с соответствующим типом соединения. Перед монтажом необходимо проверить совпадение диаметра и направление сборки дымохода.</p>',
+            'specs' => [
+                ['key' => 'Тип', 'value' => 'Адаптер одноконтурный'],
+                ['key' => 'Система', 'value' => 'Моно'],
+                ['key' => 'Тип соединения', 'value' => 'М-М'],
+                ['key' => 'Диаметр', 'value' => '110 мм'],
+                ['key' => 'Материал', 'value' => 'Нержавеющая сталь'],
+                ['key' => 'Марка стали', 'value' => 'AISI 430'],
+                ['key' => 'Толщина стали', 'value' => '0,8 мм'],
+                ['key' => 'Артикул производителя', 'value' => 'TS.FRT.AKL.0110.83435'],
+                ['key' => 'Штрихкод', 'value' => '4680205039478'],
+                ['key' => 'Страна производства', 'value' => 'Россия'],
+            ],
+        ],
+    ];
+
     public function handle(IntegrationProductCreator $creator): int
     {
         $rows = match ($this->option('batch')) {
@@ -254,6 +284,7 @@ class CreateSbgDistinctProductsBatchCommand extends Command
             'researched-priced-20261012-g' => self::BATCH_RESEARCHED_PRICED_20261012_G,
             'researched-priced-20261012-h' => self::BATCH_RESEARCHED_PRICED_20261012_H,
             'researched-priced-20261012-i' => self::BATCH_RESEARCHED_PRICED_20261012_I,
+            'researched-priced-20261012-j' => self::BATCH_RESEARCHED_PRICED_20261012_J,
             default => null,
         };
 
