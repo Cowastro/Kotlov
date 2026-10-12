@@ -518,6 +518,82 @@ class OneCExchangeTest extends TestCase
         $this->assertSame(0, Product::query()->count());
     }
 
+    public function test_catalog_file_may_be_larger_than_the_advertised_chunk_limit(): void
+    {
+        config()->set('onec.exchange.file_limit', 32);
+        config()->set('onec.exchange.max_file_size', 256);
+
+        $firstChunk = '<?xml?><x>';
+        $secondChunk = str_repeat('x', 30);
+        $lastChunk = '</x>';
+
+        $this->withBasicAuth('onec-test', 'secret-test')
+            ->get('/1c/exchange?type=catalog&mode=init')
+            ->assertOk()
+            ->assertSeeText('file_limit=32', false);
+
+        foreach ([$firstChunk, $secondChunk, $lastChunk] as $chunk) {
+            $this->call(
+                'POST',
+                '/1c/exchange?type=catalog&mode=file&filename=import.xml',
+                [],
+                [],
+                [],
+                ['PHP_AUTH_USER' => 'onec-test', 'PHP_AUTH_PW' => 'secret-test'],
+                $chunk,
+            )->assertOk()->assertSeeText('success');
+        }
+
+        $session = hash('sha256', 'onec-test');
+        $this->assertSame(
+            $firstChunk.$secondChunk.$lastChunk,
+            Storage::disk('local')->get("onec-exchange/onec/{$session}/import.xml")
+        );
+
+        $run = IntegrationExchangeRun::query()->latest('id')->firstOrFail();
+        $this->assertSame('running', $run->status);
+        $this->assertSame(3, $run->files_count);
+        $this->assertSame(strlen($firstChunk.$secondChunk.$lastChunk), $run->bytes_received);
+    }
+
+    public function test_catalog_file_over_total_safety_limit_marks_run_as_failed(): void
+    {
+        config()->set('onec.exchange.file_limit', 32);
+        config()->set('onec.exchange.max_file_size', 64);
+
+        $this->withBasicAuth('onec-test', 'secret-test')
+            ->get('/1c/exchange?type=catalog&mode=init')
+            ->assertOk();
+
+        $this->call(
+            'POST',
+            '/1c/exchange?type=catalog&mode=file&filename=import.xml',
+            [],
+            [],
+            [],
+            ['PHP_AUTH_USER' => 'onec-test', 'PHP_AUTH_PW' => 'secret-test'],
+            '<?xml version="1.0"?>'.str_repeat('x', 64),
+        )->assertOk()->assertSeeText('failure');
+
+        $run = IntegrationExchangeRun::query()->latest('id')->firstOrFail();
+        $this->assertSame('failed', $run->status);
+        $this->assertNotNull($run->finished_at);
+        $this->assertStringContainsString('превысил допустимый общий размер', $run->error_message);
+    }
+
+    public function test_new_catalog_init_closes_the_previous_unfinished_run(): void
+    {
+        $url = '/1c/exchange?type=catalog&mode=init';
+        $this->withBasicAuth('onec-test', 'secret-test')->get($url)->assertOk();
+        $previous = IntegrationExchangeRun::query()->latest('id')->firstOrFail();
+
+        $this->withBasicAuth('onec-test', 'secret-test')->get($url)->assertOk();
+
+        $this->assertSame('failed', $previous->fresh()->status);
+        $this->assertStringContainsString('начала новый обмен', $previous->fresh()->error_message);
+        $this->assertSame(1, IntegrationExchangeRun::query()->where('status', 'running')->count());
+    }
+
     public function test_init_removes_files_left_by_a_previous_exchange(): void
     {
         $session = hash('sha256', 'onec-test');

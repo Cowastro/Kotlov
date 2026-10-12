@@ -130,6 +130,12 @@ class OneCExchangeController extends Controller
             return $this->plain("failure\nInvalid filename");
         }
 
+        $operation = match ($type) {
+            'catalog' => 'catalog',
+            'sale' => 'order_statuses',
+            default => null,
+        };
+
         $contents = $request->getContent();
         $path = $this->sessionPath($request, $source).'/'.$filename;
         $disk = Storage::disk((string) config('onec.exchange.storage_disk'));
@@ -143,18 +149,23 @@ class OneCExchangeController extends Controller
             $disk->delete([$path.'.received', $path.'.result.json']);
         }
 
-        $existing = ! $startsNewFile && $disk->exists($path) ? $disk->get($path) : '';
-        if (strlen($existing) + strlen($contents) > (int) config('onec.exchange.file_limit')) {
-            return $this->plain("failure\nFile is too large");
+        $existingBytes = ! $startsNewFile && $disk->exists($path) ? $disk->size($path) : 0;
+        $totalBytes = $existingBytes + strlen($contents);
+        if ($totalBytes > (int) config('onec.exchange.max_file_size')) {
+            $run = $operation
+                ? ($this->currentRun($request, $source, $operation)
+                    ?? $this->startRun($request, $source, 'inbound', $operation))
+                : null;
+            $this->exchangeJournal->fail(
+                $run,
+                'Файл CommerceML превысил допустимый общий размер '.config('onec.exchange.max_file_size').' байт.'
+            );
+
+            return $this->plain("failure\nComplete file is too large");
         }
 
+        $existing = $existingBytes > 0 ? $disk->get($path) : '';
         $disk->put($path, $existing.$contents);
-
-        $operation = match ($type) {
-            'catalog' => 'catalog',
-            'sale' => 'order_statuses',
-            default => null,
-        };
 
         if ($operation) {
             $run = $this->currentRun($request, $source, $operation)
@@ -171,6 +182,14 @@ class OneCExchangeController extends Controller
             ->deleteDirectory($this->sessionPath($request, $source));
 
         if ($type === 'catalog') {
+            $previousRun = $this->currentRun($request, $source, 'catalog');
+            if ($previousRun?->status === 'running') {
+                $this->exchangeJournal->fail(
+                    $previousRun,
+                    'Сеанс прерван: 1С начала новый обмен до завершения предыдущего.'
+                );
+            }
+
             $this->startRun($request, $source, 'inbound', 'catalog');
             Cache::put($this->catalogSnapshotStartedCacheKey($request, $source), now()->toIso8601String(), now()->addHours(6));
             Cache::forget($this->catalogOffersReceivedCacheKey($request, $source));
