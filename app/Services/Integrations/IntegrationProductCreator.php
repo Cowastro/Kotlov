@@ -5,6 +5,7 @@ namespace App\Services\Integrations;
 use App\Models\IntegrationProduct;
 use App\Models\Product;
 use App\Services\SupplierProductAvailabilityService;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
@@ -15,7 +16,12 @@ class IntegrationProductCreator
         private readonly SupplierProductAvailabilityService $availability,
     ) {}
 
-    /** @param array{name:string, category_id:int|string, retail_price:float|int|string} $data */
+    /**
+     * @param array{name:string, category_id:int|string, retail_price:float|int|string,
+     *     brand_id?:int|string|null, h1?:string|null, short_description?:string|null,
+     *     content?:string|null, images?:array<int,string>, specs?:array<int,array<string,string>>,
+     *     meta_title?:string|null, meta_description?:string|null} $data
+     */
     public function createAndLink(IntegrationProduct $item, array $data): ?Product
     {
         return DB::transaction(function () use ($item, $data): ?Product {
@@ -29,7 +35,18 @@ class IntegrationProductCreator
             }
 
             $name = trim((string) $data['name']);
-            $product = Product::query()->create([
+            $contentFields = Arr::only($data, [
+                'brand_id',
+                'h1',
+                'short_description',
+                'content',
+                'images',
+                'specs',
+                'meta_title',
+                'meta_description',
+            ]);
+
+            $product = Product::query()->create(array_merge([
                 'category_id' => (int) $data['category_id'],
                 'supplier_id' => $item->source?->supplier_id,
                 'name' => $name,
@@ -42,7 +59,7 @@ class IntegrationProductCreator
                 'in_stock' => false,
                 'availability_status' => Product::AVAILABILITY_CHECK,
                 'stock_qty' => null,
-            ]);
+            ], $contentFields));
 
             $product->update([
                 'sku' => $this->uniqueSku($product->id),
