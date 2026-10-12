@@ -9,6 +9,17 @@ use Illuminate\Support\Facades\DB;
 
 class ReconcileSupplierAvailabilityCommand extends Command
 {
+    private const STOVE_CATEGORY_SLUGS = [
+        'pechki',
+        'pechi-kaminy',
+        'pechi',
+        'peci-drovianye-otopitelnye',
+        'drovyanye-pechi-dlya-bani',
+        'drovianye-peci-bannye',
+        'elektrokamenki',
+        'elektricheskie-pechi',
+    ];
+
     protected $signature = 'supplier:reconcile-availability
         {--apply : Recalculate catalog availability for every product linked to an active supplier}';
 
@@ -63,15 +74,27 @@ class ReconcileSupplierAvailabilityCommand extends Command
                 'updated_at' => now(),
             ]);
 
+        // A stove without any active supplier link must never expose a stale
+        // retail price or an optimistic stock flag on the storefront.
+        $guardedStoves = $this->unlinkedStovesWithPublicOfferQuery()->update([
+            'price' => 0,
+            'price_old' => null,
+            'in_stock' => false,
+            'stock_qty' => null,
+            'availability_status' => Product::AVAILABILITY_CHECK,
+            'updated_at' => now(),
+        ]);
+
         $after = $this->inconsistencyCounts();
         $this->newLine();
         $this->info('Пересчитано связанных товаров: ' . count($productIds));
+        $this->info('Печей без поставщика переведено в «цену и наличие уточняйте»: '.$guardedStoves);
         $this->table(['Проверка после исправления', 'Количество'], $this->rows($after));
 
         return array_sum($after) === 0 ? self::SUCCESS : self::FAILURE;
     }
 
-    /** @return array{false_positive:int,false_negative:int,uncertain_in_stock:int} */
+    /** @return array{false_positive:int,false_negative:int,uncertain_in_stock:int,unlinked_stoves_with_public_offer:int} */
     private function inconsistencyCounts(): array
     {
         $hasActiveLink = fn ($query) => $query
@@ -128,16 +151,73 @@ class ReconcileSupplierAvailabilityCommand extends Command
                 ->where('p.in_stock', true)
                 ->where('p.is_archived', false)
                 ->count(),
+            'unlinked_stoves_with_public_offer' => $this->unlinkedStovesWithPublicOfferQuery()->count(),
         ];
     }
 
-    /** @param array{false_positive:int,false_negative:int,uncertain_in_stock:int} $counts */
+    /** @param array{false_positive:int,false_negative:int,uncertain_in_stock:int,unlinked_stoves_with_public_offer:int} $counts */
     private function rows(array $counts): array
     {
         return [
             ['Нет подтверждённого остатка, но на сайте «В наличии»', $counts['false_positive']],
             ['Остаток подтверждён, но на сайте не «В наличии»', $counts['false_negative']],
             ['«Уточняйте наличие» одновременно с флагом in_stock', $counts['uncertain_in_stock']],
+            ['Печь без активного поставщика показывает цену или наличие', $counts['unlinked_stoves_with_public_offer']],
         ];
+    }
+
+    private function unlinkedStovesWithPublicOfferQuery()
+    {
+        $categoryIds = $this->stoveCategoryIds();
+
+        $hasActiveLegacyLink = fn ($query) => $query
+            ->selectRaw('1')
+            ->from('supplier_products as guard_sp')
+            ->join('suppliers as guard_s', 'guard_s.id', '=', 'guard_sp.supplier_id')
+            ->whereColumn('guard_sp.product_id', 'p.id')
+            ->where('guard_s.is_active', true);
+        $hasActiveIntegrationLink = fn ($query) => $query
+            ->selectRaw('1')
+            ->from('integration_products as guard_ip')
+            ->join('integration_sources as guard_source', 'guard_source.id', '=', 'guard_ip.integration_source_id')
+            ->whereColumn('guard_ip.product_id', 'p.id')
+            ->where('guard_source.is_active', true)
+            ->where('guard_ip.match_status', 'matched');
+
+        return DB::table('products as p')
+            ->whereIn('p.category_id', $categoryIds)
+            ->where('p.is_archived', false)
+            ->whereNotExists($hasActiveLegacyLink)
+            ->whereNotExists($hasActiveIntegrationLink)
+            ->where(fn ($query) => $query
+                ->where('p.price', '>', 0)
+                ->orWhere('p.in_stock', true)
+                ->orWhereNotNull('p.stock_qty')
+                ->orWhere('p.availability_status', '!=', Product::AVAILABILITY_CHECK)
+                ->orWhereNull('p.availability_status'));
+    }
+
+    /** @return array<int, int> */
+    private function stoveCategoryIds(): array
+    {
+        $categories = DB::table('categories')->get(['id', 'parent_id', 'slug']);
+        $ids = $categories
+            ->whereIn('slug', self::STOVE_CATEGORY_SLUGS)
+            ->pluck('id')
+            ->map(fn ($id): int => (int) $id)
+            ->values()
+            ->all();
+
+        do {
+            $before = count($ids);
+            foreach ($categories as $category) {
+                if (in_array((int) $category->parent_id, $ids, true)) {
+                    $ids[] = (int) $category->id;
+                }
+            }
+            $ids = array_values(array_unique($ids));
+        } while (count($ids) > $before);
+
+        return $ids;
     }
 }

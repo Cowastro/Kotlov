@@ -312,7 +312,11 @@ class ProductInfolist
             return null;
         }
 
-        return url('/' . $categorySlug . '/' . $record->slug);
+        $url = url('/' . $categorySlug . '/' . $record->slug);
+
+        return ! $record->is_active && ! $record->is_archived
+            ? $url . '?admin-preview=1'
+            : $url;
     }
 
     /** @return array<string, mixed> */

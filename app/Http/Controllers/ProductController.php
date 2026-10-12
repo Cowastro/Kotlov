@@ -30,8 +30,13 @@ class ProductController extends Controller
             return redirect($parentSlug ? '/'.$parentSlug : '/', 301);
         }
 
+        $canPreviewInactive = request()->boolean('admin-preview')
+            && auth()->user()?->is_active
+            && auth()->user()?->isManager();
+
         $product = Product::where('slug', $productSlug)
-            ->where(fn ($q) => $q->where('is_active', true)->orWhere('is_archived', true))
+            ->when(! $canPreviewInactive, fn ($query) => $query
+                ->where(fn ($q) => $q->where('is_active', true)->orWhere('is_archived', true)))
             ->with([
                 'category.parent',
                 'brand',

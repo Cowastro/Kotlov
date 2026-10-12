@@ -111,6 +111,15 @@ Schedule::command('supplier:sync-ligmet --apply --all-categories --create-new --
     ->runInBackground()
     ->appendOutputTo(storage_path('logs/ligmet-sync.log'));
 
+// Страховка витрины: печи без активной связи с поставщиком не должны
+// показывать устаревшие цены или неподтверждённое наличие.
+Schedule::command('supplier:reconcile-availability --apply')
+    ->hourlyAt(20)
+    ->timezone($supplierSyncTimezone)
+    ->withoutOverlapping()
+    ->runInBackground()
+    ->appendOutputTo(storage_path('logs/supplier-availability-reconcile.log'));
+
 // ТСК Насосы: ежедневно обновляем цены и наличие насосного оборудования.
 Schedule::command('supplier:sync-tsk-nasosy --apply')
     ->dailyAt('08:20')

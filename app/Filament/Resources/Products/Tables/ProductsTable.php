@@ -60,7 +60,9 @@ class ProductsTable
 
                 TextColumn::make('frontend_url')
                     ->label('Где купить')
-                    ->state('Открыть')
+                    ->state(fn ($record): string => $record->is_active || $record->is_archived
+                        ? 'Открыть'
+                        : 'Предпросмотр')
                     ->url(fn ($record) => self::productUrl($record))
                     ->openUrlInNewTab()
                     ->icon('heroicon-o-arrow-top-right-on-square')
@@ -792,7 +794,11 @@ class ProductsTable
             return null;
         }
 
-        return url('/'.$categorySlug.'/'.$record->slug);
+        $url = url('/'.$categorySlug.'/'.$record->slug);
+
+        return ! $record->is_active && ! $record->is_archived
+            ? $url.'?admin-preview=1'
+            : $url;
     }
 
     private static function supplierChannelState(object $record): string

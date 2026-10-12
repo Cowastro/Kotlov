@@ -69,7 +69,7 @@ class HandleRedirects
         // Exact redirect mappings must win over broad legacy-path rules.
         // Keep currently valid product URLs untouched even if an obsolete
         // redirect row with the same source still exists in the database.
-        if (! $this->isCanonicalProductPath($path)) {
+        if (! $this->isCanonicalProductPath($request, $path)) {
             $redirect = DB::table('redirects')
                 ->where('from_url', $path)
                 ->where('is_active', 1)
@@ -263,7 +263,7 @@ class HandleRedirects
         return $path === $canonicalPath || $targetPath === $canonicalPath;
     }
 
-    private function isCanonicalProductPath(string $path): bool
+    private function isCanonicalProductPath(Request $request, string $path): bool
     {
         $path = '/' . trim($path, '/');
         $productSlug = basename($path);
@@ -274,8 +274,9 @@ class HandleRedirects
 
         $product = Product::query()
             ->where('slug', $productSlug)
-            ->where('is_active', true)
-            ->where('is_archived', false)
+            ->when(! $this->canPreviewInactive($request), fn ($query) => $query
+                ->where('is_active', true)
+                ->where('is_archived', false))
             ->with('category')
             ->first();
 
@@ -358,7 +359,10 @@ class HandleRedirects
 
         $product = Product::query()
             ->where('slug', rawurldecode($segments[1]))
-            ->where(fn ($query) => $query->where('is_active', true)->orWhere('is_archived', true))
+            ->when(! $this->canPreviewInactive($request), fn ($query) => $query
+                ->where(fn ($productQuery) => $productQuery
+                    ->where('is_active', true)
+                    ->orWhere('is_archived', true)))
             ->with('category:id,slug')
             ->first();
 
@@ -435,7 +439,10 @@ class HandleRedirects
         $lastSegment = rawurldecode((string) end($segments));
         $isProductPath = Product::query()
             ->where('slug', $lastSegment)
-            ->where(fn ($query) => $query->where('is_active', true)->orWhere('is_archived', true))
+            ->when(! $this->canPreviewInactive($request), fn ($query) => $query
+                ->where(fn ($productQuery) => $productQuery
+                    ->where('is_active', true)
+                    ->orWhere('is_archived', true)))
             ->exists();
 
         if ($isProductPath) {
@@ -491,7 +498,10 @@ class HandleRedirects
 
         $product = Product::query()
             ->whereIn('slug', $candidates)
-            ->where(fn ($query) => $query->where('is_active', true)->orWhere('is_archived', true))
+            ->when(! $this->canPreviewInactive($request), fn ($query) => $query
+                ->where(fn ($productQuery) => $productQuery
+                    ->where('is_active', true)
+                    ->orWhere('is_archived', true)))
             ->with('category')
             ->first();
 
@@ -519,6 +529,13 @@ class HandleRedirects
         $query = $request->getQueryString();
 
         return redirect($targetPath . ($query ? '?' . $query : ''), 301);
+    }
+
+    private function canPreviewInactive(Request $request): bool
+    {
+        return $request->boolean('admin-preview')
+            && $request->user()?->is_active
+            && $request->user()?->isManager();
     }
 
     private function normalizeLegacySlug(string $slug): string
