@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class CrmContactPoint extends Model
 {
-    protected $fillable = ['contact_id', 'type', 'value', 'normalized_value', 'label', 'is_primary', 'is_active'];
+    protected $fillable = ['contact_id', 'counterparty_id', 'type', 'value', 'normalized_value', 'label', 'is_primary', 'is_active'];
 
     protected $casts = ['is_primary' => 'boolean', 'is_active' => 'boolean'];
 
@@ -25,5 +25,10 @@ class CrmContactPoint extends Model
     public function contact(): BelongsTo
     {
         return $this->belongsTo(CrmContact::class, 'contact_id');
+    }
+
+    public function counterparty(): BelongsTo
+    {
+        return $this->belongsTo(CrmCounterparty::class, 'counterparty_id');
     }
 }

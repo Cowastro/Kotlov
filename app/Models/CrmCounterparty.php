@@ -36,12 +36,13 @@ class CrmCounterparty extends Model
     ];
 
     protected $fillable = [
-        'type', 'classification', 'business_unit', 'status', 'name', 'legal_name',
+        'type', 'classification', 'business_unit', 'status', 'name', 'public_name', 'legal_name',
+        'business_region', 'one_c_manager_name', 'registered_at', 'abc_xyz_classification',
         'unp', 'external_1c_id', 'responsible_user_id', 'source', 'website',
-        'legal_address', 'notes', 'last_contact_at',
+        'legal_address', 'postal_address', 'actual_address', 'notes', 'last_contact_at',
     ];
 
-    protected $casts = ['last_contact_at' => 'datetime'];
+    protected $casts = ['registered_at' => 'date', 'last_contact_at' => 'datetime'];
 
     public function responsibleUser(): BelongsTo
     {
@@ -53,8 +54,28 @@ class CrmCounterparty extends Model
         return $this->hasMany(CrmContact::class, 'counterparty_id');
     }
 
+    public function contactPoints(): HasMany
+    {
+        return $this->hasMany(CrmContactPoint::class, 'counterparty_id');
+    }
+
+    public function externalIdentities(): HasMany
+    {
+        return $this->hasMany(CrmExternalIdentity::class, 'counterparty_id');
+    }
+
     public function calls(): HasMany
     {
         return $this->hasMany(TelephonyCall::class, 'crm_counterparty_id');
+    }
+
+    public function getPhonesListAttribute(): string
+    {
+        return $this->contactPoints->where('type', 'phone')->pluck('value')->join(', ');
+    }
+
+    public function getEmailsListAttribute(): string
+    {
+        return $this->contactPoints->where('type', 'email')->pluck('value')->join(', ');
     }
 }

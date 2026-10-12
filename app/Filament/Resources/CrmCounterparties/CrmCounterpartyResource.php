@@ -11,9 +11,11 @@ use App\Models\User;
 use BackedEnum;
 use Filament\Actions\EditAction;
 use Filament\Actions\ViewAction;
+use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Toggle;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Resources\Resource;
 use Filament\Schemas\Components\Section;
@@ -22,6 +24,7 @@ use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 
 class CrmCounterpartyResource extends Resource
 {
@@ -56,15 +59,27 @@ class CrmCounterpartyResource extends Resource
                     ->required()->default('wholesale'),
                 Select::make('status')->label('Статус')->options(CrmCounterparty::STATUSES)->required()->default('active'),
                 TextInput::make('legal_name')->label('Юридическое название')->maxLength(255)->columnSpan(2),
+                TextInput::make('public_name')->label('Публичное название')->maxLength(255)->columnSpan(2),
                 TextInput::make('unp')->label('УНП / ИНН')->maxLength(32),
                 Select::make('responsible_user_id')->label('Ответственный')
                     ->options(fn (): array => User::query()->whereIn('role', ['admin', 'manager', 'sales_manager'])
                         ->where('is_active', true)->orderBy('name')->pluck('name', 'id')->all())
                     ->searchable()->preload(),
-                TextInput::make('external_1c_id')->label('Идентификатор 1С')->maxLength(255),
                 TextInput::make('website')->label('Сайт')->url()->maxLength(255),
+                TextInput::make('business_region')->label('Бизнес-регион 1С')->maxLength(255),
+                TextInput::make('one_c_manager_name')->label('Менеджер в 1С')->maxLength(255),
                 Textarea::make('legal_address')->label('Адрес')->rows(2)->columnSpanFull(),
                 Textarea::make('notes')->label('Общая информация / особенности работы')->rows(4)->columnSpanFull(),
+            ]),
+            Section::make('Общие телефоны и электронная почта')->schema([
+                Repeater::make('contactPoints')->relationship()->label('Каналы связи организации')->columns(5)
+                    ->schema([
+                        Select::make('type')->label('Тип')->options(['phone' => 'Телефон', 'email' => 'Email'])->required(),
+                        TextInput::make('value')->label('Телефон / email')->required()->maxLength(255)->columnSpan(2),
+                        TextInput::make('label')->label('Комментарий')->maxLength(100),
+                        Toggle::make('is_primary')->label('Основной'),
+                        Toggle::make('is_active')->label('Активен')->default(true),
+                    ])->defaultItems(0)->addActionLabel('Добавить телефон или email')->reorderable(false),
             ]),
         ]);
     }
@@ -80,10 +95,14 @@ class CrmCounterpartyResource extends Resource
                     ->formatStateUsing(fn (string $state): string => CrmCounterparty::BUSINESS_UNITS[$state] ?? $state),
                 TextEntry::make('legal_name')->label('Юридическое название')->placeholder('—'),
                 TextEntry::make('unp')->label('УНП / ИНН')->placeholder('—'),
+                TextEntry::make('phones_list')->label('Телефоны')->placeholder('—')->copyable(),
+                TextEntry::make('emails_list')->label('Email')->placeholder('—')->copyable(),
                 TextEntry::make('responsibleUser.name')->label('Ответственный')->placeholder('Не назначен'),
                 TextEntry::make('contacts_count')->label('Контактных лиц')->state(fn (CrmCounterparty $record): int => $record->contacts()->count()),
                 TextEntry::make('calls_count')->label('Звонков')->state(fn (CrmCounterparty $record): int => $record->calls()->count()),
-                TextEntry::make('external_1c_id')->label('Идентификатор 1С')->placeholder('Не связан'),
+                TextEntry::make('external_identities_count')->label('Связей с 1С')
+                    ->state(fn (CrmCounterparty $record): int => $record->externalIdentities()->count()),
+                TextEntry::make('one_c_manager_name')->label('Менеджер в 1С')->placeholder('Не указан'),
                 TextEntry::make('notes')->label('Примечание')->placeholder('—')->columnSpanFull(),
             ]),
         ]);
@@ -91,6 +110,8 @@ class CrmCounterpartyResource extends Resource
 
     public static function table(Table $table): Table
     {
+        $table->modifyQueryUsing(fn (Builder $query): Builder => $query->with(['contactPoints', 'responsibleUser']));
+
         return $table->columns([
             TextColumn::make('name')->label('Контрагент')->searchable()->sortable()->weight('bold')
                 ->description(fn (CrmCounterparty $record): ?string => $record->legal_name),
@@ -103,6 +124,12 @@ class CrmCounterpartyResource extends Resource
             TextColumn::make('business_unit')->label('Направление')->badge()
                 ->formatStateUsing(fn (string $state): string => CrmCounterparty::BUSINESS_UNITS[$state] ?? $state),
             TextColumn::make('unp')->label('УНП')->searchable()->placeholder('—')->copyable(),
+            TextColumn::make('phones_list')->label('Телефоны')->copyable()->placeholder('—')
+                ->searchable(query: fn (Builder $query, string $search): Builder => $query->whereHas(
+                    'contactPoints',
+                    fn (Builder $points): Builder => $points->where('type', 'phone')->where('value', 'like', "%{$search}%"),
+                )),
+            TextColumn::make('emails_list')->label('Email')->placeholder('—')->toggleable(isToggledHiddenByDefault: true),
             TextColumn::make('contacts_count')->label('Контакты')->counts('contacts')->sortable(),
             TextColumn::make('responsibleUser.name')->label('Ответственный')->placeholder('Не назначен'),
             TextColumn::make('status')->label('Статус')->badge()
