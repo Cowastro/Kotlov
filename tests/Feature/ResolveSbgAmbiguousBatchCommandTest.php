@@ -418,4 +418,65 @@ class ResolveSbgAmbiguousBatchCommandTest extends TestCase
             'confidence' => 'manual',
         ]);
     }
+
+    public function test_it_links_unipump_upc_25_40_to_the_researched_canonical_card(): void
+    {
+        $source = IntegrationSource::query()->create([
+            'code' => 'onec-sbg-unipump-upc-25-40',
+            'name' => '1С СанБизнесГруп',
+            'settings' => ['partner_name' => 'ООО «СанБизнесГруп»'],
+            'is_active' => true,
+            'update_stock' => true,
+        ]);
+        $category = Category::query()->create([
+            'name' => 'Циркуляционные насосы',
+            'slug' => 'circulation-pumps-upc-25-40',
+            'parent_id' => 0,
+        ]);
+        $product = Product::query()->create([
+            'category_id' => $category->id,
+            'sku' => 'PS-008.471',
+            'name' => 'Насос циркуляционный UNIPUMP UPC 25-40 180',
+            'slug' => 'unipump-upc-25-40-180-canonical',
+            'price' => 176.92,
+            'in_stock' => false,
+            'stock_qty' => null,
+        ]);
+        $wrongCandidate = Product::query()->create([
+            'category_id' => $category->id,
+            'sku' => 'PS-008.469',
+            'name' => 'Насос циркуляционный APC GR 25-40 180',
+            'slug' => 'apc-gr-25-40-180',
+        ]);
+        $item = IntegrationProduct::query()->create([
+            'integration_source_id' => $source->id,
+            'external_id' => 'unipump-upc-25-40-180',
+            'external_code' => 'УТ-00000523',
+            'name' => 'Насос циркуляц. (отопл.) UPC 25-40 180',
+            'price_byn' => null,
+            'stock_quantity' => 2,
+            'match_status' => 'ambiguous',
+            'candidates' => [['product_id' => $wrongCandidate->id, 'score' => 0.83]],
+        ]);
+
+        $this->artisan('integration:resolve-sbg-ambiguous', [
+            '--batch' => 'exact-20261013-j',
+            '--code' => ['УТ-00000523'],
+            '--apply' => true,
+        ])->assertSuccessful();
+
+        $item->refresh();
+        $product->refresh();
+        $this->assertSame($product->id, $item->product_id);
+        $this->assertSame('matched', $item->match_status);
+        $this->assertSame('manual_search', $item->match_method);
+        $this->assertSame('176.92', $product->price);
+        $this->assertTrue($product->in_stock);
+        $this->assertSame('2', (string) $product->stock_qty);
+        $this->assertDatabaseHas('supplier_product_mappings', [
+            'supplier_article' => 'УТ-00000523',
+            'product_id' => $product->id,
+            'confidence' => 'manual',
+        ]);
+    }
 }
