@@ -929,13 +929,12 @@ class SyncBaniaPricelistCommand extends Command
         }
 
         return array_values(array_filter($supplierProducts, function (object $candidate) use ($identity): bool {
-            foreach ([(string) ($candidate->product_name ?? ''), (string) ($candidate->supplier_name ?? '')] as $name) {
-                if ($name !== '' && $this->modelIdentity($name) === $identity) {
-                    return true;
-                }
+            $name = trim((string) ($candidate->product_name ?? ''));
+            if ($name === '') {
+                $name = trim((string) ($candidate->supplier_name ?? ''));
             }
 
-            return false;
+            return $name !== '' && $this->modelIdentity($name) === $identity;
         }));
     }
 
@@ -1016,24 +1015,24 @@ class SyncBaniaPricelistCommand extends Command
         }
 
         $identities = $this->supplierProductIdentities($supplierProduct);
-        $exactArticleCandidates = array_values(array_filter(
-            $candidates,
-            fn (array $candidate): bool => in_array($this->modelIdentity((string) ($candidate['name'] ?? '')), $identities, true)
-        ));
-        if (count($exactArticleCandidates) === 1) {
-            return array_merge($exactArticleCandidates[0], [
-                'match_type' => 'retail_article_exact',
-                'confidence' => 100,
-            ]);
-        }
-
         $exactTitleCandidates = array_values(array_filter(
             $indexes['rows'] ?? [],
             fn (array $candidate): bool => in_array($this->modelIdentity((string) ($candidate['name'] ?? '')), $identities, true)
         ));
         if (count($exactTitleCandidates) === 1) {
-            return array_merge($exactTitleCandidates[0], [
-                'match_type' => 'retail_title_exact',
+            $titleMatch = $exactTitleCandidates[0];
+            $sameArticle = count($candidates) === 1
+                && (string) ($candidates[0]['norm_article'] ?? '') === (string) ($titleMatch['norm_article'] ?? '');
+
+            return array_merge($titleMatch, [
+                'match_type' => $sameArticle ? 'retail_article_exact' : 'retail_title_exact',
+                'confidence' => 100,
+            ]);
+        }
+
+        if (count($candidates) === 1) {
+            return array_merge($candidates[0], [
+                'match_type' => 'retail_article_exact',
                 'confidence' => 100,
             ]);
         }
@@ -1070,15 +1069,14 @@ class SyncBaniaPricelistCommand extends Command
 
     private function supplierProductIdentities(object $supplierProduct): array
     {
-        $identities = [];
-        foreach ([(string) ($supplierProduct->product_name ?? ''), (string) ($supplierProduct->supplier_name ?? '')] as $name) {
-            $identity = $this->modelIdentity($name);
-            if ($identity !== '') {
-                $identities[] = $identity;
-            }
+        $name = trim((string) ($supplierProduct->product_name ?? ''));
+        if ($name === '') {
+            $name = trim((string) ($supplierProduct->supplier_name ?? ''));
         }
 
-        return array_values(array_unique($identities));
+        $identity = $this->modelIdentity($name);
+
+        return $identity === '' ? [] : [$identity];
     }
 
     private function isStandaloneRetailMatchConfident(object $supplierProduct, ?array $retailMatch): bool

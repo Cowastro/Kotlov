@@ -118,7 +118,7 @@ class SyncBaniaPricelistSafetyTest extends TestCase
         $product = (object) [
             'product_id' => 11,
             'product_name' => 'Печь отопительная ASTON Lesnaya 300',
-            'supplier_name' => '',
+            'supplier_name' => 'Печь отопительная ASTON Lesnaya 150',
             'supplier_article' => '4610094714873',
             'supplier_article_normalized' => '4610094714873',
         ];
