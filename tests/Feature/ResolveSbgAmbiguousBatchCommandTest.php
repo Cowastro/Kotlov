@@ -96,4 +96,65 @@ class ResolveSbgAmbiguousBatchCommandTest extends TestCase
 
         $this->assertNull($item->fresh()->product_id);
     }
+
+    public function test_it_links_the_exact_meta_bel_ritm_card_found_outside_the_wrong_candidate_set(): void
+    {
+        $source = IntegrationSource::query()->create([
+            'code' => 'onec-sbg-ritm',
+            'name' => '1С СанБизнесГруп',
+            'settings' => ['partner_name' => 'ООО «СанБизнесГруп»'],
+            'is_active' => true,
+            'update_stock' => true,
+        ]);
+        $category = Category::query()->create([
+            'name' => 'Печи-камины',
+            'slug' => 'pechi-kaminy',
+            'parent_id' => 0,
+        ]);
+        $product = Product::query()->create([
+            'category_id' => $category->id,
+            'sku' => 'PS-007.486',
+            'name' => 'Печь-камин Мета-Бел Ритм АОТ-7',
+            'slug' => 'pech-kamin-meta-bel-ritm-aot-7',
+            'price' => 1800,
+            'in_stock' => false,
+            'stock_qty' => null,
+        ]);
+        $wrongCandidate = Product::query()->create([
+            'category_id' => $category->id,
+            'sku' => 'PS-006.589',
+            'name' => 'Печь-каменка Мета-Бел ПБМ 16 (в модификации ПС)',
+            'slug' => 'meta-bel-pbm-16-ps',
+        ]);
+        $item = IntegrationProduct::query()->create([
+            'integration_source_id' => $source->id,
+            'external_id' => 'meta-bel-ritm-aot-7',
+            'external_code' => 'УТ-00001564',
+            'name' => 'Печь-камин АОТ 7.0 (в модификации "Ритм")',
+            'price_byn' => 1116.90,
+            'stock_quantity' => 1,
+            'match_status' => 'ambiguous',
+            'candidates' => [['product_id' => $wrongCandidate->id, 'score' => 0.731]],
+        ]);
+
+        $this->artisan('integration:resolve-sbg-ambiguous', [
+            '--batch' => 'exact-20261012-e',
+            '--code' => ['УТ-00001564'],
+            '--apply' => true,
+        ])->assertSuccessful();
+
+        $item->refresh();
+        $product->refresh();
+        $this->assertSame($product->id, $item->product_id);
+        $this->assertSame('matched', $item->match_status);
+        $this->assertSame('manual_search', $item->match_method);
+        $this->assertSame('1800.00', $product->price);
+        $this->assertTrue($product->in_stock);
+        $this->assertSame('1', (string) $product->stock_qty);
+        $this->assertDatabaseHas('supplier_product_mappings', [
+            'supplier_article' => 'УТ-00001564',
+            'product_id' => $product->id,
+            'confidence' => 'manual',
+        ]);
+    }
 }
