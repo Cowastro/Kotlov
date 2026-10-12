@@ -211,6 +211,37 @@ class CreateSbgDistinctProductsBatchCommand extends Command
         ],
     ];
 
+    private const BATCH_RESEARCHED_PRICED_20261012_I = [
+        'УТ-00000045' => [
+            'template' => 'PS-007.853',
+            'fragments' => ['Адаптер Моно М-М', '430-0.8', 'D130'],
+            'brand' => [
+                'name' => 'Теплов и Сухов',
+                'slug' => 'teplov-i-suhov',
+                'country' => 'Россия',
+                'content' => '<p><strong>Теплов и Сухов</strong> — российский производитель модульных дымоходов и комплектующих из нержавеющей стали.</p>',
+            ],
+            'name' => 'Теплов и Сухов Адаптер Моно М-М 430-0.8 D130 (У)',
+            'images' => ['https://cdn.vseinstrumenti.ru/images/goods/santehnicheskoe-oborudovanie/komplektuyuschie-i-rashodnye-materialy-dlya-santehniki/1408338/560x504/51404470.jpg'],
+            'source_url' => 'https://www.vseinstrumenti.ru/product/adapter-mono-m-m-430-0-8-d130-teplovisuhov-u-ts-frt-akl-0130-32856-1408338/',
+            'short' => 'Одноконтурный адаптер Моно М-М Теплов и Сухов Ø130 мм из нержавеющей стали AISI 430 толщиной 0,8 мм.',
+            'content' => '<p><strong>Теплов и Сухов Адаптер Моно М-М 430-0.8 D130</strong> — одноконтурный элемент дымохода для соединения участков диаметром 130 мм. Исполнение М-М предназначено для стыковки элементов с соответствующим типом соединения.</p><p>Адаптер изготовлен из нержавеющей стали AISI 430 толщиной 0,8 мм. Перед монтажом необходимо проверить совпадение диаметра и направления сборки дымохода.</p>',
+            'specs' => [
+                ['key' => 'Тип', 'value' => 'Адаптер одноконтурный'],
+                ['key' => 'Система', 'value' => 'Моно'],
+                ['key' => 'Тип соединения', 'value' => 'М-М'],
+                ['key' => 'Диаметр', 'value' => '130 мм'],
+                ['key' => 'Материал', 'value' => 'Нержавеющая сталь'],
+                ['key' => 'Марка стали', 'value' => 'AISI 430'],
+                ['key' => 'Толщина стали', 'value' => '0,8 мм'],
+                ['key' => 'Масса нетто', 'value' => '0,4 кг'],
+                ['key' => 'Артикул производителя', 'value' => 'TS.FRT.AKL.0130.32856'],
+                ['key' => 'Штрихкод', 'value' => '4680205063992'],
+                ['key' => 'Страна производства', 'value' => 'Россия'],
+            ],
+        ],
+    ];
+
     public function handle(IntegrationProductCreator $creator): int
     {
         $rows = match ($this->option('batch')) {
@@ -222,6 +253,7 @@ class CreateSbgDistinctProductsBatchCommand extends Command
             'researched-priced-20261012-f' => self::BATCH_RESEARCHED_PRICED_20261012_F,
             'researched-priced-20261012-g' => self::BATCH_RESEARCHED_PRICED_20261012_G,
             'researched-priced-20261012-h' => self::BATCH_RESEARCHED_PRICED_20261012_H,
+            'researched-priced-20261012-i' => self::BATCH_RESEARCHED_PRICED_20261012_I,
             default => null,
         };
 
