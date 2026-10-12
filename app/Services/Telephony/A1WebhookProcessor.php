@@ -168,7 +168,10 @@ class A1WebhookProcessor
         }
 
         try {
-            return CarbonImmutable::parse($value, config('telephony.timezone', 'Europe/Minsk'));
+            // A1 sends ISO_LOCAL_DATE_TIME without an offset and documents it
+            // as Belarus local time. Persist UTC so Eloquent does not interpret
+            // the same clock value as UTC and add three hours when displaying it.
+            return CarbonImmutable::parse($value, config('telephony.timezone', 'Europe/Minsk'))->utc();
         } catch (\Throwable) {
             return null;
         }

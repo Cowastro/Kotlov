@@ -35,7 +35,17 @@ class A1TelephonyIntegrationTest extends TestCase
 
         $this->assertDatabaseCount('telephony_calls', 1);
         $this->assertDatabaseCount('telephony_call_events', 1);
-        $this->assertSame('375447910347', TelephonyCall::firstOrFail()->customer_phone);
+        $call = TelephonyCall::firstOrFail();
+        $this->assertSame('375447910347', $call->customer_phone);
+        $this->assertSame('2026-10-12 06:57:50', $call->started_at->utc()->format('Y-m-d H:i:s'));
+        $this->assertSame(
+            '2026-10-12 09:57:50',
+            $call->started_at->timezone('Europe/Minsk')->format('Y-m-d H:i:s'),
+        );
+        $this->assertSame(
+            '2026-10-12 06:57:50',
+            $call->events()->firstOrFail()->occurred_at->utc()->format('Y-m-d H:i:s'),
+        );
     }
 
     public function test_webhook_accepts_a1_connectivity_probe_without_creating_a_call(): void
