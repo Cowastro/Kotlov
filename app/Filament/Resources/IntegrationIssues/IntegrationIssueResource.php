@@ -37,6 +37,9 @@ class IntegrationIssueResource extends Resource
 {
     protected static ?string $model = IntegrationIssue::class;
 
+    /** @var \WeakMap<object, array<string, mixed>|null>|null */
+    private static ?\WeakMap $candidatePreviewCache = null;
+
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedExclamationTriangle;
 
     protected static ?string $navigationLabel = 'Требует внимания';
@@ -97,6 +100,31 @@ class IntegrationIssueResource extends Resource
                         ?? $record->integrationProduct?->name
                         ?? $record->source?->name
                         ?? '—'),
+                TextColumn::make('site_candidate')->label('Карточка сайта')
+                    ->state(fn (IntegrationIssue $record): ?string => self::candidatePreview($record)['product_name'] ?? null)
+                    ->placeholder('Кандидат не найден')
+                    ->description(function (IntegrationIssue $record): ?string {
+                        $candidate = self::candidatePreview($record);
+                        if (! $candidate) {
+                            return null;
+                        }
+
+                        return collect([
+                            round((float) $candidate['confidence'] * 100).'% совпадение',
+                            filled($candidate['product_sku']) ? 'SKU '.$candidate['product_sku'] : null,
+                            $candidate['category_name'] ?? null,
+                        ])->filter()->implode(' · ');
+                    })
+                    ->tooltip(fn (IntegrationIssue $record): ?string => self::candidatePreview($record)['product_name'] ?? null)
+                    ->url(fn (IntegrationIssue $record): ?string => self::candidatePreview($record)['public_url'] ?? null)
+                    ->openUrlInNewTab()
+                    ->icon(fn (IntegrationIssue $record): ?string => self::candidatePreview($record)
+                        ? 'heroicon-o-arrow-top-right-on-square'
+                        : null)
+                    ->color(fn (IntegrationIssue $record): string => self::candidatePreview($record) ? 'info' : 'gray')
+                    ->limit(52)
+                    ->lineClamp(2)
+                    ->wrap(),
                 TextColumn::make('recommended_action')->label('Следующий шаг')
                     ->state(fn (IntegrationIssue $record): string => self::displayAdvice($record)['title'])
                     ->description(fn (IntegrationIssue $record): ?string => self::displayAdvice($record)['steps'][0] ?? null)
@@ -221,7 +249,6 @@ class IntegrationIssueResource extends Resource
                 Action::make('linkExistingProduct')
                     ->label('Привязать карточку')
                     ->icon(Heroicon::OutlinedLink)
-                    ->iconButton()
                     ->tooltip('Привязать карточку')
                     ->color('success')
                     ->visible(fn (IntegrationIssue $record): bool => $record->status === 'open'
@@ -250,6 +277,7 @@ class IntegrationIssueResource extends Resource
                         Select::make('product_id')
                             ->label('Карточка kotlov.by')
                             ->options(fn (IntegrationIssue $record): array => self::candidateOptions($record))
+                            ->default(fn (IntegrationIssue $record): ?int => self::candidatePreview($record)['product_id'] ?? null)
                             ->searchable()
                             ->getSearchResultsUsing(fn (string $search): array => Product::query()
                                 ->where(function ($query) use ($search): void {
@@ -481,6 +509,24 @@ class IntegrationIssueResource extends Resource
             $product->sku ? 'SKU '.$product->sku : null,
             $product->name,
         ])->filter()->implode(' — ');
+    }
+
+    /** @return array<string, mixed>|null */
+    private static function candidatePreview(IntegrationIssue $issue): ?array
+    {
+        $integrationProduct = $issue->integrationProduct;
+        if (! $integrationProduct) {
+            return null;
+        }
+
+        self::$candidatePreviewCache ??= new \WeakMap;
+
+        if (! self::$candidatePreviewCache->offsetExists($integrationProduct)) {
+            self::$candidatePreviewCache[$integrationProduct] = app(IntegrationProductMatchAdvisor::class)
+                ->candidates($integrationProduct)[0] ?? null;
+        }
+
+        return self::$candidatePreviewCache[$integrationProduct];
     }
 
     /** @return array<int, string> */

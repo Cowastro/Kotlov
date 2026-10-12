@@ -217,6 +217,14 @@ class IntegrationIssueAdminTest extends TestCase
             'last_detected_at' => now(),
         ]);
 
+        $this->actingAs($admin)
+            ->get(IntegrationIssueResource::getUrl('index', ['tab' => 'ready-to-link'], panel: 'admin'))
+            ->assertOk()
+            ->assertSeeText('Карточка сайта')
+            ->assertSeeText('Труба дымохода D150')
+            ->assertSeeText('87% совпадение')
+            ->assertSeeText('SKU KOTLOV-D150');
+
         Livewire::actingAs($admin)
             ->test(ListIntegrationIssues::class)
             ->set('activeTab', 'ready-to-link')
