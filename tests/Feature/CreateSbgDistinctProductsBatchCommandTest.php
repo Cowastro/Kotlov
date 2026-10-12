@@ -177,4 +177,65 @@ class CreateSbgDistinctProductsBatchCommandTest extends TestCase
         $this->assertSame('до 1000 °C', collect($product->specs)->firstWhere('key', 'Термостойкость')['value']);
         $this->assertStringContainsString('ei9ai7nmri8olju0ojfiespb506bxm6a', $product->images[0]);
     }
+
+    public function test_it_creates_the_verified_kp_350_mount_in_the_chimney_mounting_category(): void
+    {
+        $source = IntegrationSource::query()->create([
+            'code' => 'onec-sbg-kp-350',
+            'name' => '1С СанБизнесГруп',
+            'settings' => ['partner_name' => 'ООО «СанБизнесГруп»'],
+            'is_active' => true,
+            'update_stock' => true,
+        ]);
+        $category = Category::query()->create(['name' => 'Крепления и монтаж', 'slug' => 'chimney-mounts', 'parent_id' => 0]);
+        $brand = Brand::query()->create(['name' => 'Теплов и Сухов', 'slug' => 'teplov-i-suhov']);
+        $template = Product::query()->create([
+            'category_id' => $category->id,
+            'brand_id' => $brand->id,
+            'sku' => 'PS-009.119',
+            'name' => 'Крепление универсальное Теплов и Сухов КУ Ø 240',
+            'slug' => 'mount-template',
+            'price' => 43.97,
+            'images' => ['product/009/009119/mount.jpg'],
+        ]);
+        $wrongCandidate = Product::query()->create([
+            'category_id' => $category->id,
+            'brand_id' => $brand->id,
+            'sku' => 'PS-004.961',
+            'name' => 'Крепление коллектора Buderus WMS3',
+            'slug' => 'wrong-buderus-mount',
+            'price' => 40,
+            'images' => ['product/004/004961/mount.jpg'],
+        ]);
+        $item = IntegrationProduct::query()->create([
+            'integration_source_id' => $source->id,
+            'external_id' => 'teplov-kp-350',
+            'external_code' => 'УТ-00000430',
+            'external_sku' => 'TS.KMP.KRP.0000.66285',
+            'barcode' => '4680205277184',
+            'name' => 'Крепление подвес КП 350',
+            'price_byn' => 33.01,
+            'stock_quantity' => 6,
+            'match_status' => 'ambiguous',
+            'candidates' => [['product_id' => $wrongCandidate->id, 'score' => 0.6739]],
+        ]);
+
+        $this->artisan('integration:create-sbg-distinct-products', [
+            '--batch' => 'researched-priced-20261012-g',
+            '--code' => ['УТ-00000430'],
+            '--apply' => true,
+        ])->assertSuccessful();
+
+        $product = $item->fresh()->product;
+        $this->assertNotNull($product);
+        $this->assertSame($category->id, $product->category_id);
+        $this->assertSame($brand->id, $product->brand_id);
+        $this->assertSame('Теплов и Сухов Крепление-подвес КП 350, комплект 2 шт.', $product->name);
+        $this->assertSame('47.20', $product->price);
+        $this->assertSame('6', (string) $product->stock_qty);
+        $this->assertStringContainsString('kreplenie-podves-kp-350', $product->content_source_url);
+        $this->assertSame('350 мм', collect($product->specs)->firstWhere('key', 'Длина')['value']);
+        $this->assertSame('4680205277184', collect($product->specs)->firstWhere('key', 'Штрихкод')['value']);
+        $this->assertStringContainsString('yyvc6hgtzh97c17e0pkmab40cyk6l3u3', $product->images[0]);
+    }
 }

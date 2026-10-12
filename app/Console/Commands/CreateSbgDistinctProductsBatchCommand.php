@@ -162,6 +162,33 @@ class CreateSbgDistinctProductsBatchCommand extends Command
         ],
     ];
 
+    private const BATCH_RESEARCHED_PRICED_20261012_G = [
+        'УТ-00000430' => [
+            'template' => 'PS-009.119',
+            'candidate' => 'PS-004.961',
+            'fragments' => ['Крепление подвес', 'КП 350'],
+            'name' => 'Теплов и Сухов Крепление-подвес КП 350, комплект 2 шт.',
+            'images' => ['https://aquadom.info/upload/iblock/20a/yyvc6hgtzh97c17e0pkmab40cyk6l3u3.jpg'],
+            'source_url' => 'https://aquadom.info/products/kreplenie-podves-kp-350/',
+            'short' => 'Комплект из двух креплений-подвесов Теплов и Сухов КП 350 для фиксации дымохода на расстоянии до 350 мм от стены.',
+            'content' => '<p><strong>Теплов и Сухов КП 350</strong> — комплект из двух креплений-подвесов для удержания дымохода в вертикальном положении на расстоянии до 350 мм от стены. Подвижная пластина позволяет смещать дымоход по горизонтали.</p><p>Крепление используется совместно с универсальным креплением и не является разгружающим элементом: основной вес дымохода должна принимать монтажная площадка или опора. Комплект изготовлен из нержавеющей стали AISI 430.</p>',
+            'specs' => [
+                ['key' => 'Тип', 'value' => 'Крепление-подвес'],
+                ['key' => 'Длина', 'value' => '350 мм'],
+                ['key' => 'Комплектация', 'value' => '2 крепления'],
+                ['key' => 'Материал', 'value' => 'Нержавеющая сталь'],
+                ['key' => 'Марка стали', 'value' => 'AISI 430'],
+                ['key' => 'Толщина стали', 'value' => '1 мм'],
+                ['key' => 'Рабочая температура', 'value' => 'до 600 °C'],
+                ['key' => 'Размер упаковки (Д×Ш×В)', 'value' => '350×60×50 мм'],
+                ['key' => 'Масса в упаковке', 'value' => '0,775 кг'],
+                ['key' => 'Артикул производителя', 'value' => 'TS.KMP.KRP.0000.66285'],
+                ['key' => 'Штрихкод', 'value' => '4680205277184'],
+                ['key' => 'Страна производства', 'value' => 'Россия'],
+            ],
+        ],
+    ];
+
     public function handle(IntegrationProductCreator $creator): int
     {
         $rows = match ($this->option('batch')) {
@@ -171,6 +198,7 @@ class CreateSbgDistinctProductsBatchCommand extends Command
             'chimney-priced-20261012-d' => self::BATCH_CHIMNEY_PRICED_20261012_D,
             'researched-priced-20261012-e' => self::BATCH_RESEARCHED_PRICED_20261012_E,
             'researched-priced-20261012-f' => self::BATCH_RESEARCHED_PRICED_20261012_F,
+            'researched-priced-20261012-g' => self::BATCH_RESEARCHED_PRICED_20261012_G,
             default => null,
         };
 
