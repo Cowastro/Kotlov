@@ -274,4 +274,87 @@ class ResolveSbgAmbiguousBatchCommandTest extends TestCase
             'confidence' => 'manual',
         ]);
     }
+
+    public function test_it_links_the_18m_and_15m_electrovel_variants_to_their_exact_hotta_eko_cards(): void
+    {
+        $source = IntegrationSource::query()->create([
+            'code' => 'onec-sbg-electrovel-midrange',
+            'name' => '1С СанБизнесГруп',
+            'settings' => ['partner_name' => 'ООО «СанБизнесГруп»'],
+            'is_active' => true,
+            'update_stock' => true,
+        ]);
+        $category = Category::query()->create([
+            'name' => 'Электрические котлы',
+            'slug' => 'electric-boilers-midrange',
+            'parent_id' => 0,
+        ]);
+        $product18 = Product::query()->create([
+            'category_id' => $category->id,
+            'sku' => 'PS-008.853',
+            'name' => 'Электрокотел KOTLOV GE Eko 18М',
+            'slug' => 'electrovel-hotta-eko-18m',
+            'price' => 400,
+            'in_stock' => false,
+            'stock_qty' => null,
+        ]);
+        $product15 = Product::query()->create([
+            'category_id' => $category->id,
+            'sku' => 'PS-008.852',
+            'name' => 'Электрокотел KOTLOV GE Eko 15М',
+            'slug' => 'electrovel-hotta-eko-15m',
+            'price' => 250,
+            'in_stock' => false,
+            'stock_qty' => null,
+        ]);
+        $item18 = IntegrationProduct::query()->create([
+            'integration_source_id' => $source->id,
+            'external_id' => 'b7d51895-1d6e-11ea-a220-1c1b0d1de7c2',
+            'external_code' => 'УТ-00003027',
+            'name' => 'Электрокотел "ElectroVel" 18М НВ (клавиши)',
+            'price_byn' => 313,
+            'stock_quantity' => 3,
+            'match_status' => 'ambiguous',
+            'candidates' => [['product_id' => $product18->id, 'score' => 0.6602]],
+        ]);
+        $item15 = IntegrationProduct::query()->create([
+            'integration_source_id' => $source->id,
+            'external_id' => 'b7d51894-1d6e-11ea-a220-1c1b0d1de7c2',
+            'external_code' => 'УТ-00003026',
+            'name' => 'Электрокотел "ElectroVel" 15М НВ (Авт.)',
+            'price_byn' => 213,
+            'stock_quantity' => 5,
+            'match_status' => 'ambiguous',
+            'candidates' => [['product_id' => $product15->id, 'score' => 0.7158]],
+        ]);
+
+        $this->artisan('integration:resolve-sbg-ambiguous', [
+            '--batch' => 'exact-20261012-h',
+            '--code' => ['УТ-00003027', 'УТ-00003026'],
+            '--apply' => true,
+        ])->assertSuccessful();
+
+        $item18->refresh();
+        $item15->refresh();
+        $product18->refresh();
+        $product15->refresh();
+        $this->assertSame($product18->id, $item18->product_id);
+        $this->assertSame($product15->id, $item15->product_id);
+        $this->assertSame('manual_candidate', $item18->match_method);
+        $this->assertSame('manual_candidate', $item15->match_method);
+        $this->assertSame('400.00', $product18->price);
+        $this->assertSame('250.00', $product15->price);
+        $this->assertSame('3', (string) $product18->stock_qty);
+        $this->assertSame('5', (string) $product15->stock_qty);
+        $this->assertDatabaseHas('supplier_product_mappings', [
+            'supplier_article' => 'УТ-00003027',
+            'product_id' => $product18->id,
+            'confidence' => 'manual',
+        ]);
+        $this->assertDatabaseHas('supplier_product_mappings', [
+            'supplier_article' => 'УТ-00003026',
+            'product_id' => $product15->id,
+            'confidence' => 'manual',
+        ]);
+    }
 }
