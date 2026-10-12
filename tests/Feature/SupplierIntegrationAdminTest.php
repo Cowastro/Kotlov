@@ -189,7 +189,6 @@ class SupplierIntegrationAdminTest extends TestCase
     public function test_product_list_renders_mixed_supplier_channels_without_treating_labels_as_models(): void
     {
         $admin = User::factory()->create(['role' => 'admin', 'is_active' => true]);
-        $legacySupplierUser = User::factory()->create(['role' => 'supplier', 'is_active' => true]);
         $supplier = Supplier::query()->create([
             'code' => 'mixed-product-list-supplier',
             'name' => 'Поставщик смешанного товара',
@@ -228,7 +227,7 @@ class SupplierIntegrationAdminTest extends TestCase
         ]);
         $product = Product::query()->create([
             'category_id' => $category->id,
-            'supplier_id' => $legacySupplierUser->id,
+            'supplier_id' => $supplier->id,
             'sku' => 'MIXED-LIST-1',
             'name' => 'Товар с двумя каналами и полным длинным наименованием без обрезания в списке',
             'slug' => 'mixed-list-product',
