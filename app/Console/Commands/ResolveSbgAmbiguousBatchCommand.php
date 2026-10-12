@@ -121,6 +121,15 @@ class ResolveSbgAmbiguousBatchCommand extends Command
         ],
     ];
 
+    /** @var array<string, array{sku:string,item:list<string>,product:list<string>}> */
+    private const BATCH_EXACT_20261012_G = [
+        'УТ-00003031' => [
+            'sku' => 'PS-008.857',
+            'item' => ['Электрокотел', 'ElectroVel', '48М', 'НВ', 'клавиши'],
+            'product' => ['Электрокотел', 'KOTLOV GE', 'Eko', '48М'],
+        ],
+    ];
+
     public function handle(IntegrationProductMatchDecision $decision): int
     {
         $rows = match ($this->option('batch')) {
@@ -130,6 +139,7 @@ class ResolveSbgAmbiguousBatchCommand extends Command
             'exact-20261012-d' => self::BATCH_EXACT_20261012_D,
             'exact-20261012-e' => self::BATCH_EXACT_20261012_E,
             'exact-20261012-f' => self::BATCH_EXACT_20261012_F,
+            'exact-20261012-g' => self::BATCH_EXACT_20261012_G,
             default => null,
         };
 

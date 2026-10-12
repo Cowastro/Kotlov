@@ -219,4 +219,59 @@ class ResolveSbgAmbiguousBatchCommandTest extends TestCase
             'confidence' => 'manual',
         ]);
     }
+
+    public function test_it_links_electrovel_48m_to_the_existing_hotta_eko_line_card(): void
+    {
+        $source = IntegrationSource::query()->create([
+            'code' => 'onec-sbg-electrovel-48m',
+            'name' => '1С СанБизнесГруп',
+            'settings' => ['partner_name' => 'ООО «СанБизнесГруп»'],
+            'is_active' => true,
+            'update_stock' => true,
+        ]);
+        $category = Category::query()->create([
+            'name' => 'Электрические котлы',
+            'slug' => 'electric-boilers',
+            'parent_id' => 0,
+        ]);
+        $product = Product::query()->create([
+            'category_id' => $category->id,
+            'sku' => 'PS-008.857',
+            'name' => 'Электрокотел KOTLOV GE Eko 48М',
+            'slug' => 'electrovel-hotta-eko-48m',
+            'price' => 600,
+            'in_stock' => false,
+            'stock_qty' => null,
+        ]);
+        $item = IntegrationProduct::query()->create([
+            'integration_source_id' => $source->id,
+            'external_id' => 'b7d51899-1d6e-11ea-a220-1c1b0d1de7c2',
+            'external_code' => 'УТ-00003031',
+            'name' => 'Электрокотел "ElectroVel" 48М НВ (клавиши)',
+            'price_byn' => 486,
+            'stock_quantity' => 1,
+            'match_status' => 'ambiguous',
+            'candidates' => [['product_id' => $product->id, 'score' => 0.6602]],
+        ]);
+
+        $this->artisan('integration:resolve-sbg-ambiguous', [
+            '--batch' => 'exact-20261012-g',
+            '--code' => ['УТ-00003031'],
+            '--apply' => true,
+        ])->assertSuccessful();
+
+        $item->refresh();
+        $product->refresh();
+        $this->assertSame($product->id, $item->product_id);
+        $this->assertSame('matched', $item->match_status);
+        $this->assertSame('manual', $item->match_method);
+        $this->assertSame('600.00', $product->price);
+        $this->assertTrue($product->in_stock);
+        $this->assertSame('1', (string) $product->stock_qty);
+        $this->assertDatabaseHas('supplier_product_mappings', [
+            'supplier_article' => 'УТ-00003031',
+            'product_id' => $product->id,
+            'confidence' => 'manual',
+        ]);
+    }
 }
