@@ -68,6 +68,10 @@ class SupplierProductAvailabilityService
 
             $integrationStock = $integrationStockByProduct->get($productId);
             $legacyStock = $stockByProduct->get($productId);
+            if ($integrationStock === null && $legacyStock === null) {
+                continue;
+            }
+
             if ($integrationStock !== null) {
                 $stockQty = (int) $integrationStock->known_quantity_count > 0
                     ? max(0, (int) $integrationStock->total_quantity)

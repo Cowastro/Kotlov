@@ -433,4 +433,101 @@ class IntegrationProductAdminClarityTest extends TestCase
 
         $this->assertSame(0, IntegrationCategory::query()->whereNotNull('category_id')->count());
     }
+
+    public function test_admin_can_create_and_immediately_link_a_new_site_product(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin', 'is_active' => true]);
+        $supplier = Supplier::query()->create([
+            'code' => 'create-card-supplier',
+            'name' => 'Поставщик новой карточки',
+            'is_active' => true,
+        ]);
+        $source = IntegrationSource::query()->create([
+            'supplier_id' => $supplier->id,
+            'code' => 'create-card-source',
+            'name' => '1С поставщика новой карточки',
+            'is_active' => true,
+            'update_stock' => true,
+        ]);
+        $category = Category::query()->create([
+            'name' => 'Новая категория привязки',
+            'slug' => 'new-linked-card-category',
+            'parent_id' => 0,
+        ]);
+        $item = IntegrationProduct::query()->create([
+            'integration_source_id' => $source->id,
+            'external_id' => 'create-card-external-id',
+            'external_sku' => 'TS.NEW.001',
+            'name' => 'Новая позиция из 1С',
+            'price' => 100,
+            'price_byn' => 120,
+            'stock_quantity' => 7,
+            'match_status' => 'ambiguous',
+            'candidates' => [['product_id' => 999999, 'score' => 0.5]],
+        ]);
+
+        Livewire::actingAs($admin)
+            ->test(ListIntegrationProducts::class)
+            ->callTableAction('createProduct', $item, [
+                'name' => 'Созданная карточка сайта',
+                'category_id' => $category->id,
+                'retail_price' => 159.90,
+            ])
+            ->assertHasNoTableActionErrors();
+
+        $item->refresh();
+        $product = Product::query()->findOrFail($item->product_id);
+
+        $this->assertSame('Созданная карточка сайта', $product->name);
+        $this->assertSame($category->id, $product->category_id);
+        $this->assertSame($supplier->id, $product->supplier_id);
+        $this->assertSame('159.90', $product->price);
+        $this->assertMatchesRegularExpression('/^KOTLOV-\d{6}$/', $product->sku);
+        $this->assertSame(7, $product->stock_qty);
+        $this->assertTrue($product->in_stock);
+        $this->assertSame(Product::AVAILABILITY_IN_STOCK, $product->availability_status);
+        $this->assertSame('matched', $item->match_status);
+        $this->assertSame('manual_created', $item->match_method);
+        $this->assertSame($category->id, $item->target_category_id);
+        $this->assertNull($item->candidates);
+        $this->assertDatabaseHas('supplier_product_mappings', [
+            'supplier_code' => $source->matchingSupplierCode(),
+            'supplier_article' => 'TS.NEW.001',
+            'product_id' => $product->id,
+            'confidence' => 'manual',
+            'is_active' => true,
+        ]);
+    }
+
+    public function test_create_product_action_is_hidden_after_the_item_is_linked(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin', 'is_active' => true]);
+        $category = Category::query()->create([
+            'name' => 'Категория уже привязанной карточки',
+            'slug' => 'already-linked-card-category',
+            'parent_id' => 0,
+        ]);
+        $product = Product::query()->create([
+            'category_id' => $category->id,
+            'name' => 'Уже созданная карточка',
+            'slug' => 'already-created-card',
+            'sku' => 'KOTLOV-ALREADY',
+        ]);
+        $source = IntegrationSource::query()->create([
+            'code' => 'already-linked-source',
+            'name' => 'Источник привязанной карточки',
+        ]);
+        $item = IntegrationProduct::query()->create([
+            'integration_source_id' => $source->id,
+            'product_id' => $product->id,
+            'external_id' => 'already-linked-external',
+            'name' => 'Уже привязанная позиция',
+            'stock_quantity' => 1,
+            'match_status' => 'matched',
+        ]);
+
+        Livewire::actingAs($admin)
+            ->test(ListIntegrationProducts::class)
+            ->assertTableActionHidden('createProduct', $item);
+    }
 }

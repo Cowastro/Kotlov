@@ -9,6 +9,7 @@ use App\Models\IntegrationCategory;
 use App\Models\IntegrationProduct;
 use App\Models\IntegrationSource;
 use App\Services\Integrations\IntegrationCategoryAdvisor;
+use App\Services\Integrations\IntegrationProductCreator;
 use App\Services\Integrations\IntegrationProductMatchAdvisor;
 use App\Services\Integrations\IntegrationProductMatchDecision;
 use BackedEnum;
@@ -481,6 +482,65 @@ class IntegrationProductResource extends Resource
                         Notification::make()
                             ->success()
                             ->title('Категория товара сохранена')
+                            ->send();
+                    }),
+                Action::make('createProduct')
+                    ->label('Создать карточку')
+                    ->icon(Heroicon::OutlinedPlusCircle)
+                    ->color('success')
+                    ->visible(fn (IntegrationProduct $record): bool => blank($record->product_id)
+                        && $record->match_status !== 'ignored')
+                    ->fillForm(fn (IntegrationProduct $record): array => [
+                        'name' => $record->name,
+                        'category_id' => $record->resolvedSiteCategory()?->id,
+                    ])
+                    ->form([
+                        TextInput::make('name')
+                            ->label('Название новой карточки')
+                            ->required()
+                            ->maxLength(255),
+                        Select::make('category_id')
+                            ->label('Категория kotlov.by')
+                            ->options(fn (): array => self::siteCategoryOptions())
+                            ->searchable()
+                            ->preload()
+                            ->required(),
+                        TextInput::make('retail_price')
+                            ->label('Розничная цена сайта')
+                            ->numeric()
+                            ->minValue(0.01)
+                            ->suffix('BYN')
+                            ->required()
+                            ->helperText('Введите именно розницу. Оптовая цена поставщика не копируется в розницу автоматически.'),
+                        Placeholder::make('source_data')
+                            ->label('Данные 1С')
+                            ->content(fn (IntegrationProduct $record): string => collect([
+                                $record->external_sku ? 'артикул '.$record->external_sku : null,
+                                $record->normalizedPriceByn() ? 'опт '.number_format($record->normalizedPriceByn(), 2, ',', ' ').' BYN' : 'опт не рассчитан',
+                                'остаток '.$record->formattedStockQuantity(),
+                            ])->filter()->implode(' · ')),
+                    ])
+                    ->modalHeading('Создать новую карточку и привязать к 1С')
+                    ->modalDescription('Используйте, когда подходящей карточки сайта ещё нет. Будет создан новый товар с внутренним SKU, а артикул 1С сохранится в постоянной привязке.')
+                    ->requiresConfirmation()
+                    ->modalSubmitActionLabel('Создать и привязать')
+                    ->action(function (IntegrationProduct $record, array $data): void {
+                        $product = app(IntegrationProductCreator::class)->createAndLink($record, $data);
+
+                        if (! $product) {
+                            Notification::make()
+                                ->warning()
+                                ->title('Позиция уже обработана')
+                                ->body('Обновите таблицу: товар уже привязан либо исключён из каталога.')
+                                ->send();
+
+                            return;
+                        }
+
+                        Notification::make()
+                            ->success()
+                            ->title('Новая карточка создана и привязана')
+                            ->body($product->sku.' — '.$product->name.'. Остаток синхронизирован из 1С.')
                             ->send();
                     }),
                 EditAction::make()->label('Выбрать вручную'),
