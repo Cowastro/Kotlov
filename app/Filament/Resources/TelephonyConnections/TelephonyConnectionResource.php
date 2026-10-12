@@ -63,7 +63,10 @@ class TelephonyConnectionResource extends Resource
             TextColumn::make('company_id')->label('Компания A1')->weight('bold'),
             TextColumn::make('webhook_url')->label('URL для Webhook A1')
                 ->state(fn (TelephonyConnection $record): string => route('telephony.a1.webhook', $record->webhook_secret))
-                ->copyable()->limit(55)
+                ->copyable()
+                ->copyableState(fn (TelephonyConnection $record): string => route('telephony.a1.webhook', $record->webhook_secret))
+                ->copyMessage('Полный Webhook URL скопирован')
+                ->limit(55)
                 ->tooltip(fn (TelephonyConnection $record): string => route('telephony.a1.webhook', $record->webhook_secret)),
             IconColumn::make('is_enabled')->label('Open API')->boolean(),
             TextColumn::make('webhook_last_received_at')->label('Последний Webhook')->dateTime('d.m.Y H:i:s', 'Europe/Minsk')->placeholder('Не получали'),
