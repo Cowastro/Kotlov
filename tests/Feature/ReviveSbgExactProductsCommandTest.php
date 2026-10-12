@@ -35,14 +35,6 @@ class ReviveSbgExactProductsCommandTest extends TestCase
             'is_active' => false,
             'is_archived' => false,
         ]);
-        Product::query()->create([
-            'category_id' => $category->id,
-            'brand_id' => $brand->id,
-            'sku' => 'KOTLOV-022421',
-            'name' => 'КПД Отвод 45* 2мм ф120',
-            'slug' => 'image-template-kpd-elbow',
-            'images' => ['img/products/kpd/elbow-45.jpg'],
-        ]);
         $item = IntegrationProduct::query()->create([
             'integration_source_id' => $source->id,
             'external_id' => 'kpd-elbow-150',
@@ -64,10 +56,14 @@ class ReviveSbgExactProductsCommandTest extends TestCase
         $this->assertSame('manual_search', $item->match_method);
         $this->assertTrue($target->is_active);
         $this->assertSame('КПД Отвод 45° 2 мм Ø150, чёрный', $target->name);
-        $this->assertSame(['img/products/kpd/elbow-45.jpg'], $target->images);
+        $this->assertCount(3, $target->images);
+        $this->assertSame(
+            'https://cheboksary.fornaks.ru/catalog/dymohod-schiedel-permeter-iz-stali/otvod-kpd-45-d-150-2-mm-chernyy/',
+            $target->content_source_url
+        );
         $this->assertSame('2', (string) $target->stock_qty);
         $this->assertTrue($target->in_stock);
         $this->assertNotEmpty($target->content);
-        $this->assertCount(5, $target->specs);
+        $this->assertCount(8, $target->specs);
     }
 }
