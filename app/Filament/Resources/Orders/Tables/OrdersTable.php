@@ -9,7 +9,6 @@ use App\Models\OrderItem;
 use App\Models\Product;
 use App\Models\Supplier;
 use App\Models\User;
-use App\Services\Market\MarketPriceIndicator;
 use App\Services\Orders\OrderSettlementManager;
 use Filament\Actions\Action;
 use Filament\Actions\ActionGroup;
@@ -31,9 +30,6 @@ use Illuminate\Support\HtmlString;
 
 class OrdersTable
 {
-    /** @var \WeakMap<Order, array<string, mixed>>|null */
-    private static ?\WeakMap $marketIndicatorCache = null;
-
     public static function configure(Table $table): Table
     {
         $paymentNames = [
@@ -95,7 +91,6 @@ class OrdersTable
                     'items.product.category:id,name,slug',
                     'items.product.integrationProducts.source.supplier.crmCounterparty.contactPoints',
                     'items.product.supplierProducts.supplier.crmCounterparty.contactPoints',
-                    'items.product.marketPriceObservations.source',
                     'manager:id,name',
                     'archivedBy:id,name',
                     'placedEconomicSnapshot',
@@ -259,16 +254,6 @@ class OrdersTable
                         : 'Заказ без снимка: показана текущая оценка. Неизвестная цена не считается нулевой.')
                     ->wrap()
                     ->sortable(query: fn (Builder $query, string $direction): Builder => $query->orderBy('total', $direction)),
-
-                TextColumn::make('market_price_indicator')
-                    ->label('Рынок')
-                    ->state(fn (Order $record): string => self::marketIndicator($record)['label'])
-                    ->description(fn (Order $record): string => self::marketIndicator($record)['description'])
-                    ->badge()
-                    ->color(fn (Order $record): string => self::marketIndicator($record)['color'])
-                    ->icon(fn (Order $record): string => self::marketIndicator($record)['icon'])
-                    ->tooltip('Розничная позиция заказа относительно свежих подтверждённых предложений рынка. Закупочные цены здесь не используются.')
-                    ->wrap(),
 
                 TextColumn::make('items_sum_quantity')
                     ->label('Товаров')
@@ -519,23 +504,6 @@ class OrdersTable
             ->recordActions([
                 ViewAction::make(),
                 ActionGroup::make([
-                    Action::make('market_price_details')
-                        ->label('Рынок по позициям')
-                        ->icon('heroicon-o-presentation-chart-line')
-                        ->color('info')
-                        ->slideOver()
-                        ->modalWidth('7xl')
-                        ->modalHeading(fn (Order $record): string => 'Рынок по заказу '.$record->number)
-                        ->modalSubmitAction(false)
-                        ->modalCancelActionLabel('Закрыть')
-                        ->modalContent(function (Order $record) {
-                            $indicator = self::marketIndicator($record);
-
-                            return view('filament.market.price-details', [
-                                'overview' => $indicator,
-                                'rows' => $indicator['rows'],
-                            ]);
-                        }),
                     Action::make('confirmed')
                         ->label('Подтвердить')
                         ->icon('heroicon-o-check')
@@ -794,14 +762,5 @@ class OrdersTable
         preg_match('/[A-Z0-9._%+\-]+@[A-Z0-9.\-]+\.[A-Z]{2,}/iu', $value, $match);
 
         return isset($match[0]) ? trim($match[0]) : null;
-    }
-
-    /** @return array<string, mixed> */
-    private static function marketIndicator(Order $order): array
-    {
-        self::$marketIndicatorCache ??= new \WeakMap;
-
-        return self::$marketIndicatorCache[$order]
-            ??= app(MarketPriceIndicator::class)->forOrder($order);
     }
 }

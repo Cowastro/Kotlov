@@ -336,8 +336,9 @@ class MarketPriceIntelligenceTest extends TestCase
 
         $this->get(OrderResource::getUrl('index', panel: 'admin'))
             ->assertOk()
-            ->assertSeeText('Рынок')
-            ->assertSeeText('Требует внимания: 1');
+            ->assertDontSee('market_price_indicator', false)
+            ->assertDontSeeText('Рынок по позициям')
+            ->assertDontSeeText('Требует внимания: 1');
     }
 
     public function test_price_recommendation_uses_market_median_and_explains_margin_impact(): void
