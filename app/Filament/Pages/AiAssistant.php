@@ -223,6 +223,9 @@ class AiAssistant extends Page
                 'count' => Product::query()
                     ->where('is_archived', false)
                     ->whereHas('supplierProducts')
+                    ->where(fn ($query) => $query
+                        ->whereNull('content_source_url')
+                        ->orWhere('content_source_url', ''))
                     ->whereDoesntHave('supplierProducts', fn ($query) => $query->whereNotNull('source_url')->where('source_url', '!=', ''))
                     ->count(),
                 'hint' => 'Поставщик уже есть, но нет source_url для фото, характеристик и SEO.',
@@ -774,6 +777,9 @@ class AiAssistant extends Page
             'without_supplier' => $query->whereDoesntHave('supplierProducts'),
             'without_source' => $query
                 ->whereHas('supplierProducts')
+                ->where(fn ($query) => $query
+                    ->whereNull('content_source_url')
+                    ->orWhere('content_source_url', ''))
                 ->whereDoesntHave('supplierProducts', fn ($query) => $query
                     ->whereNotNull('source_url')
                     ->where('source_url', '!=', '')),
@@ -830,6 +836,11 @@ class AiAssistant extends Page
 
     private function productSourceLabel(Product $product): string
     {
+        if (filled($product->content_source_url)) {
+            return parse_url((string) $product->content_source_url, PHP_URL_HOST)
+                ?: 'Источник контента';
+        }
+
         $supplierProduct = $product->supplierProducts
             ->first(fn ($supplierProduct): bool => filled($supplierProduct->source_url));
 
@@ -849,7 +860,9 @@ class AiAssistant extends Page
             return 'Нет связи с поставщиком: найти supplier_product, наличие и склад.';
         }
 
-        $withSource = $product->supplierProducts
+        $withSource = filled($product->content_source_url)
+            ? true
+            : $product->supplierProducts
             ->first(fn ($supplierProduct): bool => filled($supplierProduct->source_url));
 
         if (! $withSource) {

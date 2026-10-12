@@ -42,7 +42,7 @@ class Product extends Model
         'name', 'slug', 'h1', 'sku',
         'price', 'price_old', 'currency',
         'content', 'short_description',
-        'images', 'specs', 'service_info', 'documents', 'promo_flags', 'video_url',
+        'images', 'specs', 'service_info', 'documents', 'promo_flags', 'video_url', 'content_source_url',
         'weight', 'unit', 'warranty',
         'is_active', 'is_archived', 'in_stock', 'availability_status', 'stock_qty',
         'is_featured', 'is_new', 'is_sale', 'sort_order',

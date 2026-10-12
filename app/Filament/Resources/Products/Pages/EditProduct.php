@@ -31,7 +31,8 @@ class EditProduct extends EditRecord
                 ->icon('heroicon-o-link')
                 ->color('success')
                 ->fillForm(fn (): array => [
-                    'source_url' => $this->record->supplierProducts()
+                    'source_url' => $this->record->content_source_url
+                        ?: $this->record->supplierProducts()
                         ->whereNotNull('source_url')
                         ->where('source_url', '!=', '')
                         ->orderBy('id')

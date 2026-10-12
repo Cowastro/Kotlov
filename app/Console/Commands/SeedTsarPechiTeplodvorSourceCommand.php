@@ -4,7 +4,6 @@ namespace App\Console\Commands;
 
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
 
 /**
  * One-off: link kotlov.by «Царь-Печи» products to their teplodvor.by product
@@ -84,7 +83,6 @@ class SeedTsarPechiTeplodvorSourceCommand extends Command
         $apply = (bool) $this->option('apply');
         $this->line($apply ? '<fg=red;options=bold>APPLY</>' : '<fg=yellow>DRY-RUN</>');
 
-        $supplierId = $this->manualSourceSupplierId($apply);
         $ids = array_keys(self::MAP);
         $products = DB::table('products')->whereIn('id', $ids)->get(['id', 'sku', 'name'])->keyBy('id');
 
@@ -110,28 +108,10 @@ class SeedTsarPechiTeplodvorSourceCommand extends Command
                 continue;
             }
 
-            $existing = DB::table('supplier_products')->where('product_id', $id)->orderBy('id')->first();
-            if ($existing) {
-                DB::table('supplier_products')->where('id', $existing->id)->update([
-                    'source_url' => $url,
-                    'updated_at' => now(),
-                ]);
-            } else {
-                $article = 'manual-source-' . $id;
-                DB::table('supplier_products')->insert([
-                    'supplier_id' => $supplierId,
-                    'product_id' => $id,
-                    'product_sku' => $product->sku,
-                    'supplier_article' => $article,
-                    'supplier_article_normalized' => Str::lower($article),
-                    'supplier_name' => $product->name,
-                    'source_url' => $url,
-                    'match_status' => 'manual',
-                    'match_confidence' => 'source-url-edit',
-                    'created_at' => now(),
-                    'updated_at' => now(),
-                ]);
-            }
+            DB::table('products')->where('id', $id)->update([
+                'content_source_url' => $url,
+                'updated_at' => now(),
+            ]);
             $linked++;
         }
 
@@ -140,26 +120,4 @@ class SeedTsarPechiTeplodvorSourceCommand extends Command
         return self::SUCCESS;
     }
 
-    private function manualSourceSupplierId(bool $apply): int
-    {
-        if (! $apply) {
-            return (int) (DB::table('suppliers')->where('code', 'manual-source')->value('id') ?? 0);
-        }
-
-        DB::table('suppliers')->updateOrInsert(
-            ['code' => 'manual-source'],
-            [
-                'name' => 'Manual source URL',
-                'currency' => 'BYN',
-                'currency_rate' => 1,
-                'contact' => null,
-                'notes' => 'Системный поставщик для ссылок, добавленных вручную из карточки товара.',
-                'is_active' => false,
-                'updated_at' => now(),
-                'created_at' => now(),
-            ],
-        );
-
-        return (int) DB::table('suppliers')->where('code', 'manual-source')->value('id');
-    }
 }
