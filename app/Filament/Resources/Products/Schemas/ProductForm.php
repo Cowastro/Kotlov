@@ -2,7 +2,11 @@
 
 namespace App\Filament\Resources\Products\Schemas;
 
+use App\Filament\Resources\CrmCounterparties\CrmCounterpartyResource;
+use App\Filament\Resources\Suppliers\SupplierResource;
+use App\Models\CrmCounterparty;
 use App\Models\Product;
+use App\Models\Supplier;
 use Carbon\Carbon;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\KeyValue;
@@ -73,6 +77,10 @@ class ProductForm
                             ->label('Поставщик')
                             ->relationship('supplier', 'name', fn ($query) => $query->where('role', 'supplier'))
                             ->searchable(),
+
+                        Placeholder::make('supplier_contacts_summary')
+                            ->label('Контакты поставщика')
+                            ->content(fn (?Product $record): HtmlString => self::supplierContactsHtml($record)),
                     ]),
 
                 // ── Правая часть: статусы + цены (1/3 ширины) ──────────────
@@ -448,6 +456,125 @@ class ProductForm
                             ]),
                     ]),
             ]);
+    }
+
+    private static function supplierContactsHtml(?Product $product): HtmlString
+    {
+        if (! $product?->exists) {
+            return new HtmlString('<span style="color:#9ca3af">Контакты появятся после сохранения товара.</span>');
+        }
+
+        $suppliers = collect([$product->supplier])
+            ->merge($product->supplierProducts->pluck('supplier'))
+            ->merge($product->integrationProducts->pluck('source.supplier'))
+            ->filter(fn ($supplier): bool => $supplier instanceof Supplier)
+            ->unique('id')
+            ->values();
+
+        if ($suppliers->isEmpty()) {
+            return new HtmlString(
+                '<div style="padding:12px 14px;border:1px dashed #4b5563;border-radius:10px;color:#9ca3af">'
+                .'Поставщик ещё не привязан. Выберите его слева или свяжите товар через обмен 1С.'
+                .'</div>',
+            );
+        }
+
+        $cards = $suppliers->map(function (Supplier $supplier): string {
+            $counterparty = self::findSupplierCounterparty($supplier);
+            $contacts = self::supplierContactLines($supplier, $counterparty);
+            $supplierUrl = e(SupplierResource::getUrl('edit', ['record' => $supplier], panel: 'admin'));
+            $crmUrl = $counterparty
+                ? e(CrmCounterpartyResource::getUrl('edit', ['record' => $counterparty], panel: 'admin'))
+                : null;
+
+            $links = '<a href="'.$supplierUrl.'" style="color:#60a5fa;text-decoration:none">Поставщик</a>';
+            if ($crmUrl) {
+                $links .= '<span style="color:#6b7280"> · </span><a href="'.$crmUrl.'" style="color:#60a5fa;text-decoration:none">CRM</a>';
+            }
+
+            $body = $contacts === []
+                ? '<div style="margin-top:7px;color:#f59e0b;font-size:12px">Телефон и e-mail пока не заполнены</div>'
+                : '<div style="display:grid;gap:6px;margin-top:8px">'.implode('', $contacts).'</div>';
+
+            return '<div style="padding:12px 14px;border:1px solid #374151;border-radius:10px;background:rgba(31,41,55,.35)">'
+                .'<div style="display:flex;align-items:center;justify-content:space-between;gap:12px">'
+                .'<strong style="color:#f3f4f6">'.e($supplier->name).'</strong>'
+                .'<span style="font-size:11px;white-space:nowrap">'.$links.'</span>'
+                .'</div>'.$body.'</div>';
+        })->implode('<div style="height:8px"></div>');
+
+        return new HtmlString($cards);
+    }
+
+    private static function findSupplierCounterparty(Supplier $supplier): ?CrmCounterparty
+    {
+        return CrmCounterparty::query()
+            ->with([
+                'contactPoints' => fn ($query) => $query->where('is_active', true)->orderByDesc('is_primary'),
+                'contactPoints.contact',
+            ])
+            ->where(function ($query) use ($supplier): void {
+                $query
+                    ->where('name', $supplier->name)
+                    ->orWhere('public_name', $supplier->name)
+                    ->orWhere('legal_name', $supplier->name);
+            })
+            ->first();
+    }
+
+    /** @return array<int, string> */
+    private static function supplierContactLines(Supplier $supplier, ?CrmCounterparty $counterparty): array
+    {
+        $items = collect();
+
+        if ($counterparty) {
+            foreach ($counterparty->contactPoints as $point) {
+                if (! in_array($point->type, ['phone', 'email'], true) || blank($point->value)) {
+                    continue;
+                }
+
+                $items->push([
+                    'type' => $point->type,
+                    'value' => trim((string) $point->value),
+                    'label' => collect([
+                        $point->contact?->full_name,
+                        $point->contact?->position,
+                        $point->label,
+                    ])->filter()->unique()->join(' · '),
+                ]);
+            }
+        }
+
+        $rawContact = (string) $supplier->contact;
+        preg_match_all('/[A-Z0-9._%+\-]+@[A-Z0-9.\-]+\.[A-Z]{2,}/iu', $rawContact, $emails);
+        preg_match_all('/(?<!\w)(?:\+?\d[\d\s().\-]{5,}\d)(?!\w)/u', preg_replace('/https?:\/\/\S+/iu', '', $rawContact) ?? '', $phones);
+
+        foreach ($phones[0] ?? [] as $phone) {
+            $items->push(['type' => 'phone', 'value' => trim($phone), 'label' => 'Из карточки поставщика']);
+        }
+        foreach ($emails[0] ?? [] as $email) {
+            $items->push(['type' => 'email', 'value' => trim($email), 'label' => 'Из карточки поставщика']);
+        }
+
+        return $items
+            ->unique(fn (array $item): string => $item['type'].'|'.mb_strtolower($item['value']))
+            ->map(function (array $item): string {
+                $isPhone = $item['type'] === 'phone';
+                $href = $isPhone
+                    ? 'tel:'.preg_replace('/[^\d+]/', '', $item['value'])
+                    : 'mailto:'.$item['value'];
+                $icon = $isPhone ? '☎' : '✉';
+                $label = $item['label'] !== ''
+                    ? '<span style="color:#9ca3af;font-size:11px">'.e($item['label']).'</span>'
+                    : '';
+
+                return '<div style="display:flex;align-items:center;gap:8px;min-width:0">'
+                    .'<span aria-hidden="true" style="color:#f59e0b">'.$icon.'</span>'
+                    .'<a href="'.e($href).'" style="color:#e5e7eb;font-weight:600;text-decoration:none">'.e($item['value']).'</a>'
+                    .$label.'</div>';
+            })
+            ->values()
+            ->all();
     }
 
     /**

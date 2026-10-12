@@ -8,6 +8,8 @@ use App\Filament\Resources\Products\Tables\ProductsTable;
 use App\Filament\Resources\Suppliers\Pages\ListSuppliers;
 use App\Filament\Resources\Suppliers\SupplierResource;
 use App\Models\Category;
+use App\Models\CrmContactPoint;
+use App\Models\CrmCounterparty;
 use App\Models\IntegrationExchangeRun;
 use App\Models\IntegrationProduct;
 use App\Models\IntegrationSource;
@@ -171,6 +173,23 @@ class SupplierIntegrationAdminTest extends TestCase
         $supplier = Supplier::query()->create([
             'code' => 'mixed-product-list-supplier',
             'name' => 'Поставщик смешанного товара',
+            'contact' => '+375 29 111-22-33 | supply-card@example.by',
+        ]);
+        $counterparty = CrmCounterparty::query()->create([
+            'name' => 'Поставщик смешанного товара',
+            'classification' => 'supplier',
+        ]);
+        CrmContactPoint::query()->create([
+            'counterparty_id' => $counterparty->id,
+            'type' => 'phone',
+            'value' => '+375 29 999-88-77',
+            'is_primary' => true,
+        ]);
+        CrmContactPoint::query()->create([
+            'counterparty_id' => $counterparty->id,
+            'type' => 'email',
+            'value' => 'sales@example.by',
+            'is_primary' => true,
         ]);
         $legacySupplier = Supplier::query()->create([
             'code' => 'mixed-product-list-legacy-supplier',
@@ -237,7 +256,14 @@ class SupplierIntegrationAdminTest extends TestCase
             ->assertSeeText('Фотографии')
             ->assertSeeText('Характеристики')
             ->assertSeeText('Промо и сервис')
-            ->assertSeeText('SEO');
+            ->assertSeeText('SEO')
+            ->assertSeeText('Контакты поставщика')
+            ->assertSeeText('+375 29 999-88-77')
+            ->assertSeeText('sales@example.by')
+            ->assertSeeText('+375 29 111-22-33')
+            ->assertSeeText('supply-card@example.by')
+            ->assertSee('tel:+375299998877', false)
+            ->assertSee('mailto:sales@example.by', false);
     }
 
     public function test_product_list_does_not_show_unknown_supplier_quantity_as_zero(): void
