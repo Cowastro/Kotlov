@@ -109,10 +109,6 @@ class OrdersTable
                 TextColumn::make('created_at')
                     ->label('Дата')
                     ->dateTime('d.m.Y H:i')
-                    ->description(fn (Order $record): ?string => $record->isHistoricalUnprocessed()
-                        ? 'Историческая заявка · '.(int) $record->created_at->diffInDays(now()).' дн.'
-                        : null)
-                    ->color(fn (Order $record): ?string => $record->isHistoricalUnprocessed() ? 'gray' : null)
                     ->sortable(),
 
                 TextColumn::make('customer_name')
@@ -233,7 +229,6 @@ class OrdersTable
                         return $goods.' · Вход ≈ '.number_format($summary['purchase_total'], 2, '.', ' ').' BYN · Маржа ≈ '.$margin.$percent;
                     })
                     ->color(fn (Order $record): string => match (true) {
-                        $record->isHistoricalUnprocessed() => 'gray',
                         $record->latestSettlement !== null
                             && ! app(OrderSettlementManager::class)->isCurrent($record->latestSettlement, $record) => 'warning',
                         $record->latestSettlement !== null
@@ -252,7 +247,7 @@ class OrdersTable
                     ->icon('heroicon-o-calculator')
                     ->tooltip(fn (Order $record): string => $record->placedEconomicSnapshot
                         ? 'Неизменяемый снимок на момент оформления. Неизвестные расходы не считаются нулевыми.'
-                        : 'Исторический заказ без снимка: показана текущая оценка. Неизвестная цена не считается нулевой.')
+                        : 'Заказ без снимка: показана текущая оценка. Неизвестная цена не считается нулевой.')
                     ->wrap()
                     ->sortable(query: fn (Builder $query, string $direction): Builder => $query->orderBy('total', $direction)),
 
@@ -322,7 +317,6 @@ class OrdersTable
                         'unknown', 'no_response', 'delayed' => 'warning',
                         'confirmed' => 'success',
                         'sent' => 'info',
-                        'historical' => 'gray',
                         default => 'warning',
                     })
                     ->icon(fn (string $state): string => match ($state) {
@@ -330,7 +324,6 @@ class OrdersTable
                         'unknown', 'no_response', 'delayed' => 'heroicon-o-exclamation-triangle',
                         'confirmed' => 'heroicon-o-check-circle',
                         'sent' => 'heroicon-o-arrow-up-tray',
-                        'historical' => 'heroicon-o-archive-box',
                         default => 'heroicon-o-clock',
                     })
                     ->description(fn (Order $record): ?string => $record->onecSyncDescription())
@@ -356,13 +349,11 @@ class OrdersTable
                     ->color(fn (Order $record): string => match ($record->managementSummary()['severity']) {
                         'critical' => 'danger',
                         'warning' => 'warning',
-                        'historical' => 'gray',
                         default => 'success',
                     })
                     ->icon(fn (Order $record): string => match ($record->managementSummary()['severity']) {
                         'critical' => 'heroicon-o-exclamation-triangle',
                         'warning' => 'heroicon-o-eye',
-                        'historical' => 'heroicon-o-archive-box',
                         default => 'heroicon-o-check-circle',
                     })
                     ->wrap(),
@@ -448,28 +439,6 @@ class OrdersTable
                 SelectFilter::make('status')
                     ->label('Статус заказа')
                     ->options($statusNames),
-
-                SelectFilter::make('lead_relevance')
-                    ->label('Актуальность заявки')
-                    ->options([
-                        'historical' => 'Историческая, вне рабочей очереди',
-                        'current' => 'Текущая рабочая заявка',
-                        'archived' => 'Неактуальная, в архиве',
-                    ])
-                    ->query(function (Builder $query, array $data): Builder {
-                        return match ($data['value'] ?? null) {
-                            'historical' => $query->historicalUnprocessed(),
-                            'current' => $query
-                                ->whereNull('archived_at')
-                                ->where('status', 'new')
-                                ->where(fn (Builder $payment): Builder => $payment
-                                    ->whereNull('payment_status')
-                                    ->orWhere('payment_status', '!=', 'paid'))
-                                ->where('created_at', '>', Order::historicalLeadCutoff()),
-                            'archived' => $query->archived(),
-                            default => $query,
-                        };
-                    }),
 
                 SelectFilter::make('payment_type')
                     ->label('Способ оплаты')

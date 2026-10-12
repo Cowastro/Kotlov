@@ -4,10 +4,7 @@ namespace App\Filament\Resources\Orders\Pages;
 
 use App\Filament\Resources\Orders\OrderResource;
 use App\Models\Order;
-use Filament\Actions\Action;
 use Filament\Actions\CreateAction;
-use Filament\Forms\Components\Textarea;
-use Filament\Notifications\Notification;
 use Filament\Resources\Pages\ListRecords;
 use Filament\Schemas\Components\Tabs\Tab;
 use Filament\Support\Enums\Width;
@@ -25,45 +22,6 @@ class ListOrders extends ListRecords
     protected function getHeaderActions(): array
     {
         return [
-            Action::make('archiveHistorical')
-                ->label(fn (): string => 'Закрыть все старые: '.Order::query()->historicalUnprocessed()->count())
-                ->icon('heroicon-o-archive-box-arrow-down')
-                ->color('warning')
-                ->visible(fn (): bool => Order::query()->historicalUnprocessed()->exists())
-                ->form([
-                    Textarea::make('reason')
-                        ->label('Общая причина закрытия')
-                        ->helperText('Причина и автор сохранятся в истории каждого заказа. Сами заказы не удаляются.')
-                        ->default('Архивная заявка до запуска нового рабочего процесса')
-                        ->rows(3)
-                        ->minLength(3)
-                        ->maxLength(1000)
-                        ->required(),
-                ])
-                ->requiresConfirmation()
-                ->modalHeading('Архивировать все старые заявки')
-                ->modalDescription(fn (): string => 'Будут закрыты '.Order::query()->historicalUnprocessed()->count().' новых неоплаченных заявок из очереди «Исторические заявки». Новые, оплаченные и уже обработанные заказы не изменятся.')
-                ->modalSubmitActionLabel('Присвоить «Неактуально» и архивировать')
-                ->action(function (array $data): void {
-                    $changed = 0;
-
-                    Order::query()
-                        ->historicalUnprocessed()
-                        ->orderBy('id')
-                        ->chunkById(100, function ($orders) use ($data, &$changed): void {
-                            foreach ($orders as $order) {
-                                if ($order->markIrrelevant($data['reason'])) {
-                                    $changed++;
-                                }
-                            }
-                        });
-
-                    Notification::make()
-                        ->title('Старые заявки перемещены в архив')
-                        ->body("В архиве: {$changed}. Заказы, причина и история сохранены.")
-                        ->success()
-                        ->send();
-                }),
             CreateAction::make(),
         ];
     }
@@ -98,7 +56,6 @@ class ListOrders extends ListRecords
                 ->withOperationalProblem('negative_margin')
                 ->orWhere(fn (Builder $part): Builder => $part->withOperationalProblem('low_margin')))
             ->count();
-        $historicalLeadCount = Order::query()->historicalUnprocessed()->count();
         $archivedCount = Order::query()->archived()->count();
 
         $tabs = [
@@ -113,12 +70,6 @@ class ListOrders extends ListRecords
                 ->modifyQueryUsing(fn (Builder $query) => $query->withOperationalProblem('needs_attention'))
                 ->badge($attentionCount ?: null)
                 ->badgeColor('danger'),
-
-            'historical_leads' => Tab::make('Исторические заявки')
-                ->icon('heroicon-o-archive-box')
-                ->modifyQueryUsing(fn (Builder $query) => $query->historicalUnprocessed())
-                ->badge($historicalLeadCount ?: null)
-                ->badgeColor('gray'),
 
             'archived' => Tab::make('Архив / неактуальные')
                 ->icon('heroicon-o-archive-box-arrow-down')

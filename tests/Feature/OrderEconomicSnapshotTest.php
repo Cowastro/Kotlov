@@ -131,7 +131,7 @@ class OrderEconomicSnapshotTest extends TestCase
             ->assertSeeText('Не рассчитана до подтверждения расходов');
     }
 
-    public function test_quick_filters_also_find_historical_orders_without_a_snapshot(): void
+    public function test_quick_filters_also_find_legacy_orders_without_a_snapshot(): void
     {
         $product = $this->product();
         $order = $this->order(150, 150, 0);
