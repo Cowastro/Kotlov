@@ -70,6 +70,12 @@ class ProductInfolist
                                     ->label('Поставщик')
                                     ->placeholder('—'),
 
+                                TextEntry::make('supplier_contacts_summary')
+                                    ->label('Контакты поставщика')
+                                    ->state(fn (Product $record) => ProductForm::supplierContactsHtml($record))
+                                    ->html()
+                                    ->columnSpanFull(),
+
                                 TextEntry::make('h1')
                                     ->label('H1')
                                     ->placeholder('—'),
@@ -115,7 +121,6 @@ class ProductInfolist
                                 TextEntry::make('market_position')
                                     ->label('Позиция')
                                     ->state(fn (Product $record): string => self::marketIndicator($record)['indicator_label'])
-                                    ->description(fn (Product $record): string => self::marketIndicator($record)['indicator_description'])
                                     ->badge()
                                     ->color(fn (Product $record): string => self::marketIndicator($record)['indicator_color'])
                                     ->icon(fn (Product $record): string => self::marketIndicator($record)['indicator_icon']),

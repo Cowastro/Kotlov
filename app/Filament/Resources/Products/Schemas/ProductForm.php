@@ -458,14 +458,13 @@ class ProductForm
             ]);
     }
 
-    private static function supplierContactsHtml(?Product $product): HtmlString
+    public static function supplierContactsHtml(?Product $product): HtmlString
     {
         if (! $product?->exists) {
             return new HtmlString('<span style="color:#9ca3af">Контакты появятся после сохранения товара.</span>');
         }
 
-        $suppliers = collect([$product->supplier])
-            ->merge($product->supplierProducts->pluck('supplier'))
+        $suppliers = $product->supplierProducts->pluck('supplier')
             ->merge($product->integrationProducts->pluck('source.supplier'))
             ->filter(fn ($supplier): bool => $supplier instanceof Supplier)
             ->unique('id')

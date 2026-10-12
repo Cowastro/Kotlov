@@ -170,6 +170,7 @@ class SupplierIntegrationAdminTest extends TestCase
     public function test_product_list_renders_mixed_supplier_channels_without_treating_labels_as_models(): void
     {
         $admin = User::factory()->create(['role' => 'admin', 'is_active' => true]);
+        $legacySupplierUser = User::factory()->create(['role' => 'supplier', 'is_active' => true]);
         $supplier = Supplier::query()->create([
             'code' => 'mixed-product-list-supplier',
             'name' => 'Поставщик смешанного товара',
@@ -202,6 +203,7 @@ class SupplierIntegrationAdminTest extends TestCase
         ]);
         $product = Product::query()->create([
             'category_id' => $category->id,
+            'supplier_id' => $legacySupplierUser->id,
             'sku' => 'MIXED-LIST-1',
             'name' => 'Товар с двумя каналами и полным длинным наименованием без обрезания в списке',
             'slug' => 'mixed-list-product',
@@ -262,6 +264,15 @@ class SupplierIntegrationAdminTest extends TestCase
             ->assertSeeText('sales@example.by')
             ->assertSeeText('+375 29 111-22-33')
             ->assertSeeText('supply-card@example.by')
+            ->assertSee('tel:+375299998877', false)
+            ->assertSee('mailto:sales@example.by', false);
+
+        $this->actingAs($admin)
+            ->get(ProductResource::getUrl('view', ['record' => $product], panel: 'admin'))
+            ->assertOk()
+            ->assertSeeText('Контакты поставщика')
+            ->assertSeeText('+375 29 999-88-77')
+            ->assertSeeText('sales@example.by')
             ->assertSee('tel:+375299998877', false)
             ->assertSee('mailto:sales@example.by', false);
     }
