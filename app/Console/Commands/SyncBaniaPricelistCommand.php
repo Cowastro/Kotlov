@@ -174,6 +174,7 @@ class SyncBaniaPricelistCommand extends Command
             'errors' => 0,
             'missing_marked_out_of_stock' => 0,
             'retail_price_synced' => 0,
+            'retail_only_synced' => 0,
             'retail_price_suggested' => 0,
             'retail_price_missing' => 0,
             'retail_price_skipped_manual_review' => 0,
@@ -321,6 +322,7 @@ class SyncBaniaPricelistCommand extends Command
                     }
                     if ($syncRetailPrices && $retailChanged) {
                         $this->updateProductRetailPrice($supplierProduct, $retailMatch, $now);
+                        $supplierProduct->product_price = (float) $retailMatch['price'];
                         $stats['retail_price_synced']++;
                     }
                     if ($supplierProduct->product_id) {
@@ -343,6 +345,44 @@ class SyncBaniaPricelistCommand extends Command
             } catch (\Throwable $e) {
                 $stats['errors']++;
                 $this->addReportRow($row, ['reason' => $e->getMessage()], 'error');
+            }
+        }
+
+        if ($syncRetailPrices) {
+            foreach ($supplierProducts as $supplierProduct) {
+                $retailMatch = $this->matchRetailForSupplierProduct($supplierProduct, $retailIndexes);
+                if (! $this->isStandaloneRetailMatchConfident($supplierProduct, $retailMatch)) {
+                    continue;
+                }
+
+                $repairArticle = $repairSupplierArticles
+                    && ($retailMatch['match_type'] ?? '') === 'retail_title_exact'
+                    && $this->canRepairSupplierArticle((int) $supplier->id, $supplierProduct, [
+                        'article' => $retailMatch['article'] ?? '',
+                        'norm_article' => $retailMatch['norm_article'] ?? '',
+                    ]);
+                $retailChanged = $this->hasRetailPriceChange($supplierProduct, $retailMatch);
+
+                if (! $retailChanged && ! $repairArticle) {
+                    continue;
+                }
+
+                if (! $dryRun) {
+                    if ($retailChanged) {
+                        $this->updateProductRetailPrice($supplierProduct, $retailMatch, $now);
+                        $supplierProduct->product_price = (float) $retailMatch['price'];
+                        $stats['retail_price_synced']++;
+                        $stats['retail_only_synced']++;
+                    }
+                    if ($repairArticle) {
+                        DB::table('supplier_products')->where('id', $supplierProduct->id)->update([
+                            'supplier_article' => trim((string) ($retailMatch['article'] ?? '')),
+                            'supplier_article_normalized' => (string) ($retailMatch['norm_article'] ?? ''),
+                            'updated_at' => $now,
+                        ]);
+                        $stats['supplier_article_repaired']++;
+                    }
+                }
             }
         }
 
@@ -975,6 +1015,29 @@ class SyncBaniaPricelistCommand extends Command
             }
         }
 
+        $identities = $this->supplierProductIdentities($supplierProduct);
+        $exactArticleCandidates = array_values(array_filter(
+            $candidates,
+            fn (array $candidate): bool => in_array($this->modelIdentity((string) ($candidate['name'] ?? '')), $identities, true)
+        ));
+        if (count($exactArticleCandidates) === 1) {
+            return array_merge($exactArticleCandidates[0], [
+                'match_type' => 'retail_article_exact',
+                'confidence' => 100,
+            ]);
+        }
+
+        $exactTitleCandidates = array_values(array_filter(
+            $indexes['rows'] ?? [],
+            fn (array $candidate): bool => in_array($this->modelIdentity((string) ($candidate['name'] ?? '')), $identities, true)
+        ));
+        if (count($exactTitleCandidates) === 1) {
+            return array_merge($exactTitleCandidates[0], [
+                'match_type' => 'retail_title_exact',
+                'confidence' => 100,
+            ]);
+        }
+
         if ($candidates === []) {
             $candidates = array_map(
                 fn (array $row): array => $row + ['match_type' => 'retail_title'],
@@ -1003,6 +1066,31 @@ class SyncBaniaPricelistCommand extends Command
         }
 
         return $best + ['confidence' => $bestScore];
+    }
+
+    private function supplierProductIdentities(object $supplierProduct): array
+    {
+        $identities = [];
+        foreach ([(string) ($supplierProduct->product_name ?? ''), (string) ($supplierProduct->supplier_name ?? '')] as $name) {
+            $identity = $this->modelIdentity($name);
+            if ($identity !== '') {
+                $identities[] = $identity;
+            }
+        }
+
+        return array_values(array_unique($identities));
+    }
+
+    private function isStandaloneRetailMatchConfident(object $supplierProduct, ?array $retailMatch): bool
+    {
+        if (! $supplierProduct->product_id || ! $retailMatch || empty($retailMatch['price'])) {
+            return false;
+        }
+
+        return in_array((string) ($retailMatch['match_type'] ?? ''), [
+            'retail_article_exact',
+            'retail_title_exact',
+        ], true);
     }
 
     private function bestCandidate(array $row, array $candidates): array

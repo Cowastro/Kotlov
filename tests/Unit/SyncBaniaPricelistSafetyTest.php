@@ -87,6 +87,66 @@ class SyncBaniaPricelistSafetyTest extends TestCase
         self::assertSame('title_ambiguous', $result['match_type']);
     }
 
+    public function test_standalone_retail_match_uses_exact_article_and_title(): void
+    {
+        $product = (object) [
+            'product_id' => 10,
+            'product_name' => 'Печь-камин Везувий KZ-14РS "Антрацит"',
+            'supplier_name' => '',
+            'supplier_article' => '4610094759515',
+            'supplier_article_normalized' => '4610094759515',
+        ];
+        $retail = [
+            'name' => 'Печь-камин Везувий KZ-14РS "Антрацит"',
+            'article' => '4610094759515',
+            'norm_article' => '4610094759515',
+            'price' => 3433.0,
+            'normalized_name' => $this->invoke('normalizeName', 'Печь-камин Везувий KZ-14РS "Антрацит"'),
+        ];
+
+        $result = $this->invoke('matchRetailForSupplierProduct', $product, [
+            'article' => ['4610094759515' => [$retail]],
+            'rows' => [$retail],
+        ]);
+
+        self::assertSame('retail_article_exact', $result['match_type']);
+        self::assertSame(3433.0, $result['price']);
+    }
+
+    public function test_standalone_retail_match_falls_back_to_unique_exact_title_for_stale_article(): void
+    {
+        $product = (object) [
+            'product_id' => 11,
+            'product_name' => 'Печь отопительная ASTON Lesnaya 300',
+            'supplier_name' => '',
+            'supplier_article' => '4610094714873',
+            'supplier_article_normalized' => '4610094714873',
+        ];
+        $wrongArticleRetail = [
+            'name' => 'Печь отопительная ASTON Lesnaya 200',
+            'article' => '4610094714873',
+            'norm_article' => '4610094714873',
+            'price' => 1200.0,
+            'normalized_name' => $this->invoke('normalizeName', 'Печь отопительная ASTON Lesnaya 200'),
+        ];
+        $correctRetail = [
+            'name' => 'Печь отопительная ASTON Lesnaya 300',
+            'article' => '4610094715375',
+            'norm_article' => '4610094715375',
+            'price' => 1631.0,
+            'normalized_name' => $this->invoke('normalizeName', 'Печь отопительная ASTON Lesnaya 300'),
+        ];
+
+        $result = $this->invoke('matchRetailForSupplierProduct', $product, [
+            'article' => ['4610094714873' => [$wrongArticleRetail]],
+            'rows' => [$wrongArticleRetail, $correctRetail],
+        ]);
+
+        self::assertSame('retail_title_exact', $result['match_type']);
+        self::assertSame('4610094715375', $result['article']);
+        self::assertSame(1631.0, $result['price']);
+    }
+
     public function test_retail_parser_does_not_treat_price_as_missing_article(): void
     {
         $parsed = $this->invoke('parseRetailRow', ['ВЕЗУВИЙ Тестовая модель', null, 'шт', 1298], 4);
