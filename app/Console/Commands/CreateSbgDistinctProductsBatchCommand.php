@@ -50,11 +50,21 @@ class CreateSbgDistinctProductsBatchCommand extends Command
         'УТ-00008923' => ['template' => 'PS-009.691', 'candidate' => 'PS-007.807', 'fragments' => ['Тройник 45', '430-0.8', 'D115']],
     ];
 
+    /** @var array<string, array{template:string,candidate?:string,fragments:list<string>}> */
+    private const BATCH_CHIMNEY_PRICED_20261012_C = [
+        'УТ-00009647' => ['template' => 'PS-008.996', 'candidate' => 'PS-009.519', 'fragments' => ['Адаптер переход', '430-0.8', 'D200/220']],
+        'УТ-00008323' => ['template' => 'KOTLOV-007983', 'candidate' => 'PS-007.811', 'fragments' => ['Конденсатоотвод', '430-0.5', 'D115']],
+        'УТ-00008732' => ['template' => 'PS-008.996', 'candidate' => 'PS-009.518', 'fragments' => ['Адаптер переход', '430-0.8', 'D180/200']],
+        'УТ-00008832' => ['template' => 'PS-009.051', 'candidate' => 'PS-009.743', 'fragments' => ['Труба Термо L 250', '430-0.8/430', 'D115/200']],
+        'УТ-00009413' => ['template' => 'PS-008.996', 'candidate' => 'PS-009.519', 'fragments' => ['Адаптер переход', '430-0.8', 'D200/250']],
+    ];
+
     public function handle(IntegrationProductCreator $creator): int
     {
         $rows = match ($this->option('batch')) {
             'chimney-priced-20261012-a' => self::BATCH_CHIMNEY_PRICED_20261012_A,
             'chimney-priced-20261012-b' => self::BATCH_CHIMNEY_PRICED_20261012_B,
+            'chimney-priced-20261012-c' => self::BATCH_CHIMNEY_PRICED_20261012_C,
             default => null,
         };
 
