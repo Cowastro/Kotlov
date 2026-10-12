@@ -227,6 +227,17 @@ class SupplierIntegrationAdminTest extends TestCase
             ->assertDontSeeText('Старый тестовый поставщик карточки')
             ->assertDontSeeText('LEGACY-MIXED-LIST-1')
             ->assertDontSeeText('1С + Старый канал');
+
+        $this->actingAs($admin)
+            ->get(ProductResource::getUrl('edit', ['record' => $product], panel: 'admin'))
+            ->assertOk()
+            ->assertSeeText('Карточка товара')
+            ->assertSeeText('Продажи и наличие')
+            ->assertSeeText('Описание')
+            ->assertSeeText('Фотографии')
+            ->assertSeeText('Характеристики')
+            ->assertSeeText('Промо и сервис')
+            ->assertSeeText('SEO');
     }
 
     public function test_product_list_does_not_show_unknown_supplier_quantity_as_zero(): void
