@@ -14,8 +14,19 @@ class SyncLigmetCommandTest extends TestCase
         $command = new SyncLigmetCommand;
         $method = new ReflectionMethod($command, 'brandFromSection');
 
-        $this->assertSame('Пегас', $method->invoke($command, '03) Печи / Пегас, Россия'));
-        $this->assertSame('Пегас', $method->invoke($command, '03) Stoves / PEGAS'));
+        $this->assertSame('Pegas', $method->invoke($command, '03) Печи / Пегас, Россия'));
+        $this->assertSame('Pegas', $method->invoke($command, '03) Stoves / PEGAS'));
+    }
+
+    public function test_pegas_model_matches_cyrillic_supplier_and_site_names(): void
+    {
+        $command = new SyncLigmetCommand;
+        $method = new ReflectionMethod($command, 'model');
+
+        $supplierModel = $method->invoke($command, 'Печь Пегас 16 нерж со стеклом', 'Pegas');
+        $siteModel = $method->invoke($command, 'Банная печь Пегас 16 нерж со стеклом', 'Pegas');
+
+        $this->assertSame($supplierModel, $siteModel);
     }
 
     #[DataProvider('numericStockProvider')]

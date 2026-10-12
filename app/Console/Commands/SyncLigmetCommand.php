@@ -92,8 +92,8 @@ class SyncLigmetCommand extends Command
         'mbs' => 'MBS',
         'nordflam' => 'Nordflam',
         'panadero' => 'Panadero',
-        'пегас' => 'Пегас',
-        'pegas' => 'Пегас',
+        'пегас' => 'Pegas',
+        'pegas' => 'Pegas',
     ];
 
     /** Section-path keyword → KOTLOV category_id (checked in order). */
@@ -136,6 +136,8 @@ class SyncLigmetCommand extends Command
         'КРАСНАЯ', 'КРАСНЫЙ',
         'КОРИЧНЕВАЯ', 'КОРИЧНЕВЫЙ',
         'ПАТИНА', 'АНТРАЦИТ', 'ГРАФИТ', 'КРЕМОВАЯ', 'КРЕМОВЫЙ',
+        // The site brand is "Pegas", while supplier names contain both spellings.
+        'ПЕГАС', 'PEGAS',
     ];
 
     private array $indexBySupplierArticle = [];
