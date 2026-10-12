@@ -216,6 +216,11 @@ class SupplierIntegrationAdminTest extends TestCase
             'code' => 'mixed-product-list-legacy-supplier',
             'name' => 'Старый тестовый поставщик карточки',
         ]);
+        $manualSourceSupplier = Supplier::query()->create([
+            'code' => 'manual-source',
+            'name' => 'Manual source URL',
+            'is_active' => false,
+        ]);
         $category = Category::query()->create([
             'name' => 'Категория списка товаров',
             'slug' => 'mixed-product-list-category',
@@ -235,6 +240,11 @@ class SupplierIntegrationAdminTest extends TestCase
             'supplier_article' => 'LEGACY-MIXED-LIST-1',
             'price_byn' => 10,
             'stock_quantity' => 99,
+        ]);
+        SupplierProduct::query()->create([
+            'supplier_id' => $manualSourceSupplier->id,
+            'product_id' => $product->id,
+            'supplier_article' => 'manual-source-'.$product->id,
         ]);
         $source = IntegrationSource::query()->create([
             'supplier_id' => $supplier->id,
@@ -289,7 +299,8 @@ class SupplierIntegrationAdminTest extends TestCase
             ->assertSeeText('+375 29 111-22-33')
             ->assertSeeText('supply-card@example.by')
             ->assertSee('tel:+375299998877', false)
-            ->assertSee('mailto:sales@example.by', false);
+            ->assertSee('mailto:sales@example.by', false)
+            ->assertDontSeeText('Manual source URL');
 
         $this->actingAs($admin)
             ->get(ProductResource::getUrl('view', ['record' => $product], panel: 'admin'))
@@ -298,7 +309,8 @@ class SupplierIntegrationAdminTest extends TestCase
             ->assertSeeText('+375 29 999-88-77')
             ->assertSeeText('sales@example.by')
             ->assertSee('tel:+375299998877', false)
-            ->assertSee('mailto:sales@example.by', false);
+            ->assertSee('mailto:sales@example.by', false)
+            ->assertDontSeeText('Manual source URL');
     }
 
     public function test_product_list_does_not_show_unknown_supplier_quantity_as_zero(): void
