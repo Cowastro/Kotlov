@@ -419,7 +419,8 @@ class CreateSbgDistinctProductsBatchCommand extends Command
     private const BATCH_RESEARCHED_PRICED_20261013_P = [
         'УТ-00008565' => [
             'template' => 'KOTLOV-007994',
-            'fragments' => ['Отвод 87', 'ОМ-Р', '430-0.8', 'D130', '3S', 'TS.FRT.O87.0130.75385'],
+            'external_sku' => 'TS.FRT.O87.0130.75385',
+            'fragments' => ['Отвод 87', 'ОМ-Р', '430-0.8', 'D130', '3S'],
             'name' => 'Теплов и Сухов Отвод 87° ОМ-Р 430-0.8 D130 (3S)',
             'retail' => 37.00,
             'images' => ['https://enginer-pro.ru/upload/resize_cache/iblock/353/z1ktevmckvt2h3mnhc7ginouoijz9wzv/580_580_1/311da5b7_73e1_11ea_819c_5254007ee97b_4c09ceda_f27c_11ef_99de_fe9e81472390.jpg'],
@@ -521,6 +522,7 @@ class CreateSbgDistinctProductsBatchCommand extends Command
                 && $portableImages !== []
                 && $candidateIds->contains((int) $expectedCandidate->id)
                 && $this->containsAll($item->name, $rule['fragments'])
+                && (! isset($rule['external_sku']) || $item->external_sku === $rule['external_sku'])
                 && Product::query()->where('name', $name)->doesntExist();
 
             if (! $valid) {
