@@ -16,10 +16,8 @@ class InactiveProductPreviewTest extends TestCase
     {
         [$category, $product] = $this->inactiveProduct();
 
-        $this->followingRedirects()
-            ->get('https://kotlov.by/'.$category->slug.'/'.$product->slug.'?admin-preview=1')
-            ->assertOk()
-            ->assertDontSee($product->name);
+        $this->get('https://kotlov.by/'.$category->slug.'/'.$product->slug.'?admin-preview=1')
+            ->assertNotFound();
     }
 
     public function test_active_manager_can_preview_an_inactive_product(): void

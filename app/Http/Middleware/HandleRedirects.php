@@ -533,9 +533,12 @@ class HandleRedirects
 
     private function canPreviewInactive(Request $request): bool
     {
-        return $request->boolean('admin-preview')
-            && $request->user()?->is_active
-            && $request->user()?->isManager();
+        // This middleware is appended globally and runs before the web guard
+        // has restored the authenticated user from the session.  It only has
+        // to avoid collapsing a requested preview URL back to its category;
+        // ProductController performs the actual manager/active-user check and
+        // returns 404 to everyone else.
+        return $request->boolean('admin-preview');
     }
 
     private function normalizeLegacySlug(string $slug): string
