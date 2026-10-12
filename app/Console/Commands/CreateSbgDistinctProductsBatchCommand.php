@@ -364,6 +364,34 @@ class CreateSbgDistinctProductsBatchCommand extends Command
         ],
     ];
 
+    private const BATCH_RESEARCHED_PRICED_20261012_N = [
+        'УТ-00009196' => [
+            'template' => 'KOTLOV-022603',
+            'candidate' => 'PS-009.079',
+            'fragments' => ['Зонт-Конус Термо', '430-0.5/430', 'D120/180', 'У1'],
+            'name' => 'Теплов и Сухов Зонт-Конус Термо ЗКТ-Р 430-0.5/430 D120/180 (У1)',
+            'retail' => 55.00,
+            'images' => ['https://banikaminy.ru/upload/iblock/e6e/7il96iu0543p3l1czodqcc84cjbv93sp.jpeg'],
+            'source_url' => 'https://banikaminy.ru/catalog/dymokhody_baki_ventilyatsiya/dymokhodnye-sistemy-teplov-i-sukhov-tis-ferrit/zont_deflektor_zont_konus/4247/',
+            'short' => 'Зонт-конус Теплов и Сухов ЗКТ-Р для сэндвич-дымохода Ø120/180 мм из нержавеющей стали AISI 430 толщиной 0,5 мм.',
+            'content' => '<p><strong>Теплов и Сухов ЗКТ-Р 120/180</strong> — финальный элемент сэндвич-дымохода, объединяющий конус и защитный зонт. Он закрывает слой изоляции и защищает дымовой канал от атмосферных осадков.</p><p>Элемент устанавливается на трубу Термо с внутренним диаметром 120 мм и наружным диаметром 180 мм. Внутренняя и внешняя стенки выполнены из нержавеющей стали AISI 430 толщиной 0,5 мм.</p>',
+            'specs' => [
+                ['key' => 'Тип', 'value' => 'Зонт-конус Термо'],
+                ['key' => 'Модель', 'value' => 'ЗКТ-Р'],
+                ['key' => 'Внутренний диаметр', 'value' => '120 мм'],
+                ['key' => 'Наружный диаметр', 'value' => '180 мм'],
+                ['key' => 'Материал', 'value' => 'Нержавеющая сталь'],
+                ['key' => 'Марка стали', 'value' => 'AISI 430'],
+                ['key' => 'Толщина стали', 'value' => '0,5 мм'],
+                ['key' => 'Покрытие', 'value' => 'Без окрашенного покрытия'],
+                ['key' => 'Масса', 'value' => '0,54 кг'],
+                ['key' => 'Артикул производителя', 'value' => 'TS.FRT.ZKN.0120.74698'],
+                ['key' => 'Гарантия', 'value' => '12 месяцев'],
+                ['key' => 'Страна производства', 'value' => 'Россия'],
+            ],
+        ],
+    ];
+
     public function handle(IntegrationProductCreator $creator): int
     {
         $rows = match ($this->option('batch')) {
@@ -380,6 +408,7 @@ class CreateSbgDistinctProductsBatchCommand extends Command
             'researched-priced-20261012-k' => self::BATCH_RESEARCHED_PRICED_20261012_K,
             'researched-priced-20261012-l' => self::BATCH_RESEARCHED_PRICED_20261012_L,
             'researched-priced-20261012-m' => self::BATCH_RESEARCHED_PRICED_20261012_M,
+            'researched-priced-20261012-n' => self::BATCH_RESEARCHED_PRICED_20261012_N,
             default => null,
         };
 
