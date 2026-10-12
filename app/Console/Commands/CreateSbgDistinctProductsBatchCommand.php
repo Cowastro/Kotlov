@@ -416,6 +416,31 @@ class CreateSbgDistinctProductsBatchCommand extends Command
         ],
     ];
 
+    private const BATCH_RESEARCHED_PRICED_20261013_P = [
+        'УТ-00008565' => [
+            'template' => 'KOTLOV-007994',
+            'fragments' => ['Отвод 87', 'ОМ-Р', '430-0.8', 'D130', '3S', 'TS.FRT.O87.0130.75385'],
+            'name' => 'Теплов и Сухов Отвод 87° ОМ-Р 430-0.8 D130 (3S)',
+            'retail' => 37.00,
+            'images' => ['https://enginer-pro.ru/upload/resize_cache/iblock/353/z1ktevmckvt2h3mnhc7ginouoijz9wzv/580_580_1/311da5b7_73e1_11ea_819c_5254007ee97b_4c09ceda_f27c_11ef_99de_fe9e81472390.jpg'],
+            'source_url' => 'https://enginer-pro.ru/catalog/kotly-otopleniya/dymokhody-i-komplektuyushchie/dymokhody-iz-nerzhaveyushchey-stali/odnostennye_dymokhody/otvody_/otvod-mono/otvod-87-om-r-430-08-d130-3s/',
+            'short' => 'Трёхсекционный моно-отвод Теплов и Сухов ОМ-Р 87° диаметром 130 мм из нержавеющей стали AISI 430 толщиной 0,8 мм.',
+            'content' => '<p><strong>Теплов и Сухов ОМ-Р 87° D130 (3S)</strong> — трёхсекционный отвод для изменения направления одностенного дымового канала почти под прямым углом.</p><p>Элемент выполнен из нержавеющей стали AISI 430 толщиной 0,8 мм. Диаметр подключения — 130 мм. Это отдельная конфигурация, которую нельзя объединять с более тонким отводом 430-0,5 мм.</p>',
+            'specs' => [
+                ['key' => 'Тип', 'value' => 'Отвод моно'],
+                ['key' => 'Модель', 'value' => 'ОМ-Р'],
+                ['key' => 'Угол', 'value' => '87°'],
+                ['key' => 'Диаметр', 'value' => '130 мм'],
+                ['key' => 'Количество секций', 'value' => '3'],
+                ['key' => 'Материал', 'value' => 'Нержавеющая сталь'],
+                ['key' => 'Марка стали', 'value' => 'AISI 430'],
+                ['key' => 'Толщина стали', 'value' => '0,8 мм'],
+                ['key' => 'Артикул производителя', 'value' => 'TS.FRT.O87.0130.75385'],
+                ['key' => 'Страна производства', 'value' => 'Россия'],
+            ],
+        ],
+    ];
+
     public function handle(IntegrationProductCreator $creator): int
     {
         $rows = match ($this->option('batch')) {
@@ -434,6 +459,7 @@ class CreateSbgDistinctProductsBatchCommand extends Command
             'researched-priced-20261012-m' => self::BATCH_RESEARCHED_PRICED_20261012_M,
             'researched-priced-20261012-n' => self::BATCH_RESEARCHED_PRICED_20261012_N,
             'researched-priced-20261013-o' => self::BATCH_RESEARCHED_PRICED_20261013_O,
+            'researched-priced-20261013-p' => self::BATCH_RESEARCHED_PRICED_20261013_P,
             default => null,
         };
 
@@ -480,6 +506,7 @@ class CreateSbgDistinctProductsBatchCommand extends Command
             }
 
             $candidateIds = collect($item->candidates)->pluck('product_id')->map(fn ($id): int => (int) $id);
+            $normalizedPrice = $item->normalizedPriceByn();
             $configuredBrand = $rule['brand'] ?? null;
             $brand = $configuredBrand ? $this->findBrand($configuredBrand) : $template->brand;
             $brandName = trim((string) ($configuredBrand['name'] ?? $brand?->name));
@@ -488,7 +515,7 @@ class CreateSbgDistinctProductsBatchCommand extends Command
                 && $item->source?->partnerName() === self::PARTNER_NAME
                 && $item->match_status === 'ambiguous'
                 && (float) $item->stock_quantity > 0
-                && $item->normalizedPriceByn()
+                && ($normalizedPrice !== null || isset($rule['retail']))
                 && $template->category_id
                 && ($brand || $configuredBrand || ($rule['allow_brandless'] ?? false))
                 && $portableImages !== []
@@ -506,8 +533,8 @@ class CreateSbgDistinctProductsBatchCommand extends Command
             $stats['ready']++;
             $retail = isset($rule['retail'])
                 ? (float) $rule['retail']
-                : $this->retailPrice((float) $item->normalizedPriceByn(), (float) $template->price);
-            if ($retail < (float) $item->normalizedPriceByn()) {
+                : $this->retailPrice((float) $normalizedPrice, (float) $template->price);
+            if ($normalizedPrice !== null && $retail < $normalizedPrice) {
                 $stats['ready']--;
                 $stats['blocked']++;
                 $details[] = [$code, $rule['template'], 'blocked', 'configured retail price is below supplier price'];

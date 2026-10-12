@@ -711,4 +711,54 @@ class CreateSbgDistinctProductsBatchCommandTest extends TestCase
         $this->assertStringContainsString('bitumnyy-germetik-dlya-krov.webp', $product->images[0]);
         $this->assertSame('manual_created', $item->fresh()->match_method);
     }
+
+    public function test_it_creates_an_exact_researched_product_without_inventing_a_missing_supplier_price(): void
+    {
+        $source = IntegrationSource::query()->create([
+            'code' => 'onec-sbg-omr-130-08',
+            'name' => '1С СанБизнесГруп',
+            'settings' => ['partner_name' => 'ООО «СанБизнесГруп»'],
+            'is_active' => true,
+            'update_stock' => true,
+        ]);
+        $category = Category::query()->create(['name' => 'Колена моно', 'slug' => 'mono-elbows-130', 'parent_id' => 0]);
+        $brand = Brand::query()->create(['name' => 'Теплов и Сухов', 'slug' => 'teplov-i-suhov-omr']);
+        $template = Product::query()->create([
+            'category_id' => $category->id,
+            'brand_id' => $brand->id,
+            'sku' => 'KOTLOV-007994',
+            'name' => 'Теплов и Сухов Отвод 87° ОМ-Р 430-0.5 D130 (3S)',
+            'slug' => 'omr-130-05-template',
+            'price' => 29,
+            'images' => ['product/omr-130-05.jpg'],
+        ]);
+        $item = IntegrationProduct::query()->create([
+            'integration_source_id' => $source->id,
+            'external_id' => 'omr-130-08',
+            'external_code' => 'УТ-00008565',
+            'external_sku' => 'TS.FRT.O87.0130.75385',
+            'name' => 'Отвод 87* ОМ-Р 430-0.8 D130 (3S) арт. TS.FRT.O87.0130.75385',
+            'price_byn' => null,
+            'stock_quantity' => 1,
+            'match_status' => 'ambiguous',
+            'candidates' => [['product_id' => $template->id, 'score' => 0.71]],
+        ]);
+
+        $this->artisan('integration:create-sbg-distinct-products', [
+            '--batch' => 'researched-priced-20261013-p',
+            '--code' => ['УТ-00008565'],
+            '--apply' => true,
+        ])->assertSuccessful();
+
+        $product = $item->fresh()->product;
+        $this->assertNotNull($product);
+        $this->assertNotSame($template->id, $product->id);
+        $this->assertSame('Теплов и Сухов Отвод 87° ОМ-Р 430-0.8 D130 (3S)', $product->name);
+        $this->assertSame('37.00', $product->price);
+        $this->assertSame('1', (string) $product->stock_qty);
+        $this->assertNull($item->fresh()->normalizedPriceByn());
+        $this->assertSame('0,8 мм', collect($product->specs)->firstWhere('key', 'Толщина стали')['value']);
+        $this->assertSame('TS.FRT.O87.0130.75385', collect($product->specs)->firstWhere('key', 'Артикул производителя')['value']);
+        $this->assertSame('manual_created', $item->fresh()->match_method);
+    }
 }
