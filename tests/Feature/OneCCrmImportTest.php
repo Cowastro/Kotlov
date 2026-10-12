@@ -7,6 +7,7 @@ use App\Filament\Resources\CrmImportRuns\CrmImportRunResource;
 use App\Models\CrmContactPoint;
 use App\Models\CrmCounterparty;
 use App\Models\CrmExternalIdentity;
+use App\Models\CrmImportConflict;
 use App\Models\CrmImportRun;
 use App\Models\TelephonyCall;
 use App\Models\User;
@@ -87,6 +88,15 @@ class OneCCrmImportTest extends TestCase
     public function test_admin_can_open_one_c_import_control_pages(): void
     {
         $admin = User::factory()->create(['role' => 'admin', 'is_active' => true]);
+        CrmImportConflict::query()->create([
+            'source' => '1c_trade',
+            'import_type' => 'trade_contacts',
+            'external_id' => 'test-conflict',
+            'external_name' => 'Неоднозначный партнёр',
+            'reason' => 'Найдено несколько возможных карточек CRM',
+            'candidate_ids' => [10, 20],
+            'payload' => ['name' => 'Неоднозначный партнёр'],
+        ]);
 
         $this->actingAs($admin)
             ->get(CrmImportRunResource::getUrl('index', panel: 'admin'))

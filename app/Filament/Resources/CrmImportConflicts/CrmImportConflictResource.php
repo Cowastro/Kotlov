@@ -59,8 +59,8 @@ class CrmImportConflictResource extends Resource
             TextColumn::make('source')->label('Источник')->badge()
                 ->formatStateUsing(fn (string $state): string => CrmExternalIdentity::SOURCES[$state] ?? $state),
             TextColumn::make('reason')->label('Почему требуется разбор')->wrap(),
-            TextColumn::make('candidate_ids')->label('Возможных карточек')
-                ->formatStateUsing(fn (?array $state): int => count($state ?? [])),
+            TextColumn::make('candidate_count')->label('Возможных карточек')
+                ->state(fn (CrmImportConflict $record): int => count($record->candidate_ids ?? [])),
             TextColumn::make('status')->label('Статус')->badge()
                 ->formatStateUsing(fn (string $state): string => CrmImportConflict::STATUSES[$state] ?? $state),
             TextColumn::make('resolvedCounterparty.name')->label('Связано с')->placeholder('—'),
