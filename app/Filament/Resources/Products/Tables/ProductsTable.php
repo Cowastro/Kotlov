@@ -31,6 +31,7 @@ use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\HtmlString;
 
 class ProductsTable
 {
@@ -173,6 +174,7 @@ class ProductsTable
                 TextColumn::make('suppliers_list')
                     ->label('Поставщик')
                     ->getStateUsing(fn ($record): string => self::supplierNames($record))
+                    ->description(fn ($record): ?HtmlString => self::supplierContacts($record))
                     ->limit(22)
                     ->width('9rem')
                     ->grow(false)
@@ -874,6 +876,39 @@ class ProductsTable
             : $record->supplierProducts->map(fn ($item): ?string => $item->supplier?->name);
 
         return $names->filter()->unique()->implode(', ') ?: '—';
+    }
+
+    private static function supplierContacts(object $record): ?HtmlString
+    {
+        $suppliers = self::productSuppliers($record);
+        $showNames = $suppliers->count() > 1;
+        $rows = $suppliers->map(function (Supplier $supplier) use ($showNames): ?string {
+            $phone = $supplier->contactPhoneNumbers()[0] ?? null;
+            $email = $supplier->contactEmailAddresses()[0] ?? null;
+            if (! $phone && ! $email) {
+                return null;
+            }
+
+            $links = collect([
+                $phone ? '<a class="text-primary-600 hover:underline" href="tel:'.e(preg_replace('/[^\d+]/', '', $phone)).'">☎ '.e($phone).'</a>' : null,
+                $email ? '<a class="text-primary-600 hover:underline" href="mailto:'.e($email).'">✉ '.e($email).'</a>' : null,
+            ])->filter()->implode(' · ');
+
+            return ($showNames ? '<span class="text-gray-500">'.e($supplier->name).':</span> ' : '').$links;
+        })->filter()->implode('<br>');
+
+        return $rows !== '' ? new HtmlString($rows) : null;
+    }
+
+    /** @return Collection<int, Supplier> */
+    private static function productSuppliers(object $record): Collection
+    {
+        $integrationItems = self::activeIntegrationItems($record);
+        $suppliers = $integrationItems->isNotEmpty()
+            ? $integrationItems->map(fn ($item): ?Supplier => $item->source?->supplier)
+            : $record->supplierProducts->map(fn ($item): ?Supplier => $item->supplier);
+
+        return new Collection($suppliers->filter()->unique('id')->values()->all());
     }
 
     private static function availabilityStatus(Product $record): string

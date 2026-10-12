@@ -97,6 +97,11 @@ class OrderItem extends Model
         return $this->belongsTo(Supplier::class, 'fulfillment_supplier_id');
     }
 
+    public function supplySupplier(): BelongsTo
+    {
+        return $this->belongsTo(Supplier::class, 'supply_supplier_id');
+    }
+
     public function fulfillmentConfirmedBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'fulfillment_confirmed_by');

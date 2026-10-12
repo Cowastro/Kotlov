@@ -37,6 +37,58 @@ class Supplier extends Model
         return $this->belongsTo(CrmCounterparty::class, 'crm_counterparty_id');
     }
 
+    /** @return array<int, string> */
+    public function contactPhoneNumbers(): array
+    {
+        $phones = $this->crmCounterparty?->contactPoints
+            ->where('is_active', true)
+            ->where('type', 'phone')
+            ->pluck('value')
+            ->filter()
+            ->unique()
+            ->values()
+            ->all() ?? [];
+
+        if ($phones !== []) {
+            return $phones;
+        }
+
+        preg_match_all('/(?<!\w)(?:\+?\d[\d\s().\-]{5,}\d)(?!\w)/u', (string) $this->contact, $matches);
+
+        return collect($matches[0] ?? [])
+            ->map(fn (string $phone): string => trim($phone))
+            ->filter()
+            ->unique()
+            ->values()
+            ->all();
+    }
+
+    /** @return array<int, string> */
+    public function contactEmailAddresses(): array
+    {
+        $emails = $this->crmCounterparty?->contactPoints
+            ->where('is_active', true)
+            ->where('type', 'email')
+            ->pluck('value')
+            ->filter()
+            ->unique()
+            ->values()
+            ->all() ?? [];
+
+        if ($emails !== []) {
+            return $emails;
+        }
+
+        preg_match_all('/[A-Z0-9._%+\-]+@[A-Z0-9.\-]+\.[A-Z]{2,}/iu', (string) $this->contact, $matches);
+
+        return collect($matches[0] ?? [])
+            ->map(fn (string $email): string => trim($email))
+            ->filter()
+            ->unique()
+            ->values()
+            ->all();
+    }
+
     public function priceItems(): HasMany
     {
         return $this->hasMany(SupplierPriceItem::class);

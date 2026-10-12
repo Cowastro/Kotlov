@@ -5,6 +5,8 @@ namespace Tests\Feature;
 use App\Filament\Resources\Orders\OrderResource;
 use App\Filament\Resources\Products\ProductResource;
 use App\Models\Category;
+use App\Models\CrmContactPoint;
+use App\Models\CrmCounterparty;
 use App\Models\IntegrationProduct;
 use App\Models\IntegrationSource;
 use App\Models\Order;
@@ -75,8 +77,11 @@ class OrderSupplyRoutingTest extends TestCase
             ->assertSeeText('Заказ 240.00 BYN')
             ->assertSeeText('Товары 240.00 BYN · Вход ≈ 192.00 BYN · Маржа ≈ 48.00 BYN / 20.0%')
             ->assertSeeText('Контроль')
-            ->assertSeeText('Проверить · 1')
             ->assertSeeText('Не назначен менеджер')
+            ->assertSeeText('+375 29 100-20-30')
+            ->assertSeeText('orders@sanbusiness.test')
+            ->assertSee('tel:+375291002030', false)
+            ->assertSee('mailto:orders@sanbusiness.test', false)
             ->assertSeeText('В наличии · остаток 7 шт.')
             ->assertSeeText('На сайте ↗')
             ->assertSee(ProductResource::getUrl('edit', ['record' => $fixture['product']], panel: 'admin'), false)
@@ -369,6 +374,23 @@ class OrderSupplyRoutingTest extends TestCase
         $ownSupplier->update([
             'name' => 'ООО «СанБизнесГруп»',
             'contact' => '+375 29 100-20-30',
+        ]);
+        $counterparty = CrmCounterparty::query()->create([
+            'name' => 'ООО «СанБизнесГруп»',
+            'classification' => 'supplier',
+        ]);
+        $ownSupplier->update(['crm_counterparty_id' => $counterparty->id]);
+        CrmContactPoint::query()->create([
+            'counterparty_id' => $counterparty->id,
+            'type' => 'phone',
+            'value' => '+375 29 100-20-30',
+            'is_primary' => true,
+        ]);
+        CrmContactPoint::query()->create([
+            'counterparty_id' => $counterparty->id,
+            'type' => 'email',
+            'value' => 'orders@sanbusiness.test',
+            'is_primary' => true,
         ]);
         $source = IntegrationSource::query()->where('code', 'onec')->firstOrFail();
         $source->update([

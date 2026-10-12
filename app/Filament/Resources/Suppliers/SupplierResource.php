@@ -403,40 +403,12 @@ class SupplierResource extends Resource
 
     private static function supplierPhones(Supplier $supplier): string
     {
-        $phones = (string) ($supplier->crmCounterparty?->contactPoints
-            ->where('is_active', true)
-            ->where('type', 'phone')
-            ->pluck('value')
-            ->filter()
-            ->unique()
-            ->join(', ') ?? '');
-
-        if ($phones !== '') {
-            return $phones;
-        }
-
-        preg_match_all('/(?<!\w)(?:\+?\d[\d\s().\-]{5,}\d)(?!\w)/u', (string) $supplier->contact, $matches);
-
-        return (string) collect($matches[0] ?? [])->map(fn (string $phone): string => trim($phone))->unique()->join(', ');
+        return implode(', ', $supplier->contactPhoneNumbers());
     }
 
     private static function supplierEmails(Supplier $supplier): string
     {
-        $emails = (string) ($supplier->crmCounterparty?->contactPoints
-            ->where('is_active', true)
-            ->where('type', 'email')
-            ->pluck('value')
-            ->filter()
-            ->unique()
-            ->join(', ') ?? '');
-
-        if ($emails !== '') {
-            return $emails;
-        }
-
-        preg_match_all('/[A-Z0-9._%+\-]+@[A-Z0-9.\-]+\.[A-Z]{2,}/iu', (string) $supplier->contact, $matches);
-
-        return (string) collect($matches[0] ?? [])->map(fn (string $email): string => trim($email))->unique()->join(', ');
+        return implode(', ', $supplier->contactEmailAddresses());
     }
 
     private static function integrationSourceNames(Supplier $supplier): ?string

@@ -7,6 +7,7 @@ use App\Filament\Resources\Products\ProductResource;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Product;
+use App\Models\Supplier;
 use App\Models\User;
 use App\Services\Market\MarketPriceIndicator;
 use App\Services\Orders\OrderSettlementManager;
@@ -26,6 +27,7 @@ use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
+use Illuminate\Support\HtmlString;
 
 class OrdersTable
 {
@@ -85,11 +87,14 @@ class OrdersTable
                 ->withSum('items', 'quantity')
                 ->with([
                     'items:id,order_id,product_id,integration_product_id,product_name,product_sku,price,quantity,total,supply_status,supply_route_label,supply_supplier_id,supply_integration_source_id,supply_channel,supply_supplier_name,supply_supplier_contact,supply_source_label,supply_purchase_price,supply_price_tax_mode,supply_vat_rate,supply_stock_quantity,supply_is_available,supply_candidate_count,supply_captured_at,fulfillment_route,fulfillment_supplier_id,fulfillment_supplier_name,fulfillment_supplier_contact,fulfillment_purchase_price',
-                    'items.fulfillmentSupplier:id,name,contact,marketplace_commission_rate',
-                    'items.integrationProduct.source.supplier',
+                    'items.fulfillmentSupplier:id,crm_counterparty_id,name,contact,marketplace_commission_rate',
+                    'items.fulfillmentSupplier.crmCounterparty.contactPoints',
+                    'items.supplySupplier:id,crm_counterparty_id,name,contact,marketplace_commission_rate',
+                    'items.supplySupplier.crmCounterparty.contactPoints',
+                    'items.integrationProduct.source.supplier.crmCounterparty.contactPoints',
                     'items.product.category:id,name,slug',
-                    'items.product.integrationProducts.source.supplier',
-                    'items.product.supplierProducts.supplier',
+                    'items.product.integrationProducts.source.supplier.crmCounterparty.contactPoints',
+                    'items.product.supplierProducts.supplier.crmCounterparty.contactPoints',
                     'items.product.marketPriceObservations.source',
                     'manager:id,name',
                     'archivedBy:id,name',
@@ -335,17 +340,10 @@ class OrdersTable
 
                 TextColumn::make('management_attention')
                     ->label('Контроль')
-                    ->state(function (Order $record): string {
-                        $summary = $record->managementSummary();
-
-                        return $summary['problem_count'] > 0
-                            ? $summary['attention_label'].' · '.$summary['problem_count']
-                            : $summary['attention_label'];
-                    })
-                    ->description(fn (Order $record): string => $record->managementSummary()['problems']
-                        ->pluck('label')
-                        ->take(2)
-                        ->implode(' · ') ?: 'Критичных сигналов нет')
+                    ->state(fn (Order $record): string => self::attentionLabel($record))
+                    ->description(fn (Order $record): string => $record->managementSummary()['problem_count'] > 0
+                        ? 'Откройте заказ и устраните указанные причины'
+                        : 'Критичных сигналов нет')
                     ->tooltip(fn (Order $record): string => $record->managementSummary()['problems']
                         ->pluck('label')
                         ->implode("\n") ?: 'Критичных сигналов нет')
@@ -371,7 +369,7 @@ class OrdersTable
                             ? $summary['supplier_names']->implode(', ')
                             : 'Поставщик не определён';
                     })
-                    ->description(function (Order $record): string {
+                    ->description(function (Order $record): HtmlString|string {
                         $summary = $record->supplySummary();
                         $parts = [];
 
@@ -386,7 +384,12 @@ class OrdersTable
                             $parts[] = 'Заявки: '.$requestSummary;
                         }
 
-                        return $parts !== [] ? implode(' · ', $parts) : 'Маршрут рассчитан по текущим связям';
+                        $status = $parts !== [] ? implode(' · ', $parts) : 'Маршрут рассчитан по текущим связям';
+                        $contacts = self::orderSupplierContacts($record);
+
+                        return $contacts
+                            ? new HtmlString($contacts.'<br><span class="text-gray-500">'.e($status).'</span>')
+                            : $status;
                     })
                     ->color(fn (Order $record): string => match (true) {
                         $record->supplierOrderRequests->contains('status', 'rejected') => 'danger',
@@ -699,6 +702,98 @@ class OrdersTable
         return abs($stock - round($stock)) < 0.0005
             ? number_format($stock, 0, ',', ' ')
             : rtrim(rtrim(number_format($stock, 3, ',', ' '), '0'), ',');
+    }
+
+    private static function attentionLabel(Order $order): string
+    {
+        $summary = $order->managementSummary();
+        $labels = $summary['problems']->pluck('label')->filter()->values();
+        if ($labels->isEmpty()) {
+            return 'Готов к работе';
+        }
+
+        $label = $labels->take(2)->implode(' · ');
+        $remaining = $labels->count() - 2;
+
+        return $remaining > 0 ? $label.' · ещё '.$remaining : $label;
+    }
+
+    private static function orderSupplierContacts(Order $order): ?string
+    {
+        $contacts = $order->items->map(function (OrderItem $item): ?array {
+            $context = $item->supplyContext();
+            $supplier = self::supplierForItem($item, $context);
+            $legacyContact = (string) ($item->fulfillment_supplier_contact
+                ?: $context['supplier_contact']
+                ?: $item->supply_supplier_contact);
+
+            $phone = $supplier?->contactPhoneNumbers()[0] ?? self::phoneFromText($legacyContact);
+            $email = $supplier?->contactEmailAddresses()[0] ?? self::emailFromText($legacyContact);
+            if (! $phone && ! $email) {
+                return null;
+            }
+
+            return [
+                'key' => $supplier?->id ?: ($context['supplier_name'] ?? $legacyContact),
+                'name' => $supplier?->name ?? $context['supplier_name'] ?? $item->fulfillment_supplier_name,
+                'phone' => $phone,
+                'email' => $email,
+            ];
+        })->filter()->unique('key')->values();
+
+        $showNames = $contacts->count() > 1;
+        $rows = $contacts->map(function (array $contact) use ($showNames): string {
+            $phone = $contact['phone'];
+            $email = $contact['email'];
+            $links = collect([
+                $phone ? '<a class="text-primary-600 hover:underline" href="tel:'.e(preg_replace('/[^\d+]/', '', $phone)).'">☎ '.e($phone).'</a>' : null,
+                $email ? '<a class="text-primary-600 hover:underline" href="mailto:'.e($email).'">✉ '.e($email).'</a>' : null,
+            ])->filter()->implode(' · ');
+
+            return ($showNames && filled($contact['name'])
+                ? '<strong>'.e($contact['name']).':</strong> '
+                : '').$links;
+        })->implode('<br>');
+
+        return $rows !== '' ? $rows : null;
+    }
+
+    /** @param array<string, mixed> $context */
+    private static function supplierForItem(OrderItem $item, array $context): ?Supplier
+    {
+        $supplierId = $item->fulfillment_supplier_id ?: ($context['supplier_id'] ?? $item->supply_supplier_id);
+        $suppliers = collect([
+            $item->fulfillmentSupplier,
+            $item->supplySupplier,
+            $item->integrationProduct?->source?->supplier,
+        ]);
+
+        foreach ($item->product?->integrationProducts ?? [] as $offer) {
+            $suppliers->push($offer->source?->supplier);
+        }
+        foreach ($item->product?->supplierProducts ?? [] as $offer) {
+            $suppliers->push($offer->supplier);
+        }
+
+        $suppliers = $suppliers->filter()->unique('id')->values();
+
+        return $supplierId
+            ? $suppliers->first(fn (Supplier $supplier): bool => $supplier->id === (int) $supplierId)
+            : $suppliers->first(fn (Supplier $supplier): bool => $supplier->name === ($context['supplier_name'] ?? null));
+    }
+
+    private static function phoneFromText(string $value): ?string
+    {
+        preg_match('/(?<!\w)(?:\+?\d[\d\s().\-]{5,}\d)(?!\w)/u', $value, $match);
+
+        return isset($match[0]) ? trim($match[0]) : null;
+    }
+
+    private static function emailFromText(string $value): ?string
+    {
+        preg_match('/[A-Z0-9._%+\-]+@[A-Z0-9.\-]+\.[A-Z]{2,}/iu', $value, $match);
+
+        return isset($match[0]) ? trim($match[0]) : null;
     }
 
     /** @return array<string, mixed> */
