@@ -52,6 +52,41 @@ class SyncBaniaPricelistSafetyTest extends TestCase
         self::assertSame('manual_review', $result['action']);
     }
 
+    public function test_unique_exact_title_can_override_a_stale_article_link(): void
+    {
+        $wrongArticleProduct = (object) [
+            'product_name' => 'Печь отопительная ASTON Lesnaya 200',
+            'supplier_name' => '',
+        ];
+        $exactTitleProduct = (object) [
+            'product_name' => 'Печь отопительная ASTON Lesnaya 300',
+            'supplier_name' => '',
+        ];
+        $row = $this->row('Печь отопительная ASTON Lesnaya 300', '4610094715375');
+
+        $result = $this->invoke(
+            'matchRow',
+            $row,
+            ['article' => ['4610094715375' => [$wrongArticleProduct]]],
+            [$wrongArticleProduct, $exactTitleProduct]
+        );
+
+        self::assertSame('title_article_repair', $result['match_type']);
+        self::assertSame($exactTitleProduct, $result['supplier_product']);
+    }
+
+    public function test_duplicate_exact_titles_are_sent_to_manual_review(): void
+    {
+        $first = (object) ['product_name' => 'Печь банная Тест 18', 'supplier_name' => ''];
+        $second = (object) ['product_name' => 'Печь банная Тест 18', 'supplier_name' => ''];
+        $row = $this->row('Печь банная Тест 18', 'TEST-18');
+
+        $result = $this->invoke('matchRow', $row, ['article' => []], [$first, $second]);
+
+        self::assertSame('manual_review', $result['action']);
+        self::assertSame('title_ambiguous', $result['match_type']);
+    }
+
     public function test_retail_parser_does_not_treat_price_as_missing_article(): void
     {
         $parsed = $this->invoke('parseRetailRow', ['ВЕЗУВИЙ Тестовая модель', null, 'шт', 1298], 4);

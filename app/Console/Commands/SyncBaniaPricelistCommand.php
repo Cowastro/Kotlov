@@ -20,6 +20,7 @@ class SyncBaniaPricelistCommand extends Command
         {--retail-price-file= : Path to a local BANIA retail XLSX/CSV file}
         {--retail-sheet-url= : Google Sheets URL with BANIA retail prices}
         {--sync-retail-prices : Update products.price from the retail price list when a confident row is found}
+        {--repair-supplier-articles : Replace stale/generic BANIA articles only for a unique exact product-title match}
         {--create-missing-products : Disabled for BANIA; unmatched price rows are reported without creating catalog products}
         {--limit= : Process only the first N price rows}
         {--mark-missing-out-of-stock : Mark linked BANIA rows missing from the price list as out_of_stock}
@@ -44,6 +45,15 @@ class SyncBaniaPricelistCommand extends Command
         'Эверест',
         'Этна',
         'ЭТНА',
+        'DoorWood',
+        'ASTON',
+        'НМК',
+        'KARINA',
+        'Сибирь',
+        'Север',
+        'Prometall',
+        'Рубцовский литейный комплекс ЛДВ',
+        'Банька',
     ];
     private const ALLOWED_CATEGORY_SLUGS = [
         'pechki',
@@ -92,6 +102,7 @@ class SyncBaniaPricelistCommand extends Command
         $apply = (bool) $this->option('apply');
         $dryRun = (bool) $this->option('dry-run') || ! $apply;
         $syncRetailPrices = (bool) $this->option('sync-retail-prices');
+        $repairSupplierArticles = (bool) $this->option('repair-supplier-articles');
         $createMissingProducts = (bool) $this->option('create-missing-products');
         $limit = $this->option('limit') !== null ? max(0, (int) $this->option('limit')) : null;
 
@@ -166,6 +177,8 @@ class SyncBaniaPricelistCommand extends Command
             'retail_price_suggested' => 0,
             'retail_price_missing' => 0,
             'retail_price_skipped_manual_review' => 0,
+            'supplier_article_repaired' => 0,
+            'supplier_article_repair_skipped_conflict' => 0,
             'manual_review_resolved' => 0,
             'missing_archived' => 0,
             'missing_kept_other_suppliers' => 0,
@@ -277,7 +290,14 @@ class SyncBaniaPricelistCommand extends Command
                 }
 
                 $newInStock = $this->isAvailableStock($row['stock_status']);
-                $changed = $this->hasSupplierProductChanges($supplierProduct, $row, $newInStock);
+                $repairArticle = false;
+                if ($repairSupplierArticles && str_starts_with((string) ($match['match_type'] ?? ''), 'title')) {
+                    $repairArticle = $this->canRepairSupplierArticle((int) $supplier->id, $supplierProduct, $row);
+                    if (! $repairArticle && $this->supplierArticleDiffers($supplierProduct, $row)) {
+                        $stats['supplier_article_repair_skipped_conflict']++;
+                    }
+                }
+                $changed = $this->hasSupplierProductChanges($supplierProduct, $row, $newInStock, $repairArticle);
                 $retailChanged = $this->hasRetailPriceChange($supplierProduct, $retailMatch);
                 if (! $changed) {
                     if (! $syncRetailPrices || ! $retailChanged) {
@@ -294,7 +314,10 @@ class SyncBaniaPricelistCommand extends Command
 
                 if (! $dryRun) {
                     if ($changed) {
-                        $this->updateSupplierProduct($supplierProduct, $row, $newInStock, $now);
+                        $this->updateSupplierProduct($supplierProduct, $row, $newInStock, $now, $repairArticle);
+                        if ($repairArticle) {
+                            $stats['supplier_article_repaired']++;
+                        }
                     }
                     if ($syncRetailPrices && $retailChanged) {
                         $this->updateProductRetailPrice($supplierProduct, $retailMatch, $now);
@@ -784,6 +807,8 @@ class SyncBaniaPricelistCommand extends Command
 
     private function matchRow(array $row, array $indexes, array $supplierProducts): array
     {
+        $identityCandidates = $this->exactIdentityCandidates($row, $supplierProducts);
+
         if ($row['norm_article'] !== '' && isset($indexes['article'][$row['norm_article']])) {
             $articleCandidates = $indexes['article'][$row['norm_article']];
             $best = $this->bestCandidate($row, $articleCandidates);
@@ -793,6 +818,15 @@ class SyncBaniaPricelistCommand extends Command
                     'match_type' => 'article',
                     'confidence' => $best['score'],
                     'reason' => '',
+                ];
+            }
+
+            if (count($identityCandidates) === 1) {
+                return [
+                    'supplier_product' => $identityCandidates[0],
+                    'match_type' => 'title_article_repair',
+                    'confidence' => 100,
+                    'reason' => 'unique exact title overrides a stale/conflicting catalogue article',
                 ];
             }
 
@@ -807,13 +841,24 @@ class SyncBaniaPricelistCommand extends Command
             ];
         }
 
-        $best = $this->bestCandidate($row, $supplierProducts);
-        if ($best['score'] === 100 && $this->hasCompatibleProductIdentity($row, $best['supplier_product'])) {
+        if (count($identityCandidates) === 1) {
             return [
-                'supplier_product' => $best['supplier_product'],
+                'supplier_product' => $identityCandidates[0],
                 'match_type' => 'title',
-                'confidence' => $best['score'],
+                'confidence' => 100,
                 'reason' => '',
+            ];
+        }
+
+        $best = $this->bestCandidate($row, $supplierProducts);
+
+        if (count($identityCandidates) > 1) {
+            return [
+                'action' => 'manual_review',
+                'match_type' => 'title_ambiguous',
+                'confidence' => 100,
+                'supplier_product' => $best['supplier_product'] ?? null,
+                'reason' => 'exact normalized title belongs to more than one BANIA supplier product',
             ];
         }
 
@@ -834,6 +879,24 @@ class SyncBaniaPricelistCommand extends Command
             'supplier_product' => $best['supplier_product'] ?? null,
             'reason' => 'no linked BANIA supplier product found',
         ];
+    }
+
+    private function exactIdentityCandidates(array $row, array $supplierProducts): array
+    {
+        $identity = $this->modelIdentity((string) ($row['name'] ?? ''));
+        if ($identity === '') {
+            return [];
+        }
+
+        return array_values(array_filter($supplierProducts, function (object $candidate) use ($identity): bool {
+            foreach ([(string) ($candidate->product_name ?? ''), (string) ($candidate->supplier_name ?? '')] as $name) {
+                if ($name !== '' && $this->modelIdentity($name) === $identity) {
+                    return true;
+                }
+            }
+
+            return false;
+        }));
     }
 
     private function hasCompatibleProductIdentity(array $row, ?object $supplierProduct): bool
@@ -1162,7 +1225,7 @@ class SyncBaniaPricelistCommand extends Command
         return array_values(array_unique($numbers));
     }
 
-    private function updateSupplierProduct(object $supplierProduct, array $row, bool $inStock, $now): void
+    private function updateSupplierProduct(object $supplierProduct, array $row, bool $inStock, $now, bool $repairArticle = false): void
     {
         $raw = json_decode((string) $supplierProduct->raw, true);
         if (! is_array($raw)) {
@@ -1178,7 +1241,7 @@ class SyncBaniaPricelistCommand extends Command
             'stock_text' => $row['stock_text'],
         ];
 
-        DB::table('supplier_products')->where('id', $supplierProduct->id)->update([
+        $updates = [
             'price' => $row['price'],
             'currency' => 'BYN',
             'currency_rate' => 1,
@@ -1191,11 +1254,22 @@ class SyncBaniaPricelistCommand extends Command
             'last_stock_synced_at' => $now,
             'last_synced_at' => $now,
             'updated_at' => $now,
-        ]);
+        ];
+
+        if ($repairArticle) {
+            $updates['supplier_article'] = trim((string) $row['article']);
+            $updates['supplier_article_normalized'] = (string) $row['norm_article'];
+        }
+
+        DB::table('supplier_products')->where('id', $supplierProduct->id)->update($updates);
     }
 
-    private function hasSupplierProductChanges(object $supplierProduct, array $row, bool $newInStock): bool
+    private function hasSupplierProductChanges(object $supplierProduct, array $row, bool $newInStock, bool $repairArticle = false): bool
     {
+        if ($repairArticle) {
+            return true;
+        }
+
         $oldPrice = $supplierProduct->price_byn !== null ? (float) $supplierProduct->price_byn : null;
         if ($oldPrice === null || abs($oldPrice - (float) $row['price']) > 0.01) {
             return true;
@@ -1206,6 +1280,34 @@ class SyncBaniaPricelistCommand extends Command
         }
 
         return (string) $supplierProduct->stock_status !== $row['stock_status'];
+    }
+
+    private function supplierArticleDiffers(object $supplierProduct, array $row): bool
+    {
+        $newArticle = (string) ($row['norm_article'] ?? '');
+        if ($newArticle === '') {
+            return false;
+        }
+
+        return $newArticle !== $this->normalizeArticle((string) ($supplierProduct->supplier_article_normalized ?? $supplierProduct->supplier_article ?? ''));
+    }
+
+    private function canRepairSupplierArticle(int $supplierId, object $supplierProduct, array $row): bool
+    {
+        if (! $this->supplierArticleDiffers($supplierProduct, $row)) {
+            return false;
+        }
+
+        $normalized = (string) ($row['norm_article'] ?? '');
+
+        return ! DB::table('supplier_products')
+            ->where('supplier_id', $supplierId)
+            ->where('id', '<>', (int) $supplierProduct->id)
+            ->where(function ($query) use ($normalized) {
+                $query->where('supplier_article_normalized', $normalized)
+                    ->orWhere('supplier_article', trim($normalized));
+            })
+            ->exists();
     }
 
     private function refreshProductAvailability(int $productId, $now): void
