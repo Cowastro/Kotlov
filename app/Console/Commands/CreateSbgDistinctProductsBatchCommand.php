@@ -21,7 +21,7 @@ class CreateSbgDistinctProductsBatchCommand extends Command
 
     private const PARTNER_NAME = 'ООО «СанБизнесГруп»';
 
-    /** @var array<string, array{template:string,fragments:list<string>}> */
+    /** @var array<string, array{template:string,candidate?:string,fragments:list<string>}> */
     private const BATCH_CHIMNEY_PRICED_20261012_A = [
         'УТ-00000947' => ['template' => 'KOTLOV-007993', 'fragments' => ['Труба L250', '430-0.8', 'D130']],
         'УТ-00000761' => ['template' => 'PS-009.107', 'fragments' => ['Проход перекрытия', '480х480', 'D220-260']],
@@ -37,10 +37,24 @@ class CreateSbgDistinctProductsBatchCommand extends Command
         'УТ-00008868' => ['template' => 'PS-008.991', 'fragments' => ['Адаптер переход', '430-0.8', 'D110/115']],
     ];
 
+    /** @var array<string, array{template:string,candidate?:string,fragments:list<string>}> */
+    private const BATCH_CHIMNEY_PRICED_20261012_B = [
+        'УТ-00001134' => ['template' => 'PS-009.741', 'fragments' => ['Шибер ШМ-Р', '430-0.8', 'D150']],
+        'УТ-00000241' => ['template' => 'KOTLOV-007998', 'candidate' => 'PS-007.788', 'fragments' => ['Зонт ЗМ-Р', '430-0.5', 'D150']],
+        'УТ-00000239' => ['template' => 'KOTLOV-007998', 'candidate' => 'PS-007.837', 'fragments' => ['Зонт ЗМ-Р', '430-0.5', 'D120']],
+        'УТ-00008738' => ['template' => 'KOTLOV-007984', 'candidate' => 'PS-007.806', 'fragments' => ['Зонт ЗМ-Р', '430-0.5', 'D115']],
+        'УТ-00006024' => ['template' => 'PS-009.741', 'candidate' => 'PS-007.954', 'fragments' => ['Шибер ШМ-Р', '430-0.8', 'D110']],
+        'УТ-00003598' => ['template' => 'PS-009.741', 'candidate' => 'PS-007.863', 'fragments' => ['Шибер ШМ-Р', '430-0.8', 'D130']],
+        'УТ-00000911' => ['template' => 'PS-009.085', 'candidate' => 'PS-007.858', 'fragments' => ['Тройник 87', '430-0.8', 'D130']],
+        'УТ-00008924' => ['template' => 'PS-009.085', 'candidate' => 'PS-007.807', 'fragments' => ['Тройник 87', '430-0.8', 'D115']],
+        'УТ-00008923' => ['template' => 'PS-009.691', 'candidate' => 'PS-007.807', 'fragments' => ['Тройник 45', '430-0.8', 'D115']],
+    ];
+
     public function handle(IntegrationProductCreator $creator): int
     {
         $rows = match ($this->option('batch')) {
             'chimney-priced-20261012-a' => self::BATCH_CHIMNEY_PRICED_20261012_A,
+            'chimney-priced-20261012-b' => self::BATCH_CHIMNEY_PRICED_20261012_B,
             default => null,
         };
 
@@ -63,8 +77,9 @@ class CreateSbgDistinctProductsBatchCommand extends Command
         foreach ($rows as $code => $rule) {
             $items = IntegrationProduct::query()->with(['source', 'product'])->where('external_code', $code)->get();
             $template = Product::query()->where('sku', $rule['template'])->first();
+            $expectedCandidate = Product::query()->where('sku', $rule['candidate'] ?? $rule['template'])->first();
 
-            if ($items->count() !== 1 || ! $template) {
+            if ($items->count() !== 1 || ! $template || ! $expectedCandidate) {
                 $stats['blocked']++;
                 $details[] = [$code, $rule['template'], 'blocked', 'missing unique 1C row or template'];
 
@@ -96,7 +111,7 @@ class CreateSbgDistinctProductsBatchCommand extends Command
                 && $template->category_id
                 && $template->brand_id
                 && $portableImages !== []
-                && $candidateIds->contains((int) $template->id)
+                && $candidateIds->contains((int) $expectedCandidate->id)
                 && $this->containsAll($item->name, $rule['fragments'])
                 && Product::query()->where('name', $name)->doesntExist();
 
