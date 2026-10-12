@@ -140,9 +140,25 @@ class SyncLigmetCommand extends Command
         'ПЕГАС', 'PEGAS',
     ];
 
+    /**
+     * Supplier articles whose legacy catalogue names are not identical to the
+     * current Ligmet workbook. These links were verified by model/variant and
+     * the retail price; keeping the supplier article as the stable key avoids
+     * creating duplicate Pegas cards.
+     */
+    private const SUPPLIER_ARTICLE_TO_SKU = [
+        '994552772' => 'PS-011.720',       // Пегас 16 нерж, стекло, в камне
+        '9945553688' => 'PS-011.748',      // Пегас 16 нерж, стекло, сетка
+        '2002770413037' => 'KOTLOV-000226', // Тундра Профи 18
+        '2002770413038' => 'KOTLOV-000225', // Тундра Профи 18 со стеклом
+        '994553701' => 'PS-011.709',       // Легион 16 чугун ДТ 4
+    ];
+
     private array $indexBySupplierArticle = [];
 
     private array $indexByBrandModel = [];
+
+    private array $productIdBySku = [];
 
     private array $activeProductsByBrand = [];
 
@@ -676,6 +692,7 @@ class SyncLigmetCommand extends Command
                 if (isset($exclude[(int) $p->id])) {
                     return; // about to be archived — don't match to it
                 }
+                $this->productIdBySku[(string) $p->sku] = (int) $p->id;
                 $bid = (int) $p->brand_id;
                 if ($bid > 0) {
                     $model = $this->model((string) $p->name, $this->brandById[$bid] ?? '');
@@ -733,6 +750,14 @@ class SyncLigmetCommand extends Command
             $pid = $this->indexBySupplierArticle[$row['norm_article']];
 
             return ['product_id' => $pid, 'sku' => $this->sku($pid), 'confidence' => 'exact_supplier_article'];
+        }
+        $legacySku = self::SUPPLIER_ARTICLE_TO_SKU[$row['norm_article']] ?? null;
+        if ($legacySku !== null && isset($this->productIdBySku[$legacySku])) {
+            return [
+                'product_id' => $this->productIdBySku[$legacySku],
+                'sku' => $legacySku,
+                'confidence' => 'verified_supplier_article_map',
+            ];
         }
         if ($brandId !== null && ! empty($this->indexByBrandModel[$brandId])) {
             $model = $this->model($row['name'], $this->brandById[$brandId] ?? '');

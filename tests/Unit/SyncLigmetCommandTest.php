@@ -5,6 +5,7 @@ namespace Tests\Unit;
 use App\Console\Commands\SyncLigmetCommand;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
+use ReflectionClass;
 use ReflectionMethod;
 
 class SyncLigmetCommandTest extends TestCase
@@ -27,6 +28,21 @@ class SyncLigmetCommandTest extends TestCase
         $siteModel = $method->invoke($command, 'Банная печь Пегас 16 нерж со стеклом', 'Pegas');
 
         $this->assertSame($supplierModel, $siteModel);
+    }
+
+    public function test_verified_pegas_supplier_articles_point_to_existing_catalogue_skus(): void
+    {
+        $map = (new ReflectionClass(SyncLigmetCommand::class))
+            ->getReflectionConstant('SUPPLIER_ARTICLE_TO_SKU')
+            ->getValue();
+
+        $this->assertSame([
+            '994552772' => 'PS-011.720',
+            '9945553688' => 'PS-011.748',
+            '2002770413037' => 'KOTLOV-000226',
+            '2002770413038' => 'KOTLOV-000225',
+            '994553701' => 'PS-011.709',
+        ], $map);
     }
 
     #[DataProvider('numericStockProvider')]
