@@ -267,6 +267,7 @@ class CatalogController extends Controller
         // Запрос товаров
         $query = Product::query()
             ->orderable()
+            ->withSupplierChannels()
             ->whereIn('category_id', $activeCategoryIds)
             ->with(['category', 'brand']);
 

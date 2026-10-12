@@ -189,28 +189,24 @@
                                 @php
                                     $b2bComparison = app(\App\Services\B2bCatalogOfferResolver::class)->comparison($product, auth()->user());
                                     $b2bOffer = $b2bComparison['offer'] ?? null;
-                                    $totalSupplierStock = $product->supplierProducts->where('stock_quantity', '>', 0)->sum('stock_quantity');
-                                    // Auto-determine status from supplier stock if not explicitly set
-                                    if ($b2bOffer || $totalSupplierStock > 0) {
+                                    if (!$product->is_active || $product->is_archived) {
+                                        $availabilityStatus = 'out_of_stock';
+                                    } elseif ($b2bOffer && (float) $b2bOffer->stock_quantity > 0) {
                                         $availabilityStatus = 'in_stock';
                                     } else {
                                         $availabilityStatus = method_exists($product, 'effectiveAvailabilityStatus')
                                             ? $product->effectiveAvailabilityStatus()
                                             : 'check';
-                                        // Never show "нет в наличии" for non-archived — use "уточняйте наличие"
-                                        if ($availabilityStatus === 'out_of_stock' && ! $product->is_archived) {
-                                            $availabilityStatus = 'check';
-                                        }
                                     }
                                     $canBuy = $b2bOffer
-                                        ? ! $product->is_archived && (float) $b2bOffer->stock_quantity >= 1
-                                        : (! $product->is_archived
-                                            && (float) $product->price > 0
-                                            && in_array($availabilityStatus, ['in_stock', 'check']));
-                                    $availabilityLabel = method_exists($product, 'availabilityLabel')
-                                        ? $product->availabilityLabel()
-                                        : 'Уточняйте наличие';
+                                        ? $product->is_active && ! $product->is_archived && (float) $b2bOffer->stock_quantity >= 1
+                                        : $product->canBeOrdered();
+                                    $availabilityLabel = \App\Models\Product::availabilityStatusOptions()[$availabilityStatus]
+                                        ?? 'Уточняйте наличие';
                                     $displayPrice = $b2bComparison['wholesale_price'] ?? (float) $product->price;
+                                    $showPreviewPrice = request()->boolean('admin-preview')
+                                        && auth()->user()?->isManager()
+                                        && (float) $product->price > 0;
                                 @endphp
 
                                 {{-- Цена --}}
@@ -245,7 +241,7 @@
                                                 </p>
                                             @endif
                                         </div>
-                                    @elseif ($canBuy)
+                                    @elseif ($canBuy || $showPreviewPrice)
                                         <h4 class="price-on-sale">
                                             {{ number_format($product->price, 2, '.', ' ') }} BYN
                                         </h4>
@@ -306,6 +302,10 @@
                                         <span class="stock out-stock fw-medium text-danger">
                                             <i class="icon icon-XCircle"></i> Снят с продажи
                                         </span>
+                                    @elseif (!$product->is_active)
+                                        <span class="stock out-stock fw-medium text-danger">
+                                            <i class="icon icon-XCircle"></i> Нет в наличии
+                                        </span>
                                     @elseif ($b2bOffer)
                                         <span class="stock in-stock fw-medium text-success">
                                             <i class="icon icon-CheckCircle"></i>
@@ -332,6 +332,12 @@
 
                             @if ($product->is_archived)
                                 {{-- Снят с продажи — только консультация --}}
+                                <a href="#ask" data-bs-toggle="modal"
+                                    class="tf-btn type-xl btn-primary animate-btn w-100">
+                                    Заказать консультацию
+                                </a>
+                            @elseif (!$product->is_active)
+                                {{-- Отключённая карточка доступна только в предпросмотре менеджера. --}}
                                 <a href="#ask" data-bs-toggle="modal"
                                     class="tf-btn type-xl btn-primary animate-btn w-100">
                                     Заказать консультацию
@@ -484,7 +490,7 @@
     @endif
 
     {{-- Sticky кнопка "В корзину" при скролле --}}
-    @if (!$product->is_archived)
+    @if ($canBuy)
     <div class="tf-sticky-btn-atc">
         <div class="container">
             <div class="tf-height-observer w-100 d-flex align-items-center">

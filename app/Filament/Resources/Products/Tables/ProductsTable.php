@@ -328,7 +328,7 @@ class ProductsTable
                     ->query(fn (Builder $query, array $data): Builder => match ($data['value'] ?? null) {
                         Product::AVAILABILITY_IN_STOCK => self::whereEffectivelyInStock($query),
                         Product::AVAILABILITY_CHECK => self::whereAvailabilityNeedsCheck($query),
-                        Product::AVAILABILITY_OUT_OF_STOCK => $query->where('availability_status', Product::AVAILABILITY_OUT_OF_STOCK),
+                        Product::AVAILABILITY_OUT_OF_STOCK => self::whereEffectivelyOutOfStock($query),
                         default => $query,
                     }),
 
@@ -878,13 +878,6 @@ class ProductsTable
 
     private static function availabilityStatus(Product $record): string
     {
-        $integrationItems = self::activeIntegrationItems($record);
-        if ($integrationItems->isNotEmpty()) {
-            return (self::supplierStock($record) ?? 0) > 0
-                ? Product::AVAILABILITY_IN_STOCK
-                : Product::AVAILABILITY_CHECK;
-        }
-
         return $record->effectiveAvailabilityStatus();
     }
 
@@ -906,31 +899,72 @@ class ProductsTable
                 ->orWhere('price', '<=', 0)
                 ->orWhere('in_stock', false)
                 ->orWhereNull('in_stock')
-                ->orWhere('availability_status', Product::AVAILABILITY_OUT_OF_STOCK);
+                ->orWhere('availability_status', Product::AVAILABILITY_OUT_OF_STOCK)
+                ->orWhere(function (Builder $query): void {
+                    $query
+                        ->whereDoesntHave('supplierProducts', fn (Builder $supplierProducts): Builder => $supplierProducts
+                            ->where(fn (Builder $stock): Builder => $stock
+                                ->where('in_stock', true)
+                                ->orWhere('stock_quantity', '>', 0)))
+                        ->whereDoesntHave('integrationProducts', fn (Builder $integrationProducts): Builder => $integrationProducts
+                            ->where('match_status', 'matched')
+                            ->where('stock_quantity', '>', 0)
+                            ->whereHas('source', fn (Builder $source): Builder => $source->where('is_active', true)));
+                });
         });
     }
 
     private static function whereEffectivelyInStock(Builder $query): Builder
     {
         return $query
+            ->where('is_active', true)
+            ->where('is_archived', false)
             ->where('in_stock', true)
             ->where(function (Builder $query): void {
                 $query
                     ->whereNull('availability_status')
                     ->orWhere('availability_status', '!=', Product::AVAILABILITY_OUT_OF_STOCK);
+            })
+            ->where(function (Builder $query): void {
+                $query
+                    ->whereHas('supplierProducts', fn (Builder $supplierProducts): Builder => $supplierProducts
+                        ->where(fn (Builder $stock): Builder => $stock
+                            ->where('in_stock', true)
+                            ->orWhere('stock_quantity', '>', 0)))
+                    ->orWhereHas('integrationProducts', fn (Builder $integrationProducts): Builder => $integrationProducts
+                        ->where('match_status', 'matched')
+                        ->where('stock_quantity', '>', 0)
+                        ->whereHas('source', fn (Builder $source): Builder => $source->where('is_active', true)));
             });
     }
 
     private static function whereAvailabilityNeedsCheck(Builder $query): Builder
     {
+        return $query
+            ->where('is_active', true)
+            ->where('is_archived', false)
+            ->where(function (Builder $status): void {
+                $status
+                    ->whereNull('availability_status')
+                    ->orWhere('availability_status', '!=', Product::AVAILABILITY_OUT_OF_STOCK);
+            })
+            ->whereDoesntHave('supplierProducts', fn (Builder $supplierProducts): Builder => $supplierProducts
+                ->where(fn (Builder $stock): Builder => $stock
+                    ->where('in_stock', true)
+                    ->orWhere('stock_quantity', '>', 0)))
+            ->whereDoesntHave('integrationProducts', fn (Builder $integrationProducts): Builder => $integrationProducts
+                ->where('match_status', 'matched')
+                ->where('stock_quantity', '>', 0)
+                ->whereHas('source', fn (Builder $source): Builder => $source->where('is_active', true)));
+    }
+
+    private static function whereEffectivelyOutOfStock(Builder $query): Builder
+    {
         return $query->where(function (Builder $query): void {
             $query
-                ->where('availability_status', Product::AVAILABILITY_CHECK)
-                ->orWhere(function (Builder $query): void {
-                    $query
-                        ->where('in_stock', false)
-                        ->whereNull('availability_status');
-                });
+                ->where('is_active', false)
+                ->orWhere('is_archived', true)
+                ->orWhere('availability_status', Product::AVAILABILITY_OUT_OF_STOCK);
         });
     }
 

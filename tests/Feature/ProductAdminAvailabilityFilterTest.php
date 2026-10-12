@@ -5,6 +5,8 @@ namespace Tests\Feature;
 use App\Filament\Resources\Products\Pages\ListProducts;
 use App\Models\Category;
 use App\Models\Product;
+use App\Models\Supplier;
+use App\Models\SupplierProduct;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
@@ -54,6 +56,25 @@ class ProductAdminAvailabilityFilterTest extends TestCase
             'in_stock' => true,
             'availability_status' => Product::AVAILABILITY_OUT_OF_STOCK,
         ]);
+        $unlinkedInStockFlag = $this->product($category, 'UNLINKED-STOCK-FLAG', [
+            'is_active' => true,
+            'price' => 100,
+            'in_stock' => true,
+            'availability_status' => Product::AVAILABILITY_IN_STOCK,
+        ]);
+        $supplier = Supplier::query()->create([
+            'code' => 'admin-stock-filter-supplier',
+            'name' => 'Поставщик для фильтра',
+        ]);
+        foreach ([$publiclyInStock, $inactiveWithSupplierStock, $withoutPrice, $explicitlyOut] as $linkedProduct) {
+            SupplierProduct::query()->create([
+                'supplier_id' => $supplier->id,
+                'product_id' => $linkedProduct->id,
+                'supplier_article' => 'FILTER-'.$linkedProduct->sku,
+                'in_stock' => true,
+                'stock_quantity' => 3,
+            ]);
+        }
 
         Livewire::actingAs($admin)
             ->test(ListProducts::class)
@@ -64,6 +85,7 @@ class ProductAdminAvailabilityFilterTest extends TestCase
                 $needsCheck,
                 $withoutPrice,
                 $explicitlyOut,
+                $unlinkedInStockFlag,
             ]);
 
         Livewire::actingAs($admin)
@@ -74,14 +96,21 @@ class ProductAdminAvailabilityFilterTest extends TestCase
                 $needsCheck,
                 $withoutPrice,
                 $explicitlyOut,
+                $unlinkedInStockFlag,
             ])
             ->assertCanNotSeeTableRecords([$publiclyInStock]);
 
         Livewire::actingAs($admin)
             ->test(ListProducts::class)
             ->filterTable('availability_status', Product::AVAILABILITY_CHECK)
-            ->assertCanSeeTableRecords([$needsCheck])
+            ->assertCanSeeTableRecords([$needsCheck, $unlinkedInStockFlag])
             ->assertCanNotSeeTableRecords([$publiclyInStock, $explicitlyOut]);
+
+        Livewire::actingAs($admin)
+            ->test(ListProducts::class)
+            ->filterTable('availability_status', Product::AVAILABILITY_OUT_OF_STOCK)
+            ->assertCanSeeTableRecords([$inactiveWithSupplierStock, $explicitlyOut])
+            ->assertCanNotSeeTableRecords([$publiclyInStock, $needsCheck, $unlinkedInStockFlag]);
     }
 
     private function product(Category $category, string $sku, array $attributes): Product

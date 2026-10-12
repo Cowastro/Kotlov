@@ -32,7 +32,10 @@ class CartController extends Controller
             'quantity' => ['sometimes', 'integer', 'min:1', 'max:999'],
         ]);
 
-        $product = Product::with('category:id,slug')->findOrFail($request->product_id);
+        $product = Product::query()
+            ->withSupplierChannels()
+            ->with('category:id,slug')
+            ->findOrFail($request->product_id);
         $b2bOffer = $offerResolver->forProduct($product, $request->user());
 
         if ($request->user()?->isB2B() && ! $b2bOffer) {
@@ -43,17 +46,18 @@ class CartController extends Controller
                 : back()->with('error', $message);
         }
 
-        // Снятый с продажи товар нельзя заказать
-        if ($product->is_archived) {
+        // Отключённый или снятый с продажи товар нельзя заказать даже через
+        // сохранённую ссылку, старую корзину либо активное предложение B2B.
+        if (! $product->is_active || $product->is_archived) {
             if ($request->expectsJson()) {
-                return response()->json(['message' => 'Товар снят с продажи и недоступен для заказа.'], 422);
+                return response()->json(['message' => 'Товар недоступен для заказа.'], 422);
             }
 
-            return back()->with('error', 'Товар снят с продажи и недоступен для заказа.');
+            return back()->with('error', 'Товар недоступен для заказа.');
         }
 
         $canBeOrdered = $b2bOffer
-            ? (float) $b2bOffer->stock_quantity >= 1
+            ? $product->is_active && ! $product->is_archived && (float) $b2bOffer->stock_quantity >= 1
             : $product->canBeOrdered();
 
         if (! $canBeOrdered) {

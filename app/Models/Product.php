@@ -77,21 +77,28 @@ class Product extends Model
 
     public function effectiveAvailabilityStatus(): string
     {
-        $status = $this->availability_status ?: null;
-
-        // Explicitly marked "уточняйте наличие"
-        if ($status === self::AVAILABILITY_CHECK) {
-            return self::AVAILABILITY_CHECK;
+        if (! $this->is_active || $this->is_archived) {
+            return self::AVAILABILITY_OUT_OF_STOCK;
         }
+
+        $status = $this->availability_status ?: null;
 
         // Explicitly marked "нет в наличии" — only case that shows "Нет в наличии"
         if ($status === self::AVAILABILITY_OUT_OF_STOCK) {
             return self::AVAILABILITY_OUT_OF_STOCK;
         }
 
-        // In_stock flag is the source of truth for "В наличии"
-        if ($this->in_stock) {
+        // "В наличии" is allowed only when a linked supplier channel confirms
+        // a positive/available stock.  A bare flag on the product card is not
+        // enough: it can be left over after a link or an import was disabled.
+        if ($this->hasAvailableSupplierChannel()) {
             return self::AVAILABILITY_IN_STOCK;
+        }
+
+        // A linked channel without a positive balance, or a product without a
+        // channel at all, must be confirmed by a manager before sale.
+        if ($status === self::AVAILABILITY_CHECK) {
+            return self::AVAILABILITY_CHECK;
         }
 
         // Not in stock but not explicitly marked — show "Уточняйте наличие"
@@ -105,12 +112,73 @@ class Product extends Model
 
     public function canBeOrdered(): bool
     {
-        return ! $this->is_archived
+        return $this->is_active
+            && ! $this->is_archived
             && (float) $this->price > 0
             && in_array($this->effectiveAvailabilityStatus(), [
                 self::AVAILABILITY_IN_STOCK,
                 self::AVAILABILITY_CHECK,
             ], true);
+    }
+
+    public function hasLinkedSupplierChannel(): bool
+    {
+        $hasLegacyLink = $this->relationLoaded('supplierProducts')
+            ? $this->supplierProducts->isNotEmpty()
+            : $this->supplierProducts()->exists();
+
+        if ($hasLegacyLink) {
+            return true;
+        }
+
+        if ($this->relationLoaded('integrationProducts')) {
+            return $this->integrationProducts->contains(
+                fn (IntegrationProduct $item): bool => $item->match_status === 'matched'
+                    && $item->source?->is_active === true
+            );
+        }
+
+        return $this->integrationProducts()
+            ->where('match_status', 'matched')
+            ->whereHas('source', fn ($source) => $source->where('is_active', true))
+            ->exists();
+    }
+
+    public function hasAvailableSupplierChannel(): bool
+    {
+        $legacyAvailable = $this->relationLoaded('supplierProducts')
+            ? $this->supplierProducts->contains(
+                fn (SupplierProduct $item): bool => $item->in_stock === true
+                    || (float) $item->stock_quantity > 0
+            )
+            : $this->supplierProducts()->available()->exists();
+
+        if ($legacyAvailable) {
+            return true;
+        }
+
+        if ($this->relationLoaded('integrationProducts')) {
+            return $this->integrationProducts->contains(
+                fn (IntegrationProduct $item): bool => $item->match_status === 'matched'
+                    && $item->source?->is_active === true
+                    && (float) $item->stock_quantity > 0
+            );
+        }
+
+        return $this->integrationProducts()
+            ->where('match_status', 'matched')
+            ->where('stock_quantity', '>', 0)
+            ->whereHas('source', fn ($source) => $source->where('is_active', true))
+            ->exists();
+    }
+
+    public function scopeWithSupplierChannels($query)
+    {
+        return $query->with([
+            'supplierProducts:id,product_id,in_stock,stock_quantity',
+            'integrationProducts:id,product_id,integration_source_id,stock_quantity,match_status',
+            'integrationProducts.source:id,is_active',
+        ]);
     }
 
     public function heatPumpCatalogMeta(): ?array

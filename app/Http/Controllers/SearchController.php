@@ -23,6 +23,7 @@ class SearchController extends Controller
 
             $query = Product::active()
                 ->notArchived()
+                ->withSupplierChannels()
                 ->where(function ($qb) use ($words, $q) {
                     // Сначала пробуем полное совпадение
                     $qb->where('name', 'like', "%{$q}%")

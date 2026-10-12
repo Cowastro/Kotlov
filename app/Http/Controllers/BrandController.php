@@ -44,6 +44,7 @@ class BrandController extends Controller
 
         $products = $brand->products()
             ->orderable()
+            ->withSupplierChannels()
             ->with(['category'])
             ->orderByDesc('is_featured')
             ->orderByDesc('rating')

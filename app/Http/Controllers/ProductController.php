@@ -40,6 +40,9 @@ class ProductController extends Controller
             ->with([
                 'category.parent',
                 'brand',
+                'supplierProducts:id,product_id,in_stock,stock_quantity',
+                'integrationProducts:id,product_id,integration_source_id,stock_quantity,match_status',
+                'integrationProducts.source:id,is_active',
                 'reviews' => fn ($q) => $q->where('is_approved', true)->latest()->limit(10),
             ])
             ->firstOrFail();
@@ -81,6 +84,7 @@ class ProductController extends Controller
         $relatedProducts = Product::where('category_id', $product->category_id)
             ->where('id', '!=', $product->id)
             ->orderable()
+            ->withSupplierChannels()
             ->with(['category', 'brand'])
             ->inRandomOrder()
             ->limit(8)

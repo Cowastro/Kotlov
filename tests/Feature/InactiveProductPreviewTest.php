@@ -4,6 +4,8 @@ namespace Tests\Feature;
 
 use App\Models\Category;
 use App\Models\Product;
+use App\Models\Supplier;
+use App\Models\SupplierProduct;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -32,7 +34,10 @@ class InactiveProductPreviewTest extends TestCase
             ->followingRedirects()
             ->get('https://kotlov.by/'.$category->slug.'/'.$product->slug.'?admin-preview=1')
             ->assertOk()
-            ->assertSee($product->name);
+            ->assertSee($product->name)
+            ->assertSee('133.00 BYN')
+            ->assertSee('Нет в наличии')
+            ->assertDontSee('class="tf-btn type-xl animate-btn w-100 btn-add-to-cart"', false);
     }
 
     /** @return array{Category, Product} */
@@ -49,11 +54,22 @@ class InactiveProductPreviewTest extends TestCase
             'name' => 'Отключённая печь для предпросмотра',
             'slug' => 'inactive-preview-stove',
             'sku' => 'PREVIEW-STOVE-1',
-            'price' => 0,
+            'price' => 133,
             'is_active' => false,
             'is_archived' => false,
-            'in_stock' => false,
-            'availability_status' => Product::AVAILABILITY_CHECK,
+            'in_stock' => true,
+            'availability_status' => Product::AVAILABILITY_IN_STOCK,
+        ]);
+        $supplier = Supplier::query()->create([
+            'code' => 'inactive-preview-supplier',
+            'name' => 'Поставщик отключённой карточки',
+        ]);
+        SupplierProduct::query()->create([
+            'supplier_id' => $supplier->id,
+            'product_id' => $product->id,
+            'supplier_article' => 'INACTIVE-PREVIEW-1',
+            'in_stock' => true,
+            'stock_quantity' => 5,
         ]);
 
         return [$category, $product];

@@ -116,24 +116,28 @@ Route::get('/', function () {
         $kaminIds = $kaminCatId ? $categoryBranchIds($kaminCatId) : collect();
 
         $productsKotly = $sellableProducts()
+            ->withSupplierChannels()
             ->whereIn('category_id', $kotlyIds)
             ->with(['category', 'brand'])
             ->orderByDesc('is_featured')->orderByDesc('rating')
             ->limit(8)->get();
 
         $productsNasosy = $sellableProducts()
+            ->withSupplierChannels()
             ->whereIn('category_id', $nasosIds)
             ->with(['category', 'brand'])
             ->orderByDesc('is_featured')->orderByDesc('rating')
             ->limit(8)->get();
 
         $productsKaminy = $sellableProducts()
+            ->withSupplierChannels()
             ->whereIn('category_id', $kaminIds)
             ->with(['category', 'brand'])
             ->orderByDesc('is_featured')->orderByDesc('rating')
             ->limit(8)->get();
 
         $productsAkcii = $sellableProducts()
+            ->withSupplierChannels()
             ->where('is_sale', true)
             ->with(['category', 'brand'])
             ->orderByDesc('rating')

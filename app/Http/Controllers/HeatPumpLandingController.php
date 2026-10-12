@@ -89,6 +89,7 @@ class HeatPumpLandingController extends Controller
 
         $products = Product::query()
             ->orderable()
+            ->withSupplierChannels()
             ->where('category_id', $category->id)
             ->when($page['product_filter'] === 'r290', fn ($query) => $query->where('name', 'like', '%R290%'))
             ->with(['category', 'brand'])

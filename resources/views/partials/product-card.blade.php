@@ -10,7 +10,7 @@
     $b2bOffer = $b2bComparison['offer'] ?? null;
     $isB2bOffer = $b2bOffer !== null;
     $canBuy = $isB2bOffer
-        ? ! $product->is_archived && (float) $b2bOffer->stock_quantity >= 1
+        ? $product->is_active && ! $product->is_archived && (float) $b2bOffer->stock_quantity >= 1
         : (method_exists($product, 'canBeOrdered') ? $product->canBeOrdered() : ($product->in_stock && $product->price > 0));
     $isPublicSale = method_exists($product, 'isPublicSale') ? $product->isPublicSale() : false;
 
