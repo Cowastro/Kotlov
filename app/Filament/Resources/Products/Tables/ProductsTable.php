@@ -95,7 +95,7 @@ class ProductsTable
                     ->toggleable(),
 
                 TextColumn::make('supplier_stock')
-                    ->label('Остаток')
+                    ->label('Остаток поставщика')
                     ->getStateUsing(fn ($record): string => ($stock = self::supplierStock($record)) === null
                         ? '—'
                         : number_format($stock, 0, ',', ' '))
@@ -229,7 +229,7 @@ class ProductsTable
                     ->toggleable(isToggledHiddenByDefault: true),
 
                 TextColumn::make('operational_status')
-                    ->label('Наличие')
+                    ->label('На сайте')
                     ->state(fn (Product $record): string => match (true) {
                         $record->is_archived => 'Архив',
                         ! $record->is_active => 'Отключён',
@@ -301,7 +301,10 @@ class ProductsTable
             ->paginated([25, 50, 100])
             ->filters([
                 TernaryFilter::make('is_active')
-                    ->label('Активность'),
+                    ->label('Карточка сайта')
+                    ->placeholder('Все')
+                    ->trueLabel('Только активные')
+                    ->falseLabel('Только отключённые'),
 
                 TernaryFilter::make('is_archived')
                     ->label('Архив')
@@ -310,7 +313,24 @@ class ProductsTable
                     ->falseLabel('Без архива')
                     ->default(false),
                 TernaryFilter::make('in_stock')
-                    ->label('Наличие'),
+                    ->label('В наличии на сайте')
+                    ->placeholder('Все')
+                    ->trueLabel('Да — можно продавать')
+                    ->falseLabel('Нет — не в наличии')
+                    ->queries(
+                        true: fn (Builder $query): Builder => self::wherePubliclyInStock($query),
+                        false: fn (Builder $query): Builder => self::whereNotPubliclyInStock($query),
+                    ),
+
+                SelectFilter::make('availability_status')
+                    ->label('Статус наличия')
+                    ->options(Product::availabilityStatusOptions())
+                    ->query(fn (Builder $query, array $data): Builder => match ($data['value'] ?? null) {
+                        Product::AVAILABILITY_IN_STOCK => self::whereEffectivelyInStock($query),
+                        Product::AVAILABILITY_CHECK => self::whereAvailabilityNeedsCheck($query),
+                        Product::AVAILABILITY_OUT_OF_STOCK => $query->where('availability_status', Product::AVAILABILITY_OUT_OF_STOCK),
+                        default => $query,
+                    }),
 
                 TernaryFilter::make('is_featured')
                     ->label('Хит продаж'),
@@ -866,6 +886,52 @@ class ProductsTable
         }
 
         return $record->effectiveAvailabilityStatus();
+    }
+
+    private static function wherePubliclyInStock(Builder $query): Builder
+    {
+        return self::whereEffectivelyInStock($query)
+            ->where('is_active', true)
+            ->where('is_archived', false)
+            ->where('price', '>', 0);
+    }
+
+    private static function whereNotPubliclyInStock(Builder $query): Builder
+    {
+        return $query->where(function (Builder $query): void {
+            $query
+                ->where('is_active', false)
+                ->orWhere('is_archived', true)
+                ->orWhereNull('price')
+                ->orWhere('price', '<=', 0)
+                ->orWhere('in_stock', false)
+                ->orWhereNull('in_stock')
+                ->orWhere('availability_status', Product::AVAILABILITY_OUT_OF_STOCK);
+        });
+    }
+
+    private static function whereEffectivelyInStock(Builder $query): Builder
+    {
+        return $query
+            ->where('in_stock', true)
+            ->where(function (Builder $query): void {
+                $query
+                    ->whereNull('availability_status')
+                    ->orWhere('availability_status', '!=', Product::AVAILABILITY_OUT_OF_STOCK);
+            });
+    }
+
+    private static function whereAvailabilityNeedsCheck(Builder $query): Builder
+    {
+        return $query->where(function (Builder $query): void {
+            $query
+                ->where('availability_status', Product::AVAILABILITY_CHECK)
+                ->orWhere(function (Builder $query): void {
+                    $query
+                        ->where('in_stock', false)
+                        ->whereNull('availability_status');
+                });
+        });
     }
 
     private static function activeIntegrationItems(object $record): Collection
