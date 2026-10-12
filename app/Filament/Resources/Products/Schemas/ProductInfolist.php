@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\Products\Schemas;
 
 use App\Models\Product;
+use App\Models\Supplier;
 use App\Services\Market\MarketPriceIndicator;
 use Filament\Infolists\Components\IconEntry;
 use Filament\Infolists\Components\TextEntry;
@@ -66,8 +67,12 @@ class ProductInfolist
                                     ->label('Бренд')
                                     ->placeholder('—'),
 
-                                TextEntry::make('supplier.name')
+                                TextEntry::make('supplier_display_name')
                                     ->label('Поставщик')
+                                    ->state(fn (Product $record): ?string => filled($record->supplier_id)
+                                        ? Supplier::query()->whereKey($record->supplier_id)->value('name')
+                                            ?? $record->supplier?->name
+                                        : null)
                                     ->placeholder('—'),
 
                                 TextEntry::make('supplier_contacts_summary')
