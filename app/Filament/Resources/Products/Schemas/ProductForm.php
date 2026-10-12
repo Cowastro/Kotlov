@@ -507,6 +507,13 @@ class ProductForm
 
     private static function findSupplierCounterparty(Supplier $supplier): ?CrmCounterparty
     {
+        if ($supplier->crmCounterparty) {
+            return $supplier->crmCounterparty->loadMissing([
+                'contactPoints' => fn ($query) => $query->where('is_active', true)->orderByDesc('is_primary'),
+                'contactPoints.contact',
+            ]);
+        }
+
         return CrmCounterparty::query()
             ->with([
                 'contactPoints' => fn ($query) => $query->where('is_active', true)->orderByDesc('is_primary'),

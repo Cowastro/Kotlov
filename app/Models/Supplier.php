@@ -11,7 +11,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 class Supplier extends Model
 {
     protected $fillable = [
-        'code', 'name', 'currency', 'currency_rate',
+        'crm_counterparty_id', 'code', 'name', 'currency', 'currency_rate',
         'marketplace_commission_rate', 'settlement_terms_days', 'settlement_notes',
         'automatic_order_transfer_enabled', 'automatic_order_transfer_approved_at',
         'automatic_order_transfer_approved_by', 'automatic_order_transfer_note',
@@ -30,6 +30,11 @@ class Supplier extends Model
     public function imports(): HasMany
     {
         return $this->hasMany(SupplierPriceImport::class);
+    }
+
+    public function crmCounterparty(): BelongsTo
+    {
+        return $this->belongsTo(CrmCounterparty::class, 'crm_counterparty_id');
     }
 
     public function priceItems(): HasMany

@@ -106,6 +106,23 @@ class SupplierIntegrationAdminTest extends TestCase
             'code' => 'mixed-supplier',
             'name' => 'Поставщик со смешанным каналом',
         ]);
+        $counterparty = CrmCounterparty::query()->create([
+            'name' => 'CRM поставщика со смешанным каналом',
+            'classification' => 'supplier',
+        ]);
+        CrmContactPoint::query()->create([
+            'counterparty_id' => $counterparty->id,
+            'type' => 'phone',
+            'value' => '+375 29 700-60-50',
+            'is_primary' => true,
+        ]);
+        CrmContactPoint::query()->create([
+            'counterparty_id' => $counterparty->id,
+            'type' => 'email',
+            'value' => 'orders@example.by',
+            'is_primary' => true,
+        ]);
+        $supplier->update(['crm_counterparty_id' => $counterparty->id]);
         $category = Category::query()->create([
             'name' => 'Категория смешанного канала',
             'slug' => 'mixed-channel-category',
@@ -152,11 +169,13 @@ class SupplierIntegrationAdminTest extends TestCase
             ->assertOk()
             ->assertSeeText('Канал данных')
             ->assertSeeText('Статус 1С');
-
         Livewire::actingAs($admin)
             ->test(ListSuppliers::class)
             ->searchTable('Поставщик со смешанным каналом')
             ->assertSeeText('Поставщик со смешанным каналом')
+            ->assertSeeText('+375 29 700-60-50')
+            ->assertSeeText('orders@example.by')
+            ->assertSeeText('CRM поставщика со смешанным каналом')
             ->assertSeeText('Смешанный')
             ->assertSeeText('Работает')
             ->assertSeeText('Старые: 1')
@@ -180,6 +199,7 @@ class SupplierIntegrationAdminTest extends TestCase
             'name' => 'Поставщик смешанного товара',
             'classification' => 'supplier',
         ]);
+        $supplier->update(['crm_counterparty_id' => $counterparty->id]);
         CrmContactPoint::query()->create([
             'counterparty_id' => $counterparty->id,
             'type' => 'phone',

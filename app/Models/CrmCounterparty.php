@@ -69,6 +69,11 @@ class CrmCounterparty extends Model
         return $this->hasMany(TelephonyCall::class, 'crm_counterparty_id');
     }
 
+    public function suppliers(): HasMany
+    {
+        return $this->hasMany(Supplier::class, 'crm_counterparty_id');
+    }
+
     public function getPhonesListAttribute(): string
     {
         return $this->contactPoints->where('type', 'phone')->pluck('value')->join(', ');

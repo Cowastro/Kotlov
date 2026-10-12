@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Suppliers;
 
+use App\Filament\Resources\CrmCounterparties\CrmCounterpartyResource;
 use App\Filament\Resources\IntegrationSources\IntegrationSourceResource;
 use App\Filament\Resources\Suppliers\Pages\CreateSupplier;
 use App\Filament\Resources\Suppliers\Pages\EditSupplier;
@@ -62,6 +63,7 @@ class SupplierResource extends Resource
             ->withCount('supplierProducts')
             ->with('latestChannelTransition')
             ->with([
+                'crmCounterparty.contactPoints',
                 'integrationSources' => fn ($query) => $query
                     ->withCount(['products as linked_products_count' => fn ($products) => $products
                         ->where('match_status', 'matched')])
@@ -83,6 +85,19 @@ class SupplierResource extends Resource
                 ->label('Название')
                 ->required()
                 ->maxLength(255),
+
+            Select::make('crm_counterparty_id')
+                ->label('Контрагент CRM')
+                ->relationship(
+                    name: 'crmCounterparty',
+                    titleAttribute: 'name',
+                    modifyQueryUsing: fn ($query) => $query
+                        ->whereIn('classification', ['supplier', 'unclassified'])
+                        ->orderBy('name'),
+                )
+                ->searchable(['name', 'public_name', 'legal_name', 'unp'])
+                ->preload()
+                ->helperText('Источник телефонов и электронной почты поставщика в CRM.'),
 
             Select::make('currency')
                 ->label('Валюта поставщика')
@@ -189,6 +204,31 @@ class SupplierResource extends Resource
                     ->copyable()
                     ->badge()
                     ->color('gray'),
+
+                TextColumn::make('crm_phones')
+                    ->label('Телефоны')
+                    ->state(fn (Supplier $record): string => self::supplierPhones($record))
+                    ->placeholder('Не указаны')
+                    ->copyable()
+                    ->wrap(),
+
+                TextColumn::make('crm_emails')
+                    ->label('Email')
+                    ->state(fn (Supplier $record): string => self::supplierEmails($record))
+                    ->placeholder('Не указан')
+                    ->copyable()
+                    ->wrap(),
+
+                TextColumn::make('crm_counterparty_name')
+                    ->label('Карточка CRM')
+                    ->state(fn (Supplier $record): ?string => $record->crmCounterparty?->name)
+                    ->placeholder('Не связана')
+                    ->badge()
+                    ->color(fn (?string $state): string => filled($state) ? 'success' : 'warning')
+                    ->url(fn (Supplier $record): ?string => $record->crmCounterparty
+                        ? CrmCounterpartyResource::getUrl('view', ['record' => $record->crmCounterparty], panel: 'admin')
+                        : null)
+                    ->toggleable(),
 
                 TextColumn::make('currency')
                     ->label('Валюта')
@@ -359,6 +399,44 @@ class SupplierResource extends Resource
             $hasLegacy => 'Старый канал',
             default => 'Не настроен',
         };
+    }
+
+    private static function supplierPhones(Supplier $supplier): string
+    {
+        $phones = (string) ($supplier->crmCounterparty?->contactPoints
+            ->where('is_active', true)
+            ->where('type', 'phone')
+            ->pluck('value')
+            ->filter()
+            ->unique()
+            ->join(', ') ?? '');
+
+        if ($phones !== '') {
+            return $phones;
+        }
+
+        preg_match_all('/(?<!\w)(?:\+?\d[\d\s().\-]{5,}\d)(?!\w)/u', (string) $supplier->contact, $matches);
+
+        return (string) collect($matches[0] ?? [])->map(fn (string $phone): string => trim($phone))->unique()->join(', ');
+    }
+
+    private static function supplierEmails(Supplier $supplier): string
+    {
+        $emails = (string) ($supplier->crmCounterparty?->contactPoints
+            ->where('is_active', true)
+            ->where('type', 'email')
+            ->pluck('value')
+            ->filter()
+            ->unique()
+            ->join(', ') ?? '');
+
+        if ($emails !== '') {
+            return $emails;
+        }
+
+        preg_match_all('/[A-Z0-9._%+\-]+@[A-Z0-9.\-]+\.[A-Z]{2,}/iu', (string) $supplier->contact, $matches);
+
+        return (string) collect($matches[0] ?? [])->map(fn (string $email): string => trim($email))->unique()->join(', ');
     }
 
     private static function integrationSourceNames(Supplier $supplier): ?string
