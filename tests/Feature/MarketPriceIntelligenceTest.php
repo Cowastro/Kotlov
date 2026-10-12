@@ -332,8 +332,7 @@ class MarketPriceIntelligenceTest extends TestCase
 
         $this->get(ProductResource::getUrl('index', panel: 'admin'))
             ->assertOk()
-            ->assertSeeText('Рынок')
-            ->assertSeeText('Выше рынка +20,0%');
+            ->assertDontSeeText('Выше рынка +20,0%');
 
         $this->get(OrderResource::getUrl('index', panel: 'admin'))
             ->assertOk()

@@ -198,6 +198,8 @@ class SupplierIntegrationAdminTest extends TestCase
             'integration_source_id' => $source->id,
             'product_id' => $product->id,
             'external_id' => 'mixed-product-list-external',
+            'price_byn' => 100,
+            'stock_quantity' => 3,
             'match_status' => 'matched',
         ]);
 
@@ -206,7 +208,14 @@ class SupplierIntegrationAdminTest extends TestCase
             ->assertOk()
             ->assertSeeText('Товар с двумя каналами')
             ->assertSeeText('Поставщик смешанного товара')
-            ->assertSeeText('1С + Старый канал');
+            ->assertSeeText('Цена опт')
+            ->assertSeeText('100,00 BYN')
+            ->assertSeeText('Розница')
+            ->assertSeeText('Где купить')
+            ->assertSeeText('Наличие')
+            ->assertSeeText('Поставщик: 3 шт.')
+            ->assertDontSeeText('LEGACY-MIXED-LIST-1')
+            ->assertDontSeeText('1С + Старый канал');
     }
 
     public function test_connect_1c_action_can_prefill_supplier_without_saving_anything(): void
