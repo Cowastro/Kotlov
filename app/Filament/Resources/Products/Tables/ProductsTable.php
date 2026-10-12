@@ -44,18 +44,23 @@ class ProductsTable
                     ->label('Фото')
                     ->getStateUsing(fn ($record) => url($record->imageUrl(0)))
                     ->square()
-                    ->height(48)
-                    ->width(48),
+                    ->height(36)
+                    ->width(36),
 
                 TextColumn::make('name')
                     ->label('Товар')
                     ->searchable()
                     ->sortable()
                     ->weight('bold')
-                    ->limit(60)
+                    ->limit(48)
+                    ->lineClamp(1)
                     ->tooltip(fn ($record) => $record->name)
-                    ->wrap()
-                    ->description(fn ($record) => $record->sku ? 'SKU: '.$record->sku : null),
+                    ->url(fn ($record) => self::productUrl($record))
+                    ->openUrlInNewTab()
+                    ->description(fn ($record): ?string => collect([
+                        $record->sku ? 'SKU '.$record->sku : null,
+                        $record->brand?->name,
+                    ])->filter()->implode(' · ') ?: null),
 
                 TextColumn::make('frontend_url')
                     ->label('Сайт')
@@ -63,25 +68,27 @@ class ProductsTable
                     ->url(fn ($record) => self::productUrl($record))
                     ->openUrlInNewTab()
                     ->icon('heroicon-o-arrow-top-right-on-square')
-                    ->toggleable(),
+                    ->toggleable(isToggledHiddenByDefault: true),
 
                 TextColumn::make('sku')
                     ->label('Артикул')
                     ->searchable()
                     ->copyable()
-                    ->toggleable(),
+                    ->toggleable(isToggledHiddenByDefault: true),
 
                 TextColumn::make('category.name')
                     ->label('Категория')
                     ->sortable()
                     ->badge()
+                    ->limit(28)
+                    ->tooltip(fn ($record): ?string => $record->category?->name)
                     ->toggleable(),
 
                 TextColumn::make('brand.name')
                     ->label('Бренд')
                     ->sortable()
                     ->placeholder('—')
-                    ->toggleable(),
+                    ->toggleable(isToggledHiddenByDefault: true),
 
                 TextColumn::make('supplier_article')
                     ->label('Арт. пост.')
@@ -103,20 +110,22 @@ class ProductsTable
                         'supplierProducts',
                         fn ($q) => $q->where('supplier_article', 'like', "%{$search}%")
                     ))
-                    ->toggleable(),
+                    ->toggleable(isToggledHiddenByDefault: true),
 
                 TextColumn::make('supplier_stock')
                     ->label('Кол-во (пост.)')
                     ->getStateUsing(fn ($record): int => (int) $record->supplierProducts->sum('stock_quantity'))
-                    ->toggleable(),
+                    ->toggleable(isToggledHiddenByDefault: true),
 
                 TextColumn::make('supplier_price')
-                    ->label('Закупка мин.')
+                    ->label('Закупка / остаток')
                     ->getStateUsing(function ($record): string {
                         $min = $record->supplierProducts->min('price_byn');
 
                         return $min ? number_format((float) $min, 2).' BYN' : '—';
                     })
+                    ->description(fn ($record): string => 'Остаток пост.: '
+                        .(int) $record->supplierProducts->sum('stock_quantity').' шт.')
                     ->toggleable(),
 
                 TextColumn::make('price')
@@ -131,12 +140,10 @@ class ProductsTable
                 TextColumn::make('market_price_indicator')
                     ->label('Рынок')
                     ->state(fn (Product $record): string => self::marketIndicator($record)['indicator_label'])
-                    ->description(fn (Product $record): string => self::marketIndicator($record)['indicator_description'])
                     ->tooltip(fn (Product $record): string => self::marketIndicator($record)['indicator_tooltip'])
                     ->badge()
                     ->color(fn (Product $record): string => self::marketIndicator($record)['indicator_color'])
-                    ->icon(fn (Product $record): string => self::marketIndicator($record)['indicator_icon'])
-                    ->wrap(),
+                    ->icon(fn (Product $record): string => self::marketIndicator($record)['indicator_icon']),
 
                 TextColumn::make('margin_min')
                     ->label('Маржа мин.')
@@ -171,10 +178,10 @@ class ProductsTable
                             default => 'success',
                         };
                     })
-                    ->toggleable(),
+                    ->toggleable(isToggledHiddenByDefault: true),
 
                 TextColumn::make('suppliers_list')
-                    ->label('Поставщик')
+                    ->label('Поставщик / канал')
                     ->getStateUsing(fn ($record): string => $record->supplierProducts
                         ->map(fn ($sp) => $sp->supplier?->name)
                         ->toBase()
@@ -186,6 +193,18 @@ class ProductsTable
                         ->unique()
                         ->implode(', ') ?: '—'
                     )
+                    ->description(fn ($record): string => self::supplierChannelState($record))
+                    ->limit(28)
+                    ->tooltip(fn ($record): string => $record->supplierProducts
+                        ->map(fn ($sp) => $sp->supplier?->name)
+                        ->toBase()
+                        ->merge($record->integrationProducts
+                            ->where('match_status', 'matched')
+                            ->map(fn ($item) => $item->source?->supplier?->name)
+                            ->toBase())
+                        ->filter()
+                        ->unique()
+                        ->implode(', ') ?: '—')
                     ->searchable(query: fn (Builder $query, string $search) => $query->where(
                         fn (Builder $query) => $query
                             ->whereHas('supplierProducts.supplier', fn ($supplier) => $supplier->where('name', 'like', "%{$search}%"))
@@ -197,24 +216,7 @@ class ProductsTable
 
                 TextColumn::make('supplier_channels')
                     ->label('Канал данных')
-                    ->getStateUsing(function ($record): string {
-                        $channels = $record->integrationProducts
-                            ->where('match_status', 'matched')
-                            ->map(fn ($item): ?string => match ($item->source?->driver) {
-                                'commerceml' => '1С',
-                                'api' => 'API',
-                                'file' => 'Файл',
-                                default => $item->source?->name,
-                            })
-                            ->filter()
-                            ->toBase();
-
-                        if ($record->supplierProducts->isNotEmpty()) {
-                            $channels->push('Старый канал');
-                        }
-
-                        return $channels->unique()->implode(' + ') ?: 'Не настроен';
-                    })
+                    ->getStateUsing(fn ($record): string => self::supplierChannelState($record))
                     ->badge()
                     ->color(fn (string $state): string => match (true) {
                         str_contains($state, '+') => 'warning',
@@ -222,7 +224,7 @@ class ProductsTable
                         $state === 'Не настроен' => 'gray',
                         default => 'info',
                     })
-                    ->toggleable(),
+                    ->toggleable(isToggledHiddenByDefault: true),
 
                 TextColumn::make('price_old')
                     ->label('Старая цена')
@@ -237,11 +239,13 @@ class ProductsTable
                 IconColumn::make('in_stock')
                     ->label('Наличие')
                     ->getStateUsing(fn ($record) => $record->in_stock || $record->supplierProducts->sum('stock_quantity') > 0)
-                    ->boolean(),
+                    ->boolean()
+                    ->toggleable(isToggledHiddenByDefault: true),
 
                 IconColumn::make('is_active')
                     ->label('Активен')
-                    ->boolean(),
+                    ->boolean()
+                    ->toggleable(isToggledHiddenByDefault: true),
 
                 IconColumn::make('is_archived')
                     ->label('Архив')
@@ -249,7 +253,27 @@ class ProductsTable
                     ->trueIcon('heroicon-o-archive-box')
                     ->falseIcon('heroicon-o-minus')
                     ->trueColor('warning')
-                    ->falseColor('gray'),
+                    ->falseColor('gray')
+                    ->toggleable(isToggledHiddenByDefault: true),
+
+                TextColumn::make('operational_status')
+                    ->label('Состояние')
+                    ->state(fn (Product $record): string => match (true) {
+                        $record->is_archived => 'Архив',
+                        ! $record->is_active => 'Отключён',
+                        default => $record->availabilityLabel(),
+                    })
+                    ->description(fn (Product $record): ?string => $record->stock_qty === null
+                        ? null
+                        : 'На сайте: '.number_format((float) $record->stock_qty, 0, ',', ' ').' шт.')
+                    ->badge()
+                    ->color(fn (Product $record): string => match (true) {
+                        $record->is_archived => 'gray',
+                        ! $record->is_active => 'warning',
+                        $record->effectiveAvailabilityStatus() === Product::AVAILABILITY_IN_STOCK => 'success',
+                        $record->effectiveAvailabilityStatus() === Product::AVAILABILITY_OUT_OF_STOCK => 'danger',
+                        default => 'info',
+                    }),
 
                 TextColumn::make('status_badges')
                     ->label('Статусы')
@@ -268,7 +292,8 @@ class ProductsTable
 
                         return $badges ? implode(' ', $badges) : '<span class="text-gray-500">—</span>';
                     })
-                    ->html(),
+                    ->html()
+                    ->toggleable(isToggledHiddenByDefault: true),
 
                 IconColumn::make('is_featured')
                     ->label('Хит')
@@ -294,7 +319,7 @@ class ProductsTable
                     ->label('Добавлен')
                     ->dateTime('d.m.Y H:i')
                     ->sortable()
-                    ->toggleable(),
+                    ->toggleable(isToggledHiddenByDefault: true),
 
                 TextColumn::make('updated_at')
                     ->label('Обновлён')
@@ -800,5 +825,25 @@ class ProductsTable
         }
 
         return url('/'.$categorySlug.'/'.$record->slug);
+    }
+
+    private static function supplierChannelState(object $record): string
+    {
+        $channels = $record->integrationProducts
+            ->where('match_status', 'matched')
+            ->map(fn ($item): ?string => match ($item->source?->driver) {
+                'commerceml' => '1С',
+                'api' => 'API',
+                'file' => 'Файл',
+                default => $item->source?->name,
+            })
+            ->filter()
+            ->toBase();
+
+        if ($record->supplierProducts->isNotEmpty()) {
+            $channels->push('Старый канал');
+        }
+
+        return $channels->unique()->implode(' + ') ?: 'Не настроен';
     }
 }
