@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Filament\Resources\Products\Pages\EditProduct;
 use App\Filament\Resources\Products\ProductResource;
 use App\Filament\Resources\Products\RelationManagers\IntegrationProductsRelationManager;
+use App\Models\Category;
 use App\Models\IntegrationProduct;
 use App\Models\IntegrationSource;
 use App\Models\Product;
@@ -38,7 +39,13 @@ class ProductIntegrationDataRelationManagerTest extends TestCase
                 'vat_rate' => 20,
             ],
         ]);
+        $category = Category::query()->create([
+            'name' => 'Тестовая категория',
+            'slug' => 'testovaya-kategoriya',
+            'parent_id' => 0,
+        ]);
         $product = Product::query()->create([
+            'category_id' => $category->id,
             'name' => 'Карточка сайта',
             'slug' => 'kartochka-sayta',
             'sku' => 'KOTLOV-TEST',
