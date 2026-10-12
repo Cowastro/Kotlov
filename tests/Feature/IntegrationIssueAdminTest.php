@@ -10,6 +10,7 @@ use App\Models\IntegrationProduct;
 use App\Models\IntegrationSource;
 use App\Models\Order;
 use App\Models\Product;
+use App\Models\Supplier;
 use App\Models\User;
 use App\Services\Integrations\IntegrationIssueAiAdvisor;
 use App\Services\Integrations\IntegrationOrderStatusMapper;
@@ -266,6 +267,88 @@ class IntegrationIssueAdminTest extends TestCase
             ->assertSeeText('Фактически привязан')
             ->assertSeeText('Привязан')
             ->assertSeeText('1С: 3 шт. · Сайт: В наличии · остаток 8 шт.');
+    }
+
+    public function test_admin_can_create_and_publish_a_product_when_issue_has_no_candidates(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin', 'is_active' => true]);
+        $supplier = Supplier::query()->create([
+            'code' => 'issue-create-card-supplier',
+            'name' => 'Поставщик новой карточки из проблемы',
+            'is_active' => true,
+        ]);
+        $source = IntegrationSource::query()->create([
+            'supplier_id' => $supplier->id,
+            'code' => 'issue-create-card-source',
+            'name' => '1С для создания карточки',
+            'is_active' => true,
+            'update_stock' => true,
+        ]);
+        $category = Category::query()->create([
+            'name' => 'Категория новой карточки из проблемы',
+            'slug' => 'issue-created-product-category',
+            'parent_id' => 0,
+        ]);
+        $item = IntegrationProduct::query()->create([
+            'integration_source_id' => $source->id,
+            'external_id' => 'issue-create-card-external',
+            'external_sku' => 'ONEC.NEW.404',
+            'name' => 'Совершенно новая позиция без кандидатов',
+            'price' => 110,
+            'price_byn' => 110,
+            'stock_quantity' => 4,
+            'match_status' => 'unmatched',
+            'candidates' => null,
+        ]);
+        $issue = IntegrationIssue::query()->create([
+            'integration_source_id' => $source->id,
+            'integration_product_id' => $item->id,
+            'fingerprint' => 'issue-create-card-no-candidates',
+            'type' => 'product_attention',
+            'severity' => 'danger',
+            'status' => 'open',
+            'title' => 'Товар в наличии не привязан',
+            'message' => $item->name,
+            'context' => ['unmatched' => true, 'missing_price' => false],
+            'first_detected_at' => now(),
+            'last_detected_at' => now(),
+        ]);
+
+        Livewire::actingAs($admin)
+            ->test(ListIntegrationIssues::class)
+            ->set('activeTab', 'ready-to-link')
+            ->assertTableActionVisible('createProduct', $issue)
+            ->callTableAction('createProduct', $issue, [
+                'name' => 'Новая карточка прямо из очереди',
+                'category_id' => $category->id,
+                'retail_price' => 159.90,
+            ])
+            ->assertHasNoTableActionErrors();
+
+        $item->refresh();
+        $product = Product::query()->findOrFail($item->product_id);
+
+        $this->assertSame('Новая карточка прямо из очереди', $product->name);
+        $this->assertSame($category->id, $product->category_id);
+        $this->assertSame('159.90', $product->price);
+        $this->assertTrue($product->is_active);
+        $this->assertTrue($product->in_stock);
+        $this->assertSame(4, $product->stock_qty);
+        $this->assertSame('matched', $item->match_status);
+        $this->assertSame('manual_created', $item->match_method);
+        $this->assertDatabaseHas('supplier_product_mappings', [
+            'supplier_code' => $source->matchingSupplierCode(),
+            'supplier_article' => 'ONEC.NEW.404',
+            'product_id' => $product->id,
+            'confidence' => 'manual',
+            'is_active' => true,
+        ]);
+
+        $issue->refresh();
+        $this->assertSame('resolved', $issue->status);
+        $this->assertSame('created_product', data_get($issue->context, 'resolution.type'));
+        $this->assertSame($product->id, data_get($issue->context, 'resolution.product_id'));
+        $this->assertSame($admin->id, data_get($issue->context, 'resolution.resolved_by_user_id'));
     }
 
     public function test_stale_product_issue_cannot_replace_an_existing_link(): void

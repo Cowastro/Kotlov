@@ -6,6 +6,8 @@ use App\Filament\Resources\IntegrationIssues\Pages\ListIntegrationIssues;
 use App\Filament\Resources\IntegrationProducts\IntegrationProductResource;
 use App\Filament\Resources\IntegrationSources\IntegrationSourceResource;
 use App\Filament\Resources\Orders\OrderResource;
+use App\Filament\Resources\Products\ProductResource as SiteProductResource;
+use App\Models\Category;
 use App\Models\IntegrationIssue;
 use App\Models\Order;
 use App\Models\Product;
@@ -22,6 +24,7 @@ use Filament\Actions\BulkAction;
 use Filament\Actions\BulkActionGroup;
 use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Select;
+use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
@@ -263,6 +266,80 @@ class IntegrationIssueResource extends Resource
                             ->title('Правило сопоставления сохранено')
                             ->body('Запустите повторный обмен статусами. Задача закроется автоматически после успешного применения.')
                             ->send();
+                    }),
+                Action::make('createProduct')
+                    ->label('Создать карточку')
+                    ->icon(Heroicon::OutlinedPlusCircle)
+                    ->tooltip('Создать новую карточку сайта')
+                    ->color('primary')
+                    ->visible(fn (IntegrationIssue $record): bool => $record->status === 'open'
+                        && filled($record->integration_product_id)
+                        && data_get($record->context, 'unmatched') === true
+                        && blank($record->integrationProduct?->product_id)
+                        && self::candidatePreview($record) === null)
+                    ->fillForm(fn (IntegrationIssue $record): array => [
+                        'name' => $record->integrationProduct?->name,
+                        'category_id' => $record->integrationProduct?->resolvedSiteCategory()?->id,
+                    ])
+                    ->modalHeading('Создать новую карточку и разместить на сайте')
+                    ->modalDescription('Используйте, когда подходящей карточки нет. Товар будет опубликован, привязан к позиции 1С, а проблема закроется автоматически.')
+                    ->form([
+                        Placeholder::make('external_product_for_create')
+                            ->label('Товар из 1С')
+                            ->content(fn (IntegrationIssue $record): string => collect([
+                                $record->integrationProduct?->name,
+                                $record->integrationProduct?->external_sku
+                                    ? 'арт. '.$record->integrationProduct->external_sku
+                                    : null,
+                                $record->integrationProduct?->normalizedPriceByn()
+                                    ? 'опт '.number_format($record->integrationProduct->normalizedPriceByn(), 2, ',', ' ').' BYN'
+                                    : 'оптовая цена не рассчитана',
+                                $record->integrationProduct?->formattedStockQuantity(),
+                            ])->filter()->implode(' · ')),
+                        TextInput::make('name')
+                            ->label('Название новой карточки')
+                            ->required()
+                            ->maxLength(255),
+                        Select::make('category_id')
+                            ->label('Категория kotlov.by')
+                            ->options(fn (): array => self::siteCategoryOptions())
+                            ->searchable()
+                            ->preload()
+                            ->required(),
+                        TextInput::make('retail_price')
+                            ->label('Розничная цена сайта')
+                            ->numeric()
+                            ->minValue(0.01)
+                            ->suffix('BYN')
+                            ->required()
+                            ->helperText('Введите розничную цену. Оптовая цена из 1С не публикуется как розничная автоматически.'),
+                        Placeholder::make('create_safety_note')
+                            ->label('Что произойдёт')
+                            ->content('Будет создан активный товар с внутренним SKU, остаток начнёт поступать из 1С, а ручная привязка сохранится для следующих обменов.'),
+                    ])
+                    ->requiresConfirmation()
+                    ->modalSubmitActionLabel('Создать, привязать и открыть')
+                    ->action(function (IntegrationIssue $record, array $data): void {
+                        $product = app(IntegrationProductIssueResolver::class)
+                            ->createAndLinkProduct($record, $data, (int) auth()->id());
+
+                        if (! $product) {
+                            Notification::make()
+                                ->warning()
+                                ->title('Позиция уже обработана')
+                                ->body('Обновите очередь: товар уже привязан, создан либо исключён из каталога.')
+                                ->send();
+
+                            return;
+                        }
+
+                        Notification::make()
+                            ->success()
+                            ->title('Карточка создана и размещена на сайте')
+                            ->body($product->sku.' — '.$product->name.'. Проверьте описание, изображения и характеристики.')
+                            ->send();
+
+                        redirect()->to(SiteProductResource::getUrl('edit', ['record' => $product], panel: 'admin'));
                     }),
                 Action::make('linkExistingProduct')
                     ->label('Привязать карточку')
@@ -679,6 +756,22 @@ class IntegrationIssueResource extends Resource
         })->implode('');
 
         return new HtmlString('<ol class="space-y-2">'.$items.'</ol>');
+    }
+
+    /** @return array<int, string> */
+    private static function siteCategoryOptions(): array
+    {
+        return Category::query()
+            ->with('parent:id,name')
+            ->where('is_active', true)
+            ->orderBy('name')
+            ->get(['id', 'parent_id', 'name'])
+            ->mapWithKeys(fn (Category $category): array => [
+                $category->getKey() => $category->parent
+                    ? $category->parent->name.' → '.$category->name
+                    : $category->name,
+            ])
+            ->all();
     }
 
     /** @return array{title:string,steps:array<int,string>,note:string,source:string,provider:string} */
