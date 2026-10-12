@@ -5,6 +5,7 @@ namespace Tests\Unit;
 use App\Console\Commands\SyncBaniaPricelistCommand;
 use PHPUnit\Framework\TestCase;
 use ReflectionMethod;
+use ReflectionProperty;
 
 class SyncBaniaPricelistSafetyTest extends TestCase
 {
@@ -147,6 +148,44 @@ class SyncBaniaPricelistSafetyTest extends TestCase
         self::assertSame(1631.0, $result['price']);
     }
 
+    public function test_duplicate_stock_article_cannot_drive_unrelated_retail_price(): void
+    {
+        $command = new SyncBaniaPricelistCommand();
+        $property = new ReflectionProperty(SyncBaniaPricelistCommand::class, 'duplicatePriceArticles');
+        $property->setAccessible(true);
+        $property->setValue($command, ['40300' => true]);
+        $product = (object) [
+            'product_id' => 16680,
+            'product_name' => 'Чесалка телескопическая от 20 до 70 см',
+            'supplier_name' => '',
+            'supplier_article' => '40300',
+            'supplier_article_normalized' => '40300',
+        ];
+        $retail = [
+            'name' => 'ПБ Семирамида Inox Люмина антрацит',
+            'article' => '40300', 'norm_article' => '40300', 'price' => 1680.0,
+            'normalized_name' => $this->invoke('normalizeName', 'ПБ Семирамида Inox Люмина антрацит'),
+        ];
+
+        $result = $this->invokeOn($command, 'matchRetailForSupplierProduct', $product, [
+            'article' => ['40300' => [$retail]], 'rows' => [$retail],
+        ]);
+
+        self::assertNull($result);
+    }
+
+    public function test_compact_model_identity_repairs_spacing_and_latin_c_typos(): void
+    {
+        self::assertSame(
+            $this->invoke('modelIdentity', 'Котел Куппер Практик -16В'),
+            $this->invoke('modelIdentity', 'Котел КУППЕР ПРАКТИК-16 В')
+        );
+        self::assertSame(
+            $this->invoke('modelIdentity', 'Везувий Оптимум 14 ДТ-3C б/в'),
+            $this->invoke('modelIdentity', 'Везувий Оптимум 14 ДТ-3С б/в')
+        );
+    }
+
     public function test_retail_parser_does_not_treat_price_as_missing_article(): void
     {
         $parsed = $this->invoke('parseRetailRow', ['ВЕЗУВИЙ Тестовая модель', null, 'шт', 1298], 4);
@@ -187,9 +226,14 @@ class SyncBaniaPricelistSafetyTest extends TestCase
 
     private function invoke(string $method, mixed ...$arguments): mixed
     {
+        return $this->invokeOn(new SyncBaniaPricelistCommand(), $method, ...$arguments);
+    }
+
+    private function invokeOn(SyncBaniaPricelistCommand $command, string $method, mixed ...$arguments): mixed
+    {
         $reflection = new ReflectionMethod(SyncBaniaPricelistCommand::class, $method);
         $reflection->setAccessible(true);
 
-        return $reflection->invoke(new SyncBaniaPricelistCommand(), ...$arguments);
+        return $reflection->invoke($command, ...$arguments);
     }
 }

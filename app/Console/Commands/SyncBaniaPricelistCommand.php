@@ -96,6 +96,13 @@ class SyncBaniaPricelistCommand extends Command
     private array $driveFolderWorkbookUrls = [];
     private int $duplicatePriceArticlesSkipped = 0;
     private int $duplicateRetailArticlesSkipped = 0;
+    /** @var array<string, true> */
+    private array $duplicatePriceArticles = [];
+
+    /** Known catalogue titles whose supplier wording omits a material token. */
+    private const ARTICLE_OVERRIDES_BY_SKU = [
+        'PS-003.824' => '34000',
+    ];
 
     public function handle(): int
     {
@@ -378,6 +385,7 @@ class SyncBaniaPricelistCommand extends Command
                         DB::table('supplier_products')->where('id', $supplierProduct->id)->update([
                             'supplier_article' => trim((string) ($retailMatch['article'] ?? '')),
                             'supplier_article_normalized' => (string) ($retailMatch['norm_article'] ?? ''),
+                            'supplier_article_compact' => (string) ($retailMatch['norm_article'] ?? ''),
                             'updated_at' => $now,
                         ]);
                         $stats['supplier_article_repaired']++;
@@ -730,6 +738,7 @@ class SyncBaniaPricelistCommand extends Command
         $duplicates = array_filter($counts, fn (int $count): bool => $count > 1);
         if ($source === 'price') {
             $this->duplicatePriceArticlesSkipped = count($duplicates);
+            $this->duplicatePriceArticles = array_fill_keys(array_keys($duplicates), true);
         } else {
             $this->duplicateRetailArticlesSkipped = count($duplicates);
         }
@@ -928,7 +937,14 @@ class SyncBaniaPricelistCommand extends Command
             return [];
         }
 
-        return array_values(array_filter($supplierProducts, function (object $candidate) use ($identity): bool {
+        return array_values(array_filter($supplierProducts, function (object $candidate) use ($identity, $row): bool {
+            $sku = trim((string) ($candidate->catalog_product_sku ?? $candidate->product_sku ?? ''));
+            $overrideArticle = self::ARTICLE_OVERRIDES_BY_SKU[$sku] ?? null;
+            if ($overrideArticle !== null
+                && $this->normalizeArticle($overrideArticle) === $this->normalizeArticle((string) ($row['norm_article'] ?? $row['article'] ?? ''))) {
+                return true;
+            }
+
             $name = trim((string) ($candidate->product_name ?? ''));
             if ($name === '') {
                 $name = trim((string) ($candidate->supplier_name ?? ''));
@@ -961,7 +977,11 @@ class SyncBaniaPricelistCommand extends Command
             ' ',
             $value
         ) ?? $value;
-        $value = preg_replace('/\s+/u', ' ', $value) ?? $value;
+        // Supplier and catalogue titles frequently differ only as "-16В" vs
+        // "-16 В". Whitespace is non-semantic for exact identity. Normalize
+        // the common Latin C typo in Russian model codes such as ДТ-3C too.
+        $value = preg_replace('/(?<=\d)c(?=\s|$)/u', 'с', $value) ?? $value;
+        $value = preg_replace('/\s+/u', '', $value) ?? $value;
 
         return trim($value);
     }
@@ -1031,6 +1051,11 @@ class SyncBaniaPricelistCommand extends Command
         }
 
         if (count($candidates) === 1) {
+            $candidateArticle = (string) ($candidates[0]['norm_article'] ?? '');
+            if ($candidateArticle !== '' && isset($this->duplicatePriceArticles[$candidateArticle])) {
+                return null;
+            }
+
             return array_merge($candidates[0], [
                 'match_type' => 'retail_article_exact',
                 'confidence' => 100,
@@ -1345,6 +1370,7 @@ class SyncBaniaPricelistCommand extends Command
         if ($repairArticle) {
             $updates['supplier_article'] = trim((string) $row['article']);
             $updates['supplier_article_normalized'] = (string) $row['norm_article'];
+            $updates['supplier_article_compact'] = (string) $row['norm_article'];
         }
 
         DB::table('supplier_products')->where('id', $supplierProduct->id)->update($updates);
