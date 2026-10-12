@@ -649,4 +649,66 @@ class CreateSbgDistinctProductsBatchCommandTest extends TestCase
         $this->assertStringContainsString('7il96iu0543p3l1czodqcc84cjbv93sp.jpeg', $product->images[0]);
         $this->assertSame('manual_created', $item->fresh()->match_method);
     }
+
+    public function test_it_creates_the_exact_mixfor_mt77_bituminous_sealant_as_a_distinct_product(): void
+    {
+        $source = IntegrationSource::query()->create([
+            'code' => 'onec-sbg-mixfor-mt77',
+            'name' => '1С СанБизнесГруп',
+            'settings' => ['partner_name' => 'ООО «СанБизнесГруп»'],
+            'is_active' => true,
+            'update_stock' => true,
+        ]);
+        $category = Category::query()->create(['name' => 'Герметики и монтажные материалы', 'slug' => 'sealants-mt77', 'parent_id' => 0]);
+        $brand = Brand::query()->create(['name' => 'MIXFOR', 'slug' => 'mixfor']);
+        $template = Product::query()->create([
+            'category_id' => $category->id,
+            'brand_id' => $brand->id,
+            'sku' => 'KOTLOV-022563',
+            'name' => 'MIXFOR MT-78 HiTemp герметик высокотемпературный, 300 мл',
+            'slug' => 'mixfor-mt78-template',
+            'price' => 15.90,
+            'images' => ['product/mixfor-mt78.jpg'],
+        ]);
+        $wrongCandidate = Product::query()->create([
+            'category_id' => $category->id,
+            'brand_id' => null,
+            'sku' => 'PS-006.489',
+            'name' => 'Герметик битумный OLIMP, 290 мл',
+            'slug' => 'olimp-bituminous-sealant-candidate',
+            'price' => 16,
+            'images' => ['product/olimp-bituminous-sealant.jpg'],
+        ]);
+        $item = IntegrationProduct::query()->create([
+            'integration_source_id' => $source->id,
+            'external_id' => 'mixfor-mt77-310',
+            'external_code' => 'УТ-00002604',
+            'name' => 'Герметик битумный MIXFOR МТ-77 черный, 310 мл',
+            'price_byn' => 12,
+            'stock_quantity' => 35,
+            'match_status' => 'ambiguous',
+            'candidates' => [['product_id' => $wrongCandidate->id, 'score' => 0.71]],
+        ]);
+
+        $this->artisan('integration:create-sbg-distinct-products', [
+            '--batch' => 'researched-priced-20261013-o',
+            '--code' => ['УТ-00002604'],
+            '--apply' => true,
+        ])->assertSuccessful();
+
+        $product = $item->fresh()->product;
+        $this->assertNotNull($product);
+        $this->assertNotSame($template->id, $product->id);
+        $this->assertNotSame($wrongCandidate->id, $product->id);
+        $this->assertSame($category->id, $product->category_id);
+        $this->assertSame($brand->id, $product->brand_id);
+        $this->assertSame('MIXFOR MT-77 герметик битумный для кровли, чёрный, 310 мл', $product->name);
+        $this->assertSame('18.00', $product->price);
+        $this->assertSame('35', (string) $product->stock_qty);
+        $this->assertSame('MT-77', collect($product->specs)->firstWhere('key', 'Модель')['value']);
+        $this->assertSame('310 мл', collect($product->specs)->firstWhere('key', 'Объём')['value']);
+        $this->assertStringContainsString('amazonka.by/germetik-bitumnyy-dlya-krovli-mixfor-mt-77', $product->content_source_url);
+        $this->assertStringContainsString('bitumnyy-germetik-dlya-krov.webp', $product->images[0]);
+        $this->assertSame('manual_created', $item->fresh()->match_method);
+    }
 }

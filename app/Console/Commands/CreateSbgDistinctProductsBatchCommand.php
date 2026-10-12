@@ -392,6 +392,30 @@ class CreateSbgDistinctProductsBatchCommand extends Command
         ],
     ];
 
+    private const BATCH_RESEARCHED_PRICED_20261013_O = [
+        'УТ-00002604' => [
+            'template' => 'KOTLOV-022563',
+            'candidate' => 'PS-006.489',
+            'fragments' => ['Герметик битумный', 'MIXFOR', 'МТ-77', '310 мл'],
+            'name' => 'MIXFOR MT-77 герметик битумный для кровли, чёрный, 310 мл',
+            'retail' => 18.00,
+            'images' => ['https://amazonka.by/uploads/webp/product/12600/12647/494b1092d1ca3db5230424afc7d7931c_20031_bitumnyy-germetik-dlya-krov.webp'],
+            'source_url' => 'https://amazonka.by/germetik-bitumnyy-dlya-krovli-mixfor-mt-77',
+            'short' => 'Чёрный битумный герметик MIXFOR MT-77 объёмом 310 мл для герметизации кровли, желобов и соединений битумных материалов.',
+            'content' => '<p><strong>MIXFOR MT-77</strong> — однокомпонентный чёрный битумный герметик для склеивания и герметизации соединений между кровельными материалами, а также для оперативного устранения протечек в крышах и желобах.</p><p>Пластичная масса совместима с битумными материалами, обладает хорошей адгезией к широкому спектру строительных материалов, включая влажные поверхности, и устойчива к воздействию ультрафиолета.</p>',
+            'specs' => [
+                ['key' => 'Тип', 'value' => 'Битумный герметик'],
+                ['key' => 'Модель', 'value' => 'MT-77'],
+                ['key' => 'Назначение', 'value' => 'Для кровли и водосточных систем'],
+                ['key' => 'Объём', 'value' => '310 мл'],
+                ['key' => 'Цвет', 'value' => 'Чёрный'],
+                ['key' => 'Основа', 'value' => 'Битумная'],
+                ['key' => 'Количество компонентов', 'value' => '1'],
+                ['key' => 'Устойчивость к УФ-излучению', 'value' => 'Да'],
+            ],
+        ],
+    ];
+
     public function handle(IntegrationProductCreator $creator): int
     {
         $rows = match ($this->option('batch')) {
@@ -409,6 +433,7 @@ class CreateSbgDistinctProductsBatchCommand extends Command
             'researched-priced-20261012-l' => self::BATCH_RESEARCHED_PRICED_20261012_L,
             'researched-priced-20261012-m' => self::BATCH_RESEARCHED_PRICED_20261012_M,
             'researched-priced-20261012-n' => self::BATCH_RESEARCHED_PRICED_20261012_N,
+            'researched-priced-20261013-o' => self::BATCH_RESEARCHED_PRICED_20261013_O,
             default => null,
         };
 
