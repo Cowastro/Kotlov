@@ -157,4 +157,66 @@ class ResolveSbgAmbiguousBatchCommandTest extends TestCase
             'confidence' => 'manual',
         ]);
     }
+
+    public function test_it_links_the_exact_insulated_ceiling_passage_found_outside_the_wrong_candidate_set(): void
+    {
+        $source = IntegrationSource::query()->create([
+            'code' => 'onec-sbg-ppu-u',
+            'name' => '1С СанБизнесГруп',
+            'settings' => ['partner_name' => 'ООО «СанБизнесГруп»'],
+            'is_active' => true,
+            'update_stock' => true,
+        ]);
+        $category = Category::query()->create([
+            'name' => 'Крепления и монтаж',
+            'slug' => 'chimney-mounting',
+            'parent_id' => 0,
+        ]);
+        $product = Product::query()->create([
+            'category_id' => $category->id,
+            'sku' => 'PS-011.626',
+            'name' => 'Проход перекрытия универсальный утепленный ППУ-У',
+            'slug' => 'ppu-u-590-180-210',
+            'price' => 189.05,
+            'in_stock' => false,
+            'stock_qty' => null,
+        ]);
+        $wrongCandidate = Product::query()->create([
+            'category_id' => $category->id,
+            'sku' => 'PS-009.106',
+            'name' => 'Проход перекрытия универсальный ППУ-Р 500х500 Ø 180-210',
+            'slug' => 'ppu-r-500-180-210',
+        ]);
+        $item = IntegrationProduct::query()->create([
+            'integration_source_id' => $source->id,
+            'external_id' => '2300b736-ae85-11ed-a6b6-1c1b0d1de7c2',
+            'external_code' => 'УТ-00007867',
+            'external_sku' => 'TS.KMP.PPU.0210.81596',
+            'name' => 'Проход перекрытия универсальный утепленный ППУ-У 590х590 D180-210 (круг) (М)',
+            'price_byn' => 155.69,
+            'stock_quantity' => 1,
+            'match_status' => 'ambiguous',
+            'candidates' => [['product_id' => $wrongCandidate->id, 'score' => 0.7778]],
+        ]);
+
+        $this->artisan('integration:resolve-sbg-ambiguous', [
+            '--batch' => 'exact-20261012-f',
+            '--code' => ['УТ-00007867'],
+            '--apply' => true,
+        ])->assertSuccessful();
+
+        $item->refresh();
+        $product->refresh();
+        $this->assertSame($product->id, $item->product_id);
+        $this->assertSame('matched', $item->match_status);
+        $this->assertSame('manual_search', $item->match_method);
+        $this->assertSame('189.05', $product->price);
+        $this->assertTrue($product->in_stock);
+        $this->assertSame('1', (string) $product->stock_qty);
+        $this->assertDatabaseHas('supplier_product_mappings', [
+            'supplier_article' => 'TS.KMP.PPU.0210.81596',
+            'product_id' => $product->id,
+            'confidence' => 'manual',
+        ]);
+    }
 }
