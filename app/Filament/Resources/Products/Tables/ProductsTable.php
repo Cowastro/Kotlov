@@ -134,7 +134,7 @@ class ProductsTable
                 TextColumn::make('margin_min')
                     ->label('Маржа мин.')
                     ->getStateUsing(function ($record): string {
-                        $cost = $record->supplierProducts->min('price_byn');
+                        $cost = self::wholesalePrice($record);
                         $retail = $record->price !== null ? (float) $record->price : 0.0;
 
                         if (! $cost || $retail <= 0) {
@@ -149,7 +149,7 @@ class ProductsTable
                     })
                     ->badge()
                     ->color(function ($record): string {
-                        $cost = $record->supplierProducts->min('price_byn');
+                        $cost = self::wholesalePrice($record);
                         $retail = $record->price !== null ? (float) $record->price : 0.0;
 
                         if (! $cost || $retail <= 0) {
@@ -170,30 +170,11 @@ class ProductsTable
 
                 TextColumn::make('suppliers_list')
                     ->label('Поставщик')
-                    ->getStateUsing(fn ($record): string => $record->supplierProducts
-                        ->map(fn ($sp) => $sp->supplier?->name)
-                        ->toBase()
-                        ->merge($record->integrationProducts
-                            ->where('match_status', 'matched')
-                            ->map(fn ($item) => $item->source?->supplier?->name)
-                            ->toBase())
-                        ->filter()
-                        ->unique()
-                        ->implode(', ') ?: '—'
-                    )
+                    ->getStateUsing(fn ($record): string => self::supplierNames($record))
                     ->limit(22)
                     ->width('9rem')
                     ->grow(false)
-                    ->tooltip(fn ($record): string => $record->supplierProducts
-                        ->map(fn ($sp) => $sp->supplier?->name)
-                        ->toBase()
-                        ->merge($record->integrationProducts
-                            ->where('match_status', 'matched')
-                            ->map(fn ($item) => $item->source?->supplier?->name)
-                            ->toBase())
-                        ->filter()
-                        ->unique()
-                        ->implode(', ') ?: '—')
+                    ->tooltip(fn ($record): string => self::supplierNames($record))
                     ->searchable(query: fn (Builder $query, string $search) => $query->where(
                         fn (Builder $query) => $query
                             ->whereHas('supplierProducts.supplier', fn ($supplier) => $supplier->where('name', 'like', "%{$search}%"))
@@ -250,15 +231,15 @@ class ProductsTable
                     ->state(fn (Product $record): string => match (true) {
                         $record->is_archived => 'Архив',
                         ! $record->is_active => 'Отключён',
-                        default => $record->availabilityLabel(),
+                        default => Product::availabilityStatusOptions()[self::availabilityStatus($record)],
                     })
                     ->description(fn (Product $record): string => self::availabilityDescription($record))
                     ->badge()
                     ->color(fn (Product $record): string => match (true) {
                         $record->is_archived => 'gray',
                         ! $record->is_active => 'warning',
-                        $record->effectiveAvailabilityStatus() === Product::AVAILABILITY_IN_STOCK => 'success',
-                        $record->effectiveAvailabilityStatus() === Product::AVAILABILITY_OUT_OF_STOCK => 'danger',
+                        self::availabilityStatus($record) === Product::AVAILABILITY_IN_STOCK => 'success',
+                        self::availabilityStatus($record) === Product::AVAILABILITY_OUT_OF_STOCK => 'danger',
                         default => 'info',
                     }),
 
@@ -816,8 +797,8 @@ class ProductsTable
 
     private static function supplierChannelState(object $record): string
     {
-        $channels = $record->integrationProducts
-            ->where('match_status', 'matched')
+        $integrationItems = self::activeIntegrationItems($record);
+        $channels = $integrationItems
             ->map(fn ($item): ?string => match ($item->source?->driver) {
                 'commerceml' => '1С',
                 'api' => 'API',
@@ -827,7 +808,7 @@ class ProductsTable
             ->filter()
             ->toBase();
 
-        if ($record->supplierProducts->isNotEmpty()) {
+        if ($integrationItems->isEmpty() && $record->supplierProducts->isNotEmpty()) {
             $channels->push('Старый канал');
         }
 
@@ -836,11 +817,10 @@ class ProductsTable
 
     private static function wholesalePrice(object $record): ?float
     {
-        $prices = $record->supplierProducts
-            ->pluck('price_byn')
-            ->merge($record->integrationProducts
-                ->where('match_status', 'matched')
-                ->map(fn ($item): ?float => $item->normalizedPriceByn()))
+        $integrationItems = self::activeIntegrationItems($record);
+        $prices = ($integrationItems->isNotEmpty()
+            ? $integrationItems->map(fn ($item): ?float => $item->normalizedPriceByn())
+            : $record->supplierProducts->pluck('price_byn'))
             ->map(fn ($price): float => (float) $price)
             ->filter(fn (float $price): bool => $price > 0);
 
@@ -849,11 +829,41 @@ class ProductsTable
 
     private static function supplierStock(object $record): int
     {
-        $integrationItems = $record->integrationProducts->where('match_status', 'matched');
+        $integrationItems = self::activeIntegrationItems($record);
 
         return (int) ($integrationItems->isNotEmpty()
             ? $integrationItems->sum(fn ($item): float => (float) $item->stock_quantity)
             : $record->supplierProducts->sum('stock_quantity'));
+    }
+
+    private static function supplierNames(object $record): string
+    {
+        $integrationItems = self::activeIntegrationItems($record);
+        $names = $integrationItems->isNotEmpty()
+            ? $integrationItems->map(fn ($item): ?string => $item->source?->supplier?->name
+                ?: $item->source?->partnerName())
+            : $record->supplierProducts->map(fn ($item): ?string => $item->supplier?->name);
+
+        return $names->filter()->unique()->implode(', ') ?: '—';
+    }
+
+    private static function availabilityStatus(Product $record): string
+    {
+        $integrationItems = self::activeIntegrationItems($record);
+        if ($integrationItems->isNotEmpty()) {
+            return self::supplierStock($record) > 0
+                ? Product::AVAILABILITY_IN_STOCK
+                : Product::AVAILABILITY_CHECK;
+        }
+
+        return $record->effectiveAvailabilityStatus();
+    }
+
+    private static function activeIntegrationItems(object $record): Collection
+    {
+        return $record->integrationProducts
+            ->filter(fn ($item): bool => $item->match_status === 'matched'
+                && $item->source?->is_active === true);
     }
 
     private static function availabilityDescription(Product $record): string

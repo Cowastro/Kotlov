@@ -16,14 +16,27 @@ class ReconcileSupplierAvailabilityCommand extends Command
 
     public function handle(SupplierProductAvailabilityService $availability): int
     {
-        $productIds = DB::table('supplier_products as sp')
+        $legacyProductIds = DB::table('supplier_products as sp')
             ->join('suppliers as s', 's.id', '=', 'sp.supplier_id')
             ->where('s.is_active', true)
             ->whereNotNull('sp.product_id')
             ->distinct()
-            ->orderBy('sp.product_id')
             ->pluck('sp.product_id')
-            ->map(fn ($id): int => (int) $id)
+            ->map(fn ($id): int => (int) $id);
+        $integrationProductIds = DB::table('integration_products as ip')
+            ->join('integration_sources as source', 'source.id', '=', 'ip.integration_source_id')
+            ->where('source.is_active', true)
+            ->where('source.update_stock', true)
+            ->where('ip.match_status', 'matched')
+            ->whereNotNull('ip.product_id')
+            ->distinct()
+            ->pluck('ip.product_id')
+            ->map(fn ($id): int => (int) $id);
+        $productIds = $legacyProductIds
+            ->merge($integrationProductIds)
+            ->unique()
+            ->sort()
+            ->values()
             ->all();
 
         $before = $this->inconsistencyCounts();
@@ -75,18 +88,40 @@ class ReconcileSupplierAvailabilityCommand extends Command
             ->whereColumn('stock_sp.product_id', 'p.id')
             ->where('stock_s.is_active', true)
             ->where('stock_sp.in_stock', true);
+        $hasActiveIntegrationLink = fn ($query) => $query
+            ->selectRaw('1')
+            ->from('integration_products as linked_ip')
+            ->join('integration_sources as linked_source', 'linked_source.id', '=', 'linked_ip.integration_source_id')
+            ->whereColumn('linked_ip.product_id', 'p.id')
+            ->where('linked_source.is_active', true)
+            ->where('linked_source.update_stock', true)
+            ->where('linked_ip.match_status', 'matched');
+        $hasConfirmedIntegrationStock = fn ($query) => $query
+            ->selectRaw('1')
+            ->from('integration_products as stock_ip')
+            ->join('integration_sources as stock_source', 'stock_source.id', '=', 'stock_ip.integration_source_id')
+            ->whereColumn('stock_ip.product_id', 'p.id')
+            ->where('stock_source.is_active', true)
+            ->where('stock_source.update_stock', true)
+            ->where('stock_ip.match_status', 'matched')
+            ->where('stock_ip.stock_quantity', '>', 0);
 
         return [
             'false_positive' => DB::table('products as p')
                 ->where('p.in_stock', true)
                 ->where('p.is_archived', false)
-                ->whereExists($hasActiveLink)
+                ->where(fn ($query) => $query
+                    ->whereExists($hasActiveLink)
+                    ->orWhereExists($hasActiveIntegrationLink))
                 ->whereNotExists($hasConfirmedStock)
+                ->whereNotExists($hasConfirmedIntegrationStock)
                 ->count(),
             'false_negative' => DB::table('products as p')
                 ->where('p.in_stock', false)
                 ->where('p.is_archived', false)
-                ->whereExists($hasConfirmedStock)
+                ->where(fn ($query) => $query
+                    ->whereExists($hasConfirmedStock)
+                    ->orWhereExists($hasConfirmedIntegrationStock))
                 ->count(),
             'uncertain_in_stock' => DB::table('products as p')
                 ->where('p.availability_status', Product::AVAILABILITY_CHECK)

@@ -4,6 +4,7 @@ namespace App\Services\Integrations;
 
 use App\Models\IntegrationProduct;
 use App\Models\IntegrationSource;
+use App\Services\SupplierProductAvailabilityService;
 use Carbon\CarbonInterface;
 
 class CatalogStockSnapshotFinalizer
@@ -25,11 +26,20 @@ class CatalogStockSnapshotFinalizer
             });
 
         $zeroed = (clone $omitted)->where('stock_quantity', '>', 0)->count();
+        $productIds = (clone $omitted)
+            ->where('match_status', 'matched')
+            ->whereNotNull('product_id')
+            ->pluck('product_id')
+            ->map(fn ($id): int => (int) $id)
+            ->unique()
+            ->all();
 
         $omitted->update([
             'stock_quantity' => 0,
             'stock_confirmed_at' => now(),
         ]);
+
+        app(SupplierProductAvailabilityService::class)->refreshMany($productIds);
 
         return $zeroed;
     }

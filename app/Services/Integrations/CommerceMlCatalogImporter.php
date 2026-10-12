@@ -7,6 +7,7 @@ use App\Models\IntegrationProduct;
 use App\Models\IntegrationSource;
 use App\Models\IntegrationWarehouse;
 use App\Models\Product;
+use App\Services\SupplierProductAvailabilityService;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use SimpleXMLElement;
@@ -114,6 +115,21 @@ class CommerceMlCatalogImporter
 
         $stats['staging_created'] = count($this->createdExternalIds);
         $stats['staging_updated'] = count($this->updatedExternalIds);
+
+        $touchedExternalIds = array_keys($this->createdExternalIds + $this->updatedExternalIds);
+        if ($touchedExternalIds !== []) {
+            $productIds = IntegrationProduct::query()
+                ->whereBelongsTo($source, 'source')
+                ->whereIn('external_id', $touchedExternalIds)
+                ->where('match_status', 'matched')
+                ->whereNotNull('product_id')
+                ->pluck('product_id')
+                ->map(fn ($id): int => (int) $id)
+                ->unique()
+                ->all();
+
+            app(SupplierProductAvailabilityService::class)->refreshMany($productIds);
+        }
 
         return $stats;
     }

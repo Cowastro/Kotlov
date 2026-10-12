@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Product;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 class SupplierProductAvailabilityService
 {
@@ -24,20 +25,38 @@ class SupplierProductAvailabilityService
             return;
         }
 
+        if (! Schema::hasColumns('products', ['in_stock', 'stock_qty', 'availability_status'])) {
+            return;
+        }
+
         $now ??= now();
         $products = DB::table('products')
             ->whereIn('id', $productIds)
             ->get(['id', 'in_stock', 'stock_qty', 'availability_status'])
             ->keyBy('id');
-        $stockByProduct = DB::table('supplier_products as sp')
-            ->join('suppliers as s', 's.id', '=', 'sp.supplier_id')
-            ->where('s.is_active', true)
-            ->whereIn('sp.product_id', $productIds)
-            ->groupBy('sp.product_id')
-            ->selectRaw('sp.product_id')
-            ->selectRaw('MAX(CASE WHEN sp.in_stock = 1 THEN 1 ELSE 0 END) as confirmed_in_stock')
-            ->selectRaw('SUM(CASE WHEN sp.stock_quantity IS NOT NULL THEN 1 ELSE 0 END) as known_quantity_count')
-            ->selectRaw('SUM(CASE WHEN sp.stock_quantity IS NOT NULL THEN sp.stock_quantity ELSE 0 END) as total_quantity')
+        $stockByProduct = Schema::hasTable('supplier_products') && Schema::hasTable('suppliers')
+            ? DB::table('supplier_products as sp')
+                ->join('suppliers as s', 's.id', '=', 'sp.supplier_id')
+                ->where('s.is_active', true)
+                ->whereIn('sp.product_id', $productIds)
+                ->groupBy('sp.product_id')
+                ->selectRaw('sp.product_id')
+                ->selectRaw('MAX(CASE WHEN sp.in_stock = 1 THEN 1 ELSE 0 END) as confirmed_in_stock')
+                ->selectRaw('SUM(CASE WHEN sp.stock_quantity IS NOT NULL THEN 1 ELSE 0 END) as known_quantity_count')
+                ->selectRaw('SUM(CASE WHEN sp.stock_quantity IS NOT NULL THEN sp.stock_quantity ELSE 0 END) as total_quantity')
+                ->get()
+                ->keyBy('product_id')
+            : collect();
+        $integrationStockByProduct = DB::table('integration_products as ip')
+            ->join('integration_sources as source', 'source.id', '=', 'ip.integration_source_id')
+            ->where('source.is_active', true)
+            ->where('source.update_stock', true)
+            ->where('ip.match_status', 'matched')
+            ->whereIn('ip.product_id', $productIds)
+            ->groupBy('ip.product_id')
+            ->selectRaw('ip.product_id')
+            ->selectRaw('SUM(CASE WHEN ip.stock_quantity IS NOT NULL THEN 1 ELSE 0 END) as known_quantity_count')
+            ->selectRaw('SUM(CASE WHEN ip.stock_quantity IS NOT NULL THEN ip.stock_quantity ELSE 0 END) as total_quantity')
             ->get()
             ->keyBy('product_id');
 
@@ -47,11 +66,19 @@ class SupplierProductAvailabilityService
                 continue;
             }
 
-            $stock = $stockByProduct->get($productId);
-            $confirmedInStock = $stock !== null && (bool) $stock->confirmed_in_stock;
-            $stockQty = $stock !== null && (int) $stock->known_quantity_count > 0
-                ? max(0, (int) $stock->total_quantity)
-                : null;
+            $integrationStock = $integrationStockByProduct->get($productId);
+            $legacyStock = $stockByProduct->get($productId);
+            if ($integrationStock !== null) {
+                $stockQty = (int) $integrationStock->known_quantity_count > 0
+                    ? max(0, (int) $integrationStock->total_quantity)
+                    : null;
+                $confirmedInStock = $stockQty !== null && $stockQty > 0;
+            } else {
+                $stockQty = $legacyStock !== null && (int) $legacyStock->known_quantity_count > 0
+                    ? max(0, (int) $legacyStock->total_quantity)
+                    : null;
+                $confirmedInStock = $legacyStock !== null && (bool) $legacyStock->confirmed_in_stock;
+            }
             $availability = $confirmedInStock
                 ? Product::AVAILABILITY_IN_STOCK
                 : Product::AVAILABILITY_CHECK;

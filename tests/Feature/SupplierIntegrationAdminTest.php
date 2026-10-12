@@ -172,6 +172,10 @@ class SupplierIntegrationAdminTest extends TestCase
             'code' => 'mixed-product-list-supplier',
             'name' => 'Поставщик смешанного товара',
         ]);
+        $legacySupplier = Supplier::query()->create([
+            'code' => 'mixed-product-list-legacy-supplier',
+            'name' => 'Старый тестовый поставщик карточки',
+        ]);
         $category = Category::query()->create([
             'name' => 'Категория списка товаров',
             'slug' => 'mixed-product-list-category',
@@ -182,11 +186,14 @@ class SupplierIntegrationAdminTest extends TestCase
             'sku' => 'MIXED-LIST-1',
             'name' => 'Товар с двумя каналами',
             'slug' => 'mixed-list-product',
+            'price' => 150,
         ]);
         SupplierProduct::query()->create([
-            'supplier_id' => $supplier->id,
+            'supplier_id' => $legacySupplier->id,
             'product_id' => $product->id,
             'supplier_article' => 'LEGACY-MIXED-LIST-1',
+            'price_byn' => 10,
+            'stock_quantity' => 99,
         ]);
         $source = IntegrationSource::query()->create([
             'supplier_id' => $supplier->id,
@@ -210,10 +217,12 @@ class SupplierIntegrationAdminTest extends TestCase
             ->assertSeeText('Поставщик смешанного')
             ->assertSeeText('Цена опт')
             ->assertSeeText('100,00 BYN')
+            ->assertSeeText('50.00 BYN / 33.3%')
             ->assertSeeText('Розница')
             ->assertSeeText('Где купить')
             ->assertSeeText('Наличие')
             ->assertSeeText('Поставщик: 3 шт.')
+            ->assertDontSeeText('Старый тестовый поставщик карточки')
             ->assertDontSeeText('LEGACY-MIXED-LIST-1')
             ->assertDontSeeText('1С + Старый канал');
     }

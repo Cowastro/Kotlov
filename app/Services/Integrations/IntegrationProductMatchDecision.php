@@ -4,6 +4,7 @@ namespace App\Services\Integrations;
 
 use App\Models\IntegrationProduct;
 use App\Models\Product;
+use App\Services\SupplierProductAvailabilityService;
 use Illuminate\Support\Facades\DB;
 
 class IntegrationProductMatchDecision
@@ -91,5 +92,6 @@ class IntegrationProductMatchDecision
             'matched_at' => now(),
         ]);
         $this->recorder->record($item);
+        app(SupplierProductAvailabilityService::class)->refresh($product->id);
     }
 }
