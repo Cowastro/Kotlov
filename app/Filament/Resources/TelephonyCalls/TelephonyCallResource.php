@@ -23,6 +23,7 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\HtmlString;
 
 class TelephonyCallResource extends Resource
 {
@@ -96,6 +97,14 @@ class TelephonyCallResource extends Resource
                     ->formatStateUsing(fn (string $state): string => TelephonyCall::HANDLING_STATUSES[$state] ?? $state),
                 TextEntry::make('failure_reason')->label('Причина ошибки')->placeholder('—')->columnSpan(2),
                 TextEntry::make('manager_note')->label('Результат / следующий шаг')->placeholder('Не заполнен')->columnSpanFull(),
+                TextEntry::make('record_name')->label('Запись разговора')
+                    ->formatStateUsing(fn (TelephonyCall $record): HtmlString => new HtmlString(sprintf(
+                        '<audio controls preload="none" style="width: min(100%%, 680px)" src="%s"></audio>',
+                        e(route('telephony.a1.recording', $record)),
+                    )))
+                    ->html()
+                    ->visible(fn (TelephonyCall $record): bool => filled($record->record_name))
+                    ->columnSpanFull(),
                 TextEntry::make('external_uuid')->label('UUID A1')->copyable()->columnSpanFull(),
             ]),
         ]);
@@ -128,8 +137,11 @@ class TelephonyCallResource extends Resource
                     ->color(fn (string $state): string => match ($state) {
                         'callback_required' => 'danger', 'unprocessed' => 'warning', 'in_progress' => 'info', 'handled' => 'success', default => 'gray',
                     }),
-                TextColumn::make('record_name')->label('Запись')->formatStateUsing(fn (?string $state): string => $state ? 'Есть' : '—')
-                    ->icon(fn (?string $state): ?string => $state ? 'heroicon-o-speaker-wave' : null)->toggleable(),
+                TextColumn::make('record_name')->label('Запись')->formatStateUsing(fn (?string $state): string => $state ? 'Слушать' : '—')
+                    ->icon(fn (?string $state): ?string => $state ? 'heroicon-o-play-circle' : null)
+                    ->url(fn (TelephonyCall $record): ?string => $record->record_name ? route('telephony.a1.recording', $record) : null)
+                    ->openUrlInNewTab()
+                    ->toggleable(),
             ])
             ->filters([
                 SelectFilter::make('status')->label('Результат')->options(TelephonyCall::STATUSES),

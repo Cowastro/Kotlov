@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\A1CallRecordingController;
 use App\Http\Controllers\A1TelephonyWebhookController;
 use App\Http\Controllers\AccountController;
 use App\Http\Controllers\AuthController;
@@ -271,6 +272,10 @@ Route::get('/brands/{slug}', [BrandController::class, 'show'])->name('brand.show
 Route::post('/telegram/webhook', [TelegramWebhookController::class, 'handle']);
 
 // ===== ВАТС A1 =====
+Route::get('/admin/telephony-calls/{telephonyCall}/recording', A1CallRecordingController::class)
+    ->middleware('auth')
+    ->name('telephony.a1.recording');
+
 // Секрет находится в пути, поскольку Webhook A1 не подписывает запросы.
 Route::match(['get', 'post'], '/integrations/a1/telephony/{secret}', A1TelephonyWebhookController::class)
     ->where('secret', '[A-Za-z0-9_-]{24,128}')

@@ -37,6 +37,14 @@ class A1OpenApiClient
         ])->json() ?? [];
     }
 
+    public function recording(TelephonyConnection $connection, string $filename): Response
+    {
+        return $this->request($connection, 'get', '/record', [
+            'company_id' => $connection->company_id,
+            'filename' => $filename,
+        ]);
+    }
+
     /** @return list<array<string, mixed>> */
     private function get(TelephonyConnection $connection, string $path, array $query): array
     {
