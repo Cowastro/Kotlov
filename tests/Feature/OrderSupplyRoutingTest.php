@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Filament\Resources\Orders\OrderResource;
+use App\Filament\Resources\Products\ProductResource;
 use App\Models\Category;
 use App\Models\IntegrationProduct;
 use App\Models\IntegrationSource;
@@ -75,7 +76,11 @@ class OrderSupplyRoutingTest extends TestCase
             ->assertSeeText('Товары 240.00 BYN · Вход ≈ 192.00 BYN · Маржа ≈ 48.00 BYN / 20.0%')
             ->assertSeeText('Контроль')
             ->assertSeeText('Проверить · 1')
-            ->assertSeeText('Не назначен менеджер');
+            ->assertSeeText('Не назначен менеджер')
+            ->assertSeeText('В наличии · остаток 7 шт.')
+            ->assertSeeText('На сайте ↗')
+            ->assertSee(ProductResource::getUrl('edit', ['record' => $fixture['product']], panel: 'admin'), false)
+            ->assertSee(url('/'.$fixture['product']->category->slug.'/'.$fixture['product']->slug), false);
 
         $this->actingAs($admin)
             ->get(OrderResource::getUrl('view', ['record' => $fixture['order']], panel: 'admin'))
@@ -345,7 +350,7 @@ class OrderSupplyRoutingTest extends TestCase
             ->assertSeeText('поставщику ничего не отправлено');
     }
 
-    /** @return array{order: Order, item: OrderItem} */
+    /** @return array{order: Order, item: OrderItem, product: Product} */
     private function fixture(float $onecPrice = 80, string $suffix = '1'): array
     {
         $category = Category::query()->create([
@@ -415,6 +420,6 @@ class OrderSupplyRoutingTest extends TestCase
             'total' => 240,
         ]);
 
-        return compact('order', 'item');
+        return compact('order', 'item', 'product');
     }
 }

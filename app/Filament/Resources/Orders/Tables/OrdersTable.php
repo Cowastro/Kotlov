@@ -3,7 +3,10 @@
 namespace App\Filament\Resources\Orders\Tables;
 
 use App\Filament\Exports\OrderExporter;
+use App\Filament\Resources\Products\ProductResource;
 use App\Models\Order;
+use App\Models\OrderItem;
+use App\Models\Product;
 use App\Models\User;
 use App\Services\Market\MarketPriceIndicator;
 use App\Services\Orders\OrderSettlementManager;
@@ -84,6 +87,7 @@ class OrdersTable
                     'items:id,order_id,product_id,integration_product_id,product_name,product_sku,price,quantity,total,supply_status,supply_route_label,supply_supplier_id,supply_integration_source_id,supply_channel,supply_supplier_name,supply_supplier_contact,supply_source_label,supply_purchase_price,supply_price_tax_mode,supply_vat_rate,supply_stock_quantity,supply_is_available,supply_candidate_count,supply_captured_at,fulfillment_route,fulfillment_supplier_id,fulfillment_supplier_name,fulfillment_supplier_contact,fulfillment_purchase_price',
                     'items.fulfillmentSupplier:id,name,contact,marketplace_commission_rate',
                     'items.integrationProduct.source.supplier',
+                    'items.product.category:id,name,slug',
                     'items.product.integrationProducts.source.supplier',
                     'items.product.supplierProducts.supplier',
                     'items.product.marketPriceObservations.source',
@@ -410,11 +414,12 @@ class OrdersTable
 
                 TextColumn::make('items_list')
                     ->label('Товары')
-                    ->state(fn ($record) => $record->items->map(fn ($item) => $item->product_name.
-                        ($item->product_sku ? ' ['.$item->product_sku.']' : '')
-                    )->filter()->join("\n"))
+                    ->state(fn (Order $record): string => $record->items
+                        ->map(fn (OrderItem $item): string => self::productLinks($item))
+                        ->filter()
+                        ->join('<div style="height:6px"></div>'))
+                    ->html()
                     ->wrap()
-                    ->lineClamp(2)
                     ->searchable(query: function (Builder $query, string $search): Builder {
                         return $query->orWhereHas('items', function (Builder $itemsQuery) use ($search): void {
                             $itemsQuery
@@ -621,6 +626,79 @@ class OrdersTable
                     })
                     ->deselectRecordsAfterCompletion(),
             ]);
+    }
+
+    private static function productLinks(OrderItem $item): string
+    {
+        $product = $item->product;
+        $name = e($item->product_name.($item->product_sku ? ' ['.$item->product_sku.']' : ''));
+
+        if (! $product) {
+            return $name.'<div style="font-size:11px;color:#f59e0b">Карточка товара не связана</div>';
+        }
+
+        $adminUrl = e(ProductResource::getUrl('edit', ['record' => $product], panel: 'admin'));
+        $publicUrl = self::publicProductUrl($product);
+        $availability = e($product->availabilityLabel());
+        $stock = self::currentStock($product);
+        $stockLabel = $stock === null
+            ? 'остаток не указан'
+            : 'остаток '.e(self::formatStock($stock)).' шт.';
+        $color = match ($product->effectiveAvailabilityStatus()) {
+            Product::AVAILABILITY_IN_STOCK => '#22c55e',
+            Product::AVAILABILITY_OUT_OF_STOCK => '#ef4444',
+            default => '#f59e0b',
+        };
+        $siteLink = $publicUrl
+            ? ' · <a href="'.e($publicUrl).'" target="_blank" rel="noopener" style="color:#60a5fa">На сайте ↗</a>'
+            : '';
+
+        return '<div>'
+            .'<a href="'.$adminUrl.'" style="font-weight:700;color:#93c5fd">'.$name.'</a>'
+            .'<div style="font-size:11px;margin-top:3px;color:'.$color.'">'.$availability.' · '.$stockLabel.$siteLink.'</div>'
+            .'</div>';
+    }
+
+    private static function publicProductUrl(Product $product): ?string
+    {
+        if (! $product->category?->slug || ! $product->slug) {
+            return null;
+        }
+
+        $url = url('/'.$product->category->slug.'/'.$product->slug);
+
+        return ! $product->is_active && ! $product->is_archived
+            ? $url.'?admin-preview=1'
+            : $url;
+    }
+
+    private static function currentStock(Product $product): ?float
+    {
+        if ($product->stock_qty !== null) {
+            return (float) $product->stock_qty;
+        }
+
+        $integrationItems = $product->integrationProducts
+            ->filter(fn ($item): bool => $item->match_status === 'matched' && $item->source?->is_active === true)
+            ->filter(fn ($item): bool => $item->stock_quantity !== null);
+
+        if ($integrationItems->isNotEmpty()) {
+            return (float) $integrationItems->sum(fn ($item): float => (float) $item->stock_quantity);
+        }
+
+        $supplierItems = $product->supplierProducts
+            ->filter(fn ($item): bool => $item->stock_quantity !== null);
+
+        return $supplierItems->isEmpty()
+            ? null
+            : (float) $supplierItems->sum(fn ($item): float => (float) $item->stock_quantity);
+    }
+
+    private static function formatStock(float $stock): string
+    {
+        return abs($stock - round($stock)) < 0.0005
+            ? number_format($stock, 0, ',', ' ')
+            : rtrim(rtrim(number_format($stock, 3, ',', ' '), '0'), ',');
     }
 
     /** @return array<string, mixed> */

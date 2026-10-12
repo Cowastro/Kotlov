@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Products\Tables;
 
+use App\Filament\Resources\Products\ProductResource;
 use App\Jobs\RunProductCatalogAiReview;
 use App\Jobs\RunProductSourceEnrichment;
 use App\Models\Brand;
@@ -55,11 +56,10 @@ class ProductsTable
                     ->wrap()
                     ->width('18rem')
                     ->grow(false)
-                    ->url(fn ($record) => self::productUrl($record))
-                    ->openUrlInNewTab(),
+                    ->url(fn (Product $record): string => ProductResource::getUrl('edit', ['record' => $record], panel: 'admin')),
 
                 TextColumn::make('frontend_url')
-                    ->label('Где купить')
+                    ->label('Карточка')
                     ->state(fn ($record): string => $record->is_active || $record->is_archived
                         ? 'Открыть'
                         : 'Предпросмотр')
