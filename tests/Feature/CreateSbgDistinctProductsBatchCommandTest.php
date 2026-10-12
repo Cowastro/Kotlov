@@ -76,4 +76,50 @@ class CreateSbgDistinctProductsBatchCommandTest extends TestCase
         $this->assertSame('2', (string) $product->stock_qty);
         $this->assertTrue($product->in_stock);
     }
+
+    public function test_it_creates_a_researched_product_with_verified_source_content(): void
+    {
+        $source = IntegrationSource::query()->create([
+            'code' => 'onec-sbg-researched',
+            'name' => '1С СанБизнесГруп',
+            'settings' => ['partner_name' => 'ООО «СанБизнесГруп»'],
+            'is_active' => true,
+            'update_stock' => true,
+        ]);
+        $category = Category::query()->create(['name' => 'Дымоходы', 'slug' => 'chimneys', 'parent_id' => 0]);
+        $brand = Brand::query()->create(['name' => 'DARCO', 'slug' => 'darco']);
+        $template = Product::query()->create([
+            'category_id' => $category->id,
+            'brand_id' => $brand->id,
+            'sku' => 'PS-009.331',
+            'name' => 'DARCO Труба RP130/500-CZ2 (ML)',
+            'slug' => 'darco-template',
+            'price' => 65,
+            'images' => ['img/products/darco/template.jpg'],
+        ]);
+        $item = IntegrationProduct::query()->create([
+            'integration_source_id' => $source->id,
+            'external_id' => 'darco-rp120-500',
+            'external_code' => 'УТ-00000962',
+            'name' => 'Труба RP 120/500-CZ2 (ML)',
+            'price_byn' => 49.61,
+            'stock_quantity' => 1,
+            'match_status' => 'ambiguous',
+            'candidates' => [['product_id' => $template->id, 'score' => 0.95]],
+        ]);
+
+        $this->artisan('integration:create-sbg-distinct-products', [
+            '--batch' => 'researched-priced-20261012-e',
+            '--code' => ['УТ-00000962'],
+            '--apply' => true,
+        ])->assertSuccessful();
+
+        $product = $item->fresh()->product;
+        $this->assertNotNull($product);
+        $this->assertSame('DARCO Труба дымоходная RP120/500-CZ2 (ML) Ø120, 2 мм', $product->name);
+        $this->assertSame('70.90', $product->price);
+        $this->assertStringContainsString('sklep.darco.pl', $product->content_source_url);
+        $this->assertSame('2 мм', collect($product->specs)->firstWhere('key', 'Толщина стали')['value']);
+        $this->assertStringContainsString('ca2d77af23ce0eed739d5bb6a99e2b48', $product->images[0]);
+    }
 }

@@ -65,6 +65,73 @@ class CreateSbgDistinctProductsBatchCommand extends Command
         'УТ-00008915' => ['template' => 'KOTLOV-007994', 'candidate' => 'PS-003.424', 'fragments' => ['Отвод 87', '430-0.5', 'D115', '3S']],
     ];
 
+    private const BATCH_RESEARCHED_PRICED_20261012_E = [
+        'УТ-00000962' => [
+            'template' => 'PS-009.331', 'fragments' => ['RP 120/500-CZ2', 'ML'],
+            'name' => 'DARCO Труба дымоходная RP120/500-CZ2 (ML) Ø120, 2 мм',
+            'images' => ['https://sklep.darco.pl/picture/fit-in/608x809/smart/filters:quality(75):fill(white)/ca2d77af23ce0eed739d5bb6a99e2b48'],
+            'source_url' => 'https://sklep.darco.pl/ogrzewanie_kominkowe/rura_prosta_rp120500_cz2_mlsz_szara',
+            'short' => 'Прямая дымоходная труба DARCO RP120/500-CZ2 (ML) из чёрной стали: Ø120 мм, длина 500 мм, стенка 2 мм.',
+            'content' => '<p><strong>DARCO RP120/500-CZ2 (ML)</strong> — прямая труба системы подключения печей и каминов на твёрдом топливе. Изготовлена из чёрной стали и покрыта термостойкой краской Senotherm.</p><p>Диаметр 120 мм, длина 500 мм и толщина стенки 2 мм. Рабочая температура — до 600 °C. Цена сайта хранится отдельно от оптовой цены и остатка 1С.</p>',
+            'specs' => [
+                ['key' => 'Тип', 'value' => 'Прямая дымоходная труба'], ['key' => 'Диаметр', 'value' => '120 мм'],
+                ['key' => 'Длина', 'value' => '500 мм'], ['key' => 'Толщина стали', 'value' => '2 мм'],
+                ['key' => 'Материал', 'value' => 'Чёрная сталь'], ['key' => 'Покрытие', 'value' => 'Термостойкая краска Senotherm'],
+                ['key' => 'Рабочая температура', 'value' => 'до 600 °C'], ['key' => 'Гарантия', 'value' => '24 месяца'],
+            ],
+        ],
+        'УТ-00000616' => [
+            'template' => 'PS-009.932', 'fragments' => ['Милана', '8мм'],
+            'name' => 'Царь-Печи Милана, отопительная печь 8 мм',
+            'images' => [
+                'https://www.r-sauna.ru/assets/images/products/9802/milana.jpeg',
+                'https://www.r-sauna.ru/assets/images/products/9802/milana-21.jpeg',
+                'https://www.r-sauna.ru/assets/images/products/9802/milana-shema.jpeg',
+            ],
+            'source_url' => 'https://www.r-sauna.ru/catalog/otopit/otopitelnye-pechi-car-pechi/otopitelnaya-pech-milana-8mm/',
+            'short' => 'Стальная отопительная печь Царь-Печи Милана с топкой 8 мм для помещений объёмом 35–45 м³.',
+            'content' => '<p><strong>Царь-Печи Милана 8 мм</strong> — компактная дровяная отопительная печь с конвекционными экранами и варочной поверхностью. Рассчитана на быстрый прогрев помещений объёмом 35–45 м³.</p><p>Топка изготовлена из стали толщиной 8 мм; диаметр дымохода — 115 мм. Цена сайта рассчитана с сохранением минимальной валовой маржи относительно оптовой цены 1С.</p>',
+            'specs' => [
+                ['key' => 'Объём помещения', 'value' => '35–45 м³'], ['key' => 'Размеры (Ш×Г×В)', 'value' => '480×420×420 мм'],
+                ['key' => 'Масса', 'value' => '35 кг'], ['key' => 'Диаметр дымохода', 'value' => '115 мм'],
+                ['key' => 'Толщина топки', 'value' => '8 мм'], ['key' => 'Максимальная длина полена', 'value' => '40 см'],
+                ['key' => 'Топливо', 'value' => 'Дрова'], ['key' => 'Страна производства', 'value' => 'Россия'],
+            ],
+        ],
+        'УТ-00000613' => [
+            'template' => 'PS-009.932', 'fragments' => ['Золовка', '8мм'],
+            'name' => 'Царь-Печи Золовка, отопительная печь 8 мм',
+            'images' => ['https://www.r-sauna.ru/assets/images/products/9796/zolovka.jpeg'],
+            'source_url' => 'https://www.r-sauna.ru/catalog/otopit/otopitelnye-pechi-car-pechi/otopitelnaya-pech-zolovka-8mm/',
+            'short' => 'Стальная отопительная печь Царь-Печи Золовка с топкой 8 мм для помещений объёмом 50–70 м³.',
+            'content' => '<p><strong>Царь-Печи Золовка 8 мм</strong> — дровяная отопительная печь с конвекционными экранами и варочной поверхностью для помещений объёмом 50–70 м³.</p><p>Топка изготовлена из стали толщиной 8 мм; диаметр дымохода — 115 мм. Цена сайта рассчитана с сохранением минимальной валовой маржи относительно оптовой цены 1С.</p>',
+            'specs' => [
+                ['key' => 'Объём помещения', 'value' => '50–70 м³'], ['key' => 'Размеры (Ш×Г×В)', 'value' => '480×500×550 (675) мм'],
+                ['key' => 'Масса', 'value' => '60 кг'], ['key' => 'Диаметр дымохода', 'value' => '115 мм'],
+                ['key' => 'Толщина топки', 'value' => '8 мм'], ['key' => 'Максимальная длина полена', 'value' => '45 см'],
+                ['key' => 'Топливо', 'value' => 'Дрова'], ['key' => 'Страна производства', 'value' => 'Россия'],
+            ],
+        ],
+        'УТ-00000611' => [
+            'template' => 'PS-009.932', 'fragments' => ['Злата', '8мм'],
+            'name' => 'Царь-Печи Злата, отопительная печь 8 мм',
+            'images' => [
+                'https://www.r-sauna.ru/assets/images/products/9795/zlata.jpeg',
+                'https://www.r-sauna.ru/assets/images/products/9795/zlata-31.jpeg',
+                'https://www.r-sauna.ru/assets/images/products/9795/zlata-shema-2.jpeg',
+            ],
+            'source_url' => 'https://www.r-sauna.ru/catalog/otopit/otopitelnye-pechi-car-pechi/otopitelnaya-pech-zlata-8mm/',
+            'short' => 'Стальная отопительная печь Царь-Печи Злата с топкой 8 мм для помещений объёмом 35–50 м³.',
+            'content' => '<p><strong>Царь-Печи Злата 8 мм</strong> — дровяная отопительная печь с варочной поверхностью для дачи, дома, гаража или мастерской объёмом до 50 м³.</p><p>Топка изготовлена из стали толщиной 8 мм; диаметр дымохода — 115 мм. Цена сайта рассчитана с сохранением минимальной валовой маржи относительно оптовой цены 1С.</p>',
+            'specs' => [
+                ['key' => 'Объём помещения', 'value' => '35–50 м³'], ['key' => 'Размеры (Ш×Г×В)', 'value' => '560×410×480 мм'],
+                ['key' => 'Масса', 'value' => '60 кг'], ['key' => 'Диаметр дымохода', 'value' => '115 мм'],
+                ['key' => 'Толщина топки', 'value' => '8 мм'], ['key' => 'Максимальная длина полена', 'value' => '40 см'],
+                ['key' => 'Топливо', 'value' => 'Дрова'], ['key' => 'Страна производства', 'value' => 'Россия'],
+            ],
+        ],
+    ];
+
     public function handle(IntegrationProductCreator $creator): int
     {
         $rows = match ($this->option('batch')) {
@@ -72,6 +139,7 @@ class CreateSbgDistinctProductsBatchCommand extends Command
             'chimney-priced-20261012-b' => self::BATCH_CHIMNEY_PRICED_20261012_B,
             'chimney-priced-20261012-c' => self::BATCH_CHIMNEY_PRICED_20261012_C,
             'chimney-priced-20261012-d' => self::BATCH_CHIMNEY_PRICED_20261012_D,
+            'researched-priced-20261012-e' => self::BATCH_RESEARCHED_PRICED_20261012_E,
             default => null,
         };
 
@@ -104,7 +172,7 @@ class CreateSbgDistinctProductsBatchCommand extends Command
             }
 
             $item = $items->first();
-            $portableImages = $this->portableImages($template);
+            $portableImages = $rule['images'] ?? $this->portableImages($template);
             if ($item->product_id) {
                 if ($item->match_status === 'matched' && $item->match_method === 'manual_created') {
                     $stats['already']++;
@@ -119,7 +187,7 @@ class CreateSbgDistinctProductsBatchCommand extends Command
 
             $candidateIds = collect($item->candidates)->pluck('product_id')->map(fn ($id): int => (int) $id);
             $brand = trim((string) $template->brand?->name);
-            $name = $this->productName($brand, $item->name);
+            $name = $rule['name'] ?? $this->productName($brand, $item->name);
             $valid = $item->source?->name === self::SOURCE_NAME
                 && $item->source?->partnerName() === self::PARTNER_NAME
                 && $item->match_status === 'ambiguous'
@@ -149,10 +217,11 @@ class CreateSbgDistinctProductsBatchCommand extends Command
                     'retail_price' => $retail,
                     'brand_id' => $template->brand_id,
                     'h1' => $name,
-                    'short_description' => $this->shortDescription($name),
-                    'content' => $this->content($name, (string) $item->external_sku),
+                    'short_description' => $rule['short'] ?? $this->shortDescription($name),
+                    'content' => $rule['content'] ?? $this->content($name, (string) $item->external_sku),
                     'images' => $portableImages,
-                    'specs' => $this->specs($item),
+                    'specs' => $rule['specs'] ?? $this->specs($item),
+                    'content_source_url' => $rule['source_url'] ?? null,
                     'meta_title' => Str::limit($name.' — купить в Беларуси | KOTLOV', 255, ''),
                     'meta_description' => Str::limit('Купить '.$name.' в KOTLOV. Характеристики, актуальная цена и наличие, доставка по Беларуси.', 255, ''),
                 ]);

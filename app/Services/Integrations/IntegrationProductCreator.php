@@ -20,7 +20,7 @@ class IntegrationProductCreator
      * @param array{name:string, category_id:int|string, retail_price:float|int|string,
      *     brand_id?:int|string|null, h1?:string|null, short_description?:string|null,
      *     content?:string|null, images?:array<int,string>, specs?:array<int,array<string,string>>,
-     *     meta_title?:string|null, meta_description?:string|null} $data
+     *     content_source_url?:string|null, meta_title?:string|null, meta_description?:string|null} $data
      */
     public function createAndLink(IntegrationProduct $item, array $data): ?Product
     {
@@ -42,6 +42,7 @@ class IntegrationProductCreator
                 'content',
                 'images',
                 'specs',
+                'content_source_url',
                 'meta_title',
                 'meta_description',
             ]);
