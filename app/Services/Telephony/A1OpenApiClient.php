@@ -6,6 +6,7 @@ use App\Models\TelephonyConnection;
 use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Sleep;
 use RuntimeException;
 
 class A1OpenApiClient
@@ -61,9 +62,12 @@ class A1OpenApiClient
     private function request(TelephonyConnection $connection, string $method, string $path, array $query, bool $canRefresh = true): Response
     {
         $token = $this->accessToken($connection);
-        $response = $this->http()
-            ->withHeaders(['Authentication' => $token])
-            ->send(strtoupper($method), $this->url($path), ['query' => $query]);
+        $response = $this->sendWithRateLimit(
+            $this->http()->withHeaders(['Authentication' => $token]),
+            strtoupper($method),
+            $this->url($path),
+            ['query' => $query],
+        );
 
         if ($response->status() === 403 && $canRefresh) {
             $connection->forceFill(['access_token' => null, 'access_token_expires_at' => null])->save();
@@ -87,17 +91,21 @@ class A1OpenApiClient
         $request = $this->http();
 
         if ($canRefresh) {
-            $response = $request
-                ->withHeaders(['Authorization' => $connection->refresh_token])
-                ->put($this->url('/auth/tokens'));
+            $response = $this->sendWithRateLimit(
+                $request->withHeaders(['Authorization' => $connection->refresh_token]),
+                'PUT',
+                $this->url('/auth/tokens'),
+            );
         } else {
             if (! $connection->company_id || ! $connection->primary_api_key) {
                 throw new RuntimeException('Не заполнены ID клиента и первичный код A1.');
             }
 
-            $response = $request
-                ->withHeaders(['Authorization' => base64_encode($connection->company_id.':'.$connection->primary_api_key)])
-                ->get($this->url('/auth/tokens'));
+            $response = $this->sendWithRateLimit(
+                $request->withHeaders(['Authorization' => base64_encode($connection->company_id.':'.$connection->primary_api_key)]),
+                'GET',
+                $this->url('/auth/tokens'),
+            );
         }
 
         $response->throw();
@@ -118,6 +126,29 @@ class A1OpenApiClient
         ]);
 
         return $accessToken;
+    }
+
+    /**
+     * A1 limits Open API traffic to one request per second. A token request,
+     * employee sync and history sync may otherwise run back-to-back. Keep a
+     * small safety margin and retry transient 429 responses automatically.
+     *
+     * @param  array<string, mixed>  $options
+     */
+    private function sendWithRateLimit(PendingRequest $request, string $method, string $url, array $options = []): Response
+    {
+        $response = null;
+
+        for ($attempt = 1; $attempt <= 3; $attempt++) {
+            Sleep::for(1100)->milliseconds();
+            $response = $request->send($method, $url, $options);
+
+            if ($response->status() !== 429) {
+                return $response;
+            }
+        }
+
+        return $response;
     }
 
     private function http(): PendingRequest
