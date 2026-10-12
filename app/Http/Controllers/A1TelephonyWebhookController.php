@@ -23,7 +23,15 @@ class A1TelephonyWebhookController extends Controller
             return response()->json(['accepted' => false, 'message' => 'Payload too large'], 413);
         }
 
-        $payload = $request->isMethod('get') ? $request->query() : $request->json()->all();
+        // A1 verifies a newly entered endpoint with a POST that does not contain
+        // a call event. Use all() so both JSON and form-encoded notifications
+        // are supported, then acknowledge the connectivity probe separately.
+        $payload = $request->isMethod('get') ? $request->query() : $request->all();
+
+        if (! isset($payload['notificationType']) && ! isset($payload['uuid'])) {
+            return response()->json(['accepted' => true, 'probe' => true]);
+        }
+
         $configuredCompanyId = $connection?->company_id;
 
         if ($configuredCompanyId && isset($payload['companyId']) && (string) $payload['companyId'] !== (string) $configuredCompanyId) {

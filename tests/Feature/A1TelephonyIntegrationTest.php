@@ -38,6 +38,26 @@ class A1TelephonyIntegrationTest extends TestCase
         $this->assertSame('375447910347', TelephonyCall::firstOrFail()->customer_phone);
     }
 
+    public function test_webhook_accepts_a1_connectivity_probe_without_creating_a_call(): void
+    {
+        $this->post(route('telephony.a1.webhook', $this->secret))
+            ->assertOk()
+            ->assertJson(['accepted' => true, 'probe' => true]);
+
+        $this->assertDatabaseCount('telephony_calls', 0);
+        $this->assertDatabaseCount('telephony_call_events', 0);
+    }
+
+    public function test_webhook_accepts_form_encoded_call_events(): void
+    {
+        $this->post(route('telephony.a1.webhook', $this->secret), $this->startPayload())
+            ->assertOk()
+            ->assertJson(['accepted' => true]);
+
+        $this->assertDatabaseCount('telephony_calls', 1);
+        $this->assertDatabaseCount('telephony_call_events', 1);
+    }
+
     public function test_finish_event_marks_missed_call_for_callback(): void
     {
         $this->postJson(route('telephony.a1.webhook', $this->secret), $this->startPayload())->assertOk();
