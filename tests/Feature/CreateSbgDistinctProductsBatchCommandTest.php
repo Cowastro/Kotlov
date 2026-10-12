@@ -238,4 +238,53 @@ class CreateSbgDistinctProductsBatchCommandTest extends TestCase
         $this->assertSame('4680205277184', collect($product->specs)->firstWhere('key', 'Штрихкод')['value']);
         $this->assertStringContainsString('yyvc6hgtzh97c17e0pkmab40cyk6l3u3', $product->images[0]);
     }
+
+    public function test_it_creates_the_brandless_obvalovannyy_gabbro_diabase_card(): void
+    {
+        $source = IntegrationSource::query()->create([
+            'code' => 'onec-sbg-gabbro-obval',
+            'name' => '1С СанБизнесГруп',
+            'settings' => ['partner_name' => 'ООО «СанБизнесГруп»'],
+            'is_active' => true,
+            'update_stock' => true,
+        ]);
+        $category = Category::query()->create(['name' => 'Камни для бани', 'slug' => 'sauna-stones', 'parent_id' => 0]);
+        $template = Product::query()->create([
+            'category_id' => $category->id,
+            'brand_id' => null,
+            'sku' => 'PS-000.123',
+            'name' => 'Камни Габбро-диабаз колотый (20 кг)',
+            'slug' => 'gabbro-split-template',
+            'price' => 24,
+            'images' => ['product/000/000123/gabbro.jpg'],
+        ]);
+        $item = IntegrationProduct::query()->create([
+            'integration_source_id' => $source->id,
+            'external_id' => 'gabbro-obval-20kg',
+            'external_code' => 'УТ-00000263',
+            'name' => 'Камень для саун (габбро-диабаз обвал,кор)',
+            'price_byn' => 21.50,
+            'stock_quantity' => 5,
+            'match_status' => 'ambiguous',
+            'candidates' => [['product_id' => $template->id, 'score' => 0.6718]],
+        ]);
+
+        $this->artisan('integration:create-sbg-distinct-products', [
+            '--batch' => 'researched-priced-20261012-h',
+            '--code' => ['УТ-00000263'],
+            '--apply' => true,
+        ])->assertSuccessful();
+
+        $product = $item->fresh()->product;
+        $this->assertNotNull($product);
+        $this->assertSame($category->id, $product->category_id);
+        $this->assertNull($product->brand_id);
+        $this->assertSame('Камни для бани габбро-диабаз обвалованный, 20 кг', $product->name);
+        $this->assertSame('30.75', $product->price);
+        $this->assertSame('5', (string) $product->stock_qty);
+        $this->assertStringContainsString('kamni-gabbro-diabaz-obvalovannyj', $product->content_source_url);
+        $this->assertSame('Обвалованный', collect($product->specs)->firstWhere('key', 'Обработка')['value']);
+        $this->assertSame('20 кг', collect($product->specs)->firstWhere('key', 'Фасовка')['value']);
+        $this->assertStringContainsString('kamni_g-d_obval.png', $product->images[0]);
+    }
 }

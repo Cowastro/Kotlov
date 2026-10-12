@@ -189,6 +189,28 @@ class CreateSbgDistinctProductsBatchCommand extends Command
         ],
     ];
 
+    private const BATCH_RESEARCHED_PRICED_20261012_H = [
+        'УТ-00000263' => [
+            'template' => 'PS-000.123',
+            'fragments' => ['габбро-диабаз', 'обвал', 'кор'],
+            'allow_brandless' => true,
+            'name' => 'Камни для бани габбро-диабаз обвалованный, 20 кг',
+            'images' => ['https://teplodar.by/images/magazin/tovar/kamni_g-d_obval.png'],
+            'source_url' => 'https://teplodar.by/kamni-dlya-bani/kamni-gabbro-diabaz-obvalovannyj.html',
+            'short' => 'Натуральный обвалованный габбро-диабаз для банных печей и каменок, фасовка 20 кг.',
+            'content' => '<p><strong>Габбро-диабаз обвалованный</strong> — натуральный камень для банных печей и каменок. После обваловки камни получают закруглённые края, благодаря чему вода легче проходит в глубину каменки.</p><p>Камень поставляется в картонной коробке массой 20 кг. Перед первой укладкой камни необходимо промыть; в процессе эксплуатации их рекомендуется периодически перебирать и удалять растрескавшиеся элементы.</p>',
+            'specs' => [
+                ['key' => 'Тип', 'value' => 'Натуральный камень для бани'],
+                ['key' => 'Порода', 'value' => 'Габбро-диабаз'],
+                ['key' => 'Обработка', 'value' => 'Обвалованный'],
+                ['key' => 'Фасовка', 'value' => '20 кг'],
+                ['key' => 'Упаковка', 'value' => 'Картонная коробка'],
+                ['key' => 'Размер упаковки (Ш×Д×В)', 'value' => '400×300×150 мм'],
+                ['key' => 'Происхождение', 'value' => 'Республика Карелия, Россия'],
+            ],
+        ],
+    ];
+
     public function handle(IntegrationProductCreator $creator): int
     {
         $rows = match ($this->option('batch')) {
@@ -199,6 +221,7 @@ class CreateSbgDistinctProductsBatchCommand extends Command
             'researched-priced-20261012-e' => self::BATCH_RESEARCHED_PRICED_20261012_E,
             'researched-priced-20261012-f' => self::BATCH_RESEARCHED_PRICED_20261012_F,
             'researched-priced-20261012-g' => self::BATCH_RESEARCHED_PRICED_20261012_G,
+            'researched-priced-20261012-h' => self::BATCH_RESEARCHED_PRICED_20261012_H,
             default => null,
         };
 
@@ -255,7 +278,7 @@ class CreateSbgDistinctProductsBatchCommand extends Command
                 && (float) $item->stock_quantity > 0
                 && $item->normalizedPriceByn()
                 && $template->category_id
-                && ($brand || $configuredBrand)
+                && ($brand || $configuredBrand || ($rule['allow_brandless'] ?? false))
                 && $portableImages !== []
                 && $candidateIds->contains((int) $expectedCandidate->id)
                 && $this->containsAll($item->name, $rule['fragments'])
