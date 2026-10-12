@@ -59,12 +59,19 @@ class CreateSbgDistinctProductsBatchCommand extends Command
         'УТ-00009413' => ['template' => 'PS-008.996', 'candidate' => 'PS-009.519', 'fragments' => ['Адаптер переход', '430-0.8', 'D200/250']],
     ];
 
+    /** @var array<string, array{template:string,candidate?:string,fragments:list<string>}> */
+    private const BATCH_CHIMNEY_PRICED_20261012_D = [
+        'УТ-00002027' => ['template' => 'KOTLOV-022564', 'candidate' => 'PS-009.743', 'fragments' => ['Труба L250', '430-0.8', 'D115']],
+        'УТ-00008915' => ['template' => 'KOTLOV-007994', 'candidate' => 'PS-003.424', 'fragments' => ['Отвод 87', '430-0.5', 'D115', '3S']],
+    ];
+
     public function handle(IntegrationProductCreator $creator): int
     {
         $rows = match ($this->option('batch')) {
             'chimney-priced-20261012-a' => self::BATCH_CHIMNEY_PRICED_20261012_A,
             'chimney-priced-20261012-b' => self::BATCH_CHIMNEY_PRICED_20261012_B,
             'chimney-priced-20261012-c' => self::BATCH_CHIMNEY_PRICED_20261012_C,
+            'chimney-priced-20261012-d' => self::BATCH_CHIMNEY_PRICED_20261012_D,
             default => null,
         };
 
