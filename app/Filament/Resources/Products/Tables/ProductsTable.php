@@ -52,11 +52,9 @@ class ProductsTable
                     ->searchable()
                     ->sortable()
                     ->weight('bold')
-                    ->limit(44)
-                    ->lineClamp(2)
-                    ->width('14rem')
+                    ->wrap()
+                    ->width('18rem')
                     ->grow(false)
-                    ->tooltip(fn ($record) => $record->name)
                     ->url(fn ($record) => self::productUrl($record))
                     ->openUrlInNewTab(),
 
@@ -869,12 +867,10 @@ class ProductsTable
     private static function availabilityDescription(Product $record): string
     {
         $supplierStock = self::supplierStock($record);
+        $stock = $record->stock_qty === null
+            ? $supplierStock
+            : (float) $record->stock_qty;
 
-        return collect([
-            'Поставщик: '.number_format($supplierStock, 0, ',', ' ').' шт.',
-            $record->stock_qty === null
-                ? null
-                : 'Сайт: '.number_format((float) $record->stock_qty, 0, ',', ' ').' шт.',
-        ])->filter()->implode(' · ');
+        return 'Остаток: '.number_format($stock, 0, ',', ' ').' шт.';
     }
 }

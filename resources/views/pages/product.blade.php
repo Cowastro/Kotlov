@@ -314,7 +314,7 @@
                                         </span>
                                     @elseif ($availabilityStatus === 'in_stock')
                                         <span class="stock in-stock fw-medium text-success">
-                                            <i class="icon icon-CheckCircle"></i> В наличии@if($totalSupplierStock > 0) <span class="text-muted fw-normal" style="font-size:0.88em;">({{ $totalSupplierStock }} шт.)</span>@endif
+                                            <i class="icon icon-CheckCircle"></i> В наличии@if($product->stock_qty !== null && (int) $product->stock_qty > 0): {{ number_format((float) $product->stock_qty, 0, ',', ' ') }} шт.@endif
                                         </span>
                                     @elseif ($availabilityStatus === 'check')
                                         <span class="stock check-stock fw-medium" style="color:#b45309;">

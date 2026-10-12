@@ -184,7 +184,7 @@ class SupplierIntegrationAdminTest extends TestCase
         $product = Product::query()->create([
             'category_id' => $category->id,
             'sku' => 'MIXED-LIST-1',
-            'name' => 'Товар с двумя каналами',
+            'name' => 'Товар с двумя каналами и полным длинным наименованием без обрезания в списке',
             'slug' => 'mixed-list-product',
             'price' => 150,
         ]);
@@ -213,7 +213,7 @@ class SupplierIntegrationAdminTest extends TestCase
         $this->actingAs($admin)
             ->get(ProductResource::getUrl('index', panel: 'admin'))
             ->assertOk()
-            ->assertSeeText('Товар с двумя каналами')
+            ->assertSeeText('Товар с двумя каналами и полным длинным наименованием без обрезания в списке')
             ->assertSeeText('Поставщик смешанного')
             ->assertSeeText('Цена опт')
             ->assertSeeText('100,00 BYN')
@@ -221,7 +221,8 @@ class SupplierIntegrationAdminTest extends TestCase
             ->assertSeeText('Розница')
             ->assertSeeText('Где купить')
             ->assertSeeText('Наличие')
-            ->assertSeeText('Поставщик: 3 шт.')
+            ->assertSeeText('Остаток: 3 шт.')
+            ->assertDontSeeText('Поставщик: 3 шт. · Сайт: 3 шт.')
             ->assertDontSeeText('Старый тестовый поставщик карточки')
             ->assertDontSeeText('LEGACY-MIXED-LIST-1')
             ->assertDontSeeText('1С + Старый канал');
