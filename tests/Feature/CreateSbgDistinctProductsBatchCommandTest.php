@@ -393,4 +393,70 @@ class CreateSbgDistinctProductsBatchCommandTest extends TestCase
         $this->assertStringContainsString('adapter-mono-m-m-430-0-8-d110-u', $product->content_source_url);
         $this->assertStringContainsString('IMG17586c5773810e092068ef5f09ad9950', $product->images[0]);
     }
+
+    public function test_it_creates_the_exact_aisi_304_d115_superheater_as_a_distinct_product(): void
+    {
+        $source = IntegrationSource::query()->create([
+            'code' => 'onec-sbg-superheater-304-115',
+            'name' => '1С СанБизнесГруп',
+            'settings' => ['partner_name' => 'ООО «СанБизнесГруп»'],
+            'is_active' => true,
+            'update_stock' => true,
+        ]);
+        $category = Category::query()->create(['name' => 'Теплосъёмники', 'slug' => 'heat-exchangers', 'parent_id' => 0]);
+        $brand = Brand::query()->create(['name' => 'Теплов и Сухов', 'slug' => 'teplov-i-suhov']);
+        $template = Product::query()->create([
+            'category_id' => $category->id,
+            'brand_id' => $brand->id,
+            'sku' => 'PS-010.836',
+            'name' => 'Пароперегреватель ППШ-М',
+            'slug' => 'ppsh-m-generic',
+            'price' => 378.95,
+            'images' => ['product/010/010836/ppsh.jpg'],
+        ]);
+        $wrongCandidate = Product::query()->create([
+            'category_id' => $category->id,
+            'brand_id' => $brand->id,
+            'sku' => 'PS-011.152',
+            'name' => 'ППШ-Б бак 40л и пароперегреватель трубный D115',
+            'slug' => 'ppsh-b-tank-40l',
+            'price' => 1200,
+            'images' => ['product/011/011152/ppsh-b.jpg'],
+        ]);
+        $item = IntegrationProduct::query()->create([
+            'integration_source_id' => $source->id,
+            'external_id' => '0992344f-efcb-11ed-a711-1c1b0d1de7c2',
+            'external_code' => 'УТ-00008043',
+            'external_sku' => 'TS.BAK.PPS.0115.79803',
+            'barcode' => '4680205552700',
+            'name' => 'ППШ-М Пароперегреватель трубный 304, L495 D115/115 (К)',
+            'price_byn' => 346.70,
+            'stock_quantity' => 1,
+            'match_status' => 'ambiguous',
+            'candidates' => [['product_id' => $wrongCandidate->id, 'score' => 0.7925]],
+        ]);
+
+        $this->artisan('integration:create-sbg-distinct-products', [
+            '--batch' => 'researched-priced-20261012-k',
+            '--code' => ['УТ-00008043'],
+            '--apply' => true,
+        ])->assertSuccessful();
+
+        $product = $item->fresh()->product;
+        $this->assertNotNull($product);
+        $this->assertNotSame($template->id, $product->id);
+        $this->assertNotSame($wrongCandidate->id, $product->id);
+        $this->assertSame($category->id, $product->category_id);
+        $this->assertSame($brand->id, $product->brand_id);
+        $this->assertSame('Теплов и Сухов ППШ-М пароперегреватель трубный AISI 304, L495, D115/115 (К)', $product->name);
+        $this->assertSame('399.00', $product->price);
+        $this->assertSame('1', (string) $product->stock_qty);
+        $this->assertSame('AISI 304', collect($product->specs)->firstWhere('key', 'Марка стали')['value']);
+        $this->assertSame('115 мм', collect($product->specs)->firstWhere('key', 'Диаметр дымохода')['value']);
+        $this->assertSame('TS.BAK.PPS.0115.79803', collect($product->specs)->firstWhere('key', 'Артикул производителя')['value']);
+        $this->assertStringContainsString('ppsh-m-paroperegrevatel-trubnyj-304-l495-d115/115-k', $product->content_source_url);
+        $this->assertCount(2, $product->images);
+        $this->assertStringContainsString('qWnXfn-N0ofrsIuLPQmKrA', $product->images[0]);
+        $this->assertSame('manual_created', $item->fresh()->match_method);
+    }
 }

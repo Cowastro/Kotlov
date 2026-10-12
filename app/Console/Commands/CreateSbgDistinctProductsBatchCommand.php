@@ -272,6 +272,41 @@ class CreateSbgDistinctProductsBatchCommand extends Command
         ],
     ];
 
+    private const BATCH_RESEARCHED_PRICED_20261012_K = [
+        'УТ-00008043' => [
+            'template' => 'PS-010.836',
+            'candidate' => 'PS-011.152',
+            'fragments' => ['ППШ-М', '304', 'L495', 'D115/115'],
+            'name' => 'Теплов и Сухов ППШ-М пароперегреватель трубный AISI 304, L495, D115/115 (К)',
+            'retail' => 399.00,
+            'images' => [
+                'https://kpd-ural.ru/thumb/2/qWnXfn-N0ofrsIuLPQmKrA/600r600/d/ppsh-paro-nagrevatel-trubnyy-l495mm-430-08-f120.png',
+                'https://kpd-ural.ru/thumb/2/P-AjQl6mJhkgkmfJsR8A1A/600r600/d/ppsh-paro-nagrevatel-trubnyy-l495mm-430-08-f120-1.png',
+            ],
+            'source_url' => 'https://kpd-ural.ru/magazin/product/ppsh-m-paroperegrevatel-trubnyj-304-l495-d115/115-k',
+            'short' => 'Трубный пароперегреватель Теплов и Сухов ППШ-М для дымохода Ø115 мм: AISI 304, толщина 0,8 мм, длина 495 мм.',
+            'content' => '<p><strong>Теплов и Сухов ППШ-М</strong> — трубный пароперегреватель из нержавеющей стали AISI 304. Устанавливается на банную печь как стартовый элемент дымохода диаметром 115 мм и позволяет получать перегретый мелкодисперсный пар.</p><p>Для работы пароперегреватель подключают к баку-ватерпассу, который приобретается отдельно. Перед монтажом проверьте совместимость дымохода и не допускайте работу системы без воды.</p>',
+            'specs' => [
+                ['key' => 'Тип', 'value' => 'Пароперегреватель трубный'],
+                ['key' => 'Производитель', 'value' => 'Теплов и Сухов'],
+                ['key' => 'Диаметр дымохода', 'value' => '115 мм'],
+                ['key' => 'Длина', 'value' => '495 мм'],
+                ['key' => 'Габариты', 'value' => '200×495×200 мм'],
+                ['key' => 'Материал', 'value' => 'Нержавеющая сталь'],
+                ['key' => 'Марка стали', 'value' => 'AISI 304'],
+                ['key' => 'Толщина стали', 'value' => '0,8 мм'],
+                ['key' => 'Масса', 'value' => '4,52 кг'],
+                ['key' => 'Цвет', 'value' => 'Стальной'],
+                ['key' => 'Совместимое оборудование', 'value' => 'Бак-ватерпасс'],
+                ['key' => 'Бак-ватерпасс в комплекте', 'value' => 'Нет'],
+                ['key' => 'Артикул производителя', 'value' => 'TS.BAK.PPS.0115.79803'],
+                ['key' => 'Штрихкод', 'value' => '4680205552700'],
+                ['key' => 'Гарантия', 'value' => '12 месяцев'],
+                ['key' => 'Страна производства', 'value' => 'Россия'],
+            ],
+        ],
+    ];
+
     public function handle(IntegrationProductCreator $creator): int
     {
         $rows = match ($this->option('batch')) {
@@ -285,6 +320,7 @@ class CreateSbgDistinctProductsBatchCommand extends Command
             'researched-priced-20261012-h' => self::BATCH_RESEARCHED_PRICED_20261012_H,
             'researched-priced-20261012-i' => self::BATCH_RESEARCHED_PRICED_20261012_I,
             'researched-priced-20261012-j' => self::BATCH_RESEARCHED_PRICED_20261012_J,
+            'researched-priced-20261012-k' => self::BATCH_RESEARCHED_PRICED_20261012_K,
             default => null,
         };
 
@@ -355,7 +391,16 @@ class CreateSbgDistinctProductsBatchCommand extends Command
             }
 
             $stats['ready']++;
-            $retail = $this->retailPrice((float) $item->normalizedPriceByn(), (float) $template->price);
+            $retail = isset($rule['retail'])
+                ? (float) $rule['retail']
+                : $this->retailPrice((float) $item->normalizedPriceByn(), (float) $template->price);
+            if ($retail < (float) $item->normalizedPriceByn()) {
+                $stats['ready']--;
+                $stats['blocked']++;
+                $details[] = [$code, $rule['template'], 'blocked', 'configured retail price is below supplier price'];
+
+                continue;
+            }
 
             if ($apply) {
                 if (! $brand && $configuredBrand) {
