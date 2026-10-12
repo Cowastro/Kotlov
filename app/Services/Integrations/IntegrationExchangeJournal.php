@@ -79,6 +79,10 @@ class IntegrationExchangeJournal
         array $metrics = [],
         bool $accumulate = false,
     ): void {
+        // A successfully retried 1C request supersedes the transient error saved
+        // by its first attempt. Never leave a green run with a stale red error.
+        $metrics['error_message'] = null;
+
         if ($run && $accumulate) {
             $metrics = $this->accumulateMetrics($run->fresh() ?? $run, $metrics);
         }

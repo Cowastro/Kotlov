@@ -16,6 +16,7 @@ use App\Services\Integrations\IntegrationMonitoringWindow;
 use App\Services\Integrations\OrderIntegrationRouter;
 use App\Services\Integrations\SupplierChannelTransitionPlanner;
 use Carbon\CarbonImmutable;
+use Illuminate\Contracts\Cache\LockTimeoutException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
@@ -232,9 +233,29 @@ class OneCExchangeController extends Controller
             ?? $this->startRun($request, $source, 'inbound', $operation);
 
         try {
-            $stats = $type === 'sale'
-                ? $this->orderImporter->import($disk->get($path), $source)
-                : $this->catalogImporter->import($disk->get($path), $source->code);
+            if ($type === 'sale') {
+                $stats = $this->orderImporter->import($disk->get($path), $source);
+            } else {
+                $stats = Cache::lock($this->catalogImportLockKey($source), 300)
+                    ->block(180, function () use ($disk, $path, $source): ?array {
+                        // A slow catalogue import can outlive the timeout on the 1C
+                        // side. Its retry waits for the first request and then sees
+                        // the receipt instead of importing the same rows concurrently.
+                        if ($disk->exists($path.'.received') && $disk->exists($path.'.result.json')) {
+                            return null;
+                        }
+
+                        return $this->catalogImporter->import($disk->get($path), $source->code);
+                    });
+
+                if ($stats === null) {
+                    return $this->plain('success');
+                }
+            }
+        } catch (LockTimeoutException $exception) {
+            report($exception);
+
+            return $this->plain("failure\nCatalogue import is still running");
         } catch (\Throwable $exception) {
             report($exception);
             $this->exchangeJournal->fail($run, $exception);
@@ -747,6 +768,11 @@ class OneCExchangeController extends Controller
     private function catalogOffersReceivedCacheKey(Request $request, IntegrationSource $source): string
     {
         return 'integration_catalog_offers_received:'.hash('sha256', $this->sessionPath($request, $source));
+    }
+
+    private function catalogImportLockKey(IntegrationSource $source): string
+    {
+        return 'integration_catalog_import:'.$source->id;
     }
 
     private function sessionCacheKey(string $token): string

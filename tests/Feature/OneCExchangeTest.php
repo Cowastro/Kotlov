@@ -757,6 +757,56 @@ XML;
             ->count());
     }
 
+    public function test_successful_catalog_retry_clears_the_previous_attempt_error(): void
+    {
+        $this->withBasicAuth('onec-test', 'secret-test')
+            ->get('/1c/exchange?type=catalog&mode=init')
+            ->assertOk();
+
+        $this->call(
+            'POST',
+            '/1c/exchange?type=catalog&mode=file&filename=import.xml',
+            [],
+            [],
+            [],
+            ['PHP_AUTH_USER' => 'onec-test', 'PHP_AUTH_PW' => 'secret-test'],
+            '<broken-xml>',
+        )->assertOk();
+        $this->withBasicAuth('onec-test', 'secret-test')
+            ->get('/1c/exchange?type=catalog&mode=import&filename=import.xml')
+            ->assertOk()
+            ->assertSee('failure');
+
+        $xml = <<<'XML'
+<?xml version="1.0" encoding="UTF-8"?>
+<КоммерческаяИнформация>
+  <Каталог><Товары><Товар>
+    <Ид>retry-after-error</Ид>
+    <Артикул>RETRY-ERR-1</Артикул>
+    <Наименование>Повтор после ошибки</Наименование>
+  </Товар></Товары></Каталог>
+</КоммерческаяИнформация>
+XML;
+        $this->call(
+            'POST',
+            '/1c/exchange?type=catalog&mode=file&filename=import.xml',
+            [],
+            [],
+            [],
+            ['PHP_AUTH_USER' => 'onec-test', 'PHP_AUTH_PW' => 'secret-test'],
+            $xml,
+        )->assertOk();
+        $this->withBasicAuth('onec-test', 'secret-test')
+            ->get('/1c/exchange?type=catalog&mode=import&filename=import.xml')
+            ->assertOk()
+            ->assertSee('success');
+
+        $run = IntegrationExchangeRun::query()->latest('id')->firstOrFail();
+        $this->assertSame('success', $run->status);
+        $this->assertNull($run->error_message);
+        $this->assertSame(1, $run->items_received);
+    }
+
     public function test_catalog_exchange_journal_accumulates_all_uploaded_parts(): void
     {
         $importXml = <<<'XML'
