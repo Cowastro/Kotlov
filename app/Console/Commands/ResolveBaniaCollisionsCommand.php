@@ -68,8 +68,20 @@ class ResolveBaniaCollisionsCommand extends Command
                     ->first(['id', 'product_id']);
                 if ($targetLink && $targetLink->product_id !== null && (int) $targetLink->product_id !== (int) $product->id) {
                     $stats['link_repairs']--;
-                    $stats['guard_skips']++;
-                    $this->warn($sku . ': target supplier article is already linked to another product; skipped.');
+                    $stats['archived']++;
+                    $this->warn($sku . ': archive obsolete card; target supplier article is already linked to the canonical product.');
+                    DB::table('products')->where('id', $product->id)->update([
+                        'is_active' => false,
+                        'is_archived' => true,
+                        'in_stock' => false,
+                        'updated_at' => $now,
+                    ]);
+                    DB::table('supplier_products')->where('id', $link->id)->update([
+                        'in_stock' => false,
+                        'stock_quantity' => 0,
+                        'stock_status' => 'out_of_stock',
+                        'updated_at' => $now,
+                    ]);
                     continue;
                 }
 
