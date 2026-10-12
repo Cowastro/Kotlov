@@ -201,10 +201,15 @@ class ResolveBaniaCollisionsCommand extends Command
 
     private function findActiveProductBySku(string $sku): ?object
     {
-        return DB::table('products')
+        $active = DB::table('products')
             ->where('sku', $sku)
-            ->orderBy('is_archived')
-            ->orderByDesc('is_active')
+            ->where('is_archived', false)
+            ->where('is_active', true)
+            ->orderByDesc('id')
+            ->first(['id']);
+
+        return $active ?: DB::table('products')
+            ->where('sku', $sku)
             ->orderByDesc('id')
             ->first(['id']);
     }
