@@ -10,6 +10,8 @@ use App\Models\Brand;
 use App\Models\Category;
 use App\Models\ContactRequest;
 use App\Models\Coupon;
+use App\Models\CrmContact;
+use App\Models\CrmCounterparty;
 use App\Models\EmailSubscriber;
 use App\Models\Faq;
 use App\Models\InstallerApplication;
@@ -49,6 +51,8 @@ final class AdminRoleAccess
     private const MANAGER_ABILITIES = [
         Order::class => ['viewAny', 'view', 'update'],
         ContactRequest::class => ['viewAny', 'view', 'update'],
+        CrmCounterparty::class => ['viewAny', 'view', 'create', 'update'],
+        CrmContact::class => ['viewAny', 'view', 'create', 'update'],
         InstallRequest::class => ['viewAny', 'view', 'update'],
         Review::class => ['viewAny', 'view', 'update'],
         MarketPriceObservation::class => ['viewAny', 'view'],
@@ -67,6 +71,8 @@ final class AdminRoleAccess
         Category::class,
         ContactRequest::class,
         Coupon::class,
+        CrmCounterparty::class,
+        CrmContact::class,
         EmailSubscriber::class,
         Faq::class,
         InstallerApplication::class,

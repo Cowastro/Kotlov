@@ -30,7 +30,7 @@ class TelephonyCall extends Model
     protected $fillable = [
         'provider', 'external_uuid', 'company_id', 'direction', 'dial_type',
         'customer_phone', 'employee_phone', 'line_number', 'assigned_user_id',
-        'matched_user_id', 'order_id', 'contact_request_id', 'status',
+        'matched_user_id', 'crm_counterparty_id', 'crm_contact_id', 'order_id', 'contact_request_id', 'status',
         'handling_status', 'started_at', 'answered_at', 'finished_at', 'duration',
         'conversation_duration', 'record_name', 'recording_url', 'failure_reason',
         'callback_status', 'handled_at', 'handled_by', 'manager_note', 'metadata',
@@ -52,6 +52,16 @@ class TelephonyCall extends Model
     public function matchedUser(): BelongsTo
     {
         return $this->belongsTo(User::class, 'matched_user_id');
+    }
+
+    public function crmCounterparty(): BelongsTo
+    {
+        return $this->belongsTo(CrmCounterparty::class, 'crm_counterparty_id');
+    }
+
+    public function crmContact(): BelongsTo
+    {
+        return $this->belongsTo(CrmContact::class, 'crm_contact_id');
     }
 
     public function handledByUser(): BelongsTo
@@ -81,7 +91,8 @@ class TelephonyCall extends Model
 
     public function getContactNameAttribute(): string
     {
-        return $this->order?->customer_name
+        return $this->crmContact?->full_name
+            ?? $this->order?->customer_name
             ?? $this->matchedUser?->name
             ?? $this->contactRequest?->name
             ?? 'Неизвестный номер';

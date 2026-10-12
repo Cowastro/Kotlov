@@ -9,6 +9,7 @@ use App\Models\TelephonyCallEvent;
 use App\Models\TelephonyConnection;
 use App\Models\TelephonyEmployee;
 use App\Models\User;
+use App\Services\Crm\CrmContactMatcher;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Arr;
@@ -17,6 +18,8 @@ use InvalidArgumentException;
 
 class A1WebhookProcessor
 {
+    public function __construct(private readonly CrmContactMatcher $crmContactMatcher) {}
+
     /** @param array<string, mixed> $payload */
     public function process(array $payload): TelephonyCall
     {
@@ -154,6 +157,10 @@ class A1WebhookProcessor
         $call->contact_request_id ??= ContactRequest::query()
             ->whereIn(DB::raw(sprintf($digitsExpression, 'phone')), $variants)
             ->latest('id')->value('id');
+
+        if (! $call->crm_contact_id) {
+            $this->crmContactMatcher->attachToCall($call);
+        }
     }
 
     private function digitsExpression(string $column): string
