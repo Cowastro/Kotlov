@@ -264,7 +264,7 @@ class ResolveSbgAmbiguousBatchCommandTest extends TestCase
         $product->refresh();
         $this->assertSame($product->id, $item->product_id);
         $this->assertSame('matched', $item->match_status);
-        $this->assertSame('manual', $item->match_method);
+        $this->assertSame('manual_candidate', $item->match_method);
         $this->assertSame('600.00', $product->price);
         $this->assertTrue($product->in_stock);
         $this->assertSame('1', (string) $product->stock_qty);
