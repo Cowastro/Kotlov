@@ -369,12 +369,14 @@ class OrdersTable
                             $parts[] = 'Заявки: '.$requestSummary;
                         }
 
-                        $status = $parts !== [] ? implode(' · ', $parts) : 'Маршрут рассчитан по текущим связям';
+                        $status = $parts !== [] ? implode(' · ', $parts) : null;
                         $contacts = self::orderSupplierContacts($record);
 
-                        return $contacts
-                            ? new HtmlString($contacts.'<br><span class="text-gray-500">'.e($status).'</span>')
-                            : $status;
+                        if ($contacts && $status) {
+                            return new HtmlString($contacts.'<br><span class="text-gray-500">'.e($status).'</span>');
+                        }
+
+                        return $contacts ? new HtmlString($contacts) : ($status ?? '');
                     })
                     ->color(fn (Order $record): string => match (true) {
                         $record->supplierOrderRequests->contains('status', 'rejected') => 'danger',

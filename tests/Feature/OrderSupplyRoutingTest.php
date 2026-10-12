@@ -80,6 +80,7 @@ class OrderSupplyRoutingTest extends TestCase
             ->assertSeeText('Не назначен менеджер')
             ->assertSeeText('+375 29 100-20-30')
             ->assertSeeText('orders@sanbusiness.test')
+            ->assertDontSeeText('Маршрут рассчитан по текущим связям')
             ->assertSee('tel:+375291002030', false)
             ->assertSee('mailto:orders@sanbusiness.test', false)
             ->assertSeeText('В наличии · остаток 7 шт.')
