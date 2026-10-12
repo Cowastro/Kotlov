@@ -16,6 +16,7 @@ on:
           - ps-artisan
           - stop-varmega-image-repair
           - stop-product-image-repair
+          - audit-teplodar
           - deploy-safe
           - deploy-recover
       artisan_args:
@@ -44,7 +45,7 @@ jobs:
           set -euo pipefail
 
           case "$TASK" in
-            optimize-clear|artisan-dry-run|artisan-apply|artisan-background|tail-log|ps-artisan|stop-varmega-image-repair|stop-product-image-repair|deploy-safe|deploy-recover) ;;
+            optimize-clear|artisan-dry-run|artisan-apply|artisan-background|tail-log|ps-artisan|stop-varmega-image-repair|stop-product-image-repair|audit-teplodar|deploy-safe|deploy-recover) ;;
             *) echo "::error::Unsupported task: $TASK"; exit 1 ;;
           esac
 
@@ -169,6 +170,10 @@ jobs:
                 pkill -f 'artisan catalog:repair-product-images' || true
                 echo "artisan_processes_after=$(pgrep -fc '[a]rtisan' || true)"
                 ;;
+              audit-teplodar)
+                "$PHP_BIN" artisan supplier:audit-teplodar-bania \
+                  --output=storage/app/reports/bania/teplodar-bania-audit.csv
+                ;;
               deploy-safe)
               # Never discard production changes. A dirty tracked worktree is a
               # hard stop so an operator can inspect and preserve it first. The
@@ -226,3 +231,28 @@ jobs:
           ssh -i ~/.ssh/server_key -p "$port" "$SERVER_USER@$SERVER_HOST" \
             "TASK='$TASK' ARTISAN_ARGS='$ARTISAN_ARGS' LOG_FILE='$LOG_FILE' SERVER_PATH='$server_path' PHP_BIN='$php_bin' bash -s" \
             <<< "$remote_script"
+
+      - name: Download Teplodar audit report
+        if: inputs.task == 'audit-teplodar'
+        env:
+          SERVER_HOST: ${{ secrets.SERVER_HOST }}
+          SERVER_PORT: ${{ secrets.SERVER_PORT }}
+          SERVER_USER: ${{ secrets.SERVER_USER }}
+          SERVER_PATH: ${{ secrets.SERVER_PATH }}
+        run: |
+          set -euo pipefail
+          port="${SERVER_PORT:-22}"
+          server_path="${SERVER_PATH:-/var/www/h209767/data/www/new.kotlov.by}"
+          mkdir -p audit-artifacts
+          scp -i ~/.ssh/server_key -P "$port" \
+            "$SERVER_USER@$SERVER_HOST:$server_path/storage/app/reports/bania/teplodar-bania-audit.csv" \
+            audit-artifacts/teplodar-bania-audit.csv
+
+      - name: Upload Teplodar audit report
+        if: inputs.task == 'audit-teplodar'
+        uses: actions/upload-artifact@v4
+        with:
+          name: teplodar-bania-audit
+          path: audit-artifacts/teplodar-bania-audit.csv
+          if-no-files-found: error
+          retention-days: 7
