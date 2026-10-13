@@ -21,7 +21,26 @@
         overscroll-behavior-inline: contain;
     }
 
+    /* Do not crush words and phone numbers into one-character lines in narrow cells. */
     .fi-ta-cell {
-        overflow-wrap: anywhere;
+        overflow-wrap: break-word;
+        word-break: normal;
+    }
+
+    /* The order queue is information-dense, so keep its rhythm compact without
+       making controls or the rest of the admin panel smaller. */
+    .orders-workspace .fi-ta-header-cell {
+        padding: 0.625rem;
+    }
+
+    .orders-workspace .fi-ta-text:not(.fi-inline),
+    .orders-workspace .fi-ta-icon {
+        padding: 0.75rem 0.625rem;
+    }
+
+    .orders-workspace .fi-ta-cell-onec-sync-state,
+    .orders-workspace .fi-ta-header-cell-onec-sync-state {
+        min-width: 3.5rem;
+        white-space: nowrap;
     }
 </style>

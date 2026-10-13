@@ -20,6 +20,8 @@ use Filament\Actions\ViewAction;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Textarea;
 use Filament\Notifications\Notification;
+use Filament\Support\Enums\IconSize;
+use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\Filter;
 use Filament\Tables\Filters\SelectFilter;
@@ -80,6 +82,7 @@ class OrdersTable
             ->toArray();
 
         return $table
+            ->extraAttributes(['class' => 'orders-workspace'])
             ->modifyQueryUsing(fn (Builder $query) => $query
                 ->withSum('items', 'quantity')
                 ->with([
@@ -109,6 +112,7 @@ class OrdersTable
                     ->label('№ заказа')
                     ->searchable()
                     ->sortable()
+                    ->description(fn (Order $record): string => $record->created_at?->format('d.m.Y H:i') ?? 'Дата не указана')
                     ->width('132px')
                     ->grow(false)
                     ->weight('bold'),
@@ -118,7 +122,8 @@ class OrdersTable
                     ->dateTime('d.m.Y H:i')
                     ->width('132px')
                     ->grow(false)
-                    ->sortable(),
+                    ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: true),
 
                 TextColumn::make('customer_name')
                     ->label('Клиент')
@@ -184,7 +189,8 @@ class OrdersTable
                     })
                     ->width('170px')
                     ->grow(false)
-                    ->formatStateUsing(fn (?string $state, Order $record): string => $record->paymentStatusLabel()),
+                    ->formatStateUsing(fn (?string $state, Order $record): string => $record->paymentStatusLabel())
+                    ->toggleable(isToggledHiddenByDefault: true),
 
                 TextColumn::make('economics')
                     ->label('Экономика')
@@ -302,18 +308,16 @@ class OrdersTable
                             $record->archived_at?->format('d.m.Y H:i'),
                             $record->archivedBy?->name,
                         ])->filter()->implode(' · ')
-                        : null)
+                        : $record->paymentStatusLabel())
                     ->tooltip(fn (Order $record): ?string => $record->isArchivedAsIrrelevant()
                         ? $record->archive_reason
                         : null)
                     ->width('150px')
                     ->grow(false),
 
-                TextColumn::make('onec_sync_state')
-                    ->label('Обмен')
+                IconColumn::make('onec_sync_state')
+                    ->label('1С')
                     ->state(fn (Order $record): string => $record->onecSyncState())
-                    ->badge()
-                    ->formatStateUsing(fn (string $state): string => Order::ONEC_SYNC_STATES[$state] ?? $state)
                     ->color(fn (string $state): string => match ($state) {
                         'conflict' => 'danger',
                         'unknown', 'no_response', 'delayed' => 'warning',
@@ -328,10 +332,17 @@ class OrdersTable
                         'sent' => 'heroicon-o-arrow-up-tray',
                         default => 'heroicon-o-clock',
                     })
-                    ->description(fn (Order $record): ?string => $record->onecSyncDescription())
-                    ->width('160px')
-                    ->grow(false)
-                    ->wrap(),
+                    ->tooltip(function (Order $record): string {
+                        $state = $record->onecSyncState();
+                        $label = Order::ONEC_SYNC_STATES[$state] ?? $state;
+
+                        return collect([$label, $record->onecSyncDescription()])
+                            ->filter()
+                            ->implode(' · ');
+                    })
+                    ->size(IconSize::Large)
+                    ->alignCenter()
+                    ->width('56px'),
 
                 TextColumn::make('management_attention')
                     ->label('Контроль')
