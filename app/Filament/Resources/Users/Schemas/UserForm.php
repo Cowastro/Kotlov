@@ -84,6 +84,13 @@ class UserForm
                             ->autocomplete('off')
                             ->helperText('Указывается в персональной подписи исходящих писем.'),
 
+                        Toggle::make('configure_telegram')
+                            ->label('Привязать Telegram')
+                            ->helperText('Включите только если сотруднику действительно нужен Telegram для заказов.')
+                            ->default(fn ($record): bool => filled($record?->telegram_username))
+                            ->live()
+                            ->dehydrated(false),
+
                         TextInput::make('telegram_username')
                             ->label('Telegram username')
                             ->placeholder('username (без @)')
@@ -93,6 +100,7 @@ class UserForm
                                 'data-1p-ignore' => 'true',
                                 'data-lpignore' => 'true',
                             ])
+                            ->visible(fn (Get $get): bool => (bool) $get('configure_telegram'))
                             ->helperText('Необязательно. Нужен только для назначения заказов через Telegram.')
                             ->unique(ignoreRecord: true),
                     ]),
@@ -100,6 +108,13 @@ class UserForm
                 Section::make('Пароль')
                     ->description('При редактировании оставьте поля пустыми, если пароль менять не нужно.')
                     ->schema([
+                        Toggle::make('change_password')
+                            ->label('Изменить пароль')
+                            ->helperText('Поля нового пароля появятся только после включения.')
+                            ->default(fn ($record): bool => $record === null)
+                            ->live()
+                            ->dehydrated(false),
+
                         TextInput::make('password')
                             ->label('Пароль')
                             ->password()
@@ -110,7 +125,8 @@ class UserForm
                                 'data-lpignore' => 'true',
                             ])
                             ->afterStateHydrated(fn (TextInput $component): TextInput => $component->state(null))
-                            ->required(fn ($record) => $record === null) // обязателен только при создании
+                            ->visible(fn (Get $get): bool => (bool) $get('change_password'))
+                            ->required(fn (Get $get): bool => (bool) $get('change_password'))
                             ->dehydrateStateUsing(fn ($state) => filled($state) ? bcrypt($state) : null)
                             ->dehydrated(fn ($state) => filled($state))
                             ->minLength(8),
@@ -125,8 +141,9 @@ class UserForm
                                 'data-lpignore' => 'true',
                             ])
                             ->afterStateHydrated(fn (TextInput $component): TextInput => $component->state(null))
+                            ->visible(fn (Get $get): bool => (bool) $get('change_password'))
                             ->same('password')
-                            ->required(fn ($record) => $record === null)
+                            ->required(fn (Get $get): bool => (bool) $get('change_password'))
                             ->dehydrated(false),
                     ]),
 
