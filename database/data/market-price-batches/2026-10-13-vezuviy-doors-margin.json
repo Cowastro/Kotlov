@@ -1,0 +1,201 @@
+{
+  "code": "2026-10-13-vezuviy-doors-margin",
+  "observed_at": "2026-10-13T21:35:00+02:00",
+  "sources": [
+    {"code": "vezuviy-official-ru", "name": "Везувий — официальный магазин", "kind": "manufacturer", "base_url": "https://vezuviy.su", "currency": "RUB", "region": "Россия", "freshness_hours": 720},
+    {"code": "ugpechi-ru", "name": "Усадьба Гурмана — прайс", "base_url": "https://www.ugpechi.ru", "currency": "RUB", "region": "Россия", "freshness_hours": 720},
+    {"code": "pechi-top-ru", "name": "Печи-Топ", "base_url": "https://pechi-top.ru", "currency": "RUB", "region": "Россия", "freshness_hours": 720},
+    {"code": "pro-kaminy-ru", "name": "PRO Камины", "base_url": "https://pro-kaminy.ru", "currency": "RUB", "region": "Россия", "freshness_hours": 720}
+  ],
+  "products": [
+    {
+      "sku": "PS-010.785",
+      "review_reason": "Точная дверка Везувий 270 Бронза проверена по производителю и двум независимым продавцам; цены RUB пересчитаны по курсу НБРБ.",
+      "observations": [
+        {"source":"vezuviy-official-ru","url":"https://vezuviy.su/pechnye-dveri-i-aksessuary/dvercy-dlya-kamina-chugunnye-germetichnye/bronza/","external_name":"Дверка ВЕЗУВИЙ каминная 270 (Бронза)","model":"270 Бронза","observed_price":10510,"currency":"RUB","exchange_rate_to_byn":0.035964,"availability_status":"in_stock","match_method":"exact_model","match_confidence":1,"is_confirmed":true,"is_comparable":true,"validation_flags":[]},
+        {"source":"ugpechi-ru","url":"https://www.ugpechi.ru/upload/price.pdf","external_name":"Дверка ВЕЗУВИЙ каминная 270 (Бронза)","model":"270 Бронза","observed_price":7510,"currency":"RUB","exchange_rate_to_byn":0.035964,"availability_status":"unknown","match_method":"exact_model","match_confidence":1,"is_confirmed":true,"is_comparable":true,"validation_flags":[]},
+        {"source":"pechi-top-ru","url":"https://pechi-top.ru/kaminnoe-i-pechnoe-lite/kaminnoe-i-pechnoe-lite-vezuviy/","external_name":"Дверка Везувий каминная 270 (Бронза) (280х250)","model":"270 Бронза","observed_price":10510,"currency":"RUB","exchange_rate_to_byn":0.035964,"availability_status":"in_stock","match_method":"exact_model","match_confidence":1,"is_confirmed":true,"is_comparable":true,"validation_flags":[]}
+      ]
+    },
+    {
+      "sku": "PS-010.786",
+      "review_reason": "Точная дверка Везувий 260 Антрацит проверена по производителю и двум независимым продавцам; цены RUB пересчитаны по курсу НБРБ.",
+      "observations": [
+        {"source":"vezuviy-official-ru","url":"https://vezuviy.su/pechnye-dveri-i-aksessuary/dvercy-dlya-kamina-chugunnye-germetichnye/antracit/","external_name":"Дверка ВЕЗУВИЙ каминная 260 (Антрацит)","model":"260 Антрацит","observed_price":10110,"currency":"RUB","exchange_rate_to_byn":0.035964,"availability_status":"in_stock","match_method":"exact_model","match_confidence":1,"is_confirmed":true,"is_comparable":true,"validation_flags":[]},
+        {"source":"ugpechi-ru","url":"https://www.ugpechi.ru/upload/price.pdf","external_name":"Дверка ВЕЗУВИЙ каминная 260 (Антрацит)","model":"260 Антрацит","observed_price":6890,"currency":"RUB","exchange_rate_to_byn":0.035964,"availability_status":"unknown","match_method":"exact_model","match_confidence":1,"is_confirmed":true,"is_comparable":true,"validation_flags":[]},
+        {"source":"pechi-top-ru","url":"https://pechi-top.ru/kaminnoe-i-pechnoe-lite/kaminnoe-i-pechnoe-lite-vezuviy/","external_name":"Дверка Везувий каминная 260 (Антрацит) (210х250)","model":"260 Антрацит","observed_price":9630,"currency":"RUB","exchange_rate_to_byn":0.035964,"availability_status":"in_stock","match_method":"exact_model","match_confidence":1,"is_confirmed":true,"is_comparable":true,"validation_flags":[]}
+      ]
+    },
+    {
+      "sku": "PS-011.142",
+      "review_reason": "Точная дверка Везувий 210 Антрацит проверена по производителю и двум независимым продавцам; цены RUB пересчитаны по курсу НБРБ.",
+      "observations": [
+        {"source":"vezuviy-official-ru","url":"https://vezuviy.su/pechnye-dveri-i-aksessuary/dvercy-dlya-kamina-chugunnye-germetichnye/antracit/","external_name":"Дверка ВЕЗУВИЙ каминная 210 (Антрацит)","model":"210 Антрацит","observed_price":13580,"currency":"RUB","exchange_rate_to_byn":0.035964,"availability_status":"in_stock","match_method":"exact_model","match_confidence":1,"is_confirmed":true,"is_comparable":true,"validation_flags":[]},
+        {"source":"ugpechi-ru","url":"https://www.ugpechi.ru/upload/price.pdf","external_name":"Дверка ВЕЗУВИЙ каминная 210 (Антрацит)","model":"210 Антрацит","observed_price":8970,"currency":"RUB","exchange_rate_to_byn":0.035964,"availability_status":"unknown","match_method":"exact_model","match_confidence":1,"is_confirmed":true,"is_comparable":true,"validation_flags":[]},
+        {"source":"pechi-top-ru","url":"https://pechi-top.ru/kaminnoe-i-pechnoe-lite/kaminnoe-i-pechnoe-lite-vezuviy/","external_name":"Дверка Везувий каминная 210 (Антрацит) (325х290)","model":"210 Антрацит","observed_price":12930,"currency":"RUB","exchange_rate_to_byn":0.035964,"availability_status":"in_stock","match_method":"exact_model","match_confidence":1,"is_confirmed":true,"is_comparable":true,"validation_flags":[]}
+      ]
+    },
+    {
+      "sku": "PS-011.144",
+      "review_reason": "Точная дверка Везувий 270 Антрацит проверена по производителю и двум независимым продавцам; цены RUB пересчитаны по курсу НБРБ.",
+      "observations": [
+        {"source":"vezuviy-official-ru","url":"https://vezuviy.su/pechnye-dveri-i-aksessuary/dvercy-dlya-kamina-chugunnye-germetichnye/antracit/","external_name":"Дверка ВЕЗУВИЙ каминная 270 (Антрацит)","model":"270 Антрацит","observed_price":10870,"currency":"RUB","exchange_rate_to_byn":0.035964,"availability_status":"in_stock","match_method":"exact_model","match_confidence":1,"is_confirmed":true,"is_comparable":true,"validation_flags":[]},
+        {"source":"ugpechi-ru","url":"https://www.ugpechi.ru/upload/price.pdf","external_name":"Дверка ВЕЗУВИЙ каминная 270 (Антрацит)","model":"270 Антрацит","observed_price":7410,"currency":"RUB","exchange_rate_to_byn":0.035964,"availability_status":"unknown","match_method":"exact_model","match_confidence":1,"is_confirmed":true,"is_comparable":true,"validation_flags":[]},
+        {"source":"pechi-top-ru","url":"https://pechi-top.ru/kaminnoe-i-pechnoe-lite/kaminnoe-i-pechnoe-lite-vezuviy/","external_name":"Дверка Везувий каминная 270 (Антрацит) (280х250)","model":"270 Антрацит","observed_price":10350,"currency":"RUB","exchange_rate_to_byn":0.035964,"availability_status":"in_stock","match_method":"exact_model","match_confidence":1,"is_confirmed":true,"is_comparable":true,"validation_flags":[]}
+      ]
+    },
+    {
+      "sku": "PS-011.150",
+      "review_reason": "Точная дверка Везувий 222 Антрацит проверена по производителю и двум независимым продавцам; цены RUB пересчитаны по курсу НБРБ.",
+      "observations": [
+        {"source":"vezuviy-official-ru","url":"https://vezuviy.su/pechnye-dveri-i-aksessuary/dvercy-dlya-kamina-chugunnye-germetichnye/antracit/","external_name":"Дверка ВЕЗУВИЙ каминная 222 (Антрацит)","model":"222 Антрацит","observed_price":16650,"currency":"RUB","exchange_rate_to_byn":0.035964,"availability_status":"in_stock","match_method":"exact_model","match_confidence":1,"is_confirmed":true,"is_comparable":true,"validation_flags":[]},
+        {"source":"ugpechi-ru","url":"https://www.ugpechi.ru/upload/price.pdf","external_name":"Дверка ВЕЗУВИЙ каминная 222 (Антрацит)","model":"222 Антрацит","observed_price":11360,"currency":"RUB","exchange_rate_to_byn":0.035964,"availability_status":"unknown","match_method":"exact_model","match_confidence":1,"is_confirmed":true,"is_comparable":true,"validation_flags":[]},
+        {"source":"pechi-top-ru","url":"https://pechi-top.ru/kaminnoe-i-pechnoe-lite/kaminnoe-i-pechnoe-lite-vezuviy/","external_name":"Дверка Везувий каминная 222 (Антрацит) (407х273)","model":"222 Антрацит","observed_price":15860,"currency":"RUB","exchange_rate_to_byn":0.035964,"availability_status":"in_stock","match_method":"exact_model","match_confidence":1,"is_confirmed":true,"is_comparable":true,"validation_flags":[]}
+      ]
+    },
+    {
+      "sku": "PS-011.151",
+      "review_reason": "Точная дверка Везувий 205 Антрацит проверена по производителю и двум независимым продавцам; цены RUB пересчитаны по курсу НБРБ.",
+      "observations": [
+        {"source":"vezuviy-official-ru","url":"https://vezuviy.su/pechnye-dveri-i-aksessuary/dvercy-dlya-kamina-chugunnye-germetichnye/antracit/","external_name":"Дверка ВЕЗУВИЙ каминная 205 (Антрацит)","model":"205 Антрацит","observed_price":25680,"currency":"RUB","exchange_rate_to_byn":0.035964,"availability_status":"in_stock","match_method":"exact_model","match_confidence":1,"is_confirmed":true,"is_comparable":true,"validation_flags":[]},
+        {"source":"ugpechi-ru","url":"https://www.ugpechi.ru/upload/price.pdf","external_name":"Дверка ВЕЗУВИЙ каминная 205 (Антрацит)","model":"205 Антрацит","observed_price":17520,"currency":"RUB","exchange_rate_to_byn":0.035964,"availability_status":"unknown","match_method":"exact_model","match_confidence":1,"is_confirmed":true,"is_comparable":true,"validation_flags":[]},
+        {"source":"pechi-top-ru","url":"https://pechi-top.ru/kaminnoe-i-pechnoe-lite/kaminnoe-i-pechnoe-lite-vezuviy/","external_name":"Дверка Везувий каминная 205 (Антрацит) (415х415)","model":"205 Антрацит","observed_price":24460,"currency":"RUB","exchange_rate_to_byn":0.035964,"availability_status":"in_stock","match_method":"exact_model","match_confidence":1,"is_confirmed":true,"is_comparable":true,"validation_flags":[]}
+      ]
+    },
+    {
+      "sku": "PS-011.420",
+      "review_reason": "Точная негерметичная дверка Везувий ДТ-4С Бронза проверена по производителю и двум независимым продавцам; цены RUB пересчитаны по курсу НБРБ.",
+      "observations": [
+        {"source":"vezuviy-official-ru","url":"https://vezuviy.su/pechnye-dveri-i-aksessuary/chugunnye-dveri/bronza/","external_name":"Дверка ВЕЗУВИЙ печная ДТ-4С (Бронза)","model":"ДТ-4С Бронза","observed_price":6960,"currency":"RUB","exchange_rate_to_byn":0.035964,"availability_status":"in_stock","match_method":"exact_model","match_confidence":1,"is_confirmed":true,"is_comparable":true,"validation_flags":[]},
+        {"source":"ugpechi-ru","url":"https://www.ugpechi.ru/upload/price.pdf","external_name":"Дверка ВЕЗУВИЙ печная ДТ-4С (Бронза)","model":"ДТ-4С Бронза","observed_price":4980,"currency":"RUB","exchange_rate_to_byn":0.035964,"availability_status":"unknown","match_method":"exact_model","match_confidence":1,"is_confirmed":true,"is_comparable":true,"validation_flags":[]},
+        {"source":"pechi-top-ru","url":"https://pechi-top.ru/kaminnoe-i-pechnoe-lite/kaminnoe-i-pechnoe-lite-vezuviy/","external_name":"Дверка Везувий печная ДТ-4С (Бронза) (280х250)","model":"ДТ-4С Бронза","observed_price":6960,"currency":"RUB","exchange_rate_to_byn":0.035964,"availability_status":"in_stock","match_method":"exact_model","match_confidence":1,"is_confirmed":true,"is_comparable":true,"validation_flags":[]}
+      ]
+    },
+    {
+      "sku": "PS-011.438",
+      "review_reason": "Точная дверка Везувий 205 Бронза проверена по производителю и двум независимым продавцам; цены RUB пересчитаны по курсу НБРБ.",
+      "observations": [
+        {"source":"vezuviy-official-ru","url":"https://vezuviy.su/pechnye-dveri-i-aksessuary/dverka-vezuviy-kaminnaya-205-bronza/","external_name":"Дверка ВЕЗУВИЙ каминная 205 (Бронза)","model":"205 Бронза","observed_price":25830,"currency":"RUB","exchange_rate_to_byn":0.035964,"availability_status":"in_stock","match_method":"exact_model","match_confidence":1,"is_confirmed":true,"is_comparable":true,"validation_flags":[]},
+        {"source":"ugpechi-ru","url":"https://www.ugpechi.ru/upload/price.pdf","external_name":"Дверка ВЕЗУВИЙ каминная 205 (Бронза)","model":"205 Бронза","observed_price":17630,"currency":"RUB","exchange_rate_to_byn":0.035964,"availability_status":"unknown","match_method":"exact_model","match_confidence":1,"is_confirmed":true,"is_comparable":true,"validation_flags":[]},
+        {"source":"pechi-top-ru","url":"https://pechi-top.ru/kaminnoe-i-pechnoe-lite/kaminnoe-i-pechnoe-lite-vezuviy/","external_name":"Дверка Везувий каминная 205 (Бронза) (415х415)","model":"205 Бронза","observed_price":24600,"currency":"RUB","exchange_rate_to_byn":0.035964,"availability_status":"in_stock","match_method":"exact_model","match_confidence":1,"is_confirmed":true,"is_comparable":true,"validation_flags":[]}
+      ]
+    },
+    {
+      "sku": "PS-011.439",
+      "review_reason": "Точная дверка Везувий 220 Бронза проверена по производителю и двум независимым продавцам; цены RUB пересчитаны по курсу НБРБ.",
+      "observations": [
+        {"source":"vezuviy-official-ru","url":"https://vezuviy.su/pechnye-dveri-i-aksessuary/dvercy-dlya-kamina-chugunnye-germetichnye/bronza/","external_name":"Дверка ВЕЗУВИЙ каминная 220 (Бронза)","model":"220 Бронза","observed_price":13060,"currency":"RUB","exchange_rate_to_byn":0.035964,"availability_status":"in_stock","match_method":"exact_model","match_confidence":1,"is_confirmed":true,"is_comparable":true,"validation_flags":[]},
+        {"source":"ugpechi-ru","url":"https://www.ugpechi.ru/upload/price.pdf","external_name":"Дверка ВЕЗУВИЙ каминная 220 (Бронза)","model":"220 Бронза","observed_price":9360,"currency":"RUB","exchange_rate_to_byn":0.035964,"availability_status":"unknown","match_method":"exact_model","match_confidence":1,"is_confirmed":true,"is_comparable":true,"validation_flags":[]},
+        {"source":"pechi-top-ru","url":"https://pechi-top.ru/kaminnoe-i-pechnoe-lite/kaminnoe-i-pechnoe-lite-vezuviy/","external_name":"Дверка Везувий каминная 220 (Бронза) (325х290)","model":"220 Бронза","observed_price":13060,"currency":"RUB","exchange_rate_to_byn":0.035964,"availability_status":"in_stock","match_method":"exact_model","match_confidence":1,"is_confirmed":true,"is_comparable":true,"validation_flags":[]}
+      ]
+    },
+    {
+      "sku": "PS-011.828",
+      "review_reason": "Точная дверка Везувий 224 Антрацит проверена по производителю и двум независимым продавцам; цены RUB пересчитаны по курсу НБРБ.",
+      "observations": [
+        {"source":"vezuviy-official-ru","url":"https://vezuviy.su/pechnye-dveri-i-aksessuary/dvercy-dlya-kamina-chugunnye-germetichnye/antracit/","external_name":"Дверка ВЕЗУВИЙ каминная 224 (Антрацит)","model":"224 Антрацит","observed_price":19720,"currency":"RUB","exchange_rate_to_byn":0.035964,"availability_status":"in_stock","match_method":"exact_model","match_confidence":1,"is_confirmed":true,"is_comparable":true,"validation_flags":[]},
+        {"source":"ugpechi-ru","url":"https://www.ugpechi.ru/upload/price.pdf","external_name":"Дверка ВЕЗУВИЙ каминная 224 (Антрацит)","model":"224 Антрацит","observed_price":13440,"currency":"RUB","exchange_rate_to_byn":0.035964,"availability_status":"unknown","match_method":"exact_model","match_confidence":1,"is_confirmed":true,"is_comparable":true,"validation_flags":[]},
+        {"source":"pechi-top-ru","url":"https://pechi-top.ru/kaminnoe-i-pechnoe-lite/kaminnoe-i-pechnoe-lite-vezuviy/","external_name":"Дверка Везувий каминная 224 (Антрацит) (340х410)","model":"224 Антрацит","observed_price":18780,"currency":"RUB","exchange_rate_to_byn":0.035964,"availability_status":"in_stock","match_method":"exact_model","match_confidence":1,"is_confirmed":true,"is_comparable":true,"validation_flags":[]}
+      ]
+    },
+    {
+      "sku": "PS-011.830",
+      "review_reason": "Точная негерметичная дверка Везувий ДТ-4С Антрацит проверена по производителю и двум независимым продавцам; цены RUB пересчитаны по курсу НБРБ.",
+      "observations": [
+        {"source":"vezuviy-official-ru","url":"https://vezuviy.su/pechnye-dveri-i-aksessuary/chugunnye-dveri/antracit/","external_name":"Дверка ВЕЗУВИЙ печная ДТ-4С (Антрацит)","model":"ДТ-4С Антрацит","observed_price":7140,"currency":"RUB","exchange_rate_to_byn":0.035964,"availability_status":"in_stock","match_method":"exact_model","match_confidence":1,"is_confirmed":true,"is_comparable":true,"validation_flags":[]},
+        {"source":"ugpechi-ru","url":"https://www.ugpechi.ru/upload/price.pdf","external_name":"Дверка ВЕЗУВИЙ печная ДТ-4С (Антрацит)","model":"ДТ-4С Антрацит","observed_price":4880,"currency":"RUB","exchange_rate_to_byn":0.035964,"availability_status":"unknown","match_method":"exact_model","match_confidence":1,"is_confirmed":true,"is_comparable":true,"validation_flags":[]},
+        {"source":"pechi-top-ru","url":"https://pechi-top.ru/kaminnoe-i-pechnoe-lite/kaminnoe-i-pechnoe-lite-vezuviy/","external_name":"Дверка Везувий печная ДТ-4С (Антрацит) (280х250)","model":"ДТ-4С Антрацит","observed_price":6800,"currency":"RUB","exchange_rate_to_byn":0.035964,"availability_status":"in_stock","match_method":"exact_model","match_confidence":1,"is_confirmed":true,"is_comparable":true,"validation_flags":[]}
+      ]
+    },
+    {
+      "sku": "PS-011.920",
+      "review_reason": "Точная дверка Везувий 230 Антрацит проверена по производителю и двум независимым продавцам; цены RUB пересчитаны по курсу НБРБ.",
+      "observations": [
+        {"source":"vezuviy-official-ru","url":"https://vezuviy.su/pechnye-dveri-i-aksessuary/dvercy-dlya-kamina-chugunnye-germetichnye/antracit/","external_name":"Дверка ВЕЗУВИЙ каминная 230 (Антрацит)","model":"230 Антрацит","observed_price":17720,"currency":"RUB","exchange_rate_to_byn":0.035964,"availability_status":"in_stock","match_method":"exact_model","match_confidence":1,"is_confirmed":true,"is_comparable":true,"validation_flags":[]},
+        {"source":"ugpechi-ru","url":"https://www.ugpechi.ru/upload/price.pdf","external_name":"Дверка ВЕЗУВИЙ каминная 230 (Антрацит)","model":"230 Антрацит","observed_price":12090,"currency":"RUB","exchange_rate_to_byn":0.035964,"availability_status":"unknown","match_method":"exact_model","match_confidence":1,"is_confirmed":true,"is_comparable":true,"validation_flags":[]},
+        {"source":"pechi-top-ru","url":"https://pechi-top.ru/kaminnoe-i-pechnoe-lite/kaminnoe-i-pechnoe-lite-vezuviy/","external_name":"Дверка Везувий каминная 230 (Антрацит) (407х273)","model":"230 Антрацит","observed_price":16880,"currency":"RUB","exchange_rate_to_byn":0.035964,"availability_status":"in_stock","match_method":"exact_model","match_confidence":1,"is_confirmed":true,"is_comparable":true,"validation_flags":[]}
+      ]
+    },
+    {
+      "sku": "KOTLOV-004333",
+      "review_reason": "Точная дверка Везувий 220 Антрацит проверена по производителю и двум независимым продавцам; цены RUB пересчитаны по курсу НБРБ.",
+      "observations": [
+        {"source":"vezuviy-official-ru","url":"https://vezuviy.su/pechnye-dveri-i-aksessuary/dvercy-dlya-kamina-chugunnye-germetichnye/antracit/","external_name":"Дверка ВЕЗУВИЙ каминная 220 (Антрацит)","model":"220 Антрацит","observed_price":13580,"currency":"RUB","exchange_rate_to_byn":0.035964,"availability_status":"in_stock","match_method":"exact_model","match_confidence":1,"is_confirmed":true,"is_comparable":true,"validation_flags":[]},
+        {"source":"ugpechi-ru","url":"https://www.ugpechi.ru/upload/price.pdf","external_name":"Дверка ВЕЗУВИЙ каминная 220 (Антрацит)","model":"220 Антрацит","observed_price":9260,"currency":"RUB","exchange_rate_to_byn":0.035964,"availability_status":"unknown","match_method":"exact_model","match_confidence":1,"is_confirmed":true,"is_comparable":true,"validation_flags":[]},
+        {"source":"pechi-top-ru","url":"https://pechi-top.ru/kaminnoe-i-pechnoe-lite/kaminnoe-i-pechnoe-lite-vezuviy/","external_name":"Дверка Везувий каминная 220 (Антрацит) (325х290)","model":"220 Антрацит","observed_price":12930,"currency":"RUB","exchange_rate_to_byn":0.035964,"availability_status":"in_stock","match_method":"exact_model","match_confidence":1,"is_confirmed":true,"is_comparable":true,"validation_flags":[]}
+      ]
+    },
+    {
+      "sku": "KOTLOV-004334",
+      "review_reason": "Точная дверка Везувий 240 Антрацит проверена по производителю и двум независимым продавцам; цены RUB пересчитаны по курсу НБРБ.",
+      "observations": [
+        {"source":"vezuviy-official-ru","url":"https://vezuviy.su/pechnye-dveri-i-aksessuary/dvercy-dlya-kamina-chugunnye-germetichnye/antracit/","external_name":"Дверка ВЕЗУВИЙ каминная 240 (Антрацит)","model":"240 Антрацит","observed_price":21230,"currency":"RUB","exchange_rate_to_byn":0.035964,"availability_status":"in_stock","match_method":"exact_model","match_confidence":1,"is_confirmed":true,"is_comparable":true,"validation_flags":[]},
+        {"source":"ugpechi-ru","url":"https://www.ugpechi.ru/upload/price.pdf","external_name":"Дверка ВЕЗУВИЙ каминная 240 (Антрацит)","model":"240 Антрацит","observed_price":14480,"currency":"RUB","exchange_rate_to_byn":0.035964,"availability_status":"unknown","match_method":"exact_model","match_confidence":1,"is_confirmed":true,"is_comparable":true,"validation_flags":[]},
+        {"source":"pechi-top-ru","url":"https://pechi-top.ru/kaminnoe-i-pechnoe-lite/kaminnoe-i-pechnoe-lite-vezuviy/","external_name":"Дверка Везувий каминная 240 (Антрацит) (340х410)","model":"240 Антрацит","observed_price":20220,"currency":"RUB","exchange_rate_to_byn":0.035964,"availability_status":"in_stock","match_method":"exact_model","match_confidence":1,"is_confirmed":true,"is_comparable":true,"validation_flags":[]}
+      ]
+    },
+    {
+      "sku": "KOTLOV-004338",
+      "review_reason": "Точная дверка Везувий 280 Бронза проверена по производителю и двум независимым продавцам; цены RUB пересчитаны по курсу НБРБ.",
+      "observations": [
+        {"source":"vezuviy-official-ru","url":"https://vezuviy.su/pechnye-dveri-i-aksessuary/dvercy-dlya-kamina-chugunnye-germetichnye/bronza/","external_name":"Дверка ВЕЗУВИЙ каминная 280 (Бронза)","model":"280 Бронза","observed_price":16000,"currency":"RUB","exchange_rate_to_byn":0.035964,"availability_status":"in_stock","match_method":"exact_model","match_confidence":1,"is_confirmed":true,"is_comparable":true,"validation_flags":[]},
+        {"source":"ugpechi-ru","url":"https://www.ugpechi.ru/upload/price.pdf","external_name":"Дверка ВЕЗУВИЙ каминная 280 (Бронза)","model":"280 Бронза","observed_price":11470,"currency":"RUB","exchange_rate_to_byn":0.035964,"availability_status":"unknown","match_method":"exact_model","match_confidence":1,"is_confirmed":true,"is_comparable":true,"validation_flags":[]},
+        {"source":"pro-kaminy-ru","url":"https://pro-kaminy.ru/katalog/pechnoe-lite/dverczyi-topochnyie/dverczyi-topochnyie-vezuvij/dverka-kaminnaya-vezuvij-280-%28bronza%29.html","external_name":"Дверка каминная ВЕЗУВИЙ 280 (Бронза)","model":"280 Бронза","observed_price":15080,"currency":"RUB","exchange_rate_to_byn":0.035964,"availability_status":"unknown","match_method":"exact_model","match_confidence":1,"is_confirmed":true,"is_comparable":true,"validation_flags":[]}
+      ]
+    },
+    {
+      "sku": "KOTLOV-004349",
+      "review_reason": "Точная дверка Везувий 230 Бронза проверена по производителю и двум независимым продавцам; цены RUB пересчитаны по курсу НБРБ.",
+      "observations": [
+        {"source":"vezuviy-official-ru","url":"https://vezuviy.su/pechnye-dveri-i-aksessuary/dvercy-dlya-kamina-chugunnye-germetichnye/bronza/","external_name":"Дверка ВЕЗУВИЙ каминная 230 (Бронза)","model":"230 Бронза","observed_price":17030,"currency":"RUB","exchange_rate_to_byn":0.035964,"availability_status":"in_stock","match_method":"exact_model","match_confidence":1,"is_confirmed":true,"is_comparable":true,"validation_flags":[]},
+        {"source":"ugpechi-ru","url":"https://www.ugpechi.ru/upload/price.pdf","external_name":"Дверка ВЕЗУВИЙ каминная 230 (Бронза)","model":"230 Бронза","observed_price":12190,"currency":"RUB","exchange_rate_to_byn":0.035964,"availability_status":"unknown","match_method":"exact_model","match_confidence":1,"is_confirmed":true,"is_comparable":true,"validation_flags":[]},
+        {"source":"pechi-top-ru","url":"https://pechi-top.ru/kaminnoe-i-pechnoe-lite/kaminnoe-i-pechnoe-lite-vezuviy/","external_name":"Дверка Везувий каминная 230 (Бронза) (407х273)","model":"230 Бронза","observed_price":17030,"currency":"RUB","exchange_rate_to_byn":0.035964,"availability_status":"in_stock","match_method":"exact_model","match_confidence":1,"is_confirmed":true,"is_comparable":true,"validation_flags":[]}
+      ]
+    },
+    {
+      "sku": "KOTLOV-004351",
+      "review_reason": "Точная дверка Везувий 217 Бронза проверена по производителю и двум независимым продавцам; цены RUB пересчитаны по курсу НБРБ.",
+      "observations": [
+        {"source":"vezuviy-official-ru","url":"https://vezuviy.su/pechnye-dveri-i-aksessuary/dvercy-dlya-kamina-chugunnye-germetichnye/bronza/","external_name":"Дверка ВЕЗУВИЙ каминная 217 (Бронза)","model":"217 Бронза","observed_price":19650,"currency":"RUB","exchange_rate_to_byn":0.035964,"availability_status":"in_stock","match_method":"exact_model","match_confidence":1,"is_confirmed":true,"is_comparable":true,"validation_flags":[]},
+        {"source":"ugpechi-ru","url":"https://www.ugpechi.ru/upload/price.pdf","external_name":"Дверка ВЕЗУВИЙ каминная 217 (Бронза)","model":"217 Бронза","observed_price":14070,"currency":"RUB","exchange_rate_to_byn":0.035964,"availability_status":"unknown","match_method":"exact_model","match_confidence":1,"is_confirmed":true,"is_comparable":true,"validation_flags":[]},
+        {"source":"pechi-top-ru","url":"https://pechi-top.ru/kaminnoe-i-pechnoe-lite/kaminnoe-i-pechnoe-lite-vezuviy/","external_name":"Дверка Везувий каминная 217 (Бронза) (337х405)","model":"217 Бронза","observed_price":19650,"currency":"RUB","exchange_rate_to_byn":0.035964,"availability_status":"in_stock","match_method":"exact_model","match_confidence":1,"is_confirmed":true,"is_comparable":true,"validation_flags":[]}
+      ]
+    },
+    {
+      "sku": "KOTLOV-004353",
+      "review_reason": "Точная дверка Везувий 224 Бронза проверена по производителю и двум независимым продавцам; цены RUB пересчитаны по курсу НБРБ.",
+      "observations": [
+        {"source":"vezuviy-official-ru","url":"https://vezuviy.su/pechnye-dveri-i-aksessuary/dvercy-dlya-kamina-chugunnye-germetichnye/bronza/","external_name":"Дверка ВЕЗУВИЙ каминная 224 (Бронза)","model":"224 Бронза","observed_price":18920,"currency":"RUB","exchange_rate_to_byn":0.035964,"availability_status":"in_stock","match_method":"exact_model","match_confidence":1,"is_confirmed":true,"is_comparable":true,"validation_flags":[]},
+        {"source":"ugpechi-ru","url":"https://www.ugpechi.ru/upload/price.pdf","external_name":"Дверка ВЕЗУВИЙ каминная 224 (Бронза)","model":"224 Бронза","observed_price":13550,"currency":"RUB","exchange_rate_to_byn":0.035964,"availability_status":"unknown","match_method":"exact_model","match_confidence":1,"is_confirmed":true,"is_comparable":true,"validation_flags":[]},
+        {"source":"pechi-top-ru","url":"https://pechi-top.ru/kaminnoe-i-pechnoe-lite/kaminnoe-i-pechnoe-lite-vezuviy/","external_name":"Дверка Везувий каминная 224 (Бронза) (330х410)","model":"224 Бронза","observed_price":18920,"currency":"RUB","exchange_rate_to_byn":0.035964,"availability_status":"in_stock","match_method":"exact_model","match_confidence":1,"is_confirmed":true,"is_comparable":true,"validation_flags":[]}
+      ]
+    },
+    {
+      "sku": "KOTLOV-004354",
+      "review_reason": "Точная дверка Везувий 260 Бронза проверена по производителю и двум независимым продавцам; цены RUB пересчитаны по курсу НБРБ.",
+      "observations": [
+        {"source":"vezuviy-official-ru","url":"https://vezuviy.su/pechnye-dveri-i-aksessuary/dvercy-dlya-kamina-chugunnye-germetichnye/bronza/","external_name":"Дверка ВЕЗУВИЙ каминная 260 (Бронза)","model":"260 Бронза","observed_price":9790,"currency":"RUB","exchange_rate_to_byn":0.035964,"availability_status":"in_stock","match_method":"exact_model","match_confidence":1,"is_confirmed":true,"is_comparable":true,"validation_flags":[]},
+        {"source":"ugpechi-ru","url":"https://www.ugpechi.ru/upload/price.pdf","external_name":"Дверка ВЕЗУВИЙ каминная 260 (Бронза)","model":"260 Бронза","observed_price":6990,"currency":"RUB","exchange_rate_to_byn":0.035964,"availability_status":"unknown","match_method":"exact_model","match_confidence":1,"is_confirmed":true,"is_comparable":true,"validation_flags":[]},
+        {"source":"pechi-top-ru","url":"https://pechi-top.ru/kaminnoe-i-pechnoe-lite/kaminnoe-i-pechnoe-lite-vezuviy/","external_name":"Дверка Везувий каминная 260 (Бронза) (210х250)","model":"260 Бронза","observed_price":9790,"currency":"RUB","exchange_rate_to_byn":0.035964,"availability_status":"in_stock","match_method":"exact_model","match_confidence":1,"is_confirmed":true,"is_comparable":true,"validation_flags":[]}
+      ]
+    },
+    {
+      "sku": "KOTLOV-004357",
+      "review_reason": "Точная негерметичная дверка Везувий ДТ-3С Бронза проверена по производителю и двум независимым продавцам; цены RUB пересчитаны по курсу НБРБ.",
+      "observations": [
+        {"source":"vezuviy-official-ru","url":"https://vezuviy.su/pechnye-dveri-i-aksessuary/chugunnye-dveri/bronza/","external_name":"Дверка ВЕЗУВИЙ печная ДТ-3С (Бронза)","model":"ДТ-3С Бронза","observed_price":5930,"currency":"RUB","exchange_rate_to_byn":0.035964,"availability_status":"in_stock","match_method":"exact_model","match_confidence":1,"is_confirmed":true,"is_comparable":true,"validation_flags":[]},
+        {"source":"ugpechi-ru","url":"https://www.ugpechi.ru/upload/price.pdf","external_name":"Дверка ВЕЗУВИЙ печная ДТ-3С (Бронза)","model":"ДТ-3С Бронза","observed_price":4340,"currency":"RUB","exchange_rate_to_byn":0.035964,"availability_status":"unknown","match_method":"exact_model","match_confidence":1,"is_confirmed":true,"is_comparable":true,"validation_flags":[]},
+        {"source":"pechi-top-ru","url":"https://pechi-top.ru/kaminnoe-i-pechnoe-lite/kaminnoe-i-pechnoe-lite-vezuviy/","external_name":"Дверка Везувий печная ДТ-3С (Бронза) (210х250)","model":"ДТ-3С Бронза","observed_price":5930,"currency":"RUB","exchange_rate_to_byn":0.035964,"availability_status":"in_stock","match_method":"exact_model","match_confidence":1,"is_confirmed":true,"is_comparable":true,"validation_flags":[]}
+      ]
+    },
+    {
+      "sku": "KOTLOV-004395",
+      "review_reason": "Точная дверка Везувий 280 Антрацит проверена по производителю и двум независимым продавцам; цены RUB пересчитаны по курсу НБРБ.",
+      "observations": [
+        {"source":"vezuviy-official-ru","url":"https://vezuviy.su/pechnye-dveri-i-aksessuary/dver-vezuviy-280-antracit/","external_name":"Дверка ВЕЗУВИЙ каминная 280 (Антрацит)","model":"280 Антрацит","observed_price":15870,"currency":"RUB","exchange_rate_to_byn":0.035964,"availability_status":"in_stock","match_method":"exact_model","match_confidence":1,"is_confirmed":true,"is_comparable":true,"validation_flags":[]},
+        {"source":"ugpechi-ru","url":"https://www.ugpechi.ru/upload/price.pdf","external_name":"Дверка ВЕЗУВИЙ каминная 280 (Антрацит)","model":"280 Антрацит","observed_price":11360,"currency":"RUB","exchange_rate_to_byn":0.035964,"availability_status":"unknown","match_method":"exact_model","match_confidence":1,"is_confirmed":true,"is_comparable":true,"validation_flags":[]},
+        {"source":"pro-kaminy-ru","url":"https://pro-kaminy.ru/katalog/pechnoe-lite/dverczyi-topochnyie/dverczyi-topochnyie-vezuvij/","external_name":"Дверка каминная ВЕЗУВИЙ 280 (Антрацит)","model":"280 Антрацит","observed_price":14960,"currency":"RUB","exchange_rate_to_byn":0.035964,"availability_status":"unknown","match_method":"exact_model","match_confidence":1,"is_confirmed":true,"is_comparable":true,"validation_flags":[]}
+      ]
+    }
+  ]
+}

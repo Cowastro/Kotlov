@@ -142,4 +142,57 @@ class ApplyMarketPriceBatchCommandTest extends TestCase
             ->expectsOutputToContain('metric.observations=11')
             ->assertSuccessful();
     }
+
+    public function test_vezuviy_doors_margin_batch_is_valid_and_matches_exact_active_server_skus(): void
+    {
+        $category = Category::query()->create([
+            'name' => 'Проверка цен дверей Везувий',
+            'slug' => 'vezuviy-doors-batch-test',
+            'parent_id' => 0,
+            'is_active' => true,
+        ]);
+
+        foreach ([
+            'PS-010.785',
+            'PS-010.786',
+            'PS-011.142',
+            'PS-011.144',
+            'PS-011.150',
+            'PS-011.151',
+            'PS-011.420',
+            'PS-011.438',
+            'PS-011.439',
+            'PS-011.828',
+            'PS-011.830',
+            'PS-011.920',
+            'KOTLOV-004333',
+            'KOTLOV-004334',
+            'KOTLOV-004338',
+            'KOTLOV-004349',
+            'KOTLOV-004351',
+            'KOTLOV-004353',
+            'KOTLOV-004354',
+            'KOTLOV-004357',
+            'KOTLOV-004395',
+        ] as $index => $sku) {
+            Product::query()->create([
+                'category_id' => $category->id,
+                'name' => 'Тестовая точная модель '.$sku,
+                'slug' => 'vezuviy-doors-batch-'.$index,
+                'sku' => $sku,
+                'price' => 1005,
+                'currency' => 'BYN',
+                'is_active' => true,
+                'is_archived' => false,
+            ]);
+        }
+
+        $this->artisan('catalog:apply-market-price-batch', [
+            'batch' => '2026-10-13-vezuviy-doors-margin',
+        ])
+            ->expectsOutputToContain('metric.status=dry_run')
+            ->expectsOutputToContain('metric.products=21')
+            ->expectsOutputToContain('metric.observations=63')
+            ->assertSuccessful();
+    }
 }
