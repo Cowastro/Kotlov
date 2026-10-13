@@ -2742,4 +2742,71 @@ class CreateSbgDistinctProductsBatchCommandTest extends TestCase
         $this->assertStringNotContainsString('rub', mb_strtolower($product->content));
         $this->assertSame('manual_created', $item->fresh()->match_method);
     }
+
+    public function test_it_creates_the_exact_aisi_304_d115_120_adapter_instead_of_linking_aisi_430(): void
+    {
+        $source = IntegrationSource::query()->create([
+            'code' => 'onec-sbg-teplov-adapter-304-d115-120',
+            'name' => '1С СанБизнесГруп',
+            'settings' => ['partner_name' => 'ООО «СанБизнесГруп»'],
+            'is_active' => true,
+            'update_stock' => true,
+        ]);
+        $category = Category::query()->firstOrCreate(['slug' => 'perehody-adaptery-dymohod'], [
+            'name' => 'Переходы и адаптеры дымохода',
+            'parent_id' => 0,
+        ]);
+        $teplov = Brand::query()->firstOrCreate(['slug' => 'teplov-i-suhov'], ['name' => 'Теплов и Сухов']);
+        $wrongAisi430Candidate = Product::query()->create([
+            'category_id' => $category->id,
+            'brand_id' => $teplov->id,
+            'sku' => 'PS-008.992',
+            'name' => 'Адаптер переход Моно АПМ-Р 430-0.8 D115/120',
+            'slug' => 'teplov-adapter-430-d115-120-template',
+            'price' => 26.33,
+            'images' => ['product/0008/008992/adapter-430-d115-120.jpg'],
+        ]);
+        $item = IntegrationProduct::query()->create([
+            'integration_source_id' => $source->id,
+            'external_id' => 'teplov-adapter-304-d115-120',
+            'external_code' => 'УТ-00003994',
+            'external_sku' => 'TS.ST5.AKP.0115.79236',
+            'name' => 'Адаптер переход Моно М-М 304-0.8 D115/120 (У)',
+            'price_byn' => null,
+            'stock_quantity' => 1,
+            'match_status' => 'ambiguous',
+            'candidates' => [['product_id' => $wrongAisi430Candidate->id, 'score' => 0.86]],
+        ]);
+
+        $this->artisan('integration:create-sbg-distinct-products', [
+            '--batch' => 'researched-priced-20261013-au',
+            '--code' => ['УТ-00003994'],
+            '--apply' => true,
+        ])->assertSuccessful();
+
+        $product = $item->fresh()->product;
+        $this->assertNotNull($product);
+        $this->assertNotSame($wrongAisi430Candidate->id, $product->id);
+        $this->assertSame($category->id, $product->category_id);
+        $this->assertSame($teplov->id, $product->brand_id);
+        $this->assertSame('Теплов и Сухов Адаптер-переход Моно М-М 304-0.8 D115/120 (У)', $product->name);
+        $this->assertSame('29.90', $product->price);
+        $this->assertSame('1', (string) $product->stock_qty);
+        $this->assertNull($item->fresh()->normalizedPriceByn());
+        $this->assertSame('М-М', collect($product->specs)->firstWhere('key', 'Тип соединения')['value']);
+        $this->assertSame('115 мм', collect($product->specs)->firstWhere('key', 'Входной диаметр')['value']);
+        $this->assertSame('120 мм', collect($product->specs)->firstWhere('key', 'Выходной диаметр')['value']);
+        $this->assertSame('AISI 304', collect($product->specs)->firstWhere('key', 'Марка стали')['value']);
+        $this->assertSame('0,8 мм', collect($product->specs)->firstWhere('key', 'Толщина стали')['value']);
+        $this->assertSame('TS.ST5.AKP.0115.79236', collect($product->specs)->firstWhere('key', 'Артикул производителя')['value']);
+        $this->assertSame(['img/products/generated/teplov-suhov-adapter-mono-mm-304-08-d115-120.png'], $product->images);
+        $this->assertFileExists(public_path('img/products/generated/teplov-suhov-adapter-mono-mm-304-08-d115-120.png'));
+        $this->assertStringContainsString('pechiteplov.ru', $product->content_source_url);
+        $this->assertStringNotContainsString('AISI 430', $product->content);
+        $this->assertStringNotContainsString('кандидат', mb_strtolower($product->content));
+        $this->assertStringNotContainsString('розничная цена', mb_strtolower($product->content));
+        $this->assertStringNotContainsString('нбрб', mb_strtolower($product->content));
+        $this->assertStringNotContainsString('rub', mb_strtolower($product->content));
+        $this->assertSame('manual_created', $item->fresh()->match_method);
+    }
 }

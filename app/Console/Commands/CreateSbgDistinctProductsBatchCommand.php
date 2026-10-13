@@ -1450,6 +1450,43 @@ class CreateSbgDistinctProductsBatchCommand extends Command
         ],
     ];
 
+    private const BATCH_RESEARCHED_PRICED_20261013_AU = [
+        'УТ-00003994' => [
+            'template' => 'PS-008.992',
+            'category_slug' => 'perehody-adaptery-dymohod',
+            'external_sku' => 'TS.ST5.AKP.0115.79236',
+            'fragments' => ['Адаптер переход', 'Моно М-М', '304-0.8', 'D115/120'],
+            'brand' => [
+                'name' => 'Теплов и Сухов',
+                'slug' => 'teplov-i-suhov',
+                'country' => 'Россия',
+                'content' => '<p><strong>Теплов и Сухов</strong> — российский производитель модульных дымоходов и комплектующих из нержавеющей стали.</p>',
+            ],
+            'name' => 'Теплов и Сухов Адаптер-переход Моно М-М 304-0.8 D115/120 (У)',
+            'retail' => 29.90,
+            'images' => ['img/products/generated/teplov-suhov-adapter-mono-mm-304-08-d115-120.png'],
+            'source_url' => 'https://naberezhnye-chelny.pechiteplov.ru/catalog/adaptery_perekhody_mono/adapter_perekhod_apm_r_304_0_8_d115_120/',
+            'short' => 'Одностенный адаптер-переход «Теплов и Сухов» Моно М-М для перехода с Ø115 на Ø120 мм, сталь AISI 304 толщиной 0,8 мм.',
+            'content' => '<p><strong>Теплов и Сухов Моно М-М 304-0.8 D115/120 (У)</strong> — одностенный адаптер-переход для соединения элементов дымохода диаметром 115 и 120 мм.</p><p>Конусный элемент изготовлен из нержавеющей стали AISI 304 толщиной 0,8 мм. Исполнение «мама-мама» рассчитано на сборку с совместимыми элементами модульной системы «Теплов и Сухов». Перед установкой следует проверить диаметры и направление сборки дымохода.</p>',
+            'specs' => [
+                ['key' => 'Тип', 'value' => 'Одностенный адаптер-переход'],
+                ['key' => 'Система', 'value' => 'Моно'],
+                ['key' => 'Тип соединения', 'value' => 'М-М'],
+                ['key' => 'Входной диаметр', 'value' => '115 мм'],
+                ['key' => 'Выходной диаметр', 'value' => '120 мм'],
+                ['key' => 'Материал', 'value' => 'Нержавеющая сталь'],
+                ['key' => 'Марка стали', 'value' => 'AISI 304'],
+                ['key' => 'Толщина стали', 'value' => '0,8 мм'],
+                ['key' => 'Высота', 'value' => '124 мм'],
+                ['key' => 'Габариты', 'value' => '120 × 120 × 124 мм'],
+                ['key' => 'Масса', 'value' => '0,31 кг'],
+                ['key' => 'Артикул производителя', 'value' => 'TS.ST5.AKP.0115.79236'],
+                ['key' => 'Гарантия', 'value' => '12 месяцев'],
+                ['key' => 'Страна производства', 'value' => 'Россия'],
+            ],
+        ],
+    ];
+
     public function handle(IntegrationProductCreator $creator): int
     {
         $rows = match ($this->option('batch')) {
@@ -1499,6 +1536,7 @@ class CreateSbgDistinctProductsBatchCommand extends Command
             'researched-priced-20261013-ar' => self::BATCH_RESEARCHED_PRICED_20261013_AR,
             'researched-priced-20261013-as' => self::BATCH_RESEARCHED_PRICED_20261013_AS,
             'researched-priced-20261013-at' => self::BATCH_RESEARCHED_PRICED_20261013_AT,
+            'researched-priced-20261013-au' => self::BATCH_RESEARCHED_PRICED_20261013_AU,
             default => null,
         };
 
