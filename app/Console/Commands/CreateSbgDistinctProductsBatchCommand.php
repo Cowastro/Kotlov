@@ -2341,6 +2341,43 @@ class CreateSbgDistinctProductsBatchCommand extends Command
         ],
     ];
 
+    private const BATCH_UNMATCHED_RESEARCHED_20261013_BX = [
+        'УТ-00001154' => [
+            'template_slug' => 'taim-slang-gazovyi-rezinovyi-12-10-m-stucer-gaika',
+            'allow_unmatched' => true,
+            'category_slug' => 'gazovye-shlangi',
+            'fragments' => ['Шланг газовый', 'ШГ-Ш1/2-3,0-Г1/2'],
+            'brand' => [
+                'name' => 'ТАиМ',
+                'slug' => 'taim',
+                'country' => 'Беларусь',
+            ],
+            'name' => 'ТАиМ Шланг газовый резиновый 1/2″, 3,0 м, штуцер–гайка',
+            'retail' => 23.00,
+            'images' => [
+                'img/products/taim/taim-gas-hose-rubber-12-3000-fm-1.jpg',
+            ],
+            'source_url' => 'https://minskgas.by/product/shlang-gazovyj-rezinovyj-1-2-dlina-30m-shtuczer-gajka/',
+            'short' => 'Резиновый газовый шланг ТАиМ длиной 3,0 м с соединением штуцер–гайка 1/2″ для подключения бытовых газовых приборов.',
+            'content' => '<p><strong>ТАиМ ШГ, 3,0 м</strong> — гибкий шланг из армированной резины для присоединения бытовых газовых приборов к газопроводу или газовому баллону. На концах установлены штуцер с наружной резьбой G1/2″ и накидная гайка с внутренней резьбой G1/2″.</p><p>Шланг рассчитан на метан и сжиженный пропан-бутан при давлении до 0,05 МПа и рабочей температуре от −20 до +70 °C. Монтаж и проверку герметичности должен выполнять квалифицированный специалист в соответствии с требованиями к газовому оборудованию.</p>',
+            'specs' => [
+                ['key' => 'Тип', 'value' => 'Газовый шланг'],
+                ['key' => 'Модель', 'value' => 'ШГ-Ш1/2-3,0-Г1/2'],
+                ['key' => 'Материал', 'value' => 'Армированная резина'],
+                ['key' => 'Внутренний диаметр', 'value' => '9 мм'],
+                ['key' => 'Размер присоединения', 'value' => 'G1/2″ НР × G1/2″ ВР'],
+                ['key' => 'Тип соединения', 'value' => 'Штуцер–гайка'],
+                ['key' => 'Длина', 'value' => '3000 мм'],
+                ['key' => 'Максимальное давление', 'value' => '0,05 МПа'],
+                ['key' => 'Рабочая температура', 'value' => 'от −20 до +70 °C'],
+                ['key' => 'Рабочая среда', 'value' => 'Метан, пропан-бутан'],
+                ['key' => 'Комплектация', 'value' => 'Шланг, паспорт, уплотнительная прокладка'],
+                ['key' => 'Страна производства', 'value' => 'Беларусь'],
+                ['key' => 'Бренд', 'value' => 'ТАиМ'],
+            ],
+        ],
+    ];
+
     public function handle(
         IntegrationProductCreator $creator,
         IntegrationProductMatchDecision $matchDecision,
@@ -2421,6 +2458,7 @@ class CreateSbgDistinctProductsBatchCommand extends Command
             'unmatched-researched-20261013-bu' => self::BATCH_UNMATCHED_RESEARCHED_20261013_BU,
             'unmatched-researched-20261013-bv' => self::BATCH_UNMATCHED_RESEARCHED_20261013_BV,
             'unmatched-researched-20261013-bw' => self::BATCH_UNMATCHED_RESEARCHED_20261013_BW,
+            'unmatched-researched-20261013-bx' => self::BATCH_UNMATCHED_RESEARCHED_20261013_BX,
             default => null,
         };
 
