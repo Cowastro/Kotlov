@@ -2,13 +2,14 @@
 
 namespace App\Services\CrmMail;
 
+use App\Models\CommercialDocument;
 use App\Models\CrmMailbox;
 use App\Models\CrmMailMessage;
 use App\Models\CrmMailThread;
 use App\Models\User;
-use Illuminate\Support\Str;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use RuntimeException;
 use Symfony\Component\Mailer\Mailer;
 use Symfony\Component\Mailer\Transport\Smtp\EsmtpTransport;
@@ -76,6 +77,10 @@ class CrmMailSender
                 'handled_at' => now(),
             ])->save();
 
+            CommercialDocument::query()
+                ->where('crm_mail_thread_id', $thread->id)
+                ->update(['status' => 'sent', 'sent_at' => now()]);
+
             return $draft->fresh();
         });
     }
@@ -87,8 +92,7 @@ class CrmMailSender
         array $cc = [],
         array $attachments = [],
         array $attachmentNames = [],
-    ): CrmMailMessage
-    {
+    ): CrmMailMessage {
         $mailbox = $thread->mailbox;
 
         if (! $mailbox || ! $mailbox->is_enabled) {
@@ -221,13 +225,14 @@ class CrmMailSender
             'managerName' => $user->name,
             'managerJobTitle' => $user->job_title,
             'managerPhone' => $user->phone,
-            'company' => config('legal.seller'),
+            'company' => config('legal.commercial_documents'),
         ])->render();
     }
 
     public function brandedText(string $body, User $user): string
     {
-        $phones = implode(', ', config('legal.seller.phones', []));
+        $company = config('legal.commercial_documents', []);
+        $phones = implode(', ', $company['phones'] ?? []);
 
         $managerDetails = array_filter([
             $user->job_title,
@@ -239,7 +244,7 @@ class CrmMailSender
             .($managerDetails ? implode("\n", $managerDetails)."\n" : '')
             .'Команда KOTLOV.BY'."\n"
             .'Общие телефоны: '.$phones."\n"
-            .config('legal.seller.email', 'info@kotlov.by').' · https://kotlov.by';
+            .($company['email'] ?? 'info@kotlov.by').' · https://kotlov.by';
     }
 
     private function mailer(CrmMailbox $mailbox): Mailer

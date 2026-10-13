@@ -10,6 +10,7 @@ use App\Http\Controllers\CartController;
 use App\Http\Controllers\CatalogController;
 use App\Http\Controllers\CatalogIndexController;
 use App\Http\Controllers\CheckoutController;
+use App\Http\Controllers\CommercialDocumentPdfController;
 use App\Http\Controllers\CompareController;
 use App\Http\Controllers\ContactRequestController;
 use App\Http\Controllers\FireplaceInstallationController;
@@ -51,6 +52,10 @@ Route::match(['get', 'post'], '/1c/exchange/{source}', OneCExchangeController::c
     ->where('source', '[a-z0-9][a-z0-9_-]{1,99}')
     ->withoutMiddleware([PreventRequestForgery::class, ValidateCsrfToken::class])
     ->name('onec.exchange.source');
+
+Route::get('/admin/commercial-documents/{commercialDocument}/pdf', CommercialDocumentPdfController::class)
+    ->middleware('auth')
+    ->name('admin.commercial-documents.pdf');
 
 Route::get('/robots.txt', function (Request $request) {
     if ($request->getHost() === 'admin.'.config('app.base_domain', 'kotlov.by')) {

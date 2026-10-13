@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Products\Tables;
 
+use App\Filament\Resources\CommercialDocuments\CommercialDocumentResource;
 use App\Filament\Resources\Products\ProductResource;
 use App\Jobs\RunProductCatalogAiReview;
 use App\Jobs\RunProductSourceEnrichment;
@@ -431,6 +432,16 @@ class ProductsTable
                 ]),
             ])
             ->toolbarActions([
+                BulkAction::make('create_commercial_document')
+                    ->label('Создать КП / счёт')
+                    ->icon('heroicon-o-document-currency-dollar')
+                    ->color('primary')
+                    ->action(function (Collection $records) {
+                        session()->put('commercial_document_product_ids', $records->modelKeys());
+
+                        return redirect(CommercialDocumentResource::getUrl('create'));
+                    })
+                    ->deselectRecordsAfterCompletion(),
                 BulkActionGroup::make([
                     BulkAction::make('activate')
                         ->label('Активировать')

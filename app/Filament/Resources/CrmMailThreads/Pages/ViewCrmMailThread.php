@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\CrmMailThreads\Pages;
 
+use App\Filament\Resources\CommercialDocuments\CommercialDocumentResource;
 use App\Filament\Resources\CrmCounterparties\CrmCounterpartyResource;
 use App\Filament\Resources\CrmMailThreads\CrmMailThreadResource;
 use App\Filament\Resources\Suppliers\SupplierResource;
@@ -104,6 +105,24 @@ class ViewCrmMailThread extends ViewRecord
                     } catch (Throwable $exception) {
                         Notification::make()->danger()->title('Письмо не отправлено')->body($exception->getMessage())->send();
                     }
+                }),
+            Action::make('create_quote')
+                ->label('Создать КП')
+                ->icon('heroicon-o-document-currency-dollar')
+                ->color('success')
+                ->visible(fn (): bool => $this->record->status !== 'draft')
+                ->action(function () {
+                    session()->put('commercial_document_prefill', [
+                        'type' => 'quote',
+                        'client_name' => $this->record->participant_name,
+                        'client_company' => $this->record->counterparty?->legal_name ?: $this->record->counterparty?->name,
+                        'client_email' => $this->record->participant_email,
+                        'client_phone' => $this->record->counterparty?->phones_list,
+                        'client_unp' => $this->record->counterparty?->unp,
+                        'client_address' => $this->record->counterparty?->legal_address,
+                    ]);
+
+                    return redirect(CommercialDocumentResource::getUrl('create'));
                 }),
             Action::make('edit_draft')
                 ->label('Редактировать')

@@ -8,6 +8,7 @@ use App\Models\BlogCategory;
 use App\Models\BlogPost;
 use App\Models\Brand;
 use App\Models\Category;
+use App\Models\CommercialDocument;
 use App\Models\ContactRequest;
 use App\Models\Coupon;
 use App\Models\CrmContact;
@@ -52,6 +53,7 @@ final class AdminRoleAccess
      * @var array<class-string<Model>, list<string>>
      */
     private const MANAGER_ABILITIES = [
+        CommercialDocument::class => ['viewAny', 'view', 'create', 'update'],
         Order::class => ['viewAny', 'view', 'update'],
         ContactRequest::class => ['viewAny', 'view', 'update'],
         CrmCounterparty::class => ['viewAny', 'view', 'create', 'update'],
@@ -76,6 +78,7 @@ final class AdminRoleAccess
         Category::class,
         ContactRequest::class,
         Coupon::class,
+        CommercialDocument::class,
         CrmCounterparty::class,
         CrmContact::class,
         CrmMailbox::class,
