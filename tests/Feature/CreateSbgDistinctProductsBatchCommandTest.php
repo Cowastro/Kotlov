@@ -2611,4 +2611,69 @@ class CreateSbgDistinctProductsBatchCommandTest extends TestCase
         $this->assertStringNotContainsString('rub', mb_strtolower($product->content));
         $this->assertSame('manual_created', $item->fresh()->match_method);
     }
+
+    public function test_it_creates_the_exact_electrolux_eft_rr_chassis_instead_of_linking_efa2(): void
+    {
+        $source = IntegrationSource::query()->create([
+            'code' => 'onec-sbg-electrolux-eft-rr',
+            'name' => '1С СанБизнесГруп',
+            'settings' => ['partner_name' => 'ООО «СанБизнесГруп»'],
+            'is_active' => true,
+            'update_stock' => true,
+        ]);
+        $category = Category::query()->firstOrCreate(['slug' => 'obogrevateli'], [
+            'name' => 'Обогреватели',
+            'parent_id' => 0,
+        ]);
+        $electrolux = Brand::query()->firstOrCreate(['slug' => 'electrolux'], ['name' => 'Electrolux']);
+        $wrongSupportCandidate = Product::query()->create([
+            'category_id' => $category->id,
+            'brand_id' => $electrolux->id,
+            'sku' => 'KOTLOV-000745',
+            'name' => 'Комплект опор Electrolux EFA2',
+            'slug' => 'electrolux-efa2-support-template',
+            'price' => 25,
+            'images' => ['product/0000/000745/electrolux-efa2.jpg'],
+        ]);
+        $item = IntegrationProduct::query()->create([
+            'integration_source_id' => $source->id,
+            'external_id' => 'electrolux-eft-rr-chassis',
+            'external_code' => 'УТ-00004685',
+            'external_sku' => null,
+            'name' => 'Комплект шасси EFT/RR для напольной установки конвектора Electrolux Rapid Transformer',
+            'price_byn' => null,
+            'stock_quantity' => 3,
+            'match_status' => 'ambiguous',
+            'candidates' => [['product_id' => $wrongSupportCandidate->id, 'score' => 0.7968]],
+        ]);
+
+        $this->artisan('integration:create-sbg-distinct-products', [
+            '--batch' => 'researched-priced-20261013-as',
+            '--code' => ['УТ-00004685'],
+            '--apply' => true,
+        ])->assertSuccessful();
+
+        $product = $item->fresh()->product;
+        $this->assertNotNull($product);
+        $this->assertNotSame($wrongSupportCandidate->id, $product->id);
+        $this->assertSame($category->id, $product->category_id);
+        $this->assertSame($electrolux->id, $product->brand_id);
+        $this->assertSame('Electrolux EFT/RR комплект шасси для конвектора Rapid Transformer', $product->name);
+        $this->assertSame('34.90', $product->price);
+        $this->assertSame('3', (string) $product->stock_qty);
+        $this->assertNull($item->fresh()->normalizedPriceByn());
+        $this->assertSame('EFT/RR', collect($product->specs)->firstWhere('key', 'Модель')['value']);
+        $this->assertSame('НС-1117334', collect($product->specs)->firstWhere('key', 'Код товара')['value']);
+        $this->assertSame('Rapid Transformer System', collect($product->specs)->firstWhere('key', 'Серия')['value']);
+        $this->assertSame('2 колесные опоры', collect($product->specs)->firstWhere('key', 'Комплект')['value']);
+        $this->assertSame(['img/products/electrolux/electrolux-eft-rr-chassis.jpg'], $product->images);
+        $this->assertFileExists(public_path('img/products/electrolux/electrolux-eft-rr-chassis.jpg'));
+        $this->assertStringContainsString('climat-profit.by', $product->content_source_url);
+        $this->assertStringNotContainsString('EFA2', $product->content);
+        $this->assertStringNotContainsString('кандидат', mb_strtolower($product->content));
+        $this->assertStringNotContainsString('розничная цена', mb_strtolower($product->content));
+        $this->assertStringNotContainsString('нбрб', mb_strtolower($product->content));
+        $this->assertStringNotContainsString('rub', mb_strtolower($product->content));
+        $this->assertSame('manual_created', $item->fresh()->match_method);
+    }
 }

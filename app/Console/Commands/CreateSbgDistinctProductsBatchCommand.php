@@ -1381,6 +1381,38 @@ class CreateSbgDistinctProductsBatchCommand extends Command
         ],
     ];
 
+    private const BATCH_RESEARCHED_PRICED_20261013_AS = [
+        'УТ-00004685' => [
+            'template' => 'KOTLOV-000745',
+            'category_slug' => 'obogrevateli',
+            'fragments' => ['Комплект', 'шасси', 'EFT/RR', 'Electrolux', 'Rapid', 'Transformer'],
+            'brand' => [
+                'name' => 'Electrolux',
+                'slug' => 'electrolux',
+            ],
+            'name' => 'Electrolux EFT/RR комплект шасси для конвектора Rapid Transformer',
+            'retail' => 34.90,
+            'images' => ['img/products/electrolux/electrolux-eft-rr-chassis.jpg'],
+            'source_url' => 'https://climat-profit.by/komplekt-shassi-eft-rr-dlya-electrolux-rapid-transformer/',
+            'short' => 'Комплект колесных опор Electrolux EFT/RR для напольной установки конвекторов Rapid Transformer System.',
+            'content' => '<p><strong>Electrolux EFT/RR</strong> — комплект колесных опор для напольной установки электрического конвектора. Шасси позволяет легко перемещать прибор между помещениями.</p><p>Модель EFT/RR рассчитана на совместную установку с конвекторами Electrolux Rapid Transformer System. В комплект входят две белые опоры с колёсами.</p>',
+            'specs' => [
+                ['key' => 'Тип', 'value' => 'Комплект колесных опор'],
+                ['key' => 'Модель', 'value' => 'EFT/RR'],
+                ['key' => 'Код товара', 'value' => 'НС-1117334'],
+                ['key' => 'Серия', 'value' => 'Rapid Transformer System'],
+                ['key' => 'Назначение', 'value' => 'Напольная установка и перемещение конвектора'],
+                ['key' => 'Совместимость', 'value' => 'Конвекторы Electrolux Rapid Transformer System'],
+                ['key' => 'Комплект', 'value' => '2 колесные опоры'],
+                ['key' => 'Материал', 'value' => 'Пластик'],
+                ['key' => 'Цвет', 'value' => 'Белый'],
+                ['key' => 'Габариты', 'value' => '226 × 70 × 40 мм'],
+                ['key' => 'Масса нетто', 'value' => '0,26 кг'],
+                ['key' => 'Масса брутто', 'value' => '0,32 кг'],
+            ],
+        ],
+    ];
+
     public function handle(IntegrationProductCreator $creator): int
     {
         $rows = match ($this->option('batch')) {
@@ -1428,6 +1460,7 @@ class CreateSbgDistinctProductsBatchCommand extends Command
             'researched-priced-20261013-ap' => self::BATCH_RESEARCHED_PRICED_20261013_AP,
             'researched-priced-20261013-aq' => self::BATCH_RESEARCHED_PRICED_20261013_AQ,
             'researched-priced-20261013-ar' => self::BATCH_RESEARCHED_PRICED_20261013_AR,
+            'researched-priced-20261013-as' => self::BATCH_RESEARCHED_PRICED_20261013_AS,
             default => null,
         };
 
