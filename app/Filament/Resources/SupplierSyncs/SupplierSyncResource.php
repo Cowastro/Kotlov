@@ -2,24 +2,19 @@
 
 namespace App\Filament\Resources\SupplierSyncs;
 
-use App\Filament\Resources\SupplierSyncs\Pages\CreateSupplierSync;
-use App\Filament\Resources\SupplierSyncs\Pages\EditSupplierSync;
 use App\Filament\Resources\SupplierSyncs\Pages\ListSupplierSyncs;
 use App\Models\SupplierSync;
 use BackedEnum;
-use Filament\Actions\Action;
-use Filament\Actions\EditAction;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
-use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
-use Illuminate\Support\Str;
+use Illuminate\Database\Eloquent\Model;
 
 class SupplierSyncResource extends Resource
 {
@@ -30,6 +25,7 @@ class SupplierSyncResource extends Resource
     protected static ?string $pluralModelLabel = 'Обновление товаров';
     protected static ?string $recordTitleAttribute = 'title';
     protected static ?int $navigationSort = 4;
+    protected static bool $shouldRegisterNavigation = false;
 
     public static function getNavigationGroup(): ?string
     {
@@ -136,13 +132,13 @@ class SupplierSyncResource extends Resource
                     ->limit(32),
 
                 TextColumn::make('last_run_at')
-                    ->label('Последний запуск')
-                    ->dateTime('d.m.Y H:i')
+                    ->label('Последний ручной запуск')
+                    ->dateTime('d.m.Y H:i', 'Europe/Minsk')
                     ->placeholder('—')
                     ->sortable(),
 
                 TextColumn::make('last_status')
-                    ->label('Статус')
+                    ->label('Ручной статус')
                     ->badge()
                     ->formatStateUsing(fn (?string $state) => match ($state) {
                         'updated' => 'обновлено',
@@ -162,62 +158,28 @@ class SupplierSyncResource extends Resource
                     ->boolean()
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
-            ->defaultSort('title')
-            ->recordActions([
-                Action::make('dry_run')
-                    ->label('Пробный запуск')
-                    ->icon('heroicon-o-eye')
-                    ->color('gray')
-                    ->action(fn (SupplierSync $record) => self::runSync($record, 'dry_run')),
-
-                Action::make('update')
-                    ->label('Полное обновление')
-                    ->icon('heroicon-o-arrow-path')
-                    ->color('warning')
-                    ->requiresConfirmation()
-                    ->action(fn (SupplierSync $record) => self::runSync($record, 'update')),
-
-                Action::make('source')
-                    ->label('Открыть источник')
-                    ->icon('heroicon-o-arrow-top-right-on-square')
-                    ->url(fn (SupplierSync $record) => $record->source_url)
-                    ->openUrlInNewTab()
-                    ->visible(fn (SupplierSync $record) => filled($record->source_url)),
-
-                Action::make('log')
-                    ->label('Посмотреть лог')
-                    ->icon('heroicon-o-document-text')
-                    ->modalHeading(fn (SupplierSync $record) => 'Лог: ' . $record->title)
-                    ->modalSubmitAction(false)
-                    ->modalCancelActionLabel('Закрыть')
-                    ->modalContent(fn (SupplierSync $record) => view('filament.resources.supplier-syncs.log', [
-                        'log' => $record->logContents(),
-                    ])),
-
-                EditAction::make()
-                    ->label('Настройки'),
-            ]);
+            ->defaultSort('title');
     }
 
     public static function getPages(): array
     {
         return [
             'index' => ListSupplierSyncs::route('/'),
-            'create' => CreateSupplierSync::route('/create'),
-            'edit' => EditSupplierSync::route('/{record}/edit'),
         ];
     }
 
-    private static function runSync(SupplierSync $record, string $mode): void
+    public static function canCreate(): bool
     {
-        $result = $record->runSync($mode);
+        return false;
+    }
 
-        $notification = Notification::make()
-            ->title($result['exit_code'] === 0 ? 'Команда завершена' : 'Команда завершилась с ошибками')
-            ->body(Str::limit($result['output'] ?: 'Вывод команды пуст.', 900))
-            ->persistent();
+    public static function canEdit(Model $record): bool
+    {
+        return false;
+    }
 
-        $result['exit_code'] === 0 ? $notification->success() : $notification->danger();
-        $notification->send();
+    public static function canDelete(Model $record): bool
+    {
+        return false;
     }
 }
