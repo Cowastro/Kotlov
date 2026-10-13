@@ -107,6 +107,24 @@ class OrderInfolist
                                 : ($record->assigned_to ?? null)),
                     ]),
 
+                Section::make('Что делать дальше')
+                    ->icon('heroicon-o-forward')
+                    ->columnSpanFull()
+                    ->compact()
+                    ->columns(3)
+                    ->schema([
+                        TextEntry::make('workflow_stage')
+                            ->label('Текущий этап')
+                            ->badge()
+                            ->getStateUsing(fn (Order $record): string => $record->status_label),
+                        TextEntry::make('workflow_destination')
+                            ->label('Куда передать')
+                            ->getStateUsing(fn (Order $record): string => $record->workflowDestination()),
+                        TextEntry::make('workflow_next_step')
+                            ->label('Следующее действие')
+                            ->getStateUsing(fn (Order $record): string => $record->workflowNextStep()),
+                    ]),
+
                 Section::make('Обмен с 1С')
                     ->icon('heroicon-o-arrow-path-rounded-square')
                     ->columnSpanFull()

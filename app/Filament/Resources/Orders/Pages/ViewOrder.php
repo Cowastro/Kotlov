@@ -58,16 +58,56 @@ class ViewOrder extends ViewRecord
     protected function getHeaderActions(): array
     {
         return [
+            Action::make('acceptOrder')
+                ->label('Принять заказ')
+                ->icon('heroicon-o-hand-raised')
+                ->color('success')
+                ->visible(fn (): bool => $this->record->status === 'new')
+                ->requiresConfirmation()
+                ->modalHeading('Принять заказ в работу?')
+                ->modalDescription('Вы станете ответственным менеджером. Действие сохранится в истории статусов.')
+                ->action(fn () => $this->transitionOrder('confirmed', 'Заказ принят в работу.')),
+            Action::make('startProcessing')
+                ->label('Передать в обработку')
+                ->icon('heroicon-o-arrow-path')
+                ->color('primary')
+                ->visible(fn (): bool => $this->record->status === 'confirmed')
+                ->disabled(fn (): bool => $this->record->items->contains(fn (OrderItem $item): bool => blank($item->fulfillment_confirmed_at)))
+                ->tooltip(fn (): ?string => $this->record->items->contains(fn (OrderItem $item): bool => blank($item->fulfillment_confirmed_at))
+                    ? 'Сначала подтвердите исполнение всех позиций.'
+                    : null)
+                ->action(fn () => $this->transitionOrder('processing', 'Заказ передан в обработку.')),
+            Action::make('markShipped')
+                ->label('Передать в доставку')
+                ->icon('heroicon-o-truck')
+                ->color('primary')
+                ->visible(fn (): bool => $this->record->status === 'processing')
+                ->requiresConfirmation()
+                ->action(fn () => $this->transitionOrder('shipped', 'Заказ передан в доставку.')),
+            Action::make('markDelivered')
+                ->label('Отметить доставленным')
+                ->icon('heroicon-o-check-circle')
+                ->color('success')
+                ->visible(fn (): bool => $this->record->status === 'shipped')
+                ->requiresConfirmation()
+                ->action(fn () => $this->transitionOrder('delivered', 'Клиент получил заказ.')),
             Action::make('confirmFulfillment')
                 ->label('Подтвердить исполнение')
                 ->icon('heroicon-o-check-badge')
                 ->color('warning')
+                ->disabled(fn (): bool => $this->record->items->isNotEmpty()
+                    && $this->record->items->every(fn (OrderItem $item): bool => filled($item->fulfillment_confirmed_at)))
+                ->tooltip(fn (): ?string => $this->record->items->isNotEmpty()
+                    && $this->record->items->every(fn (OrderItem $item): bool => filled($item->fulfillment_confirmed_at))
+                        ? 'Исполнение всех позиций уже подтверждено.'
+                        : null)
                 ->modalHeading('Подтверждение исполнителя позиции')
                 ->modalDescription('Рекомендация системы останется в снимке заказа. Здесь фиксируется решение менеджера и его история.')
                 ->schema([
                     Select::make('order_item_id')
                         ->label('Позиция заказа')
                         ->options(fn (): array => $this->record->items
+                            ->filter(fn (OrderItem $item): bool => blank($item->fulfillment_confirmed_at))
                             ->mapWithKeys(fn (OrderItem $item): array => [
                                 $item->id => $item->product_name.' · '.($item->product_sku ?: 'без артикула'),
                             ])->all())
@@ -111,7 +151,11 @@ class ViewOrder extends ViewRecord
                         filled($data['purchase_price'] ?? null) ? (float) $data['purchase_price'] : null,
                     );
 
-                    $this->record->refresh();
+                    if ($this->record->status === 'new') {
+                        $this->record->transitionTo('confirmed', 'Заказ принят автоматически при подтверждении исполнения.', $this->managerAttributes());
+                    }
+
+                    $this->reloadRecord();
 
                     Notification::make()
                         ->success()
@@ -249,5 +293,39 @@ class ViewOrder extends ViewRecord
                 }),
             EditAction::make(),
         ];
+    }
+
+    private function transitionOrder(string $status, string $comment): void
+    {
+        $this->record->transitionTo($status, $comment, $this->managerAttributes());
+        $this->reloadRecord();
+
+        Notification::make()
+            ->success()
+            ->title('Статус: '.(Order::STATUSES[$status] ?? $status))
+            ->body($this->record->workflowNextStep())
+            ->send();
+    }
+
+    /** @return array<string, mixed> */
+    private function managerAttributes(): array
+    {
+        $user = auth()->user();
+
+        return [
+            'manager_id' => $this->record->manager_id ?: $user?->id,
+            'assigned_to' => $this->record->assigned_to ?: '@'.($user?->telegram_username ?: $user?->name),
+        ];
+    }
+
+    private function reloadRecord(): void
+    {
+        $this->record->refresh()->load([
+            'items.fulfillmentConfirmedBy',
+            'items.fulfillmentSupplier',
+            'statusHistory.user',
+            'manager',
+            'supplierOrderRequests.items',
+        ]);
     }
 }

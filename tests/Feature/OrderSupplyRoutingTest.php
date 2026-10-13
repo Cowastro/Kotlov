@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Filament\Resources\Orders\OrderResource;
+use App\Filament\Resources\Orders\Pages\ViewOrder;
 use App\Filament\Resources\Products\ProductResource;
 use App\Models\Category;
 use App\Models\CrmContactPoint;
@@ -20,6 +21,7 @@ use App\Services\Orders\OrderItemSupplyContextResolver;
 use App\Services\Orders\SupplierOrderRequestBuilder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Validation\ValidationException;
+use Livewire\Livewire;
 use Tests\TestCase;
 
 class OrderSupplyRoutingTest extends TestCase
@@ -280,6 +282,41 @@ class OrderSupplyRoutingTest extends TestCase
             ->assertSeeText('Передать поставщику напрямую')
             ->assertSeeText('История решений по исполнению')
             ->assertSeeText('Поставщик доставляет клиенту напрямую.');
+    }
+
+    public function test_first_fulfillment_confirmation_accepts_order_assigns_manager_and_disables_repeat(): void
+    {
+        $fixture = $this->fixture();
+        $manager = User::factory()->create([
+            'name' => 'Наталья',
+            'role' => 'admin',
+            'is_active' => true,
+        ]);
+        $supplier = Supplier::query()->where('code', 'sanbusinessgroup')->firstOrFail();
+
+        Livewire::actingAs($manager)
+            ->test(ViewOrder::class, ['record' => $fixture['order']->id])
+            ->assertActionEnabled('confirmFulfillment')
+            ->callAction('confirmFulfillment', [
+                'order_item_id' => $fixture['item']->id,
+                'fulfillment_route' => 'supplier_purchase',
+                'supplier_id' => $supplier->id,
+                'purchase_price' => 96,
+            ])
+            ->assertHasNoActionErrors()
+            ->assertActionDisabled('confirmFulfillment');
+
+        $order = $fixture['order']->fresh();
+        $this->assertSame('confirmed', $order->status);
+        $this->assertSame($manager->id, $order->manager_id);
+        $this->assertSame('Принят', $order->status_label);
+        $this->assertSame('В обработку / закупку', $order->workflowDestination());
+        $this->assertDatabaseHas('order_status_history', [
+            'order_id' => $order->id,
+            'user_id' => $manager->id,
+            'status_from' => 'new',
+            'status_to' => 'confirmed',
+        ]);
     }
 
     public function test_supplier_is_required_for_external_fulfillment_routes(): void

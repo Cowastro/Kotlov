@@ -75,7 +75,7 @@ class Order extends Model
     // Статусы для отображения
     public const STATUSES = [
         'new' => 'Новый',
-        'confirmed' => 'Подтверждён',
+        'confirmed' => 'Принят',
         'processing' => 'В обработке',
         'shipped' => 'Отправлен',
         'delivered' => 'Доставлен',
@@ -146,6 +146,32 @@ class Order extends Model
         } finally {
             $this->pendingStatusHistoryComment = null;
         }
+    }
+
+    public function workflowNextStep(): string
+    {
+        return match ($this->status) {
+            'new' => 'Принять заказ в работу и связаться с клиентом.',
+            'confirmed' => 'Подтвердить исполнение всех позиций и перевести заказ в обработку.',
+            'processing' => 'Закупить или собрать товар, затем передать в доставку.',
+            'shipped' => 'Контролировать доставку и отметить получение клиентом.',
+            'delivered' => 'Заказ выполнен. Проверить оплату и взаиморасчёты.',
+            'cancelled' => 'Заказ закрыт. Дальнейшая передача не требуется.',
+            default => 'Уточнить текущее состояние заказа.',
+        };
+    }
+
+    public function workflowDestination(): string
+    {
+        return match ($this->status) {
+            'new' => 'Ответственному менеджеру',
+            'confirmed' => 'В обработку / закупку',
+            'processing' => 'В доставку',
+            'shipped' => 'На контроль получения',
+            'delivered' => 'На финансовое закрытие',
+            'cancelled' => 'В архив',
+            default => 'Требует разбора',
+        };
     }
 
     public function markIrrelevant(string $reason): bool

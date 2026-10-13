@@ -507,29 +507,29 @@ class OrdersTable
                 ViewAction::make(),
                 ActionGroup::make([
                     Action::make('confirmed')
-                        ->label('Подтвердить')
+                        ->label('Принять заказ')
                         ->icon('heroicon-o-check')
                         ->color('warning')
                         ->visible(fn ($record) => $record->status === 'new')
-                        ->action(fn ($record) => $record->update(['status' => 'confirmed'])),
+                        ->action(fn (Order $record) => $record->transitionTo('confirmed', 'Заказ принят в работу.')),
                     Action::make('processing')
                         ->label('В обработке')
                         ->icon('heroicon-o-arrow-path')
                         ->color('primary')
-                        ->visible(fn ($record) => in_array($record->status, ['new', 'confirmed']))
-                        ->action(fn ($record) => $record->update(['status' => 'processing'])),
+                        ->visible(fn ($record) => $record->status === 'confirmed')
+                        ->action(fn (Order $record) => $record->transitionTo('processing', 'Заказ передан в обработку.')),
                     Action::make('shipped')
                         ->label('Отправлен')
                         ->icon('heroicon-o-truck')
                         ->color('primary')
-                        ->visible(fn ($record) => in_array($record->status, ['new', 'confirmed', 'processing']))
-                        ->action(fn ($record) => $record->update(['status' => 'shipped'])),
+                        ->visible(fn ($record) => $record->status === 'processing')
+                        ->action(fn (Order $record) => $record->transitionTo('shipped', 'Заказ передан в доставку.')),
                     Action::make('delivered')
                         ->label('Доставлен')
                         ->icon('heroicon-o-check-circle')
                         ->color('success')
-                        ->visible(fn ($record) => in_array($record->status, ['new', 'confirmed', 'processing', 'shipped']))
-                        ->action(fn ($record) => $record->update(['status' => 'delivered'])),
+                        ->visible(fn ($record) => $record->status === 'shipped')
+                        ->action(fn (Order $record) => $record->transitionTo('delivered', 'Клиент получил заказ.')),
                     Action::make('markIrrelevant')
                         ->label('Неактуальна')
                         ->icon('heroicon-o-archive-box')
