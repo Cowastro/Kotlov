@@ -1684,4 +1684,72 @@ class CreateSbgDistinctProductsBatchCommandTest extends TestCase
         $this->assertStringNotContainsString('rub', mb_strtolower($product->content));
         $this->assertSame('manual_created', $item->fresh()->match_method);
     }
+
+    public function test_it_creates_the_oxi_lower_grate_with_a_clean_local_image_instead_of_linking_the_legend_grate(): void
+    {
+        $source = IntegrationSource::query()->create([
+            'code' => 'onec-sbg-oxi-lower-grate',
+            'name' => '1С СанБизнесГруп',
+            'settings' => ['partner_name' => 'ООО «СанБизнесГруп»'],
+            'is_active' => true,
+            'update_stock' => true,
+        ]);
+        $category = Category::query()->firstOrCreate(['slug' => 'pelletnye-gorelki'], [
+            'name' => 'Пеллетные горелки',
+            'parent_id' => 0,
+        ]);
+        $legend = Brand::query()->create(['name' => 'Legend', 'slug' => 'legend-lower-grate-test']);
+        $oxi = Brand::query()->firstOrCreate(['slug' => 'oxi'], ['name' => 'OXI']);
+        $wrongGrateCandidate = Product::query()->create([
+            'category_id' => $category->id,
+            'brand_id' => $legend->id,
+            'sku' => 'KOTLOV-004507',
+            'name' => 'Колосник легенда 16 (280*115)',
+            'slug' => 'legend-16-grate-template-for-oxi-lower-grate',
+            'price' => 35,
+            'images' => ['https://pechki66.ru/watermarked-grate.jpg'],
+        ]);
+        $item = IntegrationProduct::query()->create([
+            'integration_source_id' => $source->id,
+            'external_id' => 'oxi-lower-grate-75-1000',
+            'external_code' => 'УТ-00006723',
+            'external_sku' => null,
+            'name' => 'Колосник нижний 75/1000',
+            'price_byn' => null,
+            'stock_quantity' => 6,
+            'match_status' => 'ambiguous',
+            'candidates' => [['product_id' => $wrongGrateCandidate->id, 'score' => 0.6835]],
+        ]);
+
+        $this->artisan('integration:create-sbg-distinct-products', [
+            '--batch' => 'researched-priced-20261013-ae',
+            '--code' => ['УТ-00006723'],
+            '--apply' => true,
+        ])->assertSuccessful();
+
+        $product = $item->fresh()->product;
+        $this->assertNotNull($product);
+        $this->assertNotSame($wrongGrateCandidate->id, $product->id);
+        $this->assertSame($category->id, $product->category_id);
+        $this->assertSame($oxi->id, $product->brand_id);
+        $this->assertSame('OXI Колосник нижнего ряда для пеллетной горелки Ceramik+ 75–1000 кВт', $product->name);
+        $this->assertSame('119.00', $product->price);
+        $this->assertSame('6', (string) $product->stock_qty);
+        $this->assertNull($item->fresh()->normalizedPriceByn());
+        $this->assertSame('AISI 310S', collect($product->specs)->firstWhere('key', 'Марка стали')['value']);
+        $this->assertSame('6 мм', collect($product->specs)->firstWhere('key', 'Толщина')['value']);
+        $this->assertSame('03040060', collect($product->specs)->firstWhere('key', 'Артикул производителя')['value']);
+        $this->assertSame(['img/products/oxi/oxi-ceramik-plus-lower-grate-75-1000.jpg'], $product->images);
+        $this->assertFalse(str_contains(implode(' ', $product->images), 'pechki66.ru'));
+        $this->assertFalse(str_contains(implode(' ', $product->images), 'prom.ua'));
+        $this->assertFalse(str_contains(implode(' ', $product->images), 'bigl.ua'));
+        $this->assertStringContainsString('bigl.ua', $product->content_source_url);
+        $this->assertStringContainsString('снятой с производства в 2020 году', mb_strtolower($product->content));
+        $this->assertStringNotContainsString('кандидат', mb_strtolower($product->content));
+        $this->assertStringNotContainsString('розничная цена', mb_strtolower($product->content));
+        $this->assertStringNotContainsString('нбрб', mb_strtolower($product->content));
+        $this->assertStringNotContainsString('uah', mb_strtolower($product->content));
+        $this->assertStringNotContainsString('rub', mb_strtolower($product->content));
+        $this->assertSame('manual_created', $item->fresh()->match_method);
+    }
 }

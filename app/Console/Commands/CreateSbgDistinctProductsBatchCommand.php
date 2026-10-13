@@ -894,6 +894,39 @@ class CreateSbgDistinctProductsBatchCommand extends Command
         ],
     ];
 
+    private const BATCH_RESEARCHED_PRICED_20261013_AE = [
+        'УТ-00006723' => [
+            'template' => 'KOTLOV-004507',
+            'category_slug' => 'pelletnye-gorelki',
+            'fragments' => ['Колосник нижний', '75/1000'],
+            'brand' => [
+                'name' => 'OXI',
+                'slug' => 'oxi',
+                'country' => 'Украина',
+                'content' => '<p><strong>OXI</strong> — украинский производитель пеллетных горелок и запасных частей для них.</p>',
+            ],
+            'name' => 'OXI Колосник нижнего ряда для пеллетной горелки Ceramik+ 75–1000 кВт',
+            'retail' => 119.00,
+            'images' => ['img/products/oxi/oxi-ceramik-plus-lower-grate-75-1000.jpg'],
+            'source_url' => 'https://bigl.ua/p1861056813-kolosnik-nizhnego-ryada',
+            'short' => 'Нижний колосник OXI для пеллетных горелок Ceramik+ мощностью 75–1000 кВт. Нержавеющая сталь AISI 310S, толщина 6 мм.',
+            'content' => '<p><strong>OXI 03040060</strong> — нижний колосник для пеллетных горелок Ceramik+ мощностью от 75 до 1000 кВт.</p><p>Деталь изготовлена из жаростойкой нержавеющей стали AISI 310S толщиной 6 мм и рассчитана на рабочую температуру до 1100 °C. Предназначена для ремонта и обслуживания линейки Ceramik+ 75–1000 кВт, снятой с производства в 2020 году.</p>',
+            'specs' => [
+                ['key' => 'Тип', 'value' => 'Колосник нижнего ряда'],
+                ['key' => 'Назначение', 'value' => 'Для пеллетной горелки'],
+                ['key' => 'Бренд', 'value' => 'OXI'],
+                ['key' => 'Серия', 'value' => 'Ceramik+'],
+                ['key' => 'Мощность горелки', 'value' => '75–1000 кВт'],
+                ['key' => 'Материал', 'value' => 'Нержавеющая сталь'],
+                ['key' => 'Марка стали', 'value' => 'AISI 310S'],
+                ['key' => 'Толщина', 'value' => '6 мм'],
+                ['key' => 'Рабочая температура', 'value' => 'до 1100 °C'],
+                ['key' => 'Артикул производителя', 'value' => '03040060'],
+                ['key' => 'Страна производства', 'value' => 'Украина'],
+            ],
+        ],
+    ];
+
     public function handle(IntegrationProductCreator $creator): int
     {
         $rows = match ($this->option('batch')) {
@@ -927,6 +960,7 @@ class CreateSbgDistinctProductsBatchCommand extends Command
             'researched-priced-20261013-ab' => self::BATCH_RESEARCHED_PRICED_20261013_AB,
             'researched-priced-20261013-ac' => self::BATCH_RESEARCHED_PRICED_20261013_AC,
             'researched-priced-20261013-ad' => self::BATCH_RESEARCHED_PRICED_20261013_AD,
+            'researched-priced-20261013-ae' => self::BATCH_RESEARCHED_PRICED_20261013_AE,
             default => null,
         };
 
