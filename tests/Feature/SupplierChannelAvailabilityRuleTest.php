@@ -149,6 +149,39 @@ class SupplierChannelAvailabilityRuleTest extends TestCase
         $this->assertFalse($product->fresh()->canBePurchased());
     }
 
+    public function test_product_page_keeps_one_c_stock_valid_when_source_settings_use_defaults(): void
+    {
+        $product = $this->product('STOREFRONT-ONE-C', true);
+        $supplier = Supplier::query()->create([
+            'code' => 'storefront-one-c-supplier',
+            'name' => 'Поставщик витрины 1С',
+        ]);
+        $source = IntegrationSource::query()->create([
+            'supplier_id' => $supplier->id,
+            'code' => 'storefront-one-c-source',
+            'name' => '1С витрины',
+            'driver' => 'commerceml',
+            'is_active' => true,
+        ]);
+        $source->forceFill(['settings' => []])->saveQuietly();
+
+        IntegrationProduct::query()->create([
+            'integration_source_id' => $source->id,
+            'product_id' => $product->id,
+            'external_id' => 'storefront-one-c-item',
+            'name' => 'Позиция витрины 1С',
+            'stock_quantity' => 7,
+            'stock_confirmed_at' => now()->subMinutes(30),
+            'match_status' => 'matched',
+        ]);
+
+        $response = $this->get('/supplier-channel-rule-products/'.$product->slug);
+
+        $response->assertOk();
+        $response->assertSee('В наличии');
+        $response->assertDontSee('Уточняйте наличие');
+    }
+
     private function product(string $sku, bool $active): Product
     {
         $category = Category::query()->firstOrCreate(

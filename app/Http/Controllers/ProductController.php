@@ -37,12 +37,10 @@ class ProductController extends Controller
         $product = Product::where('slug', $productSlug)
             ->when(! $canPreviewInactive, fn ($query) => $query
                 ->where(fn ($q) => $q->where('is_active', true)->orWhere('is_archived', true)))
+            ->withSupplierChannels()
             ->with([
                 'category.parent',
                 'brand',
-                'supplierProducts:id,product_id,in_stock,stock_quantity,last_stock_synced_at,last_synced_at,updated_at',
-                'integrationProducts:id,product_id,integration_source_id,stock_quantity,match_status,stock_confirmed_at',
-                'integrationProducts.source:id,is_active,settings',
                 'reviews' => fn ($q) => $q->where('is_approved', true)->latest()->limit(10),
             ])
             ->firstOrFail();
