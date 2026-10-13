@@ -329,6 +329,37 @@ class ViewOrder extends ViewRecord
                         'Ручная фиксация: '.trim($data['comment']),
                     );
                 }),
+            Action::make('closeAsIrrelevant')
+                ->label('Отказ / неактуален')
+                ->icon('heroicon-o-no-symbol')
+                ->color('danger')
+                ->visible(fn (): bool => $this->record->canBeClosedAsIrrelevant())
+                ->modalHeading('Закрыть заказ без удаления?')
+                ->modalDescription('Заказ получит статус «Отменён» и попадёт в архив. Причина, автор и время сохранятся в истории.')
+                ->schema([
+                    Select::make('reason_type')
+                        ->label('Основание')
+                        ->options(Order::CLOSURE_REASONS)
+                        ->native(false)
+                        ->required(),
+                    Textarea::make('reason')
+                        ->label('Конкретная причина')
+                        ->placeholder('Например: клиент купил товар в другом месте.')
+                        ->rows(3)
+                        ->minLength(3)
+                        ->maxLength(1000)
+                        ->required(),
+                ])
+                ->modalSubmitActionLabel('Закрыть заказ')
+                ->action(function (array $data): void {
+                    $this->record->markIrrelevant($data['reason'], $data['reason_type']);
+                    $this->reloadRecord();
+
+                    Notification::make()
+                        ->success()
+                        ->title('Заказ закрыт и перемещён в архив')
+                        ->send();
+                }),
             EditAction::make(),
         ];
     }

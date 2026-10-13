@@ -599,7 +599,9 @@ class OrdersTable
                         $skipped = 0;
 
                         $records->each(function (Order $record) use ($data, &$changed, &$skipped): void {
-                            if (! $record->markIrrelevant($data['reason'])) {
+                            // Массовая архивация нужна только для очистки новых заявок.
+                            // Подтверждённые заказы закрываются только штучно с отдельной причиной.
+                            if ($record->status !== 'new' || ! $record->markIrrelevant($data['reason'])) {
                                 $skipped++;
 
                                 return;

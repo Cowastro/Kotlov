@@ -92,6 +92,16 @@ class Order extends Model
         'cancelled' => 'Отменён',
     ];
 
+    /** Причины закрытия заказа без удаления истории. */
+    public const CLOSURE_REASONS = [
+        'customer_refusal' => 'Отказ клиента',
+        'irrelevant' => 'Заявка больше не актуальна',
+        'unreachable' => 'Не удалось связаться',
+        'duplicate' => 'Дубль заказа',
+        'test' => 'Тестовая заявка',
+        'other' => 'Другая причина',
+    ];
+
     public const PAYMENT_TYPES = [
         'cash' => 'Наличными',
         'card' => 'Банковской платежной карточкой',
@@ -222,13 +232,23 @@ class Order extends Model
         };
     }
 
-    public function markIrrelevant(string $reason): bool
+    public function canBeClosedAsIrrelevant(): bool
     {
-        if ($this->status !== 'new' || $this->payment_status === 'paid' || $this->archived_at !== null) {
+        return in_array($this->status, ['new', 'confirmed', 'processing'], true)
+            && $this->payment_status !== 'paid'
+            && $this->archived_at === null;
+    }
+
+    public function markIrrelevant(string $reason, ?string $reasonType = null): bool
+    {
+        if (! $this->canBeClosedAsIrrelevant()) {
             return false;
         }
 
         $reason = trim($reason);
+        if ($reasonType !== null) {
+            $reason = (self::CLOSURE_REASONS[$reasonType] ?? self::CLOSURE_REASONS['other']).': '.$reason;
+        }
         $timezone = config('app.display_timezone', 'Europe/Minsk');
         $note = '['.now()->timezone($timezone)->format('d.m.Y H:i').'] Неактуальная заявка: '.$reason;
         $adminComment = filled($this->admin_comment)
