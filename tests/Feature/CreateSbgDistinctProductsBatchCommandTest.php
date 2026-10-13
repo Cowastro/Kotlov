@@ -6573,4 +6573,103 @@ class CreateSbgDistinctProductsBatchCommandTest extends TestCase
         $this->assertSame($productCount + 1, Product::query()->count());
         $this->assertSame($product->id, $item->fresh()->product_id);
     }
+
+    public function test_it_creates_the_exact_unmatched_albertoni_chromed_copper_tube_400mm(): void
+    {
+        $source = IntegrationSource::query()->create([
+            'code' => 'onec-sbg-unmatched-albertoni-tube-400mm',
+            'name' => '1С СанБизнесГруп',
+            'settings' => ['partner_name' => 'ООО «СанБизнесГруп»'],
+            'is_active' => true,
+            'update_stock' => true,
+        ]);
+        $category = Category::query()->firstOrCreate(['slug' => 'zhestkaya-podvodka-dlya-vody'], [
+            'name' => 'Жёсткая подводка для воды',
+            'parent_id' => 0,
+        ]);
+        $templateCategory = Category::query()->firstOrCreate(['slug' => 'gibkaya-podvodka-dlya-vody'], [
+            'name' => 'Гибкая подводка для воды',
+            'parent_id' => 0,
+        ]);
+        Product::query()->create([
+            'category_id' => $templateCategory->id,
+            'sku' => 'KOTLOV-000812',
+            'name' => 'Тайм Шланг газовый резиновый 1/2″, 1,0 м, штуцер–гайка',
+            'slug' => 'taim-slang-gazovyi-rezinovyi-12-10-m-stucer-gaika',
+            'price' => 14,
+            'images' => ['img/products/taim/template.jpg'],
+            'is_active' => true,
+            'is_archived' => false,
+        ]);
+        $item = IntegrationProduct::query()->create([
+            'integration_source_id' => $source->id,
+            'external_id' => 'bbd2cc63-1f62-11e9-bad6-1c1b0d1de7c2',
+            'external_code' => 'УТ-00001110',
+            'external_sku' => null,
+            'name' => 'Хром. трубка медная d10 с гайкой 1/2 400mmx1/2"',
+            'price_byn' => null,
+            'stock_quantity' => 5,
+            'match_status' => 'unmatched',
+            'candidates' => null,
+        ]);
+        $productCount = Product::query()->count();
+
+        $this->artisan('integration:create-sbg-distinct-products', [
+            '--batch' => 'unmatched-researched-20261013-cl',
+            '--code' => ['УТ-00001110'],
+        ])->assertSuccessful();
+        $this->assertNull($item->fresh()->product_id);
+
+        $this->artisan('integration:create-sbg-distinct-products', [
+            '--batch' => 'unmatched-researched-20261013-cl',
+            '--code' => ['УТ-00001110'],
+            '--apply' => true,
+        ])->assertSuccessful();
+
+        $item->refresh();
+        $product = $item->product;
+        $brand = Brand::query()->where('slug', 'albertoni')->first();
+        $this->assertSame($productCount + 1, Product::query()->count());
+        $this->assertNotNull($product);
+        $this->assertNotNull($brand);
+        $this->assertSame('Италия', $brand->country);
+        $this->assertSame('matched', $item->match_status);
+        $this->assertSame('manual_created', $item->match_method);
+        $this->assertSame($category->id, $item->target_category_id);
+        $this->assertNull($item->candidates);
+        $this->assertNull($item->external_sku);
+        $this->assertSame('Albertoni 130/1 M272706 Трубка медная хромированная Ø10 мм, 1/2″ ВР–1/2″ ВР, 400 мм', $product->name);
+        $this->assertSame('47.00', $product->price);
+        $this->assertSame('5', (string) $product->stock_qty);
+        $this->assertTrue((bool) $product->in_stock);
+        $this->assertSame($brand->id, $product->brand_id);
+        $this->assertSame($category->id, $product->category_id);
+        $this->assertSame('M272706', collect($product->specs)->firstWhere('key', 'Модель')['value']);
+        $this->assertSame('1/2″ ВР × 1/2″ ВР', collect($product->specs)->firstWhere('key', 'Размер присоединения')['value']);
+        $this->assertSame('400 мм', collect($product->specs)->firstWhere('key', 'Длина')['value']);
+        $this->assertSame([
+            'img/products/albertoni/albertoni-m272706-chrome-copper-tube-400mm.png',
+        ], $product->images);
+        $this->assertFileExists(public_path('img/products/albertoni/albertoni-m272706-chrome-copper-tube-400mm.png'));
+        $this->assertStringContainsString('pivduyma.ua', $product->content_source_url);
+        $this->assertStringContainsString('допустимый радиус изгиба', $product->content);
+        $this->assertStringNotContainsString('розничная цена', mb_strtolower($product->content));
+        $this->assertStringNotContainsString('byn', mb_strtolower($product->content));
+        $this->assertDatabaseHas('supplier_product_mappings', [
+            'supplier_code' => $source->matchingSupplierCode(),
+            'supplier_article' => 'УТ-00001110',
+            'product_id' => $product->id,
+            'product_sku' => $product->sku,
+            'confidence' => 'manual',
+            'is_active' => true,
+        ]);
+
+        $this->artisan('integration:create-sbg-distinct-products', [
+            '--batch' => 'unmatched-researched-20261013-cl',
+            '--code' => ['УТ-00001110'],
+            '--apply' => true,
+        ])->assertSuccessful();
+        $this->assertSame($productCount + 1, Product::query()->count());
+        $this->assertSame($product->id, $item->fresh()->product_id);
+    }
 }
