@@ -7092,4 +7092,105 @@ class CreateSbgDistinctProductsBatchCommandTest extends TestCase
         $this->assertSame($productCount, Product::query()->count());
         $this->assertSame($product->id, $item->fresh()->product_id);
     }
+
+    public function test_it_creates_the_exact_unmatched_albertoni_k04106_mixer_tube(): void
+    {
+        $source = IntegrationSource::query()->create([
+            'code' => 'onec-sbg-unmatched-albertoni-k04106',
+            'name' => '1С СанБизнесГруп',
+            'settings' => ['partner_name' => 'ООО «СанБизнесГруп»'],
+            'is_active' => true,
+            'update_stock' => true,
+        ]);
+        $category = Category::query()->firstOrCreate(['slug' => 'zhestkaya-podvodka-dlya-vody'], [
+            'name' => 'Жёсткая подводка для воды',
+            'parent_id' => 0,
+        ]);
+        $brand = Brand::query()->firstOrCreate(['slug' => 'albertoni'], [
+            'name' => 'Albertoni',
+            'country' => 'Италия',
+        ]);
+        Product::query()->create([
+            'category_id' => $category->id,
+            'brand_id' => $brand->id,
+            'sku' => 'KOTLOV-008072',
+            'name' => 'Albertoni 238/5 Трубка медная хромированная Ø10 мм, 5 м',
+            'slug' => 'albertoni-2385-trubka-mednaia-xromirovannaia-o10-mm-5-m',
+            'price' => 199,
+            'images' => ['img/products/albertoni/template.webp'],
+            'is_active' => true,
+            'is_archived' => false,
+        ]);
+        $item = IntegrationProduct::query()->create([
+            'integration_source_id' => $source->id,
+            'external_id' => 'bbd2cbf5-1f62-11e9-bad6-1c1b0d1de7c2',
+            'external_code' => 'УТ-00001000',
+            'external_sku' => null,
+            'name' => 'Трубка для смесителя М10 35 cm',
+            'price_byn' => null,
+            'stock_quantity' => 14,
+            'stock_confirmed_at' => now(),
+            'match_status' => 'unmatched',
+            'candidates' => null,
+        ]);
+        $productCount = Product::query()->count();
+
+        $this->artisan('integration:create-sbg-distinct-products', [
+            '--batch' => 'unmatched-researched-20261013-cq',
+            '--code' => ['УТ-00001000'],
+        ])->assertSuccessful();
+        $this->assertNull($item->fresh()->product_id);
+        $this->assertNull($item->fresh()->external_sku);
+        $this->assertSame($productCount, Product::query()->count());
+
+        $this->artisan('integration:create-sbg-distinct-products', [
+            '--batch' => 'unmatched-researched-20261013-cq',
+            '--code' => ['УТ-00001000'],
+            '--apply' => true,
+        ])->assertSuccessful();
+
+        $item->refresh();
+        $product = $item->product;
+        $this->assertSame($productCount + 1, Product::query()->count());
+        $this->assertNotNull($product);
+        $this->assertSame('K04106', $item->external_sku);
+        $this->assertSame('matched', $item->match_status);
+        $this->assertSame('manual_created', $item->match_method);
+        $this->assertSame($category->id, $item->target_category_id);
+        $this->assertNull($item->candidates);
+        $this->assertSame('Albertoni K04106 Трубка для смесителя M10×Ø10, 350 мм', $product->name);
+        $this->assertSame('22.00', $product->price);
+        $this->assertSame('14', (string) $product->stock_qty);
+        $this->assertTrue((bool) $product->in_stock);
+        $this->assertSame($brand->id, $product->brand_id);
+        $this->assertSame($category->id, $product->category_id);
+        $this->assertSame('K04106', collect($product->specs)->firstWhere('key', 'Артикул производителя')['value']);
+        $this->assertSame('350 мм', collect($product->specs)->firstWhere('key', 'Длина')['value']);
+        $this->assertSame('M10 × Ø10 мм', collect($product->specs)->firstWhere('key', 'Тип соединения')['value']);
+        $this->assertSame([
+            'img/products/albertoni/albertoni-k04106-m10-d10-350mm-clean.webp',
+        ], $product->images);
+        $this->assertFileExists(public_path('img/products/albertoni/albertoni-k04106-m10-d10-350mm-clean.webp'));
+        $this->assertStringContainsString('prom.ua', $product->content_source_url);
+        $this->assertStringContainsString('цанговый фитинг', $product->content);
+        $this->assertStringNotContainsString('розничная цена', mb_strtolower($product->content));
+        $this->assertStringNotContainsString('uah', mb_strtolower($product->content));
+        $this->assertDatabaseHas('supplier_product_mappings', [
+            'supplier_code' => $source->matchingSupplierCode(),
+            'supplier_article' => 'K04106',
+            'product_id' => $product->id,
+            'product_sku' => $product->sku,
+            'confidence' => 'manual',
+            'is_active' => true,
+        ]);
+
+        $this->artisan('integration:create-sbg-distinct-products', [
+            '--batch' => 'unmatched-researched-20261013-cq',
+            '--code' => ['УТ-00001000'],
+            '--apply' => true,
+        ])->assertSuccessful();
+        $this->assertSame($productCount + 1, Product::query()->count());
+        $this->assertSame($product->id, $item->fresh()->product_id);
+        $this->assertSame(1, Product::query()->where('name', $product->name)->count());
+    }
 }

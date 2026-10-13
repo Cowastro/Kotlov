@@ -2996,6 +2996,43 @@ class CreateSbgDistinctProductsBatchCommand extends Command
         ],
     ];
 
+    private const BATCH_UNMATCHED_RESEARCHED_20261013_CQ = [
+        'УТ-00001000' => [
+            'template_slug' => 'albertoni-2385-trubka-mednaia-xromirovannaia-o10-mm-5-m',
+            'allow_unmatched' => true,
+            'category_slug' => 'zhestkaya-podvodka-dlya-vody',
+            'external_sku' => 'K04106',
+            'hydrate_external_sku' => true,
+            'fragments' => ['Трубка для смесителя', 'М10', '35 cm'],
+            'brand' => [
+                'name' => 'Albertoni',
+                'slug' => 'albertoni',
+                'country' => 'Италия',
+            ],
+            'name' => 'Albertoni K04106 Трубка для смесителя M10×Ø10, 350 мм',
+            'retail' => 22.00,
+            'images' => [
+                'img/products/albertoni/albertoni-k04106-m10-d10-350mm-clean.webp',
+            ],
+            'source_url' => 'https://prom.ua/p2364378215-trubka-dlya-smesitelya.html',
+            'short' => 'Хромированная медная трубка Albertoni K04106 длиной 350 мм с резьбой M10 и гладким концом Ø10 мм для жёсткого подключения смесителя.',
+            'content' => '<p><strong>Albertoni K04106</strong> — хромированная медная трубка для жёсткого подключения смесителя к водопроводу.</p><p>Резьбовой конец M10 вкручивается в корпус смесителя, а гладкий конец трубки Ø10 мм подключается через цанговый фитинг. Длина 350 мм позволяет аккуратно сформировать подводку по месту монтажа.</p><p>Перед установкой проверьте тип присоединения приборного крана и соблюдайте допустимый радиус изгиба медной трубки.</p>',
+            'specs' => [
+                ['key' => 'Тип', 'value' => 'Трубка для жёсткой подводки смесителя'],
+                ['key' => 'Артикул производителя', 'value' => 'K04106'],
+                ['key' => 'Материал', 'value' => 'Медь'],
+                ['key' => 'Покрытие', 'value' => 'Хром'],
+                ['key' => 'Резьба со стороны смесителя', 'value' => 'M10'],
+                ['key' => 'Диаметр трубки', 'value' => '10 мм'],
+                ['key' => 'Длина', 'value' => '350 мм'],
+                ['key' => 'Тип соединения', 'value' => 'M10 × Ø10 мм'],
+                ['key' => 'Назначение', 'value' => 'Подключение смесителя к водопроводу'],
+                ['key' => 'Бренд', 'value' => 'Albertoni'],
+                ['key' => 'Страна производства', 'value' => 'Италия'],
+            ],
+        ],
+    ];
+
     public function handle(
         IntegrationProductCreator $creator,
         IntegrationProductMatchDecision $matchDecision,
@@ -3095,6 +3132,7 @@ class CreateSbgDistinctProductsBatchCommand extends Command
             'unmatched-researched-20261013-cn' => self::BATCH_UNMATCHED_RESEARCHED_20261013_CN,
             'unmatched-researched-20261013-co' => self::BATCH_UNMATCHED_RESEARCHED_20261013_CO,
             'unmatched-researched-20261013-cp' => self::BATCH_UNMATCHED_RESEARCHED_20261013_CP,
+            'unmatched-researched-20261013-cq' => self::BATCH_UNMATCHED_RESEARCHED_20261013_CQ,
             default => null,
         };
 
