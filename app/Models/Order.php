@@ -83,6 +83,15 @@ class Order extends Model
         'cancelled' => 'Отменён',
     ];
 
+    /** Этапы, которые менеджер может зафиксировать вручную до полноценного обмена с 1С. */
+    public const MANUAL_WORKFLOW_STATUSES = [
+        'confirmed' => 'Подтверждён',
+        'processing' => 'В обработке / создан в учётной системе',
+        'shipped' => 'Передан в доставку',
+        'delivered' => 'Доставлен клиенту',
+        'cancelled' => 'Отменён',
+    ];
+
     public const PAYMENT_TYPES = [
         'cash' => 'Наличными',
         'card' => 'Банковской платежной карточкой',

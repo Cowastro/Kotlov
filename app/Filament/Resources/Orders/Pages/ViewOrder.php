@@ -298,6 +298,37 @@ class ViewOrder extends ViewRecord
                         ->body('Она опубликована в изолированном кабинете поставщика. Автоматического письма не отправлялось.')
                         ->send();
                 }),
+            Action::make('changeWorkflowStatus')
+                ->label('Изменить этап вручную')
+                ->icon('heroicon-o-arrows-right-left')
+                ->color('gray')
+                ->visible(fn (): bool => $this->record->archived_at === null)
+                ->modalHeading('Изменить этап заказа вручную')
+                ->modalDescription('Используйте этот режим, если действие уже выполнено вне сайта, например заказ создан вручную в 1С. Автор, время и комментарий сохранятся в истории.')
+                ->schema([
+                    Select::make('status')
+                        ->label('Новый этап')
+                        ->options(fn (): array => collect(Order::MANUAL_WORKFLOW_STATUSES)
+                            ->except($this->record->status)
+                            ->all())
+                        ->native(false)
+                        ->required(),
+                    Textarea::make('comment')
+                        ->label('Что было сделано')
+                        ->placeholder('Например: Заказ клиента №123 создан вручную в 1С и передан на комплектацию.')
+                        ->helperText('Комментарий увидят другие менеджеры в истории заказа.')
+                        ->rows(3)
+                        ->minLength(3)
+                        ->maxLength(2000)
+                        ->required(),
+                ])
+                ->modalSubmitActionLabel('Сохранить этап')
+                ->action(function (array $data): void {
+                    $this->transitionOrder(
+                        $data['status'],
+                        'Ручная фиксация: '.trim($data['comment']),
+                    );
+                }),
             EditAction::make(),
         ];
     }
