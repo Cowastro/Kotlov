@@ -1992,6 +1992,21 @@ class CreateSbgDistinctProductsBatchCommand extends Command
         ],
     ];
 
+    private const BATCH_ARCHIVED_OLE_PRO_20261013_BL = [
+        'УТ-00000144' => [
+            'archive_linked_product' => true,
+            'product_sku' => 'KOTLOV-022609',
+            'product_slug' => 'ole-pro-os-h-tp-datcik-temperatury-gorelki-20-50-kvt',
+            'fragments' => ['Датчик температуры', 'OS-H-TP', '20-50'],
+            'product_fragments' => ['OLE-PRO', 'OS-H-TP', '20–50'],
+        ],
+        'УТ-00001965' => [
+            'ignore_not_for_site' => true,
+            'candidate_slug' => 'datchik-temperatury-goryachej-vody-as16',
+            'fragments' => ['Датчик температуры', 'OS-H-TP', '75-150', 'HOTTA'],
+        ],
+    ];
+
     public function handle(
         IntegrationProductCreator $creator,
         IntegrationProductMatchDecision $matchDecision,
@@ -2060,6 +2075,7 @@ class CreateSbgDistinctProductsBatchCommand extends Command
             'researched-priced-20261013-bi' => self::BATCH_RESEARCHED_PRICED_20261013_BI,
             'archived-20261013-bj' => self::BATCH_ARCHIVED_20261013_BJ,
             'not-for-site-20261013-bk' => self::BATCH_NOT_FOR_SITE_20261013_BK,
+            'archived-ole-pro-20261013-bl' => self::BATCH_ARCHIVED_OLE_PRO_20261013_BL,
             default => null,
         };
 
@@ -2081,6 +2097,71 @@ class CreateSbgDistinctProductsBatchCommand extends Command
 
         foreach ($rows as $code => $rule) {
             $items = IntegrationProduct::query()->with(['source', 'product'])->where('external_code', $code)->get();
+
+            if ($rule['archive_linked_product'] ?? false) {
+                $product = Product::query()
+                    ->where('sku', $rule['product_sku'])
+                    ->where('slug', $rule['product_slug'])
+                    ->first();
+                if ($items->count() !== 1 || ! $product) {
+                    $stats['blocked']++;
+                    $details[] = [$code, $rule['product_sku'], 'blocked', 'missing unique 1C row or archived product'];
+
+                    continue;
+                }
+
+                $item = $items->first();
+                $alreadyArchived = $item->match_status === 'ignored'
+                    && $item->match_method === 'manual_ignore'
+                    && ! $item->product_id
+                    && ! $product->is_active
+                    && $product->is_archived;
+                if ($alreadyArchived) {
+                    $stats['already']++;
+                    $details[] = [$code, $product->sku, 'already', 'archived product is already excluded from the site'];
+
+                    continue;
+                }
+
+                $valid = $item->source?->name === self::SOURCE_NAME
+                    && $item->source?->partnerName() === self::PARTNER_NAME
+                    && $item->match_status === 'matched'
+                    && $item->match_method === 'manual_created'
+                    && (int) $item->product_id === (int) $product->id
+                    && (float) $item->stock_quantity > 0
+                    && $this->containsAll($item->name, $rule['fragments'])
+                    && $this->containsAll($product->name, $rule['product_fragments']);
+
+                if (! $valid) {
+                    $stats['blocked']++;
+                    $details[] = [$code, $product->sku, 'blocked', 'source, identity, stock or linked-product guard failed'];
+
+                    continue;
+                }
+
+                $stats['ready']++;
+                if ($apply) {
+                    $product->forceFill([
+                        'is_active' => false,
+                        'is_archived' => true,
+                        'in_stock' => false,
+                        'stock_qty' => null,
+                    ])->save();
+                    $item->forceFill([
+                        'product_id' => null,
+                        'match_status' => 'ignored',
+                        'match_method' => 'manual_ignore',
+                        'match_confidence' => null,
+                        'matched_at' => null,
+                    ])->save();
+                    $stats['ignored']++;
+                    $details[] = [$code, $product->sku, 'archived', 'linked archived product excluded from the public catalog'];
+                } else {
+                    $details[] = [$code, $product->sku, 'ready', 'archive linked product and mark as not for site'];
+                }
+
+                continue;
+            }
 
             if (
                 ($rule['ignore_archived'] ?? false)

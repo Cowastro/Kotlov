@@ -3610,6 +3610,100 @@ class CreateSbgDistinctProductsBatchCommandTest extends TestCase
         $this->assertSame('ignored', $item->fresh()->match_status);
     }
 
+    public function test_it_archives_the_old_ole_pro_sensor_card_and_excludes_its_high_power_sibling(): void
+    {
+        $source = IntegrationSource::query()->create([
+            'code' => 'onec-sbg-archived-ole-pro-sensors',
+            'name' => '1С СанБизнесГруп',
+            'settings' => ['partner_name' => 'ООО «СанБизнесГруп»'],
+            'is_active' => true,
+            'update_stock' => true,
+        ]);
+        $category = Category::query()->firstOrCreate(['slug' => 'regulyatory'], [
+            'name' => 'Регуляторы',
+            'parent_id' => 0,
+        ]);
+        $oldSensor = Product::query()->create([
+            'category_id' => $category->id,
+            'sku' => 'KOTLOV-022609',
+            'name' => 'OLE-PRO OS-H-TP датчик температуры горелки 20–50 кВт',
+            'slug' => 'ole-pro-os-h-tp-datcik-temperatury-gorelki-20-50-kvt',
+            'price' => 61,
+            'images' => ['product/ole-pro/os-h-tp.jpg'],
+            'is_active' => true,
+            'is_archived' => false,
+            'in_stock' => true,
+            'stock_qty' => 6,
+        ]);
+        $wrongCandidate = Product::query()->create([
+            'category_id' => $category->id,
+            'sku' => 'PS-004.326',
+            'name' => 'Датчик температуры горячей воды AS1.6 (Buderus)',
+            'slug' => 'datchik-temperatury-goryachej-vody-as16',
+            'price' => 93.20,
+            'images' => ['product/buderus/as16.jpg'],
+        ]);
+        $linkedItem = IntegrationProduct::query()->create([
+            'integration_source_id' => $source->id,
+            'external_id' => 'old-os-h-tp-20-50',
+            'external_code' => 'УТ-00000144',
+            'name' => 'Датчик температуры OS-H-TP (20-50)',
+            'price_byn' => null,
+            'stock_quantity' => 6,
+            'product_id' => $oldSensor->id,
+            'match_status' => 'matched',
+            'match_method' => 'manual_created',
+            'match_confidence' => 1,
+            'matched_at' => now(),
+        ]);
+        $siblingItem = IntegrationProduct::query()->create([
+            'integration_source_id' => $source->id,
+            'external_id' => 'old-os-h-tp-75-150',
+            'external_code' => 'УТ-00001965',
+            'name' => 'Датчик температуры горелки OS-H-TP (75-150) HOTTA',
+            'price_byn' => null,
+            'stock_quantity' => 7,
+            'match_status' => 'ambiguous',
+            'match_method' => 'fuzzy_name',
+            'match_confidence' => 0.71,
+            'candidates' => [['product_id' => $wrongCandidate->id, 'score' => 0.71]],
+        ]);
+
+        $this->artisan('integration:create-sbg-distinct-products', [
+            '--batch' => 'archived-ole-pro-20261013-bl',
+        ])->assertSuccessful();
+        $this->assertTrue($oldSensor->fresh()->is_active);
+        $this->assertSame('matched', $linkedItem->fresh()->match_status);
+        $this->assertSame('ambiguous', $siblingItem->fresh()->match_status);
+
+        $this->artisan('integration:create-sbg-distinct-products', [
+            '--batch' => 'archived-ole-pro-20261013-bl',
+            '--apply' => true,
+        ])->assertSuccessful();
+
+        $oldSensor->refresh();
+        $this->assertFalse($oldSensor->is_active);
+        $this->assertTrue($oldSensor->is_archived);
+        $this->assertFalse($oldSensor->in_stock);
+        $this->assertNull($oldSensor->stock_qty);
+
+        foreach ([$linkedItem, $siblingItem] as $item) {
+            $item->refresh();
+            $this->assertNull($item->product_id);
+            $this->assertSame('ignored', $item->match_status);
+            $this->assertSame('manual_ignore', $item->match_method);
+            $this->assertNull($item->match_confidence);
+            $this->assertNull($item->matched_at);
+        }
+
+        $this->artisan('integration:create-sbg-distinct-products', [
+            '--batch' => 'archived-ole-pro-20261013-bl',
+            '--apply' => true,
+        ])->assertSuccessful();
+        $this->assertSame('ignored', $linkedItem->fresh()->match_status);
+        $this->assertSame('ignored', $siblingItem->fresh()->match_status);
+    }
+
     public function test_it_creates_the_exact_teplov_i_suhov_l500_d120_200_pipe_instead_of_linking_the_l250_d120_180_candidate(): void
     {
         $source = IntegrationSource::query()->create([
