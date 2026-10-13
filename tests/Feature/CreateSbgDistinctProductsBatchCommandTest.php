@@ -933,4 +933,62 @@ class CreateSbgDistinctProductsBatchCommandTest extends TestCase
         $this->assertStringContainsString('OXI%20ARTTHERM.pdf', $product->content_source_url);
         $this->assertSame('manual_created', $item->fresh()->match_method);
     }
+
+    public function test_it_creates_the_exact_150_to_200_teplov_adapter_instead_of_linking_the_150_to_160_candidate(): void
+    {
+        $source = IntegrationSource::query()->create([
+            'code' => 'onec-sbg-teplov-adapter-150-200',
+            'name' => '1С СанБизнесГруп',
+            'settings' => ['partner_name' => 'ООО «СанБизнесГруп»'],
+            'is_active' => true,
+            'update_stock' => true,
+        ]);
+        $category = Category::query()->create([
+            'name' => 'Переходы и адаптеры',
+            'slug' => 'chimney-adapters-150-200-test',
+            'parent_id' => 0,
+        ]);
+        $brand = Brand::query()->create(['name' => 'Теплов и Сухов', 'slug' => 'teplov-i-suhov-adapter-test']);
+        $wrongDiameterCandidate = Product::query()->create([
+            'category_id' => $category->id,
+            'brand_id' => $brand->id,
+            'sku' => 'PS-008.995',
+            'name' => 'Адаптер-переход Теплов и Сухов Моно М-М 430-0.8, Ø 150/160',
+            'slug' => 'teplov-adapter-150-160-template',
+            'price' => 30.52,
+            'images' => ['product/008/008995/adapter.jpg'],
+        ]);
+        $item = IntegrationProduct::query()->create([
+            'integration_source_id' => $source->id,
+            'external_id' => 'teplov-adapter-150-200',
+            'external_code' => 'УТ-00009589',
+            'external_sku' => 'TS.FRT.AKP.0150.61096',
+            'name' => 'Адаптер переход Моно М-М (С) 430-0.8 D150/200',
+            'price_byn' => null,
+            'stock_quantity' => 4,
+            'match_status' => 'ambiguous',
+            'candidates' => [['product_id' => $wrongDiameterCandidate->id, 'score' => 0.7532]],
+        ]);
+
+        $this->artisan('integration:create-sbg-distinct-products', [
+            '--batch' => 'researched-priced-20261013-t',
+            '--code' => ['УТ-00009589'],
+            '--apply' => true,
+        ])->assertSuccessful();
+
+        $product = $item->fresh()->product;
+        $this->assertNotNull($product);
+        $this->assertNotSame($wrongDiameterCandidate->id, $product->id);
+        $this->assertSame($category->id, $product->category_id);
+        $this->assertSame($brand->id, $product->brand_id);
+        $this->assertSame('Теплов и Сухов Адаптер-переход Моно М-М (С) 430-0.8 D150/200', $product->name);
+        $this->assertSame('41.00', $product->price);
+        $this->assertSame('4', (string) $product->stock_qty);
+        $this->assertNull($item->fresh()->normalizedPriceByn());
+        $this->assertSame('150 мм', collect($product->specs)->firstWhere('key', 'Переход с')['value']);
+        $this->assertSame('200 мм', collect($product->specs)->firstWhere('key', 'Переход на')['value']);
+        $this->assertSame('TS.FRT.AKP.0150.61096', collect($product->specs)->firstWhere('key', 'Артикул производителя')['value']);
+        $this->assertStringContainsString('ts-frt-akp-0150-61096', mb_strtolower($product->content_source_url));
+        $this->assertSame('manual_created', $item->fresh()->match_method);
+    }
 }

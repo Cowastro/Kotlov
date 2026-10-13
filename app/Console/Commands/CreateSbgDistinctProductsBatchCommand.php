@@ -533,6 +533,35 @@ class CreateSbgDistinctProductsBatchCommand extends Command
         ],
     ];
 
+    private const BATCH_RESEARCHED_PRICED_20261013_T = [
+        'УТ-00009589' => [
+            'template' => 'PS-008.995',
+            'external_sku' => 'TS.FRT.AKP.0150.61096',
+            'fragments' => ['Адаптер переход', 'Моно М-М', '430-0.8', 'D150/200'],
+            'name' => 'Теплов и Сухов Адаптер-переход Моно М-М (С) 430-0.8 D150/200',
+            'retail' => 41.00,
+            'images' => ['https://cdn.vseinstrumenti.ru/images/goods/santehnicheskoe-oborudovanie/komplektuyuschie-i-rashodnye-materialy-dlya-santehniki/1408289/560x504/51789001.jpg'],
+            'source_url' => 'https://www.vseinstrumenti.ru/product/adapter-perehod-mono-m-m-430-0-8-d150-200-teplovisuhov-ts-frt-akp-0150-61096-1408289/',
+            'short' => 'Одноконтурный адаптер-переход Теплов и Сухов для соединения дымоходов Ø150 и Ø200 мм, AISI 430 толщиной 0,8 мм.',
+            'content' => '<p><strong>Теплов и Сухов Моно М-М (С) D150/200</strong> — одноконтурный адаптер-переход для соединения патрубка теплогенерирующего аппарата Ø150 мм с дымоходом Ø200 мм.</p><p>Конусный элемент изготовлен из нержавеющей стали AISI 430 толщиной 0,8 мм и предназначен для сухого режима эксплуатации. Это отдельная модификация: её нельзя объединять с адаптером Ø150/160. Розничная цена рассчитана по актуальному рыночному ориентиру 1 126 RUB и официальному курсу НБРБ на 13.10.2026.</p>',
+            'specs' => [
+                ['key' => 'Тип', 'value' => 'Адаптер-переход одноконтурный'],
+                ['key' => 'Система', 'value' => 'Моно'],
+                ['key' => 'Тип соединения', 'value' => 'М-М'],
+                ['key' => 'Переход с', 'value' => '150 мм'],
+                ['key' => 'Переход на', 'value' => '200 мм'],
+                ['key' => 'Материал', 'value' => 'Нержавеющая сталь'],
+                ['key' => 'Марка стали', 'value' => 'AISI 430'],
+                ['key' => 'Толщина стали', 'value' => '0,8 мм'],
+                ['key' => 'Габариты', 'value' => '260×205×205 мм'],
+                ['key' => 'Масса', 'value' => '0,887 кг'],
+                ['key' => 'Режим эксплуатации', 'value' => 'Сухой'],
+                ['key' => 'Артикул производителя', 'value' => 'TS.FRT.AKP.0150.61096'],
+                ['key' => 'Страна производства', 'value' => 'Россия'],
+            ],
+        ],
+    ];
+
     public function handle(IntegrationProductCreator $creator): int
     {
         $rows = match ($this->option('batch')) {
@@ -555,6 +584,7 @@ class CreateSbgDistinctProductsBatchCommand extends Command
             'researched-priced-20261013-q' => self::BATCH_RESEARCHED_PRICED_20261013_Q,
             'researched-priced-20261013-r' => self::BATCH_RESEARCHED_PRICED_20261013_R,
             'researched-priced-20261013-s' => self::BATCH_RESEARCHED_PRICED_20261013_S,
+            'researched-priced-20261013-t' => self::BATCH_RESEARCHED_PRICED_20261013_T,
             default => null,
         };
 
