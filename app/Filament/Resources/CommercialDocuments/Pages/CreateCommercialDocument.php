@@ -5,6 +5,7 @@ namespace App\Filament\Resources\CommercialDocuments\Pages;
 use App\Filament\Resources\CommercialDocuments\CommercialDocumentResource;
 use App\Models\Product;
 use App\Services\CommercialDocuments\CommercialDocumentWorkflow;
+use Filament\Forms\Components\Repeater;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\CreateRecord;
 use Illuminate\Database\Eloquent\Model;
@@ -46,7 +47,21 @@ class CreateCommercialDocument extends CreateRecord
             ];
         })->all();
 
-        $this->form->fill(array_merge($this->data, $prefill, ['items' => $items]));
+        $this->form->fill(array_merge($this->data, $prefill));
+
+        // A relationship repeater reloads its state from the (still unsaved)
+        // document while the form is being filled. On the create page that
+        // relationship is empty, so passing `items` to fill() is overwritten
+        // by a blank default row. Hydrate the prepared rows afterwards.
+        $itemsRepeater = $this->form->getComponentByStatePath('items');
+        if ($itemsRepeater instanceof Repeater) {
+            $hydratedItems = [];
+            foreach ($items as $item) {
+                $hydratedItems[$itemsRepeater->generateUuid() ?? count($hydratedItems)] = $item;
+            }
+
+            $itemsRepeater->rawState($hydratedItems);
+        }
     }
 
     protected function handleRecordCreation(array $data): Model
