@@ -1781,6 +1781,42 @@ class CreateSbgDistinctProductsBatchCommand extends Command
         ],
     ];
 
+    private const BATCH_RESEARCHED_PRICED_20261013_BD = [
+        'УТ-00009448' => [
+            'template' => 'PS-009.041',
+            'category_slug' => 'truby-sendvich',
+            'external_sku' => 'TS.FRT.TRB.0120.61045',
+            'fragments' => ['Труба Термо', 'L 500', 'ТТ-Р', '430-0.8/430', 'D120/200'],
+            'brand' => [
+                'name' => 'Теплов и Сухов',
+                'slug' => 'teplov-i-suhov',
+            ],
+            'name' => 'Теплов и Сухов Труба Термо L500 ТТ-Р 430-0.8/430 D120/200',
+            'retail' => 99.00,
+            'images' => ['img/products/teplov-i-suhov/teplov-i-suhov-tt-r-l500-430-08-430-d120-200.png'],
+            'source_url' => 'https://kaminchi.ru/dimohod/dymoxody-modulnye-iz-nerzhaveyushhej-stali/dvustennye-sendvich-dymoxody/dymoxody-dvustennye-diametrom-120-mm/truba-termo-l-500-tt-r-430-0-8-430-d120-2001',
+            'short' => 'Утеплённая сэндвич-труба Теплов и Сухов длиной 500 мм: внутренняя AISI 430 толщиной 0,8 мм, диаметры 120/200 мм.',
+            'content' => '<p><strong>Теплов и Сухов Труба Термо L500 ТТ-Р 430-0.8/430 D120/200</strong> — прямой утеплённый элемент модульного дымохода для отвода продуктов сгорания. Внутренняя и наружная оболочки выполнены из нержавеющей стали AISI 430, между ними расположен слой теплоизоляции.</p><p>Номинальная длина элемента составляет 500 мм, монтажная длина после соединения — 447 мм. Внутренний диаметр 120 мм, наружный — 200 мм. Артикул производителя — TS.FRT.TRB.0120.61045.</p>',
+            'specs' => [
+                ['key' => 'Тип элемента', 'value' => 'Утеплённая сэндвич-труба'],
+                ['key' => 'Серия', 'value' => 'Термо ТТ-Р'],
+                ['key' => 'Номинальная длина', 'value' => '500 мм'],
+                ['key' => 'Монтажная длина', 'value' => '447 мм'],
+                ['key' => 'Внутренний диаметр', 'value' => '120 мм'],
+                ['key' => 'Наружный диаметр', 'value' => '200 мм'],
+                ['key' => 'Материал внутренней трубы', 'value' => 'Нержавеющая сталь AISI 430'],
+                ['key' => 'Толщина внутренней трубы', 'value' => '0,8 мм'],
+                ['key' => 'Материал наружной трубы', 'value' => 'Нержавеющая сталь AISI 430'],
+                ['key' => 'Толщина наружной трубы', 'value' => '0,5 мм'],
+                ['key' => 'Толщина теплоизоляции', 'value' => '40 мм'],
+                ['key' => 'Масса', 'value' => '2,95 кг'],
+                ['key' => 'Артикул производителя', 'value' => 'TS.FRT.TRB.0120.61045'],
+                ['key' => 'Гарантия', 'value' => '12 месяцев'],
+                ['key' => 'Страна производства', 'value' => 'Россия'],
+            ],
+        ],
+    ];
+
     public function handle(
         IntegrationProductCreator $creator,
         IntegrationProductMatchDecision $matchDecision,
@@ -1842,6 +1878,7 @@ class CreateSbgDistinctProductsBatchCommand extends Command
             'researched-priced-20261013-ba' => self::BATCH_RESEARCHED_PRICED_20261013_BA,
             'researched-priced-20261013-bb' => self::BATCH_RESEARCHED_PRICED_20261013_BB,
             'researched-priced-20261013-bc' => self::BATCH_RESEARCHED_PRICED_20261013_BC,
+            'researched-priced-20261013-bd' => self::BATCH_RESEARCHED_PRICED_20261013_BD,
             default => null,
         };
 

@@ -3485,4 +3485,97 @@ class CreateSbgDistinctProductsBatchCommandTest extends TestCase
         $this->assertSame($productCount, Product::query()->count());
         $this->assertSame($exactProduct->id, $item->fresh()->product_id);
     }
+
+    public function test_it_creates_the_exact_teplov_i_suhov_l500_d120_200_pipe_instead_of_linking_the_l250_d120_180_candidate(): void
+    {
+        $source = IntegrationSource::query()->create([
+            'code' => 'onec-sbg-teplov-suhov-l500-d120-200',
+            'name' => '1С СанБизнесГруп',
+            'settings' => ['partner_name' => 'ООО «СанБизнесГруп»'],
+            'is_active' => true,
+            'update_stock' => true,
+        ]);
+        $category = Category::query()->firstOrCreate(['slug' => 'truby-sendvich'], [
+            'name' => 'Трубы сэндвич',
+            'parent_id' => 0,
+        ]);
+        $brand = Brand::query()->firstOrCreate(
+            ['slug' => 'teplov-i-suhov'],
+            ['name' => 'Теплов и Сухов'],
+        );
+        $wrongCandidate = Product::query()->create([
+            'category_id' => $category->id,
+            'brand_id' => $brand->id,
+            'sku' => 'PS-009.041',
+            'name' => 'Труба Теплов и Сухов термо ТТ-Р 430, 0.8/430, 0.5 120/180 L250',
+            'slug' => 'truba-teplov-i-suhov-termo-tt-r-430-08-430-05-120-180-l250',
+            'price' => 60,
+            'images' => ['product/teplov/l250-120-180.jpg'],
+        ]);
+        $item = IntegrationProduct::query()->create([
+            'integration_source_id' => $source->id,
+            'external_id' => 'teplov-suhov-l500-d120-200',
+            'external_code' => 'УТ-00009448',
+            'external_sku' => 'TS.FRT.TRB.0120.61045',
+            'name' => 'Труба Термо L 500 ТТ-Р 430-0.8/430 D120/200 арт. TS.FRT.TRB.0120.61045',
+            'price_byn' => null,
+            'stock_quantity' => 3,
+            'match_status' => 'ambiguous',
+            'candidates' => [['product_id' => $wrongCandidate->id, 'score' => 0.67]],
+        ]);
+        $productCount = Product::query()->count();
+
+        $this->artisan('integration:create-sbg-distinct-products', [
+            '--batch' => 'researched-priced-20261013-bd',
+            '--code' => ['УТ-00009448'],
+            '--apply' => true,
+        ])->assertSuccessful();
+
+        $item->refresh();
+        $this->assertSame($productCount + 1, Product::query()->count());
+        $this->assertNotNull($item->product_id);
+        $this->assertNotSame($wrongCandidate->id, $item->product_id);
+        $this->assertSame('matched', $item->match_status);
+        $this->assertSame('manual_created', $item->match_method);
+        $this->assertSame($category->id, $item->target_category_id);
+        $this->assertNull($item->candidates);
+
+        $product = $item->product;
+        $this->assertSame('Теплов и Сухов Труба Термо L500 ТТ-Р 430-0.8/430 D120/200', $product->name);
+        $this->assertSame('99.00', $product->price);
+        $this->assertSame('3', (string) $product->stock_qty);
+        $this->assertTrue((bool) $product->in_stock);
+        $this->assertSame('Теплов и Сухов', $product->brand?->name);
+        $this->assertSame('500 мм', collect($product->specs)->firstWhere('key', 'Номинальная длина')['value']);
+        $this->assertSame('447 мм', collect($product->specs)->firstWhere('key', 'Монтажная длина')['value']);
+        $this->assertSame('120 мм', collect($product->specs)->firstWhere('key', 'Внутренний диаметр')['value']);
+        $this->assertSame('200 мм', collect($product->specs)->firstWhere('key', 'Наружный диаметр')['value']);
+        $this->assertSame('TS.FRT.TRB.0120.61045', collect($product->specs)->firstWhere('key', 'Артикул производителя')['value']);
+        $this->assertSame(['img/products/teplov-i-suhov/teplov-i-suhov-tt-r-l500-430-08-430-d120-200.png'], $product->images);
+        $this->assertFileExists(public_path('img/products/teplov-i-suhov/teplov-i-suhov-tt-r-l500-430-08-430-d120-200.png'));
+        $this->assertStringContainsString('kaminchi.ru', $product->content_source_url);
+        $this->assertStringContainsString('монтажная длина после соединения — 447 мм', $product->content);
+        $this->assertStringNotContainsString('L250', $product->content);
+        $this->assertStringNotContainsString('120/180', $product->content);
+        $this->assertStringNotContainsString('кандидат', mb_strtolower($product->content));
+        $this->assertStringNotContainsString('розничная цена', mb_strtolower($product->content));
+        $this->assertStringNotContainsString('rub', mb_strtolower($product->content));
+        $this->assertStringNotContainsString('13.10.2026', $product->content);
+        $this->assertDatabaseHas('supplier_product_mappings', [
+            'supplier_code' => $source->matchingSupplierCode(),
+            'supplier_article' => 'TS.FRT.TRB.0120.61045',
+            'product_id' => $product->id,
+            'product_sku' => $product->sku,
+            'confidence' => 'manual',
+            'is_active' => true,
+        ]);
+
+        $this->artisan('integration:create-sbg-distinct-products', [
+            '--batch' => 'researched-priced-20261013-bd',
+            '--code' => ['УТ-00009448'],
+            '--apply' => true,
+        ])->assertSuccessful();
+        $this->assertSame($productCount + 1, Product::query()->count());
+        $this->assertSame($product->id, $item->fresh()->product_id);
+    }
 }
