@@ -241,7 +241,7 @@
                                                 </p>
                                             @endif
                                         </div>
-                                    @elseif ($canBuy || $showPreviewPrice)
+                                    @elseif ((float) $product->price > 0 || $showPreviewPrice)
                                         <h4 class="price-on-sale">
                                             {{ number_format($product->price, 2, '.', ' ') }} BYN
                                         </h4>

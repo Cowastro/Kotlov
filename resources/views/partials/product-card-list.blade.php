@@ -18,7 +18,7 @@
 
     $price = $isB2bOffer
         ? number_format($b2bComparison['wholesale_price'], 2, '.', ' ') . ' BYN'
-        : ($canBuy
+        : ((float) $product->price > 0
             ? number_format((float) $product->price, 2, '.', ' ') . ' BYN'
             : ($availabilityStatus === 'out_of_stock' ? 'Нет в наличии' : 'Цена по запросу'));
     $priceOld = (! $isB2bOffer && $canBuy && $isPublicSale && $product->price_old && $product->price_old > $product->price)

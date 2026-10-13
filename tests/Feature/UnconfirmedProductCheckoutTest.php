@@ -91,10 +91,22 @@ class UnconfirmedProductCheckoutTest extends TestCase
 
         foreach (['partials.product-card', 'partials.product-card-list'] as $view) {
             $this->view($view, ['product' => $product])
+                ->assertSee('33.00 BYN')
                 ->assertSee('Заказать консультацию')
                 ->assertSee('data-can-buy="0"', false)
                 ->assertDontSee('btn-add-to-cart', false);
         }
+    }
+
+    public function test_product_page_keeps_the_retail_price_visible_while_stock_requires_confirmation(): void
+    {
+        $product = $this->unconfirmedProduct();
+
+        $this->get('/'.$product->category->slug.'/'.$product->slug)
+            ->assertOk()
+            ->assertSee('33.00 BYN')
+            ->assertSee('Уточняйте наличие')
+            ->assertSee('Заказать консультацию');
     }
 
     public function test_checkout_stops_and_refreshes_a_stale_retail_price(): void
