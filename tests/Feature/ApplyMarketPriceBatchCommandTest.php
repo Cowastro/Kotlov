@@ -326,4 +326,36 @@ class ApplyMarketPriceBatchCommandTest extends TestCase
             ->expectsOutputToContain('metric.observations=0')
             ->assertSuccessful();
     }
+
+    public function test_second_technolit_zero_price_batch_uses_exact_production_skus(): void
+    {
+        $category = Category::query()->create([
+            'name' => 'Тест второго пакета нулевых цен ТехноЛит',
+            'slug' => 'technolit-zero-price-batch-two-test',
+            'parent_id' => 0,
+            'is_active' => true,
+        ]);
+
+        foreach (range(129, 133) as $index => $number) {
+            $sku = sprintf('KOTLOV-%06d', $number);
+            Product::query()->create([
+                'category_id' => $category->id,
+                'name' => 'Точная production-модель '.$sku,
+                'slug' => 'technolit-zero-price-batch-two-'.$index,
+                'sku' => $sku,
+                'price' => 0,
+                'currency' => 'BYN',
+                'is_active' => true,
+                'is_archived' => false,
+            ]);
+        }
+
+        $this->artisan('catalog:apply-market-price-batch', [
+            'batch' => '2026-10-13-technolit-zero-002',
+        ])
+            ->expectsOutputToContain('metric.status=dry_run')
+            ->expectsOutputToContain('metric.products=5')
+            ->expectsOutputToContain('metric.observations=7')
+            ->assertSuccessful();
+    }
 }
