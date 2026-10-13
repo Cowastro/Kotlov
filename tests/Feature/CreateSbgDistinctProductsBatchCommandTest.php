@@ -5311,4 +5311,105 @@ class CreateSbgDistinctProductsBatchCommandTest extends TestCase
         $this->assertSame($productCount + 1, Product::query()->count());
         $this->assertSame($product->id, $item->fresh()->product_id);
     }
+
+    public function test_it_creates_the_exact_unmatched_taim_2000_rubber_gas_hose(): void
+    {
+        $source = IntegrationSource::query()->create([
+            'code' => 'onec-sbg-unmatched-taim-rubber-gas-hose-2000',
+            'name' => '1С СанБизнесГруп',
+            'settings' => ['partner_name' => 'ООО «СанБизнесГруп»'],
+            'is_active' => true,
+            'update_stock' => true,
+        ]);
+        $category = Category::query()->firstOrCreate(['slug' => 'gazovye-shlangi'], [
+            'name' => 'Газовые шланги',
+            'parent_id' => 0,
+        ]);
+        Product::query()->create([
+            'category_id' => $category->id,
+            'sku' => 'KOTLOV-000906',
+            'name' => 'ТАиМ Шланг газовый резиновый 1/2″, 1,0 м, штуцер–гайка',
+            'slug' => 'taim-slang-gazovyi-rezinovyi-12-10-m-stucer-gaika',
+            'price' => 11,
+            'images' => ['img/products/taim/template.jpg'],
+            'is_active' => true,
+            'is_archived' => false,
+        ]);
+        $item = IntegrationProduct::query()->create([
+            'integration_source_id' => $source->id,
+            'external_id' => 'bbd2cc90-1f62-11e9-bad6-1c1b0d1de7c2',
+            'external_code' => 'УТ-00001153',
+            'external_sku' => null,
+            'name' => 'Шланг газовый ШГ-Ш1/2-2,0-Г1/2-',
+            'price_byn' => null,
+            'stock_quantity' => 90,
+            'match_status' => 'unmatched',
+            'candidates' => null,
+        ]);
+        $productCount = Product::query()->count();
+
+        $this->artisan('integration:create-sbg-distinct-products', [
+            '--batch' => 'unmatched-researched-20261013-by',
+            '--code' => ['УТ-00001153'],
+        ])->assertSuccessful();
+        $this->assertNull($item->fresh()->product_id);
+
+        $this->artisan('integration:create-sbg-distinct-products', [
+            '--batch' => 'unmatched-researched-20261013-by',
+            '--code' => ['УТ-00001153'],
+            '--apply' => true,
+        ])->assertSuccessful();
+
+        $item->refresh();
+        $product = $item->product;
+        $brand = Brand::query()->where('slug', 'taim')->first();
+        $this->assertSame($productCount + 1, Product::query()->count());
+        $this->assertNotNull($product);
+        $this->assertNotNull($brand);
+        $this->assertSame('Беларусь', $brand->country);
+        $this->assertSame('matched', $item->match_status);
+        $this->assertSame('manual_created', $item->match_method);
+        $this->assertSame($category->id, $item->target_category_id);
+        $this->assertNull($item->candidates);
+        $this->assertNull($item->external_sku);
+        $this->assertSame('ТАиМ Шланг газовый резиновый 1/2″, 2,0 м, штуцер–гайка', $product->name);
+        $this->assertSame('17.50', $product->price);
+        $this->assertSame('90', (string) $product->stock_qty);
+        $this->assertTrue((bool) $product->in_stock);
+        $this->assertSame($brand->id, $product->brand_id);
+        $this->assertSame($category->id, $product->category_id);
+        $this->assertSame('ШГ-Ш1/2-2,0-Г1/2', collect($product->specs)->firstWhere('key', 'Модель')['value']);
+        $this->assertSame('Армированная резина', collect($product->specs)->firstWhere('key', 'Материал')['value']);
+        $this->assertSame('G1/2″ НР × G1/2″ ВР', collect($product->specs)->firstWhere('key', 'Размер присоединения')['value']);
+        $this->assertSame('Штуцер–гайка', collect($product->specs)->firstWhere('key', 'Тип соединения')['value']);
+        $this->assertSame('2000 мм', collect($product->specs)->firstWhere('key', 'Длина')['value']);
+        $this->assertSame('0,05 МПа', collect($product->specs)->firstWhere('key', 'Максимальное давление')['value']);
+        $this->assertSame('от −20 до +70 °C', collect($product->specs)->firstWhere('key', 'Рабочая температура')['value']);
+        $this->assertSame([
+            'img/products/taim/taim-gas-hose-rubber-12-3000-fm-1.jpg',
+        ], $product->images);
+        $this->assertFileExists(public_path('img/products/taim/taim-gas-hose-rubber-12-3000-fm-1.jpg'));
+        $this->assertStringContainsString('minskgas.by', $product->content_source_url);
+        $this->assertStringContainsString('проверку герметичности', mb_strtolower($product->content));
+        $this->assertStringNotContainsString('minskgas.by', mb_strtolower(implode(' ', $product->images)));
+        $this->assertStringNotContainsString('розничная цена', mb_strtolower($product->content));
+        $this->assertStringNotContainsString('byn', mb_strtolower($product->content));
+        $this->assertStringNotContainsString('13.10.2026', $product->content);
+        $this->assertDatabaseHas('supplier_product_mappings', [
+            'supplier_code' => $source->matchingSupplierCode(),
+            'supplier_article' => 'УТ-00001153',
+            'product_id' => $product->id,
+            'product_sku' => $product->sku,
+            'confidence' => 'manual',
+            'is_active' => true,
+        ]);
+
+        $this->artisan('integration:create-sbg-distinct-products', [
+            '--batch' => 'unmatched-researched-20261013-by',
+            '--code' => ['УТ-00001153'],
+            '--apply' => true,
+        ])->assertSuccessful();
+        $this->assertSame($productCount + 1, Product::query()->count());
+        $this->assertSame($product->id, $item->fresh()->product_id);
+    }
 }
