@@ -35,6 +35,14 @@ class CrmCounterparty extends Model
         'inactive' => 'Неактуален',
     ];
 
+    public const SOURCES = [
+        'manual' => 'Создан вручную',
+        'email' => 'Почта',
+        'telephony' => 'Телефония',
+        '1c_trade' => '1С Управление торговлей',
+        '1c_accounting' => '1С Бухгалтерия',
+    ];
+
     protected $fillable = [
         'type', 'classification', 'business_unit', 'status', 'name', 'public_name', 'legal_name',
         'business_region', 'one_c_manager_name', 'registered_at', 'abc_xyz_classification',

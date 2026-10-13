@@ -35,7 +35,7 @@ class ViewCrmMailThread extends ViewRecord
                 ->label('Взять в работу')->icon('heroicon-o-hand-raised')->color('warning')
                 ->visible(fn (): bool => $this->record->assigned_user_id !== auth()->id() || $this->record->status === 'new')
                 ->action(function (): void {
-                    $this->record->update(['assigned_user_id' => auth()->id(), 'status' => 'in_progress']);
+                    $this->record->takeFor((int) auth()->id());
                     $this->record->refresh();
                 }),
             Action::make('reply')

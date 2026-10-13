@@ -98,8 +98,11 @@ class CrmCounterpartyResource extends Resource
                 TextEntry::make('phones_list')->label('Телефоны')->placeholder('—')->copyable(),
                 TextEntry::make('emails_list')->label('Email')->placeholder('—')->copyable(),
                 TextEntry::make('responsibleUser.name')->label('Ответственный')->placeholder('Не назначен'),
+                TextEntry::make('source')->label('Источник лида')->badge()
+                    ->formatStateUsing(fn (string $state): string => CrmCounterparty::SOURCES[$state] ?? $state),
                 TextEntry::make('contacts_count')->label('Контактных лиц')->state(fn (CrmCounterparty $record): int => $record->contacts()->count()),
                 TextEntry::make('calls_count')->label('Звонков')->state(fn (CrmCounterparty $record): int => $record->calls()->count()),
+                TextEntry::make('mail_threads_count')->label('Переписок')->state(fn (CrmCounterparty $record): int => $record->mailThreads()->count()),
                 TextEntry::make('external_identities_count')->label('Связей с 1С')
                     ->state(fn (CrmCounterparty $record): int => $record->externalIdentities()->count()),
                 TextEntry::make('one_c_manager_name')->label('Менеджер в 1С')->placeholder('Не указан'),
@@ -123,6 +126,12 @@ class CrmCounterpartyResource extends Resource
                 }),
             TextColumn::make('business_unit')->label('Направление')->badge()
                 ->formatStateUsing(fn (string $state): string => CrmCounterparty::BUSINESS_UNITS[$state] ?? $state),
+            TextColumn::make('source')->label('Источник')->badge()->sortable()
+                ->formatStateUsing(fn (string $state): string => CrmCounterparty::SOURCES[$state] ?? $state)
+                ->color(fn (string $state): string => match ($state) {
+                    'email' => 'info', 'telephony' => 'success',
+                    '1c_trade', '1c_accounting' => 'warning', default => 'gray',
+                }),
             TextColumn::make('unp')->label('УНП')->searchable()->placeholder('—')->copyable(),
             TextColumn::make('phones_list')->label('Телефоны')->copyable()->placeholder('—')
                 ->searchable(query: fn (Builder $query, string $search): Builder => $query->whereHas(
@@ -138,6 +147,8 @@ class CrmCounterpartyResource extends Resource
         ])->filters([
             SelectFilter::make('classification')->label('Категория')->options(CrmCounterparty::CLASSIFICATIONS),
             SelectFilter::make('business_unit')->label('Направление')->options(CrmCounterparty::BUSINESS_UNITS),
+            SelectFilter::make('status')->label('Статус')->options(CrmCounterparty::STATUSES),
+            SelectFilter::make('source')->label('Источник')->options(CrmCounterparty::SOURCES),
             SelectFilter::make('responsible_user_id')->label('Ответственный')->relationship('responsibleUser', 'name')->searchable()->preload(),
         ])->recordActions([ViewAction::make(), EditAction::make()])->defaultSort('updated_at', 'desc');
     }

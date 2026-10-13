@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Facades\DB;
 
 class CrmMailThread extends Model
 {
@@ -62,5 +63,19 @@ class CrmMailThread extends Model
     public function scopeNeedsAttention(Builder $query): Builder
     {
         return $query->whereIn('status', ['new', 'waiting_manager']);
+    }
+
+    public function takeFor(int $userId): void
+    {
+        DB::transaction(function () use ($userId): void {
+            $this->forceFill([
+                'assigned_user_id' => $userId,
+                'status' => 'in_progress',
+            ])->save();
+
+            $this->counterparty()
+                ->whereNull('responsible_user_id')
+                ->update(['responsible_user_id' => $userId]);
+        });
     }
 }

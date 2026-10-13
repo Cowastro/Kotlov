@@ -159,9 +159,7 @@ class CrmMailThreadResource extends Resource
                     Action::make('take')
                         ->label('Взять в работу')->icon('heroicon-o-hand-raised')->color('warning')
                         ->visible(fn (CrmMailThread $record): bool => $record->assigned_user_id !== auth()->id() || $record->status === 'new')
-                        ->action(fn (CrmMailThread $record) => $record->update([
-                            'assigned_user_id' => auth()->id(), 'status' => 'in_progress',
-                        ])),
+                        ->action(fn (CrmMailThread $record) => $record->takeFor((int) auth()->id())),
                     Action::make('close')
                         ->label('Закрыть')->icon('heroicon-o-check-circle')->color('success')
                         ->visible(fn (CrmMailThread $record): bool => $record->status !== 'closed')

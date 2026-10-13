@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\CrmCounterparties\Pages;
 
 use App\Filament\Resources\CrmCounterparties\CrmCounterpartyResource;
+use App\Models\CrmCounterparty;
 use App\Services\Crm\Imports\OneCCrmImporter;
 use Filament\Actions\Action;
 use Filament\Actions\CreateAction;
@@ -11,6 +12,7 @@ use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Toggle;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\ListRecords;
+use Filament\Schemas\Components\Tabs\Tab;
 use Filament\Support\Enums\Width;
 use Illuminate\Support\Facades\Storage;
 use Throwable;
@@ -22,6 +24,19 @@ class ListCrmCounterparties extends ListRecords
     public function getMaxContentWidth(): Width|string|null
     {
         return Width::Full;
+    }
+
+    public function getTabs(): array
+    {
+        return [
+            'all' => Tab::make('Все'),
+            'leads' => Tab::make('Новые лиды')
+                ->modifyQueryUsing(fn ($query) => $query->where('status', 'lead'))
+                ->badge(fn (): int => CrmCounterparty::query()->where('status', 'lead')->count()),
+            'email' => Tab::make('Из почты')
+                ->modifyQueryUsing(fn ($query) => $query->where('source', 'email'))
+                ->badge(fn (): int => CrmCounterparty::query()->where('source', 'email')->count()),
+        ];
     }
 
     protected function getHeaderActions(): array
