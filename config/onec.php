@@ -10,5 +10,8 @@ return [
         'max_file_size' => (int) env('ONEC_EXCHANGE_MAX_FILE_SIZE', 512 * 1024 * 1024),
         'storage_disk' => env('ONEC_EXCHANGE_DISK', 'local'),
         'storage_path' => env('ONEC_EXCHANGE_PATH', 'onec-exchange'),
+        // Keep the latest raw CommerceML files briefly for diagnostics and
+        // mapping review. Older session directories are removed by scheduler.
+        'file_retention_hours' => (int) env('ONEC_EXCHANGE_FILE_RETENTION_HOURS', 48),
     ],
 ];

@@ -633,6 +633,48 @@ class OneCExchangeTest extends TestCase
         Storage::disk('local')->assertMissing("{$directory}/import.xml.received");
     }
 
+    public function test_exchange_file_cleanup_removes_only_expired_sessions(): void
+    {
+        $expired = 'onec-exchange/onec/expired-session/import.xml';
+        $fresh = 'onec-exchange/onec/fresh-session/offers.xml';
+        Storage::disk('local')->put($expired, str_repeat('x', 2048));
+        Storage::disk('local')->put($fresh, '<fresh />');
+        touch(Storage::disk('local')->path($expired), now()->subHours(49)->timestamp);
+
+        $this->artisan('integration:prune-exchange-files --hours=48')
+            ->expectsOutputToContain('Removed 1 expired session(s), 1 file(s), 2.0 KB')
+            ->assertSuccessful();
+
+        Storage::disk('local')->assertMissing($expired);
+        Storage::disk('local')->assertExists($fresh);
+    }
+
+    public function test_exchange_file_cleanup_never_removes_an_active_session(): void
+    {
+        $source = IntegrationSource::query()->create([
+            'code' => 'onec',
+            'name' => '1С',
+        ]);
+        $sessionDirectory = 'onec-exchange/onec/active-session';
+        $file = $sessionDirectory.'/import.xml';
+        Storage::disk('local')->put($file, '<active />');
+        touch(Storage::disk('local')->path($file), now()->subDays(7)->timestamp);
+        IntegrationExchangeRun::query()->create([
+            'integration_source_id' => $source->id,
+            'direction' => 'inbound',
+            'operation' => 'catalog',
+            'status' => 'running',
+            'session_key' => hash('sha256', $sessionDirectory),
+            'started_at' => now()->subDays(7),
+        ]);
+
+        $this->artisan('integration:prune-exchange-files --hours=48')
+            ->expectsOutputToContain('Active sessions skipped: 1')
+            ->assertSuccessful();
+
+        Storage::disk('local')->assertExists($file);
+    }
+
     public function test_new_xml_replaces_a_completed_file_even_with_utf8_bom(): void
     {
         $session = hash('sha256', 'onec-test');

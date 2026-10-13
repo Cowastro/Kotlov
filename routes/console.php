@@ -9,6 +9,12 @@ Schedule::command('integration:scan-issues')
     ->withoutOverlapping(5)
     ->runInBackground();
 
+Schedule::command('integration:prune-exchange-files')
+    ->dailyAt('03:20')
+    ->timezone('Europe/Minsk')
+    ->withoutOverlapping(30)
+    ->appendOutputTo(storage_path('logs/integration-exchange-cleanup.log'));
+
 Schedule::command('telephony:sync-a1')
     ->everyFiveMinutes()
     ->withoutOverlapping(10)
