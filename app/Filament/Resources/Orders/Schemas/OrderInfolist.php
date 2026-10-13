@@ -100,6 +100,7 @@ class OrderInfolist
                         TextEntry::make('workflow_stage')
                             ->label('Текущий этап')
                             ->badge()
+                            ->color(fn (Order $record): string => $statusColor($record->status))
                             ->getStateUsing(fn (Order $record): string => $record->status_label),
                         TextEntry::make('workflow_destination')
                             ->label('Куда передать')
