@@ -957,6 +957,35 @@ class CreateSbgDistinctProductsBatchCommand extends Command
         ],
     ];
 
+    private const BATCH_RESEARCHED_PRICED_20261013_AG = [
+        'УТ-00005720' => [
+            'template' => 'PS-008.996',
+            'category_slug' => 'perehody-adaptery-dymohod',
+            'fragments' => ['Адаптер переход', 'Моно М-М', '304-0.8', 'D160/180'],
+            'name' => 'Теплов и Сухов Адаптер-переход Моно М-М 304-0.8 D160/180',
+            'retail' => 39.90,
+            'images' => ['img/products/generated/teplov-suhov-adapter-mono-mm-304-08-d160-180.png'],
+            'source_url' => 'https://teplov.nt-rt.ru/price',
+            'short' => 'Одностенный адаптер-переход Теплов и Сухов Моно М-М из нержавеющей стали AISI 304 толщиной 0,8 мм, Ø160/180 мм.',
+            'content' => '<p><strong>Теплов и Сухов Моно М-М 304-0.8 D160/180</strong> — одностенный адаптер-переход для соединения патрубка теплогенерирующего аппарата Ø160 мм с дымоходной системой Ø180 мм.</p><p>Конусный элемент изготовлен из коррозионностойкой нержавеющей стали AISI 304 толщиной 0,8 мм и соединён TIG-сваркой встык. Исполнение «мама-мама» подходит для дымоходов печей, каминов и котлов на дровах, газе или пеллетах; рабочая температура — до 600 °C.</p>',
+            'specs' => [
+                ['key' => 'Тип', 'value' => 'Одностенный адаптер-переход'],
+                ['key' => 'Тип соединения', 'value' => 'М-М'],
+                ['key' => 'Входной диаметр', 'value' => '160 мм'],
+                ['key' => 'Выходной диаметр', 'value' => '180 мм'],
+                ['key' => 'Материал', 'value' => 'Нержавеющая сталь'],
+                ['key' => 'Марка стали', 'value' => 'AISI 304'],
+                ['key' => 'Толщина стали', 'value' => '0,8 мм'],
+                ['key' => 'Тип сварки', 'value' => 'TIG, встык'],
+                ['key' => 'Рабочая температура', 'value' => 'до 600 °C'],
+                ['key' => 'Рекомендуемое топливо', 'value' => 'Дрова, газ, пеллеты'],
+                ['key' => 'Масса', 'value' => '0,32 кг'],
+                ['key' => 'Артикул производителя', 'value' => 'TS.ST5.AKP.0160.66160'],
+                ['key' => 'Страна производства', 'value' => 'Россия'],
+            ],
+        ],
+    ];
+
     public function handle(IntegrationProductCreator $creator): int
     {
         $rows = match ($this->option('batch')) {
@@ -992,6 +1021,7 @@ class CreateSbgDistinctProductsBatchCommand extends Command
             'researched-priced-20261013-ad' => self::BATCH_RESEARCHED_PRICED_20261013_AD,
             'researched-priced-20261013-ae' => self::BATCH_RESEARCHED_PRICED_20261013_AE,
             'researched-priced-20261013-af' => self::BATCH_RESEARCHED_PRICED_20261013_AF,
+            'researched-priced-20261013-ag' => self::BATCH_RESEARCHED_PRICED_20261013_AG,
             default => null,
         };
 
