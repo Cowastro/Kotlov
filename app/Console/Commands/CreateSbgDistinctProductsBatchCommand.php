@@ -1984,11 +1984,18 @@ class CreateSbgDistinctProductsBatchCommand extends Command
         ],
     ];
 
+    private const BATCH_NOT_FOR_SITE_20261013_BK = [
+        'УТ-00006721' => [
+            'ignore_not_for_site' => true,
+            'candidate_slug' => 'kontroller-salus-pc11',
+            'fragments' => ['Контроллер', 'OFC-OXI'],
+        ],
+    ];
+
     public function handle(
         IntegrationProductCreator $creator,
         IntegrationProductMatchDecision $matchDecision,
-    ): int
-    {
+    ): int {
         $rows = match ($this->option('batch')) {
             'chimney-priced-20261012-a' => self::BATCH_CHIMNEY_PRICED_20261012_A,
             'chimney-priced-20261012-b' => self::BATCH_CHIMNEY_PRICED_20261012_B,
@@ -2052,6 +2059,7 @@ class CreateSbgDistinctProductsBatchCommand extends Command
             'researched-priced-20261013-bh' => self::BATCH_RESEARCHED_PRICED_20261013_BH,
             'researched-priced-20261013-bi' => self::BATCH_RESEARCHED_PRICED_20261013_BI,
             'archived-20261013-bj' => self::BATCH_ARCHIVED_20261013_BJ,
+            'not-for-site-20261013-bk' => self::BATCH_NOT_FOR_SITE_20261013_BK,
             default => null,
         };
 
@@ -2074,7 +2082,10 @@ class CreateSbgDistinctProductsBatchCommand extends Command
         foreach ($rows as $code => $rule) {
             $items = IntegrationProduct::query()->with(['source', 'product'])->where('external_code', $code)->get();
 
-            if ($rule['ignore_archived'] ?? false) {
+            if (
+                ($rule['ignore_archived'] ?? false)
+                || ($rule['ignore_not_for_site'] ?? false)
+            ) {
                 $candidate = Product::query()->where('slug', $rule['candidate_slug'])->first();
                 if ($items->count() !== 1 || ! $candidate) {
                     $stats['blocked']++;
@@ -2086,7 +2097,7 @@ class CreateSbgDistinctProductsBatchCommand extends Command
                 $item = $items->first();
                 if ($item->match_status === 'ignored' && $item->match_method === 'manual_ignore' && ! $item->product_id) {
                     $stats['already']++;
-                    $details[] = [$code, '-', 'already', 'archived item is already excluded from the site'];
+                    $details[] = [$code, '-', 'already', 'item is already excluded from the site'];
 
                     continue;
                 }
@@ -2117,9 +2128,9 @@ class CreateSbgDistinctProductsBatchCommand extends Command
                         'matched_at' => null,
                     ])->save();
                     $stats['ignored']++;
-                    $details[] = [$code, '-', 'ignored', 'archived item excluded from the public catalog'];
+                    $details[] = [$code, '-', 'ignored', 'item excluded from the public catalog'];
                 } else {
-                    $details[] = [$code, '-', 'ready', 'archive as not for site'];
+                    $details[] = [$code, '-', 'ready', 'mark as not for site'];
                 }
 
                 continue;

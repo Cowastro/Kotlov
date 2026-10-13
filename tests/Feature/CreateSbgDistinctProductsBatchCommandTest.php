@@ -3548,6 +3548,68 @@ class CreateSbgDistinctProductsBatchCommandTest extends TestCase
         $this->assertSame('ignored', $item->fresh()->match_status);
     }
 
+    public function test_it_marks_the_old_ofc_oxi_controller_as_not_for_site(): void
+    {
+        $source = IntegrationSource::query()->create([
+            'code' => 'onec-sbg-old-ofc-oxi',
+            'name' => '1С СанБизнесГруп',
+            'settings' => ['partner_name' => 'ООО «СанБизнесГруп»'],
+            'is_active' => true,
+            'update_stock' => true,
+        ]);
+        $category = Category::query()->firstOrCreate(['slug' => 'regulyatory'], [
+            'name' => 'Регуляторы',
+            'parent_id' => 0,
+        ]);
+        $wrongCandidate = Product::query()->create([
+            'category_id' => $category->id,
+            'sku' => 'PS-005.590',
+            'name' => 'Контроллер SALUS PC11',
+            'slug' => 'kontroller-salus-pc11',
+            'price' => 190,
+            'images' => ['product/salus/pc11.jpg'],
+        ]);
+        $item = IntegrationProduct::query()->create([
+            'integration_source_id' => $source->id,
+            'external_id' => 'old-ofc-oxi',
+            'external_code' => 'УТ-00006721',
+            'name' => 'Контроллер OFC-OXI',
+            'price_byn' => null,
+            'stock_quantity' => 2,
+            'match_status' => 'ambiguous',
+            'match_method' => 'fuzzy_name',
+            'match_confidence' => 0.75,
+            'candidates' => [['product_id' => $wrongCandidate->id, 'score' => 0.75]],
+        ]);
+
+        $this->artisan('integration:create-sbg-distinct-products', [
+            '--batch' => 'not-for-site-20261013-bk',
+            '--code' => ['УТ-00006721'],
+        ])->assertSuccessful();
+        $this->assertSame('ambiguous', $item->fresh()->match_status);
+
+        $this->artisan('integration:create-sbg-distinct-products', [
+            '--batch' => 'not-for-site-20261013-bk',
+            '--code' => ['УТ-00006721'],
+            '--apply' => true,
+        ])->assertSuccessful();
+
+        $item->refresh();
+        $this->assertNull($item->product_id);
+        $this->assertSame('ignored', $item->match_status);
+        $this->assertSame('manual_ignore', $item->match_method);
+        $this->assertNull($item->match_confidence);
+        $this->assertNull($item->matched_at);
+        $this->assertSame($wrongCandidate->id, (int) $item->candidates[0]['product_id']);
+
+        $this->artisan('integration:create-sbg-distinct-products', [
+            '--batch' => 'not-for-site-20261013-bk',
+            '--code' => ['УТ-00006721'],
+            '--apply' => true,
+        ])->assertSuccessful();
+        $this->assertSame('ignored', $item->fresh()->match_status);
+    }
+
     public function test_it_creates_the_exact_teplov_i_suhov_l500_d120_200_pipe_instead_of_linking_the_l250_d120_180_candidate(): void
     {
         $source = IntegrationSource::query()->create([
