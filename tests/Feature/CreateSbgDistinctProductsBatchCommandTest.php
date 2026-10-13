@@ -5010,4 +5010,102 @@ class CreateSbgDistinctProductsBatchCommandTest extends TestCase
         $this->assertSame($productCount + 1, Product::query()->count());
         $this->assertSame($product->id, $item->fresh()->product_id);
     }
+
+    public function test_it_creates_the_exact_unmatched_zurflex_dn16_600_gas_hose(): void
+    {
+        $source = IntegrationSource::query()->create([
+            'code' => 'onec-sbg-unmatched-zurflex-dn16-600',
+            'name' => '1С СанБизнесГруп',
+            'settings' => ['partner_name' => 'ООО «СанБизнесГруп»'],
+            'is_active' => true,
+            'update_stock' => true,
+        ]);
+        $category = Category::query()->firstOrCreate(['slug' => 'gazovye-shlangi'], [
+            'name' => 'Газовые шланги',
+            'parent_id' => 0,
+        ]);
+        Product::query()->create([
+            'category_id' => $category->id,
+            'sku' => 'KOTLOV-000903',
+            'name' => 'Газовый шланг ZURFLEX DN16, гайка/штуцер, 1,2 м',
+            'slug' => 'gazovyi-slang-zurflex-dn16-gaikastucer-12-m',
+            'price' => 34,
+            'images' => ['img/products/zurflex/template.webp'],
+            'is_active' => true,
+            'is_archived' => false,
+        ]);
+        $item = IntegrationProduct::query()->create([
+            'integration_source_id' => $source->id,
+            'external_id' => 'bbd2cc97-1f62-11e9-bad6-1c1b0d1de7c2',
+            'external_code' => 'УТ-00001162',
+            'external_sku' => null,
+            'name' => 'ШЛК-I-0,5-DN16-0,6',
+            'price_byn' => null,
+            'stock_quantity' => 4,
+            'match_status' => 'unmatched',
+            'candidates' => null,
+        ]);
+        $productCount = Product::query()->count();
+
+        $this->artisan('integration:create-sbg-distinct-products', [
+            '--batch' => 'unmatched-researched-20261013-bv',
+            '--code' => ['УТ-00001162'],
+        ])->assertSuccessful();
+        $this->assertNull($item->fresh()->product_id);
+
+        $this->artisan('integration:create-sbg-distinct-products', [
+            '--batch' => 'unmatched-researched-20261013-bv',
+            '--code' => ['УТ-00001162'],
+            '--apply' => true,
+        ])->assertSuccessful();
+
+        $item->refresh();
+        $product = $item->product;
+        $brand = Brand::query()->where('slug', 'zurflex')->first();
+        $this->assertSame($productCount + 1, Product::query()->count());
+        $this->assertNotNull($product);
+        $this->assertNotNull($brand);
+        $this->assertSame('matched', $item->match_status);
+        $this->assertSame('manual_created', $item->match_method);
+        $this->assertSame($category->id, $item->target_category_id);
+        $this->assertNull($item->candidates);
+        $this->assertNull($item->external_sku);
+        $this->assertSame('Газовый шланг ZURFLEX DN16, гайка/штуцер, 0,6 м', $product->name);
+        $this->assertSame('27.00', $product->price);
+        $this->assertSame('4', (string) $product->stock_qty);
+        $this->assertTrue((bool) $product->in_stock);
+        $this->assertSame($brand->id, $product->brand_id);
+        $this->assertSame($category->id, $product->category_id);
+        $this->assertSame('ШЛК-I-0,5-DN16-0,6', collect($product->specs)->firstWhere('key', 'Модель')['value']);
+        $this->assertSame('3/4″ ВР × 3/4″ НР', collect($product->specs)->firstWhere('key', 'Размер присоединения')['value']);
+        $this->assertSame('Гайка/штуцер', collect($product->specs)->firstWhere('key', 'Тип соединения')['value']);
+        $this->assertSame('600 мм', collect($product->specs)->firstWhere('key', 'Длина')['value']);
+        $this->assertSame([
+            'img/products/zurflex/zurflex-gas-hose-dn16-600-fm-1.webp',
+            'img/products/zurflex/zurflex-gas-hose-dn16-600-fm-2.webp',
+        ], $product->images);
+        $this->assertFileExists(public_path('img/products/zurflex/zurflex-gas-hose-dn16-600-fm-1.webp'));
+        $this->assertFileExists(public_path('img/products/zurflex/zurflex-gas-hose-dn16-600-fm-2.webp'));
+        $this->assertStringContainsString('bereg.by', $product->content_source_url);
+        $this->assertStringContainsString('проверку герметичности', mb_strtolower($product->content));
+        $this->assertStringNotContainsString('розничная цена', mb_strtolower($product->content));
+        $this->assertStringNotContainsString('byn', mb_strtolower($product->content));
+        $this->assertStringNotContainsString('13.10.2026', $product->content);
+        $this->assertDatabaseHas('supplier_product_mappings', [
+            'supplier_code' => $source->matchingSupplierCode(),
+            'supplier_article' => 'УТ-00001162',
+            'product_id' => $product->id,
+            'product_sku' => $product->sku,
+            'confidence' => 'manual',
+            'is_active' => true,
+        ]);
+
+        $this->artisan('integration:create-sbg-distinct-products', [
+            '--batch' => 'unmatched-researched-20261013-bv',
+            '--code' => ['УТ-00001162'],
+            '--apply' => true,
+        ])->assertSuccessful();
+        $this->assertSame($productCount + 1, Product::query()->count());
+        $this->assertSame($product->id, $item->fresh()->product_id);
+    }
 }

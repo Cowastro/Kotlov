@@ -2269,6 +2269,41 @@ class CreateSbgDistinctProductsBatchCommand extends Command
         ],
     ];
 
+    private const BATCH_UNMATCHED_RESEARCHED_20261013_BV = [
+        'УТ-00001162' => [
+            'template_slug' => 'gazovyi-slang-zurflex-dn16-gaikastucer-12-m',
+            'allow_unmatched' => true,
+            'category_slug' => 'gazovye-shlangi',
+            'fragments' => ['ШЛК-I-0,5-DN16-0,6'],
+            'brand' => [
+                'name' => 'ZURFLEX',
+                'slug' => 'zurflex',
+            ],
+            'name' => 'Газовый шланг ZURFLEX DN16, гайка/штуцер, 0,6 м',
+            'retail' => 27.00,
+            'images' => [
+                'img/products/zurflex/zurflex-gas-hose-dn16-600-fm-1.webp',
+                'img/products/zurflex/zurflex-gas-hose-dn16-600-fm-2.webp',
+            ],
+            'source_url' => 'https://www.bereg.by/product/shlang_gibkiy_gofrirovannyy_s_prisoedinitelnymi_elementami_ru_0_005_mpa_dn_16_gayka_shtutser_3_4_0_6/',
+            'short' => 'Гибкий гофрированный газовый шланг ZURFLEX из нержавеющей стали AISI 304; DN16 (3/4″), соединение гайка/штуцер, длина 0,6 м.',
+            'content' => '<p><strong>Газовый шланг ZURFLEX DN16, 0,6 м</strong> — гибкая гофрированная подводка из нержавеющей стали AISI 304 для подключения бытового газового оборудования. Исполнение гайка/штуцер обеспечивает соединение с внутренней и наружной резьбой 3/4″.</p><p>Рабочее давление — 0,005 МПа, максимальная температура рабочей среды — 150 °C. Монтаж и проверку герметичности должен выполнять квалифицированный специалист в соответствии с требованиями к газовому оборудованию.</p>',
+            'specs' => [
+                ['key' => 'Тип', 'value' => 'Гибкая подводка для газа'],
+                ['key' => 'Модель', 'value' => 'ШЛК-I-0,5-DN16-0,6'],
+                ['key' => 'Номинальный диаметр', 'value' => 'DN16'],
+                ['key' => 'Размер присоединения', 'value' => '3/4″ ВР × 3/4″ НР'],
+                ['key' => 'Тип соединения', 'value' => 'Гайка/штуцер'],
+                ['key' => 'Длина', 'value' => '600 мм'],
+                ['key' => 'Рабочее давление', 'value' => '0,005 МПа'],
+                ['key' => 'Максимальная температура рабочей среды', 'value' => '150 °C'],
+                ['key' => 'Материал', 'value' => 'Нержавеющая сталь AISI 304'],
+                ['key' => 'Назначение', 'value' => 'Подключение бытового газового оборудования'],
+                ['key' => 'Бренд', 'value' => 'ZURFLEX'],
+            ],
+        ],
+    ];
+
     public function handle(
         IntegrationProductCreator $creator,
         IntegrationProductMatchDecision $matchDecision,
@@ -2347,6 +2382,7 @@ class CreateSbgDistinctProductsBatchCommand extends Command
             'unmatched-researched-20261013-bs' => self::BATCH_UNMATCHED_RESEARCHED_20261013_BS,
             'unmatched-researched-20261013-bt' => self::BATCH_UNMATCHED_RESEARCHED_20261013_BT,
             'unmatched-researched-20261013-bu' => self::BATCH_UNMATCHED_RESEARCHED_20261013_BU,
+            'unmatched-researched-20261013-bv' => self::BATCH_UNMATCHED_RESEARCHED_20261013_BV,
             default => null,
         };
 
