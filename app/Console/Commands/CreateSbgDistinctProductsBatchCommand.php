@@ -3175,7 +3175,7 @@ class CreateSbgDistinctProductsBatchCommand extends Command
             'template' => 'KOTLOV-008004',
             'allow_unmatched' => true,
             'category_slug' => 'troyniki-mono',
-            'fragments' => ['Тройник 87', 'ТРМ(М)-Р', '430-0.8', 'D250', 'TS.FRT.T87.0250.68993'],
+            'fragments' => ['Тройник 87', 'ТРМ(М)-Р', '430-0.8', 'D250'],
             'name' => 'Теплов и Сухов Тройник 87° ТРМ(М)-Р AISI 430 0,8 мм Ø250',
             'retail' => 122.00,
             'images' => [

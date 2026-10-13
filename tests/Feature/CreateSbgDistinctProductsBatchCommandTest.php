@@ -7529,7 +7529,7 @@ class CreateSbgDistinctProductsBatchCommandTest extends TestCase
             'external_id' => 'teplov-suhov-tee-87-d250-430-08',
             'external_code' => 'УТ-00000915',
             'external_sku' => 'TS.FRT.T87.0250.68993',
-            'name' => 'Тройник 87* ТРМ(М)-Р 430-0.8 D250 арт. TS.FRT.T87.0250.68993',
+            'name' => 'Тройник 87* ТРМ(М)-Р 430-0.8 D250',
             'price' => 93.84,
             'price_currency' => 'BYN',
             'price_currency_rate' => 1,
