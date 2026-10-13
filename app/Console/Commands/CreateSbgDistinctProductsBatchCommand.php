@@ -2963,6 +2963,39 @@ class CreateSbgDistinctProductsBatchCommand extends Command
         ],
     ];
 
+    private const BATCH_UNMATCHED_RESEARCHED_20261013_CP = [
+        'УТ-00001048' => [
+            'template_slug' => 'teplov-i-suxov-fartuk-d-260-m',
+            'link_existing_slug' => 'teplov-i-suxov-fartuk-d-260-m',
+            'refresh_existing' => true,
+            'allow_unmatched' => true,
+            'category_slug' => 'zaglushki-dymohod',
+            'fragments' => ['Фартук', 'D 260', '(М)'],
+            'link_fragments' => ['Теплов и Сухов', 'Фартук', 'D 260', '(М)'],
+            'brand' => [
+                'name' => 'Теплов и Сухов',
+                'slug' => 'teplov-i-suhov',
+                'country' => 'Россия',
+            ],
+            'name' => 'Теплов и Сухов Фартук для дымохода Ø260 мм',
+            'retail' => 43.14,
+            'images' => [
+                'img/products/teplov-i-suhov/fartuk-d260-clean.jpeg',
+            ],
+            'source_url' => 'https://ekb.resan.ru/catalog/dymokhody_i_komplektuyushchie/dymokhody/fartuk_dlya_dymokhoda/81875/',
+            'short' => 'Фартук «Теплов и Сухов» Ø260 мм для защиты и декоративного оформления зоны прохода дымохода.',
+            'content' => '<p><strong>Фартук «Теплов и Сухов» Ø260 мм</strong> закрывает монтажный зазор вокруг трубы и помогает защитить зону примыкания от атмосферных осадков.</p><p>Элемент также используют для аккуратного оформления прохода дымохода через кровлю, потолочный лист или проходной узел. Фартук не заменяет обязательную теплоизоляцию и герметизацию прохода.</p><p>Перед монтажом сверьте диаметр трубы и геометрию места установки.</p>',
+            'specs' => [
+                ['key' => 'Тип', 'value' => 'Фартук для дымохода'],
+                ['key' => 'Артикул производителя', 'value' => 'TS.KMP.FRK.0260.79671'],
+                ['key' => 'Диаметр', 'value' => '260 мм'],
+                ['key' => 'Назначение', 'value' => 'Защита и декоративное оформление зоны прохода дымохода'],
+                ['key' => 'Бренд', 'value' => 'Теплов и Сухов'],
+                ['key' => 'Страна производства', 'value' => 'Россия'],
+            ],
+        ],
+    ];
+
     public function handle(
         IntegrationProductCreator $creator,
         IntegrationProductMatchDecision $matchDecision,
@@ -3061,6 +3094,7 @@ class CreateSbgDistinctProductsBatchCommand extends Command
             'unmatched-researched-20261013-cm' => self::BATCH_UNMATCHED_RESEARCHED_20261013_CM,
             'unmatched-researched-20261013-cn' => self::BATCH_UNMATCHED_RESEARCHED_20261013_CN,
             'unmatched-researched-20261013-co' => self::BATCH_UNMATCHED_RESEARCHED_20261013_CO,
+            'unmatched-researched-20261013-cp' => self::BATCH_UNMATCHED_RESEARCHED_20261013_CP,
             default => null,
         };
 

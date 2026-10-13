@@ -6988,4 +6988,108 @@ class CreateSbgDistinctProductsBatchCommandTest extends TestCase
         $this->assertNull($product->fresh()->brand_id);
         $this->assertSame(1, Category::query()->where('slug', 'okna-dlya-bani-i-sauny')->count());
     }
+
+    public function test_it_links_and_refreshes_the_exact_unmatched_teplov_i_suhov_apron_d260(): void
+    {
+        $source = IntegrationSource::query()->create([
+            'code' => 'onec-sbg-unmatched-apron-d260',
+            'name' => '1С СанБизнесГруп',
+            'settings' => ['partner_name' => 'ООО «СанБизнесГруп»'],
+            'is_active' => true,
+            'update_stock' => true,
+        ]);
+        $category = Category::query()->firstOrCreate(['slug' => 'zaglushki-dymohod'], [
+            'name' => 'Заглушки и оголовки',
+            'parent_id' => 0,
+        ]);
+        $brand = Brand::query()->firstOrCreate(['slug' => 'teplov-i-suhov'], [
+            'name' => 'Теплов и Сухов',
+            'country' => 'Россия',
+        ]);
+        $product = Product::query()->create([
+            'category_id' => $category->id,
+            'brand_id' => $brand->id,
+            'sku' => 'KOTLOV-008116',
+            'name' => 'Теплов и Сухов Фартук D 260 (М)',
+            'slug' => 'teplov-i-suxov-fartuk-d-260-m',
+            'price' => 61.62,
+            'images' => ['img/products/source-enrichment/watermarked-apron.jpeg'],
+            'short_description' => 'Старое описание.',
+            'content' => '<p>Старое описание.</p>',
+            'is_active' => true,
+            'is_archived' => false,
+        ]);
+        $item = IntegrationProduct::query()->create([
+            'integration_source_id' => $source->id,
+            'external_id' => 'bbd2cc36-1f62-11e9-bad6-1c1b0d1de7c2',
+            'external_code' => 'УТ-00001048',
+            'external_sku' => 'TS.KMP.FRK.0260.79671',
+            'name' => 'Фартук D 260 (М)',
+            'price' => 35.95,
+            'price_currency' => 'BYN',
+            'price_currency_rate' => 1,
+            'price_tax_mode' => IntegrationSource::PRICE_TAX_EXCLUSIVE,
+            'price_vat_rate' => 20,
+            'price_byn' => 43.14,
+            'stock_quantity' => 21,
+            'stock_confirmed_at' => now(),
+            'match_status' => 'unmatched',
+            'candidates' => null,
+        ]);
+        $productCount = Product::query()->count();
+
+        $this->artisan('integration:create-sbg-distinct-products', [
+            '--batch' => 'unmatched-researched-20261013-cp',
+            '--code' => ['УТ-00001048'],
+        ])->assertSuccessful();
+        $this->assertNull($item->fresh()->product_id);
+        $this->assertSame('61.62', $product->fresh()->price);
+
+        $this->artisan('integration:create-sbg-distinct-products', [
+            '--batch' => 'unmatched-researched-20261013-cp',
+            '--code' => ['УТ-00001048'],
+            '--apply' => true,
+        ])->assertSuccessful();
+
+        $item->refresh();
+        $product->refresh();
+        $this->assertSame($productCount, Product::query()->count());
+        $this->assertSame($product->id, $item->product_id);
+        $this->assertSame('matched', $item->match_status);
+        $this->assertSame('manual_search', $item->match_method);
+        $this->assertSame($category->id, $item->target_category_id);
+        $this->assertNull($item->candidates);
+        $this->assertSame('Теплов и Сухов Фартук для дымохода Ø260 мм', $product->name);
+        $this->assertSame('43.14', $product->price);
+        $this->assertSame('21', (string) $product->stock_qty);
+        $this->assertTrue((bool) $product->in_stock);
+        $this->assertSame($brand->id, $product->brand_id);
+        $this->assertSame($category->id, $product->category_id);
+        $this->assertSame('TS.KMP.FRK.0260.79671', collect($product->specs)->firstWhere('key', 'Артикул производителя')['value']);
+        $this->assertSame('260 мм', collect($product->specs)->firstWhere('key', 'Диаметр')['value']);
+        $this->assertSame([
+            'img/products/teplov-i-suhov/fartuk-d260-clean.jpeg',
+        ], $product->images);
+        $this->assertFileExists(public_path('img/products/teplov-i-suhov/fartuk-d260-clean.jpeg'));
+        $this->assertStringContainsString('resan.ru', $product->content_source_url);
+        $this->assertStringContainsString('не заменяет обязательную теплоизоляцию', $product->content);
+        $this->assertStringNotContainsString('розничная цена', mb_strtolower($product->content));
+        $this->assertStringNotContainsString('byn', mb_strtolower($product->content));
+        $this->assertDatabaseHas('supplier_product_mappings', [
+            'supplier_code' => $source->matchingSupplierCode(),
+            'supplier_article' => 'TS.KMP.FRK.0260.79671',
+            'product_id' => $product->id,
+            'product_sku' => 'KOTLOV-008116',
+            'confidence' => 'manual',
+            'is_active' => true,
+        ]);
+
+        $this->artisan('integration:create-sbg-distinct-products', [
+            '--batch' => 'unmatched-researched-20261013-cp',
+            '--code' => ['УТ-00001048'],
+            '--apply' => true,
+        ])->assertSuccessful();
+        $this->assertSame($productCount, Product::query()->count());
+        $this->assertSame($product->id, $item->fresh()->product_id);
+    }
 }
