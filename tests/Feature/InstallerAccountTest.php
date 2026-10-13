@@ -32,11 +32,17 @@ class InstallerAccountTest extends TestCase
             Schema::create('users', function (Blueprint $table) {
                 $table->id();
                 $table->string('name');
+                $table->string('first_name')->nullable();
+                $table->string('last_name')->nullable();
                 $table->string('email')->unique();
                 $table->timestamp('email_verified_at')->nullable();
                 $table->string('password');
                 $table->string('role')->default('client');
+                $table->boolean('is_crm_user')->default(false)->index();
                 $table->boolean('is_active')->default(true);
+                $table->string('phone')->nullable();
+                $table->string('job_title')->nullable();
+                $table->string('department')->nullable();
                 $table->rememberToken();
                 $table->timestamps();
             });
