@@ -2078,4 +2078,70 @@ class CreateSbgDistinctProductsBatchCommandTest extends TestCase
         $this->assertStringNotContainsString('rub', mb_strtolower($product->content));
         $this->assertSame('manual_created', $item->fresh()->match_method);
     }
+
+    public function test_it_creates_the_exact_darco_reverse_reducer_instead_of_linking_the_120_mm_variant(): void
+    {
+        $source = IntegrationSource::query()->create([
+            'code' => 'onec-sbg-darco-rd150-200',
+            'name' => '1С СанБизнесГруп',
+            'settings' => ['partner_name' => 'ООО «СанБизнесГруп»'],
+            'is_active' => true,
+            'update_stock' => true,
+        ]);
+        $category = Category::query()->firstOrCreate(['slug' => 'perehody-adaptery-dymohod'], [
+            'name' => 'Переходы и адаптеры дымохода',
+            'parent_id' => 0,
+        ]);
+        $darco = Brand::query()->create(['slug' => 'darco', 'name' => 'DARCO']);
+        $wrongDiameterCandidate = Product::query()->create([
+            'category_id' => $category->id,
+            'brand_id' => $darco->id,
+            'sku' => 'PS-009.425',
+            'name' => 'Редукция Darco RD150/120-CZ2',
+            'slug' => 'darco-rd150-120-template',
+            'price' => 65,
+            'images' => ['product/0009/009425/darco.jpg'],
+        ]);
+        $item = IntegrationProduct::query()->create([
+            'integration_source_id' => $source->id,
+            'external_id' => 'darco-rd150-200-cz2-ii',
+            'external_code' => 'УТ-00005568',
+            'external_sku' => null,
+            'name' => 'Редуктор RD150/200- CZ2/II',
+            'price_byn' => null,
+            'stock_quantity' => 2,
+            'match_status' => 'ambiguous',
+            'candidates' => [['product_id' => $wrongDiameterCandidate->id, 'score' => 0.75]],
+        ]);
+
+        $this->artisan('integration:create-sbg-distinct-products', [
+            '--batch' => 'researched-priced-20261013-ak',
+            '--code' => ['УТ-00005568'],
+            '--apply' => true,
+        ])->assertSuccessful();
+
+        $product = $item->fresh()->product;
+        $this->assertNotNull($product);
+        $this->assertNotSame($wrongDiameterCandidate->id, $product->id);
+        $this->assertSame($category->id, $product->category_id);
+        $this->assertSame('DARCO', $product->brand->name);
+        $this->assertSame('DARCO Редукция обратная RD150/200-CZ2/II, Ø150/200 мм, 2 мм', $product->name);
+        $this->assertSame('84.90', $product->price);
+        $this->assertSame('2', (string) $product->stock_qty);
+        $this->assertNull($item->fresh()->normalizedPriceByn());
+        $this->assertSame('Обратная дымоходная редукция', collect($product->specs)->firstWhere('key', 'Тип')['value']);
+        $this->assertSame('200 мм', collect($product->specs)->firstWhere('key', 'Диаметр со стороны дымохода')['value']);
+        $this->assertSame('2 мм', collect($product->specs)->firstWhere('key', 'Толщина стали')['value']);
+        $this->assertSame('600 °C', collect($product->specs)->firstWhere('key', 'Максимальная температура')['value']);
+        $this->assertSame(['img/products/darco/darco-rd150-200-cz2-ii.jpg'], $product->images);
+        $this->assertFileExists(public_path('img/products/darco/darco-rd150-200-cz2-ii.jpg'));
+        $this->assertStringContainsString('sklep.darco.pl', $product->content_source_url);
+        $this->assertStringContainsString('не взаимозаменяемы', $product->content);
+        $this->assertStringNotContainsString('120 мм', $product->content);
+        $this->assertStringNotContainsString('кандидат', mb_strtolower($product->content));
+        $this->assertStringNotContainsString('розничная цена', mb_strtolower($product->content));
+        $this->assertStringNotContainsString('нбрб', mb_strtolower($product->content));
+        $this->assertStringNotContainsString('pln', mb_strtolower($product->content));
+        $this->assertSame('manual_created', $item->fresh()->match_method);
+    }
 }

@@ -1094,6 +1094,43 @@ class CreateSbgDistinctProductsBatchCommand extends Command
         ],
     ];
 
+    private const BATCH_RESEARCHED_PRICED_20261013_AK = [
+        'УТ-00005568' => [
+            'template' => 'PS-009.425',
+            'category_slug' => 'perehody-adaptery-dymohod',
+            'fragments' => ['Редуктор', 'RD150/200', 'CZ2/II'],
+            'brand' => [
+                'name' => 'DARCO',
+                'slug' => 'darco',
+                'country' => 'Польша',
+                'content' => '<p><strong>DARCO</strong> — польский производитель систем дымоудаления, вентиляции и распределения горячего воздуха.</p>',
+            ],
+            'name' => 'DARCO Редукция обратная RD150/200-CZ2/II, Ø150/200 мм, 2 мм',
+            'retail' => 84.90,
+            'images' => ['img/products/darco/darco-rd150-200-cz2-ii.jpg'],
+            'source_url' => 'https://sklep.darco.pl/ogrzewanie_kominkowe/redukcja_rd_plus_150_200_cz2ii_mlodwrotna',
+            'short' => 'Обратная дымоходная редукция DARCO RD150/200-CZ2/II для перехода с Ø150 на Ø200 мм, чёрная сталь 2 мм.',
+            'content' => '<p><strong>DARCO RD150/200-CZ2/II</strong> — обратная редукция системы чёрных дымоходных подключений SPK. Она соединяет выход отопительного прибора Ø150 мм с дымоходом Ø200 мм; увеличивающее и уменьшающее исполнения не взаимозаменяемы.</p><p>Элемент изготовлен из чёрной стали толщиной 2 мм и снаружи покрыт термостойкой краской Senotherm. Предназначен для печей, каминов и других твердотопливных отопительных приборов, работающих без конденсации.</p>',
+            'specs' => [
+                ['key' => 'Тип', 'value' => 'Обратная дымоходная редукция'],
+                ['key' => 'Модель', 'value' => 'RD150/200-CZ2/II'],
+                ['key' => 'Диаметр со стороны отопительного прибора', 'value' => '150 мм'],
+                ['key' => 'Диаметр со стороны дымохода', 'value' => '200 мм'],
+                ['key' => 'Материал', 'value' => 'Чёрная сталь'],
+                ['key' => 'Толщина стали', 'value' => '2 мм'],
+                ['key' => 'Покрытие', 'value' => 'Термостойкая краска Senotherm'],
+                ['key' => 'Длина', 'value' => '170 мм'],
+                ['key' => 'Максимальная температура', 'value' => '600 °C'],
+                ['key' => 'Топливо', 'value' => 'Дрова, уголь'],
+                ['key' => 'Условия эксплуатации', 'value' => 'Без конденсации'],
+                ['key' => 'Гарантия', 'value' => '24 месяца'],
+                ['key' => 'Код производителя', 'value' => 'WC-RD150/200-CZ2/II'],
+                ['key' => 'EAN', 'value' => '5907587911093'],
+                ['key' => 'Страна производства', 'value' => 'Польша'],
+            ],
+        ],
+    ];
+
     public function handle(IntegrationProductCreator $creator): int
     {
         $rows = match ($this->option('batch')) {
@@ -1133,6 +1170,7 @@ class CreateSbgDistinctProductsBatchCommand extends Command
             'researched-priced-20261013-ah' => self::BATCH_RESEARCHED_PRICED_20261013_AH,
             'researched-priced-20261013-ai' => self::BATCH_RESEARCHED_PRICED_20261013_AI,
             'researched-priced-20261013-aj' => self::BATCH_RESEARCHED_PRICED_20261013_AJ,
+            'researched-priced-20261013-ak' => self::BATCH_RESEARCHED_PRICED_20261013_AK,
             default => null,
         };
 
