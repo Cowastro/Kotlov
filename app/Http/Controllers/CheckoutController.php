@@ -24,7 +24,7 @@ class CheckoutController extends Controller
     {
         $cart = session(self::CART_KEY, []);
 
-        $availability = $availabilityGuard->pruneUnavailableRetailItems($cart);
+        $availability = $availabilityGuard->reconcileRetailItems($cart);
         $cart = $availability['cart'];
         if ($availability['removed_ids'] !== []) {
             session([self::CART_KEY => $cart]);
@@ -32,6 +32,14 @@ class CheckoutController extends Controller
             return redirect()->route('cart')->with(
                 'error',
                 'Товары без подтверждённого наличия удалены из корзины. Для них доступна консультация.'
+            );
+        }
+        if ($availability['price_changed_ids'] !== []) {
+            session([self::CART_KEY => $cart]);
+
+            return redirect()->route('cart')->with(
+                'info',
+                'Цены в корзине обновились. Проверьте итоговую сумму перед оформлением.'
             );
         }
 
@@ -60,7 +68,7 @@ class CheckoutController extends Controller
             return redirect()->route('cart')->with('info', 'Корзина пуста.');
         }
 
-        $availability = $availabilityGuard->pruneUnavailableRetailItems($cart);
+        $availability = $availabilityGuard->reconcileRetailItems($cart);
         $cart = $availability['cart'];
         if ($availability['removed_ids'] !== []) {
             session([self::CART_KEY => $cart]);
@@ -68,6 +76,14 @@ class CheckoutController extends Controller
             return redirect()->route('cart')->with(
                 'error',
                 'Заказ не создан: товары без подтверждённого наличия удалены из корзины. Закажите консультацию.'
+            );
+        }
+        if ($availability['price_changed_ids'] !== []) {
+            session([self::CART_KEY => $cart]);
+
+            return redirect()->route('cart')->with(
+                'error',
+                'Заказ не создан: цены изменились и обновлены в корзине. Проверьте сумму и подтвердите заказ повторно.'
             );
         }
 
@@ -87,7 +103,8 @@ class CheckoutController extends Controller
                 ->get()
                 ->keyBy('id');
 
-            foreach ($cart as $item) {
+            $b2bPriceChanged = false;
+            foreach ($cart as $key => $item) {
                 if (($item['pricing_type'] ?? 'retail') !== 'b2b') {
                     continue;
                 }
@@ -102,6 +119,21 @@ class CheckoutController extends Controller
                         'B2B-заказ не создан: одна из позиций потеряла привязку или свежий подтверждённый остаток 1С.'
                     );
                 }
+
+                $currentPrice = $offerResolver->priceWithTax($offer);
+                if (abs((float) $item['price'] - $currentPrice) >= 0.01) {
+                    $cart[$key]['price'] = $currentPrice;
+                    $b2bPriceChanged = true;
+                }
+            }
+
+            if ($b2bPriceChanged) {
+                session([self::CART_KEY => $cart]);
+
+                return redirect()->route('cart')->with(
+                    'error',
+                    'B2B-заказ не создан: цены 1С изменились и обновлены в корзине. Проверьте сумму повторно.'
+                );
             }
         }
 

@@ -5,6 +5,8 @@ namespace Tests\Feature;
 use App\Models\Category;
 use App\Models\Order;
 use App\Models\Product;
+use App\Models\Supplier;
+use App\Models\SupplierProduct;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -95,6 +97,40 @@ class UnconfirmedProductCheckoutTest extends TestCase
         }
     }
 
+    public function test_checkout_stops_and_refreshes_a_stale_retail_price(): void
+    {
+        $product = $this->confirmedProduct(120);
+        $cart = [
+            $product->id => [
+                'id' => $product->id,
+                'name' => $product->name,
+                'sku' => $product->sku,
+                'price' => 90.0,
+                'quantity' => 1,
+                'pricing_type' => 'retail',
+            ],
+        ];
+        $orderCount = Order::query()->count();
+
+        $this->withSession(['cart' => $cart])
+            ->withHeader('User-Agent', 'Mozilla/5.0')
+            ->post(route('checkout.store'), [
+                'order_token' => 'stale-retail-price',
+                'customer_name' => 'Тестовый покупатель',
+                'customer_phone' => '+375291112233',
+                'delivery_type' => 'pickup',
+                'payment_type' => 'cash',
+            ])
+            ->assertRedirect(route('cart'))
+            ->assertSessionHas(
+                'error',
+                'Заказ не создан: цены изменились и обновлены в корзине. Проверьте сумму и подтвердите заказ повторно.'
+            );
+
+        $this->assertEquals(120.0, session('cart')[$product->id]['price']);
+        $this->assertDatabaseCount((new Order)->getTable(), $orderCount);
+    }
+
     private function unconfirmedProduct(): Product
     {
         $category = Category::query()->firstOrCreate(
@@ -117,5 +153,29 @@ class UnconfirmedProductCheckoutTest extends TestCase
             'in_stock' => false,
             'availability_status' => Product::AVAILABILITY_CHECK,
         ]);
+    }
+
+    private function confirmedProduct(float $price): Product
+    {
+        $product = $this->unconfirmedProduct();
+        $product->update([
+            'price' => $price,
+            'in_stock' => true,
+            'availability_status' => Product::AVAILABILITY_IN_STOCK,
+        ]);
+        $supplier = Supplier::query()->create([
+            'code' => 'confirmed-price-'.uniqid(),
+            'name' => 'Поставщик подтверждённой цены',
+        ]);
+        SupplierProduct::query()->create([
+            'supplier_id' => $supplier->id,
+            'product_id' => $product->id,
+            'supplier_article' => 'PRICE-'.uniqid(),
+            'price_byn' => max(1, $price - 20),
+            'in_stock' => true,
+            'stock_quantity' => 3,
+        ]);
+
+        return $product->fresh();
     }
 }

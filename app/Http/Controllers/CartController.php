@@ -148,7 +148,7 @@ class CartController extends Controller
         $cart = session(self::KEY, []);
         $id = (int) $request->product_id;
 
-        $availability = $availabilityGuard->pruneUnavailableRetailItems($cart);
+        $availability = $availabilityGuard->reconcileRetailItems($cart);
         $cart = $availability['cart'];
         session([self::KEY => $cart]);
 
@@ -175,6 +175,8 @@ class CartController extends Controller
                         ? response()->json(['message' => $message], 422)
                         : back()->with('error', $message);
                 }
+
+                $cart[$id]['price'] = $offerResolver->priceWithTax($offer);
             }
 
             $cart[$id]['quantity'] = (int) $request->quantity;
@@ -338,9 +340,9 @@ class CartController extends Controller
 
     private function getAvailableItems(CartAvailabilityGuard $availabilityGuard): array
     {
-        $availability = $availabilityGuard->pruneUnavailableRetailItems($this->getItems());
+        $availability = $availabilityGuard->reconcileRetailItems($this->getItems());
 
-        if ($availability['removed_ids'] !== []) {
+        if ($availability['removed_ids'] !== [] || $availability['price_changed_ids'] !== []) {
             session([self::KEY => $availability['cart']]);
         }
 

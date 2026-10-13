@@ -128,6 +128,38 @@ class B2bCatalogPricingTest extends TestCase
         $this->assertDatabaseCount((new Order)->getTable(), 0);
     }
 
+    public function test_checkout_stops_and_refreshes_a_changed_b2b_price(): void
+    {
+        [$product, $user] = $this->catalogFixture(approved: true);
+
+        $this->actingAs($user)
+            ->postJson('/cart/add', ['product_id' => $product->id, 'quantity' => 1])
+            ->assertOk();
+
+        IntegrationProduct::query()->where('product_id', $product->id)->update([
+            'price' => 100,
+            'price_byn' => 100,
+        ]);
+        $this->app->forgetScopedInstances();
+
+        $this->withHeader('User-Agent', 'Mozilla/5.0')
+            ->post(route('checkout.store'), [
+                'order_token' => 'changed-b2b-price',
+                'customer_name' => 'СБГ.BY',
+                'customer_phone' => '+375291112233',
+                'delivery_type' => 'pickup',
+                'payment_type' => 'cash',
+            ])
+            ->assertRedirect(route('cart'))
+            ->assertSessionHas(
+                'error',
+                'B2B-заказ не создан: цены 1С изменились и обновлены в корзине. Проверьте сумму повторно.'
+            );
+
+        $this->assertEquals(100.0, session('cart')[$product->id]['price']);
+        $this->assertDatabaseCount((new Order)->getTable(), 0);
+    }
+
     public function test_admin_can_preview_partner_card_without_changing_their_account(): void
     {
         [$product] = $this->catalogFixture(approved: false);
