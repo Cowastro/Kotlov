@@ -1637,7 +1637,7 @@ class CreateSbgDistinctProductsBatchCommand extends Command
             'refresh_existing' => true,
             'category_slug' => 'zonty-deflektory',
             'external_sku' => 'TS.ST5.ZNT.0150.32500',
-            'fragments' => ['Зонт', 'ЗМ-Р', '304-0.5', 'D150', 'TS.ST5.ZNT.0150.32500'],
+            'fragments' => ['Зонт', 'ЗМ-Р', '304-0.5', 'D150'],
             'brand' => [
                 'name' => 'Теплов и Сухов',
                 'slug' => 'teplov-i-suhov',

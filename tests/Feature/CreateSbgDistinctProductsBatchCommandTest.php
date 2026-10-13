@@ -3151,7 +3151,7 @@ class CreateSbgDistinctProductsBatchCommandTest extends TestCase
             'external_id' => 'teplov-zm-r-304-d150',
             'external_code' => 'УТ-00002699',
             'external_sku' => 'TS.ST5.ZNT.0150.32500',
-            'name' => 'Зонт ЗМ-Р 304-0.5 D150 арт. TS.ST5.ZNT.0150.32500',
+            'name' => 'Зонт ЗМ-Р 304-0.5 D150',
             'price_byn' => null,
             'stock_quantity' => 3,
             'match_status' => 'ambiguous',
