@@ -19,11 +19,11 @@ class OrderExporter extends Exporter
 
             ExportColumn::make('created_at')
                 ->label('Дата создания')
-                ->formatStateUsing(fn($state) => $state?->format('d.m.Y H:i')),
+                ->formatStateUsing(fn ($state) => $state?->format('d.m.Y H:i')),
 
             ExportColumn::make('status')
                 ->label('Статус')
-                ->formatStateUsing(fn($state) => Order::STATUSES[$state] ?? $state),
+                ->formatStateUsing(fn ($state) => Order::STATUSES[$state] ?? $state),
 
             ExportColumn::make('customer_name')
                 ->label('Имя клиента'),
@@ -36,7 +36,7 @@ class OrderExporter extends Exporter
 
             ExportColumn::make('delivery_type')
                 ->label('Способ доставки')
-                ->formatStateUsing(fn($state) => Order::DELIVERY_TYPES[$state] ?? $state),
+                ->formatStateUsing(fn ($state) => Order::DELIVERY_TYPES[$state] ?? $state),
 
             ExportColumn::make('delivery_region')
                 ->label('Область'),
@@ -49,38 +49,32 @@ class OrderExporter extends Exporter
 
             ExportColumn::make('delivery_price')
                 ->label('Стоимость доставки')
-                ->formatStateUsing(fn($state) => number_format((float) $state, 2, '.', ' ')),
+                ->formatStateUsing(fn ($state) => number_format((float) $state, 2, '.', ' ')),
 
             ExportColumn::make('payment_type')
                 ->label('Способ оплаты')
-                ->formatStateUsing(fn($state) => Order::PAYMENT_TYPES[$state] ?? $state),
+                ->formatStateUsing(fn ($state) => Order::PAYMENT_TYPES[$state] ?? $state),
 
             ExportColumn::make('payment_status')
                 ->label('Статус оплаты')
-                ->formatStateUsing(fn($state) => match($state) {
-                    'paid'     => 'Оплачен',
-                    'pending'  => 'Ожидает оплаты',
-                    'failed'   => 'Ошибка оплаты',
-                    'refunded' => 'Возврат',
-                    default    => $state,
-                }),
+                ->formatStateUsing(fn ($state, Order $record): string => $record->paymentStatusLabel()),
 
             ExportColumn::make('subtotal')
                 ->label('Сумма товаров')
-                ->formatStateUsing(fn($state) => number_format((float) $state, 2, '.', ' ')),
+                ->formatStateUsing(fn ($state) => number_format((float) $state, 2, '.', ' ')),
 
             ExportColumn::make('discount')
                 ->label('Скидка')
-                ->formatStateUsing(fn($state) => number_format((float) $state, 2, '.', ' ')),
+                ->formatStateUsing(fn ($state) => number_format((float) $state, 2, '.', ' ')),
 
             ExportColumn::make('total')
                 ->label('Итого')
-                ->formatStateUsing(fn($state) => number_format((float) $state, 2, '.', ' ')),
+                ->formatStateUsing(fn ($state) => number_format((float) $state, 2, '.', ' ')),
 
             ExportColumn::make('items_list')
                 ->label('Товары')
-                ->getStateUsing(fn(Order $record) => $record->items
-                    ->map(fn($item) => "{$item->product_name} (арт. {$item->product_sku}) × {$item->quantity} = {$item->total} BYN")
+                ->getStateUsing(fn (Order $record) => $record->items
+                    ->map(fn ($item) => "{$item->product_name} (арт. {$item->product_sku}) × {$item->quantity} = {$item->total} BYN")
                     ->join(' | ')
                 ),
 
@@ -101,11 +95,12 @@ class OrderExporter extends Exporter
     public static function getCompletedNotificationBody(Export $export): string
     {
         $count = $export->successful_rows;
-        return "Экспорт завершён. Выгружено {$count} " . match(true) {
+
+        return "Экспорт завершён. Выгружено {$count} ".match (true) {
             $count % 100 >= 11 && $count % 100 <= 19 => 'заказов',
             $count % 10 === 1 => 'заказ',
             $count % 10 >= 2 && $count % 10 <= 4 => 'заказа',
             default => 'заказов',
-        } . '.';
+        }.'.';
     }
 }

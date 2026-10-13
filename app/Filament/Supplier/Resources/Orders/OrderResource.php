@@ -80,8 +80,8 @@ class OrderResource extends Resource
                         TextEntry::make('payment_status')
                             ->label('Оплата')
                             ->badge()
-                            ->formatStateUsing(fn (string $state): string => static::paymentStatusLabel($state))
-                            ->color(fn (string $state): string => $state === 'paid' ? 'success' : 'warning'),
+                            ->formatStateUsing(fn (string $state, Order $record): string => $record->paymentStatusLabel())
+                            ->color(fn (Order $record): string => $record->paymentStatusColor()),
                         TextEntry::make('supplier_items_count')
                             ->label('Ваших позиций')
                             ->suffix(' шт.'),
@@ -201,8 +201,8 @@ class OrderResource extends Resource
                 TextColumn::make('payment_status')
                     ->label('Оплата')
                     ->badge()
-                    ->formatStateUsing(fn (string $state): string => static::paymentStatusLabel($state))
-                    ->color(fn (string $state): string => $state === 'paid' ? 'success' : 'warning'),
+                    ->formatStateUsing(fn (string $state, Order $record): string => $record->paymentStatusLabel())
+                    ->color(fn (Order $record): string => $record->paymentStatusColor()),
                 TextColumn::make('items.integrationProduct.source.name')
                     ->label('Источник')
                     ->badge()
@@ -314,20 +314,12 @@ class OrderResource extends Resource
     {
         return match ($status) {
             'new' => 'info',
-            'confirmed', 'processing' => 'warning',
+            'confirmed' => 'success',
+            'processing' => 'warning',
             'shipped' => 'primary',
             'delivered' => 'success',
             'cancelled' => 'danger',
             default => 'gray',
-        };
-    }
-
-    private static function paymentStatusLabel(string $status): string
-    {
-        return match ($status) {
-            'paid' => 'Оплачен',
-            'pending' => 'Ожидает оплаты',
-            default => $status,
         };
     }
 }

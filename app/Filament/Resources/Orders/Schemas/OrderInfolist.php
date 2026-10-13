@@ -26,29 +26,13 @@ class OrderInfolist
 
         $statusColor = fn (?string $state) => match ($state) {
             'new' => 'info',
-            'confirmed' => 'warning',
+            'confirmed' => 'success',
             'processing' => 'warning',
             'shipped' => 'primary',
             'delivered' => 'success',
             'completed' => 'success',
             'cancelled' => 'danger',
             default => 'gray',
-        };
-
-        $paymentStatusColor = fn (?string $state) => match ($state) {
-            'paid' => 'success',
-            'pending' => 'warning',
-            'failed' => 'danger',
-            'refunded' => 'info',
-            default => 'gray',
-        };
-
-        $paymentStatusLabel = fn (?string $state) => match ($state) {
-            'paid' => 'Оплачен',
-            'pending' => 'Ожидает оплаты',
-            'failed' => 'Ошибка оплаты',
-            'refunded' => 'Возврат',
-            default => $state,
         };
 
         return $schema
@@ -93,8 +77,8 @@ class OrderInfolist
                         TextEntry::make('payment_status')
                             ->label('Статус оплаты')
                             ->badge()
-                            ->color($paymentStatusColor)
-                            ->formatStateUsing($paymentStatusLabel),
+                            ->color(fn (Order $record): string => $record->paymentStatusColor())
+                            ->formatStateUsing(fn (?string $state, Order $record): string => $record->paymentStatusLabel()),
 
                         TextEntry::make('manager.name')
                             ->label('Ответственный')
@@ -319,8 +303,8 @@ class OrderInfolist
                         TextEntry::make('payment_status')
                             ->label('Статус')
                             ->badge()
-                            ->color($paymentStatusColor)
-                            ->formatStateUsing($paymentStatusLabel),
+                            ->color(fn (Order $record): string => $record->paymentStatusColor())
+                            ->formatStateUsing(fn (?string $state, Order $record): string => $record->paymentStatusLabel()),
 
                         TextEntry::make('coupon_code')
                             ->label('Промокод')

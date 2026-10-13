@@ -80,6 +80,8 @@ class OrderSupplyRoutingTest extends TestCase
             ->assertSeeText('Товары 240.00 BYN · Вход ≈ 192.00 BYN · Маржа ≈ 48.00 BYN / 20.0%')
             ->assertSeeText('Контроль')
             ->assertSeeText('Не назначен менеджер')
+            ->assertSeeText('Оплата при получении')
+            ->assertDontSeeText('Ожидает оплаты')
             ->assertSeeText('+375 29 100-20-30')
             ->assertSeeText('orders@sanbusiness.test')
             ->assertDontSeeText('Маршрут рассчитан по текущим связям')
@@ -309,7 +311,7 @@ class OrderSupplyRoutingTest extends TestCase
         $order = $fixture['order']->fresh();
         $this->assertSame('confirmed', $order->status);
         $this->assertSame($manager->id, $order->manager_id);
-        $this->assertSame('Принят', $order->status_label);
+        $this->assertSame('Подтверждён', $order->status_label);
         $this->assertSame('В обработку / закупку', $order->workflowDestination());
         $this->assertDatabaseHas('order_status_history', [
             'order_id' => $order->id,
@@ -317,6 +319,25 @@ class OrderSupplyRoutingTest extends TestCase
             'status_from' => 'new',
             'status_to' => 'confirmed',
         ]);
+    }
+
+    public function test_retail_payment_on_receipt_is_not_shown_as_overdue_payment(): void
+    {
+        $order = new Order([
+            'payment_type' => 'cash',
+            'payment_status' => 'pending',
+        ]);
+
+        $this->assertTrue($order->isRetailCustomer());
+        $this->assertTrue($order->isPaymentOnReceipt());
+        $this->assertSame('Оплата при получении', $order->paymentStatusLabel());
+        $this->assertSame('info', $order->paymentStatusColor());
+
+        $order->payment_type = 'online_card';
+
+        $this->assertFalse($order->isPaymentOnReceipt());
+        $this->assertSame('Ожидает оплаты', $order->paymentStatusLabel());
+        $this->assertSame('warning', $order->paymentStatusColor());
     }
 
     public function test_supplier_is_required_for_external_fulfillment_routes(): void

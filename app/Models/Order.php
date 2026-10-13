@@ -75,7 +75,7 @@ class Order extends Model
     // Статусы для отображения
     public const STATUSES = [
         'new' => 'Новый',
-        'confirmed' => 'Принят',
+        'confirmed' => 'Подтверждён',
         'processing' => 'В обработке',
         'shipped' => 'Отправлен',
         'delivered' => 'Доставлен',
@@ -171,6 +171,44 @@ class Order extends Model
             'delivered' => 'На финансовое закрытие',
             'cancelled' => 'В архив',
             default => 'Требует разбора',
+        };
+    }
+
+    public function isRetailCustomer(): bool
+    {
+        return blank($this->company_unp);
+    }
+
+    public function isPaymentOnReceipt(): bool
+    {
+        return $this->isRetailCustomer()
+            && in_array($this->payment_type, ['cash', 'card'], true);
+    }
+
+    public function paymentStatusLabel(): string
+    {
+        if ($this->payment_status === 'pending' && $this->isPaymentOnReceipt()) {
+            return 'Оплата при получении';
+        }
+
+        return match ($this->payment_status) {
+            'paid' => 'Оплачен',
+            'pending' => 'Ожидает оплаты',
+            'failed' => 'Ошибка оплаты',
+            'refunded' => 'Возврат',
+            default => $this->payment_status ?: '—',
+        };
+    }
+
+    public function paymentStatusColor(): string
+    {
+        return match (true) {
+            $this->payment_status === 'paid' => 'success',
+            $this->payment_status === 'pending' && $this->isPaymentOnReceipt() => 'info',
+            $this->payment_status === 'pending' => 'warning',
+            $this->payment_status === 'failed' => 'danger',
+            $this->payment_status === 'refunded' => 'info',
+            default => 'gray',
         };
     }
 

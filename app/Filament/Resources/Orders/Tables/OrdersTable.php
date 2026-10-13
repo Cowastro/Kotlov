@@ -56,7 +56,7 @@ class OrdersTable
             ->toArray();
 
         $paymentStatuses = [
-            'pending' => 'Ожидает оплаты',
+            'pending' => 'Не оплачено / при получении',
             'paid' => 'Оплачен',
             'failed' => 'Ошибка оплаты',
             'refunded' => 'Возврат',
@@ -64,7 +64,7 @@ class OrdersTable
 
         $statusLabelOverrides = [
             'new' => 'Новый',
-            'confirmed' => 'Подтвержден',
+            'confirmed' => 'Подтверждён',
             'processing' => 'В обработке',
             'waiting_payment' => 'Ожидает оплаты',
             'paid' => 'Оплачен',
@@ -166,21 +166,16 @@ class OrdersTable
                 TextColumn::make('payment_status')
                     ->label('Статус оплаты')
                     ->badge()
-                    ->color(fn (?string $state) => match ($state) {
-                        'paid' => 'success',
-                        'pending' => 'warning',
-                        'failed' => 'danger',
-                        'refunded' => 'info',
-                        default => 'gray',
-                    })
-                    ->icon(fn (?string $state) => match ($state) {
-                        'paid' => 'heroicon-o-check-circle',
-                        'pending' => 'heroicon-o-clock',
-                        'failed' => 'heroicon-o-x-circle',
-                        'refunded' => 'heroicon-o-arrow-uturn-left',
+                    ->color(fn (Order $record): string => $record->paymentStatusColor())
+                    ->icon(fn (?string $state, Order $record) => match (true) {
+                        $state === 'paid' => 'heroicon-o-check-circle',
+                        $state === 'pending' && $record->isPaymentOnReceipt() => 'heroicon-o-hand-raised',
+                        $state === 'pending' => 'heroicon-o-clock',
+                        $state === 'failed' => 'heroicon-o-x-circle',
+                        $state === 'refunded' => 'heroicon-o-arrow-uturn-left',
                         default => null,
                     })
-                    ->formatStateUsing(fn (?string $state) => $state ? ($paymentStatuses[$state] ?? $state) : '—'),
+                    ->formatStateUsing(fn (?string $state, Order $record): string => $record->paymentStatusLabel()),
 
                 TextColumn::make('economics')
                     ->label('Экономика')
@@ -266,7 +261,7 @@ class OrdersTable
                     ->badge()
                     ->color(fn (?string $state, Order $record) => $record->isArchivedAsIrrelevant() ? 'gray' : match ($state) {
                         'new' => 'info',
-                        'confirmed' => 'warning',
+                        'confirmed' => 'success',
                         'processing' => 'warning',
                         'waiting_payment' => 'warning',
                         'paid' => 'success',
