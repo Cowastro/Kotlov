@@ -3341,6 +3341,42 @@ class CreateSbgDistinctProductsBatchCommand extends Command
         ],
     ];
 
+    // The exact PSM D260 is listed by two independent retailers at 2,081-2,140
+    // RUB. At the official NBRB rate of 3.6006 BYN per 100 RUB on 2026-10-14,
+    // the upper current retail reference is 77.05 BYN, rounded to 77 BYN.
+    private const BATCH_UNMATCHED_RESEARCHED_20261014_CZ = [
+        'УТ-00000746' => [
+            'template_slug' => 'ploschadka-montajnaya-teplov-i-suhov-mono-pmm-r-aisi-304-08-120',
+            'allow_unmatched' => true,
+            'category_slug' => 'krepleniya-dymohod',
+            'fragments' => ['Площадка сквозная монтажная', 'ПСМ', 'D 260'],
+            'brand' => [
+                'name' => 'Теплов и Сухов',
+                'slug' => 'teplov-i-suhov',
+                'country' => 'Россия',
+                'content' => '<p><strong>Теплов и Сухов</strong> — российский производитель модульных дымоходных систем и монтажных элементов.</p>',
+            ],
+            'name' => 'Теплов и Сухов Площадка сквозная монтажная ПСМ Ø260',
+            'retail' => 77.00,
+            'images' => [
+                'img/products/teplov-i-suhov/psm-260-through-mounting-platform.png',
+            ],
+            'source_url' => 'https://promindex.ru/krasnoyarsk/catalog/429256-ploschadka-skvoznaya-montazhnaya-psm-d-260.html',
+            'short' => 'Сквозная монтажная площадка Теплов и Сухов ПСМ из нержавеющей стали AISI 430 для дымохода Ø260 мм.',
+            'content' => '<p><strong>Теплов и Сухов ПСМ Ø260</strong> — сквозная монтажная площадка для фиксации дымохода и передачи его весовой нагрузки на несущую конструкцию.</p><p>Изделие выполнено из нержавеющей стали AISI 430. Диаметр прохода составляет 260 мм, габариты — 400×200×400 мм.</p><p>Перед монтажом проверьте совместимость с диаметром и типом дымоходной системы, а также с крепёжными элементами.</p>',
+            'specs' => [
+                ['key' => 'Тип элемента', 'value' => 'Площадка сквозная монтажная'],
+                ['key' => 'Модель', 'value' => 'ПСМ'],
+                ['key' => 'Диаметр', 'value' => '260 мм'],
+                ['key' => 'Габариты (Ш×В×Г)', 'value' => '400×200×400 мм'],
+                ['key' => 'Вес', 'value' => '3 кг'],
+                ['key' => 'Марка стали', 'value' => 'AISI 430'],
+                ['key' => 'Бренд', 'value' => 'Теплов и Сухов'],
+                ['key' => 'Страна производства', 'value' => 'Россия'],
+            ],
+        ],
+    ];
+
     public function handle(
         IntegrationProductCreator $creator,
         IntegrationProductMatchDecision $matchDecision,
@@ -3449,6 +3485,7 @@ class CreateSbgDistinctProductsBatchCommand extends Command
             'unmatched-researched-20261014-cw' => self::BATCH_UNMATCHED_RESEARCHED_20261014_CW,
             'unmatched-disputed-20261014-cx' => self::BATCH_UNMATCHED_DISPUTED_20261014_CX,
             'unmatched-researched-20261014-cy' => self::BATCH_UNMATCHED_RESEARCHED_20261014_CY,
+            'unmatched-researched-20261014-cz' => self::BATCH_UNMATCHED_RESEARCHED_20261014_CZ,
             default => null,
         };
 
