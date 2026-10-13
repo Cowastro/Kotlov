@@ -479,4 +479,53 @@ class ResolveSbgAmbiguousBatchCommandTest extends TestCase
             'confidence' => 'manual',
         ]);
     }
+
+    public function test_it_links_the_exact_solpi_slp_500ba_euro_card(): void
+    {
+        $source = IntegrationSource::query()->create([
+            'code' => 'onec-sbg-solpi-slp-500ba-euro',
+            'name' => '1С СанБизнесГруп',
+            'settings' => ['partner_name' => 'ООО «СанБизнесГруп»'],
+            'is_active' => true,
+            'update_stock' => true,
+        ]);
+        $category = Category::query()->create([
+            'name' => 'Стабилизаторы напряжения',
+            'slug' => 'stabilizatory-napryazheniya-test',
+            'parent_id' => 0,
+        ]);
+        $product = Product::query()->create([
+            'category_id' => $category->id,
+            'sku' => 'PS-002.366',
+            'name' => 'Стабилизатор напряжения Solpi-M SLP-500BA EURO, 500 ВА, 2 розетки',
+            'slug' => 'solpi-m-slp-500ba',
+            'price' => 180,
+        ]);
+        $item = IntegrationProduct::query()->create([
+            'integration_source_id' => $source->id,
+            'external_id' => 'solpi-slp-500ba-euro',
+            'external_code' => 'УТ-00009655',
+            'name' => 'Стабилизатор напряжения Solpi-m SLP-500BА EURO',
+            'price_byn' => null,
+            'stock_quantity' => 1,
+            'match_status' => 'ambiguous',
+            'candidates' => [['product_id' => $product->id, 'score' => 0.9394]],
+        ]);
+
+        $this->artisan('integration:resolve-sbg-ambiguous', [
+            '--batch' => 'exact-20261013-k',
+            '--code' => ['УТ-00009655'],
+            '--apply' => true,
+        ])->assertSuccessful();
+
+        $item->refresh();
+        $this->assertSame($product->id, $item->product_id);
+        $this->assertSame('matched', $item->match_status);
+        $this->assertSame('manual_candidate', $item->match_method);
+        $this->assertDatabaseHas('supplier_product_mappings', [
+            'supplier_article' => 'УТ-00009655',
+            'product_id' => $product->id,
+            'confidence' => 'manual',
+        ]);
+    }
 }
