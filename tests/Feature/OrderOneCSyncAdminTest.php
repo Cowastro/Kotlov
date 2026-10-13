@@ -60,8 +60,8 @@ class OrderOneCSyncAdminTest extends TestCase
             ->assertSee('Ответ получен')
             ->assertSee('Конфликт статусов')
             ->assertSee('Неизвестный статус')
-            ->assertSeeText('Регламентный обмен задержан.')
-            ->assertSeeText('1С пытается вернуть более ранний статус.')
+            ->assertSee('Регламентный обмен задержан.')
+            ->assertSee('1С пытается вернуть более ранний статус.')
             ->assertSeeText('Есть открытая проблема');
     }
 
