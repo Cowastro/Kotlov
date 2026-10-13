@@ -1,0 +1,671 @@
+{
+    "code": "2026-10-13-technolit-zero-013",
+    "observed_at": "2026-10-13T21:24:12+00:00",
+    "review_required": true,
+    "selection": {
+        "production_only": true,
+        "active_only": true,
+        "unpriced_only": true,
+        "brand": "ТехноЛит",
+        "skus": [],
+        "after_id": 12461,
+        "limit": 5,
+        "source_queue": "storage/app/private/price-research-queue-38466265607/price-research-queue.csv"
+    },
+    "sources": [
+        {
+            "code": "web-8cde72c895d68935",
+            "name": "PechiBani.by",
+            "kind": "competitor",
+            "base_url": "https://pechibani.by",
+            "currency": "BYN",
+            "region": "Открытый рынок",
+            "freshness_hours": 168,
+            "minimum_match_confidence": 0.99,
+            "notes": "Источник найден hosted web_search; batch требует ручной проверки до применения."
+        },
+        {
+            "code": "web-66174494f7f95435",
+            "name": "БАНИ САУНЫ",
+            "kind": "competitor",
+            "base_url": "https://banisauny.by",
+            "currency": "BYN",
+            "region": "Открытый рынок",
+            "freshness_hours": 168,
+            "minimum_match_confidence": 0.99,
+            "notes": "Источник найден hosted web_search; batch требует ручной проверки до применения."
+        },
+        {
+            "code": "web-6f160b438b8531be",
+            "name": "Kotlovlida.by",
+            "kind": "competitor",
+            "base_url": "https://kotlovlida.by",
+            "currency": "BYN",
+            "region": "Открытый рынок",
+            "freshness_hours": 168,
+            "minimum_match_confidence": 0.99,
+            "notes": "Источник найден hosted web_search; batch требует ручной проверки до применения."
+        }
+    ],
+    "products": [
+        {
+            "sku": "KOTLOV-000184",
+            "review_reason": "Live-web исследование точной production-модели нашло менее трёх независимых подтверждённых предложений; сохранить консультационный режим.",
+            "force_consultation_hold": true,
+            "observations": [
+                {
+                    "source": "web-8cde72c895d68935",
+                    "url": "https://pechibani.by/pechi-dlya-bani/pech-avangard-zk-35-p2-uragan-v-krugloy-setke/",
+                    "external_name": "Печь Авангард ЗК 35 (П2) Ураган в круглой сетке",
+                    "model": "Печь для бани Гефест Авангард ЗК 35 (П2) Ураган круглая сетка",
+                    "package": "Печь, стартовая труба 0,5 м, крышка каменки, 2 паровые пушки, круглая сетка, дверца закрытой каменки с клапаном, зольный ящик, герметик, паспорт",
+                    "observed_price": 5263,
+                    "currency": "BYN",
+                    "exchange_rate_to_byn": 1,
+                    "price_includes_vat": null,
+                    "availability_status": "unknown",
+                    "match_method": "exact_model",
+                    "match_confidence": 0.99,
+                    "is_confirmed": true,
+                    "is_comparable": true,
+                    "validation_flags": [],
+                    "evidence": "Карточка подтверждает модель, производителя ТехноЛит, цену 5 263 BYN; комплектация перечислена в описании."
+                }
+            ],
+            "research": {
+                "summary": "Найдены предложения в Беларуси и России. В РБ точная модель представлена у нескольких независимых продавцов: kotlov.by — 5 263 BYN (наличие уточнять), pechibani.by — 5 263 BYN, pechi-dimohody.by — 5 260 BYN по региональному каталогу, parnaya.by — 5 000 BYN (карточка с противоречиями в описании). В РФ диапазон цен точной модели: 125 600–138 495 RUB; самый низкий — официальный pechi-avangard.ru за 125 600 RUB. Цена клиента 0,00 BYN не является рыночной и, вероятно, технически не заполнена.",
+                "verdict": "Белорусский рынок по точной модели ориентировочно 5 000–5 263 BYN. Наиболее надежные подтвержденные цены в РБ — 5 263 BYN (kotlov.by, pechibani.by); предложение parnaya.by за 5 000 BYN требует уточнения модели/комплектации из-за противоречий в описании. Российские цены без учета доставки, НДС и логистики не дают очевидной экономии. Рекомендуется подтвердить наличие и комплектацию у 2–3 белорусских продавцов перед выставлением цены.",
+                "confidence": "medium",
+                "search_queries": [
+                    "Печь для бани Гефест Авангард ЗК 35 П2 Ураган круглая сетка ТехноЛит",
+                    "KOTLOV-000184 печь Гефест Авангард ЗК 35",
+                    "Гефест Авангард ЗК 35 Ураган круглая сетка купить",
+                    "site:pechi-dimohody.by \"AVANGARD ЗК (35)\" \"Ураган в круглой сетке\"",
+                    "\"Авангард ЗК 35 (П2) Ураган в круглой сетке\" Беларусь купить",
+                    "\"Гефест Авангард ЗК 35 (П2) Ураган круглая сетка\" KOTLOV-000184"
+                ],
+                "rejected_candidates": [
+                    {
+                        "title": "Печь для бани Гефест Авангард ЗК 35 (П2)",
+                        "url": "https://kotlov.by/drovianye-peci-bannye/pec-dlia-bani-gefest-avangard-zk-35-p2",
+                        "reason": "Другая комплектация: без Ураган/круглой сетки."
+                    },
+                    {
+                        "title": "Печь для бани Гефест Авангард ЗК 35 (П2) Ураган в сетке Тюльпан",
+                        "url": "https://kotlov.by/drovianye-peci-bannye/pec-dlia-bani-gefest-avangard-zk-35-p2-uragan-v-setke-tiulpan",
+                        "reason": "Другая форма сетки — Тюльпан, не круглая сетка."
+                    },
+                    {
+                        "title": "Печь Гефест Авангард ЗКН 35 (П2) Ураган в круглой сетке",
+                        "url": "https://pechi-group.ru/product/avangard-zkn-35-p2-uragan-v-krugloy-setke/",
+                        "reason": "Модификация ЗКН, а не ЗК."
+                    },
+                    {
+                        "title": "Печь Гефест Авангард ЗКН 35 (П2) Ураган в круглой сетке",
+                        "url": "https://prometey-spb.ru/pechi-dlya-bani/drovyannye-pechi/pechi-gefest/gefest-avangard/pech-gefest-avangard-zkn-35-p2-uragan-v-krugloy-setke/",
+                        "reason": "Модификация ЗКН, а не ЗК."
+                    },
+                    {
+                        "title": "Печь банная Авангард ЗКН 35 (П2) Ураган в круглой сетке",
+                        "url": "https://ruspechka.shop/product/avangard-zkn-35-p2-uragan-v-krugloj-setke",
+                        "reason": "Модификация ЗКН, а не ЗК."
+                    },
+                    {
+                        "title": "Чугунная печь для бани Гефест Авангард ЗК 35 (П2) Pro Ураган в круглой сетке",
+                        "url": "https://3d-sauna.ru/chugunnaya-pech-dlya-bani-gefest-avangard-zk-35-p2-pro-uragan-v-krugloy-setke",
+                        "reason": "Pro-модификация, не базовая ЗК 35 (П2)."
+                    },
+                    {
+                        "title": "Комплект Авангард ЗК 35 (П2) Классика 940/40 Талькохлорит кирпич",
+                        "url": "https://kamin53.ru/product/chugunnaya-pech-dlya-bani-komplekt-avangard-zk-35-p2-klassika-940-40-talkohlorit-kirpich/",
+                        "reason": "Другая комплектация с каменной облицовкой, не Ураган круглая сетка."
+                    },
+                    {
+                        "title": "Чугунная банная печь Авангард ЗК 35 (П2)",
+                        "url": "https://teplone.by/chugunnaja-bannaja-pech-avangard-zk-35-p2-avangard-zk-35-p2/",
+                        "reason": "Другая комплектация: без Ураган/круглой сетки."
+                    },
+                    {
+                        "title": "Печь Авангард ЗК 35 (П2) Ураган в сетке Тюльпан",
+                        "url": "https://banisauny.by/pechi-dlya-bani/pech-avangard-zk-35-p2-uragan-v-setke-tyulpan/",
+                        "reason": "Другая форма сетки — Тюльпан, не круглая сетка."
+                    }
+                ],
+                "excluded_offers": [
+                    {
+                        "title": "ТехноЛит Печь для бани Гефест Авангард ЗК 35 (П2) Ураган круглая сетка",
+                        "url": "https://kotlov.by/drovianye-peci-bannye/pec-dlia-bani-gefest-avangard-zk-35-p2-uragan-kruglaia-setka",
+                        "reason": "Собственный домен KOTLOV не является независимым рыночным источником."
+                    },
+                    {
+                        "title": "Чугунная печь для бани Гефест AVANGARD ЗК (35) (П2) Ураган в круглой сетке",
+                        "url": "https://berezovka.pechi-dimohody.by/pechi-dlya-bani/proizvoditeli1/pechi-dlya-bani-gefest/chugunnaya-pech-dlya-bani-gefest-avangard-zk-30-p2-uragan-v-krugloj-setke",
+                        "reason": "Предложение не подтверждает точное совпадение модели."
+                    },
+                    {
+                        "title": "Печь для бани Gefest (Технолит) Авангард ЗК 35 (П2) Ураган в круглой сетке",
+                        "url": "https://parnaya.by/katalog-tovarov/drovyanye-pechi-dlya-bani/drovyanye-pechi-dlya-bani-gefest-tekhnolit/drovyanye-pechi-dlya-bani-gefest-tekhnolit-avangard/pech-dlya-bani-gefest-tekhnolit-avangard-zk-24-p2-3334-3335-3336-detail",
+                        "reason": "Предложение не подтверждает точное совпадение модели."
+                    },
+                    {
+                        "title": "Купить печь для бани АВАНГАРД ЗК 35 (П2) Ураган в круглой сетке",
+                        "url": "https://pechi-avangard.ru/catalog/avangard-v-krugloy-setke/avangard-zk-35-p2-uragan-v-krugloy-setke/",
+                        "reason": "Нет положительной подтверждённой цены в BYN."
+                    },
+                    {
+                        "title": "Чугунная печь для бани Авангард ЗК 35 (П2) Ураган в круглой сетке",
+                        "url": "https://kamin53.ru/product/chugunnaya-pech-dlya-bani-avangard-zk-35-p2-uragan-v-krugloy-setke-2/",
+                        "reason": "Нет положительной подтверждённой цены в BYN."
+                    },
+                    {
+                        "title": "Печь Гефест Авангард ЗК 35 (П2) Ураган в круглой сетке",
+                        "url": "https://pechi-group.ru/product/pech-gefest-avangard-zk-35-p2-uragan-v-krugloy-setke/",
+                        "reason": "Нет положительной подтверждённой цены в BYN."
+                    },
+                    {
+                        "title": "Печь для бани Авангард ЗК 35 (П2) Ураган круглая сетка",
+                        "url": "https://saunaopt.ru/pechi-dlya-bani/drovyanye-pechi/pech-dlya-bani-avangard-zk-30-p2-uragan-kruglaya-setka",
+                        "reason": "Предложение не подтверждает точное совпадение модели."
+                    },
+                    {
+                        "title": "Печь Гефест Авангард ЗК 35 (П2) Ураган в круглой сетке",
+                        "url": "https://msk.happybannik.ru/product/pech-gefest-avangard-zk-30-p-2-uragan-v-krugloj-setke/",
+                        "reason": "Предложение не подтверждает точное совпадение модели."
+                    }
+                ],
+                "model": "deepseek-v4-pro",
+                "searched_at": "2026-10-13T21:19:30+00:00"
+            }
+        },
+        {
+            "sku": "KOTLOV-000185",
+            "review_reason": "Live-web исследование точной production-модели нашло менее трёх независимых подтверждённых предложений; сохранить консультационный режим.",
+            "force_consultation_hold": true,
+            "observations": [],
+            "research": {
+                "summary": "Найдены три независимых предложения в Беларуси: kotlov.by — 5411.20 BYN, banisauny.by — 5411.00 BYN (наличие уточнять), pechibani.by — 5269.00 BYN. Рыночный диапазон по Беларуси — 5269–5411.20 BYN. Для сравнения в РФ цена от 135600 до 142400 RUB. Артикул KOTLOV-000185 в открытом поиске не подтвержден; товар идентифицирован по точному названию, бренду ТехноЛит и артикулам продавцов (например, 12259 у белорусских продавцов).",
+                "verdict": "Товар присутствует на рынке Беларуси. Минимальная подтвержденная цена — 5269.00 BYN на pechibani.by, однако у части белорусских карточек в описании комплектации указана «круглая сетка» вместо «Тюльпан», поэтому перед закупкой необходимо письменно подтвердить комплектность, наличие и срок поставки. Цена клиента 0.00 BYN не является рыночным ориентиром; автоматическое решение об изменении цены не принимается.",
+                "confidence": "medium",
+                "search_queries": [
+                    "Гефест Авангард ЗК 35 П2 Ураган в сетке Тюльпан",
+                    "KOTLOV-000185",
+                    "ТехноЛит Гефест Авангард ЗК 35 Ураган Тюльпан цена",
+                    "Печь для бани Гефест Авангард ЗК 35 П2 купить Беларусь",
+                    "AVANGARD ЗК 35 П2 Ураган в сетке Тюльпан купить"
+                ],
+                "rejected_candidates": [
+                    {
+                        "title": "Печь для бани Gefest (Технолит) Авангард ЗК 35 (П2) Ураган в круглой сетке",
+                        "url": "https://parnaya.by/katalog-tovarov/drovyanye-pechi-dlya-bani/drovyanye-pechi-dlya-bani-gefest-tekhnolit/drovyanye-pechi-dlya-bani-gefest-tekhnolit-avangard/pech-dlya-bani-gefest-tekhnolit-avangard-zk-24-p2-3334-3335-3336-detail",
+                        "reason": "Другая комплектация — круглая сетка, а не сетка Тюльпан."
+                    },
+                    {
+                        "title": "Каталог печей Гефест Авангард в Гомеле",
+                        "url": "https://gomel.pechi-dimohody.by/pechi-dlya-bani/proizvoditeli1/pechi-dlya-bani-gefest/pjech-gjefjest-anvangard",
+                        "reason": "Каталожная страница без отдельной подтверждаемой карточки товара; цена 5400 BYN не засчитана как полноценное предложение."
+                    },
+                    {
+                        "title": "Чугунная печь для бани Гефест Авангард ЗК 35 (П2) Pro Ураган в сетке Тюльпан",
+                        "url": "https://3d-sauna.ru:443/chugunnaya-pech-dlya-bani-gefest-avangard-zk-35-p2-pro-uragan-v-setke-tyulpan",
+                        "reason": "Исполнение Pro, не совпадает с целевой моделью ЗК 35 (П2) Ураган."
+                    },
+                    {
+                        "title": "Чугунная печь для бани Технолит Авангард ЗК Ураган 35 (П2) в сетке Тюльпан — technolit.shop",
+                        "url": "https://technolit.shop/shop/?per_row=5&shop_view=list&filter_vid-dverki-pechi=panoramnaya&filter_obem-parnogo-pomescheniya-m3=do-35-m3",
+                        "reason": "Каталожная выдача/агрегатор без подтверждаемой карточки товара."
+                    }
+                ],
+                "excluded_offers": [
+                    {
+                        "title": "Печь для бани Гефест Авангард ЗК 35 (П2) Ураган в сетке Тюльпан",
+                        "url": "https://kotlov.by/drovianye-peci-bannye/pec-dlia-bani-gefest-avangard-zk-35-p2-uragan-v-setke-tiulpan",
+                        "reason": "Собственный домен KOTLOV не является независимым рыночным источником."
+                    },
+                    {
+                        "title": "Печь Авангард ЗК 35 (П2) Ураган в сетке Тюльпан ТехноЛит",
+                        "url": "https://banisauny.by/pechi-dlya-bani/chugunnyye-pechi-dlya-bani/pech-avangard-zk-35-p2-uragan-v-setke-tyulpan/",
+                        "reason": "Предложение не подтверждает точное совпадение модели."
+                    },
+                    {
+                        "title": "Печь Авангард ЗК 35 (П2) Ураган в сетке Тюльпан",
+                        "url": "https://pechibani.by/pechi-dlya-bani/pech-avangard-zk-35-p2-uragan-v-setke-tyulpan/",
+                        "reason": "Предложение не подтверждает точное совпадение модели."
+                    },
+                    {
+                        "title": "Печь для бани Авангард ЗК 35 (П2) Ураган в сетке Тюльпан",
+                        "url": "https://ruspechka.shop/product/avangard-zk-35-p2-uragan-v-setke-tyulpan",
+                        "reason": "Нет положительной подтверждённой цены в BYN."
+                    },
+                    {
+                        "title": "Печь Гефест Авангард ЗК 35 (П2) Ураган в сетке Тюльпан",
+                        "url": "https://prometey-spb.ru/pechi-dlya-bani/drovyannye-pechi/pechi-gefest/gefest-avangard/pech-gefest-avangard-zk-35-p2-uragan-v-setke-tyulpan/",
+                        "reason": "Нет положительной подтверждённой цены в BYN."
+                    },
+                    {
+                        "title": "Авангард ЗК 35 (П2) Ураган в сетке Тюльпан",
+                        "url": "https://pechi53.ru/shop/pechibanya/gefest/pechi-v-setke/avangard-uragan/%d0%b0%d0%b2%d0%b0%d0%bd%d0%b3%d0%b0%d1%80%d0%b4-%d0%b7%d0%ba-35-%d0%bf2-%d1%83%d1%80%d0%b0%d0%b3%d0%b0%d0%bd-%d0%b2-%d1%81%d0%b5%d1%82%d0%ba%d0%b5-%d1%82%d1%8e%d0%bb%d1%8c%d0%bf%d0%b0%d0%bd/",
+                        "reason": "Нет положительной подтверждённой цены в BYN."
+                    },
+                    {
+                        "title": "Печь для русской бани Гефест Avangard ЗК 35 (П2) Ураган в сетке тюльпан",
+                        "url": "https://www.master-sauna.ru/catalog/drovyanye-pechi/gefest/drovyanyie-pechi-seriya-gefest-avangard/gefest-avangard-zk-35-p2-uragan-tyulpan.html",
+                        "reason": "Нет положительной подтверждённой цены в BYN."
+                    }
+                ],
+                "model": "deepseek-v4-pro",
+                "searched_at": "2026-10-13T21:20:46+00:00"
+            }
+        },
+        {
+            "sku": "KOTLOV-000186",
+            "review_reason": "Live-web исследование точной production-модели нашло менее трёх независимых подтверждённых предложений; сохранить консультационный режим.",
+            "force_consultation_hold": true,
+            "observations": [
+                {
+                    "source": "web-66174494f7f95435",
+                    "url": "https://banisauny.by/pechi-dlya-bani/pech-avangard-zk-25-p2-uragan-v-krugloy-setke/",
+                    "external_name": "Печь Авангард ЗК 25 (П2) Ураган в круглой сетке",
+                    "model": "Печь для бани Гефест Авангард ЗК 25 (П2) Ураган круглая сетка",
+                    "package": "печь AVANGARD ЗК 25 (П2), стартовая труба 0.5 м, крышка каменки, 2 паровые пушки, круглая сетка, дверца закрытой каменки с клапаном, зольный ящик, герметик, паспорт; камни не входят",
+                    "observed_price": 4196,
+                    "currency": "BYN",
+                    "exchange_rate_to_byn": 1,
+                    "price_includes_vat": null,
+                    "availability_status": "unknown",
+                    "match_method": "exact_model",
+                    "match_confidence": 0.99,
+                    "is_confirmed": true,
+                    "is_comparable": true,
+                    "validation_flags": [],
+                    "evidence": "Карточка banisauny.by: точное название, цена 4 196 BYN, производитель ТехноЛит, вес 253 кг, объём парной 25 м³."
+                },
+                {
+                    "source": "web-6f160b438b8531be",
+                    "url": "https://kotlovlida.by/p170862095-chugunnaya-bannaya-pech.html",
+                    "external_name": "Чугунная банная печь GFS Авангард ЗК 25 (П2) Ураган круглая сетка",
+                    "model": "Печь для бани Гефест Авангард ЗК 25 (П2) Ураган круглая сетка",
+                    "package": "печь AVANGARD ЗК 25 (П2), стартовая труба 0.5 м, крышка каменки, 2 паровые пушки, круглая сетка, дверца закрытой каменки, зольный ящик, герметик, паспорт; камни не входят",
+                    "observed_price": 4309,
+                    "currency": "BYN",
+                    "exchange_rate_to_byn": 1,
+                    "price_includes_vat": null,
+                    "availability_status": "unknown",
+                    "match_method": "exact_model",
+                    "match_confidence": 0.99,
+                    "is_confirmed": true,
+                    "is_comparable": true,
+                    "validation_flags": [],
+                    "evidence": "Карточка kotlovlida.by: точное название, цена 4 309 руб., производитель Технолит, объём парной 25 м³."
+                }
+            ],
+            "research": {
+                "summary": "По запрошенной модели в Беларуси найдено несколько независимых предложений с ценами 4 196–4 309 BYN. Самая низкая подтверждённая цена — 4 196 BYN на banisauny.by. На kotlov.by и kotlovlida.by цена одинаковая — около 4 309 BYN, на pechnoy.by карточка точной модели есть, но цена в выдаче не видна. На российском рынке точная модель стоит от 107 990 до 113 400 RUB; в Украине найдено предложение за 163 148 UAH. Цена клиента 0,00 BYN не является рыночной и, вероятно, техническая/заглушка; для конкурентоспособности по Беларуси ориентир — диапазон 4 196–4 309 BYN.",
+                "verdict": "Рыночная цена в Беларуси сформирована на уровне 4 196–4 309 BYN. Предложение клиента с 0,00 BYN нельзя использовать как ориентир — нужно запросить/установить актуальную цену не выше нижней границы рынка, иначе предложение будет неконкурентоспособным. Автоматически менять цену не следует, но рекомендуется выставить витринную цену в пределах 4 196–4 309 BYN и дополнительно проверить наличие у banisauny.by, так как это самая низкая найденная цена.",
+                "confidence": "high",
+                "search_queries": [
+                    "Гефест Авангард ЗК 25 П2 Ураган круглая сетка",
+                    "KOTLOV-000186",
+                    "Печь для бани Гефест Авангард ЗК 25 Ураган ТехноЛит",
+                    "site:by Авангард ЗК 25 П2 Ураган круглая сетка",
+                    "\"Авангард ЗК 25\" \"П2\" \"Ураган\" \"круглой сетке\"",
+                    "\"Авангард ЗК 25 (П2)\" Ураган круглая сетка цена"
+                ],
+                "rejected_candidates": [
+                    {
+                        "title": "Печь для бани Технолит АВАНГАРД ЗК 25 (П2) PRO Ураган в круглой сетке",
+                        "url": "https://hot.by/pechi-dlya-bani/pech-dlya-bani-gefest-avangard-zk-25-p2-uragan-v-krugloj-setke/?utm_source=google&utm_campaign=pmnew&utm_medium=cpc&utm_term=..m...",
+                        "reason": "Версия PRO — отличается от запрошенной модели без PRO; цена 4 423 BYN."
+                    },
+                    {
+                        "title": "Печь Авангард ЗК 25 (П2) Pro Ураган в круглой сетке",
+                        "url": "https://pechibani.by/pechi-dlya-bani/pech-avangard-zk-25-p2-pro-uragan-v-krugloy-setke/",
+                        "reason": "Версия PRO, не совпадает с запрошенным исполнением."
+                    },
+                    {
+                        "title": "Банная печь Гефест AVANGARD ЗК 25 (П2) Pro Ураган в круглой сетке",
+                        "url": "https://mir-para.by/drovyanye-pechi-dlya-bani/tekhnolit/bannaya-pech-gefest-avangard-zk-25-p2-pro-uragan-v-krugloj-setke.html",
+                        "reason": "Версия PRO, цена 0.00 р./наличие уточнять, не является подтверждённым рыночным предложением."
+                    },
+                    {
+                        "title": "Печь Гефест Авангард ЗК 25 (П2) Pro Ураган в круглой сетке",
+                        "url": "https://kamin-studio.ru/product/pech-gefest-avangard-zk-24-p2-uragan-v-krugloy-setke/",
+                        "reason": "Версия Pro и цена по запросу; URL содержит ЗК 24, что указывает на несоответствие модели."
+                    },
+                    {
+                        "title": "Чугунная печь для бани Гефест Авангард ЗК 25 (П2) Pro Ураган в круглой сетке",
+                        "url": "https://3d-sauna.ru/chugunnaya-pech-dlya-bani-gefest-avangard-zk-25-p2-pro-uragan-v-krugloy-setke",
+                        "reason": "Версия Pro, не совпадает с запрошенной моделью."
+                    },
+                    {
+                        "title": "Печь для бани Техно Лит Авангард Ураган 25М Pro ЗК в сетке тюльпан",
+                        "url": "https://progrill72.ru/shop/goods/pech_dlya_bani_tehno_lit_avangard_uragan_25m_Pro_zk_v_setke_tyulpan-3913",
+                        "reason": "Другая модификация (М), сетка тюльпан, версия Pro."
+                    },
+                    {
+                        "title": "Чугунная печь для бани Авангард ЗК 25 (М) Ураган в сетке Тюльпан",
+                        "url": "https://kamin53.ru/product/chugunnaya-pech-dlya-bani-avangard-zk-25-m-uragan-v-setke-tyulpan-2/",
+                        "reason": "Другая модификация (М) и сетка тюльпан."
+                    },
+                    {
+                        "title": "Чугунная печь для бани AVANGARD ЗК 25 (М) Ураган круглая сетка",
+                        "url": "https://chelyabinsk.pechki66.ru/product/chugunnaya-pech-dlya-bani-avangard-zk-25-m-uragan-kruglaya-setka-tekhnolit/",
+                        "reason": "Другая модификация (М), хотя сетка круглая."
+                    },
+                    {
+                        "title": "Печь для бани Авангард ЗК 25 (М) Ураган круглая сетка",
+                        "url": "https://saunaopt.ru/pechi-dlya-bani/drovyanye-pechi/pech-dlya-bani-avangard-zk-24-m-uragan-kruglaya-setka",
+                        "reason": "Другая модификация (М); URL содержит ЗК 24."
+                    },
+                    {
+                        "title": "Чугунная печь для бани GFS (Гефест) ЗК 25 Ураган",
+                        "url": "https://volgograd.technolit.ru/production/pechi-dlya-bani/pechi-v-setke-uragan/gefest-uragan-zk/gefest-zk-uragan-25-/",
+                        "reason": "Другая модель GFS ЗК 25 Ураган, без Авангард и без П2, дымоход 130 мм."
+                    },
+                    {
+                        "title": "Категорийная выдача pechi-dimohody.by с моделью AVANGARD ЗК (25) (П2) Ураган в круглой сетке",
+                        "url": "https://jitkovichi.pechi-dimohody.by/pechi-dlya-bani/proizvoditeli1/pechi-dlya-bani-gefest/pechi-v-setke-i-uragan/avangard-uragan",
+                        "reason": "Категорийная/агрегаторная страница, а не подтверждаемая карточка товара."
+                    }
+                ],
+                "excluded_offers": [
+                    {
+                        "title": "ТехноЛит Печь для бани Гефест Авангард ЗК 25 (П2) Ураган круглая сетка",
+                        "url": "https://kotlov.by/drovianye-peci-bannye/pec-dlia-bani-gefest-avangard-zk-25-p2-uragan-kruglaia-setka",
+                        "reason": "Собственный домен KOTLOV не является независимым рыночным источником."
+                    },
+                    {
+                        "title": "Печь Авангард ЗК 25 (П2) Ураган в круглой сетке",
+                        "url": "https://pechnoy.by/pechi-dlya-bani/drovyanyye-pechi/pechi-gefest/pechi-avangard/pech-avangard-zk-25-p2-uragan-v-krugloy-setke/",
+                        "reason": "Нет положительной подтверждённой цены в BYN."
+                    },
+                    {
+                        "title": "Печь банная Авангард ЗК 25 (П2) Ураган в круглой сетке",
+                        "url": "https://ruspechka.shop/product/avangard-zk-25-p2-uragan-v-krugloj-setke",
+                        "reason": "Нет положительной подтверждённой цены в BYN."
+                    },
+                    {
+                        "title": "ПБ Авангард ЗК 25 (П2) Ураган в круглой сетке (Технолит)",
+                        "url": "https://oven35.ru/katalog/pechi/bannye-pechi/pb-avangard-zk-25-p2-uragan-v-krugloj-setke-tehnolit/",
+                        "reason": "Нет положительной подтверждённой цены в BYN."
+                    },
+                    {
+                        "title": "Авангард ЗК 25 (П2) Ураган в круглой сетке",
+                        "url": "https://planetapechey.ru/bani-i-sauny/drovyanye-pechi/chugunnye-pechi-dlya-bani-gefest/pechi-v-setke/avangard-uragan/avangard-zk-25-p2-uragan-v-krugloy-setke",
+                        "reason": "Нет положительной подтверждённой цены в BYN."
+                    },
+                    {
+                        "title": "Чугунная печь для бани Авангард ЗК 25 (П2) Ураган в круглой сетке",
+                        "url": "https://kamin53.ru/product/chugunnaya-pech-dlya-bani-avangard-zk-25-p2-uragan-v-krugloy-setke/",
+                        "reason": "Нет положительной подтверждённой цены в BYN."
+                    },
+                    {
+                        "title": "Чугунная печь для бани Гефест Авангард ЗК 25П2 Ураган в круглой сетке",
+                        "url": "https://bani-krasnodar.ru/252-2?route=product/product&language=ru-ru",
+                        "reason": "Нет положительной подтверждённой цены в BYN."
+                    },
+                    {
+                        "title": "Печь в сетке чугунная Технолит Авангард ЗК 25 (П2) Ураган в круглой сетке",
+                        "url": "https://garner.com.ua/chugunnaya-pech-dlya-bani-avangard-zk-24-p2-uragan-v-krugloy-setke/",
+                        "reason": "Нет положительной подтверждённой цены в BYN."
+                    }
+                ],
+                "model": "deepseek-v4-pro",
+                "searched_at": "2026-10-13T21:21:59+00:00"
+            }
+        },
+        {
+            "sku": "KOTLOV-000187",
+            "review_reason": "Live-web исследование точной production-модели нашло менее трёх независимых подтверждённых предложений; сохранить консультационный режим.",
+            "force_consultation_hold": true,
+            "observations": [],
+            "research": {
+                "summary": "Найдено одно точное предложение в Беларуси — kotlov.by: Печь для бани Гефест Авангард ЗК 35 (П2) за 4 856.40 BYN. В РФ точная базовая модель представлена у нескольких независимых продавцов: saunaopt.ru, master-sauna.ru, prometey-spb.ru, kaminvdom.ru по 121 700–127 800 RUB. Варианты 'Ураган', сетки 'Тюльпан'/'круглая', версия Pro и комплекты с облицовкой исключены из сравнения как другая комплектация/исполнение. Цена в КП 0.00 BYN нерепрезентативна: это не рыночная цена, для рублёвых предложений точный BYN-эквивалент требует уточнения курса на дату сделки, ориентировочно 4.3–4.7 тыс. BYN без учёта доставки и импорта.",
+                "verdict": "В Беларуси конкуренция по точной модели низкая: подтверждён только один полный офер kotlov.by за 4 856.40 BYN. Российский рынок даёт более плотный диапазон 121 700–127 800 RUB. Заявленную цену клиента 0.00 BYN следует заменить на актуальную расчётную цену вблизи 4 850 BYN и перед фиксацией цены проверить наличие, комплектность и срок поставки.",
+                "confidence": "medium",
+                "search_queries": [
+                    "Печь для бани Гефест Авангард ЗК 35 (П2)",
+                    "Гефест Авангард ЗК 35 П2 купить",
+                    "ТехноЛит Авангард ЗК 35",
+                    "KOTLOV-000187",
+                    "Авангард ЗК 35 П2 купить Беларусь",
+                    "Авангард ЗК 35 П2 Минск цена",
+                    "Печь для бани Авангард ЗК 35 П2 BYN",
+                    "\"Авангард ЗК 35\" \"П2\" купить"
+                ],
+                "rejected_candidates": [
+                    {
+                        "title": "Печь для бани Гефест Авангард ЗК 35 (П2) Ураган круглая сетка",
+                        "url": "https://kotlov.by/drovianye-peci-bannye/pec-dlia-bani-gefest-avangard-zk-35-p2-uragan-kruglaia-setka",
+                        "reason": "Другая комплектация: исполнение Ураган с круглой сеткой, а не базовая печь под обкладку."
+                    },
+                    {
+                        "title": "Печь для бани Гефест Авангард ЗК 35 (П2) Ураган в сетке Тюльпан",
+                        "url": "https://kotlov.by/drovianye-peci-bannye/pec-dlia-bani-gefest-avangard-zk-35-p2-uragan-v-setke-tiulpan",
+                        "reason": "Другая комплектация: сетка Тюльпан и комбинированная каменка, не базовая модель."
+                    },
+                    {
+                        "title": "Печь Авангард ЗК 35 (П2) Pro",
+                        "url": "https://banisauny.by/pechi-dlya-bani/chugunnyye-pechi-dlya-bani/pech-avangard-zk-35-p2-pro/",
+                        "reason": "Версия Pro с усиленной каменкой и увеличенной гарантией, а не базовая ЗК 35 (П2)."
+                    },
+                    {
+                        "title": "Печь Авангард ЗК 35 (П2) Ураган в сетке Тюльпан",
+                        "url": "https://banisauny.by/pechi-dlya-bani/pech-avangard-zk-35-p2-uragan-v-setke-tyulpan/",
+                        "reason": "Другая комплектация: исполнение Ураган в сетке, не базовая модель."
+                    },
+                    {
+                        "title": "Печь Авангард ЗК 35 (П2) Ураган в сетке Тюльпан",
+                        "url": "https://pechibani.by/pechi-dlya-bani/pech-avangard-zk-35-p2-uragan-v-setke-tyulpan/",
+                        "reason": "Другая комплектация: сетка Тюльпан, не базовая печь под обкладку."
+                    },
+                    {
+                        "title": "Печь для бани Технолит АВАНГАРД ЗК 35 (П2) Ураган в сетке Тюльпан",
+                        "url": "https://hot.by/pechi-dlya-bani/pech-dlya-bani-tehnolit-avangard-zk-35-p2-uragan-v-setke-tyulpan/",
+                        "reason": "Другая комплектация: Pro/Ураган в сетке Тюльпан, а не точная базовая модель."
+                    },
+                    {
+                        "title": "Чугунная печь для бани Авангард ЗК 35 (П2) Ураган в круглой сетке",
+                        "url": "https://kamin53.ru/product/chugunnaya-pech-dlya-bani-avangard-zk-35-p2-uragan-v-krugloy-setke-2/",
+                        "reason": "Другая комплектация: Ураган в круглой сетке."
+                    },
+                    {
+                        "title": "Комплект Авангард ЗК 35 (П2) Классика 940/40 Змеевик",
+                        "url": "https://kamin53.ru/product/chugunnaya-pech-dlya-bani-komplekt-avangard-zk-35-p2-klassika-940-40-zmeevik/",
+                        "reason": "Комплект с облицовкой из змеевика, а не отдельная печь в базовой комплектации."
+                    },
+                    {
+                        "title": "Чугунная печь для бани Технолит Авангард ЗК 35 (П2)",
+                        "url": "https://technolit.shop/cat/pechi-pod-obkladku/?filter_vid-dverki-pechi=panoramnaya&filter_obem-parnogo-pomescheniya-m3=do-35-m3&shop_view=list",
+                        "reason": "Каталожная выдача, а не подтверждаемая карточка товара с полными условиями покупки."
+                    },
+                    {
+                        "title": "Печи Авангард, страница каталога",
+                        "url": "https://pechibani.by/pechi-dlya-bani/drovyanyye-pechi/pechi-gefest/pechi-avangard/?page=3",
+                        "reason": "Страница категории с несколькими моделями, не полноценная карточка точной модели."
+                    }
+                ],
+                "excluded_offers": [
+                    {
+                        "title": "Печь для бани Гефест Авангард ЗК 35 (П2) купить в Минске",
+                        "url": "https://kotlov.by/drovianye-peci-bannye/pec-dlia-bani-gefest-avangard-zk-35-p2",
+                        "reason": "Собственный домен KOTLOV не является независимым рыночным источником."
+                    },
+                    {
+                        "title": "Печь для бани Авангард ЗК 35 (П2)",
+                        "url": "https://saunaopt.ru/pechi-dlya-bani/drovyanye-pechi/pech-dlya-bani-avangard-zk-30-p2",
+                        "reason": "Нет положительной подтверждённой цены в BYN."
+                    },
+                    {
+                        "title": "Печь для русской бани Гефест Avangard ЗК 35 (П2)",
+                        "url": "https://www.master-sauna.ru/catalog/drovyanye-pechi/gefest/drovyanyie-pechi-seriya-gefest-avangard/gefest-avangard-zk-35-p2.html",
+                        "reason": "Нет положительной подтверждённой цены в BYN."
+                    },
+                    {
+                        "title": "Печь Гефест Авангард ЗК 35 (П2)",
+                        "url": "https://prometey-spb.ru/pechi-dlya-bani/drovyannye-pechi/pechi-gefest/gefest-avangard/pech-gefest-avangard-zk-35-p2/",
+                        "reason": "Нет положительной подтверждённой цены в BYN."
+                    },
+                    {
+                        "title": "Печь для бани Гефест Авангард ЗК 35 (П2)",
+                        "url": "https://kaminvdom.ru/pech-dlya-bani-gefest-avangard-zk-35-p2",
+                        "reason": "Нет положительной подтверждённой цены в BYN."
+                    }
+                ],
+                "model": "deepseek-v4-pro",
+                "searched_at": "2026-10-13T21:22:58+00:00"
+            }
+        },
+        {
+            "sku": "KOTLOV-000188",
+            "review_reason": "Live-web исследование точной production-модели нашло менее трёх независимых подтверждённых предложений; сохранить консультационный режим.",
+            "force_consultation_hold": true,
+            "observations": [
+                {
+                    "source": "web-8cde72c895d68935",
+                    "url": "https://pechibani.by/pechi-dlya-bani/pech-avangard-zk-40-p2-uragan-v-krugloy-setke/",
+                    "external_name": "Печь для бани AVANGARD ЗК 40 (П2) Ураган в круглой сетке",
+                    "model": "Печь для бани Гефест Авангард ЗК 40 (П2) Ураган круглая сетка",
+                    "package": "печь банная, стартовая труба 0,5 м, крышка каменки, 2 паровые пушки, сетка «круглая», дверца закрытой каменки, зольный ящик, герметик, гарантийный паспорт",
+                    "observed_price": 5931,
+                    "currency": "BYN",
+                    "exchange_rate_to_byn": 1,
+                    "price_includes_vat": null,
+                    "availability_status": "unknown",
+                    "match_method": "exact_model",
+                    "match_confidence": 0.99,
+                    "is_confirmed": true,
+                    "is_comparable": true,
+                    "validation_flags": [],
+                    "evidence": "В сниппете карточки pechibani.by указана цена 5 931 BYN и подтверждён состав комплекта."
+                }
+            ],
+            "research": {
+                "summary": "Точная модель «Гефест/AVANGARD ЗК 40 (П2) Ураган в круглой сетке» найдена в Беларуси у двух продавцов с подтверждёнными ценами: KOTLOV.BY — 6 091,40 BYN и PechiBani.by — 5 931,00 BYN. Ещё одна белорусская карточка (pechi-dimohody.by, Житковичи) совпадает по названию, но цена в поисковой выдаче не видна. В РФ точная модель представлена широко: от 134 300 до 160 300 RUB у независимых продавцов. Коммерческая цена клиента 0,00 BYN не является рыночной — это незаполненное/техническое значение, сравнивать его с рынком нельзя и автоматически менять цену на его основании не следует. Артикул KOTLOV-000188 в открытом поиске публично не подтвердился, поэтому он похож на внутренний SKU KOTLOV.BY.",
+                "verdict": "В Беларуси рыночный ориентир для точной модели — 5 931–6 091,40 BYN. Минимальное подтверждённое предложение — PechiBani.by за 5 931,00 BYN; KOTLOV.BY дороже на 160,40 BYN. Для закупки рекомендуется запросить у обоих продавцов наличие, комплектность и срок поставки, а также уточнить цену у pechi-dimohody.by, так как без неё полноценных белорусских оферт только две. Российские цены не следует смешивать с белорусскими без актуального пересчёта; при проверке курса они могут быть дополнительным ориентиром. Цену клиента 0,00 BYN использовать как рыночный бенчмарк нельзя.",
+                "confidence": "medium",
+                "search_queries": [
+                    "Печь для бани Гефест Авангард ЗК 40 П2 Ураган круглая сетка ТехноЛит",
+                    "KOTLOV-000188",
+                    "Гефест Авангард ЗК 40 Ураган круглая сетка купить",
+                    "ТехноЛит печь Гефест Авангард ЗК 40 Ураган",
+                    "pechibani.by Печь AVANGARD ЗК 40 П2 Ураган в круглой сетке цена",
+                    "site:pechibani.by AVANGARD ЗК 40 Ураган круглая сетка",
+                    "Купить печь Гефест Авангард ЗК 40 П2 Ураган круглая сетка Минск Беларусь цена BYN",
+                    "ТехноЛит Авангард ЗК 40 П2 Ураган круглая сетка Минск"
+                ],
+                "rejected_candidates": [
+                    {
+                        "title": "Печь для бани Гефест Авангард ЗК 40 (П2) Ураган в сетке Тюльпан",
+                        "url": "https://kotlov.by/drovianye-peci-bannye/pec-dlia-bani-gefest-avangard-zk-40-p2-uragan-v-setke-tiulpan",
+                        "reason": "Другая комплектация: сетка «Тюльпан», а не круглая сетка."
+                    },
+                    {
+                        "title": "Печь для бани AVANGARD ЗК 40 (П2) Ураган в сетке Тюльпан",
+                        "url": "https://pechibani.by/pechi-dlya-bani/pech-avangard-zk-40-p2-uragan-v-setke-tyulpan/",
+                        "reason": "Другая комплектация: сетка «Тюльпан», а не круглая сетка."
+                    },
+                    {
+                        "title": "Чугунная печь для бани Авангард ЗК 40 (П2) Ураган в сетке Тюльпан",
+                        "url": "https://kamin53.ru/product/chugunnaya-pech-dlya-bani-avangard-zk-40-p2-uragan-v-setke-tyulpan/",
+                        "reason": "Другая комплектация: сетка «Тюльпан», а не круглая сетка."
+                    },
+                    {
+                        "title": "Печь Гефест Авангард ЗК 40 (П2) Pro Ураган в круглой сетке",
+                        "url": "https://pechi-group.ru/product/avangard-zk-40-p2-uragan-v-krugloy-setke/",
+                        "reason": "Исполнение Pro: парная 18–30 м³, мощность 30 кВт, не соответствует ЗК 40 (П2) на 40 м³."
+                    },
+                    {
+                        "title": "Печь Гефест Авангард ЗК 40 (П2) Pro Ураган в круглой сетке",
+                        "url": "https://prometey-spb.ru/pechi-dlya-bani/drovyannye-pechi/pechi-gefest/gefest-avangard/pech-gefest-avangard-zk-40-p2-pro-uragan-v-krugloy-setke/",
+                        "reason": "Исполнение Pro: другие объём парной и мощность."
+                    },
+                    {
+                        "title": "Чугунная печь для бани Авангард ЗК 40 (П2) Pro Ураган в круглой сетке",
+                        "url": "https://eurobani.by/katalog/bannie-pechi/drovjanye-pechi/bannyye-pechi-gefest-tekhnolit/chugunnaya-pech-dlya-bani-avangard-zk-40-p2-pro-uragan-v-krugloy-setke",
+                        "reason": "Исполнение Pro, не точная модель ЗК 40 (П2) Ураган круглая сетка."
+                    },
+                    {
+                        "title": "Чугунная банная печь Авангард ЗК 40 (П2)",
+                        "url": "https://teplone.by/chugunnaja-bannaja-pech-tehnolit-avangard-zk-40-p2-avangard-zk-40-p2/",
+                        "reason": "Исполнение «под обкладку», а не круглая сетка; цена в сниппете не подтверждена."
+                    },
+                    {
+                        "title": "Печь для бани Техно Лит Авангард Ураган 40П2С Pro ЗК тюльпан чугунная",
+                        "url": "https://progrill72.ru/shop/goods/pech_dlya_bani_tehno_lit_avangard_uragan_40p2s_Pro_zk_tyulpan_chugunnaya-3925",
+                        "reason": "Модель Pro/тюльпан, не точная модель запроса."
+                    },
+                    {
+                        "title": "Печь для бани Авангард ЗК 40 (П2) Ураган в сетке Тюльпан",
+                        "url": "https://saunaopt.ru/pechi-dlya-bani/drovyanye-pechi/pech-dlya-bani-avangard-zk-40-p2-uragan-v-setke-tyulpan",
+                        "reason": "Другая комплектация: сетка «Тюльпан», а не круглая сетка."
+                    },
+                    {
+                        "title": "Чугунная банная печь Гефест AVANGARD ЗК 40 П2 Ураган круглая сетка",
+                        "url": "https://kubatura.ru/dvor-i-sad/bani-i-sauny/pechi-dlya-bani-i-sauny/pechi-bannye/pechi-dlya-bani-drovyanye/chugunnaya-bannaya-pech-gefest-avangard-zk-40-p2-uragan-kruglaya-setka/",
+                        "reason": "Название совпадает, но цена в поисковой выдаче не подтверждена, поэтому не включена в оферты."
+                    }
+                ],
+                "excluded_offers": [
+                    {
+                        "title": "Печь для бани Гефест Авангард ЗК 40 (П2) Ураган круглая сетка",
+                        "url": "https://kotlov.by/drovianye-peci-bannye/pec-dlia-bani-gefest-avangard-zk-40-p2-uragan-kruglaia-setka",
+                        "reason": "Собственный домен KOTLOV не является независимым рыночным источником."
+                    },
+                    {
+                        "title": "Чугунная печь для бани Гефест AVANGARD ЗК 40 (П2) Ураган в круглой сетке",
+                        "url": "https://jitkovichi.pechi-dimohody.by/pechi-dlya-bani/proizvoditeli1/pechi-dlya-bani-gefest/chugunnaya-pech-dlya-bani-gefest-avangard-zk-40-p2-uragan-v-krugloj-setke",
+                        "reason": "Нет положительной подтверждённой цены в BYN."
+                    },
+                    {
+                        "title": "Чугунная печь для бани Авангард ЗК 40 (П2) Ураган в круглой сетке",
+                        "url": "https://kamin53.ru/product/chugunnaya-pech-dlya-bani-avangard-zk-40-p2-uragan-v-krugloy-setke/",
+                        "reason": "Нет положительной подтверждённой цены в BYN."
+                    },
+                    {
+                        "title": "Чугунная печь для бани \"Гефест\" AVANGARD ЗК 40 (П2) Ураган в круглой сетке",
+                        "url": "https://dymohod-ferrum.ru/product/%d1%87%d1%83%d0%b3%d1%83%d0%bd%d0%bd%d0%b0%d1%8f-%d0%bf%d0%b5%d1%87%d1%8c-%d0%b4%d0%bb%d1%8f-%d0%b1%d0%b0%d0%bd%d0%b8-%d0%b3%d0%b5%d1%84%d0%b5%d1%81%d1%82-avangard-%d0%b7%d0%ba-40-%d0%bf2-%d1%83-2/",
+                        "reason": "Нет положительной подтверждённой цены в BYN."
+                    },
+                    {
+                        "title": "Печь Гефест Авангард ЗК 40 (П2) Ураган в круглой сетке",
+                        "url": "https://pechi-group.ru/product/pech-gefest-pech-gefest-avangard-zk-40-p2-uragan-v-krugloy-setke/",
+                        "reason": "Нет положительной подтверждённой цены в BYN."
+                    },
+                    {
+                        "title": "Печь Гефест Авангард ЗК 40 (П2) Ураган в круглой сетке",
+                        "url": "https://prometey-spb.ru/pechi-dlya-bani/drovyannye-pechi/pechi-gefest/gefest-avangard/pech-gefest-avangard-zk-40-p2-uragan-v-krugloy-setke/",
+                        "reason": "Нет положительной подтверждённой цены в BYN."
+                    },
+                    {
+                        "title": "Печь банная Авангард ЗК 40 (П)2 Ураган в круглой сетке",
+                        "url": "https://1phenix.ru/pech-bannaya-avangard-zk-40-p-2-uragan-v-krugloy-setke",
+                        "reason": "Нет положительной подтверждённой цены в BYN."
+                    },
+                    {
+                        "title": "Чугунная печь для бани AVANGARD ЗК 40 (П2) Ураган в круглой сетке",
+                        "url": "https://pechirus.ru/site/product?id=55531",
+                        "reason": "Нет положительной подтверждённой цены в BYN."
+                    },
+                    {
+                        "title": "AVANGARD ЗК 40 (П2) Ураган круглая сетка",
+                        "url": "https://kupitpech.ru/catalog/pechi-dlya-bani/pechi_dlya_bani_chugunnye/tekhnolit_chugun/avangard/avangard-zk-40-p2-uragan-kruglaya-setka/",
+                        "reason": "Нет положительной подтверждённой цены в BYN."
+                    },
+                    {
+                        "title": "Чугунная печь для бани Гефест Авангард ЗК 40 (П2) Ураган в круглой сетке",
+                        "url": "https://3d-sauna.ru/chugunnaya-pech-dlya-bani-gefest-avangard-zk-40-p2-uragan-v-krugloy-setke-2",
+                        "reason": "Нет положительной подтверждённой цены в BYN."
+                    },
+                    {
+                        "title": "Авангард ЗК 40 (П2) Ураган в круглой сетке",
+                        "url": "https://planetapechey.ru/bani-i-sauny/drovyanye-pechi/chugunnye-pechi-dlya-bani-gefest/pechi-v-setke/avangard-uragan/avangard-zk-40-p2-uragan-v-krugloy-setke",
+                        "reason": "Нет положительной подтверждённой цены в BYN."
+                    }
+                ],
+                "model": "deepseek-v4-pro",
+                "searched_at": "2026-10-13T21:24:12+00:00"
+            }
+        }
+    ],
+    "failed_products": []
+}
