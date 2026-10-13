@@ -2,9 +2,10 @@
 
 namespace Tests\Feature;
 
+use App\Models\Category;
+use App\Models\IntegrationExchangeRun;
 use App\Models\IntegrationProduct;
 use App\Models\IntegrationSource;
-use App\Models\Category;
 use App\Models\Product;
 use App\Models\Supplier;
 use App\Models\SupplierProduct;
@@ -120,5 +121,76 @@ class SupplierProductAvailabilityServiceTest extends TestCase
         $this->assertSame(1, $product->stock_qty);
         $this->assertSame(Product::AVAILABILITY_IN_STOCK, $product->availability_status);
         $this->assertSame('0.410', $item->fresh()->stock_quantity);
+    }
+
+    public function test_recent_one_c_exchange_keeps_unchanged_stock_live_and_does_not_add_duplicate_rows(): void
+    {
+        $category = Category::query()->create([
+            'name' => 'Категория системной сверки остатков',
+            'slug' => 'systemic-one-c-stock-category',
+            'parent_id' => 0,
+        ]);
+        $single = Product::query()->create([
+            'category_id' => $category->id,
+            'sku' => 'ONEC-UNCHANGED-1',
+            'name' => 'Неизменённый товар 1С',
+            'slug' => 'onec-unchanged-stock',
+            'price' => 10,
+            'in_stock' => false,
+            'availability_status' => Product::AVAILABILITY_CHECK,
+        ]);
+        $duplicate = Product::query()->create([
+            'category_id' => $category->id,
+            'sku' => 'ONEC-DUPLICATE-1',
+            'name' => 'Товар с двумя строками одного источника',
+            'slug' => 'onec-duplicate-stock',
+            'price' => 10,
+            'in_stock' => false,
+            'availability_status' => Product::AVAILABILITY_CHECK,
+        ]);
+        $source = IntegrationSource::query()->create([
+            'code' => 'onec-systemic-stock-test',
+            'name' => '1С системной сверки остатков',
+            'driver' => 'commerceml',
+            'is_active' => true,
+            'update_stock' => true,
+            'settings' => ['catalog_interval_minutes' => 10],
+        ]);
+        IntegrationExchangeRun::query()->create([
+            'integration_source_id' => $source->id,
+            'direction' => 'inbound',
+            'operation' => 'catalog',
+            'status' => 'success',
+            'started_at' => now()->subMinutes(11),
+            'finished_at' => now()->subMinutes(10),
+        ]);
+        IntegrationProduct::query()->create([
+            'integration_source_id' => $source->id,
+            'product_id' => $single->id,
+            'external_id' => 'onec-unchanged-row',
+            'stock_quantity' => 1,
+            'stock_confirmed_at' => now()->subDays(2),
+            'match_status' => 'matched',
+        ]);
+        foreach ([6, 4] as $index => $quantity) {
+            IntegrationProduct::query()->create([
+                'integration_source_id' => $source->id,
+                'product_id' => $duplicate->id,
+                'external_id' => 'onec-duplicate-row-'.$index,
+                'stock_quantity' => $quantity,
+                'stock_confirmed_at' => now()->subDays(2),
+                'match_status' => 'matched',
+            ]);
+        }
+
+        app(SupplierProductAvailabilityService::class)->refreshMany([$single->id, $duplicate->id]);
+
+        $single = Product::query()->withSupplierChannels()->findOrFail($single->id);
+        $duplicate->refresh();
+        $this->assertSame(1, $single->stock_qty);
+        $this->assertSame(Product::AVAILABILITY_IN_STOCK, $single->effectiveAvailabilityStatus());
+        $this->assertTrue($single->canBePurchased());
+        $this->assertSame(6, $duplicate->stock_qty);
+        $this->assertSame(Product::AVAILABILITY_IN_STOCK, $duplicate->availability_status);
     }
 }

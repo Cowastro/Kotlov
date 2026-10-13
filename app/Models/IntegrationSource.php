@@ -364,4 +364,14 @@ class IntegrationSource extends Model
             fn ($query) => $query->where('status', 'success'),
         );
     }
+
+    public function latestSuccessfulCatalogExchangeRun(): HasOne
+    {
+        return $this->hasOne(IntegrationExchangeRun::class)->ofMany(
+            ['finished_at' => 'max', 'id' => 'max'],
+            fn ($query) => $query
+                ->where('status', 'success')
+                ->where('operation', 'catalog'),
+        );
+    }
 }

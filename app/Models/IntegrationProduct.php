@@ -83,10 +83,26 @@ class IntegrationProduct extends Model
 
     public function hasFreshPositiveStock(): bool
     {
-        return $this->source?->is_active === true
-            && $this->stock_confirmed_at !== null
-            && $this->stock_confirmed_at->gte(now()->subMinutes($this->source->stockValidityMinutes()))
-            && (float) $this->stock_quantity > 0;
+        $source = $this->source;
+        if ($source?->is_active !== true || (float) $this->stock_quantity <= 0) {
+            return false;
+        }
+
+        if ($this->stock_confirmed_at?->gte(now()->subMinutes($source->stockValidityMinutes()))) {
+            return true;
+        }
+
+        if ($source->code !== 'onec' && $source->driver !== 'commerceml') {
+            return false;
+        }
+
+        $latestCatalogExchange = $source->relationLoaded('latestSuccessfulCatalogExchangeRun')
+            ? $source->latestSuccessfulCatalogExchangeRun
+            : $source->latestSuccessfulCatalogExchangeRun()->first();
+
+        return $latestCatalogExchange?->finished_at?->gte(
+            now()->subMinutes(max(30, $source->catalogIntervalMinutes() * 3))
+        ) ?? false;
     }
 
     public function normalizedPriceByn(): ?float

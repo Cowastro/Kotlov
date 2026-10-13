@@ -206,6 +206,7 @@ class Product extends Model
             'supplierProducts:id,product_id,in_stock,stock_quantity,last_stock_synced_at,last_synced_at,updated_at',
             'integrationProducts:id,product_id,integration_source_id,stock_quantity,match_status,stock_confirmed_at',
             'integrationProducts.source:id,code,driver,is_active,settings',
+            'integrationProducts.source.latestSuccessfulCatalogExchangeRun',
         ]);
     }
 

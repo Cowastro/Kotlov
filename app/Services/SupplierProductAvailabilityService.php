@@ -47,16 +47,23 @@ class SupplierProductAvailabilityService
                 ->get()
                 ->keyBy('product_id')
             : collect();
-        $integrationStockByProduct = DB::table('integration_products as ip')
+        $integrationStockBySource = DB::table('integration_products as ip')
             ->join('integration_sources as source', 'source.id', '=', 'ip.integration_source_id')
             ->where('source.is_active', true)
             ->where('source.update_stock', true)
             ->where('ip.match_status', 'matched')
             ->whereIn('ip.product_id', $productIds)
-            ->groupBy('ip.product_id')
+            ->groupBy('ip.product_id', 'ip.integration_source_id')
             ->selectRaw('ip.product_id')
-            ->selectRaw('SUM(CASE WHEN ip.stock_quantity IS NOT NULL THEN 1 ELSE 0 END) as known_quantity_count')
-            ->selectRaw('SUM(CASE WHEN ip.stock_quantity IS NOT NULL THEN ip.stock_quantity ELSE 0 END) as total_quantity')
+            ->selectRaw('ip.integration_source_id')
+            ->selectRaw('MAX(CASE WHEN ip.stock_quantity IS NOT NULL THEN 1 ELSE 0 END) as known_quantity_count')
+            ->selectRaw('MAX(CASE WHEN ip.stock_quantity IS NOT NULL THEN ip.stock_quantity ELSE 0 END) as source_quantity');
+        $integrationStockByProduct = DB::query()
+            ->fromSub($integrationStockBySource, 'integration_stock_by_source')
+            ->groupBy('product_id')
+            ->selectRaw('product_id')
+            ->selectRaw('SUM(known_quantity_count) as known_quantity_count')
+            ->selectRaw('SUM(source_quantity) as total_quantity')
             ->get()
             ->keyBy('product_id');
 
