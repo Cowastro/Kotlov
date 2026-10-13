@@ -292,8 +292,8 @@ class MarketWebResearchServiceTest extends TestCase
             'services.ai.deepseek_research_model' => 'deepseek-v4-pro',
             'services.ai.deepseek_research_fallback_model' => 'deepseek-flash',
             'services.ai.market_research_safe_mode' => true,
-            'services.ai.market_research_max_search_uses' => 2,
-            'services.ai.market_research_max_output_tokens' => 2500,
+            'services.ai.market_research_max_search_uses' => 6,
+            'services.ai.market_research_max_output_tokens' => 8000,
             'services.ai.market_research_cache_minutes' => 360,
         ]);
 
@@ -326,9 +326,10 @@ class MarketWebResearchServiceTest extends TestCase
             $data = $request->data();
 
             return $data['model'] === 'deepseek-flash'
-                && $data['tools'][0]['max_uses'] === 2
-                && $data['max_tokens'] === 2500
-                && $data['reasoning']['effort'] === 'none';
+                && $data['tools'][0]['max_uses'] === 6
+                && $data['max_tokens'] === 8000
+                && $data['reasoning']['effort'] === 'low'
+                && $data['metadata']['user_id'] === 'kotlov-market-research';
         });
     }
 
@@ -386,8 +387,9 @@ class MarketWebResearchServiceTest extends TestCase
         $requests = Http::recorded();
         $repairPayload = $requests[1][0]->data();
         $this->assertSame('deepseek-flash', $repairPayload['model']);
-        $this->assertSame(2000, $repairPayload['max_tokens']);
+        $this->assertSame(4000, $repairPayload['max_tokens']);
         $this->assertSame('none', $repairPayload['reasoning']['effort']);
+        $this->assertSame('kotlov-market-research-format', $repairPayload['metadata']['user_id']);
         $this->assertArrayNotHasKey('tools', $repairPayload);
     }
 

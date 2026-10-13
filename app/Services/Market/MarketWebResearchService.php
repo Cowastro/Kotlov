@@ -49,7 +49,7 @@ class MarketWebResearchService
         }
 
         $product->loadMissing(['brand', 'category']);
-        $cacheKey = 'market-research:'.hash('sha256', implode('|', [
+        $cacheKey = 'market-research:v3:'.hash('sha256', implode('|', [
             $provider['name'],
             $provider['model'],
             (string) ($product->getKey() ?: $product->sku),
@@ -170,8 +170,9 @@ class MarketWebResearchService
             $payload = [
                 'model' => $model,
                 'max_tokens' => $safeMode
-                    ? max(512, min(4000, (int) config('services.ai.market_research_max_output_tokens', 2500)))
+                    ? max(2000, min(12000, (int) config('services.ai.market_research_max_output_tokens', 8000)))
                     : 16000,
+                'metadata' => ['user_id' => 'kotlov-market-research'],
                 'system' => $this->instructions()."\n\n".$this->deepSeekJsonContract(),
                 'messages' => [[
                     'role' => 'user',
@@ -181,13 +182,13 @@ class MarketWebResearchService
                     'type' => 'web_search_20250305',
                     'name' => 'web_search',
                     'max_uses' => $safeMode
-                        ? max(1, min(3, (int) config('services.ai.market_research_max_search_uses', 2)))
+                        ? max(1, min(8, (int) config('services.ai.market_research_max_search_uses', 6)))
                         : 12,
                 ]],
             ];
 
             if ($safeMode) {
-                $payload['reasoning'] = ['effort' => 'none'];
+                $payload['reasoning'] = ['effort' => 'low'];
             }
 
             return $payload;
@@ -363,8 +364,9 @@ PROMPT;
                 ])
                 ->post($provider['responses_url'], [
                     'model' => $model,
-                    'max_tokens' => 2000,
+                    'max_tokens' => 4000,
                     'reasoning' => ['effort' => 'none'],
+                    'metadata' => ['user_id' => 'kotlov-market-research-format'],
                     'system' => 'Преобразуй исходный отчёт в JSON. Не выполняй новый поиск, не добавляй факты, цены или ссылки. '.$this->deepSeekJsonContract(),
                     'messages' => [[
                         'role' => 'user',
