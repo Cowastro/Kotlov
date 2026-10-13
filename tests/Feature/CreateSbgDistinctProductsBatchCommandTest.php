@@ -6279,4 +6279,100 @@ class CreateSbgDistinctProductsBatchCommandTest extends TestCase
         $this->assertSame($productCount + 1, Product::query()->count());
         $this->assertSame($product->id, $item->fresh()->product_id);
     }
+
+    public function test_it_creates_the_exact_unmatched_chistodym_chimney_cleaner_05kg(): void
+    {
+        $source = IntegrationSource::query()->create([
+            'code' => 'onec-sbg-unmatched-chistodym-05kg',
+            'name' => '1С СанБизнесГруп',
+            'settings' => ['partner_name' => 'ООО «СанБизнесГруп»'],
+            'is_active' => true,
+            'update_stock' => true,
+        ]);
+        $category = Category::query()->firstOrCreate(['slug' => 'aksessuary-kaminy'], [
+            'name' => 'Аксессуары для каминов',
+            'parent_id' => 0,
+        ]);
+        Product::query()->create([
+            'category_id' => $category->id,
+            'sku' => 'KOTLOV-000910',
+            'name' => 'Nordflam Решетка каминная AERO 90×800 белая',
+            'slug' => 'nordflam-resetka-kaminnaia-aero-90800-belaia',
+            'price' => 104,
+            'images' => ['img/products/nordflam/template.jpg'],
+            'is_active' => true,
+            'is_archived' => false,
+        ]);
+        $item = IntegrationProduct::query()->create([
+            'integration_source_id' => $source->id,
+            'external_id' => 'bbd2cc6f-1f62-11e9-bad6-1c1b0d1de7c2',
+            'external_code' => 'УТ-00001122',
+            'external_sku' => null,
+            'name' => 'Чистодым 0,5кг',
+            'price_byn' => 10.56,
+            'stock_quantity' => 7,
+            'match_status' => 'unmatched',
+            'candidates' => null,
+        ]);
+        $productCount = Product::query()->count();
+
+        $this->artisan('integration:create-sbg-distinct-products', [
+            '--batch' => 'unmatched-researched-20261013-ci',
+            '--code' => ['УТ-00001122'],
+        ])->assertSuccessful();
+        $this->assertNull($item->fresh()->product_id);
+
+        $this->artisan('integration:create-sbg-distinct-products', [
+            '--batch' => 'unmatched-researched-20261013-ci',
+            '--code' => ['УТ-00001122'],
+            '--apply' => true,
+        ])->assertSuccessful();
+
+        $item->refresh();
+        $product = $item->product;
+        $brand = Brand::query()->where('slug', 'chistodym')->first();
+        $this->assertSame($productCount + 1, Product::query()->count());
+        $this->assertNotNull($product);
+        $this->assertNotNull($brand);
+        $this->assertSame('Беларусь', $brand->country);
+        $this->assertSame('matched', $item->match_status);
+        $this->assertSame('manual_created', $item->match_method);
+        $this->assertSame($category->id, $item->target_category_id);
+        $this->assertNull($item->candidates);
+        $this->assertNull($item->external_sku);
+        $this->assertSame('Чистодым Очиститель дымохода, 0,5 кг', $product->name);
+        $this->assertSame('12.00', $product->price);
+        $this->assertSame('7', (string) $product->stock_qty);
+        $this->assertTrue((bool) $product->in_stock);
+        $this->assertSame($brand->id, $product->brand_id);
+        $this->assertSame($category->id, $product->category_id);
+        $this->assertSame('Очиститель дымохода', collect($product->specs)->firstWhere('key', 'Тип')['value']);
+        $this->assertSame('0,5 кг', collect($product->specs)->firstWhere('key', 'Масса нетто')['value']);
+        $this->assertSame('Порошок', collect($product->specs)->firstWhere('key', 'Форма')['value']);
+        $this->assertSame('Около 10', collect($product->specs)->firstWhere('key', 'Количество применений')['value']);
+        $this->assertSame([
+            'img/products/chistodym/chistodym-chimney-cleaner-05kg.png',
+        ], $product->images);
+        $this->assertFileExists(public_path('img/products/chistodym/chistodym-chimney-cleaner-05kg.png'));
+        $this->assertStringContainsString('biodso.ru', $product->content_source_url);
+        $this->assertStringContainsString('механическую чистку', $product->content);
+        $this->assertStringNotContainsString('розничная цена', mb_strtolower($product->content));
+        $this->assertStringNotContainsString('byn', mb_strtolower($product->content));
+        $this->assertDatabaseHas('supplier_product_mappings', [
+            'supplier_code' => $source->matchingSupplierCode(),
+            'supplier_article' => 'УТ-00001122',
+            'product_id' => $product->id,
+            'product_sku' => $product->sku,
+            'confidence' => 'manual',
+            'is_active' => true,
+        ]);
+
+        $this->artisan('integration:create-sbg-distinct-products', [
+            '--batch' => 'unmatched-researched-20261013-ci',
+            '--code' => ['УТ-00001122'],
+            '--apply' => true,
+        ])->assertSuccessful();
+        $this->assertSame($productCount + 1, Product::query()->count());
+        $this->assertSame($product->id, $item->fresh()->product_id);
+    }
 }
