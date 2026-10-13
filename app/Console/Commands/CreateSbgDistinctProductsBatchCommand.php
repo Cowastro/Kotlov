@@ -1746,7 +1746,7 @@ class CreateSbgDistinctProductsBatchCommand extends Command
             'refresh_existing' => true,
             'category_slug' => 'burzhuiki-pechi',
             'external_sku' => '00902',
-            'fragments' => ['ПО', 'Авоська', 'портативная', 'антрацит', '00902'],
+            'fragments' => ['ПО', 'Авоська', 'портативная', 'антрацит'],
             'brand' => [
                 'name' => 'TMF',
                 'slug' => 'tmf',

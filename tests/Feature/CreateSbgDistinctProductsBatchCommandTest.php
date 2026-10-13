@@ -3431,7 +3431,7 @@ class CreateSbgDistinctProductsBatchCommandTest extends TestCase
             'external_id' => 'tmf-avoska-00902',
             'external_code' => 'УТ-00008428',
             'external_sku' => '00902',
-            'name' => 'ПО Авоська, портативная, антрацит арт. 00902',
+            'name' => 'ПО Авоська, портативная, антрацит',
             'price_byn' => null,
             'stock_quantity' => 1,
             'match_status' => 'ambiguous',
