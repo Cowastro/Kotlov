@@ -12,7 +12,8 @@ class UserInfolist
     {
         return $schema
             ->components([
-                TextEntry::make('name'),
+                TextEntry::make('first_name')->label('Имя'),
+                TextEntry::make('last_name')->label('Фамилия'),
                 TextEntry::make('email')
                     ->label('Email address'),
                 TextEntry::make('role')
@@ -23,6 +24,12 @@ class UserInfolist
                 TextEntry::make('job_title')
                     ->label('Должность')
                     ->placeholder('-'),
+                TextEntry::make('department')
+                    ->label('Отдел')
+                    ->placeholder('-'),
+                IconEntry::make('is_crm_user')
+                    ->label('Сотрудник CRM')
+                    ->boolean(),
                 TextEntry::make('avatar')
                     ->placeholder('-'),
                 IconEntry::make('is_active')

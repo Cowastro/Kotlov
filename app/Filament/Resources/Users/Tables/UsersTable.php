@@ -25,7 +25,7 @@ class UsersTable
                     ->circular(),
 
                 TextColumn::make('name')
-                    ->label('Имя')
+                    ->label('Имя и фамилия')
                     ->searchable()
                     ->sortable()
                     ->weight('bold'),
@@ -42,6 +42,10 @@ class UsersTable
                     ->label('Должность')
                     ->searchable()
                     ->placeholder('Не указана'),
+
+                IconColumn::make('is_crm_user')
+                    ->label('CRM')
+                    ->boolean(),
 
                 TextColumn::make('role')
                     ->label('Роль')

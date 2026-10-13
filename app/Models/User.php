@@ -18,14 +18,18 @@ class User extends Authenticatable implements FilamentUser
 
     protected $fillable = [
         'name',
+        'first_name',
+        'last_name',
         'email',
         'password',
 
         'role',
+        'is_crm_user',
         'client_type',
 
         'phone',
         'job_title',
+        'department',
         'telegram_username',
         'avatar',
         'is_active',
@@ -45,6 +49,7 @@ class User extends Authenticatable implements FilamentUser
         'email_verified_at' => 'datetime',
         'password' => 'hashed',
         'is_active' => 'boolean',
+        'is_crm_user' => 'boolean',
         'b2b_approved' => 'boolean',
         'client_type' => ClientType::class,
     ];
@@ -56,6 +61,20 @@ class User extends Authenticatable implements FilamentUser
         'installer' => 'Монтажник',
         'client' => 'Клиент',
     ];
+
+    protected static function booted(): void
+    {
+        static::saving(function (User $user): void {
+            $fullName = trim(implode(' ', array_filter([
+                trim((string) $user->first_name),
+                trim((string) $user->last_name),
+            ])));
+
+            if ($fullName !== '') {
+                $user->name = $fullName;
+            }
+        });
+    }
 
     public function isAdmin(): bool
     {
