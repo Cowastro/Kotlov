@@ -7789,4 +7789,70 @@ class CreateSbgDistinctProductsBatchCommandTest extends TestCase
         $this->assertSame($productCount + 1, Product::query()->count());
         $this->assertSame($product->id, $item->fresh()->product_id);
     }
+
+    public function test_it_documents_the_unidentifiable_vtpm25_mixing_valve_as_a_research_dispute(): void
+    {
+        $source = IntegrationSource::query()->create([
+            'code' => 'onec-sbg-unmatched-vtpm25',
+            'name' => '1С СанБизнесГруп',
+            'settings' => ['partner_name' => 'ООО «СанБизнесГруп»'],
+            'is_active' => true,
+            'update_stock' => true,
+        ]);
+        $item = IntegrationProduct::query()->create([
+            'integration_source_id' => $source->id,
+            'external_id' => 'b547050e-1f62-11e9-bad6-1c1b0d1de7c2',
+            'external_code' => 'УТ-00000834',
+            'external_sku' => null,
+            'barcode' => null,
+            'name' => 'Смесительные терм.клапаны на 3 вых. 1" VTPM25',
+            'price' => null,
+            'price_byn' => null,
+            'stock_quantity' => 1,
+            'stock_confirmed_at' => now(),
+            'match_status' => 'unmatched',
+            'candidates' => null,
+        ]);
+        $productCount = Product::query()->count();
+
+        $this->artisan('integration:create-sbg-distinct-products', [
+            '--batch' => 'unmatched-disputed-20261014-cx',
+            '--code' => ['УТ-00000834'],
+        ])->assertSuccessful();
+        $this->assertSame('unmatched', $item->fresh()->match_status);
+
+        $this->artisan('integration:create-sbg-distinct-products', [
+            '--batch' => 'unmatched-disputed-20261014-cx',
+            '--code' => ['УТ-00000834'],
+            '--apply' => true,
+        ])->assertSuccessful();
+
+        $item->refresh();
+        $dispute = $item->candidates[0];
+        $this->assertSame($productCount, Product::query()->count());
+        $this->assertNull($item->product_id);
+        $this->assertSame('ambiguous', $item->match_status);
+        $this->assertSame('manual_research_unresolved', $item->match_method);
+        $this->assertNull($item->match_confidence);
+        $this->assertSame('research_dispute', $dispute['type']);
+        $this->assertStringContainsString('VTPM25', $dispute['reason']);
+        $this->assertContains('артикул производителя', $dispute['required_data']);
+        $this->assertContains('пропускная способность Kvs', $dispute['required_data']);
+        $this->assertCount(3, $dispute['evidence']);
+        $this->assertSame('УТ-00000834', $dispute['source_identity']['external_code']);
+        $this->assertSame('Смесительные терм.клапаны на 3 вых. 1" VTPM25', $dispute['source_identity']['name']);
+
+        $stats = app(\App\Services\Integrations\CommerceMlCatalogImporter::class)
+            ->rematchSource($source->code);
+        $this->assertSame(['matched' => 0, 'suggested' => 0, 'ambiguous' => 0, 'unmatched' => 0], $stats);
+        $this->assertSame('manual_research_unresolved', $item->fresh()->match_method);
+
+        $this->artisan('integration:create-sbg-distinct-products', [
+            '--batch' => 'unmatched-disputed-20261014-cx',
+            '--code' => ['УТ-00000834'],
+            '--apply' => true,
+        ])->assertSuccessful();
+        $this->assertSame($productCount, Product::query()->count());
+        $this->assertSame('manual_research_unresolved', $item->fresh()->match_method);
+    }
 }

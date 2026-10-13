@@ -3274,6 +3274,38 @@ class CreateSbgDistinctProductsBatchCommand extends Command
         ],
     ];
 
+    private const BATCH_UNMATCHED_DISPUTED_20261014_CX = [
+        'УТ-00000834' => [
+            'document_dispute' => true,
+            'external_id' => 'b547050e-1f62-11e9-bad6-1c1b0d1de7c2',
+            'fragments' => ['Смесительные терм.клапаны', '3 вых.', '1"', 'VTPM25'],
+            'reason' => 'Обозначение «VTPM25» отсутствует в доступных каталогах производителей, а название 1С не содержит бренда, артикула, диапазона температуры, Kvs и типа резьбы. Под описание трёхходового термостатического клапана 1″ подходят несколько несовместимых моделей, поэтому точную цену, изображение и характеристики назначить безопасно нельзя.',
+            'required_data' => [
+                'бренд или производитель',
+                'артикул производителя',
+                'фотография маркировки или упаковки',
+                'диапазон регулирования температуры',
+                'пропускная способность Kvs',
+                'тип и размер резьбовых соединений',
+                'закупочная цена',
+            ],
+            'evidence' => [
+                [
+                    'url' => 'https://ridan.ru/catalog/thermal-automation/regulyatory-temperatury-i-davleniya-pryamogo-deistviya/regulyatory-temperatury-monoblochnye/termostaticheskiy-smesitelnyy-klapan-tvm-h',
+                    'finding' => 'Архивный Danfoss/Ridan TVM-H DN25 имеет собственный артикул 003Z1127 и не подтверждает обозначение VTPM25.',
+                ],
+                [
+                    'url' => 'https://wester-russia.ru/klapan-termostatnyj-wester-vrs3-35-60-dn25-nr-1-kvs-2-5',
+                    'finding' => 'Wester VRS3 также имеет DN25 и резьбу 1″, но диапазон 35–60 °C и Kvs 2,5 являются отдельной спецификацией.',
+                ],
+                [
+                    'url' => 'https://www.regulus.cz/cz/ventil-termostaticky-smes-tvmix-dn-25-zv.14904',
+                    'finding' => 'Regulus TVmix DN25 — ещё одна модель того же общего назначения с иной маркировкой и присоединениями.',
+                ],
+            ],
+        ],
+    ];
+
     public function handle(
         IntegrationProductCreator $creator,
         IntegrationProductMatchDecision $matchDecision,
@@ -3380,6 +3412,7 @@ class CreateSbgDistinctProductsBatchCommand extends Command
             'unmatched-researched-20261014-cu' => self::BATCH_UNMATCHED_RESEARCHED_20261014_CU,
             'unmatched-researched-20261014-cv' => self::BATCH_UNMATCHED_RESEARCHED_20261014_CV,
             'unmatched-researched-20261014-cw' => self::BATCH_UNMATCHED_RESEARCHED_20261014_CW,
+            'unmatched-disputed-20261014-cx' => self::BATCH_UNMATCHED_DISPUTED_20261014_CX,
             default => null,
         };
 
