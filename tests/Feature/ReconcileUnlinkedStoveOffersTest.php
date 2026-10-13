@@ -3,6 +3,8 @@
 namespace Tests\Feature;
 
 use App\Models\Category;
+use App\Models\IntegrationProduct;
+use App\Models\IntegrationSource;
 use App\Models\Product;
 use App\Models\Supplier;
 use App\Models\SupplierProduct;
@@ -64,6 +66,51 @@ class ReconcileUnlinkedStoveOffersTest extends TestCase
         $this->assertTrue($linkedStove->in_stock);
         $this->assertSame('80.00', $unlinkedAccessory->price);
         $this->assertTrue($unlinkedAccessory->in_stock);
+    }
+
+    public function test_one_c_stock_is_authoritative_over_a_legacy_supplier_in_the_final_audit(): void
+    {
+        $category = Category::query()->create([
+            'parent_id' => 0,
+            'name' => 'Тест приоритета 1С',
+            'slug' => 'onec-priority-reconcile-test',
+            'is_active' => true,
+        ]);
+        $product = $this->product($category, 'ONEC-PRIORITY-RECONCILE', 100);
+        $supplier = Supplier::query()->create([
+            'code' => 'legacy-priority-test',
+            'name' => 'Старый канал наличия',
+            'is_active' => true,
+        ]);
+        SupplierProduct::query()->create([
+            'supplier_id' => $supplier->id,
+            'product_id' => $product->id,
+            'supplier_article' => 'LEGACY-POSITIVE',
+            'in_stock' => true,
+            'stock_quantity' => 9,
+        ]);
+        $source = IntegrationSource::query()->create([
+            'code' => 'onec-priority-reconcile-test',
+            'name' => '1С приоритетного остатка',
+            'driver' => 'commerceml',
+            'is_active' => true,
+            'update_stock' => true,
+        ]);
+        IntegrationProduct::query()->create([
+            'integration_source_id' => $source->id,
+            'product_id' => $product->id,
+            'external_id' => 'ONEC-ZERO',
+            'match_status' => 'matched',
+            'stock_quantity' => 0,
+        ]);
+
+        $this->artisan('supplier:reconcile-availability', ['--apply' => true])
+            ->assertSuccessful();
+
+        $product->refresh();
+        $this->assertFalse($product->in_stock);
+        $this->assertSame(0, $product->stock_qty);
+        $this->assertSame(Product::AVAILABILITY_CHECK, $product->availability_status);
     }
 
     private function product(Category $category, string $sku, int $price): Product

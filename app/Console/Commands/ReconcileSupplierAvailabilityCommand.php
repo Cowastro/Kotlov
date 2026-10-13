@@ -136,17 +136,22 @@ class ReconcileSupplierAvailabilityCommand extends Command
                 ->where('p.in_stock', true)
                 ->where('p.is_archived', false)
                 ->where(fn ($query) => $query
-                    ->whereExists($hasActiveLink)
-                    ->orWhereExists($hasActiveIntegrationLink))
-                ->whereNotExists($hasConfirmedStock)
-                ->whereNotExists($hasConfirmedIntegrationStock)
+                    ->where(fn ($integration) => $integration
+                        ->whereExists($hasActiveIntegrationLink)
+                        ->whereNotExists($hasConfirmedIntegrationStock))
+                    ->orWhere(fn ($legacy) => $legacy
+                        ->whereNotExists($hasActiveIntegrationLink)
+                        ->whereExists($hasActiveLink)
+                        ->whereNotExists($hasConfirmedStock)))
                 ->count(),
             'false_negative' => DB::table('products as p')
                 ->where('p.in_stock', false)
                 ->where('p.is_archived', false)
                 ->where(fn ($query) => $query
-                    ->whereExists($hasConfirmedStock)
-                    ->orWhereExists($hasConfirmedIntegrationStock))
+                    ->whereExists($hasConfirmedIntegrationStock)
+                    ->orWhere(fn ($legacy) => $legacy
+                        ->whereNotExists($hasActiveIntegrationLink)
+                        ->whereExists($hasConfirmedStock)))
                 ->count(),
             'uncertain_in_stock' => DB::table('products as p')
                 ->where('p.availability_status', Product::AVAILABILITY_CHECK)
