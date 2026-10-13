@@ -1880,6 +1880,7 @@ class CreateSbgDistinctProductsBatchCommand extends Command
             'template' => 'PS-009.495',
             'category_slug' => 'troyniki-mono',
             'external_sku' => 'YS125/90-OC',
+            'hydrate_external_sku' => true,
             'fragments' => ['Тройник', 'тип Y', 'YS125/90-OC'],
             'brand' => [
                 'name' => 'Darco',
@@ -2082,7 +2083,9 @@ class CreateSbgDistinctProductsBatchCommand extends Command
                 && $this->hasNoKnownWatermarkSource($portableImages)
                 && $candidateIds->contains((int) $expectedCandidate->id)
                 && $this->containsAll($item->name, $rule['fragments'])
-                && (! isset($rule['external_sku']) || $item->external_sku === $rule['external_sku'])
+                && (! isset($rule['external_sku'])
+                    || $item->external_sku === $rule['external_sku']
+                    || (($rule['hydrate_external_sku'] ?? false) && blank($item->external_sku)))
                 && ($linkProduct
                     ? $this->containsAll($linkProduct->name, $rule['link_fragments'] ?? [$rule['link_existing_sku']])
                     : Product::query()->where('name', $name)->doesntExist());
@@ -2107,6 +2110,10 @@ class CreateSbgDistinctProductsBatchCommand extends Command
             }
 
             if ($apply) {
+                if (($rule['hydrate_external_sku'] ?? false) && blank($item->external_sku)) {
+                    $item->forceFill(['external_sku' => $rule['external_sku']])->save();
+                }
+
                 if ($linkProduct) {
                     $linked = DB::transaction(function () use (
                         $item, $linkProduct, $rule, $portableImages, $category, $matchDecision

@@ -3774,7 +3774,7 @@ class CreateSbgDistinctProductsBatchCommandTest extends TestCase
             'integration_source_id' => $source->id,
             'external_id' => 'darco-ys125-90-oc',
             'external_code' => 'УТ-00009142',
-            'external_sku' => 'YS125/90-OC',
+            'external_sku' => null,
             'name' => 'Тройник тип Y YS125/90-OC',
             'price_byn' => null,
             'stock_quantity' => 1,
@@ -3795,6 +3795,7 @@ class CreateSbgDistinctProductsBatchCommandTest extends TestCase
         $this->assertNotSame($wrongCandidate->id, $item->product_id);
         $this->assertSame('matched', $item->match_status);
         $this->assertSame('manual_created', $item->match_method);
+        $this->assertSame('YS125/90-OC', $item->external_sku);
         $this->assertSame($category->id, $item->target_category_id);
         $this->assertNull($item->candidates);
 
