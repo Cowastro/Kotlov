@@ -277,6 +277,11 @@ jobs:
             cat "$detail_log"
             echo "safe_openai_smoke_end"
           fi
+          if [[ "$TASK" == "artisan-dry-run" && "${ARTISAN_ARGV[0]:-}" == "catalog:diagnose-availability" ]]; then
+            echo "safe_availability_diagnostic_begin"
+            cat "$detail_log"
+            echo "safe_availability_diagnostic_end"
+          fi
           if [[ "$TASK" == "research-price-batch" ]]; then
             echo "safe_market_research_metrics_begin"
             grep '^metric\.' "$detail_log" || true

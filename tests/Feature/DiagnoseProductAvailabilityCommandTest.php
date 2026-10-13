@@ -68,5 +68,11 @@ class DiagnoseProductAvailabilityCommandTest extends TestCase
             ->expectsOutput('integration.1.validity_minutes=1440')
             ->expectsOutput('integration.1.fresh_positive=1')
             ->assertSuccessful();
+
+        $this->artisan('catalog:diagnose-availability', ['product' => (string) $product->id])
+            ->expectsOutput('product_found=1')
+            ->expectsOutput('product_id='.$product->id)
+            ->expectsOutput('effective_status=in_stock')
+            ->assertSuccessful();
     }
 }

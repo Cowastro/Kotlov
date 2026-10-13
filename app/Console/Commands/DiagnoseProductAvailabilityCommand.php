@@ -21,7 +21,7 @@ class DiagnoseProductAvailabilityCommand extends Command
                 $query->where('sku', $identifier);
 
                 if (ctype_digit($identifier)) {
-                    $query->orWhereKey((int) $identifier);
+                    $query->orWhere('id', (int) $identifier);
                 }
             })
             ->first();
