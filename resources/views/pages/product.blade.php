@@ -548,6 +548,19 @@
             @php
                 $serviceInfo = is_array($product->service_info) ? array_filter($product->service_info) : [];
                 $documents = is_array($product->documents) ? array_filter($product->documents) : [];
+                $xoControllerManualUrl = '/docs/kotlov-xo-controller-1-2os-ru.pdf';
+                $isXoCeramicPro100 = $product->slug === 'pelletnaya-gorelka-kotlov-xo-ceramic-pro-100-kvt';
+                $contentHasXoControllerManual = str_contains((string) $product->content, $xoControllerManualUrl);
+                if ($isXoCeramicPro100 && !collect($documents)->contains(
+                    fn ($document) => is_array($document)
+                        ? ($document['url'] ?? null) === $xoControllerManualUrl
+                        : $document === $xoControllerManualUrl
+                )) {
+                    $documents[] = [
+                        'label' => 'Инструкция контроллера XO 1.0S/2.0S (PDF)',
+                        'url' => $xoControllerManualUrl,
+                    ];
+                }
                 $videoUrl = trim((string) ($product->video_url ?? ''));
                 $videoEmbedUrl = null;
                 $isDirectVideo = $videoUrl && preg_match('~\.(mp4|webm|mov)(?:\?|$)~i', $videoUrl);
@@ -675,6 +688,13 @@
                             <div class="box-desc">
                                 <div class="desc_info cl-text-2">
                                     {!! $product->content !!}
+                                    @if ($isXoCeramicPro100 && !$contentHasXoControllerManual)
+                                        <p class="mt-4">
+                                            <a href="{{ $xoControllerManualUrl }}" target="_blank" rel="noopener">
+                                                <strong>Инструкция контроллера XO 1.0S/2.0S (PDF)</strong>
+                                            </a>
+                                        </p>
+                                    @endif
                                 </div>
                             </div>
                         @else
