@@ -2931,6 +2931,8 @@ class CreateSbgDistinctProductsBatchCommand extends Command
             'template_slug' => 'korobka-osina-855520avpod-10mm',
             'allow_unmatched' => true,
             'allow_brandless' => true,
+            'force_brandless' => true,
+            'refresh_existing' => true,
             'category_slug' => 'okna-dlya-bani-i-sauny',
             'category' => [
                 'name' => 'Окна для бани и сауны',
@@ -3253,6 +3255,9 @@ class CreateSbgDistinctProductsBatchCommand extends Command
                         $stats['ready']++;
                         if ($apply) {
                             $item->product->forceFill([
+                                'brand_id' => ($rule['force_brandless'] ?? false)
+                                    ? null
+                                    : $item->product->brand_id,
                                 'short_description' => $rule['short'] ?? $item->product->short_description,
                                 'content' => $rule['content'] ?? $item->product->content,
                                 'images' => $portableImages,
@@ -3278,7 +3283,9 @@ class CreateSbgDistinctProductsBatchCommand extends Command
             $candidateIds = collect($item->candidates)->pluck('product_id')->map(fn ($id): int => (int) $id);
             $normalizedPrice = $item->normalizedPriceByn();
             $configuredBrand = $rule['brand'] ?? null;
-            $brand = $configuredBrand ? $this->findBrand($configuredBrand) : $template->brand;
+            $brand = ($rule['force_brandless'] ?? false)
+                ? null
+                : ($configuredBrand ? $this->findBrand($configuredBrand) : $template->brand);
             $category = $this->categoryForRule($rule, $template);
             $brandName = trim((string) ($configuredBrand['name'] ?? $brand?->name));
             $name = $rule['name'] ?? $this->productName($brandName, $item->name);

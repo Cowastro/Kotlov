@@ -6898,8 +6898,13 @@ class CreateSbgDistinctProductsBatchCommandTest extends TestCase
             'slug' => 'dveri-dlya-ban-i-saun',
             'parent_id' => $parent->id,
         ]);
+        $templateBrand = Brand::query()->firstOrCreate([
+            'name' => 'DoorWood',
+            'slug' => 'doorwood',
+        ]);
         Product::query()->create([
             'category_id' => $templateCategory->id,
+            'brand_id' => $templateBrand->id,
             'sku' => 'PS-SAUNA-TEMPLATE',
             'name' => 'Коробка Осина (85*55*2,0/АВ/под 10мм)',
             'slug' => 'korobka-osina-855520avpod-10mm',
@@ -6971,6 +6976,8 @@ class CreateSbgDistinctProductsBatchCommandTest extends TestCase
             'is_active' => true,
         ]);
 
+        $product->forceFill(['brand_id' => $templateBrand->id])->save();
+
         $this->artisan('integration:create-sbg-distinct-products', [
             '--batch' => 'unmatched-researched-20261013-co',
             '--code' => ['УТ-00001066'],
@@ -6978,6 +6985,7 @@ class CreateSbgDistinctProductsBatchCommandTest extends TestCase
         ])->assertSuccessful();
         $this->assertSame($productCount + 1, Product::query()->count());
         $this->assertSame($product->id, $item->fresh()->product_id);
+        $this->assertNull($product->fresh()->brand_id);
         $this->assertSame(1, Category::query()->where('slug', 'okna-dlya-bani-i-sauny')->count());
     }
 }
