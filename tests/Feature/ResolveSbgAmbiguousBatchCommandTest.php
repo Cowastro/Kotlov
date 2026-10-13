@@ -749,4 +749,77 @@ class ResolveSbgAmbiguousBatchCommandTest extends TestCase
             'confidence' => 'manual',
         ]);
     }
+
+    public function test_it_links_and_refreshes_the_exact_combined_zord_ugs_02_without_using_the_barrier_candidate(): void
+    {
+        $source = IntegrationSource::query()->create([
+            'code' => 'onec-sbg-zord-ugs-02-combined',
+            'name' => '1С СанБизнесГруп',
+            'settings' => ['partner_name' => 'ООО «СанБизнесГруп»'],
+            'is_active' => true,
+            'update_stock' => true,
+        ]);
+        $category = Category::query()->create([
+            'name' => 'Сигнализаторы загазованности',
+            'slug' => 'gas-detectors-zord-combined-test',
+            'parent_id' => 0,
+        ]);
+        $brand = Brand::query()->create(['name' => 'Электротеплоприбор', 'slug' => 'electroteplopribor-zord-combined-test']);
+        $zord = Product::query()->create([
+            'category_id' => $category->id,
+            'brand_id' => $brand->id,
+            'sku' => 'PS-011.094',
+            'name' => 'Сигнализатор загазованности ЗОРД УГС-02 (СО+СH) комбинированный на 2 газа (угарный + горючий)',
+            'slug' => 'zord-ugs-02-combined-test',
+            'price' => 85,
+            'in_stock' => false,
+            'stock_qty' => null,
+            'images' => ['product/0011/011094/61c43eaab7cbc.jpg'],
+        ]);
+        $barrier = Product::query()->create([
+            'category_id' => $category->id,
+            'sku' => 'PS-005.704',
+            'name' => 'Сигнализатор загазованности Барьер-CH4',
+            'slug' => 'barrier-ch4-wrong-candidate-for-zord-ugs-02',
+        ]);
+        $item = IntegrationProduct::query()->create([
+            'integration_source_id' => $source->id,
+            'external_id' => 'zord-ugs-02-combined',
+            'external_code' => 'УТ-00006897',
+            'name' => 'Сигнализатор загазованости ЗОРД-УГС-02 (CO+CH)',
+            'price_byn' => null,
+            'stock_quantity' => 9,
+            'match_status' => 'ambiguous',
+            'candidates' => [['product_id' => $barrier->id, 'score' => 0.8356]],
+        ]);
+
+        $this->artisan('integration:resolve-sbg-ambiguous', [
+            '--batch' => 'exact-20261013-o',
+            '--code' => ['УТ-00006897'],
+            '--apply' => true,
+        ])->assertSuccessful();
+
+        $item->refresh();
+        $zord->refresh();
+        $this->assertSame($zord->id, $item->product_id);
+        $this->assertNotSame($barrier->id, $item->product_id);
+        $this->assertSame('matched', $item->match_status);
+        $this->assertSame('manual_search', $item->match_method);
+        $this->assertSame('105.00', $zord->price);
+        $this->assertTrue($zord->in_stock);
+        $this->assertSame('9', (string) $zord->stock_qty);
+        $this->assertSame('Сигнализатор загазованности ЗОРД УГС-02 (CO+CH) комбинированный', $zord->name);
+        $this->assertSame($zord->name, $zord->h1);
+        $this->assertSame(['product/0011/011094/61c43eaab7cbc.jpg'], $zord->images);
+        $this->assertStringNotContainsString('pechki66.ru', implode(' ', $zord->images));
+        $this->assertStringContainsString('gazby.by', $zord->content_source_url);
+        $this->assertStringNotContainsString('кандидат', mb_strtolower($zord->content));
+        $this->assertStringNotContainsString('розничная цена', mb_strtolower($zord->content));
+        $this->assertSame('Беларусь', collect($zord->specs)->firstWhere('key', 'Страна производства')['value']);
+        $this->assertDatabaseHas('supplier_product_mappings', [
+            'supplier_article' => 'УТ-00006897',
+            'product_id' => $zord->id,
+            'confidence' => 'manual',
+        ]);
+    }
 }
