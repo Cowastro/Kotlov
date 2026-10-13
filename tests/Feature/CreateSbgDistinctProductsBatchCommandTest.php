@@ -3847,6 +3847,85 @@ class CreateSbgDistinctProductsBatchCommandTest extends TestCase
         $this->assertSame($product->id, $item->fresh()->product_id);
     }
 
+    public function test_it_creates_the_exact_unmatched_alukraft_1200_roll(): void
+    {
+        $source = IntegrationSource::query()->create([
+            'code' => 'onec-sbg-unmatched-alukraft-1200',
+            'name' => '1С СанБизнесГруп',
+            'settings' => ['partner_name' => 'ООО «СанБизнесГруп»'],
+            'is_active' => true,
+            'update_stock' => true,
+        ]);
+        $category = Category::query()->firstOrCreate(['slug' => 'otdelka-dlya-parnoj'], [
+            'name' => 'Отделка для парной',
+            'parent_id' => 0,
+        ]);
+        Product::query()->create([
+            'category_id' => $category->id,
+            'brand_id' => null,
+            'sku' => 'PS-012.090',
+            'name' => 'Фольга для бани Алукрафт на бумажной основе 30м2',
+            'slug' => 'folga-dlya-bani-alukraft-na-bumajnoy-osnove-30m2',
+            'price' => 68,
+            'images' => ['product/alukraft-30.jpg'],
+            'is_active' => true,
+            'is_archived' => false,
+        ]);
+        $item = IntegrationProduct::query()->create([
+            'integration_source_id' => $source->id,
+            'external_id' => 'unmatched-alukraft-1200-18m2',
+            'external_code' => 'УТ-00002162',
+            'name' => 'Отражающая изоляция "Алукрафт 1200", рулон 1,2м*15мп',
+            'price_byn' => null,
+            'stock_quantity' => 1,
+            'match_status' => 'unmatched',
+            'candidates' => null,
+        ]);
+        $productCount = Product::query()->count();
+
+        $this->artisan('integration:create-sbg-distinct-products', [
+            '--batch' => 'unmatched-researched-20261013-bo',
+            '--code' => ['УТ-00002162'],
+        ])->assertSuccessful();
+        $this->assertNull($item->fresh()->product_id);
+        $this->assertSame($productCount, Product::query()->count());
+
+        $this->artisan('integration:create-sbg-distinct-products', [
+            '--batch' => 'unmatched-researched-20261013-bo',
+            '--code' => ['УТ-00002162'],
+            '--apply' => true,
+        ])->assertSuccessful();
+
+        $item->refresh();
+        $product = $item->product;
+        $this->assertSame($productCount + 1, Product::query()->count());
+        $this->assertNotNull($product);
+        $this->assertSame('matched', $item->match_status);
+        $this->assertSame('manual_created', $item->match_method);
+        $this->assertSame($category->id, $item->target_category_id);
+        $this->assertNull($item->candidates);
+        $this->assertSame('Отражающая изоляция Алукрафт 1200, 1,2×15 м (18 м²)', $product->name);
+        $this->assertNull($product->brand_id);
+        $this->assertSame('55.00', $product->price);
+        $this->assertSame('1', (string) $product->stock_qty);
+        $this->assertTrue((bool) $product->in_stock);
+        $this->assertSame(['img/products/alukraft/alukraft-1200-1-2x15m-18m2.png'], $product->images);
+        $this->assertFileExists(public_path('img/products/alukraft/alukraft-1200-1-2x15m-18m2.png'));
+        $this->assertSame('18 м²', collect($product->specs)->firstWhere('key', 'Площадь рулона')['value']);
+        $this->assertStringContainsString('pechy-kaminy.ru', $product->content_source_url);
+        $this->assertStringNotContainsString('розничная цена', mb_strtolower($product->content));
+        $this->assertStringNotContainsString('rub', mb_strtolower($product->content));
+        $this->assertStringNotContainsString('13.10.2026', $product->content);
+
+        $this->artisan('integration:create-sbg-distinct-products', [
+            '--batch' => 'unmatched-researched-20261013-bo',
+            '--code' => ['УТ-00002162'],
+            '--apply' => true,
+        ])->assertSuccessful();
+        $this->assertSame($productCount + 1, Product::query()->count());
+        $this->assertSame($product->id, $item->fresh()->product_id);
+    }
+
     public function test_it_creates_the_exact_teplov_i_suhov_l500_d120_200_pipe_instead_of_linking_the_l250_d120_180_candidate(): void
     {
         $source = IntegrationSource::query()->create([

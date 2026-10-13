@@ -2043,6 +2043,31 @@ class CreateSbgDistinctProductsBatchCommand extends Command
         ],
     ];
 
+    private const BATCH_UNMATCHED_RESEARCHED_20261013_BO = [
+        'УТ-00002162' => [
+            'template' => 'PS-012.090',
+            'allow_unmatched' => true,
+            'allow_brandless' => true,
+            'category_slug' => 'otdelka-dlya-parnoj',
+            'fragments' => ['Отражающая изоляция', 'Алукрафт 1200', '1,2м', '15мп'],
+            'name' => 'Отражающая изоляция Алукрафт 1200, 1,2×15 м (18 м²)',
+            'retail' => 55.00,
+            'images' => ['img/products/alukraft/alukraft-1200-1-2x15m-18m2.png'],
+            'source_url' => 'https://pechy-kaminy.ru/catalog/aksessuaryi/dlya-montazha/izolyacziya/plasteks/otrazhayushhaya-izolyacziya-alukraft-%2818-m2%29.html',
+            'short' => 'Рулонная отражающая изоляция из алюминиевой фольги на крафт-бумаге для бань и саун; ширина 1,2 м, длина 15 м.',
+            'content' => '<p><strong>Алукрафт 1200</strong> — отражающая рулонная изоляция из алюминиевой фольги на крафт-бумаге. Материал помогает снизить теплопотери и служит парозащитным слоем при отделке парных.</p><p>Рулон шириной 1,2 м и длиной 15 м закрывает 18 м². Алукрафт монтируют фольгированной стороной внутрь помещения; стыки проклеивают алюминиевой лентой.</p>',
+            'specs' => [
+                ['key' => 'Тип', 'value' => 'Отражающая рулонная изоляция'],
+                ['key' => 'Модель', 'value' => 'Алукрафт 1200'],
+                ['key' => 'Материал', 'value' => 'Алюминиевая фольга на крафт-бумаге'],
+                ['key' => 'Ширина', 'value' => '1,2 м'],
+                ['key' => 'Длина', 'value' => '15 м'],
+                ['key' => 'Площадь рулона', 'value' => '18 м²'],
+                ['key' => 'Назначение', 'value' => 'Теплоотражающий и парозащитный слой для бань и саун'],
+            ],
+        ],
+    ];
+
     public function handle(
         IntegrationProductCreator $creator,
         IntegrationProductMatchDecision $matchDecision,
@@ -2114,6 +2139,7 @@ class CreateSbgDistinctProductsBatchCommand extends Command
             'archived-ole-pro-20261013-bl' => self::BATCH_ARCHIVED_OLE_PRO_20261013_BL,
             'archived-hotta-sensor-20261013-bm' => self::BATCH_ARCHIVED_HOTTA_SENSOR_20261013_BM,
             'unmatched-researched-20261013-bn' => self::BATCH_UNMATCHED_RESEARCHED_20261013_BN,
+            'unmatched-researched-20261013-bo' => self::BATCH_UNMATCHED_RESEARCHED_20261013_BO,
             default => null,
         };
 
