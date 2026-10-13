@@ -2481,6 +2481,39 @@ class CreateSbgDistinctProductsBatchCommand extends Command
         ],
     ];
 
+    private const BATCH_UNMATCHED_RESEARCHED_20261013_CB = [
+        'УТ-00001146' => [
+            'template_slug' => 'taim-slang-gazovyi-rezinovyi-12-10-m-stucer-gaika',
+            'allow_unmatched' => true,
+            'category_slug' => 'gibkaya-podvodka-dlya-vody',
+            'fragments' => ['Шланг водопроводный гибкий', 'ШВГ-ШД М10х1-1,0-Г1/2'],
+            'brand' => [
+                'name' => 'Тифлос',
+                'slug' => 'tiflos',
+                'country' => 'Беларусь',
+            ],
+            'name' => 'Тифлос Шланг водопроводный гибкий М10×1 длинный–G1/2″, 1,0 м',
+            'retail' => 6.00,
+            'images' => [
+                'img/products/tiflos/tiflos-water-hose-long-m10-g12-1000-1.webp',
+            ],
+            'source_url' => 'https://tiflos.biz/shlangi/vodoprovodnye-shlangi',
+            'short' => 'Гибкая подводка Тифлос длиной 1,0 м для подключения смесителя: длинный штуцер M10×1 и накидная гайка G1/2″.',
+            'content' => '<p><strong>Тифлос ШВГ-ШД, 1,0 м</strong> — гибкая водопроводная подводка в оплётке из нержавеющей стали для присоединения смесителя к системе холодного или горячего водоснабжения.</p><p>Исполнение ШД отличается длинным штуцером M10×1 для корпуса смесителя. На другом конце установлена накидная гайка с внутренней трубной резьбой G1/2″. Длина подводки составляет 1000 мм.</p>',
+            'specs' => [
+                ['key' => 'Тип', 'value' => 'Гибкая подводка для воды'],
+                ['key' => 'Модель', 'value' => 'ШВГ-ШД М10×1-1,0-G1/2'],
+                ['key' => 'Размер присоединения', 'value' => 'M10×1 НР × G1/2″ ВР'],
+                ['key' => 'Тип соединения', 'value' => 'Длинный штуцер для смесителя/гайка'],
+                ['key' => 'Длина', 'value' => '1000 мм'],
+                ['key' => 'Материал оплётки', 'value' => 'Нержавеющая сталь'],
+                ['key' => 'Назначение', 'value' => 'Подключение смесителя к водопроводу'],
+                ['key' => 'Страна производства', 'value' => 'Беларусь'],
+                ['key' => 'Бренд', 'value' => 'Тифлос'],
+            ],
+        ],
+    ];
+
     public function handle(
         IntegrationProductCreator $creator,
         IntegrationProductMatchDecision $matchDecision,
@@ -2565,6 +2598,7 @@ class CreateSbgDistinctProductsBatchCommand extends Command
             'unmatched-researched-20261013-by' => self::BATCH_UNMATCHED_RESEARCHED_20261013_BY,
             'unmatched-researched-20261013-bz' => self::BATCH_UNMATCHED_RESEARCHED_20261013_BZ,
             'unmatched-researched-20261013-ca' => self::BATCH_UNMATCHED_RESEARCHED_20261013_CA,
+            'unmatched-researched-20261013-cb' => self::BATCH_UNMATCHED_RESEARCHED_20261013_CB,
             default => null,
         };
 
