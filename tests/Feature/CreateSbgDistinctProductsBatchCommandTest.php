@@ -7872,7 +7872,7 @@ class CreateSbgDistinctProductsBatchCommandTest extends TestCase
             'parent_id' => 0,
         ]);
         Product::query()->firstOrCreate([
-            'slug' => 'oxi-snek-podaci-pellet-sp4-70-70-2000-2-m',
+            'slug' => 'snek-podaci-pellet-oxi-sp4-70-70-2000-2-m',
         ], [
             'category_id' => $category->id,
             'sku' => 'KOTLOV-004507',

@@ -3311,7 +3311,7 @@ class CreateSbgDistinctProductsBatchCommand extends Command
     // 2026-10-14 this is 831.79 BYN, rounded to 832 BYN retail.
     private const BATCH_UNMATCHED_RESEARCHED_20261014_CY = [
         'УТ-00000747' => [
-            'template_slug' => 'oxi-snek-podaci-pellet-sp4-70-70-2000-2-m',
+            'template_slug' => 'snek-podaci-pellet-oxi-sp4-70-70-2000-2-m',
             'allow_unmatched' => true,
             'category_slug' => 'pelletnye-gorelki',
             'fragments' => ['Подача для пелет', '2,0M', '15W', 'fi60mm', 'Ecolinex'],
