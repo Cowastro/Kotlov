@@ -121,10 +121,17 @@ class BuildMarketPriceBatchCommand extends Command
             }
 
             $observations = [];
+            $excludedOffers = [];
             foreach ((array) ($result['offers'] ?? []) as $offer) {
                 $observation = $this->observationFromOffer($offer, $product, $sourceRows);
                 if ($observation !== null) {
                     $observations[] = $observation;
+                } else {
+                    $excludedOffers[] = [
+                        'title' => trim((string) ($offer['title'] ?? '')),
+                        'url' => trim((string) ($offer['url'] ?? '')),
+                        'reason' => $this->offerExclusionReason($offer),
+                    ];
                 }
             }
 
@@ -144,6 +151,7 @@ class BuildMarketPriceBatchCommand extends Command
                     'confidence' => $result['confidence'] ?? 'low',
                     'search_queries' => array_values((array) ($result['search_queries'] ?? [])),
                     'rejected_candidates' => array_values((array) ($result['rejected_candidates'] ?? [])),
+                    'excluded_offers' => $excludedOffers,
                     'model' => $result['model'] ?? null,
                     'searched_at' => $this->researchTimestamp($result['searched_at'] ?? null),
                 ],
@@ -192,7 +200,7 @@ class BuildMarketPriceBatchCommand extends Command
         }
 
         $host = Str::lower((string) parse_url($url, PHP_URL_HOST));
-        if ($host === '') {
+        if ($host === '' || $host === 'kotlov.by' || str_ends_with($host, '.kotlov.by')) {
             return null;
         }
 
@@ -239,6 +247,21 @@ class BuildMarketPriceBatchCommand extends Command
             'validation_flags' => [],
             'evidence' => Str::limit(trim((string) ($offer['evidence'] ?? '')), 500, ''),
         ];
+    }
+
+    /** @param array<string, mixed> $offer */
+    private function offerExclusionReason(array $offer): string
+    {
+        $url = trim((string) ($offer['url'] ?? ''));
+        $host = Str::lower((string) parse_url($url, PHP_URL_HOST));
+
+        return match (true) {
+            ($offer['match'] ?? null) !== 'exact' => 'Предложение не подтверждает точное совпадение модели.',
+            $host === 'kotlov.by', str_ends_with($host, '.kotlov.by') => 'Собственный домен KOTLOV не является независимым рыночным источником.',
+            filter_var($url, FILTER_VALIDATE_URL) === false => 'Некорректный URL предложения.',
+            ! is_numeric($offer['price_byn'] ?? null) || (float) $offer['price_byn'] <= 0 => 'Нет положительной подтверждённой цены в BYN.',
+            default => 'Предложение не прошло обязательную проверку сопоставимости.',
+        };
     }
 
     private function availabilityStatus(mixed $value): string

@@ -127,6 +127,7 @@ class BuildMarketPriceBatchCommandTest extends TestCase
 
         $reports = [
             $products[0]->id => $this->readyReport([
+                $this->offer('Собственный магазин', 'https://kotlov.by/product', 4000, 'exact'),
                 $this->offer('Первый продавец', 'https://one.example/product', 4100, 'exact'),
                 $this->offer('Второй продавец', 'https://two.example/product', 4200, 'exact'),
                 $this->offer('Третий продавец', 'https://three.example/product', 4300, 'exact'),
@@ -165,6 +166,7 @@ class BuildMarketPriceBatchCommandTest extends TestCase
         $this->assertCount(2, $batch['products']);
         $this->assertFalse($batch['products'][0]['force_consultation_hold']);
         $this->assertCount(3, $batch['products'][0]['observations']);
+        $this->assertSame('Собственный домен KOTLOV не является независимым рыночным источником.', $batch['products'][0]['research']['excluded_offers'][0]['reason']);
         $this->assertSame(['one.example', 'two.example', 'three.example'], collect($batch['products'][0]['observations'])
             ->map(fn (array $observation): string => parse_url($observation['url'], PHP_URL_HOST))
             ->all());
