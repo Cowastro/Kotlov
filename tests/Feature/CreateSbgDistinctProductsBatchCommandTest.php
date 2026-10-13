@@ -3926,6 +3926,89 @@ class CreateSbgDistinctProductsBatchCommandTest extends TestCase
         $this->assertSame($product->id, $item->fresh()->product_id);
     }
 
+    public function test_it_creates_the_exact_unmatched_mut_vm3_dn25_valve(): void
+    {
+        $source = IntegrationSource::query()->create([
+            'code' => 'onec-sbg-unmatched-mut-vm3-dn25',
+            'name' => '1С СанБизнесГруп',
+            'settings' => ['partner_name' => 'ООО «СанБизнесГруп»'],
+            'is_active' => true,
+            'update_stock' => true,
+        ]);
+        $category = Category::query()->firstOrCreate(['slug' => 'smesitelnye-klapany-i-uzly'], [
+            'name' => 'Смесительные клапаны и узлы',
+            'parent_id' => 0,
+        ]);
+        $templateBrand = Brand::query()->create(['name' => 'ESBE', 'slug' => 'esbe']);
+        Product::query()->create([
+            'category_id' => $category->id,
+            'brand_id' => $templateBrand->id,
+            'sku' => 'PS-004.426',
+            'name' => 'Клапан смесительный серии ESBE VRG 131',
+            'slug' => 'klapan-smesitelnyj-serii-esbe-vrg-131',
+            'price' => 139.80,
+            'images' => ['product/esbe-vrg-131.jpg'],
+            'is_active' => true,
+            'is_archived' => false,
+        ]);
+        $item = IntegrationProduct::query()->create([
+            'integration_source_id' => $source->id,
+            'external_id' => 'unmatched-mut-vm3-dn25',
+            'external_code' => 'УТ-00002159',
+            'external_sku' => null,
+            'name' => 'Клапан смеситель 3-ходовой VM3 (латунь) d25 VVM3Z25',
+            'price_byn' => 84.96,
+            'stock_quantity' => 1,
+            'match_status' => 'unmatched',
+            'candidates' => null,
+        ]);
+        $productCount = Product::query()->count();
+
+        $this->artisan('integration:create-sbg-distinct-products', [
+            '--batch' => 'unmatched-researched-20261013-bp',
+            '--code' => ['УТ-00002159'],
+        ])->assertSuccessful();
+        $this->assertNull($item->fresh()->product_id);
+        $this->assertNull($item->fresh()->external_sku);
+
+        $this->artisan('integration:create-sbg-distinct-products', [
+            '--batch' => 'unmatched-researched-20261013-bp',
+            '--code' => ['УТ-00002159'],
+            '--apply' => true,
+        ])->assertSuccessful();
+
+        $item->refresh();
+        $product = $item->product;
+        $this->assertSame($productCount + 1, Product::query()->count());
+        $this->assertNotNull($product);
+        $this->assertSame('VVM3Z25', $item->external_sku);
+        $this->assertSame('matched', $item->match_status);
+        $this->assertSame('manual_created', $item->match_method);
+        $this->assertSame($category->id, $item->target_category_id);
+        $this->assertSame('MUT', $product->brand?->name);
+        $this->assertSame('mut', $product->brand?->slug);
+        $this->assertSame('Трёхходовой смесительный клапан MUT VM3 3000 DN25, 1″', $product->name);
+        $this->assertSame('169.00', $product->price);
+        $this->assertSame('1', (string) $product->stock_qty);
+        $this->assertTrue((bool) $product->in_stock);
+        $this->assertSame(['img/products/mut/mut-vm3-3000-dn25.jpg'], $product->images);
+        $this->assertFileExists(public_path('img/products/mut/mut-vm3-3000-dn25.jpg'));
+        $this->assertSame('DN25', collect($product->specs)->firstWhere('key', 'Номинальный диаметр')['value']);
+        $this->assertStringContainsString('mutmeccanica.com', $product->content_source_url);
+        $this->assertStringNotContainsString('розничная цена', mb_strtolower($product->content));
+        $this->assertStringNotContainsString('eur', mb_strtolower($product->content));
+        $this->assertStringNotContainsString('13.10.2026', $product->content);
+
+        $this->artisan('integration:create-sbg-distinct-products', [
+            '--batch' => 'unmatched-researched-20261013-bp',
+            '--code' => ['УТ-00002159'],
+            '--apply' => true,
+        ])->assertSuccessful();
+        $this->assertSame($productCount + 1, Product::query()->count());
+        $this->assertSame($product->id, $item->fresh()->product_id);
+        $this->assertSame(1, Brand::query()->where('slug', 'mut')->count());
+    }
+
     public function test_it_creates_the_exact_teplov_i_suhov_l500_d120_200_pipe_instead_of_linking_the_l250_d120_180_candidate(): void
     {
         $source = IntegrationSource::query()->create([

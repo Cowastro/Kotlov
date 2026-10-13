@@ -2068,6 +2068,42 @@ class CreateSbgDistinctProductsBatchCommand extends Command
         ],
     ];
 
+    private const BATCH_UNMATCHED_RESEARCHED_20261013_BP = [
+        'УТ-00002159' => [
+            'template' => 'PS-004.426',
+            'allow_unmatched' => true,
+            'category_slug' => 'smesitelnye-klapany-i-uzly',
+            'external_sku' => 'VVM3Z25',
+            'hydrate_external_sku' => true,
+            'fragments' => ['Клапан смеситель', '3-ходовой', 'VM3', 'латунь', 'd25', 'VVM3Z25'],
+            'brand' => [
+                'name' => 'MUT',
+                'slug' => 'mut',
+            ],
+            'name' => 'Трёхходовой смесительный клапан MUT VM3 3000 DN25, 1″',
+            'retail' => 169.00,
+            'images' => ['img/products/mut/mut-vm3-3000-dn25.jpg'],
+            'source_url' => 'https://mutmeccanica.com/prodottomutmeccanica.php?p=167',
+            'short' => 'Латунный трёхходовой смесительный клапан MUT VM3 серии 3000, DN25, внутренняя резьба G1″.',
+            'content' => '<p><strong>MUT VM3 3000 DN25</strong> — трёхходовой поворотный клапан для смешения и перенаправления потока в системах отопления. Корпус и внутренний ротор выполнены из латуни.</p><p>Клапан имеет три присоединения с внутренней цилиндрической резьбой G1″. Ручная шкала позволяет задать положение ротора; для автоматического управления предусмотрена установка совместимого электропривода.</p>',
+            'specs' => [
+                ['key' => 'Тип', 'value' => 'Трёхходовой смесительный клапан'],
+                ['key' => 'Модель', 'value' => 'VM3 3000'],
+                ['key' => 'Код поставщика', 'value' => 'VVM3Z25'],
+                ['key' => 'Номинальный диаметр', 'value' => 'DN25'],
+                ['key' => 'Присоединение', 'value' => 'G1″, внутренняя резьба'],
+                ['key' => 'Материал корпуса', 'value' => 'Латунь'],
+                ['key' => 'Материал ротора', 'value' => 'Латунь'],
+                ['key' => 'Угол поворота', 'value' => '90°'],
+                ['key' => 'Максимальное рабочее давление', 'value' => '10 бар'],
+                ['key' => 'Температура рабочей среды', 'value' => '5–110 °C'],
+                ['key' => 'Управление', 'value' => 'Ручное, с возможностью установки электропривода'],
+                ['key' => 'Назначение', 'value' => 'Системы отопления'],
+                ['key' => 'Страна производства', 'value' => 'Италия'],
+            ],
+        ],
+    ];
+
     public function handle(
         IntegrationProductCreator $creator,
         IntegrationProductMatchDecision $matchDecision,
@@ -2140,6 +2176,7 @@ class CreateSbgDistinctProductsBatchCommand extends Command
             'archived-hotta-sensor-20261013-bm' => self::BATCH_ARCHIVED_HOTTA_SENSOR_20261013_BM,
             'unmatched-researched-20261013-bn' => self::BATCH_UNMATCHED_RESEARCHED_20261013_BN,
             'unmatched-researched-20261013-bo' => self::BATCH_UNMATCHED_RESEARCHED_20261013_BO,
+            'unmatched-researched-20261013-bp' => self::BATCH_UNMATCHED_RESEARCHED_20261013_BP,
             default => null,
         };
 
