@@ -7,7 +7,9 @@ use App\Models\Category;
 use App\Models\IntegrationProduct;
 use App\Models\Product;
 use App\Services\Integrations\IntegrationProductCreator;
+use App\Services\Integrations\IntegrationProductMatchDecision;
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 class CreateSbgDistinctProductsBatchCommand extends Command
@@ -1592,7 +1594,45 @@ class CreateSbgDistinctProductsBatchCommand extends Command
         ],
     ];
 
-    public function handle(IntegrationProductCreator $creator): int
+    private const BATCH_RESEARCHED_PRICED_20261013_AY = [
+        'УТ-00003235' => [
+            'template' => 'KOTLOV-000745',
+            'link_existing_sku' => 'KOTLOV-000727',
+            'link_fragments' => ['Electrolux', 'EFT/AG2R'],
+            'refresh_existing' => true,
+            'category_slug' => 'obogrevateli',
+            'fragments' => ['Комплект', 'шасси', 'EFT/AG2R', 'напольной установки', 'конвектора'],
+            'brand' => [
+                'name' => 'Electrolux',
+                'slug' => 'electrolux',
+            ],
+            'name' => 'Комплект шасси Electrolux EFT/AG2R для Air Gate Transformer',
+            'retail' => 33.00,
+            'images' => ['img/products/electrolux/electrolux-eft-ag2r-chassis.jpg'],
+            'source_url' => 'https://www.rusklimat.ru/ufa/product/komplekt-shassi-eft-ag2r-dlya-electrolux-air-gate-transformer',
+            'short' => 'Комплект из двух колёсных опор Electrolux EFT/AG2R для напольной установки модулей Air Gate Transformer System.',
+            'content' => '<p><strong>Electrolux EFT/AG2R</strong> — комплект шасси для напольной установки электрических конвекторов Air Gate Transformer System. Две опоры с колёсами позволяют быстро установить модуль на пол и удобно перемещать его по помещению.</p><p>Комплект выполнен из белого пластика и рассчитан на штатное крепление к совместимому отопительному модулю. Код модели — НС-1117333. Перед покупкой необходимо сверить обозначение системы конвектора.</p>',
+            'specs' => [
+                ['key' => 'Тип', 'value' => 'Комплект шасси для конвектора'],
+                ['key' => 'Модель', 'value' => 'EFT/AG2R'],
+                ['key' => 'Код товара', 'value' => 'НС-1117333'],
+                ['key' => 'Совместимость', 'value' => 'Electrolux Air Gate Transformer System'],
+                ['key' => 'Комплектация', 'value' => '2 колёсные опоры'],
+                ['key' => 'Материал', 'value' => 'Пластик'],
+                ['key' => 'Цвет', 'value' => 'Белый'],
+                ['key' => 'Габариты одной опоры', 'value' => '226 × 70 × 40 мм'],
+                ['key' => 'Масса комплекта', 'value' => '0,26 кг'],
+                ['key' => 'Гарантия', 'value' => '36 месяцев'],
+                ['key' => 'Расчётный срок службы', 'value' => '10 лет'],
+                ['key' => 'Страна производства', 'value' => 'Россия'],
+            ],
+        ],
+    ];
+
+    public function handle(
+        IntegrationProductCreator $creator,
+        IntegrationProductMatchDecision $matchDecision,
+    ): int
     {
         $rows = match ($this->option('batch')) {
             'chimney-priced-20261012-a' => self::BATCH_CHIMNEY_PRICED_20261012_A,
@@ -1645,6 +1685,7 @@ class CreateSbgDistinctProductsBatchCommand extends Command
             'researched-priced-20261013-av' => self::BATCH_RESEARCHED_PRICED_20261013_AV,
             'researched-priced-20261013-aw' => self::BATCH_RESEARCHED_PRICED_20261013_AW,
             'researched-priced-20261013-ax' => self::BATCH_RESEARCHED_PRICED_20261013_AX,
+            'researched-priced-20261013-ay' => self::BATCH_RESEARCHED_PRICED_20261013_AY,
             default => null,
         };
 
@@ -1660,7 +1701,7 @@ class CreateSbgDistinctProductsBatchCommand extends Command
         }
 
         $apply = (bool) $this->option('apply');
-        $stats = array_fill_keys(['configured', 'ready', 'created', 'refreshed', 'brands_created', 'already', 'blocked'], 0);
+        $stats = array_fill_keys(['configured', 'ready', 'created', 'linked', 'refreshed', 'brands_created', 'already', 'blocked'], 0);
         $stats['configured'] = count($rows);
         $details = [];
 
@@ -1668,8 +1709,12 @@ class CreateSbgDistinctProductsBatchCommand extends Command
             $items = IntegrationProduct::query()->with(['source', 'product'])->where('external_code', $code)->get();
             $template = Product::query()->where('sku', $rule['template'])->first();
             $expectedCandidate = Product::query()->where('sku', $rule['candidate'] ?? $rule['template'])->first();
+            $linkProduct = isset($rule['link_existing_sku'])
+                ? Product::query()->where('sku', $rule['link_existing_sku'])->first()
+                : null;
 
-            if ($items->count() !== 1 || ! $template || ! $expectedCandidate) {
+            if ($items->count() !== 1 || ! $template || ! $expectedCandidate
+                || (isset($rule['link_existing_sku']) && ! $linkProduct)) {
                 $stats['blocked']++;
                 $details[] = [$code, $rule['template'], 'blocked', 'missing unique 1C row or template'];
 
@@ -1679,7 +1724,21 @@ class CreateSbgDistinctProductsBatchCommand extends Command
             $item = $items->first();
             $portableImages = $rule['images'] ?? $this->portableImages($template);
             if ($item->product_id) {
-                if ($item->match_status === 'matched' && $item->match_method === 'manual_created') {
+                $isExpectedExistingLink = $linkProduct
+                    && $item->match_status === 'matched'
+                    && $item->match_method === 'manual_search'
+                    && (int) $item->product_id === (int) $linkProduct->id;
+
+                if ($isExpectedExistingLink && ($rule['refresh_existing'] ?? false)) {
+                    $stats['ready']++;
+                    if ($apply) {
+                        $this->refreshExistingProduct($linkProduct, $rule, $portableImages);
+                        $stats['refreshed']++;
+                        $details[] = [$code, $linkProduct->sku, 'refreshed', Str::limit($linkProduct->name, 58)];
+                    } else {
+                        $details[] = [$code, $linkProduct->sku, 'ready', 'existing exact card refresh'];
+                    }
+                } elseif ($item->match_status === 'matched' && $item->match_method === 'manual_created') {
                     $canRefresh = ($rule['refresh_existing'] ?? false)
                         && $item->product
                         && $item->product->name === ($rule['name'] ?? null)
@@ -1735,7 +1794,9 @@ class CreateSbgDistinctProductsBatchCommand extends Command
                 && $candidateIds->contains((int) $expectedCandidate->id)
                 && $this->containsAll($item->name, $rule['fragments'])
                 && (! isset($rule['external_sku']) || $item->external_sku === $rule['external_sku'])
-                && Product::query()->where('name', $name)->doesntExist();
+                && ($linkProduct
+                    ? $this->containsAll($linkProduct->name, $rule['link_fragments'] ?? [$rule['link_existing_sku']])
+                    : Product::query()->where('name', $name)->doesntExist());
 
             if (! $valid) {
                 $stats['blocked']++;
@@ -1757,6 +1818,37 @@ class CreateSbgDistinctProductsBatchCommand extends Command
             }
 
             if ($apply) {
+                if ($linkProduct) {
+                    $linked = DB::transaction(function () use (
+                        $item, $linkProduct, $rule, $portableImages, $category, $matchDecision
+                    ): ?Product {
+                        $linked = $matchDecision->linkSelectedProduct($item, $linkProduct->id);
+                        if (! $linked) {
+                            return null;
+                        }
+
+                        $this->refreshExistingProduct($linked, $rule, $portableImages);
+                        $item->forceFill([
+                            'target_category_id' => $category->id,
+                            'candidates' => null,
+                        ])->save();
+
+                        return $linked->fresh();
+                    });
+
+                    if (! $linked) {
+                        $stats['blocked']++;
+                        $details[] = [$code, $linkProduct->sku, 'blocked', 'row changed during exact link'];
+
+                        continue;
+                    }
+
+                    $stats['linked']++;
+                    $details[] = [$code, $linked->sku, 'linked', number_format($retail, 2, '.', '').' BYN · '.$linked->name];
+
+                    continue;
+                }
+
                 if (! $brand && $configuredBrand) {
                     $brand = $this->createBrand($configuredBrand);
                     $stats['brands_created']++;
@@ -1796,6 +1888,33 @@ class CreateSbgDistinctProductsBatchCommand extends Command
         $this->table(['metric', 'count'], collect($stats)->map(fn ($count, $metric) => [$metric, $count])->values()->all());
 
         return $stats['blocked'] === 0 ? self::SUCCESS : self::FAILURE;
+    }
+
+    /** @param array<string, mixed> $rule @param list<string> $portableImages */
+    private function refreshExistingProduct(Product $product, array $rule, array $portableImages): void
+    {
+        $name = (string) ($rule['name'] ?? $product->name);
+        $product->forceFill([
+            'category_id' => isset($rule['category_slug'])
+                ? Category::query()->where('slug', $rule['category_slug'])->value('id') ?? $product->category_id
+                : $product->category_id,
+            'brand_id' => isset($rule['brand'])
+                ? $this->findBrand($rule['brand'])?->id ?? $product->brand_id
+                : $product->brand_id,
+            'name' => $name,
+            'h1' => $name,
+            'price' => isset($rule['retail']) ? round((float) $rule['retail'], 2) : $product->price,
+            'currency' => 'BYN',
+            'short_description' => $rule['short'] ?? $product->short_description,
+            'content' => $rule['content'] ?? $product->content,
+            'images' => $portableImages,
+            'specs' => $rule['specs'] ?? $product->specs,
+            'content_source_url' => $rule['source_url'] ?? $product->content_source_url,
+            'meta_title' => Str::limit($name.' — купить в Беларуси | KOTLOV', 255, ''),
+            'meta_description' => Str::limit('Купить '.$name.' в KOTLOV. Характеристики, актуальная цена и наличие, доставка по Беларуси.', 255, ''),
+            'is_active' => true,
+            'is_archived' => false,
+        ])->save();
     }
 
     /** @param array{name:string,slug:string} $config */

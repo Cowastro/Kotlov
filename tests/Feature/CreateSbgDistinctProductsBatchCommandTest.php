@@ -3011,4 +3011,104 @@ class CreateSbgDistinctProductsBatchCommandTest extends TestCase
         $this->assertStringNotContainsString('rub', mb_strtolower($product->content));
         $this->assertSame('manual_created', $item->fresh()->match_method);
     }
+
+    public function test_it_links_eft_ag2r_to_the_existing_exact_card_without_creating_a_duplicate(): void
+    {
+        $source = IntegrationSource::query()->create([
+            'code' => 'onec-sbg-electrolux-eft-ag2r',
+            'name' => '1С СанБизнесГруп',
+            'settings' => ['partner_name' => 'ООО «СанБизнесГруп»'],
+            'is_active' => true,
+            'update_stock' => true,
+        ]);
+        $category = Category::query()->firstOrCreate(['slug' => 'obogrevateli'], [
+            'name' => 'Обогреватели',
+            'parent_id' => 0,
+        ]);
+        $electrolux = Brand::query()->firstOrCreate(['slug' => 'electrolux'], ['name' => 'Electrolux']);
+        $wrongEfa2Candidate = Product::query()->create([
+            'category_id' => $category->id,
+            'brand_id' => $electrolux->id,
+            'sku' => 'KOTLOV-000745',
+            'name' => 'Комплект опор Electrolux EFA2 для напольной установки',
+            'slug' => 'electrolux-efa2-wrong-candidate',
+            'price' => 30,
+            'images' => ['product/electrolux/efa2.jpg'],
+        ]);
+        $exactProduct = Product::query()->create([
+            'category_id' => $category->id,
+            'brand_id' => $electrolux->id,
+            'sku' => 'KOTLOV-000727',
+            'name' => 'Electrolux EFT/AG2R',
+            'slug' => 'electrolux-eftag2r',
+            'price' => 33,
+            'images' => ['product/electrolux/eft-ag2r-old.jpg'],
+            'content' => '<p>Старое описание.</p>',
+            'is_active' => true,
+            'is_archived' => false,
+        ]);
+        $item = IntegrationProduct::query()->create([
+            'integration_source_id' => $source->id,
+            'external_id' => 'electrolux-eft-ag2r-chassis',
+            'external_code' => 'УТ-00003235',
+            'external_sku' => null,
+            'name' => 'Комплект шасси EFT/AG2R для напольной установки конвектора Electrolux',
+            'price_byn' => null,
+            'stock_quantity' => 1,
+            'match_status' => 'ambiguous',
+            'candidates' => [['product_id' => $wrongEfa2Candidate->id, 'score' => 0.80]],
+        ]);
+        $productCount = Product::query()->count();
+
+        $this->artisan('integration:create-sbg-distinct-products', [
+            '--batch' => 'researched-priced-20261013-ay',
+            '--code' => ['УТ-00003235'],
+            '--apply' => true,
+        ])->assertSuccessful();
+
+        $item->refresh();
+        $exactProduct->refresh();
+        $this->assertSame($productCount, Product::query()->count());
+        $this->assertSame($exactProduct->id, $item->product_id);
+        $this->assertNotSame($wrongEfa2Candidate->id, $item->product_id);
+        $this->assertSame('matched', $item->match_status);
+        $this->assertSame('manual_search', $item->match_method);
+        $this->assertSame($category->id, $item->target_category_id);
+        $this->assertNull($item->candidates);
+        $this->assertSame('Комплект шасси Electrolux EFT/AG2R для Air Gate Transformer', $exactProduct->name);
+        $this->assertSame('33.00', $exactProduct->price);
+        $this->assertSame('1', (string) $exactProduct->stock_qty);
+        $this->assertTrue((bool) $exactProduct->in_stock);
+        $this->assertTrue((bool) $exactProduct->is_active);
+        $this->assertFalse((bool) $exactProduct->is_archived);
+        $this->assertSame('EFT/AG2R', collect($exactProduct->specs)->firstWhere('key', 'Модель')['value']);
+        $this->assertSame('НС-1117333', collect($exactProduct->specs)->firstWhere('key', 'Код товара')['value']);
+        $this->assertSame('2 колёсные опоры', collect($exactProduct->specs)->firstWhere('key', 'Комплектация')['value']);
+        $this->assertSame('226 × 70 × 40 мм', collect($exactProduct->specs)->firstWhere('key', 'Габариты одной опоры')['value']);
+        $this->assertSame(['img/products/electrolux/electrolux-eft-ag2r-chassis.jpg'], $exactProduct->images);
+        $this->assertFileExists(public_path('img/products/electrolux/electrolux-eft-ag2r-chassis.jpg'));
+        $this->assertStringContainsString('rusklimat.ru', $exactProduct->content_source_url);
+        $this->assertStringContainsString('Air Gate Transformer System', $exactProduct->content);
+        $this->assertStringNotContainsString('EFA2', $exactProduct->content);
+        $this->assertStringNotContainsString('кандидат', mb_strtolower($exactProduct->content));
+        $this->assertStringNotContainsString('розничная цена', mb_strtolower($exactProduct->content));
+        $this->assertStringNotContainsString('нбрб', mb_strtolower($exactProduct->content));
+        $this->assertStringNotContainsString('byn', mb_strtolower($exactProduct->content));
+        $this->assertDatabaseHas('supplier_product_mappings', [
+            'supplier_code' => $source->matchingSupplierCode(),
+            'supplier_article' => 'УТ-00003235',
+            'product_id' => $exactProduct->id,
+            'product_sku' => 'KOTLOV-000727',
+            'confidence' => 'manual',
+            'is_active' => true,
+        ]);
+
+        $this->artisan('integration:create-sbg-distinct-products', [
+            '--batch' => 'researched-priced-20261013-ay',
+            '--code' => ['УТ-00003235'],
+            '--apply' => true,
+        ])->assertSuccessful();
+        $this->assertSame($productCount, Product::query()->count());
+        $this->assertSame($exactProduct->id, $item->fresh()->product_id);
+    }
 }
