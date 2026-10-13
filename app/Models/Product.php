@@ -41,8 +41,6 @@ class Product extends Model
         'category_id', 'brand_id', 'supplier_id',
         'name', 'slug', 'h1', 'sku',
         'price', 'price_old', 'currency',
-        'market_price_verified_at', 'market_price_source_url',
-        'supplier_candidate_name', 'supplier_candidate_url',
         'content', 'short_description',
         'images', 'specs', 'service_info', 'documents', 'promo_flags', 'video_url', 'content_source_url',
         'weight', 'unit', 'warranty',
@@ -66,7 +64,6 @@ class Product extends Model
         'is_sale' => 'boolean',
         'price' => 'decimal:2',
         'price_old' => 'decimal:2',
-        'market_price_verified_at' => 'datetime',
     ];
 
     public static function availabilityStatusOptions(): array
@@ -121,15 +118,7 @@ class Product extends Model
             && in_array($this->effectiveAvailabilityStatus(), [
                 self::AVAILABILITY_IN_STOCK,
                 self::AVAILABILITY_CHECK,
-            ], true)
-            && ($this->hasLinkedSupplierChannel() || $this->hasFreshMarketPrice() || $this->isPublicSale());
-    }
-
-    public function hasFreshMarketPrice(): bool
-    {
-        return $this->market_price_verified_at !== null
-            && $this->market_price_verified_at->greaterThanOrEqualTo(now()->subDays(30))
-            && filled($this->market_price_source_url);
+            ], true);
     }
 
     public function hasLinkedSupplierChannel(): bool

@@ -66,10 +66,6 @@ class AuditUnlinkedProductsCommand extends Command
                 'p.in_stock',
                 'p.availability_status',
                 'p.content_source_url',
-                'p.market_price_verified_at',
-                'p.market_price_source_url',
-                'p.supplier_candidate_name',
-                'p.supplier_candidate_url',
                 'p.updated_at',
             ]);
 
@@ -86,9 +82,7 @@ class AuditUnlinkedProductsCommand extends Command
         fputcsv($handle, [
             'product_id', 'sku', 'name', 'slug', 'brand', 'category',
             'price', 'price_old', 'currency', 'is_active', 'in_stock',
-            'availability_status', 'content_source_url', 'market_price_verified_at',
-            'market_price_source_url', 'supplier_candidate_name',
-            'supplier_candidate_url', 'updated_at',
+            'availability_status', 'content_source_url', 'updated_at',
         ], ';');
 
         foreach ($rows as $row) {
@@ -106,10 +100,6 @@ class AuditUnlinkedProductsCommand extends Command
                 (int) $row->in_stock,
                 $row->availability_status,
                 $row->content_source_url,
-                $row->market_price_verified_at,
-                $row->market_price_source_url,
-                $row->supplier_candidate_name,
-                $row->supplier_candidate_url,
                 $row->updated_at,
             ], ';');
         }
@@ -124,8 +114,6 @@ class AuditUnlinkedProductsCommand extends Command
                 ['categories', $rows->pluck('category')->filter()->unique()->count()],
                 ['with_public_price', $rows->filter(fn ($row) => (float) $row->price > 0)->count()],
                 ['with_content_source', $rows->filter(fn ($row) => filled($row->content_source_url))->count()],
-                ['with_verified_market_price', $rows->filter(fn ($row) => filled($row->market_price_verified_at))->count()],
-                ['with_supplier_candidate', $rows->filter(fn ($row) => filled($row->supplier_candidate_url))->count()],
             ],
         );
         $this->info("Report: {$output}");
