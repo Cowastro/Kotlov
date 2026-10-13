@@ -725,6 +725,36 @@ class CreateSbgDistinctProductsBatchCommand extends Command
         ],
     ];
 
+    private const BATCH_RESEARCHED_PRICED_20261013_Z = [
+        'УТ-00007501' => [
+            'template' => 'PS-009.743',
+            'external_sku' => 'TS.ST5.TRB.0115.79161',
+            'fragments' => ['Труба L1000', 'ТМ-Р', '304-0.8', 'D115'],
+            'name' => 'Теплов и Сухов Труба L1000 ТМ-Р 304-0.8 D115 (У)',
+            'retail' => 98.30,
+            'images' => ['img/products/generated/teplov-suhov-truba-l1000-tm-r-304-08-d115.png'],
+            'source_url' => 'https://banikaminy.ru/catalog/dymokhody_baki_ventilyatsiya/dymokhodnye-sistemy-teplov-i-sukhov-tis-standart-50/',
+            'short' => 'Одностенная труба дымохода Теплов и Сухов ТМ-Р длиной 1000 мм и диаметром 115 мм из AISI 304 толщиной 0,8 мм.',
+            'content' => '<p><strong>Теплов и Сухов ТМ-Р L1000 D115</strong> — одностенная дымоходная труба длиной 1000 мм для подключения печей, каминов и котлов, гильзования кирпичных каналов и прокладки внутри негорючих шахт.</p><p>Труба изготовлена из нержавеющей стали AISI 304 толщиной 0,8 мм и рассчитана на рабочую температуру до 600 °C. Подходит для оборудования, работающего на дровах, газе или пеллетах.</p>',
+            'specs' => [
+                ['key' => 'Тип', 'value' => 'Труба дымоходная одностенная'],
+                ['key' => 'Система', 'value' => 'Моно'],
+                ['key' => 'Серия', 'value' => 'ТиС Стандарт'],
+                ['key' => 'Модель', 'value' => 'ТМ-Р'],
+                ['key' => 'Длина', 'value' => '1000 мм'],
+                ['key' => 'Диаметр', 'value' => '115 мм'],
+                ['key' => 'Материал', 'value' => 'Нержавеющая сталь'],
+                ['key' => 'Марка стали', 'value' => 'AISI 304'],
+                ['key' => 'Толщина стали', 'value' => '0,8 мм'],
+                ['key' => 'Рабочая температура', 'value' => 'до 600 °C'],
+                ['key' => 'Рекомендуемое топливо', 'value' => 'Дрова, газ, пеллеты'],
+                ['key' => 'Режим эксплуатации', 'value' => 'Сухой или влажный'],
+                ['key' => 'Артикул производителя', 'value' => 'TS.ST5.TRB.0115.79161'],
+                ['key' => 'Страна производства', 'value' => 'Россия'],
+            ],
+        ],
+    ];
+
     public function handle(IntegrationProductCreator $creator): int
     {
         $rows = match ($this->option('batch')) {
@@ -753,6 +783,7 @@ class CreateSbgDistinctProductsBatchCommand extends Command
             'researched-priced-20261013-w' => self::BATCH_RESEARCHED_PRICED_20261013_W,
             'researched-priced-20261013-x' => self::BATCH_RESEARCHED_PRICED_20261013_X,
             'researched-priced-20261013-y' => self::BATCH_RESEARCHED_PRICED_20261013_Y,
+            'researched-priced-20261013-z' => self::BATCH_RESEARCHED_PRICED_20261013_Z,
             default => null,
         };
 
