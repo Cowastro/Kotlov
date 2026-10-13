@@ -15,6 +15,12 @@ Schedule::command('telephony:sync-a1')
     ->runInBackground()
     ->appendOutputTo(storage_path('logs/a1-telephony-sync.log'));
 
+Schedule::command('crm:mail-sync')
+    ->everyFiveMinutes()
+    ->withoutOverlapping(10)
+    ->runInBackground()
+    ->appendOutputTo(storage_path('logs/crm-mail-sync.log'));
+
 // Черновики попадают в кабинет только у поставщиков, для которых администратор
 // отдельно включил автоматическую передачу после успешного контрольного периода.
 // У всех существующих поставщиков настройка по умолчанию выключена.

@@ -1,0 +1,66 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+
+class CrmMailThread extends Model
+{
+    public const STATUSES = [
+        'new' => 'Новый лид',
+        'in_progress' => 'В работе',
+        'waiting_customer' => 'Ждём клиента',
+        'waiting_manager' => 'Нужен ответ',
+        'closed' => 'Закрыто',
+        'spam' => 'Спам',
+    ];
+
+    public const PRIORITIES = [
+        'low' => 'Низкий',
+        'normal' => 'Обычный',
+        'high' => 'Высокий',
+        'urgent' => 'Срочно',
+    ];
+
+    protected $fillable = [
+        'mailbox_id', 'crm_counterparty_id', 'crm_contact_id', 'assigned_user_id',
+        'thread_key', 'subject', 'participant_name', 'participant_email', 'status',
+        'priority', 'messages_count', 'unread_count', 'last_message_at', 'handled_at',
+        'manager_note',
+    ];
+
+    protected $casts = ['last_message_at' => 'datetime', 'handled_at' => 'datetime'];
+
+    public function mailbox(): BelongsTo
+    {
+        return $this->belongsTo(CrmMailbox::class, 'mailbox_id');
+    }
+
+    public function counterparty(): BelongsTo
+    {
+        return $this->belongsTo(CrmCounterparty::class, 'crm_counterparty_id');
+    }
+
+    public function contact(): BelongsTo
+    {
+        return $this->belongsTo(CrmContact::class, 'crm_contact_id');
+    }
+
+    public function assignedUser(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'assigned_user_id');
+    }
+
+    public function messages(): HasMany
+    {
+        return $this->hasMany(CrmMailMessage::class, 'thread_id')->orderBy('received_at');
+    }
+
+    public function scopeNeedsAttention(Builder $query): Builder
+    {
+        return $query->whereIn('status', ['new', 'waiting_manager']);
+    }
+}

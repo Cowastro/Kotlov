@@ -135,6 +135,11 @@ class User extends Authenticatable implements FilamentUser
         return $this->hasMany(Order::class, 'manager_id');
     }
 
+    public function assignedMailThreads(): HasMany
+    {
+        return $this->hasMany(CrmMailThread::class, 'assigned_user_id');
+    }
+
     public function reviews(): HasMany
     {
         return $this->hasMany(Review::class);

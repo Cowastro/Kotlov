@@ -1,0 +1,268 @@
+<?php
+
+namespace App\Services\CrmMail;
+
+use App\Models\CrmMailbox;
+use App\Models\CrmMailMessage;
+use App\Models\CrmMailThread;
+use Carbon\Carbon;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
+use RuntimeException;
+use Throwable;
+
+class ImapMailboxSynchronizer
+{
+    public function __construct(private readonly LeadMatcher $leadMatcher) {}
+
+    /** @return array{imported: int, skipped: int} */
+    public function sync(CrmMailbox $mailbox): array
+    {
+        if (! function_exists('imap_open')) {
+            throw new RuntimeException('На сервере PHP не подключено расширение IMAP. Включите php-imap для фоновой загрузки писем.');
+        }
+
+        if (blank($mailbox->password)) {
+            throw new RuntimeException('Не задан пароль почтового ящика.');
+        }
+
+        $imap = @imap_open($mailbox->imapPath(), $mailbox->username, $mailbox->password, OP_READONLY, 1);
+
+        if ($imap === false) {
+            throw new RuntimeException('IMAP: '.(imap_last_error() ?: 'не удалось подключиться к ящику'));
+        }
+
+        $mailbox->forceFill(['last_sync_at' => now(), 'last_error' => null])->save();
+        $imported = 0;
+        $skipped = 0;
+
+        try {
+            $query = $mailbox->last_uid ? 'UID '.($mailbox->last_uid + 1).':*' : 'ALL';
+            $numbers = imap_search($imap, $query, SE_UID) ?: [];
+            sort($numbers, SORT_NUMERIC);
+
+            foreach (array_slice($numbers, -250) as $uid) {
+                if (CrmMailMessage::query()->where('mailbox_id', $mailbox->id)->where('imap_uid', $uid)->exists()) {
+                    $skipped++;
+                    $mailbox->last_uid = max((int) $mailbox->last_uid, (int) $uid);
+
+                    continue;
+                }
+
+                $messageNumber = imap_msgno($imap, (int) $uid);
+                $header = imap_headerinfo($imap, $messageNumber);
+                $from = $header->from[0] ?? null;
+                $fromEmail = $from ? mb_strtolower(($from->mailbox ?? '').'@'.($from->host ?? '')) : '';
+
+                if (! filter_var($fromEmail, FILTER_VALIDATE_EMAIL)) {
+                    $skipped++;
+
+                    continue;
+                }
+
+                $fromName = $this->decodeHeader($from->personal ?? null);
+                $subject = $this->decodeHeader($header->subject ?? null) ?: '(без темы)';
+                $messageId = $this->cleanMessageId($header->message_id ?? null);
+                $inReplyTo = $this->cleanMessageId($header->in_reply_to ?? null);
+                $structure = imap_fetchstructure($imap, $messageNumber);
+                $bodies = $this->extractBodies($imap, $messageNumber, $structure);
+                [$counterparty, $contact] = $this->leadMatcher->resolve(
+                    $fromEmail,
+                    $fromName,
+                    $mailbox->create_leads,
+                );
+
+                DB::transaction(function () use (
+                    $mailbox, $uid, $header, $fromEmail, $fromName, $subject, $messageId,
+                    $inReplyTo, $structure, $bodies, $counterparty, $contact
+                ): void {
+                    $threadKey = $this->threadKey($fromEmail, $subject, $inReplyTo);
+                    $receivedAt = $this->parseDate($header->date ?? null);
+                    $thread = CrmMailThread::query()->firstOrCreate(
+                        ['mailbox_id' => $mailbox->id, 'thread_key' => $threadKey],
+                        [
+                            'crm_counterparty_id' => $counterparty?->id,
+                            'crm_contact_id' => $contact?->id,
+                            'subject' => $subject,
+                            'participant_name' => $fromName,
+                            'participant_email' => $fromEmail,
+                            'status' => 'new',
+                            'priority' => 'normal',
+                        ],
+                    );
+
+                    CrmMailMessage::create([
+                        'thread_id' => $thread->id,
+                        'mailbox_id' => $mailbox->id,
+                        'message_id' => $messageId,
+                        'in_reply_to' => $inReplyTo,
+                        'imap_uid' => $uid,
+                        'direction' => 'incoming',
+                        'from_name' => $fromName,
+                        'from_email' => $fromEmail,
+                        'to' => $this->addresses($header->to ?? []),
+                        'cc' => $this->addresses($header->cc ?? []),
+                        'subject' => $subject,
+                        'text_body' => $bodies['text'],
+                        'html_body' => $bodies['html'],
+                        'attachments_count' => $this->countAttachments($structure),
+                        'is_read' => false,
+                        'received_at' => $receivedAt,
+                        'metadata' => ['size' => $header->Size ?? null],
+                    ]);
+
+                    $thread->forceFill([
+                        'crm_counterparty_id' => $thread->crm_counterparty_id ?? $counterparty?->id,
+                        'crm_contact_id' => $thread->crm_contact_id ?? $contact?->id,
+                        'participant_name' => $thread->participant_name ?: $fromName,
+                        'messages_count' => $thread->messages_count + 1,
+                        'unread_count' => $thread->unread_count + 1,
+                        'last_message_at' => $receivedAt,
+                        'status' => in_array($thread->status, ['closed', 'waiting_customer'], true)
+                            ? 'waiting_manager'
+                            : $thread->status,
+                    ])->save();
+
+                    $counterparty?->forceFill(['last_contact_at' => $receivedAt])->save();
+                });
+
+                $mailbox->last_uid = max((int) $mailbox->last_uid, (int) $uid);
+                $imported++;
+            }
+
+            $mailbox->forceFill([
+                'last_uid' => $mailbox->last_uid,
+                'last_success_at' => now(),
+                'last_error' => null,
+            ])->save();
+        } catch (Throwable $exception) {
+            $mailbox->forceFill(['last_error' => $exception->getMessage()])->save();
+            throw $exception;
+        } finally {
+            imap_close($imap);
+        }
+
+        return compact('imported', 'skipped');
+    }
+
+    private function decodeHeader(?string $value): ?string
+    {
+        if (blank($value)) {
+            return null;
+        }
+
+        return trim(imap_utf8($value));
+    }
+
+    private function cleanMessageId(?string $value): ?string
+    {
+        return filled($value) ? trim($value, " <>\t\n\r\0\x0B") : null;
+    }
+
+    private function threadKey(string $email, string $subject, ?string $inReplyTo): string
+    {
+        if ($inReplyTo) {
+            $existing = CrmMailMessage::query()->where('message_id', $inReplyTo)->first();
+
+            if ($existing) {
+                return $existing->thread->thread_key;
+            }
+        }
+
+        $normalizedSubject = Str::of($subject)
+            ->lower()
+            ->replaceMatches('/^(re|fw|fwd|ответ)\s*:\s*/ui', '')
+            ->squish()
+            ->value();
+
+        return hash('sha256', $email.'|'.$normalizedSubject);
+    }
+
+    private function parseDate(?string $value): Carbon
+    {
+        try {
+            return filled($value) ? Carbon::parse($value) : now();
+        } catch (Throwable) {
+            return now();
+        }
+    }
+
+    /** @return list<array{name: string|null, email: string}> */
+    private function addresses(array $addresses): array
+    {
+        return collect($addresses)->map(function (object $address): array {
+            return [
+                'name' => $this->decodeHeader($address->personal ?? null),
+                'email' => mb_strtolower(($address->mailbox ?? '').'@'.($address->host ?? '')),
+            ];
+        })->filter(fn (array $item): bool => filter_var($item['email'], FILTER_VALIDATE_EMAIL) !== false)
+            ->values()->all();
+    }
+
+    /** @return array{text: string|null, html: string|null} */
+    private function extractBodies($imap, int $messageNumber, object|false $structure): array
+    {
+        $result = ['text' => null, 'html' => null];
+
+        if (! $structure) {
+            return $result;
+        }
+
+        $this->walkParts($imap, $messageNumber, $structure, '', $result);
+
+        if (! $result['text'] && ! $result['html']) {
+            $result['text'] = trim((string) imap_body($imap, $messageNumber, FT_PEEK)) ?: null;
+        }
+
+        return $result;
+    }
+
+    /** @param array{text: string|null, html: string|null} $result */
+    private function walkParts($imap, int $messageNumber, object $part, string $prefix, array &$result): void
+    {
+        if (! empty($part->parts)) {
+            foreach ($part->parts as $index => $child) {
+                $number = $prefix === '' ? (string) ($index + 1) : $prefix.'.'.($index + 1);
+                $this->walkParts($imap, $messageNumber, $child, $number, $result);
+            }
+
+            return;
+        }
+
+        $isAttachment = isset($part->disposition) && in_array(strtoupper($part->disposition), ['ATTACHMENT', 'INLINE'], true)
+            && ($part->dparameters ?? []);
+        if ($isAttachment || ($part->type ?? null) !== TYPETEXT) {
+            return;
+        }
+
+        $body = $prefix === ''
+            ? (string) imap_body($imap, $messageNumber, FT_PEEK)
+            : (string) imap_fetchbody($imap, $messageNumber, $prefix, FT_PEEK);
+        $body = match ($part->encoding ?? ENC7BIT) {
+            ENCBASE64 => (string) base64_decode($body, true),
+            ENCQUOTEDPRINTABLE => quoted_printable_decode($body),
+            default => $body,
+        };
+        $subtype = strtoupper($part->subtype ?? 'PLAIN');
+        $key = $subtype === 'HTML' ? 'html' : 'text';
+        $result[$key] ??= trim($body) ?: null;
+    }
+
+    private function countAttachments(object|false $structure): int
+    {
+        if (! $structure) {
+            return 0;
+        }
+
+        $count = 0;
+        foreach ($structure->parts ?? [] as $part) {
+            $disposition = strtoupper($part->disposition ?? '');
+            if ($disposition === 'ATTACHMENT') {
+                $count++;
+            }
+            $count += $this->countAttachments($part);
+        }
+
+        return $count;
+    }
+}

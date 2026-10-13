@@ -35,6 +35,11 @@ class CrmContact extends Model
         return $this->hasMany(TelephonyCall::class, 'crm_contact_id');
     }
 
+    public function mailThreads(): HasMany
+    {
+        return $this->hasMany(CrmMailThread::class, 'crm_contact_id');
+    }
+
     public function getPhonesListAttribute(): string
     {
         return $this->contactPoints->where('type', 'phone')->pluck('value')->join(', ');
