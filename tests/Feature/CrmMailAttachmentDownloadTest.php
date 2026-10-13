@@ -70,6 +70,7 @@ class CrmMailAttachmentDownloadTest extends TestCase
                     'mime_type' => 'application/pdf',
                     'size' => 11,
                     'stored' => true,
+                    'error' => null,
                 ]],
             ],
         ]);

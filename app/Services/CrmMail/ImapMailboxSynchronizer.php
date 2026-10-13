@@ -337,7 +337,7 @@ class ImapMailboxSynchronizer
         ])->save();
     }
 
-    /** @return list<array{name: string, path: string|null, mime_type: string, size: int, stored: bool}> */
+    /** @return list<array{name: string, path: string|null, mime_type: string, size: int, stored: bool, error: string|null}> */
     private function extractAttachments($imap, int $messageNumber, object|false $structure, int $mailboxId, int $uid): array
     {
         if (! $structure) {
@@ -350,7 +350,7 @@ class ImapMailboxSynchronizer
         return $attachments;
     }
 
-    /** @param list<array{name: string, path: string|null, mime_type: string, size: int, stored: bool}> $attachments */
+    /** @param list<array{name: string, path: string|null, mime_type: string, size: int, stored: bool, error: string|null}> $attachments */
     private function walkAttachments(
         $imap,
         int $messageNumber,
@@ -383,10 +383,21 @@ class ImapMailboxSynchronizer
         $name = $this->safeAttachmentName($filename, count($attachments) + 1);
         $mimeType = $this->partMimeType($part);
         $path = null;
+        $error = null;
 
-        if ($size <= 25 * 1024 * 1024) {
+        if ($size > 25 * 1024 * 1024) {
+            $error = 'too_large';
+        } else {
             $path = 'crm-mail-attachments/incoming/'.$mailboxId.'/'.$uid.'/'.sprintf('%02d-', count($attachments) + 1).$name;
-            Storage::disk('local')->put($path, $body);
+            try {
+                if (! Storage::disk('local')->put($path, $body)) {
+                    $path = null;
+                    $error = 'storage_failed';
+                }
+            } catch (Throwable) {
+                $path = null;
+                $error = 'storage_failed';
+            }
         }
 
         $attachments[] = [
@@ -395,6 +406,7 @@ class ImapMailboxSynchronizer
             'mime_type' => $mimeType,
             'size' => $size,
             'stored' => $path !== null,
+            'error' => $error,
         ];
     }
 
@@ -409,9 +421,17 @@ class ImapMailboxSynchronizer
 
     private function attachmentFilename(object $part): ?string
     {
-        foreach (array_merge($part->dparameters ?? [], $part->parameters ?? []) as $parameter) {
-            if (in_array(strtolower((string) ($parameter->attribute ?? '')), ['filename', 'name'], true)) {
+        foreach (array_merge((array) ($part->dparameters ?? []), (array) ($part->parameters ?? [])) as $parameter) {
+            $attribute = strtolower((string) ($parameter->attribute ?? ''));
+            if (in_array($attribute, ['filename', 'name'], true)) {
                 return $this->decodeHeader((string) ($parameter->value ?? ''));
+            }
+
+            if (in_array($attribute, ['filename*', 'name*'], true)) {
+                $value = (string) ($parameter->value ?? '');
+                $encodedName = str_contains($value, "''") ? explode("''", $value, 2)[1] : $value;
+
+                return $this->decodeHeader(rawurldecode($encodedName));
             }
         }
 
@@ -429,7 +449,7 @@ class ImapMailboxSynchronizer
     private function partMimeType(object $part): string
     {
         $types = ['text', 'multipart', 'message', 'application', 'audio', 'image', 'video', 'application'];
-        $type = $types[(int) ($part->type ?? TYPEOTHER)] ?? 'application';
+        $type = $types[(int) ($part->type ?? 7)] ?? 'application';
         $subtype = strtolower((string) ($part->subtype ?? 'octet-stream'));
 
         return $type.'/'.$subtype;

@@ -63,4 +63,18 @@ class ImapMailboxSynchronizerEncodingTest extends TestCase
         $this->assertSame('Заказ поставщику.pdf', $filename);
         $this->assertSame('Заказ-поставщику.pdf', $safeNameMethod->invoke($service, '../Заказ:поставщику.pdf', 1));
     }
+
+    public function test_it_decodes_an_rfc_2231_attachment_filename(): void
+    {
+        $service = (new ReflectionClass(ImapMailboxSynchronizer::class))->newInstanceWithoutConstructor();
+        $method = new \ReflectionMethod($service, 'attachmentFilename');
+        $part = (object) [
+            'dparameters' => [(object) [
+                'attribute' => 'filename*',
+                'value' => "UTF-8''%D0%A1%D1%87%D0%B5%D1%82%20%D0%BD%D0%B0%20%D0%BE%D0%BF%D0%BB%D0%B0%D1%82%D1%83.pdf",
+            ]],
+        ];
+
+        $this->assertSame('Счет на оплату.pdf', $method->invoke($service, $part));
+    }
 }

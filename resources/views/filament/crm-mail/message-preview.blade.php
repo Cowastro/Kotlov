@@ -81,7 +81,7 @@
                             href="{{ route('admin.crm-mail-messages.attachments.download', ['message' => $message, 'attachment' => $index]) }}"
                         >📎 {{ $attachmentName }} @if ($attachmentSize)<small>{{ $attachmentSize }}</small>@endif</a>
                     @else
-                        <span class="crm-mail-attachment">📎 {{ $attachmentName }} @if ($attachmentSize)<small>{{ $attachmentSize }}</small>@endif · файл превышает 25 МБ</span>
+                        <span class="crm-mail-attachment">📎 {{ $attachmentName }} @if ($attachmentSize)<small>{{ $attachmentSize }}</small>@endif · {{ ($attachment['error'] ?? null) === 'too_large' ? 'файл превышает 25 МБ' : 'файл не удалось сохранить' }}</span>
                     @endif
                 @endforeach
             </div>
