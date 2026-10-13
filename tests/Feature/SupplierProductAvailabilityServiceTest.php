@@ -161,8 +161,8 @@ class SupplierProductAvailabilityServiceTest extends TestCase
             'direction' => 'inbound',
             'operation' => 'catalog',
             'status' => 'success',
-            'started_at' => now()->subMinutes(11),
-            'finished_at' => now()->subMinutes(10),
+            'started_at' => now()->subHours(2)->subMinute(),
+            'finished_at' => now()->subHours(2),
         ]);
         IntegrationProduct::query()->create([
             'integration_source_id' => $source->id,

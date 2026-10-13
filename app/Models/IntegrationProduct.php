@@ -101,7 +101,7 @@ class IntegrationProduct extends Model
             : $source->latestSuccessfulCatalogExchangeRun()->first();
 
         return $latestCatalogExchange?->finished_at?->gte(
-            now()->subMinutes(max(30, $source->catalogIntervalMinutes() * 3))
+            now()->subMinutes($source->stockValidityMinutes())
         ) ?? false;
     }
 
