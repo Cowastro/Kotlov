@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\CrmMailThreads\Pages;
 
 use App\Filament\Resources\CrmMailThreads\CrmMailThreadResource;
+use App\Filament\Widgets\CrmMailHealthOverview;
 use App\Models\CrmMailbox;
 use App\Models\CrmMailThread;
 use App\Services\CrmMail\CrmMailSender;
@@ -192,6 +193,13 @@ class ListCrmMailThreads extends ListRecords
                         ->body('Удалено переписок: '.$count)
                         ->send();
                 }),
+        ];
+    }
+
+    protected function getHeaderWidgets(): array
+    {
+        return [
+            CrmMailHealthOverview::class,
         ];
     }
 }
