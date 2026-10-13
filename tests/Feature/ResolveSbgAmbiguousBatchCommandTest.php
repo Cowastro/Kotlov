@@ -919,7 +919,7 @@ class ResolveSbgAmbiguousBatchCommandTest extends TestCase
             'category_id' => $category->id,
             'brand_id' => $unipump->id,
             'sku' => 'PS-008.303',
-            'name' => 'Насос Unipump CP 25-40 180',
+            'name' => 'Насос циркуляционный Unipump CP 25-40 130',
             'h1' => 'Насос Unipump CP 25-40 180',
             'slug' => 'unipump-cp-25-40-180-test',
             'price' => 113.73,
