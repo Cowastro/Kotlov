@@ -2012,4 +2012,70 @@ class CreateSbgDistinctProductsBatchCommandTest extends TestCase
         $this->assertStringNotContainsString('rub', mb_strtolower($product->content));
         $this->assertSame('manual_created', $item->fresh()->match_method);
     }
+
+    public function test_it_corrects_modemo_to_atm_moderno_and_does_not_link_rifar(): void
+    {
+        $source = IntegrationSource::query()->create([
+            'code' => 'onec-sbg-atm-moderno-500-80',
+            'name' => '1С СанБизнесГруп',
+            'settings' => ['partner_name' => 'ООО «СанБизнесГруп»'],
+            'is_active' => true,
+            'update_stock' => true,
+        ]);
+        $category = Category::query()->firstOrCreate(['slug' => 'alyuminievye-radiatory'], [
+            'name' => 'Алюминиевые радиаторы',
+            'parent_id' => 0,
+        ]);
+        $rifar = Brand::query()->create(['slug' => 'rifar', 'name' => 'Rifar']);
+        $wrongRifarCandidate = Product::query()->create([
+            'category_id' => $category->id,
+            'brand_id' => $rifar->id,
+            'sku' => 'PS-010.410',
+            'name' => 'Радиатор биметаллический Rifar SUPReMO 500, 1 секция',
+            'slug' => 'rifar-supremo-template-for-moderno',
+            'price' => 55,
+            'images' => ['product/0010/010410/rifar.jpg'],
+        ]);
+        $item = IntegrationProduct::query()->create([
+            'integration_source_id' => $source->id,
+            'external_id' => 'atm-modemo-500-80-one-section',
+            'external_code' => 'УТ-00005612',
+            'external_sku' => null,
+            'name' => 'Радиатор отопления алюминиевый "Modemo" 500/80 1 секция, РФ',
+            'price_byn' => null,
+            'stock_quantity' => 1,
+            'match_status' => 'ambiguous',
+            'candidates' => [['product_id' => $wrongRifarCandidate->id, 'score' => 0.7125]],
+        ]);
+
+        $this->artisan('integration:create-sbg-distinct-products', [
+            '--batch' => 'researched-priced-20261013-aj',
+            '--code' => ['УТ-00005612'],
+            '--apply' => true,
+        ])->assertSuccessful();
+
+        $product = $item->fresh()->product;
+        $this->assertNotNull($product);
+        $this->assertNotSame($wrongRifarCandidate->id, $product->id);
+        $this->assertSame($category->id, $product->category_id);
+        $this->assertSame('ATM Thermo', $product->brand->name);
+        $this->assertSame('ATM Thermo Moderno 500/80, алюминиевый радиатор, 1 секция', $product->name);
+        $this->assertSame('27.90', $product->price);
+        $this->assertSame('1', (string) $product->stock_qty);
+        $this->assertNull($item->fresh()->normalizedPriceByn());
+        $this->assertSame('Moderno 500/80', collect($product->specs)->firstWhere('key', 'Модель')['value']);
+        $this->assertSame('Секционный алюминиевый радиатор', collect($product->specs)->firstWhere('key', 'Тип')['value']);
+        $this->assertSame('149 Вт', collect($product->specs)->firstWhere('key', 'Номинальный тепловой поток одной секции')['value']);
+        $this->assertSame('16 бар', collect($product->specs)->firstWhere('key', 'Рабочее давление')['value']);
+        $this->assertSame(['img/products/atm-thermo/atm-thermo-moderno-500-80.jpg'], $product->images);
+        $this->assertFileExists(public_path('img/products/atm-thermo/atm-thermo-moderno-500-80.jpg'));
+        $this->assertStringContainsString('progreem.by', $product->content_source_url);
+        $this->assertStringContainsString('Цена указана за одну секцию', $product->content);
+        $this->assertStringNotContainsString('Modemo', $product->name);
+        $this->assertStringNotContainsString('кандидат', mb_strtolower($product->content));
+        $this->assertStringNotContainsString('розничная цена', mb_strtolower($product->content));
+        $this->assertStringNotContainsString('нбрб', mb_strtolower($product->content));
+        $this->assertStringNotContainsString('rub', mb_strtolower($product->content));
+        $this->assertSame('manual_created', $item->fresh()->match_method);
+    }
 }

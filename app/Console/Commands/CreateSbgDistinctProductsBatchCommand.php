@@ -1058,6 +1058,42 @@ class CreateSbgDistinctProductsBatchCommand extends Command
         ],
     ];
 
+    private const BATCH_RESEARCHED_PRICED_20261013_AJ = [
+        'УТ-00005612' => [
+            'template' => 'PS-010.410',
+            'category_slug' => 'alyuminievye-radiatory',
+            'fragments' => ['Радиатор отопления', 'Modemo', '500/80', '1 секция'],
+            'brand' => [
+                'name' => 'ATM Thermo',
+                'slug' => 'atm-thermo',
+                'country' => 'Россия',
+                'content' => '<p><strong>ATM Thermo</strong> — российская марка секционных алюминиевых и биметаллических радиаторов отопления.</p>',
+            ],
+            'name' => 'ATM Thermo Moderno 500/80, алюминиевый радиатор, 1 секция',
+            'retail' => 27.90,
+            'images' => ['img/products/atm-thermo/atm-thermo-moderno-500-80.jpg'],
+            'source_url' => 'https://progreem.by/upload/iblock/b41/iryplwnf9eu6fkbc4zr8as9mvfbknba8/Pasport-radiatora-ATM-thermo.pdf',
+            'short' => 'Одна секция алюминиевого радиатора ATM Thermo Moderno 500/80 с межосевым расстоянием 500 мм и рабочим давлением 16 бар.',
+            'content' => '<p><strong>ATM Thermo Moderno 500/80</strong> — литой алюминиевый секционный радиатор российского производства для автономных систем водяного отопления. Секции собраны на стальных ниппелях, а многоступенчатая подготовка поверхности и двухслойное покрытие защищают корпус от коррозии.</p><p>Цена указана за одну секцию. Глубина 80 мм и номинальный тепловой поток 149 Вт позволяют собрать радиатор под расчётную тепловую нагрузку помещения. Монтажный комплект приобретается отдельно.</p>',
+            'specs' => [
+                ['key' => 'Тип', 'value' => 'Секционный алюминиевый радиатор'],
+                ['key' => 'Модель', 'value' => 'Moderno 500/80'],
+                ['key' => 'Количество секций', 'value' => '1'],
+                ['key' => 'Межосевое расстояние', 'value' => '500 мм'],
+                ['key' => 'Размер одной секции (В×Ш×Г)', 'value' => '572×79×80 мм'],
+                ['key' => 'Номинальный тепловой поток одной секции', 'value' => '149 Вт'],
+                ['key' => 'Рабочее давление', 'value' => '16 бар'],
+                ['key' => 'Испытательное давление', 'value' => '24 бар'],
+                ['key' => 'Максимальная температура теплоносителя', 'value' => '110 °C'],
+                ['key' => 'Объём теплоносителя в секции', 'value' => '0,37 л'],
+                ['key' => 'Масса одной секции', 'value' => '0,99 кг'],
+                ['key' => 'Подключение', 'value' => 'Боковое, 1″'],
+                ['key' => 'Цвет', 'value' => 'Белый, RAL 9016'],
+                ['key' => 'Страна производства', 'value' => 'Россия'],
+            ],
+        ],
+    ];
+
     public function handle(IntegrationProductCreator $creator): int
     {
         $rows = match ($this->option('batch')) {
@@ -1096,6 +1132,7 @@ class CreateSbgDistinctProductsBatchCommand extends Command
             'researched-priced-20261013-ag' => self::BATCH_RESEARCHED_PRICED_20261013_AG,
             'researched-priced-20261013-ah' => self::BATCH_RESEARCHED_PRICED_20261013_AH,
             'researched-priced-20261013-ai' => self::BATCH_RESEARCHED_PRICED_20261013_AI,
+            'researched-priced-20261013-aj' => self::BATCH_RESEARCHED_PRICED_20261013_AJ,
             default => null,
         };
 
