@@ -4,8 +4,9 @@ namespace Tests\Unit;
 
 use App\Models\Product;
 use App\Models\SupplierProduct;
+use Carbon\CarbonImmutable;
 use Illuminate\Support\Collection;
-use PHPUnit\Framework\TestCase;
+use Tests\TestCase;
 
 class ProductIndexabilityTest extends TestCase
 {
@@ -19,7 +20,11 @@ class ProductIndexabilityTest extends TestCase
             'availability_status' => Product::AVAILABILITY_IN_STOCK,
         ]);
         $product->setRelation('supplierProducts', new Collection([
-            new SupplierProduct(['in_stock' => true, 'stock_quantity' => 1]),
+            new SupplierProduct([
+                'in_stock' => true,
+                'stock_quantity' => 1,
+                'last_stock_synced_at' => CarbonImmutable::now(),
+            ]),
         ]));
 
         $this->assertTrue($product->canBeOrdered());
@@ -77,7 +82,11 @@ class ProductIndexabilityTest extends TestCase
             'availability_status' => Product::AVAILABILITY_IN_STOCK,
         ]);
         $product->setRelation('supplierProducts', new Collection([
-            new SupplierProduct(['in_stock' => true, 'stock_quantity' => 1]),
+            new SupplierProduct([
+                'in_stock' => true,
+                'stock_quantity' => 1,
+                'last_stock_synced_at' => CarbonImmutable::now(),
+            ]),
         ]));
 
         $this->assertTrue($product->canBePurchased());

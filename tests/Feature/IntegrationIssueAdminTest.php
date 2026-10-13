@@ -196,6 +196,7 @@ class IntegrationIssueAdminTest extends TestCase
             'name' => 'Труба нерж. D150',
             'price' => 100,
             'stock_quantity' => 3,
+            'stock_confirmed_at' => now(),
             'match_status' => 'ambiguous',
             'match_method' => 'fuzzy_name',
             'match_confidence' => 0.87,
@@ -297,6 +298,7 @@ class IntegrationIssueAdminTest extends TestCase
             'price' => 110,
             'price_byn' => 110,
             'stock_quantity' => 4,
+            'stock_confirmed_at' => now(),
             'match_status' => 'unmatched',
             'candidates' => null,
         ]);

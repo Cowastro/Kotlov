@@ -473,6 +473,7 @@ class OrderSupplyRoutingTest extends TestCase
             'name' => $product->name,
             'price' => $onecPrice,
             'stock_quantity' => 7,
+            'stock_confirmed_at' => now(),
             'match_status' => 'matched',
         ]);
         $legacySupplier = Supplier::query()->create([
