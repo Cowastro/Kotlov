@@ -13,6 +13,7 @@ use App\Http\Controllers\CheckoutController;
 use App\Http\Controllers\CommercialDocumentPdfController;
 use App\Http\Controllers\CompareController;
 use App\Http\Controllers\ContactRequestController;
+use App\Http\Controllers\CrmMailAttachmentController;
 use App\Http\Controllers\FireplaceInstallationController;
 use App\Http\Controllers\HeatPumpInstallationController;
 use App\Http\Controllers\HeatPumpLandingController;
@@ -56,6 +57,11 @@ Route::match(['get', 'post'], '/1c/exchange/{source}', OneCExchangeController::c
 Route::get('/admin/commercial-documents/{commercialDocument}/pdf', CommercialDocumentPdfController::class)
     ->middleware('auth')
     ->name('admin.commercial-documents.pdf');
+
+Route::get('/admin/crm-mail-messages/{message}/attachments/{attachment}', CrmMailAttachmentController::class)
+    ->whereNumber('attachment')
+    ->middleware('auth')
+    ->name('admin.crm-mail-messages.attachments.download');
 
 Route::get('/robots.txt', function (Request $request) {
     if ($request->getHost() === 'admin.'.config('app.base_domain', 'kotlov.by')) {

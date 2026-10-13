@@ -46,4 +46,21 @@ class ImapMailboxSynchronizerEncodingTest extends TestCase
 
         $this->assertSame([9, 10, 11], $method->invoke($service, range(1, 11), 11, 3));
     }
+
+    public function test_it_reads_and_sanitizes_an_encoded_attachment_filename(): void
+    {
+        $service = (new ReflectionClass(ImapMailboxSynchronizer::class))->newInstanceWithoutConstructor();
+        $filenameMethod = new \ReflectionMethod($service, 'attachmentFilename');
+        $safeNameMethod = new \ReflectionMethod($service, 'safeAttachmentName');
+        $encoded = '=?UTF-8?B?'.base64_encode('Заказ поставщику.pdf').'?=';
+        $part = (object) [
+            'dparameters' => [(object) ['attribute' => 'filename', 'value' => $encoded]],
+            'parameters' => [],
+        ];
+
+        $filename = $filenameMethod->invoke($service, $part);
+
+        $this->assertSame('Заказ поставщику.pdf', $filename);
+        $this->assertSame('Заказ-поставщику.pdf', $safeNameMethod->invoke($service, '../Заказ:поставщику.pdf', 1));
+    }
 }

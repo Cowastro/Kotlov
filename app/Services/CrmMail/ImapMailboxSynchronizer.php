@@ -7,6 +7,7 @@ use App\Models\CrmMailMessage;
 use App\Models\CrmMailThread;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use RuntimeException;
 use Throwable;
@@ -47,12 +48,12 @@ class ImapMailboxSynchronizer
             $existingUids = CrmMailMessage::query()
                 ->where('mailbox_id', $mailbox->id)
                 ->whereIn('imap_uid', $numbers)
-                ->pluck('imap_uid')
-                ->mapWithKeys(fn ($uid): array => [(int) $uid => true])
-                ->all();
+                ->get()
+                ->keyBy(fn (CrmMailMessage $message): int => (int) $message->imap_uid);
 
             foreach ($numbers as $uid) {
-                if (isset($existingUids[(int) $uid])) {
+                if ($existingMessage = $existingUids->get((int) $uid)) {
+                    $this->hydrateAttachments($imap, $mailbox, $existingMessage, (int) $uid);
                     $skipped++;
                     $mailbox->last_uid = max((int) $mailbox->last_uid, (int) $uid);
 
@@ -77,6 +78,7 @@ class ImapMailboxSynchronizer
                 $inReplyTo = $this->cleanMessageId($header->in_reply_to ?? null);
                 $structure = imap_fetchstructure($imap, $messageNumber);
                 $bodies = $this->extractBodies($imap, $messageNumber, $structure);
+                $attachments = $this->extractAttachments($imap, $messageNumber, $structure, $mailbox->id, (int) $uid);
                 [$counterparty, $contact] = $this->leadMatcher->resolve(
                     $fromEmail,
                     $fromName,
@@ -85,7 +87,7 @@ class ImapMailboxSynchronizer
 
                 DB::transaction(function () use (
                     $mailbox, $uid, $header, $fromEmail, $fromName, $subject, $messageId,
-                    $inReplyTo, $structure, $bodies, $counterparty, $contact
+                    $inReplyTo, $bodies, $attachments, $counterparty, $contact
                 ): void {
                     $threadKey = $this->threadKey($fromEmail, $subject, $inReplyTo);
                     $receivedAt = $this->parseDate($header->date ?? null);
@@ -121,10 +123,14 @@ class ImapMailboxSynchronizer
                         'subject' => $subject,
                         'text_body' => $bodies['text'],
                         'html_body' => $bodies['html'],
-                        'attachments_count' => $this->countAttachments($structure),
+                        'attachments_count' => count($attachments),
                         'is_read' => false,
                         'received_at' => $receivedAt,
-                        'metadata' => ['size' => $header->Size ?? null],
+                        'metadata' => [
+                            'size' => $header->Size ?? null,
+                            'attachments' => $attachments,
+                            'attachments_scanned_at' => now()->toIso8601String(),
+                        ],
                     ]);
 
                     $thread->forceFill([
@@ -306,6 +312,127 @@ class ImapMailboxSynchronizer
     private function toUtf8(string $value, ?string $charset = null): string
     {
         return app(MailEncodingNormalizer::class)->toUtf8($value, $charset);
+    }
+
+    private function hydrateAttachments($imap, CrmMailbox $mailbox, CrmMailMessage $message, int $uid): void
+    {
+        $metadata = $message->metadata ?? [];
+        if (filled($metadata['attachments_scanned_at'] ?? null)) {
+            return;
+        }
+
+        $messageNumber = imap_msgno($imap, $uid);
+        if ($messageNumber < 1) {
+            return;
+        }
+
+        $structure = imap_fetchstructure($imap, $messageNumber);
+        $attachments = $this->extractAttachments($imap, $messageNumber, $structure, $mailbox->id, $uid);
+        $metadata['attachments'] = $attachments;
+        $metadata['attachments_scanned_at'] = now()->toIso8601String();
+
+        $message->forceFill([
+            'attachments_count' => count($attachments),
+            'metadata' => $metadata,
+        ])->save();
+    }
+
+    /** @return list<array{name: string, path: string|null, mime_type: string, size: int, stored: bool}> */
+    private function extractAttachments($imap, int $messageNumber, object|false $structure, int $mailboxId, int $uid): array
+    {
+        if (! $structure) {
+            return [];
+        }
+
+        $attachments = [];
+        $this->walkAttachments($imap, $messageNumber, $structure, '', $attachments, $mailboxId, $uid);
+
+        return $attachments;
+    }
+
+    /** @param list<array{name: string, path: string|null, mime_type: string, size: int, stored: bool}> $attachments */
+    private function walkAttachments(
+        $imap,
+        int $messageNumber,
+        object $part,
+        string $prefix,
+        array &$attachments,
+        int $mailboxId,
+        int $uid,
+    ): void {
+        if (! empty($part->parts)) {
+            foreach ($part->parts as $index => $child) {
+                $number = $prefix === '' ? (string) ($index + 1) : $prefix.'.'.($index + 1);
+                $this->walkAttachments($imap, $messageNumber, $child, $number, $attachments, $mailboxId, $uid);
+            }
+
+            return;
+        }
+
+        $filename = $this->attachmentFilename($part);
+        $disposition = strtoupper((string) ($part->disposition ?? ''));
+        if ($disposition !== 'ATTACHMENT' && ! ($disposition === 'INLINE' && filled($filename))) {
+            return;
+        }
+
+        $body = $prefix === ''
+            ? (string) imap_body($imap, $messageNumber, FT_PEEK)
+            : (string) imap_fetchbody($imap, $messageNumber, $prefix, FT_PEEK);
+        $body = $this->decodePartBody($body, (int) ($part->encoding ?? ENC7BIT));
+        $size = strlen($body);
+        $name = $this->safeAttachmentName($filename, count($attachments) + 1);
+        $mimeType = $this->partMimeType($part);
+        $path = null;
+
+        if ($size <= 25 * 1024 * 1024) {
+            $path = 'crm-mail-attachments/incoming/'.$mailboxId.'/'.$uid.'/'.sprintf('%02d-', count($attachments) + 1).$name;
+            Storage::disk('local')->put($path, $body);
+        }
+
+        $attachments[] = [
+            'name' => $name,
+            'path' => $path,
+            'mime_type' => $mimeType,
+            'size' => $size,
+            'stored' => $path !== null,
+        ];
+    }
+
+    private function decodePartBody(string $body, int $encoding): string
+    {
+        return match ($encoding) {
+            ENCBASE64 => (string) base64_decode($body, true),
+            ENCQUOTEDPRINTABLE => quoted_printable_decode($body),
+            default => $body,
+        };
+    }
+
+    private function attachmentFilename(object $part): ?string
+    {
+        foreach (array_merge($part->dparameters ?? [], $part->parameters ?? []) as $parameter) {
+            if (in_array(strtolower((string) ($parameter->attribute ?? '')), ['filename', 'name'], true)) {
+                return $this->decodeHeader((string) ($parameter->value ?? ''));
+            }
+        }
+
+        return null;
+    }
+
+    private function safeAttachmentName(?string $filename, int $index): string
+    {
+        $filename = basename(str_replace('\\', '/', trim((string) $filename)));
+        $filename = preg_replace('/[\x00-\x1F\x7F<>:"\/\\|?*]+/u', '-', $filename) ?: '';
+
+        return Str::limit($filename !== '' ? $filename : 'attachment-'.$index.'.bin', 180, '');
+    }
+
+    private function partMimeType(object $part): string
+    {
+        $types = ['text', 'multipart', 'message', 'application', 'audio', 'image', 'video', 'application'];
+        $type = $types[(int) ($part->type ?? TYPEOTHER)] ?? 'application';
+        $subtype = strtolower((string) ($part->subtype ?? 'octet-stream'));
+
+        return $type.'/'.$subtype;
     }
 
     private function countAttachments(object|false $structure): int

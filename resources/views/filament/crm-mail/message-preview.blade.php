@@ -8,7 +8,7 @@
     };
     $recipients = collect($message->to ?? [])->pluck('email')->filter()->implode(', ');
     $copies = collect($message->cc ?? [])->pluck('email')->filter()->implode(', ');
-    $attachments = collect($message->metadata['attachments'] ?? [])->pluck('name')->filter();
+    $attachments = collect($message->metadata['attachments'] ?? [])->values();
     $date = $message->received_at ?? $message->sent_at;
     $hasOriginalHtml = filled($originalHtml);
 @endphp
@@ -69,8 +69,20 @@
         <footer class="crm-mail-attachments">
             <span class="crm-mail-attachments-title">Вложения · {{ $attachments->count() }}</span>
             <div class="crm-mail-attachment-list">
-                @foreach ($attachments as $attachment)
-                    <span class="crm-mail-attachment">📎 {{ $attachment }}</span>
+                @foreach ($attachments as $index => $attachment)
+                    @php
+                        $attachmentName = $attachment['name'] ?? 'Вложение '.($index + 1);
+                        $attachmentSize = isset($attachment['size']) ? Number::fileSize((int) $attachment['size']) : null;
+                        $canDownload = filled($attachment['path'] ?? null);
+                    @endphp
+                    @if ($canDownload)
+                        <a
+                            class="crm-mail-attachment"
+                            href="{{ route('admin.crm-mail-messages.attachments.download', ['message' => $message, 'attachment' => $index]) }}"
+                        >📎 {{ $attachmentName }} @if ($attachmentSize)<small>{{ $attachmentSize }}</small>@endif</a>
+                    @else
+                        <span class="crm-mail-attachment">📎 {{ $attachmentName }} @if ($attachmentSize)<small>{{ $attachmentSize }}</small>@endif · файл превышает 25 МБ</span>
+                    @endif
                 @endforeach
             </div>
         </footer>
@@ -104,6 +116,9 @@
         .crm-mail-attachments-title { color: rgb(161 161 170); font-size: 13px; font-weight: 600; }
         .crm-mail-attachment-list { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 9px; }
         .crm-mail-attachment { border: 1px solid rgb(82 82 91); border-radius: 8px; padding: 7px 10px; color: rgb(228 228 231); font-size: 13px; }
+        a.crm-mail-attachment { color: rgb(96 165 250); text-decoration: none; }
+        a.crm-mail-attachment:hover { border-color: rgb(96 165 250); background: rgb(59 130 246 / .1); }
+        .crm-mail-attachment small { margin-left: 6px; color: rgb(161 161 170); }
         @media (max-width: 700px) { .crm-mail-header { grid-template-columns: 36px minmax(0, 1fr); } .crm-mail-avatar { width: 36px; height: 36px; } .crm-mail-date { grid-column: 2; } .crm-mail-subject, .crm-mail-body { padding-left: 16px; padding-right: 16px; } }
     </style>
 @endonce
