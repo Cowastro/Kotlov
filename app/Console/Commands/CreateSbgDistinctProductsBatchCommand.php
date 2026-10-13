@@ -755,6 +755,41 @@ class CreateSbgDistinctProductsBatchCommand extends Command
         ],
     ];
 
+    private const BATCH_RESEARCHED_PRICED_20261013_AA = [
+        'УТ-00007186' => [
+            'template' => 'PS-007.784',
+            'category_slug' => 'perehody-adaptery-dymohod',
+            'external_sku' => 'TS.ST5.AKL.0150.32871',
+            'fragments' => ['Адаптер Моно М-М', '304-0.8', 'D150'],
+            'brand' => [
+                'name' => 'Теплов и Сухов',
+                'slug' => 'teplov-i-suhov',
+                'country' => 'Россия',
+                'content' => '<p><strong>Теплов и Сухов</strong> — российский производитель модульных дымоходов и комплектующих из нержавеющей стали.</p>',
+            ],
+            'name' => 'Теплов и Сухов Адаптер Моно М-М 304-0.8 D150',
+            'retail' => 29.90,
+            'images' => ['img/products/generated/teplov-suhov-adapter-mono-mm-304-08-d150.png'],
+            'source_url' => 'https://www.vseinstrumenti.ru/product/adapter-mono-m-m-304-0-8-d150-teplovisuhov-ts-st5-akl-0150-32871-1408363/',
+            'short' => 'Одностенный адаптер котла Теплов и Сухов Моно М-М Ø150 мм из кислотостойкой нержавеющей стали AISI 304 толщиной 0,8 мм.',
+            'content' => '<p><strong>Теплов и Сухов Моно М-М D150</strong> — одностенный адаптер для соединения патрубка отопительного оборудования с дымоходом диаметром 150 мм и перехода со сборки «по дыму» на сборку «по конденсату».</p><p>Адаптер изготовлен из нержавеющей стали AISI 304 толщиной 0,8 мм. Материал устойчив к кислотному конденсату и подходит для дымоходов газовых и твердотопливных котлов длительного горения.</p>',
+            'specs' => [
+                ['key' => 'Тип', 'value' => 'Адаптер котла одностенный'],
+                ['key' => 'Система', 'value' => 'Моно'],
+                ['key' => 'Тип соединения', 'value' => 'М-М'],
+                ['key' => 'Диаметр', 'value' => '150 мм'],
+                ['key' => 'Материал', 'value' => 'Нержавеющая сталь'],
+                ['key' => 'Марка стали', 'value' => 'AISI 304'],
+                ['key' => 'Толщина стали', 'value' => '0,8 мм'],
+                ['key' => 'Габариты', 'value' => '120×160×160 мм'],
+                ['key' => 'Масса', 'value' => '0,396 кг'],
+                ['key' => 'Назначение', 'value' => 'Соединение патрубка котла с дымоходом'],
+                ['key' => 'Артикул производителя', 'value' => 'TS.ST5.AKL.0150.32871'],
+                ['key' => 'Страна производства', 'value' => 'Россия'],
+            ],
+        ],
+    ];
+
     public function handle(IntegrationProductCreator $creator): int
     {
         $rows = match ($this->option('batch')) {
@@ -784,6 +819,7 @@ class CreateSbgDistinctProductsBatchCommand extends Command
             'researched-priced-20261013-x' => self::BATCH_RESEARCHED_PRICED_20261013_X,
             'researched-priced-20261013-y' => self::BATCH_RESEARCHED_PRICED_20261013_Y,
             'researched-priced-20261013-z' => self::BATCH_RESEARCHED_PRICED_20261013_Z,
+            'researched-priced-20261013-aa' => self::BATCH_RESEARCHED_PRICED_20261013_AA,
             default => null,
         };
 
