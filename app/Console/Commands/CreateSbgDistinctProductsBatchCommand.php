@@ -2679,6 +2679,41 @@ class CreateSbgDistinctProductsBatchCommand extends Command
         ],
     ];
 
+    private const BATCH_UNMATCHED_RESEARCHED_20261013_CH = [
+        'УТ-00001123' => [
+            'template_slug' => 'nordflam-resetka-kaminnaia-aero-90800-belaia',
+            'allow_unmatched' => true,
+            'category_slug' => 'aksessuary-kaminy',
+            'fragments' => ['Чистодым', '1,0 кг'],
+            'brand' => [
+                'name' => 'Чистодым',
+                'slug' => 'chistodym',
+                'country' => 'Беларусь',
+            ],
+            'name' => 'Чистодым Очиститель дымохода, 1 кг',
+            'retail' => 22.00,
+            'images' => [
+                'img/products/chistodym/chistodym-chimney-cleaner-1kg.png',
+            ],
+            'source_url' => 'https://biodso.ru/catalog/tapo/1164/',
+            'short' => 'Порошковое средство Чистодым для очистки и профилактической защиты дымоходов, печей, каминов и твердотопливных котлов; банка 1 кг с мерным ковшиком.',
+            'content' => '<p><strong>Чистодым, 1 кг</strong> — порошковое средство для химической очистки и профилактической защиты дымоходов, печей, каминов и твердотопливных котлов, работающих на дровах или угле.</p><p>При нагреве активные компоненты вступают в реакцию с сажей, способствуют её разрушению и уменьшают повторное образование отложений. Средство подходит для кирпичных и металлических дымоходов. Банка комплектуется мерным ковшиком; одного килограмма хватает примерно на 20 применений.</p><p>Химическая обработка не отменяет регулярный осмотр и механическую чистку дымохода. Применяйте средство только по инструкции на упаковке.</p>',
+            'specs' => [
+                ['key' => 'Тип', 'value' => 'Очиститель дымохода'],
+                ['key' => 'Форма', 'value' => 'Порошок'],
+                ['key' => 'Масса нетто', 'value' => '1 кг'],
+                ['key' => 'Упаковка', 'value' => 'Пластиковая банка с мерным ковшиком'],
+                ['key' => 'Топливо', 'value' => 'Дрова, уголь'],
+                ['key' => 'Назначение', 'value' => 'Очистка и профилактика образования сажи'],
+                ['key' => 'Применение', 'value' => 'Дымоходы, печи, камины, твердотопливные котлы'],
+                ['key' => 'Количество применений', 'value' => 'Около 20'],
+                ['key' => 'Состав', 'value' => 'Хлорид натрия, сульфаты, фосфаты, ускорители горения, функциональные добавки'],
+                ['key' => 'Страна производства', 'value' => 'Беларусь'],
+                ['key' => 'Бренд', 'value' => 'Чистодым'],
+            ],
+        ],
+    ];
+
     public function handle(
         IntegrationProductCreator $creator,
         IntegrationProductMatchDecision $matchDecision,
@@ -2769,6 +2804,7 @@ class CreateSbgDistinctProductsBatchCommand extends Command
             'unmatched-researched-20261013-ce' => self::BATCH_UNMATCHED_RESEARCHED_20261013_CE,
             'unmatched-researched-20261013-cf' => self::BATCH_UNMATCHED_RESEARCHED_20261013_CF,
             'unmatched-researched-20261013-cg' => self::BATCH_UNMATCHED_RESEARCHED_20261013_CG,
+            'unmatched-researched-20261013-ch' => self::BATCH_UNMATCHED_RESEARCHED_20261013_CH,
             default => null,
         };
 
