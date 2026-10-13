@@ -1,0 +1,86 @@
+{
+    "code": "2026-10-13-technolit-zero-001",
+    "observed_at": "2026-10-13T22:49:00+02:00",
+    "review_required": true,
+    "sources": [],
+    "products": [
+        {
+            "sku": "KOTLOV-000126",
+            "review_reason": "Live-web проверка точной модели GFS Гефест Гроза 18 (М) нашла собственную карточку KOTLOV и похожие либо неполные внешние предложения, но не подтвердила три независимых карточки с сопоставимой комплектацией и ценой.",
+            "force_consultation_hold": true,
+            "observations": [],
+            "research": {
+                "model": "gpt-6.1-sol",
+                "confidence": "medium",
+                "independent_confirmed_offers": 0,
+                "own_listing_excluded": "https://kotlov.by/drovianye-peci-bannye/pec-dlia-bani-gfs-gefest-groza-18-m-cugun",
+                "evidence": [
+                    {
+                        "url": "https://pechnoy.by/pechi-dlya-bani/drovyanyye-pechi/pechi-gefest/gefest-groza/pech-groza-18m/",
+                        "result": "Точная модель найдена, но актуальная открытая цена не подтверждена."
+                    },
+                    {
+                        "url": "https://www.technolit.ru/production/pechi-dlya-bani/chugunnye-bannye-pechi/chugunnye-pechi-dlya-bani-groza/groza-18-mhgf/#char",
+                        "result": "Универсальный печь-комплект, а не базовая печь; несопоставимая комплектация."
+                    },
+                    {
+                        "url": "https://banipechi.by/catalog/pechi-dlya-banu/pechi-gefest/pechi-v-setke-uragan/pechi-v-setke/pech-dlya-bani-groza-18-m-v-setke",
+                        "result": "Исполнение в сетке; другая комплектация."
+                    }
+                ]
+            }
+        },
+        {
+            "sku": "KOTLOV-000127",
+            "review_reason": "Live-web проверка Искандер ЗК 18 (П2) Ураган подтвердила собственную карточку KOTLOV, но внешние результаты относились к Pro, исполнению М, витринам или предложениям без проверяемой цены; три независимых точных офера отсутствуют.",
+            "force_consultation_hold": true,
+            "observations": [],
+            "research": {
+                "model": "gpt-6.1-sol",
+                "confidence": "medium",
+                "independent_confirmed_offers": 0,
+                "own_listing_excluded": "https://kotlov.by/drovianye-peci-bannye/pec-dlia-bani-iskander-zk-18-p2-uragan-cugun",
+                "evidence": [
+                    {
+                        "url": "https://banisauny.by/pechi-dlya-bani/pech-iskander-zk-18-p2-pro-uragan/",
+                        "result": "Версия Pro с увеличенной каменкой; не совпадает с целевой моделью."
+                    },
+                    {
+                        "url": "https://chehovpech.ru/ovens/chugunnaja-bannaja-pech-iskander-zk-18-p2-uragan/#cheaper",
+                        "result": "Карточка относится к Pro-версии; несопоставима."
+                    },
+                    {
+                        "url": "https://pechibani.by/pechi-dlya-bani/pech-iskander-zk-18-p2-pro-uragan/",
+                        "result": "Pro-версия, а не стандартная П2."
+                    }
+                ]
+            }
+        },
+        {
+            "sku": "KOTLOV-000128",
+            "review_reason": "Live-web проверка AVANGARD ЗК 25 (П2) Ураган в сетке Тюльпан нашла собственную карточку KOTLOV и внешние карточки с Pro/М-исполнением либо противоречивыми характеристиками; менее трёх независимых точных подтверждений.",
+            "force_consultation_hold": true,
+            "observations": [],
+            "research": {
+                "model": "gpt-6.1-sol",
+                "confidence": "medium",
+                "independent_confirmed_offers": 0,
+                "own_listing_excluded": "https://kotlov.by/drovianye-peci-bannye/pec-dlia-bani-avangard-zk-25-p2-uragan-v-setke-tiulpan",
+                "evidence": [
+                    {
+                        "url": "https://eurobani.by/katalog/bannie-pechi/drovjanye-pechi/bannyye-pechi-gefest-tekhnolit/chugunnaya-pech-dlya-bani-avangard-zk-25-p2-pro-uragan-v-setke-tyulpan",
+                        "result": "Версия Pro; не совпадает с базовой П2."
+                    },
+                    {
+                        "url": "https://www.provent59.ru/goods/304729080-chugunnaya_pech_dlya_bani_avangard_zk_25_p2_uragan_v_setke_tyulpan",
+                        "result": "Заголовок П2, но комплектация указывает исполнение М и круглую сетку; конфликт данных."
+                    },
+                    {
+                        "url": "https://pechnoy.by/pechi-dlya-bani/drovyanyye-pechi/pechi-gefest/pechi-avangard/pech-avangard-zk-25-p2-uragan-v-setke-tyulpan/",
+                        "result": "Точная модель найдена, но открытая актуальная цена не подтверждена."
+                    }
+                ]
+            }
+        }
+    ]
+}
