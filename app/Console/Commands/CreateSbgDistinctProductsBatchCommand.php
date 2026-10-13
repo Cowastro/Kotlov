@@ -1202,6 +1202,41 @@ class CreateSbgDistinctProductsBatchCommand extends Command
         ],
     ];
 
+    private const BATCH_RESEARCHED_PRICED_20261013_AN = [
+        'УТ-00005207' => [
+            'template' => 'PS-009.149',
+            'category_slug' => 'perehody-adaptery-dymohod',
+            'external_sku' => 'TS.ST5.PRT.0150.49266',
+            'fragments' => ['Переход Моно/Термо', 'ПМТ-Р', '304-0.8/304', 'D150/250'],
+            'brand' => [
+                'name' => 'Теплов и Сухов',
+                'slug' => 'teplov-i-suhov',
+                'country' => 'Россия',
+                'content' => '<p><strong>Теплов и Сухов</strong> — российский производитель модульных дымоходов и комплектующих из нержавеющей стали.</p>',
+            ],
+            'name' => 'Теплов и Сухов Переход Моно/Термо ПМТ-Р 304-0.8/304 D150/250',
+            'retail' => 129.90,
+            'images' => ['img/products/teplov-i-suhov/teplov-suhov-pmt-304-08-304-d150-250.jpg'],
+            'source_url' => 'https://banikaminy.ru/catalog/dymokhody_baki_ventilyatsiya/dymokhodnye-sistemy-teplov-i-sukhov-tis-standart-50/sistema_tis_standart_50_termo/10101/',
+            'short' => 'Переход «Теплов и Сухов» с одностенного дымохода Ø150 мм на утеплённый Ø250 мм, внутренняя сталь AISI 304 толщиной 0,8 мм.',
+            'content' => '<p><strong>Переход Моно/Термо ПМТ-Р 304-0.8/304 D150/250</strong> соединяет одностенный дымовой канал Ø150 мм с двустенной утеплённой системой наружным диаметром Ø250 мм. Элемент закрывает торец теплоизоляции и обеспечивает корректный переход между системами Моно и Термо.</p><p>Внутренний дымовой контур изготовлен из нержавеющей стали AISI 304 толщиной 0,8 мм, наружный контур — из нержавеющей стали AISI 304. Переход предназначен для совместимой модульной системы «Теплов и Сухов».</p>',
+            'specs' => [
+                ['key' => 'Тип', 'value' => 'Переход Моно/Термо'],
+                ['key' => 'Модель', 'value' => 'ПМТ-Р 304-0.8/304 D150/250'],
+                ['key' => 'Внутренний диаметр', 'value' => '150 мм'],
+                ['key' => 'Наружный диаметр', 'value' => '250 мм'],
+                ['key' => 'Марка стали внутреннего контура', 'value' => 'AISI 304'],
+                ['key' => 'Толщина стали внутреннего контура', 'value' => '0,8 мм'],
+                ['key' => 'Марка стали наружного контура', 'value' => 'AISI 304'],
+                ['key' => 'Система', 'value' => 'Стандарт 50'],
+                ['key' => 'Назначение', 'value' => 'Переход с одностенного дымохода на утеплённый'],
+                ['key' => 'Масса', 'value' => '0,96 кг'],
+                ['key' => 'Артикул производителя', 'value' => 'TS.ST5.PRT.0150.49266'],
+                ['key' => 'Страна производства', 'value' => 'Россия'],
+            ],
+        ],
+    ];
+
     public function handle(IntegrationProductCreator $creator): int
     {
         $rows = match ($this->option('batch')) {
@@ -1244,6 +1279,7 @@ class CreateSbgDistinctProductsBatchCommand extends Command
             'researched-priced-20261013-ak' => self::BATCH_RESEARCHED_PRICED_20261013_AK,
             'researched-priced-20261013-al' => self::BATCH_RESEARCHED_PRICED_20261013_AL,
             'researched-priced-20261013-am' => self::BATCH_RESEARCHED_PRICED_20261013_AM,
+            'researched-priced-20261013-an' => self::BATCH_RESEARCHED_PRICED_20261013_AN,
             default => null,
         };
 
