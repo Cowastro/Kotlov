@@ -27,6 +27,28 @@ class ListCrmMailThreads extends ListRecords
         return 'Входящие, исходящие, черновики, спам и история общения с клиентами и поставщиками в одном месте.';
     }
 
+    public function mount(): void
+    {
+        parent::mount();
+
+        $query = CrmMailThread::query()->followUpDue();
+        if (! auth()->user()?->isAdmin()) {
+            $query->where(fn (Builder $query): Builder => $query
+                ->whereNull('assigned_user_id')
+                ->orWhere('assigned_user_id', auth()->id()));
+        }
+
+        $dueCount = $query->count();
+        if ($dueCount > 0) {
+            Notification::make()
+                ->warning()
+                ->title('Пора проконтролировать потенциальные сделки')
+                ->body('Просроченных контактов: '.$dueCount.'. Откройте вкладку «Нужен контроль».')
+                ->persistent()
+                ->send();
+        }
+    }
+
     public function getTabs(): array
     {
         return [
@@ -49,6 +71,16 @@ class ListCrmMailThreads extends ListRecords
                     ->where('unread_count', '>', 0)
                     ->count() ?: null)
                 ->badgeColor('warning'),
+            'potential_deals' => Tab::make('Потенциальные сделки')
+                ->icon('heroicon-o-currency-dollar')
+                ->modifyQueryUsing(fn (Builder $query): Builder => $query->potentialDeals())
+                ->badge(CrmMailThread::query()->potentialDeals()->count() ?: null)
+                ->badgeColor('info'),
+            'follow_up' => Tab::make('Нужен контроль')
+                ->icon('heroicon-o-bell-alert')
+                ->modifyQueryUsing(fn (Builder $query): Builder => $query->followUpDue())
+                ->badge(CrmMailThread::query()->followUpDue()->count() ?: null)
+                ->badgeColor('danger'),
             'drafts' => Tab::make('Черновики')
                 ->icon('heroicon-o-document-text')
                 ->modifyQueryUsing(fn (Builder $query): Builder => $query->where('status', 'draft'))

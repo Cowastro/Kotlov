@@ -25,6 +25,7 @@ use Filament\Actions\Action;
 use Filament\Actions\ActionGroup;
 use Filament\Actions\EditAction;
 use Filament\Actions\ViewAction;
+use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TagsInput;
@@ -82,7 +83,7 @@ class CrmMailThreadResource extends Resource
     public static function getEloquentQuery(): Builder
     {
         return parent::getEloquentQuery()->with([
-            'mailbox', 'assignedUser', 'counterparty', 'contact', 'messages', 'supplierOrderRequest.order',
+            'mailbox', 'assignedUser', 'counterparty', 'contact', 'messages', 'commercialDocuments', 'supplierOrderRequest.order',
             'supplierOrderRequest.supplier.crmCounterparty',
         ]);
     }
@@ -93,6 +94,10 @@ class CrmMailThreadResource extends Resource
             Section::make('Обработка лида')->columns(2)->schema([
                 Select::make('status')->label('Статус')->options(CrmMailThread::STATUSES)->required(),
                 Select::make('priority')->label('Приоритет')->options(CrmMailThread::PRIORITIES)->required(),
+                Select::make('sales_stage')->label('Стадия потенциальной сделки')
+                    ->options(CrmMailThread::SALES_STAGES)->placeholder('Не является сделкой')->nullable(),
+                DateTimePicker::make('next_follow_up_at')->label('Следующий контроль')
+                    ->seconds(false)->native(false)->nullable(),
                 Select::make('assigned_user_id')->label('Ответственный')
                     ->options(fn (): array => User::query()->whereIn('role', ['admin', 'manager', 'sales_manager'])
                         ->where('is_active', true)->orderBy('name')->pluck('name', 'id')->all())
@@ -106,6 +111,8 @@ class CrmMailThreadResource extends Resource
                         ])->all())
                     ->searchable()->nullable(),
                 Textarea::make('manager_note')->label('Итог / следующий шаг')->rows(4)->maxLength(3000)->columnSpanFull(),
+                Textarea::make('follow_up_note')->label('Что сделать при следующем контакте')
+                    ->rows(3)->maxLength(3000)->columnSpanFull(),
             ]),
         ]);
     }
@@ -130,6 +137,13 @@ class CrmMailThreadResource extends Resource
                     ->color(fn (string $state): string => static::statusColor($state)),
                 TextEntry::make('priority')->label('Приоритет')->badge()
                     ->formatStateUsing(fn (string $state): string => CrmMailThread::PRIORITIES[$state] ?? $state),
+                TextEntry::make('sales_stage')->label('Потенциальная сделка')->badge()
+                    ->placeholder('Не отмечена')
+                    ->formatStateUsing(fn (?string $state): string => CrmMailThread::SALES_STAGES[$state] ?? (string) $state)
+                    ->color(fn (?string $state): string => static::salesStageColor($state)),
+                TextEntry::make('next_follow_up_at')->label('Следующий контроль')
+                    ->dateTime('d.m.Y H:i', 'Europe/Minsk')->placeholder('Не назначен')
+                    ->color(fn (CrmMailThread $record): string => static::followUpColor($record)),
                 TextEntry::make('mailbox.email')->label('Почтовый ящик'),
                 TextEntry::make('last_message_at')->label('Последнее письмо')->dateTime('d.m.Y H:i', 'Europe/Minsk'),
                 TextEntry::make('supplierOrderRequest.order.number')
@@ -140,6 +154,7 @@ class CrmMailThreadResource extends Resource
                     ]))
                     ->color('primary'),
                 TextEntry::make('manager_note')->label('Итог / следующий шаг')->placeholder('Не заполнен')->columnSpanFull(),
+                TextEntry::make('follow_up_note')->label('Задача контроля')->placeholder('Не заполнена')->columnSpanFull(),
             ]),
             Section::make('Переписка')
                 ->description('Входящие и ответы сотрудников собраны в одной цепочке.')
@@ -187,10 +202,19 @@ class CrmMailThreadResource extends Resource
                 TextColumn::make('status')->label('Состояние')->badge()->sortable()
                     ->formatStateUsing(fn (string $state): string => CrmMailThread::STATUSES[$state] ?? $state)
                     ->color(fn (string $state): string => static::statusColor($state)),
+                TextColumn::make('sales_stage')->label('Сделка / контроль')->badge()->sortable()
+                    ->placeholder('—')
+                    ->formatStateUsing(fn (?string $state): string => CrmMailThread::SALES_STAGES[$state] ?? (string) $state)
+                    ->color(fn (?string $state): string => static::salesStageColor($state))
+                    ->icon(fn (CrmMailThread $record): ?string => static::commercialOfferIcon($record))
+                    ->iconColor(fn (CrmMailThread $record): string => static::commercialOfferIconColor($record))
+                    ->tooltip(fn (CrmMailThread $record): ?string => static::commercialOfferTooltip($record))
+                    ->description(fn (CrmMailThread $record): ?string => static::followUpLabel($record)),
             ])
             ->defaultSort('last_message_at', 'desc')
             ->filters([
                 SelectFilter::make('status')->label('Статус')->options(CrmMailThread::STATUSES),
+                SelectFilter::make('sales_stage')->label('Стадия сделки')->options(CrmMailThread::SALES_STAGES),
                 SelectFilter::make('priority')->label('Приоритет')->options(CrmMailThread::PRIORITIES),
                 SelectFilter::make('assigned_user_id')->label('Ответственный')->relationship('assignedUser', 'name')->searchable()->preload(),
                 SelectFilter::make('mailbox_id')->label('Ящик')->relationship('mailbox', 'email'),
@@ -338,6 +362,47 @@ class CrmMailThreadResource extends Resource
                             && $record->status !== 'draft'
                             && ($record->assigned_user_id !== auth()->id() || $record->status === 'new'))
                         ->action(fn (CrmMailThread $record) => $record->takeFor((int) auth()->id())),
+                    Action::make('mark_potential_deal')
+                        ->label('В потенциальные сделки')
+                        ->icon('heroicon-o-currency-dollar')
+                        ->color('info')
+                        ->visible(fn (CrmMailThread $record): bool => ! $record->trashed()
+                            && ! in_array($record->status, ['draft', 'spam'], true)
+                            && blank($record->sales_stage))
+                        ->action(fn (CrmMailThread $record) => $record->update([
+                            'sales_stage' => 'new_inquiry',
+                            'assigned_user_id' => $record->assigned_user_id ?: auth()->id(),
+                            'next_follow_up_at' => now()->addWeekday()->setTime(10, 0),
+                            'follow_up_note' => 'Уточнить потребность клиента и следующий шаг.',
+                        ])),
+                    Action::make('manage_deal')
+                        ->label('Стадия и контроль')
+                        ->icon('heroicon-o-calendar-days')
+                        ->color('warning')
+                        ->visible(fn (CrmMailThread $record): bool => ! $record->trashed() && filled($record->sales_stage))
+                        ->fillForm(fn (CrmMailThread $record): array => [
+                            'sales_stage' => $record->sales_stage,
+                            'next_follow_up_at' => $record->next_follow_up_at,
+                            'follow_up_note' => $record->follow_up_note,
+                        ])
+                        ->schema([
+                            Select::make('sales_stage')->label('Стадия сделки')
+                                ->options(CrmMailThread::SALES_STAGES)->required(),
+                            DateTimePicker::make('next_follow_up_at')->label('Дата и время контроля')
+                                ->seconds(false)->native(false),
+                            Textarea::make('follow_up_note')->label('Что сделать')
+                                ->rows(3)->maxLength(3000),
+                        ])
+                        ->action(function (CrmMailThread $record, array $data): void {
+                            $finished = in_array($data['sales_stage'], ['won', 'lost'], true);
+                            $record->update([
+                                'sales_stage' => $data['sales_stage'],
+                                'next_follow_up_at' => $finished ? null : ($data['next_follow_up_at'] ?? null),
+                                'follow_up_note' => $data['follow_up_note'] ?? null,
+                                'status' => $finished ? 'closed' : $record->status,
+                                'handled_at' => $finished ? now() : $record->handled_at,
+                            ]);
+                        }),
                     Action::make('close')
                         ->label('Закрыть')->icon('heroicon-o-check-circle')->color('success')
                         ->visible(fn (CrmMailThread $record): bool => ! $record->trashed()
@@ -399,6 +464,68 @@ class CrmMailThreadResource extends Resource
             'closed' => 'success',
             default => 'gray',
         };
+    }
+
+    public static function salesStageColor(?string $stage): string
+    {
+        return match ($stage) {
+            'new_inquiry' => 'danger',
+            'qualification' => 'warning',
+            'proposal_sent' => 'info',
+            'negotiation' => 'primary',
+            'won' => 'success',
+            'lost' => 'gray',
+            default => 'gray',
+        };
+    }
+
+    public static function followUpLabel(CrmMailThread $record): ?string
+    {
+        if (! $record->next_follow_up_at || ! $record->isPotentialDeal()) {
+            return null;
+        }
+
+        $prefix = $record->next_follow_up_at->isPast() ? 'Просрочено' : 'Контроль';
+
+        return $prefix.': '.$record->next_follow_up_at->timezone('Europe/Minsk')->format('d.m H:i');
+    }
+
+    public static function followUpColor(CrmMailThread $record): string
+    {
+        if ($record->next_follow_up_at?->isPast() && $record->isPotentialDeal()) {
+            return 'danger';
+        }
+
+        return 'gray';
+    }
+
+    public static function commercialOfferIcon(CrmMailThread $record): ?string
+    {
+        if ($record->commercialDocuments->contains(fn ($document): bool => $document->ai_assisted && $document->status === 'sent')) {
+            return 'heroicon-o-sparkles';
+        }
+
+        return $record->commercialDocuments->contains(fn ($document): bool => $document->status === 'sent')
+            ? 'heroicon-o-document-check'
+            : null;
+    }
+
+    public static function commercialOfferIconColor(CrmMailThread $record): string
+    {
+        return $record->commercialDocuments->contains(fn ($document): bool => $document->ai_assisted && $document->status === 'sent')
+            ? 'primary'
+            : 'success';
+    }
+
+    public static function commercialOfferTooltip(CrmMailThread $record): ?string
+    {
+        if ($record->commercialDocuments->contains(fn ($document): bool => $document->ai_assisted && $document->status === 'sent')) {
+            return 'КП подготовлено с помощью ИИ и отправлено клиенту';
+        }
+
+        return $record->commercialDocuments->contains(fn ($document): bool => $document->status === 'sent')
+            ? 'Коммерческое предложение отправлено'
+            : null;
     }
 
     public static function mailReadLabel(CrmMailThread $record): string

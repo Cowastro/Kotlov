@@ -16,10 +16,13 @@ class CreateCommercialDocument extends CreateRecord
 
     public bool $createMailDraft = false;
 
+    public bool $aiAssisted = false;
+
     public function mount(): void
     {
         parent::mount();
         $this->createMailDraft = (bool) session()->pull('commercial_document_create_mail_draft', false);
+        $this->aiAssisted = $this->createMailDraft;
         $prefill = session()->pull('commercial_document_prefill', []);
         $productIds = collect(session()->pull('commercial_document_product_ids', []))->map(fn ($id): int => (int) $id)->filter()->unique();
         $quantities = session()->pull('commercial_document_product_quantities', []);
@@ -67,6 +70,9 @@ class CreateCommercialDocument extends CreateRecord
     protected function handleRecordCreation(array $data): Model
     {
         $record = parent::handleRecordCreation($data);
+        if ($this->aiAssisted) {
+            $record->forceFill(['ai_assisted' => true])->save();
+        }
         $record->recalculate();
 
         if ($this->createMailDraft && filter_var((string) $record->client_email, FILTER_VALIDATE_EMAIL)) {

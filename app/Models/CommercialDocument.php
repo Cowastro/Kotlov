@@ -22,7 +22,7 @@ class CommercialDocument extends Model
     ];
 
     protected $fillable = [
-        'number', 'type', 'status', 'source_document_id', 'created_by', 'manager_id', 'crm_mail_thread_id',
+        'number', 'type', 'status', 'ai_assisted', 'source_document_id', 'created_by', 'manager_id', 'crm_mail_thread_id',
         'client_name', 'client_company', 'client_email', 'client_phone', 'client_unp', 'client_address',
         'issued_at', 'valid_until', 'currency', 'subtotal', 'discount_total', 'delivery_price', 'total',
         'vat_rate', 'payment_terms', 'delivery_terms', 'notes', 'seller_snapshot', 'sent_at', 'accepted_at',
@@ -33,6 +33,7 @@ class CommercialDocument extends Model
         'valid_until' => 'date',
         'sent_at' => 'datetime',
         'accepted_at' => 'datetime',
+        'ai_assisted' => 'boolean',
         'seller_snapshot' => 'array',
         'subtotal' => 'decimal:2',
         'discount_total' => 'decimal:2',

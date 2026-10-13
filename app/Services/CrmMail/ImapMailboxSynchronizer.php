@@ -145,6 +145,8 @@ class ImapMailboxSynchronizer
                             : $thread->status,
                     ])->save();
 
+                    $thread->markCustomerReplied();
+
                     $counterparty?->forceFill(['last_contact_at' => $receivedAt])->save();
                 });
 

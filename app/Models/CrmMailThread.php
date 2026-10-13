@@ -30,17 +30,34 @@ class CrmMailThread extends Model
         'urgent' => 'Срочно',
     ];
 
+    public const SALES_STAGES = [
+        'new_inquiry' => 'Новый запрос',
+        'qualification' => 'Уточнение потребности',
+        'proposal_sent' => 'КП отправлено',
+        'negotiation' => 'Переговоры / дожим',
+        'won' => 'Сделка успешна',
+        'lost' => 'Сделка не состоялась',
+    ];
+
+    public const OPEN_SALES_STAGES = [
+        'new_inquiry',
+        'qualification',
+        'proposal_sent',
+        'negotiation',
+    ];
+
     protected $fillable = [
         'mailbox_id', 'crm_counterparty_id', 'crm_contact_id', 'assigned_user_id',
         'supplier_order_request_id',
-        'thread_key', 'subject', 'participant_name', 'participant_email', 'status',
+        'thread_key', 'subject', 'participant_name', 'participant_email', 'status', 'sales_stage',
         'priority', 'messages_count', 'unread_count', 'last_message_at', 'handled_at',
-        'manager_note',
+        'next_follow_up_at', 'follow_up_note', 'manager_note',
     ];
 
     protected $casts = [
         'last_message_at' => 'datetime',
         'handled_at' => 'datetime',
+        'next_follow_up_at' => 'datetime',
         'deleted_at' => 'datetime',
     ];
 
@@ -74,6 +91,11 @@ class CrmMailThread extends Model
         return $this->hasMany(CrmMailMessage::class, 'thread_id')->orderBy('received_at');
     }
 
+    public function commercialDocuments(): HasMany
+    {
+        return $this->hasMany(CommercialDocument::class, 'crm_mail_thread_id');
+    }
+
     public function hasValidRecipient(): bool
     {
         if (filter_var(trim((string) $this->participant_email), FILTER_VALIDATE_EMAIL) !== false) {
@@ -93,6 +115,48 @@ class CrmMailThread extends Model
     public function scopeNeedsAttention(Builder $query): Builder
     {
         return $query->whereIn('status', ['new', 'waiting_manager']);
+    }
+
+    public function scopePotentialDeals(Builder $query): Builder
+    {
+        return $query->whereIn('sales_stage', self::OPEN_SALES_STAGES);
+    }
+
+    public function scopeFollowUpDue(Builder $query): Builder
+    {
+        return $query->potentialDeals()
+            ->whereNotNull('next_follow_up_at')
+            ->where('next_follow_up_at', '<=', now());
+    }
+
+    public function isPotentialDeal(): bool
+    {
+        return in_array($this->sales_stage, self::OPEN_SALES_STAGES, true);
+    }
+
+    public function markProposalSent(?int $userId = null): void
+    {
+        $this->forceFill([
+            'assigned_user_id' => $this->assigned_user_id ?: $userId,
+            'sales_stage' => 'proposal_sent',
+            'status' => 'waiting_customer',
+            'next_follow_up_at' => now()->addWeekdays(2)->setTime(10, 0),
+            'follow_up_note' => 'Связаться с клиентом после отправки коммерческого предложения.',
+        ])->save();
+    }
+
+    public function markCustomerReplied(): void
+    {
+        if (! $this->isPotentialDeal()) {
+            return;
+        }
+
+        $this->forceFill([
+            'sales_stage' => 'negotiation',
+            'status' => 'waiting_manager',
+            'next_follow_up_at' => now(),
+            'follow_up_note' => 'Получен ответ клиента — обработать и назначить следующий контакт.',
+        ])->save();
     }
 
     public function takeFor(int $userId): void

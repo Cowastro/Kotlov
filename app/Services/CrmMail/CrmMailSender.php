@@ -77,9 +77,13 @@ class CrmMailSender
                 'handled_at' => now(),
             ])->save();
 
-            CommercialDocument::query()
+            $commercialDocuments = CommercialDocument::query()
                 ->where('crm_mail_thread_id', $thread->id)
                 ->update(['status' => 'sent', 'sent_at' => now()]);
+
+            if ($commercialDocuments > 0) {
+                $thread->markProposalSent($user->id);
+            }
 
             return $draft->fresh();
         });
@@ -167,6 +171,13 @@ class CrmMailSender
             'last_message_at' => now(),
             'handled_at' => now(),
         ])->save();
+
+        if ($thread->isPotentialDeal()) {
+            $thread->forceFill([
+                'next_follow_up_at' => now()->addWeekdays(2)->setTime(10, 0),
+                'follow_up_note' => 'Проверить ответ клиента после отправленного письма.',
+            ])->save();
+        }
 
         return $message;
     }
