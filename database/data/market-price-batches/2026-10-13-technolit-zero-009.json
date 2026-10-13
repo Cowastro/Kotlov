@@ -1,0 +1,610 @@
+{
+    "code": "2026-10-13-technolit-zero-009",
+    "observed_at": "2026-10-13T21:16:23+00:00",
+    "review_required": true,
+    "selection": {
+        "production_only": true,
+        "active_only": true,
+        "unpriced_only": true,
+        "brand": "ТехноЛит",
+        "skus": [],
+        "after_id": 12441,
+        "limit": 5,
+        "source_queue": "storage/app/private/price-research-queue-38466265607/price-research-queue.csv"
+    },
+    "sources": [
+        {
+            "code": "web-b38744efc4fbe2b0",
+            "name": "ТеплоДвор",
+            "kind": "competitor",
+            "base_url": "https://www.teplodvor.by",
+            "currency": "BYN",
+            "region": "Открытый рынок",
+            "freshness_hours": 168,
+            "minimum_match_confidence": 0.99,
+            "notes": "Источник найден hosted web_search; batch требует ручной проверки до применения."
+        },
+        {
+            "code": "web-b717c65fa7d4589c",
+            "name": "d-b.by",
+            "kind": "competitor",
+            "base_url": "https://d-b.by",
+            "currency": "BYN",
+            "region": "Открытый рынок",
+            "freshness_hours": 168,
+            "minimum_match_confidence": 0.99,
+            "notes": "Источник найден hosted web_search; batch требует ручной проверки до применения."
+        },
+        {
+            "code": "web-66174494f7f95435",
+            "name": "БАНИ САУНЫ",
+            "kind": "competitor",
+            "base_url": "https://banisauny.by",
+            "currency": "BYN",
+            "region": "Открытый рынок",
+            "freshness_hours": 168,
+            "minimum_match_confidence": 0.99,
+            "notes": "Источник найден hosted web_search; batch требует ручной проверки до применения."
+        }
+    ],
+    "products": [
+        {
+            "sku": "KOTLOV-000164",
+            "review_reason": "Live-web исследование точной production-модели нашло менее трёх независимых подтверждённых предложений; сохранить консультационный режим.",
+            "force_consultation_hold": true,
+            "observations": [
+                {
+                    "source": "web-b38744efc4fbe2b0",
+                    "url": "https://www.teplodvor.by/shop/pech-dlya-bani/pech-dlya-bani-gfs-gefest-groza-uragan-18-p-chugun/",
+                    "external_name": "Печь для бани GFS Гефест Гроза Ураган 18 (П) чугун купить в Минске, цена и характеристики",
+                    "model": "Печь для бани GFS Гефест Гроза Ураган 18 (П) чугун",
+                    "package": "печь GFS Гефест Гроза 18 (П), чугунный короб, дверца GEFEST 350, зольный ящик, стартовая труба 115х500, герметик Титан до 1500С, гарантийный паспорт, стальная кованая сетка Гроза Ураган 18",
+                    "observed_price": 4107.8,
+                    "currency": "BYN",
+                    "exchange_rate_to_byn": 1,
+                    "price_includes_vat": null,
+                    "availability_status": "in_stock",
+                    "match_method": "exact_model",
+                    "match_confidence": 0.99,
+                    "is_confirmed": true,
+                    "is_comparable": true,
+                    "validation_flags": [],
+                    "evidence": "Страница товара: «Банная печь GFS Гефест Гроза Ураган 18 (П) чугун», цена 4107.80 руб., есть в наличии, гарантия 60 мес., мощность 18 кВт."
+                },
+                {
+                    "source": "web-b717c65fa7d4589c",
+                    "url": "https://d-b.by/cataloge/pechi-dlya-bani/drovyanye/chugunnaja-bannaja-pech-tehnolit-groza-18-p-uragan-groza-uragan-18-p/#inline",
+                    "external_name": "Чугунная банная печь Гроза 18 (П) Ураган",
+                    "model": "Печь для бани GFS Гефест Гроза Ураган 18 (П) чугун",
+                    "package": "печь Гроза 18 (П) Ураган в сетке, закрытая каменка, дверца со стеклом, стартовая труба 50 см; камни не входят",
+                    "observed_price": 3517.8,
+                    "currency": "BYN",
+                    "exchange_rate_to_byn": 1,
+                    "price_includes_vat": null,
+                    "availability_status": "unknown",
+                    "match_method": "exact_model",
+                    "match_confidence": 0.99,
+                    "is_confirmed": true,
+                    "is_comparable": true,
+                    "validation_flags": [],
+                    "evidence": "Карточка: «Чугунная банная печь Гроза 18 (П) Ураган», 3517.80 руб., с пометкой «Цену и наличие товара уточняйте у менеджера»."
+                }
+            ],
+            "research": {
+                "summary": "В Беларуси найдено 3 подтверждённых карточки именно модели GFS/Гефест Гроза Ураган 18 (П) чугун: kotlov.by — 4107.80 BYN, teplodvor.by — 4107.80 BYN (в наличии), d-b.by — 3517.80 BYN (цену и наличие просят уточнять). Два белорусских продавца сходятся на 4107.80 BYN, нижняя заявленная точка — 3517.80 BYN, но требует проверки. В РФ найденные сопоставимые оферты: 85 800 RUB и 98 000 RUB. Цена клиента 0.00 BYN не является рыночной и не может использоваться для сравнения.",
+                "verdict": "Ориентир для Беларуси — 4107.80 BYN по подтверждённым предложениям kotlov.by и teplodvor.by. Нижняя граница для переговоров — 3517.80 BYN у d-b.by, но только после подтверждения наличия и финальной цены. Рекомендуется закладывать в КП рыночную цену около 4100 BYN, проверив комплектность и наличие у поставщика; цену 0.00 BYN заменить.",
+                "confidence": "high",
+                "search_queries": [
+                    "Печь для бани GFS Гефест Гроза Ураган 18 П чугун ТехноЛит KOTLOV-000164",
+                    "ТехноЛит Гефест Гроза Ураган 18 П чугун цена",
+                    "\"Гроза Ураган 18 (П)\" ТехноЛит купить",
+                    "\"GFS Гефест Гроза Ураган 18 (П)\"",
+                    "\"Гефест Ураган Гроза в сетке 18 (П)\" цена BYN",
+                    "site:pechi-dimohody.by \"18 (П)\" \"Ураган\""
+                ],
+                "rejected_candidates": [
+                    {
+                        "title": "Печь для бани GFS Гефест Гроза Ураган 18 (М) чугун",
+                        "url": "https://kotlov.by/drovianye-peci-bannye/pec-dlia-bani-gfs-gefest-groza-uragan-18-m-cugun",
+                        "reason": "Другая модификация двери/исполнения — (М), а не (П); цена 3613.80 BYN не относится к целевой модели."
+                    },
+                    {
+                        "title": "Печь для бани GFS Гефест ЗК Ураган 18 (П) чугун",
+                        "url": "https://kotlov.by/drovianye-peci-bannye/pec-dlia-bani-gfs-gefest-zk-uragan-18-p-cugun",
+                        "reason": "Другая линейка — GFS ЗК, а не GFS Гроза; цена 4833.60 BYN."
+                    },
+                    {
+                        "title": "Гроза Ураган 18 (П)2 ТехноЛит",
+                        "url": "https://banisauny.by/pechi-dlya-bani/drovyanyye-pechi/pechi-gefest/groza-uragan/groza-uragan-18-p2/",
+                        "reason": "Модификация (П)2, а не (П); цена 4000 BYN не применима к целевой позиции."
+                    },
+                    {
+                        "title": "Чугунная банная печь GFS Гроза 18 (П) Ураган",
+                        "url": "https://nn.pech.ru/catalog/pechi-dlya-bani/chugunnaya-bannaya-pech-gfs-groza-18-p-uragan/",
+                        "reason": "Модель совпадает, но в поисковой выдаче не подтверждены цена и наличие — не учитывалась как оферта без ручной проверки."
+                    },
+                    {
+                        "title": "Печь для бани Гефест Гроза Ураган 18 (П)",
+                        "url": "https://yakutsk.vashe-teplo.su/catalog/teplyie-polyi/elektricheskij-teplyij-pol/kabelnyij-teplyij-pol/elektricheskij-teplyij-pol-na-setke/teplyij-pol-teplolyuks-mat/katalog/teplyie-polyi/vodyanoj-teplyij-pol/catalog/pechi-dlya-bani/catalog/pechi-dlya-bani/bannyie-pechi-gefest/bannaya-pech-groza-gefest/pech-dlya-bani-gefest-groza-uragan-18-(p)",
+                        "reason": "Модель совпадает, но цена не указана в выдаче — не использована как полноценное предложение."
+                    },
+                    {
+                        "title": "Чугунная печь для бани Гефест Ураган Гроза в сетке 18 (П)",
+                        "url": "https://disna.pechi-dimohody.by/pechi-dlya-bani/proizvoditeli1/pechi-dlya-bani-gefest/chugunnaya-pech-dlya-bani-gefest-uragan-groza-v-setke-18-p",
+                        "reason": "Цена показана как 0 BYN, фактическая стоимость не подтверждена — оферта некорректна."
+                    }
+                ],
+                "excluded_offers": [
+                    {
+                        "title": "Печь для бани GFS Гефест Гроза Ураган 18 (П) чугун купить в Минске",
+                        "url": "https://kotlov.by/drovianye-peci-bannye/pec-dlia-bani-gfs-gefest-groza-uragan-18-p-cugun",
+                        "reason": "Собственный домен KOTLOV не является независимым рыночным источником."
+                    },
+                    {
+                        "title": "Печь Банная Гефест Гроза 18 (П) Ураган",
+                        "url": "https://gefestgroup.ru/gefest/pechi-v-setke--uragan/bannye-pechi-gefest-groza/pech-bannaya-gefest-groza-18-p-uragan/",
+                        "reason": "Нет положительной подтверждённой цены в BYN."
+                    },
+                    {
+                        "title": "Печь банная чугунная ГЕФЕСТ Гроза Ураган 18 (П)",
+                        "url": "https://krasnodar.parmaster.ru:443/catalog/pechi_dlya_bani/pech-bannaya-chugunnaya-gefest-groza-uragan-18-p--8-18-m-140-kg-d115-mm/",
+                        "reason": "Нет положительной подтверждённой цены в BYN."
+                    }
+                ],
+                "model": "deepseek-v4-pro",
+                "searched_at": "2026-10-13T21:12:03+00:00"
+            }
+        },
+        {
+            "sku": "KOTLOV-000165",
+            "review_reason": "Live-web исследование точной production-модели нашло менее трёх независимых подтверждённых предложений; сохранить консультационный режим.",
+            "force_consultation_hold": true,
+            "observations": [
+                {
+                    "source": "web-b38744efc4fbe2b0",
+                    "url": "https://www.teplodvor.by/shop/pech-dlya-bani/pech-dlya-bani-gfs-gefest-groza-uragan-24-p-chugun/",
+                    "external_name": "Печь для бани GFS Гефест Гроза Ураган 24 (П) чугун",
+                    "model": "Печь для бани GFS Гефест Гроза Ураган 24 (П) чугун",
+                    "package": "печь банная GFS Гефест Гроза Ураган 24 (П), короб чугунный Гроза 24, вставка чугунная, дверца GEFEST 350, зольный ящик, труба чугунная стартовая ф115 L500, герметик Титан, гарантийный паспорт, стальная кованая сетка Гроза Ураган",
+                    "observed_price": 4358.6,
+                    "currency": "BYN",
+                    "exchange_rate_to_byn": 1,
+                    "price_includes_vat": null,
+                    "availability_status": "in_stock",
+                    "match_method": "exact_model",
+                    "match_confidence": 0.99,
+                    "is_confirmed": true,
+                    "is_comparable": true,
+                    "validation_flags": [],
+                    "evidence": "Карточка товара в поисковой выдаче: модель (П), цена 4358.60 руб., наличие 'Есть в наличии', вес 193 кг, комплект соответствует модели."
+                },
+                {
+                    "source": "web-b717c65fa7d4589c",
+                    "url": "https://d-b.by/cataloge/pechi-dlya-bani/drovyanye/chugunnaja-bannaja-pech-tehnolit-groza-24-p-uragan-groza-uragan-24-p/",
+                    "external_name": "Чугунная банная печь Гроза 24 (П) Ураган",
+                    "model": "Печь для бани GFS Гефест Гроза Ураган 24 (П) чугун",
+                    "package": "печь банная Гроза 24П, чугунный короб, труба чугунная стартовая ф115 L500, вставка чугунная, дверца GEFEST 350, зольный ящик, герметик, стальная кованая сетка, гарантийный паспорт",
+                    "observed_price": 3833.5,
+                    "currency": "BYN",
+                    "exchange_rate_to_byn": 1,
+                    "price_includes_vat": null,
+                    "availability_status": "unknown",
+                    "match_method": "exact_model",
+                    "match_confidence": 0.99,
+                    "is_confirmed": true,
+                    "is_comparable": true,
+                    "validation_flags": [],
+                    "evidence": "Карточка товара: модель Гроза 24 (П) Ураган, цена 3833.50 руб., прямо указано 'Цену и наличие товара уточняйте у менеджера'."
+                }
+            ],
+            "research": {
+                "summary": "Найдены точные предложения модели GFS Гефест Гроза Ураган 24 (П) чугун в Беларуси. Подтверждённые цены в BYN: 3 833.50 BYN (d-b.by, наличие уточнять), 4 358.60 BYN (teplodvor.by, есть в наличии) и 4 358.60 BYN (gantsevichi.kotlov.by, наличие явно не указано). В РФ модель предлагается от 73 000 до 98 000 RUB. Цена клиента 0.00 BYN выглядит как незаполненный плейсхолдер и не пригодна для сравнения.",
+                "verdict": "Ориентир рыночной цены в Беларуси для GFS Гефест Гроза Ураган 24 (П) чугун: 3 833–4 359 BYN. Самая низкая подтверждённая цена — 3 833.50 BYN, но доступность требует подтверждения; гарантированное наличие заявлено по 4 358.60 BYN. Российские цены 73 000–98 000 RUB дают дополнительный верхний контекст, но прямое сравнение требует пересчёта с учётом доставки и НДС. Автоматически менять цену не рекомендуется: сначала нужно уточнить актуальное наличие и закупочные условия у d-b.by и teplodvor.by.",
+                "confidence": "medium",
+                "search_queries": [
+                    "Печь для бани GFS Гефест Гроза Ураган 24 (П) чугун ТехноЛит",
+                    "KOTLOV-000165",
+                    "Гефест Гроза Ураган 24 П чугун печь баня купить",
+                    "ТехноЛит Ураган 24 чугун печь для бани цена Беларусь",
+                    "\"Гроза Ураган 24 (П)\" чугун цена",
+                    "\"Гроза Ураган 24 (П)\" Технолит купить Беларусь",
+                    "site:teplo-izba.by \"Гроза Ураган 24 (П)\"",
+                    "site:banisauny.by \"Гроза Ураган 24\" \"П\""
+                ],
+                "rejected_candidates": [
+                    {
+                        "title": "Печь для бани GFS Гефест Гроза Ураган 24 (М) чугун",
+                        "url": "https://kotlov.by/drovianye-peci-bannye/pec-dlia-bani-gfs-gefest-groza-uragan-24-m-cugun",
+                        "reason": "Другая модификация (М), а не (П); цена 3 997.60 BYN не относится к запрошенной модели."
+                    },
+                    {
+                        "title": "Гроза Ураган 24 (М) ТехноЛит",
+                        "url": "https://banisauny.by/pechi-dlya-bani/drovyanyye-pechi/pechi-gefest/groza-uragan/groza-24ms-uragan/",
+                        "reason": "Модификация (М), цена 3 892 BYN не подходит для сравнения с (П)."
+                    },
+                    {
+                        "title": "Печь для бани GFS Гефест Гроза Ураган 24 (П)2 чугун",
+                        "url": "https://pechibani.by/pechi-dlya-bani/drovyanyye-pechi/pechi-gefest/groza-uragan/groza-uragan-24-p2/",
+                        "reason": "Модификация (П)2: вес 232 кг и другие параметры отличаются от запрошенной (П) с весом 193 кг."
+                    },
+                    {
+                        "title": "Банная печь Гроза Ураган 24 (П)2",
+                        "url": "https://maximal.by/otopitelnoe-i-klimaticheskoe-oborudovanie/bannaya-pech-groza-uragan-24-p-2",
+                        "reason": "Модификация (П)2, а не (П); цена 4 150.00 BYN не относится к запрошенной модели."
+                    },
+                    {
+                        "title": "Печь чугунная для бани Технолит Гроза 24 (П2) Ураган",
+                        "url": "https://sogreem.by/pechi-dlya-bani/pech-chugunnaya-dlya-bani-tehnolit-groza-24-p2-uragan",
+                        "reason": "Модификация (П2), вес 232 кг, отличается от запрошенной (П)."
+                    },
+                    {
+                        "title": "Печь для бани Гефест Гроза Ураган 24П чугунная Технолит",
+                        "url": "https://te-plo.com/catalog/pechi_dlya_bani_i_sauny/pechi_dlya_bani/pech_dlya_bani_gefest_groza_uragan_24p_chugunnaya_/",
+                        "reason": "В карточке вес 232 кг и закрытая каменка, что не совпадает с заявленной модификацией (П) весом 193 кг; вероятно, это (П)2 или неточная карточка."
+                    },
+                    {
+                        "title": "Чугунная печь для бани Гефест Гроза Ураган 24 (П) в Бресте",
+                        "url": "https://brest.teplo-izba.by/pechi/bani/gefest-groza-uragan/gefest-groza-uragan-24p.html",
+                        "reason": "Модель совпадает, но в доступном сниппете нет подтверждённой цены, поэтому не включена как полноценное предложение."
+                    },
+                    {
+                        "title": "Чугунная печь для бани Гефест Гроза Ураган 24 (П) в Витебске",
+                        "url": "https://vitebsk.teplo-izba.by/pechi/bani/gefest-groza-uragan/gefest-groza-uragan-24p.html",
+                        "reason": "Модель совпадает, но в доступном сниппете нет подтверждённой цены, поэтому не включена как полноценное предложение."
+                    }
+                ],
+                "excluded_offers": [
+                    {
+                        "title": "ТехноЛит Печь для бани GFS Гефест Гроза Ураган 24 (П) чугун",
+                        "url": "https://gantsevichi.kotlov.by/drovianye-peci-bannye/pec-dlia-bani-gfs-gefest-groza-uragan-24-p-cugun",
+                        "reason": "Собственный домен KOTLOV не является независимым рыночным источником."
+                    },
+                    {
+                        "title": "Чугунная печь для бани Гефест Гроза Ураган 24 (П)",
+                        "url": "https://kamin.website/chugunnaya-pech-dlya-bani-gefest-groza-uragan-24-p",
+                        "reason": "Нет положительной подтверждённой цены в BYN."
+                    },
+                    {
+                        "title": "Печь банная Гефест Гроза Ураган 24 (П)",
+                        "url": "https://vova-dymohod.ru/bannye-pechi-833/pech-bannaya-gefest-groza-uragan-24-p1?language=ru-ru",
+                        "reason": "Нет положительной подтверждённой цены в BYN."
+                    },
+                    {
+                        "title": "Печь банная Гроза Ураган 24 (П)",
+                        "url": "https://xn----jtbajinxg0e.xn--p1ai/catalog/pechi-bannye/drovyanye/gefest/groza-uragan-24-p/",
+                        "reason": "Нет положительной подтверждённой цены в BYN."
+                    },
+                    {
+                        "title": "Печь банная \"Гефест Гроза Ураган 24\" (П) Технолит",
+                        "url": "https://te-plo.com/catalog/pechi_dlya_bani_i_sauny/pechi_dlya_bani/pech_bannaya_gefest_groza_uragan_24_p_/",
+                        "reason": "Нет положительной подтверждённой цены в BYN."
+                    }
+                ],
+                "model": "deepseek-v4-pro",
+                "searched_at": "2026-10-13T21:12:58+00:00"
+            }
+        },
+        {
+            "sku": "KOTLOV-000166",
+            "review_reason": "Live-web исследование точной production-модели нашло менее трёх независимых подтверждённых предложений; сохранить консультационный режим.",
+            "force_consultation_hold": true,
+            "observations": [
+                {
+                    "source": "web-b717c65fa7d4589c",
+                    "url": "https://d-b.by/cataloge/pechi-dlya-bani/drovyanye/chugunnaja-bannaja-pech-tehnolit-groza-24-p-v-setke-groza-v-setke-24-p/#inline",
+                    "external_name": "Чугунная банная печь Гроза 24 (П) в сетке",
+                    "model": "Печь для бани GFS Гефест Гроза 24 (П) в сетке чугун",
+                    "package": "Печь банная Гроза 24П, зольный ящик, герметик Титан до 1500°C, гарантийный паспорт, стальная кованая сетка, стартовый чугунный патрубок ф115",
+                    "observed_price": 2775.7,
+                    "currency": "BYN",
+                    "exchange_rate_to_byn": 1,
+                    "price_includes_vat": null,
+                    "availability_status": "unknown",
+                    "match_method": "exact_model",
+                    "match_confidence": 0.99,
+                    "is_confirmed": true,
+                    "is_comparable": true,
+                    "validation_flags": [],
+                    "evidence": "В web-сниппете d-b.by: цена 2775.70 руб. (BYN), код 'Гроза в сетке 24 (П) Техно Лит', комплект включает стальную кованую сетку."
+                }
+            ],
+            "research": {
+                "summary": "Целевая позиция — дровяная чугунная печь ТехноЛит/Гефест Гроза 24 (П) в сетке, объём парной до 24 м³. В Беларуси найдены независимые продавцы: KOTLOV.BY — 3 401.00 BYN, d-b.by — 2 775.70 BYN (цену и наличие просят уточнять у менеджера). Ещё две белорусские карточки найдены без раскрытой цены в поисковой выдаче: pechi-dimohody.by (Гомель) и teplo-izba.by (Брест). На рынке РФ та же модель предлагается от 55 000 до 73 200 RUB, что подтверждает активное предложение, но без актуального курса в BYN не пересчитывалось. Цена клиента 0.00 BYN является незаполненной и не может использоваться для сравнения.",
+                "verdict": "Ориентир рыночной цены в Беларуси по подтверждённым карточкам: 2 775.70–3 401.00 BYN. Для точного решения следует запросить актуальное наличие и цену у d-b.by, pechi-dimohody.by и teplo-izba.by, а также сверить комплектацию 'в сетке' с целевым SKU KOTLOV-000166. Цену клиента 0.00 BYN считать некорректной, автоматически менять её на основе рынка не рекомендуется.",
+                "confidence": "medium",
+                "search_queries": [
+                    "Печь для бани GFS Гефест Гроза 24 (П) в сетке чугун ТехноЛит",
+                    "Гефест Гроза 24 П сетке чугун KOTLOV-000166",
+                    "Гефест Гроза 24 (П) в сетке чугун купить Беларусь",
+                    "\"Гроза 24 (П) в сетке\" цена BYN",
+                    "\"Гроза 24 (П)\" \"в сетке\" \"BYN\" купить",
+                    "site:pechi-dimohody.by \"Гроза 24 (П) в сетке\""
+                ],
+                "rejected_candidates": [
+                    {
+                        "title": "Печь-комплект Гефест Гроза 24 (П2)",
+                        "url": "https://kotlov.by/drovianye-peci-bannye/pec-komplekt-gefest-groza-24-p2",
+                        "reason": "Другая модификация/комплектация: (П2) и 'печь-комплект', а не целевая (П) в сетке; цена 4 066.00 BYN."
+                    },
+                    {
+                        "title": "Печь для бани GFS Гефест Гроза Ураган 24 (П) чугун",
+                        "url": "https://gantsevichi.kotlov.by/drovianye-peci-bannye/pec-dlia-bani-gfs-gefest-groza-uragan-24-p-cugun",
+                        "reason": "Комплектация 'Ураган' с чугунным коробом, а не базовая 'в сетке'; цена 4 358.60 BYN."
+                    },
+                    {
+                        "title": "Печь чугунная для бани Технолит Гроза 24 (П2) в сетке",
+                        "url": "https://sogreem.by/pechi-dlya-bani/pech-chugunnaya-dlya-bani-tehnolit-groza-24-p2-v-setke",
+                        "reason": "Модификация (П2), не (П); цена 3 273.60 BYN."
+                    },
+                    {
+                        "title": "Чугунная печь для бани Гроза 24 (П2) в сетке",
+                        "url": "https://eurobani.by/katalog/bannie-pechi/drovjanye-pechi/bannyye-pechi-gefest-tekhnolit/chugunnaya-pech-dlya-bani-groza-24-p2-v-setke",
+                        "reason": "Модификация (П2), не (П); цена 3 400.00 BYN."
+                    },
+                    {
+                        "title": "Банная печь Гроза 24 (П2) в сетке",
+                        "url": "https://unishop.by/catalog/239209ef6ca6acf95f670e9c84c735eb/?idshop=2138",
+                        "reason": "Модификация (П2), не (П); цена 3 415 р."
+                    },
+                    {
+                        "title": "Печь для бани Гефест Гроза 24 (П) под обкладку",
+                        "url": "https://megsa.ru/product/pech-dlya-bani-gefest-groza-24-p-pod-obkladku/?add-to-cart=223",
+                        "reason": "Комплектация 'под обкладку', а не 'в сетке'; цена не используется для сравнения."
+                    },
+                    {
+                        "title": "Чугунная печь для бани Гроза 24 (П2) в сетке",
+                        "url": "https://kamin53.ru/product/chugunnaya-pech-dlya-bani-groza-24-p2-v-setke/",
+                        "reason": "Модификация (П2), не (П); цена 89 460 ₽."
+                    },
+                    {
+                        "title": "Гефест чугунная банная печь Гроза в сетке 24 М (17 кВт)",
+                        "url": "https://kirpi4iki.ru/pechi/pechi-drovyanye-dlya-bani/gefest-chugunnaya-bannaya-pech-groza-v-setke-24-m-17-kvt.html",
+                        "reason": "Модификация 24 М с дверцей М, мощность 17 кВт, не целевая (П) 24 кВт."
+                    }
+                ],
+                "excluded_offers": [
+                    {
+                        "title": "Печь для бани GFS Гефест Гроза 24 (П) в сетке чугун",
+                        "url": "https://kotlov.by/drovianye-peci-bannye/pec-dlia-bani-gfs-gefest-groza-24-p-v-setke-cugun",
+                        "reason": "Собственный домен KOTLOV не является независимым рыночным источником."
+                    },
+                    {
+                        "title": "Чугунная печь для бани Гефест Гроза 24 (П) в сетке",
+                        "url": "https://gomel.pechi-dimohody.by/pechi-dlya-bani/proizvoditeli1/pechi-dlya-bani-gefest/chugunnaya-pech-dlya-bani-gefest-groza-24-p-v-setke",
+                        "reason": "Нет положительной подтверждённой цены в BYN."
+                    },
+                    {
+                        "title": "Чугунная печь для бани Гефест Гроза в сетке 24 (П)",
+                        "url": "https://brest.teplo-izba.by/pechi/bani/gefest-groza/gefest-groza-w-setke-24p.html",
+                        "reason": "Нет положительной подтверждённой цены в BYN."
+                    },
+                    {
+                        "title": "Чугунная печь для бани Гефест Гроза в сетке 24 (П)",
+                        "url": "https://kamin.website/chugunnaya-pech-dlya-bani-gefest-groza-v-setke-24-p",
+                        "reason": "Нет положительной подтверждённой цены в BYN."
+                    },
+                    {
+                        "title": "Печь Гроза 24 (П) в сетке в СПб",
+                        "url": "https://kocherga.net/groza-24-p-v-setke",
+                        "reason": "Нет положительной подтверждённой цены в BYN."
+                    },
+                    {
+                        "title": "Чугунная банная печь Гефест Гроза 24П в сетке",
+                        "url": "https://glavdacha.ru/tovary-dlya-bani/pechi-dlya-bani/chugunnaya-bannaya-pech-groza-24p-v-setke/",
+                        "reason": "Нет положительной подтверждённой цены в BYN."
+                    }
+                ],
+                "model": "deepseek-v4-pro",
+                "searched_at": "2026-10-13T21:14:06+00:00"
+            }
+        },
+        {
+            "sku": "KOTLOV-000167",
+            "review_reason": "Live-web исследование точной production-модели нашло менее трёх независимых подтверждённых предложений; сохранить консультационный режим.",
+            "force_consultation_hold": true,
+            "observations": [
+                {
+                    "source": "web-b717c65fa7d4589c",
+                    "url": "https://d-b.by/cataloge/pechi-dlya-bani/drovyanye/chugunnaja-bannaja-pech-groza-18-p-v-setke-groza-v-setke-18-m/#inline",
+                    "external_name": "Чугунная банная печь Гроза 18 (П) в сетке",
+                    "model": "Печь для бани GFS Гефест Гроза 18 (П) в сетке чугун",
+                    "package": null,
+                    "observed_price": 2505.1,
+                    "currency": "BYN",
+                    "exchange_rate_to_byn": 1,
+                    "price_includes_vat": null,
+                    "availability_status": "unknown",
+                    "match_method": "exact_model",
+                    "match_confidence": 0.99,
+                    "is_confirmed": true,
+                    "is_comparable": true,
+                    "validation_flags": [],
+                    "evidence": "Карточка d-b.by: 2505.10 руб.; код товара «Гроза в сетке 18 (П) Техно Лит», производитель Техно Лит."
+                }
+            ],
+            "research": {
+                "summary": "По запросу найдено точное совпадение модели в Беларуси и РФ. В Беларуси подтверждены две карточки: kotlov.by — 3 112.20 BYN и d-b.by — 2 505.10 BYN, однако у d-b.by цену и наличие нужно уточнять у менеджера. В РФ точное совпадение найдено в Тепломаркет-М (Екатеринбург) — 63 600 RUB, но позиция отмечена как «Нет в наличии». Таким образом, актуальный белорусский рыночный диапазон по подтверждённым страницам — примерно 2 505–3 112 BYN. Клиентская цена 0.00 BYN, скорее всего, является незаполненным значением и не может использоваться для сравнения.",
+                "verdict": "Заполнить цену в коммерческом предложении. Ориентироваться на рынок Беларуси 2 505–3 112 BYN, при этом обязательно уточнить фактическое наличие и цену у d-b.by и kotlov.by. Российское предложение 63 600 RUB можно учитывать только как справочное — товар отсутствует и требует пересчёта по актуальному курсу при импорте. Решение об изменении цены не принимается автоматически; рекомендую перепроверить закупочную себестоимость и складской статус.",
+                "confidence": "medium",
+                "search_queries": [
+                    "Печь для бани GFS Гефест Гроза 18 (П) в сетке чугун",
+                    "KOTLOV-000167",
+                    "ТехноЛит Гефест Гроза 18 П сетка чугун купить",
+                    "\"Гефест Гроза 18\" печь баня сетка чугун",
+                    "site:pechi-dimohody.by \"Гроза 18 (П) в сетке\" цена",
+                    "\"Чугунная печь для бани Гефест Гроза 18 (П) в сетке\" цена",
+                    "\"Гроза 18 (П) в сетке\" Беларусь купить цена",
+                    "\"Гроза в сетке 18 (П)\" Техно Лит купить"
+                ],
+                "rejected_candidates": [
+                    {
+                        "title": "Печь Банная Гефест Гроза 18 (П) Ураган",
+                        "url": "https://gefestgroup.ru/gefest/pechi-v-setke--uragan/bannye-pechi-gefest-groza/pech-bannaya-gefest-groza-18-p-uragan/",
+                        "reason": "Комплектация «Ураган» с чугунным коробом, дверцей для пара и стартовой трубой 500 мм; не базовая комплектация «в сетке»."
+                    },
+                    {
+                        "title": "Печь для русской бани «ГЕФЕСТ» Гроза 18 (П2) в сетке",
+                        "url": "https://www.master-sauna.ru/catalog/drovyanye-pechi/gefest/groza/gefest-groza-18-p2-setka.html",
+                        "reason": "Модификация П2, а не П; артикул Гроза 18П2С."
+                    },
+                    {
+                        "title": "Чугунная печь для бани Гроза 18 (П2) в сетке",
+                        "url": "https://kamin53.ru/product/chugunnaya-pech-dlya-bani-groza-18-p2-v-setke/",
+                        "reason": "Модификация П2, а не П."
+                    },
+                    {
+                        "title": "Печь Гефест Гроза 18 (М) в сетке",
+                        "url": "https://pechi-group.ru/product/pech-dlya-bani-gefest-pech-dlya-bani-gefest-groza-18-m-v-setke/",
+                        "reason": "Модификация М (малая дверца), а не П."
+                    },
+                    {
+                        "title": "Чугунная печь для бани Гефест Гроза 18 (П) в сетке",
+                        "url": "https://ive.pechi-dimohody.by/pechi-dlya-bani/proizvoditeli1/pechi-dlya-bani-gefest/chugunnaya-pech-dlya-bani-gefest-groza-18-p-v-setke",
+                        "reason": "Точная карточка найдена, но цена и наличие в выдаче web_search не подтверждены."
+                    }
+                ],
+                "excluded_offers": [
+                    {
+                        "title": "Печь для бани GFS Гефест Гроза 18 (П) в сетке чугун",
+                        "url": "https://kotlov.by/drovianye-peci-bannye/pec-dlia-bani-gfs-gefest-groza-18-p-v-setke-cugun",
+                        "reason": "Собственный домен KOTLOV не является независимым рыночным источником."
+                    },
+                    {
+                        "title": "Чугунная печь для бани Гефест Гроза 18П в сетке",
+                        "url": "https://ekaterinburg.teplomarket-m.ru/chugunnaya-pech-dlya-bani-gefest-groza-18-p-v-setke",
+                        "reason": "Нет положительной подтверждённой цены в BYN."
+                    }
+                ],
+                "model": "deepseek-v4-pro",
+                "searched_at": "2026-10-13T21:15:12+00:00"
+            }
+        },
+        {
+            "sku": "KOTLOV-000168",
+            "review_reason": "Live-web исследование точной production-модели нашло менее трёх независимых подтверждённых предложений; сохранить консультационный режим.",
+            "force_consultation_hold": true,
+            "observations": [
+                {
+                    "source": "web-b38744efc4fbe2b0",
+                    "url": "https://www.teplodvor.by/shop/pech-dlya-bani/pech-dlya-bani-gfs-gefest-groza-uragan-24-m-chugun/",
+                    "external_name": "Печь для бани GFS Гефест Гроза Ураган 24 (М) чугун",
+                    "model": "Печь для бани GFS Гефест Гроза Ураган 24 (М) чугун",
+                    "package": "Печь, чугунный короб Гроза 24, чугунная вставка, дверца GEFEST 350, зольный ящик, стартовая труба 115x500, герметик Титан, паспорт, стальная кованая сетка",
+                    "observed_price": 3997.6,
+                    "currency": "BYN",
+                    "exchange_rate_to_byn": 1,
+                    "price_includes_vat": null,
+                    "availability_status": "in_stock",
+                    "match_method": "exact_model",
+                    "match_confidence": 0.99,
+                    "is_confirmed": true,
+                    "is_comparable": true,
+                    "validation_flags": [],
+                    "evidence": "Сниппет карточки: 'Есть в наличии', 'Цена:3997.60 руб.', точное название GFS Гефест Гроза Ураган 24 (М) чугун, гарантия 60 мес."
+                },
+                {
+                    "source": "web-66174494f7f95435",
+                    "url": "https://banisauny.by/pechi-dlya-bani/drovyanyye-pechi/pechi-gefest/groza-uragan/groza-24ms-uragan/",
+                    "external_name": "Гроза Ураган 24 (М) ТехноЛит",
+                    "model": "Печь для бани GFS Гефест Гроза Ураган 24 (М) чугун",
+                    "package": "Печь банная GFS Гефест Гроза Ураган 24 (М), чугунный короб, вставка, дверца GEFEST 350, зольный ящик, труба 115x500, герметик, паспорт, стальная кованая сетка",
+                    "observed_price": 3892,
+                    "currency": "BYN",
+                    "exchange_rate_to_byn": 1,
+                    "price_includes_vat": null,
+                    "availability_status": "unknown",
+                    "match_method": "exact_model",
+                    "match_confidence": 0.99,
+                    "is_confirmed": true,
+                    "is_comparable": true,
+                    "validation_flags": [],
+                    "evidence": "Сниппет карточки: 'Гроза Ураган 24 (М)', '3 892 BYN', производитель ТехноЛит, материал чугун, комплект Ураган."
+                }
+            ],
+            "research": {
+                "summary": "По точному товару «Печь для бани GFS Гефест Гроза Ураган 24 (М) чугун» найдены 3 независимые белорусские карточки: kotlov.by — 3 997,60 BYN, teplodvor.by — 3 997,60 BYN, banisauny.by — 3 892,00 BYN. Подтверждённое наличие указано только у teplodvor.by. Рыночный диапазон в Беларуси — 3 892–3 997,60 BYN. На российском рынке та же модель (24 М, комплект Ураган) встречается от 84 200 до 105 200 RUB; НДС 20% явно включён в цену pechnoy.expert. Клиентская цена 0,00 BYN является незаполненной/технической и не может служить ориентиром.",
+                "verdict": "Цену клиента не принимать как рыночную. Для Беларуси ориентироваться на диапазон 3 892–3 997,60 BYN, минимальная подтверждённая карточка — banisauny.by за 3 892 BYN. Перед использованием запросить у поставщиков подтверждение наличия, НДС и комплектности: наличие в выдаче подтверждено только у teplodvor.by. Автоматически цену не менять.",
+                "confidence": "medium",
+                "search_queries": [
+                    "Печь для бани GFS Гефест Гроза Ураган 24 (М) чугун",
+                    "ТехноЛит Гефест Гроза Ураган 24 М чугун печь для бани",
+                    "KOTLOV-000168 печь",
+                    "Гефест Гроза Ураган 24 чугун купить Беларусь",
+                    "site:banisauny.by Гроза Ураган 24 (М)",
+                    "site:pechi-dimohody.by \"Гроза Ураган\" \"24 (М)\"",
+                    "site:pechnoy.by \"Гроза Ураган 24\" цена",
+                    "\"Гроза Ураган 24 (М)\" купить цена"
+                ],
+                "rejected_candidates": [
+                    {
+                        "title": "Печь для бани GFS Гефест Гроза Ураган 24 (П) чугун | KOTLOV",
+                        "url": "https://gantsevichi.kotlov.by/drovianye-peci-bannye/pec-dlia-bani-gfs-gefest-groza-uragan-24-p-cugun",
+                        "reason": "Модификация (П), а не (М): другая дверца/стекло и вынос портала; цена 4 358,60 BYN не относится к целевому SKU."
+                    },
+                    {
+                        "title": "Печь для бани GFS Гефест Гроза Ураган 24 (П) чугун",
+                        "url": "https://www.teplodvor.by/shop/pech-dlya-bani/pech-dlya-bani-gfs-gefest-groza-uragan-24-p-chugun/",
+                        "reason": "Модификация (П), а не (М); цена 4 358,60 BYN."
+                    },
+                    {
+                        "title": "Печь для бани GFS Гроза Ураган 24 (П)2 чугун",
+                        "url": "https://pechibani.by/pechi-dlya-bani/drovyanyye-pechi/pechi-gefest/groza-uragan/groza-uragan-24-p2/",
+                        "reason": "Модификация (П)2, не совпадает с целевой (М)."
+                    },
+                    {
+                        "title": "Печь для бани Гефест Гроза Ураган 24П чугунная Технолит",
+                        "url": "https://te-plo.com/catalog/pechi_dlya_bani_i_sauny/pechi_dlya_bani/pech_dlya_bani_gefest_groza_uragan_24p_chugunnaya_/",
+                        "reason": "Модификация (П), а не (М); цена 95 000 руб."
+                    },
+                    {
+                        "title": "Чугунная печь для бани Гефест Ураган Гроза в сетке 24 (М)",
+                        "url": "https://pechi-dimohody.by/pechi-dlya-bani/proizvoditeli1/pechi-dlya-bani-gefest/pechi-v-setke-i-uragan/groza-uragan",
+                        "reason": "Найден только листинг категории без подтверждённой отдельной карточки товара; цена 3 989 BYN требует проверки на карточке."
+                    }
+                ],
+                "excluded_offers": [
+                    {
+                        "title": "Печь для бани GFS Гефест Гроза Ураган 24 (М) чугун",
+                        "url": "https://kotlov.by/drovianye-peci-bannye/pec-dlia-bani-gfs-gefest-groza-uragan-24-m-cugun",
+                        "reason": "Собственный домен KOTLOV не является независимым рыночным источником."
+                    },
+                    {
+                        "title": "Печь для бани GFS Гроза Ураган 24М чугунная",
+                        "url": "https://pechnoy.expert/catalog/pechi_1/pechi_dlya_bani/pechi_dlya_bani_drovyanye/pech_dlya_bani_gfs_groza_uragan_24m_chugunnaya/",
+                        "reason": "Нет положительной подтверждённой цены в BYN."
+                    },
+                    {
+                        "title": "Печь для бани GFS Гроза Ураган 24М чугунная",
+                        "url": "https://doker.ru/catalog/pechi_kaminy/pech_dlya_bani_gfs_groza_uragan_24m_chugunnaya.html",
+                        "reason": "Нет положительной подтверждённой цены в BYN."
+                    },
+                    {
+                        "title": "печь Гроза 24 (М) Ураган в СПб",
+                        "url": "https://kocherga.net/groza-24-m-uragan",
+                        "reason": "Нет положительной подтверждённой цены в BYN."
+                    },
+                    {
+                        "title": "Чугунная печь для бани Гроза 24 (М) Ураган",
+                        "url": "https://kamin53.ru/product/chugunnaya-pech-dlya-bani-groza-24-m-uragan-2/",
+                        "reason": "Нет положительной подтверждённой цены в BYN."
+                    },
+                    {
+                        "title": "Печь банная чугунная ГЕФЕСТ Гроза Ураган 24 (М)",
+                        "url": "https://lyublinskaya-47.parmaster.ru/catalog/pechi_dlya_bani/pech_bannaya_chugunnaya_gefest_groza_uragan_24_m_12_24_m_140_kg_d115_mm/",
+                        "reason": "Нет положительной подтверждённой цены в BYN."
+                    },
+                    {
+                        "title": "Гроза 24 (М) Ураган",
+                        "url": "https://www.volgograd.technolit.ru/production/pechi-dlya-bani/pechi-v-setke-uragan/groza-uragan/groza-uragan-24ms/",
+                        "reason": "Нет положительной подтверждённой цены в BYN."
+                    }
+                ],
+                "model": "deepseek-v4-pro",
+                "searched_at": "2026-10-13T21:16:23+00:00"
+            }
+        }
+    ],
+    "failed_products": []
+}
+
+
