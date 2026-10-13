@@ -463,6 +463,7 @@ class ResolveSbgAmbiguousBatchCommand extends Command
                     if ($apply && $refresh !== null && ($refresh['replace_attributes'] ?? false) === true) {
                         $product->allAttributeValues()->delete();
                         $enricher->syncSpecsToAttributeValues($product, $refresh['specs'] ?? []);
+                        $product->forceFill(['specs' => []])->save();
                         $stats['refreshed']++;
                         $details[] = [$code, $rule['sku'], 'attributes refreshed', Str::limit($product->name, 64)];
                     } else {
@@ -519,6 +520,7 @@ class ResolveSbgAmbiguousBatchCommand extends Command
                     if (($refresh['replace_attributes'] ?? false) === true) {
                         $product->allAttributeValues()->delete();
                         $enricher->syncSpecsToAttributeValues($product, $refresh['specs'] ?? []);
+                        $product->forceFill(['specs' => []])->save();
                     }
                     $stats['refreshed']++;
                 }

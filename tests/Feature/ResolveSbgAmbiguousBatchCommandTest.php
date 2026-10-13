@@ -952,6 +952,28 @@ class ResolveSbgAmbiguousBatchCommandTest extends TestCase
             'created_at' => now(),
             'updated_at' => now(),
         ]);
+        $staleWidthAttributeId = DB::table('attributes')->insertGetId([
+            'category_id' => $category->id,
+            'group_id' => 0,
+            'sort_order' => 0,
+            'type' => 'value',
+            'name' => 'Ширина, мм , см',
+            'suffix' => 'см',
+            'in_filter' => false,
+            'in_sort' => false,
+            'in_product' => true,
+            'in_brief' => false,
+            'is_comparable' => false,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+        DB::table('product_attribute_values')->insert([
+            'product_id' => $pump->id,
+            'attribute_id' => $staleWidthAttributeId,
+            'value' => '122',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
         $apc = Product::query()->create([
             'category_id' => $category->id,
             'sku' => 'PS-008.469',
@@ -986,25 +1008,31 @@ class ResolveSbgAmbiguousBatchCommandTest extends TestCase
         $this->assertSame('1', (string) $pump->stock_qty);
         $this->assertSame('UNIPUMP CP 25-40 180 циркуляционный насос', $pump->name);
         $this->assertSame($pump->name, $pump->h1);
-        $this->assertSame('CP 25-40 180', collect($pump->specs)->firstWhere('key', 'Модель')['value']);
-        $this->assertSame('180 мм', collect($pump->specs)->firstWhere('key', 'Монтажная длина')['value']);
-        $this->assertSame('4 м', collect($pump->specs)->firstWhere('key', 'Максимальный напор')['value']);
-        $this->assertSame('38 / 53 / 72 Вт', collect($pump->specs)->firstWhere('key', 'Мощность по скоростям')['value']);
+        $this->assertSame([], $pump->specs);
         $this->assertSame(['product/008/008303/Unipump_cp1.jpg'], $pump->images);
         $this->assertStringContainsString('unipump.ru', $pump->content_source_url);
         $this->assertStringNotContainsString('130 мм', $pump->short_description);
         $this->assertStringNotContainsString('130 мм', $pump->content);
         $this->assertStringNotContainsString('APC', $pump->content);
-        $this->assertDatabaseMissing('product_attribute_values', [
+        $this->assertDatabaseHas('product_attribute_values', [
             'product_id' => $pump->id,
             'attribute_id' => $badHeadAttributeId,
+            'value' => '4',
+        ]);
+        $this->assertDatabaseMissing('product_attribute_values', [
+            'product_id' => $pump->id,
+            'attribute_id' => $staleWidthAttributeId,
         ]);
         $this->assertGreaterThan(0, DB::table('product_attribute_values')->where('product_id', $pump->id)->count());
 
+        DB::table('product_attribute_values')
+            ->where('product_id', $pump->id)
+            ->where('attribute_id', $badHeadAttributeId)
+            ->update(['value' => '36']);
         DB::table('product_attribute_values')->insert([
             'product_id' => $pump->id,
-            'attribute_id' => $badHeadAttributeId,
-            'value' => '36',
+            'attribute_id' => $staleWidthAttributeId,
+            'value' => '122',
             'created_at' => now(),
             'updated_at' => now(),
         ]);
@@ -1013,9 +1041,14 @@ class ResolveSbgAmbiguousBatchCommandTest extends TestCase
             '--code' => ['УТ-00003074'],
             '--apply' => true,
         ])->assertSuccessful();
-        $this->assertDatabaseMissing('product_attribute_values', [
+        $this->assertDatabaseHas('product_attribute_values', [
             'product_id' => $pump->id,
             'attribute_id' => $badHeadAttributeId,
+            'value' => '4',
+        ]);
+        $this->assertDatabaseMissing('product_attribute_values', [
+            'product_id' => $pump->id,
+            'attribute_id' => $staleWidthAttributeId,
         ]);
         $this->assertDatabaseHas('supplier_product_mappings', [
             'supplier_article' => 'УТ-00003074',
