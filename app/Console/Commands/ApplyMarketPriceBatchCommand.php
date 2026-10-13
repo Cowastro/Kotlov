@@ -112,10 +112,16 @@ class ApplyMarketPriceBatchCommand extends Command
                     $result['old_prices_cleared']++;
                 }
 
-                $recommendation = $recommendations->forProduct($product->fresh());
+                $forceHold = (bool) ($item['force_consultation_hold'] ?? false);
+                $recommendation = $forceHold
+                    ? [
+                        'status' => 'research_unconfirmed',
+                        'reason' => 'Текущий проверенный пакет содержит менее трёх независимых точных предложений.',
+                    ]
+                    : $recommendations->forProduct($product->fresh());
                 $hold = true;
 
-                if ($recommendation['status'] === 'ready') {
+                if (! $forceHold && $recommendation['status'] === 'ready') {
                     $hold = false;
                     if ($recommendation['can_apply']) {
                         $recommendations->apply(
@@ -168,16 +174,16 @@ class ApplyMarketPriceBatchCommand extends Command
      */
     private function validateBatch(array $sources, array $products): void
     {
-        if ($sources === [] || $products === []) {
-            throw new \InvalidArgumentException('A batch requires sources and products.');
+        if ($products === []) {
+            throw new \InvalidArgumentException('A batch requires products.');
         }
 
         foreach ($products as $product) {
             if (blank($product['sku'] ?? null) || blank($product['review_reason'] ?? null)) {
                 throw new \InvalidArgumentException('Every product requires sku and review_reason.');
             }
-            if (empty($product['observations'])) {
-                throw new \InvalidArgumentException('Every product requires at least one observation.');
+            if (empty($product['observations']) && ! ($product['force_consultation_hold'] ?? false)) {
+                throw new \InvalidArgumentException('A product without observations must explicitly force a consultation hold.');
             }
             foreach ($product['observations'] as $observation) {
                 if (! isset($sources[$observation['source'] ?? ''])) {

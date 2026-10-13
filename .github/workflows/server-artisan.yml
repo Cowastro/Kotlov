@@ -20,6 +20,7 @@ on:
           - audit-unlinked-products
           - audit-price-integrity
           - verify-commercial-pdf
+          - research-price-batch
           - configure-openai
           - deploy-safe
           - deploy-recover
@@ -49,7 +50,7 @@ jobs:
           set -euo pipefail
 
           case "$TASK" in
-            optimize-clear|artisan-dry-run|artisan-apply|artisan-background|tail-log|ps-artisan|stop-varmega-image-repair|stop-product-image-repair|audit-teplodar|audit-unlinked-products|audit-price-integrity|verify-commercial-pdf|configure-openai|deploy-safe|deploy-recover) ;;
+            optimize-clear|artisan-dry-run|artisan-apply|artisan-background|tail-log|ps-artisan|stop-varmega-image-repair|stop-product-image-repair|audit-teplodar|audit-unlinked-products|audit-price-integrity|verify-commercial-pdf|research-price-batch|configure-openai|deploy-safe|deploy-recover) ;;
             *) echo "::error::Unsupported task: $TASK"; exit 1 ;;
           esac
 
@@ -68,7 +69,7 @@ jobs:
             exit 1
           fi
 
-          if [[ "$TASK" == artisan-* && -z "${ARTISAN_ARGS// }" ]]; then
+          if [[ ("$TASK" == artisan-* || "$TASK" == "research-price-batch") && -z "${ARTISAN_ARGS// }" ]]; then
             echo "::error::artisan_args is required for artisan tasks."
             exit 1
           fi
@@ -193,6 +194,10 @@ jobs:
               verify-commercial-pdf)
                 "$PHP_BIN" artisan commercial-documents:verify-pdf "${ARTISAN_ARGV[@]}"
                 ;;
+              research-price-batch)
+                "$PHP_BIN" artisan catalog:build-market-price-batch "${ARTISAN_ARGV[@]}" \
+                  --output=storage/app/private/market-price-research/market-price-research-batch.json
+                ;;
               deploy-safe)
               # Never discard production changes. A dirty tracked worktree is a
               # hard stop so an operator can inspect and preserve it first. The
@@ -267,6 +272,11 @@ jobs:
             echo "safe_openai_smoke_begin"
             cat "$detail_log"
             echo "safe_openai_smoke_end"
+          fi
+          if [[ "$TASK" == "research-price-batch" ]]; then
+            echo "safe_market_research_metrics_begin"
+            grep '^metric\.' "$detail_log" || true
+            echo "safe_market_research_metrics_end"
           fi
           exit "$status"
           SCRIPT
@@ -353,6 +363,31 @@ jobs:
         with:
           name: teplodar-bania-audit
           path: audit-artifacts/teplodar-bania-audit.csv
+          if-no-files-found: error
+          retention-days: 7
+
+      - name: Download market price research batch
+        if: always() && inputs.task == 'research-price-batch'
+        env:
+          SERVER_HOST: ${{ secrets.SERVER_HOST }}
+          SERVER_PORT: ${{ secrets.SERVER_PORT }}
+          SERVER_USER: ${{ secrets.SERVER_USER }}
+          SERVER_PATH: ${{ secrets.SERVER_PATH }}
+        run: |
+          set -euo pipefail
+          port="${SERVER_PORT:-22}"
+          server_path="${SERVER_PATH:-/var/www/h209767/data/www/new.kotlov.by}"
+          mkdir -p audit-artifacts
+          scp -i ~/.ssh/server_key -P "$port" \
+            "$SERVER_USER@$SERVER_HOST:$server_path/storage/app/private/market-price-research/market-price-research-batch.json" \
+            audit-artifacts/market-price-research-batch.json
+
+      - name: Upload market price research batch
+        if: always() && inputs.task == 'research-price-batch'
+        uses: actions/upload-artifact@v4
+        with:
+          name: market-price-research-batch
+          path: audit-artifacts/market-price-research-batch.json
           if-no-files-found: error
           retention-days: 7
 

@@ -11,6 +11,7 @@ use App\Models\SupplierProduct;
 use App\Models\User;
 use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\File;
 use Tests\TestCase;
 
 class ApplyMarketPriceBatchCommandTest extends TestCase
@@ -237,5 +238,61 @@ class ApplyMarketPriceBatchCommandTest extends TestCase
             ->expectsOutputToContain('metric.products=11')
             ->expectsOutputToContain('metric.observations=22')
             ->assertSuccessful();
+    }
+
+    public function test_reviewed_batch_can_force_a_consultation_hold_without_market_observations(): void
+    {
+        User::factory()->create(['role' => 'admin', 'is_active' => true]);
+        $category = Category::query()->create([
+            'name' => 'Неподтверждённая рыночная цена',
+            'slug' => 'forced-market-hold-test',
+            'parent_id' => 0,
+            'is_active' => true,
+        ]);
+        $product = Product::query()->create([
+            'category_id' => $category->id,
+            'name' => 'Редкая точная модель без открытой цены',
+            'slug' => 'forced-market-hold-product',
+            'sku' => 'TEST-FORCED-HOLD',
+            'price' => 0,
+            'currency' => 'BYN',
+            'is_active' => true,
+            'is_archived' => false,
+            'requires_price_confirmation' => false,
+        ]);
+        $batch = 'test-force-consultation-hold';
+        $path = database_path('data/market-price-batches/'.$batch.'.json');
+
+        File::put($path, json_encode([
+            'code' => $batch,
+            'observed_at' => '2026-10-13T18:00:00+02:00',
+            'sources' => [],
+            'products' => [[
+                'sku' => $product->sku,
+                'review_reason' => 'Три независимых точных предложения не найдены.',
+                'force_consultation_hold' => true,
+                'observations' => [],
+            ]],
+        ], JSON_THROW_ON_ERROR | JSON_PRETTY_PRINT));
+
+        try {
+            $this->artisan('catalog:apply-market-price-batch', [
+                'batch' => $batch,
+                '--apply' => true,
+            ])
+                ->expectsOutputToContain('metric.status=applied')
+                ->expectsOutputToContain('metric.consultation_holds=1')
+                ->assertSuccessful();
+
+            $this->assertTrue($product->fresh()->requires_price_confirmation);
+            $this->assertDatabaseHas('activity_logs', [
+                'model_type' => Product::class,
+                'model_id' => $product->id,
+                'action' => 'market_price_confirmation_required',
+            ]);
+            $this->assertSame(0, MarketPriceObservation::query()->where('product_id', $product->id)->count());
+        } finally {
+            File::delete($path);
+        }
     }
 }
