@@ -12,6 +12,7 @@ use BackedEnum;
 use Filament\Actions\EditAction;
 use Filament\Actions\ViewAction;
 use Filament\Forms\Components\DatePicker;
+use Filament\Forms\Components\Hidden;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
@@ -63,6 +64,7 @@ class CommercialDocumentResource extends Resource
                 ->columns(4)
                 ->columnSpanFull()
                 ->schema([
+                    Hidden::make('crm_mail_thread_id'),
                     Select::make('type')->label('Тип')->options(CommercialDocument::TYPES)->default('quote')->required()->native(false)->live(),
                     Select::make('status')->label('Статус')->options(CommercialDocument::STATUSES)->default('draft')->required()->native(false),
                     DatePicker::make('issued_at')->label('Дата')->default(today())->required()->native(false),

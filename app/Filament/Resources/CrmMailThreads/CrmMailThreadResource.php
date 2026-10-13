@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\CrmMailThreads;
 
+use App\Filament\Resources\CommercialDocuments\CommercialDocumentResource;
 use App\Filament\Resources\CrmCounterparties\CrmCounterpartyResource;
 use App\Filament\Resources\CrmMailThreads\Pages\EditCrmMailThread;
 use App\Filament\Resources\CrmMailThreads\Pages\ListCrmMailThreads;
@@ -15,6 +16,7 @@ use App\Models\CrmMailThread;
 use App\Models\User;
 use App\Services\CrmMail\CrmMailSender;
 use App\Services\CrmMail\SupplierRequestMailDraftService;
+use App\Services\CommercialDocuments\QuickCommercialOfferService;
 use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Actions\ActionGroup;
@@ -202,6 +204,44 @@ class CrmMailThreadResource extends Resource
             ->recordActions([
                 ViewAction::make()->label('Открыть')
                     ->visible(fn (CrmMailThread $record): bool => ! $record->trashed()),
+                Action::make('quick_quote')
+                    ->label('Быстрое КП')
+                    ->icon('heroicon-o-document-currency-dollar')
+                    ->color('success')
+                    ->visible(fn (CrmMailThread $record): bool => ! $record->trashed() && $record->status !== 'draft')
+                    ->modalHeading('Быстрое коммерческое предложение')
+                    ->modalDescription('Компания и товары подобраны из письма. После проверки откроется готовая форма КП.')
+                    ->modalSubmitActionLabel('Продолжить к КП')
+                    ->modalWidth('5xl')
+                    ->fillForm(function (CrmMailThread $record): array {
+                        $prepared = app(QuickCommercialOfferService::class)->prepare($record);
+
+                        return array_merge($prepared['prefill'], ['product_ids' => $prepared['default_product_ids']]);
+                    })
+                    ->schema([
+                        TextInput::make('client_company')->label('Компания')->required()->maxLength(255),
+                        TextInput::make('client_name')->label('Контактное лицо')->maxLength(255),
+                        TextInput::make('client_email')->label('Email')->email()->required()->maxLength(255),
+                        Select::make('product_ids')
+                            ->label('Товары для КП')
+                            ->multiple()->required()->searchable()
+                            ->options(fn (CrmMailThread $record): array => app(QuickCommercialOfferService::class)->prepare($record)['suggestions'])
+                            ->getSearchResultsUsing(fn (string $search): array => app(QuickCommercialOfferService::class)->searchProducts($search))
+                            ->getOptionLabelsUsing(fn (array $values): array => app(QuickCommercialOfferService::class)->productLabels($values))
+                            ->helperText('Предложения получены из темы, текста и артикулов письма. Можно найти любой товар каталога.'),
+                    ])
+                    ->action(function (CrmMailThread $record, array $data) {
+                        $prepared = app(QuickCommercialOfferService::class)->prepare($record);
+                        session()->put('commercial_document_prefill', array_merge($prepared['prefill'], [
+                            'client_company' => $data['client_company'],
+                            'client_name' => $data['client_name'] ?? null,
+                            'client_email' => $data['client_email'],
+                        ]));
+                        session()->put('commercial_document_product_ids', $data['product_ids']);
+                        session()->put('commercial_document_create_mail_draft', true);
+
+                        return redirect(CommercialDocumentResource::getUrl('create'));
+                    }),
                 ActionGroup::make([
                     Action::make('edit_draft')
                         ->label('Редактировать черновик')

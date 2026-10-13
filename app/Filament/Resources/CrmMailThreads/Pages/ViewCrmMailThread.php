@@ -8,12 +8,14 @@ use App\Filament\Resources\CrmMailThreads\CrmMailThreadResource;
 use App\Filament\Resources\Suppliers\SupplierResource;
 use App\Services\CrmMail\CrmMailSender;
 use App\Services\CrmMail\SupplierRequestMailDraftService;
+use App\Services\CommercialDocuments\QuickCommercialOfferService;
 use Filament\Actions\Action;
 use Filament\Actions\EditAction;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TagsInput;
 use Filament\Forms\Components\Textarea;
+use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\ViewRecord;
 use Filament\Support\Enums\Width;
@@ -107,20 +109,42 @@ class ViewCrmMailThread extends ViewRecord
                     }
                 }),
             Action::make('create_quote')
-                ->label('Создать КП')
+                ->label('Быстрое КП')
                 ->icon('heroicon-o-document-currency-dollar')
                 ->color('success')
                 ->visible(fn (): bool => $this->record->status !== 'draft')
-                ->action(function () {
-                    session()->put('commercial_document_prefill', [
-                        'type' => 'quote',
-                        'client_name' => $this->record->participant_name,
-                        'client_company' => $this->record->counterparty?->legal_name ?: $this->record->counterparty?->name,
-                        'client_email' => $this->record->participant_email,
-                        'client_phone' => $this->record->counterparty?->phones_list,
-                        'client_unp' => $this->record->counterparty?->unp,
-                        'client_address' => $this->record->counterparty?->legal_address,
+                ->modalHeading('Быстрое коммерческое предложение')
+                ->modalDescription('Компания и товары подобраны из письма. Проверьте их — после сохранения система подготовит PDF и черновик ответа.')
+                ->modalSubmitActionLabel('Создать КП и письмо')
+                ->modalWidth('5xl')
+                ->fillForm(function (): array {
+                    $prepared = app(QuickCommercialOfferService::class)->prepare($this->record);
+
+                    return array_merge($prepared['prefill'], [
+                        'product_ids' => $prepared['default_product_ids'],
                     ]);
+                })
+                ->schema([
+                    TextInput::make('client_company')->label('Компания')->required()->maxLength(255),
+                    TextInput::make('client_name')->label('Контактное лицо')->maxLength(255),
+                    TextInput::make('client_email')->label('Email')->email()->required()->maxLength(255),
+                    Select::make('product_ids')
+                        ->label('Товары для КП')
+                        ->multiple()->required()->searchable()
+                        ->options(fn (): array => app(QuickCommercialOfferService::class)->prepare($this->record)['suggestions'])
+                        ->getSearchResultsUsing(fn (string $search): array => app(QuickCommercialOfferService::class)->searchProducts($search))
+                        ->getOptionLabelsUsing(fn (array $values): array => app(QuickCommercialOfferService::class)->productLabels($values))
+                        ->helperText('Сверху — варианты, найденные по теме, тексту и артикулам письма. Можно найти любой товар каталога.'),
+                ])
+                ->action(function (array $data) {
+                    $prepared = app(QuickCommercialOfferService::class)->prepare($this->record);
+                    session()->put('commercial_document_prefill', array_merge($prepared['prefill'], [
+                        'client_company' => $data['client_company'],
+                        'client_name' => $data['client_name'] ?? null,
+                        'client_email' => $data['client_email'],
+                    ]));
+                    session()->put('commercial_document_product_ids', $data['product_ids']);
+                    session()->put('commercial_document_create_mail_draft', true);
 
                     return redirect(CommercialDocumentResource::getUrl('create'));
                 }),

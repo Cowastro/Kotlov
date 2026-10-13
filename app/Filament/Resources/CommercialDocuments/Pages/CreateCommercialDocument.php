@@ -4,6 +4,8 @@ namespace App\Filament\Resources\CommercialDocuments\Pages;
 
 use App\Filament\Resources\CommercialDocuments\CommercialDocumentResource;
 use App\Models\Product;
+use App\Services\CommercialDocuments\CommercialDocumentWorkflow;
+use Filament\Notifications\Notification;
 use Filament\Resources\Pages\CreateRecord;
 use Illuminate\Database\Eloquent\Model;
 
@@ -11,9 +13,12 @@ class CreateCommercialDocument extends CreateRecord
 {
     protected static string $resource = CommercialDocumentResource::class;
 
+    public bool $createMailDraft = false;
+
     public function mount(): void
     {
         parent::mount();
+        $this->createMailDraft = (bool) session()->pull('commercial_document_create_mail_draft', false);
         $prefill = session()->pull('commercial_document_prefill', []);
         $productIds = collect(session()->pull('commercial_document_product_ids', []))->map(fn ($id): int => (int) $id)->filter()->unique();
         if ($productIds->isEmpty()) {
@@ -43,6 +48,20 @@ class CreateCommercialDocument extends CreateRecord
     {
         $record = parent::handleRecordCreation($data);
         $record->recalculate();
+
+        if ($this->createMailDraft && filter_var((string) $record->client_email, FILTER_VALIDATE_EMAIL)) {
+            try {
+                app(CommercialDocumentWorkflow::class)->createMailDraft($record, auth()->user());
+                Notification::make()
+                    ->success()
+                    ->title('КП и письмо готовы')
+                    ->body('PDF приложен к черновику письма. Проверьте его и отправьте клиенту.')
+                    ->send();
+            } catch (\Throwable $exception) {
+                Notification::make()->warning()->title('КП создано, письмо не сформировано')
+                    ->body($exception->getMessage())->send();
+            }
+        }
 
         return $record;
     }
