@@ -162,8 +162,16 @@ class CrmMailThreadResource extends Resource
     {
         return $table
             ->poll('60s')
+            ->recordClasses(fn (CrmMailThread $record): string => static::mailRowClasses($record))
             ->columns([
-                TextColumn::make('last_message_at')->label('Дата')->dateTime('d.m.Y H:i', 'Europe/Minsk')->sortable(),
+                TextColumn::make('last_message_at')
+                    ->label('Дата')
+                    ->dateTime('d.m.Y H:i', 'Europe/Minsk')
+                    ->description(fn (CrmMailThread $record): string => static::mailReadLabel($record))
+                    ->icon(fn (CrmMailThread $record): string => static::mailReadIcon($record))
+                    ->color(fn (CrmMailThread $record): string => static::mailReadColor($record))
+                    ->weight(fn (CrmMailThread $record): string => $record->unread_count > 0 ? 'bold' : 'medium')
+                    ->sortable(),
                 TextColumn::make('participant_name')->label('Отправитель')->weight('bold')->searchable()
                     ->description(fn (CrmMailThread $record): string => $record->participant_email),
                 TextColumn::make('subject')->label('Тема')->searchable()->limit(65)->wrap()
@@ -390,6 +398,56 @@ class CrmMailThreadResource extends Resource
             'waiting_customer' => 'info',
             'closed' => 'success',
             default => 'gray',
+        };
+    }
+
+    public static function mailReadLabel(CrmMailThread $record): string
+    {
+        if ($record->unread_count > 0) {
+            return 'Непрочитано: '.$record->unread_count;
+        }
+
+        return match ($record->status) {
+            'new' => 'Новое · прочитано',
+            'closed' => 'Закрыто · прочитано',
+            default => 'Прочитано',
+        };
+    }
+
+    public static function mailReadIcon(CrmMailThread $record): string
+    {
+        if ($record->unread_count > 0) {
+            return 'heroicon-o-envelope';
+        }
+
+        return $record->status === 'closed'
+            ? 'heroicon-o-check-circle'
+            : 'heroicon-o-envelope-open';
+    }
+
+    public static function mailReadColor(CrmMailThread $record): string
+    {
+        if ($record->unread_count > 0) {
+            return 'warning';
+        }
+
+        return match ($record->status) {
+            'new' => 'danger',
+            'closed' => 'success',
+            default => 'gray',
+        };
+    }
+
+    public static function mailRowClasses(CrmMailThread $record): string
+    {
+        if ($record->unread_count > 0) {
+            return 'bg-warning-50 dark:bg-warning-950/40';
+        }
+
+        return match ($record->status) {
+            'new' => 'bg-danger-50 dark:bg-danger-950/25',
+            'closed' => 'bg-gray-100/80 opacity-70 dark:bg-gray-900/80',
+            default => '',
         };
     }
 
