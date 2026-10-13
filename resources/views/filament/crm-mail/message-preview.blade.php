@@ -74,12 +74,32 @@
                         $attachmentName = $attachment['name'] ?? 'Вложение '.($index + 1);
                         $attachmentSize = isset($attachment['size']) ? Number::fileSize((int) $attachment['size']) : null;
                         $canDownload = filled($attachment['path'] ?? null);
+                        $extension = mb_strtolower(pathinfo($attachmentName, PATHINFO_EXTENSION));
+                        $canPreview = $canDownload && in_array($extension, ['docx', 'pdf', 'png', 'jpg', 'jpeg', 'gif', 'webp', 'txt', 'csv'], true);
                     @endphp
                     @if ($canDownload)
-                        <a
-                            class="crm-mail-attachment"
-                            href="{{ route('admin.crm-mail-messages.attachments.download', ['message' => $message, 'attachment' => $index]) }}"
-                        >📎 {{ $attachmentName }} @if ($attachmentSize)<small>{{ $attachmentSize }}</small>@endif</a>
+                        <span class="crm-mail-attachment-group">
+                            @if ($canPreview)
+                                <a
+                                    class="crm-mail-attachment"
+                                    href="{{ route('admin.crm-mail-messages.attachments.preview', ['message' => $message, 'attachment' => $index]) }}"
+                                    target="_blank"
+                                    rel="noopener"
+                                >👁 {{ $attachmentName }} @if ($attachmentSize)<small>{{ $attachmentSize }}</small>@endif</a>
+                                <a
+                                    class="crm-mail-attachment-download"
+                                    href="{{ route('admin.crm-mail-messages.attachments.download', ['message' => $message, 'attachment' => $index]) }}"
+                                    download="{{ $attachmentName }}"
+                                    title="Скачать оригинал"
+                                >⬇ Скачать</a>
+                            @else
+                                <a
+                                    class="crm-mail-attachment"
+                                    href="{{ route('admin.crm-mail-messages.attachments.download', ['message' => $message, 'attachment' => $index]) }}"
+                                    download="{{ $attachmentName }}"
+                                >⬇ {{ $attachmentName }} @if ($attachmentSize)<small>{{ $attachmentSize }}</small>@endif</a>
+                            @endif
+                        </span>
                     @else
                         <span class="crm-mail-attachment">📎 {{ $attachmentName }} @if ($attachmentSize)<small>{{ $attachmentSize }}</small>@endif · {{ ($attachment['error'] ?? null) === 'too_large' ? 'файл превышает 25 МБ' : 'файл не удалось сохранить' }}</span>
                     @endif
@@ -115,7 +135,11 @@
         .crm-mail-attachments { border-top: 1px solid rgb(63 63 70); padding: 14px 22px 18px; }
         .crm-mail-attachments-title { color: rgb(161 161 170); font-size: 13px; font-weight: 600; }
         .crm-mail-attachment-list { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 9px; }
+        .crm-mail-attachment-group { display: inline-flex; align-items: stretch; }
         .crm-mail-attachment { border: 1px solid rgb(82 82 91); border-radius: 8px; padding: 7px 10px; color: rgb(228 228 231); font-size: 13px; }
+        .crm-mail-attachment-group .crm-mail-attachment { border-radius: 8px 0 0 8px; }
+        .crm-mail-attachment-download { display: inline-flex; align-items: center; border: 1px solid rgb(82 82 91); border-left: 0; border-radius: 0 8px 8px 0; padding: 7px 10px; color: rgb(134 239 172); font-size: 12px; text-decoration: none; }
+        .crm-mail-attachment-download:hover { border-color: rgb(34 197 94); background: rgb(34 197 94 / .1); }
         a.crm-mail-attachment { color: rgb(96 165 250); text-decoration: none; }
         a.crm-mail-attachment:hover { border-color: rgb(96 165 250); background: rgb(59 130 246 / .1); }
         .crm-mail-attachment small { margin-left: 6px; color: rgb(161 161 170); }

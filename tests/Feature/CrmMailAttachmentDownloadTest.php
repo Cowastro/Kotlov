@@ -9,6 +9,7 @@ use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
+use ZipArchive;
 
 class CrmMailAttachmentDownloadTest extends TestCase
 {
@@ -43,8 +44,71 @@ class CrmMailAttachmentDownloadTest extends TestCase
         ]))->assertForbidden();
     }
 
-    private function messageWithAttachment(string $path): CrmMailMessage
+    public function test_customer_cannot_preview_crm_mail_attachments(): void
     {
+        Storage::fake('local');
+        $customer = User::factory()->create(['role' => 'client', 'is_active' => true]);
+        $path = 'crm-mail-attachments/incoming/1/101/01-invoice.docx';
+        $message = $this->messageWithAttachment($path, 'invoice.docx');
+        Storage::disk('local')->put($path, $this->docx('Invoice', []));
+
+        $this->actingAs($customer)->get(route('admin.crm-mail-messages.attachments.preview', [
+            'message' => $message,
+            'attachment' => 0,
+        ]))->assertForbidden();
+    }
+
+    public function test_manager_can_preview_docx_inside_crm(): void
+    {
+        Storage::fake('local');
+        $manager = User::factory()->create(['role' => 'manager', 'is_active' => true]);
+        $path = 'crm-mail-attachments/incoming/1/101/01-invoice.docx';
+        $message = $this->messageWithAttachment($path, 'счетчик.docx', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+        Storage::disk('local')->put($path, $this->docx('Счёт № 125', [['Товар', 'Количество'], ['Счётчик', '3 шт.']]));
+
+        $response = $this->actingAs($manager)->get(route('admin.crm-mail-messages.attachments.preview', [
+            'message' => $message,
+            'attachment' => 0,
+        ]));
+
+        $response->assertOk()
+            ->assertSee('Просмотр: счетчик.docx')
+            ->assertSee('Счёт № 125')
+            ->assertSee('Счётчик')
+            ->assertSee('Скачать оригинал');
+    }
+
+    public function test_manager_can_preview_pdf_inline_and_still_download_it(): void
+    {
+        Storage::fake('local');
+        $manager = User::factory()->create(['role' => 'manager', 'is_active' => true]);
+        $path = 'crm-mail-attachments/incoming/1/102/01-offer.pdf';
+        $message = $this->messageWithAttachment($path, 'предложение.pdf');
+        Storage::disk('local')->put($path, 'PDF-CONTENT');
+
+        $preview = $this->actingAs($manager)->get(route('admin.crm-mail-messages.attachments.preview', [
+            'message' => $message,
+            'attachment' => 0,
+        ]));
+        $preview->assertOk()
+            ->assertHeader('Content-Type', 'application/pdf')
+            ->assertHeader('X-Content-Type-Options', 'nosniff');
+        $this->assertStringStartsWith('inline;', (string) $preview->headers->get('Content-Disposition'));
+
+        $download = $this->actingAs($manager)->get(route('admin.crm-mail-messages.attachments.download', [
+            'message' => $message,
+            'attachment' => 0,
+        ]));
+        $download->assertOk();
+        $this->assertStringStartsWith('attachment;', (string) $download->headers->get('Content-Disposition'));
+        $this->assertSame('PDF-CONTENT', $download->streamedContent());
+    }
+
+    private function messageWithAttachment(
+        string $path,
+        string $name = 'order.pdf',
+        string $mimeType = 'application/pdf',
+    ): CrmMailMessage {
         $mailbox = CrmMailbox::create([
             'name' => 'Attachment test',
             'email' => 'attachments-test@kotlov.by',
@@ -65,14 +129,35 @@ class CrmMailAttachmentDownloadTest extends TestCase
             'attachments_count' => 1,
             'metadata' => [
                 'attachments' => [[
-                    'name' => 'order.pdf',
+                    'name' => $name,
                     'path' => $path,
-                    'mime_type' => 'application/pdf',
+                    'mime_type' => $mimeType,
                     'size' => 11,
                     'stored' => true,
                     'error' => null,
                 ]],
             ],
         ]);
+    }
+
+    /**
+     * @param  list<list<string>>  $rows
+     */
+    private function docx(string $paragraph, array $rows): string
+    {
+        $temporary = tempnam(sys_get_temp_dir(), 'crm-docx-');
+        $zip = new ZipArchive;
+        $zip->open($temporary, ZipArchive::CREATE | ZipArchive::OVERWRITE);
+        $table = collect($rows)->map(fn (array $row): string => '<w:tr>'.collect($row)
+            ->map(fn (string $cell): string => '<w:tc><w:p><w:r><w:t>'.e($cell).'</w:t></w:r></w:p></w:tc>')
+            ->implode('').'</w:tr>')->implode('');
+        $zip->addFromString('word/document.xml', '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+            .'<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body>'
+            .'<w:p><w:r><w:t>'.e($paragraph).'</w:t></w:r></w:p><w:tbl>'.$table.'</w:tbl></w:body></w:document>');
+        $zip->close();
+        $content = file_get_contents($temporary);
+        unlink($temporary);
+
+        return (string) $content;
     }
 }
