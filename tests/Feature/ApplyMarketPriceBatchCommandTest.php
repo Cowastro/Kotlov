@@ -195,4 +195,47 @@ class ApplyMarketPriceBatchCommandTest extends TestCase
             ->expectsOutputToContain('metric.observations=63')
             ->assertSuccessful();
     }
+
+    public function test_remaining_margin_evidence_batch_is_valid_and_matches_exact_active_server_skus(): void
+    {
+        $category = Category::query()->create([
+            'name' => 'Проверка оставшихся маржинальных цен',
+            'slug' => 'remaining-margin-batch-test',
+            'parent_id' => 0,
+            'is_active' => true,
+        ]);
+
+        foreach ([
+            'KOTLOV-004709',
+            'KOTLOV-005891',
+            'KOTLOV-005892',
+            'KOTLOV-005893',
+            'KOTLOV-005894',
+            'KOTLOV-004488',
+            'KOTLOV-004526',
+            'KOTLOV-004569',
+            'KOTLOV-004570',
+            'KOTLOV-004571',
+            'KOTLOV-004417',
+        ] as $index => $sku) {
+            Product::query()->create([
+                'category_id' => $category->id,
+                'name' => 'Тестовая точная модель '.$sku,
+                'slug' => 'remaining-margin-batch-'.$index,
+                'sku' => $sku,
+                'price' => 1005,
+                'currency' => 'BYN',
+                'is_active' => true,
+                'is_archived' => false,
+            ]);
+        }
+
+        $this->artisan('catalog:apply-market-price-batch', [
+            'batch' => '2026-10-13-remaining-margin-evidence',
+        ])
+            ->expectsOutputToContain('metric.status=dry_run')
+            ->expectsOutputToContain('metric.products=11')
+            ->expectsOutputToContain('metric.observations=22')
+            ->assertSuccessful();
+    }
 }

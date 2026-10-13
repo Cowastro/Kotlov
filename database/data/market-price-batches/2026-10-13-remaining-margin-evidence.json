@@ -1,0 +1,109 @@
+{
+  "code": "2026-10-13-remaining-margin-evidence",
+  "observed_at": "2026-10-13T22:15:00+02:00",
+  "sources": [
+    {"code":"sauna-life-ru","name":"Сауна Лайф","base_url":"https://sauna-life.ru","currency":"RUB","region":"Россия","freshness_hours":720},
+    {"code":"united-thermo-kz","name":"Юнайтед Термо — прайс","base_url":"https://storage.kz.prom.st","currency":"KZT","region":"Казахстан","freshness_hours":720},
+    {"code":"termogorod-ru","name":"Термогород","base_url":"https://termogorod.ru","currency":"RUB","region":"Россия","freshness_hours":720},
+    {"code":"teplovoz38-ru","name":"Тепловоз","base_url":"https://teplovoz38.ru","currency":"RUB","region":"Россия","freshness_hours":720},
+    {"code":"asp-stroy-ru","name":"АСП Строй","base_url":"https://asp-stroy.com","currency":"RUB","region":"Россия","freshness_hours":720},
+    {"code":"proremont-ru","name":"ПроРемонт","base_url":"https://www.proremont.ru","currency":"RUB","region":"Россия","freshness_hours":720},
+    {"code":"saunamsk-ru","name":"СаунаМСК","base_url":"https://www.saunamsk.ru","currency":"RUB","region":"Россия","freshness_hours":720},
+    {"code":"pech-ru","name":"Печь.ру","base_url":"https://www.pech.ru","currency":"RUB","region":"Россия","freshness_hours":720},
+    {"code":"pechi-tut-ru","name":"Печи Тут","base_url":"https://pechi-tut.ru","currency":"RUB","region":"Россия","freshness_hours":720},
+    {"code":"teplomir24-ru","name":"Тепломир24","base_url":"https://ekaterinburg.teplomir24.ru","currency":"RUB","region":"Россия","freshness_hours":720},
+    {"code":"zavodtek-ru","name":"Заводы ТЭК","base_url":"https://zavodtek.ru","currency":"RUB","region":"Россия","freshness_hours":720},
+    {"code":"teplodar-price-ru","name":"Теплодар — прайс","kind":"manufacturer","base_url":"https://teplodar.nt-rt.ru","currency":"RUB","region":"Россия","freshness_hours":720},
+    {"code":"ugpechi-ru","name":"Усадьба Гурмана — прайс","base_url":"https://www.ugpechi.ru","currency":"RUB","region":"Россия","freshness_hours":720}
+  ],
+  "products": [
+    {
+      "sku":"KOTLOV-004709",
+      "review_reason":"Точная модель ТЭНа KARINA найдена только у одного независимого продавца; цена не должна применяться без трёх источников.",
+      "observations":[
+        {"source":"sauna-life-ru","url":"https://sauna-life.ru/catalog/ten-dlya-elektrokamenki-karina-optima-25-75kvt","external_name":"ТЭН для электрокаменки KARINA Optima 2,5; 7,5 кВт","model":"Optima/Steam 2,5; 7,5 кВт; Classic/Steam 7,5","observed_price":5800,"currency":"RUB","exchange_rate_to_byn":0.035964,"availability_status":"in_stock","match_method":"exact_model","match_confidence":1,"is_confirmed":true,"is_comparable":true,"validation_flags":[]}
+      ]
+    },
+    {
+      "sku":"KOTLOV-005891",
+      "review_reason":"VM16644 точно подтверждён только актуальным прайсом поставщика; независимых розничных цен недостаточно, поэтому сохраняется консультация.",
+      "observations":[
+        {"source":"united-thermo-kz","url":"https://storage.kz.prom.st/489092_prajs_list_yunajted_termo_ot_15.03.2026_goda..pdf","external_name":"VM16644 VMSV02-G005030 3/4x1, 3 бар","model":"VM16644","observed_price":4029,"currency":"KZT","exchange_rate_to_byn":0.0066667,"availability_status":"unknown","match_method":"exact_model","match_confidence":1,"is_confirmed":true,"is_comparable":true,"validation_flags":[]}
+      ]
+    },
+    {
+      "sku":"KOTLOV-005892",
+      "review_reason":"VM16647 точно подтверждён только актуальным прайсом поставщика; независимых розничных цен недостаточно, поэтому сохраняется консультация.",
+      "observations":[
+        {"source":"united-thermo-kz","url":"https://storage.kz.prom.st/489092_prajs_list_yunajted_termo_ot_15.03.2026_goda..pdf","external_name":"VM16647 VMSV02-G005060 3/4x1, 6 бар","model":"VM16647","observed_price":4029,"currency":"KZT","exchange_rate_to_byn":0.0066667,"availability_status":"unknown","match_method":"exact_model","match_confidence":1,"is_confirmed":true,"is_comparable":true,"validation_flags":[]}
+      ]
+    },
+    {
+      "sku":"KOTLOV-005893",
+      "review_reason":"VM16648 подтверждён прайсом и отдельным продавцом, но двух независимых источников недостаточно для изменения цены.",
+      "observations":[
+        {"source":"united-thermo-kz","url":"https://storage.kz.prom.st/489092_prajs_list_yunajted_termo_ot_15.03.2026_goda..pdf","external_name":"VM16648 VMSV02-G005080 3/4x1, 8 бар","model":"VM16648","observed_price":4029,"currency":"KZT","exchange_rate_to_byn":0.0066667,"availability_status":"unknown","match_method":"exact_model","match_confidence":1,"is_confirmed":true,"is_comparable":true,"validation_flags":[]},
+        {"source":"termogorod-ru","url":"https://termogorod.ru/armatura-dlya-obvyazki-kotelnykh/predokhranitelnaya-armatura/gruppy-bezopasnosti-varmega","external_name":"Клапан предохранительный Varmega VM16648, мембранный, 8 бар, ВР 3/4 x 1","model":"VM16648","observed_price":465,"currency":"RUB","exchange_rate_to_byn":0.035964,"availability_status":"in_stock","match_method":"exact_model","match_confidence":1,"is_confirmed":true,"is_comparable":true,"validation_flags":[]}
+      ]
+    },
+    {
+      "sku":"KOTLOV-005894",
+      "review_reason":"VM16649 подтверждён прайсом и отдельным продавцом, но двух независимых источников недостаточно для изменения цены.",
+      "observations":[
+        {"source":"united-thermo-kz","url":"https://storage.kz.prom.st/489092_prajs_list_yunajted_termo_ot_15.03.2026_goda..pdf","external_name":"VM16649 VMSV02-G005100 3/4x1, 10 бар","model":"VM16649","observed_price":4029,"currency":"KZT","exchange_rate_to_byn":0.0066667,"availability_status":"unknown","match_method":"exact_model","match_confidence":1,"is_confirmed":true,"is_comparable":true,"validation_flags":[]},
+        {"source":"teplovoz38-ru","url":"https://teplovoz38.ru/catalog/truby-i-soedineniya/krany-i-klapana/klapany-reduktory/39698-klapan-predoxranitelnyj-varmega-vm16649-vr-34-x-1-x-10-bar/","external_name":"Клапан предохранительный Varmega VM16649, ВР 3/4 x 1, 10 бар","model":"VM16649","observed_price":956,"currency":"RUB","exchange_rate_to_byn":0.035964,"availability_status":"in_stock","match_method":"exact_model","match_confidence":1,"is_confirmed":true,"is_comparable":true,"validation_flags":[]}
+      ]
+    },
+    {
+      "sku":"KOTLOV-004488",
+      "review_reason":"Точная плитка 200x50x20 мм и единица продажи 1 м²/100 шт. проверены у трёх независимых продавцов; поштучные цены нормализованы до комплекта 100 шт.",
+      "observations":[
+        {"source":"asp-stroy-ru","url":"https://asp-stroy.com/product/%D0%BF%D0%BB%D0%B8%D1%82%D0%BA%D0%B0-%D0%BE%D0%B1%D0%BB%D0%B8%D1%86%D0%BE%D0%B2%D0%BE%D1%87%D0%BD%D0%B0%D1%8F-%D1%80%D0%B2%D0%B0%D0%BD%D1%8B%D0%B9-%D0%BA%D0%B0%D0%BC%D0%B5%D0%BD%D1%8C/","external_name":"Плитка облицовочная Рваный камень Талькохлорит 200x50x20 мм, 1 м²/100 шт.","model":"200x50x20 мм, 100 шт.","package":"100 шт.","unit":"1 м²","observed_price":12000,"currency":"RUB","exchange_rate_to_byn":0.035964,"availability_status":"in_stock","match_method":"exact_model","match_confidence":1,"is_confirmed":true,"is_comparable":true,"validation_flags":[]},
+        {"source":"proremont-ru","url":"https://www.proremont.ru/catalog/plitka-talkokhlorit-200kh50kh20-rvanyj-kamen","external_name":"Плитка рваный камень талькохлорит 200x50x20 мм, 100 шт. в м²","model":"200x50x20 мм, 1 м²","observed_price":8450,"currency":"RUB","exchange_rate_to_byn":0.035964,"availability_status":"in_stock","match_method":"exact_model","match_confidence":1,"is_confirmed":true,"is_comparable":true,"validation_flags":[]},
+        {"source":"saunamsk-ru","url":"https://www.saunamsk.ru/plitka-talkohlorit/rvanyj-kamen-talkohlorit-200h50h20-mm-1sht","external_name":"Рваный камень талькохлорит 200x50x20 мм, 100 шт. в м²","model":"200x50x20 мм, 1 м²","package":"100 шт.","unit":"1 м²","observed_price":12000,"currency":"RUB","exchange_rate_to_byn":0.035964,"availability_status":"in_stock","match_method":"exact_model","match_confidence":1,"is_confirmed":true,"is_comparable":true,"validation_flags":[]}
+      ]
+    },
+    {
+      "sku":"KOTLOV-004526",
+      "review_reason":"Красный комплект К-270 из 8 плиток точно найден у двух независимых продавцов; третьего источника нет, поэтому цена не применяется.",
+      "observations":[
+        {"source":"pech-ru","url":"https://www.pech.ru/catalog/oblitsovochnyy-material/plitka-dlya-kamina-400kh200-krasn-komplekt-8sht-k-270/","external_name":"Плитка для камина 400x200 красная, комплект 8 шт., К-270","model":"К-270 красная, 8 шт.","observed_price":1120,"currency":"RUB","exchange_rate_to_byn":0.035964,"availability_status":"in_stock","match_method":"exact_model","match_confidence":1,"is_confirmed":true,"is_comparable":true,"validation_flags":[]},
+        {"source":"pechi-tut-ru","url":"https://pechi-tut.ru/vse-dlya-bani/oblicovochniy-kamen","external_name":"Плитка для камина 400x200 красная, комплект 8 шт., К-270","model":"К-270 красная, 8 шт.","observed_price":1120,"currency":"RUB","exchange_rate_to_byn":0.035964,"availability_status":"order","match_method":"exact_model","match_confidence":1,"is_confirmed":true,"is_comparable":true,"validation_flags":[]}
+      ]
+    },
+    {
+      "sku":"KOTLOV-004569",
+      "review_reason":"Точная печь ТОП-200 ДС (стальная дверца, ПО.06.000.00-01) проверена по прайсу бренда и двум независимым продавцам.",
+      "observations":[
+        {"source":"teplodar-price-ru","url":"https://teplodar.nt-rt.ru/images/showcase/price.pdf","external_name":"Печь ТОП-200 ДС, ПО.06.000.00-01","model":"ТОП-200 ДС","observed_price":30570,"currency":"RUB","exchange_rate_to_byn":0.035964,"availability_status":"unknown","match_method":"exact_model","match_confidence":1,"is_confirmed":true,"is_comparable":true,"validation_flags":[]},
+        {"source":"teplomir24-ru","url":"https://ekaterinburg.teplomir24.ru/catalog/otoplenie/kotly_tverdotoplivnye/seriya-top/","external_name":"Печь ТОП-200 ДС, ПО.06.000.00-01","model":"ТОП-200 ДС","observed_price":31970,"currency":"RUB","exchange_rate_to_byn":0.035964,"availability_status":"in_stock","match_method":"exact_model","match_confidence":1,"is_confirmed":true,"is_comparable":true,"validation_flags":[]},
+        {"source":"zavodtek-ru","url":"https://omsk.zavodtek.ru/catalog/otopitelnye-pechi-dlya-doma/?PAGEN_1=5","external_name":"Отопительная печь ТОП 200 ДС","model":"ТОП-200 ДС","observed_price":31670,"currency":"RUB","exchange_rate_to_byn":0.035964,"availability_status":"in_stock","match_method":"exact_model","match_confidence":1,"is_confirmed":true,"is_comparable":true,"validation_flags":[]}
+      ]
+    },
+    {
+      "sku":"KOTLOV-004570",
+      "review_reason":"Точная печь ТОП-200 ДЧ (чугунная дверца, ПО.06.000.00) проверена по прайсу бренда и двум независимым продавцам.",
+      "observations":[
+        {"source":"teplodar-price-ru","url":"https://teplodar.nt-rt.ru/images/showcase/price.pdf","external_name":"Печь ТОП-200 ДЧ, ПО.06.000.00","model":"ТОП-200 ДЧ","observed_price":36690,"currency":"RUB","exchange_rate_to_byn":0.035964,"availability_status":"unknown","match_method":"exact_model","match_confidence":1,"is_confirmed":true,"is_comparable":true,"validation_flags":[]},
+        {"source":"teplomir24-ru","url":"https://ekaterinburg.teplomir24.ru/catalog/otoplenie/kotly_tverdotoplivnye/seriya-top/","external_name":"Печь ТОП-200 ДЧ, ПО.06.000.00","model":"ТОП-200 ДЧ","observed_price":38980,"currency":"RUB","exchange_rate_to_byn":0.035964,"availability_status":"order","match_method":"exact_model","match_confidence":1,"is_confirmed":true,"is_comparable":true,"validation_flags":[]},
+        {"source":"zavodtek-ru","url":"https://omsk.zavodtek.ru/catalog/otopitelnye-pechi-dlya-doma/?PAGEN_1=5","external_name":"Отопительная печь ТОП 200 ДЧ","model":"ТОП-200 ДЧ","observed_price":38680,"currency":"RUB","exchange_rate_to_byn":0.035964,"availability_status":"in_stock","match_method":"exact_model","match_confidence":1,"is_confirmed":true,"is_comparable":true,"validation_flags":[]}
+      ]
+    },
+    {
+      "sku":"KOTLOV-004571",
+      "review_reason":"Точная печь ТОП-300 ДЧ (чугунная дверца, ПО.08.000.00) проверена по прайсу бренда и двум независимым продавцам.",
+      "observations":[
+        {"source":"teplodar-price-ru","url":"https://teplodar.nt-rt.ru/images/showcase/price.pdf","external_name":"Печь ТОП-300 ДЧ, ПО.08.000.00","model":"ТОП-300 ДЧ","observed_price":44860,"currency":"RUB","exchange_rate_to_byn":0.035964,"availability_status":"unknown","match_method":"exact_model","match_confidence":1,"is_confirmed":true,"is_comparable":true,"validation_flags":[]},
+        {"source":"teplomir24-ru","url":"https://ekaterinburg.teplomir24.ru/catalog/otoplenie/kotly_tverdotoplivnye/seriya-top/","external_name":"Печь ТОП-300 ДЧ, ПО.08.000.00","model":"ТОП-300 ДЧ","observed_price":46980,"currency":"RUB","exchange_rate_to_byn":0.035964,"availability_status":"order","match_method":"exact_model","match_confidence":1,"is_confirmed":true,"is_comparable":true,"validation_flags":[]},
+        {"source":"zavodtek-ru","url":"https://zavodtek.ru/catalog/otopitelnye-pechi-dlya-doma/otopitelnaya-pech-top-300-dch/","external_name":"Отопительная печь ТОП 300 ДЧ","model":"ТОП-300 ДЧ","observed_price":46680,"currency":"RUB","exchange_rate_to_byn":0.035964,"availability_status":"in_stock","match_method":"exact_model","match_confidence":1,"is_confirmed":true,"is_comparable":true,"validation_flags":[]}
+      ]
+    },
+    {
+      "sku":"KOTLOV-004417",
+      "review_reason":"Точный короб для облицовки Эверест найден только в одном актуальном отраслевом прайсе; цена не должна применяться без трёх источников.",
+      "observations":[
+        {"source":"ugpechi-ru","url":"https://www.ugpechi.ru/upload/price.pdf","external_name":"Короб для облицовки Эверест (Облицовка Везувий Президент)","model":"Короб Эверест/Президент","observed_price":2630,"currency":"RUB","exchange_rate_to_byn":0.035964,"availability_status":"unknown","match_method":"exact_model","match_confidence":1,"is_confirmed":true,"is_comparable":true,"validation_flags":[]}
+      ]
+    }
+  ]
+}
