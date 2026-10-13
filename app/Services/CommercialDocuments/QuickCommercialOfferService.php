@@ -4,6 +4,7 @@ namespace App\Services\CommercialDocuments;
 
 use App\Models\CrmMailThread;
 use App\Models\Product;
+use App\Services\Crm\BelarusCompanyLookup;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 
@@ -16,7 +17,10 @@ class QuickCommercialOfferService
         'для', 'или', 'как', 'что', 'это', 'нам', 'вам', 'вас', 'при', 'под', 'над', 'без', 'из', 'на', 'по', 'от', 'до',
     ];
 
-    public function __construct(private readonly CommercialOfferMailAnalyzer $mailAnalyzer) {}
+    public function __construct(
+        private readonly CommercialOfferMailAnalyzer $mailAnalyzer,
+        private readonly BelarusCompanyLookup $companyLookup,
+    ) {}
 
     /**
      * @return array{prefill: array<string, mixed>, suggestions: array<int, string>, default_product_ids: list<int>, product_quantities: array<int, float>, analysis_summary: string}
@@ -26,6 +30,10 @@ class QuickCommercialOfferService
         $thread->loadMissing(['counterparty.contactPoints', 'contact.contactPoints', 'messages']);
         $text = $this->sourceText($thread);
         $analysis = $this->mailAnalyzer->analyze($thread, $text, $useAi);
+        $registry = $this->companyLookup->lookup($analysis['unp'] ?? null);
+        if ($registry) {
+            $analysis = $this->mergeRegistryData($analysis, $registry);
+        }
         $aiSearchText = collect($analysis['items'])
             ->flatMap(fn (array $item): array => [$item['query'], $item['sku']])
             ->filter()->implode(' ');
@@ -68,6 +76,8 @@ class QuickCommercialOfferService
                 $item['product']->id => $this->quantityForProduct($item['product'], $analysis['items']),
             ])->all(),
             'analysis_summary' => $this->analysisSummary($analysis),
+            'analysis' => $analysis,
+            'unmatched_items' => $this->unmatchedItems($analysis['items'], $ranked),
         ];
     }
 
@@ -184,17 +194,20 @@ class QuickCommercialOfferService
     private function clientPrefill(CrmMailThread $thread, string $text, array $analysis): array
     {
         $counterparty = $thread->counterparty;
-        $company = $counterparty?->legal_name ?: $counterparty?->name ?: $analysis['company'] ?: $this->extractCompany($text);
+        $recognizedCompany = $analysis['legal_name'] ?: $analysis['company'] ?: $this->extractCompany($text);
+        $company = ($counterparty?->type === 'organization' && $counterparty?->classification !== 'unclassified')
+            ? ($counterparty->legal_name ?: $counterparty->name)
+            : ($recognizedCompany ?: $counterparty?->legal_name ?: $counterparty?->name);
 
         return [
             'type' => 'quote',
             'crm_mail_thread_id' => $thread->id,
             'client_name' => $thread->contact?->full_name ?: $analysis['contact_name'] ?: $thread->participant_name,
             'client_company' => $company,
-            'client_email' => $thread->participant_email,
-            'client_phone' => $thread->contact?->phones_list ?: $counterparty?->phones_list,
-            'client_unp' => $counterparty?->unp,
-            'client_address' => $counterparty?->legal_address,
+            'client_email' => $thread->participant_email ?: ($analysis['emails'][0] ?? null),
+            'client_phone' => $thread->contact?->phones_list ?: $counterparty?->phones_list ?: ($analysis['phones'][0] ?? null),
+            'client_unp' => $counterparty?->unp ?: $analysis['unp'],
+            'client_address' => $counterparty?->legal_address ?: $analysis['legal_address'],
         ];
     }
 
@@ -236,8 +249,48 @@ class QuickCommercialOfferService
             return $name.' × '.$item['quantity'];
         })->implode('; ');
 
-        return 'DeepSeek: '.($analysis['company'] ?: 'компания не определена').'. '
+        $requisites = collect([
+            $analysis['unp'] ? 'УНП '.$analysis['unp'] : null,
+            $analysis['legal_address'] ? 'адрес найден' : null,
+            count($analysis['phones']) ? 'телефоны: '.implode(', ', $analysis['phones']) : null,
+        ])->filter()->implode(' · ');
+
+        return 'DeepSeek: '.($analysis['legal_name'] ?: $analysis['company'] ?: 'компания не определена').'. '
+            .($requisites !== '' ? $requisites.'. ' : '')
             .($items !== '' ? 'Распознано: '.$items.'.' : 'Позиции автоматически не распознаны — выберите товар вручную.');
+    }
+
+    private function mergeRegistryData(array $analysis, array $registry): array
+    {
+        foreach (['company', 'legal_name', 'unp', 'legal_address'] as $field) {
+            if (! empty($registry[$field])) {
+                $analysis[$field] = $registry[$field];
+            }
+        }
+        $analysis['phones'] = collect(array_merge($registry['phones'] ?? [], $analysis['phones'] ?? []))->filter()->unique()->values()->all();
+        $analysis['emails'] = collect(array_merge($registry['emails'] ?? [], $analysis['emails'] ?? []))->filter()->unique()->values()->all();
+        $analysis['registry_source'] = $registry['source'] ?? null;
+
+        return $analysis;
+    }
+
+    /** @return list<array{query: string, sku: ?string, quantity: float}> */
+    private function unmatchedItems(array $items, Collection $ranked): array
+    {
+        return collect($items)->filter(function (array $item) use ($ranked): bool {
+            return ! $ranked->contains(function (array $rankedItem) use ($item): bool {
+                /** @var Product $product */
+                $product = $rankedItem['product'];
+                $sku = Str::lower(trim((string) ($item['sku'] ?? '')));
+                if ($sku !== '' && Str::lower(trim((string) $product->sku)) === $sku) {
+                    return true;
+                }
+
+                return $this->tokens((string) $item['query'])
+                    ->filter(fn (string $token): bool => Str::contains(Str::lower($product->name.' '.$product->h1), $token))
+                    ->count() >= 2;
+            });
+        })->values()->all();
     }
 
     private function extractCompany(string $text): ?string

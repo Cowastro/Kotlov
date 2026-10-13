@@ -36,13 +36,13 @@ return [
     ],
 
     'turnstile' => [
-        'enabled'  => env('FORM_TURNSTILE_ENABLED', false),
+        'enabled' => env('FORM_TURNSTILE_ENABLED', false),
         'site_key' => env('TURNSTILE_SITE_KEY', ''),
-        'secret'   => env('TURNSTILE_SECRET_KEY', ''),
+        'secret' => env('TURNSTILE_SECRET_KEY', ''),
     ],
 
     'telegram' => [
-        'bot_token'      => env('TELEGRAM_BOT_TOKEN'),
+        'bot_token' => env('TELEGRAM_BOT_TOKEN'),
         'allow_in_tests' => (bool) env('TELEGRAM_ALLOW_IN_TESTS', false),
         'orders_chat_id' => env('TELEGRAM_ORDERS_CHAT_ID'),
         'installer_applications_chat_id' => env('TELEGRAM_INSTALLER_APPLICATIONS_CHAT_ID', env('TELEGRAM_ORDERS_CHAT_ID')),
@@ -50,13 +50,19 @@ return [
 
     'ai' => [
         'anthropic_key' => env('ANTHROPIC_API_KEY', ''),
-        'api_key'       => env('AI_API_KEY', ''),
-        'api_url'       => env('AI_API_URL', ''),
-        'model'         => env('AI_MODEL', 'deepseek-chat'),
-        'match_model'   => env('AI_MATCH_MODEL', ''),
-        'openai_key'    => env('OPENAI_API_KEY', ''),
-        'openai_url'    => env('OPENAI_API_URL', 'https://api.openai.com/v1/chat/completions'),
-        'openai_model'  => env('OPENAI_MODEL', 'gpt-4.1'),
+        'api_key' => env('AI_API_KEY', ''),
+        'api_url' => env('AI_API_URL', ''),
+        'model' => env('AI_MODEL', 'deepseek-chat'),
+        'match_model' => env('AI_MATCH_MODEL', ''),
+        'openai_key' => env('OPENAI_API_KEY', ''),
+        'openai_url' => env('OPENAI_API_URL', 'https://api.openai.com/v1/chat/completions'),
+        'openai_model' => env('OPENAI_MODEL', 'gpt-4.1'),
+    ],
+
+    'belarus_company_registry' => [
+        'url' => env('BELARUS_COMPANY_REGISTRY_URL', 'https://api.contragento.by/api/check'),
+        'username' => env('BELARUS_COMPANY_REGISTRY_USERNAME', ''),
+        'password' => env('BELARUS_COMPANY_REGISTRY_PASSWORD', ''),
     ],
 
 ];

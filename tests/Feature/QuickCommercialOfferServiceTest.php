@@ -7,6 +7,7 @@ use App\Models\CrmMailbox;
 use App\Models\CrmMailThread;
 use App\Models\Product;
 use App\Services\AiContentEnricher;
+use App\Services\CommercialDocuments\QuickCommercialOfferSaver;
 use App\Services\CommercialDocuments\QuickCommercialOfferService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -64,7 +65,13 @@ class QuickCommercialOfferServiceTest extends TestCase
         $ai->shouldReceive('providerName')->andReturn('deepseek-chat (api.deepseek.com)');
         $ai->shouldReceive('complete')->once()->andReturn(json_encode([
             'company' => 'ООО «Молочный завод»',
+            'legal_name' => 'Общество с ограниченной ответственностью «Молочный завод»',
+            'unp' => '190123456',
+            'legal_address' => 'г. Минск, ул. Тестовая, 1',
             'contact_name' => 'Иван Петров',
+            'contact_position' => 'Начальник отдела закупок',
+            'phones' => ['+375 29 100-20-30'],
+            'emails' => ['purchase@example.com'],
             'items' => [[
                 'query' => 'Циркуляционный насос Grundfos Comfort',
                 'sku' => 'UP-15-14',
@@ -101,10 +108,50 @@ class QuickCommercialOfferServiceTest extends TestCase
 
         $result = app(QuickCommercialOfferService::class)->prepare($thread, true);
 
-        $this->assertSame('ООО «Молочный завод»', $result['prefill']['client_company']);
+        $this->assertSame('Общество с ограниченной ответственностью «Молочный завод»', $result['prefill']['client_company']);
+        $this->assertSame('190123456', $result['prefill']['client_unp']);
+        $this->assertSame('+375 29 100-20-30', $result['prefill']['client_phone']);
         $this->assertSame($product->id, $result['default_product_ids'][0]);
         $this->assertSame(4.0, $result['product_quantities'][$product->id]);
         $this->assertStringContainsString('DeepSeek', $result['analysis_summary']);
         $this->assertSame('777.00', $product->fresh()->price);
+    }
+
+    public function test_it_saves_recognized_client_contacts_and_creates_inactive_product_draft(): void
+    {
+        $mailbox = CrmMailbox::query()->create([
+            'name' => 'CRM', 'email' => 'crm@kotlov.by', 'username' => 'crm@kotlov.by',
+            'password' => 'secret', 'imap_host' => 'imap.example.com', 'imap_port' => 993,
+            'imap_encryption' => 'ssl', 'imap_folder' => 'INBOX', 'smtp_host' => 'smtp.example.com',
+            'smtp_port' => 465, 'smtp_encryption' => 'ssl', 'is_enabled' => true,
+        ]);
+        $category = Category::query()->create(['name' => 'Черновики', 'slug' => 'draft-products', 'is_active' => true]);
+        $thread = CrmMailThread::query()->create([
+            'mailbox_id' => $mailbox->id, 'thread_key' => 'save-recognized-client', 'subject' => 'Запрос',
+            'participant_name' => 'Анна Иванова', 'participant_email' => 'anna@example.by',
+            'status' => 'new', 'priority' => 'normal', 'messages_count' => 1, 'unread_count' => 1, 'last_message_at' => now(),
+        ]);
+        $analysis = [
+            'company' => 'ООО «Тест»', 'legal_name' => 'ООО «Тест»', 'unp' => '190123456',
+            'legal_address' => 'Минск', 'contact_name' => 'Анна Иванова', 'contact_position' => 'Закупки',
+            'phones' => ['+375291112233'], 'emails' => ['anna@example.by'],
+        ];
+
+        $saver = app(QuickCommercialOfferSaver::class);
+        $company = $saver->saveClient($thread, [
+            'client_company' => 'ООО «Тест»', 'client_name' => 'Анна Иванова',
+            'client_email' => 'anna@example.by', 'client_unp' => '190123456', 'client_address' => 'Минск',
+        ], $analysis);
+        $products = $saver->createDraftProducts([[
+            'query' => 'Неизвестный промышленный насос', 'sku' => 'NEW-001', 'quantity' => 2,
+        ]], $category->id);
+
+        $this->assertSame('190123456', $company->unp);
+        $this->assertDatabaseHas('crm_contacts', ['counterparty_id' => $company->id, 'full_name' => 'Анна Иванова']);
+        $this->assertDatabaseHas('crm_contact_points', ['counterparty_id' => $company->id, 'type' => 'email', 'normalized_value' => 'anna@example.by']);
+        $product = Product::query()->findOrFail(array_key_first($products));
+        $this->assertFalse($product->is_active);
+        $this->assertSame(Product::AVAILABILITY_CHECK, $product->availability_status);
+        $this->assertSame(2.0, $products[$product->id]);
     }
 }

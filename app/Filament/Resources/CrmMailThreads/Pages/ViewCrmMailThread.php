@@ -6,6 +6,8 @@ use App\Filament\Resources\CommercialDocuments\CommercialDocumentResource;
 use App\Filament\Resources\CrmCounterparties\CrmCounterpartyResource;
 use App\Filament\Resources\CrmMailThreads\CrmMailThreadResource;
 use App\Filament\Resources\Suppliers\SupplierResource;
+use App\Models\Category;
+use App\Services\CommercialDocuments\QuickCommercialOfferSaver;
 use App\Services\CommercialDocuments\QuickCommercialOfferService;
 use App\Services\CrmMail\CrmMailSender;
 use App\Services\CrmMail\SupplierRequestMailDraftService;
@@ -16,8 +18,10 @@ use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TagsInput;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Toggle;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\ViewRecord;
+use Filament\Schemas\Components\Utilities\Get;
 use Filament\Support\Enums\Width;
 use Throwable;
 
@@ -123,17 +127,32 @@ class ViewCrmMailThread extends ViewRecord
                     return array_merge($prepared['prefill'], [
                         'product_ids' => $prepared['default_product_ids'],
                         'analysis_summary' => $prepared['analysis_summary'],
+                        'unmatched_items_summary' => CrmMailThreadResource::unmatchedItemsSummary($prepared['unmatched_items']),
+                        'save_client_to_crm' => true,
                     ]);
                 })
                 ->schema([
                     TextInput::make('client_company')->label('Компания')->required()->maxLength(255),
                     TextInput::make('client_name')->label('Контактное лицо')->maxLength(255),
                     TextInput::make('client_email')->label('Email')->email()->required()->maxLength(255),
+                    TextInput::make('client_phone')->label('Телефон')->maxLength(80),
+                    TextInput::make('client_unp')->label('УНП')->length(9),
+                    TextInput::make('client_address')->label('Юридический адрес')->maxLength(500)->columnSpanFull(),
                     Textarea::make('analysis_summary')->label('Результат автоматического разбора')
                         ->disabled()->dehydrated(false)->rows(2)->columnSpanFull(),
+                    Toggle::make('save_client_to_crm')->label('Сохранить компанию и контактное лицо в CRM')
+                        ->helperText('Будут сохранены только проверенные вами реквизиты и контакты.'),
+                    Textarea::make('unmatched_items_summary')->label('Не найдено в каталоге')
+                        ->disabled()->dehydrated(false)->rows(2)->columnSpanFull(),
+                    Toggle::make('create_missing_products')->label('Создать черновики отсутствующих товаров')->live()
+                        ->helperText('Карточки будут неактивными до проверки менеджером.'),
+                    Select::make('draft_category_id')->label('Категория для новых черновиков')
+                        ->options(fn (): array => Category::query()->orderBy('name')->pluck('name', 'id')->all())
+                        ->searchable()->visible(fn (Get $get): bool => (bool) $get('create_missing_products'))
+                        ->required(fn (Get $get): bool => (bool) $get('create_missing_products')),
                     Select::make('product_ids')
                         ->label('Товары для КП')
-                        ->multiple()->required()->searchable()
+                        ->multiple()->required(fn (Get $get): bool => ! (bool) $get('create_missing_products'))->searchable()
                         ->options(fn (): array => app(QuickCommercialOfferService::class)->prepare($this->record)['suggestions'])
                         ->getSearchResultsUsing(fn (string $search): array => app(QuickCommercialOfferService::class)->searchProducts($search))
                         ->getOptionLabelsUsing(fn (array $values): array => app(QuickCommercialOfferService::class)->productLabels($values))
@@ -141,13 +160,23 @@ class ViewCrmMailThread extends ViewRecord
                 ])
                 ->action(function (array $data) {
                     $prepared = app(QuickCommercialOfferService::class)->prepare($this->record);
+                    $saver = app(QuickCommercialOfferSaver::class);
+                    if ($data['save_client_to_crm'] ?? false) {
+                        $saver->saveClient($this->record, $data, $prepared['analysis']);
+                    }
+                    $newProducts = ($data['create_missing_products'] ?? false)
+                        ? $saver->createDraftProducts($prepared['unmatched_items'], (int) $data['draft_category_id'])
+                        : [];
                     session()->put('commercial_document_prefill', array_merge($prepared['prefill'], [
                         'client_company' => $data['client_company'],
                         'client_name' => $data['client_name'] ?? null,
                         'client_email' => $data['client_email'],
+                        'client_phone' => $data['client_phone'] ?? null,
+                        'client_unp' => $data['client_unp'] ?? null,
+                        'client_address' => $data['client_address'] ?? null,
                     ]));
-                    session()->put('commercial_document_product_ids', $data['product_ids']);
-                    session()->put('commercial_document_product_quantities', $prepared['product_quantities']);
+                    session()->put('commercial_document_product_ids', array_values(array_unique(array_merge($data['product_ids'] ?? [], array_keys($newProducts)))));
+                    session()->put('commercial_document_product_quantities', $prepared['product_quantities'] + $newProducts);
                     session()->put('commercial_document_create_mail_draft', true);
 
                     return redirect(CommercialDocumentResource::getUrl('create'));
