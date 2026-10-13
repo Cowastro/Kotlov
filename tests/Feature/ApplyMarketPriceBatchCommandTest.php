@@ -105,4 +105,41 @@ class ApplyMarketPriceBatchCommandTest extends TestCase
             ->where('action', 'market_price_recommendation_applied')
             ->count());
     }
+
+    public function test_extreme_markup_batch_is_valid_and_matches_exact_active_server_skus(): void
+    {
+        $category = Category::query()->create([
+            'name' => 'Проверка ценовых выбросов',
+            'slug' => 'extreme-price-batch-test',
+            'parent_id' => 0,
+            'is_active' => true,
+        ]);
+
+        foreach ([
+            'KOTLOV-004490',
+            'KOTLOV-004404',
+            'KOTLOV-004558',
+            'KOTLOV-004406',
+            'KOTLOV-004324',
+        ] as $index => $sku) {
+            Product::query()->create([
+                'category_id' => $category->id,
+                'name' => 'Тестовая точная модель '.$sku,
+                'slug' => 'extreme-price-batch-'.$index,
+                'sku' => $sku,
+                'price' => 1005,
+                'currency' => 'BYN',
+                'is_active' => true,
+                'is_archived' => false,
+            ]);
+        }
+
+        $this->artisan('catalog:apply-market-price-batch', [
+            'batch' => '2026-10-13-extreme-markup',
+        ])
+            ->expectsOutputToContain('metric.status=dry_run')
+            ->expectsOutputToContain('metric.products=5')
+            ->expectsOutputToContain('metric.observations=11')
+            ->assertSuccessful();
+    }
 }

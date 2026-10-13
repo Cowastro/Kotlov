@@ -1,0 +1,59 @@
+{
+  "code": "2026-10-13-extreme-markup",
+  "observed_at": "2026-10-13T20:55:00+02:00",
+  "sources": [
+    {"code": "bania-by", "name": "Bania.by", "base_url": "https://bania.by", "region": "Беларусь"},
+    {"code": "karniz-ru", "name": "Karniz.ru", "base_url": "https://www.karniz.ru", "currency": "RUB", "region": "Россия"},
+    {"code": "prosept-official-ru", "name": "PROSEPT — официальный магазин", "kind": "manufacturer", "base_url": "https://prosept.ru", "currency": "RUB", "region": "Россия"},
+    {"code": "yandex-market-ru", "name": "Яндекс Маркет", "base_url": "https://market.yandex.ru", "currency": "RUB", "region": "Россия"},
+    {"code": "vseinstrumenti-ru", "name": "ВсеИнструменты.ру", "base_url": "https://www.vseinstrumenti.ru", "currency": "RUB", "region": "Россия"},
+    {"code": "woodson-ru", "name": "Woodson", "base_url": "https://novgorod.woodson.ru", "currency": "RUB", "region": "Россия"},
+    {"code": "epool-ru", "name": "Epool", "base_url": "https://spb.epool.ru", "currency": "RUB", "region": "Россия"},
+    {"code": "parnaya-by", "name": "Парная", "base_url": "https://parnaya.by", "region": "Беларусь"},
+    {"code": "vezuviy-official-ru", "name": "Везувий — официальный магазин", "kind": "manufacturer", "base_url": "https://vezuviy.su", "currency": "RUB", "region": "Россия"},
+    {"code": "tverskoe-teplo-ru", "name": "Тверское тепло", "base_url": "https://tverskoe-teplo.ru", "currency": "RUB", "region": "Россия"}
+  ],
+  "products": [
+    {
+      "sku": "KOTLOV-004490",
+      "review_reason": "Точное ведро Банные штучки, артикул 32814; найдены только два независимых предложения, поэтому цена остаётся на согласовании.",
+      "observations": [
+        {"source": "bania-by", "url": "https://bania.by/bannye-shtuchki", "external_name": "Ведро 9 л, система регулировки обручей, липа Банные штучки", "external_sku": "32814", "model": "32814", "observed_price": 72.00, "currency": "BYN", "exchange_rate_to_byn": 1, "availability_status": "in_stock", "match_method": "exact_sku", "match_confidence": 1, "is_confirmed": true, "is_comparable": true, "validation_flags": []},
+        {"source": "karniz-ru", "url": "https://www.karniz.ru/catalog/product/vedro_9_l_sistema_regulirovki_obruchey_lipa_bannye_shtuchki_/", "external_name": "Ведро 9 л, система регулировки обручей, липа Банные штучки", "external_sku": "32814", "model": "32814", "observed_price": 2711.00, "currency": "RUB", "exchange_rate_to_byn": 0.035964, "availability_status": "in_stock", "match_method": "exact_sku", "match_confidence": 1, "is_confirmed": true, "is_comparable": true, "validation_flags": []}
+      ]
+    },
+    {
+      "sku": "KOTLOV-004404",
+      "review_reason": "Точный антисептик PROSEPT SAUNA 004-1, 1 л; три независимых актуальных предложения в RUB пересчитаны по официальному курсу НБРБ.",
+      "observations": [
+        {"source": "prosept-official-ru", "url": "https://prosept.ru/catalog/sredstva-dlya-bani-i-sauny/", "external_name": "PROSEPT SAUNA 1 л", "external_sku": "004-1", "model": "PROSEPT SAUNA 1 л", "observed_price": 888.00, "currency": "RUB", "exchange_rate_to_byn": 0.035964, "availability_status": "in_stock", "match_method": "exact_sku", "match_confidence": 1, "is_confirmed": true, "is_comparable": true, "validation_flags": []},
+        {"source": "yandex-market-ru", "url": "https://m.integration.vs.market.yandex.net/card/antiseptik-prosept-sauna-004-1-kontsentrat-dlya-vnutrennikh-rabot-1l/5880512014", "external_name": "Антисептик PROSEPT SAUNA 004-1, концентрат, 1 л", "external_sku": "004-1", "model": "PROSEPT SAUNA 1 л", "observed_price": 847.00, "currency": "RUB", "exchange_rate_to_byn": 0.035964, "availability_status": "in_stock", "match_method": "exact_sku", "match_confidence": 1, "is_confirmed": true, "is_comparable": true, "validation_flags": []},
+        {"source": "vseinstrumenti-ru", "url": "https://www.vseinstrumenti.ru/product/antiseptik-dlya-ban-i-saun-prosept-sauna-kontsentrat-1-l-004-1-854803/", "external_name": "Антисептик для бань и саун PROSEPT SAUNA концентрат 1:10, 1 л", "external_sku": "004-1", "model": "PROSEPT SAUNA 1 л", "observed_price": 885.00, "currency": "RUB", "exchange_rate_to_byn": 0.035964, "availability_status": "in_stock", "match_method": "exact_sku", "match_confidence": 1, "is_confirmed": true, "is_comparable": true, "validation_flags": []}
+      ]
+    },
+    {
+      "sku": "KOTLOV-004558",
+      "review_reason": "Точная облицовочная плитка Везувий 200х300 бежевая В8/БКД, артикул 4610094704072; доступно менее трёх независимых предложений.",
+      "observations": [
+        {"source": "woodson-ru", "url": "https://novgorod.woodson.ru/catalog/komplektuyushchie_1/dlya_pechey_kaminov/", "external_name": "Плитка для камина 200х300 бежевая В8, БКД угловая", "external_sku": "4610094704072", "model": "200х300 В8/БКД угловая", "observed_price": 200.00, "currency": "RUB", "exchange_rate_to_byn": 0.035964, "availability_status": "in_stock", "match_method": "exact_sku", "match_confidence": 1, "is_confirmed": true, "is_comparable": true, "validation_flags": []},
+        {"source": "epool-ru", "url": "https://spb.epool.ru/good/372032", "external_name": "Облицовочная плитка для камина Везувий 200х300 мм, бежевая В8", "model": "200х300 В8", "observed_price": 205.00, "currency": "RUB", "exchange_rate_to_byn": 0.035964, "availability_status": "out_of_stock", "match_method": "exact_model", "match_confidence": 1, "is_confirmed": true, "is_comparable": true, "validation_flags": ["offer_out_of_stock"]}
+      ]
+    },
+    {
+      "sku": "KOTLOV-004406",
+      "review_reason": "Точная облицовочная плитка Везувий 400х200 слоновая кость, артикул 4680019126371; найдено одно независимое предложение.",
+      "observations": [
+        {"source": "woodson-ru", "url": "https://novgorod.woodson.ru/catalog/komplektuyushchie_1/dlya_pechey_kaminov/", "external_name": "Плитка для камина 400х200 слоновая кость В5,5С, В9,9С, В10, В11, ПК-01,02,03,04", "external_sku": "4680019126371", "model": "400х200 слоновая кость", "observed_price": 140.00, "currency": "RUB", "exchange_rate_to_byn": 0.035964, "availability_status": "in_stock", "match_method": "exact_sku", "match_confidence": 1, "is_confirmed": true, "is_comparable": true, "validation_flags": []}
+      ]
+    },
+    {
+      "sku": "KOTLOV-004324",
+      "review_reason": "Точный монтажный тоннель Везувий 210/211/220 размером 334х295х120; белорусская цена и два независимых российских предложения.",
+      "observations": [
+        {"source": "parnaya-by", "url": "https://parnaya.by/katalog-tovarov/kaminnoe-pechnoe-lite/tonneli-montazhnye", "external_name": "Тоннель монтажный Везувий 210 / 211 / 220", "model": "210/211/220 334х295х120", "observed_price": 141.00, "currency": "BYN", "exchange_rate_to_byn": 1, "availability_status": "unknown", "match_method": "exact_model", "match_confidence": 1, "is_confirmed": true, "is_comparable": true, "validation_flags": []},
+        {"source": "vezuviy-official-ru", "url": "https://vezuviy.su/pechnye-dveri-i-aksessuary/montazhnye-tonneli/", "external_name": "Тоннель монтажный ВЕЗУВИЙ 210, 211, 220 (334*295*120)", "model": "210/211/220 334х295х120", "observed_price": 1561.00, "currency": "RUB", "exchange_rate_to_byn": 0.035964, "availability_status": "in_stock", "match_method": "exact_model", "match_confidence": 1, "is_confirmed": true, "is_comparable": true, "validation_flags": []},
+        {"source": "tverskoe-teplo-ru", "url": "https://tverskoe-teplo.ru/catalog/pechnoe_lite/pechnoe_lite_vezuviy/pechnoe_lite_vezuviy_1/tonnel_montazhnyy_vezuviy_210_211_220_334x295x120_mm_bez_pokraski/", "external_name": "Тоннель монтажный Везувий 210, 211, 220, 334x295x120 мм", "model": "210/211/220 334х295х120", "observed_price": 1378.00, "currency": "RUB", "exchange_rate_to_byn": 0.035964, "availability_status": "in_stock", "match_method": "exact_model", "match_confidence": 1, "is_confirmed": true, "is_comparable": true, "validation_flags": []}
+      ]
+    }
+  ]
+}
