@@ -92,6 +92,28 @@ class ProductIndexabilityTest extends TestCase
         $this->assertTrue($product->canBePurchased());
     }
 
+    public function test_price_confirmation_hold_overrides_fresh_supplier_stock(): void
+    {
+        $product = new Product([
+            'price' => 100,
+            'is_active' => true,
+            'is_archived' => false,
+            'in_stock' => true,
+            'availability_status' => Product::AVAILABILITY_IN_STOCK,
+            'requires_price_confirmation' => true,
+        ]);
+        $product->setRelation('supplierProducts', new Collection([
+            new SupplierProduct([
+                'in_stock' => true,
+                'stock_quantity' => 1,
+                'last_stock_synced_at' => CarbonImmutable::now(),
+            ]),
+        ]));
+
+        $this->assertSame(Product::AVAILABILITY_CHECK, $product->effectiveAvailabilityStatus());
+        $this->assertFalse($product->canBePurchased());
+    }
+
     public function test_stale_supplier_in_stock_flag_with_zero_quantity_cannot_enter_checkout(): void
     {
         $product = new Product([

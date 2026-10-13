@@ -1,0 +1,65 @@
+{
+  "code": "2026-10-13-below-cost-priority",
+  "observed_at": "2026-10-13T12:00:00+02:00",
+  "sources": [
+    {"code": "ultraprice-by", "name": "UltraPrice.by", "base_url": "https://ultraprice.by", "region": "Беларусь"},
+    {"code": "belotop-by", "name": "Belotop.by", "base_url": "https://belotop.by", "region": "Беларусь"},
+    {"code": "amazonka-by", "name": "Amazonka.by", "base_url": "https://amazonka.by", "region": "Беларусь"},
+    {"code": "bania-by", "name": "Bania.by", "base_url": "https://bania.by", "region": "Беларусь"},
+    {"code": "banipechi-by", "name": "BANIPECHI.BY", "base_url": "https://banipechi.by", "region": "Беларусь"},
+    {"code": "vishop-by", "name": "Vishop.by", "base_url": "https://vishop.by", "region": "Беларусь"},
+    {"code": "teplodar-official-ru", "name": "Теплодар — официальный магазин", "kind": "manufacturer", "base_url": "https://www.teplodar.ru", "currency": "RUB", "region": "Россия"},
+    {"code": "bigstore-by", "name": "Bigstore.by", "base_url": "https://www.bigstore.by", "region": "Беларусь"},
+    {"code": "pletora-ru", "name": "Pletora", "base_url": "https://pletora.ru", "currency": "RUB", "region": "Россия"},
+    {"code": "santehmoskva-ru", "name": "СантехМосква", "base_url": "https://santehmoskva.ru", "currency": "RUB", "region": "Россия"},
+    {"code": "royal-thermo-official-ru", "name": "Royal Thermo — официальный магазин", "kind": "manufacturer", "base_url": "https://royal-thermo.su", "currency": "RUB", "region": "Россия"},
+    {"code": "domklimat24-ru", "name": "ДомКлимат", "base_url": "https://domklimat24.ru", "currency": "RUB", "region": "Россия"}
+  ],
+  "products": [
+    {
+      "sku": "PS-007.208",
+      "review_reason": "Точная модель Ураган Ковка 16 (270), три доступных предложения в Беларуси; итог ограничен серверной входной ценой и правилом маржи.",
+      "clear_invalid_old_price": true,
+      "observations": [
+        {"source": "ultraprice-by", "url": "https://ultraprice.by/product/bannaya-pech-vezuvij-uragan-kovka-16-270", "external_name": "Банная печь Везувий Ураган Ковка 16 (270)", "model": "Ураган Ковка 16 (270)", "observed_price": 2052.00, "currency": "BYN", "exchange_rate_to_byn": 1, "availability_status": "in_stock", "match_method": "exact_model", "match_confidence": 1, "is_confirmed": true, "is_comparable": true, "validation_flags": []},
+        {"source": "belotop-by", "url": "https://belotop.by/bannye-pechi/vezuvij", "external_name": "Печь Везувий Ураган Ковка 16 (270)", "external_sku": "4406", "model": "Ураган Ковка 16 (270)", "observed_price": 1610.60, "currency": "BYN", "exchange_rate_to_byn": 1, "availability_status": "in_stock", "match_method": "exact_model", "match_confidence": 1, "is_confirmed": true, "is_comparable": true, "validation_flags": []},
+        {"source": "amazonka-by", "url": "https://amazonka.by/pech-dlya-bani-vezuviy-uragan-kovka-16-270", "external_name": "Печь для бани Везувий Ураган Ковка 16 (270)", "model": "Ураган Ковка 16 (270)", "observed_price": 1754.00, "currency": "BYN", "exchange_rate_to_byn": 1, "availability_status": "in_stock", "match_method": "exact_model", "match_confidence": 1, "is_confirmed": true, "is_comparable": true, "validation_flags": []}
+      ]
+    },
+    {
+      "sku": "KOTLOV-004246",
+      "review_reason": "Точная модель Русичъ Антрацит 16 ДТ-4; найдено только одно доступное независимое предложение в Беларуси.",
+      "observations": [
+        {"source": "amazonka-by", "url": "https://amazonka.by/pechi-dlya-bani/pechi-dlya-bani-vezuviy", "external_name": "Печь для бани Везувий Русичъ Антрацит 16 (ДТ-4)", "model": "Русичъ Антрацит 16 (ДТ-4)", "observed_price": 955.00, "currency": "BYN", "exchange_rate_to_byn": 1, "availability_status": "in_stock", "match_method": "exact_model", "match_confidence": 1, "is_confirmed": true, "is_comparable": true, "validation_flags": []},
+        {"source": "bania-by", "url": "https://bania.by/vezuvij-rusich?attrb%5B119%5D=1&attrb%5B29%5D=1", "external_name": "Печь для бани Везувий Русичъ Антрацит 16 (ДТ-4)", "model": "Русичъ Антрацит 16 (ДТ-4)", "observed_price": 1162.00, "currency": "BYN", "exchange_rate_to_byn": 1, "availability_status": "out_of_stock", "match_method": "exact_model", "match_confidence": 1, "is_confirmed": true, "is_comparable": true, "validation_flags": ["offer_out_of_stock"]}
+      ]
+    },
+    {
+      "sku": "KOTLOV-004560",
+      "review_reason": "Точная модель Локомотивъ-200 (2019), два доступных предложения в Беларуси и официальный прайс производителя; RUB пересчитан по курсу НБРБ на дату проверки.",
+      "observations": [
+        {"source": "banipechi-by", "url": "https://banipechi.by/catalog/pechi-i-kaminy-dlya-doma-i-dachi/otopitelnye-pechi-dlya-doma-i-dachi-teblodar/lokomotiv/lokomotiv-200", "external_name": "Отопительная печь Локомотивъ-200 (2019)", "model": "Локомотивъ-200 (2019)", "observed_price": 1235.63, "currency": "BYN", "exchange_rate_to_byn": 1, "availability_status": "in_stock", "match_method": "exact_model", "match_confidence": 1, "is_confirmed": true, "is_comparable": true, "validation_flags": []},
+        {"source": "vishop-by", "url": "https://vishop.by/catalog/pechi--kotly--kaminy-dlya-bani--doma--dachi/pechi-i-kaminy-dlya-doma/otopitelnye-pechi-teplodar/", "external_name": "Отопительно варочная печь Теплодар Локомотивъ 200 (2019)", "external_sku": "ТМ-200", "model": "Локомотивъ-200 (2019)", "observed_price": 1320.00, "currency": "BYN", "exchange_rate_to_byn": 1, "availability_status": "in_stock", "match_method": "exact_model", "match_confidence": 1, "is_confirmed": true, "is_comparable": true, "validation_flags": []},
+        {"source": "teplodar-official-ru", "url": "https://www.teplodar.ru/catalog/detail/lokomotiv-200-2019/", "external_name": "Отопительная печь Локомотивъ-200 (2019)", "external_sku": "00000027743", "model": "Локомотивъ-200 (2019)", "observed_price": 31980.00, "currency": "RUB", "exchange_rate_to_byn": 0.035964, "availability_status": "in_stock", "match_method": "exact_sku", "match_confidence": 1, "is_confirmed": true, "is_comparable": true, "validation_flags": []}
+      ]
+    },
+    {
+      "sku": "KOTLOV-003099",
+      "review_reason": "Точный артикул Royal Thermo RTE 07.0020; белорусское предложение недоступно, российские цены сохранены только как справочные.",
+      "observations": [
+        {"source": "bigstore-by", "url": "https://www.bigstore.by/products/nabor-uzlov-nizhnego-podklyucheniya-royal-thermo-rte-070020-34h34ek-ng-nr-pryamoj-razdelnyj-2-sht", "external_name": "Набор узлов нижнего подключения Royal Thermo прямой раздельный", "external_sku": "RTE 07.0020", "model": "RTE 07.0020", "observed_price": 29.14, "currency": "BYN", "exchange_rate_to_byn": 1, "availability_status": "out_of_stock", "match_method": "exact_sku", "match_confidence": 1, "is_confirmed": true, "is_comparable": true, "validation_flags": ["offer_out_of_stock"]},
+        {"source": "pletora-ru", "url": "https://pletora.ru/catalog/otoplenie/radiatornaya-armatura/uzly-nizhnego-podklyucheniya/nabor_nizhnego_podklyucheniya_royal_thermo_pryamoy_razdelnyy_3_4kh3_4ek/", "external_name": "Набор нижнего подключения Royal Thermo прямой раздельный", "external_sku": "RTE 07.0020", "model": "RTE 07.0020", "observed_price": 1100.00, "currency": "RUB", "exchange_rate_to_byn": 0.035964, "availability_status": "in_stock", "match_method": "exact_sku", "match_confidence": 1, "is_confirmed": true, "is_comparable": true, "validation_flags": ["non_belarus_market"]},
+        {"source": "santehmoskva-ru", "url": "https://santehmoskva.ru/nabor-nijnego-podklyucheniya-royal-thermo-pryamoy-razdelniy-3-4h3-4ek-rte-07-0020.html", "external_name": "Набор нижнего подключения Royal Thermo прямой раздельный", "external_sku": "RTE 07.0020", "model": "RTE 07.0020", "observed_price": 1000.00, "currency": "RUB", "exchange_rate_to_byn": 0.035964, "availability_status": "in_stock", "match_method": "exact_sku", "match_confidence": 1, "is_confirmed": true, "is_comparable": true, "validation_flags": ["non_belarus_market"]}
+      ]
+    },
+    {
+      "sku": "KOTLOV-003102",
+      "review_reason": "Точный артикул Royal Thermo RTE 07.0021; белорусское предложение недоступно, российские цены сохранены только как справочные.",
+      "observations": [
+        {"source": "bigstore-by", "url": "https://www.bigstore.by/products/nabor-uzlov-nizhnego-podklyucheniya-royal-thermo-rte-070021-34h34ek-ng-nr-uglovoj-razdelnyj-2-sht", "external_name": "Набор узлов нижнего подключения Royal Thermo угловой раздельный", "external_sku": "RTE 07.0021", "model": "RTE 07.0021", "observed_price": 29.14, "currency": "BYN", "exchange_rate_to_byn": 1, "availability_status": "out_of_stock", "match_method": "exact_sku", "match_confidence": 1, "is_confirmed": true, "is_comparable": true, "validation_flags": ["offer_out_of_stock"]},
+        {"source": "royal-thermo-official-ru", "url": "https://royal-thermo.su/products/nabor_nizhnego_podklyucheniya_royal_thermo_uglovoy_razdelnyy_3_4kh3_4ek/", "external_name": "Набор нижнего подключения Royal Thermo угловой раздельный", "external_sku": "RTE 07.0021", "model": "RTE 07.0021", "observed_price": 1050.00, "currency": "RUB", "exchange_rate_to_byn": 0.035964, "availability_status": "in_stock", "match_method": "exact_sku", "match_confidence": 1, "is_confirmed": true, "is_comparable": true, "validation_flags": ["non_belarus_market"]},
+        {"source": "domklimat24-ru", "url": "https://domklimat24.ru/nabor-nizhnego-podklyucheniya-royal-thermo-uglovoy-razdelnyy-3-4kh3-4yek/", "external_name": "Набор нижнего подключения Royal Thermo угловой раздельный", "external_sku": "RTE 07.0021", "model": "RTE 07.0021", "observed_price": 1100.00, "currency": "RUB", "exchange_rate_to_byn": 0.035964, "availability_status": "in_stock", "match_method": "exact_sku", "match_confidence": 1, "is_confirmed": true, "is_comparable": true, "validation_flags": ["non_belarus_market"]}
+      ]
+    }
+  ]
+}

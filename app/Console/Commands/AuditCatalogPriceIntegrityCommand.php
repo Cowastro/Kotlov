@@ -97,6 +97,9 @@ class AuditCatalogPriceIntegrityCommand extends Command
                     ->whereNull('ip.stock_confirmed_at')
                     ->orWhere('ip.stock_confirmed_at', '<', now()->subHours($staleHours)))
                 ->count(),
+            'price_confirmation_holds' => (clone $active)
+                ->where('p.requires_price_confirmation', true)
+                ->count(),
         ];
 
         if (filled($this->option('output'))) {

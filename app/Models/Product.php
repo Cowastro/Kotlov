@@ -45,6 +45,7 @@ class Product extends Model
         'images', 'specs', 'service_info', 'documents', 'promo_flags', 'video_url', 'content_source_url',
         'weight', 'unit', 'warranty',
         'is_active', 'is_archived', 'in_stock', 'availability_status', 'stock_qty',
+        'requires_price_confirmation',
         'is_featured', 'is_new', 'is_sale', 'sort_order',
         'meta_title', 'meta_keywords', 'meta_description',
         'rating', 'reviews_count', 'views_count',
@@ -58,6 +59,7 @@ class Product extends Model
         'promo_flags' => 'array',
         'is_active' => 'boolean',
         'is_archived' => 'boolean',
+        'requires_price_confirmation' => 'boolean',
         'in_stock' => 'boolean',
         'is_featured' => 'boolean',
         'is_new' => 'boolean',
@@ -86,6 +88,13 @@ class Product extends Model
         // Explicitly marked "нет в наличии" — only case that shows "Нет в наличии"
         if ($status === self::AVAILABILITY_OUT_OF_STOCK) {
             return self::AVAILABILITY_OUT_OF_STOCK;
+        }
+
+        // A pricing hold is stronger than a fresh supplier balance. The card
+        // remains public with its last known price, but checkout must wait for
+        // a manager to confirm that the retail price still covers procurement.
+        if ($this->requires_price_confirmation) {
+            return self::AVAILABILITY_CHECK;
         }
 
         // "В наличии" is allowed only when a linked supplier channel confirms
