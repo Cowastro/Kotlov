@@ -1168,6 +1168,40 @@ class CreateSbgDistinctProductsBatchCommand extends Command
         ],
     ];
 
+    private const BATCH_RESEARCHED_PRICED_20261013_AM = [
+        'УТ-00005212' => [
+            'template' => 'PS-009.741',
+            'category_slug' => 'shibery-dymohod',
+            'external_sku' => 'TS.ST5.SHR.0150.70287',
+            'fragments' => ['Шибер', 'ШМ(М)-Р', '304-0.8', 'D150'],
+            'brand' => [
+                'name' => 'Теплов и Сухов',
+                'slug' => 'teplov-i-suhov',
+                'country' => 'Россия',
+                'content' => '<p><strong>Теплов и Сухов</strong> — российский производитель модульных дымоходов и комплектующих из нержавеющей стали.</p>',
+            ],
+            'name' => 'Теплов и Сухов Шибер Моно ШМ(М)-Р 304-0.8 D150 (У)',
+            'retail' => 69.90,
+            'images' => ['img/products/teplov-i-suhov/teplov-suhov-shiber-shmm-304-08-d150.jpg'],
+            'source_url' => 'https://woodson.ru/catalog/dymokhody/tis/316_304/shiber_shm_m_r_304_0_8_d150_u/',
+            'short' => 'Поворотный шибер «Теплов и Сухов» для одностенного дымохода Ø150 мм, нержавеющая сталь AISI 304 толщиной 0,8 мм.',
+            'content' => '<p><strong>Шибер Моно ШМ(М)-Р 304-0.8 D150</strong> служит для регулирования тяги путём частичного перекрытия дымового канала. Поворотная заслонка встроена в одностенный участок трубы, а наружная рукоятка позволяет менять её положение.</p><p>Элемент изготовлен из нержавеющей стали AISI 304 толщиной 0,8 мм и рассчитан на дымоход диаметром 150 мм. Применяется с печами, каминами и твердотопливными котлами в совместимой модульной системе дымохода.</p>',
+            'specs' => [
+                ['key' => 'Тип', 'value' => 'Поворотный шибер'],
+                ['key' => 'Серия', 'value' => 'Моно'],
+                ['key' => 'Модель', 'value' => 'ШМ(М)-Р 304-0.8 D150 (У)'],
+                ['key' => 'Диаметр дымохода', 'value' => '150 мм'],
+                ['key' => 'Марка стали', 'value' => 'AISI 304'],
+                ['key' => 'Толщина стали', 'value' => '0,8 мм'],
+                ['key' => 'Конструкция', 'value' => 'Одностенная, без теплоизоляции'],
+                ['key' => 'Механизм', 'value' => 'Поворотная заслонка с наружной рукояткой'],
+                ['key' => 'Масса', 'value' => '0,654 кг'],
+                ['key' => 'Артикул производителя', 'value' => 'TS.ST5.SHR.0150.70287'],
+                ['key' => 'Страна производства', 'value' => 'Россия'],
+            ],
+        ],
+    ];
+
     public function handle(IntegrationProductCreator $creator): int
     {
         $rows = match ($this->option('batch')) {
@@ -1209,6 +1243,7 @@ class CreateSbgDistinctProductsBatchCommand extends Command
             'researched-priced-20261013-aj' => self::BATCH_RESEARCHED_PRICED_20261013_AJ,
             'researched-priced-20261013-ak' => self::BATCH_RESEARCHED_PRICED_20261013_AK,
             'researched-priced-20261013-al' => self::BATCH_RESEARCHED_PRICED_20261013_AL,
+            'researched-priced-20261013-am' => self::BATCH_RESEARCHED_PRICED_20261013_AM,
             default => null,
         };
 

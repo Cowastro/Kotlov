@@ -2209,4 +2209,70 @@ class CreateSbgDistinctProductsBatchCommandTest extends TestCase
         $this->assertStringNotContainsString('pln', mb_strtolower($product->content));
         $this->assertSame('manual_created', $item->fresh()->match_method);
     }
+
+    public function test_it_creates_the_exact_aisi_304_d150_shiber_instead_of_linking_the_aisi_430_candidate(): void
+    {
+        $source = IntegrationSource::query()->create([
+            'code' => 'onec-sbg-teplov-shiber-304-d150',
+            'name' => '1С СанБизнесГруп',
+            'settings' => ['partner_name' => 'ООО «СанБизнесГруп»'],
+            'is_active' => true,
+            'update_stock' => true,
+        ]);
+        $category = Category::query()->firstOrCreate(['slug' => 'shibery-dymohod'], [
+            'name' => 'Шиберы и задвижки',
+            'parent_id' => 0,
+        ]);
+        $teplov = Brand::query()->firstOrCreate(['slug' => 'teplov-i-suhov'], ['name' => 'Теплов и Сухов']);
+        $wrongAisi430Candidate = Product::query()->create([
+            'category_id' => $category->id,
+            'brand_id' => $teplov->id,
+            'sku' => 'PS-009.741',
+            'name' => 'Шибер ШМ-Р (430-1,0) D150',
+            'slug' => 'teplov-shiber-430-10-d150-template',
+            'price' => 55,
+            'images' => ['product/0009/009741/shiber-430.jpg'],
+        ]);
+        $item = IntegrationProduct::query()->create([
+            'integration_source_id' => $source->id,
+            'external_id' => 'teplov-shiber-304-08-d150',
+            'external_code' => 'УТ-00005212',
+            'external_sku' => 'TS.ST5.SHR.0150.70287',
+            'name' => 'Шибер ШМ(М)-Р 304-0.8 D150 (У)',
+            'price_byn' => null,
+            'stock_quantity' => 2,
+            'match_status' => 'ambiguous',
+            'candidates' => [['product_id' => $wrongAisi430Candidate->id, 'score' => 0.82]],
+        ]);
+
+        $this->artisan('integration:create-sbg-distinct-products', [
+            '--batch' => 'researched-priced-20261013-am',
+            '--code' => ['УТ-00005212'],
+            '--apply' => true,
+        ])->assertSuccessful();
+
+        $product = $item->fresh()->product;
+        $this->assertNotNull($product);
+        $this->assertNotSame($wrongAisi430Candidate->id, $product->id);
+        $this->assertSame($category->id, $product->category_id);
+        $this->assertSame($teplov->id, $product->brand_id);
+        $this->assertSame('Теплов и Сухов Шибер Моно ШМ(М)-Р 304-0.8 D150 (У)', $product->name);
+        $this->assertSame('69.90', $product->price);
+        $this->assertSame('2', (string) $product->stock_qty);
+        $this->assertNull($item->fresh()->normalizedPriceByn());
+        $this->assertSame('Поворотный шибер', collect($product->specs)->firstWhere('key', 'Тип')['value']);
+        $this->assertSame('150 мм', collect($product->specs)->firstWhere('key', 'Диаметр дымохода')['value']);
+        $this->assertSame('AISI 304', collect($product->specs)->firstWhere('key', 'Марка стали')['value']);
+        $this->assertSame('0,8 мм', collect($product->specs)->firstWhere('key', 'Толщина стали')['value']);
+        $this->assertSame('TS.ST5.SHR.0150.70287', collect($product->specs)->firstWhere('key', 'Артикул производителя')['value']);
+        $this->assertSame(['img/products/teplov-i-suhov/teplov-suhov-shiber-shmm-304-08-d150.jpg'], $product->images);
+        $this->assertFileExists(public_path('img/products/teplov-i-suhov/teplov-suhov-shiber-shmm-304-08-d150.jpg'));
+        $this->assertStringContainsString('woodson.ru', $product->content_source_url);
+        $this->assertStringNotContainsString('AISI 430', $product->content);
+        $this->assertStringNotContainsString('кандидат', mb_strtolower($product->content));
+        $this->assertStringNotContainsString('розничная цена', mb_strtolower($product->content));
+        $this->assertStringNotContainsString('нбрб', mb_strtolower($product->content));
+        $this->assertStringNotContainsString('rub', mb_strtolower($product->content));
+        $this->assertSame('manual_created', $item->fresh()->match_method);
+    }
 }
