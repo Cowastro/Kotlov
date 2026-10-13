@@ -47,4 +47,37 @@ class ProductXoControllerManualLinkTest extends TestCase
             ])
             ->assertSee('href="#documents"', false);
     }
+
+    public function test_plain_controller_manual_label_in_xo_description_becomes_a_link(): void
+    {
+        $category = Category::query()->firstOrCreate(
+            ['slug' => 'pelletnye-gorelki'],
+            [
+                'parent_id' => 0,
+                'name' => 'Пеллетные горелки',
+                'is_active' => true,
+            ]
+        );
+
+        Product::query()->create([
+            'category_id' => $category->id,
+            'name' => 'Пеллетная горелка KOTLOV XO Ceramic PRO 100 кВт',
+            'slug' => 'pelletnaya-gorelka-kotlov-xo-ceramic-pro-100-kvt',
+            'sku' => 'PS-012.203',
+            'price' => 14400,
+            'content' => '<h2>Контроллер XO со встроенным Wi-Fi</h2><p><strong>Инструкция контроллера XO 1.0S/2.0S (PDF)</strong></p>',
+            'documents' => null,
+            'is_active' => true,
+            'is_archived' => false,
+            'in_stock' => true,
+            'availability_status' => Product::AVAILABILITY_IN_STOCK,
+        ]);
+
+        $this->get('https://kotlov.by/pelletnye-gorelki/pelletnaya-gorelka-kotlov-xo-ceramic-pro-100-kvt')
+            ->assertOk()
+            ->assertSee(
+                '<a href="/docs/kotlov-xo-controller-1-2os-ru.pdf" class="link fw-medium" target="_blank" rel="noopener"><strong>Инструкция контроллера XO 1.0S/2.0S (PDF)</strong></a>',
+                false
+            );
+    }
 }

@@ -550,7 +550,18 @@
                 $documents = is_array($product->documents) ? array_filter($product->documents) : [];
                 $xoControllerManualUrl = '/docs/kotlov-xo-controller-1-2os-ru.pdf';
                 $isXoCeramicPro100 = $product->slug === 'pelletnaya-gorelka-kotlov-xo-ceramic-pro-100-kvt';
-                $contentHasXoControllerManual = str_contains((string) $product->content, $xoControllerManualUrl);
+                $renderedProductContent = (string) $product->content;
+                if ($isXoCeramicPro100 && !str_contains($renderedProductContent, $xoControllerManualUrl)) {
+                    $manualLabel = 'Инструкция контроллера XO 1.0S/2.0S (PDF)';
+                    $manualLink = '<a href="' . $xoControllerManualUrl . '" class="link fw-medium" target="_blank" rel="noopener"><strong>' . $manualLabel . '</strong></a>';
+                    $renderedProductContent = preg_replace(
+                        '~<strong>\s*' . preg_quote($manualLabel, '~') . '\s*</strong>~u',
+                        $manualLink,
+                        $renderedProductContent,
+                        1
+                    ) ?? $renderedProductContent;
+                }
+                $contentHasXoControllerManual = str_contains($renderedProductContent, $xoControllerManualUrl);
                 if ($isXoCeramicPro100 && !collect($documents)->contains(
                     fn ($document) => is_array($document)
                         ? ($document['url'] ?? null) === $xoControllerManualUrl
@@ -695,7 +706,7 @@
                                             </a>
                                         </p>
                                     @endif
-                                    {!! $product->content !!}
+                                    {!! $renderedProductContent !!}
                                 </div>
                             </div>
                         @else
