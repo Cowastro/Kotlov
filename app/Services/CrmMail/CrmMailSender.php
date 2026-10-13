@@ -33,12 +33,16 @@ class CrmMailSender
             ? $thread->subject
             : 'Re: '.$thread->subject;
         $messageId = Str::uuid().'@'.parse_url(config('app.url'), PHP_URL_HOST);
+        $htmlBody = $this->brandedHtml($body, $user);
+        $plainBody = $this->brandedText($body, $user);
 
         $email = (new Email)
             ->from(sprintf('%s <%s>', $mailbox->name, $mailbox->email))
+            ->replyTo(sprintf('%s <%s>', $mailbox->name, $mailbox->email))
             ->to($thread->participant_email)
             ->subject($subject)
-            ->text($body);
+            ->text($plainBody)
+            ->html($htmlBody);
         $email->getHeaders()->addIdHeader('Message-ID', $messageId);
         if ($lastMessage?->message_id) {
             $email->getHeaders()->addIdHeader('In-Reply-To', $lastMessage->message_id);
@@ -58,7 +62,8 @@ class CrmMailSender
             'from_email' => $mailbox->email,
             'to' => [['name' => $thread->participant_name, 'email' => $thread->participant_email]],
             'subject' => $subject,
-            'text_body' => $body,
+            'text_body' => $plainBody,
+            'html_body' => $htmlBody,
             'is_read' => true,
             'sent_at' => now(),
             'received_at' => now(),
@@ -72,5 +77,25 @@ class CrmMailSender
         ])->save();
 
         return $message;
+    }
+
+    public function brandedHtml(string $body, User $user): string
+    {
+        return view('emails.crm.kotlov-reply', [
+            'body' => $body,
+            'managerName' => $user->name,
+            'company' => config('legal.seller'),
+        ])->render();
+    }
+
+    public function brandedText(string $body, User $user): string
+    {
+        $phones = implode(', ', config('legal.seller.phones', []));
+
+        return trim($body)."\n\n"
+            .'С уважением, '.$user->name."\n"
+            ."Команда KOTLOV.BY\n"
+            .$phones."\n"
+            .config('legal.seller.email', 'info@kotlov.by')." · https://kotlov.by";
     }
 }

@@ -11,6 +11,7 @@ use App\Models\CrmMailbox;
 use App\Models\CrmMailThread;
 use App\Models\User;
 use App\Services\CrmMail\LeadMatcher;
+use App\Services\CrmMail\CrmMailSender;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
@@ -123,5 +124,44 @@ class CrmMailModuleTest extends TestCase
 
         $this->assertSame($otherManager->id, $thread->fresh()->assigned_user_id);
         $this->assertSame($owner->id, $counterparty->fresh()->responsible_user_id);
+    }
+
+    public function test_mail_thread_can_be_moved_to_trash_and_restored(): void
+    {
+        $mailbox = CrmMailbox::create([
+            'name' => 'KOTLOV',
+            'email' => 'trash@kotlov.by',
+            'username' => 'trash@kotlov.by',
+        ]);
+        $thread = CrmMailThread::create([
+            'mailbox_id' => $mailbox->id,
+            'thread_key' => hash('sha256', 'trash@example.com|request'),
+            'participant_email' => 'trash@example.com',
+        ]);
+
+        $thread->delete();
+
+        $this->assertNull(CrmMailThread::find($thread->id));
+        $this->assertNotNull(CrmMailThread::onlyTrashed()->find($thread->id));
+
+        $thread->restore();
+
+        $this->assertNotNull(CrmMailThread::find($thread->id));
+    }
+
+    public function test_branded_reply_contains_manager_signature_and_safe_customer_text(): void
+    {
+        $manager = User::factory()->create(['name' => 'Александр Менеджер']);
+        $sender = app(CrmMailSender::class);
+
+        $html = $sender->brandedHtml('Здравствуйте! <script>alert(1)</script>', $manager);
+        $text = $sender->brandedText('Здравствуйте!', $manager);
+
+        $this->assertStringContainsString('KOTLOV', $html);
+        $this->assertStringContainsString('Александр Менеджер', $html);
+        $this->assertStringNotContainsString('<script>', $html);
+        $this->assertStringContainsString('&lt;script&gt;', $html);
+        $this->assertStringContainsString('Команда KOTLOV.BY', $text);
+        $this->assertStringContainsString('info@kotlov.by', $text);
     }
 }

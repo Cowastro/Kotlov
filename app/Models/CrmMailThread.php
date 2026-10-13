@@ -6,10 +6,13 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\DB;
 
 class CrmMailThread extends Model
 {
+    use SoftDeletes;
+
     public const STATUSES = [
         'new' => 'Новый лид',
         'in_progress' => 'В работе',
@@ -33,7 +36,11 @@ class CrmMailThread extends Model
         'manager_note',
     ];
 
-    protected $casts = ['last_message_at' => 'datetime', 'handled_at' => 'datetime'];
+    protected $casts = [
+        'last_message_at' => 'datetime',
+        'handled_at' => 'datetime',
+        'deleted_at' => 'datetime',
+    ];
 
     public function mailbox(): BelongsTo
     {

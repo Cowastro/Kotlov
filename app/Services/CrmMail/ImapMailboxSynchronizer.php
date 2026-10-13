@@ -78,7 +78,7 @@ class ImapMailboxSynchronizer
                 ): void {
                     $threadKey = $this->threadKey($fromEmail, $subject, $inReplyTo);
                     $receivedAt = $this->parseDate($header->date ?? null);
-                    $thread = CrmMailThread::query()->firstOrCreate(
+                    $thread = CrmMailThread::withTrashed()->firstOrCreate(
                         ['mailbox_id' => $mailbox->id, 'thread_key' => $threadKey],
                         [
                             'crm_counterparty_id' => $counterparty?->id,
@@ -90,6 +90,11 @@ class ImapMailboxSynchronizer
                             'priority' => 'normal',
                         ],
                     );
+                    $wasTrashed = $thread->trashed();
+
+                    if ($wasTrashed) {
+                        $thread->restore();
+                    }
 
                     CrmMailMessage::create([
                         'thread_id' => $thread->id,
@@ -118,7 +123,7 @@ class ImapMailboxSynchronizer
                         'messages_count' => $thread->messages_count + 1,
                         'unread_count' => $thread->unread_count + 1,
                         'last_message_at' => $receivedAt,
-                        'status' => in_array($thread->status, ['closed', 'waiting_customer'], true)
+                        'status' => $wasTrashed || in_array($thread->status, ['closed', 'waiting_customer'], true)
                             ? 'waiting_manager'
                             : $thread->status,
                     ])->save();

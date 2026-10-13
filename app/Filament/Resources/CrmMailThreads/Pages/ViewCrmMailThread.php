@@ -41,7 +41,12 @@ class ViewCrmMailThread extends ViewRecord
             Action::make('reply')
                 ->label('Ответить')->icon('heroicon-o-paper-airplane')->color('primary')
                 ->schema([
-                    Textarea::make('body')->label('Ответ клиенту')->rows(10)->required()->maxLength(20000),
+                    Textarea::make('body')
+                        ->label('Ответ клиенту')
+                        ->rows(10)
+                        ->required()
+                        ->maxLength(20000)
+                        ->helperText('Система добавит фирменную шапку KOTLOV, подпись менеджера, телефоны и ссылку на сайт. Текстовая версия письма создаётся автоматически.'),
                 ])
                 ->requiresConfirmation()
                 ->modalHeading('Отправить ответ клиенту')
@@ -56,6 +61,17 @@ class ViewCrmMailThread extends ViewRecord
                     }
                 }),
             EditAction::make()->label('Карточка лида'),
+            Action::make('trash')
+                ->label('В корзину')
+                ->icon('heroicon-o-trash')
+                ->color('danger')
+                ->requiresConfirmation()
+                ->modalHeading('Переместить переписку в корзину?')
+                ->modalDescription('Переписку можно восстановить из вкладки «Корзина». Новое входящее письмо вернёт её в работу автоматически.')
+                ->action(function (): void {
+                    $this->record->delete();
+                    $this->redirect(CrmMailThreadResource::getUrl('index'));
+                }),
         ];
     }
 }

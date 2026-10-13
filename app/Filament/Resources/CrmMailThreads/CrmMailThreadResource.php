@@ -154,17 +154,44 @@ class CrmMailThreadResource extends Resource
                 SelectFilter::make('mailbox_id')->label('Ящик')->relationship('mailbox', 'email'),
             ])
             ->recordActions([
-                ViewAction::make(),
+                ViewAction::make()
+                    ->visible(fn (CrmMailThread $record): bool => ! $record->trashed()),
                 ActionGroup::make([
                     Action::make('take')
                         ->label('Взять в работу')->icon('heroicon-o-hand-raised')->color('warning')
-                        ->visible(fn (CrmMailThread $record): bool => $record->assigned_user_id !== auth()->id() || $record->status === 'new')
+                        ->visible(fn (CrmMailThread $record): bool => ! $record->trashed()
+                            && ($record->assigned_user_id !== auth()->id() || $record->status === 'new'))
                         ->action(fn (CrmMailThread $record) => $record->takeFor((int) auth()->id())),
                     Action::make('close')
                         ->label('Закрыть')->icon('heroicon-o-check-circle')->color('success')
-                        ->visible(fn (CrmMailThread $record): bool => $record->status !== 'closed')
+                        ->visible(fn (CrmMailThread $record): bool => ! $record->trashed() && $record->status !== 'closed')
                         ->action(fn (CrmMailThread $record) => $record->update(['status' => 'closed', 'handled_at' => now()])),
-                    EditAction::make(),
+                    EditAction::make()
+                        ->visible(fn (CrmMailThread $record): bool => ! $record->trashed()),
+                    Action::make('trash')
+                        ->label('В корзину')
+                        ->icon('heroicon-o-trash')
+                        ->color('danger')
+                        ->visible(fn (CrmMailThread $record): bool => ! $record->trashed())
+                        ->requiresConfirmation()
+                        ->modalHeading('Переместить переписку в корзину?')
+                        ->modalDescription('Переписку можно будет восстановить. Новое письмо клиента также автоматически вернёт её в работу.')
+                        ->action(fn (CrmMailThread $record) => $record->delete()),
+                    Action::make('restore')
+                        ->label('Восстановить')
+                        ->icon('heroicon-o-arrow-uturn-left')
+                        ->color('success')
+                        ->visible(fn (CrmMailThread $record): bool => $record->trashed())
+                        ->action(fn (CrmMailThread $record) => $record->restore()),
+                    Action::make('delete_forever')
+                        ->label('Удалить навсегда')
+                        ->icon('heroicon-o-x-circle')
+                        ->color('danger')
+                        ->visible(fn (CrmMailThread $record): bool => $record->trashed() && auth()->user()?->isAdmin() === true)
+                        ->requiresConfirmation()
+                        ->modalHeading('Удалить переписку навсегда?')
+                        ->modalDescription('Будут окончательно удалены вся цепочка и сохранённые письма. Это действие нельзя отменить.')
+                        ->action(fn (CrmMailThread $record) => $record->forceDelete()),
                 ]),
             ]);
     }
