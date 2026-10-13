@@ -5,12 +5,16 @@ namespace Tests\Feature;
 use App\Filament\Resources\Orders\Pages\ViewOrder as AdminViewOrder;
 use App\Filament\Resources\Suppliers\SupplierResource;
 use App\Filament\Supplier\Resources\SupplierOrderRequests\SupplierOrderRequestResource;
+use App\Models\CrmContactPoint;
+use App\Models\CrmCounterparty;
+use App\Models\CrmMailbox;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Supplier;
 use App\Models\SupplierOrderRequest;
 use App\Models\SupplierOrderRequestItem;
 use App\Models\User;
+use App\Services\CrmMail\SupplierRequestMailDraftService;
 use App\Services\Orders\SupplierAutoTransferManager;
 use App\Services\Orders\SupplierAutoTransferReadiness;
 use App\Services\Orders\SupplierOrderRequestWorkflow;
@@ -22,6 +26,53 @@ use Tests\TestCase;
 class SupplierOrderRequestWorkflowTest extends TestCase
 {
     use RefreshDatabase;
+
+    public function test_supplier_email_added_to_crm_card_is_pulled_into_existing_draft(): void
+    {
+        $manager = User::factory()->create(['role' => 'admin', 'is_active' => true]);
+        $counterparty = CrmCounterparty::query()->create(['name' => 'Поставщик без email']);
+        $supplier = Supplier::query()->create([
+            'crm_counterparty_id' => $counterparty->id,
+            'code' => 'supplier-with-late-email',
+            'name' => 'Поставщик без email',
+            'contact' => '+375291112233',
+            'is_active' => true,
+        ]);
+        [, , , $request] = $this->requestFixture('LATE-EMAIL', $manager, $supplier);
+        CrmMailbox::query()->firstOrCreate(
+            ['email' => 'info@kotlov.by'],
+            [
+                'name' => 'KOTLOV',
+                'username' => 'info@kotlov.by',
+                'is_enabled' => true,
+            ],
+        );
+
+        $service = app(SupplierRequestMailDraftService::class);
+        $thread = $service->sync($request, $manager);
+
+        $this->assertFalse($thread->hasValidRecipient());
+        $this->assertSame($counterparty->id, $thread->crm_counterparty_id);
+
+        CrmContactPoint::query()->create([
+            'counterparty_id' => $counterparty->id,
+            'type' => 'email',
+            'value' => 'orders@supplier.test',
+            'is_primary' => true,
+            'is_active' => true,
+        ]);
+
+        $thread = $service->refreshRecipientFromSupplier($thread);
+
+        $this->assertTrue($thread->hasValidRecipient());
+        $this->assertSame('orders@supplier.test', $thread->participant_email);
+        $this->assertSame(
+            ['orders@supplier.test'],
+            collect($thread->messages()->where('direction', 'draft')->firstOrFail()->to)
+                ->pluck('email')
+                ->all(),
+        );
+    }
 
     public function test_manager_explicitly_publishes_a_request_to_only_the_assigned_supplier_portal(): void
     {

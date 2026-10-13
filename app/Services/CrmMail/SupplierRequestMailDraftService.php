@@ -91,8 +91,13 @@ class SupplierRequestMailDraftService
                 return $thread;
             }
 
+            if ($recipient === '' && filter_var((string) $thread->participant_email, FILTER_VALIDATE_EMAIL)) {
+                $recipient = (string) $thread->participant_email;
+            }
+
             $thread->fill([
                 'mailbox_id' => $mailbox->id,
+                'crm_counterparty_id' => $request->supplier?->crm_counterparty_id,
                 'assigned_user_id' => $user?->id,
                 'thread_key' => hash('sha256', 'supplier-order-request|'.$request->id),
                 'subject' => $subject,
@@ -134,6 +139,52 @@ class SupplierRequestMailDraftService
         });
     }
 
+    public function refreshRecipientFromSupplier(CrmMailThread $thread): CrmMailThread
+    {
+        if ($thread->status !== 'draft' || ! $thread->supplier_order_request_id) {
+            return $thread;
+        }
+
+        $thread->loadMissing('supplierOrderRequest.supplier.crmCounterparty.contactPoints');
+        $supplier = $thread->supplierOrderRequest?->supplier;
+        $recipient = $supplier?->contactEmailAddresses()[0] ?? '';
+
+        if ($supplier?->crm_counterparty_id && $thread->crm_counterparty_id !== $supplier->crm_counterparty_id) {
+            $thread->forceFill(['crm_counterparty_id' => $supplier->crm_counterparty_id])->save();
+        }
+
+        if ($thread->hasValidRecipient()) {
+            return $thread->fresh(['messages', 'supplierOrderRequest.supplier.crmCounterparty.contactPoints']);
+        }
+
+        if (filter_var($recipient, FILTER_VALIDATE_EMAIL) === false) {
+            return $thread->fresh(['messages', 'supplierOrderRequest.supplier.crmCounterparty.contactPoints']);
+        }
+
+        return DB::transaction(function () use ($thread, $recipient): CrmMailThread {
+            $thread->forceFill(['participant_email' => $recipient])->save();
+
+            $message = $thread->messages()->where('direction', 'draft')->first();
+            if ($message) {
+                $recipients = collect($message->to ?? [])
+                    ->filter(fn (mixed $address): bool => is_array($address)
+                        && filter_var((string) ($address['email'] ?? ''), FILTER_VALIDATE_EMAIL) !== false)
+                    ->values();
+
+                if ($recipients->isEmpty()) {
+                    $message->forceFill([
+                        'to' => [[
+                            'name' => $thread->participant_name,
+                            'email' => $recipient,
+                        ]],
+                    ])->save();
+                }
+            }
+
+            return $thread->fresh(['messages', 'supplierOrderRequest.supplier.crmCounterparty.contactPoints']);
+        });
+    }
+
     public function update(
         CrmMailThread $thread,
         string|array|null $recipients,
@@ -143,8 +194,7 @@ class SupplierRequestMailDraftService
         array $cc = [],
         ?array $attachments = null,
         array $attachmentNames = [],
-    ): CrmMailThread
-    {
+    ): CrmMailThread {
         if ($thread->status !== 'draft') {
             throw new RuntimeException('Редактировать можно только неотправленный черновик.');
         }
@@ -195,7 +245,7 @@ class SupplierRequestMailDraftService
     }
 
     /** @param list<string> $addresses
-     *  @return list<array{name: string|null, email: string}>
+     * @return list<array{name: string|null, email: string}>
      */
     private function addressRecords(array $addresses, ?string $primaryName = null): array
     {

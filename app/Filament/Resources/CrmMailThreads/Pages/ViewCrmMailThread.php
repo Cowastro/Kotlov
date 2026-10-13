@@ -2,15 +2,17 @@
 
 namespace App\Filament\Resources\CrmMailThreads\Pages;
 
+use App\Filament\Resources\CrmCounterparties\CrmCounterpartyResource;
 use App\Filament\Resources\CrmMailThreads\CrmMailThreadResource;
+use App\Filament\Resources\Suppliers\SupplierResource;
 use App\Services\CrmMail\CrmMailSender;
 use App\Services\CrmMail\SupplierRequestMailDraftService;
 use Filament\Actions\Action;
 use Filament\Actions\EditAction;
-use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TagsInput;
+use Filament\Forms\Components\Textarea;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\ViewRecord;
 use Filament\Support\Enums\Width;
@@ -23,8 +25,23 @@ class ViewCrmMailThread extends ViewRecord
     public function mount(int|string $record): void
     {
         parent::mount($record);
+        if (! $this->record->hasValidRecipient()) {
+            $this->record = app(SupplierRequestMailDraftService::class)
+                ->refreshRecipientFromSupplier($this->record);
+        }
         $this->record->messages()->where('direction', 'incoming')->update(['is_read' => true]);
         $this->record->forceFill(['unread_count' => 0])->save();
+
+        if ($this->record->status === 'draft'
+            && $this->record->supplier_order_request_id
+            && ! $this->record->hasValidRecipient()) {
+            Notification::make()
+                ->warning()
+                ->title('Не указан email поставщика')
+                ->body('Добавьте электронную почту в карточку контрагента. До этого отправка письма недоступна.')
+                ->persistent()
+                ->send();
+        }
     }
 
     public function getMaxContentWidth(): Width|string|null
@@ -110,11 +127,48 @@ class ViewCrmMailThread extends ViewRecord
                     $this->record->refresh();
                     Notification::make()->success()->title('Черновик сохранён')->send();
                 }),
+            Action::make('add_supplier_email')
+                ->label('Добавить email в карточку')
+                ->icon('heroicon-o-at-symbol')
+                ->color('danger')
+                ->visible(fn (): bool => $this->record->status === 'draft'
+                    && $this->record->supplier_order_request_id !== null
+                    && ! $this->record->hasValidRecipient()
+                    && $this->supplierEmailCardUrl() !== null)
+                ->url(fn (): ?string => $this->supplierEmailCardUrl())
+                ->openUrlInNewTab(),
+            Action::make('refresh_supplier_email')
+                ->label('Проверить email')
+                ->icon('heroicon-o-arrow-path')
+                ->color('gray')
+                ->visible(fn (): bool => $this->record->status === 'draft'
+                    && $this->record->supplier_order_request_id !== null
+                    && ! $this->record->hasValidRecipient())
+                ->action(function (): void {
+                    $this->record = app(SupplierRequestMailDraftService::class)
+                        ->refreshRecipientFromSupplier($this->record);
+
+                    if ($this->record->hasValidRecipient()) {
+                        Notification::make()->success()->title('Email поставщика добавлен в черновик')->send();
+
+                        return;
+                    }
+
+                    Notification::make()
+                        ->warning()
+                        ->title('Email всё ещё не указан')
+                        ->body('Сохраните электронную почту в карточке контрагента и повторите проверку.')
+                        ->send();
+                }),
             Action::make('send_draft')
                 ->label('Отправить')
                 ->icon('heroicon-o-paper-airplane')
                 ->color('success')
                 ->visible(fn (): bool => $this->record->status === 'draft')
+                ->disabled(fn (): bool => ! $this->record->hasValidRecipient())
+                ->tooltip(fn (): ?string => $this->record->hasValidRecipient()
+                    ? null
+                    : 'Сначала добавьте email в карточку поставщика')
                 ->fillForm(fn (): array => CrmMailThreadResource::draftData($this->record))
                 ->schema(CrmMailThreadResource::draftFields(true))
                 ->modalWidth('6xl')
@@ -176,5 +230,21 @@ class ViewCrmMailThread extends ViewRecord
                     $this->redirect(CrmMailThreadResource::getUrl('index'));
                 }),
         ];
+    }
+
+    private function supplierEmailCardUrl(): ?string
+    {
+        $this->record->loadMissing('supplierOrderRequest.supplier.crmCounterparty');
+        $supplier = $this->record->supplierOrderRequest?->supplier;
+
+        if ($supplier?->crmCounterparty) {
+            return CrmCounterpartyResource::getUrl('edit', [
+                'record' => $supplier->crmCounterparty,
+            ]);
+        }
+
+        return $supplier
+            ? SupplierResource::getUrl('edit', ['record' => $supplier])
+            : null;
     }
 }

@@ -2,10 +2,12 @@
 
 namespace App\Filament\Resources\CrmMailThreads;
 
+use App\Filament\Resources\CrmCounterparties\CrmCounterpartyResource;
 use App\Filament\Resources\CrmMailThreads\Pages\EditCrmMailThread;
 use App\Filament\Resources\CrmMailThreads\Pages\ListCrmMailThreads;
 use App\Filament\Resources\CrmMailThreads\Pages\ViewCrmMailThread;
 use App\Filament\Resources\Orders\OrderResource;
+use App\Filament\Resources\Suppliers\SupplierResource;
 use App\Models\CrmContact;
 use App\Models\CrmContactPoint;
 use App\Models\CrmMailMessage;
@@ -18,14 +20,14 @@ use Filament\Actions\Action;
 use Filament\Actions\ActionGroup;
 use Filament\Actions\EditAction;
 use Filament\Actions\ViewAction;
+use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Select;
+use Filament\Forms\Components\TagsInput;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
-use Filament\Forms\Components\FileUpload;
-use Filament\Forms\Components\TagsInput;
-use Filament\Notifications\Notification;
 use Filament\Infolists\Components\RepeatableEntry;
 use Filament\Infolists\Components\TextEntry;
+use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
@@ -72,7 +74,8 @@ class CrmMailThreadResource extends Resource
     public static function getEloquentQuery(): Builder
     {
         return parent::getEloquentQuery()->with([
-            'mailbox', 'assignedUser', 'counterparty', 'contact', 'supplierOrderRequest.order',
+            'mailbox', 'assignedUser', 'counterparty', 'contact', 'messages', 'supplierOrderRequest.order',
+            'supplierOrderRequest.supplier.crmCounterparty',
         ]);
     }
 
@@ -104,7 +107,14 @@ class CrmMailThreadResource extends Resource
         return $schema->components([
             Section::make('Лид')->columns(4)->schema([
                 TextEntry::make('participant_name')->label('Имя')->placeholder('Не указано')->weight('bold'),
-                TextEntry::make('participant_email')->label('Email')->copyable()->url(fn (CrmMailThread $record): string => 'mailto:'.$record->participant_email),
+                TextEntry::make('participant_email')
+                    ->label('Email')
+                    ->placeholder('Не указан — добавьте в карточку поставщика')
+                    ->copyable(fn (CrmMailThread $record): bool => $record->hasValidRecipient())
+                    ->url(fn (CrmMailThread $record): ?string => $record->hasValidRecipient()
+                        ? 'mailto:'.$record->participant_email
+                        : null)
+                    ->color(fn (CrmMailThread $record): string => $record->hasValidRecipient() ? 'primary' : 'danger'),
                 TextEntry::make('counterparty.name')->label('Контрагент CRM')->placeholder('Новый контакт'),
                 TextEntry::make('assignedUser.name')->label('Ответственный')->placeholder('Не назначен'),
                 TextEntry::make('status')->label('Статус')->badge()
@@ -219,6 +229,10 @@ class CrmMailThreadResource extends Resource
                         ->icon('heroicon-o-paper-airplane')
                         ->color('success')
                         ->visible(fn (CrmMailThread $record): bool => ! $record->trashed() && $record->status === 'draft')
+                        ->disabled(fn (CrmMailThread $record): bool => ! $record->hasValidRecipient())
+                        ->tooltip(fn (CrmMailThread $record): ?string => $record->hasValidRecipient()
+                            ? null
+                            : 'Сначала добавьте email в карточку поставщика')
                         ->fillForm(fn (CrmMailThread $record): array => static::draftData($record))
                         ->schema(static::draftFields(true))
                         ->modalWidth('6xl')
@@ -242,6 +256,17 @@ class CrmMailThreadResource extends Resource
                                 Notification::make()->danger()->title('Письмо не отправлено')->body($exception->getMessage())->send();
                             }
                         }),
+                    Action::make('add_supplier_email')
+                        ->label('Добавить email в карточку')
+                        ->icon('heroicon-o-at-symbol')
+                        ->color('danger')
+                        ->visible(fn (CrmMailThread $record): bool => ! $record->trashed()
+                            && $record->status === 'draft'
+                            && $record->supplier_order_request_id !== null
+                            && ! $record->hasValidRecipient()
+                            && static::supplierEmailCardUrl($record) !== null)
+                        ->url(fn (CrmMailThread $record): ?string => static::supplierEmailCardUrl($record))
+                        ->openUrlInNewTab(),
                     Action::make('take')
                         ->label('Взять в работу')->icon('heroicon-o-hand-raised')->color('warning')
                         ->visible(fn (CrmMailThread $record): bool => ! $record->trashed()
@@ -401,6 +426,22 @@ class CrmMailThreadResource extends Resource
             ->map(fn (mixed $email): string => mb_strtolower(trim((string) $email)))
             ->filter(fn (string $email): bool => filter_var($email, FILTER_VALIDATE_EMAIL) !== false)
             ->unique()->values()->all();
+    }
+
+    public static function supplierEmailCardUrl(CrmMailThread $record): ?string
+    {
+        $record->loadMissing('supplierOrderRequest.supplier.crmCounterparty');
+        $supplier = $record->supplierOrderRequest?->supplier;
+
+        if ($supplier?->crmCounterparty) {
+            return CrmCounterpartyResource::getUrl('edit', [
+                'record' => $supplier->crmCounterparty,
+            ]);
+        }
+
+        return $supplier
+            ? SupplierResource::getUrl('edit', ['record' => $supplier])
+            : null;
     }
 
     public static function getPages(): array

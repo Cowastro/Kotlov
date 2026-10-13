@@ -74,6 +74,22 @@ class CrmMailThread extends Model
         return $this->hasMany(CrmMailMessage::class, 'thread_id')->orderBy('received_at');
     }
 
+    public function hasValidRecipient(): bool
+    {
+        if (filter_var(trim((string) $this->participant_email), FILTER_VALIDATE_EMAIL) !== false) {
+            return true;
+        }
+
+        $draft = $this->relationLoaded('messages')
+            ? $this->messages->where('direction', 'draft')->sortByDesc('id')->first()
+            : $this->messages()->where('direction', 'draft')->latest('id')->first();
+
+        return collect($draft?->to ?? [])->contains(
+            fn (mixed $recipient): bool => is_array($recipient)
+                && filter_var(trim((string) ($recipient['email'] ?? '')), FILTER_VALIDATE_EMAIL) !== false,
+        );
+    }
+
     public function scopeNeedsAttention(Builder $query): Builder
     {
         return $query->whereIn('status', ['new', 'waiting_manager']);
