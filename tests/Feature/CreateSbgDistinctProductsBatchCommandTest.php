@@ -3578,4 +3578,88 @@ class CreateSbgDistinctProductsBatchCommandTest extends TestCase
         $this->assertSame($productCount + 1, Product::query()->count());
         $this->assertSame($product->id, $item->fresh()->product_id);
     }
+
+    public function test_it_links_and_refreshes_the_exact_small_fraction_raspberry_quartzite_card(): void
+    {
+        $source = IntegrationSource::query()->create([
+            'code' => 'onec-sbg-raspberry-quartzite-small',
+            'name' => '1С СанБизнесГруп',
+            'settings' => ['partner_name' => 'ООО «СанБизнесГруп»'],
+            'is_active' => true,
+            'update_stock' => true,
+        ]);
+        $category = Category::query()->firstOrCreate(['slug' => 'kamni-dlya-bani'], [
+            'name' => 'Камни для бани',
+            'parent_id' => 0,
+        ]);
+        $exactProduct = Product::query()->create([
+            'category_id' => $category->id,
+            'sku' => 'PS-000.124',
+            'name' => 'Камни Малиновый кварцит колотый (20 кг)',
+            'slug' => 'kamni-malinovyj-kvarcit-kolotyj',
+            'price' => 35,
+            'images' => ['product/000/000124/208-kvarc.jpg'],
+            'short_description' => 'Старая карточка без указания фракции.',
+            'content' => '<p>Старое описание с недоказанными лечебными утверждениями.</p>',
+            'is_active' => true,
+            'is_archived' => false,
+        ]);
+        $item = IntegrationProduct::query()->create([
+            'integration_source_id' => $source->id,
+            'external_id' => 'raspberry-quartzite-small-box',
+            'external_code' => 'УТ-00009367',
+            'external_sku' => null,
+            'name' => 'Камень для саун (малиновый кварцит, кор) мелкий',
+            'price_byn' => null,
+            'stock_quantity' => 3,
+            'match_status' => 'ambiguous',
+            'candidates' => [['product_id' => $exactProduct->id, 'score' => 0.70]],
+        ]);
+        $productCount = Product::query()->count();
+
+        $this->artisan('integration:create-sbg-distinct-products', [
+            '--batch' => 'researched-priced-20261013-be',
+            '--code' => ['УТ-00009367'],
+            '--apply' => true,
+        ])->assertSuccessful();
+
+        $item->refresh();
+        $exactProduct->refresh();
+        $this->assertSame($productCount, Product::query()->count());
+        $this->assertSame($exactProduct->id, $item->product_id);
+        $this->assertSame('matched', $item->match_status);
+        $this->assertSame('manual_search', $item->match_method);
+        $this->assertSame($category->id, $item->target_category_id);
+        $this->assertNull($item->candidates);
+        $this->assertSame('Камни для бани Малиновый кварцит колотый, мелкая фракция, 20 кг', $exactProduct->name);
+        $this->assertSame('38.00', $exactProduct->price);
+        $this->assertSame('3', (string) $exactProduct->stock_qty);
+        $this->assertTrue((bool) $exactProduct->in_stock);
+        $this->assertSame('Мелкая', collect($exactProduct->specs)->firstWhere('key', 'Фракция')['value']);
+        $this->assertSame('20 кг', collect($exactProduct->specs)->firstWhere('key', 'Фасовка')['value']);
+        $this->assertSame(['img/products/sauna-stones/malinovyi-kvartsit-kolotyi-melkii-20kg.png'], $exactProduct->images);
+        $this->assertFileExists(public_path('img/products/sauna-stones/malinovyi-kvartsit-kolotyi-melkii-20kg.png'));
+        $this->assertStringContainsString('banipechi.by', $exactProduct->content_source_url);
+        $this->assertStringContainsString('поставляется в коробке массой 20 кг', $exactProduct->content);
+        $this->assertStringNotContainsString('лечеб', mb_strtolower($exactProduct->content));
+        $this->assertStringNotContainsString('давлен', mb_strtolower($exactProduct->content));
+        $this->assertStringNotContainsString('розничная цена', mb_strtolower($exactProduct->content));
+        $this->assertStringNotContainsString('rub', mb_strtolower($exactProduct->content));
+        $this->assertDatabaseHas('supplier_product_mappings', [
+            'supplier_code' => $source->matchingSupplierCode(),
+            'supplier_article' => 'УТ-00009367',
+            'product_id' => $exactProduct->id,
+            'product_sku' => 'PS-000.124',
+            'confidence' => 'manual',
+            'is_active' => true,
+        ]);
+
+        $this->artisan('integration:create-sbg-distinct-products', [
+            '--batch' => 'researched-priced-20261013-be',
+            '--code' => ['УТ-00009367'],
+            '--apply' => true,
+        ])->assertSuccessful();
+        $this->assertSame($productCount, Product::query()->count());
+        $this->assertSame($exactProduct->id, $item->fresh()->product_id);
+    }
 }

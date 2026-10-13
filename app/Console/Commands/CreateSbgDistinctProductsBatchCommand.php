@@ -1817,6 +1817,34 @@ class CreateSbgDistinctProductsBatchCommand extends Command
         ],
     ];
 
+    private const BATCH_RESEARCHED_PRICED_20261013_BE = [
+        'УТ-00009367' => [
+            'template' => 'PS-000.124',
+            'link_existing_sku' => 'PS-000.124',
+            'link_fragments' => ['Малиновый кварцит', 'колотый', '20 кг'],
+            'refresh_existing' => true,
+            'category_slug' => 'kamni-dlya-bani',
+            'fragments' => ['малиновый кварцит', 'кор', 'мелкий'],
+            'allow_brandless' => true,
+            'name' => 'Камни для бани Малиновый кварцит колотый, мелкая фракция, 20 кг',
+            'retail' => 38.00,
+            'images' => ['img/products/sauna-stones/malinovyi-kvartsit-kolotyi-melkii-20kg.png'],
+            'source_url' => 'https://banipechi.by/catalog/kamni-dlya-pechi/kamni-malinoviy-kvarcit-melk',
+            'short' => 'Колотый малиновый кварцит мелкой фракции для банных печей и каменок, фасовка в коробке 20 кг.',
+            'content' => '<p><strong>Малиновый кварцит колотый, мелкая фракция</strong> — природный камень для закладки в дровяные и электрические банные каменки. Неровная колотая поверхность увеличивает площадь теплоотдачи, а высокая плотность кварцита помогает камню аккумулировать тепло.</p><p>Камень поставляется в коробке массой 20 кг. Перед первой укладкой его необходимо промыть и просушить. Во время эксплуатации каменку рекомендуется периодически перебирать, удаляя растрескавшиеся камни.</p>',
+            'specs' => [
+                ['key' => 'Тип', 'value' => 'Природный камень для бани'],
+                ['key' => 'Порода', 'value' => 'Малиновый кварцит'],
+                ['key' => 'Обработка', 'value' => 'Колотый'],
+                ['key' => 'Фракция', 'value' => 'Мелкая'],
+                ['key' => 'Фасовка', 'value' => '20 кг'],
+                ['key' => 'Упаковка', 'value' => 'Картонная коробка'],
+                ['key' => 'Назначение', 'value' => 'Банные печи и каменки'],
+                ['key' => 'Страна происхождения', 'value' => 'Россия'],
+            ],
+        ],
+    ];
+
     public function handle(
         IntegrationProductCreator $creator,
         IntegrationProductMatchDecision $matchDecision,
@@ -1879,6 +1907,7 @@ class CreateSbgDistinctProductsBatchCommand extends Command
             'researched-priced-20261013-bb' => self::BATCH_RESEARCHED_PRICED_20261013_BB,
             'researched-priced-20261013-bc' => self::BATCH_RESEARCHED_PRICED_20261013_BC,
             'researched-priced-20261013-bd' => self::BATCH_RESEARCHED_PRICED_20261013_BD,
+            'researched-priced-20261013-be' => self::BATCH_RESEARCHED_PRICED_20261013_BE,
             default => null,
         };
 
