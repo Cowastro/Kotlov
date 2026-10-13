@@ -21,7 +21,7 @@ class MarketWebResearchService
 
         $product->loadMissing(['brand', 'category']);
         $models = array_values(array_unique(array_filter([
-            trim((string) config('services.ai.openai_research_model', 'gpt-5.4')),
+            trim((string) config('services.ai.openai_research_model', 'gpt-6.1-sol')),
             trim((string) config('services.ai.openai_model', 'gpt-4.1')),
         ])));
         $lastError = null;
@@ -70,6 +70,7 @@ class MarketWebResearchService
                 'type' => 'web_search',
                 'external_web_access' => true,
                 'search_context_size' => 'high',
+                'return_token_budget' => 'unlimited',
                 'user_location' => [
                     'type' => 'approximate',
                     'country' => 'BY',
@@ -77,9 +78,9 @@ class MarketWebResearchService
                     'region' => 'Minsk',
                 ],
             ]],
-            'tool_choice' => 'auto',
+            'tool_choice' => 'required',
             'include' => ['web_search_call.action.sources'],
-            'max_output_tokens' => 9000,
+            'max_output_tokens' => 16000,
             'instructions' => $this->instructions(),
             'input' => $this->productPrompt($product, $quotePrice),
             'text' => [
@@ -93,8 +94,7 @@ class MarketWebResearchService
         ];
 
         if (preg_match('/^(gpt-[56]|o[1-9])/', $model) === 1) {
-            $payload['reasoning'] = ['effort' => 'high'];
-            $payload['return_token_budget'] = 'unlimited';
+            $payload['reasoning'] = ['effort' => 'max'];
         }
 
         return $payload;

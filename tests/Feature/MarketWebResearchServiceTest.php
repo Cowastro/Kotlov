@@ -17,7 +17,7 @@ class MarketWebResearchServiceTest extends TestCase
         config()->set([
             'services.ai.openai_key' => 'test-key',
             'services.ai.openai_responses_url' => 'https://api.openai.test/v1/responses',
-            'services.ai.openai_research_model' => 'gpt-5.4',
+            'services.ai.openai_research_model' => 'gpt-6.1-sol',
             'services.ai.openai_model' => 'gpt-4.1',
         ]);
 
@@ -87,9 +87,10 @@ class MarketWebResearchServiceTest extends TestCase
                 && $data['store'] === false
                 && $data['tools'][0]['type'] === 'web_search'
                 && $data['tools'][0]['search_context_size'] === 'high'
-                && $data['reasoning']['effort'] === 'high'
-                && $data['return_token_budget'] === 'unlimited'
-                && $data['max_output_tokens'] === 9000;
+                && $data['tools'][0]['return_token_budget'] === 'unlimited'
+                && $data['tool_choice'] === 'required'
+                && $data['reasoning']['effort'] === 'max'
+                && $data['max_output_tokens'] === 16000;
         });
     }
 
