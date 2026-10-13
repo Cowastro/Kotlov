@@ -1845,6 +1845,36 @@ class CreateSbgDistinctProductsBatchCommand extends Command
         ],
     ];
 
+    private const BATCH_RESEARCHED_PRICED_20261013_BF = [
+        'УТ-00008344' => [
+            'template' => 'KOTLOV-022510',
+            'category_slug' => 'oblicovki',
+            'fragments' => ['Плита вермикулитовая', '25х1260х1000'],
+            'brand' => [
+                'name' => 'Scamol',
+                'slug' => 'scamol',
+            ],
+            'name' => 'Вермикулитовая плита Skamol V-1100-700 1260×1000×25 мм',
+            'retail' => 349.00,
+            'images' => ['img/products/skamol/skamol-v1100-700-1260-1000-25.png'],
+            'source_url' => 'https://kaminnext.ru/catalog/teploizolyatsiya/soputstvuyushchie_tovary/3646/',
+            'short' => 'Термостойкая вермикулитовая плита Skamol V-1100 плотностью 700 кг/м³, размер 1260×1000×25 мм, для футеровки и теплоизоляции.',
+            'content' => '<p><strong>Skamol V-1100-700 1260×1000×25 мм</strong> — полноразмерная вермикулитовая плита для огнеупорной футеровки топочных камер, печей, каминов и барбекю. Материал рассчитан на рабочую температуру до 1100 °C и подходит для замены внутренних защитных плит.</p><p>Размер листа составляет 1260×1000 мм при толщине 25 мм, плотность — 700 кг/м³. Плита поддаётся раскрою обычным деревообрабатывающим инструментом. Это отдельный полноразмерный лист, а не фасонная запчасть для конкретной модели печи.</p>',
+            'specs' => [
+                ['key' => 'Тип', 'value' => 'Вермикулитовая термостойкая плита'],
+                ['key' => 'Серия', 'value' => 'V-1100-700'],
+                ['key' => 'Длина', 'value' => '1260 мм'],
+                ['key' => 'Ширина', 'value' => '1000 мм'],
+                ['key' => 'Толщина', 'value' => '25 мм'],
+                ['key' => 'Плотность', 'value' => '700 кг/м³'],
+                ['key' => 'Максимальная рабочая температура', 'value' => '1100 °C'],
+                ['key' => 'Материал', 'value' => 'Прессованный вермикулит'],
+                ['key' => 'Назначение', 'value' => 'Футеровка и теплоизоляция печей, каминов и топок'],
+                ['key' => 'Страна бренда', 'value' => 'Дания'],
+            ],
+        ],
+    ];
+
     public function handle(
         IntegrationProductCreator $creator,
         IntegrationProductMatchDecision $matchDecision,
@@ -1908,6 +1938,7 @@ class CreateSbgDistinctProductsBatchCommand extends Command
             'researched-priced-20261013-bc' => self::BATCH_RESEARCHED_PRICED_20261013_BC,
             'researched-priced-20261013-bd' => self::BATCH_RESEARCHED_PRICED_20261013_BD,
             'researched-priced-20261013-be' => self::BATCH_RESEARCHED_PRICED_20261013_BE,
+            'researched-priced-20261013-bf' => self::BATCH_RESEARCHED_PRICED_20261013_BF,
             default => null,
         };
 

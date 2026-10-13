@@ -73,13 +73,14 @@ class SupplierProductAvailabilityService
             }
 
             if ($integrationStock !== null) {
-                $stockQty = (int) $integrationStock->known_quantity_count > 0
-                    ? max(0, (int) $integrationStock->total_quantity)
-                    : null;
+                $stockQty = $this->summaryStockQty(
+                    $integrationStock->known_quantity_count,
+                    $integrationStock->total_quantity,
+                );
                 $confirmedInStock = $stockQty !== null && $stockQty > 0;
             } else {
-                $stockQty = $legacyStock !== null && (int) $legacyStock->known_quantity_count > 0
-                    ? max(0, (int) $legacyStock->total_quantity)
+                $stockQty = $legacyStock !== null
+                    ? $this->summaryStockQty($legacyStock->known_quantity_count, $legacyStock->total_quantity)
                     : null;
                 $confirmedInStock = $legacyStock !== null && (bool) $legacyStock->confirmed_in_stock;
             }
@@ -101,5 +102,23 @@ class SupplierProductAvailabilityService
                 'updated_at' => $now,
             ]);
         }
+    }
+
+    private function summaryStockQty(mixed $knownQuantityCount, mixed $totalQuantity): ?int
+    {
+        if ((int) $knownQuantityCount <= 0) {
+            return null;
+        }
+
+        $total = (float) $totalQuantity;
+        if ($total <= 0) {
+            return 0;
+        }
+
+        // products.stock_qty is an integer summary, while supplier channels
+        // can contain fractional units (for example, a partly used sheet).
+        // Keep the exact amount on the channel and preserve positive
+        // availability in the product summary instead of truncating it to 0.
+        return max(1, (int) $total);
     }
 }

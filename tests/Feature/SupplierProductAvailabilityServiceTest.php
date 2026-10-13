@@ -83,4 +83,42 @@ class SupplierProductAvailabilityServiceTest extends TestCase
         $this->assertSame(0, $product->stock_qty);
         $this->assertSame(Product::AVAILABILITY_CHECK, $product->availability_status);
     }
+
+    public function test_fractional_one_c_stock_remains_available_in_the_integer_product_summary(): void
+    {
+        $category = Category::query()->create([
+            'name' => 'Категория дробного остатка',
+            'slug' => 'fractional-stock-category',
+            'parent_id' => 0,
+        ]);
+        $product = Product::query()->create([
+            'category_id' => $category->id,
+            'sku' => 'FRACTIONAL-STOCK-1',
+            'name' => 'Лист с дробным остатком',
+            'slug' => 'fractional-stock-product',
+            'in_stock' => false,
+            'availability_status' => Product::AVAILABILITY_CHECK,
+        ]);
+        $source = IntegrationSource::query()->create([
+            'code' => 'onec-fractional-stock-test',
+            'name' => '1С дробный остаток',
+            'is_active' => true,
+            'update_stock' => true,
+        ]);
+        $item = IntegrationProduct::query()->create([
+            'integration_source_id' => $source->id,
+            'product_id' => $product->id,
+            'external_id' => 'fractional-stock-external-1',
+            'stock_quantity' => 0.41,
+            'match_status' => 'matched',
+        ]);
+
+        app(SupplierProductAvailabilityService::class)->refresh($product->id);
+
+        $product->refresh();
+        $this->assertTrue($product->in_stock);
+        $this->assertSame(1, $product->stock_qty);
+        $this->assertSame(Product::AVAILABILITY_IN_STOCK, $product->availability_status);
+        $this->assertSame('0.410', $item->fresh()->stock_quantity);
+    }
 }

@@ -3662,4 +3662,90 @@ class CreateSbgDistinctProductsBatchCommandTest extends TestCase
         $this->assertSame($productCount, Product::query()->count());
         $this->assertSame($exactProduct->id, $item->fresh()->product_id);
     }
+
+    public function test_it_creates_the_full_size_skamol_board_instead_of_linking_the_small_mbs_spare_part(): void
+    {
+        $source = IntegrationSource::query()->create([
+            'code' => 'onec-sbg-skamol-board-1260-1000-25',
+            'name' => '1С СанБизнесГруп',
+            'settings' => ['partner_name' => 'ООО «СанБизнесГруп»'],
+            'is_active' => true,
+            'update_stock' => true,
+        ]);
+        $category = Category::query()->firstOrCreate(['slug' => 'oblicovki'], [
+            'name' => 'Облицовки и термоизоляция',
+            'parent_id' => 0,
+        ]);
+        $wrongCandidate = Product::query()->create([
+            'category_id' => $category->id,
+            'sku' => 'KOTLOV-022510',
+            'name' => 'MBS Плита вермикулитовая к MBS Vesta (~500х300мм)',
+            'slug' => 'mbs-plita-vermikulitovaia-k-mbs-vesta-500x300mm',
+            'price' => 120,
+            'images' => ['product/mbs/vesta-vermiculite.jpg'],
+        ]);
+        $item = IntegrationProduct::query()->create([
+            'integration_source_id' => $source->id,
+            'external_id' => 'skamol-board-1260-1000-25',
+            'external_code' => 'УТ-00008344',
+            'external_sku' => null,
+            'name' => 'Плита вермикулитовая 25х1260х1000 мм',
+            'price_byn' => null,
+            'stock_quantity' => 0.41,
+            'match_status' => 'ambiguous',
+            'candidates' => [['product_id' => $wrongCandidate->id, 'score' => 0.78]],
+        ]);
+        $productCount = Product::query()->count();
+
+        $this->artisan('integration:create-sbg-distinct-products', [
+            '--batch' => 'researched-priced-20261013-bf',
+            '--code' => ['УТ-00008344'],
+            '--apply' => true,
+        ])->assertSuccessful();
+
+        $item->refresh();
+        $this->assertSame($productCount + 1, Product::query()->count());
+        $this->assertNotNull($item->product_id);
+        $this->assertNotSame($wrongCandidate->id, $item->product_id);
+        $this->assertSame('matched', $item->match_status);
+        $this->assertSame('manual_created', $item->match_method);
+        $this->assertSame($category->id, $item->target_category_id);
+        $this->assertNull($item->candidates);
+
+        $product = $item->product;
+        $this->assertSame('Вермикулитовая плита Skamol V-1100-700 1260×1000×25 мм', $product->name);
+        $this->assertSame('349.00', $product->price);
+        $this->assertSame('1', (string) $product->stock_qty);
+        $this->assertSame('0.410', $item->stock_quantity);
+        $this->assertTrue((bool) $product->in_stock);
+        $this->assertSame('Scamol', $product->brand?->name);
+        $this->assertSame('1260 мм', collect($product->specs)->firstWhere('key', 'Длина')['value']);
+        $this->assertSame('1000 мм', collect($product->specs)->firstWhere('key', 'Ширина')['value']);
+        $this->assertSame('25 мм', collect($product->specs)->firstWhere('key', 'Толщина')['value']);
+        $this->assertSame('700 кг/м³', collect($product->specs)->firstWhere('key', 'Плотность')['value']);
+        $this->assertSame(['img/products/skamol/skamol-v1100-700-1260-1000-25.png'], $product->images);
+        $this->assertFileExists(public_path('img/products/skamol/skamol-v1100-700-1260-1000-25.png'));
+        $this->assertStringContainsString('kaminnext.ru', $product->content_source_url);
+        $this->assertStringContainsString('отдельный полноразмерный лист', $product->content);
+        $this->assertStringNotContainsString('MBS Vesta', $product->content);
+        $this->assertStringNotContainsString('500×300', $product->content);
+        $this->assertStringNotContainsString('розничная цена', mb_strtolower($product->content));
+        $this->assertStringNotContainsString('rub', mb_strtolower($product->content));
+        $this->assertDatabaseHas('supplier_product_mappings', [
+            'supplier_code' => $source->matchingSupplierCode(),
+            'supplier_article' => 'УТ-00008344',
+            'product_id' => $product->id,
+            'product_sku' => $product->sku,
+            'confidence' => 'manual',
+            'is_active' => true,
+        ]);
+
+        $this->artisan('integration:create-sbg-distinct-products', [
+            '--batch' => 'researched-priced-20261013-bf',
+            '--code' => ['УТ-00008344'],
+            '--apply' => true,
+        ])->assertSuccessful();
+        $this->assertSame($productCount + 1, Product::query()->count());
+        $this->assertSame($product->id, $item->fresh()->product_id);
+    }
 }
