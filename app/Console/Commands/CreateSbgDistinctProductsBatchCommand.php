@@ -1555,6 +1555,43 @@ class CreateSbgDistinctProductsBatchCommand extends Command
         ],
     ];
 
+    private const BATCH_RESEARCHED_PRICED_20261013_AX = [
+        'УТ-00003236' => [
+            'template' => 'PS-000.18660',
+            'category_slug' => 'elektricheskie-konvektoryi',
+            'fragments' => ['Блок управления', 'Transformer Mechanic', 'Electrolux', 'ECH/TUM'],
+            'brand' => [
+                'name' => 'Electrolux',
+                'slug' => 'electrolux',
+            ],
+            'name' => 'Electrolux ECH/TUM Transformer Mechanic механический блок управления',
+            'retail' => 106.90,
+            'images' => ['img/products/electrolux/electrolux-ech-tum-transformer-mechanic.png'],
+            'source_url' => 'https://aquadom.info/products/blok_upravl_ya_transformer_mechanic_ech_tum/',
+            'short' => 'Механический блок управления Electrolux ECH/TUM с термостатом и двумя режимами мощности для конвекторов Transformer System.',
+            'content' => '<p><strong>Electrolux ECH/TUM Transformer Mechanic</strong> — съёмный механический блок управления для электрических конвекторов Electrolux Transformer System. Термостат позволяет задать комфортную температуру и поддерживает её автоматически.</p><p>Блок имеет два режима мощности — половинный и полный, индикацию включения и защитное отключение при сильном наклоне или опрокидывании. Код модели — НС-1081907. Перед заменой нужно сверить модель конвектора и форму разъёма.</p>',
+            'specs' => [
+                ['key' => 'Тип', 'value' => 'Съёмный блок управления конвектором'],
+                ['key' => 'Модель', 'value' => 'ECH/TUM'],
+                ['key' => 'Код товара', 'value' => 'НС-1081907'],
+                ['key' => 'Термостат', 'value' => 'Механический'],
+                ['key' => 'Управление', 'value' => 'Механическое'],
+                ['key' => 'Режимы мощности', 'value' => 'Половинная / полная'],
+                ['key' => 'Совместимость', 'value' => 'Конвекторы Electrolux Transformer System'],
+                ['key' => 'Индикация', 'value' => 'Включение'],
+                ['key' => 'Защита', 'value' => 'Отключение при сильном наклоне или опрокидывании'],
+                ['key' => 'Класс пылевлагозащиты', 'value' => 'IP24'],
+                ['key' => 'Wi-Fi', 'value' => 'Нет'],
+                ['key' => 'Дисплей', 'value' => 'Нет'],
+                ['key' => 'Габариты', 'value' => '148 × 91 × 86 мм'],
+                ['key' => 'Масса', 'value' => '0,3 кг'],
+                ['key' => 'Материал корпуса', 'value' => 'Термостойкий пластик'],
+                ['key' => 'Цвет', 'value' => 'Серый / белый'],
+                ['key' => 'Гарантия', 'value' => '36 месяцев'],
+            ],
+        ],
+    ];
+
     public function handle(IntegrationProductCreator $creator): int
     {
         $rows = match ($this->option('batch')) {
@@ -1607,6 +1644,7 @@ class CreateSbgDistinctProductsBatchCommand extends Command
             'researched-priced-20261013-au' => self::BATCH_RESEARCHED_PRICED_20261013_AU,
             'researched-priced-20261013-av' => self::BATCH_RESEARCHED_PRICED_20261013_AV,
             'researched-priced-20261013-aw' => self::BATCH_RESEARCHED_PRICED_20261013_AW,
+            'researched-priced-20261013-ax' => self::BATCH_RESEARCHED_PRICED_20261013_AX,
             default => null,
         };
 

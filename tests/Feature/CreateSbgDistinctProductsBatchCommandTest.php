@@ -2943,4 +2943,72 @@ class CreateSbgDistinctProductsBatchCommandTest extends TestCase
         $this->assertStringNotContainsString('грн', mb_strtolower($product->content));
         $this->assertSame('manual_created', $item->fresh()->match_method);
     }
+
+    public function test_it_creates_the_original_ech_tum_instead_of_linking_ech_tum3(): void
+    {
+        $source = IntegrationSource::query()->create([
+            'code' => 'onec-sbg-electrolux-ech-tum',
+            'name' => '1С СанБизнесГруп',
+            'settings' => ['partner_name' => 'ООО «СанБизнесГруп»'],
+            'is_active' => true,
+            'update_stock' => true,
+        ]);
+        $category = Category::query()->firstOrCreate(['slug' => 'elektricheskie-konvektoryi'], [
+            'name' => 'Электрические конвекторы',
+            'parent_id' => 0,
+        ]);
+        $electrolux = Brand::query()->firstOrCreate(['slug' => 'electrolux'], ['name' => 'Electrolux']);
+        $wrongTum3Candidate = Product::query()->create([
+            'category_id' => $category->id,
+            'brand_id' => $electrolux->id,
+            'sku' => 'PS-000.18660',
+            'name' => 'Блок управления Electrolux ECH/TUM3 Transformer Mechanic',
+            'slug' => 'electrolux-ech-tum3-transformer-mechanic-template',
+            'price' => 105,
+            'images' => ['product/0000/00018660/electrolux-ech-tum3.jpg'],
+        ]);
+        $item = IntegrationProduct::query()->create([
+            'integration_source_id' => $source->id,
+            'external_id' => 'electrolux-ech-tum-original',
+            'external_code' => 'УТ-00003236',
+            'external_sku' => null,
+            'name' => 'Блок управления Transformer Mechanic Electrolux ECH/TUM',
+            'price_byn' => null,
+            'stock_quantity' => 2,
+            'match_status' => 'ambiguous',
+            'candidates' => [['product_id' => $wrongTum3Candidate->id, 'score' => 0.85]],
+        ]);
+
+        $this->artisan('integration:create-sbg-distinct-products', [
+            '--batch' => 'researched-priced-20261013-ax',
+            '--code' => ['УТ-00003236'],
+            '--apply' => true,
+        ])->assertSuccessful();
+
+        $product = $item->fresh()->product;
+        $this->assertNotNull($product);
+        $this->assertNotSame($wrongTum3Candidate->id, $product->id);
+        $this->assertSame($category->id, $product->category_id);
+        $this->assertSame($electrolux->id, $product->brand_id);
+        $this->assertSame('Electrolux ECH/TUM Transformer Mechanic механический блок управления', $product->name);
+        $this->assertSame('106.90', $product->price);
+        $this->assertSame('2', (string) $product->stock_qty);
+        $this->assertTrue((bool) $product->is_active);
+        $this->assertNull($item->fresh()->normalizedPriceByn());
+        $this->assertSame('ECH/TUM', collect($product->specs)->firstWhere('key', 'Модель')['value']);
+        $this->assertSame('НС-1081907', collect($product->specs)->firstWhere('key', 'Код товара')['value']);
+        $this->assertSame('Механический', collect($product->specs)->firstWhere('key', 'Термостат')['value']);
+        $this->assertSame('Половинная / полная', collect($product->specs)->firstWhere('key', 'Режимы мощности')['value']);
+        $this->assertSame('148 × 91 × 86 мм', collect($product->specs)->firstWhere('key', 'Габариты')['value']);
+        $this->assertSame(['img/products/electrolux/electrolux-ech-tum-transformer-mechanic.png'], $product->images);
+        $this->assertFileExists(public_path('img/products/electrolux/electrolux-ech-tum-transformer-mechanic.png'));
+        $this->assertStringContainsString('aquadom.info', $product->content_source_url);
+        $this->assertStringNotContainsString('ECH/TUM3', $product->content);
+        $this->assertStringNotContainsString('кандидат', mb_strtolower($product->content));
+        $this->assertStringNotContainsString('розничная цена', mb_strtolower($product->content));
+        $this->assertStringNotContainsString('нбрб', mb_strtolower($product->content));
+        $this->assertStringNotContainsString('byn', mb_strtolower($product->content));
+        $this->assertStringNotContainsString('rub', mb_strtolower($product->content));
+        $this->assertSame('manual_created', $item->fresh()->match_method);
+    }
 }
