@@ -7494,4 +7494,108 @@ class CreateSbgDistinctProductsBatchCommandTest extends TestCase
         $this->assertSame($productCount + 1, Product::query()->count());
         $this->assertSame($product->id, $item->fresh()->product_id);
     }
+
+    public function test_it_creates_the_exact_unmatched_teplov_i_suhov_d250_tee(): void
+    {
+        $source = IntegrationSource::query()->create([
+            'code' => 'onec-sbg-unmatched-teplov-suhov-d250-tee',
+            'name' => '1С СанБизнесГруп',
+            'settings' => ['partner_name' => 'ООО «СанБизнесГруп»'],
+            'is_active' => true,
+            'update_stock' => true,
+        ]);
+        $category = Category::query()->firstOrCreate(['slug' => 'troyniki-mono'], [
+            'name' => 'Тройники моно',
+            'parent_id' => 0,
+            'is_active' => true,
+        ]);
+        $brand = Brand::query()->create([
+            'name' => 'Теплов и Сухов',
+            'slug' => 'teplov-i-suhov',
+        ]);
+        Product::query()->create([
+            'category_id' => $category->id,
+            'brand_id' => $brand->id,
+            'sku' => 'KOTLOV-008004',
+            'name' => 'Теплов и Сухов Тройник 87° ТРМ(М)-Р 430-0.5 D150',
+            'slug' => 'teplov-i-suhov-troynik-87-430-05-d150-template',
+            'price' => 73.39,
+            'images' => ['product/teplov-suhov/old-tee.jpg'],
+            'is_active' => true,
+            'is_archived' => false,
+        ]);
+        $item = IntegrationProduct::query()->create([
+            'integration_source_id' => $source->id,
+            'external_id' => 'teplov-suhov-tee-87-d250-430-08',
+            'external_code' => 'УТ-00000915',
+            'external_sku' => 'TS.FRT.T87.0250.68993',
+            'name' => 'Тройник 87* ТРМ(М)-Р 430-0.8 D250 арт. TS.FRT.T87.0250.68993',
+            'price' => 93.84,
+            'price_currency' => 'BYN',
+            'price_currency_rate' => 1,
+            'price_tax_mode' => IntegrationSource::PRICE_TAX_EXCLUSIVE,
+            'price_vat_rate' => 20,
+            'price_byn' => 112.61,
+            'stock_quantity' => 3,
+            'stock_confirmed_at' => now(),
+            'match_status' => 'unmatched',
+            'candidates' => null,
+        ]);
+        $productCount = Product::query()->count();
+
+        $dryRunStatus = \Illuminate\Support\Facades\Artisan::call('integration:create-sbg-distinct-products', [
+            '--batch' => 'unmatched-researched-20261014-cu',
+            '--code' => ['УТ-00000915'],
+        ]);
+        $this->assertSame(0, $dryRunStatus, \Illuminate\Support\Facades\Artisan::output());
+        $this->assertNull($item->fresh()->product_id);
+
+        $this->artisan('integration:create-sbg-distinct-products', [
+            '--batch' => 'unmatched-researched-20261014-cu',
+            '--code' => ['УТ-00000915'],
+            '--apply' => true,
+        ])->assertSuccessful();
+
+        $item->refresh();
+        $product = $item->product()->sole();
+        $this->assertSame($productCount + 1, Product::query()->count());
+        $this->assertSame('matched', $item->match_status);
+        $this->assertSame('manual_created', $item->match_method);
+        $this->assertSame($category->id, $item->target_category_id);
+        $this->assertSame('TS.FRT.T87.0250.68993', $item->external_sku);
+        $this->assertSame('Теплов и Сухов Тройник 87° ТРМ(М)-Р AISI 430 0,8 мм Ø250', $product->name);
+        $this->assertSame('122.00', $product->price);
+        $this->assertSame('3', (string) $product->stock_qty);
+        $this->assertTrue((bool) $product->in_stock);
+        $this->assertSame(Product::AVAILABILITY_IN_STOCK, $product->effectiveAvailabilityStatus());
+        $this->assertSame($brand->id, $product->brand_id);
+        $this->assertSame($category->id, $product->category_id);
+        $this->assertSame('87°', collect($product->specs)->firstWhere('key', 'Угол')['value']);
+        $this->assertSame('250 мм', collect($product->specs)->firstWhere('key', 'Диаметр')['value']);
+        $this->assertSame('AISI 430', collect($product->specs)->firstWhere('key', 'Марка стали')['value']);
+        $this->assertSame('0,8 мм', collect($product->specs)->firstWhere('key', 'Толщина стали')['value']);
+        $this->assertSame([
+            'img/products/teplov-i-suhov/troynik-87-trmm-r-430-1-0-d150.jpg',
+        ], $product->images);
+        $this->assertFileExists(public_path('img/products/teplov-i-suhov/troynik-87-trmm-r-430-1-0-d150.jpg'));
+        $this->assertStringContainsString('enginer-pro.ru', $product->content_source_url);
+        $this->assertStringContainsString('ревизию', mb_strtolower($product->content));
+        $this->assertStringNotContainsString('розничная цена', mb_strtolower($product->content));
+        $this->assertDatabaseHas('supplier_product_mappings', [
+            'supplier_code' => $source->matchingSupplierCode(),
+            'supplier_article' => 'TS.FRT.T87.0250.68993',
+            'product_id' => $product->id,
+            'product_sku' => $product->sku,
+            'confidence' => 'manual',
+            'is_active' => true,
+        ]);
+
+        $this->artisan('integration:create-sbg-distinct-products', [
+            '--batch' => 'unmatched-researched-20261014-cu',
+            '--code' => ['УТ-00000915'],
+            '--apply' => true,
+        ])->assertSuccessful();
+        $this->assertSame($productCount + 1, Product::query()->count());
+        $this->assertSame($product->id, $item->fresh()->product_id);
+    }
 }

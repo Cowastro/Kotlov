@@ -3166,6 +3166,41 @@ class CreateSbgDistinctProductsBatchCommand extends Command
         ],
     ];
 
+    // Enginer Pro lists this exact Tis Ferrit Mono tee at 3,389 RUB. At the
+    // official 2026-10-14 cross-rate of 27.8648 RUB/BYN that is 121.62 BYN,
+    // rounded to 122 BYN retail. The clean image is the already-vetted factory
+    // photo used for the same 87-degree TRM(M)-R body in another diameter.
+    private const BATCH_UNMATCHED_RESEARCHED_20261014_CU = [
+        'УТ-00000915' => [
+            'template' => 'KOTLOV-008004',
+            'allow_unmatched' => true,
+            'category_slug' => 'troyniki-mono',
+            'fragments' => ['Тройник 87', 'ТРМ(М)-Р', '430-0.8', 'D250', 'TS.FRT.T87.0250.68993'],
+            'name' => 'Теплов и Сухов Тройник 87° ТРМ(М)-Р AISI 430 0,8 мм Ø250',
+            'retail' => 122.00,
+            'images' => [
+                'img/products/teplov-i-suhov/troynik-87-trmm-r-430-1-0-d150.jpg',
+            ],
+            'source_url' => 'https://enginer-pro.ru/catalog/kotly-otopleniya/dymokhody-i-komplektuyushchie/dymokhody-iz-nerzhaveyushchey-stali/odnostennye_dymokhody/troyniki-chetveriki/troyniki-mono/troynik-87-trmm-r-430-08-d250/',
+            'short' => 'Одностенный дымоходный тройник Теплов и Сухов ТРМ(М)-Р 87° из стали AISI 430 толщиной 0,8 мм, диаметр 250 мм.',
+            'content' => '<p><strong>Теплов и Сухов ТРМ(М)-Р 87° Ø250</strong> — одностенный тройник серии «Феррит Моно» для изменения направления дымового канала и организации точки обслуживания.</p><p>Элемент изготовлен из нержавеющей стали AISI 430 толщиной 0,8 мм. Диаметр всех патрубков составляет 250 мм, угол отвода — 87°. Боковое ответвление позволяет выполнять ревизию, чистку и отвод конденсата при установке совместимых элементов.</p>',
+            'specs' => [
+                ['key' => 'Тип', 'value' => 'Тройник одностенный'],
+                ['key' => 'Модель', 'value' => 'ТРМ(М)-Р'],
+                ['key' => 'Серия', 'value' => 'ТиС Феррит Моно'],
+                ['key' => 'Угол', 'value' => '87°'],
+                ['key' => 'Диаметр', 'value' => '250 мм'],
+                ['key' => 'Марка стали', 'value' => 'AISI 430'],
+                ['key' => 'Толщина стали', 'value' => '0,8 мм'],
+                ['key' => 'Конструкция', 'value' => 'Без теплоизоляции'],
+                ['key' => 'Назначение', 'value' => 'Дымоходы печей, каминов и котлов'],
+                ['key' => 'Артикул производителя', 'value' => 'TS.FRT.T87.0250.68993'],
+                ['key' => 'Бренд', 'value' => 'Теплов и Сухов'],
+                ['key' => 'Страна производства', 'value' => 'Россия'],
+            ],
+        ],
+    ];
+
     public function handle(
         IntegrationProductCreator $creator,
         IntegrationProductMatchDecision $matchDecision,
@@ -3269,6 +3304,7 @@ class CreateSbgDistinctProductsBatchCommand extends Command
             'unmatched-researched-20261013-cr' => self::BATCH_UNMATCHED_RESEARCHED_20261013_CR,
             'unmatched-disputed-20261013-cs' => self::BATCH_UNMATCHED_DISPUTED_20261013_CS,
             'unmatched-researched-20261013-ct' => self::BATCH_UNMATCHED_RESEARCHED_20261013_CT,
+            'unmatched-researched-20261014-cu' => self::BATCH_UNMATCHED_RESEARCHED_20261014_CU,
             default => null,
         };
 
