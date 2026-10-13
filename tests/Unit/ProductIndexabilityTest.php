@@ -5,7 +5,7 @@ namespace Tests\Unit;
 use App\Models\Product;
 use App\Models\SupplierProduct;
 use Illuminate\Support\Collection;
-use PHPUnit\Framework\TestCase;
+use Tests\TestCase;
 
 class ProductIndexabilityTest extends TestCase
 {
