@@ -49,6 +49,7 @@ class CrmMailMessagePreviewTest extends TestCase
         $this->assertStringNotContainsString('<table', $html);
         $this->assertStringNotContainsString('<img', $html);
         $this->assertStringNotContainsString('<style', $html);
+        $this->assertStringNotContainsString('table{width:100%}', $html);
     }
 
     #[Test]
