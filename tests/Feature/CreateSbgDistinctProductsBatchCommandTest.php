@@ -1479,4 +1479,75 @@ class CreateSbgDistinctProductsBatchCommandTest extends TestCase
         $this->assertStringNotContainsString('rub', mb_strtolower($product->content));
         $this->assertSame('manual_created', $item->fresh()->match_method);
     }
+
+    public function test_it_creates_the_aisi_304_mono_thermo_transition_instead_of_linking_the_aisi_430_candidate(): void
+    {
+        $source = IntegrationSource::query()->create([
+            'code' => 'onec-sbg-teplov-pmt-304-d115-210',
+            'name' => '1С СанБизнесГруп',
+            'settings' => ['partner_name' => 'ООО «СанБизнесГруп»'],
+            'is_active' => true,
+            'update_stock' => true,
+        ]);
+        $wrongCategory = Category::query()->create([
+            'name' => 'Заглушки и оголовки',
+            'slug' => 'zaglushki-dymohod-pmt-test',
+            'parent_id' => 0,
+        ]);
+        $correctCategory = Category::query()->firstOrCreate(['slug' => 'perehody-adaptery-dymohod'], [
+            'name' => 'Переходы и адаптеры дымохода',
+            'parent_id' => 0,
+        ]);
+        $teplov = Brand::query()->firstOrCreate(['slug' => 'teplov-i-suhov'], ['name' => 'Теплов и Сухов']);
+        $wrongTransitionCandidate = Product::query()->create([
+            'category_id' => $wrongCategory->id,
+            'brand_id' => $teplov->id,
+            'sku' => 'KOTLOV-008031',
+            'name' => 'Теплов и Сухов Переход Моно/Термо ПМТ-Р 430-0.8/430 D115/210',
+            'slug' => 'teplov-pmt-430-d115-210-template-for-304',
+            'price' => 70,
+            'images' => ['https://pechki66.ru/watermarked-transition.jpg'],
+        ]);
+        $item = IntegrationProduct::query()->create([
+            'integration_source_id' => $source->id,
+            'external_id' => 'teplov-pmt-304-d115-210',
+            'external_code' => 'УТ-00006949',
+            'external_sku' => 'TS.ST5.PRT.0115.49262',
+            'name' => 'Переход Моно/Термо ПМТ-Р 304-0.8/304 D115/210*',
+            'price_byn' => null,
+            'stock_quantity' => 2,
+            'match_status' => 'ambiguous',
+            'candidates' => [['product_id' => $wrongTransitionCandidate->id, 'score' => 0.6596]],
+        ]);
+
+        $this->artisan('integration:create-sbg-distinct-products', [
+            '--batch' => 'researched-priced-20261013-ab',
+            '--code' => ['УТ-00006949'],
+            '--apply' => true,
+        ])->assertSuccessful();
+
+        $product = $item->fresh()->product;
+        $this->assertNotNull($product);
+        $this->assertNotSame($wrongTransitionCandidate->id, $product->id);
+        $this->assertSame($correctCategory->id, $product->category_id);
+        $this->assertSame($teplov->id, $product->brand_id);
+        $this->assertSame('Теплов и Сухов Переход Моно/Термо ПМТ-Р 304-0.8/304-0.5 D115/210', $product->name);
+        $this->assertSame('109.00', $product->price);
+        $this->assertSame('2', (string) $product->stock_qty);
+        $this->assertNull($item->fresh()->normalizedPriceByn());
+        $this->assertSame('115 мм', collect($product->specs)->firstWhere('key', 'Внутренний диаметр')['value']);
+        $this->assertSame('210 мм', collect($product->specs)->firstWhere('key', 'Наружный диаметр')['value']);
+        $this->assertSame('Нержавеющая сталь AISI 304', collect($product->specs)->firstWhere('key', 'Материал внутренней трубы')['value']);
+        $this->assertSame('Нержавеющая сталь AISI 304', collect($product->specs)->firstWhere('key', 'Материал наружной трубы')['value']);
+        $this->assertSame('TS.ST5.PRT.0115.49262', collect($product->specs)->firstWhere('key', 'Артикул производителя')['value']);
+        $this->assertSame(['img/products/generated/teplov-suhov-perehod-mono-termo-pmt-r-304-08-304-05-d115-210.png'], $product->images);
+        $this->assertFalse(str_contains(implode(' ', $product->images), 'pechki66.ru'));
+        $this->assertStringContainsString('profsnabeng.ru', $product->content_source_url);
+        $this->assertStringNotContainsString('кандидат', mb_strtolower($product->content));
+        $this->assertStringNotContainsString('нельзя объединять', mb_strtolower($product->content));
+        $this->assertStringNotContainsString('розничная цена', mb_strtolower($product->content));
+        $this->assertStringNotContainsString('нбрб', mb_strtolower($product->content));
+        $this->assertStringNotContainsString('rub', mb_strtolower($product->content));
+        $this->assertSame('manual_created', $item->fresh()->match_method);
+    }
 }

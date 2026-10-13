@@ -790,6 +790,43 @@ class CreateSbgDistinctProductsBatchCommand extends Command
         ],
     ];
 
+    private const BATCH_RESEARCHED_PRICED_20261013_AB = [
+        'УТ-00006949' => [
+            'template' => 'KOTLOV-008031',
+            'category_slug' => 'perehody-adaptery-dymohod',
+            'external_sku' => 'TS.ST5.PRT.0115.49262',
+            'fragments' => ['Переход Моно/Термо', 'ПМТ-Р', '304-0.8/304', 'D115/210'],
+            'brand' => [
+                'name' => 'Теплов и Сухов',
+                'slug' => 'teplov-i-suhov',
+                'country' => 'Россия',
+                'content' => '<p><strong>Теплов и Сухов</strong> — российский производитель модульных дымоходов и комплектующих из нержавеющей стали.</p>',
+            ],
+            'name' => 'Теплов и Сухов Переход Моно/Термо ПМТ-Р 304-0.8/304-0.5 D115/210',
+            'retail' => 109.00,
+            'images' => ['img/products/generated/teplov-suhov-perehod-mono-termo-pmt-r-304-08-304-05-d115-210.png'],
+            'source_url' => 'https://profsnabeng.ru/product/109802-teplov-i-suhov-ts-st5-prt-0115-49262',
+            'short' => 'Переход Теплов и Сухов ПМТ-Р с одностенного дымохода Ø115 мм на утеплённый Ø210 мм, внутренняя и наружная трубы из нержавеющей стали AISI 304.',
+            'content' => '<p><strong>Теплов и Сухов ПМТ-Р D115/210</strong> — стартовый переход для соединения одностенного дымохода диаметром 115 мм с утеплённой двухконтурной системой наружным диаметром 210 мм.</p><p>Внутренняя труба изготовлена из кислотостойкой нержавеющей стали AISI 304 толщиной 0,8 мм, наружная — из AISI 304 толщиной 0,5 мм. Слой базальтовой теплоизоляции толщиной 50 мм снижает нагрев внешнего контура и защищает торец утеплителя.</p>',
+            'specs' => [
+                ['key' => 'Тип', 'value' => 'Переход с одностенного на утеплённый дымоход'],
+                ['key' => 'Система', 'value' => 'Моно/Термо'],
+                ['key' => 'Серия', 'value' => 'ТиС Стандарт'],
+                ['key' => 'Модель', 'value' => 'ПМТ-Р'],
+                ['key' => 'Внутренний диаметр', 'value' => '115 мм'],
+                ['key' => 'Наружный диаметр', 'value' => '210 мм'],
+                ['key' => 'Материал внутренней трубы', 'value' => 'Нержавеющая сталь AISI 304'],
+                ['key' => 'Толщина внутренней трубы', 'value' => '0,8 мм'],
+                ['key' => 'Материал наружной трубы', 'value' => 'Нержавеющая сталь AISI 304'],
+                ['key' => 'Толщина наружной трубы', 'value' => '0,5 мм'],
+                ['key' => 'Теплоизоляция', 'value' => 'Базальтовое волокно, 50 мм'],
+                ['key' => 'Рабочая температура', 'value' => 'до 600 °C'],
+                ['key' => 'Артикул производителя', 'value' => 'TS.ST5.PRT.0115.49262'],
+                ['key' => 'Страна производства', 'value' => 'Россия'],
+            ],
+        ],
+    ];
+
     public function handle(IntegrationProductCreator $creator): int
     {
         $rows = match ($this->option('batch')) {
@@ -820,6 +857,7 @@ class CreateSbgDistinctProductsBatchCommand extends Command
             'researched-priced-20261013-y' => self::BATCH_RESEARCHED_PRICED_20261013_Y,
             'researched-priced-20261013-z' => self::BATCH_RESEARCHED_PRICED_20261013_Z,
             'researched-priced-20261013-aa' => self::BATCH_RESEARCHED_PRICED_20261013_AA,
+            'researched-priced-20261013-ab' => self::BATCH_RESEARCHED_PRICED_20261013_AB,
             default => null,
         };
 
