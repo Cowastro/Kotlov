@@ -2229,6 +2229,43 @@ class CreateSbgDistinctProductsBatchCommand extends Command
         ],
     ];
 
+    private const BATCH_UNMATCHED_RESEARCHED_20261013_BU = [
+        'УТ-00001165' => [
+            'template_slug' => 'gazovyi-slang-zurflex-dn16-gaikastucer-12-m',
+            'allow_unmatched' => true,
+            'category_slug' => 'gazovye-shlangi',
+            'fragments' => ['ШЛКг-1-0,5-DN12-2,5'],
+            'brand' => [
+                'name' => 'CEMFLEX',
+                'slug' => 'cemflex',
+                'country' => 'Беларусь',
+            ],
+            'name' => 'Газовый шланг CEMFLEX DN12, гайка/штуцер, 2,5 м',
+            'retail' => 22.00,
+            'images' => [
+                'img/products/cemflex/cemflex-gas-hose-dn12-2500-fm-1.jpg',
+                'img/products/cemflex/cemflex-gas-hose-dn12-2500-fm-2.jpg',
+            ],
+            'source_url' => 'https://santeh24.by/catalog/shlangi_podvodka_gibkaya/shlangi_dlya_gaza/22359/',
+            'short' => 'Гибкий гофрированный газовый шланг CEMFLEX из нержавеющей стали AISI 304; DN12 (1/2″), соединение гайка/штуцер, длина 2,5 м.',
+            'content' => '<p><strong>Газовый шланг CEMFLEX DN12, 2,5 м</strong> — гибкая гофрированная подводка из нержавеющей стали AISI 304 для подключения газового оборудования. Исполнение гайка/штуцер имеет внутреннюю и наружную резьбу 1/2″.</p><p>Рабочий диапазон температуры — от −15 до +150 °C. Монтаж и проверку герметичности должен выполнять квалифицированный специалист в соответствии с требованиями к газовому оборудованию.</p>',
+            'specs' => [
+                ['key' => 'Тип', 'value' => 'Гибкая подводка для газа'],
+                ['key' => 'Модель', 'value' => 'ШЛКг-1-0,5-DN12-2,5'],
+                ['key' => 'Номинальный диаметр', 'value' => 'DN12'],
+                ['key' => 'Размер присоединения', 'value' => '1/2″ ВР × 1/2″ НР'],
+                ['key' => 'Тип соединения', 'value' => 'Гайка/штуцер'],
+                ['key' => 'Длина', 'value' => '2500 мм'],
+                ['key' => 'Максимальное давление', 'value' => '25 бар'],
+                ['key' => 'Рабочая температура', 'value' => 'от −15 до +150 °C'],
+                ['key' => 'Материал', 'value' => 'Нержавеющая сталь AISI 304'],
+                ['key' => 'Назначение', 'value' => 'Подключение газового оборудования'],
+                ['key' => 'Страна производства', 'value' => 'Беларусь'],
+                ['key' => 'Бренд', 'value' => 'CEMFLEX'],
+            ],
+        ],
+    ];
+
     public function handle(
         IntegrationProductCreator $creator,
         IntegrationProductMatchDecision $matchDecision,
@@ -2306,6 +2343,7 @@ class CreateSbgDistinctProductsBatchCommand extends Command
             'unmatched-researched-20261013-br' => self::BATCH_UNMATCHED_RESEARCHED_20261013_BR,
             'unmatched-researched-20261013-bs' => self::BATCH_UNMATCHED_RESEARCHED_20261013_BS,
             'unmatched-researched-20261013-bt' => self::BATCH_UNMATCHED_RESEARCHED_20261013_BT,
+            'unmatched-researched-20261013-bu' => self::BATCH_UNMATCHED_RESEARCHED_20261013_BU,
             default => null,
         };
 

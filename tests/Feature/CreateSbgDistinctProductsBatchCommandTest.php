@@ -4892,4 +4892,103 @@ class CreateSbgDistinctProductsBatchCommandTest extends TestCase
         $this->assertSame($productCount + 1, Product::query()->count());
         $this->assertSame($product->id, $item->fresh()->product_id);
     }
+
+    public function test_it_creates_the_exact_unmatched_cemflex_dn12_gas_hose(): void
+    {
+        $source = IntegrationSource::query()->create([
+            'code' => 'onec-sbg-unmatched-cemflex-dn12-2500',
+            'name' => '1С СанБизнесГруп',
+            'settings' => ['partner_name' => 'ООО «СанБизнесГруп»'],
+            'is_active' => true,
+            'update_stock' => true,
+        ]);
+        $category = Category::query()->firstOrCreate(['slug' => 'gazovye-shlangi'], [
+            'name' => 'Газовые шланги',
+            'parent_id' => 0,
+        ]);
+        Product::query()->create([
+            'category_id' => $category->id,
+            'sku' => 'KOTLOV-000902',
+            'name' => 'Газовый шланг ZURFLEX DN16, гайка/штуцер, 1,2 м',
+            'slug' => 'gazovyi-slang-zurflex-dn16-gaikastucer-12-m',
+            'price' => 34,
+            'images' => ['img/products/zurflex/template.webp'],
+            'is_active' => true,
+            'is_archived' => false,
+        ]);
+        $item = IntegrationProduct::query()->create([
+            'integration_source_id' => $source->id,
+            'external_id' => 'bbd2cc9a-1f62-11e9-bad6-1c1b0d1de7c2',
+            'external_code' => 'УТ-00001165',
+            'external_sku' => null,
+            'name' => 'ШЛКг-1-0,5-DN12-2,5',
+            'price_byn' => null,
+            'stock_quantity' => 6,
+            'match_status' => 'unmatched',
+            'candidates' => null,
+        ]);
+        $productCount = Product::query()->count();
+
+        $this->artisan('integration:create-sbg-distinct-products', [
+            '--batch' => 'unmatched-researched-20261013-bu',
+            '--code' => ['УТ-00001165'],
+        ])->assertSuccessful();
+        $this->assertNull($item->fresh()->product_id);
+
+        $this->artisan('integration:create-sbg-distinct-products', [
+            '--batch' => 'unmatched-researched-20261013-bu',
+            '--code' => ['УТ-00001165'],
+            '--apply' => true,
+        ])->assertSuccessful();
+
+        $item->refresh();
+        $product = $item->product;
+        $brand = Brand::query()->where('slug', 'cemflex')->first();
+        $this->assertSame($productCount + 1, Product::query()->count());
+        $this->assertNotNull($product);
+        $this->assertNotNull($brand);
+        $this->assertSame('Беларусь', $brand->country);
+        $this->assertSame('matched', $item->match_status);
+        $this->assertSame('manual_created', $item->match_method);
+        $this->assertSame($category->id, $item->target_category_id);
+        $this->assertNull($item->candidates);
+        $this->assertNull($item->external_sku);
+        $this->assertSame('Газовый шланг CEMFLEX DN12, гайка/штуцер, 2,5 м', $product->name);
+        $this->assertSame('22.00', $product->price);
+        $this->assertSame('6', (string) $product->stock_qty);
+        $this->assertTrue((bool) $product->in_stock);
+        $this->assertSame($brand->id, $product->brand_id);
+        $this->assertSame($category->id, $product->category_id);
+        $this->assertSame('DN12', collect($product->specs)->firstWhere('key', 'Номинальный диаметр')['value']);
+        $this->assertSame('1/2″ ВР × 1/2″ НР', collect($product->specs)->firstWhere('key', 'Размер присоединения')['value']);
+        $this->assertSame('Гайка/штуцер', collect($product->specs)->firstWhere('key', 'Тип соединения')['value']);
+        $this->assertSame('2500 мм', collect($product->specs)->firstWhere('key', 'Длина')['value']);
+        $this->assertSame([
+            'img/products/cemflex/cemflex-gas-hose-dn12-2500-fm-1.jpg',
+            'img/products/cemflex/cemflex-gas-hose-dn12-2500-fm-2.jpg',
+        ], $product->images);
+        $this->assertFileExists(public_path('img/products/cemflex/cemflex-gas-hose-dn12-2500-fm-1.jpg'));
+        $this->assertFileExists(public_path('img/products/cemflex/cemflex-gas-hose-dn12-2500-fm-2.jpg'));
+        $this->assertStringContainsString('santeh24.by', $product->content_source_url);
+        $this->assertStringContainsString('проверку герметичности', mb_strtolower($product->content));
+        $this->assertStringNotContainsString('розничная цена', mb_strtolower($product->content));
+        $this->assertStringNotContainsString('byn', mb_strtolower($product->content));
+        $this->assertStringNotContainsString('13.10.2026', $product->content);
+        $this->assertDatabaseHas('supplier_product_mappings', [
+            'supplier_code' => $source->matchingSupplierCode(),
+            'supplier_article' => 'УТ-00001165',
+            'product_id' => $product->id,
+            'product_sku' => $product->sku,
+            'confidence' => 'manual',
+            'is_active' => true,
+        ]);
+
+        $this->artisan('integration:create-sbg-distinct-products', [
+            '--batch' => 'unmatched-researched-20261013-bu',
+            '--code' => ['УТ-00001165'],
+            '--apply' => true,
+        ])->assertSuccessful();
+        $this->assertSame($productCount + 1, Product::query()->count());
+        $this->assertSame($product->id, $item->fresh()->product_id);
+    }
 }
