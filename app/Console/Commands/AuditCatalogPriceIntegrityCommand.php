@@ -71,12 +71,15 @@ class AuditCatalogPriceIntegrityCommand extends Command
                 ->count(),
             'retail_below_supplier_cost' => (clone $active)
                 ->joinSub($supplierCost, 'costs', 'costs.product_id', '=', 'p.id')
-                ->whereColumn('p.price', '<', 'costs.minimum_cost')
+                ->whereRaw('p.price < costs.minimum_cost * 1.0')
                 ->count(),
             'retail_margin_below_minimum' => (clone $active)
                 ->joinSub($supplierCost, 'costs', 'costs.product_id', '=', 'p.id')
                 ->where('p.price', '>', 0)
-                ->whereRaw('((p.price - costs.minimum_cost) / p.price * 100) < ?', [$minimumMargin])
+                ->whereRaw(
+                    '((p.price - costs.minimum_cost) * 100.0 / p.price) < CAST(? AS DECIMAL(10, 2))',
+                    [$minimumMargin],
+                )
                 ->count(),
             'retail_above_four_times_supplier_cost' => (clone $active)
                 ->joinSub($supplierCost, 'costs', 'costs.product_id', '=', 'p.id')
