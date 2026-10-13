@@ -40,6 +40,7 @@ class UnconfirmedProductCheckoutTest extends TestCase
                 'pricing_type' => 'retail',
             ],
         ];
+        $orderCount = Order::query()->count();
 
         $this->withSession(['cart' => $cart])
             ->withHeader('User-Agent', 'Mozilla/5.0')
@@ -57,7 +58,7 @@ class UnconfirmedProductCheckoutTest extends TestCase
             );
 
         $this->assertEmpty(session('cart', []));
-        $this->assertDatabaseCount((new Order)->getTable(), 0);
+        $this->assertDatabaseCount((new Order)->getTable(), $orderCount);
     }
 
     public function test_cart_api_removes_an_item_that_requires_availability_confirmation(): void
