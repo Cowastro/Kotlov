@@ -133,6 +133,14 @@ class SupplierChannelAvailabilityRuleTest extends TestCase
         $this->assertSame(Product::AVAILABILITY_IN_STOCK, $product->fresh()->effectiveAvailabilityStatus());
         $this->assertTrue($product->fresh()->canBePurchased());
 
+        $storefrontProduct = Product::query()
+            ->withSupplierChannels()
+            ->findOrFail($product->id);
+
+        $this->assertSame('commerceml', $storefrontProduct->integrationProducts->first()->source->driver);
+        $this->assertSame(Product::AVAILABILITY_IN_STOCK, $storefrontProduct->effectiveAvailabilityStatus());
+        $this->assertTrue($storefrontProduct->canBePurchased());
+
         IntegrationProduct::query()->where('product_id', $product->id)->update([
             'stock_confirmed_at' => now()->subMinutes(1441),
         ]);
