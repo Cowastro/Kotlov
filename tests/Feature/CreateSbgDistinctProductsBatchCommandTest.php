@@ -1069,4 +1069,67 @@ class CreateSbgDistinctProductsBatchCommandTest extends TestCase
         $this->assertStringNotContainsString('rub', mb_strtolower($product->content));
         $this->assertSame('manual_created', $item->fresh()->match_method);
     }
+
+    public function test_it_creates_the_exact_aisi_304_chimney_cap_instead_of_linking_the_ferrum_aisi_430_candidate(): void
+    {
+        $source = IntegrationSource::query()->create([
+            'code' => 'onec-sbg-teplov-cap-304-d115',
+            'name' => '1С СанБизнесГруп',
+            'settings' => ['partner_name' => 'ООО «СанБизнесГруп»'],
+            'is_active' => true,
+            'update_stock' => true,
+        ]);
+        $category = Category::query()->firstOrCreate(['slug' => 'zonty-deflektory'], [
+            'name' => 'Зонты и дефлекторы',
+            'parent_id' => 0,
+        ]);
+        $ferrum = Brand::query()->create(['name' => 'FERRUM', 'slug' => 'ferrum-cap-test']);
+        $teplov = Brand::query()->firstOrCreate(['slug' => 'teplov-i-suhov'], ['name' => 'Теплов и Сухов']);
+        $wrongSteelCandidate = Product::query()->create([
+            'category_id' => $category->id,
+            'brand_id' => $ferrum->id,
+            'sku' => 'PS-007.806',
+            'name' => 'Зонт-К FERRUM (430/0,5) Ф115',
+            'slug' => 'ferrum-cap-430-d115-template',
+            'price' => 28,
+            'images' => ['product/007/007806/cap.jpg'],
+        ]);
+        $item = IntegrationProduct::query()->create([
+            'integration_source_id' => $source->id,
+            'external_id' => 'teplov-cap-304-d115',
+            'external_code' => 'УТ-00008318',
+            'external_sku' => 'TS.ST5.ZNT.0115.32496',
+            'name' => 'Зонт ЗМ-Р 304-0.5 D115',
+            'price_byn' => null,
+            'stock_quantity' => 5,
+            'match_status' => 'ambiguous',
+            'candidates' => [['product_id' => $wrongSteelCandidate->id, 'score' => 0.72]],
+        ]);
+
+        $this->artisan('integration:create-sbg-distinct-products', [
+            '--batch' => 'researched-priced-20261013-v',
+            '--code' => ['УТ-00008318'],
+            '--apply' => true,
+        ])->assertSuccessful();
+
+        $product = $item->fresh()->product;
+        $this->assertNotNull($product);
+        $this->assertNotSame($wrongSteelCandidate->id, $product->id);
+        $this->assertSame($category->id, $product->category_id);
+        $this->assertSame($teplov->id, $product->brand_id);
+        $this->assertSame('Теплов и Сухов Зонт ЗМ-Р 304-0.5 D115', $product->name);
+        $this->assertSame('31.70', $product->price);
+        $this->assertSame('5', (string) $product->stock_qty);
+        $this->assertNull($item->fresh()->normalizedPriceByn());
+        $this->assertSame('115 мм', collect($product->specs)->firstWhere('key', 'Диаметр')['value']);
+        $this->assertSame('AISI 304', collect($product->specs)->firstWhere('key', 'Марка стали')['value']);
+        $this->assertSame('0,5 мм', collect($product->specs)->firstWhere('key', 'Толщина стали')['value']);
+        $this->assertSame('TS.ST5.ZNT.0115.32496', collect($product->specs)->firstWhere('key', 'Артикул производителя')['value']);
+        $this->assertStringContainsString('zont-mono-zm-r-304-0-5-d-115', $product->content_source_url);
+        $this->assertStringNotContainsString('нельзя объединять', mb_strtolower($product->content));
+        $this->assertStringNotContainsString('розничная цена', mb_strtolower($product->content));
+        $this->assertStringNotContainsString('нбрб', mb_strtolower($product->content));
+        $this->assertStringNotContainsString('rub', mb_strtolower($product->content));
+        $this->assertSame('manual_created', $item->fresh()->match_method);
+    }
 }

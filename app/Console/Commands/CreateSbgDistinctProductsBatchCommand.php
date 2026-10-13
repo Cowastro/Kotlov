@@ -600,6 +600,47 @@ class CreateSbgDistinctProductsBatchCommand extends Command
         ],
     ];
 
+    private const BATCH_RESEARCHED_PRICED_20261013_V = [
+        'УТ-00008318' => [
+            'template' => 'PS-007.806',
+            'category_slug' => 'zonty-deflektory',
+            'external_sku' => 'TS.ST5.ZNT.0115.32496',
+            'fragments' => ['Зонт ЗМ-Р', '304-0.5', 'D115'],
+            'brand' => [
+                'name' => 'Теплов и Сухов',
+                'slug' => 'teplov-i-suhov',
+                'country' => 'Россия',
+                'content' => '<p><strong>Теплов и Сухов</strong> — российский производитель модульных дымоходов и комплектующих из нержавеющей стали.</p>',
+            ],
+            'name' => 'Теплов и Сухов Зонт ЗМ-Р 304-0.5 D115',
+            'retail' => 31.70,
+            'images' => [
+                'https://pechki66.ru/wa-data/public/shop/products/35/95/29535/images/129374/129374.970.jpg',
+                'https://pechki66.ru/wa-data/public/shop/products/35/95/29535/images/129375/129375.970.jpg',
+                'https://pechki66.ru/wa-data/public/shop/products/35/95/29535/images/129376/129376.970.jpg',
+            ],
+            'source_url' => 'https://pechki66.ru/city/rostov-na-donu/product/zont-mono-zm-r-304-0-5-d-115-tis-standart/',
+            'short' => 'Одностенный зонт дымохода Теплов и Сухов ЗМ-Р Ø115 мм из AISI 304 толщиной 0,5 мм.',
+            'content' => '<p><strong>Теплов и Сухов ЗМ-Р D115</strong> — завершающий элемент одностенного дымохода, который защищает выход дымового канала от дождя и снега.</p><p>Зонт изготовлен из коррозионностойкой нержавеющей стали AISI 304 толщиной 0,5 мм. Подходит для модульных дымоходов диаметром 115 мм и оборудования на дровах, газе или пеллетах.</p>',
+            'specs' => [
+                ['key' => 'Тип', 'value' => 'Зонт дымохода'],
+                ['key' => 'Система', 'value' => 'Моно'],
+                ['key' => 'Модель', 'value' => 'ЗМ-Р'],
+                ['key' => 'Диаметр', 'value' => '115 мм'],
+                ['key' => 'Материал', 'value' => 'Нержавеющая сталь'],
+                ['key' => 'Марка стали', 'value' => 'AISI 304'],
+                ['key' => 'Толщина стали', 'value' => '0,5 мм'],
+                ['key' => 'Тип сварки', 'value' => 'TIG, встык'],
+                ['key' => 'Рабочая температура', 'value' => 'до 600 °C'],
+                ['key' => 'Рекомендуемое топливо', 'value' => 'Дрова, газ, пеллеты'],
+                ['key' => 'Масса', 'value' => '0,38 кг'],
+                ['key' => 'Гарантия производителя', 'value' => '10 лет'],
+                ['key' => 'Артикул производителя', 'value' => 'TS.ST5.ZNT.0115.32496'],
+                ['key' => 'Страна производства', 'value' => 'Россия'],
+            ],
+        ],
+    ];
+
     public function handle(IntegrationProductCreator $creator): int
     {
         $rows = match ($this->option('batch')) {
@@ -624,6 +665,7 @@ class CreateSbgDistinctProductsBatchCommand extends Command
             'researched-priced-20261013-s' => self::BATCH_RESEARCHED_PRICED_20261013_S,
             'researched-priced-20261013-t' => self::BATCH_RESEARCHED_PRICED_20261013_T,
             'researched-priced-20261013-u' => self::BATCH_RESEARCHED_PRICED_20261013_U,
+            'researched-priced-20261013-v' => self::BATCH_RESEARCHED_PRICED_20261013_V,
             default => null,
         };
 
