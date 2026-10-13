@@ -2809,4 +2809,70 @@ class CreateSbgDistinctProductsBatchCommandTest extends TestCase
         $this->assertStringNotContainsString('rub', mb_strtolower($product->content));
         $this->assertSame('manual_created', $item->fresh()->match_method);
     }
+
+    public function test_it_creates_the_retra_2_temperature_sensor_instead_of_linking_buderus(): void
+    {
+        $source = IntegrationSource::query()->create([
+            'code' => 'onec-sbg-retra-2-temperature-sensor',
+            'name' => '1С СанБизнесГруп',
+            'settings' => ['partner_name' => 'ООО «СанБизнесГруп»'],
+            'is_active' => true,
+            'update_stock' => true,
+        ]);
+        $category = Category::query()->firstOrCreate(['slug' => 'datchiki'], [
+            'name' => 'Датчики',
+            'parent_id' => 0,
+        ]);
+        $buderus = Brand::query()->firstOrCreate(['slug' => 'buderus'], ['name' => 'Buderus']);
+        $wrongBuderusCandidate = Product::query()->create([
+            'category_id' => $category->id,
+            'brand_id' => $buderus->id,
+            'sku' => 'PS-004.481',
+            'name' => 'Датчик температуры бойлера Buderus AS1',
+            'slug' => 'buderus-as1-temperature-sensor-template',
+            'price' => 120,
+            'images' => ['product/0004/004481/buderus-as1.jpg'],
+        ]);
+        $item = IntegrationProduct::query()->create([
+            'integration_source_id' => $source->id,
+            'external_id' => 'retra-2-temperature-sensor',
+            'external_code' => 'УТ-00003789',
+            'external_sku' => null,
+            'name' => 'Датчик температуры к пульту "Retra-2 (RS-485)"',
+            'price_byn' => null,
+            'stock_quantity' => 4,
+            'match_status' => 'ambiguous',
+            'candidates' => [['product_id' => $wrongBuderusCandidate->id, 'score' => 0.70]],
+        ]);
+
+        $this->artisan('integration:create-sbg-distinct-products', [
+            '--batch' => 'researched-priced-20261013-av',
+            '--code' => ['УТ-00003789'],
+            '--apply' => true,
+        ])->assertSuccessful();
+
+        $product = $item->fresh()->product;
+        $this->assertNotNull($product);
+        $this->assertNotSame($wrongBuderusCandidate->id, $product->id);
+        $this->assertSame($category->id, $product->category_id);
+        $this->assertSame('RETRA', $product->brand->name);
+        $this->assertSame('RETRA датчик температуры котла для пульта Retra-2 New RS-485, 3 м', $product->name);
+        $this->assertSame('69.90', $product->price);
+        $this->assertSame('4', (string) $product->stock_qty);
+        $this->assertNull($item->fresh()->normalizedPriceByn());
+        $this->assertSame('Пульт RETRA-2 New RS-485', collect($product->specs)->firstWhere('key', 'Совместимость')['value']);
+        $this->assertSame('от −40 до +125 °C', collect($product->specs)->firstWhere('key', 'Диапазон измерения')['value']);
+        $this->assertSame('3 м', collect($product->specs)->firstWhere('key', 'Длина кабеля')['value']);
+        $this->assertSame(['img/products/generated/retra-2-new-rs485-temperature-sensor.png'], $product->images);
+        $this->assertFileExists(public_path('img/products/generated/retra-2-new-rs485-temperature-sensor.png'));
+        $this->assertStringContainsString('retra.com.ua', $product->content_source_url);
+        $this->assertStringNotContainsString('Buderus', $product->content);
+        $this->assertStringNotContainsString('AS1', $product->content);
+        $this->assertStringNotContainsString('1-Wire', $product->content);
+        $this->assertStringNotContainsString('Dallas', $product->content);
+        $this->assertStringNotContainsString('розничная цена', mb_strtolower($product->content));
+        $this->assertStringNotContainsString('нбрб', mb_strtolower($product->content));
+        $this->assertStringNotContainsString('грн', mb_strtolower($product->content));
+        $this->assertSame('manual_created', $item->fresh()->match_method);
+    }
 }

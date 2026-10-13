@@ -1487,6 +1487,37 @@ class CreateSbgDistinctProductsBatchCommand extends Command
         ],
     ];
 
+    private const BATCH_RESEARCHED_PRICED_20261013_AV = [
+        'УТ-00003789' => [
+            'template' => 'PS-004.481',
+            'category_slug' => 'datchiki',
+            'fragments' => ['Датчик температуры', 'Retra-2', 'RS-485'],
+            'brand' => [
+                'name' => 'RETRA',
+                'slug' => 'retra',
+                'country' => 'Украина',
+                'content' => '<p><strong>RETRA</strong> — производитель твердотопливных котлов, систем автоматизации и комплектующих для отопительного оборудования.</p>',
+            ],
+            'name' => 'RETRA датчик температуры котла для пульта Retra-2 New RS-485, 3 м',
+            'retail' => 69.90,
+            'images' => ['img/products/generated/retra-2-new-rs485-temperature-sensor.png'],
+            'source_url' => 'https://retra.com.ua/index.php?download_id=50&product_id=363&route=product%2Fproduct%2Fdownload',
+            'short' => 'Проводной датчик температуры теплоносителя с кабелем 3 м для пульта управления котлом RETRA-2 New RS-485.',
+            'content' => '<p><strong>Датчик температуры RETRA</strong> предназначен для измерения температуры теплоносителя на выходе котла и передачи показаний пульту управления RETRA-2 New RS-485.</p><p>Датчик поставляется с кабелем длиной 3 м. Диапазон измерения составляет от −40 до +125 °C, дискретность индикации — 1 °C. Перед заменой необходимо обесточить пульт и проверить совместимость разъёма с конкретной ревизией оборудования.</p>',
+            'specs' => [
+                ['key' => 'Тип', 'value' => 'Проводной датчик температуры котла'],
+                ['key' => 'Назначение', 'value' => 'Измерение температуры теплоносителя'],
+                ['key' => 'Совместимость', 'value' => 'Пульт RETRA-2 New RS-485'],
+                ['key' => 'Место измерения', 'value' => 'Выход теплоносителя из котла'],
+                ['key' => 'Диапазон измерения', 'value' => 'от −40 до +125 °C'],
+                ['key' => 'Дискретность измерения', 'value' => '1 °C'],
+                ['key' => 'Длина кабеля', 'value' => '3 м'],
+                ['key' => 'Подключение', 'value' => 'Проводное'],
+                ['key' => 'Страна бренда', 'value' => 'Украина'],
+            ],
+        ],
+    ];
+
     public function handle(IntegrationProductCreator $creator): int
     {
         $rows = match ($this->option('batch')) {
@@ -1537,6 +1568,7 @@ class CreateSbgDistinctProductsBatchCommand extends Command
             'researched-priced-20261013-as' => self::BATCH_RESEARCHED_PRICED_20261013_AS,
             'researched-priced-20261013-at' => self::BATCH_RESEARCHED_PRICED_20261013_AT,
             'researched-priced-20261013-au' => self::BATCH_RESEARCHED_PRICED_20261013_AU,
+            'researched-priced-20261013-av' => self::BATCH_RESEARCHED_PRICED_20261013_AV,
             default => null,
         };
 
