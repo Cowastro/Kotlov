@@ -20,6 +20,7 @@ on:
           - audit-unlinked-products
           - audit-price-integrity
           - verify-commercial-pdf
+          - configure-openai
           - deploy-safe
           - deploy-recover
       artisan_args:
@@ -48,7 +49,7 @@ jobs:
           set -euo pipefail
 
           case "$TASK" in
-            optimize-clear|artisan-dry-run|artisan-apply|artisan-background|tail-log|ps-artisan|stop-varmega-image-repair|stop-product-image-repair|audit-teplodar|audit-unlinked-products|audit-price-integrity|verify-commercial-pdf|deploy-safe|deploy-recover) ;;
+            optimize-clear|artisan-dry-run|artisan-apply|artisan-background|tail-log|ps-artisan|stop-varmega-image-repair|stop-product-image-repair|audit-teplodar|audit-unlinked-products|audit-price-integrity|verify-commercial-pdf|configure-openai|deploy-safe|deploy-recover) ;;
             *) echo "::error::Unsupported task: $TASK"; exit 1 ;;
           esac
 
@@ -98,6 +99,7 @@ jobs:
           ssh-keyscan -p "${SERVER_PORT:-22}" "$SERVER_HOST" >> ~/.ssh/known_hosts
 
       - name: Run remote task
+        if: inputs.task != 'configure-openai'
         env:
           TASK: ${{ inputs.task }}
           ARTISAN_ARGS: ${{ inputs.artisan_args }}
@@ -261,12 +263,72 @@ jobs:
             grep '^metric\.' "$detail_log" || true
             echo "safe_price_metrics_end"
           fi
+          if [[ "$TASK" == "artisan-dry-run" && "${ARTISAN_ARGV[0]:-}" == "market:openai-smoke" ]]; then
+            echo "safe_openai_smoke_begin"
+            cat "$detail_log"
+            echo "safe_openai_smoke_end"
+          fi
           exit "$status"
           SCRIPT
           )
 
           ssh -i ~/.ssh/server_key -p "$port" "$SERVER_USER@$SERVER_HOST" \
             "TASK='$TASK' ARTISAN_ARGS='$ARTISAN_ARGS' LOG_FILE='$LOG_FILE' SERVER_PATH='$server_path' PHP_BIN='$php_bin' bash -s" \
+            <<< "$remote_script"
+
+      - name: Configure OpenAI production secret
+        if: inputs.task == 'configure-openai'
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          SERVER_HOST: ${{ secrets.SERVER_HOST }}
+          SERVER_PORT: ${{ secrets.SERVER_PORT }}
+          SERVER_USER: ${{ secrets.SERVER_USER }}
+          SERVER_PATH: ${{ secrets.SERVER_PATH }}
+          PHP_BIN: ${{ secrets.SERVER_PHP_BIN }}
+        run: |
+          set -euo pipefail
+          test -n "$OPENAI_API_KEY"
+
+          port="${SERVER_PORT:-22}"
+          php_bin="${PHP_BIN:-/opt/alt/php83/usr/bin/php}"
+          server_path="${SERVER_PATH:-/var/www/h209767/data/www/new.kotlov.by}"
+          key_literal="$(printf '%q' "$OPENAI_API_KEY")"
+
+          remote_script=$(cat <<'SCRIPT'
+          set -euo pipefail
+          cd "$SERVER_PATH"
+          openai_key=__OPENAI_KEY_LITERAL__
+          test -n "$openai_key"
+          test -f .env
+
+          umask 077
+          temp_env="$(mktemp "$SERVER_PATH/.env.openai.XXXXXX")"
+          cleanup() { rm -f "$temp_env"; }
+          trap cleanup EXIT
+          replaced=0
+          while IFS= read -r line || [[ -n "$line" ]]; do
+            if [[ "$line" == OPENAI_API_KEY=* ]]; then
+              printf 'OPENAI_API_KEY=%s\n' "$openai_key" >> "$temp_env"
+              replaced=1
+            else
+              printf '%s\n' "$line" >> "$temp_env"
+            fi
+          done < .env
+          if [[ "$replaced" -eq 0 ]]; then
+            printf '\nOPENAI_API_KEY=%s\n' "$openai_key" >> "$temp_env"
+          fi
+
+          chmod --reference=.env "$temp_env" 2>/dev/null || chmod 600 "$temp_env"
+          mv "$temp_env" .env
+          trap - EXIT
+          "$PHP_BIN" artisan optimize:clear >/dev/null
+          echo 'openai_key_configured=1'
+          SCRIPT
+          )
+          remote_script="${remote_script/__OPENAI_KEY_LITERAL__/$key_literal}"
+
+          ssh -i ~/.ssh/server_key -p "$port" "$SERVER_USER@$SERVER_HOST" \
+            "SERVER_PATH='$server_path' PHP_BIN='$php_bin' bash -s" \
             <<< "$remote_script"
 
       - name: Download Teplodar audit report
