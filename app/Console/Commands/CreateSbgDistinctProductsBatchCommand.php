@@ -1911,6 +1911,34 @@ class CreateSbgDistinctProductsBatchCommand extends Command
         ],
     ];
 
+    private const BATCH_RESEARCHED_PRICED_20261013_BH = [
+        'УТ-00009517' => [
+            'template' => 'KOTLOV-008004',
+            'external_sku' => 'TS.FRT.T87.0150.82195',
+            'fragments' => ['Тройник 87', 'ТРМ(М)-Р', '430-1.0', 'D150'],
+            'name' => 'Теплов и Сухов Тройник 87° ТРМ(М)-Р AISI 430 1,0 мм Ø150',
+            'retail' => 99.00,
+            'images' => ['img/products/teplov-i-suhov/troynik-87-trmm-r-430-1-0-d150.jpg'],
+            'source_url' => 'https://saunaopt.ru/dymohodnye-sistemy/stalnye-dymohody/trojnik-mono-87-trmm-r-430-1-0-d150',
+            'short' => 'Одностенный дымоходный тройник Теплов и Сухов ТРМ(М)-Р 87° из стали AISI 430 толщиной 1,0 мм, диаметр 150 мм.',
+            'content' => '<p><strong>Теплов и Сухов ТРМ(М)-Р 87° Ø150</strong> — одностенный тройник серии «Феррит Моно» для изменения направления дымового канала и устройства точки обслуживания дымохода.</p><p>Элемент изготовлен из нержавеющей стали AISI 430 толщиной 1,0 мм. Ревизионное ответвление упрощает осмотр, чистку и отвод конденсата. Модель рассчитана на сухой режим эксплуатации и сборку по конденсату в дымоходах дровяных печей, каминов и твердотопливных котлов.</p>',
+            'specs' => [
+                ['key' => 'Тип', 'value' => 'Тройник одностенный'],
+                ['key' => 'Модель', 'value' => 'ТРМ(М)-Р'],
+                ['key' => 'Серия', 'value' => 'ТиС Феррит Моно'],
+                ['key' => 'Угол', 'value' => '87°'],
+                ['key' => 'Диаметр', 'value' => '150 мм'],
+                ['key' => 'Марка стали', 'value' => 'AISI 430'],
+                ['key' => 'Толщина стали', 'value' => '1,0 мм'],
+                ['key' => 'Тип монтажа', 'value' => 'По конденсату'],
+                ['key' => 'Режим эксплуатации', 'value' => 'Сухой'],
+                ['key' => 'Топливо', 'value' => 'Дрова'],
+                ['key' => 'Применение', 'value' => 'Дровяные печи, камины, твердотопливные котлы'],
+                ['key' => 'Страна производства', 'value' => 'Россия'],
+            ],
+        ],
+    ];
+
     public function handle(
         IntegrationProductCreator $creator,
         IntegrationProductMatchDecision $matchDecision,
@@ -1976,6 +2004,7 @@ class CreateSbgDistinctProductsBatchCommand extends Command
             'researched-priced-20261013-be' => self::BATCH_RESEARCHED_PRICED_20261013_BE,
             'researched-priced-20261013-bf' => self::BATCH_RESEARCHED_PRICED_20261013_BF,
             'researched-priced-20261013-bg' => self::BATCH_RESEARCHED_PRICED_20261013_BG,
+            'researched-priced-20261013-bh' => self::BATCH_RESEARCHED_PRICED_20261013_BH,
             default => null,
         };
 

@@ -3828,4 +3828,85 @@ class CreateSbgDistinctProductsBatchCommandTest extends TestCase
         $this->assertSame($productCount + 1, Product::query()->count());
         $this->assertSame($product->id, $item->fresh()->product_id);
     }
+
+    public function test_it_creates_the_exact_teplov_i_suhov_aisi_430_one_mm_d150_tee(): void
+    {
+        $source = IntegrationSource::query()->create([
+            'code' => 'onec-sbg-teplov-suhov-tee-one-mm',
+            'name' => '1С СанБизнесГруп',
+            'settings' => ['partner_name' => 'ООО «СанБизнесГруп»'],
+            'is_active' => true,
+            'update_stock' => true,
+        ]);
+        $category = Category::query()->firstOrCreate(['slug' => 'troyniki-mono'], [
+            'name' => 'Тройники моно',
+            'parent_id' => 0,
+        ]);
+        $brand = Brand::query()->create(['name' => 'Теплов и Сухов', 'slug' => 'teplov-i-suhov']);
+        $wrongCandidate = Product::query()->create([
+            'category_id' => $category->id,
+            'brand_id' => $brand->id,
+            'sku' => 'KOTLOV-008004',
+            'name' => 'Теплов и Сухов Тройник 87° ТРМ(М)-Р 430-0.5 D150',
+            'slug' => 'teplov-i-suhov-troynik-87-430-05-d150',
+            'price' => 73.39,
+            'images' => ['product/teplov-suhov/wrong-05-mm.jpg'],
+        ]);
+        $item = IntegrationProduct::query()->create([
+            'integration_source_id' => $source->id,
+            'external_id' => 'teplov-suhov-tee-one-mm-d150',
+            'external_code' => 'УТ-00009517',
+            'external_sku' => 'TS.FRT.T87.0150.82195',
+            'name' => 'Тройник 87* ТРМ(М)-Р 430-1.0 D150',
+            'price_byn' => null,
+            'stock_quantity' => 1,
+            'match_status' => 'ambiguous',
+            'candidates' => [['product_id' => $wrongCandidate->id, 'score' => 0.73]],
+        ]);
+        $productCount = Product::query()->count();
+
+        $this->artisan('integration:create-sbg-distinct-products', [
+            '--batch' => 'researched-priced-20261013-bh',
+            '--code' => ['УТ-00009517'],
+            '--apply' => true,
+        ])->assertSuccessful();
+
+        $item->refresh();
+        $this->assertSame($productCount + 1, Product::query()->count());
+        $this->assertNotNull($item->product_id);
+        $this->assertNotSame($wrongCandidate->id, $item->product_id);
+        $this->assertSame('matched', $item->match_status);
+        $this->assertSame('manual_created', $item->match_method);
+        $this->assertSame($category->id, $item->target_category_id);
+        $this->assertNull($item->candidates);
+
+        $product = $item->product;
+        $this->assertSame('Теплов и Сухов Тройник 87° ТРМ(М)-Р AISI 430 1,0 мм Ø150', $product->name);
+        $this->assertSame('99.00', $product->price);
+        $this->assertSame($brand->id, $product->brand_id);
+        $this->assertSame('150 мм', collect($product->specs)->firstWhere('key', 'Диаметр')['value']);
+        $this->assertSame('1,0 мм', collect($product->specs)->firstWhere('key', 'Толщина стали')['value']);
+        $this->assertSame(['img/products/teplov-i-suhov/troynik-87-trmm-r-430-1-0-d150.jpg'], $product->images);
+        $this->assertFileExists(public_path('img/products/teplov-i-suhov/troynik-87-trmm-r-430-1-0-d150.jpg'));
+        $this->assertStringContainsString('saunaopt.ru', $product->content_source_url);
+        $this->assertStringContainsString('сухой режим', mb_strtolower($product->content));
+        $this->assertStringNotContainsString('розничная цена', mb_strtolower($product->content));
+        $this->assertStringNotContainsString('rub', mb_strtolower($product->content));
+        $this->assertDatabaseHas('supplier_product_mappings', [
+            'supplier_code' => $source->matchingSupplierCode(),
+            'supplier_article' => 'TS.FRT.T87.0150.82195',
+            'product_id' => $product->id,
+            'product_sku' => $product->sku,
+            'confidence' => 'manual',
+            'is_active' => true,
+        ]);
+
+        $this->artisan('integration:create-sbg-distinct-products', [
+            '--batch' => 'researched-priced-20261013-bh',
+            '--code' => ['УТ-00009517'],
+            '--apply' => true,
+        ])->assertSuccessful();
+        $this->assertSame($productCount + 1, Product::query()->count());
+        $this->assertSame($product->id, $item->fresh()->product_id);
+    }
 }
