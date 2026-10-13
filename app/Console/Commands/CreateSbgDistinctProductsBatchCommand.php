@@ -2783,6 +2783,42 @@ class CreateSbgDistinctProductsBatchCommand extends Command
         ],
     ];
 
+    private const BATCH_UNMATCHED_RESEARCHED_20261013_CK = [
+        'УТ-00001111' => [
+            'template_slug' => 'taim-slang-gazovyi-rezinovyi-12-10-m-stucer-gaika',
+            'allow_unmatched' => true,
+            'category_slug' => 'zhestkaya-podvodka-dlya-vody',
+            'fragments' => ['Хром. трубка медная', 'd10', '500mmx1/2'],
+            'brand' => [
+                'name' => 'Albertoni',
+                'slug' => 'albertoni',
+                'country' => 'Италия',
+            ],
+            'name' => 'Albertoni 130/1 M272708 Трубка медная хромированная Ø10 мм, 1/2″ ВР–1/2″ ВР, 500 мм',
+            'retail' => 50.00,
+            'images' => [
+                'img/products/albertoni/albertoni-m272708-chrome-copper-tube-500mm.png',
+            ],
+            'source_url' => 'https://www.pivduyma.ua/trubky-vodyani-hromovani/albertoni-130-1-d10-1-2-trubka-hromovana',
+            'short' => 'Хромированная медная трубка Albertoni 130/1 M272708 длиной 500 мм с двумя накидными гайками 1/2″ для жёсткого подключения сантехнического оборудования.',
+            'content' => '<p><strong>Albertoni 130/1 M272708</strong> — мягкая медная трубка с хромированным покрытием для аккуратной и долговечной жёсткой подводки воды.</p><p>Трубка имеет наружный диаметр 10 мм, длину 500 мм и две накидные гайки с внутренней резьбой 1/2″. Она подходит для подключения смесителей, унитазов, биде и другого сантехнического оборудования на открытых участках, где важен аккуратный внешний вид.</p><p>Перед монтажом проверьте совместимость присоединений и соблюдайте допустимый радиус изгиба медной трубки.</p>',
+            'specs' => [
+                ['key' => 'Тип', 'value' => 'Трубка для жёсткой подводки воды'],
+                ['key' => 'Серия', 'value' => '130/1'],
+                ['key' => 'Модель', 'value' => 'M272708'],
+                ['key' => 'Материал', 'value' => 'Медь'],
+                ['key' => 'Покрытие', 'value' => 'Хром'],
+                ['key' => 'Наружный диаметр', 'value' => '10 мм'],
+                ['key' => 'Размер присоединения', 'value' => '1/2″ ВР × 1/2″ ВР'],
+                ['key' => 'Тип соединения', 'value' => 'Гайка/гайка'],
+                ['key' => 'Длина', 'value' => '500 мм'],
+                ['key' => 'Назначение', 'value' => 'Подключение сантехнического оборудования к водопроводу'],
+                ['key' => 'Страна производства', 'value' => 'Италия'],
+                ['key' => 'Бренд', 'value' => 'Albertoni'],
+            ],
+        ],
+    ];
+
     public function handle(
         IntegrationProductCreator $creator,
         IntegrationProductMatchDecision $matchDecision,
@@ -2876,6 +2912,7 @@ class CreateSbgDistinctProductsBatchCommand extends Command
             'unmatched-researched-20261013-ch' => self::BATCH_UNMATCHED_RESEARCHED_20261013_CH,
             'unmatched-researched-20261013-ci' => self::BATCH_UNMATCHED_RESEARCHED_20261013_CI,
             'unmatched-researched-20261013-cj' => self::BATCH_UNMATCHED_RESEARCHED_20261013_CJ,
+            'unmatched-researched-20261013-ck' => self::BATCH_UNMATCHED_RESEARCHED_20261013_CK,
             default => null,
         };
 
