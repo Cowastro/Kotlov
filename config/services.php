@@ -61,6 +61,10 @@ return [
         'openai_research_model' => env('OPENAI_RESEARCH_MODEL', 'gpt-6.1-sol'),
         'openai_research_timeout' => env('OPENAI_RESEARCH_TIMEOUT', 180),
         'openai_proxy' => env('OPENAI_PROXY', ''),
+        'market_openai_provider' => env('MARKET_OPENAI_PROVIDER', 'openai'),
+        'azure_openai_key' => env('AZURE_OPENAI_API_KEY', ''),
+        'azure_openai_responses_url' => env('AZURE_OPENAI_RESPONSES_URL', ''),
+        'azure_openai_research_model' => env('AZURE_OPENAI_RESEARCH_MODEL', 'gpt-5.5'),
     ],
 
     'belarus_company_registry' => [

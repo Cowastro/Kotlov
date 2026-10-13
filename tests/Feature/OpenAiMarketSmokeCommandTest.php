@@ -26,7 +26,6 @@ class OpenAiMarketSmokeCommandTest extends TestCase
             'services.ai.openai_responses_url' => 'https://api.openai.com/v1/responses',
         ]);
         Http::fake([
-            'https://api.openai.com/v1/models/gpt-6.1-sol' => Http::response(['id' => 'gpt-6.1-sol']),
             'https://api.openai.com/v1/responses' => Http::response([
                 'output' => [[
                     'type' => 'web_search_call',
@@ -42,5 +41,33 @@ class OpenAiMarketSmokeCommandTest extends TestCase
             ->expectsOutputToContain('web_search_calls=1')
             ->doesntExpectOutputToContain('secret-test-key')
             ->assertSuccessful();
+    }
+
+    public function test_it_checks_azure_openai_without_exposing_the_key(): void
+    {
+        config()->set([
+            'services.ai.market_openai_provider' => 'azure',
+            'services.ai.azure_openai_key' => 'azure-secret-key',
+            'services.ai.azure_openai_responses_url' => 'https://example.openai.azure.com/openai/v1/responses',
+            'services.ai.azure_openai_research_model' => 'market-research-deployment',
+        ]);
+        Http::fake([
+            'https://example.openai.azure.com/openai/v1/responses' => Http::response([
+                'output' => [[
+                    'type' => 'web_search_call',
+                    'status' => 'completed',
+                ]],
+            ]),
+        ]);
+
+        $this->artisan('market:openai-smoke', ['--web' => true])
+            ->expectsOutputToContain('openai_provider=azure')
+            ->expectsOutputToContain('model_access=1')
+            ->expectsOutputToContain('web_search=1')
+            ->doesntExpectOutputToContain('azure-secret-key')
+            ->assertSuccessful();
+
+        Http::assertSent(fn ($request): bool => $request->hasHeader('api-key', 'azure-secret-key')
+            && ! $request->hasHeader('Authorization'));
     }
 }

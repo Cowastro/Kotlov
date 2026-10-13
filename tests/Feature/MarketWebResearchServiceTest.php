@@ -94,6 +94,54 @@ class MarketWebResearchServiceTest extends TestCase
         });
     }
 
+    public function test_it_supports_official_azure_openai_responses_and_web_search(): void
+    {
+        config()->set([
+            'services.ai.market_openai_provider' => 'azure',
+            'services.ai.azure_openai_key' => 'azure-secret-key',
+            'services.ai.azure_openai_responses_url' => 'https://example.openai.azure.com/openai/v1/responses',
+            'services.ai.azure_openai_research_model' => 'market-research-deployment',
+        ]);
+
+        Http::fake([
+            'https://example.openai.azure.com/openai/v1/responses' => Http::response([
+                'output' => [[
+                    'type' => 'message',
+                    'content' => [[
+                        'type' => 'output_text',
+                        'text' => json_encode([
+                            'summary' => 'Предложений не найдено.',
+                            'verdict' => 'Нужна ручная проверка.',
+                            'confidence' => 'low',
+                            'search_queries' => ['тестовый товар цена Беларусь'],
+                            'offers' => [],
+                            'rejected_candidates' => [],
+                        ], JSON_UNESCAPED_UNICODE),
+                    ]],
+                ]],
+            ]),
+        ]);
+
+        $result = app(MarketWebResearchService::class)->research(new Product([
+            'name' => 'Тестовый товар',
+            'sku' => 'TEST-1',
+        ]), 100);
+
+        $this->assertSame('ready', $result['status']);
+        $this->assertSame('market-research-deployment', $result['model']);
+
+        Http::assertSent(function (Request $request): bool {
+            $data = $request->data();
+
+            return $request->hasHeader('api-key', 'azure-secret-key')
+                && ! $request->hasHeader('Authorization')
+                && $data['model'] === 'market-research-deployment'
+                && $data['tools'][0]['type'] === 'web_search'
+                && ! array_key_exists('external_web_access', $data['tools'][0])
+                && ! array_key_exists('return_token_budget', $data['tools'][0]);
+        });
+    }
+
     /** @return array<string, mixed> */
     private function offer(string $seller, string $url, float $price): array
     {

@@ -14,36 +14,46 @@ class MarketWebResearchService
     /** @return array<string, mixed> */
     public function research(Product $product, float $quotePrice): array
     {
-        $apiKey = trim((string) config('services.ai.openai_key'));
+        $provider = $this->provider();
+        $apiKey = $provider['api_key'];
         if ($apiKey === '') {
-            return $this->failure('Поиск не настроен: на сервере отсутствует OPENAI_API_KEY.');
+            return $this->failure('Поиск не настроен: отсутствует API-ключ выбранного OpenAI-провайдера.');
+        }
+        if ($provider['responses_url'] === '' || $provider['model'] === '') {
+            return $this->failure('Поиск не настроен: для выбранного OpenAI-провайдера не заданы endpoint или модель.');
         }
 
         $product->loadMissing(['brand', 'category']);
-        $models = array_values(array_unique(array_filter([
-            trim((string) config('services.ai.openai_research_model', 'gpt-6.1-sol')),
-            trim((string) config('services.ai.openai_model', 'gpt-4.1')),
-        ])));
+        $models = $provider['name'] === 'azure'
+            ? [$provider['model']]
+            : array_values(array_unique(array_filter([
+                $provider['model'],
+                trim((string) config('services.ai.openai_model', 'gpt-4.1')),
+            ])));
         $lastError = null;
 
         foreach ($models as $model) {
             try {
-                $request = Http::withToken($apiKey)
-                    ->acceptJson()
+                $request = Http::acceptJson()
                     ->timeout((int) config('services.ai.openai_research_timeout', 180))
                     ->retry(2, 1500, throw: false);
-                $proxy = trim((string) config('services.ai.openai_proxy'));
-                if ($proxy !== '') {
-                    $request = $request->withOptions(['proxy' => $proxy]);
+                if ($provider['name'] === 'azure') {
+                    $request = $request->withHeaders(['api-key' => $apiKey]);
+                } else {
+                    $request = $request->withToken($apiKey);
+                    $proxy = trim((string) config('services.ai.openai_proxy'));
+                    if ($proxy !== '') {
+                        $request = $request->withOptions(['proxy' => $proxy]);
+                    }
                 }
 
                 $response = $request->post(
-                    (string) config('services.ai.openai_responses_url', 'https://api.openai.com/v1/responses'),
-                    $this->payload($product, $quotePrice, $model)
+                    $provider['responses_url'],
+                    $this->payload($product, $quotePrice, $model, $provider['name'])
                 );
 
                 if (! $response->successful()) {
-                    $lastError = $this->apiError($response->json(), $response->status());
+                    $lastError = $this->apiError($response->json(), $response->status(), $provider['label']);
 
                     continue;
                 }
@@ -61,23 +71,27 @@ class MarketWebResearchService
     }
 
     /** @return array<string, mixed> */
-    private function payload(Product $product, float $quotePrice, string $model): array
+    private function payload(Product $product, float $quotePrice, string $model, string $provider): array
     {
+        $webSearch = [
+            'type' => 'web_search',
+            'search_context_size' => 'high',
+            'user_location' => [
+                'type' => 'approximate',
+                'country' => 'BY',
+                'city' => 'Minsk',
+                'region' => 'Minsk',
+            ],
+        ];
+        if ($provider === 'openai') {
+            $webSearch['external_web_access'] = true;
+            $webSearch['return_token_budget'] = 'unlimited';
+        }
+
         $payload = [
             'model' => $model,
             'store' => false,
-            'tools' => [[
-                'type' => 'web_search',
-                'external_web_access' => true,
-                'search_context_size' => 'high',
-                'return_token_budget' => 'unlimited',
-                'user_location' => [
-                    'type' => 'approximate',
-                    'country' => 'BY',
-                    'city' => 'Minsk',
-                    'region' => 'Minsk',
-                ],
-            ]],
+            'tools' => [$webSearch],
             'tool_choice' => 'required',
             'include' => ['web_search_call.action.sources'],
             'max_output_tokens' => 16000,
@@ -352,9 +366,35 @@ PROMPT;
     }
 
     /** @param array<string, mixed>|null $body */
-    private function apiError(?array $body, int $status): string
+    private function apiError(?array $body, int $status, string $provider): string
     {
-        return 'OpenAI HTTP '.$status.': '.trim((string) data_get($body, 'error.message', 'неизвестная ошибка'));
+        return $provider.' HTTP '.$status.': '.trim((string) data_get($body, 'error.message', 'неизвестная ошибка'));
+    }
+
+    /** @return array{name: string, label: string, api_key: string, responses_url: string, model: string} */
+    private function provider(): array
+    {
+        $name = trim((string) config('services.ai.market_openai_provider', 'openai')) === 'azure'
+            ? 'azure'
+            : 'openai';
+
+        if ($name === 'azure') {
+            return [
+                'name' => 'azure',
+                'label' => 'Azure OpenAI',
+                'api_key' => trim((string) config('services.ai.azure_openai_key')),
+                'responses_url' => trim((string) config('services.ai.azure_openai_responses_url')),
+                'model' => trim((string) config('services.ai.azure_openai_research_model', 'gpt-5.5')),
+            ];
+        }
+
+        return [
+            'name' => 'openai',
+            'label' => 'OpenAI',
+            'api_key' => trim((string) config('services.ai.openai_key')),
+            'responses_url' => trim((string) config('services.ai.openai_responses_url', 'https://api.openai.com/v1/responses')),
+            'model' => trim((string) config('services.ai.openai_research_model', 'gpt-6.1-sol')),
+        ];
     }
 
     /** @return array<string, mixed> */
