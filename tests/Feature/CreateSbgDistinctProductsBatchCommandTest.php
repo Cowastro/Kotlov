@@ -989,6 +989,84 @@ class CreateSbgDistinctProductsBatchCommandTest extends TestCase
         $this->assertSame('200 мм', collect($product->specs)->firstWhere('key', 'Переход на')['value']);
         $this->assertSame('TS.FRT.AKP.0150.61096', collect($product->specs)->firstWhere('key', 'Артикул производителя')['value']);
         $this->assertStringContainsString('ts-frt-akp-0150-61096', mb_strtolower($product->content_source_url));
+        $this->assertStringNotContainsString('нельзя объединять', mb_strtolower($product->content));
+        $this->assertStringNotContainsString('розничная цена', mb_strtolower($product->content));
+        $this->assertStringNotContainsString('нбрб', mb_strtolower($product->content));
+        $this->assertStringNotContainsString('rub', mb_strtolower($product->content));
+        $this->assertSame('manual_created', $item->fresh()->match_method);
+
+        $product->forceFill(['content' => '<p>Служебное описание цены и сопоставления.</p>'])->save();
+
+        $this->artisan('integration:create-sbg-distinct-products', [
+            '--batch' => 'researched-priced-20261013-t',
+            '--code' => ['УТ-00009589'],
+            '--apply' => true,
+        ])->assertSuccessful();
+
+        $this->assertStringContainsString('плавное соединение', $product->fresh()->content);
+        $this->assertStringNotContainsString('Служебное', $product->fresh()->content);
+    }
+
+    public function test_it_creates_the_exact_aisi_304_l500_pipe_instead_of_linking_the_aisi_430_l1000_candidate(): void
+    {
+        $source = IntegrationSource::query()->create([
+            'code' => 'onec-sbg-teplov-pipe-304-l500-d115',
+            'name' => '1С СанБизнесГруп',
+            'settings' => ['partner_name' => 'ООО «СанБизнесГруп»'],
+            'is_active' => true,
+            'update_stock' => true,
+        ]);
+        $category = Category::query()->create([
+            'name' => 'Трубы моно',
+            'slug' => 'mono-pipes-304-l500-test',
+            'parent_id' => 0,
+        ]);
+        $brand = Brand::query()->create(['name' => 'Теплов и Сухов', 'slug' => 'teplov-i-suhov-pipe-test']);
+        $wrongPipeCandidate = Product::query()->create([
+            'category_id' => $category->id,
+            'brand_id' => $brand->id,
+            'sku' => 'PS-009.743',
+            'name' => 'Труба моно L1000 ТМ-Р (430-1,0) D115',
+            'slug' => 'teplov-pipe-430-l1000-d115-template',
+            'price' => 45,
+            'images' => ['product/009/009743/pipe.jpg'],
+        ]);
+        $item = IntegrationProduct::query()->create([
+            'integration_source_id' => $source->id,
+            'external_id' => 'teplov-pipe-304-l500-d115',
+            'external_code' => 'УТ-00009115',
+            'external_sku' => 'TS.ST5.TRB.0115.79182',
+            'name' => 'Труба L500 ТМ-Р 304-0.8 D115 (У)',
+            'price_byn' => null,
+            'stock_quantity' => 2,
+            'match_status' => 'ambiguous',
+            'candidates' => [['product_id' => $wrongPipeCandidate->id, 'score' => 0.7529]],
+        ]);
+
+        $this->artisan('integration:create-sbg-distinct-products', [
+            '--batch' => 'researched-priced-20261013-u',
+            '--code' => ['УТ-00009115'],
+            '--apply' => true,
+        ])->assertSuccessful();
+
+        $product = $item->fresh()->product;
+        $this->assertNotNull($product);
+        $this->assertNotSame($wrongPipeCandidate->id, $product->id);
+        $this->assertSame($category->id, $product->category_id);
+        $this->assertSame($brand->id, $product->brand_id);
+        $this->assertSame('Теплов и Сухов Труба L500 ТМ-Р 304-0.8 D115 (У)', $product->name);
+        $this->assertSame('65.50', $product->price);
+        $this->assertSame('2', (string) $product->stock_qty);
+        $this->assertNull($item->fresh()->normalizedPriceByn());
+        $this->assertSame('500 мм', collect($product->specs)->firstWhere('key', 'Длина')['value']);
+        $this->assertSame('115 мм', collect($product->specs)->firstWhere('key', 'Диаметр')['value']);
+        $this->assertSame('AISI 304', collect($product->specs)->firstWhere('key', 'Марка стали')['value']);
+        $this->assertSame('TS.ST5.TRB.0115.79182', collect($product->specs)->firstWhere('key', 'Артикул производителя')['value']);
+        $this->assertStringContainsString('truba-mono-l500-tm-r-304-0-8-d-115', $product->content_source_url);
+        $this->assertStringNotContainsString('нельзя объединять', mb_strtolower($product->content));
+        $this->assertStringNotContainsString('розничная цена', mb_strtolower($product->content));
+        $this->assertStringNotContainsString('нбрб', mb_strtolower($product->content));
+        $this->assertStringNotContainsString('rub', mb_strtolower($product->content));
         $this->assertSame('manual_created', $item->fresh()->match_method);
     }
 }

@@ -424,10 +424,11 @@ class CreateSbgDistinctProductsBatchCommand extends Command
             'fragments' => ['Отвод 87', 'ОМ-Р', '430-0.8', 'D130', '3S'],
             'name' => 'Теплов и Сухов Отвод 87° ОМ-Р 430-0.8 D130 (3S)',
             'retail' => 37.00,
+            'refresh_existing' => true,
             'images' => ['https://enginer-pro.ru/upload/resize_cache/iblock/353/z1ktevmckvt2h3mnhc7ginouoijz9wzv/580_580_1/311da5b7_73e1_11ea_819c_5254007ee97b_4c09ceda_f27c_11ef_99de_fe9e81472390.jpg'],
             'source_url' => 'https://enginer-pro.ru/catalog/kotly-otopleniya/dymokhody-i-komplektuyushchie/dymokhody-iz-nerzhaveyushchey-stali/odnostennye_dymokhody/otvody_/otvod-mono/otvod-87-om-r-430-08-d130-3s/',
             'short' => 'Трёхсекционный моно-отвод Теплов и Сухов ОМ-Р 87° диаметром 130 мм из нержавеющей стали AISI 430 толщиной 0,8 мм.',
-            'content' => '<p><strong>Теплов и Сухов ОМ-Р 87° D130 (3S)</strong> — трёхсекционный отвод для изменения направления одностенного дымового канала почти под прямым углом.</p><p>Элемент выполнен из нержавеющей стали AISI 430 толщиной 0,8 мм. Диаметр подключения — 130 мм. Это отдельная конфигурация, которую нельзя объединять с более тонким отводом 430-0,5 мм.</p>',
+            'content' => '<p><strong>Теплов и Сухов ОМ-Р 87° D130 (3S)</strong> — трёхсекционный отвод для изменения направления одностенного дымового канала почти под прямым углом.</p><p>Элемент выполнен из нержавеющей стали AISI 430 толщиной 0,8 мм. Диаметр подключения — 130 мм. Секционная конструкция позволяет сформировать поворот дымохода при монтаже.</p>',
             'specs' => [
                 ['key' => 'Тип', 'value' => 'Отвод моно'],
                 ['key' => 'Модель', 'value' => 'ОМ-Р'],
@@ -517,10 +518,11 @@ class CreateSbgDistinctProductsBatchCommand extends Command
             ],
             'name' => 'OLE-PRO OS-H-TP датчик температуры горелки 20–50 кВт',
             'retail' => 61.00,
+            'refresh_existing' => true,
             'images' => ['https://images.deal.by/117410925_datchik-temperatury-os-h-3.jpg'],
             'source_url' => 'https://arttherm.dp.ua/DOCS/Oxi/OXI%20ARTTHERM.pdf',
             'short' => 'Архивный датчик температуры горелки OLE-PRO OS-H-TP для горелок OXI/HOTTA мощностью 20–50 кВт и контроллеров OFC-OXI-1/2.',
-            'content' => '<p><strong>OLE-PRO OS-H-TP</strong> — датчик температуры горелки для автоматики пеллетных горелок OXI/HOTTA мощностью 20–50 кВт. Модель предназначена для контроллеров OFC-OXI-1 и OFC-OXI-2.</p><p>Это архивная запасная часть для оборудования прежних поколений. Перед заказом необходимо сверить маркировку датчика, модель контроллера и мощность горелки. Цена рассчитана по архивной цене производителя 18 EUR с НДС и официальному курсу НБРБ на 13.10.2026.</p>',
+            'content' => '<p><strong>OLE-PRO OS-H-TP</strong> — датчик температуры горелки для автоматики пеллетных горелок OXI/HOTTA мощностью 20–50 кВт. Модель предназначена для контроллеров OFC-OXI-1 и OFC-OXI-2.</p><p>Это архивная запасная часть для оборудования прежних поколений. Перед заказом необходимо сверить маркировку датчика, модель контроллера и мощность горелки.</p>',
             'specs' => [
                 ['key' => 'Тип', 'value' => 'Датчик температуры горелки'],
                 ['key' => 'Модель', 'value' => 'OS-H-TP'],
@@ -540,10 +542,11 @@ class CreateSbgDistinctProductsBatchCommand extends Command
             'fragments' => ['Адаптер переход', 'Моно М-М', '430-0.8', 'D150/200'],
             'name' => 'Теплов и Сухов Адаптер-переход Моно М-М (С) 430-0.8 D150/200',
             'retail' => 41.00,
+            'refresh_existing' => true,
             'images' => ['https://cdn.vseinstrumenti.ru/images/goods/santehnicheskoe-oborudovanie/komplektuyuschie-i-rashodnye-materialy-dlya-santehniki/1408289/560x504/51789001.jpg'],
             'source_url' => 'https://www.vseinstrumenti.ru/product/adapter-perehod-mono-m-m-430-0-8-d150-200-teplovisuhov-ts-frt-akp-0150-61096-1408289/',
             'short' => 'Одноконтурный адаптер-переход Теплов и Сухов для соединения дымоходов Ø150 и Ø200 мм, AISI 430 толщиной 0,8 мм.',
-            'content' => '<p><strong>Теплов и Сухов Моно М-М (С) D150/200</strong> — одноконтурный адаптер-переход для соединения патрубка теплогенерирующего аппарата Ø150 мм с дымоходом Ø200 мм.</p><p>Конусный элемент изготовлен из нержавеющей стали AISI 430 толщиной 0,8 мм и предназначен для сухого режима эксплуатации. Это отдельная модификация: её нельзя объединять с адаптером Ø150/160. Розничная цена рассчитана по актуальному рыночному ориентиру 1 126 RUB и официальному курсу НБРБ на 13.10.2026.</p>',
+            'content' => '<p><strong>Теплов и Сухов Моно М-М (С) D150/200</strong> — одноконтурный адаптер-переход для соединения патрубка теплогенерирующего аппарата Ø150 мм с дымоходом Ø200 мм.</p><p>Конусный элемент изготовлен из нержавеющей стали AISI 430 толщиной 0,8 мм и предназначен для сухого режима эксплуатации. Переход обеспечивает плавное соединение элементов разного диаметра.</p>',
             'specs' => [
                 ['key' => 'Тип', 'value' => 'Адаптер-переход одноконтурный'],
                 ['key' => 'Система', 'value' => 'Моно'],
@@ -557,6 +560,41 @@ class CreateSbgDistinctProductsBatchCommand extends Command
                 ['key' => 'Масса', 'value' => '0,887 кг'],
                 ['key' => 'Режим эксплуатации', 'value' => 'Сухой'],
                 ['key' => 'Артикул производителя', 'value' => 'TS.FRT.AKP.0150.61096'],
+                ['key' => 'Страна производства', 'value' => 'Россия'],
+            ],
+        ],
+    ];
+
+    private const BATCH_RESEARCHED_PRICED_20261013_U = [
+        'УТ-00009115' => [
+            'template' => 'PS-009.743',
+            'external_sku' => 'TS.ST5.TRB.0115.79182',
+            'fragments' => ['Труба L500', 'ТМ-Р', '304-0.8', 'D115'],
+            'name' => 'Теплов и Сухов Труба L500 ТМ-Р 304-0.8 D115 (У)',
+            'retail' => 65.50,
+            'images' => [
+                'https://pechki66.ru/wa-data/public/shop/products/33/95/29533/images/129368/129368.970.jpg',
+                'https://pechki66.ru/wa-data/public/shop/products/33/95/29533/images/129369/129369.970.jpg',
+                'https://pechki66.ru/wa-data/public/shop/products/33/95/29533/images/129370/129370.970.jpg',
+            ],
+            'source_url' => 'https://pechki66.ru/city/rostov-na-donu/product/truba-mono-l500-tm-r-304-0-8-d-115-tis-standart/',
+            'short' => 'Одностенная труба дымохода Теплов и Сухов ТМ-Р длиной 500 мм и диаметром 115 мм из AISI 304 толщиной 0,8 мм.',
+            'content' => '<p><strong>Теплов и Сухов ТМ-Р L500 D115</strong> — одностенная дымоходная труба длиной 500 мм для подключения отопительного оборудования, гильзования кирпичных каналов и прокладки внутри негорючих шахт.</p><p>Труба изготовлена из нержавеющей стали AISI 304 толщиной 0,8 мм, сварена встык методом TIG и рассчитана на рабочую температуру до 600 °C. Подходит для оборудования, работающего на дровах, газе или пеллетах.</p>',
+            'specs' => [
+                ['key' => 'Тип', 'value' => 'Труба дымоходная одностенная'],
+                ['key' => 'Система', 'value' => 'Моно'],
+                ['key' => 'Модель', 'value' => 'ТМ-Р'],
+                ['key' => 'Длина', 'value' => '500 мм'],
+                ['key' => 'Диаметр', 'value' => '115 мм'],
+                ['key' => 'Материал', 'value' => 'Нержавеющая сталь'],
+                ['key' => 'Марка стали', 'value' => 'AISI 304'],
+                ['key' => 'Толщина стали', 'value' => '0,8 мм'],
+                ['key' => 'Тип сварки', 'value' => 'TIG, встык'],
+                ['key' => 'Рабочая температура', 'value' => 'до 600 °C'],
+                ['key' => 'Рекомендуемое топливо', 'value' => 'Дрова, газ, пеллеты'],
+                ['key' => 'Масса', 'value' => '1,1 кг'],
+                ['key' => 'Гарантия производителя', 'value' => '10 лет'],
+                ['key' => 'Артикул производителя', 'value' => 'TS.ST5.TRB.0115.79182'],
                 ['key' => 'Страна производства', 'value' => 'Россия'],
             ],
         ],
@@ -585,6 +623,7 @@ class CreateSbgDistinctProductsBatchCommand extends Command
             'researched-priced-20261013-r' => self::BATCH_RESEARCHED_PRICED_20261013_R,
             'researched-priced-20261013-s' => self::BATCH_RESEARCHED_PRICED_20261013_S,
             'researched-priced-20261013-t' => self::BATCH_RESEARCHED_PRICED_20261013_T,
+            'researched-priced-20261013-u' => self::BATCH_RESEARCHED_PRICED_20261013_U,
             default => null,
         };
 
@@ -600,7 +639,7 @@ class CreateSbgDistinctProductsBatchCommand extends Command
         }
 
         $apply = (bool) $this->option('apply');
-        $stats = array_fill_keys(['configured', 'ready', 'created', 'brands_created', 'already', 'blocked'], 0);
+        $stats = array_fill_keys(['configured', 'ready', 'created', 'refreshed', 'brands_created', 'already', 'blocked'], 0);
         $stats['configured'] = count($rows);
         $details = [];
 
@@ -620,8 +659,30 @@ class CreateSbgDistinctProductsBatchCommand extends Command
             $portableImages = $rule['images'] ?? $this->portableImages($template);
             if ($item->product_id) {
                 if ($item->match_status === 'matched' && $item->match_method === 'manual_created') {
-                    $stats['already']++;
-                    $details[] = [$code, $item->product?->sku ?: '-', 'already', Str::limit($item->product?->name ?: '', 58)];
+                    $canRefresh = ($rule['refresh_existing'] ?? false)
+                        && $item->product
+                        && $item->product->name === ($rule['name'] ?? null)
+                        && $item->source?->name === self::SOURCE_NAME
+                        && $item->source?->partnerName() === self::PARTNER_NAME
+                        && (! isset($rule['external_sku']) || $item->external_sku === $rule['external_sku']);
+
+                    if ($canRefresh) {
+                        $stats['ready']++;
+                        if ($apply) {
+                            $item->product->forceFill([
+                                'short_description' => $rule['short'] ?? $item->product->short_description,
+                                'content' => $rule['content'] ?? $item->product->content,
+                                'content_source_url' => $rule['source_url'] ?? $item->product->content_source_url,
+                            ])->save();
+                            $stats['refreshed']++;
+                            $details[] = [$code, $item->product->sku, 'refreshed', Str::limit($item->product->name, 58)];
+                        } else {
+                            $details[] = [$code, $item->product->sku, 'ready', 'public content refresh'];
+                        }
+                    } else {
+                        $stats['already']++;
+                        $details[] = [$code, $item->product?->sku ?: '-', 'already', Str::limit($item->product?->name ?: '', 58)];
+                    }
                 } else {
                     $stats['blocked']++;
                     $details[] = [$code, $rule['template'], 'blocked', 'already linked by another method'];
