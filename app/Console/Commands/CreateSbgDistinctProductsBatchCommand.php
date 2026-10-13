@@ -2015,6 +2015,34 @@ class CreateSbgDistinctProductsBatchCommand extends Command
         ],
     ];
 
+    private const BATCH_UNMATCHED_RESEARCHED_20261013_BN = [
+        'УТ-00001953' => [
+            'template_slug' => 'fireway-master-flash-8-pryamoj',
+            'link_existing_slug' => 'fireway-master-flash-8-pryamoj',
+            'refresh_existing' => true,
+            'allow_unmatched' => true,
+            'category_slug' => 'krepleniya-dymohod',
+            'fragments' => ['Проходник кровли', 'мастер-флеш прямой', '180-330'],
+            'link_fragments' => ['Master Flash', '№8', '178-330', 'Fireway'],
+            'name' => 'Fireway Master Flash №8 прямой 178–330 мм',
+            'retail' => 85.00,
+            'images' => ['img/products/master-flash/master-flash-8-180-330-black.png'],
+            'source_url' => 'https://pechisamara.ru/catalog/product/master-flesh-no8-silikon-178-330-chernyi-priamoi-20-sht/',
+            'short' => 'Прямой силиконовый кровельный проход Fireway Master Flash №8 для герметизации труб диаметром 178–330 мм.',
+            'content' => '<p><strong>Fireway Master Flash №8</strong> — прямой кровельный проход для герметизации места вывода дымовой или вентиляционной трубы через кровлю. Ступенчатая силиконовая манжета подрезается по диаметру трубы в диапазоне 178–330 мм.</p><p>Гибкий фланец размером 420×420 мм принимает форму металлической, профилированной, черепичной, битумной или шиферной кровли. Проход рассчитан на уклон от 0 до 20° и температурный диапазон от −55 до +260 °C.</p>',
+            'specs' => [
+                ['key' => 'Тип', 'value' => 'Кровельный проход прямой'],
+                ['key' => 'Модель', 'value' => 'Master Flash №8'],
+                ['key' => 'Диаметр трубы', 'value' => '178–330 мм'],
+                ['key' => 'Материал манжеты', 'value' => 'Силикон'],
+                ['key' => 'Размер фланца', 'value' => '420×420 мм'],
+                ['key' => 'Допустимый уклон кровли', 'value' => '0–20°'],
+                ['key' => 'Температура эксплуатации', 'value' => 'от −55 до +260 °C'],
+                ['key' => 'Назначение', 'value' => 'Герметизация прохода дымовой или вентиляционной трубы через кровлю'],
+            ],
+        ],
+    ];
+
     public function handle(
         IntegrationProductCreator $creator,
         IntegrationProductMatchDecision $matchDecision,
@@ -2085,6 +2113,7 @@ class CreateSbgDistinctProductsBatchCommand extends Command
             'not-for-site-20261013-bk' => self::BATCH_NOT_FOR_SITE_20261013_BK,
             'archived-ole-pro-20261013-bl' => self::BATCH_ARCHIVED_OLE_PRO_20261013_BL,
             'archived-hotta-sensor-20261013-bm' => self::BATCH_ARCHIVED_HOTTA_SENSOR_20261013_BM,
+            'unmatched-researched-20261013-bn' => self::BATCH_UNMATCHED_RESEARCHED_20261013_BN,
             default => null,
         };
 
@@ -2226,16 +2255,25 @@ class CreateSbgDistinctProductsBatchCommand extends Command
                 continue;
             }
 
-            $template = Product::query()->where('sku', $rule['template'])->first();
-            $expectedCandidate = Product::query()->where('sku', $rule['candidate'] ?? $rule['template'])->first();
-            $linkProduct = isset($rule['link_existing_sku'])
-                ? Product::query()->where('sku', $rule['link_existing_sku'])->first()
-                : null;
+            $allowUnmatched = (bool) ($rule['allow_unmatched'] ?? false);
+            $templateReference = $rule['template'] ?? $rule['template_slug'];
+            $template = isset($rule['template_slug'])
+                ? Product::query()->where('slug', $rule['template_slug'])->first()
+                : Product::query()->where('sku', $rule['template'])->first();
+            $expectedCandidate = $allowUnmatched
+                ? null
+                : Product::query()->where('sku', $rule['candidate'] ?? $rule['template'])->first();
+            $linkConfigured = isset($rule['link_existing_sku']) || isset($rule['link_existing_slug']);
+            $linkProduct = isset($rule['link_existing_slug'])
+                ? Product::query()->where('slug', $rule['link_existing_slug'])->first()
+                : (isset($rule['link_existing_sku'])
+                    ? Product::query()->where('sku', $rule['link_existing_sku'])->first()
+                    : null);
 
-            if ($items->count() !== 1 || ! $template || ! $expectedCandidate
-                || (isset($rule['link_existing_sku']) && ! $linkProduct)) {
+            if ($items->count() !== 1 || ! $template || (! $allowUnmatched && ! $expectedCandidate)
+                || ($linkConfigured && ! $linkProduct)) {
                 $stats['blocked']++;
-                $details[] = [$code, $rule['template'], 'blocked', 'missing unique 1C row or template'];
+                $details[] = [$code, $templateReference, 'blocked', 'missing unique 1C row or template'];
 
                 continue;
             }
@@ -2286,7 +2324,7 @@ class CreateSbgDistinctProductsBatchCommand extends Command
                     }
                 } else {
                     $stats['blocked']++;
-                    $details[] = [$code, $rule['template'], 'blocked', 'already linked by another method'];
+                    $details[] = [$code, $templateReference, 'blocked', 'already linked by another method'];
                 }
 
                 continue;
@@ -2303,25 +2341,25 @@ class CreateSbgDistinctProductsBatchCommand extends Command
             $name = $rule['name'] ?? $this->productName($brandName, $item->name);
             $valid = $item->source?->name === self::SOURCE_NAME
                 && $item->source?->partnerName() === self::PARTNER_NAME
-                && $item->match_status === 'ambiguous'
+                && $item->match_status === ($allowUnmatched ? 'unmatched' : 'ambiguous')
                 && (float) $item->stock_quantity > 0
                 && ($normalizedPrice !== null || isset($rule['retail']))
                 && $category
                 && ($brand || $configuredBrand || ($rule['allow_brandless'] ?? false))
                 && $portableImages !== []
                 && $this->hasNoKnownWatermarkSource($portableImages)
-                && $candidateIds->contains((int) $expectedCandidate->id)
+                && ($allowUnmatched || $candidateIds->contains((int) $expectedCandidate->id))
                 && $this->containsAll($item->name, $rule['fragments'])
                 && (! isset($rule['external_sku'])
                     || $item->external_sku === $rule['external_sku']
                     || (($rule['hydrate_external_sku'] ?? false) && blank($item->external_sku)))
                 && ($linkProduct
-                    ? $this->containsAll($linkProduct->name, $rule['link_fragments'] ?? [$rule['link_existing_sku']])
+                    ? $this->containsAll($linkProduct->name, $rule['link_fragments'] ?? [$rule['link_existing_sku'] ?? $rule['link_existing_slug']])
                     : Product::query()->where('name', $name)->doesntExist());
 
             if (! $valid) {
                 $stats['blocked']++;
-                $details[] = [$code, $rule['template'], 'blocked', 'source, identity, price, category, brand, image or candidate guard failed'];
+                $details[] = [$code, $templateReference, 'blocked', 'source, identity, price, category, brand, image or candidate guard failed'];
 
                 continue;
             }
@@ -2333,7 +2371,7 @@ class CreateSbgDistinctProductsBatchCommand extends Command
             if ($normalizedPrice !== null && $retail < $normalizedPrice) {
                 $stats['ready']--;
                 $stats['blocked']++;
-                $details[] = [$code, $rule['template'], 'blocked', 'configured retail price is below supplier price'];
+                $details[] = [$code, $templateReference, 'blocked', 'configured retail price is below supplier price'];
 
                 continue;
             }
@@ -2396,7 +2434,7 @@ class CreateSbgDistinctProductsBatchCommand extends Command
 
                 if (! $product) {
                     $stats['blocked']++;
-                    $details[] = [$code, $rule['template'], 'blocked', 'row changed during create'];
+                    $details[] = [$code, $templateReference, 'blocked', 'row changed during create'];
 
                     continue;
                 }
@@ -2404,7 +2442,7 @@ class CreateSbgDistinctProductsBatchCommand extends Command
                 $stats['created']++;
                 $details[] = [$code, $product->sku, 'created', number_format($retail, 2, '.', '').' BYN · '.$name];
             } else {
-                $details[] = [$code, $rule['template'], 'ready', number_format($retail, 2, '.', '').' BYN · '.$name];
+                $details[] = [$code, $templateReference, 'ready', number_format($retail, 2, '.', '').' BYN · '.$name];
             }
         }
 

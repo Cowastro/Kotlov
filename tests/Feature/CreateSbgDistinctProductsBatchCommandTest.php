@@ -3766,6 +3766,87 @@ class CreateSbgDistinctProductsBatchCommandTest extends TestCase
         $this->assertSame('ignored', $item->fresh()->match_status);
     }
 
+    public function test_it_links_and_refreshes_the_exact_unmatched_fireway_master_flash_card(): void
+    {
+        $source = IntegrationSource::query()->create([
+            'code' => 'onec-sbg-unmatched-master-flash',
+            'name' => '1С СанБизнесГруп',
+            'settings' => ['partner_name' => 'ООО «СанБизнесГруп»'],
+            'is_active' => true,
+            'update_stock' => true,
+        ]);
+        $category = Category::query()->firstOrCreate(['slug' => 'krepleniya-dymohod'], [
+            'name' => 'Крепления и монтаж',
+            'parent_id' => 0,
+        ]);
+        $brand = Brand::query()->create(['name' => 'Fireway', 'slug' => 'fireway']);
+        $product = Product::query()->create([
+            'category_id' => $category->id,
+            'brand_id' => $brand->id,
+            'sku' => 'KOTLOV-023001',
+            'name' => 'Master Flash №8 прямой (178-330 мм) Fireway',
+            'slug' => 'fireway-master-flash-8-pryamoj',
+            'price' => 56,
+            'images' => [],
+            'short_description' => 'Старая неполная карточка.',
+            'content' => '<p>Старое описание.</p>',
+            'is_active' => true,
+            'is_archived' => false,
+        ]);
+        $item = IntegrationProduct::query()->create([
+            'integration_source_id' => $source->id,
+            'external_id' => 'unmatched-master-flash-180-330',
+            'external_code' => 'УТ-00001953',
+            'name' => 'Проходник кровли (мастер-флеш прямой) (180-330)',
+            'price_byn' => null,
+            'stock_quantity' => 6,
+            'match_status' => 'unmatched',
+            'candidates' => null,
+        ]);
+        $productCount = Product::query()->count();
+
+        $this->artisan('integration:create-sbg-distinct-products', [
+            '--batch' => 'unmatched-researched-20261013-bn',
+            '--code' => ['УТ-00001953'],
+        ])->assertSuccessful();
+        $this->assertNull($item->fresh()->product_id);
+        $this->assertSame('56.00', $product->fresh()->price);
+
+        $this->artisan('integration:create-sbg-distinct-products', [
+            '--batch' => 'unmatched-researched-20261013-bn',
+            '--code' => ['УТ-00001953'],
+            '--apply' => true,
+        ])->assertSuccessful();
+
+        $item->refresh();
+        $product->refresh();
+        $this->assertSame($productCount, Product::query()->count());
+        $this->assertSame($product->id, $item->product_id);
+        $this->assertSame('matched', $item->match_status);
+        $this->assertSame('manual_search', $item->match_method);
+        $this->assertSame($category->id, $item->target_category_id);
+        $this->assertNull($item->candidates);
+        $this->assertSame('Fireway Master Flash №8 прямой 178–330 мм', $product->name);
+        $this->assertSame('85.00', $product->price);
+        $this->assertSame('6', (string) $product->stock_qty);
+        $this->assertTrue((bool) $product->in_stock);
+        $this->assertSame(['img/products/master-flash/master-flash-8-180-330-black.png'], $product->images);
+        $this->assertFileExists(public_path('img/products/master-flash/master-flash-8-180-330-black.png'));
+        $this->assertSame('178–330 мм', collect($product->specs)->firstWhere('key', 'Диаметр трубы')['value']);
+        $this->assertStringContainsString('pechisamara.ru', $product->content_source_url);
+        $this->assertStringNotContainsString('розничная цена', mb_strtolower($product->content));
+        $this->assertStringNotContainsString('rub', mb_strtolower($product->content));
+        $this->assertStringNotContainsString('13.10.2026', $product->content);
+
+        $this->artisan('integration:create-sbg-distinct-products', [
+            '--batch' => 'unmatched-researched-20261013-bn',
+            '--code' => ['УТ-00001953'],
+            '--apply' => true,
+        ])->assertSuccessful();
+        $this->assertSame($productCount, Product::query()->count());
+        $this->assertSame($product->id, $item->fresh()->product_id);
+    }
+
     public function test_it_creates_the_exact_teplov_i_suhov_l500_d120_200_pipe_instead_of_linking_the_l250_d120_180_candidate(): void
     {
         $source = IntegrationSource::query()->create([
