@@ -1752,4 +1752,68 @@ class CreateSbgDistinctProductsBatchCommandTest extends TestCase
         $this->assertStringNotContainsString('rub', mb_strtolower($product->content));
         $this->assertSame('manual_created', $item->fresh()->match_method);
     }
+
+    public function test_it_creates_solpi_slp_500_mini_instead_of_linking_the_separate_new_model(): void
+    {
+        $source = IntegrationSource::query()->create([
+            'code' => 'onec-sbg-solpi-slp-500-mini',
+            'name' => '1С СанБизнесГруп',
+            'settings' => ['partner_name' => 'ООО «СанБизнесГруп»'],
+            'is_active' => true,
+            'update_stock' => true,
+        ]);
+        $category = Category::query()->firstOrCreate(['slug' => 'stabilizatory-napryazheniya'], [
+            'name' => 'Стабилизаторы напряжения',
+            'parent_id' => 0,
+        ]);
+        $solpi = Brand::query()->firstOrCreate(['slug' => 'solpi'], ['name' => 'Solpi']);
+        $wrongNewCandidate = Product::query()->create([
+            'category_id' => $category->id,
+            'brand_id' => $solpi->id,
+            'sku' => 'PS-011.932',
+            'name' => 'Стабилизатор напряжения Solpi-M SLP 500 ВА NEW',
+            'slug' => 'solpi-slp-500-new-template-for-mini',
+            'price' => 179,
+            'images' => ['product/0011/011932/64f044882091c.jpg'],
+        ]);
+        $item = IntegrationProduct::query()->create([
+            'integration_source_id' => $source->id,
+            'external_id' => 'solpi-slp-500-mini',
+            'external_code' => 'УТ-00005747',
+            'external_sku' => null,
+            'name' => 'Стабилизатор напряжения Solpi-m  SLP-500ВА Mini',
+            'price_byn' => null,
+            'stock_quantity' => 1,
+            'match_status' => 'ambiguous',
+            'candidates' => [['product_id' => $wrongNewCandidate->id, 'score' => 0.9571]],
+        ]);
+
+        $this->artisan('integration:create-sbg-distinct-products', [
+            '--batch' => 'researched-priced-20261013-af',
+            '--code' => ['УТ-00005747'],
+            '--apply' => true,
+        ])->assertSuccessful();
+
+        $product = $item->fresh()->product;
+        $this->assertNotNull($product);
+        $this->assertNotSame($wrongNewCandidate->id, $product->id);
+        $this->assertSame($category->id, $product->category_id);
+        $this->assertSame($solpi->id, $product->brand_id);
+        $this->assertSame('Solpi-M SLP-500VA Mini, стабилизатор напряжения 500 ВА', $product->name);
+        $this->assertSame('169.00', $product->price);
+        $this->assertSame('1', (string) $product->stock_qty);
+        $this->assertNull($item->fresh()->normalizedPriceByn());
+        $this->assertSame('SLP-500VA Mini', collect($product->specs)->firstWhere('key', 'Модель')['value']);
+        $this->assertSame('500 ВА', collect($product->specs)->firstWhere('key', 'Полная мощность')['value']);
+        $this->assertSame('150–260 В', collect($product->specs)->firstWhere('key', 'Входное напряжение')['value']);
+        $this->assertSame('2', collect($product->specs)->firstWhere('key', 'Выходные розетки')['value']);
+        $this->assertSame(['img/products/solpi/solpi-m-slp-500-mini.jpg'], $product->images);
+        $this->assertFileExists(public_path('img/products/solpi/solpi-m-slp-500-mini.jpg'));
+        $this->assertStringContainsString('gss56.ru', $product->content_source_url);
+        $this->assertStringNotContainsString('кандидат', mb_strtolower($product->content));
+        $this->assertStringNotContainsString('розничная цена', mb_strtolower($product->content));
+        $this->assertStringNotContainsString('нбрб', mb_strtolower($product->content));
+        $this->assertStringNotContainsString('rub', mb_strtolower($product->content));
+        $this->assertSame('manual_created', $item->fresh()->match_method);
+    }
 }

@@ -927,6 +927,36 @@ class CreateSbgDistinctProductsBatchCommand extends Command
         ],
     ];
 
+    private const BATCH_RESEARCHED_PRICED_20261013_AF = [
+        'УТ-00005747' => [
+            'template' => 'PS-011.932',
+            'category_slug' => 'stabilizatory-napryazheniya',
+            'fragments' => ['Solpi-m', 'SLP-500ВА', 'Mini'],
+            'name' => 'Solpi-M SLP-500VA Mini, стабилизатор напряжения 500 ВА',
+            'retail' => 169.00,
+            'images' => ['img/products/solpi/solpi-m-slp-500-mini.jpg'],
+            'source_url' => 'https://gss56.ru/catalog/stabilizatory_napryazheniya/stabilizator_napryazheniya_solpi_m_slp_500va_mini_k10.html',
+            'short' => 'Компактный релейный стабилизатор Solpi-M SLP-500VA Mini мощностью 500 ВА для защиты котлов и маломощной бытовой техники.',
+            'content' => '<p><strong>Solpi-M SLP-500VA Mini</strong> — компактный автоматический релейный стабилизатор напряжения для газовых котлов, циркуляционных насосов и другой техники мощностью до 500 ВА.</p><p>Модель работает при входном напряжении 150–260 В и поддерживает на выходе 220 В с точностью ±5 %. Цветной дисплей одновременно показывает входное и выходное напряжение, уровень нагрузки и состояние защит. Предусмотрены две выходные розетки и выбираемая задержка включения 6 или 180 секунд.</p>',
+            'specs' => [
+                ['key' => 'Тип', 'value' => 'Релейный стабилизатор напряжения'],
+                ['key' => 'Модель', 'value' => 'SLP-500VA Mini'],
+                ['key' => 'Полная мощность', 'value' => '500 ВА'],
+                ['key' => 'Входное напряжение', 'value' => '150–260 В'],
+                ['key' => 'Выходное напряжение', 'value' => '220 В ±5 %'],
+                ['key' => 'Время отклика', 'value' => '2 мс'],
+                ['key' => 'Количество ступеней стабилизации', 'value' => '8'],
+                ['key' => 'Выходные розетки', 'value' => '2'],
+                ['key' => 'Задержка включения', 'value' => '6 или 180 секунд'],
+                ['key' => 'КПД', 'value' => 'до 98 %'],
+                ['key' => 'Размеры (Ш×В×Г)', 'value' => '160×170×110 мм'],
+                ['key' => 'Масса', 'value' => '2,5 кг'],
+                ['key' => 'Размещение', 'value' => 'Универсальное'],
+                ['key' => 'Охлаждение', 'value' => 'Естественное'],
+            ],
+        ],
+    ];
+
     public function handle(IntegrationProductCreator $creator): int
     {
         $rows = match ($this->option('batch')) {
@@ -961,6 +991,7 @@ class CreateSbgDistinctProductsBatchCommand extends Command
             'researched-priced-20261013-ac' => self::BATCH_RESEARCHED_PRICED_20261013_AC,
             'researched-priced-20261013-ad' => self::BATCH_RESEARCHED_PRICED_20261013_AD,
             'researched-priced-20261013-ae' => self::BATCH_RESEARCHED_PRICED_20261013_AE,
+            'researched-priced-20261013-af' => self::BATCH_RESEARCHED_PRICED_20261013_AF,
             default => null,
         };
 
