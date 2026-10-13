@@ -3346,7 +3346,7 @@ class CreateSbgDistinctProductsBatchCommand extends Command
     // the upper current retail reference is 77.05 BYN, rounded to 77 BYN.
     private const BATCH_UNMATCHED_RESEARCHED_20261014_CZ = [
         'УТ-00000746' => [
-            'template_slug' => 'ploschadka-montajnaya-teplov-i-suhov-mono-pmm-r-aisi-304-08-120',
+            'template_slug' => 'ploschadka-montajnaya-teplov-i-suhov-mono-pmm-r-aisi-304-08-mm',
             'allow_unmatched' => true,
             'category_slug' => 'krepleniya-dymohod',
             'fragments' => ['Площадка сквозная монтажная', 'ПСМ', 'D 260'],

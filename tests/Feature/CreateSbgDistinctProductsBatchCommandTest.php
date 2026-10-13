@@ -7965,7 +7965,7 @@ class CreateSbgDistinctProductsBatchCommandTest extends TestCase
             'parent_id' => 0,
         ]);
         Product::query()->firstOrCreate([
-            'slug' => 'ploschadka-montajnaya-teplov-i-suhov-mono-pmm-r-aisi-304-08-120',
+            'slug' => 'ploschadka-montajnaya-teplov-i-suhov-mono-pmm-r-aisi-304-08-mm',
         ], [
             'category_id' => $category->id,
             'sku' => 'PS-009.684',
