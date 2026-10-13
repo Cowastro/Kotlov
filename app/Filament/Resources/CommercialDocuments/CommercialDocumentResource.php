@@ -10,6 +10,7 @@ use App\Models\CommercialDocument;
 use App\Models\Product;
 use App\Services\CommercialDocuments\CommercialOfferCopilotService;
 use App\Services\CommercialDocuments\QuickCommercialOfferService;
+use App\Services\Market\MarketWebResearchService;
 use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Actions\EditAction;
@@ -241,23 +242,32 @@ class CommercialDocumentResource extends Resource
                             SchemaActions::make([
                                 Action::make('compare_market')
                                     ->label('Сравнить рынок')
-                                    ->icon('heroicon-o-chart-bar')
+                                    ->icon('heroicon-o-globe-alt')
                                     ->color('info')
-                                    ->action(function (Get $get): void {
-                                        $productId = (int) $get('product_id');
-                                        if ($productId <= 0) {
-                                            Notification::make()->warning()->title('Сначала выберите товар')->send();
-
-                                            return;
+                                    ->slideOver()
+                                    ->modalWidth('7xl')
+                                    ->modalHeading(fn (Get $get): string => 'Исследование рынка · '.(Product::query()->find((int) $get('product_id'))?->name ?: 'товар не выбран'))
+                                    ->modalDescription('ИИ выполнит живой поиск в интернете, проверит точность модели и покажет вывод со ссылками. Обычно это занимает до двух минут.')
+                                    ->modalSubmitAction(false)
+                                    ->modalCancelActionLabel('Закрыть')
+                                    ->modalContent(function (Get $get) {
+                                        $product = Product::query()->find((int) $get('product_id'));
+                                        if (! $product) {
+                                            return view('filament.market.live-price-research', [
+                                                'research' => [
+                                                    'status' => 'error',
+                                                    'message' => 'Сначала выберите товар.',
+                                                ],
+                                                'pricing' => [],
+                                            ]);
                                         }
 
-                                        $pricing = app(CommercialOfferCopilotService::class)->pricing($productId, (float) $get('unit_price'));
-                                        Notification::make()
-                                            ->info()
-                                            ->title('Проверка цены')
-                                            ->body(self::pricingInsightText($pricing))
-                                            ->persistent()
-                                            ->send();
+                                        $quotePrice = (float) $get('unit_price');
+
+                                        return view('filament.market.live-price-research', [
+                                            'research' => app(MarketWebResearchService::class)->research($product, $quotePrice),
+                                            'pricing' => app(CommercialOfferCopilotService::class)->pricing($product->id, $quotePrice),
+                                        ]);
                                     }),
                             ])->key('pricing_actions')->columnSpan(3),
                         ]),

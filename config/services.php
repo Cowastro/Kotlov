@@ -57,6 +57,10 @@ return [
         'openai_key' => env('OPENAI_API_KEY', ''),
         'openai_url' => env('OPENAI_API_URL', 'https://api.openai.com/v1/chat/completions'),
         'openai_model' => env('OPENAI_MODEL', 'gpt-4.1'),
+        'openai_responses_url' => env('OPENAI_RESPONSES_URL', 'https://api.openai.com/v1/responses'),
+        'openai_research_model' => env('OPENAI_RESEARCH_MODEL', 'gpt-5.4'),
+        'openai_research_timeout' => env('OPENAI_RESEARCH_TIMEOUT', 180),
+        'openai_proxy' => env('OPENAI_PROXY', ''),
     ],
 
     'belarus_company_registry' => [
