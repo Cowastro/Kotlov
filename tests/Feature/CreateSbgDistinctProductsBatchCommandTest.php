@@ -1154,4 +1154,66 @@ class CreateSbgDistinctProductsBatchCommandTest extends TestCase
 
         $this->assertSame(['img/products/generated/teplov-suhov-zont-zm-r-304-05-d115.png'], $product->fresh()->images);
     }
+
+    public function test_it_creates_the_1000va_solpi_stabilizer_instead_of_linking_the_15000va_candidate(): void
+    {
+        $source = IntegrationSource::query()->create([
+            'code' => 'onec-sbg-solpi-m-1000va',
+            'name' => '1С СанБизнесГруп',
+            'settings' => ['partner_name' => 'ООО «СанБизнесГруп»'],
+            'is_active' => true,
+            'update_stock' => true,
+        ]);
+        $category = Category::query()->create([
+            'name' => 'Стабилизаторы напряжения',
+            'slug' => 'voltage-stabilizers-solpi-test',
+            'parent_id' => 0,
+        ]);
+        $brand = Brand::query()->create(['name' => 'Solpi-M', 'slug' => 'solpi-m-1000va-test']);
+        $wrongPowerCandidate = Product::query()->create([
+            'category_id' => $category->id,
+            'brand_id' => $brand->id,
+            'sku' => 'PS-002.374',
+            'name' => 'Стабилизатор напряжения Solpi-M SLP-M 15000VA',
+            'slug' => 'solpi-m-slp-m-15000va-template',
+            'price' => 950,
+            'images' => ['product/002/002374/solpi-15000va.jpg'],
+        ]);
+        $item = IntegrationProduct::query()->create([
+            'integration_source_id' => $source->id,
+            'external_id' => 'solpi-m-slp-m-1000va',
+            'external_code' => 'УТ-00008302',
+            'name' => 'Стабилизатор напряжения Solpi-m SLP-M 1.000VA',
+            'price_byn' => null,
+            'stock_quantity' => 1,
+            'match_status' => 'ambiguous',
+            'candidates' => [['product_id' => $wrongPowerCandidate->id, 'score' => 0.99]],
+        ]);
+
+        $this->artisan('integration:create-sbg-distinct-products', [
+            '--batch' => 'researched-priced-20261013-w',
+            '--code' => ['УТ-00008302'],
+            '--apply' => true,
+        ])->assertSuccessful();
+
+        $product = $item->fresh()->product;
+        $this->assertNotNull($product);
+        $this->assertNotSame($wrongPowerCandidate->id, $product->id);
+        $this->assertSame($category->id, $product->category_id);
+        $this->assertSame($brand->id, $product->brand_id);
+        $this->assertSame('Solpi-M SLP-M 1000VA электромеханический стабилизатор напряжения', $product->name);
+        $this->assertSame('245.00', $product->price);
+        $this->assertSame('1', (string) $product->stock_qty);
+        $this->assertNull($item->fresh()->normalizedPriceByn());
+        $this->assertSame('1000 ВА', collect($product->specs)->firstWhere('key', 'Номинальная мощность')['value']);
+        $this->assertSame('150–260 В', collect($product->specs)->firstWhere('key', 'Входное напряжение')['value']);
+        $this->assertSame(['img/products/generated/solpi-m-slp-m-1000va.png'], $product->images);
+        $this->assertStringContainsString('slp_m_1000va', $product->content_source_url);
+        $this->assertStringNotContainsString('кандидат', mb_strtolower($product->content));
+        $this->assertStringNotContainsString('нельзя объединять', mb_strtolower($product->content));
+        $this->assertStringNotContainsString('розничная цена', mb_strtolower($product->content));
+        $this->assertStringNotContainsString('нбрб', mb_strtolower($product->content));
+        $this->assertStringNotContainsString('rub', mb_strtolower($product->content));
+        $this->assertSame('manual_created', $item->fresh()->match_method);
+    }
 }

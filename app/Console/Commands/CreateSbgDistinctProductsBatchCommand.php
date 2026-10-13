@@ -635,6 +635,35 @@ class CreateSbgDistinctProductsBatchCommand extends Command
         ],
     ];
 
+    private const BATCH_RESEARCHED_PRICED_20261013_W = [
+        'УТ-00008302' => [
+            'template' => 'PS-002.374',
+            'fragments' => ['Стабилизатор напряжения', 'Solpi-m', 'SLP-M', '1.000VA'],
+            'name' => 'Solpi-M SLP-M 1000VA электромеханический стабилизатор напряжения',
+            'retail' => 245.00,
+            'images' => ['img/products/generated/solpi-m-slp-m-1000va.png'],
+            'source_url' => 'https://energobelarus.by/market/stabilizatory_napryazheniya_vypryamiteli/elektromekhanicheskiy_stabilizator_napryazheniya_dlya_doma_slp_m_1000va/',
+            'short' => 'Электромеханический стабилизатор напряжения Solpi-M SLP-M мощностью 1000 ВА для бытовой техники и отопительного оборудования.',
+            'content' => '<p><strong>Solpi-M SLP-M 1000VA</strong> — однофазный электромеханический стабилизатор для защиты бытовой техники, автоматики котлов и другого оборудования от пониженного и повышенного напряжения.</p><p>Стабилизатор поддерживает выходное напряжение 220 В с точностью ±3%, оснащён цифровой индикацией, двумя евророзетками и защитой от перегрузки и перегрева. Металлический корпус подходит для настенного или напольного размещения.</p>',
+            'specs' => [
+                ['key' => 'Тип стабилизатора', 'value' => 'Электромеханический'],
+                ['key' => 'Номинальная мощность', 'value' => '1000 ВА'],
+                ['key' => 'Фазность', 'value' => 'Однофазный'],
+                ['key' => 'Входное напряжение', 'value' => '150–260 В'],
+                ['key' => 'Выходное напряжение', 'value' => '220 В ±3%'],
+                ['key' => 'Частота сети', 'value' => '50 Гц'],
+                ['key' => 'Количество розеток', 'value' => '2'],
+                ['key' => 'Индикация', 'value' => 'Цифровая'],
+                ['key' => 'Охлаждение', 'value' => 'Естественное'],
+                ['key' => 'Степень защиты', 'value' => 'IP20'],
+                ['key' => 'Габариты', 'value' => '290×162×202 мм'],
+                ['key' => 'Масса', 'value' => '4,81 кг'],
+                ['key' => 'Материал корпуса', 'value' => 'Металл'],
+                ['key' => 'Страна производства', 'value' => 'Беларусь'],
+            ],
+        ],
+    ];
+
     public function handle(IntegrationProductCreator $creator): int
     {
         $rows = match ($this->option('batch')) {
@@ -660,6 +689,7 @@ class CreateSbgDistinctProductsBatchCommand extends Command
             'researched-priced-20261013-t' => self::BATCH_RESEARCHED_PRICED_20261013_T,
             'researched-priced-20261013-u' => self::BATCH_RESEARCHED_PRICED_20261013_U,
             'researched-priced-20261013-v' => self::BATCH_RESEARCHED_PRICED_20261013_V,
+            'researched-priced-20261013-w' => self::BATCH_RESEARCHED_PRICED_20261013_W,
             default => null,
         };
 
