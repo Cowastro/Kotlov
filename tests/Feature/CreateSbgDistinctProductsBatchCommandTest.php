@@ -6087,4 +6087,100 @@ class CreateSbgDistinctProductsBatchCommandTest extends TestCase
         $this->assertSame($productCount + 1, Product::query()->count());
         $this->assertSame($product->id, $item->fresh()->product_id);
     }
+
+    public function test_it_creates_the_exact_unmatched_tiflos_female_female_water_hose_800(): void
+    {
+        $source = IntegrationSource::query()->create([
+            'code' => 'onec-sbg-unmatched-tiflos-ff-water-hose-800',
+            'name' => '1С СанБизнесГруп',
+            'settings' => ['partner_name' => 'ООО «СанБизнесГруп»'],
+            'is_active' => true,
+            'update_stock' => true,
+        ]);
+        $category = Category::query()->firstOrCreate(['slug' => 'gibkaya-podvodka-dlya-vody'], [
+            'name' => 'Гибкая подводка для воды',
+            'parent_id' => 0,
+        ]);
+        Product::query()->create([
+            'category_id' => $category->id,
+            'sku' => 'KOTLOV-000909',
+            'name' => 'ТАиМ Шланг газовый резиновый 1/2″, 1,0 м, штуцер–гайка',
+            'slug' => 'taim-slang-gazovyi-rezinovyi-12-10-m-stucer-gaika',
+            'price' => 11,
+            'images' => ['img/products/taim/template.jpg'],
+            'is_active' => true,
+            'is_archived' => false,
+        ]);
+        $item = IntegrationProduct::query()->create([
+            'integration_source_id' => $source->id,
+            'external_id' => 'a13f8d35-62a9-4cea-9c84-0000011140aa',
+            'external_code' => 'УТ-00001140',
+            'external_sku' => null,
+            'name' => 'Шланг водопроводный гибкий ШВГ-Г 1/2-0,8-Г1/2',
+            'price_byn' => null,
+            'stock_quantity' => 10,
+            'match_status' => 'unmatched',
+            'candidates' => null,
+        ]);
+        $productCount = Product::query()->count();
+
+        $this->artisan('integration:create-sbg-distinct-products', [
+            '--batch' => 'unmatched-researched-20261013-cg',
+            '--code' => ['УТ-00001140'],
+        ])->assertSuccessful();
+        $this->assertNull($item->fresh()->product_id);
+
+        $this->artisan('integration:create-sbg-distinct-products', [
+            '--batch' => 'unmatched-researched-20261013-cg',
+            '--code' => ['УТ-00001140'],
+            '--apply' => true,
+        ])->assertSuccessful();
+
+        $item->refresh();
+        $product = $item->product;
+        $brand = Brand::query()->where('slug', 'tiflos')->first();
+        $this->assertSame($productCount + 1, Product::query()->count());
+        $this->assertNotNull($product);
+        $this->assertNotNull($brand);
+        $this->assertSame('Беларусь', $brand->country);
+        $this->assertSame('matched', $item->match_status);
+        $this->assertSame('manual_created', $item->match_method);
+        $this->assertSame($category->id, $item->target_category_id);
+        $this->assertNull($item->candidates);
+        $this->assertNull($item->external_sku);
+        $this->assertSame('Тифлос Шланг водопроводный гибкий G1/2″ ВР–G1/2″ ВР, 0,8 м', $product->name);
+        $this->assertSame('6.50', $product->price);
+        $this->assertSame('10', (string) $product->stock_qty);
+        $this->assertTrue((bool) $product->in_stock);
+        $this->assertSame($brand->id, $product->brand_id);
+        $this->assertSame($category->id, $product->category_id);
+        $this->assertSame('ШВГ-Г G1/2-0,8-G1/2', collect($product->specs)->firstWhere('key', 'Модель')['value']);
+        $this->assertSame('G1/2″ ВР × G1/2″ ВР', collect($product->specs)->firstWhere('key', 'Размер присоединения')['value']);
+        $this->assertSame('Гайка/гайка', collect($product->specs)->firstWhere('key', 'Тип соединения')['value']);
+        $this->assertSame('800 мм', collect($product->specs)->firstWhere('key', 'Длина')['value']);
+        $this->assertSame([
+            'img/products/tiflos/tiflos-water-hose-g12-female-female-family.png',
+        ], $product->images);
+        $this->assertFileExists(public_path('img/products/tiflos/tiflos-water-hose-g12-female-female-family.png'));
+        $this->assertStringContainsString('tiflos.biz', $product->content_source_url);
+        $this->assertStringContainsString('800 мм', $product->content);
+        $this->assertStringNotContainsString('розничная цена', mb_strtolower($product->content));
+        $this->assertStringNotContainsString('byn', mb_strtolower($product->content));
+        $this->assertDatabaseHas('supplier_product_mappings', [
+            'supplier_code' => $source->matchingSupplierCode(),
+            'supplier_article' => 'УТ-00001140',
+            'product_id' => $product->id,
+            'product_sku' => $product->sku,
+            'confidence' => 'manual',
+            'is_active' => true,
+        ]);
+
+        $this->artisan('integration:create-sbg-distinct-products', [
+            '--batch' => 'unmatched-researched-20261013-cg',
+            '--code' => ['УТ-00001140'],
+            '--apply' => true,
+        ])->assertSuccessful();
+        $this->assertSame($productCount + 1, Product::query()->count());
+        $this->assertSame($product->id, $item->fresh()->product_id);
+    }
 }
