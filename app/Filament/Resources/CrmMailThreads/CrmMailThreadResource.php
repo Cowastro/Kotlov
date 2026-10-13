@@ -17,6 +17,7 @@ use App\Models\CrmMailThread;
 use App\Models\User;
 use App\Services\CommercialDocuments\QuickCommercialOfferSaver;
 use App\Services\CommercialDocuments\QuickCommercialOfferService;
+use App\Services\CrmMail\CrmMailMessagePreview;
 use App\Services\CrmMail\CrmMailSender;
 use App\Services\CrmMail\SupplierRequestMailDraftService;
 use BackedEnum;
@@ -32,6 +33,7 @@ use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Infolists\Components\RepeatableEntry;
 use Filament\Infolists\Components\TextEntry;
+use Filament\Infolists\Components\ViewEntry;
 use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Schemas\Components\Section;
@@ -143,34 +145,13 @@ class CrmMailThreadResource extends Resource
                 ->description('Входящие и ответы сотрудников собраны в одной цепочке.')
                 ->columnSpanFull()
                 ->schema([
-                    RepeatableEntry::make('messages')->hiddenLabel()->columns(4)->schema([
-                        TextEntry::make('direction')->label('Направление')->badge()
-                            ->formatStateUsing(fn (string $state): string => match ($state) {
-                                'draft' => 'Черновик',
-                                'outgoing' => 'Исходящее',
-                                default => 'Входящее',
-                            })
-                            ->color(fn (string $state): string => match ($state) {
-                                'draft' => 'warning',
-                                'outgoing' => 'success',
-                                default => 'info',
-                            }),
-                        TextEntry::make('from_email')->label('От кого')->copyable(),
-                        TextEntry::make('received_at')->label('Когда')->dateTime('d.m.Y H:i', 'Europe/Minsk'),
-                        TextEntry::make('attachments_count')->label('Вложения')->formatStateUsing(fn (int $state): string => $state ? $state.' шт.' : 'Нет'),
-                        TextEntry::make('recipients')->label('Кому')
-                            ->state(fn (CrmMailMessage $record): string => collect($record->to ?? [])->pluck('email')->filter()->implode(', '))
-                            ->placeholder('Не указано')->columnSpan(2),
-                        TextEntry::make('copies')->label('Копия')
-                            ->state(fn (CrmMailMessage $record): string => collect($record->cc ?? [])->pluck('email')->filter()->implode(', '))
-                            ->placeholder('Нет')->columnSpan(2),
-                        TextEntry::make('subject')->label('Тема')->weight('bold')->columnSpanFull(),
-                        TextEntry::make('body_preview')->label('Сообщение')
-                            ->state(fn (CrmMailMessage $record): string => trim($record->text_body ?: strip_tags((string) $record->html_body)) ?: 'Текст отсутствует')
+                    RepeatableEntry::make('messages')->hiddenLabel()->schema([
+                        ViewEntry::make('mail_preview')->hiddenLabel()
+                            ->view('filament.crm-mail.message-preview', fn (CrmMailMessage $record): array => [
+                                'message' => $record,
+                                'safeHtml' => app(CrmMailMessagePreview::class)->html($record),
+                            ])
                             ->columnSpanFull(),
-                        TextEntry::make('attachment_names')->label('Прикреплённые файлы')
-                            ->state(fn (CrmMailMessage $record): string => collect($record->metadata['attachments'] ?? [])->pluck('name')->filter()->implode(', '))
-                            ->placeholder('Нет')->columnSpanFull(),
                     ]),
                 ]),
         ]);
