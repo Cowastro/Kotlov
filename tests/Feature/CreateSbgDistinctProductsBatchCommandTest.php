@@ -1883,4 +1883,69 @@ class CreateSbgDistinctProductsBatchCommandTest extends TestCase
         $this->assertStringNotContainsString('rub', mb_strtolower($product->content));
         $this->assertSame('manual_created', $item->fresh()->match_method);
     }
+
+    public function test_it_creates_metallo_as_a_bimetallic_single_section_instead_of_linking_rifar(): void
+    {
+        $source = IntegrationSource::query()->create([
+            'code' => 'onec-sbg-atm-metallo-500-80',
+            'name' => '1С СанБизнесГруп',
+            'settings' => ['partner_name' => 'ООО «СанБизнесГруп»'],
+            'is_active' => true,
+            'update_stock' => true,
+        ]);
+        $category = Category::query()->firstOrCreate(['slug' => 'bimetallicheskie-radiatory'], [
+            'name' => 'Биметаллические радиаторы',
+            'parent_id' => 0,
+        ]);
+        $rifar = Brand::query()->create(['slug' => 'rifar', 'name' => 'Rifar']);
+        $wrongRifarCandidate = Product::query()->create([
+            'category_id' => $category->id,
+            'brand_id' => $rifar->id,
+            'sku' => 'PS-010.410',
+            'name' => 'Радиатор биметаллический Rifar SUPReMO 500, 1 секция',
+            'slug' => 'rifar-supremo-template-for-metallo',
+            'price' => 55,
+            'images' => ['product/0010/010410/rifar.jpg'],
+        ]);
+        $item = IntegrationProduct::query()->create([
+            'integration_source_id' => $source->id,
+            'external_id' => 'atm-metallo-500-80-one-section',
+            'external_code' => 'УТ-00005614',
+            'external_sku' => null,
+            'name' => 'Радиатор отопления алюминиевый "Metallo" 500/80 1 секция, РФ',
+            'price_byn' => null,
+            'stock_quantity' => 2,
+            'match_status' => 'ambiguous',
+            'candidates' => [['product_id' => $wrongRifarCandidate->id, 'score' => 0.6957]],
+        ]);
+
+        $this->artisan('integration:create-sbg-distinct-products', [
+            '--batch' => 'researched-priced-20261013-ah',
+            '--code' => ['УТ-00005614'],
+            '--apply' => true,
+        ])->assertSuccessful();
+
+        $product = $item->fresh()->product;
+        $this->assertNotNull($product);
+        $this->assertNotSame($wrongRifarCandidate->id, $product->id);
+        $this->assertSame($category->id, $product->category_id);
+        $this->assertSame('ATM Thermo', $product->brand->name);
+        $this->assertSame('ATM Thermo Metallo 500/80, биметаллический радиатор, 1 секция', $product->name);
+        $this->assertSame('32.90', $product->price);
+        $this->assertSame('2', (string) $product->stock_qty);
+        $this->assertNull($item->fresh()->normalizedPriceByn());
+        $this->assertSame('Секционный биметаллический радиатор', collect($product->specs)->firstWhere('key', 'Тип')['value']);
+        $this->assertSame('1', collect($product->specs)->firstWhere('key', 'Количество секций')['value']);
+        $this->assertSame('138 Вт', collect($product->specs)->firstWhere('key', 'Номинальный тепловой поток одной секции')['value']);
+        $this->assertSame('24 бар', collect($product->specs)->firstWhere('key', 'Рабочее давление')['value']);
+        $this->assertSame(['img/products/atm-thermo/atm-thermo-metallo-500-80.webp'], $product->images);
+        $this->assertFileExists(public_path('img/products/atm-thermo/atm-thermo-metallo-500-80.webp'));
+        $this->assertStringContainsString('progreem.by', $product->content_source_url);
+        $this->assertStringContainsString('Цена указана за одну секцию', $product->content);
+        $this->assertStringNotContainsString('кандидат', mb_strtolower($product->content));
+        $this->assertStringNotContainsString('розничная цена', mb_strtolower($product->content));
+        $this->assertStringNotContainsString('нбрб', mb_strtolower($product->content));
+        $this->assertStringNotContainsString('rub', mb_strtolower($product->content));
+        $this->assertSame('manual_created', $item->fresh()->match_method);
+    }
 }
