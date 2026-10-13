@@ -2165,6 +2165,35 @@ class CreateSbgDistinctProductsBatchCommand extends Command
         ],
     ];
 
+    private const BATCH_UNMATCHED_RESEARCHED_20261013_BS = [
+        'УТ-00001169' => [
+            'template_slug' => 'oxi-kolosnik-niznego-riada-dlia-pelletnoi-gorelki-ceramik-75-1000-kvt',
+            'allow_unmatched' => true,
+            'category_slug' => 'pelletnye-gorelki',
+            'fragments' => ['Шнек', 'ШП4-70-70-2000'],
+            'brand' => [
+                'name' => 'OXI',
+                'slug' => 'oxi',
+            ],
+            'name' => 'Шнек подачи пеллет OXI ШП4-70-70-2000, 2 м',
+            'retail' => 1190.00,
+            'images' => [
+                'img/products/oxi/oxi-shp4-70-70-2000.png',
+            ],
+            'source_url' => 'https://gazal.com.ua/kotelnoye-oborudovaniye/komplektuyushchiye-k-pelletnym-gorelkam/shneki',
+            'short' => 'Шнек OXI ШП4-70-70-2000 для подачи пеллет из бункера к горелке мощностью 75–150 кВт; длина 2 м.',
+            'content' => '<p><strong>OXI ШП4-70-70-2000</strong> — шнековый механизм для подачи пеллет из топливного бункера к пеллетной горелке. Модель рассчитана на работу с горелками мощностью 75–150 кВт.</p><p>Номинальная длина шнека — 2 м. При подборе необходимо проверить совместимость с горелкой, приводом, бункером и системой управления.</p>',
+            'specs' => [
+                ['key' => 'Тип', 'value' => 'Шнек подачи пеллет'],
+                ['key' => 'Модель', 'value' => 'ШП4-70-70-2000'],
+                ['key' => 'Номинальная длина', 'value' => '2000 мм'],
+                ['key' => 'Совместимая мощность горелки', 'value' => '75–150 кВт'],
+                ['key' => 'Назначение', 'value' => 'Подача пеллет из бункера к горелке'],
+                ['key' => 'Бренд', 'value' => 'OXI'],
+            ],
+        ],
+    ];
+
     public function handle(
         IntegrationProductCreator $creator,
         IntegrationProductMatchDecision $matchDecision,
@@ -2240,6 +2269,7 @@ class CreateSbgDistinctProductsBatchCommand extends Command
             'unmatched-researched-20261013-bp' => self::BATCH_UNMATCHED_RESEARCHED_20261013_BP,
             'unmatched-researched-20261013-bq' => self::BATCH_UNMATCHED_RESEARCHED_20261013_BQ,
             'unmatched-researched-20261013-br' => self::BATCH_UNMATCHED_RESEARCHED_20261013_BR,
+            'unmatched-researched-20261013-bs' => self::BATCH_UNMATCHED_RESEARCHED_20261013_BS,
             default => null,
         };
 

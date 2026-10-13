@@ -4701,4 +4701,97 @@ class CreateSbgDistinctProductsBatchCommandTest extends TestCase
         $this->assertSame($productCount + 1, Product::query()->count());
         $this->assertSame($product->id, $item->fresh()->product_id);
     }
+
+    public function test_it_creates_the_exact_unmatched_oxi_shp4_70_70_2000_pellet_auger(): void
+    {
+        $source = IntegrationSource::query()->create([
+            'code' => 'onec-sbg-unmatched-oxi-shp4-70-70-2000',
+            'name' => '1С СанБизнесГруп',
+            'settings' => ['partner_name' => 'ООО «СанБизнесГруп»'],
+            'is_active' => true,
+            'update_stock' => true,
+        ]);
+        $category = Category::query()->firstOrCreate(['slug' => 'pelletnye-gorelki'], [
+            'name' => 'Пеллетные горелки',
+            'parent_id' => 0,
+        ]);
+        $brand = Brand::query()->firstOrCreate(['slug' => 'oxi'], ['name' => 'OXI']);
+        Product::query()->create([
+            'category_id' => $category->id,
+            'brand_id' => $brand->id,
+            'sku' => 'KOTLOV-000900',
+            'name' => 'OXI колосник нижнего ряда для пеллетной горелки Керамик 75-1000 кВт',
+            'slug' => 'oxi-kolosnik-niznego-riada-dlia-pelletnoi-gorelki-ceramik-75-1000-kvt',
+            'price' => 100,
+            'images' => ['product/oxi/template.jpg'],
+            'is_active' => true,
+            'is_archived' => false,
+        ]);
+        $item = IntegrationProduct::query()->create([
+            'integration_source_id' => $source->id,
+            'external_id' => 'unmatched-oxi-shp4-70-70-2000',
+            'external_code' => 'УТ-00001169',
+            'external_sku' => null,
+            'name' => 'Шнек ШП4-70-70-2000',
+            'price_byn' => null,
+            'stock_quantity' => 1,
+            'match_status' => 'unmatched',
+            'candidates' => null,
+        ]);
+        $productCount = Product::query()->count();
+
+        $this->artisan('integration:create-sbg-distinct-products', [
+            '--batch' => 'unmatched-researched-20261013-bs',
+            '--code' => ['УТ-00001169'],
+        ])->assertSuccessful();
+        $this->assertNull($item->fresh()->product_id);
+
+        $this->artisan('integration:create-sbg-distinct-products', [
+            '--batch' => 'unmatched-researched-20261013-bs',
+            '--code' => ['УТ-00001169'],
+            '--apply' => true,
+        ])->assertSuccessful();
+
+        $item->refresh();
+        $product = $item->product;
+        $this->assertSame($productCount + 1, Product::query()->count());
+        $this->assertNotNull($product);
+        $this->assertSame('matched', $item->match_status);
+        $this->assertSame('manual_created', $item->match_method);
+        $this->assertSame($category->id, $item->target_category_id);
+        $this->assertNull($item->candidates);
+        $this->assertNull($item->external_sku);
+        $this->assertSame('Шнек подачи пеллет OXI ШП4-70-70-2000, 2 м', $product->name);
+        $this->assertSame('1190.00', $product->price);
+        $this->assertSame('1', (string) $product->stock_qty);
+        $this->assertTrue((bool) $product->in_stock);
+        $this->assertSame($brand->id, $product->brand_id);
+        $this->assertSame($category->id, $product->category_id);
+        $this->assertSame('2000 мм', collect($product->specs)->firstWhere('key', 'Номинальная длина')['value']);
+        $this->assertSame('75–150 кВт', collect($product->specs)->firstWhere('key', 'Совместимая мощность горелки')['value']);
+        $this->assertSame(['img/products/oxi/oxi-shp4-70-70-2000.png'], $product->images);
+        $this->assertFileExists(public_path('img/products/oxi/oxi-shp4-70-70-2000.png'));
+        $this->assertStringContainsString('gazal.com.ua', $product->content_source_url);
+        $this->assertStringContainsString('из топливного бункера', mb_strtolower($product->content));
+        $this->assertStringNotContainsString('розничная цена', mb_strtolower($product->content));
+        $this->assertStringNotContainsString('uah', mb_strtolower($product->content));
+        $this->assertStringNotContainsString('eur', mb_strtolower($product->content));
+        $this->assertStringNotContainsString('13.10.2026', $product->content);
+        $this->assertDatabaseHas('supplier_product_mappings', [
+            'supplier_code' => $source->matchingSupplierCode(),
+            'supplier_article' => 'УТ-00001169',
+            'product_id' => $product->id,
+            'product_sku' => $product->sku,
+            'confidence' => 'manual',
+            'is_active' => true,
+        ]);
+
+        $this->artisan('integration:create-sbg-distinct-products', [
+            '--batch' => 'unmatched-researched-20261013-bs',
+            '--code' => ['УТ-00001169'],
+            '--apply' => true,
+        ])->assertSuccessful();
+        $this->assertSame($productCount + 1, Product::query()->count());
+        $this->assertSame($product->id, $item->fresh()->product_id);
+    }
 }
