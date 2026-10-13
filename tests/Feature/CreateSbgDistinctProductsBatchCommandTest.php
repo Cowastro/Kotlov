@@ -4517,4 +4517,88 @@ class CreateSbgDistinctProductsBatchCommandTest extends TestCase
         $this->assertSame($productCount + 1, Product::query()->count());
         $this->assertSame($product->id, $item->fresh()->product_id);
     }
+
+    public function test_it_links_and_refreshes_the_exact_unmatched_ma25_aluminium_tape(): void
+    {
+        $source = IntegrationSource::query()->create([
+            'code' => 'onec-sbg-unmatched-ma25-tape',
+            'name' => '1С СанБизнесГруп',
+            'settings' => ['partner_name' => 'ООО «СанБизнесГруп»'],
+            'is_active' => true,
+            'update_stock' => true,
+        ]);
+        $category = Category::query()->firstOrCreate(['slug' => 'otdelka-dlya-parnoj'], [
+            'name' => 'Отделка для парной',
+            'parent_id' => 0,
+        ]);
+        $product = Product::query()->create([
+            'category_id' => $category->id,
+            'brand_id' => null,
+            'sku' => 'PS-012.089',
+            'name' => 'Скотч-фольга (алюминиевая клейкая лента) 50мм х 50м',
+            'slug' => 'skotch-folga-alyuminievaya-kleykaya-lenta-50mm-h-50m',
+            'price' => 15,
+            'images' => [
+                'product/0012/012089/679b60b309dbc.png',
+                'product/0012/012089/679b60b309e57.jpg',
+            ],
+            'is_active' => true,
+            'is_archived' => false,
+        ]);
+        $item = IntegrationProduct::query()->create([
+            'integration_source_id' => $source->id,
+            'external_id' => 'unmatched-ma25-tape',
+            'external_code' => 'УТ-00002120',
+            'name' => 'Фольгоскотч (лента МА25 50ммх50м)',
+            'price_byn' => null,
+            'stock_quantity' => 21,
+            'match_status' => 'unmatched',
+            'candidates' => null,
+        ]);
+        $productCount = Product::query()->count();
+
+        $this->artisan('integration:create-sbg-distinct-products', [
+            '--batch' => 'unmatched-researched-20261013-bq',
+            '--code' => ['УТ-00002120'],
+        ])->assertSuccessful();
+        $this->assertNull($item->fresh()->product_id);
+        $this->assertSame('15.00', $product->fresh()->price);
+
+        $this->artisan('integration:create-sbg-distinct-products', [
+            '--batch' => 'unmatched-researched-20261013-bq',
+            '--code' => ['УТ-00002120'],
+            '--apply' => true,
+        ])->assertSuccessful();
+
+        $item->refresh();
+        $product->refresh();
+        $this->assertSame($productCount, Product::query()->count());
+        $this->assertSame($product->id, $item->product_id);
+        $this->assertSame('matched', $item->match_status);
+        $this->assertSame('manual_search', $item->match_method);
+        $this->assertSame($category->id, $item->target_category_id);
+        $this->assertNull($item->candidates);
+        $this->assertSame('Алюминиевая самоклеящаяся лента МА-25, 50 мм × 50 м', $product->name);
+        $this->assertSame('16.00', $product->price);
+        $this->assertSame('21', (string) $product->stock_qty);
+        $this->assertTrue((bool) $product->in_stock);
+        $this->assertSame([
+            'product/0012/012089/679b60b309dbc.png',
+            'product/0012/012089/679b60b309e57.jpg',
+        ], $product->images);
+        $this->assertSame('25 мкм', collect($product->specs)->firstWhere('key', 'Толщина алюминиевой основы')['value']);
+        $this->assertSame('от −40 до +100 °C', collect($product->specs)->firstWhere('key', 'Температура эксплуатации')['value']);
+        $this->assertStringContainsString('amazonka.by', $product->content_source_url);
+        $this->assertStringNotContainsString('розничная цена', mb_strtolower($product->content));
+        $this->assertStringNotContainsString('rub', mb_strtolower($product->content));
+        $this->assertStringNotContainsString('13.10.2026', $product->content);
+
+        $this->artisan('integration:create-sbg-distinct-products', [
+            '--batch' => 'unmatched-researched-20261013-bq',
+            '--code' => ['УТ-00002120'],
+            '--apply' => true,
+        ])->assertSuccessful();
+        $this->assertSame($productCount, Product::query()->count());
+        $this->assertSame($product->id, $item->fresh()->product_id);
+    }
 }

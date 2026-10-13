@@ -2104,6 +2104,33 @@ class CreateSbgDistinctProductsBatchCommand extends Command
         ],
     ];
 
+    private const BATCH_UNMATCHED_RESEARCHED_20261013_BQ = [
+        'УТ-00002120' => [
+            'template_slug' => 'skotch-folga-alyuminievaya-kleykaya-lenta-50mm-h-50m',
+            'link_existing_slug' => 'skotch-folga-alyuminievaya-kleykaya-lenta-50mm-h-50m',
+            'refresh_existing' => true,
+            'allow_unmatched' => true,
+            'allow_brandless' => true,
+            'category_slug' => 'otdelka-dlya-parnoj',
+            'fragments' => ['Фольгоскотч', 'МА25', '50ммх50м'],
+            'link_fragments' => ['Скотч-фольга', 'алюминиевая клейкая лента', '50мм х 50м'],
+            'name' => 'Алюминиевая самоклеящаяся лента МА-25, 50 мм × 50 м',
+            'retail' => 16.00,
+            'source_url' => 'https://grodno.amazonka.by/folgoskotch-ma25-mkm-50-m-x-50-mm',
+            'short' => 'Алюминиевая самоклеящаяся лента МА-25 для герметизации стыков фольгированной теплоизоляции; ширина 50 мм, длина 50 м.',
+            'content' => '<p><strong>МА-25</strong> — самоклеящаяся алюминиевая лента для проклейки швов и стыков фольгированной теплоизоляции. Лента помогает создать непрерывный отражающий и парозащитный слой в банях и саунах.</p><p>Перед монтажом поверхность необходимо очистить, обезжирить и высушить. Ленту приклеивают без складок и тщательно прикатывают по всей ширине.</p>',
+            'specs' => [
+                ['key' => 'Тип', 'value' => 'Алюминиевая самоклеящаяся лента'],
+                ['key' => 'Модель', 'value' => 'МА-25'],
+                ['key' => 'Толщина алюминиевой основы', 'value' => '25 мкм'],
+                ['key' => 'Ширина', 'value' => '50 мм'],
+                ['key' => 'Длина рулона', 'value' => '50 м'],
+                ['key' => 'Температура эксплуатации', 'value' => 'от −40 до +100 °C'],
+                ['key' => 'Назначение', 'value' => 'Герметизация стыков фольгированной теплоизоляции'],
+            ],
+        ],
+    ];
+
     public function handle(
         IntegrationProductCreator $creator,
         IntegrationProductMatchDecision $matchDecision,
@@ -2177,6 +2204,7 @@ class CreateSbgDistinctProductsBatchCommand extends Command
             'unmatched-researched-20261013-bn' => self::BATCH_UNMATCHED_RESEARCHED_20261013_BN,
             'unmatched-researched-20261013-bo' => self::BATCH_UNMATCHED_RESEARCHED_20261013_BO,
             'unmatched-researched-20261013-bp' => self::BATCH_UNMATCHED_RESEARCHED_20261013_BP,
+            'unmatched-researched-20261013-bq' => self::BATCH_UNMATCHED_RESEARCHED_20261013_BQ,
             default => null,
         };
 
