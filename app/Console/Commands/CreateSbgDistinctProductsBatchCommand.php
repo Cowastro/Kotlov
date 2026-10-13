@@ -664,6 +664,35 @@ class CreateSbgDistinctProductsBatchCommand extends Command
         ],
     ];
 
+    private const BATCH_RESEARCHED_PRICED_20261013_X = [
+        'УТ-00008128' => [
+            'template' => 'PS-009.742',
+            'external_sku' => 'TS.ENG.TRB.0150.54823',
+            'fragments' => ['Труба L500', 'ТМ-Р', '310-0.8', 'D150'],
+            'name' => 'Теплов и Сухов Труба L500 ТМ-Р 310-0.8 D150 «Энерго»',
+            'retail' => 143.50,
+            'images' => ['img/products/generated/teplov-suhov-truba-l500-tm-r-310-08-d150.png'],
+            'source_url' => 'https://banikaminy.ru/catalog/dymokhody_baki_ventilyatsiya/dymokhodnye_sistemy_teplov_i_sukhov_tis_energo/sistema_tis_energo_mono/9972/',
+            'short' => 'Одностенная труба дымохода Теплов и Сухов «Энерго» длиной 500 мм и диаметром 150 мм из жаростойкой стали AISI 310 толщиной 0,8 мм.',
+            'content' => '<p><strong>Теплов и Сухов ТМ-Р L500 D150 «Энерго»</strong> — одностенная дымоходная труба для отвода продуктов сгорания от печей, каминов и котлов.</p><p>Труба изготовлена из жаростойкой нержавеющей стали AISI 310 толщиной 0,8 мм. Длина элемента — 500 мм, диаметр — 150 мм. Серия «Энерго» предназначена для участков дымохода с высокой температурной нагрузкой.</p>',
+            'specs' => [
+                ['key' => 'Тип', 'value' => 'Труба дымоходная одностенная'],
+                ['key' => 'Система', 'value' => 'Моно'],
+                ['key' => 'Серия', 'value' => 'ТиС Энерго'],
+                ['key' => 'Модель', 'value' => 'ТМ-Р'],
+                ['key' => 'Длина', 'value' => '500 мм'],
+                ['key' => 'Диаметр', 'value' => '150 мм'],
+                ['key' => 'Материал', 'value' => 'Жаростойкая нержавеющая сталь'],
+                ['key' => 'Марка стали', 'value' => 'AISI 310'],
+                ['key' => 'Толщина стали', 'value' => '0,8 мм'],
+                ['key' => 'Изоляция', 'value' => 'Нет'],
+                ['key' => 'Назначение', 'value' => 'Для печей, каминов и котлов'],
+                ['key' => 'Артикул производителя', 'value' => 'TS.ENG.TRB.0150.54823'],
+                ['key' => 'Страна производства', 'value' => 'Россия'],
+            ],
+        ],
+    ];
+
     public function handle(IntegrationProductCreator $creator): int
     {
         $rows = match ($this->option('batch')) {
@@ -690,6 +719,7 @@ class CreateSbgDistinctProductsBatchCommand extends Command
             'researched-priced-20261013-u' => self::BATCH_RESEARCHED_PRICED_20261013_U,
             'researched-priced-20261013-v' => self::BATCH_RESEARCHED_PRICED_20261013_V,
             'researched-priced-20261013-w' => self::BATCH_RESEARCHED_PRICED_20261013_W,
+            'researched-priced-20261013-x' => self::BATCH_RESEARCHED_PRICED_20261013_X,
             default => null,
         };
 

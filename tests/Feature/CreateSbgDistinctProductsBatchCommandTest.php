@@ -1216,4 +1216,69 @@ class CreateSbgDistinctProductsBatchCommandTest extends TestCase
         $this->assertStringNotContainsString('rub', mb_strtolower($product->content));
         $this->assertSame('manual_created', $item->fresh()->match_method);
     }
+
+    public function test_it_creates_the_aisi_310_l500_pipe_instead_of_linking_the_aisi_430_l1000_candidate(): void
+    {
+        $source = IntegrationSource::query()->create([
+            'code' => 'onec-sbg-teplov-energo-310-l500-d150',
+            'name' => '1С СанБизнесГруп',
+            'settings' => ['partner_name' => 'ООО «СанБизнесГруп»'],
+            'is_active' => true,
+            'update_stock' => true,
+        ]);
+        $category = Category::query()->create([
+            'name' => 'Трубы моно',
+            'slug' => 'mono-pipes-310-l500-test',
+            'parent_id' => 0,
+        ]);
+        $brand = Brand::query()->create(['name' => 'Теплов и Сухов', 'slug' => 'teplov-i-suhov-energo-test']);
+        $wrongPipeCandidate = Product::query()->create([
+            'category_id' => $category->id,
+            'brand_id' => $brand->id,
+            'sku' => 'PS-009.742',
+            'name' => 'Труба моно L1000 ТМ-Р (430-1,0) D150',
+            'slug' => 'teplov-pipe-430-l1000-d150-template',
+            'price' => 80,
+            'images' => ['product/009/009742/pipe.jpg'],
+        ]);
+        $item = IntegrationProduct::query()->create([
+            'integration_source_id' => $source->id,
+            'external_id' => 'teplov-energo-pipe-310-l500-d150',
+            'external_code' => 'УТ-00008128',
+            'external_sku' => 'TS.ENG.TRB.0150.54823',
+            'name' => 'Труба L500 ТМ-Р 310-0.8 D150',
+            'price_byn' => null,
+            'stock_quantity' => 1,
+            'match_status' => 'ambiguous',
+            'candidates' => [['product_id' => $wrongPipeCandidate->id, 'score' => 0.78]],
+        ]);
+
+        $this->artisan('integration:create-sbg-distinct-products', [
+            '--batch' => 'researched-priced-20261013-x',
+            '--code' => ['УТ-00008128'],
+            '--apply' => true,
+        ])->assertSuccessful();
+
+        $product = $item->fresh()->product;
+        $this->assertNotNull($product);
+        $this->assertNotSame($wrongPipeCandidate->id, $product->id);
+        $this->assertSame($category->id, $product->category_id);
+        $this->assertSame($brand->id, $product->brand_id);
+        $this->assertSame('Теплов и Сухов Труба L500 ТМ-Р 310-0.8 D150 «Энерго»', $product->name);
+        $this->assertSame('143.50', $product->price);
+        $this->assertSame('1', (string) $product->stock_qty);
+        $this->assertNull($item->fresh()->normalizedPriceByn());
+        $this->assertSame('500 мм', collect($product->specs)->firstWhere('key', 'Длина')['value']);
+        $this->assertSame('150 мм', collect($product->specs)->firstWhere('key', 'Диаметр')['value']);
+        $this->assertSame('AISI 310', collect($product->specs)->firstWhere('key', 'Марка стали')['value']);
+        $this->assertSame('TS.ENG.TRB.0150.54823', collect($product->specs)->firstWhere('key', 'Артикул производителя')['value']);
+        $this->assertSame(['img/products/generated/teplov-suhov-truba-l500-tm-r-310-08-d150.png'], $product->images);
+        $this->assertStringContainsString('/9972/', $product->content_source_url);
+        $this->assertStringNotContainsString('кандидат', mb_strtolower($product->content));
+        $this->assertStringNotContainsString('нельзя объединять', mb_strtolower($product->content));
+        $this->assertStringNotContainsString('розничная цена', mb_strtolower($product->content));
+        $this->assertStringNotContainsString('нбрб', mb_strtolower($product->content));
+        $this->assertStringNotContainsString('rub', mb_strtolower($product->content));
+        $this->assertSame('manual_created', $item->fresh()->match_method);
+    }
 }
