@@ -10,11 +10,12 @@
     $copies = collect($message->cc ?? [])->pluck('email')->filter()->implode(', ');
     $attachments = collect($message->metadata['attachments'] ?? [])->pluck('name')->filter();
     $date = $message->received_at ?? $message->sent_at;
+    $hasOriginalHtml = filled($originalHtml);
 @endphp
 
 <article
     class="crm-mail-card {{ $isIncoming ? 'is-incoming' : 'is-outgoing' }}"
-    x-data="{ originalOpen: false }"
+    x-data="{ originalOpen: @js($hasOriginalHtml) }"
 >
     <header class="crm-mail-header">
         <div class="crm-mail-avatar" aria-hidden="true">
@@ -38,7 +39,7 @@
 
     <div class="crm-mail-subject">{{ $message->subject ?: 'Без темы' }}</div>
 
-    <div class="crm-mail-body">
+    <div class="crm-mail-body" x-show="! originalOpen">
         {!! $safeHtml !!}
     </div>
 
@@ -49,7 +50,7 @@
                 class="crm-mail-original-toggle"
                 x-on:click="originalOpen = ! originalOpen"
                 x-text="originalOpen ? 'Скрыть оригинальное оформление' : 'Показать оригинальное оформление'"
-            >Показать оригинальное оформление</button>
+            >Скрыть оригинальное оформление</button>
 
             <template x-if="originalOpen">
                 <iframe
