@@ -572,11 +572,8 @@ class CreateSbgDistinctProductsBatchCommand extends Command
             'fragments' => ['Труба L500', 'ТМ-Р', '304-0.8', 'D115'],
             'name' => 'Теплов и Сухов Труба L500 ТМ-Р 304-0.8 D115 (У)',
             'retail' => 65.50,
-            'images' => [
-                'https://pechki66.ru/wa-data/public/shop/products/33/95/29533/images/129368/129368.970.jpg',
-                'https://pechki66.ru/wa-data/public/shop/products/33/95/29533/images/129369/129369.970.jpg',
-                'https://pechki66.ru/wa-data/public/shop/products/33/95/29533/images/129370/129370.970.jpg',
-            ],
+            'refresh_existing' => true,
+            'images' => ['img/products/generated/teplov-suhov-truba-l500-tm-r-304-08-d115.png'],
             'source_url' => 'https://pechki66.ru/city/rostov-na-donu/product/truba-mono-l500-tm-r-304-0-8-d-115-tis-standart/',
             'short' => 'Одностенная труба дымохода Теплов и Сухов ТМ-Р длиной 500 мм и диаметром 115 мм из AISI 304 толщиной 0,8 мм.',
             'content' => '<p><strong>Теплов и Сухов ТМ-Р L500 D115</strong> — одностенная дымоходная труба длиной 500 мм для подключения отопительного оборудования, гильзования кирпичных каналов и прокладки внутри негорючих шахт.</p><p>Труба изготовлена из нержавеющей стали AISI 304 толщиной 0,8 мм, сварена встык методом TIG и рассчитана на рабочую температуру до 600 °C. Подходит для оборудования, работающего на дровах, газе или пеллетах.</p>',
@@ -614,11 +611,8 @@ class CreateSbgDistinctProductsBatchCommand extends Command
             ],
             'name' => 'Теплов и Сухов Зонт ЗМ-Р 304-0.5 D115',
             'retail' => 31.70,
-            'images' => [
-                'https://pechki66.ru/wa-data/public/shop/products/35/95/29535/images/129374/129374.970.jpg',
-                'https://pechki66.ru/wa-data/public/shop/products/35/95/29535/images/129375/129375.970.jpg',
-                'https://pechki66.ru/wa-data/public/shop/products/35/95/29535/images/129376/129376.970.jpg',
-            ],
+            'refresh_existing' => true,
+            'images' => ['img/products/generated/teplov-suhov-zont-zm-r-304-05-d115.png'],
             'source_url' => 'https://pechki66.ru/city/rostov-na-donu/product/zont-mono-zm-r-304-0-5-d-115-tis-standart/',
             'short' => 'Одностенный зонт дымохода Теплов и Сухов ЗМ-Р Ø115 мм из AISI 304 толщиной 0,5 мм.',
             'content' => '<p><strong>Теплов и Сухов ЗМ-Р D115</strong> — завершающий элемент одностенного дымохода, который защищает выход дымового канала от дождя и снега.</p><p>Зонт изготовлен из коррозионностойкой нержавеющей стали AISI 304 толщиной 0,5 мм. Подходит для модульных дымоходов диаметром 115 мм и оборудования на дровах, газе или пеллетах.</p>',
@@ -706,6 +700,7 @@ class CreateSbgDistinctProductsBatchCommand extends Command
                         && $item->product->name === ($rule['name'] ?? null)
                         && $item->source?->name === self::SOURCE_NAME
                         && $item->source?->partnerName() === self::PARTNER_NAME
+                        && $this->hasNoKnownWatermarkSource($portableImages)
                         && (! isset($rule['external_sku']) || $item->external_sku === $rule['external_sku']);
 
                     if ($canRefresh) {
@@ -714,6 +709,7 @@ class CreateSbgDistinctProductsBatchCommand extends Command
                             $item->product->forceFill([
                                 'short_description' => $rule['short'] ?? $item->product->short_description,
                                 'content' => $rule['content'] ?? $item->product->content,
+                                'images' => $portableImages,
                                 'content_source_url' => $rule['source_url'] ?? $item->product->content_source_url,
                             ])->save();
                             $stats['refreshed']++;
@@ -750,6 +746,7 @@ class CreateSbgDistinctProductsBatchCommand extends Command
                 && $category
                 && ($brand || $configuredBrand || ($rule['allow_brandless'] ?? false))
                 && $portableImages !== []
+                && $this->hasNoKnownWatermarkSource($portableImages)
                 && $candidateIds->contains((int) $expectedCandidate->id)
                 && $this->containsAll($item->name, $rule['fragments'])
                 && (! isset($rule['external_sku']) || $item->external_sku === $rule['external_sku'])
@@ -869,6 +866,14 @@ class CreateSbgDistinctProductsBatchCommand extends Command
             ->filter()
             ->values()
             ->all();
+    }
+
+    /** @param list<string> $images */
+    private function hasNoKnownWatermarkSource(array $images): bool
+    {
+        return collect($images)->every(
+            fn (string $image): bool => ! str_contains(mb_strtolower($image), 'pechki66.ru')
+        );
     }
 
     private function productName(string $brand, string $sourceName): string

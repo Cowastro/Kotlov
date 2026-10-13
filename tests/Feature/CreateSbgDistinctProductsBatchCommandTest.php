@@ -1062,12 +1062,23 @@ class CreateSbgDistinctProductsBatchCommandTest extends TestCase
         $this->assertSame('115 мм', collect($product->specs)->firstWhere('key', 'Диаметр')['value']);
         $this->assertSame('AISI 304', collect($product->specs)->firstWhere('key', 'Марка стали')['value']);
         $this->assertSame('TS.ST5.TRB.0115.79182', collect($product->specs)->firstWhere('key', 'Артикул производителя')['value']);
+        $this->assertSame(['img/products/generated/teplov-suhov-truba-l500-tm-r-304-08-d115.png'], $product->images);
         $this->assertStringContainsString('truba-mono-l500-tm-r-304-0-8-d-115', $product->content_source_url);
         $this->assertStringNotContainsString('нельзя объединять', mb_strtolower($product->content));
         $this->assertStringNotContainsString('розничная цена', mb_strtolower($product->content));
         $this->assertStringNotContainsString('нбрб', mb_strtolower($product->content));
         $this->assertStringNotContainsString('rub', mb_strtolower($product->content));
         $this->assertSame('manual_created', $item->fresh()->match_method);
+
+        $product->forceFill(['images' => ['https://pechki66.ru/watermarked-product.jpg']])->save();
+
+        $this->artisan('integration:create-sbg-distinct-products', [
+            '--batch' => 'researched-priced-20261013-u',
+            '--code' => ['УТ-00009115'],
+            '--apply' => true,
+        ])->assertSuccessful();
+
+        $this->assertSame(['img/products/generated/teplov-suhov-truba-l500-tm-r-304-08-d115.png'], $product->fresh()->images);
     }
 
     public function test_it_creates_the_exact_aisi_304_chimney_cap_instead_of_linking_the_ferrum_aisi_430_candidate(): void
@@ -1125,11 +1136,22 @@ class CreateSbgDistinctProductsBatchCommandTest extends TestCase
         $this->assertSame('AISI 304', collect($product->specs)->firstWhere('key', 'Марка стали')['value']);
         $this->assertSame('0,5 мм', collect($product->specs)->firstWhere('key', 'Толщина стали')['value']);
         $this->assertSame('TS.ST5.ZNT.0115.32496', collect($product->specs)->firstWhere('key', 'Артикул производителя')['value']);
+        $this->assertSame(['img/products/generated/teplov-suhov-zont-zm-r-304-05-d115.png'], $product->images);
         $this->assertStringContainsString('zont-mono-zm-r-304-0-5-d-115', $product->content_source_url);
         $this->assertStringNotContainsString('нельзя объединять', mb_strtolower($product->content));
         $this->assertStringNotContainsString('розничная цена', mb_strtolower($product->content));
         $this->assertStringNotContainsString('нбрб', mb_strtolower($product->content));
         $this->assertStringNotContainsString('rub', mb_strtolower($product->content));
         $this->assertSame('manual_created', $item->fresh()->match_method);
+
+        $product->forceFill(['images' => ['https://pechki66.ru/watermarked-product.jpg']])->save();
+
+        $this->artisan('integration:create-sbg-distinct-products', [
+            '--batch' => 'researched-priced-20261013-v',
+            '--code' => ['УТ-00008318'],
+            '--apply' => true,
+        ])->assertSuccessful();
+
+        $this->assertSame(['img/products/generated/teplov-suhov-zont-zm-r-304-05-d115.png'], $product->fresh()->images);
     }
 }
