@@ -3909,4 +3909,89 @@ class CreateSbgDistinctProductsBatchCommandTest extends TestCase
         $this->assertSame($productCount + 1, Product::query()->count());
         $this->assertSame($product->id, $item->fresh()->product_id);
     }
+
+    public function test_it_creates_the_exact_kpd_black_d120_one_meter_pipe_instead_of_the_shiber(): void
+    {
+        $source = IntegrationSource::query()->create([
+            'code' => 'onec-sbg-kpd-black-d120-pipe',
+            'name' => '1С СанБизнесГруп',
+            'settings' => ['partner_name' => 'ООО «СанБизнесГруп»'],
+            'is_active' => true,
+            'update_stock' => true,
+        ]);
+        $category = Category::query()->firstOrCreate(['slug' => 'truby-mono'], [
+            'name' => 'Трубы моно',
+            'parent_id' => 0,
+        ]);
+        $brand = Brand::query()->create(['name' => 'КПД', 'slug' => 'kpd']);
+        $wrongCandidate = Product::query()->create([
+            'category_id' => $category->id,
+            'brand_id' => $brand->id,
+            'sku' => 'KOTLOV-022436',
+            'name' => 'КПД КПД ЧЕРНЫЙ Шибер 1000мм 2мм ф120',
+            'slug' => 'kpd-chernyy-shiber-1000-d120',
+            'price' => 74,
+            'images' => ['product/kpd/wrong-shiber.jpg'],
+        ]);
+        $item = IntegrationProduct::query()->create([
+            'integration_source_id' => $source->id,
+            'external_id' => 'kpd-black-pipe-1000-d120-2mm',
+            'external_code' => 'УТ-00008904',
+            'external_sku' => null,
+            'name' => 'КПД Труба ЧЁРНАЯ 1000мм 2мм ф120',
+            'price_byn' => null,
+            'stock_quantity' => 3,
+            'match_status' => 'ambiguous',
+            'candidates' => [['product_id' => $wrongCandidate->id, 'score' => 0.75]],
+        ]);
+        $productCount = Product::query()->count();
+
+        $this->artisan('integration:create-sbg-distinct-products', [
+            '--batch' => 'researched-priced-20261013-bi',
+            '--code' => ['УТ-00008904'],
+            '--apply' => true,
+        ])->assertSuccessful();
+
+        $item->refresh();
+        $this->assertSame($productCount + 1, Product::query()->count());
+        $this->assertNotNull($item->product_id);
+        $this->assertNotSame($wrongCandidate->id, $item->product_id);
+        $this->assertSame('matched', $item->match_status);
+        $this->assertSame('manual_created', $item->match_method);
+        $this->assertSame('6716', $item->external_sku);
+        $this->assertSame($category->id, $item->target_category_id);
+        $this->assertNull($item->candidates);
+
+        $product = $item->product;
+        $this->assertSame('КПД ЧЁРНЫЙ Труба дымоходная 1000 мм, Ø120, 2 мм', $product->name);
+        $this->assertSame('99.00', $product->price);
+        $this->assertSame($brand->id, $product->brand_id);
+        $this->assertSame('120 мм', collect($product->specs)->firstWhere('key', 'Диаметр')['value']);
+        $this->assertSame('1000 мм', collect($product->specs)->firstWhere('key', 'Длина')['value']);
+        $this->assertSame('2 мм', collect($product->specs)->firstWhere('key', 'Толщина стали')['value']);
+        $this->assertSame(['img/products/kpd/truba-chernaya-1000-d120-2mm.jpg'], $product->images);
+        $this->assertFileExists(public_path('img/products/kpd/truba-chernaya-1000-d120-2mm.jpg'));
+        $this->assertStringContainsString('1001pech.ru', $product->content_source_url);
+        $this->assertStringContainsString('стали 08пс', mb_strtolower($product->content));
+        $this->assertStringContainsString('до 800 °c', mb_strtolower($product->content));
+        $this->assertStringNotContainsString('шибер', mb_strtolower($product->content));
+        $this->assertStringNotContainsString('розничная цена', mb_strtolower($product->content));
+        $this->assertStringNotContainsString('rub', mb_strtolower($product->content));
+        $this->assertDatabaseHas('supplier_product_mappings', [
+            'supplier_code' => $source->matchingSupplierCode(),
+            'supplier_article' => '6716',
+            'product_id' => $product->id,
+            'product_sku' => $product->sku,
+            'confidence' => 'manual',
+            'is_active' => true,
+        ]);
+
+        $this->artisan('integration:create-sbg-distinct-products', [
+            '--batch' => 'researched-priced-20261013-bi',
+            '--code' => ['УТ-00008904'],
+            '--apply' => true,
+        ])->assertSuccessful();
+        $this->assertSame($productCount + 1, Product::query()->count());
+        $this->assertSame($product->id, $item->fresh()->product_id);
+    }
 }

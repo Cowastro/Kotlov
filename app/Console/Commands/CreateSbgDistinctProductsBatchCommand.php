@@ -1939,6 +1939,43 @@ class CreateSbgDistinctProductsBatchCommand extends Command
         ],
     ];
 
+    private const BATCH_RESEARCHED_PRICED_20261013_BI = [
+        'УТ-00008904' => [
+            'template' => 'KOTLOV-022436',
+            'category_slug' => 'truby-mono',
+            'external_sku' => '6716',
+            'hydrate_external_sku' => true,
+            'fragments' => ['КПД', 'Труба', '1000мм', '2мм', 'ф120'],
+            'brand' => [
+                'name' => 'КПД',
+                'slug' => 'kpd',
+                'country' => 'Россия',
+            ],
+            'name' => 'КПД ЧЁРНЫЙ Труба дымоходная 1000 мм, Ø120, 2 мм',
+            'retail' => 99.00,
+            'images' => ['img/products/kpd/truba-chernaya-1000-d120-2mm.jpg'],
+            'source_url' => 'https://1001pech.ru/catalog/truby_1_m_kpd/truba_chernaya_1000mm_d120_2_mm_kpd/',
+            'short' => 'Одностенная дымоходная труба КПД ЧЁРНЫЙ длиной 1000 мм и диаметром 120 мм из стали 08ПС толщиной 2 мм.',
+            'content' => '<p><strong>КПД ЧЁРНЫЙ Ø120, 1000 мм</strong> — одностенная труба для подключения банных и отопительных печей, каминов и твердотопливных котлов к дымоходу.</p><p>Труба изготовлена из стали 08ПС толщиной 2 мм и окрашена чёрной термостойкой эмалью RAL 9005. Раструбное соединение предназначено для сборки по конденсату без соединительных хомутов. Рабочая температура — до 800 °C.</p>',
+            'specs' => [
+                ['key' => 'Тип', 'value' => 'Труба дымоходная одностенная'],
+                ['key' => 'Серия', 'value' => 'КПД ЧЁРНЫЙ'],
+                ['key' => 'Артикул производителя', 'value' => '6716'],
+                ['key' => 'Диаметр', 'value' => '120 мм'],
+                ['key' => 'Длина', 'value' => '1000 мм'],
+                ['key' => 'Материал', 'value' => 'Сталь 08ПС'],
+                ['key' => 'Толщина стали', 'value' => '2 мм'],
+                ['key' => 'Цвет', 'value' => 'Чёрный (RAL 9005)'],
+                ['key' => 'Покрытие', 'value' => 'Термостойкая эмаль'],
+                ['key' => 'Рабочая температура', 'value' => 'до 800 °C'],
+                ['key' => 'Тип монтажа', 'value' => 'По конденсату'],
+                ['key' => 'Соединение', 'value' => 'Раструбное, без хомутов'],
+                ['key' => 'Применение', 'value' => 'Печи, камины, твердотопливные котлы'],
+                ['key' => 'Страна производства', 'value' => 'Россия'],
+            ],
+        ],
+    ];
+
     public function handle(
         IntegrationProductCreator $creator,
         IntegrationProductMatchDecision $matchDecision,
@@ -2005,6 +2042,7 @@ class CreateSbgDistinctProductsBatchCommand extends Command
             'researched-priced-20261013-bf' => self::BATCH_RESEARCHED_PRICED_20261013_BF,
             'researched-priced-20261013-bg' => self::BATCH_RESEARCHED_PRICED_20261013_BG,
             'researched-priced-20261013-bh' => self::BATCH_RESEARCHED_PRICED_20261013_BH,
+            'researched-priced-20261013-bi' => self::BATCH_RESEARCHED_PRICED_20261013_BI,
             default => null,
         };
 
