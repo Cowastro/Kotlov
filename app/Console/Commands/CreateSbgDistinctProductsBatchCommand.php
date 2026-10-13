@@ -1665,6 +1665,44 @@ class CreateSbgDistinctProductsBatchCommand extends Command
         ],
     ];
 
+    private const BATCH_RESEARCHED_PRICED_20261013_BA = [
+        'УТ-00001966' => [
+            'template' => 'PS-008.834',
+            'link_existing_sku' => 'PS-008.835',
+            'link_fragments' => ['TENKO', '6 кВт', '220 V'],
+            'refresh_existing' => true,
+            'category_slug' => 'elektricheskie-teny-dlya-otopleniya',
+            'fragments' => ['Блок нагревательный', '6,0', '220', '2"', 'TENKO'],
+            'brand' => [
+                'name' => 'Tenko',
+                'slug' => 'tenko',
+            ],
+            'name' => 'Блок нагревателей регулируемый Tenko БНР 6 кВт 220 В, 2″',
+            'retail' => 387.00,
+            'images' => ['img/products/tenko/tenko-bnr-6kw-220v-2in.png'],
+            'source_url' => 'https://tenko.ua/ua/catalog/good/6-kvt-220-v_59',
+            'short' => 'Регулируемый погружной блок нагревателей Tenko БНР мощностью 6 кВт для сети 220 В с резьбовым подключением 2 дюйма.',
+            'content' => '<p><strong>Tenko БНР 6 кВт 220 В, 2″</strong> — готовый регулируемый блок нагревателей для нагрева воды и других совместимых теплоносителей в ёмкостях объёмом от 20 литров, а также в отопительных системах с принудительной циркуляцией.</p><p>Капиллярный термостат поддерживает заданную температуру в диапазоне от 0 до 77 °C: отключает нагрев при достижении установленного значения и включает его снова после снижения температуры. Дополнительная защита срабатывает при 95 °C. Модификация рассчитана на однофазную сеть 220 В и устанавливается через резьбу 2 дюйма.</p>',
+            'specs' => [
+                ['key' => 'Тип', 'value' => 'Регулируемый блок нагревателей'],
+                ['key' => 'Серия', 'value' => 'БНР'],
+                ['key' => 'Мощность', 'value' => '6 кВт'],
+                ['key' => 'Номинальное напряжение', 'value' => '220 В'],
+                ['key' => 'Тип нагревателя', 'value' => 'ТЭН'],
+                ['key' => 'Диапазон регулирования температуры', 'value' => '0–77 °C'],
+                ['key' => 'Температура защиты от перегрева', 'value' => '95 °C'],
+                ['key' => 'КПД', 'value' => '99 %'],
+                ['key' => 'Класс защиты', 'value' => 'IP54'],
+                ['key' => 'Резьбовое подключение', 'value' => '2″'],
+                ['key' => 'Погружная длина', 'value' => '480 мм'],
+                ['key' => 'Размер блока управления', 'value' => '115 × 115 мм'],
+                ['key' => 'Масса', 'value' => 'не менее 1,3 кг'],
+                ['key' => 'Артикул производителя', 'value' => '52024'],
+                ['key' => 'Гарантия', 'value' => '12 месяцев'],
+            ],
+        ],
+    ];
+
     public function handle(
         IntegrationProductCreator $creator,
         IntegrationProductMatchDecision $matchDecision,
@@ -1723,6 +1761,7 @@ class CreateSbgDistinctProductsBatchCommand extends Command
             'researched-priced-20261013-ax' => self::BATCH_RESEARCHED_PRICED_20261013_AX,
             'researched-priced-20261013-ay' => self::BATCH_RESEARCHED_PRICED_20261013_AY,
             'researched-priced-20261013-az' => self::BATCH_RESEARCHED_PRICED_20261013_AZ,
+            'researched-priced-20261013-ba' => self::BATCH_RESEARCHED_PRICED_20261013_BA,
             default => null,
         };
 

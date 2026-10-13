@@ -3208,4 +3208,101 @@ class CreateSbgDistinctProductsBatchCommandTest extends TestCase
         $this->assertSame($productCount, Product::query()->count());
         $this->assertSame($exactProduct->id, $item->fresh()->product_id);
     }
+
+    public function test_it_links_the_exact_tenko_bnr_6kw_220v_without_using_the_9kw_380v_candidate(): void
+    {
+        $source = IntegrationSource::query()->create([
+            'code' => 'onec-sbg-tenko-bnr-6-220',
+            'name' => '1С СанБизнесГруп',
+            'settings' => ['partner_name' => 'ООО «СанБизнесГруп»'],
+            'is_active' => true,
+            'update_stock' => true,
+        ]);
+        $category = Category::query()->firstOrCreate(['slug' => 'elektricheskie-teny-dlya-otopleniya'], [
+            'name' => 'Электрические ТЭНы для отопления',
+            'parent_id' => 0,
+        ]);
+        $brand = Brand::query()->firstOrCreate(['slug' => 'tenko'], ['name' => 'Tenko']);
+        $wrongCandidate = Product::query()->create([
+            'category_id' => $category->id,
+            'brand_id' => $brand->id,
+            'sku' => 'PS-008.834',
+            'name' => 'Блок нагревателей регулируемый TENKO 9 кВт 380 V',
+            'slug' => 'tenko-bnr-9kw-380v-wrong-candidate',
+            'price' => 397,
+            'images' => ['product/tenko/bnr-9-380.jpg'],
+        ]);
+        $exactProduct = Product::query()->create([
+            'category_id' => $category->id,
+            'brand_id' => $brand->id,
+            'sku' => 'PS-008.835',
+            'name' => 'Блок нагревателей регулируемый (БНР) блок-тэн TENKO 6 кВт 220 V',
+            'slug' => 'blok-nagrevateley-reguliruemyiy-bnr-blok-ten-tenko-6-kvt-220-v',
+            'price' => 387,
+            'images' => ['product/tenko/old-bnr-6-220.jpg'],
+            'content' => null,
+            'is_active' => true,
+            'is_archived' => false,
+        ]);
+        $item = IntegrationProduct::query()->create([
+            'integration_source_id' => $source->id,
+            'external_id' => 'tenko-bnr-6-220',
+            'external_code' => 'УТ-00001966',
+            'external_sku' => null,
+            'name' => 'Блок нагревательный регулируемый 6,0 _ 220 2" TENKO',
+            'price_byn' => null,
+            'stock_quantity' => 2,
+            'match_status' => 'ambiguous',
+            'candidates' => [['product_id' => $wrongCandidate->id, 'score' => 0.74]],
+        ]);
+        $productCount = Product::query()->count();
+
+        $this->artisan('integration:create-sbg-distinct-products', [
+            '--batch' => 'researched-priced-20261013-ba',
+            '--code' => ['УТ-00001966'],
+            '--apply' => true,
+        ])->assertSuccessful();
+
+        $item->refresh();
+        $exactProduct->refresh();
+        $this->assertSame($productCount, Product::query()->count());
+        $this->assertSame($exactProduct->id, $item->product_id);
+        $this->assertNotSame($wrongCandidate->id, $item->product_id);
+        $this->assertSame('manual_search', $item->match_method);
+        $this->assertSame($category->id, $item->target_category_id);
+        $this->assertNull($item->candidates);
+        $this->assertSame('Блок нагревателей регулируемый Tenko БНР 6 кВт 220 В, 2″', $exactProduct->name);
+        $this->assertSame('387.00', $exactProduct->price);
+        $this->assertSame('2', (string) $exactProduct->stock_qty);
+        $this->assertTrue((bool) $exactProduct->in_stock);
+        $this->assertSame('6 кВт', collect($exactProduct->specs)->firstWhere('key', 'Мощность')['value']);
+        $this->assertSame('220 В', collect($exactProduct->specs)->firstWhere('key', 'Номинальное напряжение')['value']);
+        $this->assertSame('2″', collect($exactProduct->specs)->firstWhere('key', 'Резьбовое подключение')['value']);
+        $this->assertSame('480 мм', collect($exactProduct->specs)->firstWhere('key', 'Погружная длина')['value']);
+        $this->assertSame(['img/products/tenko/tenko-bnr-6kw-220v-2in.png'], $exactProduct->images);
+        $this->assertFileExists(public_path('img/products/tenko/tenko-bnr-6kw-220v-2in.png'));
+        $this->assertStringContainsString('tenko.ua', $exactProduct->content_source_url);
+        $this->assertStringContainsString('0 до 77 °C', $exactProduct->content);
+        $this->assertStringNotContainsString('9 кВт', $exactProduct->content);
+        $this->assertStringNotContainsString('380', $exactProduct->content);
+        $this->assertStringNotContainsString('кандидат', mb_strtolower($exactProduct->content));
+        $this->assertStringNotContainsString('розничная цена', mb_strtolower($exactProduct->content));
+        $this->assertStringNotContainsString('uah', mb_strtolower($exactProduct->content));
+        $this->assertDatabaseHas('supplier_product_mappings', [
+            'supplier_code' => $source->matchingSupplierCode(),
+            'supplier_article' => 'УТ-00001966',
+            'product_id' => $exactProduct->id,
+            'product_sku' => 'PS-008.835',
+            'confidence' => 'manual',
+            'is_active' => true,
+        ]);
+
+        $this->artisan('integration:create-sbg-distinct-products', [
+            '--batch' => 'researched-priced-20261013-ba',
+            '--code' => ['УТ-00001966'],
+            '--apply' => true,
+        ])->assertSuccessful();
+        $this->assertSame($productCount, Product::query()->count());
+        $this->assertSame($exactProduct->id, $item->fresh()->product_id);
+    }
 }
