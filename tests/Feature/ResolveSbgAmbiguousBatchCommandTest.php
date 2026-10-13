@@ -602,4 +602,79 @@ class ResolveSbgAmbiguousBatchCommandTest extends TestCase
             'confidence' => 'manual',
         ]);
     }
+
+    public function test_it_links_and_reprices_the_exact_yarilo_stove_without_using_the_burzhuyka_candidate(): void
+    {
+        $source = IntegrationSource::query()->create([
+            'code' => 'onec-sbg-yarilo-8mm',
+            'name' => '1С СанБизнесГруп',
+            'settings' => ['partner_name' => 'ООО «СанБизнесГруп»'],
+            'is_active' => true,
+            'update_stock' => true,
+        ]);
+        $category = Category::query()->create([
+            'name' => 'Печи дровяные (отопительные)',
+            'slug' => 'yarilo-stove-test',
+            'parent_id' => 0,
+        ]);
+        $brand = Brand::query()->create(['name' => 'Царь-Печи', 'slug' => 'tsar-pechi-yarilo-test']);
+        $yarilo = Product::query()->create([
+            'category_id' => $category->id,
+            'brand_id' => $brand->id,
+            'sku' => 'PS-009.940',
+            'name' => 'Печь Царь-Печи Ярило (8 мм)',
+            'slug' => 'pech-tsar-pechi-yarilo-test',
+            'price' => 648,
+            'in_stock' => false,
+            'stock_qty' => null,
+            'images' => ['legacy/yarilo.jpg'],
+            'content' => '<p>Покупательское описание печи Ярило.</p>',
+        ]);
+        $burzhuyka = Product::query()->create([
+            'category_id' => $category->id,
+            'brand_id' => $brand->id,
+            'sku' => 'PS-009.932',
+            'name' => 'Отопительная печь Царь-Печи Буржуйка (8 мм)',
+            'slug' => 'pech-tsar-pechi-burzhuyka-test',
+        ]);
+        $item = IntegrationProduct::query()->create([
+            'integration_source_id' => $source->id,
+            'external_id' => 'yarilo-8mm',
+            'external_code' => 'УТ-00007407',
+            'name' => 'Отопительная печь "Ярило" (8мм)',
+            'price_byn' => null,
+            'stock_quantity' => 1,
+            'match_status' => 'ambiguous',
+            'candidates' => [['product_id' => $burzhuyka->id, 'score' => 0.736]],
+        ]);
+
+        $this->artisan('integration:resolve-sbg-ambiguous', [
+            '--batch' => 'exact-20261013-m',
+            '--code' => ['УТ-00007407'],
+            '--apply' => true,
+        ])->assertSuccessful();
+
+        $item->refresh();
+        $yarilo->refresh();
+        $this->assertSame($yarilo->id, $item->product_id);
+        $this->assertNotSame($burzhuyka->id, $item->product_id);
+        $this->assertSame('matched', $item->match_status);
+        $this->assertSame('manual_search', $item->match_method);
+        $this->assertSame('699.00', $yarilo->price);
+        $this->assertTrue($yarilo->in_stock);
+        $this->assertSame('1', (string) $yarilo->stock_qty);
+        $this->assertSame([
+            'product/009/009940/5ef8a43be874e.jpg',
+            'product/009/009940/5ef8a43be8810.jpg',
+            'product/009/009940/5ef8a43be88c0.jpg',
+        ], $yarilo->images);
+        $this->assertStringNotContainsString('pechki66.ru', implode(' ', $yarilo->images));
+        $this->assertStringContainsString('Покупательское описание', $yarilo->content);
+        $this->assertStringContainsString('vishop.by', $yarilo->content_source_url);
+        $this->assertDatabaseHas('supplier_product_mappings', [
+            'supplier_article' => 'УТ-00007407',
+            'product_id' => $yarilo->id,
+            'confidence' => 'manual',
+        ]);
+    }
 }

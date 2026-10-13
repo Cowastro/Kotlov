@@ -207,6 +207,26 @@ class ResolveSbgAmbiguousBatchCommand extends Command
         ],
     ];
 
+    /** @var array<string, array{sku:string,item:list<string>,product:list<string>,search:bool,refresh:array<string,mixed>}> */
+    private const BATCH_EXACT_20261013_M = [
+        'УТ-00007407' => [
+            'sku' => 'PS-009.940',
+            'item' => ['Отопительная печь', 'Ярило', '8мм'],
+            'product' => ['Печь', 'Царь-Печи', 'Ярило', '8 мм'],
+            'search' => true,
+            'refresh' => [
+                'name' => 'Печь Царь-Печи Ярило (8 мм)',
+                'retail' => 699.00,
+                'images' => [
+                    'product/009/009940/5ef8a43be874e.jpg',
+                    'product/009/009940/5ef8a43be8810.jpg',
+                    'product/009/009940/5ef8a43be88c0.jpg',
+                ],
+                'source_url' => 'https://vishop.by/catalog/pechi--kotly--kaminy-dlya-bani--doma--dachi/pechi-i-kaminy-dlya-doma/otopitelnye-pechi-car-pechi/otopitelnaya-pech-yarilo-dekor/',
+            ],
+        ],
+    ];
+
     public function handle(IntegrationProductMatchDecision $decision): int
     {
         $rows = match ($this->option('batch')) {
@@ -222,6 +242,7 @@ class ResolveSbgAmbiguousBatchCommand extends Command
             'exact-20261013-j' => self::BATCH_EXACT_20261013_J,
             'exact-20261013-k' => self::BATCH_EXACT_20261013_K,
             'exact-20261013-l' => self::BATCH_EXACT_20261013_L,
+            'exact-20261013-m' => self::BATCH_EXACT_20261013_M,
             default => null,
         };
 
