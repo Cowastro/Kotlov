@@ -168,15 +168,15 @@ class ViewCrmMailThread extends ViewRecord
                 ->disabled(fn (): bool => ! $this->record->hasValidRecipient())
                 ->tooltip(fn (): ?string => $this->record->hasValidRecipient()
                     ? null
-                    : 'Сначала добавьте email в карточку поставщика')
+                    : 'Сначала укажите хотя бы одного получателя')
                 ->fillForm(fn (): array => CrmMailThreadResource::draftData($this->record))
                 ->schema(CrmMailThreadResource::draftFields(true))
                 ->modalWidth('6xl')
-                ->requiresConfirmation()
-                ->modalHeading('Отправить письмо поставщику?')
+                ->modalSubmitActionLabel('Отправить письмо')
+                ->modalHeading('Отправить письмо')
                 ->modalDescription(fn (): string => filled($this->record->participant_email)
                     ? 'Письмо будет отправлено на '.$this->record->participant_email
-                    : 'Сначала укажите email поставщика.')
+                    : 'Укажите хотя бы одного получателя.')
                 ->action(function (array $data): void {
                     try {
                         $thread = app(SupplierRequestMailDraftService::class)->update(
@@ -191,7 +191,7 @@ class ViewCrmMailThread extends ViewRecord
                         );
                         app(CrmMailSender::class)->sendDraft($thread, auth()->user());
                         $this->record->refresh();
-                        Notification::make()->success()->title('Письмо поставщику отправлено')->send();
+                        Notification::make()->success()->title('Письмо отправлено')->send();
                     } catch (Throwable $exception) {
                         Notification::make()->danger()->title('Письмо не отправлено')->body($exception->getMessage())->send();
                     }

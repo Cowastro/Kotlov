@@ -3,8 +3,9 @@
 namespace App\Filament\Resources\CrmMailThreads\Pages;
 
 use App\Filament\Resources\CrmMailThreads\CrmMailThreadResource;
-use App\Models\CrmMailThread;
 use App\Models\CrmMailbox;
+use App\Models\CrmMailThread;
+use App\Services\CrmMail\CrmMailSender;
 use App\Services\CrmMail\ImapMailboxSynchronizer;
 use App\Services\CrmMail\SupplierRequestMailDraftService;
 use Filament\Actions\Action;
@@ -122,23 +123,53 @@ class ListCrmMailThreads extends ListRecords
                     TextInput::make('participant_name')->label('Имя / компания получателя')->maxLength(255),
                 ], CrmMailThreadResource::draftFields(true)))
                 ->modalHeading('Новое исходящее письмо')
+                ->modalDescription('Письмо можно отправить сразу или сохранить для дальнейшего редактирования.')
                 ->modalWidth('6xl')
-                ->modalSubmitActionLabel('Сохранить в черновики')
-                ->action(function (array $data): void {
-                    $thread = app(SupplierRequestMailDraftService::class)->create(
-                        CrmMailbox::query()->findOrFail($data['mailbox_id']),
-                        auth()->user(),
-                        CrmMailThreadResource::mergeRecipients($data, 'recipients', 'address_book_to'),
-                        $data['subject'],
-                        $data['body'],
-                        $data['participant_name'] ?? null,
-                        CrmMailThreadResource::mergeRecipients($data, 'cc', 'address_book_cc'),
-                        $data['attachments'] ?? [],
-                        $data['attachment_file_names'] ?? [],
-                    );
+                ->modalSubmitActionLabel('Отправить письмо')
+                ->extraModalFooterActions(fn (Action $action): array => [
+                    $action->makeModalSubmitAction('saveDraft', arguments: ['save_as_draft' => true])
+                        ->label('Сохранить в черновики')
+                        ->icon('heroicon-o-document-text')
+                        ->color('gray'),
+                ])
+                ->action(function (array $data, array $arguments): void {
+                    try {
+                        $thread = app(SupplierRequestMailDraftService::class)->create(
+                            CrmMailbox::query()->findOrFail($data['mailbox_id']),
+                            auth()->user(),
+                            CrmMailThreadResource::mergeRecipients($data, 'recipients', 'address_book_to'),
+                            $data['subject'],
+                            $data['body'],
+                            $data['participant_name'] ?? null,
+                            CrmMailThreadResource::mergeRecipients($data, 'cc', 'address_book_cc'),
+                            $data['attachments'] ?? [],
+                            $data['attachment_file_names'] ?? [],
+                        );
+                    } catch (Throwable $exception) {
+                        Notification::make()->danger()->title('Письмо не сохранено')->body($exception->getMessage())->send();
 
-                    Notification::make()->success()->title('Письмо сохранено в черновики')
-                        ->body('Проверьте текст и нажмите «Отправить».')->send();
+                        return;
+                    }
+
+                    if ($arguments['save_as_draft'] ?? false) {
+                        Notification::make()->success()->title('Письмо сохранено в черновики')
+                            ->body('Его можно открыть, отредактировать и отправить позже.')->send();
+                        $this->redirect(CrmMailThreadResource::getUrl('view', ['record' => $thread]));
+
+                        return;
+                    }
+
+                    try {
+                        app(CrmMailSender::class)->sendDraft($thread, auth()->user());
+                        Notification::make()->success()->title('Письмо отправлено')->send();
+                    } catch (Throwable $exception) {
+                        Notification::make()
+                            ->warning()
+                            ->title('Письмо не отправлено и сохранено в черновиках')
+                            ->body($exception->getMessage())
+                            ->send();
+                    }
+
                     $this->redirect(CrmMailThreadResource::getUrl('view', ['record' => $thread]));
                 }),
             Action::make('empty_trash')

@@ -4,17 +4,20 @@ namespace Tests\Feature;
 
 use App\Filament\Resources\CrmMailboxes\CrmMailboxResource;
 use App\Filament\Resources\CrmMailThreads\CrmMailThreadResource;
+use App\Filament\Resources\CrmMailThreads\Pages\ListCrmMailThreads;
 use App\Models\CrmContact;
 use App\Models\CrmContactPoint;
 use App\Models\CrmCounterparty;
 use App\Models\CrmMailbox;
 use App\Models\CrmMailThread;
 use App\Models\User;
-use App\Services\CrmMail\SupplierRequestMailDraftService;
 use App\Services\CrmMail\CrmMailSender;
 use App\Services\CrmMail\LeadMatcher;
+use App\Services\CrmMail\SupplierRequestMailDraftService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
+use Livewire\Livewire;
+use Mockery;
 use Tests\TestCase;
 
 class CrmMailModuleTest extends TestCase
@@ -256,5 +259,80 @@ class CrmMailModuleTest extends TestCase
         $this->assertSame(['orders@supplier.test', 'director@supplier.test'], collect($message->to)->pluck('email')->all());
         $this->assertSame(['accounting@supplier.test'], collect($message->cc)->pluck('email')->all());
         $this->assertSame('Коммерческое предложение.pdf', $message->metadata['attachments'][0]['name']);
+    }
+
+    public function test_new_message_is_sent_immediately_by_default(): void
+    {
+        $manager = User::factory()->create(['role' => 'manager', 'is_active' => true]);
+        $mailbox = CrmMailbox::create([
+            'name' => 'KOTLOV',
+            'email' => 'compose-send@kotlov.by',
+            'username' => 'compose-send@kotlov.by',
+            'is_enabled' => true,
+        ]);
+        $sender = Mockery::mock(CrmMailSender::class);
+        $sender->shouldReceive('sendDraft')
+            ->once()
+            ->withArgs(fn (CrmMailThread $thread, User $user): bool => $thread->status === 'draft'
+                && $thread->participant_email === 'client@example.com'
+                && $user->is($manager))
+            ->andReturnUsing(fn (CrmMailThread $thread) => $thread->messages()->where('direction', 'draft')->firstOrFail());
+        $this->app->instance(CrmMailSender::class, $sender);
+
+        Livewire::actingAs($manager)
+            ->test(ListCrmMailThreads::class)
+            ->assertActionExists('compose', function ($action): bool {
+                $footerActions = $action->getModalFooterActions();
+
+                return $action->getModalSubmitActionLabel() === 'Отправить письмо'
+                    && isset($footerActions['saveDraft'])
+                    && $footerActions['saveDraft']->getLabel() === 'Сохранить в черновики';
+            })
+            ->callAction('compose', [
+                'mailbox_id' => $mailbox->id,
+                'participant_name' => 'Новый клиент',
+                'recipients' => ['client@example.com'],
+                'cc' => ['copy@example.com'],
+                'subject' => 'Коммерческое предложение',
+                'body' => 'Здравствуйте! Направляем предложение.',
+            ])
+            ->assertHasNoActionErrors();
+
+        $this->assertDatabaseHas('crm_mail_threads', [
+            'mailbox_id' => $mailbox->id,
+            'participant_email' => 'client@example.com',
+            'subject' => 'Коммерческое предложение',
+        ]);
+    }
+
+    public function test_new_message_can_optionally_be_saved_as_draft(): void
+    {
+        $manager = User::factory()->create(['role' => 'manager', 'is_active' => true]);
+        $mailbox = CrmMailbox::create([
+            'name' => 'KOTLOV',
+            'email' => 'compose-draft@kotlov.by',
+            'username' => 'compose-draft@kotlov.by',
+            'is_enabled' => true,
+        ]);
+        $sender = Mockery::mock(CrmMailSender::class);
+        $sender->shouldNotReceive('sendDraft');
+        $this->app->instance(CrmMailSender::class, $sender);
+
+        Livewire::actingAs($manager)
+            ->test(ListCrmMailThreads::class)
+            ->callAction('compose', [
+                'mailbox_id' => $mailbox->id,
+                'recipients' => ['later@example.com'],
+                'subject' => 'Письмо на потом',
+                'body' => 'Черновик письма.',
+            ], ['save_as_draft' => true])
+            ->assertHasNoActionErrors();
+
+        $this->assertDatabaseHas('crm_mail_threads', [
+            'mailbox_id' => $mailbox->id,
+            'participant_email' => 'later@example.com',
+            'subject' => 'Письмо на потом',
+            'status' => 'draft',
+        ]);
     }
 }

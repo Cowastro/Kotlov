@@ -225,19 +225,19 @@ class CrmMailThreadResource extends Resource
                             Notification::make()->success()->title('Черновик сохранён')->send();
                         }),
                     Action::make('send_draft')
-                        ->label('Отправить поставщику')
+                        ->label('Отправить письмо')
                         ->icon('heroicon-o-paper-airplane')
                         ->color('success')
                         ->visible(fn (CrmMailThread $record): bool => ! $record->trashed() && $record->status === 'draft')
                         ->disabled(fn (CrmMailThread $record): bool => ! $record->hasValidRecipient())
                         ->tooltip(fn (CrmMailThread $record): ?string => $record->hasValidRecipient()
                             ? null
-                            : 'Сначала добавьте email в карточку поставщика')
+                            : 'Сначала укажите хотя бы одного получателя')
                         ->fillForm(fn (CrmMailThread $record): array => static::draftData($record))
                         ->schema(static::draftFields(true))
                         ->modalWidth('6xl')
-                        ->requiresConfirmation()
-                        ->modalHeading('Отправить письмо поставщику?')
+                        ->modalSubmitActionLabel('Отправить письмо')
+                        ->modalHeading('Отправить письмо')
                         ->action(function (CrmMailThread $record, array $data): void {
                             try {
                                 $thread = app(SupplierRequestMailDraftService::class)->update(
@@ -251,7 +251,7 @@ class CrmMailThreadResource extends Resource
                                     $data['attachment_file_names'] ?? [],
                                 );
                                 app(CrmMailSender::class)->sendDraft($thread, auth()->user());
-                                Notification::make()->success()->title('Письмо поставщику отправлено')->send();
+                                Notification::make()->success()->title('Письмо отправлено')->send();
                             } catch (Throwable $exception) {
                                 Notification::make()->danger()->title('Письмо не отправлено')->body($exception->getMessage())->send();
                             }
