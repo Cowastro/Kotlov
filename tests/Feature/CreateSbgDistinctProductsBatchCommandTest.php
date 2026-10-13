@@ -2342,4 +2342,71 @@ class CreateSbgDistinctProductsBatchCommandTest extends TestCase
         $this->assertStringNotContainsString('rub', mb_strtolower($product->content));
         $this->assertSame('manual_created', $item->fresh()->match_method);
     }
+
+    public function test_it_creates_the_exact_l500_aisi_304_d150_pipe_instead_of_linking_l1000_aisi_430(): void
+    {
+        $source = IntegrationSource::query()->create([
+            'code' => 'onec-sbg-teplov-pipe-l500-304-d150',
+            'name' => '1С СанБизнесГруп',
+            'settings' => ['partner_name' => 'ООО «СанБизнесГруп»'],
+            'is_active' => true,
+            'update_stock' => true,
+        ]);
+        $category = Category::query()->firstOrCreate(['slug' => 'truby-mono'], [
+            'name' => 'Трубы одностенные',
+            'parent_id' => 0,
+        ]);
+        $teplov = Brand::query()->firstOrCreate(['slug' => 'teplov-i-suhov'], ['name' => 'Теплов и Сухов']);
+        $wrongPipeCandidate = Product::query()->create([
+            'category_id' => $category->id,
+            'brand_id' => $teplov->id,
+            'sku' => 'PS-009.742',
+            'name' => 'Труба моно L1000 ТМ-Р (430-1,0) D150',
+            'slug' => 'teplov-pipe-l1000-430-10-d150-template',
+            'price' => 65,
+            'images' => ['product/0009/009742/pipe-l1000-430.jpg'],
+        ]);
+        $item = IntegrationProduct::query()->create([
+            'integration_source_id' => $source->id,
+            'external_id' => 'teplov-pipe-l500-304-08-d150',
+            'external_code' => 'УТ-00005205',
+            'external_sku' => 'TS.ST5.TRB.0150.54778',
+            'name' => 'Труба L500 ТМ-Р 304-0.8 D150',
+            'price_byn' => null,
+            'stock_quantity' => 1,
+            'match_status' => 'ambiguous',
+            'candidates' => [['product_id' => $wrongPipeCandidate->id, 'score' => 0.78]],
+        ]);
+
+        $this->artisan('integration:create-sbg-distinct-products', [
+            '--batch' => 'researched-priced-20261013-ao',
+            '--code' => ['УТ-00005205'],
+            '--apply' => true,
+        ])->assertSuccessful();
+
+        $product = $item->fresh()->product;
+        $this->assertNotNull($product);
+        $this->assertNotSame($wrongPipeCandidate->id, $product->id);
+        $this->assertSame($category->id, $product->category_id);
+        $this->assertSame($teplov->id, $product->brand_id);
+        $this->assertSame('Теплов и Сухов Труба Моно L500 ТМ-Р 304-0.8 D150', $product->name);
+        $this->assertSame('84.90', $product->price);
+        $this->assertSame('1', (string) $product->stock_qty);
+        $this->assertNull($item->fresh()->normalizedPriceByn());
+        $this->assertSame('500 мм', collect($product->specs)->firstWhere('key', 'Длина')['value']);
+        $this->assertSame('150 мм', collect($product->specs)->firstWhere('key', 'Диаметр')['value']);
+        $this->assertSame('AISI 304', collect($product->specs)->firstWhere('key', 'Марка стали')['value']);
+        $this->assertSame('0,8 мм', collect($product->specs)->firstWhere('key', 'Толщина стали')['value']);
+        $this->assertSame('TS.ST5.TRB.0150.54778', collect($product->specs)->firstWhere('key', 'Артикул производителя')['value']);
+        $this->assertSame(['img/products/teplov-i-suhov/teplov-suhov-truba-l500-304-08-d150.jpg'], $product->images);
+        $this->assertFileExists(public_path('img/products/teplov-i-suhov/teplov-suhov-truba-l500-304-08-d150.jpg'));
+        $this->assertStringContainsString('pechi-online.ru', $product->content_source_url);
+        $this->assertStringNotContainsString('L1000', $product->content);
+        $this->assertStringNotContainsString('AISI 430', $product->content);
+        $this->assertStringNotContainsString('кандидат', mb_strtolower($product->content));
+        $this->assertStringNotContainsString('розничная цена', mb_strtolower($product->content));
+        $this->assertStringNotContainsString('нбрб', mb_strtolower($product->content));
+        $this->assertStringNotContainsString('rub', mb_strtolower($product->content));
+        $this->assertSame('manual_created', $item->fresh()->match_method);
+    }
 }

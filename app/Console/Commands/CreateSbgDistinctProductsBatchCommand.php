@@ -1237,6 +1237,41 @@ class CreateSbgDistinctProductsBatchCommand extends Command
         ],
     ];
 
+    private const BATCH_RESEARCHED_PRICED_20261013_AO = [
+        'УТ-00005205' => [
+            'template' => 'PS-009.742',
+            'category_slug' => 'truby-mono',
+            'external_sku' => 'TS.ST5.TRB.0150.54778',
+            'fragments' => ['Труба', 'L500', 'ТМ-Р', '304-0.8', 'D150'],
+            'brand' => [
+                'name' => 'Теплов и Сухов',
+                'slug' => 'teplov-i-suhov',
+                'country' => 'Россия',
+                'content' => '<p><strong>Теплов и Сухов</strong> — российский производитель модульных дымоходов и комплектующих из нержавеющей стали.</p>',
+            ],
+            'name' => 'Теплов и Сухов Труба Моно L500 ТМ-Р 304-0.8 D150',
+            'retail' => 84.90,
+            'images' => ['img/products/teplov-i-suhov/teplov-suhov-truba-l500-304-08-d150.jpg'],
+            'source_url' => 'https://ufa.pechi-online.ru/shop/truba_l500_tm_r_304_08_d150_tis',
+            'short' => 'Одностенная труба дымохода «Теплов и Сухов» длиной 500 мм и диаметром 150 мм, сталь AISI 304 толщиной 0,8 мм.',
+            'content' => '<p><strong>Труба Моно L500 ТМ-Р 304-0.8 D150</strong> — прямой одностенный модуль для отвода дымовых газов на вертикальных и горизонтальных участках дымохода. Длина элемента составляет 500 мм, диаметр — 150 мм.</p><p>Труба изготовлена из нержавеющей стали AISI 304 толщиной 0,8 мм и предназначена для сборки совместимой модульной системы «Теплов и Сухов». Раструбное соединение позволяет последовательно стыковать элементы дымохода.</p>',
+            'specs' => [
+                ['key' => 'Тип', 'value' => 'Одностенная труба дымохода'],
+                ['key' => 'Серия', 'value' => 'Моно'],
+                ['key' => 'Модель', 'value' => 'L500 ТМ-Р 304-0.8 D150'],
+                ['key' => 'Длина', 'value' => '500 мм'],
+                ['key' => 'Диаметр', 'value' => '150 мм'],
+                ['key' => 'Марка стали', 'value' => 'AISI 304'],
+                ['key' => 'Толщина стали', 'value' => '0,8 мм'],
+                ['key' => 'Конструкция', 'value' => 'Одностенная, без теплоизоляции'],
+                ['key' => 'Соединение', 'value' => 'Раструбное'],
+                ['key' => 'Масса', 'value' => '0,96 кг'],
+                ['key' => 'Артикул производителя', 'value' => 'TS.ST5.TRB.0150.54778'],
+                ['key' => 'Страна производства', 'value' => 'Россия'],
+            ],
+        ],
+    ];
+
     public function handle(IntegrationProductCreator $creator): int
     {
         $rows = match ($this->option('batch')) {
@@ -1280,6 +1315,7 @@ class CreateSbgDistinctProductsBatchCommand extends Command
             'researched-priced-20261013-al' => self::BATCH_RESEARCHED_PRICED_20261013_AL,
             'researched-priced-20261013-am' => self::BATCH_RESEARCHED_PRICED_20261013_AM,
             'researched-priced-20261013-an' => self::BATCH_RESEARCHED_PRICED_20261013_AN,
+            'researched-priced-20261013-ao' => self::BATCH_RESEARCHED_PRICED_20261013_AO,
             default => null,
         };
 
