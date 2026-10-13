@@ -25,6 +25,7 @@ class User extends Authenticatable implements FilamentUser
         'client_type',
 
         'phone',
+        'job_title',
         'telegram_username',
         'avatar',
         'is_active',

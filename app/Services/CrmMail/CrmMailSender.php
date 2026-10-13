@@ -2,6 +2,7 @@
 
 namespace App\Services\CrmMail;
 
+use App\Models\CrmMailbox;
 use App\Models\CrmMailMessage;
 use App\Models\CrmMailThread;
 use App\Models\User;
@@ -16,17 +17,6 @@ class CrmMailSender
     public function reply(CrmMailThread $thread, string $body, User $user): CrmMailMessage
     {
         $mailbox = $thread->mailbox;
-        if (blank($mailbox->password)) {
-            throw new RuntimeException('В настройках ящика не сохранён пароль SMTP.');
-        }
-
-        $transport = new EsmtpTransport(
-            $mailbox->smtp_host,
-            $mailbox->smtp_port,
-            in_array($mailbox->smtp_encryption, ['ssl', 'tls'], true),
-        );
-        $transport->setUsername($mailbox->username);
-        $transport->setPassword($mailbox->password);
 
         $lastMessage = $thread->messages()->whereNotNull('message_id')->latest('received_at')->first();
         $subject = preg_match('/^re\s*:/i', (string) $thread->subject)
@@ -49,7 +39,7 @@ class CrmMailSender
             $email->getHeaders()->addTextHeader('References', $lastMessage->message_id);
         }
 
-        (new Mailer($transport))->send($email);
+        $this->mailer($mailbox)->send($email);
 
         $message = CrmMailMessage::create([
             'thread_id' => $thread->id,
@@ -79,11 +69,28 @@ class CrmMailSender
         return $message;
     }
 
+    public function sendTest(CrmMailbox $mailbox, string $recipient, User $user): void
+    {
+        $body = 'Это тестовое письмо из модуля «Почта и лиды». Оно подтверждает, что общий почтовый ящик работает, а в подписи указан сотрудник, который отправил письмо.';
+
+        $email = (new Email)
+            ->from(sprintf('%s <%s>', $mailbox->name, $mailbox->email))
+            ->replyTo(sprintf('%s <%s>', $mailbox->name, $mailbox->email))
+            ->to($recipient)
+            ->subject('Тест персональной подписи KOTLOV.BY')
+            ->text($this->brandedText($body, $user))
+            ->html($this->brandedHtml($body, $user));
+
+        $this->mailer($mailbox)->send($email);
+    }
+
     public function brandedHtml(string $body, User $user): string
     {
         return view('emails.crm.kotlov-reply', [
             'body' => $body,
             'managerName' => $user->name,
+            'managerJobTitle' => $user->job_title,
+            'managerPhone' => $user->phone,
             'company' => config('legal.seller'),
         ])->render();
     }
@@ -92,10 +99,33 @@ class CrmMailSender
     {
         $phones = implode(', ', config('legal.seller.phones', []));
 
+        $managerDetails = array_filter([
+            $user->job_title,
+            $user->phone,
+        ]);
+
         return trim($body)."\n\n"
             .'С уважением, '.$user->name."\n"
-            ."Команда KOTLOV.BY\n"
-            .$phones."\n"
-            .config('legal.seller.email', 'info@kotlov.by')." · https://kotlov.by";
+            .($managerDetails ? implode("\n", $managerDetails)."\n" : '')
+            .'Команда KOTLOV.BY'."\n"
+            .'Общие телефоны: '.$phones."\n"
+            .config('legal.seller.email', 'info@kotlov.by').' · https://kotlov.by';
+    }
+
+    private function mailer(CrmMailbox $mailbox): Mailer
+    {
+        if (blank($mailbox->password)) {
+            throw new RuntimeException('В настройках ящика не сохранён пароль SMTP.');
+        }
+
+        $transport = new EsmtpTransport(
+            $mailbox->smtp_host,
+            $mailbox->smtp_port,
+            in_array($mailbox->smtp_encryption, ['ssl', 'tls'], true),
+        );
+        $transport->setUsername($mailbox->username);
+        $transport->setPassword($mailbox->password);
+
+        return new Mailer($transport);
     }
 }

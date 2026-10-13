@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Users\Schemas;
 
+use App\Enums\ClientType;
 use App\Models\User;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Select;
@@ -9,7 +10,6 @@ use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
-use App\Enums\ClientType;
 
 class UserForm
 {
@@ -31,8 +31,15 @@ class UserForm
                             ->unique(ignoreRecord: true),
 
                         TextInput::make('phone')
-                            ->label('Телефон')
-                            ->tel(),
+                            ->label('Рабочий телефон')
+                            ->tel()
+                            ->helperText('Будет указан в персональной подписи исходящих писем.'),
+
+                        TextInput::make('job_title')
+                            ->label('Должность')
+                            ->placeholder('Например: менеджер по продажам')
+                            ->maxLength(255)
+                            ->helperText('Будет указана под именем сотрудника в письмах клиентам.'),
 
                         TextInput::make('telegram_username')
                             ->label('Telegram username')
@@ -64,9 +71,9 @@ class UserForm
                             ->label('Пароль')
                             ->password()
                             ->revealable()
-                            ->required(fn($record) => $record === null) // обязателен только при создании
-                            ->dehydrateStateUsing(fn($state) => filled($state) ? bcrypt($state) : null)
-                            ->dehydrated(fn($state) => filled($state))
+                            ->required(fn ($record) => $record === null) // обязателен только при создании
+                            ->dehydrateStateUsing(fn ($state) => filled($state) ? bcrypt($state) : null)
+                            ->dehydrated(fn ($state) => filled($state))
                             ->minLength(8),
 
                         TextInput::make('password_confirmation')
@@ -74,7 +81,7 @@ class UserForm
                             ->password()
                             ->revealable()
                             ->same('password')
-                            ->required(fn($record) => $record === null)
+                            ->required(fn ($record) => $record === null)
                             ->dehydrated(false),
                     ]),
 

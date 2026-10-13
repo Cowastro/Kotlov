@@ -28,6 +28,12 @@
                                 <td style="padding-top:22px;font-size:14px;line-height:1.6;color:#5f6368;">
                                     С уважением,<br>
                                     <strong style="color:#202124;">{{ $managerName }}</strong><br>
+                                    @if(filled($managerJobTitle))
+                                        {{ $managerJobTitle }}<br>
+                                    @endif
+                                    @if(filled($managerPhone))
+                                        <a href="tel:{{ preg_replace('/[^+\d]/', '', $managerPhone) }}" style="color:#202124;text-decoration:none;">{{ $managerPhone }}</a><br>
+                                    @endif
                                     Команда KOTLOV.BY
                                 </td>
                                 <td align="right" style="padding-top:22px;font-size:14px;line-height:1.7;color:#5f6368;">

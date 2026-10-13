@@ -6,11 +6,14 @@ use App\Filament\Resources\CrmMailboxes\Pages\CreateCrmMailbox;
 use App\Filament\Resources\CrmMailboxes\Pages\EditCrmMailbox;
 use App\Filament\Resources\CrmMailboxes\Pages\ListCrmMailboxes;
 use App\Models\CrmMailbox;
+use App\Models\User;
+use App\Services\CrmMail\CrmMailSender;
 use App\Services\CrmMail\ImapMailboxSynchronizer;
 use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Actions\EditAction;
 use Filament\Forms\Components\Select;
+use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Notifications\Notification;
@@ -91,6 +94,43 @@ class CrmMailboxResource extends Resource
                             ->body("Загружено: {$result['imported']}; пропущено: {$result['skipped']}.")->send();
                     } catch (Throwable $exception) {
                         Notification::make()->danger()->title('Не удалось проверить почту')->body($exception->getMessage())->send();
+                    }
+                }),
+            Action::make('sendTest')
+                ->label('Тест подписи')
+                ->icon('heroicon-o-paper-airplane')
+                ->color('gray')
+                ->modalHeading('Отправить тестовое письмо')
+                ->modalDescription('Письмо уйдёт от общего ящика, но будет подписано именем, должностью и рабочим телефоном текущего сотрудника.')
+                ->modalSubmitActionLabel('Отправить тест')
+                ->schema([
+                    TextInput::make('recipient')
+                        ->label('Кому')
+                        ->email()
+                        ->required(),
+                    Textarea::make('signaturePreview')
+                        ->label('Подпись сотрудника')
+                        ->default(function (): string {
+                            /** @var User $user */
+                            $user = auth()->user();
+
+                            return implode("\n", array_filter([
+                                $user->name,
+                                $user->job_title,
+                                $user->phone,
+                            ]));
+                        })
+                        ->disabled()
+                        ->dehydrated(false),
+                ])
+                ->action(function (CrmMailbox $record, array $data): void {
+                    try {
+                        /** @var User $user */
+                        $user = auth()->user();
+                        app(CrmMailSender::class)->sendTest($record, $data['recipient'], $user);
+                        Notification::make()->success()->title('Тестовое письмо отправлено')->body('Проверьте полученную подпись сотрудника.')->send();
+                    } catch (Throwable $exception) {
+                        Notification::make()->danger()->title('Не удалось отправить тест')->body($exception->getMessage())->send();
                     }
                 }),
             EditAction::make(),

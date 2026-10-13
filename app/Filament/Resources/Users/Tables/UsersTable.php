@@ -38,24 +38,29 @@ class UsersTable
                     ->label('Телефон')
                     ->searchable(),
 
+                TextColumn::make('job_title')
+                    ->label('Должность')
+                    ->searchable()
+                    ->placeholder('Не указана'),
+
                 TextColumn::make('role')
                     ->label('Роль')
                     ->badge()
-                    ->color(fn(string $state) => match($state) {
-                        'admin'     => 'danger',
+                    ->color(fn (string $state) => match ($state) {
+                        'admin' => 'danger',
                         'manager', 'sales_manager' => 'info',
-                        'supplier'  => 'warning',
+                        'supplier' => 'warning',
                         'installer' => 'info',
-                        'client'    => 'success',
-                        default     => 'gray',
+                        'client' => 'success',
+                        default => 'gray',
                     })
-                    ->formatStateUsing(fn(string $state) => match($state) {
-                        'admin'     => 'Администратор',
+                    ->formatStateUsing(fn (string $state) => match ($state) {
+                        'admin' => 'Администратор',
                         'manager', 'sales_manager' => 'Менеджер',
-                        'supplier'  => 'Поставщик',
+                        'supplier' => 'Поставщик',
                         'installer' => 'Монтажник',
-                        'client'    => 'Клиент',
-                        default     => $state,
+                        'client' => 'Клиент',
+                        default => $state,
                     }),
 
                 TextColumn::make('client_type')

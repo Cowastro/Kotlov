@@ -18,6 +18,10 @@ class UserInfolist
                 TextEntry::make('role')
                     ->badge(),
                 TextEntry::make('phone')
+                    ->label('Рабочий телефон')
+                    ->placeholder('-'),
+                TextEntry::make('job_title')
+                    ->label('Должность')
                     ->placeholder('-'),
                 TextEntry::make('avatar')
                     ->placeholder('-'),

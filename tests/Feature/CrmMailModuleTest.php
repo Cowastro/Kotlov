@@ -10,8 +10,8 @@ use App\Models\CrmCounterparty;
 use App\Models\CrmMailbox;
 use App\Models\CrmMailThread;
 use App\Models\User;
-use App\Services\CrmMail\LeadMatcher;
 use App\Services\CrmMail\CrmMailSender;
+use App\Services\CrmMail\LeadMatcher;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
@@ -151,7 +151,11 @@ class CrmMailModuleTest extends TestCase
 
     public function test_branded_reply_contains_manager_signature_and_safe_customer_text(): void
     {
-        $manager = User::factory()->create(['name' => 'Александр Менеджер']);
+        $manager = User::factory()->create([
+            'name' => 'Александр Менеджер',
+            'job_title' => 'Менеджер по продажам',
+            'phone' => '+375 (29) 000-00-00',
+        ]);
         $sender = app(CrmMailSender::class);
 
         $html = $sender->brandedHtml('Здравствуйте! <script>alert(1)</script>', $manager);
@@ -159,9 +163,13 @@ class CrmMailModuleTest extends TestCase
 
         $this->assertStringContainsString('KOTLOV', $html);
         $this->assertStringContainsString('Александр Менеджер', $html);
+        $this->assertStringContainsString('Менеджер по продажам', $html);
+        $this->assertStringContainsString('+375 (29) 000-00-00', $html);
         $this->assertStringNotContainsString('<script>', $html);
         $this->assertStringContainsString('&lt;script&gt;', $html);
         $this->assertStringContainsString('Команда KOTLOV.BY', $text);
+        $this->assertStringContainsString('Менеджер по продажам', $text);
+        $this->assertStringContainsString('+375 (29) 000-00-00', $text);
         $this->assertStringContainsString('info@kotlov.by', $text);
     }
 }
