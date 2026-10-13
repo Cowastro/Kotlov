@@ -3201,6 +3201,49 @@ class CreateSbgDistinctProductsBatchCommand extends Command
         ],
     ];
 
+    // The supplier row has no brand, article or barcode, so the card deliberately
+    // describes only the unambiguous commodity identity: SML, 1220 x 610 x 10 mm.
+    // Vishop lists the same format at 33 BYN; the current 1C client price is 34 BYN.
+    // The selected source image is a clean product photo without a third-party mark.
+    private const BATCH_UNMATCHED_RESEARCHED_20261014_CV = [
+        'УТ-00000858' => [
+            'template' => 'KOTLOV-022510',
+            'allow_unmatched' => true,
+            'allow_brandless' => true,
+            'force_brandless' => true,
+            'category_slug' => 'ognezashchitnye-plity-i-listy',
+            'category' => [
+                'name' => 'Огнезащитные плиты и листы',
+                'slug' => 'ognezashchitnye-plity-i-listy',
+                'parent_slug' => 'aksessuary-dlya-bani',
+                'h1' => 'Огнезащитные плиты и листы для печей и бань',
+                'type' => 'main-child',
+                'sort_order' => 45,
+                'content' => '<p>Огнезащитные плиты и листы применяют при устройстве защитной обшивки стен, потолков и других конструкций рядом с печами, каминами и дымоходами. При подборе учитывайте материал, толщину, формат листа и требования проекта к монтажу.</p>',
+                'meta_title' => 'Огнезащитные плиты и листы — купить в Беларуси | KOTLOV',
+                'meta_description' => 'Огнезащитные плиты и листы для печей, каминов и бань: размеры, характеристики, цены и доставка по Беларуси.',
+            ],
+            'fragments' => ['Стекломагниевый лист', '1220', '610', '10'],
+            'name' => 'Стекломагниевый лист СМЛ 1220×610×10 мм',
+            'retail' => 34.00,
+            'images' => [
+                'img/products/fireproof/sml-1220-610-10.jpg',
+            ],
+            'source_url' => 'https://vishop.by/catalog/pechi--kotly--kaminy-dlya-bani--doma--dachi/vse-dlya-stroitelstva-i-otdelki/termostoykaya-plita/steklomagnievyy-list-sml-standart-1220x610x10/',
+            'short' => 'Стекломагниевый лист СМЛ формата 1220×610 мм и толщиной 10 мм для защитной и отделочной обшивки.',
+            'content' => '<p><strong>Стекломагниевый лист СМЛ 1220×610×10 мм</strong> — листовой материал на магнезиальном вяжущем с армированием стекловолокном.</p><p>Лист используют для защитной и отделочной обшивки стен, потолков и других оснований, в том числе в помещениях с печным и банным оборудованием. Формат 1220×610 мм удобен для раскроя и монтажа небольшими секциями.</p><p>СМЛ не заменяет расчёт противопожарных расстояний. Способ крепления, воздушный зазор и состав защитной конструкции выбирают по проекту и требованиям производителя отопительного оборудования.</p>',
+            'specs' => [
+                ['key' => 'Тип', 'value' => 'Стекломагниевый лист (СМЛ)'],
+                ['key' => 'Длина', 'value' => '1220 мм'],
+                ['key' => 'Ширина', 'value' => '610 мм'],
+                ['key' => 'Толщина', 'value' => '10 мм'],
+                ['key' => 'Материал', 'value' => 'Магнезиальное вяжущее, армированное стекловолокном'],
+                ['key' => 'Назначение', 'value' => 'Защитная и отделочная обшивка'],
+                ['key' => 'Единица продажи', 'value' => '1 лист'],
+            ],
+        ],
+    ];
+
     public function handle(
         IntegrationProductCreator $creator,
         IntegrationProductMatchDecision $matchDecision,
@@ -3305,6 +3348,7 @@ class CreateSbgDistinctProductsBatchCommand extends Command
             'unmatched-disputed-20261013-cs' => self::BATCH_UNMATCHED_DISPUTED_20261013_CS,
             'unmatched-researched-20261013-ct' => self::BATCH_UNMATCHED_RESEARCHED_20261013_CT,
             'unmatched-researched-20261014-cu' => self::BATCH_UNMATCHED_RESEARCHED_20261014_CU,
+            'unmatched-researched-20261014-cv' => self::BATCH_UNMATCHED_RESEARCHED_20261014_CV,
             default => null,
         };
 

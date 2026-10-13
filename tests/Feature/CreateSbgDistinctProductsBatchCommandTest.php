@@ -7598,4 +7598,107 @@ class CreateSbgDistinctProductsBatchCommandTest extends TestCase
         $this->assertSame($productCount + 1, Product::query()->count());
         $this->assertSame($product->id, $item->fresh()->product_id);
     }
+
+    public function test_it_creates_the_exact_brandless_sml_sheet_and_its_fireproof_category(): void
+    {
+        $source = IntegrationSource::query()->create([
+            'code' => 'onec-sbg-unmatched-sml-sheet',
+            'name' => '1С СанБизнесГруп',
+            'settings' => ['partner_name' => 'ООО «СанБизнесГруп»'],
+            'is_active' => true,
+            'update_stock' => true,
+        ]);
+        $parent = Category::query()->firstOrCreate(['slug' => 'aksessuary-dlya-bani'], [
+            'name' => 'Аксессуары для бани',
+            'parent_id' => 0,
+            'is_active' => true,
+        ]);
+        $templateCategory = Category::query()->firstOrCreate(['slug' => 'oblicovki'], [
+            'name' => 'Облицовки',
+            'parent_id' => 0,
+            'is_active' => true,
+        ]);
+        Product::query()->create([
+            'category_id' => $templateCategory->id,
+            'sku' => 'KOTLOV-022510',
+            'name' => 'Вермикулитовая плита Skamol V-1100-700 1260×1000×25 мм',
+            'slug' => 'skamol-v1100-template-for-sml',
+            'price' => 349,
+            'images' => ['img/products/skamol/template.png'],
+            'is_active' => true,
+            'is_archived' => false,
+        ]);
+        $item = IntegrationProduct::query()->create([
+            'integration_source_id' => $source->id,
+            'external_id' => 'bbd2cb67-1f62-11e9-bad6-1c1b0d1de7c2',
+            'external_code' => 'УТ-00000858',
+            'external_sku' => null,
+            'barcode' => null,
+            'name' => 'Стекломагниевый лист 1220*610*10',
+            'price' => 28.33,
+            'price_currency' => 'BYN',
+            'price_currency_rate' => 1,
+            'price_tax_mode' => IntegrationSource::PRICE_TAX_EXCLUSIVE,
+            'price_vat_rate' => 20,
+            'price_byn' => 34.00,
+            'stock_quantity' => 28,
+            'stock_confirmed_at' => now(),
+            'match_status' => 'unmatched',
+            'candidates' => null,
+        ]);
+        $productCount = Product::query()->count();
+
+        $this->artisan('integration:create-sbg-distinct-products', [
+            '--batch' => 'unmatched-researched-20261014-cv',
+            '--code' => ['УТ-00000858'],
+        ])->assertSuccessful();
+        $this->assertNull($item->fresh()->product_id);
+
+        $this->artisan('integration:create-sbg-distinct-products', [
+            '--batch' => 'unmatched-researched-20261014-cv',
+            '--code' => ['УТ-00000858'],
+            '--apply' => true,
+        ])->assertSuccessful();
+
+        $item->refresh();
+        $product = $item->product()->sole();
+        $category = Category::query()->where('slug', 'ognezashchitnye-plity-i-listy')->sole();
+        $this->assertSame($productCount + 1, Product::query()->count());
+        $this->assertSame($parent->id, $category->parent_id);
+        $this->assertSame('matched', $item->match_status);
+        $this->assertSame('manual_created', $item->match_method);
+        $this->assertSame($category->id, $item->target_category_id);
+        $this->assertNull($item->external_sku);
+        $this->assertNull($item->barcode);
+        $this->assertSame('Стекломагниевый лист СМЛ 1220×610×10 мм', $product->name);
+        $this->assertNull($product->brand_id);
+        $this->assertSame('34.00', $product->price);
+        $this->assertSame('28', (string) $product->stock_qty);
+        $this->assertTrue((bool) $product->in_stock);
+        $this->assertSame(Product::AVAILABILITY_IN_STOCK, $product->effectiveAvailabilityStatus());
+        $this->assertSame('1220 мм', collect($product->specs)->firstWhere('key', 'Длина')['value']);
+        $this->assertSame('610 мм', collect($product->specs)->firstWhere('key', 'Ширина')['value']);
+        $this->assertSame('10 мм', collect($product->specs)->firstWhere('key', 'Толщина')['value']);
+        $this->assertSame(['img/products/fireproof/sml-1220-610-10.jpg'], $product->images);
+        $this->assertFileExists(public_path('img/products/fireproof/sml-1220-610-10.jpg'));
+        $this->assertStringContainsString('vishop.by', $product->content_source_url);
+        $this->assertStringContainsString('не заменяет расчёт', mb_strtolower($product->content));
+        $this->assertStringNotContainsString('розничная цена', mb_strtolower($product->content));
+        $this->assertDatabaseHas('supplier_product_mappings', [
+            'supplier_code' => $source->matchingSupplierCode(),
+            'supplier_article' => 'УТ-00000858',
+            'product_id' => $product->id,
+            'product_sku' => $product->sku,
+            'confidence' => 'manual',
+            'is_active' => true,
+        ]);
+
+        $this->artisan('integration:create-sbg-distinct-products', [
+            '--batch' => 'unmatched-researched-20261014-cv',
+            '--code' => ['УТ-00000858'],
+            '--apply' => true,
+        ])->assertSuccessful();
+        $this->assertSame($productCount + 1, Product::query()->count());
+        $this->assertSame($product->id, $item->fresh()->product_id);
+    }
 }
