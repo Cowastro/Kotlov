@@ -12,6 +12,7 @@ class SyncEliconGasMetersCommand extends Command
     protected $signature = 'supplier:sync-elicon-gas-meters
         {--apply : Write changes to the database}
         {--dry-run : Preview without writing changes to the database}
+        {--prices-only : Update prices of already matched products without changing cards, attributes or images}
         {--limit= : Limit number of products for testing}
         {--no-images : Do not download product images}
         {--sleep=200 : Delay between product requests in milliseconds}';
@@ -29,8 +30,9 @@ class SyncEliconGasMetersCommand extends Command
     public function handle(): int
     {
         $apply = (bool) $this->option('apply');
+        $pricesOnly = (bool) $this->option('prices-only');
         $limit = $this->option('limit') !== null ? (int) $this->option('limit') : null;
-        $downloadImages = ! (bool) $this->option('no-images');
+        $downloadImages = ! $pricesOnly && ! (bool) $this->option('no-images');
 
         $this->line($apply
             ? '<fg=red;options=bold>APPLY: database will be updated.</>'
@@ -57,6 +59,10 @@ class SyncEliconGasMetersCommand extends Command
         }
 
         $this->line(sprintf('Supplier currency: %s, rate to BYN: %s', $this->supplierCurrency, $this->supplierRate));
+
+        if ($apply && $pricesOnly) {
+            return $this->updatePricesOnly($items);
+        }
 
         if (! $apply) {
             $preview = [];
@@ -158,6 +164,74 @@ class SyncEliconGasMetersCommand extends Command
         ));
 
         return $stats['errors'] > 0 ? self::FAILURE : self::SUCCESS;
+    }
+
+    private function updatePricesOnly(array $items): int
+    {
+        $now = now();
+        $supplier = DB::table('suppliers')->where('code', self::SUPPLIER_CODE)->first();
+
+        if (! $supplier) {
+            $this->error('Supplier "' . self::SUPPLIER_CODE . '" is not configured.');
+            return self::FAILURE;
+        }
+
+        $stats = ['updated' => 0, 'unchanged' => 0, 'no_price' => 0, 'not_matched' => 0];
+
+        foreach ($items as $i => $item) {
+            $this->line(sprintf('[%d/%d] %s', $i + 1, count($items), $item['article']));
+            $priceByn = CurrencyPriceConverter::convertToByn(
+                $item['price'],
+                $this->supplierCurrency,
+                $this->supplierRate
+            );
+
+            if ($priceByn === null) {
+                $stats['no_price']++;
+                continue;
+            }
+
+            $product = $this->findProduct($item);
+            if (! $product) {
+                $stats['not_matched']++;
+                continue;
+            }
+
+            $changed = abs((float) $product->price - $priceByn) >= 0.01;
+            if ($changed) {
+                DB::table('products')->where('id', $product->id)->update([
+                    'price' => $priceByn,
+                    'updated_at' => $now,
+                ]);
+                $this->line(sprintf('  %.2f -> %.2f BYN', (float) $product->price, $priceByn));
+            }
+
+            DB::table('supplier_products')
+                ->where('supplier_id', $supplier->id)
+                ->where(function ($query) use ($item) {
+                    $query->where('supplier_article', $item['article'])
+                        ->orWhere('supplier_article_normalized', $this->normalizeSupplierArticle($item['article']));
+                })
+                ->update([
+                    'price' => $item['price'],
+                    'currency' => $this->supplierCurrency,
+                    'currency_rate' => $this->supplierRate,
+                    'price_byn' => $priceByn,
+                    'in_stock' => true,
+                    'last_synced_at' => $now,
+                    'updated_at' => $now,
+                ]);
+
+            $stats[$changed ? 'updated' : 'unchanged']++;
+        }
+
+        $this->table(['metric', 'count'], array_map(
+            fn($key, $value) => [$key, $value],
+            array_keys($stats),
+            array_values($stats)
+        ));
+
+        return self::SUCCESS;
     }
 
     private function scrapeListing(): array
