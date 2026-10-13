@@ -2891,6 +2891,41 @@ class CreateSbgDistinctProductsBatchCommand extends Command
         ],
     ];
 
+    private const BATCH_UNMATCHED_RESEARCHED_20261013_CN = [
+        'УТ-00001091' => [
+            'template_slug' => 'homut-rastyajki-teplov-i-suhov-260',
+            'link_existing_slug' => 'homut-rastyajki-teplov-i-suhov-260',
+            'refresh_existing' => true,
+            'allow_unmatched' => true,
+            'category_slug' => 'krepleniya-dymohod',
+            'fragments' => ['Хомут растяжки', 'D 260', '(У)'],
+            'link_fragments' => ['Хомут растяжки', 'Теплов и Сухов', '260'],
+            'brand' => [
+                'name' => 'Теплов и Сухов',
+                'slug' => 'teplov-i-suhov',
+                'country' => 'Россия',
+            ],
+            'name' => 'Теплов и Сухов Хомут растяжки Ø260 мм',
+            'retail' => 14.40,
+            'images' => [
+                'img/products/teplov-i-suhov/homut-rastyazhki-d260-clean.png',
+            ],
+            'source_url' => 'https://resan.ru/catalog/dymokhody_i_komplektuyushchie/dymokhody/khomuty_dlya_dymokhoda/81416/',
+            'short' => 'Хомут растяжки «Теплов и Сухов» Ø260 мм из нержавеющей стали AISI 430 для фиксации вертикального участка дымохода над кровлей.',
+            'content' => '<p><strong>Хомут растяжки «Теплов и Сухов» Ø260 мм</strong> устанавливается на дымоход соответствующего диаметра и служит точкой крепления растяжек.</p><p>Элемент применяют для дополнительной фиксации вертикального участка дымохода, возвышающегося над кровлей более чем на 2 м. Хомут помогает удерживать трубу в вертикальном положении при ветровой нагрузке, но не является самостоятельным несущим элементом.</p><p>Перед монтажом проверьте наружный диаметр дымохода и предусмотрите подходящие тросы либо штанги растяжки.</p>',
+            'specs' => [
+                ['key' => 'Тип', 'value' => 'Хомут растяжки для дымохода'],
+                ['key' => 'Артикул производителя', 'value' => 'TS.KMP.HMR.0260.74106'],
+                ['key' => 'Диаметр', 'value' => '260 мм'],
+                ['key' => 'Материал', 'value' => 'Нержавеющая сталь AISI 430'],
+                ['key' => 'Толщина стали', 'value' => '0,5 мм'],
+                ['key' => 'Назначение', 'value' => 'Фиксация вертикального участка дымохода растяжками'],
+                ['key' => 'Бренд', 'value' => 'Теплов и Сухов'],
+                ['key' => 'Страна производства', 'value' => 'Россия'],
+            ],
+        ],
+    ];
+
     public function handle(
         IntegrationProductCreator $creator,
         IntegrationProductMatchDecision $matchDecision,
@@ -2987,6 +3022,7 @@ class CreateSbgDistinctProductsBatchCommand extends Command
             'unmatched-researched-20261013-ck' => self::BATCH_UNMATCHED_RESEARCHED_20261013_CK,
             'unmatched-researched-20261013-cl' => self::BATCH_UNMATCHED_RESEARCHED_20261013_CL,
             'unmatched-researched-20261013-cm' => self::BATCH_UNMATCHED_RESEARCHED_20261013_CM,
+            'unmatched-researched-20261013-cn' => self::BATCH_UNMATCHED_RESEARCHED_20261013_CN,
             default => null,
         };
 

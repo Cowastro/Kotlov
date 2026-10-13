@@ -6771,4 +6771,111 @@ class CreateSbgDistinctProductsBatchCommandTest extends TestCase
         $this->assertSame($productCount + 1, Product::query()->count());
         $this->assertSame($product->id, $item->fresh()->product_id);
     }
+
+    public function test_it_links_and_refreshes_the_exact_unmatched_teplov_i_suhov_guy_wire_clamp_d260(): void
+    {
+        $source = IntegrationSource::query()->create([
+            'code' => 'onec-sbg-unmatched-guy-wire-clamp-d260',
+            'name' => '1С СанБизнесГруп',
+            'settings' => ['partner_name' => 'ООО «СанБизнесГруп»'],
+            'is_active' => true,
+            'update_stock' => true,
+        ]);
+        $category = Category::query()->firstOrCreate(['slug' => 'krepleniya-dymohod'], [
+            'name' => 'Крепления и монтаж',
+            'parent_id' => 0,
+        ]);
+        $brand = Brand::query()->create([
+            'name' => 'Теплов и Сухов',
+            'slug' => 'teplov-i-suhov',
+            'country' => 'Россия',
+        ]);
+        $product = Product::query()->create([
+            'category_id' => $category->id,
+            'brand_id' => $brand->id,
+            'sku' => 'PS-009.065',
+            'name' => 'Хомут растяжки Теплов и Сухов 260',
+            'slug' => 'homut-rastyajki-teplov-i-suhov-260',
+            'price' => 10.08,
+            'images' => ['product/009/009065/homut_r.jpeg'],
+            'short_description' => 'Старая карточка с непроверенным изображением.',
+            'content' => '<p>Старое описание.</p>',
+            'is_active' => true,
+            'is_archived' => false,
+        ]);
+        $item = IntegrationProduct::query()->create([
+            'integration_source_id' => $source->id,
+            'external_id' => 'bbd2cc50-1f62-11e9-bad6-1c1b0d1de7c2',
+            'external_code' => 'УТ-00001091',
+            'external_sku' => 'TS.KMP.HMR.0260.74106',
+            'barcode' => '4680205305887',
+            'name' => 'Хомут растяжки D 260 (У)',
+            'price' => 8.40,
+            'price_currency' => 'BYN',
+            'price_currency_rate' => 1,
+            'price_tax_mode' => IntegrationSource::PRICE_TAX_EXCLUSIVE,
+            'price_vat_rate' => 20,
+            'price_byn' => 10.08,
+            'stock_quantity' => 8,
+            'stock_confirmed_at' => now(),
+            'match_status' => 'unmatched',
+            'candidates' => null,
+        ]);
+        $productCount = Product::query()->count();
+
+        $this->artisan('integration:create-sbg-distinct-products', [
+            '--batch' => 'unmatched-researched-20261013-cn',
+            '--code' => ['УТ-00001091'],
+        ])->assertSuccessful();
+        $this->assertNull($item->fresh()->product_id);
+        $this->assertSame('10.08', $product->fresh()->price);
+
+        $this->artisan('integration:create-sbg-distinct-products', [
+            '--batch' => 'unmatched-researched-20261013-cn',
+            '--code' => ['УТ-00001091'],
+            '--apply' => true,
+        ])->assertSuccessful();
+
+        $item->refresh();
+        $product->refresh();
+        $this->assertSame($productCount, Product::query()->count());
+        $this->assertSame($product->id, $item->product_id);
+        $this->assertSame('matched', $item->match_status);
+        $this->assertSame('manual_search', $item->match_method);
+        $this->assertSame($category->id, $item->target_category_id);
+        $this->assertNull($item->candidates);
+        $this->assertSame('Теплов и Сухов Хомут растяжки Ø260 мм', $product->name);
+        $this->assertSame('14.40', $product->price);
+        $this->assertSame('8', (string) $product->stock_qty);
+        $this->assertTrue((bool) $product->in_stock);
+        $this->assertSame($brand->id, $product->brand_id);
+        $this->assertSame($category->id, $product->category_id);
+        $this->assertSame('TS.KMP.HMR.0260.74106', collect($product->specs)->firstWhere('key', 'Артикул производителя')['value']);
+        $this->assertSame('260 мм', collect($product->specs)->firstWhere('key', 'Диаметр')['value']);
+        $this->assertSame('0,5 мм', collect($product->specs)->firstWhere('key', 'Толщина стали')['value']);
+        $this->assertSame([
+            'img/products/teplov-i-suhov/homut-rastyazhki-d260-clean.png',
+        ], $product->images);
+        $this->assertFileExists(public_path('img/products/teplov-i-suhov/homut-rastyazhki-d260-clean.png'));
+        $this->assertStringContainsString('resan.ru', $product->content_source_url);
+        $this->assertStringContainsString('не является самостоятельным несущим элементом', $product->content);
+        $this->assertStringNotContainsString('розничная цена', mb_strtolower($product->content));
+        $this->assertStringNotContainsString('byn', mb_strtolower($product->content));
+        $this->assertDatabaseHas('supplier_product_mappings', [
+            'supplier_code' => $source->matchingSupplierCode(),
+            'supplier_article' => 'TS.KMP.HMR.0260.74106',
+            'product_id' => $product->id,
+            'product_sku' => 'PS-009.065',
+            'confidence' => 'manual',
+            'is_active' => true,
+        ]);
+
+        $this->artisan('integration:create-sbg-distinct-products', [
+            '--batch' => 'unmatched-researched-20261013-cn',
+            '--code' => ['УТ-00001091'],
+            '--apply' => true,
+        ])->assertSuccessful();
+        $this->assertSame($productCount, Product::query()->count());
+        $this->assertSame($product->id, $item->fresh()->product_id);
+    }
 }
