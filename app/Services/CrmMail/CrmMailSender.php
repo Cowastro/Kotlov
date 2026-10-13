@@ -8,6 +8,7 @@ use App\Models\CrmMailThread;
 use App\Models\User;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use RuntimeException;
 use Symfony\Component\Mailer\Mailer;
 use Symfony\Component\Mailer\Transport\Smtp\EsmtpTransport;
@@ -22,10 +23,6 @@ class CrmMailSender
         if ($thread->status !== 'draft') {
             throw new RuntimeException('Это письмо уже не является черновиком.');
         }
-        if (! filter_var($thread->participant_email, FILTER_VALIDATE_EMAIL)) {
-            throw new RuntimeException('Укажите корректный email поставщика перед отправкой.');
-        }
-
         $draft = $thread->messages->firstWhere('direction', 'draft');
         if (! $draft) {
             throw new RuntimeException('Текст почтового черновика не найден.');
@@ -36,14 +33,23 @@ class CrmMailSender
         $body = trim((string) $draft->text_body);
         $htmlBody = $this->brandedHtml($body, $user);
         $plainBody = $this->brandedText($body, $user);
+        $recipients = $this->messageAddresses($draft->to);
+        $cc = $this->messageAddresses($draft->cc);
+        if ($recipients === []) {
+            throw new RuntimeException('Укажите хотя бы одного корректного получателя письма.');
+        }
 
         $email = (new Email)
             ->from(sprintf('%s <%s>', $mailbox->name, $mailbox->email))
             ->replyTo(sprintf('%s <%s>', $mailbox->name, $mailbox->email))
-            ->to($thread->participant_email)
+            ->to(...$recipients)
             ->subject((string) $thread->subject)
             ->text($plainBody)
             ->html($htmlBody);
+        if ($cc !== []) {
+            $email->cc(...$cc);
+        }
+        $this->attachFiles($email, $draft);
         $email->getHeaders()->addIdHeader('Message-ID', $messageId);
 
         $this->mailer($mailbox)->send($email);
@@ -53,7 +59,8 @@ class CrmMailSender
                 'sent_by_user_id' => $user->id,
                 'message_id' => $messageId,
                 'direction' => 'outgoing',
-                'to' => [['name' => $thread->participant_name, 'email' => $thread->participant_email]],
+                'to' => $draft->to,
+                'cc' => $draft->cc,
                 'subject' => $thread->subject,
                 'text_body' => $plainBody,
                 'html_body' => $htmlBody,
@@ -73,9 +80,23 @@ class CrmMailSender
         });
     }
 
-    public function reply(CrmMailThread $thread, string $body, User $user): CrmMailMessage
+    public function reply(
+        CrmMailThread $thread,
+        string $body,
+        User $user,
+        array $cc = [],
+        array $attachments = [],
+        array $attachmentNames = [],
+    ): CrmMailMessage
     {
         $mailbox = $thread->mailbox;
+
+        if (! $mailbox || ! $mailbox->is_enabled) {
+            throw new RuntimeException('Почтовый ящик отключён или не найден.');
+        }
+        if (! filter_var($thread->participant_email, FILTER_VALIDATE_EMAIL)) {
+            throw new RuntimeException('Укажите корректный email получателя перед отправкой.');
+        }
 
         $lastMessage = $thread->messages()->whereNotNull('message_id')->latest('received_at')->first();
         $subject = preg_match('/^re\s*:/i', (string) $thread->subject)
@@ -84,6 +105,9 @@ class CrmMailSender
         $messageId = Str::uuid().'@'.parse_url(config('app.url'), PHP_URL_HOST);
         $htmlBody = $this->brandedHtml($body, $user);
         $plainBody = $this->brandedText($body, $user);
+        $cc = collect($cc)->map(fn (mixed $address): string => mb_strtolower(trim((string) $address)))
+            ->filter(fn (string $address): bool => filter_var($address, FILTER_VALIDATE_EMAIL) !== false)
+            ->unique()->values()->all();
 
         $email = (new Email)
             ->from(sprintf('%s <%s>', $mailbox->name, $mailbox->email))
@@ -92,6 +116,18 @@ class CrmMailSender
             ->subject($subject)
             ->text($plainBody)
             ->html($htmlBody);
+        if ($cc !== []) {
+            $email->cc(...$cc);
+        }
+        $attachmentMetadata = collect($attachments)->values()->map(function (mixed $path, int $index) use ($attachmentNames): array {
+            $path = (string) $path;
+
+            return [
+                'path' => $path,
+                'name' => (string) ($attachmentNames[$path] ?? $attachmentNames[$index] ?? basename($path)),
+            ];
+        })->filter(fn (array $file): bool => str_starts_with($file['path'], 'crm-mail-attachments/'))->values()->all();
+        $this->attachMetadata($email, $attachmentMetadata);
         $email->getHeaders()->addIdHeader('Message-ID', $messageId);
         if ($lastMessage?->message_id) {
             $email->getHeaders()->addIdHeader('In-Reply-To', $lastMessage->message_id);
@@ -110,12 +146,15 @@ class CrmMailSender
             'from_name' => $mailbox->name,
             'from_email' => $mailbox->email,
             'to' => [['name' => $thread->participant_name, 'email' => $thread->participant_email]],
+            'cc' => collect($cc)->map(fn (string $email): array => ['name' => null, 'email' => $email])->all(),
             'subject' => $subject,
             'text_body' => $plainBody,
             'html_body' => $htmlBody,
+            'attachments_count' => count($attachmentMetadata),
             'is_read' => true,
             'sent_at' => now(),
             'received_at' => now(),
+            'metadata' => ['attachments' => $attachmentMetadata],
         ]);
 
         $thread->forceFill([
@@ -126,6 +165,38 @@ class CrmMailSender
         ])->save();
 
         return $message;
+    }
+
+    /** @return list<string> */
+    private function messageAddresses(?array $records): array
+    {
+        return collect($records ?? [])->pluck('email')
+            ->map(fn (mixed $address): string => mb_strtolower(trim((string) $address)))
+            ->filter(fn (string $address): bool => filter_var($address, FILTER_VALIDATE_EMAIL) !== false)
+            ->unique()->values()->all();
+    }
+
+    private function attachFiles(Email $email, CrmMailMessage $message): void
+    {
+        $this->attachMetadata($email, $message->metadata['attachments'] ?? []);
+    }
+
+    private function attachMetadata(Email $email, array $attachments): void
+    {
+        foreach ($attachments as $attachment) {
+            $path = (string) ($attachment['path'] ?? '');
+            if (! str_starts_with($path, 'crm-mail-attachments/')) {
+                continue;
+            }
+            if (! Storage::disk('local')->exists($path)) {
+                throw new RuntimeException('Файл вложения «'.($attachment['name'] ?? basename($path)).'» не найден. Прикрепите его повторно.');
+            }
+
+            $email->attachFromPath(
+                Storage::disk('local')->path($path),
+                (string) ($attachment['name'] ?? basename($path)),
+            );
+        }
     }
 
     public function sendTest(CrmMailbox $mailbox, string $recipient, User $user): void

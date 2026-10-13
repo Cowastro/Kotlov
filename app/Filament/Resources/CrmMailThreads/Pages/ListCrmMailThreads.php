@@ -9,7 +9,6 @@ use App\Services\CrmMail\ImapMailboxSynchronizer;
 use App\Services\CrmMail\SupplierRequestMailDraftService;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Select;
-use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\ListRecords;
@@ -114,27 +113,28 @@ class ListCrmMailThreads extends ListRecords
                 ->label('Написать письмо')
                 ->icon('heroicon-o-pencil-square')
                 ->color('primary')
-                ->schema([
+                ->schema(array_merge([
                     Select::make('mailbox_id')
                         ->label('Отправить с ящика')
                         ->options(fn (): array => CrmMailbox::query()->where('is_enabled', true)->pluck('email', 'id')->all())
                         ->default(fn (): ?int => CrmMailbox::query()->where('is_enabled', true)->value('id'))
                         ->required(),
                     TextInput::make('participant_name')->label('Имя / компания получателя')->maxLength(255),
-                    TextInput::make('recipient')->label('Кому')->email()->required(),
-                    TextInput::make('subject')->label('Тема')->required()->maxLength(255),
-                    Textarea::make('body')->label('Текст письма')->rows(14)->required()->maxLength(30000)->columnSpanFull(),
-                ])
+                ], CrmMailThreadResource::draftFields(true)))
                 ->modalHeading('Новое исходящее письмо')
+                ->modalWidth('6xl')
                 ->modalSubmitActionLabel('Сохранить в черновики')
                 ->action(function (array $data): void {
                     $thread = app(SupplierRequestMailDraftService::class)->create(
                         CrmMailbox::query()->findOrFail($data['mailbox_id']),
                         auth()->user(),
-                        $data['recipient'],
+                        CrmMailThreadResource::mergeRecipients($data, 'recipients', 'address_book_to'),
                         $data['subject'],
                         $data['body'],
                         $data['participant_name'] ?? null,
+                        CrmMailThreadResource::mergeRecipients($data, 'cc', 'address_book_cc'),
+                        $data['attachments'] ?? [],
+                        $data['attachment_file_names'] ?? [],
                     );
 
                     Notification::make()->success()->title('Письмо сохранено в черновики')

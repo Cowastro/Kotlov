@@ -7,6 +7,7 @@ use App\Filament\Resources\CrmMailThreads\Pages\ListCrmMailThreads;
 use App\Filament\Resources\CrmMailThreads\Pages\ViewCrmMailThread;
 use App\Filament\Resources\Orders\OrderResource;
 use App\Models\CrmContact;
+use App\Models\CrmContactPoint;
 use App\Models\CrmMailMessage;
 use App\Models\CrmMailThread;
 use App\Models\User;
@@ -20,6 +21,8 @@ use Filament\Actions\ViewAction;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\FileUpload;
+use Filament\Forms\Components\TagsInput;
 use Filament\Notifications\Notification;
 use Filament\Infolists\Components\RepeatableEntry;
 use Filament\Infolists\Components\TextEntry;
@@ -139,10 +142,19 @@ class CrmMailThreadResource extends Resource
                         TextEntry::make('from_email')->label('От кого')->copyable(),
                         TextEntry::make('received_at')->label('Когда')->dateTime('d.m.Y H:i', 'Europe/Minsk'),
                         TextEntry::make('attachments_count')->label('Вложения')->formatStateUsing(fn (int $state): string => $state ? $state.' шт.' : 'Нет'),
+                        TextEntry::make('recipients')->label('Кому')
+                            ->state(fn (CrmMailMessage $record): string => collect($record->to ?? [])->pluck('email')->filter()->implode(', '))
+                            ->placeholder('Не указано')->columnSpan(2),
+                        TextEntry::make('copies')->label('Копия')
+                            ->state(fn (CrmMailMessage $record): string => collect($record->cc ?? [])->pluck('email')->filter()->implode(', '))
+                            ->placeholder('Нет')->columnSpan(2),
                         TextEntry::make('subject')->label('Тема')->weight('bold')->columnSpanFull(),
                         TextEntry::make('body_preview')->label('Сообщение')
                             ->state(fn (CrmMailMessage $record): string => trim($record->text_body ?: strip_tags((string) $record->html_body)) ?: 'Текст отсутствует')
                             ->columnSpanFull(),
+                        TextEntry::make('attachment_names')->label('Прикреплённые файлы')
+                            ->state(fn (CrmMailMessage $record): string => collect($record->metadata['attachments'] ?? [])->pluck('name')->filter()->implode(', '))
+                            ->placeholder('Нет')->columnSpanFull(),
                     ]),
                 ]),
         ]);
@@ -188,13 +200,17 @@ class CrmMailThreadResource extends Resource
                         ->visible(fn (CrmMailThread $record): bool => ! $record->trashed() && $record->status === 'draft')
                         ->fillForm(fn (CrmMailThread $record): array => static::draftData($record))
                         ->schema(static::draftFields(false))
+                        ->modalWidth('6xl')
                         ->action(function (CrmMailThread $record, array $data): void {
                             app(SupplierRequestMailDraftService::class)->update(
                                 $record,
-                                $data['recipient'] ?? null,
+                                static::mergeRecipients($data, 'recipients', 'address_book_to'),
                                 $data['subject'],
                                 $data['body'],
                                 auth()->user(),
+                                static::mergeRecipients($data, 'cc', 'address_book_cc'),
+                                $data['attachments'] ?? [],
+                                $data['attachment_file_names'] ?? [],
                             );
                             Notification::make()->success()->title('Черновик сохранён')->send();
                         }),
@@ -205,16 +221,20 @@ class CrmMailThreadResource extends Resource
                         ->visible(fn (CrmMailThread $record): bool => ! $record->trashed() && $record->status === 'draft')
                         ->fillForm(fn (CrmMailThread $record): array => static::draftData($record))
                         ->schema(static::draftFields(true))
+                        ->modalWidth('6xl')
                         ->requiresConfirmation()
                         ->modalHeading('Отправить письмо поставщику?')
                         ->action(function (CrmMailThread $record, array $data): void {
                             try {
                                 $thread = app(SupplierRequestMailDraftService::class)->update(
                                     $record,
-                                    $data['recipient'],
+                                    static::mergeRecipients($data, 'recipients', 'address_book_to'),
                                     $data['subject'],
                                     $data['body'],
                                     auth()->user(),
+                                    static::mergeRecipients($data, 'cc', 'address_book_cc'),
+                                    $data['attachments'] ?? [],
+                                    $data['attachment_file_names'] ?? [],
                                 );
                                 app(CrmMailSender::class)->sendDraft($thread, auth()->user());
                                 Notification::make()->success()->title('Письмо поставщику отправлено')->send();
@@ -291,35 +311,96 @@ class CrmMailThreadResource extends Resource
         };
     }
 
-    /** @return array<int, TextInput|Textarea> */
+    /** @return array<int, mixed> */
     public static function draftFields(bool $recipientRequired): array
     {
-        $recipient = TextInput::make('recipient')
-            ->label('Email поставщика')
-            ->email()
-            ->helperText('Адрес подставляется из карточки контрагента. Если его нет, укажите вручную.');
-
-        if ($recipientRequired) {
-            $recipient->required();
-        }
-
         return [
-            $recipient,
-            TextInput::make('subject')->label('Тема')->required()->maxLength(255),
-            Textarea::make('body')->label('Текст письма')->rows(14)->required()->maxLength(30000)->columnSpanFull(),
+            Section::make('Адресаты')
+                ->description('Выберите контакты CRM либо введите новые адреса вручную.')
+                ->columns(2)
+                ->schema([
+                    Select::make('address_book_to')
+                        ->label('Адресная книга — кому')
+                        ->options(fn (): array => static::addressBookOptions())
+                        ->multiple()->searchable()->preload()
+                        ->helperText('Контакты и компании из CRM.'),
+                    TagsInput::make('recipients')
+                        ->label('Кому')
+                        ->placeholder('email@example.com')
+                        ->helperText($recipientRequired
+                            ? 'Нужен хотя бы один email. После ввода нажмите Enter.'
+                            : 'Можно указать несколько адресов.'),
+                    Select::make('address_book_cc')
+                        ->label('Адресная книга — копия')
+                        ->options(fn (): array => static::addressBookOptions())
+                        ->multiple()->searchable()->preload(),
+                    TagsInput::make('cc')
+                        ->label('Копия (CC)')
+                        ->placeholder('copy@example.com')
+                        ->helperText('Получатели копии увидят остальных адресатов.'),
+                ]),
+            Section::make('Письмо')
+                ->schema([
+                    TextInput::make('subject')->label('Тема')->required()->maxLength(255),
+                    Textarea::make('body')->label('Текст письма')->rows(12)->required()->maxLength(30000),
+                    FileUpload::make('attachments')
+                        ->label('Вложения')
+                        ->disk('local')
+                        ->directory('crm-mail-attachments')
+                        ->visibility('private')
+                        ->multiple()
+                        ->maxFiles(10)
+                        ->maxSize(15360)
+                        ->storeFileNamesIn('attachment_file_names')
+                        ->downloadable()
+                        ->openable()
+                        ->helperText('До 10 файлов, каждый не более 15 МБ.'),
+                ]),
         ];
     }
 
-    /** @return array{recipient: string, subject: string, body: string} */
+    /** @return array<string, mixed> */
     public static function draftData(CrmMailThread $record): array
     {
         $draft = $record->messages()->where('direction', 'draft')->first();
 
         return [
-            'recipient' => (string) $record->participant_email,
+            'recipients' => collect($draft?->to ?? [])->pluck('email')->filter()->values()->all()
+                ?: array_values(array_filter([(string) $record->participant_email])),
+            'cc' => collect($draft?->cc ?? [])->pluck('email')->filter()->values()->all(),
             'subject' => (string) $record->subject,
             'body' => (string) $draft?->text_body,
+            'attachments' => collect($draft?->metadata['attachments'] ?? [])->pluck('path')->filter()->values()->all(),
+            'attachment_file_names' => collect($draft?->metadata['attachments'] ?? [])->pluck('name', 'path')->filter()->all(),
         ];
+    }
+
+    /** @return array<string, string> */
+    public static function addressBookOptions(): array
+    {
+        return CrmContactPoint::query()
+            ->where('type', 'email')
+            ->where('is_active', true)
+            ->with(['contact:id,full_name', 'counterparty:id,name'])
+            ->orderByDesc('is_primary')
+            ->get()
+            ->mapWithKeys(function (CrmContactPoint $point): array {
+                $email = mb_strtolower(trim($point->value));
+                $owner = $point->contact?->full_name ?: $point->counterparty?->name ?: 'Контакт CRM';
+
+                return filter_var($email, FILTER_VALIDATE_EMAIL)
+                    ? [$email => $owner.' — '.$email]
+                    : [];
+            })->all();
+    }
+
+    /** @return list<string> */
+    public static function mergeRecipients(array $data, string $manualKey, string $bookKey): array
+    {
+        return collect(array_merge($data[$manualKey] ?? [], $data[$bookKey] ?? []))
+            ->map(fn (mixed $email): string => mb_strtolower(trim((string) $email)))
+            ->filter(fn (string $email): bool => filter_var($email, FILTER_VALIDATE_EMAIL) !== false)
+            ->unique()->values()->all();
     }
 
     public static function getPages(): array

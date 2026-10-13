@@ -8,6 +8,9 @@ use App\Services\CrmMail\SupplierRequestMailDraftService;
 use Filament\Actions\Action;
 use Filament\Actions\EditAction;
 use Filament\Forms\Components\Textarea;
+use Filament\Forms\Components\FileUpload;
+use Filament\Forms\Components\Select;
+use Filament\Forms\Components\TagsInput;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\ViewRecord;
 use Filament\Support\Enums\Width;
@@ -44,19 +47,41 @@ class ViewCrmMailThread extends ViewRecord
                 ->label('Ответить')->icon('heroicon-o-paper-airplane')->color('primary')
                 ->visible(fn (): bool => $this->record->status !== 'draft')
                 ->schema([
+                    Select::make('address_book_cc')
+                        ->label('Адресная книга — копия')
+                        ->options(fn (): array => CrmMailThreadResource::addressBookOptions())
+                        ->multiple()->searchable()->preload(),
+                    TagsInput::make('cc')
+                        ->label('Копия (CC)')
+                        ->placeholder('copy@example.com'),
                     Textarea::make('body')
                         ->label('Ответ клиенту')
                         ->rows(10)
                         ->required()
                         ->maxLength(20000)
                         ->helperText('Система добавит фирменную шапку KOTLOV, подпись менеджера, телефоны и ссылку на сайт. Текстовая версия письма создаётся автоматически.'),
+                    FileUpload::make('attachments')
+                        ->label('Вложения')
+                        ->disk('local')
+                        ->directory('crm-mail-attachments')
+                        ->visibility('private')
+                        ->multiple()->maxFiles(10)->maxSize(15360)
+                        ->storeFileNamesIn('attachment_file_names')
+                        ->helperText('До 10 файлов, каждый не более 15 МБ.'),
                 ])
                 ->requiresConfirmation()
                 ->modalHeading('Отправить ответ клиенту')
                 ->modalDescription(fn (): string => 'Письмо будет отправлено на '.$this->record->participant_email)
                 ->action(function (array $data): void {
                     try {
-                        app(CrmMailSender::class)->reply($this->record, $data['body'], auth()->user());
+                        app(CrmMailSender::class)->reply(
+                            $this->record,
+                            $data['body'],
+                            auth()->user(),
+                            CrmMailThreadResource::mergeRecipients($data, 'cc', 'address_book_cc'),
+                            $data['attachments'] ?? [],
+                            $data['attachment_file_names'] ?? [],
+                        );
                         $this->record->refresh();
                         Notification::make()->success()->title('Ответ отправлен')->send();
                     } catch (Throwable $exception) {
@@ -70,13 +95,17 @@ class ViewCrmMailThread extends ViewRecord
                 ->visible(fn (): bool => $this->record->status === 'draft')
                 ->fillForm(fn (): array => CrmMailThreadResource::draftData($this->record))
                 ->schema(CrmMailThreadResource::draftFields(false))
+                ->modalWidth('6xl')
                 ->action(function (array $data): void {
                     app(SupplierRequestMailDraftService::class)->update(
                         $this->record,
-                        $data['recipient'] ?? null,
+                        CrmMailThreadResource::mergeRecipients($data, 'recipients', 'address_book_to'),
                         $data['subject'],
                         $data['body'],
                         auth()->user(),
+                        CrmMailThreadResource::mergeRecipients($data, 'cc', 'address_book_cc'),
+                        $data['attachments'] ?? [],
+                        $data['attachment_file_names'] ?? [],
                     );
                     $this->record->refresh();
                     Notification::make()->success()->title('Черновик сохранён')->send();
@@ -88,6 +117,7 @@ class ViewCrmMailThread extends ViewRecord
                 ->visible(fn (): bool => $this->record->status === 'draft')
                 ->fillForm(fn (): array => CrmMailThreadResource::draftData($this->record))
                 ->schema(CrmMailThreadResource::draftFields(true))
+                ->modalWidth('6xl')
                 ->requiresConfirmation()
                 ->modalHeading('Отправить письмо поставщику?')
                 ->modalDescription(fn (): string => filled($this->record->participant_email)
@@ -97,10 +127,13 @@ class ViewCrmMailThread extends ViewRecord
                     try {
                         $thread = app(SupplierRequestMailDraftService::class)->update(
                             $this->record,
-                            $data['recipient'],
+                            CrmMailThreadResource::mergeRecipients($data, 'recipients', 'address_book_to'),
                             $data['subject'],
                             $data['body'],
                             auth()->user(),
+                            CrmMailThreadResource::mergeRecipients($data, 'cc', 'address_book_cc'),
+                            $data['attachments'] ?? [],
+                            $data['attachment_file_names'] ?? [],
                         );
                         app(CrmMailSender::class)->sendDraft($thread, auth()->user());
                         $this->record->refresh();

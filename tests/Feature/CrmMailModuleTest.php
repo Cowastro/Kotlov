@@ -230,10 +230,13 @@ class CrmMailModuleTest extends TestCase
 
         app(SupplierRequestMailDraftService::class)->update(
             $thread,
-            'orders@supplier.test',
+            ['orders@supplier.test', 'director@supplier.test'],
             'Новая тема',
             'Новый текст письма',
             $manager,
+            ['accounting@supplier.test'],
+            ['crm-mail-attachments/offer.pdf'],
+            ['crm-mail-attachments/offer.pdf' => 'Коммерческое предложение.pdf'],
         );
 
         $this->assertDatabaseHas('crm_mail_threads', [
@@ -246,6 +249,12 @@ class CrmMailModuleTest extends TestCase
             'thread_id' => $thread->id,
             'direction' => 'draft',
             'text_body' => 'Новый текст письма',
+            'attachments_count' => 1,
         ]);
+
+        $message = $thread->messages()->where('direction', 'draft')->firstOrFail();
+        $this->assertSame(['orders@supplier.test', 'director@supplier.test'], collect($message->to)->pluck('email')->all());
+        $this->assertSame(['accounting@supplier.test'], collect($message->cc)->pluck('email')->all());
+        $this->assertSame('Коммерческое предложение.pdf', $message->metadata['attachments'][0]['name']);
     }
 }

@@ -16,19 +16,31 @@ class SupplierRequestMailDraftService
     public function create(
         CrmMailbox $mailbox,
         User $user,
-        string $recipient,
+        string|array $recipients,
         string $subject,
         string $body,
         ?string $participantName = null,
+        array $cc = [],
+        array $attachments = [],
+        array $attachmentNames = [],
     ): CrmMailThread {
-        return DB::transaction(function () use ($mailbox, $user, $recipient, $subject, $body, $participantName): CrmMailThread {
+        $recipients = $this->normalizeAddresses($recipients);
+        $cc = $this->normalizeAddresses($cc);
+        $attachmentMetadata = $this->attachmentMetadata($attachments, $attachmentNames);
+        $primaryRecipient = $recipients[0] ?? '';
+
+        if ($primaryRecipient === '') {
+            throw new RuntimeException('Укажите хотя бы одного получателя письма.');
+        }
+
+        return DB::transaction(function () use ($mailbox, $user, $recipients, $cc, $subject, $body, $participantName, $attachmentMetadata, $primaryRecipient): CrmMailThread {
             $thread = CrmMailThread::query()->create([
                 'mailbox_id' => $mailbox->id,
                 'assigned_user_id' => $user->id,
                 'thread_key' => hash('sha256', 'outgoing-draft|'.Str::uuid()),
                 'subject' => trim($subject),
                 'participant_name' => filled($participantName) ? trim((string) $participantName) : null,
-                'participant_email' => mb_strtolower(trim($recipient)),
+                'participant_email' => $primaryRecipient,
                 'status' => 'draft',
                 'priority' => 'normal',
                 'messages_count' => 1,
@@ -42,13 +54,14 @@ class SupplierRequestMailDraftService
                 'direction' => 'draft',
                 'from_name' => $mailbox->name,
                 'from_email' => $mailbox->email,
-                'to' => [['name' => $participantName, 'email' => mb_strtolower(trim($recipient))]],
+                'to' => $this->addressRecords($recipients, $participantName),
+                'cc' => $this->addressRecords($cc),
                 'subject' => trim($subject),
                 'text_body' => trim($body),
-                'attachments_count' => 0,
+                'attachments_count' => count($attachmentMetadata),
                 'is_read' => true,
                 'received_at' => now(),
-                'metadata' => ['source' => 'manual_draft'],
+                'metadata' => ['source' => 'manual_draft', 'attachments' => $attachmentMetadata],
             ]);
 
             return $thread->fresh(['mailbox', 'messages']);
@@ -121,33 +134,89 @@ class SupplierRequestMailDraftService
         });
     }
 
-    public function update(CrmMailThread $thread, ?string $recipient, string $subject, string $body, User $user): CrmMailThread
+    public function update(
+        CrmMailThread $thread,
+        string|array|null $recipients,
+        string $subject,
+        string $body,
+        User $user,
+        array $cc = [],
+        ?array $attachments = null,
+        array $attachmentNames = [],
+    ): CrmMailThread
     {
         if ($thread->status !== 'draft') {
             throw new RuntimeException('Редактировать можно только неотправленный черновик.');
         }
 
-        return DB::transaction(function () use ($thread, $recipient, $subject, $body, $user): CrmMailThread {
+        $recipients = $this->normalizeAddresses($recipients ?? []);
+        $cc = $this->normalizeAddresses($cc);
+
+        return DB::transaction(function () use ($thread, $recipients, $cc, $subject, $body, $user, $attachments, $attachmentNames): CrmMailThread {
             $thread->forceFill([
-                'participant_email' => trim((string) $recipient),
+                'participant_email' => $recipients[0] ?? '',
                 'subject' => trim($subject),
                 'assigned_user_id' => $thread->assigned_user_id ?: $user->id,
                 'last_message_at' => now(),
             ])->save();
 
             $message = $thread->messages()->where('direction', 'draft')->firstOrFail();
+            $metadata = $message->metadata ?? [];
+            if ($attachments !== null) {
+                $metadata['attachments'] = $this->attachmentMetadata($attachments, $attachmentNames);
+            }
+
             $message->forceFill([
                 'sent_by_user_id' => $user->id,
-                'to' => trim((string) $recipient) !== ''
-                    ? [['name' => $thread->participant_name, 'email' => trim((string) $recipient)]]
-                    : [],
+                'to' => $this->addressRecords($recipients, $thread->participant_name),
+                'cc' => $this->addressRecords($cc),
                 'subject' => trim($subject),
                 'text_body' => trim($body),
+                'attachments_count' => count($metadata['attachments'] ?? []),
+                'metadata' => $metadata,
                 'received_at' => now(),
             ])->save();
 
             return $thread->fresh(['messages', 'mailbox', 'supplierOrderRequest.order']);
         });
+    }
+
+    /** @return list<string> */
+    private function normalizeAddresses(string|array $addresses): array
+    {
+        $addresses = is_array($addresses) ? $addresses : [$addresses];
+
+        return collect($addresses)
+            ->map(fn (mixed $address): string => mb_strtolower(trim((string) $address)))
+            ->filter(fn (string $address): bool => filter_var($address, FILTER_VALIDATE_EMAIL) !== false)
+            ->unique()
+            ->values()
+            ->all();
+    }
+
+    /** @param list<string> $addresses
+     *  @return list<array{name: string|null, email: string}>
+     */
+    private function addressRecords(array $addresses, ?string $primaryName = null): array
+    {
+        return collect($addresses)->values()->map(fn (string $email, int $index): array => [
+            'name' => $index === 0 ? $primaryName : null,
+            'email' => $email,
+        ])->all();
+    }
+
+    /** @return list<array{path: string, name: string}> */
+    private function attachmentMetadata(array $paths, array $names): array
+    {
+        return collect($paths)->values()->map(function (mixed $path, int $index) use ($names): array {
+            $path = (string) $path;
+
+            return [
+                'path' => $path,
+                'name' => (string) ($names[$path] ?? $names[$index] ?? basename($path)),
+            ];
+        })->filter(fn (array $file): bool => str_starts_with($file['path'], 'crm-mail-attachments/'))
+            ->values()->all();
     }
 
     private function body(SupplierOrderRequest $request): string
