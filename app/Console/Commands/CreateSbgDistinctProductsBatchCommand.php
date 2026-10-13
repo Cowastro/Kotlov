@@ -1703,6 +1703,41 @@ class CreateSbgDistinctProductsBatchCommand extends Command
         ],
     ];
 
+    private const BATCH_RESEARCHED_PRICED_20261013_BB = [
+        'УТ-00009494' => [
+            'template' => 'KOTLOV-007773',
+            'category_slug' => 'komplektuyushhie-dlya-otopleniya',
+            'fragments' => ['Тройник', 'Stahlmann', '(F)', '20х3/4х20', 'EF'],
+            'brand' => [
+                'name' => 'Stahlmann',
+                'slug' => 'stahlmann',
+            ],
+            'name' => 'Тройник Stahlmann (F) 20×3/4″×20 EF для гофрированной трубы',
+            'retail' => 35.00,
+            'images' => ['img/products/stahlmann/stahlmann-tee-f-20-3-4-20-ef.png'],
+            'source_url' => 'https://www.teremonline.ru/product/troynik-stahlmann-fittings-f-20kh3-4kh20-ef/',
+            'short' => 'Латунный тройник Stahlmann EF для двух гофрированных труб DN20 с центральным отводом 3/4 дюйма с внутренней резьбой.',
+            'content' => '<p><strong>Stahlmann (F) 20×3/4″×20 EF</strong> — переходной тройник для монтажа систем водоснабжения и отопления из гофрированной нержавеющей трубы. Два быстросборных соединения рассчитаны на трубу DN20, а центральный отвод имеет внутреннюю резьбу 3/4 дюйма.</p><p>Корпус выполнен из горячекованой латуни. Для монтажа трубу вставляют в фитинг и затягивают накидную гайку; предварительно разбирать соединение не требуется. Артикул производителя — STFL2003/420BEF, код Stahlmann — 2217200.</p>',
+            'specs' => [
+                ['key' => 'Тип', 'value' => 'Переходной тройник'],
+                ['key' => 'Серия', 'value' => 'EF'],
+                ['key' => 'Размер', 'value' => '20×3/4″×20'],
+                ['key' => 'Диаметр трубы', 'value' => '20 мм (DN20)'],
+                ['key' => 'Резьбовой отвод', 'value' => '3/4″'],
+                ['key' => 'Тип резьбы', 'value' => 'Внутренняя (F)'],
+                ['key' => 'Тип соединения', 'value' => 'Быстросборное обжимное / резьбовое'],
+                ['key' => 'Материал корпуса', 'value' => 'Латунь CW617N'],
+                ['key' => 'Рабочая температура', 'value' => 'от −50 до +110 °C'],
+                ['key' => 'Максимальное рабочее давление', 'value' => '10 бар'],
+                ['key' => 'Назначение', 'value' => 'Водоснабжение и отопление'],
+                ['key' => 'Совместимость', 'value' => 'Гофрированные трубы Stahlmann DN20'],
+                ['key' => 'Артикул производителя', 'value' => 'STFL2003/420BEF'],
+                ['key' => 'Код Stahlmann', 'value' => '2217200'],
+                ['key' => 'Гарантия', 'value' => '24 месяца'],
+            ],
+        ],
+    ];
+
     public function handle(
         IntegrationProductCreator $creator,
         IntegrationProductMatchDecision $matchDecision,
@@ -1762,6 +1797,7 @@ class CreateSbgDistinctProductsBatchCommand extends Command
             'researched-priced-20261013-ay' => self::BATCH_RESEARCHED_PRICED_20261013_AY,
             'researched-priced-20261013-az' => self::BATCH_RESEARCHED_PRICED_20261013_AZ,
             'researched-priced-20261013-ba' => self::BATCH_RESEARCHED_PRICED_20261013_BA,
+            'researched-priced-20261013-bb' => self::BATCH_RESEARCHED_PRICED_20261013_BB,
             default => null,
         };
 

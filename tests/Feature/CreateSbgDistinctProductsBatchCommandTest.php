@@ -3305,4 +3305,88 @@ class CreateSbgDistinctProductsBatchCommandTest extends TestCase
         $this->assertSame($productCount, Product::query()->count());
         $this->assertSame($exactProduct->id, $item->fresh()->product_id);
     }
+
+    public function test_it_creates_the_exact_stahlmann_dn20_female_thread_tee_instead_of_linking_an_unrelated_tee(): void
+    {
+        $source = IntegrationSource::query()->create([
+            'code' => 'onec-sbg-stahlmann-tee-20-f',
+            'name' => '1С СанБизнесГруп',
+            'settings' => ['partner_name' => 'ООО «СанБизнесГруп»'],
+            'is_active' => true,
+            'update_stock' => true,
+        ]);
+        $category = Category::query()->firstOrCreate(['slug' => 'komplektuyushhie-dlya-otopleniya'], [
+            'name' => 'Комплектующие для отопления',
+            'parent_id' => 0,
+        ]);
+        $wrongCandidate = Product::query()->create([
+            'category_id' => $category->id,
+            'sku' => 'KOTLOV-007773',
+            'name' => 'Тройник 20х32х20',
+            'slug' => 'troynik-20h32h20-wrong-candidate',
+            'price' => 20,
+            'images' => ['product/fittings/tee-20-32-20.jpg'],
+        ]);
+        $item = IntegrationProduct::query()->create([
+            'integration_source_id' => $source->id,
+            'external_id' => 'stahlmann-tee-f-20-3-4-20',
+            'external_code' => 'УТ-00009494',
+            'external_sku' => null,
+            'name' => 'Тройник Stahlmann (F) 20х3/4х20 EF',
+            'price_byn' => null,
+            'stock_quantity' => 2,
+            'match_status' => 'ambiguous',
+            'candidates' => [['product_id' => $wrongCandidate->id, 'score' => 0.73]],
+        ]);
+        $productCount = Product::query()->count();
+
+        $this->artisan('integration:create-sbg-distinct-products', [
+            '--batch' => 'researched-priced-20261013-bb',
+            '--code' => ['УТ-00009494'],
+            '--apply' => true,
+        ])->assertSuccessful();
+
+        $item->refresh();
+        $this->assertSame($productCount + 1, Product::query()->count());
+        $this->assertNotNull($item->product_id);
+        $this->assertNotSame($wrongCandidate->id, $item->product_id);
+        $this->assertSame('matched', $item->match_status);
+        $this->assertSame('manual_created', $item->match_method);
+        $this->assertSame($category->id, $item->target_category_id);
+        $this->assertNull($item->candidates);
+
+        $product = $item->product;
+        $this->assertSame('Тройник Stahlmann (F) 20×3/4″×20 EF для гофрированной трубы', $product->name);
+        $this->assertSame('35.00', $product->price);
+        $this->assertSame('2', (string) $product->stock_qty);
+        $this->assertTrue((bool) $product->in_stock);
+        $this->assertSame('Stahlmann', $product->brand?->name);
+        $this->assertSame('20 мм (DN20)', collect($product->specs)->firstWhere('key', 'Диаметр трубы')['value']);
+        $this->assertSame('Внутренняя (F)', collect($product->specs)->firstWhere('key', 'Тип резьбы')['value']);
+        $this->assertSame('STFL2003/420BEF', collect($product->specs)->firstWhere('key', 'Артикул производителя')['value']);
+        $this->assertSame(['img/products/stahlmann/stahlmann-tee-f-20-3-4-20-ef.png'], $product->images);
+        $this->assertFileExists(public_path('img/products/stahlmann/stahlmann-tee-f-20-3-4-20-ef.png'));
+        $this->assertStringContainsString('teremonline.ru', $product->content_source_url);
+        $this->assertStringContainsString('гофрированной нержавеющей трубы', $product->content);
+        $this->assertStringNotContainsString('20х32х20', $product->content);
+        $this->assertStringNotContainsString('кандидат', mb_strtolower($product->content));
+        $this->assertStringNotContainsString('розничная цена', mb_strtolower($product->content));
+        $this->assertStringNotContainsString('rub', mb_strtolower($product->content));
+        $this->assertDatabaseHas('supplier_product_mappings', [
+            'supplier_code' => $source->matchingSupplierCode(),
+            'supplier_article' => 'УТ-00009494',
+            'product_id' => $product->id,
+            'product_sku' => $product->sku,
+            'confidence' => 'manual',
+            'is_active' => true,
+        ]);
+
+        $this->artisan('integration:create-sbg-distinct-products', [
+            '--batch' => 'researched-priced-20261013-bb',
+            '--code' => ['УТ-00009494'],
+            '--apply' => true,
+        ])->assertSuccessful();
+        $this->assertSame($productCount + 1, Product::query()->count());
+        $this->assertSame($product->id, $item->fresh()->product_id);
+    }
 }
