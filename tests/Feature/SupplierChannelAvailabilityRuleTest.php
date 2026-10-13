@@ -104,7 +104,7 @@ class SupplierChannelAvailabilityRuleTest extends TestCase
         $this->assertFalse($product->fresh()->canBePurchased());
     }
 
-    public function test_stale_integration_stock_requires_consultation(): void
+    public function test_one_c_stock_remains_valid_for_a_day_and_then_requires_consultation(): void
     {
         $product = $this->product('STALE-ONE-C', true);
         $supplier = Supplier::query()->create([
@@ -119,14 +119,22 @@ class SupplierChannelAvailabilityRuleTest extends TestCase
             'is_active' => true,
             'settings' => ['stale_after_minutes' => 15],
         ]);
+        $this->assertSame(1440, $source->stockValidityMinutes());
         IntegrationProduct::query()->create([
             'integration_source_id' => $source->id,
             'product_id' => $product->id,
             'external_id' => 'stale-one-c-item',
             'name' => 'Позиция со старым остатком 1С',
             'stock_quantity' => 4,
-            'stock_confirmed_at' => now()->subMinutes(16),
+            'stock_confirmed_at' => now()->subMinutes(1439),
             'match_status' => 'matched',
+        ]);
+
+        $this->assertSame(Product::AVAILABILITY_IN_STOCK, $product->fresh()->effectiveAvailabilityStatus());
+        $this->assertTrue($product->fresh()->canBePurchased());
+
+        IntegrationProduct::query()->where('product_id', $product->id)->update([
+            'stock_confirmed_at' => now()->subMinutes(1441),
         ]);
 
         $this->assertSame(Product::AVAILABILITY_CHECK, $product->fresh()->effectiveAvailabilityStatus());

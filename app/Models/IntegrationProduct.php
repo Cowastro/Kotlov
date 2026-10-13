@@ -85,7 +85,7 @@ class IntegrationProduct extends Model
     {
         return $this->source?->is_active === true
             && $this->stock_confirmed_at !== null
-            && $this->stock_confirmed_at->gte(now()->subMinutes($this->source->staleAfterMinutes()))
+            && $this->stock_confirmed_at->gte(now()->subMinutes($this->source->stockValidityMinutes()))
             && (float) $this->stock_quantity > 0;
     }
 

@@ -77,7 +77,7 @@ class B2bCatalogPricingTest extends TestCase
     {
         [$product, $user] = $this->catalogFixture(approved: true);
         IntegrationProduct::query()->where('product_id', $product->id)->update([
-            'stock_confirmed_at' => now()->subMinutes(16),
+            'stock_confirmed_at' => now()->subMinutes(IntegrationSource::ONE_C_STOCK_MIN_VALIDITY_MINUTES + 1),
         ]);
 
         $this->actingAs($user)
@@ -110,7 +110,7 @@ class B2bCatalogPricingTest extends TestCase
             ->assertOk();
 
         IntegrationProduct::query()->where('product_id', $product->id)->update([
-            'stock_confirmed_at' => now()->subMinutes(16),
+            'stock_confirmed_at' => now()->subMinutes(IntegrationSource::ONE_C_STOCK_MIN_VALIDITY_MINUTES + 1),
         ]);
         $this->app->forgetScopedInstances();
 

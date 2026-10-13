@@ -126,12 +126,26 @@ class IntegrationSourceResource extends Resource
                         ->default(10)
                         ->required(),
                     TextInput::make('settings.stale_after_minutes')
-                        ->label('Считать обмен просроченным через')
+                        ->label('Считать отсутствие обмена просроченным через')
                         ->numeric()
                         ->minValue(5)
                         ->maxValue(1440)
                         ->suffix('мин')
                         ->default(15)
+                        ->required(),
+                    TextInput::make('settings.stock_validity_minutes')
+                        ->label('Срок действия подтверждённого остатка')
+                        ->numeric()
+                        ->minValue(1440)
+                        ->maxValue(10080)
+                        ->suffix('мин')
+                        ->default(1440)
+                        ->afterStateHydrated(function (TextInput $component, mixed $state): void {
+                            if (blank($state)) {
+                                $component->state(1440);
+                            }
+                        })
+                        ->helperText('Для 1С остаток действует не менее 24 часов. Новый обмен обновляет срок раньше.')
                         ->required(),
                     TextInput::make('settings.order_dispatch_delay_minutes')
                         ->label('Заказ задержан через')

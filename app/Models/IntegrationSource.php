@@ -11,6 +11,8 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class IntegrationSource extends Model
 {
+    public const ONE_C_STOCK_MIN_VALIDITY_MINUTES = 1440;
+
     public const PRICE_TAX_EXCLUSIVE = 'exclusive';
 
     public const PRICE_TAX_INCLUSIVE = 'inclusive';
@@ -36,6 +38,10 @@ class IntegrationSource extends Model
     protected static function booted(): void
     {
         static::creating(function (IntegrationSource $source): void {
+            $stockValidityMinutes = $source->code === 'onec' || $source->driver === 'commerceml'
+                ? self::ONE_C_STOCK_MIN_VALIDITY_MINUTES
+                : 15;
+
             $source->settings = array_merge([
                 'price_tax_mode' => self::PRICE_TAX_EXCLUSIVE,
                 'vat_rate' => 20,
@@ -48,6 +54,7 @@ class IntegrationSource extends Model
                 'order_response_timeout_minutes' => 15,
                 'catalog_interval_minutes' => 10,
                 'stale_after_minutes' => 15,
+                'stock_validity_minutes' => $stockValidityMinutes,
                 'zero_missing_stock_on_complete' => true,
                 'all_stock_positive_warning_min_products' => 20,
                 'monitor_orders_from' => now()->toIso8601String(),
@@ -205,6 +212,19 @@ class IntegrationSource extends Model
     public function staleAfterMinutes(): int
     {
         return max(5, (int) data_get($this->settings, 'stale_after_minutes', 15));
+    }
+
+    public function stockValidityMinutes(): int
+    {
+        $isOneC = $this->code === 'onec' || $this->driver === 'commerceml';
+        $fallback = $isOneC
+            ? self::ONE_C_STOCK_MIN_VALIDITY_MINUTES
+            : $this->staleAfterMinutes();
+        $configured = max(5, (int) data_get($this->settings, 'stock_validity_minutes', $fallback));
+
+        return $isOneC
+            ? max(self::ONE_C_STOCK_MIN_VALIDITY_MINUTES, $configured)
+            : $configured;
     }
 
     public function exportsOrders(): bool
