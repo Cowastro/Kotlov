@@ -72,11 +72,15 @@ class MarketPriceSummary
         $ourPrice = $base['our_price'];
 
         if ($ourPrice === null || $ourPrice <= 0) {
-            return $base + [
+            return [
+                ...$base,
+                'status' => 'ready',
+                'label' => 'Цена не задана',
                 'minimum' => $minimum,
                 'median' => $median,
                 'maximum' => $maximum,
-                'reason' => 'На сайте не задана розничная цена для сравнения.',
+                'position' => 'unpriced',
+                'reason' => null,
             ];
         }
 

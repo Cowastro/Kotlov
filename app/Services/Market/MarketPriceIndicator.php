@@ -36,6 +36,22 @@ class MarketPriceIndicator
             ];
         }
 
+        if ($summary['position'] === 'unpriced') {
+            return $summary + [
+                'indicator_label' => 'Цена не задана',
+                'indicator_description' => 'Медиана '.number_format($summary['median'], 2, ',', ' ')
+                    .' BYN · '.$summary['sources_count'].' источника',
+                'indicator_tooltip' => collect([
+                    'Коридор '.number_format($summary['minimum'], 2, ',', ' ').'–'.number_format($summary['maximum'], 2, ',', ' ').' BYN',
+                    $checkedAt ? 'Проверено '.$checkedAt->diffForHumans() : null,
+                ])->filter()->implode(' · '),
+                'indicator_color' => 'warning',
+                'indicator_icon' => 'heroicon-o-currency-dollar',
+                'warnings' => $warnings,
+                'primary_warning' => $primaryWarning,
+            ];
+        }
+
         $delta = (float) $summary['delta_percent'];
         $sign = $delta > 0 ? '+' : '';
 

@@ -108,6 +108,39 @@ class MarketPriceIntelligenceTest extends TestCase
         $this->assertStringContainsString('минимум 3', $summary['reason']);
     }
 
+    public function test_three_sources_can_price_an_unpriced_product_without_bypassing_cost_and_margin_rules(): void
+    {
+        [$product] = $this->fixture('unpriced', productPrice: 0);
+        foreach ([95, 100, 105] as $index => $price) {
+            $this->record($this->source('unpriced-'.$index), $product, $price, now()->subHour());
+        }
+        $this->attachIntegrationCost($product, 80);
+
+        $summary = app(MarketPriceSummary::class)->forProduct($product->fresh());
+        $indicator = app(MarketPriceIndicator::class)->forProduct($product->fresh());
+        $recommendation = app(MarketPriceRecommendation::class)->forProduct($product->fresh());
+
+        $this->assertSame('ready', $summary['status']);
+        $this->assertSame('unpriced', $summary['position']);
+        $this->assertSame('Цена не задана', $indicator['indicator_label']);
+        $this->assertSame('ready', $recommendation['status']);
+        $this->assertSame(100.0, $recommendation['recommended_price']);
+        $this->assertSame(100.0, $recommendation['price_change']);
+        $this->assertSame(20.0, $recommendation['recommended_margin_percent']);
+        $this->assertTrue($recommendation['can_apply']);
+
+        $admin = User::factory()->create(['role' => 'admin', 'is_active' => true]);
+        $result = app(MarketPriceRecommendation::class)->apply(
+            $product,
+            $admin,
+            'Назначена цена по трём точным источникам',
+        );
+
+        $this->assertSame('100.00', $result['product']->price);
+        $this->assertSame(0.0, (float) $result['audit']->old_values['price']);
+        $this->assertSame(100.0, (float) $result['audit']->new_values['price']);
+    }
+
     public function test_manager_can_read_market_evidence_but_cannot_manage_sources_or_observations(): void
     {
         [$product, $source] = $this->fixture('access', productPrice: 120);
