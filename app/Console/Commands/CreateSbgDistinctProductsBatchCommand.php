@@ -3040,6 +3040,7 @@ class CreateSbgDistinctProductsBatchCommand extends Command
             'template_slug' => 'truba-eurotis-italiya-iz-nerzhaveyushhej-stali-34',
             'link_existing_slug' => 'truba-eurotis-italiya-iz-nerzhaveyushhej-stali-34',
             'refresh_existing' => true,
+            'clear_price_confirmation' => true,
             'allow_unmatched' => true,
             'category_slug' => 'gofrirovanye-truby',
             'refresh_category' => true,
@@ -3579,6 +3580,9 @@ class CreateSbgDistinctProductsBatchCommand extends Command
             'images' => $portableImages,
             'specs' => $rule['specs'] ?? $product->specs,
             'content_source_url' => $rule['source_url'] ?? $product->content_source_url,
+            'requires_price_confirmation' => ($rule['clear_price_confirmation'] ?? false)
+                ? false
+                : $product->requires_price_confirmation,
             'meta_title' => Str::limit($name.' — купить в Беларуси | KOTLOV', 255, ''),
             'meta_description' => Str::limit('Купить '.$name.' в KOTLOV. Характеристики, актуальная цена и наличие, доставка по Беларуси.', 255, ''),
             'is_active' => true,

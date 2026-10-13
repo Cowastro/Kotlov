@@ -7235,6 +7235,7 @@ class CreateSbgDistinctProductsBatchCommandTest extends TestCase
             ],
             'short_description' => 'Старое описание.',
             'content' => '<p>Старое описание.</p>',
+            'requires_price_confirmation' => true,
             'is_active' => true,
             'is_archived' => false,
         ]);
@@ -7292,6 +7293,8 @@ class CreateSbgDistinctProductsBatchCommandTest extends TestCase
         $this->assertSame('49.00', $product->price);
         $this->assertSame('7', (string) $product->stock_qty);
         $this->assertTrue((bool) $product->in_stock);
+        $this->assertFalse((bool) $product->requires_price_confirmation);
+        $this->assertSame(Product::AVAILABILITY_IN_STOCK, $product->effectiveAvailabilityStatus());
         $this->assertSame($brand->id, $product->brand_id);
         $this->assertSame('Италия', $brand->country);
         $this->assertTrue((bool) $brand->is_active);
