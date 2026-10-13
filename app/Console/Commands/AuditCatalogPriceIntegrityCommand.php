@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Models\Product;
 use Illuminate\Console\Command;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Facades\DB;
@@ -115,12 +116,13 @@ class AuditCatalogPriceIntegrityCommand extends Command
         }
 
         if (filled($this->option('research-output'))) {
-            $metrics['research_rows'] = $this->writeResearchReport(
+            $researchMetrics = $this->writeResearchReport(
                 (string) $this->option('research-output'),
                 $active,
                 $supplierCost,
                 $minimumMargin,
             );
+            $metrics = [...$metrics, ...$researchMetrics];
         }
 
         foreach ($metrics as $name => $value) {
@@ -229,12 +231,13 @@ class AuditCatalogPriceIntegrityCommand extends Command
         return $rows->count();
     }
 
+    /** @return array{research_rows: int, research_reviewed_rows: int, research_unreviewed_rows: int} */
     private function writeResearchReport(
         string $output,
         Builder $active,
         Builder $supplierCost,
         float $minimumMargin,
-    ): int {
+    ): array {
         $isAbsolute = preg_match('/^(?:[A-Za-z]:[\\\\\/]|[\\\\\/])/', $output) === 1;
         $path = $isAbsolute ? $output : base_path($output);
         File::ensureDirectoryExists(dirname($path));
@@ -247,16 +250,29 @@ class AuditCatalogPriceIntegrityCommand extends Command
             'invalid_old_price' => 50,
             'non_byn_currency' => 60,
         ];
+        $latestReview = DB::table('activity_logs')
+            ->selectRaw('model_id, MAX(id) AS latest_review_id')
+            ->where('model_type', Product::class)
+            ->whereIn('action', [
+                'market_price_confirmation_required',
+                'market_price_review_completed',
+                'market_price_recommendation_applied',
+            ])
+            ->whereNotNull('model_id')
+            ->groupBy('model_id');
 
         $rows = (clone $active)
             ->leftJoinSub($supplierCost, 'costs', 'costs.product_id', '=', 'p.id')
             ->leftJoin('categories as c', 'c.id', '=', 'p.category_id')
             ->leftJoin('brands as b', 'b.id', '=', 'p.brand_id')
+            ->leftJoinSub($latestReview, 'latest_reviews', 'latest_reviews.model_id', '=', 'p.id')
+            ->leftJoin('activity_logs as review_logs', 'review_logs.id', '=', 'latest_reviews.latest_review_id')
             ->get([
                 'p.id', 'p.sku', 'p.name', 'p.slug', 'p.price', 'p.price_old',
                 'p.currency', 'p.availability_status', 'p.updated_at',
                 'c.name as category', 'c.slug as category_slug',
                 'b.name as brand', 'costs.minimum_cost',
+                'review_logs.action as review_action', 'review_logs.created_at as reviewed_at',
             ])
             ->map(function (object $row) use ($minimumMargin, $priority): ?array {
                 $price = (float) $row->price;
@@ -304,6 +320,9 @@ class AuditCatalogPriceIntegrityCommand extends Command
                     'currency' => (string) $row->currency,
                     'availability_status' => (string) $row->availability_status,
                     'updated_at' => (string) $row->updated_at,
+                    'review_state' => $row->review_action === null ? 'unreviewed' : 'reviewed',
+                    'review_action' => (string) ($row->review_action ?? ''),
+                    'reviewed_at' => (string) ($row->reviewed_at ?? ''),
                 ];
             })
             ->filter()
@@ -324,12 +343,19 @@ class AuditCatalogPriceIntegrityCommand extends Command
         fputcsv($handle, [
             'priority', 'issues', 'product_id', 'sku', 'name', 'brand', 'category', 'path',
             'retail_price', 'old_price', 'currency', 'availability_status', 'updated_at',
+            'review_state', 'review_action', 'reviewed_at',
         ], ';', '"', '');
         foreach ($rows as $row) {
             fputcsv($handle, $row, ';', '"', '');
         }
         fclose($handle);
 
-        return $rows->count();
+        $reviewed = $rows->where('review_state', 'reviewed')->count();
+
+        return [
+            'research_rows' => $rows->count(),
+            'research_reviewed_rows' => $reviewed,
+            'research_unreviewed_rows' => $rows->count() - $reviewed,
+        ];
     }
 }

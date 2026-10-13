@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\ActivityLog;
 use App\Models\Category;
 use App\Models\Product;
 use App\Models\Supplier;
@@ -49,6 +50,24 @@ class AuditCatalogPriceIntegrityCommandTest extends TestCase
             'in_stock' => true,
             'last_stock_synced_at' => now(),
         ]);
+        $reviewedProduct = Product::query()->create([
+            'category_id' => $category->id,
+            'name' => 'Проверенный товар без открытой цены',
+            'slug' => 'reviewed-zero-price-product',
+            'sku' => 'PRICE-AUDIT-REVIEWED',
+            'price' => 0,
+            'currency' => 'BYN',
+            'is_active' => true,
+            'is_archived' => false,
+            'requires_price_confirmation' => true,
+        ]);
+        ActivityLog::query()->create([
+            'action' => 'market_price_confirmation_required',
+            'model_type' => Product::class,
+            'model_id' => $reviewedProduct->id,
+            'new_values' => ['batch' => 'reviewed-test-batch'],
+            'user_agent' => 'catalog:apply-market-price-batch',
+        ]);
 
         $this->artisan('catalog:audit-price-integrity', [
             '--stale-hours' => 24,
@@ -58,14 +77,19 @@ class AuditCatalogPriceIntegrityCommandTest extends TestCase
             ->expectsOutputToContain('metric.invalid_old_price=1')
             ->expectsOutputToContain('metric.retail_below_supplier_cost=1')
             ->expectsOutputToContain('metric.retail_margin_below_minimum=1')
-            ->expectsOutputToContain('metric.report_rows=1')
-            ->expectsOutputToContain('metric.research_rows=1')
+            ->expectsOutputToContain('metric.report_rows=2')
+            ->expectsOutputToContain('metric.research_rows=2')
+            ->expectsOutputToContain('metric.research_reviewed_rows=1')
+            ->expectsOutputToContain('metric.research_unreviewed_rows=1')
             ->assertSuccessful();
 
         $this->assertSame('90.00', $product->fresh()->price);
         $this->assertStringContainsString('PRICE-AUDIT-1', File::get($report));
         $research = File::get($researchReport);
         $this->assertStringContainsString('PRICE-AUDIT-1', $research);
+        $this->assertStringContainsString('PRICE-AUDIT-REVIEWED', $research);
+        $this->assertStringContainsString('reviewed;market_price_confirmation_required', $research);
+        $this->assertStringContainsString('unreviewed', $research);
         $this->assertStringContainsString('retail_below_supplier_cost|retail_margin_below_minimum|invalid_old_price', $research);
         $this->assertStringNotContainsString('minimum_supplier_cost', $research);
         $this->assertStringNotContainsString('margin_percent', $research);
