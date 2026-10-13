@@ -343,7 +343,7 @@ class ResolveSbgAmbiguousBatchCommand extends Command
                 'images' => ['product/008/008303/Unipump_cp1.jpg'],
                 'source_url' => 'https://unipump.ru/upload/iblock/da2/x7rbbfd0ljt5oi9s9spzrcj7lladq5ab/circularnye_leaflet_2025_V2411-_1_.pdf',
                 'replace_attributes' => true,
-                'remove_attribute_names' => ['Присоединительный размер , мм'],
+                'remove_attribute_prefixes' => ['Присоединительный размер'],
                 'display_specs' => [
                     ['key' => 'Назначение', 'value' => 'Системы отопления и водяного тёплого пола'],
                     ['key' => 'Монтажная длина', 'value' => '180 мм'],
@@ -559,10 +559,16 @@ class ResolveSbgAmbiguousBatchCommand extends Command
         $product->allAttributeValues()->delete();
         $enricher->syncSpecsToAttributeValues($product, $refresh['specs'] ?? []);
 
-        $removeNames = array_values(array_filter($refresh['remove_attribute_names'] ?? [], 'is_string'));
-        if ($removeNames !== []) {
+        $removePrefixes = array_values(array_filter($refresh['remove_attribute_prefixes'] ?? [], 'is_string'));
+        if ($removePrefixes !== []) {
             $product->allAttributeValues()
-                ->whereHas('attribute', fn ($query) => $query->whereIn('name', $removeNames))
+                ->whereHas('attribute', function ($query) use ($removePrefixes): void {
+                    $query->where(function ($query) use ($removePrefixes): void {
+                        foreach ($removePrefixes as $prefix) {
+                            $query->orWhere('name', 'like', $prefix.'%');
+                        }
+                    });
+                })
                 ->delete();
         }
 
