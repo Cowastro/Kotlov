@@ -3389,4 +3389,100 @@ class CreateSbgDistinctProductsBatchCommandTest extends TestCase
         $this->assertSame($productCount + 1, Product::query()->count());
         $this->assertSame($product->id, $item->fresh()->product_id);
     }
+
+    public function test_it_links_and_corrects_the_exact_tmf_avoska_00902_without_using_the_ogon_batareya_candidate(): void
+    {
+        $source = IntegrationSource::query()->create([
+            'code' => 'onec-sbg-tmf-avoska-00902',
+            'name' => '1С СанБизнесГруп',
+            'settings' => ['partner_name' => 'ООО «СанБизнесГруп»'],
+            'is_active' => true,
+            'update_stock' => true,
+        ]);
+        $category = Category::query()->firstOrCreate(['slug' => 'burzhuiki-pechi'], [
+            'name' => 'Буржуйки',
+            'parent_id' => 0,
+        ]);
+        $brand = Brand::query()->firstOrCreate(['slug' => 'tmf'], ['name' => 'TMF']);
+        $wrongCandidate = Product::query()->create([
+            'category_id' => $category->id,
+            'brand_id' => $brand->id,
+            'sku' => 'KOTLOV-004602',
+            'name' => 'ПО ОГОНЬ-БАТАРЕЯ 5 антрацит',
+            'slug' => 'ogon-batareya-5-wrong-candidate',
+            'price' => 1000,
+            'images' => ['product/tmf/ogon-batareya-5.jpg'],
+        ]);
+        $exactProduct = Product::query()->create([
+            'category_id' => $category->id,
+            'brand_id' => $brand->id,
+            'sku' => 'PS-012.085',
+            'name' => 'Печь TMF АВОСЬКА антрацит',
+            'slug' => 'pech-otopitelnaya-avoska-tmf',
+            'price' => 0,
+            'images' => ['product/0012/012085/old-photo.jpg'],
+            'short_description' => 'Ошибочно: дверца со стеклом и мощность 8 кВт.',
+            'content' => '<p>Старое неточное описание.</p>',
+            'is_active' => true,
+            'is_archived' => false,
+        ]);
+        $item = IntegrationProduct::query()->create([
+            'integration_source_id' => $source->id,
+            'external_id' => 'tmf-avoska-00902',
+            'external_code' => 'УТ-00008428',
+            'external_sku' => '00902',
+            'name' => 'ПО Авоська, портативная, антрацит арт. 00902',
+            'price_byn' => null,
+            'stock_quantity' => 1,
+            'match_status' => 'ambiguous',
+            'candidates' => [['product_id' => $wrongCandidate->id, 'score' => 0.72]],
+        ]);
+        $productCount = Product::query()->count();
+
+        $this->artisan('integration:create-sbg-distinct-products', [
+            '--batch' => 'researched-priced-20261013-bc',
+            '--code' => ['УТ-00008428'],
+            '--apply' => true,
+        ])->assertSuccessful();
+
+        $item->refresh();
+        $exactProduct->refresh();
+        $this->assertSame($productCount, Product::query()->count());
+        $this->assertSame($exactProduct->id, $item->product_id);
+        $this->assertNotSame($wrongCandidate->id, $item->product_id);
+        $this->assertSame('manual_search', $item->match_method);
+        $this->assertSame($category->id, $item->target_category_id);
+        $this->assertNull($item->candidates);
+        $this->assertSame('Печь портативная TMF Авоська антрацит, арт. 00902', $exactProduct->name);
+        $this->assertSame('445.00', $exactProduct->price);
+        $this->assertSame('1', (string) $exactProduct->stock_qty);
+        $this->assertTrue((bool) $exactProduct->in_stock);
+        $this->assertSame('4 кВт', collect($exactProduct->specs)->firstWhere('key', 'Мощность')['value']);
+        $this->assertSame('Глухая стальная, без стекла', collect($exactProduct->specs)->firstWhere('key', 'Дверца')['value']);
+        $this->assertSame('00902', collect($exactProduct->specs)->firstWhere('key', 'Артикул производителя')['value']);
+        $this->assertSame(['img/products/tmf/tmf-avoska-anthracite-00902.png'], $exactProduct->images);
+        $this->assertFileExists(public_path('img/products/tmf/tmf-avoska-anthracite-00902.png'));
+        $this->assertStringContainsString('tmf-market.ru', $exactProduct->content_source_url);
+        $this->assertStringContainsString('глухой стальной дверцей без стекла', $exactProduct->content);
+        $this->assertStringNotContainsString('ОГОНЬ-БАТАРЕЯ', $exactProduct->content);
+        $this->assertStringNotContainsString('8 кВт', $exactProduct->content);
+        $this->assertStringNotContainsString('розничная цена', mb_strtolower($exactProduct->content));
+        $this->assertStringNotContainsString('rub', mb_strtolower($exactProduct->content));
+        $this->assertDatabaseHas('supplier_product_mappings', [
+            'supplier_code' => $source->matchingSupplierCode(),
+            'supplier_article' => '00902',
+            'product_id' => $exactProduct->id,
+            'product_sku' => 'PS-012.085',
+            'confidence' => 'manual',
+            'is_active' => true,
+        ]);
+
+        $this->artisan('integration:create-sbg-distinct-products', [
+            '--batch' => 'researched-priced-20261013-bc',
+            '--code' => ['УТ-00008428'],
+            '--apply' => true,
+        ])->assertSuccessful();
+        $this->assertSame($productCount, Product::query()->count());
+        $this->assertSame($exactProduct->id, $item->fresh()->product_id);
+    }
 }

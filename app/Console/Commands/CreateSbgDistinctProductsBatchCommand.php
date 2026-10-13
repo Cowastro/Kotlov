@@ -1738,6 +1738,49 @@ class CreateSbgDistinctProductsBatchCommand extends Command
         ],
     ];
 
+    private const BATCH_RESEARCHED_PRICED_20261013_BC = [
+        'УТ-00008428' => [
+            'template' => 'KOTLOV-004602',
+            'link_existing_sku' => 'PS-012.085',
+            'link_fragments' => ['TMF', 'АВОСЬКА', 'антрацит'],
+            'refresh_existing' => true,
+            'category_slug' => 'burzhuiki-pechi',
+            'external_sku' => '00902',
+            'fragments' => ['ПО', 'Авоська', 'портативная', 'антрацит', '00902'],
+            'brand' => [
+                'name' => 'TMF',
+                'slug' => 'tmf',
+            ],
+            'name' => 'Печь портативная TMF Авоська антрацит, арт. 00902',
+            'retail' => 445.00,
+            'images' => ['img/products/tmf/tmf-avoska-anthracite-00902.png'],
+            'source_url' => 'https://spb.tmf-market.ru/katalog/pp_avoska_antratsit/',
+            'short' => 'Компактная дровяная печь TMF Авоська мощностью 4 кВт для помещений объёмом до 50 м³, цвет антрацит, артикул 00902.',
+            'content' => '<p><strong>TMF Авоська антрацит</strong> — компактная портативная дровяная печь для отопления небольших помещений объёмом до 50 м³: гаражей, подвалов, бытовок, дач и КУНГов. Герметичный топливник позволяет поддерживать длительное горение, а плоскую верхнюю поверхность можно использовать для разогрева пищи.</p><p>Базовая модификация 00902 изготовлена из конструкционной стали толщиной до 3 мм и оснащена глухой стальной дверцей без стекла, зольным ящиком и верхним выходом дымохода диаметром 80 мм. Это именно версия «Авоська» в цвете антрацит, не модификация Inox и не исполнение НК.</p>',
+            'specs' => [
+                ['key' => 'Тип', 'value' => 'Портативная отопительная печь'],
+                ['key' => 'Модель', 'value' => 'Авоська'],
+                ['key' => 'Артикул производителя', 'value' => '00902'],
+                ['key' => 'Мощность', 'value' => '4 кВт'],
+                ['key' => 'Отапливаемый объём', 'value' => 'до 50 м³'],
+                ['key' => 'Топливо', 'value' => 'Дрова, топливные брикеты'],
+                ['key' => 'Материал', 'value' => 'Конструкционная сталь'],
+                ['key' => 'Толщина стали', 'value' => 'до 3 мм'],
+                ['key' => 'Дверца', 'value' => 'Глухая стальная, без стекла'],
+                ['key' => 'Зольный ящик', 'value' => 'Есть'],
+                ['key' => 'Диаметр дымохода', 'value' => '80 мм'],
+                ['key' => 'Выход дымохода', 'value' => 'Верхний'],
+                ['key' => 'Максимальная длина полена', 'value' => '410 мм'],
+                ['key' => 'Объём топки', 'value' => '35 л'],
+                ['key' => 'Габариты', 'value' => '530 × 265 × 480 мм'],
+                ['key' => 'Масса', 'value' => '19 кг'],
+                ['key' => 'Цвет', 'value' => 'Антрацит'],
+                ['key' => 'Гарантия', 'value' => '12 месяцев'],
+                ['key' => 'Страна производства', 'value' => 'Россия'],
+            ],
+        ],
+    ];
+
     public function handle(
         IntegrationProductCreator $creator,
         IntegrationProductMatchDecision $matchDecision,
@@ -1798,6 +1841,7 @@ class CreateSbgDistinctProductsBatchCommand extends Command
             'researched-priced-20261013-az' => self::BATCH_RESEARCHED_PRICED_20261013_AZ,
             'researched-priced-20261013-ba' => self::BATCH_RESEARCHED_PRICED_20261013_BA,
             'researched-priced-20261013-bb' => self::BATCH_RESEARCHED_PRICED_20261013_BB,
+            'researched-priced-20261013-bc' => self::BATCH_RESEARCHED_PRICED_20261013_BC,
             default => null,
         };
 
