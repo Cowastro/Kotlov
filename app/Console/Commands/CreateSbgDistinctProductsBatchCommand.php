@@ -1976,6 +1976,14 @@ class CreateSbgDistinctProductsBatchCommand extends Command
         ],
     ];
 
+    private const BATCH_ARCHIVED_20261013_BJ = [
+        'УТ-00002114' => [
+            'ignore_archived' => true,
+            'candidate_slug' => 'fireway-dverza-pr-04-kaminnaya',
+            'fragments' => ['Облицовка', 'каминная', 'Fresca', 'CPF'],
+        ],
+    ];
+
     public function handle(
         IntegrationProductCreator $creator,
         IntegrationProductMatchDecision $matchDecision,
@@ -2043,6 +2051,7 @@ class CreateSbgDistinctProductsBatchCommand extends Command
             'researched-priced-20261013-bg' => self::BATCH_RESEARCHED_PRICED_20261013_BG,
             'researched-priced-20261013-bh' => self::BATCH_RESEARCHED_PRICED_20261013_BH,
             'researched-priced-20261013-bi' => self::BATCH_RESEARCHED_PRICED_20261013_BI,
+            'archived-20261013-bj' => self::BATCH_ARCHIVED_20261013_BJ,
             default => null,
         };
 
@@ -2058,12 +2067,64 @@ class CreateSbgDistinctProductsBatchCommand extends Command
         }
 
         $apply = (bool) $this->option('apply');
-        $stats = array_fill_keys(['configured', 'ready', 'created', 'linked', 'refreshed', 'brands_created', 'already', 'blocked'], 0);
+        $stats = array_fill_keys(['configured', 'ready', 'created', 'linked', 'refreshed', 'ignored', 'brands_created', 'already', 'blocked'], 0);
         $stats['configured'] = count($rows);
         $details = [];
 
         foreach ($rows as $code => $rule) {
             $items = IntegrationProduct::query()->with(['source', 'product'])->where('external_code', $code)->get();
+
+            if ($rule['ignore_archived'] ?? false) {
+                $candidate = Product::query()->where('slug', $rule['candidate_slug'])->first();
+                if ($items->count() !== 1 || ! $candidate) {
+                    $stats['blocked']++;
+                    $details[] = [$code, $rule['candidate_slug'], 'blocked', 'missing unique 1C row or expected candidate'];
+
+                    continue;
+                }
+
+                $item = $items->first();
+                if ($item->match_status === 'ignored' && $item->match_method === 'manual_ignore' && ! $item->product_id) {
+                    $stats['already']++;
+                    $details[] = [$code, '-', 'already', 'archived item is already excluded from the site'];
+
+                    continue;
+                }
+
+                $candidateIds = collect($item->candidates)->pluck('product_id')->map(fn ($id): int => (int) $id);
+                $valid = $item->source?->name === self::SOURCE_NAME
+                    && $item->source?->partnerName() === self::PARTNER_NAME
+                    && $item->match_status === 'ambiguous'
+                    && ! $item->product_id
+                    && (float) $item->stock_quantity > 0
+                    && $candidateIds->contains((int) $candidate->id)
+                    && $this->containsAll($item->name, $rule['fragments']);
+
+                if (! $valid) {
+                    $stats['blocked']++;
+                    $details[] = [$code, $rule['candidate_slug'], 'blocked', 'source, identity, stock or candidate guard failed'];
+
+                    continue;
+                }
+
+                $stats['ready']++;
+                if ($apply) {
+                    $item->forceFill([
+                        'product_id' => null,
+                        'match_status' => 'ignored',
+                        'match_method' => 'manual_ignore',
+                        'match_confidence' => null,
+                        'matched_at' => null,
+                    ])->save();
+                    $stats['ignored']++;
+                    $details[] = [$code, '-', 'ignored', 'archived item excluded from the public catalog'];
+                } else {
+                    $details[] = [$code, '-', 'ready', 'archive as not for site'];
+                }
+
+                continue;
+            }
+
             $template = Product::query()->where('sku', $rule['template'])->first();
             $expectedCandidate = Product::query()->where('sku', $rule['candidate'] ?? $rule['template'])->first();
             $linkProduct = isset($rule['link_existing_sku'])

@@ -3486,6 +3486,68 @@ class CreateSbgDistinctProductsBatchCommandTest extends TestCase
         $this->assertSame($exactProduct->id, $item->fresh()->product_id);
     }
 
+    public function test_it_marks_the_confirmed_archived_fresca_facing_as_not_for_site(): void
+    {
+        $source = IntegrationSource::query()->create([
+            'code' => 'onec-sbg-archived-fresca-cpf',
+            'name' => '1С СанБизнесГруп',
+            'settings' => ['partner_name' => 'ООО «СанБизнесГруп»'],
+            'is_active' => true,
+            'update_stock' => true,
+        ]);
+        $category = Category::query()->firstOrCreate(['slug' => 'pechnoe-i-kaminnoe-lite'], [
+            'name' => 'Печное и каминное литьё',
+            'parent_id' => 0,
+        ]);
+        $wrongCandidate = Product::query()->create([
+            'category_id' => $category->id,
+            'sku' => 'KOTLOV-FIREWAY-PR04',
+            'name' => 'Дверца каминная Fireway PR-04',
+            'slug' => 'fireway-dverza-pr-04-kaminnaya',
+            'price' => 786,
+            'images' => ['product/fireway/pr-04.jpg'],
+        ]);
+        $item = IntegrationProduct::query()->create([
+            'integration_source_id' => $source->id,
+            'external_id' => 'archived-fresca-cpf',
+            'external_code' => 'УТ-00002114',
+            'name' => 'Облицовка каминная Fresca CPF',
+            'price_byn' => null,
+            'stock_quantity' => 1,
+            'match_status' => 'ambiguous',
+            'match_method' => 'fuzzy_name',
+            'match_confidence' => 0.67,
+            'candidates' => [['product_id' => $wrongCandidate->id, 'score' => 0.67]],
+        ]);
+
+        $this->artisan('integration:create-sbg-distinct-products', [
+            '--batch' => 'archived-20261013-bj',
+            '--code' => ['УТ-00002114'],
+        ])->assertSuccessful();
+        $this->assertSame('ambiguous', $item->fresh()->match_status);
+
+        $this->artisan('integration:create-sbg-distinct-products', [
+            '--batch' => 'archived-20261013-bj',
+            '--code' => ['УТ-00002114'],
+            '--apply' => true,
+        ])->assertSuccessful();
+
+        $item->refresh();
+        $this->assertNull($item->product_id);
+        $this->assertSame('ignored', $item->match_status);
+        $this->assertSame('manual_ignore', $item->match_method);
+        $this->assertNull($item->match_confidence);
+        $this->assertNull($item->matched_at);
+        $this->assertSame($wrongCandidate->id, (int) $item->candidates[0]['product_id']);
+
+        $this->artisan('integration:create-sbg-distinct-products', [
+            '--batch' => 'archived-20261013-bj',
+            '--code' => ['УТ-00002114'],
+            '--apply' => true,
+        ])->assertSuccessful();
+        $this->assertSame('ignored', $item->fresh()->match_status);
+    }
+
     public function test_it_creates_the_exact_teplov_i_suhov_l500_d120_200_pipe_instead_of_linking_the_l250_d120_180_candidate(): void
     {
         $source = IntegrationSource::query()->create([
