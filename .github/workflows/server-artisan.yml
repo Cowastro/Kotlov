@@ -209,6 +209,16 @@ jobs:
               # Fast-forward only: refuse divergent history and never create a
               # merge commit on the production checkout.
               git pull --ff-only origin main
+              composer_bin="$(command -v composer || true)"
+              if [[ -z "$composer_bin" ]]; then
+                echo "::error::Deployment stopped: Composer is not installed on the server."
+                exit 1
+              fi
+              COMPOSER_ALLOW_SUPERUSER=1 "$PHP_BIN" "$composer_bin" install \
+                --no-dev \
+                --no-interaction \
+                --prefer-dist \
+                --optimize-autoloader
               "$PHP_BIN" artisan migrate --force
               "$PHP_BIN" artisan optimize:clear
                 ;;
