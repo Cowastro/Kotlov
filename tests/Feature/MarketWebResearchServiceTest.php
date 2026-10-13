@@ -15,6 +15,7 @@ class MarketWebResearchServiceTest extends TestCase
     public function test_it_uses_hosted_web_search_and_only_accepts_offers_returned_as_sources(): void
     {
         config()->set([
+            'services.ai.market_research_provider' => 'openai',
             'services.ai.openai_key' => 'test-key',
             'services.ai.openai_responses_url' => 'https://api.openai.test/v1/responses',
             'services.ai.openai_research_model' => 'gpt-6.1-sol',
@@ -97,7 +98,7 @@ class MarketWebResearchServiceTest extends TestCase
     public function test_it_supports_official_azure_openai_responses_and_web_search(): void
     {
         config()->set([
-            'services.ai.market_openai_provider' => 'azure',
+            'services.ai.market_research_provider' => 'azure',
             'services.ai.azure_openai_key' => 'azure-secret-key',
             'services.ai.azure_openai_responses_url' => 'https://example.openai.azure.com/openai/v1/responses',
             'services.ai.azure_openai_research_model' => 'market-research-deployment',
@@ -140,6 +141,105 @@ class MarketWebResearchServiceTest extends TestCase
                 && ! array_key_exists('external_web_access', $data['tools'][0])
                 && ! array_key_exists('return_token_budget', $data['tools'][0]);
         });
+    }
+
+    public function test_it_supports_deepseek_pro_native_web_search_and_validates_sources(): void
+    {
+        config()->set([
+            'services.ai.market_research_provider' => 'deepseek',
+            'services.ai.api_key' => 'deepseek-secret-key',
+            'services.ai.deepseek_anthropic_url' => 'https://api.deepseek.test/anthropic/v1/messages',
+            'services.ai.deepseek_research_model' => 'deepseek-v4-pro',
+            'services.ai.deepseek_research_fallback_model' => 'deepseek-flash',
+        ]);
+
+        $report = [
+            'summary' => 'Найдено одно подтверждённое предложение.',
+            'verdict' => 'Нужна дополнительная проверка.',
+            'confidence' => 'low',
+            'search_queries' => ['тестовый товар цена'],
+            'offers' => [
+                $this->offer('Магазин', 'https://seller.by/product', 120),
+                $this->offer('Выдуманный', 'https://invented.by/product', 80),
+            ],
+            'rejected_candidates' => [],
+        ];
+
+        Http::fake([
+            'https://api.deepseek.test/anthropic/v1/messages' => Http::response([
+                'type' => 'message',
+                'model' => 'deepseek-v4-pro',
+                'content' => [
+                    [
+                        'type' => 'web_search_tool_result',
+                        'content' => [[
+                            'type' => 'web_search_result',
+                            'title' => 'Карточка товара',
+                            'url' => 'https://seller.by/product',
+                        ]],
+                    ],
+                    [
+                        'type' => 'text',
+                        'text' => "```json\n".json_encode($report, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)."\n```",
+                    ],
+                ],
+            ]),
+        ]);
+
+        $result = app(MarketWebResearchService::class)->research(new Product([
+            'name' => 'Тестовый товар',
+            'sku' => 'TEST-2',
+        ]), 100);
+
+        $this->assertSame('ready', $result['status']);
+        $this->assertSame('deepseek-v4-pro', $result['model']);
+        $this->assertCount(1, $result['offers']);
+        $this->assertSame('seller.by', $result['offers'][0]['domain']);
+
+        Http::assertSent(function (Request $request): bool {
+            $data = $request->data();
+
+            return $request->hasHeader('x-api-key', 'deepseek-secret-key')
+                && $request->hasHeader('anthropic-version', '2023-06-01')
+                && ! $request->hasHeader('Authorization')
+                && $data['model'] === 'deepseek-v4-pro'
+                && $data['tools'][0]['type'] === 'web_search_20250305'
+                && $data['tools'][0]['name'] === 'web_search'
+                && $data['tools'][0]['max_uses'] === 12
+                && $data['max_tokens'] === 16000;
+        });
+    }
+
+    public function test_it_falls_back_to_deepseek_flash_when_pro_returns_unstructured_text(): void
+    {
+        config()->set([
+            'services.ai.market_research_provider' => 'deepseek',
+            'services.ai.api_key' => 'deepseek-secret-key',
+            'services.ai.deepseek_anthropic_url' => 'https://api.deepseek.test/anthropic/v1/messages',
+            'services.ai.deepseek_research_model' => 'deepseek-v4-pro',
+            'services.ai.deepseek_research_fallback_model' => 'deepseek-flash',
+        ]);
+
+        Http::fakeSequence('https://api.deepseek.test/anthropic/v1/messages')
+            ->push(['content' => [['type' => 'text', 'text' => 'Не JSON']]])
+            ->push(['content' => [['type' => 'text', 'text' => json_encode([
+                'summary' => 'Рынок не найден.',
+                'verdict' => 'Нужна ручная проверка.',
+                'confidence' => 'low',
+                'search_queries' => ['TEST-3'],
+                'offers' => [],
+                'rejected_candidates' => [],
+            ], JSON_UNESCAPED_UNICODE)]]]);
+
+        $result = app(MarketWebResearchService::class)->research(new Product([
+            'name' => 'Тестовый товар',
+            'sku' => 'TEST-3',
+        ]), 100);
+
+        $this->assertSame('ready', $result['status']);
+        $this->assertSame('deepseek-flash', $result['model']);
+
+        Http::assertSentCount(2);
     }
 
     /** @return array<string, mixed> */

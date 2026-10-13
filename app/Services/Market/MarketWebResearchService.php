@@ -17,10 +17,10 @@ class MarketWebResearchService
         $provider = $this->provider();
         $apiKey = $provider['api_key'];
         if ($apiKey === '') {
-            return $this->failure('Поиск не настроен: отсутствует API-ключ выбранного OpenAI-провайдера.');
+            return $this->failure('Поиск не настроен: отсутствует API-ключ выбранного провайдера.');
         }
         if ($provider['responses_url'] === '' || $provider['model'] === '') {
-            return $this->failure('Поиск не настроен: для выбранного OpenAI-провайдера не заданы endpoint или модель.');
+            return $this->failure('Поиск не настроен: для выбранного провайдера не заданы endpoint или модель.');
         }
 
         $product->loadMissing(['brand', 'category']);
@@ -28,7 +28,9 @@ class MarketWebResearchService
             ? [$provider['model']]
             : array_values(array_unique(array_filter([
                 $provider['model'],
-                trim((string) config('services.ai.openai_model', 'gpt-4.1')),
+                $provider['name'] === 'deepseek'
+                    ? trim((string) config('services.ai.deepseek_research_fallback_model', 'deepseek-flash'))
+                    : trim((string) config('services.ai.openai_model', 'gpt-4.1')),
             ])));
         $lastError = null;
 
@@ -39,6 +41,11 @@ class MarketWebResearchService
                     ->retry(2, 1500, throw: false);
                 if ($provider['name'] === 'azure') {
                     $request = $request->withHeaders(['api-key' => $apiKey]);
+                } elseif ($provider['name'] === 'deepseek') {
+                    $request = $request->withHeaders([
+                        'x-api-key' => $apiKey,
+                        'anthropic-version' => '2023-06-01',
+                    ]);
                 } else {
                     $request = $request->withToken($apiKey);
                     $proxy = trim((string) config('services.ai.openai_proxy'));
@@ -58,7 +65,12 @@ class MarketWebResearchService
                     continue;
                 }
 
-                return $this->normalize($response->json(), $product, $quotePrice, $model);
+                $result = $this->normalize($response->json(), $product, $quotePrice, $model);
+                if (($result['status'] ?? null) === 'ready') {
+                    return $result;
+                }
+
+                $lastError = (string) ($result['message'] ?? 'модель не вернула структурированный отчёт');
             } catch (ConnectionException|RequestException $exception) {
                 $lastError = $exception->getMessage();
             } catch (Throwable $exception) {
@@ -73,6 +85,23 @@ class MarketWebResearchService
     /** @return array<string, mixed> */
     private function payload(Product $product, float $quotePrice, string $model, string $provider): array
     {
+        if ($provider === 'deepseek') {
+            return [
+                'model' => $model,
+                'max_tokens' => 16000,
+                'system' => $this->instructions()."\n\n".$this->deepSeekJsonContract(),
+                'messages' => [[
+                    'role' => 'user',
+                    'content' => $this->productPrompt($product, $quotePrice),
+                ]],
+                'tools' => [[
+                    'type' => 'web_search_20250305',
+                    'name' => 'web_search',
+                    'max_uses' => 12,
+                ]],
+            ];
+        }
+
         $webSearch = [
             'type' => 'web_search',
             'search_context_size' => 'high',
@@ -211,6 +240,14 @@ PROMPT;
         ];
     }
 
+    private function deepSeekJsonContract(): string
+    {
+        return <<<'PROMPT'
+Верни только один JSON-объект без Markdown и пояснений. Формат:
+{"summary":"...","verdict":"...","confidence":"high|medium|low","search_queries":["..."],"offers":[{"seller":"...","domain":"...","title":"...","url":"https://...","price":123.45,"currency":"BYN","price_byn":123.45,"availability":"...","vat":"...","package":"...","match":"exact|probable","evidence":"..."}],"rejected_candidates":[{"title":"...","url":"https://... или null","reason":"..."}]}
+PROMPT;
+    }
+
     /** @param array<string, mixed> $response
      * @return array<string, mixed>
      */
@@ -287,18 +324,38 @@ PROMPT;
     /** @param array<string, mixed> $response */
     private function outputText(array $response): string
     {
+        if (isset($response['content']) && is_array($response['content'])) {
+            $text = collect($response['content'])
+                ->filter(fn ($content): bool => is_array($content) && ($content['type'] ?? null) === 'text')
+                ->pluck('text')
+                ->map(fn ($value): string => (string) $value)
+                ->implode("\n");
+
+            return $this->stripJsonFence($text);
+        }
+
         foreach ((array) ($response['output'] ?? []) as $item) {
             if (! is_array($item) || ($item['type'] ?? null) !== 'message') {
                 continue;
             }
             foreach ((array) ($item['content'] ?? []) as $content) {
                 if (is_array($content) && ($content['type'] ?? null) === 'output_text') {
-                    return (string) ($content['text'] ?? '');
+                    return $this->stripJsonFence((string) ($content['text'] ?? ''));
                 }
             }
         }
 
-        return (string) ($response['output_text'] ?? '');
+        return $this->stripJsonFence((string) ($response['output_text'] ?? ''));
+    }
+
+    private function stripJsonFence(string $text): string
+    {
+        $text = trim($text);
+        if (preg_match('/^```(?:json)?\s*(.*?)\s*```$/is', $text, $matches) === 1) {
+            return trim($matches[1]);
+        }
+
+        return $text;
     }
 
     /** @param array<string, mixed> $response
@@ -307,6 +364,22 @@ PROMPT;
     private function webSources(array $response): array
     {
         $sources = [];
+        foreach ((array) ($response['content'] ?? []) as $content) {
+            if (! is_array($content)) {
+                continue;
+            }
+
+            if (($content['type'] ?? null) === 'web_search_tool_result') {
+                foreach ((array) ($content['content'] ?? []) as $source) {
+                    $this->appendSource($sources, $source);
+                }
+            }
+
+            foreach ((array) ($content['citations'] ?? []) as $citation) {
+                $this->appendSource($sources, $citation);
+            }
+        }
+
         foreach ((array) ($response['output'] ?? []) as $item) {
             if (! is_array($item)) {
                 continue;
@@ -374,9 +447,17 @@ PROMPT;
     /** @return array{name: string, label: string, api_key: string, responses_url: string, model: string} */
     private function provider(): array
     {
-        $name = trim((string) config('services.ai.market_openai_provider', 'openai')) === 'azure'
-            ? 'azure'
-            : 'openai';
+        $name = trim((string) config('services.ai.market_research_provider', 'deepseek'));
+
+        if ($name === 'deepseek') {
+            return [
+                'name' => 'deepseek',
+                'label' => 'DeepSeek',
+                'api_key' => trim((string) config('services.ai.api_key')),
+                'responses_url' => trim((string) config('services.ai.deepseek_anthropic_url', 'https://api.deepseek.com/anthropic/v1/messages')),
+                'model' => trim((string) config('services.ai.deepseek_research_model', 'deepseek-v4-pro')),
+            ];
+        }
 
         if ($name === 'azure') {
             return [
