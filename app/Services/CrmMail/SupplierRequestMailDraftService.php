@@ -8,10 +8,53 @@ use App\Models\CrmMailThread;
 use App\Models\SupplierOrderRequest;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use RuntimeException;
 
 class SupplierRequestMailDraftService
 {
+    public function create(
+        CrmMailbox $mailbox,
+        User $user,
+        string $recipient,
+        string $subject,
+        string $body,
+        ?string $participantName = null,
+    ): CrmMailThread {
+        return DB::transaction(function () use ($mailbox, $user, $recipient, $subject, $body, $participantName): CrmMailThread {
+            $thread = CrmMailThread::query()->create([
+                'mailbox_id' => $mailbox->id,
+                'assigned_user_id' => $user->id,
+                'thread_key' => hash('sha256', 'outgoing-draft|'.Str::uuid()),
+                'subject' => trim($subject),
+                'participant_name' => filled($participantName) ? trim((string) $participantName) : null,
+                'participant_email' => mb_strtolower(trim($recipient)),
+                'status' => 'draft',
+                'priority' => 'normal',
+                'messages_count' => 1,
+                'unread_count' => 0,
+                'last_message_at' => now(),
+            ]);
+
+            $thread->messages()->create([
+                'mailbox_id' => $mailbox->id,
+                'sent_by_user_id' => $user->id,
+                'direction' => 'draft',
+                'from_name' => $mailbox->name,
+                'from_email' => $mailbox->email,
+                'to' => [['name' => $participantName, 'email' => mb_strtolower(trim($recipient))]],
+                'subject' => trim($subject),
+                'text_body' => trim($body),
+                'attachments_count' => 0,
+                'is_read' => true,
+                'received_at' => now(),
+                'metadata' => ['source' => 'manual_draft'],
+            ]);
+
+            return $thread->fresh(['mailbox', 'messages']);
+        });
+    }
+
     public function sync(SupplierOrderRequest $request, ?User $user): CrmMailThread
     {
         $request->loadMissing(['order', 'items', 'supplier.crmCounterparty.contactPoints']);

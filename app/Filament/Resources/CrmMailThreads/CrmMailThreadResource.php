@@ -39,7 +39,7 @@ class CrmMailThreadResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedEnvelope;
 
-    protected static ?string $navigationLabel = 'Входящие письма';
+    protected static ?string $navigationLabel = 'Почта';
 
     protected static ?string $modelLabel = 'переписка';
 
@@ -151,8 +151,9 @@ class CrmMailThreadResource extends Resource
     public static function table(Table $table): Table
     {
         return $table
+            ->poll('60s')
             ->columns([
-                TextColumn::make('last_message_at')->label('Получено')->dateTime('d.m.Y H:i', 'Europe/Minsk')->sortable(),
+                TextColumn::make('last_message_at')->label('Дата')->dateTime('d.m.Y H:i', 'Europe/Minsk')->sortable(),
                 TextColumn::make('participant_name')->label('Отправитель')->weight('bold')->searchable()
                     ->description(fn (CrmMailThread $record): string => $record->participant_email),
                 TextColumn::make('subject')->label('Тема')->searchable()->limit(65)->wrap()
