@@ -18,8 +18,7 @@ class OneCOrderQueueTest extends TestCase
     public function test_confirmed_order_is_moved_to_processing_and_explicitly_queued(): void
     {
         $manager = User::factory()->create(['role' => 'manager']);
-        $source = IntegrationSource::query()->create([
-            'code' => 'onec',
+        $source = IntegrationSource::query()->updateOrCreate(['code' => 'onec'], [
             'name' => 'Центральная 1С',
             'is_active' => true,
         ]);
@@ -41,8 +40,7 @@ class OneCOrderQueueTest extends TestCase
 
     public function test_unconfirmed_order_cannot_be_queued(): void
     {
-        IntegrationSource::query()->create([
-            'code' => 'onec',
+        IntegrationSource::query()->updateOrCreate(['code' => 'onec'], [
             'name' => 'Центральная 1С',
             'is_active' => true,
         ]);
