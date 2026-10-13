@@ -34,6 +34,30 @@ class QuickCommercialOfferService
         if ($registry) {
             $analysis = $this->mergeRegistryData($analysis, $registry);
         }
+
+        return array_merge(
+            $this->matchProducts($text, $analysis),
+            ['prefill' => $this->clientPrefill($thread, $text, $analysis)],
+        );
+    }
+
+    /**
+     * @return array{suggestions: array<int, string>, default_product_ids: list<int>, product_quantities: array<int, float>, analysis_summary: string, analysis: array<string, mixed>, unmatched_items: array<int, array<string, mixed>>}
+     */
+    public function prepareText(string $text, ?bool $useAi = null): array
+    {
+        $text = trim($text);
+        $analysis = $this->mailAnalyzer->analyzeText($text, 'commercial-document-manager', $useAi);
+        if (empty($analysis['items'])) {
+            $analysis['items'] = $this->fallbackItems($text);
+        }
+
+        return $this->matchProducts($text, $analysis);
+    }
+
+    /** @return array<string, mixed> */
+    private function matchProducts(string $text, array $analysis): array
+    {
         $aiSearchText = collect($analysis['items'])
             ->flatMap(fn (array $item): array => [$item['query'], $item['sku']])
             ->filter()->implode(' ');
@@ -69,7 +93,6 @@ class QuickCommercialOfferService
             : [];
 
         return [
-            'prefill' => $this->clientPrefill($thread, $text, $analysis),
             'suggestions' => $suggestions,
             'default_product_ids' => $defaults,
             'product_quantities' => $ranked->take(12)->mapWithKeys(fn (array $item): array => [
@@ -79,6 +102,30 @@ class QuickCommercialOfferService
             'analysis' => $analysis,
             'unmatched_items' => $this->unmatchedItems($analysis['items'], $ranked),
         ];
+    }
+
+    /** @return list<array{query: string, sku: ?string, quantity: float}> */
+    private function fallbackItems(string $text): array
+    {
+        return collect(preg_split('/\R+/u', $text) ?: [])
+            ->map(function (string $line): ?array {
+                $line = trim(preg_replace('/^\s*(?:[-–—•*]+\s*|\d+[.)]\s*)/u', '', $line) ?? $line);
+                if (mb_strlen($line) < 3) {
+                    return null;
+                }
+
+                $quantity = 1.0;
+                if (preg_match('/(?:\s|^)[xх×]?\s*(\d+(?:[.,]\d+)?)\s*(?:шт\.?|ед\.?|м\.?|компл\.?|x|х|×)?\s*$/ui', $line, $match)) {
+                    $quantity = max(0.001, (float) str_replace(',', '.', $match[1]));
+                    $line = trim(mb_substr($line, 0, mb_strlen($line) - mb_strlen($match[0])));
+                }
+
+                return $line !== '' ? ['query' => $line, 'sku' => null, 'quantity' => $quantity] : null;
+            })
+            ->filter()
+            ->take(25)
+            ->values()
+            ->all();
     }
 
     /** @return array<int, string> */

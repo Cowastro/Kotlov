@@ -117,6 +117,46 @@ class QuickCommercialOfferServiceTest extends TestCase
         $this->assertSame('777.00', $product->fresh()->price);
     }
 
+    public function test_manager_text_is_matched_with_quantity_without_ai(): void
+    {
+        $category = Category::query()->create([
+            'name' => 'Подбор из формы КП', 'slug' => 'commercial-copilot-products', 'is_active' => true,
+        ]);
+        $product = Product::query()->create([
+            'category_id' => $category->id,
+            'name' => 'Насос Grundfos Comfort 15-14 BA PM',
+            'slug' => 'commercial-copilot-grundfos-comfort',
+            'sku' => 'PS-008.538',
+            'price' => 578.28,
+            'currency' => 'BYN',
+            'is_active' => true,
+            'is_archived' => false,
+        ]);
+        $numericSkuProduct = Product::query()->create([
+            'category_id' => $category->id,
+            'name' => 'Радиатор стальной тестовый',
+            'slug' => 'commercial-copilot-numeric-sku',
+            'sku' => '123456789',
+            'price' => 300,
+            'currency' => 'BYN',
+            'is_active' => true,
+            'is_archived' => false,
+        ]);
+
+        $result = app(QuickCommercialOfferService::class)
+            ->prepareText('Насос Grundfos Comfort 15-14 BA PM PS-008.538 — 2 шт.', false);
+        $numericResult = app(QuickCommercialOfferService::class)
+            ->prepareText('123456789 Радиатор стальной тестовый — 3 шт.', false);
+
+        $this->assertArrayHasKey($product->id, $result['suggestions']);
+        $this->assertContains($product->id, $result['default_product_ids']);
+        $this->assertSame(2.0, $result['product_quantities'][$product->id]);
+        $this->assertStringContainsString('быстрый подбор', $result['analysis_summary']);
+        $this->assertSame('578.28', $product->fresh()->price);
+        $this->assertArrayHasKey($numericSkuProduct->id, $numericResult['suggestions']);
+        $this->assertSame(3.0, $numericResult['product_quantities'][$numericSkuProduct->id]);
+    }
+
     public function test_it_saves_recognized_client_contacts_and_creates_inactive_product_draft(): void
     {
         $mailbox = CrmMailbox::query()->create([

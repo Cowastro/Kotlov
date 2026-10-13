@@ -18,6 +18,7 @@ use App\Models\OrderItem;
 use App\Models\Product;
 use App\Models\Supplier;
 use App\Models\User;
+use App\Services\CommercialDocuments\CommercialOfferCopilotService;
 use App\Services\Market\MarketPriceIndicator;
 use App\Services\Market\MarketPriceObservationRecorder;
 use App\Services\Market\MarketPriceRecommendation;
@@ -427,6 +428,33 @@ class MarketPriceIntelligenceTest extends TestCase
             ->assertSeeText('Рекомендация готова')
             ->assertSeeText('100,00 BYN · маржа 20,0%')
             ->assertDontSeeText('Применить рекомендованную цену');
+    }
+
+    public function test_commercial_offer_copilot_returns_rows_and_safe_pricing_without_changing_catalog_price(): void
+    {
+        [$product] = $this->fixture('commercial-copilot', productPrice: 130);
+        foreach ([95, 100, 105] as $index => $price) {
+            $this->record($this->source('commercial-copilot-'.$index), $product, $price, now()->subHour());
+        }
+        $this->attachIntegrationCost($product, 80);
+
+        $service = app(CommercialOfferCopilotService::class);
+        $rows = $service->itemRows([$product->id], [$product->id => 2]);
+        $pricing = $service->pricing($product->id, 110);
+
+        $this->assertCount(1, $rows);
+        $this->assertSame(2.0, $rows[0]['quantity']);
+        $this->assertSame(260.0, $rows[0]['line_total']);
+        $this->assertSame(80.0, $pricing['purchase_price']);
+        $this->assertSame(30.0, $pricing['margin_byn']);
+        $this->assertSame(27.3, $pricing['margin_percent']);
+        $this->assertSame(100.0, $pricing['market']['median']);
+        $this->assertSame('above', $pricing['quote_market_position']);
+        $this->assertSame(10.0, $pricing['quote_market_delta_percent']);
+        $this->assertSame('Цена КП выше рынка', $pricing['label']);
+        $this->assertSame(100.0, $pricing['recommended_price']);
+        $this->assertSame('ready', $pricing['recommendation_status']);
+        $this->assertSame('130.00', $product->fresh()->price);
     }
 
     /** @return array{Product, MarketPriceSource} */

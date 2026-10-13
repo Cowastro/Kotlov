@@ -144,6 +144,48 @@ class CommercialDocumentWorkflowTest extends TestCase
         $this->assertTrue(CommercialDocumentResource::canViewAny());
         $this->assertTrue(CommercialDocumentResource::canCreate());
         Livewire::actingAs($user)->test(ListCommercialDocuments::class)->assertSuccessful();
-        Livewire::actingAs($user)->test(CreateCommercialDocument::class)->assertSuccessful();
+        Livewire::actingAs($user)
+            ->test(CreateCommercialDocument::class)
+            ->assertSuccessful()
+            ->assertSeeText('ИИ-помощник подбора')
+            ->assertSeeText('Подобрать товары')
+            ->assertSeeText('Добавить выбранные в КП')
+            ->assertSeeText('Сравнить рынок');
+    }
+
+    public function test_manager_can_match_and_add_products_from_copilot_text(): void
+    {
+        $user = User::factory()->create(['role' => 'manager', 'is_active' => true]);
+        $category = Category::query()->create([
+            'name' => 'Помощник КП', 'slug' => 'commercial-document-copilot-ui', 'is_active' => true,
+        ]);
+        $product = Product::query()->create([
+            'category_id' => $category->id,
+            'name' => 'Насос Grundfos Comfort 15-14 BA PM',
+            'slug' => 'commercial-document-copilot-ui-product',
+            'sku' => 'PS-008.538',
+            'price' => 578.28,
+            'currency' => 'BYN',
+            'unit' => 'шт.',
+            'is_active' => true,
+            'is_archived' => false,
+        ]);
+
+        Livewire::actingAs($user)
+            ->test(CreateCommercialDocument::class)
+            ->fillForm(['copilot_request' => 'Насос Grundfos Comfort PS-008.538 — 2 шт.'])
+            ->callFormComponentAction('copilot_actions', 'analyze_copilot_request')
+            ->assertFormSet(function (array $state) use ($product): bool {
+                return in_array($product->id, $state['copilot_product_ids'] ?? [], true)
+                    && (float) ($state['copilot_quantities'][$product->id] ?? 0) === 2.0;
+            })
+            ->callFormComponentAction('copilot_actions', 'add_copilot_products')
+            ->assertFormSet(function (array $state) use ($product): bool {
+                return collect($state['items'] ?? [])->contains(
+                    fn (array $item): bool => (int) ($item['product_id'] ?? 0) === $product->id
+                        && (float) ($item['quantity'] ?? 0) === 2.0
+                        && (float) ($item['unit_price'] ?? 0) === 578.28,
+                );
+            });
     }
 }

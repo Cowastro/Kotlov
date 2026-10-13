@@ -16,6 +16,14 @@ class CommercialOfferMailAnalyzer
      */
     public function analyze(CrmMailThread $thread, string $text, ?bool $useAi = null): array
     {
+        return $this->analyzeText($text, 'thread-'.$thread->id, $useAi);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function analyzeText(string $text, string $cacheScope = 'manager', ?bool $useAi = null): array
+    {
         $useAi ??= ! app()->environment('testing');
         $empty = $this->emptyResult();
 
@@ -23,7 +31,7 @@ class CommercialOfferMailAnalyzer
             return $empty;
         }
 
-        $cacheKey = 'quick-commercial-offer-ai:'.$thread->id.':'.hash('sha256', $text);
+        $cacheKey = 'quick-commercial-offer-ai:'.hash('sha256', $cacheScope).':'.hash('sha256', $text);
 
         return Cache::remember($cacheKey, now()->addMinutes(30), function () use ($text, $empty): array {
             $response = $this->ai->complete($this->prompt($text), 700);
