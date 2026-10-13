@@ -9,6 +9,8 @@ use App\Models\Order;
 use App\Models\OrderEconomicSnapshot;
 use App\Models\OrderItem;
 use App\Models\Product;
+use App\Models\Supplier;
+use App\Models\SupplierProduct;
 use App\Models\User;
 use App\Services\Orders\OrderEconomicSnapshotRecorder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -24,6 +26,17 @@ class OrderEconomicSnapshotTest extends TestCase
     {
         Event::fake([NewOrderCreated::class]);
         $product = $this->product();
+        $supplier = Supplier::query()->create([
+            'code' => 'economic-snapshot-stock',
+            'name' => 'Поставщик подтверждённого остатка',
+        ]);
+        SupplierProduct::query()->create([
+            'supplier_id' => $supplier->id,
+            'product_id' => $product->id,
+            'supplier_article' => 'ECONOMIC-SNAPSHOT-1',
+            'in_stock' => true,
+            'stock_quantity' => 1,
+        ]);
 
         $response = $this
             ->withHeader('User-Agent', 'Mozilla/5.0')

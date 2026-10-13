@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Product;
 use App\Services\B2bCatalogOfferResolver;
+use App\Services\CartAvailabilityGuard;
 use Illuminate\Http\Request;
 
 class CartController extends Controller
@@ -14,9 +15,9 @@ class CartController extends Controller
     // ─────────────────────────────────────────
     // Страница корзины
     // ─────────────────────────────────────────
-    public function index()
+    public function index(CartAvailabilityGuard $availabilityGuard)
     {
-        $items = $this->getItems();
+        $items = $this->getAvailableItems($availabilityGuard);
         $subtotal = $this->calcSubtotal($items);
 
         return view('pages.cart', compact('items', 'subtotal'));
@@ -134,8 +135,11 @@ class CartController extends Controller
     // ─────────────────────────────────────────
     // Изменить количество  POST /cart/update
     // ─────────────────────────────────────────
-    public function update(Request $request, B2bCatalogOfferResolver $offerResolver)
-    {
+    public function update(
+        Request $request,
+        B2bCatalogOfferResolver $offerResolver,
+        CartAvailabilityGuard $availabilityGuard,
+    ) {
         $request->validate([
             'product_id' => ['required', 'integer'],
             'quantity' => ['required', 'integer', 'min:1', 'max:999'],
@@ -143,6 +147,18 @@ class CartController extends Controller
 
         $cart = session(self::KEY, []);
         $id = (int) $request->product_id;
+
+        $availability = $availabilityGuard->pruneUnavailableRetailItems($cart);
+        $cart = $availability['cart'];
+        session([self::KEY => $cart]);
+
+        if (in_array($id, $availability['removed_ids'], true)) {
+            $message = 'Товар требует подтверждения наличия и удалён из корзины. Закажите консультацию.';
+
+            return $request->expectsJson()
+                ? response()->json(['message' => $message], 422)
+                : back()->with('error', $message);
+        }
 
         if (isset($cart[$id])) {
             if (($cart[$id]['pricing_type'] ?? 'retail') === 'b2b') {
@@ -225,9 +241,9 @@ class CartController extends Controller
     // ─────────────────────────────────────────
     // API: данные для mini-cart  GET /cart/data
     // ─────────────────────────────────────────
-    public function data()
+    public function data(CartAvailabilityGuard $availabilityGuard)
     {
-        $items = $this->getItems();
+        $items = $this->getAvailableItems($availabilityGuard);
         $subtotal = $this->calcSubtotal($items);
         $threshold = (float) config('shop.free_delivery_threshold', 400);
         $remaining = max(0, $threshold - $subtotal);
@@ -318,6 +334,17 @@ class CartController extends Controller
     private function getItems(): array
     {
         return session(self::KEY, []);
+    }
+
+    private function getAvailableItems(CartAvailabilityGuard $availabilityGuard): array
+    {
+        $availability = $availabilityGuard->pruneUnavailableRetailItems($this->getItems());
+
+        if ($availability['removed_ids'] !== []) {
+            session([self::KEY => $availability['cart']]);
+        }
+
+        return $availability['cart'];
     }
 
     private function calcSubtotal(array $items): float

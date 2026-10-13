@@ -13,6 +13,7 @@
             var description = button.dataset.description || "";
             var image = button.dataset.image || "/img/products/product-placeholder.jpg";
             var url = button.dataset.url || "#";
+            var canBuy = button.dataset.canBuy === "1";
             var images = [];
 
             try {
@@ -69,7 +70,17 @@
             });
 
             var addToCart = $("#quickView .btn-action-price");
-            addToCart.addClass("btn-add-to-cart").attr("data-product-id", productId);
+            var buyActions = $("#quickView-buy-actions");
+            var consultationActions = $("#quickView-consultation-actions");
+
+            buyActions.toggleClass("d-none", !canBuy);
+            consultationActions.toggleClass("d-none", canBuy);
+
+            if (canBuy) {
+                addToCart.addClass("btn-add-to-cart").attr("data-product-id", productId);
+            } else {
+                addToCart.removeClass("btn-add-to-cart").removeAttr("data-product-id");
+            }
         });
     };
 

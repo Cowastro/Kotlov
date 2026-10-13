@@ -175,6 +175,13 @@
                     <span class="tooltip">В корзину</span>
                 </a>
             </li>
+            @else
+            <li>
+                <a href="#ask" data-bs-toggle="modal" class="hover-tooltip box-icon">
+                    <span class="icon icon-Phone"></span>
+                    <span class="tooltip">Заказать консультацию</span>
+                </a>
+            </li>
             @endif
             <li class="wishlist">
                 <a href="#" class="hover-tooltip box-icon"
@@ -201,6 +208,7 @@
                     data-image="{{ $product->image_url }}"
                     data-images='@json($quickViewImages)'
                     data-url="{{ $productUrl }}"
+                    data-can-buy="{{ $canBuy ? '1' : '0' }}"
                     class="hover-tooltip box-icon">
                     <span class="icon icon-Eye"></span>
                     <span class="tooltip">Быстрый просмотр</span>

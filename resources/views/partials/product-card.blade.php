@@ -82,6 +82,7 @@
                     data-image="{{ $product->image_url }}"
                     data-images='@json($quickViewImages)'
                     data-url="{{ $productUrl }}"
+                    data-can-buy="{{ $canBuy ? '1' : '0' }}"
                     class="hover-tooltip tooltip-left box-icon">
                     <span class="icon icon-Eye"></span>
                     <span class="tooltip">Быстрый просмотр</span>
@@ -102,8 +103,8 @@
             </ul>
         @endif
 
-        @if ($canBuy)
         <div class="product-action_bot">
+            @if ($canBuy)
             <a href="#shoppingCart"
                 class="tf-btn btn-white small w-100 btn-add-to-cart"
                 data-product-id="{{ $product->id }}"
@@ -111,8 +112,12 @@
                 <i class="icon icon-Handbag"></i>
                 <span class="add-to-cart-label">В корзину</span>
             </a>
+            @else
+            <a href="#ask" data-bs-toggle="modal" class="tf-btn btn-white small w-100">
+                Заказать консультацию
+            </a>
+            @endif
         </div>
-        @endif
     </div>
 
     <div class="card-product_info">

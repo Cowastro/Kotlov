@@ -162,12 +162,26 @@
                             <tr class="compare-row">
                                 <td class="compare-col compare-title">Корзина</td>
                                 @foreach ($products as $product)
+                                    @php
+                                        $compareB2bOffer = app(\App\Services\B2bCatalogOfferResolver::class)
+                                            ->forProduct($product, auth()->user());
+                                        $compareCanBuy = $compareB2bOffer
+                                            ? $product->is_active && ! $product->is_archived && (float) $compareB2bOffer->stock_quantity >= 1
+                                            : $product->canBePurchased();
+                                    @endphp
                                     <td class="compare-col compare-value">
+                                        @if ($compareCanBuy)
                                         <a href="#shoppingCart"
                                             class="tf-btn s-small animate-btn btn-add-to-cart"
                                             data-product-id="{{ $product->id }}">
                                             В корзину
                                         </a>
+                                        @else
+                                        <a href="#ask" data-bs-toggle="modal"
+                                            class="tf-btn s-small animate-btn">
+                                            Заказать консультацию
+                                        </a>
+                                        @endif
                                     </td>
                                 @endforeach
                             </tr>

@@ -7,6 +7,7 @@ use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Product;
 use App\Services\B2bCatalogOfferResolver;
+use App\Services\CartAvailabilityGuard;
 use App\Services\Orders\OrderEconomicSnapshotRecorder;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -19,9 +20,20 @@ class CheckoutController extends Controller
     // ─────────────────────────────────────────
     // Страница оформления заказа  GET /checkout
     // ─────────────────────────────────────────
-    public function index()
+    public function index(CartAvailabilityGuard $availabilityGuard)
     {
         $cart = session(self::CART_KEY, []);
+
+        $availability = $availabilityGuard->pruneUnavailableRetailItems($cart);
+        $cart = $availability['cart'];
+        if ($availability['removed_ids'] !== []) {
+            session([self::CART_KEY => $cart]);
+
+            return redirect()->route('cart')->with(
+                'error',
+                'Товары без подтверждённого наличия удалены из корзины. Для них доступна консультация.'
+            );
+        }
 
         if (empty($cart)) {
             return redirect()->route('cart')->with('info', 'Корзина пуста.');
@@ -37,12 +49,26 @@ class CheckoutController extends Controller
     // ─────────────────────────────────────────
     // Создать заказ  POST /checkout
     // ─────────────────────────────────────────
-    public function store(Request $request, B2bCatalogOfferResolver $offerResolver)
-    {
+    public function store(
+        Request $request,
+        B2bCatalogOfferResolver $offerResolver,
+        CartAvailabilityGuard $availabilityGuard,
+    ) {
         $cart = session(self::CART_KEY, []);
 
         if (empty($cart)) {
             return redirect()->route('cart')->with('info', 'Корзина пуста.');
+        }
+
+        $availability = $availabilityGuard->pruneUnavailableRetailItems($cart);
+        $cart = $availability['cart'];
+        if ($availability['removed_ids'] !== []) {
+            session([self::CART_KEY => $cart]);
+
+            return redirect()->route('cart')->with(
+                'error',
+                'Заказ не создан: товары без подтверждённого наличия удалены из корзины. Закажите консультацию.'
+            );
         }
 
         $containsB2bPrices = collect($cart)->contains(

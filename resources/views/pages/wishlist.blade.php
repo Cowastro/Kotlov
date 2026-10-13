@@ -48,6 +48,17 @@
                                 ? number_format($product->price_old, 2, '.', ' ') . ' BYN'
                                 : null;
                             $productUrl = '/' . ($product->category->slug ?? 'catalog') . '/' . $product->slug;
+                            $wishlistB2bOffer = app(\App\Services\B2bCatalogOfferResolver::class)
+                                ->forProduct($product, auth()->user());
+                            $canBuy = $wishlistB2bOffer
+                                ? $product->is_active && ! $product->is_archived && (float) $wishlistB2bOffer->stock_quantity >= 1
+                                : $product->canBePurchased();
+                            $quickViewImages = collect($product->images ?: [$product->main_image])
+                                ->filter()
+                                ->keys()
+                                ->map(fn ($index) => $product->imageUrl($index))
+                                ->values()
+                                ->all();
                         @endphp
 
                         <div class="card-product" data-product-id="{{ $product->id }}">
@@ -80,6 +91,15 @@
                                     </li>
                                     <li>
                                         <a href="#quickView" data-bs-toggle="offcanvas"
+                                            data-product-id="{{ $product->id }}"
+                                            data-name="{{ $product->name }}"
+                                            data-price="{{ $price }}"
+                                            data-category="{{ $product->category->name ?? '' }}"
+                                            data-description="{{ Str::limit(strip_tags($product->short_description ?: $product->content ?: 'Описание товара отсутствует.'), 240) }}"
+                                            data-image="{{ $product->image_url }}"
+                                            data-images='@json($quickViewImages ?: [$product->image_url])'
+                                            data-url="{{ $productUrl }}"
+                                            data-can-buy="{{ $canBuy ? '1' : '0' }}"
                                             class="hover-tooltip tooltip-left box-icon">
                                             <span class="icon icon-Eye"></span>
                                             <span class="tooltip">Быстрый просмотр</span>
@@ -100,10 +120,18 @@
                                 @endif
 
                                 <div class="product-action_bot">
+                                    @if ($canBuy)
                                     <a href="#shoppingCart" data-bs-toggle="offcanvas"
-                                        class="tf-btn btn-white small w-100">
+                                        class="tf-btn btn-white small w-100 btn-add-to-cart"
+                                        data-product-id="{{ $product->id }}">
                                         В корзину
                                     </a>
+                                    @else
+                                    <a href="#ask" data-bs-toggle="modal"
+                                        class="tf-btn btn-white small w-100">
+                                        Заказать консультацию
+                                    </a>
+                                    @endif
                                 </div>
                             </div>
 

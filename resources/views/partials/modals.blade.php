@@ -351,16 +351,9 @@
                     </div>
                 </div>
                 <div class="product-total-quantity">
-                    <p>Количество:</p>
-                    <div class="group-action">
-                        <div class="wg-quantity">
-                            <button class="btn-quantity btn-decrease"><i class="icon icon-minus"></i></button>
-                            <input class="quantity-product" type="text" name="number" value="1">
-                            <button class="btn-quantity btn-increase"><i class="icon icon-plus"></i></button>
-                        </div>
-                        <a href="#shoppingCart" data-bs-toggle="offcanvas" class="btn-action-price tf-btn type-xl animate-btn w-100">В корзину</a>
-                    </div>
-                    <a href="/checkout" class="tf-btn type-xl btn-primary animate-btn w-100">Купить сейчас</a>
+                    <a href="#ask" data-bs-toggle="modal" class="tf-btn type-xl btn-primary animate-btn w-100">
+                        Заказать консультацию
+                    </a>
                 </div>
             </div>
         </div>
@@ -404,7 +397,7 @@
                     <p class="product-infor-desc cl-text-2 mb-12" id="quickView-desc">Описание товара</p>
                 </div>
                 <div class="br-line"></div>
-                <div class="tf-product-variant">
+                <div class="tf-product-variant d-none" id="quickView-buy-actions">
                     <div class="tf-product-total-quantity">
                         <p>Количество:</p>
                         <div class="group-action">
@@ -415,8 +408,12 @@
                             </div>
                             <a href="#shoppingCart" data-bs-toggle="offcanvas" class="btn-action-price tf-btn type-xl animate-btn w-100">В корзину</a>
                         </div>
-                        <a href="/checkout" class="tf-btn type-xl btn-primary animate-btn w-100">Купить сейчас</a>
                     </div>
+                </div>
+                <div id="quickView-consultation-actions">
+                    <a href="#ask" data-bs-toggle="modal" class="tf-btn type-xl btn-primary animate-btn w-100">
+                        Заказать консультацию
+                    </a>
                 </div>
                 <div class="box-action">
                     <a href="#" class="tf-btn-line-2 style-primary fw-semibold" id="quickView-detail-link">Подробнее о товаре</a>
