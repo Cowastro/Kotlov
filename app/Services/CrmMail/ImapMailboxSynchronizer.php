@@ -156,14 +156,7 @@ class ImapMailboxSynchronizer
             return null;
         }
 
-        $decoded = collect(imap_mime_header_decode($value))
-            ->map(fn (object $part): string => $this->toUtf8(
-                (string) ($part->text ?? ''),
-                (string) ($part->charset ?? ''),
-            ))
-            ->implode('');
-
-        return trim($decoded);
+        return app(MailEncodingNormalizer::class)->decodeHeader($value);
     }
 
     private function cleanMessageId(?string $value): ?string
@@ -274,39 +267,7 @@ class ImapMailboxSynchronizer
 
     private function toUtf8(string $value, ?string $charset = null): string
     {
-        if ($value === '') {
-            return '';
-        }
-
-        $source = strtoupper(trim((string) $charset, " \t\n\r\0\x0B\"'"));
-        $source = match ($source) {
-            'WINDOWS1251', 'CP1251', 'WIN-1251' => 'Windows-1251',
-            'KOI8R' => 'KOI8-R',
-            'UTF8' => 'UTF-8',
-            default => $source,
-        };
-
-        try {
-            if ($source !== '' && ! in_array($source, ['DEFAULT', 'UNKNOWN-8BIT', 'UTF-8', 'US-ASCII', 'ASCII'], true)) {
-                return mb_convert_encoding($value, 'UTF-8', $source);
-            }
-
-            if (! mb_check_encoding($value, 'UTF-8')) {
-                $detected = mb_detect_encoding(
-                    $value,
-                    ['Windows-1251', 'KOI8-R', 'ISO-8859-5', 'ISO-8859-1'],
-                    true,
-                );
-
-                return $detected
-                    ? mb_convert_encoding($value, 'UTF-8', $detected)
-                    : mb_scrub($value, 'UTF-8');
-            }
-        } catch (Throwable) {
-            return mb_scrub($value, 'UTF-8');
-        }
-
-        return $value;
+        return app(MailEncodingNormalizer::class)->toUtf8($value, $charset);
     }
 
     private function countAttachments(object|false $structure): int
