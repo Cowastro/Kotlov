@@ -2,6 +2,8 @@
 
 namespace App\Console\Commands;
 
+use App\Models\Brand;
+use App\Models\Category;
 use App\Models\Product;
 use App\Services\Market\MarketWebResearchService;
 use Carbon\CarbonInterface;
@@ -18,6 +20,8 @@ class BuildMarketPriceBatchCommand extends Command
         {--sku=* : One or more exact production SKUs}
         {--after-id=0 : Process products with a larger production ID}
         {--limit=10 : Maximum products to research}
+        {--input-contexts= : Read previously exported production product contexts instead of querying a database}
+        {--export-contexts= : Export matching production product contexts without calling the research provider}
         {--output=storage/app/private/market-price-research/market-price-research-batch.json : Server-local JSON report path}';
 
     protected $description = 'Build a review-only market-price batch from active unpriced production products using hosted web search.';
@@ -39,31 +43,62 @@ class BuildMarketPriceBatchCommand extends Command
             return self::INVALID;
         }
 
-        $output = $this->safeOutputPath((string) $this->option('output'));
+        $output = $this->safeResearchPath((string) $this->option('output'));
+        $inputContexts = trim((string) $this->option('input-contexts'));
+        $exportContexts = trim((string) $this->option('export-contexts'));
+        if ($inputContexts !== '' && $exportContexts !== '') {
+            $this->error('Input and export context modes cannot be combined.');
+
+            return self::INVALID;
+        }
+
         $skus = collect((array) $this->option('sku'))->map(fn ($sku): string => trim((string) $sku))->filter()->values();
         $brand = trim((string) $this->option('brand'));
-        if ($skus->isEmpty() && $brand === '') {
+        if ($inputContexts === '' && $skus->isEmpty() && $brand === '') {
             $this->error('Provide --brand or at least one --sku.');
 
             return self::INVALID;
         }
 
-        $products = Product::query()
-            ->with(['brand', 'category'])
-            ->where('is_active', true)
-            ->where('is_archived', false)
-            ->where(fn (Builder $query) => $query->whereNull('price')->orWhere('price', '<=', 0))
-            ->where('id', '>', $afterId)
-            ->when($skus->isNotEmpty(), fn (Builder $query) => $query->whereIn('sku', $skus->all()))
-            ->when($brand !== '', fn (Builder $query) => $query->whereHas('brand', fn (Builder $brandQuery) => $brandQuery->where('name', $brand)))
-            ->orderBy('id')
-            ->limit($limit)
-            ->get();
+        $selection = [
+            'production_only' => true,
+            'active_only' => true,
+            'unpriced_only' => true,
+            'brand' => $brand !== '' ? $brand : null,
+            'skus' => $skus->all(),
+            'after_id' => $afterId,
+            'limit' => $limit,
+        ];
+        if ($inputContexts !== '') {
+            [$products, $selection] = $this->readContexts($inputContexts);
+        } else {
+            $products = Product::query()
+                ->with(['brand', 'category'])
+                ->where('is_active', true)
+                ->where('is_archived', false)
+                ->where(fn (Builder $query) => $query->whereNull('price')->orWhere('price', '<=', 0))
+                ->where('id', '>', $afterId)
+                ->when($skus->isNotEmpty(), fn (Builder $query) => $query->whereIn('sku', $skus->all()))
+                ->when($brand !== '', fn (Builder $query) => $query->whereHas('brand', fn (Builder $brandQuery) => $brandQuery->where('name', $brand)))
+                ->orderBy('id')
+                ->limit($limit)
+                ->get();
+        }
 
         if ($products->isEmpty()) {
             $this->error('No matching active unpriced production products were found.');
 
             return self::FAILURE;
+        }
+
+        if ($exportContexts !== '') {
+            $this->writeContexts($exportContexts, $selection, $products);
+            $this->line('metric.status=contexts_exported');
+            $this->line('metric.selected_products='.$products->count());
+            $this->line('metric.last_product_id='.$products->max('id'));
+            $this->line('metric.output='.$this->relativeStoragePath($this->safeResearchPath($exportContexts)));
+
+            return self::SUCCESS;
         }
 
         $sourceRows = [];
@@ -119,15 +154,7 @@ class BuildMarketPriceBatchCommand extends Command
             'code' => $batchCode,
             'observed_at' => now()->toIso8601String(),
             'review_required' => true,
-            'selection' => [
-                'production_only' => true,
-                'active_only' => true,
-                'unpriced_only' => true,
-                'brand' => $brand !== '' ? $brand : null,
-                'skus' => $skus->all(),
-                'after_id' => $afterId,
-                'limit' => $limit,
-            ],
+            'selection' => $selection,
             'sources' => array_values($sourceRows),
             'products' => $productRows,
             'failed_products' => $failedProducts,
@@ -248,7 +275,71 @@ class BuildMarketPriceBatchCommand extends Command
         return is_string($value) && trim($value) !== '' ? trim($value) : now()->toIso8601String();
     }
 
-    private function safeOutputPath(string $value): string
+    /** @return array{0: \Illuminate\Support\Collection<int, Product>, 1: array<string, mixed>} */
+    private function readContexts(string $value): array
+    {
+        $path = $this->safeResearchPath($value);
+        if (! File::isFile($path)) {
+            throw new \InvalidArgumentException('Context file not found.');
+        }
+
+        $payload = json_decode(File::get($path), true, flags: JSON_THROW_ON_ERROR);
+        if (! is_array($payload) || ! is_array($payload['selection'] ?? null) || ! is_array($payload['products'] ?? null)) {
+            throw new \InvalidArgumentException('Invalid market-price context file.');
+        }
+
+        $products = collect($payload['products'])->map(function (mixed $row): Product {
+            if (! is_array($row)
+                || ! is_numeric($row['id'] ?? null)
+                || blank($row['sku'] ?? null)
+                || blank($row['name'] ?? null)) {
+                throw new \InvalidArgumentException('Every context product requires id, sku and name.');
+            }
+
+            $product = new Product;
+            $product->forceFill([
+                'id' => (int) $row['id'],
+                'sku' => (string) $row['sku'],
+                'name' => (string) $row['name'],
+                'specs' => is_array($row['specs'] ?? null) ? $row['specs'] : [],
+            ]);
+            $product->setRelation('brand', filled($row['brand'] ?? null)
+                ? new Brand(['name' => (string) $row['brand']])
+                : null);
+            $product->setRelation('category', filled($row['category'] ?? null)
+                ? new Category(['name' => (string) $row['category']])
+                : null);
+
+            return $product;
+        })->values();
+
+        return [$products, $payload['selection']];
+    }
+
+    /** @param array<string, mixed> $selection
+     *  @param \Illuminate\Support\Collection<int, Product> $products
+     */
+    private function writeContexts(string $value, array $selection, $products): void
+    {
+        $path = $this->safeResearchPath($value);
+        $payload = [
+            'exported_at' => now()->toIso8601String(),
+            'selection' => $selection,
+            'products' => $products->map(fn (Product $product): array => [
+                'id' => $product->id,
+                'sku' => $product->sku,
+                'name' => $product->name,
+                'brand' => $product->brand?->name,
+                'category' => $product->category?->name,
+                'specs' => $product->specs ?: [],
+            ])->values()->all(),
+        ];
+
+        File::ensureDirectoryExists(dirname($path));
+        File::put($path, json_encode($payload, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES).PHP_EOL);
+    }
+
+    private function safeResearchPath(string $value): string
     {
         $value = str_replace('\\', '/', trim($value));
         $prefix = 'storage/app/private/market-price-research/';

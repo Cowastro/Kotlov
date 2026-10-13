@@ -18,11 +18,81 @@ class BuildMarketPriceBatchCommandTest extends TestCase
 
     private string $output = 'storage/app/private/market-price-research/test-market-price-batch.json';
 
+    private string $contexts = 'storage/app/private/market-price-research/test-market-price-contexts.json';
+
     protected function tearDown(): void
     {
         File::delete(base_path($this->output));
+        File::delete(base_path($this->contexts));
         CarbonImmutable::setTestNow();
         parent::tearDown();
+    }
+
+    public function test_it_exports_production_contexts_and_researches_them_without_a_database_query(): void
+    {
+        $brand = Brand::query()->create([
+            'name' => 'ТехноЛит',
+            'slug' => 'technolit-context-export-test',
+            'is_active' => true,
+        ]);
+        $category = Category::query()->create([
+            'name' => 'Печи для контекстного теста',
+            'slug' => 'market-context-export-test',
+            'parent_id' => 0,
+            'is_active' => true,
+        ]);
+        $product = Product::query()->create([
+            'brand_id' => $brand->id,
+            'category_id' => $category->id,
+            'name' => 'Печь ТехноЛит GFS 18 для экспорта',
+            'slug' => 'technolit-gfs-18-context-test',
+            'sku' => 'TEST-CONTEXT-001',
+            'price' => 0,
+            'currency' => 'BYN',
+            'specs' => [['name' => 'Мощность', 'value' => '18 кВт']],
+            'is_active' => true,
+            'is_archived' => false,
+        ]);
+
+        $this->mock(MarketWebResearchService::class, function (MockInterface $mock): void {
+            $mock->shouldReceive('research')
+                ->once()
+                ->withArgs(fn (Product $product, float $price): bool => $product->sku === 'TEST-CONTEXT-001'
+                    && $product->brand?->name === 'ТехноЛит'
+                    && $product->category?->name === 'Печи для контекстного теста'
+                    && $product->specs[0]['value'] === '18 кВт'
+                    && $price === 0.0)
+                ->andReturn($this->readyReport([]));
+        });
+
+        $this->artisan('catalog:build-market-price-batch', [
+            'batch' => '2026-10-13-context-export-test',
+            '--sku' => [$product->sku],
+            '--export-contexts' => $this->contexts,
+        ])
+            ->expectsOutputToContain('metric.status=contexts_exported')
+            ->expectsOutputToContain('metric.selected_products=1')
+            ->assertSuccessful();
+
+        $context = json_decode(File::get(base_path($this->contexts)), true, flags: JSON_THROW_ON_ERROR);
+        $this->assertSame('TEST-CONTEXT-001', $context['products'][0]['sku']);
+        $this->assertSame('ТехноЛит', $context['products'][0]['brand']);
+
+        $product->delete();
+        $this->artisan('catalog:build-market-price-batch', [
+            'batch' => '2026-10-13-context-import-test',
+            '--input-contexts' => $this->contexts,
+            '--output' => $this->output,
+        ])
+            ->expectsOutputToContain('metric.status=review_required')
+            ->expectsOutputToContain('metric.selected_products=1')
+            ->expectsOutputToContain('metric.researched_products=1')
+            ->expectsOutputToContain('metric.forced_consultation_holds=1')
+            ->assertSuccessful();
+
+        $batch = json_decode(File::get(base_path($this->output)), true, flags: JSON_THROW_ON_ERROR);
+        $this->assertSame('TEST-CONTEXT-001', $batch['products'][0]['sku']);
+        $this->assertTrue($batch['products'][0]['force_consultation_hold']);
     }
 
     public function test_it_builds_a_review_only_batch_and_forces_a_hold_without_three_exact_sources(): void

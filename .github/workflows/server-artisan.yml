@@ -38,7 +38,7 @@ jobs:
   run:
     name: Run Server Artisan Task
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 120
 
     steps:
       - name: Validate inputs
@@ -98,6 +98,10 @@ jobs:
           printf '%s\n' "$SERVER_SSH_KEY" > ~/.ssh/server_key
           chmod 600 ~/.ssh/server_key
           ssh-keyscan -p "${SERVER_PORT:-22}" "$SERVER_HOST" >> ~/.ssh/known_hosts
+
+      - name: Checkout code for market research
+        if: inputs.task == 'research-price-batch'
+        uses: actions/checkout@v6
 
       - name: Run remote task
         if: inputs.task != 'configure-openai'
@@ -196,7 +200,7 @@ jobs:
                 ;;
               research-price-batch)
                 "$PHP_BIN" artisan catalog:build-market-price-batch "${ARTISAN_ARGV[@]}" \
-                  --output=storage/app/private/market-price-research/market-price-research-batch.json
+                  --export-contexts=storage/app/private/market-price-research/market-price-contexts.json
                 ;;
               deploy-safe)
               # Never discard production changes. A dirty tracked worktree is a
@@ -366,8 +370,8 @@ jobs:
           if-no-files-found: error
           retention-days: 7
 
-      - name: Download market price research batch
-        if: always() && inputs.task == 'research-price-batch'
+      - name: Download production market price contexts
+        if: inputs.task == 'research-price-batch'
         env:
           SERVER_HOST: ${{ secrets.SERVER_HOST }}
           SERVER_PORT: ${{ secrets.SERVER_PORT }}
@@ -377,17 +381,48 @@ jobs:
           set -euo pipefail
           port="${SERVER_PORT:-22}"
           server_path="${SERVER_PATH:-/var/www/h209767/data/www/new.kotlov.by}"
-          mkdir -p audit-artifacts
+          mkdir -p storage/app/private/market-price-research
           scp -i ~/.ssh/server_key -P "$port" \
-            "$SERVER_USER@$SERVER_HOST:$server_path/storage/app/private/market-price-research/market-price-research-batch.json" \
-            audit-artifacts/market-price-research-batch.json
+            "$SERVER_USER@$SERVER_HOST:$server_path/storage/app/private/market-price-research/market-price-contexts.json" \
+            storage/app/private/market-price-research/market-price-contexts.json
+
+      - name: Setup PHP for market research
+        if: inputs.task == 'research-price-batch'
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: curl, mbstring
+          coverage: none
+
+      - name: Install market research runtime
+        if: inputs.task == 'research-price-batch'
+        run: |
+          composer install --prefer-dist --no-interaction --no-progress
+          cp .env.example .env
+          php artisan key:generate
+
+      - name: Research production market prices
+        if: inputs.task == 'research-price-batch'
+        env:
+          ARTISAN_ARGS: ${{ inputs.artisan_args }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        run: |
+          set -euo pipefail
+          test -n "$OPENAI_API_KEY"
+          IFS=' ' read -r -a ARTISAN_ARGV <<< "$ARTISAN_ARGS"
+          for i in "${!ARTISAN_ARGV[@]}"; do
+            ARTISAN_ARGV[$i]="${ARTISAN_ARGV[$i]//%20/ }"
+          done
+          php artisan catalog:build-market-price-batch "${ARTISAN_ARGV[@]}" \
+            --input-contexts=storage/app/private/market-price-research/market-price-contexts.json \
+            --output=storage/app/private/market-price-research/market-price-research-batch.json
 
       - name: Upload market price research batch
         if: always() && inputs.task == 'research-price-batch'
         uses: actions/upload-artifact@v4
         with:
           name: market-price-research-batch
-          path: audit-artifacts/market-price-research-batch.json
+          path: storage/app/private/market-price-research/market-price-research-batch.json
           if-no-files-found: error
           retention-days: 7
 
