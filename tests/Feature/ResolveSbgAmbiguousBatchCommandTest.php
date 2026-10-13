@@ -8,6 +8,7 @@ use App\Models\IntegrationProduct;
 use App\Models\IntegrationSource;
 use App\Models\Product;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
 class ResolveSbgAmbiguousBatchCommandTest extends TestCase
@@ -929,6 +930,28 @@ class ResolveSbgAmbiguousBatchCommandTest extends TestCase
             'content' => '<p>Насос CP 25-40 с монтажной длиной 130 мм.</p>',
             'images' => ['product/008/008303/Unipump_cp1.jpg'],
         ]);
+        $badHeadAttributeId = DB::table('attributes')->insertGetId([
+            'category_id' => $category->id,
+            'group_id' => 0,
+            'sort_order' => 0,
+            'type' => 'value',
+            'name' => 'Максимальный напор , м',
+            'suffix' => 'м',
+            'in_filter' => false,
+            'in_sort' => false,
+            'in_product' => true,
+            'in_brief' => false,
+            'is_comparable' => false,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+        DB::table('product_attribute_values')->insert([
+            'product_id' => $pump->id,
+            'attribute_id' => $badHeadAttributeId,
+            'value' => '36',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
         $apc = Product::query()->create([
             'category_id' => $category->id,
             'sku' => 'PS-008.469',
@@ -972,6 +995,28 @@ class ResolveSbgAmbiguousBatchCommandTest extends TestCase
         $this->assertStringNotContainsString('130 мм', $pump->short_description);
         $this->assertStringNotContainsString('130 мм', $pump->content);
         $this->assertStringNotContainsString('APC', $pump->content);
+        $this->assertDatabaseMissing('product_attribute_values', [
+            'product_id' => $pump->id,
+            'attribute_id' => $badHeadAttributeId,
+        ]);
+        $this->assertGreaterThan(0, DB::table('product_attribute_values')->where('product_id', $pump->id)->count());
+
+        DB::table('product_attribute_values')->insert([
+            'product_id' => $pump->id,
+            'attribute_id' => $badHeadAttributeId,
+            'value' => '36',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+        $this->artisan('integration:resolve-sbg-ambiguous', [
+            '--batch' => 'exact-20261013-q',
+            '--code' => ['УТ-00003074'],
+            '--apply' => true,
+        ])->assertSuccessful();
+        $this->assertDatabaseMissing('product_attribute_values', [
+            'product_id' => $pump->id,
+            'attribute_id' => $badHeadAttributeId,
+        ]);
         $this->assertDatabaseHas('supplier_product_mappings', [
             'supplier_article' => 'УТ-00003074',
             'product_id' => $pump->id,

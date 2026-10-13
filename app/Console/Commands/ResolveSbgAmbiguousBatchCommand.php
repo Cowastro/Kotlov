@@ -5,6 +5,7 @@ namespace App\Console\Commands;
 use App\Models\IntegrationProduct;
 use App\Models\Product;
 use App\Services\Integrations\IntegrationProductMatchDecision;
+use App\Services\ProductSourceEnricher;
 use Illuminate\Console\Command;
 use Illuminate\Support\Str;
 
@@ -341,6 +342,7 @@ class ResolveSbgAmbiguousBatchCommand extends Command
                 'retail' => 114.30,
                 'images' => ['product/008/008303/Unipump_cp1.jpg'],
                 'source_url' => 'https://unipump.ru/upload/iblock/da2/x7rbbfd0ljt5oi9s9spzrcj7lladq5ab/circularnye_leaflet_2025_V2411-_1_.pdf',
+                'replace_attributes' => true,
                 'short' => 'Трёхскоростной циркуляционный насос UNIPUMP CP 25-40 с мокрым ротором, напором до 4 м и монтажной длиной 180 мм.',
                 'content' => '<p><strong>UNIPUMP CP 25-40 180</strong> — циркуляционный насос с мокрым ротором для принудительного движения теплоносителя в радиаторных системах отопления и контурах водяного тёплого пола.</p><p>Модель имеет монтажную длину 180 мм, максимальный напор 4 м и производительность до 2,9 м³/ч. Три ступени мощности позволяют подобрать режим под сопротивление системы. Чугунный корпус рассчитан на давление до 10 бар, а резьбовой монтажный комплект входит в поставку.</p>',
                 'specs' => [
@@ -371,7 +373,7 @@ class ResolveSbgAmbiguousBatchCommand extends Command
         ],
     ];
 
-    public function handle(IntegrationProductMatchDecision $decision): int
+    public function handle(IntegrationProductMatchDecision $decision, ProductSourceEnricher $enricher): int
     {
         $rows = match ($this->option('batch')) {
             'exact-20261012-a' => self::BATCH_EXACT_20261012_A,
@@ -458,7 +460,14 @@ class ResolveSbgAmbiguousBatchCommand extends Command
             if ($item->product_id) {
                 if ((int) $item->product_id === (int) $product->id && $item->match_status === 'matched') {
                     $stats['already']++;
-                    $details[] = [$code, $rule['sku'], 'already', Str::limit($product->name, 64)];
+                    if ($apply && $refresh !== null && ($refresh['replace_attributes'] ?? false) === true) {
+                        $product->allAttributeValues()->delete();
+                        $enricher->syncSpecsToAttributeValues($product, $refresh['specs'] ?? []);
+                        $stats['refreshed']++;
+                        $details[] = [$code, $rule['sku'], 'attributes refreshed', Str::limit($product->name, 64)];
+                    } else {
+                        $details[] = [$code, $rule['sku'], 'already', Str::limit($product->name, 64)];
+                    }
                 } else {
                     $stats['conflict']++;
                     $details[] = [$code, $rule['sku'], 'blocked', 'already linked to another card'];
@@ -507,6 +516,10 @@ class ResolveSbgAmbiguousBatchCommand extends Command
                         'meta_title' => Str::limit($name.' — купить в Беларуси | KOTLOV', 255, ''),
                         'meta_description' => Str::limit('Купить '.$name.' в KOTLOV. Характеристики, актуальная цена и наличие, доставка по Беларуси.', 255, ''),
                     ])->save();
+                    if (($refresh['replace_attributes'] ?? false) === true) {
+                        $product->allAttributeValues()->delete();
+                        $enricher->syncSpecsToAttributeValues($product, $refresh['specs'] ?? []);
+                    }
                     $stats['refreshed']++;
                 }
                 $stats['applied']++;
