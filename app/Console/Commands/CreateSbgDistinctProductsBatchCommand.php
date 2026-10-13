@@ -1875,6 +1875,41 @@ class CreateSbgDistinctProductsBatchCommand extends Command
         ],
     ];
 
+    private const BATCH_RESEARCHED_PRICED_20261013_BG = [
+        'УТ-00009142' => [
+            'template' => 'PS-009.495',
+            'category_slug' => 'troyniki-mono',
+            'external_sku' => 'YS125/90-OC',
+            'fragments' => ['Тройник', 'тип Y', 'YS125/90-OC'],
+            'brand' => [
+                'name' => 'Darco',
+                'slug' => 'darco',
+            ],
+            'name' => 'Тройник вентиляционный Y Darco YS125/90-OC Ø125 мм',
+            'retail' => 35.00,
+            'images' => ['img/products/darco/darco-ys125-90-oc.webp'],
+            'source_url' => 'https://sklep.darco.pl/ogrzewanie_kominkowe/trojnik_y_portki_ys12590_oc',
+            'short' => 'Оцинкованный Y-тройник Darco YS125/90-OC для разветвления вентиляции, рекуперации и систем DGP диаметром 125 мм.',
+            'content' => '<p><strong>Darco YS125/90-OC</strong> — равнопроходный Y-тройник типа «брюки» для разделения воздушного потока на две ветви. Три патрубка рассчитаны на каналы номинального диаметра 125 мм, а внешний диаметр 123 мм позволяет вставлять фасонный элемент непосредственно в трубу Spiro.</p><p>Изделие выполнено из оцинкованной стали толщиной 0,5 мм и предназначено для вентиляции, рекуперации и распределения горячего воздуха DGP при температуре до 250 °C. Это воздуховодная деталь, а не тройник дымохода для отвода продуктов сгорания.</p>',
+            'specs' => [
+                ['key' => 'Тип', 'value' => 'Y-тройник типа «брюки»'],
+                ['key' => 'Модель', 'value' => 'YS125/90-OC'],
+                ['key' => 'Номинальный диаметр', 'value' => '125 мм'],
+                ['key' => 'Наружный диаметр патрубков', 'value' => '123 мм'],
+                ['key' => 'Угол разветвления', 'value' => '90°'],
+                ['key' => 'Материал', 'value' => 'Оцинкованная сталь'],
+                ['key' => 'Толщина металла', 'value' => '0,5 мм'],
+                ['key' => 'Габарит B', 'value' => '215 мм'],
+                ['key' => 'Максимальная температура', 'value' => '250 °C'],
+                ['key' => 'Масса', 'value' => '0,33 кг'],
+                ['key' => 'Назначение', 'value' => 'Вентиляция, рекуперация, системы DGP'],
+                ['key' => 'EAN', 'value' => '5907803623854'],
+                ['key' => 'Гарантия', 'value' => '24 месяца'],
+                ['key' => 'Страна производства', 'value' => 'Польша'],
+            ],
+        ],
+    ];
+
     public function handle(
         IntegrationProductCreator $creator,
         IntegrationProductMatchDecision $matchDecision,
@@ -1939,6 +1974,7 @@ class CreateSbgDistinctProductsBatchCommand extends Command
             'researched-priced-20261013-bd' => self::BATCH_RESEARCHED_PRICED_20261013_BD,
             'researched-priced-20261013-be' => self::BATCH_RESEARCHED_PRICED_20261013_BE,
             'researched-priced-20261013-bf' => self::BATCH_RESEARCHED_PRICED_20261013_BF,
+            'researched-priced-20261013-bg' => self::BATCH_RESEARCHED_PRICED_20261013_BG,
             default => null,
         };
 

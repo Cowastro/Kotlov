@@ -3748,4 +3748,83 @@ class CreateSbgDistinctProductsBatchCommandTest extends TestCase
         $this->assertSame($productCount + 1, Product::query()->count());
         $this->assertSame($product->id, $item->fresh()->product_id);
     }
+
+    public function test_it_creates_the_exact_darco_ys125_90_ventilation_tee(): void
+    {
+        $source = IntegrationSource::query()->create([
+            'code' => 'onec-sbg-darco-ys125',
+            'name' => '1С СанБизнесГруп',
+            'settings' => ['partner_name' => 'ООО «СанБизнесГруп»'],
+            'is_active' => true,
+            'update_stock' => true,
+        ]);
+        $category = Category::query()->firstOrCreate(['slug' => 'troyniki-mono'], [
+            'name' => 'Тройники моно',
+            'parent_id' => 0,
+        ]);
+        $wrongCandidate = Product::query()->create([
+            'category_id' => $category->id,
+            'sku' => 'PS-009.495',
+            'name' => 'Тройник тип Y Y150/120-CZ2-G/D',
+            'slug' => 'troynik-y-darco-150-120-cz2-g',
+            'price' => 441,
+            'images' => ['product/darco/wrong-tee.jpg'],
+        ]);
+        $item = IntegrationProduct::query()->create([
+            'integration_source_id' => $source->id,
+            'external_id' => 'darco-ys125-90-oc',
+            'external_code' => 'УТ-00009142',
+            'external_sku' => 'YS125/90-OC',
+            'name' => 'Тройник тип Y YS125/90-OC',
+            'price_byn' => null,
+            'stock_quantity' => 1,
+            'match_status' => 'ambiguous',
+            'candidates' => [['product_id' => $wrongCandidate->id, 'score' => 0.80]],
+        ]);
+        $productCount = Product::query()->count();
+
+        $this->artisan('integration:create-sbg-distinct-products', [
+            '--batch' => 'researched-priced-20261013-bg',
+            '--code' => ['УТ-00009142'],
+            '--apply' => true,
+        ])->assertSuccessful();
+
+        $item->refresh();
+        $this->assertSame($productCount + 1, Product::query()->count());
+        $this->assertNotNull($item->product_id);
+        $this->assertNotSame($wrongCandidate->id, $item->product_id);
+        $this->assertSame('matched', $item->match_status);
+        $this->assertSame('manual_created', $item->match_method);
+        $this->assertSame($category->id, $item->target_category_id);
+        $this->assertNull($item->candidates);
+
+        $product = $item->product;
+        $this->assertSame('Тройник вентиляционный Y Darco YS125/90-OC Ø125 мм', $product->name);
+        $this->assertSame('35.00', $product->price);
+        $this->assertSame('Darco', $product->brand?->name);
+        $this->assertSame('125 мм', collect($product->specs)->firstWhere('key', 'Номинальный диаметр')['value']);
+        $this->assertSame('123 мм', collect($product->specs)->firstWhere('key', 'Наружный диаметр патрубков')['value']);
+        $this->assertSame(['img/products/darco/darco-ys125-90-oc.webp'], $product->images);
+        $this->assertFileExists(public_path('img/products/darco/darco-ys125-90-oc.webp'));
+        $this->assertStringContainsString('sklep.darco.pl', $product->content_source_url);
+        $this->assertStringContainsString('вентиляции', mb_strtolower($product->content));
+        $this->assertStringContainsString('не тройник дымохода', mb_strtolower($product->content));
+        $this->assertStringNotContainsString('розничная цена', mb_strtolower($product->content));
+        $this->assertDatabaseHas('supplier_product_mappings', [
+            'supplier_code' => $source->matchingSupplierCode(),
+            'supplier_article' => 'YS125/90-OC',
+            'product_id' => $product->id,
+            'product_sku' => $product->sku,
+            'confidence' => 'manual',
+            'is_active' => true,
+        ]);
+
+        $this->artisan('integration:create-sbg-distinct-products', [
+            '--batch' => 'researched-priced-20261013-bg',
+            '--code' => ['УТ-00009142'],
+            '--apply' => true,
+        ])->assertSuccessful();
+        $this->assertSame($productCount + 1, Product::query()->count());
+        $this->assertSame($product->id, $item->fresh()->product_id);
+    }
 }
