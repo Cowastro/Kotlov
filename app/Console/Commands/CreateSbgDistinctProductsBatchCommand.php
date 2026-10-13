@@ -1413,6 +1413,43 @@ class CreateSbgDistinctProductsBatchCommand extends Command
         ],
     ];
 
+    private const BATCH_RESEARCHED_PRICED_20261013_AT = [
+        'УТ-00004679' => [
+            'template' => 'KOTLOV-003695',
+            'category_slug' => 'obogrevateli',
+            'fragments' => ['Модуль', 'съёмный', 'управляющий', 'Ballu', 'Smart', 'WI-FI', 'BEC/WF-01'],
+            'brand' => [
+                'name' => 'Ballu',
+                'slug' => 'ballu',
+            ],
+            'name' => 'Ballu Smart Wi-Fi BEC/WF-01 съёмный управляющий модуль',
+            'retail' => 64.90,
+            'images' => ['img/products/ballu/ballu-bec-wf-01-smart-wifi.png'],
+            'source_url' => 'https://climat-profit.by/modul-syomnyy-upravlyayushchiy-ballu-smart-wi-fi-bec-wf-01/',
+            'short' => 'Съёмный Wi-Fi-модуль Ballu BEC/WF-01 для дистанционного управления совместимой климатической техникой через Ballu Home.',
+            'content' => '<p><strong>Ballu Smart Wi-Fi BEC/WF-01</strong> — съёмный модуль для дистанционного управления совместимой климатической техникой Ballu со смартфона. Модуль подключается через USB-A и работает с мобильным приложением Ballu Home.</p><p>Через приложение можно включать и выключать прибор, задавать температуру и настраивать расписание. Перед покупкой следует проверить, что конкретная модель оборудования поддерживает BEC/WF-01.</p>',
+            'specs' => [
+                ['key' => 'Тип', 'value' => 'Съёмный управляющий Wi-Fi-модуль'],
+                ['key' => 'Модель', 'value' => 'BEC/WF-01'],
+                ['key' => 'Код товара', 'value' => 'НС-1102775'],
+                ['key' => 'Штрихкод', 'value' => '4620016799352'],
+                ['key' => 'Мобильное приложение', 'value' => 'Ballu Home'],
+                ['key' => 'Интерфейс подключения', 'value' => 'USB-A'],
+                ['key' => 'Интерфейсы передачи данных', 'value' => 'UART, GPIO'],
+                ['key' => 'Стандарты Wi-Fi', 'value' => 'IEEE 802.11 b/g/n'],
+                ['key' => 'Рабочая частота', 'value' => '2,412–2,484 ГГц'],
+                ['key' => 'Напряжение', 'value' => '5 В'],
+                ['key' => 'Ток', 'value' => 'средний около 30 мА, пиковый 280 мА'],
+                ['key' => 'Рабочая температура', 'value' => 'от 0 до +50 °C'],
+                ['key' => 'Габариты', 'value' => '24 × 70 × 14,5 мм'],
+                ['key' => 'Материал корпуса', 'value' => 'ABS-пластик'],
+                ['key' => 'Цвет', 'value' => 'Белый'],
+                ['key' => 'Гарантия', 'value' => '12 месяцев'],
+                ['key' => 'Страна производства', 'value' => 'Китай'],
+            ],
+        ],
+    ];
+
     public function handle(IntegrationProductCreator $creator): int
     {
         $rows = match ($this->option('batch')) {
@@ -1461,6 +1498,7 @@ class CreateSbgDistinctProductsBatchCommand extends Command
             'researched-priced-20261013-aq' => self::BATCH_RESEARCHED_PRICED_20261013_AQ,
             'researched-priced-20261013-ar' => self::BATCH_RESEARCHED_PRICED_20261013_AR,
             'researched-priced-20261013-as' => self::BATCH_RESEARCHED_PRICED_20261013_AS,
+            'researched-priced-20261013-at' => self::BATCH_RESEARCHED_PRICED_20261013_AT,
             default => null,
         };
 

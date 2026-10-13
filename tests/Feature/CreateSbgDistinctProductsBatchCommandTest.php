@@ -2676,4 +2676,70 @@ class CreateSbgDistinctProductsBatchCommandTest extends TestCase
         $this->assertStringNotContainsString('rub', mb_strtolower($product->content));
         $this->assertSame('manual_created', $item->fresh()->match_method);
     }
+
+    public function test_it_creates_the_exact_ballu_bec_wf_01_module_instead_of_linking_hommyn(): void
+    {
+        $source = IntegrationSource::query()->create([
+            'code' => 'onec-sbg-ballu-bec-wf-01',
+            'name' => '1С СанБизнесГруп',
+            'settings' => ['partner_name' => 'ООО «СанБизнесГруп»'],
+            'is_active' => true,
+            'update_stock' => true,
+        ]);
+        $category = Category::query()->firstOrCreate(['slug' => 'obogrevateli'], [
+            'name' => 'Обогреватели',
+            'parent_id' => 0,
+        ]);
+        $ballu = Brand::query()->firstOrCreate(['slug' => 'ballu'], ['name' => 'Ballu']);
+        $wrongHommynCandidate = Product::query()->create([
+            'category_id' => $category->id,
+            'brand_id' => $ballu->id,
+            'sku' => 'KOTLOV-003695',
+            'name' => 'Модуль съемный управляющий HOMMYN HDN/WFN-02-02',
+            'slug' => 'hommyn-hdn-wfn-02-02-template',
+            'price' => 50,
+            'images' => ['product/0036/003695/hommyn-wifi.jpg'],
+        ]);
+        $item = IntegrationProduct::query()->create([
+            'integration_source_id' => $source->id,
+            'external_id' => 'ballu-bec-wf-01',
+            'external_code' => 'УТ-00004679',
+            'external_sku' => null,
+            'name' => 'Модуль съёмный управляющий Ballu Smart WI-FI BEC/WF-01',
+            'price_byn' => null,
+            'stock_quantity' => 3,
+            'match_status' => 'ambiguous',
+            'candidates' => [['product_id' => $wrongHommynCandidate->id, 'score' => 0.77]],
+        ]);
+
+        $this->artisan('integration:create-sbg-distinct-products', [
+            '--batch' => 'researched-priced-20261013-at',
+            '--code' => ['УТ-00004679'],
+            '--apply' => true,
+        ])->assertSuccessful();
+
+        $product = $item->fresh()->product;
+        $this->assertNotNull($product);
+        $this->assertNotSame($wrongHommynCandidate->id, $product->id);
+        $this->assertSame($category->id, $product->category_id);
+        $this->assertSame($ballu->id, $product->brand_id);
+        $this->assertSame('Ballu Smart Wi-Fi BEC/WF-01 съёмный управляющий модуль', $product->name);
+        $this->assertSame('64.90', $product->price);
+        $this->assertSame('3', (string) $product->stock_qty);
+        $this->assertNull($item->fresh()->normalizedPriceByn());
+        $this->assertSame('BEC/WF-01', collect($product->specs)->firstWhere('key', 'Модель')['value']);
+        $this->assertSame('НС-1102775', collect($product->specs)->firstWhere('key', 'Код товара')['value']);
+        $this->assertSame('4620016799352', collect($product->specs)->firstWhere('key', 'Штрихкод')['value']);
+        $this->assertSame('USB-A', collect($product->specs)->firstWhere('key', 'Интерфейс подключения')['value']);
+        $this->assertSame('IEEE 802.11 b/g/n', collect($product->specs)->firstWhere('key', 'Стандарты Wi-Fi')['value']);
+        $this->assertSame(['img/products/ballu/ballu-bec-wf-01-smart-wifi.png'], $product->images);
+        $this->assertFileExists(public_path('img/products/ballu/ballu-bec-wf-01-smart-wifi.png'));
+        $this->assertStringContainsString('climat-profit.by', $product->content_source_url);
+        $this->assertStringNotContainsString('HOMMYN', $product->content);
+        $this->assertStringNotContainsString('кандидат', mb_strtolower($product->content));
+        $this->assertStringNotContainsString('розничная цена', mb_strtolower($product->content));
+        $this->assertStringNotContainsString('нбрб', mb_strtolower($product->content));
+        $this->assertStringNotContainsString('rub', mb_strtolower($product->content));
+        $this->assertSame('manual_created', $item->fresh()->match_method);
+    }
 }
