@@ -1272,6 +1272,43 @@ class CreateSbgDistinctProductsBatchCommand extends Command
         ],
     ];
 
+    private const BATCH_RESEARCHED_PRICED_20261013_AP = [
+        'УТ-00005204' => [
+            'template' => 'KOTLOV-007989',
+            'category_slug' => 'kolena-mono',
+            'external_sku' => 'TS.ST5.O45.0120.75261',
+            'fragments' => ['Отвод', '45', 'ОМ-Р', '304-0.8', 'D120', '2S'],
+            'brand' => [
+                'name' => 'Теплов и Сухов',
+                'slug' => 'teplov-i-suhov',
+                'country' => 'Россия',
+                'content' => '<p><strong>Теплов и Сухов</strong> — российский производитель модульных дымоходов и комплектующих из нержавеющей стали.</p>',
+            ],
+            'name' => 'Теплов и Сухов Отвод 45° Моно ОМ-Р 304-0.8 D120 (2S)',
+            'retail' => 49.90,
+            'images' => ['img/products/teplov-i-suhov/teplov-suhov-otvod-45-304-08-d120-2s.jpg'],
+            'source_url' => 'https://ufa.pechi-online.ru/shop/otvod_45_om_r_304_08_d120_tis',
+            'short' => 'Двухсегментный одностенный отвод дымохода «Теплов и Сухов» 45°, диаметр 120 мм, сталь AISI 304 толщиной 0,8 мм.',
+            'content' => '<p><strong>Отвод 45° Моно ОМ-Р 304-0.8 D120 (2S)</strong> — одностенный модуль для изменения направления дымового канала на 45°. Двухсегментная конструкция обеспечивает плавный поворот и используется при обходе препятствий или изменении трассы дымохода.</p><p>Отвод изготовлен из нержавеющей стали AISI 304 толщиной 0,8 мм. Диаметр 120 мм и раструбное соединение рассчитаны на сборку с совместимыми элементами модульной системы «Теплов и Сухов».</p>',
+            'specs' => [
+                ['key' => 'Тип', 'value' => 'Одностенный отвод дымохода'],
+                ['key' => 'Серия', 'value' => 'Моно'],
+                ['key' => 'Модель', 'value' => 'ОМ-Р 304-0.8 D120 (2S)'],
+                ['key' => 'Угол поворота', 'value' => '45°'],
+                ['key' => 'Количество сегментов', 'value' => '2'],
+                ['key' => 'Диаметр', 'value' => '120 мм'],
+                ['key' => 'Марка стали', 'value' => 'AISI 304'],
+                ['key' => 'Толщина стали', 'value' => '0,8 мм'],
+                ['key' => 'Конструкция', 'value' => 'Одностенная, без теплоизоляции'],
+                ['key' => 'Соединение', 'value' => 'Раструбное'],
+                ['key' => 'Габариты', 'value' => '215 × 180 × 130 мм'],
+                ['key' => 'Масса', 'value' => '0,347 кг'],
+                ['key' => 'Артикул производителя', 'value' => 'TS.ST5.O45.0120.75261'],
+                ['key' => 'Страна производства', 'value' => 'Россия'],
+            ],
+        ],
+    ];
+
     public function handle(IntegrationProductCreator $creator): int
     {
         $rows = match ($this->option('batch')) {
@@ -1316,6 +1353,7 @@ class CreateSbgDistinctProductsBatchCommand extends Command
             'researched-priced-20261013-am' => self::BATCH_RESEARCHED_PRICED_20261013_AM,
             'researched-priced-20261013-an' => self::BATCH_RESEARCHED_PRICED_20261013_AN,
             'researched-priced-20261013-ao' => self::BATCH_RESEARCHED_PRICED_20261013_AO,
+            'researched-priced-20261013-ap' => self::BATCH_RESEARCHED_PRICED_20261013_AP,
             default => null,
         };
 

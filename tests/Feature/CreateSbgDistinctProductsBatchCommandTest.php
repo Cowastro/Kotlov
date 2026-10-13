@@ -2409,4 +2409,72 @@ class CreateSbgDistinctProductsBatchCommandTest extends TestCase
         $this->assertStringNotContainsString('rub', mb_strtolower($product->content));
         $this->assertSame('manual_created', $item->fresh()->match_method);
     }
+
+    public function test_it_creates_the_exact_aisi_304_d120_45_degree_elbow_instead_of_linking_aisi_430(): void
+    {
+        $source = IntegrationSource::query()->create([
+            'code' => 'onec-sbg-teplov-elbow-45-304-d120',
+            'name' => '1С СанБизнесГруп',
+            'settings' => ['partner_name' => 'ООО «СанБизнесГруп»'],
+            'is_active' => true,
+            'update_stock' => true,
+        ]);
+        $category = Category::query()->firstOrCreate(['slug' => 'kolena-mono'], [
+            'name' => 'Отводы одностенные',
+            'parent_id' => 0,
+        ]);
+        $teplov = Brand::query()->firstOrCreate(['slug' => 'teplov-i-suhov'], ['name' => 'Теплов и Сухов']);
+        $wrongElbowCandidate = Product::query()->create([
+            'category_id' => $category->id,
+            'brand_id' => $teplov->id,
+            'sku' => 'KOTLOV-007989',
+            'name' => 'Теплов и Сухов Отвод 45* ОМ-Р 430-0.5 D120 (2S)',
+            'slug' => 'teplov-elbow-45-430-05-d120-template',
+            'price' => 30,
+            'images' => ['product/0079/007989/elbow-45-430.jpg'],
+        ]);
+        $item = IntegrationProduct::query()->create([
+            'integration_source_id' => $source->id,
+            'external_id' => 'teplov-elbow-45-304-08-d120-2s',
+            'external_code' => 'УТ-00005204',
+            'external_sku' => 'TS.ST5.O45.0120.75261',
+            'name' => 'Отвод 45* ОМ-Р 304-0.8 D120 (2S)',
+            'price_byn' => null,
+            'stock_quantity' => 4,
+            'match_status' => 'ambiguous',
+            'candidates' => [['product_id' => $wrongElbowCandidate->id, 'score' => 0.69]],
+        ]);
+
+        $this->artisan('integration:create-sbg-distinct-products', [
+            '--batch' => 'researched-priced-20261013-ap',
+            '--code' => ['УТ-00005204'],
+            '--apply' => true,
+        ])->assertSuccessful();
+
+        $product = $item->fresh()->product;
+        $this->assertNotNull($product);
+        $this->assertNotSame($wrongElbowCandidate->id, $product->id);
+        $this->assertSame($category->id, $product->category_id);
+        $this->assertSame($teplov->id, $product->brand_id);
+        $this->assertSame('Теплов и Сухов Отвод 45° Моно ОМ-Р 304-0.8 D120 (2S)', $product->name);
+        $this->assertSame('49.90', $product->price);
+        $this->assertSame('4', (string) $product->stock_qty);
+        $this->assertNull($item->fresh()->normalizedPriceByn());
+        $this->assertSame('45°', collect($product->specs)->firstWhere('key', 'Угол поворота')['value']);
+        $this->assertSame('2', collect($product->specs)->firstWhere('key', 'Количество сегментов')['value']);
+        $this->assertSame('120 мм', collect($product->specs)->firstWhere('key', 'Диаметр')['value']);
+        $this->assertSame('AISI 304', collect($product->specs)->firstWhere('key', 'Марка стали')['value']);
+        $this->assertSame('0,8 мм', collect($product->specs)->firstWhere('key', 'Толщина стали')['value']);
+        $this->assertSame('TS.ST5.O45.0120.75261', collect($product->specs)->firstWhere('key', 'Артикул производителя')['value']);
+        $this->assertSame(['img/products/teplov-i-suhov/teplov-suhov-otvod-45-304-08-d120-2s.jpg'], $product->images);
+        $this->assertFileExists(public_path('img/products/teplov-i-suhov/teplov-suhov-otvod-45-304-08-d120-2s.jpg'));
+        $this->assertStringContainsString('pechi-online.ru', $product->content_source_url);
+        $this->assertStringNotContainsString('AISI 430', $product->content);
+        $this->assertStringNotContainsString('0,5 мм', $product->content);
+        $this->assertStringNotContainsString('кандидат', mb_strtolower($product->content));
+        $this->assertStringNotContainsString('розничная цена', mb_strtolower($product->content));
+        $this->assertStringNotContainsString('нбрб', mb_strtolower($product->content));
+        $this->assertStringNotContainsString('rub', mb_strtolower($product->content));
+        $this->assertSame('manual_created', $item->fresh()->match_method);
+    }
 }
