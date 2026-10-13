@@ -7,6 +7,7 @@ use App\Models\Product;
 use App\Models\Supplier;
 use App\Models\SupplierProduct;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\File;
 use Tests\TestCase;
 
 class AuditCatalogPriceIntegrityCommandTest extends TestCase
@@ -15,6 +16,7 @@ class AuditCatalogPriceIntegrityCommandTest extends TestCase
 
     public function test_it_reports_price_and_margin_anomalies_without_changing_catalog_data(): void
     {
+        $report = storage_path('app/testing/price-integrity.csv');
         $category = Category::query()->create([
             'name' => 'Ценовой аудит',
             'slug' => 'price-audit',
@@ -47,12 +49,18 @@ class AuditCatalogPriceIntegrityCommandTest extends TestCase
             'last_stock_synced_at' => now(),
         ]);
 
-        $this->artisan('catalog:audit-price-integrity', ['--stale-hours' => 24])
+        $this->artisan('catalog:audit-price-integrity', [
+            '--stale-hours' => 24,
+            '--output' => $report,
+        ])
             ->expectsOutputToContain('metric.invalid_old_price=1')
             ->expectsOutputToContain('metric.retail_below_supplier_cost=1')
             ->expectsOutputToContain('metric.retail_margin_below_minimum=1')
+            ->expectsOutputToContain('metric.report_rows=1')
             ->assertSuccessful();
 
         $this->assertSame('90.00', $product->fresh()->price);
+        $this->assertStringContainsString('PRICE-AUDIT-1', File::get($report));
+        File::delete($report);
     }
 }

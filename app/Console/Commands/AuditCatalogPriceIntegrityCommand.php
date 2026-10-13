@@ -5,11 +5,13 @@ namespace App\Console\Commands;
 use Illuminate\Console\Command;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\File;
 
 class AuditCatalogPriceIntegrityCommand extends Command
 {
     protected $signature = 'catalog:audit-price-integrity
-        {--stale-hours=24 : Age after which a positive supplier stock snapshot requires attention}';
+        {--stale-hours=24 : Age after which a positive supplier stock snapshot requires attention}
+        {--output= : Optional CSV path for product-level price anomalies}';
 
     protected $description = 'Read-only aggregate audit of catalog prices, margins, currencies and stock evidence.';
 
@@ -96,6 +98,15 @@ class AuditCatalogPriceIntegrityCommand extends Command
                 ->count(),
         ];
 
+        if (filled($this->option('output'))) {
+            $metrics['report_rows'] = $this->writeReport(
+                (string) $this->option('output'),
+                $active,
+                $supplierCost,
+                $minimumMargin,
+            );
+        }
+
         foreach ($metrics as $name => $value) {
             $this->line('metric.'.$name.'='.$value);
         }
@@ -111,5 +122,94 @@ class AuditCatalogPriceIntegrityCommand extends Command
         return DB::table('products as p')
             ->where('p.is_active', true)
             ->where('p.is_archived', false);
+    }
+
+    private function writeReport(
+        string $output,
+        Builder $active,
+        Builder $supplierCost,
+        float $minimumMargin,
+    ): int {
+        $isAbsolute = preg_match('/^(?:[A-Za-z]:[\\\\\/]|[\\\\\/])/', $output) === 1;
+        $path = $isAbsolute ? $output : base_path($output);
+        File::ensureDirectoryExists(dirname($path));
+
+        $rows = (clone $active)
+            ->leftJoinSub($supplierCost, 'costs', 'costs.product_id', '=', 'p.id')
+            ->leftJoin('categories as c', 'c.id', '=', 'p.category_id')
+            ->orderBy('p.id')
+            ->get([
+                'p.id', 'p.sku', 'p.name', 'p.slug', 'p.price', 'p.price_old',
+                'p.currency', 'p.availability_status', 'p.updated_at',
+                'c.name as category', 'c.slug as category_slug', 'costs.minimum_cost',
+            ])
+            ->map(function (object $row) use ($minimumMargin): ?array {
+                $price = (float) $row->price;
+                $oldPrice = (float) $row->price_old;
+                $cost = $row->minimum_cost === null ? null : (float) $row->minimum_cost;
+                $margin = $price > 0 && $cost !== null
+                    ? round(($price - $cost) / $price * 100, 2)
+                    : null;
+                $issues = [];
+
+                if ($price <= 0) {
+                    $issues[] = 'zero_or_missing_price';
+                }
+                if (filled($row->currency) && mb_strtoupper((string) $row->currency) !== 'BYN') {
+                    $issues[] = 'non_byn_currency';
+                }
+                if ($oldPrice > 0 && $oldPrice <= $price) {
+                    $issues[] = 'invalid_old_price';
+                }
+                if ($cost !== null && $price > 0 && $price < $cost) {
+                    $issues[] = 'retail_below_supplier_cost';
+                }
+                if ($margin !== null && $margin < $minimumMargin) {
+                    $issues[] = 'retail_margin_below_minimum';
+                }
+                if ($cost !== null && $cost > 0 && $price > $cost * 4) {
+                    $issues[] = 'retail_above_four_times_supplier_cost';
+                }
+
+                if ($issues === []) {
+                    return null;
+                }
+
+                return [
+                    implode('|', $issues),
+                    $row->id,
+                    $row->sku,
+                    $row->name,
+                    $row->category,
+                    '/'.trim((string) $row->category_slug, '/').'/'.trim((string) $row->slug, '/'),
+                    $price > 0 ? number_format($price, 2, '.', '') : '',
+                    $oldPrice > 0 ? number_format($oldPrice, 2, '.', '') : '',
+                    $cost !== null ? number_format($cost, 2, '.', '') : '',
+                    $margin !== null ? number_format($margin, 2, '.', '') : '',
+                    $row->currency,
+                    $row->availability_status,
+                    $row->updated_at,
+                ];
+            })
+            ->filter()
+            ->values();
+
+        $handle = fopen($path, 'wb');
+        if ($handle === false) {
+            throw new \RuntimeException('Unable to create price audit report: '.$path);
+        }
+
+        fwrite($handle, "\xEF\xBB\xBF");
+        fputcsv($handle, [
+            'issues', 'product_id', 'sku', 'name', 'category', 'path',
+            'retail_price', 'old_price', 'minimum_supplier_cost', 'margin_percent',
+            'currency', 'availability_status', 'updated_at',
+        ], ';', '"', '');
+        foreach ($rows as $row) {
+            fputcsv($handle, $row, ';', '"', '');
+        }
+        fclose($handle);
+
+        return $rows->count();
     }
 }
