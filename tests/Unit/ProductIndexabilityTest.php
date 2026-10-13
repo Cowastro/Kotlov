@@ -50,4 +50,36 @@ class ProductIndexabilityTest extends TestCase
 
         $this->assertFalse($product->canBeOrdered());
     }
+
+    public function test_product_that_needs_availability_confirmation_cannot_enter_checkout(): void
+    {
+        $product = new Product([
+            'price' => 100,
+            'is_active' => true,
+            'is_archived' => false,
+            'in_stock' => false,
+            'availability_status' => Product::AVAILABILITY_CHECK,
+        ]);
+        $product->setRelation('supplierProducts', new Collection);
+        $product->setRelation('integrationProducts', new Collection);
+
+        $this->assertTrue($product->canBeOrdered());
+        $this->assertFalse($product->canBePurchased());
+    }
+
+    public function test_confirmed_supplier_stock_can_enter_checkout(): void
+    {
+        $product = new Product([
+            'price' => 100,
+            'is_active' => true,
+            'is_archived' => false,
+            'in_stock' => true,
+            'availability_status' => Product::AVAILABILITY_IN_STOCK,
+        ]);
+        $product->setRelation('supplierProducts', new Collection([
+            new SupplierProduct(['in_stock' => true, 'stock_quantity' => 1]),
+        ]));
+
+        $this->assertTrue($product->canBePurchased());
+    }
 }

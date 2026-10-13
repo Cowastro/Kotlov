@@ -121,6 +121,19 @@ class Product extends Model
             ], true);
     }
 
+    /**
+     * A public retail checkout requires a confirmed positive supplier balance.
+     * Products marked "Уточняйте наличие" remain visible, but must use the
+     * consultation flow instead of producing an unfulfillable order.
+     */
+    public function canBePurchased(): bool
+    {
+        return $this->is_active
+            && ! $this->is_archived
+            && (float) $this->price > 0
+            && $this->effectiveAvailabilityStatus() === self::AVAILABILITY_IN_STOCK;
+    }
+
     public function hasLinkedSupplierChannel(): bool
     {
         $hasLegacyLink = $this->relationLoaded('supplierProducts')

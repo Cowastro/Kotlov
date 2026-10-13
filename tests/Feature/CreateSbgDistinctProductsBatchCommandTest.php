@@ -2612,7 +2612,7 @@ class CreateSbgDistinctProductsBatchCommandTest extends TestCase
         $this->assertSame('manual_created', $item->fresh()->match_method);
     }
 
-    public function test_it_creates_the_exact_electrolux_eft_rr_chassis_instead_of_linking_efa2(): void
+    public function test_it_reuses_the_existing_electrolux_eft_rr_card_instead_of_creating_a_duplicate(): void
     {
         $source = IntegrationSource::query()->create([
             'code' => 'onec-sbg-electrolux-eft-rr',
@@ -2625,6 +2625,10 @@ class CreateSbgDistinctProductsBatchCommandTest extends TestCase
             'name' => 'Обогреватели',
             'parent_id' => 0,
         ]);
+        $convectorCategory = Category::query()->firstOrCreate(['slug' => 'elektricheskie-konvektoryi'], [
+            'name' => 'Электрические конвекторы',
+            'parent_id' => 0,
+        ]);
         $electrolux = Brand::query()->firstOrCreate(['slug' => 'electrolux'], ['name' => 'Electrolux']);
         $wrongSupportCandidate = Product::query()->create([
             'category_id' => $category->id,
@@ -2634,6 +2638,18 @@ class CreateSbgDistinctProductsBatchCommandTest extends TestCase
             'slug' => 'electrolux-efa2-support-template',
             'price' => 25,
             'images' => ['product/0000/000745/electrolux-efa2.jpg'],
+        ]);
+        $exactExisting = Product::query()->create([
+            'category_id' => $category->id,
+            'brand_id' => $electrolux->id,
+            'sku' => 'KOTLOV-000726',
+            'name' => 'Electrolux EFT/RR',
+            'slug' => 'electrolux-eftrr',
+            'price' => 33,
+            'images' => ['product/0000/000726/electrolux-eft-rr.jpg'],
+            'content' => '<p>Ошибочно описан как обогреватель.</p>',
+            'is_active' => true,
+            'is_archived' => false,
         ]);
         $item = IntegrationProduct::query()->create([
             'integration_source_id' => $source->id,
@@ -2646,6 +2662,7 @@ class CreateSbgDistinctProductsBatchCommandTest extends TestCase
             'match_status' => 'ambiguous',
             'candidates' => [['product_id' => $wrongSupportCandidate->id, 'score' => 0.7968]],
         ]);
+        $productCount = Product::query()->count();
 
         $this->artisan('integration:create-sbg-distinct-products', [
             '--batch' => 'researched-priced-20261013-as',
@@ -2655,11 +2672,13 @@ class CreateSbgDistinctProductsBatchCommandTest extends TestCase
 
         $product = $item->fresh()->product;
         $this->assertNotNull($product);
+        $this->assertSame($productCount, Product::query()->count());
+        $this->assertSame($exactExisting->id, $product->id);
         $this->assertNotSame($wrongSupportCandidate->id, $product->id);
-        $this->assertSame($category->id, $product->category_id);
+        $this->assertSame($convectorCategory->id, $product->category_id);
         $this->assertSame($electrolux->id, $product->brand_id);
         $this->assertSame('Electrolux EFT/RR комплект шасси для конвектора Rapid Transformer', $product->name);
-        $this->assertSame('34.90', $product->price);
+        $this->assertSame('33.00', $product->price);
         $this->assertSame('3', (string) $product->stock_qty);
         $this->assertNull($item->fresh()->normalizedPriceByn());
         $this->assertSame('EFT/RR', collect($product->specs)->firstWhere('key', 'Модель')['value']);
@@ -2674,7 +2693,7 @@ class CreateSbgDistinctProductsBatchCommandTest extends TestCase
         $this->assertStringNotContainsString('розничная цена', mb_strtolower($product->content));
         $this->assertStringNotContainsString('нбрб', mb_strtolower($product->content));
         $this->assertStringNotContainsString('rub', mb_strtolower($product->content));
-        $this->assertSame('manual_created', $item->fresh()->match_method);
+        $this->assertSame('manual_search', $item->fresh()->match_method);
     }
 
     public function test_it_creates_the_exact_ballu_bec_wf_01_module_instead_of_linking_hommyn(): void

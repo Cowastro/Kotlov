@@ -200,7 +200,7 @@
                                     }
                                     $canBuy = $b2bOffer
                                         ? $product->is_active && ! $product->is_archived && (float) $b2bOffer->stock_quantity >= 1
-                                        : $product->canBeOrdered();
+                                        : $product->canBePurchased();
                                     $availabilityLabel = \App\Models\Product::availabilityStatusOptions()[$availabilityStatus]
                                         ?? 'Уточняйте наличие';
                                     $displayPrice = $b2bComparison['wholesale_price'] ?? (float) $product->price;

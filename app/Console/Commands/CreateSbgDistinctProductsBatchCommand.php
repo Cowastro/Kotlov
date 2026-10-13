@@ -1386,14 +1386,17 @@ class CreateSbgDistinctProductsBatchCommand extends Command
     private const BATCH_RESEARCHED_PRICED_20261013_AS = [
         'УТ-00004685' => [
             'template' => 'KOTLOV-000745',
-            'category_slug' => 'obogrevateli',
+            'link_existing_sku' => 'KOTLOV-000726',
+            'link_fragments' => ['EFT/RR'],
+            'refresh_existing' => true,
+            'category_slug' => 'elektricheskie-konvektoryi',
             'fragments' => ['Комплект', 'шасси', 'EFT/RR', 'Electrolux', 'Rapid', 'Transformer'],
             'brand' => [
                 'name' => 'Electrolux',
                 'slug' => 'electrolux',
             ],
             'name' => 'Electrolux EFT/RR комплект шасси для конвектора Rapid Transformer',
-            'retail' => 34.90,
+            'retail' => 33.00,
             'images' => ['img/products/electrolux/electrolux-eft-rr-chassis.jpg'],
             'source_url' => 'https://climat-profit.by/komplekt-shassi-eft-rr-dlya-electrolux-rapid-transformer/',
             'short' => 'Комплект колесных опор Electrolux EFT/RR для напольной установки конвекторов Rapid Transformer System.',
