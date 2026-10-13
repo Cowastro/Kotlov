@@ -313,6 +313,7 @@ class B2bCatalogPricingTest extends TestCase
             'name' => 'Товар вне разрешённой ветки',
             'price' => 100,
             'stock_quantity' => 5,
+            'stock_confirmed_at' => now(),
             'match_status' => 'matched',
         ]);
 

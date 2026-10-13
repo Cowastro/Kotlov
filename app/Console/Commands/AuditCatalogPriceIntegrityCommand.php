@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\DB;
 class AuditCatalogPriceIntegrityCommand extends Command
 {
     protected $signature = 'catalog:audit-price-integrity
-        {--stale-hours=48 : Age after which a positive stock snapshot requires attention}';
+        {--stale-hours=24 : Age after which a positive supplier stock snapshot requires attention}';
 
     protected $description = 'Read-only aggregate audit of catalog prices, margins, currencies and stock evidence.';
 

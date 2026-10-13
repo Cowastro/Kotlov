@@ -161,9 +161,15 @@ class Product extends Model
     {
         $legacyAvailable = $this->relationLoaded('supplierProducts')
             ? $this->supplierProducts->contains(
-                fn (SupplierProduct $item): bool => (float) $item->stock_quantity > 0
+                fn (SupplierProduct $item): bool => $item->hasFreshPositiveStock()
             )
-            : $this->supplierProducts()->where('stock_quantity', '>', 0)->exists();
+            : $this->supplierProducts()
+                ->where('stock_quantity', '>', 0)
+                ->whereRaw(
+                    'COALESCE(last_stock_synced_at, last_synced_at, updated_at) >= ?',
+                    [now()->subHours(SupplierProduct::STALE_AFTER_HOURS)]
+                )
+                ->exists();
 
         if ($legacyAvailable) {
             return true;
@@ -172,24 +178,25 @@ class Product extends Model
         if ($this->relationLoaded('integrationProducts')) {
             return $this->integrationProducts->contains(
                 fn (IntegrationProduct $item): bool => $item->match_status === 'matched'
-                    && $item->source?->is_active === true
-                    && (float) $item->stock_quantity > 0
+                    && $item->hasFreshPositiveStock()
             );
         }
 
         return $this->integrationProducts()
+            ->with('source')
             ->where('match_status', 'matched')
             ->where('stock_quantity', '>', 0)
             ->whereHas('source', fn ($source) => $source->where('is_active', true))
-            ->exists();
+            ->get()
+            ->contains(fn (IntegrationProduct $item): bool => $item->hasFreshPositiveStock());
     }
 
     public function scopeWithSupplierChannels($query)
     {
         return $query->with([
-            'supplierProducts:id,product_id,in_stock,stock_quantity',
-            'integrationProducts:id,product_id,integration_source_id,stock_quantity,match_status',
-            'integrationProducts.source:id,is_active',
+            'supplierProducts:id,product_id,in_stock,stock_quantity,last_stock_synced_at,last_synced_at,updated_at',
+            'integrationProducts:id,product_id,integration_source_id,stock_quantity,match_status,stock_confirmed_at',
+            'integrationProducts.source:id,is_active,settings',
         ]);
     }
 

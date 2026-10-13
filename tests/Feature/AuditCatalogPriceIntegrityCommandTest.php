@@ -47,7 +47,7 @@ class AuditCatalogPriceIntegrityCommandTest extends TestCase
             'last_stock_synced_at' => now(),
         ]);
 
-        $this->artisan('catalog:audit-price-integrity', ['--stale-hours' => 48])
+        $this->artisan('catalog:audit-price-integrity', ['--stale-hours' => 24])
             ->expectsOutputToContain('metric.invalid_old_price=1')
             ->expectsOutputToContain('metric.retail_below_supplier_cost=1')
             ->expectsOutputToContain('metric.retail_margin_below_minimum=1')

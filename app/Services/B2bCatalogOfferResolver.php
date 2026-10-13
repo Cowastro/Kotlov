@@ -79,13 +79,7 @@ class B2bCatalogOfferResolver
 
     public function hasFreshStock(IntegrationProduct $offer): bool
     {
-        $confirmedAt = $offer->stock_confirmed_at;
-        $source = $offer->source;
-
-        return $source !== null
-            && $confirmedAt !== null
-            && $confirmedAt->gte(now()->subMinutes($source->staleAfterMinutes()))
-            && (float) $offer->stock_quantity > 0;
+        return $offer->hasFreshPositiveStock();
     }
 
     /** @return array{offer: IntegrationProduct, wholesale_price: float, retail_price: float, difference: float, difference_percent: float|null, vat_rate: float}|null */

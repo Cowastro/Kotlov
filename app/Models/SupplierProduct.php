@@ -102,4 +102,15 @@ class SupplierProduct extends Model
             ->where('in_stock', true)
             ->orWhere('stock_quantity', '>', 0));
     }
+
+    public function hasFreshPositiveStock(?CarbonInterface $now = null): bool
+    {
+        $confirmedAt = $this->last_stock_synced_at
+            ?? $this->last_synced_at
+            ?? $this->updated_at;
+
+        return (float) $this->stock_quantity > 0
+            && $confirmedAt !== null
+            && $confirmedAt->gte(($now ?? now())->copy()->subHours(self::STALE_AFTER_HOURS));
+    }
 }

@@ -2,9 +2,9 @@
 
 namespace Tests\Feature;
 
+use App\Models\Category;
 use App\Models\IntegrationProduct;
 use App\Models\IntegrationSource;
-use App\Models\Category;
 use App\Models\Product;
 use App\Models\Supplier;
 use App\Models\SupplierProduct;
@@ -56,6 +56,7 @@ class SupplierChannelAvailabilityRuleTest extends TestCase
             'external_id' => 'availability-rule-one-c-item',
             'name' => 'Позиция 1С правила наличия',
             'stock_quantity' => 4,
+            'stock_confirmed_at' => now(),
             'match_status' => 'matched',
         ]);
 
@@ -81,6 +82,55 @@ class SupplierChannelAvailabilityRuleTest extends TestCase
 
         $this->assertSame(Product::AVAILABILITY_OUT_OF_STOCK, $product->effectiveAvailabilityStatus());
         $this->assertFalse($product->canBeOrdered());
+    }
+
+    public function test_stale_supplier_stock_requires_consultation(): void
+    {
+        $product = $this->product('STALE-LINK', true);
+        $supplier = Supplier::query()->create([
+            'code' => 'stale-availability-rule',
+            'name' => 'Поставщик со старым остатком',
+        ]);
+        SupplierProduct::query()->create([
+            'supplier_id' => $supplier->id,
+            'product_id' => $product->id,
+            'supplier_article' => 'STALE-LINK-1',
+            'in_stock' => true,
+            'stock_quantity' => 3,
+            'last_stock_synced_at' => now()->subHours(SupplierProduct::STALE_AFTER_HOURS + 1),
+        ]);
+
+        $this->assertSame(Product::AVAILABILITY_CHECK, $product->fresh()->effectiveAvailabilityStatus());
+        $this->assertFalse($product->fresh()->canBePurchased());
+    }
+
+    public function test_stale_integration_stock_requires_consultation(): void
+    {
+        $product = $this->product('STALE-ONE-C', true);
+        $supplier = Supplier::query()->create([
+            'code' => 'stale-one-c-supplier',
+            'name' => 'Поставщик со старым остатком 1С',
+        ]);
+        $source = IntegrationSource::query()->create([
+            'supplier_id' => $supplier->id,
+            'code' => 'stale-one-c-source',
+            'name' => 'Старый остаток 1С',
+            'driver' => 'commerceml',
+            'is_active' => true,
+            'settings' => ['stale_after_minutes' => 15],
+        ]);
+        IntegrationProduct::query()->create([
+            'integration_source_id' => $source->id,
+            'product_id' => $product->id,
+            'external_id' => 'stale-one-c-item',
+            'name' => 'Позиция со старым остатком 1С',
+            'stock_quantity' => 4,
+            'stock_confirmed_at' => now()->subMinutes(16),
+            'match_status' => 'matched',
+        ]);
+
+        $this->assertSame(Product::AVAILABILITY_CHECK, $product->fresh()->effectiveAvailabilityStatus());
+        $this->assertFalse($product->fresh()->canBePurchased());
     }
 
     private function product(string $sku, bool $active): Product

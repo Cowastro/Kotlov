@@ -81,6 +81,14 @@ class IntegrationProduct extends Model
         return $formatted.' шт.';
     }
 
+    public function hasFreshPositiveStock(): bool
+    {
+        return $this->source?->is_active === true
+            && $this->stock_confirmed_at !== null
+            && $this->stock_confirmed_at->gte(now()->subMinutes($this->source->staleAfterMinutes()))
+            && (float) $this->stock_quantity > 0;
+    }
+
     public function normalizedPriceByn(): ?float
     {
         $normalized = (float) $this->price_byn;

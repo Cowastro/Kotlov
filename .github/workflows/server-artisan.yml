@@ -183,7 +183,7 @@ jobs:
                   --output=storage/app/reports/catalog/unlinked-products.csv
                 ;;
               audit-price-integrity)
-                "$PHP_BIN" artisan catalog:audit-price-integrity --stale-hours=48
+                "$PHP_BIN" artisan catalog:audit-price-integrity --stale-hours=24
                 ;;
               verify-commercial-pdf)
                 "$PHP_BIN" artisan commercial-documents:verify-pdf "${ARTISAN_ARGV[@]}"
