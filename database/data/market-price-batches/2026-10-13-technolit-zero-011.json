@@ -1,0 +1,533 @@
+{
+    "code": "2026-10-13-technolit-zero-011",
+    "observed_at": "2026-10-13T21:24:47+00:00",
+    "review_required": true,
+    "selection": {
+        "production_only": true,
+        "active_only": true,
+        "unpriced_only": true,
+        "brand": "ТехноЛит",
+        "skus": [],
+        "after_id": 12451,
+        "limit": 5,
+        "source_queue": "storage/app/private/price-research-queue-38466265607/price-research-queue.csv"
+    },
+    "sources": [
+        {
+            "code": "web-66174494f7f95435",
+            "name": "БАНИ САУНЫ",
+            "kind": "competitor",
+            "base_url": "https://banisauny.by",
+            "currency": "BYN",
+            "region": "Открытый рынок",
+            "freshness_hours": 168,
+            "minimum_match_confidence": 0.99,
+            "notes": "Источник найден hosted web_search; batch требует ручной проверки до применения."
+        },
+        {
+            "code": "web-8cde72c895d68935",
+            "name": "ПечиБани",
+            "kind": "competitor",
+            "base_url": "https://pechibani.by",
+            "currency": "BYN",
+            "region": "Открытый рынок",
+            "freshness_hours": 168,
+            "minimum_match_confidence": 0.99,
+            "notes": "Источник найден hosted web_search; batch требует ручной проверки до применения."
+        },
+        {
+            "code": "web-cf6cedd27594ca04",
+            "name": "hot.by",
+            "kind": "competitor",
+            "base_url": "https://hot.by",
+            "currency": "BYN",
+            "region": "Открытый рынок",
+            "freshness_hours": 168,
+            "minimum_match_confidence": 0.99,
+            "notes": "Источник найден hosted web_search; batch требует ручной проверки до применения."
+        }
+    ],
+    "products": [
+        {
+            "sku": "KOTLOV-000174",
+            "review_reason": "Live-web исследование точной production-модели нашло менее трёх независимых подтверждённых предложений; сохранить консультационный режим.",
+            "force_consultation_hold": true,
+            "observations": [
+                {
+                    "source": "web-66174494f7f95435",
+                    "url": "https://banisauny.by/pechi-dlya-bani/gefest-3k-pb-02-zk/",
+                    "external_name": "Печь GFS Гефест ЗК 40 в сетке",
+                    "model": "Печь для бани GFS Гефест ЗК 40 в сетке чугун",
+                    "package": "Печь, стартовая труба 150х180, зольный ящик (нерж.сталь), герметик Титан до 1500С, гарантийный паспорт; камни не входят",
+                    "observed_price": 5180,
+                    "currency": "BYN",
+                    "exchange_rate_to_byn": 1,
+                    "price_includes_vat": null,
+                    "availability_status": "unknown",
+                    "match_method": "exact_model",
+                    "match_confidence": 0.99,
+                    "is_confirmed": true,
+                    "is_comparable": true,
+                    "validation_flags": [],
+                    "evidence": "Карточка магазина БАНИ САУНЫ: код товара 878, материал чугун, 40 м³, цена 5 180 BYN."
+                },
+                {
+                    "source": "web-8cde72c895d68935",
+                    "url": "https://pechibani.by/pechi-dlya-bani/gefest-3k-pb-02-zk/",
+                    "external_name": "Печь для бани GFS Гефест ЗК 40 в сетке чугун",
+                    "model": "Печь для бани GFS Гефест ЗК 40 в сетке чугун",
+                    "package": "Печь, стартовая труба 150х180, зольный ящик (нерж.сталь), герметик Титан до 1500С, гарантийный паспорт; камни не входят",
+                    "observed_price": 5320,
+                    "currency": "BYN",
+                    "exchange_rate_to_byn": 1,
+                    "price_includes_vat": null,
+                    "availability_status": "unknown",
+                    "match_method": "exact_model",
+                    "match_confidence": 0.99,
+                    "is_confirmed": true,
+                    "is_comparable": true,
+                    "validation_flags": [],
+                    "evidence": "Карточка на pechibani.by с точным названием, код товара 878, материал чугун, 40 м³, цена 5 320 BYN."
+                }
+            ],
+            "research": {
+                "summary": "Найдена точная модель «Печь для бани GFS Гефест ЗК 40 в сетке чугун» (ТехноЛит): глухая чугунная дверца без стекла, с выносом, до 40 м³. В Беларуси обнаружены 3 подтвержденные карточки на независимых доменах: kotlov.by — 5320 BYN, banisauny.by — 5180 BYN, pechibani.by — 5320 BYN. Рыночный диапазон РБ: 5180–5320 BYN. Наличие и НДС на страницах не раскрыты, у banisauny.by прямо указано «цену и наличие уточняйте». Для сравнения в РФ найдены предложения 125 700–140 000 RUB (без пересчета в BYN): производитель ТехноЛит — 140 000 RUB «нет в наличии», kamin53.ru — 139 965 RUB, sweetfire.ru — 140 000 RUB «в наличии», kamenka.ru — 125 700 RUB. Цена клиента 0.00 BYN не позволяет судить о завышении/занижении; автоматически менять цену оснований нет.",
+                "verdict": "Товар идентифицирован. В Беларуси ориентироваться на 5180–5320 BYN, минимальная заявленная цена — 5180 BYN на banisauny.by, но ее наличие и цена требуют подтверждения. Рекомендую запросить у продавцов актуальное наличие, НДС и полный состав поставки. Цена клиента 0.00 BYN некорректна для сравнения — сначала нужно получить реальное коммерческое предложение.",
+                "confidence": "medium",
+                "search_queries": [
+                    "Печь для бани GFS Гефест ЗК 40 в сетке чугун ТехноЛит",
+                    "Гефест ЗК 40 чугун сетка купить Беларусь",
+                    "KOTLOV-000174",
+                    "\"GFS ЗК 40 в сетке\" чугун купить цена",
+                    "\"Гефест ЗК 40 в сетке\" \"чугун\" Беларусь",
+                    "\"ПБ-02 ЗК\" печь Гефест в сетке чугун"
+                ],
+                "rejected_candidates": [
+                    {
+                        "title": "Печь для бани GFS Гефест ЗК 40 (П) в сетке чугун",
+                        "url": "https://kotlov.by/drovianye-peci-bannye/pec-dlia-bani-gfs-gefest-zk-40-p-v-setke-cugun",
+                        "reason": "Исполнение (П) с панорамной стеклянной дверцей, не совпадает с базовой моделью с глухой чугунной дверцей."
+                    },
+                    {
+                        "title": "Чугунная печь для бани GFS (Гефест) ЗК 40 (П2) в сетке",
+                        "url": "https://www.technolit.ru/production/pechi-dlya-bani/pechi-v-setke-uragan/pb-02pc-zk/",
+                        "reason": "Исполнение (П2) с панорамным стеклом, не совпадает с базовой глухой дверцей."
+                    },
+                    {
+                        "title": "Чугунная печь для бани Гефест GFS ЗК 40 (М) в сетке",
+                        "url": "https://lida.amazonka.by/gfs-zk-40-m-v-setke",
+                        "reason": "Модификация (М) с малой стеклянной дверцей, не совпадает с базовой моделью без стекла."
+                    },
+                    {
+                        "title": "Сетка на трубу 300х300х1000 Гефест ЗК 40/45, Гром 40/45",
+                        "url": "https://pechibani.by/pechi-dlya-bani/drovyanyye-pechi/pechi-gefest/dopolnitelnaya-komplektaciya-dlya-pechey/setki-na-trubi/setka-na-trubu-300h300h1000-gefest-zk-35-40-45/",
+                        "reason": "Комплектующая (сетка на трубу), а не сама печь."
+                    },
+                    {
+                        "title": "Печь для бани Гефест Авангард ЗК 40 (П2) Ураган круглая сетка",
+                        "url": "https://kotlov.by/drovianye-peci-bannye/pec-dlia-bani-gefest-avangard-zk-40-p2-uragan-kruglaia-setka",
+                        "reason": "Другая серия — Авангард, не GFS Гефест ЗК 40."
+                    },
+                    {
+                        "title": "Чугунная печь для бани Гефест в сетке ПБ-02 ЗК 40",
+                        "url": "https://brest.teplo-izba.by/pechi/bani/gefest-3k/gefest-3k-w-setke-40.html",
+                        "reason": "Похоже на точное совпадение модели, но в найденных результатах отсутствуют цена и подтвержденное наличие, поэтому не включено в offers."
+                    }
+                ],
+                "excluded_offers": [
+                    {
+                        "title": "Печь для бани GFS Гефест ЗК 40 в сетке чугун",
+                        "url": "https://kotlov.by/drovianye-peci-bannye/pec-dlia-bani-gfs-gefest-zk-40-v-setke-cugun",
+                        "reason": "Собственный домен KOTLOV не является независимым рыночным источником."
+                    },
+                    {
+                        "title": "Чугунная печь для бани GFS ЗК 40 в сетке",
+                        "url": "https://tula.technolit.ru/production/pechi-dlya-bani/pechi-v-setke-uragan/pechi-v-setke/gfs-zk-40-v-setke/",
+                        "reason": "Нет положительной подтверждённой цены в BYN."
+                    },
+                    {
+                        "title": "Чугунная печь для бани GFS ЗК 40 в сетке",
+                        "url": "https://kamin53.ru/product/chugunnaya-pech-dlya-bani-gfs-zk-40-v-setke/",
+                        "reason": "Нет положительной подтверждённой цены в BYN."
+                    },
+                    {
+                        "title": "Чугунная печь для бани GFS ЗК 40 в сетке ТехноЛит",
+                        "url": "https://sweetfire.ru/product/chugunnaya-pech-dlya-bani-gfs-zk-40-v-setke/#tab-additional_information",
+                        "reason": "Нет положительной подтверждённой цены в BYN."
+                    },
+                    {
+                        "title": "Банная печь Гефест GFS ЗК 40 в сетке",
+                        "url": "https://voronezh.kamenka.ru/goods/bannaya-pech-gefest-gfs-zk-40-v-setke",
+                        "reason": "Нет положительной подтверждённой цены в BYN."
+                    }
+                ],
+                "model": "deepseek-v4-pro",
+                "searched_at": "2026-10-13T21:19:18+00:00"
+            }
+        },
+        {
+            "sku": "KOTLOV-000175",
+            "review_reason": "Live-web исследование точной production-модели нашло менее трёх независимых подтверждённых предложений; сохранить консультационный режим.",
+            "force_consultation_hold": true,
+            "observations": [
+                {
+                    "source": "web-cf6cedd27594ca04",
+                    "url": "https://hot.by/pechi-dlya-bani/pech-dlya-bani-tehnolit-gfs-zk-40-uragan/?utm_source=google&utm_campaign=pmnew&utm_medium=cpc&utm_term=..c...",
+                    "external_name": "Печь для бани Технолит GFS ЗК 40 Ураган",
+                    "model": "Печь для бани GFS Гефест ЗК Ураган 40 чугун",
+                    "package": "печь банная GFS ЗК 40, короб чугунный, стартовая труба 150х500, дверца GEFEST 450, зольный ящик, герметик до 1500С, паспорт, стальная кованая сетка; камни и паровые пушки приобретаются отдельно",
+                    "observed_price": 6911,
+                    "currency": "BYN",
+                    "exchange_rate_to_byn": 1,
+                    "price_includes_vat": null,
+                    "availability_status": "unknown",
+                    "match_method": "exact_model",
+                    "match_confidence": 0.99,
+                    "is_confirmed": true,
+                    "is_comparable": true,
+                    "validation_flags": [],
+                    "evidence": "Найден через web_search. В выдаче по hot.by указаны 7 299 руб. и скидочная цена 6 911 руб.; домен .by, поэтому валюта трактована как BYN. Характеристики совпадают с базовой версией: топочная дверца без стекла, закрытая каменка, чугун, до 40 м³."
+                }
+            ],
+            "research": {
+                "summary": "По запросу найдены реальные предложения в Беларуси и РФ. Точный артикул KOTLOV-000175 в открытых источниках не подтвердился. По названию целевой товар ближе всего к базовой чугунной печи GFS ЗК 40 Ураган: закрытая каменка, топочная дверца без стекла, чугун, парная до 40 м³, дрова. В Беларуси базовая версия найдена на hot.by — 6 911 BYN (в выдаче старая цена 7 299 BYN и скидка до 6 911 BYN), наличие не указано; близкая модификация (М, со стеклом) на kotlov.by — 6 828.60 BYN. В РФ базовая версия найдена от 115 000 RUB (kamin.website) до 177 135 RUB (kamin53.ru). Модификации (М) и (П2) — это другие исполнения, их нельзя напрямую сравнивать с базовой версией. Цена клиента 0.00 BYN некорректна для сравнения и не должна использоваться как рыночный ориентир.",
+                "verdict": "Рекомендуется сначала уточнить в карточке SKU KOTLOV-000175, какая именно модификация закупается: базовая GFS ЗК 40 Ураган (без стекла), (М) со стеклом или (П2) с усиленной каменкой. Если это базовая версия, то рыночный ориентир в Беларуси — 6 911 BYN (hot.by), в РФ — 115 000–177 135 RUB без учёта доставки и импортных затрат. Белорусских предложений немного, поэтому перед закупкой нужно подтвердить наличие, комплектность и НДС у hot.by и kotlov.by. Текущую цену 0.00 BYN следует заменить на фактическую после уточнения модификации.",
+                "confidence": "medium",
+                "search_queries": [
+                    "Печь для бани GFS Гефест ЗК Ураган 40 чугун ТехноЛит KOTLOV-000175",
+                    "Гефест ЗК Ураган 40 чугун печь для бани купить",
+                    "ТехноЛит Ураган 40 чугун печь банная GFS",
+                    "KOTLOV-000175",
+                    "\"KOTLOV-000175\"",
+                    "site:kotlov.by KOTLOV-000175",
+                    "site:pechnoy.by \"Гефест ЗК Ураган 40\" чугун"
+                ],
+                "rejected_candidates": [
+                    {
+                        "title": "Печь для бани Гефест GFS ЗК 40 (П2) Ураган",
+                        "url": "https://kotlov.by/drovianye-peci-bannye/pec-dlia-bani-gefest-gfs-zk-40-p2-uragan",
+                        "reason": "Другая модификация (П2): мощность 28 кВт, каменка открытая/закрытая, иные габариты и комплектность, не совпадает с базовой 'Ураган 40 чугун'."
+                    },
+                    {
+                        "title": "GFS Гефест ЗК Ураган 40 (М)",
+                        "url": "https://pechnoy.by/pechi-dlya-bani/drovyanyye-pechi/pechi-gefest/gefest-uragan-3k/gefest-uragan-zk-pb-02ms-zk/",
+                        "reason": "Модификация (М) со стеклом; кроме того, в найденном сниппете не указана цена, поэтому не включено в оферы."
+                    },
+                    {
+                        "title": "Чугунная банная печь GFS ЗК 40 (М) Ураган — Альянс-Камин",
+                        "url": "https://kaminpeterburg.ru/catalog/gfs-zk-40-m-uragan",
+                        "reason": "Модификация (М) со стеклом, отличается от базовой версии без стекла."
+                    },
+                    {
+                        "title": "GFS ЗК 40 (М) Ураган — Техно Лит",
+                        "url": "https://vladimir.technolit.ru/production/pechi-dlya-bani/pechi-v-setke-uragan/gefest-uragan-zk/gefest-uragan-pb-02ms-zk-uragan/",
+                        "reason": "Модификация (М), цена 179 700 ₽, но статус 'Нет в наличии'."
+                    },
+                    {
+                        "title": "Чугунная банная печь GFS ЗК 40 (П2) Ураган — Камелек Тепла",
+                        "url": "https://kamelektepla.ru/catalog/chugunnye-pechi-gfs-3k/chugunnaya-bannaya-pech-gfs-zk-40-p2-uragan/",
+                        "reason": "Другая модификация (П2), не совпадает с базовой 'Ураган 40 чугун'."
+                    }
+                ],
+                "excluded_offers": [
+                    {
+                        "title": "Печь для бани GFS Гефест ЗК Ураган 40 (М) чугун",
+                        "url": "https://kotlov.by/drovianye-peci-bannye/pec-dlia-bani-gfs-gefest-zk-uragan-40-m-cugun",
+                        "reason": "Предложение не подтверждает точное совпадение модели."
+                    },
+                    {
+                        "title": "Чугунная печь для бани GFS ЗК 40 Ураган",
+                        "url": "https://kamin53.ru/product/chugunnaya-pech-dlya-bani-gfs-zk-40-uragan/",
+                        "reason": "Нет положительной подтверждённой цены в BYN."
+                    },
+                    {
+                        "title": "Чугунная печь для бани Гефест ЗК Ураган 40",
+                        "url": "https://kamin.website/chugunnaya-pech-dlya-bani-gefest-zk-uragan-40",
+                        "reason": "Предложение не подтверждает точное совпадение модели."
+                    }
+                ],
+                "model": "deepseek-v4-pro",
+                "searched_at": "2026-10-13T21:20:51+00:00"
+            }
+        },
+        {
+            "sku": "KOTLOV-000176",
+            "review_reason": "Live-web исследование точной production-модели нашло менее трёх независимых подтверждённых предложений; сохранить консультационный режим.",
+            "force_consultation_hold": true,
+            "observations": [],
+            "research": {
+                "summary": "В Беларуси точное предложение по модели GFS Гефест ЗК Ураган 30 чугун в открытых карточках не найдено. На kotlov.by есть только смежные исполнения: GFS ЗК Ураган 30 (М) за 5 700,00 BYN и GFS ЗК 30 (П2) Ураган за 6 125,60 BYN — они отличаются дверцей/исполнением и не являются точным совпадением. На рынке РФ точная базовая модель GFS ЗК 30 Ураган зафиксирована у нескольких независимых продавцов: основной диапазон 147 420–147 500 RUB, отдельное предложение от 105c.ru — 133 791 RUB. Комплектация везде стандартная для «Ураган»: печь, чугунный короб, стартовая труба 130х500, дверца 450, зольный ящик, герметик, стальная кованая сетка; камни в комплект не входят.",
+                "verdict": "Клиентская цена 0,00 BYN не является рыночным ориентиром и не позволяет проводить сравнение. Для точной закупки в РБ необходимо запросить у поставщика цену именно базовой модели GFS ЗК 30 Ураган (глухая дверца) и подтвердить артикул KOTLOV-000176. Ориентир по РФ: 147 420–147 500 RUB, что при пересчёте требует актуального курса и логистики; автоматически менять цену на 0,00 BYN не рекомендуется.",
+                "confidence": "medium",
+                "search_queries": [
+                    "Печь для бани GFS Гефест ЗК Ураган 30 чугун ТехноЛит",
+                    "KOTLOV-000176",
+                    "Гефест ЗК Ураган 30 чугун цена",
+                    "site:kotlov.by KOTLOV-000176",
+                    "\"KOTLOV-000176\" печь",
+                    "\"GFS Гефест ЗК Ураган 30\" купить Минск"
+                ],
+                "rejected_candidates": [
+                    {
+                        "title": "Печь для бани GFS Гефест ЗК Ураган 30 (М) чугун",
+                        "url": "https://kotlov.by/drovianye-peci-bannye/pec-dlia-bani-gfs-gefest-zk-uragan-30-m-cugun",
+                        "reason": "Исполнение (М) с малой дверцей, а не базовая модель; цена 5 700,00 BYN."
+                    },
+                    {
+                        "title": "Печь для бани GFS ЗК 30 (П2) Ураган чугун",
+                        "url": "https://kotlov.by/drovianye-peci-bannye/pec-dlia-bani-gfs-zk-30-p2-uragan-cugun",
+                        "reason": "Исполнение (П2) с панорамной дверцей, а не базовая модель; цена 6 125,60 BYN."
+                    },
+                    {
+                        "title": "GFS (Гефест) ЗК 30 (П2) Ураган",
+                        "url": "https://www.technolit.ru/production/pechi-dlya-bani/pechi-v-setke-uragan/gfs-zk-uragan-30-p-2/",
+                        "reason": "Отличается исполнение: модификация П2 с панорамной дверцей; цена 161 200 ₽."
+                    },
+                    {
+                        "title": "GFS (Гефест) ЗК 30 (М) Ураган",
+                        "url": "https://www.ekb.technolit.ru/production/pechi-dlya-bani/pechi-v-setke-uragan/gefest-uragan-zk/gfs-zk-30-m-uragan/",
+                        "reason": "Отличается исполнение: модификация (М) с малой дверцей; цена 150 000 ₽."
+                    },
+                    {
+                        "title": "Чугунная печь для бани GFS ЗК 30 Ураган",
+                        "url": "https://www.volgograd.technolit.ru/production/pechi-dlya-bani/pechi-v-setke-uragan/gefest-uragan-zk/gefest-zk-uragan-pb-03s-zk-uragan/",
+                        "reason": "Точная базовая модель, но в найденной карточке статус «Нет в наличии» и цена не указана."
+                    },
+                    {
+                        "title": "Печь для бани - GFS ЗК 30 (М) Ураган",
+                        "url": "https://baniyuga.ru/shop/pech-dlya-bani---gfs-zk-30-m-uragan-59265",
+                        "reason": "Исполнение (М), не базовая модель; цена 123 500 руб."
+                    },
+                    {
+                        "title": "Печь банная GFS ЗК 30 (М) Ураган, Техно Лит",
+                        "url": "https://betongarant.ru/catalog/pechi_dlya_bani/pech_bannaya_gfs_zk_30_m_uragan_tekhno_lit/",
+                        "reason": "Исполнение (М), не базовая модель; цена 150 000 руб."
+                    }
+                ],
+                "excluded_offers": [
+                    {
+                        "title": "Чугунная печь для бани GFS ЗК 30 Ураган",
+                        "url": "https://kamin53.ru/product/chugunnaya-pech-dlya-bani-gfs-zk-30-uragan/#props",
+                        "reason": "Нет положительной подтверждённой цены в BYN."
+                    },
+                    {
+                        "title": "Чугунная печь для бани Гефест-ЗК 30 Ураган",
+                        "url": "https://bani-market.ru/product/chugunnaya-pech-dlya-bani-gefest-zk-30-uragan/?add-to-cart=1111",
+                        "reason": "Нет положительной подтверждённой цены в BYN."
+                    },
+                    {
+                        "title": "Гефест ЗК Ураган 30 (GFS ЗК Ураган 30)",
+                        "url": "https://termosfera.net/shop/the-furnace-bath/wood-fired-oven/technolit/technolit-gfs/gefesturagan-pb03szk/",
+                        "reason": "Нет положительной подтверждённой цены в BYN."
+                    },
+                    {
+                        "title": "Чугунная банная печь Гефест ЗК Ураган 30",
+                        "url": "https://system-peter.ru/product/%d1%87%d1%83%d0%b3%d1%83%d0%bd%d0%bd%d0%b0%d1%8f-%d0%b1%d0%b0%d0%bd%d0%bd%d0%b0%d1%8f-%d0%bf%d0%b5%d1%87%d1%8c-%d0%b3%d0%b5%d1%84%d0%b5%d1%81%d1%82-%d0%b7%d0%ba-%d1%83%d1%80%d0%b0%d0%b3%d0%b0%d0%bd-7/",
+                        "reason": "Нет положительной подтверждённой цены в BYN."
+                    },
+                    {
+                        "title": "Печь банная Гефест GFS ЗК Ураган 30",
+                        "url": "https://xn----jtbajinxg0e.xn--p1ai/catalog/pechi-bannye/drovyanye/gefest/gefest-uragan-zk/gefest-zk-uragan-30/",
+                        "reason": "Нет положительной подтверждённой цены в BYN."
+                    },
+                    {
+                        "title": "Чугунные печи для бани GFS ЗК Ураган 30",
+                        "url": "https://www.bdvorik.ru/catalog/pechi_dlya_bani_dymokhody/drovyanye_pechi_dlya_bani/chugunnye_pechi_gefest_tekhnolit/chugunnye_pechi_dlya_bani_gfs_zk_uragan_30/",
+                        "reason": "Предложение не подтверждает точное совпадение модели."
+                    },
+                    {
+                        "title": "Дровяная печь Гефест Ураган ЗК 30",
+                        "url": "http://105c.ru/catalog/wood-heaters/uragan_pb_ms_zk/offer-03_13/",
+                        "reason": "Предложение не подтверждает точное совпадение модели."
+                    }
+                ],
+                "model": "deepseek-v4-pro",
+                "searched_at": "2026-10-13T21:21:52+00:00"
+            }
+        },
+        {
+            "sku": "KOTLOV-000177",
+            "review_reason": "Live-web исследование точной production-модели нашло менее трёх независимых подтверждённых предложений; сохранить консультационный режим.",
+            "force_consultation_hold": true,
+            "observations": [],
+            "research": {
+                "summary": "По целевому товару «Печь для бани GFS Гефест ЗК Ураган 18 чугун» (ТехноЛит, KOTLOV-000177) в Беларуси подтверждено только одно ценовое предложение: kotlov.by — 4 358.60 BYN. Карточка совпадает по названию и ключевым характеристикам: глухая чугунная дверца, 18 кВт, парная до 18 м³, закрытая каменка, габариты топки 478×393×538 мм, до 140 кг камней. Вторая белорусская карточка pechibani.by найдена с тем же точным названием и характеристиками, но цена в поисковой выдаче не отобразилась. Остальные белорусские позиции — это модификация «(М)» со стеклом/малой дверцей (pechnoy.by, banisauny.by) и не являются целевой глухой версией. На рынке РФ найдено много похожих предложений GFS ЗК 18 Ураган, однако у большинства отличаются масса, объём парной, размер сетки или тип дверцы (часто 254 кг, 160 кг камней, 8–16 м³, стекло), поэтому они отнесены к rejected_candidates. Полноценного сравнения цен нет: по точной модели — только одна подтверждённая цена. Пересчёт RUB/BYN не выполнялся из-за отсутствия подтверждённых точных RUB-цен и курса на дату исследования.",
+                "verdict": "Рынок точной модели узкий. Единственная подтверждённая цена в Беларуси — 4 358.60 BYN на kotlov.by. Рекомендую дозапросить цену и наличие у pechibani.by, а также уточнить у kotlov.by комплектность, наличие и НДС. Не менять цену автоматически: для обоснованного решения нужно не менее трёх подтверждённых цен точной модели.",
+                "confidence": "low",
+                "search_queries": [
+                    "\"Гефест ЗК Ураган 18\" чугун",
+                    "\"GFS Гефест ЗК Ураган 18\"",
+                    "\"KOTLOV-000177\"",
+                    "ТехноЛит Ураган 18 чугун печь для бани",
+                    "\"Печь для бани GFS Гефест ЗК Ураган 18 чугун\""
+                ],
+                "rejected_candidates": [
+                    {
+                        "title": "Печь GFS Гефест ЗК Ураган 18 (М)",
+                        "url": "https://pechnoy.by/pechi-dlya-bani/drovyanyye-pechi/pechi-gefest/gefest-uragan-3k/gefest-uragan-zk-pb-04ms-zk/",
+                        "reason": "Модификация (М) с малой/остеклённой дверцей; не совпадает с целевой глухой версией."
+                    },
+                    {
+                        "title": "Печь GFS Гефест ЗК Ураган 18 (М)",
+                        "url": "https://banisauny.by/pechi-dlya-bani/gefest-uragan-zk-pb-04ms-zk/",
+                        "reason": "Модификация (М), указано стекло 190×160 мм; цена 4 503 BYN, но это не целевая глухая версия."
+                    },
+                    {
+                        "title": "Чугунная банная печь Гефест ЗК Ураган 18 П",
+                        "url": "https://kareliaprokamin.ru/catalog/pechi/mini-pech-dlya-bani/tproduct/534744010652-chugunnaya-bannaya-pech-gefest-zk-uragan",
+                        "reason": "Исполнение (П) со стеклом; не совпадает с глухой версией."
+                    },
+                    {
+                        "title": "Чугунная банная печь Гефест ЗК Ураган 18",
+                        "url": "https://system-peter.ru/product/%d1%87%d1%83%d0%b3%d1%83%d0%bd%d0%bd%d0%b0%d1%8f-%d0%b1%d0%b0%d0%bd%d0%bd%d0%b0%d1%8f-%d0%bf%d0%b5%d1%87%d1%8c-%d0%b3%d0%b5%d1%84%d0%b5%d1%81%d1%82-%d0%b7%d0%ba-%d1%83%d1%80%d0%b0%d0%b3%d0%b0%d0%bd-5/",
+                        "reason": "Дверца со стеклом, масса 227 кг; не целевая глухая версия."
+                    },
+                    {
+                        "title": "Печь банная Гефест ЗК Ураган 18",
+                        "url": "https://vova-dymohod.ru/pechi_s_zakrytoj_kamenkoj?product_id=14802",
+                        "reason": "В характеристиках указано «Форма стекла: прямое»; не глухая дверца, гарантия 1 год."
+                    },
+                    {
+                        "title": "Чугунная печь для бани GFS ЗК 18 Ураган",
+                        "url": "https://sweetfire.ru/product/chugunnaya-pech-dlya-bani-gfs-zk-18-uragan/",
+                        "reason": "RF-версия с отличающимися параметрами: масса 254 кг, сетка 822×650×530 мм, объём 8–16 м³, 160 кг камней; не совпадает с целевой 184 кг/580×480×830/18 м³."
+                    },
+                    {
+                        "title": "Чугунная печь для бани GFS (Гефест) ЗК 18 Ураган",
+                        "url": "https://www.ekb.technolit.ru/production/pechi-dlya-bani/pechi-v-setke-uragan/gefest-uragan-zk/chugunnaya-bannaya-pech-gefest-zk-uragan-pb-04-zk-uragan/",
+                        "reason": "Официальная RF-карточка: масса 254 кг, 160 кг камней, объём 8–16 м³, «нет в наличии»; характеристики не совпадают с целевой карточкой."
+                    }
+                ],
+                "excluded_offers": [
+                    {
+                        "title": "Печь для бани GFS Гефест ЗК Ураган 18 чугун",
+                        "url": "https://kotlov.by/drovianye-peci-bannye/pec-dlia-bani-gfs-gefest-zk-uragan-18-cugun",
+                        "reason": "Собственный домен KOTLOV не является независимым рыночным источником."
+                    },
+                    {
+                        "title": "Печь для бани GFS Гефест ЗК Ураган 18 чугун",
+                        "url": "https://pechibani.by/pechi-dlya-bani/gefest-uragan-zk-pb-04c-zk/",
+                        "reason": "Нет положительной подтверждённой цены в BYN."
+                    },
+                    {
+                        "title": "Чугунная печь для бани Гефест ЗК Ураган 18",
+                        "url": "https://xn--29-mlcdlmt5aj5e2c.xn--p1ai/magazin/product/13244101",
+                        "reason": "Предложение не подтверждает точное совпадение модели."
+                    }
+                ],
+                "model": "deepseek-v4-pro",
+                "searched_at": "2026-10-13T21:23:39+00:00"
+            }
+        },
+        {
+            "sku": "KOTLOV-000178",
+            "review_reason": "Live-web исследование точной production-модели нашло менее трёх независимых подтверждённых предложений; сохранить консультационный режим.",
+            "force_consultation_hold": true,
+            "observations": [],
+            "research": {
+                "summary": "На 13.10.2026 по модели «Печь для бани GFS Гефест ЗК 18 в сетке чугун» (ТехноЛит) в Беларуси найдены две подтверждённые карточки на kotlov.by: вариант (П) — 3 811.40 BYN, вариант (М) — 3 385.80 BYN; наличие по обеим нужно уточнять. На pechnoy.by есть близкая позиция GFS Гефест ЗК 18 (M) за 2 964.00 BYN, но комплектацию именно «в сетке» и SKU нужно подтвердить. В РФ базовая модель GFS ЗК 18 в сетке представлена от 60 400 до 86 600 RUB, наиболее часто встречается 86 600 RUB. Клиентская цена 0.00 BYN не является рыночным ориентиром. НДС в найденных карточках не указан.",
+                "verdict": "Рыночный ориентир для Беларуси — 2 964–3 811.40 BYN в зависимости от модификации и комплектации; для РФ — 60 400–86 600 RUB. Цену 0.00 BYN использовать нельзя. Перед установлением цены необходимо подтвердить у поставщика SKU KOTLOV-000178, модификацию (П или М) и фактическое наличие, поскольку точная привязка SKU к карточке в открытых источниках не подтверждена.",
+                "confidence": "medium",
+                "search_queries": [
+                    "Печь для бани GFS Гефест ЗК 18 в сетке чугун купить",
+                    "GFS Гефест ЗК 18 в сетке чугун ТехноЛит",
+                    "KOTLOV-000178",
+                    "Гефест ЗК 18 чугун печь баня Беларусь",
+                    "site:kotlov.by \"KOTLOV-000178\"",
+                    "site:kotlov.by \"GFS Гефест ЗК 18\" \"в сетке чугун\"",
+                    "\"Печь для бани GFS Гефест ЗК 18 в сетке чугун\"",
+                    "\"GFS Гефест ЗК 18\" \"в сетке\" \"чугун\" Беларусь купить"
+                ],
+                "rejected_candidates": [
+                    {
+                        "title": "Печь для бани GFS Гефест ЗК Ураган 18 чугун",
+                        "url": "https://kotlov.by/drovianye-peci-bannye/pec-dlia-bani-gfs-gefest-zk-uragan-18-cugun",
+                        "reason": "Другая комплектация 'Ураган' с чугунным коробом и стартовой трубой 115х500, а не базовая модель 'в сетке'."
+                    },
+                    {
+                        "title": "Комплект GFS Гефест ЗК 18 Президент 830/40 Змеевик",
+                        "url": "https://banisauny.by/pechi-dlya-bani/komplekt-gefest-zk-18-prezident-830-40-zmeevik/",
+                        "reason": "Комплект с облицовкой Президент 830/40 Змеевик, а не одиночная печь в сетке."
+                    },
+                    {
+                        "title": "Печь для бани GFS Гефест ЗК 18 (П)2 чугун",
+                        "url": "https://pechibani.by/pechi-dlya-bani/drovyanyye-pechi/pechi-gefest/gefest-3k/pech-gfs-gefest-zk-18-p2/",
+                        "reason": "Исполнение под обкладку (П2), а не 'в сетке'; не соответствует заявленной комплектации."
+                    },
+                    {
+                        "title": "Чугунная печь для бани GFS ЗК 18 (М) в сетке",
+                        "url": "https://kamin53.ru/product/chugunnaya-pech-dlya-bani-gfs-zk-18-m-v-setke/",
+                        "reason": "Модификация (М) с малой/иной дверцей, не базовое исполнение GFS ЗК 18 в сетке без суффикса."
+                    },
+                    {
+                        "title": "Печь для бани GFS ЗК 18 (П) в сетке",
+                        "url": "https://baniyuga.ru/shop/gfs-zk-18-p-v-setke-40782",
+                        "reason": "Модификация (П) с панорамной дверцей, не базовое исполнение без суффикса."
+                    },
+                    {
+                        "title": "Чугунная печь для бани GFS ЗК 18 (М) Ураган",
+                        "url": "https://kamin53.ru/product/chugunnaya-pech-dlya-bani-gfs-zk-18-m-uragan/",
+                        "reason": "Расширенная комплектация 'Ураган', не базовая печь в сетке."
+                    },
+                    {
+                        "title": "Печь-комплект Гефест ИСКАНДЕР ЗК 18 (М)",
+                        "url": "https://kotlov.by/drovianye-peci-bannye/pec-komplekt-gefest-iskander-zk-18-m",
+                        "reason": "Другая модель ИСКАНДЕР, не GFS Гефест ЗК 18 в сетке."
+                    }
+                ],
+                "excluded_offers": [
+                    {
+                        "title": "Печь для бани GFS Гефест ЗК 18 (П) в сетке чугун",
+                        "url": "https://kotlov.by/drovianye-peci-bannye/pec-dlia-bani-gfs-gefest-zk-18-p-v-setke-cugun",
+                        "reason": "Предложение не подтверждает точное совпадение модели."
+                    },
+                    {
+                        "title": "Печь GFS Гефест ЗК 18 (M)",
+                        "url": "https://pechnoy.by/pechi-dlya-bani/drovyanyye-pechi/pechi-gefest/gefest-3k/gefest-3k-pb-04m-zk/",
+                        "reason": "Предложение не подтверждает точное совпадение модели."
+                    },
+                    {
+                        "title": "Чугунная печь для бани GFS ЗК 18 в сетке",
+                        "url": "https://kamin53.ru/product/chugunnaya-pech-dlya-bani-gfs-zk-18-v-setke/",
+                        "reason": "Нет положительной подтверждённой цены в BYN."
+                    },
+                    {
+                        "title": "Чугунная печь для бани GFS ЗК 18 в сетке",
+                        "url": "https://sweetfire.ru/product/chugunnaya-pech-dlya-bani-gfs-zk-18-v-setke/",
+                        "reason": "Нет положительной подтверждённой цены в BYN."
+                    },
+                    {
+                        "title": "GFS (Гефест) ЗК 18 в сетке",
+                        "url": "https://gefestgroup.ru/gefest/pechi-dlya-bani/pechi-v-setke-i-uragan/pechi-v-setke/gfs-zk-18-v-setke/",
+                        "reason": "Нет положительной подтверждённой цены в BYN."
+                    },
+                    {
+                        "title": "GFS ЗК 18 в сетке",
+                        "url": "https://planetapechey.ru/bani-i-sauny/drovyanye-pechi/chugunnye-pechi-dlya-bani-gefest/pechi-v-setke/gfs-zk-18-v-setke",
+                        "reason": "Нет положительной подтверждённой цены в BYN."
+                    },
+                    {
+                        "title": "Банная печь Гефест GFS ЗК 18 в сетке",
+                        "url": "https://voronezh.kamenka.ru/goods/bannaya-pech-gefest-gfs-zk-18-v-setke",
+                        "reason": "Нет положительной подтверждённой цены в BYN."
+                    },
+                    {
+                        "title": "Печь GFS ЗК 18 в сетке / Гефест ЗК в сетке 18",
+                        "url": "https://chel.pulscen.ru/products/pech_gefest_zk_v_setke_18_gefest_164942800",
+                        "reason": "Нет положительной подтверждённой цены в BYN."
+                    },
+                    {
+                        "title": "Печь чугунная для бани Гефест ЗК в сетке 18",
+                        "url": "https://rupar.ru/katalog/pechi-chugunnye-gefest/pech-chugunnaya-dlya-bani-gefest-zk-v-setke-18/#home",
+                        "reason": "Нет положительной подтверждённой цены в BYN."
+                    }
+                ],
+                "model": "deepseek-v4-pro",
+                "searched_at": "2026-10-13T21:24:47+00:00"
+            }
+        }
+    ],
+    "failed_products": []
+}
+
+
