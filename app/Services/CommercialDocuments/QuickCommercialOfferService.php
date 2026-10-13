@@ -132,20 +132,44 @@ class QuickCommercialOfferService
     public function searchProducts(string $search): array
     {
         $search = trim($search);
+        $tokens = $this->tokens($search);
+        if ($tokens->isEmpty()) {
+            return [];
+        }
 
         return Product::query()
+            ->with(['brand', 'supplierProducts.supplier'])
             ->where('is_active', true)
             ->where('is_archived', false)
-            ->where(function ($query) use ($search): void {
+            ->where(function ($query) use ($search, $tokens): void {
                 $query->where('name', 'like', "%{$search}%")
                     ->orWhere('sku', 'like', "%{$search}%")
                     ->orWhere('h1', 'like', "%{$search}%");
+                foreach ($tokens->take(10) as $token) {
+                    $query->orWhere('name', 'like', "%{$token}%")
+                        ->orWhere('sku', 'like', "%{$token}%")
+                        ->orWhere('h1', 'like', "%{$token}%")
+                        ->orWhereHas('brand', fn ($brand) => $brand->where('name', 'like', "%{$token}%"))
+                        ->orWhereHas('supplierProducts', fn ($supplierProduct) => $supplierProduct
+                            ->where('supplier_name', 'like', "%{$token}%")
+                            ->orWhere('supplier_article', 'like', "%{$token}%"));
+                }
             })
-            ->orderByDesc('in_stock')
-            ->orderByDesc('views_count')
-            ->limit(30)
+            ->limit(250)
             ->get()
-            ->mapWithKeys(fn (Product $product): array => [$product->id => $this->productLabel($product)])
+            ->map(fn (Product $product): array => [
+                'product' => $product,
+                'score' => $this->manualSearchScore($product, $tokens, $search),
+            ])
+            ->sortByDesc(fn (array $item): array => [
+                $item['score'],
+                (int) $item['product']->in_stock,
+                (int) $item['product']->views_count,
+            ])
+            ->take(30)
+            ->mapWithKeys(fn (array $item): array => [
+                $item['product']->id => $this->productLabel($item['product']),
+            ])
             ->all();
     }
 
@@ -154,7 +178,7 @@ class QuickCommercialOfferService
      */
     public function productLabels(array $ids): array
     {
-        return Product::query()->whereIn('id', $ids)->get()
+        return Product::query()->with(['brand', 'supplierProducts.supplier'])->whereIn('id', $ids)->get()
             ->mapWithKeys(fn (Product $product): array => [$product->id => $this->productLabel($product)])
             ->all();
     }
@@ -213,6 +237,37 @@ class QuickCommercialOfferService
         }
 
         return $score;
+    }
+
+    private function manualSearchScore(Product $product, Collection $tokens, string $source): int
+    {
+        $source = Str::lower($source);
+        $supplierText = $product->supplierProducts->map(fn ($offer): string => implode(' ', array_filter([
+            $offer->supplier_name,
+            $offer->supplier_article,
+            $offer->supplier?->name,
+        ])))->implode(' ');
+        $haystack = Str::lower(implode(' ', array_filter([
+            $product->name,
+            $product->h1,
+            $product->sku,
+            $product->brand?->name,
+            $supplierText,
+        ])));
+        $score = Str::contains($haystack, $source) ? 180 : 0;
+
+        foreach ($tokens as $token) {
+            if (Str::lower((string) $product->sku) === $token) {
+                $score += 160;
+            } elseif (Str::contains(Str::lower((string) $product->sku), $token)) {
+                $score += 80;
+            }
+            if (Str::contains($haystack, $token)) {
+                $score += mb_strlen($token) >= 7 ? 45 : 28;
+            }
+        }
+
+        return $score + ((float) $product->price > 0 ? 5 : 0) + ($product->in_stock ? 5 : 0);
     }
 
     private function sourceText(CrmMailThread $thread): string
@@ -351,6 +406,16 @@ class QuickCommercialOfferService
 
     private function productLabel(Product $product): string
     {
-        return trim($product->name.' · '.($product->sku ?: 'без артикула').' · '.number_format((float) $product->price, 2, ',', ' ').' BYN');
+        $suppliers = $product->supplierProducts
+            ->map(fn ($offer): ?string => $offer->supplier?->name ?: $offer->supplier_name)
+            ->filter()->unique()->take(2)->implode(', ');
+
+        return implode(' · ', array_filter([
+            $product->name,
+            $product->sku ? 'арт. '.$product->sku : 'без артикула',
+            number_format((float) $product->price, 2, ',', ' ').' BYN',
+            $product->availabilityLabel(),
+            $suppliers !== '' ? 'поставщик: '.$suppliers : null,
+        ]));
     }
 }

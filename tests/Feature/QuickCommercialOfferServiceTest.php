@@ -2,10 +2,13 @@
 
 namespace Tests\Feature;
 
+use App\Filament\Resources\CrmMailThreads\CrmMailThreadResource;
 use App\Models\Category;
 use App\Models\CrmMailbox;
 use App\Models\CrmMailThread;
 use App\Models\Product;
+use App\Models\Supplier;
+use App\Models\SupplierProduct;
 use App\Services\AiContentEnricher;
 use App\Services\CommercialDocuments\QuickCommercialOfferSaver;
 use App\Services\CommercialDocuments\QuickCommercialOfferService;
@@ -155,6 +158,70 @@ class QuickCommercialOfferServiceTest extends TestCase
         $this->assertSame('578.28', $product->fresh()->price);
         $this->assertArrayHasKey($numericSkuProduct->id, $numericResult['suggestions']);
         $this->assertSame(3.0, $numericResult['product_quantities'][$numericSkuProduct->id]);
+    }
+
+    public function test_manual_search_finds_similar_catalog_products_regardless_of_word_order_and_supplier_article(): void
+    {
+        $category = Category::query()->create([
+            'name' => 'Ручной подбор', 'slug' => 'manual-quick-offer-search', 'is_active' => true,
+        ]);
+        $product = Product::query()->create([
+            'category_id' => $category->id,
+            'name' => 'Насос циркуляционный Grundfos Comfort 15-14',
+            'slug' => 'manual-quick-offer-grundfos',
+            'sku' => 'CAT-100',
+            'price' => 580,
+            'currency' => 'BYN',
+            'is_active' => true,
+            'is_archived' => false,
+            'in_stock' => true,
+            'availability_status' => Product::AVAILABILITY_IN_STOCK,
+        ]);
+        $supplier = Supplier::query()->create([
+            'code' => 'manual-search-supplier',
+            'name' => 'Поставщик насосов',
+            'currency' => 'BYN',
+            'currency_rate' => 1,
+            'is_active' => true,
+        ]);
+        SupplierProduct::query()->create([
+            'supplier_id' => $supplier->id,
+            'product_id' => $product->id,
+            'supplier_name' => $product->name,
+            'supplier_article' => 'SUP-7788',
+            'price' => 400,
+            'price_byn' => 400,
+            'currency' => 'BYN',
+            'currency_rate' => 1,
+            'in_stock' => true,
+            'stock_quantity' => 5,
+            'last_stock_synced_at' => now(),
+            'last_synced_at' => now(),
+        ]);
+
+        $service = app(QuickCommercialOfferService::class);
+        $byWords = $service->searchProducts('Comfort насос Grundfos');
+        $bySupplierArticle = $service->searchProducts('SUP-7788');
+
+        $this->assertArrayHasKey($product->id, $byWords);
+        $this->assertArrayHasKey($product->id, $bySupplierArticle);
+        $this->assertStringContainsString('Поставщик насосов', $byWords[$product->id]);
+        $this->assertStringContainsString('В наличии', $byWords[$product->id]);
+    }
+
+    public function test_manual_market_query_can_become_an_inactive_draft_when_catalog_has_no_match(): void
+    {
+        $items = CrmMailThreadResource::quickOfferMissingItems([
+            'unmatched_items' => [],
+        ], [
+            'manual_product_query' => 'Промышленный насос неизвестной модели — 2 шт.',
+            'manual_suggestion_ids' => [],
+            'product_ids' => [],
+        ]);
+
+        $this->assertCount(1, $items);
+        $this->assertSame('Промышленный насос неизвестной модели —', $items[0]['query']);
+        $this->assertSame(2.0, $items[0]['quantity']);
     }
 
     public function test_it_saves_recognized_client_contacts_and_creates_inactive_product_draft(): void

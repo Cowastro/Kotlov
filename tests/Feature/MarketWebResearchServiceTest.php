@@ -12,6 +12,45 @@ use Tests\TestCase;
 
 class MarketWebResearchServiceTest extends TestCase
 {
+    public function test_it_can_research_a_manager_query_before_a_catalog_product_exists(): void
+    {
+        config()->set([
+            'services.ai.market_research_provider' => 'openai',
+            'services.ai.openai_key' => 'test-key',
+            'services.ai.openai_responses_url' => 'https://api.openai.test/v1/responses',
+            'services.ai.openai_research_model' => 'gpt-6.1-sol',
+        ]);
+        Http::fake([
+            'https://api.openai.test/v1/responses' => Http::response([
+                'output' => [[
+                    'type' => 'message',
+                    'content' => [[
+                        'type' => 'output_text',
+                        'text' => json_encode([
+                            'summary' => 'Найден поставщик.',
+                            'verdict' => 'Проверить предложение.',
+                            'confidence' => 'medium',
+                            'search_queries' => ['промышленный насос Беларусь'],
+                            'offers' => [],
+                            'rejected_candidates' => [],
+                        ], JSON_UNESCAPED_UNICODE),
+                    ]],
+                ]],
+            ]),
+        ]);
+
+        $result = app(MarketWebResearchService::class)->researchQuery('Промышленный насос 50 м³/ч');
+
+        $this->assertSame('ready', $result['status']);
+        $this->assertSame('Промышленный насос 50 м³/ч', $result['product_name']);
+        $this->assertNull($result['quote_price']);
+        $this->assertNull($result['market']['quote_delta_percent']);
+        Http::assertSent(fn (Request $request): bool => str_contains(
+            (string) $request->data()['input'],
+            'Цена в коммерческом предложении: ещё не назначена',
+        ));
+    }
+
     public function test_it_uses_hosted_web_search_and_only_accepts_offers_returned_as_sources(): void
     {
         config()->set([

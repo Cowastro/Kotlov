@@ -144,8 +144,9 @@ class ViewCrmMailThread extends ViewRecord
                         ->helperText('Будут сохранены только проверенные вами реквизиты и контакты.'),
                     Textarea::make('unmatched_items_summary')->label('Не найдено в каталоге')
                         ->disabled()->dehydrated(false)->rows(2)->columnSpanFull(),
+                    ...CrmMailThreadResource::manualProductSearchFields(),
                     Toggle::make('create_missing_products')->label('Создать черновики отсутствующих товаров')->live()
-                        ->helperText('Карточки будут неактивными до проверки менеджером.'),
+                        ->helperText('Если товара нет в базе, будет создана неактивная карточка из ручного запроса. Она не появится на сайте до проверки менеджером.'),
                     Select::make('draft_category_id')->label('Категория для новых черновиков')
                         ->options(fn (): array => Category::query()->orderBy('name')->pluck('name', 'id')->all())
                         ->searchable()->visible(fn (Get $get): bool => (bool) $get('create_missing_products'))
@@ -153,7 +154,12 @@ class ViewCrmMailThread extends ViewRecord
                     Select::make('product_ids')
                         ->label('Товары для КП')
                         ->multiple()->required(fn (Get $get): bool => ! (bool) $get('create_missing_products'))->searchable()
-                        ->options(fn (): array => app(QuickCommercialOfferService::class)->prepare($this->record)['suggestions'])
+                        ->options(function (Get $get): array {
+                            $service = app(QuickCommercialOfferService::class);
+
+                            return $service->productLabels((array) $get('manual_suggestion_ids'))
+                                + $service->prepare($this->record)['suggestions'];
+                        })
                         ->getSearchResultsUsing(fn (string $search): array => app(QuickCommercialOfferService::class)->searchProducts($search))
                         ->getOptionLabelsUsing(fn (array $values): array => app(QuickCommercialOfferService::class)->productLabels($values))
                         ->helperText('Сверху — варианты, найденные по теме, тексту и артикулам письма. Можно найти любой товар каталога.'),
@@ -164,8 +170,9 @@ class ViewCrmMailThread extends ViewRecord
                     if ($data['save_client_to_crm'] ?? false) {
                         $saver->saveClient($this->record, $data, $prepared['analysis']);
                     }
+                    $missingItems = CrmMailThreadResource::quickOfferMissingItems($prepared, $data);
                     $newProducts = ($data['create_missing_products'] ?? false)
-                        ? $saver->createDraftProducts($prepared['unmatched_items'], (int) $data['draft_category_id'])
+                        ? $saver->createDraftProducts($missingItems, (int) $data['draft_category_id'])
                         : [];
                     session()->put('commercial_document_prefill', array_merge($prepared['prefill'], [
                         'client_company' => $data['client_company'],

@@ -12,6 +12,22 @@ use Throwable;
 class MarketWebResearchService
 {
     /** @return array<string, mixed> */
+    public function researchQuery(string $query): array
+    {
+        $query = trim($query);
+        if (mb_strlen($query) < 3) {
+            return $this->failure('Введите название, модель или характеристики товара для поиска.');
+        }
+
+        $product = new Product;
+        $product->name = $query;
+        $product->sku = null;
+        $product->price = 0;
+
+        return $this->research($product, 0);
+    }
+
+    /** @return array<string, mixed> */
     public function research(Product $product, float $quotePrice): array
     {
         $provider = $this->provider();
@@ -180,7 +196,7 @@ PROMPT;
             'Артикул/SKU: '.($product->sku ?: 'не указан'),
             'Категория: '.($product->category?->name ?: 'не указана'),
             'Характеристики: '.($specs ?: 'не указаны'),
-            'Цена в коммерческом предложении: '.number_format($quotePrice, 2, '.', '').' BYN',
+            'Цена в коммерческом предложении: '.($quotePrice > 0 ? number_format($quotePrice, 2, '.', '').' BYN' : 'ещё не назначена'),
             '',
             'Найди актуальные предложения, сравни их и дай менеджеру обоснованный вывод. В search_queries перечисли фактически выполненные поисковые формулировки.',
         ]);
@@ -301,7 +317,7 @@ PROMPT;
             'status' => 'ready',
             'product_name' => $product->name,
             'sku' => $product->sku,
-            'quote_price' => $quotePrice,
+            'quote_price' => $quotePrice > 0 ? $quotePrice : null,
             'summary' => trim((string) ($decoded['summary'] ?? '')),
             'verdict' => trim((string) ($decoded['verdict'] ?? '')),
             'confidence' => in_array($decoded['confidence'] ?? null, ['high', 'medium', 'low'], true) ? $decoded['confidence'] : 'low',
@@ -314,7 +330,9 @@ PROMPT;
                 'minimum' => $prices->isEmpty() ? null : round((float) $prices->first(), 2),
                 'median' => $median,
                 'maximum' => $prices->isEmpty() ? null : round((float) $prices->last(), 2),
-                'quote_delta_percent' => $median && $median > 0 ? round(($quotePrice - $median) / $median * 100, 1) : null,
+                'quote_delta_percent' => $median && $median > 0 && $quotePrice > 0
+                    ? round(($quotePrice - $median) / $median * 100, 1)
+                    : null,
             ],
             'model' => $model,
             'searched_at' => now(),

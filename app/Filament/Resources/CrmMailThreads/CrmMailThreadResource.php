@@ -20,6 +20,7 @@ use App\Services\CommercialDocuments\QuickCommercialOfferService;
 use App\Services\CrmMail\CrmMailMessagePreview;
 use App\Services\CrmMail\CrmMailSender;
 use App\Services\CrmMail\SupplierRequestMailDraftService;
+use App\Services\Market\MarketWebResearchService;
 use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Actions\ActionGroup;
@@ -27,6 +28,7 @@ use Filament\Actions\EditAction;
 use Filament\Actions\ViewAction;
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\FileUpload;
+use Filament\Forms\Components\Hidden;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TagsInput;
 use Filament\Forms\Components\Textarea;
@@ -37,8 +39,10 @@ use Filament\Infolists\Components\TextEntry;
 use Filament\Infolists\Components\ViewEntry;
 use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
+use Filament\Schemas\Components\Actions as SchemaActions;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Utilities\Get;
+use Filament\Schemas\Components\Utilities\Set;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
@@ -254,8 +258,9 @@ class CrmMailThreadResource extends Resource
                             ->helperText('Будут сохранены только проверенные вами поля формы, телефоны и email из письма.'),
                         Textarea::make('unmatched_items_summary')->label('Не найдено в каталоге')
                             ->disabled()->dehydrated(false)->rows(2)->columnSpanFull(),
+                        ...static::manualProductSearchFields(),
                         Toggle::make('create_missing_products')->label('Создать черновики отсутствующих товаров')->live()
-                            ->helperText('Карточки будут неактивными и не появятся на сайте до проверки.'),
+                            ->helperText('Если товара нет в базе, будет создана неактивная карточка из ручного запроса. Она не появится на сайте до проверки.'),
                         Select::make('draft_category_id')->label('Категория для новых черновиков')
                             ->options(fn (): array => Category::query()->orderBy('name')->pluck('name', 'id')->all())
                             ->searchable()->visible(fn (Get $get): bool => (bool) $get('create_missing_products'))
@@ -263,7 +268,12 @@ class CrmMailThreadResource extends Resource
                         Select::make('product_ids')
                             ->label('Товары для КП')
                             ->multiple()->required(fn (Get $get): bool => ! (bool) $get('create_missing_products'))->searchable()
-                            ->options(fn (CrmMailThread $record): array => app(QuickCommercialOfferService::class)->prepare($record)['suggestions'])
+                            ->options(function (CrmMailThread $record, Get $get): array {
+                                $service = app(QuickCommercialOfferService::class);
+
+                                return $service->productLabels((array) $get('manual_suggestion_ids'))
+                                    + $service->prepare($record)['suggestions'];
+                            })
                             ->getSearchResultsUsing(fn (string $search): array => app(QuickCommercialOfferService::class)->searchProducts($search))
                             ->getOptionLabelsUsing(fn (array $values): array => app(QuickCommercialOfferService::class)->productLabels($values))
                             ->helperText('Предложения получены из темы, текста и артикулов письма. Можно найти любой товар каталога.'),
@@ -274,8 +284,9 @@ class CrmMailThreadResource extends Resource
                         if ($data['save_client_to_crm'] ?? false) {
                             $saver->saveClient($record, $data, $prepared['analysis']);
                         }
+                        $missingItems = static::quickOfferMissingItems($prepared, $data);
                         $newProducts = ($data['create_missing_products'] ?? false)
-                            ? $saver->createDraftProducts($prepared['unmatched_items'], (int) $data['draft_category_id'])
+                            ? $saver->createDraftProducts($missingItems, (int) $data['draft_category_id'])
                             : [];
                         session()->put('commercial_document_prefill', array_merge($prepared['prefill'], [
                             'client_company' => $data['client_company'],
@@ -691,6 +702,94 @@ class CrmMailThreadResource extends Resource
         return collect($items)->map(fn (array $item): string => trim(
             (($item['sku'] ?? null) ? $item['sku'].' — ' : '').($item['query'] ?? '').' × '.($item['quantity'] ?? 1),
         ))->filter()->implode("\n") ?: 'Все распознанные позиции найдены в каталоге.';
+    }
+
+    /** @return array<int, mixed> */
+    public static function manualProductSearchFields(): array
+    {
+        return [
+            TextInput::make('manual_product_query')
+                ->label('Ручной подбор товара')
+                ->placeholder('Введите название, модель, артикул или характеристики')
+                ->helperText('Сначала ищем похожие позиции в нашей базе. Порядок слов и неполное название допускаются.')
+                ->maxLength(500)
+                ->columnSpanFull(),
+            Hidden::make('manual_suggestion_ids')->default([]),
+            Textarea::make('manual_product_summary')
+                ->label('Результат ручного подбора')
+                ->disabled()->dehydrated(false)->rows(2)->columnSpanFull(),
+            SchemaActions::make([
+                Action::make('match_manual_product')
+                    ->label('Подобрать похожие в базе')
+                    ->icon('heroicon-o-magnifying-glass')
+                    ->color('warning')
+                    ->action(function (Get $get, Set $set): void {
+                        $query = trim((string) $get('manual_product_query'));
+                        if (mb_strlen($query) < 3) {
+                            Notification::make()->warning()->title('Введите название или артикул товара')->send();
+
+                            return;
+                        }
+
+                        $result = app(QuickCommercialOfferService::class)->prepareText($query, false);
+                        $suggestionIds = array_map('intval', array_keys((array) ($result['suggestions'] ?? [])));
+                        $set('manual_suggestion_ids', $suggestionIds);
+                        $set('product_ids', array_values(array_unique(array_merge(
+                            array_map('intval', (array) $get('product_ids')),
+                            array_map('intval', (array) ($result['default_product_ids'] ?? [])),
+                        ))));
+                        $set('manual_product_summary', $suggestionIds === []
+                            ? 'В нашей базе совпадений не найдено. Нажмите «Найти на рынке и поставщика».'
+                            : 'Найдено похожих вариантов: '.count($suggestionIds).'. Выберите подходящий товар в поле «Товары для КП».');
+
+                        Notification::make()
+                            ->title($suggestionIds === [] ? 'В базе совпадений нет' : 'Похожие товары найдены')
+                            ->body($suggestionIds === []
+                                ? 'Можно выполнить поиск на рынке и затем создать неактивный черновик товара для КП.'
+                                : 'Проверьте название, артикул, цену, наличие и поставщика.')
+                            ->color($suggestionIds === [] ? 'warning' : 'success')
+                            ->send();
+                    }),
+                Action::make('research_manual_product_market')
+                    ->label('Найти на рынке и поставщика')
+                    ->icon('heroicon-o-globe-alt')
+                    ->color('info')
+                    ->slideOver()
+                    ->modalWidth('7xl')
+                    ->modalHeading(fn (Get $get): string => 'Поиск на рынке · '.(trim((string) $get('manual_product_query')) ?: 'товар не указан'))
+                    ->modalDescription('ИИ выполнит живой поиск, проверит предложения и покажет продавцов со ссылками. Обычно это занимает до двух минут.')
+                    ->modalSubmitAction(false)
+                    ->modalCancelActionLabel('Закрыть')
+                    ->modalContent(fn (Get $get) => view('filament.market.live-price-research', [
+                        'research' => app(MarketWebResearchService::class)->researchQuery((string) $get('manual_product_query')),
+                        'pricing' => [],
+                    ])),
+            ])->key('quick_offer_manual_product_actions')->columnSpanFull(),
+        ];
+    }
+
+    /** @return list<array<string, mixed>> */
+    public static function quickOfferMissingItems(array $prepared, array $data): array
+    {
+        $items = collect((array) ($prepared['unmatched_items'] ?? []));
+        $query = trim((string) ($data['manual_product_query'] ?? ''));
+        $manualSuggestionIds = array_map('intval', (array) ($data['manual_suggestion_ids'] ?? []));
+        $selectedIds = array_map('intval', (array) ($data['product_ids'] ?? []));
+
+        if ($query !== '' && array_intersect($manualSuggestionIds, $selectedIds) === []) {
+            $manual = app(QuickCommercialOfferService::class)->prepareText($query, false);
+            $manualItems = (array) ($manual['analysis']['items'] ?? []);
+            $items = $items->concat($manualItems !== [] ? $manualItems : [[
+                'query' => $query,
+                'sku' => null,
+                'quantity' => 1,
+            ]]);
+        }
+
+        return $items
+            ->filter(fn ($item): bool => is_array($item) && filled($item['query'] ?? $item['sku'] ?? null))
+            ->unique(fn (array $item): string => mb_strtolower(trim((string) ($item['sku'] ?? '')).'|'.trim((string) ($item['query'] ?? ''))))
+            ->values()->all();
     }
 
     public static function getPages(): array
