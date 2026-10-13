@@ -24,4 +24,15 @@ class ServerDeploymentWorkflowTest extends TestCase
         $this->assertStringContainsString('--no-dev', $workflow);
         $this->assertStringContainsString('--optimize-autoloader', $workflow);
     }
+
+    public function test_pdf_diagnostic_has_a_dedicated_safe_output_mode(): void
+    {
+        $workflow = file_get_contents(base_path('.github/workflows/server-artisan.yml'));
+
+        $this->assertIsString($workflow);
+        $this->assertStringContainsString('verify-commercial-pdf)', $workflow);
+        $this->assertStringContainsString('commercial-documents:verify-pdf', $workflow);
+        $this->assertStringContainsString('safe_diagnostic_output_begin', $workflow);
+        $this->assertStringContainsString('safe_diagnostic_output_end', $workflow);
+    }
 }
