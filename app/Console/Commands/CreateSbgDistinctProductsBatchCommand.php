@@ -3306,6 +3306,41 @@ class CreateSbgDistinctProductsBatchCommand extends Command
         ],
     ];
 
+    // Eco-Palnik lists the same 2 m / 15 W / 60 mm feeder format at
+    // 1,082.40 PLN. At the official NBRB rate of 7.6845 BYN per 10 PLN on
+    // 2026-10-14 this is 831.79 BYN, rounded to 832 BYN retail.
+    private const BATCH_UNMATCHED_RESEARCHED_20261014_CY = [
+        'УТ-00000747' => [
+            'template_slug' => 'oxi-snek-podaci-pellet-sp4-70-70-2000-2-m',
+            'allow_unmatched' => true,
+            'category_slug' => 'pelletnye-gorelki',
+            'fragments' => ['Подача для пелет', '2,0M', '15W', 'fi60mm', 'Ecolinex'],
+            'brand' => [
+                'name' => 'Ecolinex',
+                'slug' => 'ecolinex',
+                'country' => 'Польша',
+                'content' => '<p><strong>Ecolinex</strong> — польская торговая марка оборудования и продукции для систем отопления на пеллетах.</p>',
+            ],
+            'name' => 'Ecolinex Подача шнековая для пеллет 2 м, 15 Вт, Ø60 мм',
+            'retail' => 832.00,
+            'images' => [
+                'img/products/ecolinex/ecolinex-pellet-feeder-2m-15w-60mm.png',
+            ],
+            'source_url' => 'https://eco-palnik.pl/produkt/podajnik-slimakowy-pelletu-20m-15w-k50/',
+            'short' => 'Внешняя шнековая подача Ecolinex длиной 2 м с двигателем 15 Вт и трубой Ø60 мм для транспортировки пеллет из бункера к горелке.',
+            'content' => '<p><strong>Ecolinex 2 м / 15 Вт / Ø60 мм</strong> — внешняя шнековая подача для перемещения пеллет из топливного бункера к горелке.</p><p>Подача состоит из трубы со шнеком и компактного мотор-редуктора. Длина тракта составляет 2 м, диаметр трубы — 60 мм, мощность двигателя — 15 Вт.</p><p>Перед монтажом проверьте совместимость с бункером, горелкой и её контроллером, а также допустимый угол установки.</p>',
+            'specs' => [
+                ['key' => 'Тип', 'value' => 'Внешняя шнековая подача пеллет'],
+                ['key' => 'Длина', 'value' => '2000 мм'],
+                ['key' => 'Диаметр трубы', 'value' => '60 мм'],
+                ['key' => 'Мощность двигателя', 'value' => '15 Вт'],
+                ['key' => 'Назначение', 'value' => 'Подача пеллет из бункера к горелке'],
+                ['key' => 'Бренд', 'value' => 'Ecolinex'],
+                ['key' => 'Страна бренда', 'value' => 'Польша'],
+            ],
+        ],
+    ];
+
     public function handle(
         IntegrationProductCreator $creator,
         IntegrationProductMatchDecision $matchDecision,
@@ -3413,6 +3448,7 @@ class CreateSbgDistinctProductsBatchCommand extends Command
             'unmatched-researched-20261014-cv' => self::BATCH_UNMATCHED_RESEARCHED_20261014_CV,
             'unmatched-researched-20261014-cw' => self::BATCH_UNMATCHED_RESEARCHED_20261014_CW,
             'unmatched-disputed-20261014-cx' => self::BATCH_UNMATCHED_DISPUTED_20261014_CX,
+            'unmatched-researched-20261014-cy' => self::BATCH_UNMATCHED_RESEARCHED_20261014_CY,
             default => null,
         };
 
