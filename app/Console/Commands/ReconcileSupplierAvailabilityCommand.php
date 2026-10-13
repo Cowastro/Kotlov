@@ -52,6 +52,7 @@ class ReconcileSupplierAvailabilityCommand extends Command
 
         $before = $this->inconsistencyCounts();
         $this->table(['Проверка', 'Количество'], $this->rows($before));
+        $this->writeMetrics('before', $before);
 
         if (! (bool) $this->option('apply')) {
             $this->warn('Предпросмотр: данные не изменены. Для исправления добавьте --apply.');
@@ -90,6 +91,7 @@ class ReconcileSupplierAvailabilityCommand extends Command
         $this->info('Пересчитано связанных товаров: ' . count($productIds));
         $this->info('Печей без поставщика переведено в «цену и наличие уточняйте»: '.$guardedStoves);
         $this->table(['Проверка после исправления', 'Количество'], $this->rows($after));
+        $this->writeMetrics('after', $after);
 
         return array_sum($after) === 0 ? self::SUCCESS : self::FAILURE;
     }
@@ -164,6 +166,14 @@ class ReconcileSupplierAvailabilityCommand extends Command
             ['«Уточняйте наличие» одновременно с флагом in_stock', $counts['uncertain_in_stock']],
             ['Печь без активного поставщика показывает цену или наличие', $counts['unlinked_stoves_with_public_offer']],
         ];
+    }
+
+    /** @param array{false_positive:int,false_negative:int,uncertain_in_stock:int,unlinked_stoves_with_public_offer:int} $counts */
+    private function writeMetrics(string $stage, array $counts): void
+    {
+        foreach ($counts as $key => $value) {
+            $this->line("metric.availability.{$stage}.{$key}={$value}");
+        }
     }
 
     private function unlinkedStovesWithPublicOfferQuery()
