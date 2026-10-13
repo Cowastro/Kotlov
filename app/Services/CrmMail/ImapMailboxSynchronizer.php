@@ -136,7 +136,7 @@ class ImapMailboxSynchronizer
                 'last_error' => null,
             ])->save();
         } catch (Throwable $exception) {
-            $mailbox->forceFill(['last_error' => $exception->getMessage()])->save();
+            $mailbox->forceFill(['last_error' => $this->toUtf8($exception->getMessage())])->save();
             throw $exception;
         } finally {
             imap_close($imap);
@@ -151,7 +151,14 @@ class ImapMailboxSynchronizer
             return null;
         }
 
-        return trim(imap_utf8($value));
+        $decoded = collect(imap_mime_header_decode($value))
+            ->map(fn (object $part): string => $this->toUtf8(
+                (string) ($part->text ?? ''),
+                (string) ($part->charset ?? ''),
+            ))
+            ->implode('');
+
+        return trim($decoded);
     }
 
     private function cleanMessageId(?string $value): ?string
@@ -243,9 +250,58 @@ class ImapMailboxSynchronizer
             ENCQUOTEDPRINTABLE => quoted_printable_decode($body),
             default => $body,
         };
+        $body = $this->toUtf8($body, $this->partCharset($part));
         $subtype = strtoupper($part->subtype ?? 'PLAIN');
         $key = $subtype === 'HTML' ? 'html' : 'text';
         $result[$key] ??= trim($body) ?: null;
+    }
+
+    private function partCharset(object $part): ?string
+    {
+        foreach (array_merge($part->parameters ?? [], $part->dparameters ?? []) as $parameter) {
+            if (strtolower((string) ($parameter->attribute ?? '')) === 'charset') {
+                return (string) ($parameter->value ?? '');
+            }
+        }
+
+        return null;
+    }
+
+    private function toUtf8(string $value, ?string $charset = null): string
+    {
+        if ($value === '') {
+            return '';
+        }
+
+        $source = strtoupper(trim((string) $charset, " \t\n\r\0\x0B\"'"));
+        $source = match ($source) {
+            'WINDOWS1251', 'CP1251', 'WIN-1251' => 'Windows-1251',
+            'KOI8R' => 'KOI8-R',
+            'UTF8' => 'UTF-8',
+            default => $source,
+        };
+
+        try {
+            if ($source !== '' && ! in_array($source, ['DEFAULT', 'UNKNOWN-8BIT', 'UTF-8', 'US-ASCII', 'ASCII'], true)) {
+                return mb_convert_encoding($value, 'UTF-8', $source);
+            }
+
+            if (! mb_check_encoding($value, 'UTF-8')) {
+                $detected = mb_detect_encoding(
+                    $value,
+                    ['Windows-1251', 'KOI8-R', 'ISO-8859-5', 'ISO-8859-1'],
+                    true,
+                );
+
+                return $detected
+                    ? mb_convert_encoding($value, 'UTF-8', $detected)
+                    : mb_scrub($value, 'UTF-8');
+            }
+        } catch (Throwable) {
+            return mb_scrub($value, 'UTF-8');
+        }
+
+        return $value;
     }
 
     private function countAttachments(object|false $structure): int

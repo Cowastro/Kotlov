@@ -26,8 +26,9 @@ class SyncCrmMail extends Command
                 $result = $synchronizer->sync($connection);
                 $this->info("{$connection->email}: загружено {$result['imported']}, пропущено {$result['skipped']}");
             } catch (Throwable $exception) {
-                $connection->forceFill(['last_sync_at' => now(), 'last_error' => $exception->getMessage()])->save();
-                $this->error("{$connection->email}: {$exception->getMessage()}");
+                $message = mb_scrub($exception->getMessage(), 'UTF-8');
+                $connection->forceFill(['last_sync_at' => now(), 'last_error' => $message])->save();
+                $this->error("{$connection->email}: {$message}");
                 $failed = true;
             }
         }
