@@ -61,6 +61,27 @@ class ViewCrmMailThread extends ViewRecord
                     }
                 }),
             EditAction::make()->label('Карточка лида'),
+            Action::make('mark_spam')
+                ->label('В спам')
+                ->icon('heroicon-o-no-symbol')
+                ->color('danger')
+                ->visible(fn (): bool => $this->record->status !== 'spam')
+                ->requiresConfirmation()
+                ->modalHeading('Пометить переписку как спам?')
+                ->modalDescription('Переписка исчезнет из рабочей почты и будет доступна во вкладке «Спам».')
+                ->action(function (): void {
+                    $this->record->markAsSpam();
+                    $this->redirect(CrmMailThreadResource::getUrl('index', ['activeTab' => 'spam']));
+                }),
+            Action::make('restore_spam')
+                ->label('Вернуть из спама')
+                ->icon('heroicon-o-arrow-uturn-left')
+                ->color('success')
+                ->visible(fn (): bool => $this->record->status === 'spam')
+                ->action(function (): void {
+                    $this->record->restoreFromSpam();
+                    $this->redirect(CrmMailThreadResource::getUrl('index'));
+                }),
             Action::make('trash')
                 ->label('В корзину')
                 ->icon('heroicon-o-trash')

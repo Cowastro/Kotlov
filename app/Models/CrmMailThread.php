@@ -85,4 +85,23 @@ class CrmMailThread extends Model
                 ->update(['responsible_user_id' => $userId]);
         });
     }
+
+    public function markAsSpam(): void
+    {
+        $this->forceFill([
+            'status' => 'spam',
+            'unread_count' => 0,
+            'handled_at' => now(),
+        ])->save();
+
+        $this->messages()->where('direction', 'incoming')->update(['is_read' => true]);
+    }
+
+    public function restoreFromSpam(): void
+    {
+        $this->forceFill([
+            'status' => 'waiting_manager',
+            'handled_at' => null,
+        ])->save();
+    }
 }

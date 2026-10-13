@@ -166,6 +166,21 @@ class CrmMailThreadResource extends Resource
                         ->label('Закрыть')->icon('heroicon-o-check-circle')->color('success')
                         ->visible(fn (CrmMailThread $record): bool => ! $record->trashed() && $record->status !== 'closed')
                         ->action(fn (CrmMailThread $record) => $record->update(['status' => 'closed', 'handled_at' => now()])),
+                    Action::make('mark_spam')
+                        ->label('В спам')
+                        ->icon('heroicon-o-no-symbol')
+                        ->color('danger')
+                        ->visible(fn (CrmMailThread $record): bool => ! $record->trashed() && $record->status !== 'spam')
+                        ->requiresConfirmation()
+                        ->modalHeading('Пометить переписку как спам?')
+                        ->modalDescription('Переписка исчезнет из рабочей почты и будет доступна во вкладке «Спам».')
+                        ->action(fn (CrmMailThread $record) => $record->markAsSpam()),
+                    Action::make('restore_spam')
+                        ->label('Вернуть из спама')
+                        ->icon('heroicon-o-arrow-uturn-left')
+                        ->color('success')
+                        ->visible(fn (CrmMailThread $record): bool => ! $record->trashed() && $record->status === 'spam')
+                        ->action(fn (CrmMailThread $record) => $record->restoreFromSpam()),
                     EditAction::make()
                         ->visible(fn (CrmMailThread $record): bool => ! $record->trashed()),
                     Action::make('trash')
@@ -199,7 +214,7 @@ class CrmMailThreadResource extends Resource
     public static function statusColor(string $state): string
     {
         return match ($state) {
-            'new', 'waiting_manager' => 'danger',
+            'new', 'waiting_manager', 'spam' => 'danger',
             'in_progress' => 'warning',
             'waiting_customer' => 'info',
             'closed' => 'success',

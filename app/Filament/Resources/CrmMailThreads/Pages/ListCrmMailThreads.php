@@ -24,7 +24,13 @@ class ListCrmMailThreads extends ListRecords
         return [
             'inbox' => Tab::make('Рабочая почта')
                 ->icon('heroicon-o-inbox')
-                ->badge(CrmMailThread::query()->count()),
+                ->modifyQueryUsing(fn (Builder $query): Builder => $query->where('status', '!=', 'spam'))
+                ->badge(CrmMailThread::query()->where('status', '!=', 'spam')->count()),
+            'spam' => Tab::make('Спам')
+                ->icon('heroicon-o-no-symbol')
+                ->modifyQueryUsing(fn (Builder $query): Builder => $query->where('status', 'spam'))
+                ->badge(CrmMailThread::query()->where('status', 'spam')->count() ?: null)
+                ->badgeColor('danger'),
             'trash' => Tab::make('Корзина')
                 ->icon('heroicon-o-trash')
                 ->modifyQueryUsing(fn (Builder $query): Builder => $query->onlyTrashed())
