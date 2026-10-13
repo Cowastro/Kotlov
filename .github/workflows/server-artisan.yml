@@ -183,9 +183,7 @@ jobs:
                   --output=storage/app/reports/catalog/unlinked-products.csv
                 ;;
               audit-price-integrity)
-                "$PHP_BIN" artisan catalog:audit-price-integrity \
-                  --stale-hours=24 \
-                  --output=storage/app/reports/catalog/price-integrity.csv
+                "$PHP_BIN" artisan catalog:audit-price-integrity --stale-hours=24
                 ;;
               verify-commercial-pdf)
                 "$PHP_BIN" artisan commercial-documents:verify-pdf "${ARTISAN_ARGV[@]}"
@@ -315,30 +313,5 @@ jobs:
         with:
           name: unlinked-products-audit
           path: audit-artifacts/unlinked-products.csv
-          if-no-files-found: error
-          retention-days: 7
-
-      - name: Download price-integrity audit report
-        if: inputs.task == 'audit-price-integrity'
-        env:
-          SERVER_HOST: ${{ secrets.SERVER_HOST }}
-          SERVER_PORT: ${{ secrets.SERVER_PORT }}
-          SERVER_USER: ${{ secrets.SERVER_USER }}
-          SERVER_PATH: ${{ secrets.SERVER_PATH }}
-        run: |
-          set -euo pipefail
-          port="${SERVER_PORT:-22}"
-          server_path="${SERVER_PATH:-/var/www/h209767/data/www/new.kotlov.by}"
-          mkdir -p audit-artifacts
-          scp -i ~/.ssh/server_key -P "$port" \
-            "$SERVER_USER@$SERVER_HOST:$server_path/storage/app/reports/catalog/price-integrity.csv" \
-            audit-artifacts/price-integrity.csv
-
-      - name: Upload price-integrity audit report
-        if: inputs.task == 'audit-price-integrity'
-        uses: actions/upload-artifact@v4
-        with:
-          name: price-integrity-audit
-          path: audit-artifacts/price-integrity.csv
           if-no-files-found: error
           retention-days: 7
