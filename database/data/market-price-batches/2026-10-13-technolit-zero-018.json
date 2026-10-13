@@ -1,0 +1,507 @@
+{
+    "code": "2026-10-13-technolit-zero-018",
+    "observed_at": "2026-10-13T22:19:42+00:00",
+    "review_required": true,
+    "selection": {
+        "production_only": true,
+        "active_only": true,
+        "unpriced_only": true,
+        "brand": "ТехноЛит",
+        "skus": [],
+        "after_id": 12487,
+        "limit": 5,
+        "source_queue": "storage/app/private/price-research-queue-38466265607/price-research-queue.csv"
+    },
+    "sources": [
+        {
+            "code": "web-1ed2299efd1baa95",
+            "name": "Zonatepla.by",
+            "kind": "competitor",
+            "base_url": "https://zonatepla.by",
+            "currency": "BYN",
+            "region": "Открытый рынок",
+            "freshness_hours": 168,
+            "minimum_match_confidence": 0.99,
+            "notes": "Источник найден hosted web_search; batch требует ручной проверки до применения."
+        }
+    ],
+    "products": [
+        {
+            "sku": "KOTLOV-000210",
+            "review_reason": "Live-web исследование точной production-модели нашло менее трёх независимых подтверждённых предложений; сохранить консультационный режим.",
+            "force_consultation_hold": true,
+            "observations": [],
+            "research": {
+                "summary": "В Беларуси найдено одно точное предложение по товару «Печь-комплект Гефест Гром 50 (П2)» — kotlov.by за 12 923,80 BYN, и одно вероятное на banisauny.by за 12 584 BYN, где в описании упоминается Grom 50 (П2), но заголовок не конкретизирован. В РФ точный аналог «Универсальный печь-комплект Гром 50 (П2)» найден у трёх независимых продавцов по 340 100 RUB: vladimir.technolit.ru (нет в наличии), boing-pechi.ru (в наличии), irkutsk.saunabas.ru (под заказ). Пересчёт RUB в BYN не делался из-за отсутствия актуального курса. Белорусский рыночный ориентир — 12 584–12 924 BYN. Цена клиента не задана, поэтому сравнение с ней не проводилось.",
+                "verdict": "Для розницы в Беларуси ориентироваться на диапазон 12 600–13 000 BYN; фактическое точное предложение конкурента — 12 923,80 BYN. При импорте/сравнении с РФ учитывать цену 340 100 RUB и проверять курс, логистику и наличие. Уверенность medium: независимых белорусских продавцов мало, часть наличия требует подтверждения.",
+                "confidence": "medium",
+                "search_queries": [
+                    "Печь-комплект Гефест Гром 50 (П2) ТехноЛит",
+                    "Гефест Гром 50 П2 ТехноЛит купить",
+                    "KOTLOV-000210",
+                    "ТехноЛит Гром 50 П2 цена",
+                    "Гром 50 П2 купить Беларусь",
+                    "Печь Гефест Гром 50 П2 Минск BYN",
+                    "ТехноЛит Гром 50 П2 Беларусь цена",
+                    "\"Гром 50 (П2)\" \"BYN\""
+                ],
+                "rejected_candidates": [
+                    {
+                        "title": "Печь GFS Гефест Гром 50 (П2) ТехноЛит",
+                        "url": "https://banisauny.by/pechi-dlya-bani/drovyanyye-pechi/pechi-gefest/grom/pech-gfs-gefest-grom-50-p2/",
+                        "reason": "Не печь-комплект: в комплекте только печь, зольный ящик, стартовый патрубок, герметик и паспорт; нет короба и дверцы."
+                    },
+                    {
+                        "title": "Печь для бани GFS Гефест Гром 50 (П2) чугун",
+                        "url": "https://kotlov.by/drovianye-peci-bannye/pec-dlia-bani-gfs-gefest-grom-50-p2-cugun",
+                        "reason": "Другая единица/комплектация: печь GFS, а не печь-комплект с коробом и дверцей; цена 11 521,60 BYN."
+                    },
+                    {
+                        "title": "Гром 50 (П2) Ураган",
+                        "url": "https://baranovichi.amazonka.by/grom-50-p-uragan",
+                        "reason": "Другое исполнение: комплектация «Ураган»/в сетке, а не универсальный печь-комплект; цена 11 824 BYN."
+                    },
+                    {
+                        "title": "Гром 50 (П2)",
+                        "url": null,
+                        "reason": "Базовая чугунная печь под обкладку, а не печь-комплект; в комплекте нет короба и дверцы; цена 303 200 RUB."
+                    },
+                    {
+                        "title": "Чугунная печь для бани Комплект Гром 50 (П2) Президент 1200/50 Пироксенит",
+                        "url": "https://www.technolit.ru/production/pechi-dlya-bani/pechekomplekty/komplekt-grom-50-p2-prezident-1150-50-serpentinit/",
+                        "reason": "Комплект с каменной облицовкой «Президент», другая комплектация и цена 624 800 RUB."
+                    },
+                    {
+                        "title": "Чугунная печь для бани Комплект Гром 50 (П2) Русский пар 1600/50 Талькохлорит",
+                        "url": "https://kamin53.ru/product/chugunnaya-pech-dlya-bani-komplekt-grom-50-p2-russkiy-par-1600-50-talkohlorit/",
+                        "reason": "Комплект с облицовкой «Русский пар», другая комплектация и цена 768 390 RUB."
+                    },
+                    {
+                        "title": "Чугунная печь для бани Технолит Гром 50 (П2)",
+                        "url": "https://garner.com.ua/chugunnaya-pech-dlya-bani-grom-50-p2/#tab-description",
+                        "reason": "Базовая печь под обкладку, а не печь-комплект; другой рынок (Украина), цена 342 526 UAH."
+                    }
+                ],
+                "excluded_offers": [
+                    {
+                        "title": "Печь-комплект Гефест Гром 50 (П2)",
+                        "url": "https://kotlov.by/drovianye-peci-bannye/pec-komplekt-gefest-grom-50-p2",
+                        "reason": "Собственный домен KOTLOV не является независимым рыночным источником."
+                    },
+                    {
+                        "title": "Универсальный печь-комплект Grom",
+                        "url": "https://banisauny.by/pechi-dlya-bani/drovyanyye-pechi/pechi-gefest/universalniy-pech-komplekt/universalniy-pech-komplekt-grom/",
+                        "reason": "Предложение не подтверждает точное совпадение модели."
+                    },
+                    {
+                        "title": "Универсальный печь-комплект Гром 50 (П2)",
+                        "url": "https://vladimir.technolit.ru/production/pechi-dlya-bani/chugunnye-bannye-pechi/chugunnye-pechi-dlya-bani-gefest-grom-/universalnyy-pech-komplekt-grom-50-p-2/",
+                        "reason": "Нет положительной подтверждённой цены в BYN."
+                    },
+                    {
+                        "title": "Универсальный печь-комплект Гром 50 (П2)",
+                        "url": "https://boing-pechi.ru/41243-universalnyj-pech-komplekt-grom-50-p2",
+                        "reason": "Нет положительной подтверждённой цены в BYN."
+                    },
+                    {
+                        "title": "Печь дровяная чугунная Гефест Гром 50П(2) Универсальный комплект (печь+короб+дверца)",
+                        "url": "https://irkutsk.saunabas.ru/catalog/bannye_pechi/drovyanye_bannye_pechi/chugunnye_pechi/11152/",
+                        "reason": "Нет положительной подтверждённой цены в BYN."
+                    }
+                ],
+                "model": "deepseek-v4-pro",
+                "searched_at": "2026-10-13T22:14:11+00:00"
+            }
+        },
+        {
+            "sku": "KOTLOV-000211",
+            "review_reason": "Live-web исследование точной production-модели нашло менее трёх независимых подтверждённых предложений; сохранить консультационный режим.",
+            "force_consultation_hold": true,
+            "observations": [],
+            "research": {
+                "summary": "В Беларуси найден один прямой офер с точным заголовком «Печь-комплект Гефест Гром 40 (П2)» — kotlov.by за 9 036.40 BYN. Это наиболее релевантный ориентир, но точную комплектацию (сетка/короб/зольный ящик) нужно сверить с вашим SKU KOTLOV-000211. Остальные белорусские предложения — это другие исполнения: «Ураган», каменные облицовки «Президент/Классика» или отдельная печь без комплекта. На рынке РФ заводская карточка «Универсальный печь-комплект Гром 40 (П2)» (арт. TLT3638) стоит 237 800 RUB, но наличие не подтверждено; независимый дилер spb.kamenka.ru дает тот же уровень 237 800 RUB с пометкой «Уточняйте наличие». Прямой пересчет RUB в BYN не выполнялся, поэтому сравнивать валюты в выводе следует осторожно.",
+                "verdict": "Для позиции KOTLOV-000211 базовый белорусский рыночный ориентир — 9 036.40 BYN у kotlov.by. Перед назначением цены обязательно подтвердить, что ваша комплектация совпадает с карточкой kotlov.by (в описании упоминается усиленная сетка с закрытой каменкой). Автоматически менять цену не рекомендуется: по Беларуси прямой конкуренции по точно такой же карточке не найдено, а российские цены требуют пересчета и учета доставки/пошлины.",
+                "confidence": "low",
+                "search_queries": [
+                    "Печь-комплект Гефест Гром 40 П2 ТехноЛит",
+                    "Гефест Гром 40 П2 ТехноЛит цена",
+                    "KOTLOV-000211",
+                    "\"Гром 40\" \"П2\" купить Беларусь Минск",
+                    "\"Печь-комплект Гефест Гром 40\" Беларусь",
+                    "ТехноЛит Гром 40 П2 site:by"
+                ],
+                "rejected_candidates": [
+                    {
+                        "title": "Печь для бани Гефест Гром 40 (П2) Ураган",
+                        "url": "https://kotlov.by/drovianye-peci-bannye/pec-dlia-bani-gefest-grom-40-p2-uragan",
+                        "reason": "Другая модель/исполнение «Ураган»: габариты 630×760×1100 мм, не базовая «Печь-комплект Гефест Гром 40 (П2)»."
+                    },
+                    {
+                        "title": "Печь для бани GFS Гефест Гром 40 (П2) чугун",
+                        "url": "https://pechibani.by/pechi-dlya-bani/drovyanyye-pechi/pechi-gefest/grom/pech-gfs-gefest-grom-40-p2/",
+                        "reason": "Отдельная печь, а не «печь-комплект»: в комплекте нет короба/сетки; цена 7 633 BYN не сопоставима напрямую с KOTLOV-000211."
+                    },
+                    {
+                        "title": "Комплект Гром 40 (П2) Президент 1170/60 Талькомагнезит",
+                        "url": "https://banisauny.by/pechi-dlya-bani/komplekt-grom-40-p2-prezident-1170-60-talkomagnezit/",
+                        "reason": "Вариант с каменной облицовкой «Президент», другая комплектация и цена 19 933 BYN."
+                    },
+                    {
+                        "title": "Чугунная печь для бани Гром 40 (П2) Ураган",
+                        "url": "https://eurobani.by/katalog/bannie-pechi/drovjanye-pechi/bannyye-pechi-gefest-tekhnolit/chugunnaya-pech-dlya-bani-grom-40-p2-uragan",
+                        "reason": "Модель «Ураган» с сеткой, не базовая печь-комплект; цена 9 617 BYN."
+                    },
+                    {
+                        "title": "Банная печь Гефест Гром 40(П2) Президент 1130/40 Змеевик",
+                        "url": "https://gomel.pechi-dimohody.by/pechi-dlya-bani/proizvoditeli1/pechi-dlya-bani-gefest/pechi-v-oblicovke/grom",
+                        "reason": "Вариант в каменной облицовке, не базовая печь-комплект; цена 15 701/16 021 BYN."
+                    },
+                    {
+                        "title": "Чугунная банная печь Гром 40 (П2)",
+                        "url": "https://teplone.by/pechi-dlya-bani/drovanie-pechi/pechi-chugun/pechi-chugun-gefest/pechi-chugun-gefest-grom/chugunnaja-bannaja-pech-grom-40-p2-grom-40-p2/",
+                        "reason": "Базовая печь под обкладку, не комплект; цена в выдаче не подтверждена, наличие «под заказ 7 дней»."
+                    },
+                    {
+                        "title": "Печь-комплект для бани Гефест Гром 40 (П2)",
+                        "url": "https://kaminvdom.ru/pech-komplekt-dlya-bani-gefest-grom-40-p2",
+                        "reason": "Цена в карточке не подтверждена: в заголовке выдачи только «от 196400 RUB», поэтому не включен в offers."
+                    },
+                    {
+                        "title": "Комплект Гром 40 (П2) Классика 1150/40 Талькохлорит кирпич",
+                        "url": "https://kamin53.ru/product/chugunnaya-pech-dlya-bani-komplekt-grom-40-p2-klassika-1150-40-talkohlorit-kirpich/",
+                        "reason": "Вариант с облицовкой «Классика», другая комплектация; 380 835 ₽."
+                    }
+                ],
+                "excluded_offers": [
+                    {
+                        "title": "Печь-комплект Гефест Гром 40 (П2)",
+                        "url": "https://kotlov.by/drovianye-peci-bannye/pec-komplekt-gefest-grom-40-p2",
+                        "reason": "Собственный домен KOTLOV не является независимым рыночным источником."
+                    },
+                    {
+                        "title": "Универсальный печь-комплект Гром 40 (П2)",
+                        "url": "https://gefestgroup.ru/gefest/pechi-dlya-bani/pechi-pod-obkladku/grom/universalnyy-pech-komplekt-grom-40-p2/",
+                        "reason": "Предложение не подтверждает точное совпадение модели."
+                    },
+                    {
+                        "title": "Банная печь Гефест Grom 40 П2 печь-комплект",
+                        "url": "https://spb.kamenka.ru/goods/bannaya-pech-gefest-grom-40-p2-pech-komplekt",
+                        "reason": "Предложение не подтверждает точное совпадение модели."
+                    }
+                ],
+                "model": "deepseek-v4-pro",
+                "searched_at": "2026-10-13T22:15:43+00:00"
+            }
+        },
+        {
+            "sku": "KOTLOV-000212",
+            "review_reason": "Live-web исследование точной production-модели нашло менее трёх независимых подтверждённых предложений; сохранить консультационный режим.",
+            "force_consultation_hold": true,
+            "observations": [
+                {
+                    "source": "web-1ed2299efd1baa95",
+                    "url": "https://zonatepla.by/product/bannaya-pech-tekhnolit-iskander-zk-18-m-uragan/",
+                    "external_name": "Банная печь Технолит Искандер ЗК 18 (M) Ураган",
+                    "model": "Печь для бани Искандер ЗК 18 (M) Ураган чугун",
+                    "package": "полная комплектация в карточке не раскрыта; код товара B3109, гарантия 60 мес",
+                    "observed_price": 1764,
+                    "currency": "BYN",
+                    "exchange_rate_to_byn": 1,
+                    "price_includes_vat": null,
+                    "availability_status": "unknown",
+                    "match_method": "exact_model",
+                    "match_confidence": 0.99,
+                    "is_confirmed": true,
+                    "is_comparable": true,
+                    "validation_flags": [],
+                    "evidence": "Карточка: 1 764.00 руб. (BYN), модель Технолит Искандер ЗК 18 (M) Ураган, код B3109, страна Россия."
+                }
+            ],
+            "research": {
+                "summary": "Точная модель «Искандер ЗК 18 (M) Ураган» (ТехноЛит) найдена в Беларуси у двух независимых продавцов: zonatepla.by — 1 764,00 BYN и kotlov.by — 2 344,60 BYN. Разница между ними около 33%, поэтому нужно отдельно проверить наличие и комплектацию более дешёвого предложения. В РФ стандартная версия (M) продаётся от 61 700 до 69 600 RUB, чаще всего за 63 700 RUB, преимущественно в наличии. Pro-версии в Беларуси стоят 2 515–2 645 BYN, но это другая модификация с увеличенной каменкой и сравнивать их напрямую нельзя. Внутренний SKU KOTLOV-000212 в открытых карточках не найден.",
+                "verdict": "Модель представлена на рынке, точные предложения есть. Для белорусского рынка рабочий ориентир — 2 050–2 350 BYN, при этом предложение zonatepla.by за 1 764 BYN выглядит заметно ниже рынка и требует подтверждения наличия, комплектации и актуальности цены. Автоматически назначать цену клиента не следует: рекомендуется запросить подтверждение у обоих белорусских продавцов, сверить закупочную цену у дистрибьютора/производителя и использовать российские предложения (61 700–63 700 RUB) только как вспомогательный индикатор входной стоимости.",
+                "confidence": "medium",
+                "search_queries": [
+                    "Печь для бани Искандер ЗК 18 Ураган чугун ТехноЛит купить",
+                    "Искандер ЗК 18 (M) Ураган чугун KOTLOV-000212",
+                    "ТехноЛит Искандер ЗК 18 М Ураган чугун цена Беларусь",
+                    "\"Искандер ЗК 18 (M) Ураган\" купить Минск",
+                    "\"Искандер ЗК 18 (М) Ураган\" цена",
+                    "\"Искандер ЗК 18\" \"Ураган\" site:by",
+                    "ТехноЛит \"Искандер ЗК 18\" Ураган чугун Беларусь"
+                ],
+                "rejected_candidates": [
+                    {
+                        "title": "Печь Искандер ЗК 18 (M) Pro Ураган ТехноЛит",
+                        "url": "https://banisauny.by/pechi-dlya-bani/pech-iskander-zk-18-m-pro-uragan/",
+                        "reason": "Модификация Pro, а не стандартная M: увеличена каменка, вес 143 кг, цена 2 516 BYN."
+                    },
+                    {
+                        "title": "Печь для бани Искандер ЗК 18 (M) Pro Ураган чугун",
+                        "url": "https://pechibani.by/pechi-dlya-bani/pech-iskander-zk-18-m-pro-uragan/",
+                        "reason": "Pro-версия, не стандартная M; цена 2 645 BYN."
+                    },
+                    {
+                        "title": "Чугунная печь для бани Искандер ЗК 18 (M) Pro Ураган",
+                        "url": "https://eurobani.by/katalog/bannie-pechi/drovjanye-pechi/bannyye-pechi-gefest-tekhnolit/chugunnaya-pech-dlya-bani-iskander-zk-18-m-pro-uragan",
+                        "reason": "Pro-версия; цена 2 515 BYN, не совпадает с целевой стандартной M."
+                    },
+                    {
+                        "title": "Печь для бани Гефест ИСКАНДЕР ЗК 18 Ураган",
+                        "url": "https://kotlov.by/drovianye-peci-bannye/pec-dlia-bani-gefest-iskander-zk-18-uragan",
+                        "reason": "Модель без индекса M, дверца без стекла, мощность 16 кВт — не совпадает исполнение."
+                    },
+                    {
+                        "title": "Печь для бани Технолит Искандер ЗК 18 Ураган",
+                        "url": "https://hot.by/pechi-dlya-bani/pech-dlya-bani-tehnolit-iskander-zk-18-uragan/?utm_source=google&utm_campaign=pmnew&utm_medium=cpc&utm_term=..m...",
+                        "reason": "Модель без индекса M и без стекла; не та модификация."
+                    },
+                    {
+                        "title": "Чугунная печь для бани Гефест Искандер ЗК 18 Ураган",
+                        "url": "https://jitkovichi.pechi-dimohody.by/pechi-dlya-bani/proizvoditeli1/pechi-dlya-bani-gefest/pechi-v-setke-i-uragan",
+                        "reason": "Каталожная/агрегаторная выдача, модель без индекса M; точная карточка не подтверждена."
+                    },
+                    {
+                        "title": "Чугунная печь для бани Технолит Искандер Ураган ЗК 18",
+                        "url": "https://technolit.shop/shop/?filter_vid-dverki-pechi=gluhaya&filter_obem-parnogo-pomescheniya-m3=18&shop_view=list",
+                        "reason": "Каталожная выдача, модель без индекса M; отдельная подтверждаемая карточка не найдена."
+                    },
+                    {
+                        "title": "Печь для бани Искандер ЗК 18 (П2) Ураган чугун",
+                        "url": "https://kotlov.by/drovianye-peci-bannye/pec-dlia-bani-iskander-zk-18-p2-uragan-cugun",
+                        "reason": "Исполнение П2 с панорамной дверцей, а не M."
+                    },
+                    {
+                        "title": "Чугунная печь для бани Искандер ЗК 18 (M) Pro Ураган",
+                        "url": "https://kamin53.ru/product/chugunnaya-pech-dlya-bani-iskander-zk-18-m-pro-uragan/",
+                        "reason": "Pro-версия; цена 68 460 ₽."
+                    },
+                    {
+                        "title": "Чугунная банная печь Искандер ЗК 18 (M) Ураган",
+                        "url": "https://anapa.kaminopt.ru/chugunnaya-bannaya-pech-iskander-zk-18-m-uragan/",
+                        "reason": "Цена 87 705 ₽ указана за комплект с дымоходом, поэтому не сопоставима с одиночной печью."
+                    },
+                    {
+                        "title": "Чугунная печь для бани Искандер ЗК 18 (M) Pro Ураган",
+                        "url": "https://www.ekb.technolit.ru/production/pechi-dlya-bani/pechi-v-setke-uragan/iskander-uragan/iskander-zk-18-m-pro-uragan/#desc",
+                        "reason": "Pro-версия; цена 69 600 ₽, увеличена каменка."
+                    }
+                ],
+                "excluded_offers": [
+                    {
+                        "title": "Печь для бани Искандер ЗК 18 (M) Ураган чугун",
+                        "url": "https://kotlov.by/drovianye-peci-bannye/pec-dlia-bani-iskander-zk-18-m-uragan-cugun",
+                        "reason": "Собственный домен KOTLOV не является независимым рыночным источником."
+                    },
+                    {
+                        "title": "Печь для бани Искандер ЗК 18 (М) Ураган",
+                        "url": "https://saunaopt.ru/pechi-dlya-bani/drovyanye-pechi/pech-dlya-bani-iskander-zk-18-m-uragan",
+                        "reason": "Нет положительной подтверждённой цены в BYN."
+                    },
+                    {
+                        "title": "ИСКАНДЕР ЗК 18 (М) Ураган",
+                        "url": "https://saunika.ru/katalog/pechnoe_oborudovanie/pechi-dlya-bani/iskander-zk-18-m-uragan/",
+                        "reason": "Нет положительной подтверждённой цены в BYN."
+                    },
+                    {
+                        "title": "Чугунная печь для бани Искандер ЗК 18 (M) Ураган",
+                        "url": "https://teplojar.ru/product/chugunnaya-pech-dlya-bani-iskander-zk-18-m-uragan/",
+                        "reason": "Нет положительной подтверждённой цены в BYN."
+                    },
+                    {
+                        "title": "Искандер ЗК 18 (M) Ураган",
+                        "url": "https://bani-33.ru/iskander-zk-18-m-uragan/",
+                        "reason": "Нет положительной подтверждённой цены в BYN."
+                    }
+                ],
+                "model": "deepseek-v4-pro",
+                "searched_at": "2026-10-13T22:16:57+00:00"
+            }
+        },
+        {
+            "sku": "KOTLOV-000213",
+            "review_reason": "Live-web исследование точной production-модели нашло менее трёх независимых подтверждённых предложений; сохранить консультационный режим.",
+            "force_consultation_hold": true,
+            "observations": [],
+            "research": {
+                "summary": "На 2026-10-13 в Беларуси найдено одно подтверждённое ценовое предложение по точной модели «Искандер ЗК 25 (M) Ураган чугун»: kotlov.by — 2 766.40 BYN. Ещё один белорусский домен topkabel.by ведёт на ту же линейку, но цену и наличие не раскрывает. По России найдено несколько независимых предложений по той же модификации без Pro/П2: 72 800–77 800 ₽, со скидочной ценой от 73 132 ₽. Модификации Pro, П2, ССП и версии с глухой дверцей исключены как несовпадающие.",
+                "verdict": "Для белорусского рынка единственный подтверждённый ценовой ориентир — 2 766.40 BYN у kotlov.by. Этого недостаточно для жёсткого назначения цены: нужно запросить у kotlov.by наличие, комплектность и условия, а также попытаться получить цену у topkabel.by. Российские цены 72 800–77 800 ₽ можно использовать как вторичный ориентир, но без автоматического переноса цены из-за разницы валют, доставки и возможных пошлин.",
+                "confidence": "medium",
+                "search_queries": [
+                    "Печь для бани Искандер ЗК 25 (M) Ураган чугун ТехноЛит",
+                    "Искандер ЗК 25 М Ураган чугун KOTLOV-000213",
+                    "KOTLOV-000213",
+                    "Искандер ЗК 25 Ураган чугун цена",
+                    "site:*.by Искандер ЗК 25 Ураган ТехноЛит",
+                    "site:*.by \"Искандер ЗК 25\" Ураган",
+                    "\"Искандер ЗК 25 (M) Ураган\" Беларусь купить",
+                    "\"Искандер ЗК 25\" \"Ураган\" \"BYN\""
+                ],
+                "rejected_candidates": [
+                    {
+                        "title": "Печь для бани Технолит Искандер ЗК 25 Ураган",
+                        "url": "https://www.topkabel.by/pech-dlya-bani-tehnolit-iskander-zk-25-uragan",
+                        "reason": "Белорусский домен, но цена и наличие не раскрыты («цену и наличие уточняйте у продавца»); подтверждаемого офера нет."
+                    },
+                    {
+                        "title": "Техно Лит Печь банная чугунная ИСКАНДЕР ЗК 25(М) УРАГАН (ССП)",
+                        "url": "http://www.goridrova.ru/catalog/pechi_kamenki_dlya_bani/pechi_dlya_bani_tekhnolit/tekhno_lit_pech_bannaya_chugunnaya_iskander_zk_25_m_uragan_ssp/",
+                        "reason": "Дополнительный индекс (ССП) не совпадает с запрошенной комплектацией; цена 82 470 ₽."
+                    },
+                    {
+                        "title": "Печь для бани Техно Лит Искандер Ураган 25М Pro ЗК чугунная",
+                        "url": "https://progrill72.ru/shop/goods/pech_dlya_bani_tehno_lit_iskander_uragan_25m_Pro_zk_chugunnaya-5939",
+                        "reason": "Модификация Pro, не совпадает с запрошенной Искандер ЗК 25 (M) Ураган."
+                    },
+                    {
+                        "title": "Печь банная Искандер ЗК 25 (М) Pro Ураган (Технолит)",
+                        "url": "https://oven35.ru/katalog/pechi/bannye-pechi/pech-bannaya-iskander-zk-25-m-pro-uragan-tehnolit/",
+                        "reason": "Модификация Pro, не совпадает с запрошенной моделью."
+                    },
+                    {
+                        "title": "Чугунная печь для бани Искандер ЗК 25 (M) Pro Ураган",
+                        "url": "https://www.technolit.ru/production/pechi-dlya-bani/pechi-v-setke-uragan/iskander-uragan/iskander-zk-25-m-pro-uragan/",
+                        "reason": "Модификация Pro, не совпадает с запрошенной моделью."
+                    },
+                    {
+                        "title": "Чугунная печь для бани Искандер ЗК 25 (П2) Pro Ураган",
+                        "url": "https://kamin53.ru/product/chugunnaya-pech-dlya-bani-iskander-zk-25-p2-pro-uragan/",
+                        "reason": "Модификация П2 Pro, не совпадает с запрошенной моделью."
+                    },
+                    {
+                        "title": "Печь для бани Искандер ЗК 25 Ураган",
+                        "url": "https://chehovpech.ru/ovens/pech-dlja-bani-iskander-zk-25-uragan/#podkluch",
+                        "reason": "Без индекса (M), в характеристиках указана глухая дверца — не совпадает с целевой комплектацией со стеклом."
+                    },
+                    {
+                        "title": "Чугунная печь для бани ИСКАНДЕР ЗК 25 (М) УРАГАН (Техно Лит) до 25 м3 ОТКЛ",
+                        "url": "https://msk.1000pechi.ru/chugunnaya-pech-dlya-bani-iskander-zk-25-m-uragan-tehno-lit-do-25-m3/",
+                        "reason": "Модель совпадает, но в найденной выдаче не видна подтверждённая цена и наличие — офер не подтверждён."
+                    },
+                    {
+                        "title": "Искандер ЗК 25 Ураган",
+                        "url": "http://termosfera.net/shop/the-furnace-bath/wood-fired-oven/gefest/iskander-zk25-uragan/",
+                        "reason": "Без индекса (M), указана глухая дверка — вероятно, другая комплектация."
+                    }
+                ],
+                "excluded_offers": [
+                    {
+                        "title": "Печь для бани Искандер ЗК 25 (M) Ураган чугун",
+                        "url": "https://kotlov.by/drovianye-peci-bannye/pec-dlia-bani-iskander-zk-25-m-uragan-cugun",
+                        "reason": "Собственный домен KOTLOV не является независимым рыночным источником."
+                    },
+                    {
+                        "title": "Чугунная банная печь Искандер ЗК 25 (M) Ураган",
+                        "url": "https://kamelektepla.ru/catalog/chugunnye-pechi-iskander-zk-/chugunnaya-bannaya-pech-iskander-zk-25-m-uragan/",
+                        "reason": "Нет положительной подтверждённой цены в BYN."
+                    },
+                    {
+                        "title": "Искандер ЗК 25 (M) Ураган",
+                        "url": "https://planetapechey.ru/bani-i-sauny/drovyanye-pechi/chugunnye-pechi-dlya-bani-gefest/pechi-v-setke/iskander/iskander-zk-25-m-uragan",
+                        "reason": "Нет положительной подтверждённой цены в BYN."
+                    },
+                    {
+                        "title": "Искандер ЗК 25 (M) Ураган",
+                        "url": "https://sauna-perm.ru/pechi-dlya-bani/drovyanye-pechi/gefest/iskander/iskander-zk-25-m-uragan.html?tag=%D0%98%D1%81%D0%BA%D0%B0%D0%BD%D0%B4%D0%B5%D1%80%20%D0%97%D0%9A%2025%20%28M%29%20%D0%A3%D1%80%D0%B0%D0%B3%D0%B0%D0%BD",
+                        "reason": "Нет положительной подтверждённой цены в BYN."
+                    },
+                    {
+                        "title": "Банная печь \"Искандер ЗК 25 (M) Ураган\"",
+                        "url": "https://modulbani.ru/bannaya-pech-Iskander-ZK-25-M-Uragan",
+                        "reason": "Нет положительной подтверждённой цены в BYN."
+                    }
+                ],
+                "model": "deepseek-v4-pro",
+                "searched_at": "2026-10-13T22:17:58+00:00"
+            }
+        },
+        {
+            "sku": "KOTLOV-000214",
+            "review_reason": "Live-web исследование точной production-модели нашло менее трёх независимых подтверждённых предложений; сохранить консультационный режим.",
+            "force_consultation_hold": true,
+            "observations": [],
+            "research": {
+                "summary": "Найдено очень мало точных предложений именно базовой модели «Искандер ЗК 25 (М)». В Беларуси подтверждены две ценовые точки: 2 679.00 BYN (kotlov.by) и 2 793.00 BYN (pechi-dimohody.by, исполнение «под обкладку», поэтому помечено как probable). hot.by подтверждает такую же модель и комплектацию, но цену не публикует. Рыночный диапазон базовой модели в BYN ориентировочно 2 679–2 793. В РФ точная базовая модель без Pro/Ураган почти не представлена: найден лишь вероятный карточный товар на doker.ru без цены в выдаче. Основные российские предложения относятся к версиям Pro и/или Ураган и стоят около 72 900–81 700 RUB, поэтому прямое сравнение некорректно. Это указывает на то, что базовая (M) версия, вероятно, замещается более новыми модификациями, и рынок по ней узкий.",
+                "verdict": "Ориентироваться на диапазон 2 679–2 793 BYN. Выставлять цену выше примерно 2 800 BYN без дополнительной ценности (доставка, монтаж, расширенная гарантия) рискованно. Перед фиксацией цены стоит запросить актуальное наличие и закупочную цену у hot.by и pechi-dimohody.by, а также уточнить, не снята ли базовая (M) версия с производства и не поставляется ли вместо неё Pro.",
+                "confidence": "low",
+                "search_queries": [
+                    "Печь-комплект Гефест ИСКАНДЕР ЗК 25 (М) ТехноЛит",
+                    "ТехноЛит Искандер ЗК 25 М печь для бани",
+                    "Гефест Искандер ЗК 25 М цена",
+                    "KOTLOV-000214",
+                    "\"Искандер ЗК 25 (М)\" купить Беларусь",
+                    "\"Искандер ЗК 25 (М)\" BYN",
+                    "\"Печь-комплект Гефест ИСКАНДЕР ЗК 25\"",
+                    "site:hot.by \"Искандер ЗК 25 (М)\""
+                ],
+                "rejected_candidates": [
+                    {
+                        "title": "Печь для бани Искандер ЗК 25 (M) Ураган чугун",
+                        "url": "https://kotlov.by/drovianye-peci-bannye/pec-dlia-bani-iskander-zk-25-m-uragan-cugun",
+                        "reason": "Версия Ураган: сетка, паровые пушки, другая комплектация и мощность 25 кВт; не базовая печь-комплект."
+                    },
+                    {
+                        "title": "Печь для бани Гефест ИСКАНДЕР ЗК 25 Ураган",
+                        "url": "https://kotlov.by/drovianye-peci-bannye/pec-dlia-bani-gefest-iskander-zk-25-uragan",
+                        "reason": "Версия Ураган с глухой дверцей и другой комплектацией; не совпадает с запросом."
+                    },
+                    {
+                        "title": "Чугунная банная печь Искандер ЗК 25 (М) Ураган",
+                        "url": "https://d-b.by/cataloge/pechi-dlya-bani/drovyanye/chugunnaja-bannaja-pech-iskander-25-m-uragan-iskander-25-m-uragan/",
+                        "reason": "Версия Ураган с сеткой и паровыми пушками; цена 2 378 BYN относится к другой комплектации."
+                    },
+                    {
+                        "title": "Печь для бани Искандер ЗК 25 (М) Pro",
+                        "url": "https://pechibani.by/pechi-dlya-bani/pech-iskander-zk-25-m-pro/",
+                        "reason": "Модификация Pro с увеличенной каменкой; не базовая (M)."
+                    },
+                    {
+                        "title": "Чугунная печь для бани Искандер ЗК 25 (М) Pro",
+                        "url": "https://sweetfire.ru/product/chugunnaya-pech-dlya-bani-iskander-zk-25-m-pro/",
+                        "reason": "Модификация Pro; РФ, цена 73 500 RUB, не базовая версия."
+                    },
+                    {
+                        "title": "Чугунная печь для бани Искандер ЗК 25 (M) Pro Ураган",
+                        "url": "https://www.kostroma.technolit.ru/production/pechi-dlya-bani/pechi-v-setke-uragan/iskander-uragan/iskander-zk-25-m-pro-uragan/",
+                        "reason": "Модификация Pro Ураган; цена 81 700 RUB, другая комплектация."
+                    },
+                    {
+                        "title": "Универсальный печь-комплект GFS (Гефест) ЗК 25 (М)",
+                        "url": "https://www.technolit.ru/production/pechi-dlya-bani/chugunnye-bannye-pechi/chugunnye-pechi-dlya-bani-gefest-zk-/universalnyy-pech-komplekt-gfs-zk-25-m/",
+                        "reason": "Серия GFS, не Искандер; другие габариты, дымоход 130 мм и масса 288 кг."
+                    },
+                    {
+                        "title": "Печь-комплект Гефест ИСКАНДЕР ЗК 25 (П2)",
+                        "url": "https://kotlov.by/drovianye-peci-bannye/pec-komplekt-gefest-iskander-zk-25-p2",
+                        "reason": "Исполнение П2 с другой дверцей и комплектацией; не целевая (М) версия."
+                    }
+                ],
+                "excluded_offers": [
+                    {
+                        "title": "Печь-комплект Гефест ИСКАНДЕР ЗК 25 (М)",
+                        "url": "https://kotlov.by/drovianye-peci-bannye/pec-komplekt-gefest-iskander-zk-25-m",
+                        "reason": "Собственный домен KOTLOV не является независимым рыночным источником."
+                    },
+                    {
+                        "title": "Чугунная печь для бани Искандер ЗК 25 (М) под обкладку",
+                        "url": "https://jitkovichi.pechi-dimohody.by/pechi-dlya-bani/proizvoditeli1/pechi-dlya-bani-gefest/chugunnaya-pech-dlya-bani-iskander-zk-25-m-pod-obkladku",
+                        "reason": "Предложение не подтверждает точное совпадение модели."
+                    },
+                    {
+                        "title": "Печь для бани Технолит Искандер ЗК 25 (М)",
+                        "url": "https://hot.by/pechi-dlya-bani/pech-dlya-bani-tehnolit-iskander-zk-25-m/?utm_source=google&utm_campaign=pmnew&utm_medium=cpc&utm_term=..c...",
+                        "reason": "Нет положительной подтверждённой цены в BYN."
+                    },
+                    {
+                        "title": "Печь для бани GFS Искандер ЗК 25 М чугунная (универсальный печь-комплект)",
+                        "url": "https://doker.ru/catalog/pechi_kaminy/pech_dlya_bani_gfs_iskander_zk_25_m_chugunnaya_universalnyy_pech_komplekt.html",
+                        "reason": "Предложение не подтверждает точное совпадение модели."
+                    }
+                ],
+                "model": "deepseek-v4-pro",
+                "searched_at": "2026-10-13T22:19:42+00:00"
+            }
+        }
+    ],
+    "failed_products": []
+}
