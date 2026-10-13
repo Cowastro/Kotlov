@@ -121,6 +121,7 @@ class Category extends Model
             'kupeli' => 'img/popular/sauna.jpg',
             'kupeli-2' => 'img/popular/sauna.jpg',
             'dveri-dlya-ban-i-saun' => 'img/popular/sauna.jpg',
+            'okna-dlya-bani-i-sauny' => 'img/popular/sauna.jpg',
             'mangalyi' => 'img/popular/sauna.jpg',
             'kostrovye-chashi' => 'img/popular/sauna.jpg',
             'kamni-dlya-bani' => 'img/popular/sauna.jpg',

@@ -2926,6 +2926,41 @@ class CreateSbgDistinctProductsBatchCommand extends Command
         ],
     ];
 
+    private const BATCH_UNMATCHED_RESEARCHED_20261013_CO = [
+        'УТ-00001066' => [
+            'template_slug' => 'korobka-osina-855520avpod-10mm',
+            'allow_unmatched' => true,
+            'allow_brandless' => true,
+            'category_slug' => 'okna-dlya-bani-i-sauny',
+            'category' => [
+                'name' => 'Окна для бани и сауны',
+                'slug' => 'okna-dlya-bani-i-sauny',
+                'parent_slug' => 'bani-i-sauny',
+                'h1' => 'Окна и форточки для бани и сауны',
+                'type' => 'main-child',
+                'sort_order' => 65,
+                'content' => '<p>Окна и форточки для бани помогают проветривать парную и дают естественное освещение. При выборе учитывайте размер проёма, сторону открывания и условия эксплуатации.</p>',
+                'meta_title' => 'Окна и форточки для бани и сауны — купить в Беларуси | KOTLOV',
+                'meta_description' => 'Окна и форточки для бани и сауны: размеры, характеристики, цены и доставка по Беларуси.',
+            ],
+            'fragments' => ['Форточка', '400*400'],
+            'name' => 'Форточка для бани 400×400 мм',
+            'retail' => 82.00,
+            'images' => [
+                'img/products/sauna/fortochka-400x400-clean.jpg',
+            ],
+            'source_url' => 'https://dymohodoff.by/fortochka-dlya-sauny-40-kh-40-sm-steklopaket-prozrachnyy-olkha.html',
+            'short' => 'Открывающаяся форточка 400×400 мм для проветривания и естественного освещения бани или сауны.',
+            'content' => '<p><strong>Форточка для бани 400×400 мм</strong> — компактная открывающаяся оконная конструкция для банного помещения.</p><p>Форточка помогает быстро проветрить парную и добавляет естественное освещение. Перед монтажом проверьте размер проёма, направление открывания и состав комплекта.</p>',
+            'specs' => [
+                ['key' => 'Тип', 'value' => 'Форточка для бани и сауны'],
+                ['key' => 'Размер', 'value' => '400×400 мм'],
+                ['key' => 'Тип открывания', 'value' => 'Распашной'],
+                ['key' => 'Назначение', 'value' => 'Проветривание и естественное освещение банного помещения'],
+            ],
+        ],
+    ];
+
     public function handle(
         IntegrationProductCreator $creator,
         IntegrationProductMatchDecision $matchDecision,
@@ -3023,6 +3058,7 @@ class CreateSbgDistinctProductsBatchCommand extends Command
             'unmatched-researched-20261013-cl' => self::BATCH_UNMATCHED_RESEARCHED_20261013_CL,
             'unmatched-researched-20261013-cm' => self::BATCH_UNMATCHED_RESEARCHED_20261013_CM,
             'unmatched-researched-20261013-cn' => self::BATCH_UNMATCHED_RESEARCHED_20261013_CN,
+            'unmatched-researched-20261013-co' => self::BATCH_UNMATCHED_RESEARCHED_20261013_CO,
             default => null,
         };
 
@@ -3038,7 +3074,7 @@ class CreateSbgDistinctProductsBatchCommand extends Command
         }
 
         $apply = (bool) $this->option('apply');
-        $stats = array_fill_keys(['configured', 'ready', 'created', 'linked', 'refreshed', 'ignored', 'brands_created', 'already', 'blocked'], 0);
+        $stats = array_fill_keys(['configured', 'ready', 'created', 'linked', 'refreshed', 'ignored', 'brands_created', 'categories_created', 'already', 'blocked'], 0);
         $stats['configured'] = count($rows);
         $details = [];
 
@@ -3243,9 +3279,7 @@ class CreateSbgDistinctProductsBatchCommand extends Command
             $normalizedPrice = $item->normalizedPriceByn();
             $configuredBrand = $rule['brand'] ?? null;
             $brand = $configuredBrand ? $this->findBrand($configuredBrand) : $template->brand;
-            $category = isset($rule['category_slug'])
-                ? Category::query()->where('slug', $rule['category_slug'])->first()
-                : $template->category;
+            $category = $this->categoryForRule($rule, $template);
             $brandName = trim((string) ($configuredBrand['name'] ?? $brand?->name));
             $name = $rule['name'] ?? $this->productName($brandName, $item->name);
             $valid = $item->source?->name === self::SOURCE_NAME
@@ -3286,6 +3320,11 @@ class CreateSbgDistinctProductsBatchCommand extends Command
             }
 
             if ($apply) {
+                if (! $category->exists) {
+                    $category = $this->createCategory($rule['category']);
+                    $stats['categories_created']++;
+                }
+
                 if (($rule['hydrate_external_sku'] ?? false) && blank($item->external_sku)) {
                     $item->forceFill(['external_sku' => $rule['external_sku']])->save();
                 }
@@ -3387,6 +3426,62 @@ class CreateSbgDistinctProductsBatchCommand extends Command
             'is_active' => true,
             'is_archived' => false,
         ])->save();
+    }
+
+    /** @param array<string, mixed> $rule */
+    private function categoryForRule(array $rule, Product $template): ?Category
+    {
+        if (! isset($rule['category_slug'])) {
+            return $template->category;
+        }
+
+        $category = Category::query()->where('slug', $rule['category_slug'])->first();
+        if ($category) {
+            return $category;
+        }
+
+        $config = $rule['category'] ?? null;
+        if (! is_array($config) || ($config['slug'] ?? null) !== $rule['category_slug']) {
+            return null;
+        }
+
+        $parent = Category::query()->where('slug', $config['parent_slug'] ?? '')->first();
+        if (! $parent) {
+            return null;
+        }
+
+        return new Category([
+            'parent_id' => $parent->id,
+            'name' => $config['name'],
+            'slug' => $config['slug'],
+            'h1' => $config['h1'] ?? $config['name'],
+            'type' => $config['type'] ?? 'main-child',
+            'sort_order' => $config['sort_order'] ?? 0,
+            'is_active' => true,
+            'content' => $config['content'] ?? null,
+            'meta_title' => $config['meta_title'] ?? null,
+            'meta_description' => $config['meta_description'] ?? null,
+        ]);
+    }
+
+    /** @param array<string, mixed> $config */
+    private function createCategory(array $config): Category
+    {
+        $parent = Category::query()->where('slug', $config['parent_slug'])->firstOrFail();
+
+        return Category::query()->firstOrCreate([
+            'slug' => $config['slug'],
+        ], [
+            'parent_id' => $parent->id,
+            'name' => $config['name'],
+            'h1' => $config['h1'] ?? $config['name'],
+            'type' => $config['type'] ?? 'main-child',
+            'sort_order' => $config['sort_order'] ?? 0,
+            'is_active' => true,
+            'content' => $config['content'] ?? null,
+            'meta_title' => $config['meta_title'] ?? null,
+            'meta_description' => $config['meta_description'] ?? null,
+        ]);
     }
 
     /** @param array{name:string,slug:string} $config */

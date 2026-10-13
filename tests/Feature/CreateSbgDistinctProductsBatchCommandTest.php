@@ -6878,4 +6878,106 @@ class CreateSbgDistinctProductsBatchCommandTest extends TestCase
         $this->assertSame($productCount, Product::query()->count());
         $this->assertSame($product->id, $item->fresh()->product_id);
     }
+
+    public function test_it_creates_the_sauna_windows_category_and_unmatched_400x400_vent_card(): void
+    {
+        $source = IntegrationSource::query()->create([
+            'code' => 'onec-sbg-unmatched-sauna-window-400',
+            'name' => '1С СанБизнесГруп',
+            'settings' => ['partner_name' => 'ООО «СанБизнесГруп»'],
+            'is_active' => true,
+            'update_stock' => true,
+        ]);
+        $parent = Category::query()->create([
+            'name' => 'Бани и сауны',
+            'slug' => 'bani-i-sauny',
+            'parent_id' => 0,
+        ]);
+        $templateCategory = Category::query()->create([
+            'name' => 'Двери для бани и сауны',
+            'slug' => 'dveri-dlya-ban-i-saun',
+            'parent_id' => $parent->id,
+        ]);
+        Product::query()->create([
+            'category_id' => $templateCategory->id,
+            'sku' => 'PS-SAUNA-TEMPLATE',
+            'name' => 'Коробка Осина (85*55*2,0/АВ/под 10мм)',
+            'slug' => 'korobka-osina-855520avpod-10mm',
+            'price' => 61,
+            'images' => ['img/products/template.jpg'],
+            'is_active' => true,
+        ]);
+        $item = IntegrationProduct::query()->create([
+            'integration_source_id' => $source->id,
+            'external_id' => 'bbd2cc37-1f62-11e9-bad6-1c1b0d1de7c2',
+            'external_code' => 'УТ-00001066',
+            'external_sku' => null,
+            'name' => 'Форточка 400*400',
+            'price_byn' => null,
+            'stock_quantity' => 3,
+            'stock_confirmed_at' => now(),
+            'match_status' => 'unmatched',
+            'candidates' => null,
+        ]);
+        $productCount = Product::query()->count();
+
+        $this->artisan('integration:create-sbg-distinct-products', [
+            '--batch' => 'unmatched-researched-20261013-co',
+            '--code' => ['УТ-00001066'],
+        ])->assertSuccessful();
+        $this->assertNull($item->fresh()->product_id);
+        $this->assertDatabaseMissing('categories', ['slug' => 'okna-dlya-bani-i-sauny']);
+
+        $this->artisan('integration:create-sbg-distinct-products', [
+            '--batch' => 'unmatched-researched-20261013-co',
+            '--code' => ['УТ-00001066'],
+            '--apply' => true,
+        ])->assertSuccessful();
+
+        $item->refresh();
+        $product = $item->product;
+        $category = Category::query()->where('slug', 'okna-dlya-bani-i-sauny')->first();
+        $this->assertSame($productCount + 1, Product::query()->count());
+        $this->assertNotNull($product);
+        $this->assertNotNull($category);
+        $this->assertSame($parent->id, $category->parent_id);
+        $this->assertSame('Окна для бани и сауны', $category->name);
+        $this->assertSame('main-child', $category->type);
+        $this->assertTrue((bool) $category->is_active);
+        $this->assertSame('matched', $item->match_status);
+        $this->assertSame('manual_created', $item->match_method);
+        $this->assertSame($category->id, $item->target_category_id);
+        $this->assertSame('Форточка для бани 400×400 мм', $product->name);
+        $this->assertSame('82.00', $product->price);
+        $this->assertSame('3', (string) $product->stock_qty);
+        $this->assertTrue((bool) $product->in_stock);
+        $this->assertNull($product->brand_id);
+        $this->assertSame($category->id, $product->category_id);
+        $this->assertSame('400×400 мм', collect($product->specs)->firstWhere('key', 'Размер')['value']);
+        $this->assertSame([
+            'img/products/sauna/fortochka-400x400-clean.jpg',
+        ], $product->images);
+        $this->assertFileExists(public_path('img/products/sauna/fortochka-400x400-clean.jpg'));
+        $this->assertStringContainsString('dymohodoff.by', $product->content_source_url);
+        $this->assertStringContainsString('размер проёма', $product->content);
+        $this->assertStringNotContainsString('розничная цена', mb_strtolower($product->content));
+        $this->assertStringNotContainsString('byn', mb_strtolower($product->content));
+        $this->assertDatabaseHas('supplier_product_mappings', [
+            'supplier_code' => $source->matchingSupplierCode(),
+            'supplier_article' => 'УТ-00001066',
+            'product_id' => $product->id,
+            'product_sku' => $product->sku,
+            'confidence' => 'manual',
+            'is_active' => true,
+        ]);
+
+        $this->artisan('integration:create-sbg-distinct-products', [
+            '--batch' => 'unmatched-researched-20261013-co',
+            '--code' => ['УТ-00001066'],
+            '--apply' => true,
+        ])->assertSuccessful();
+        $this->assertSame($productCount + 1, Product::query()->count());
+        $this->assertSame($product->id, $item->fresh()->product_id);
+        $this->assertSame(1, Category::query()->where('slug', 'okna-dlya-bani-i-sauny')->count());
+    }
 }
