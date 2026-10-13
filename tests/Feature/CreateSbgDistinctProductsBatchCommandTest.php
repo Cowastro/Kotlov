@@ -2477,4 +2477,71 @@ class CreateSbgDistinctProductsBatchCommandTest extends TestCase
         $this->assertStringNotContainsString('rub', mb_strtolower($product->content));
         $this->assertSame('manual_created', $item->fresh()->match_method);
     }
+
+    public function test_it_creates_the_exact_aisi_304_d120_87_degree_tee_instead_of_linking_aisi_430(): void
+    {
+        $source = IntegrationSource::query()->create([
+            'code' => 'onec-sbg-teplov-tee-87-304-d120',
+            'name' => '1С СанБизнесГруп',
+            'settings' => ['partner_name' => 'ООО «СанБизнесГруп»'],
+            'is_active' => true,
+            'update_stock' => true,
+        ]);
+        $category = Category::query()->firstOrCreate(['slug' => 'troyniki-mono'], [
+            'name' => 'Тройники одностенные',
+            'parent_id' => 0,
+        ]);
+        $teplov = Brand::query()->firstOrCreate(['slug' => 'teplov-i-suhov'], ['name' => 'Теплов и Сухов']);
+        $wrongTeeCandidate = Product::query()->create([
+            'category_id' => $category->id,
+            'brand_id' => $teplov->id,
+            'sku' => 'KOTLOV-007990',
+            'name' => 'Теплов и Сухов Тройник 87* ТРМ(М)-Р 430-0.5 D120',
+            'slug' => 'teplov-tee-87-430-05-d120-template',
+            'price' => 55,
+            'images' => ['product/0079/007990/tee-87-430.jpg'],
+        ]);
+        $item = IntegrationProduct::query()->create([
+            'integration_source_id' => $source->id,
+            'external_id' => 'teplov-tee-87-304-08-d120',
+            'external_code' => 'УТ-00005165',
+            'external_sku' => 'TS.ST5.T87.0120.66106',
+            'name' => 'Тройник 87* ТРМ(М)-Р 304-0.8 D120',
+            'price_byn' => null,
+            'stock_quantity' => 1,
+            'match_status' => 'ambiguous',
+            'candidates' => [['product_id' => $wrongTeeCandidate->id, 'score' => 0.73]],
+        ]);
+
+        $this->artisan('integration:create-sbg-distinct-products', [
+            '--batch' => 'researched-priced-20261013-aq',
+            '--code' => ['УТ-00005165'],
+            '--apply' => true,
+        ])->assertSuccessful();
+
+        $product = $item->fresh()->product;
+        $this->assertNotNull($product);
+        $this->assertNotSame($wrongTeeCandidate->id, $product->id);
+        $this->assertSame($category->id, $product->category_id);
+        $this->assertSame($teplov->id, $product->brand_id);
+        $this->assertSame('Теплов и Сухов Тройник 87° Моно ТРМ(М)-Р 304-0.8 D120', $product->name);
+        $this->assertSame('89.90', $product->price);
+        $this->assertSame('1', (string) $product->stock_qty);
+        $this->assertNull($item->fresh()->normalizedPriceByn());
+        $this->assertSame('87°', collect($product->specs)->firstWhere('key', 'Угол ответвления')['value']);
+        $this->assertSame('120 мм', collect($product->specs)->firstWhere('key', 'Диаметр')['value']);
+        $this->assertSame('AISI 304', collect($product->specs)->firstWhere('key', 'Марка стали')['value']);
+        $this->assertSame('0,8 мм', collect($product->specs)->firstWhere('key', 'Толщина стали')['value']);
+        $this->assertSame('TS.ST5.T87.0120.66106', collect($product->specs)->firstWhere('key', 'Артикул производителя')['value']);
+        $this->assertSame(['img/products/teplov-i-suhov/teplov-suhov-troynik-87-304-08-d120.jpg'], $product->images);
+        $this->assertFileExists(public_path('img/products/teplov-i-suhov/teplov-suhov-troynik-87-304-08-d120.jpg'));
+        $this->assertStringContainsString('realkamin.ru', $product->content_source_url);
+        $this->assertStringNotContainsString('AISI 430', $product->content);
+        $this->assertStringNotContainsString('0,5 мм', $product->content);
+        $this->assertStringNotContainsString('кандидат', mb_strtolower($product->content));
+        $this->assertStringNotContainsString('розничная цена', mb_strtolower($product->content));
+        $this->assertStringNotContainsString('нбрб', mb_strtolower($product->content));
+        $this->assertStringNotContainsString('rub', mb_strtolower($product->content));
+        $this->assertSame('manual_created', $item->fresh()->match_method);
+    }
 }

@@ -1309,6 +1309,42 @@ class CreateSbgDistinctProductsBatchCommand extends Command
         ],
     ];
 
+    private const BATCH_RESEARCHED_PRICED_20261013_AQ = [
+        'УТ-00005165' => [
+            'template' => 'KOTLOV-007990',
+            'category_slug' => 'troyniki-mono',
+            'external_sku' => 'TS.ST5.T87.0120.66106',
+            'fragments' => ['Тройник', '87', 'ТРМ(М)-Р', '304-0.8', 'D120'],
+            'brand' => [
+                'name' => 'Теплов и Сухов',
+                'slug' => 'teplov-i-suhov',
+                'country' => 'Россия',
+                'content' => '<p><strong>Теплов и Сухов</strong> — российский производитель модульных дымоходов и комплектующих из нержавеющей стали.</p>',
+            ],
+            'name' => 'Теплов и Сухов Тройник 87° Моно ТРМ(М)-Р 304-0.8 D120',
+            'retail' => 89.90,
+            'images' => ['img/products/teplov-i-suhov/teplov-suhov-troynik-87-304-08-d120.jpg'],
+            'source_url' => 'https://realkamin.ru/troynik-87-trm-m-r-304-0-8-d120/',
+            'short' => 'Одностенный тройник дымохода «Теплов и Сухов» 87°, диаметр 120 мм, сталь AISI 304 толщиной 0,8 мм.',
+            'content' => '<p><strong>Тройник 87° Моно ТРМ(М)-Р 304-0.8 D120</strong> — одностенный элемент дымохода для подключения ответвления под углом 87°. Конструкция позволяет организовать соединение дымового канала и доступ для обслуживания системы.</p><p>Тройник изготовлен из нержавеющей стали AISI 304 толщиной 0,8 мм. Диаметр 120 мм и раструбные соединения рассчитаны на сборку с совместимыми элементами модульной системы «Теплов и Сухов».</p>',
+            'specs' => [
+                ['key' => 'Тип', 'value' => 'Одностенный тройник дымохода'],
+                ['key' => 'Серия', 'value' => 'Моно'],
+                ['key' => 'Модель', 'value' => 'ТРМ(М)-Р 304-0.8 D120'],
+                ['key' => 'Угол ответвления', 'value' => '87°'],
+                ['key' => 'Диаметр', 'value' => '120 мм'],
+                ['key' => 'Марка стали', 'value' => 'AISI 304'],
+                ['key' => 'Толщина стали', 'value' => '0,8 мм'],
+                ['key' => 'Конструкция', 'value' => 'Одностенная, без теплоизоляции'],
+                ['key' => 'Соединение', 'value' => 'Раструбное'],
+                ['key' => 'Габариты', 'value' => '315 × 230 × 130 мм'],
+                ['key' => 'Масса', 'value' => '1 кг'],
+                ['key' => 'Артикул производителя', 'value' => 'TS.ST5.T87.0120.66106'],
+                ['key' => 'Страна производства', 'value' => 'Россия'],
+            ],
+        ],
+    ];
+
     public function handle(IntegrationProductCreator $creator): int
     {
         $rows = match ($this->option('batch')) {
@@ -1354,6 +1390,7 @@ class CreateSbgDistinctProductsBatchCommand extends Command
             'researched-priced-20261013-an' => self::BATCH_RESEARCHED_PRICED_20261013_AN,
             'researched-priced-20261013-ao' => self::BATCH_RESEARCHED_PRICED_20261013_AO,
             'researched-priced-20261013-ap' => self::BATCH_RESEARCHED_PRICED_20261013_AP,
+            'researched-priced-20261013-aq' => self::BATCH_RESEARCHED_PRICED_20261013_AQ,
             default => null,
         };
 
