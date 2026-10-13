@@ -822,4 +822,81 @@ class ResolveSbgAmbiguousBatchCommandTest extends TestCase
             'confidence' => 'manual',
         ]);
     }
+
+    public function test_it_links_and_refreshes_the_existing_electrolux_ech_wf_01_without_creating_a_hommyn_duplicate(): void
+    {
+        $source = IntegrationSource::query()->create([
+            'code' => 'onec-sbg-electrolux-ech-wf-01',
+            'name' => '1С СанБизнесГруп',
+            'settings' => ['partner_name' => 'ООО «СанБизнесГруп»'],
+            'is_active' => true,
+            'update_stock' => true,
+        ]);
+        $category = Category::query()->create([
+            'name' => 'Электрические водонагреватели',
+            'slug' => 'electric-electrolux-module-test',
+            'parent_id' => 0,
+        ]);
+        $electrolux = Brand::query()->create(['name' => 'Electrolux', 'slug' => 'electrolux-ech-wf-test']);
+        $module = Product::query()->create([
+            'category_id' => $category->id,
+            'brand_id' => $electrolux->id,
+            'sku' => 'PS-000.18707',
+            'name' => 'Модуль Electrolux ECH/WF-01 Smart Wi-Fi',
+            'h1' => 'Модуль Electrolux ECH/WF-01 Smart Wi-Fi',
+            'slug' => 'electrolux-ech-wf-01-test',
+            'price' => 185.13,
+            'in_stock' => false,
+            'stock_qty' => null,
+            'images' => ['img/products/teplodvor-restored/electrolux/modul-electrolux-echwf-01-smart-wi-fi.png'],
+        ]);
+        $hommyn = Product::query()->create([
+            'category_id' => $category->id,
+            'sku' => 'KOTLOV-003695',
+            'name' => 'Модуль съемный управляющий HOMMYN HDN/WFN-02-02',
+            'slug' => 'hommyn-hdn-wfn-wrong-candidate',
+        ]);
+        $item = IntegrationProduct::query()->create([
+            'integration_source_id' => $source->id,
+            'external_id' => 'electrolux-ech-wf-01',
+            'external_code' => 'УТ-00003848',
+            'name' => 'Модуль съёмный управляющий Electrolux ECH/WF-01 Smart WI-FI',
+            'price_byn' => null,
+            'stock_quantity' => 1,
+            'match_status' => 'ambiguous',
+            'candidates' => [['product_id' => $hommyn->id, 'score' => 0.7792]],
+        ]);
+
+        $this->artisan('integration:resolve-sbg-ambiguous', [
+            '--batch' => 'exact-20261013-p',
+            '--code' => ['УТ-00003848'],
+            '--apply' => true,
+        ])->assertSuccessful();
+
+        $item->refresh();
+        $module->refresh();
+        $this->assertSame($module->id, $item->product_id);
+        $this->assertNotSame($hommyn->id, $item->product_id);
+        $this->assertSame('matched', $item->match_status);
+        $this->assertSame('manual_search', $item->match_method);
+        $this->assertSame('69.90', $module->price);
+        $this->assertTrue($module->in_stock);
+        $this->assertSame('1', (string) $module->stock_qty);
+        $this->assertSame('Electrolux ECH/WF-01 Smart Wi-Fi съёмный управляющий модуль', $module->name);
+        $this->assertSame($module->name, $module->h1);
+        $this->assertSame('ECH/WF-01', collect($module->specs)->firstWhere('key', 'Модель')['value']);
+        $this->assertSame('НС-1102748', collect($module->specs)->firstWhere('key', 'Код товара')['value']);
+        $this->assertSame('7312970301012', collect($module->specs)->firstWhere('key', 'Штрихкод')['value']);
+        $this->assertSame('USB Type-A', collect($module->specs)->firstWhere('key', 'Интерфейс подключения')['value']);
+        $this->assertSame('70 × 24 × 14,5 мм', collect($module->specs)->firstWhere('key', 'Габариты')['value']);
+        $this->assertSame(['img/products/teplodvor-restored/electrolux/modul-electrolux-echwf-01-smart-wi-fi.png'], $module->images);
+        $this->assertStringContainsString('b2b.rusklimat.com', $module->content_source_url);
+        $this->assertStringNotContainsString('HOMMYN', $module->content);
+        $this->assertStringNotContainsString('розничная цена', mb_strtolower($module->content));
+        $this->assertDatabaseHas('supplier_product_mappings', [
+            'supplier_article' => 'УТ-00003848',
+            'product_id' => $module->id,
+            'confidence' => 'manual',
+        ]);
+    }
 }

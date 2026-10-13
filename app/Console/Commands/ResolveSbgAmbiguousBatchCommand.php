@@ -291,6 +291,44 @@ class ResolveSbgAmbiguousBatchCommand extends Command
         ],
     ];
 
+    /** @var array<string, array{sku:string,item:list<string>,product:list<string>,search:bool,refresh:array<string,mixed>}> */
+    private const BATCH_EXACT_20261013_P = [
+        'УТ-00003848' => [
+            'sku' => 'PS-000.18707',
+            'item' => ['Модуль', 'Electrolux', 'ECH/WF-01', 'Smart', 'WI-FI'],
+            'product' => ['Модуль', 'Electrolux', 'ECH/WF-01', 'Smart', 'Wi-Fi'],
+            'search' => true,
+            'refresh' => [
+                'name' => 'Electrolux ECH/WF-01 Smart Wi-Fi съёмный управляющий модуль',
+                'retail' => 69.90,
+                'images' => ['img/products/teplodvor-restored/electrolux/modul-electrolux-echwf-01-smart-wi-fi.png'],
+                'source_url' => 'https://b2b.rusklimat.com/catalog/product/modul-syemnyy-upravlyayushchiy-electrolux-ech-wf-01-smart-wi-fi/',
+                'short' => 'Съёмный Wi-Fi-модуль Electrolux ECH/WF-01 для дистанционного управления совместимыми конвекторами и водонагревателями со смартфона.',
+                'content' => '<p><strong>Electrolux ECH/WF-01 Smart Wi-Fi</strong> — съёмный управляющий модуль, который подключается к совместимому конвектору или водонагревателю через разъём USB Type-A и позволяет управлять прибором со смартфона.</p><p>Модуль поддерживает Wi-Fi 802.11 a/b/g/n/ac и интеграцию с системой умного дома. Перед покупкой необходимо проверить совместимость ECH/WF-01 с конкретной моделью климатического оборудования Electrolux, Ballu или Zanussi.</p>',
+                'specs' => [
+                    ['key' => 'Тип', 'value' => 'Съёмный управляющий Wi-Fi-модуль'],
+                    ['key' => 'Модель', 'value' => 'ECH/WF-01'],
+                    ['key' => 'Код товара', 'value' => 'НС-1102748'],
+                    ['key' => 'Штрихкод', 'value' => '7312970301012'],
+                    ['key' => 'Назначение', 'value' => 'Дистанционное управление совместимым прибором со смартфона'],
+                    ['key' => 'Совместимые приборы', 'value' => 'Конвекторы и водонагреватели'],
+                    ['key' => 'Совместимые бренды', 'value' => 'Electrolux, Ballu, Zanussi'],
+                    ['key' => 'Интерфейс подключения', 'value' => 'USB Type-A'],
+                    ['key' => 'Стандарты Wi-Fi', 'value' => '802.11 a/b/g/n/ac'],
+                    ['key' => 'Рабочая температура', 'value' => 'от 0 до +50 °C'],
+                    ['key' => 'Габариты', 'value' => '70 × 24 × 14,5 мм'],
+                    ['key' => 'Масса нетто', 'value' => '0,05 кг'],
+                    ['key' => 'Масса брутто', 'value' => '0,07 кг'],
+                    ['key' => 'Материал корпуса', 'value' => 'Пластик'],
+                    ['key' => 'Цвет', 'value' => 'Белый'],
+                    ['key' => 'Срок службы', 'value' => '10 лет'],
+                    ['key' => 'Гарантия', 'value' => '12 месяцев'],
+                    ['key' => 'Страна производства', 'value' => 'Китай'],
+                ],
+            ],
+        ],
+    ];
+
     public function handle(IntegrationProductMatchDecision $decision): int
     {
         $rows = match ($this->option('batch')) {
@@ -309,6 +347,7 @@ class ResolveSbgAmbiguousBatchCommand extends Command
             'exact-20261013-m' => self::BATCH_EXACT_20261013_M,
             'exact-20261013-n' => self::BATCH_EXACT_20261013_N,
             'exact-20261013-o' => self::BATCH_EXACT_20261013_O,
+            'exact-20261013-p' => self::BATCH_EXACT_20261013_P,
             default => null,
         };
 
