@@ -3033,6 +3033,63 @@ class CreateSbgDistinctProductsBatchCommand extends Command
         ],
     ];
 
+    // Eurotis maps d20 to DN15 / 3/4″ (20.0 mm outside diameter). The 49 BYN retail
+    // stays within the independently observed 13.00–15.33 EUR per-metre market range.
+    private const BATCH_UNMATCHED_RESEARCHED_20261013_CR = [
+        'УТ-00000971' => [
+            'template_slug' => 'truba-eurotis-italiya-iz-nerzhaveyushhej-stali-34',
+            'link_existing_slug' => 'truba-eurotis-italiya-iz-nerzhaveyushhej-stali-34',
+            'refresh_existing' => true,
+            'allow_unmatched' => true,
+            'category_slug' => 'gofrirovanye-truby',
+            'refresh_category' => true,
+            'category' => [
+                'name' => 'Гофрированные трубы',
+                'slug' => 'gofrirovanye-truby',
+                'parent_slug' => 'truby-i-fitingi',
+                'h1' => 'Гофрированные трубы из нержавеющей стали',
+                'type' => 'catalog',
+                'sort_order' => 40,
+                'content' => '<p>Гофрированные трубы CSST из нержавеющей стали используют в системах водоснабжения, отопления и солнечных установках. При подборе сверяйте DN, наружный диаметр и тип фитингов.</p>',
+                'meta_title' => 'Гофрированные трубы из нержавеющей стали — купить в Беларуси | KOTLOV',
+                'meta_description' => 'Гофрированные трубы CSST из нержавеющей стали для воды и отопления: размеры, цены и доставка по Беларуси.',
+            ],
+            'external_sku' => 'SKAC20',
+            'hydrate_external_sku' => true,
+            'fragments' => ['Труба гофрированная', 'Eurotis', 'd20', 'SKAC20'],
+            'link_fragments' => ['EUROTIS', '3/4'],
+            'brand' => [
+                'name' => 'Eurotis',
+                'slug' => 'eurotis',
+                'country' => 'Италия',
+            ],
+            'name' => 'Eurotis TFA Труба гофрированная CSST AISI 304 Ø20 мм (DN15, 3/4″), 1 м',
+            'retail' => 49.00,
+            'images' => [
+                'product/005/005763/765-truba-gofra.jpg',
+            ],
+            'source_url' => 'https://eshop.metagas.sk/produkt/ostatny-instalacny-material-a-naradie/pripojne-hadice-voda-a-plyn/vlnovce/eurotis-trubka-3-4-tfa-50m-dn-15-1173226',
+            'short' => 'Гибкая гофрированная труба Eurotis TFA из нержавеющей стали AISI 304: DN15, наружный Ø20 мм, присоединение 3/4″. Цена указана за 1 метр.',
+            'content' => '<p><strong>Eurotis TFA DN15</strong> — формуемая гофрированная труба CSST из нержавеющей стали AISI 304 для систем водоснабжения, отопления и солнечных установок.</p><p>Обозначение d20 относится к наружному диаметру 20,0 мм; номинальный размер трубы — DN15, а присоединение — 3/4″. Гофрированная конструкция позволяет прокладывать трассу с меньшим числом соединений.</p><p>Труба продаётся погонными метрами. Для герметичного монтажа используйте совместимые фитинги и инструмент Eurotis для развальцовки.</p>',
+            'specs' => [
+                ['key' => 'Тип', 'value' => 'Гофрированная труба CSST'],
+                ['key' => 'Код поставщика', 'value' => 'SKAC20'],
+                ['key' => 'Серия', 'value' => 'TFA'],
+                ['key' => 'Номинальный диаметр', 'value' => 'DN15'],
+                ['key' => 'Присоединительный размер', 'value' => '3/4″'],
+                ['key' => 'Наружный диаметр', 'value' => '20,0 мм'],
+                ['key' => 'Внутренний диаметр', 'value' => '15,8 мм'],
+                ['key' => 'Толщина стали', 'value' => '0,3 мм'],
+                ['key' => 'Материал', 'value' => 'Нержавеющая сталь AISI 304'],
+                ['key' => 'Номинальное давление', 'value' => '15 бар'],
+                ['key' => 'Назначение', 'value' => 'Водоснабжение, отопление, солнечные системы'],
+                ['key' => 'Единица продажи', 'value' => '1 погонный метр'],
+                ['key' => 'Бренд', 'value' => 'Eurotis'],
+                ['key' => 'Страна производства', 'value' => 'Италия'],
+            ],
+        ],
+    ];
+
     public function handle(
         IntegrationProductCreator $creator,
         IntegrationProductMatchDecision $matchDecision,
@@ -3133,6 +3190,7 @@ class CreateSbgDistinctProductsBatchCommand extends Command
             'unmatched-researched-20261013-co' => self::BATCH_UNMATCHED_RESEARCHED_20261013_CO,
             'unmatched-researched-20261013-cp' => self::BATCH_UNMATCHED_RESEARCHED_20261013_CP,
             'unmatched-researched-20261013-cq' => self::BATCH_UNMATCHED_RESEARCHED_20261013_CQ,
+            'unmatched-researched-20261013-cr' => self::BATCH_UNMATCHED_RESEARCHED_20261013_CR,
             default => null,
         };
 
@@ -3308,6 +3366,10 @@ class CreateSbgDistinctProductsBatchCommand extends Command
                 if ($isExpectedExistingLink && ($rule['refresh_existing'] ?? false)) {
                     $stats['ready']++;
                     if ($apply) {
+                        if (isset($rule['brand']) && ! $this->findBrand($rule['brand'])) {
+                            $this->createBrand($rule['brand']);
+                            $stats['brands_created']++;
+                        }
                         $this->refreshExistingProduct($linkProduct, $rule, $portableImages);
                         $stats['refreshed']++;
                         $details[] = [$code, $linkProduct->sku, 'refreshed', Str::limit($linkProduct->name, 58)];
@@ -3408,6 +3470,11 @@ class CreateSbgDistinctProductsBatchCommand extends Command
                     $item->forceFill(['external_sku' => $rule['external_sku']])->save();
                 }
 
+                if (! $brand && $configuredBrand) {
+                    $brand = $this->createBrand($configuredBrand);
+                    $stats['brands_created']++;
+                }
+
                 if ($linkProduct) {
                     $linked = DB::transaction(function () use (
                         $item, $linkProduct, $rule, $portableImages, $category, $matchDecision
@@ -3437,11 +3504,6 @@ class CreateSbgDistinctProductsBatchCommand extends Command
                     $details[] = [$code, $linked->sku, 'linked', number_format($retail, 2, '.', '').' BYN · '.$linked->name];
 
                     continue;
-                }
-
-                if (! $brand && $configuredBrand) {
-                    $brand = $this->createBrand($configuredBrand);
-                    $stats['brands_created']++;
                 }
 
                 $product = $creator->createAndLink($item, [
@@ -3484,10 +3546,27 @@ class CreateSbgDistinctProductsBatchCommand extends Command
     private function refreshExistingProduct(Product $product, array $rule, array $portableImages): void
     {
         $name = (string) ($rule['name'] ?? $product->name);
+        $category = isset($rule['category_slug'])
+            ? Category::query()->where('slug', $rule['category_slug'])->first()
+            : null;
+        if ($category && ($rule['refresh_category'] ?? false) && isset($rule['category'])) {
+            $config = $rule['category'];
+            $parent = Category::query()->where('slug', $config['parent_slug'])->firstOrFail();
+            $category->forceFill([
+                'parent_id' => $parent->id,
+                'name' => $config['name'],
+                'h1' => $config['h1'] ?? $config['name'],
+                'type' => $config['type'] ?? 'main-child',
+                'sort_order' => $config['sort_order'] ?? 0,
+                'is_active' => true,
+                'content' => $config['content'] ?? null,
+                'meta_title' => $config['meta_title'] ?? null,
+                'meta_description' => $config['meta_description'] ?? null,
+            ])->save();
+        }
+
         $product->forceFill([
-            'category_id' => isset($rule['category_slug'])
-                ? Category::query()->where('slug', $rule['category_slug'])->value('id') ?? $product->category_id
-                : $product->category_id,
+            'category_id' => $category?->id ?? $product->category_id,
             'brand_id' => isset($rule['brand'])
                 ? $this->findBrand($rule['brand'])?->id ?? $product->brand_id
                 : $product->brand_id,

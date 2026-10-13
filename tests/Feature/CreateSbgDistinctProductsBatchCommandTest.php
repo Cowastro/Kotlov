@@ -7193,4 +7193,136 @@ class CreateSbgDistinctProductsBatchCommandTest extends TestCase
         $this->assertSame($product->id, $item->fresh()->product_id);
         $this->assertSame(1, Product::query()->where('name', $product->name)->count());
     }
+
+    public function test_it_links_and_refreshes_the_exact_unmatched_eurotis_skac20_pipe(): void
+    {
+        $source = IntegrationSource::query()->create([
+            'code' => 'onec-sbg-unmatched-eurotis-skac20',
+            'name' => '1С СанБизнесГруп',
+            'settings' => ['partner_name' => 'ООО «СанБизнесГруп»'],
+            'is_active' => true,
+            'update_stock' => true,
+        ]);
+        $pipes = Category::query()->create([
+            'name' => 'Трубы и фитинги',
+            'slug' => 'truby-i-fitingi',
+            'parent_id' => 0,
+            'is_active' => true,
+        ]);
+        $corrugated = Category::query()->create([
+            'name' => 'Гофрированные трубы',
+            'slug' => 'gofrirovanye-truby',
+            'parent_id' => $pipes->id,
+            'type' => 'catalog',
+            'is_active' => false,
+        ]);
+        $oldCategory = Category::query()->create([
+            'name' => 'Баки для воды',
+            'slug' => 'kupeli',
+            'parent_id' => 0,
+            'is_active' => true,
+        ]);
+        $product = Product::query()->create([
+            'category_id' => $oldCategory->id,
+            'brand_id' => null,
+            'sku' => 'PS-005.763',
+            'name' => 'Труба EUROTIS (Италия) из нержавеющей стали 3/4',
+            'slug' => 'truba-eurotis-italiya-iz-nerzhaveyushhej-stali-34',
+            'price' => 31,
+            'images' => [
+                'product/005/005763/765-truba-gofra.jpg',
+                'product/005/005763/962-nhef-ujahf.jpg',
+            ],
+            'short_description' => 'Старое описание.',
+            'content' => '<p>Старое описание.</p>',
+            'is_active' => true,
+            'is_archived' => false,
+        ]);
+        $item = IntegrationProduct::query()->create([
+            'integration_source_id' => $source->id,
+            'external_id' => 'bbd2cbd8-1f62-11e9-bad6-1c1b0d1de7c2',
+            'external_code' => 'УТ-00000971',
+            'external_sku' => null,
+            'name' => 'Труба гофрированная Eurotis d20 SKAC20',
+            'price' => 17.27,
+            'price_currency' => 'BYN',
+            'price_currency_rate' => 1,
+            'price_tax_mode' => IntegrationSource::PRICE_TAX_EXCLUSIVE,
+            'price_vat_rate' => 20,
+            'price_byn' => 20.72,
+            'stock_quantity' => 7,
+            'stock_confirmed_at' => now(),
+            'match_status' => 'unmatched',
+            'candidates' => null,
+        ]);
+        $productCount = Product::query()->count();
+
+        $this->artisan('integration:create-sbg-distinct-products', [
+            '--batch' => 'unmatched-researched-20261013-cr',
+            '--code' => ['УТ-00000971'],
+        ])->assertSuccessful();
+        $this->assertNull($item->fresh()->product_id);
+        $this->assertNull($item->fresh()->external_sku);
+        $this->assertFalse((bool) $corrugated->fresh()->is_active);
+        $this->assertSame('31.00', $product->fresh()->price);
+        $this->assertDatabaseMissing('brands', ['slug' => 'eurotis']);
+
+        $this->artisan('integration:create-sbg-distinct-products', [
+            '--batch' => 'unmatched-researched-20261013-cr',
+            '--code' => ['УТ-00000971'],
+            '--apply' => true,
+        ])->assertSuccessful();
+
+        $item->refresh();
+        $product->refresh();
+        $corrugated->refresh();
+        $brand = Brand::query()->where('slug', 'eurotis')->sole();
+        $this->assertSame($productCount, Product::query()->count());
+        $this->assertSame($product->id, $item->product_id);
+        $this->assertSame('SKAC20', $item->external_sku);
+        $this->assertSame('matched', $item->match_status);
+        $this->assertSame('manual_search', $item->match_method);
+        $this->assertSame($corrugated->id, $item->target_category_id);
+        $this->assertNull($item->candidates);
+        $this->assertTrue((bool) $corrugated->is_active);
+        $this->assertSame($pipes->id, $corrugated->parent_id);
+        $this->assertSame('Гофрированные трубы из нержавеющей стали', $corrugated->h1);
+        $this->assertStringContainsString('CSST', $corrugated->content);
+        $this->assertSame('Eurotis TFA Труба гофрированная CSST AISI 304 Ø20 мм (DN15, 3/4″), 1 м', $product->name);
+        $this->assertSame('49.00', $product->price);
+        $this->assertSame('7', (string) $product->stock_qty);
+        $this->assertTrue((bool) $product->in_stock);
+        $this->assertSame($brand->id, $product->brand_id);
+        $this->assertSame('Италия', $brand->country);
+        $this->assertTrue((bool) $brand->is_active);
+        $this->assertSame($corrugated->id, $product->category_id);
+        $this->assertSame('DN15', collect($product->specs)->firstWhere('key', 'Номинальный диаметр')['value']);
+        $this->assertSame('20,0 мм', collect($product->specs)->firstWhere('key', 'Наружный диаметр')['value']);
+        $this->assertSame('3/4″', collect($product->specs)->firstWhere('key', 'Присоединительный размер')['value']);
+        $this->assertSame([
+            'product/005/005763/765-truba-gofra.jpg',
+        ], $product->images);
+        $this->assertStringContainsString('metagas.sk', $product->content_source_url);
+        $this->assertStringContainsString('d20 относится к наружному диаметру', $product->content);
+        $this->assertStringNotContainsString('рыночная цена', mb_strtolower($product->content));
+        $this->assertStringNotContainsString('byn', mb_strtolower($product->content));
+        $this->assertDatabaseHas('supplier_product_mappings', [
+            'supplier_code' => $source->matchingSupplierCode(),
+            'supplier_article' => 'SKAC20',
+            'product_id' => $product->id,
+            'product_sku' => 'PS-005.763',
+            'confidence' => 'manual',
+            'is_active' => true,
+        ]);
+
+        $this->artisan('integration:create-sbg-distinct-products', [
+            '--batch' => 'unmatched-researched-20261013-cr',
+            '--code' => ['УТ-00000971'],
+            '--apply' => true,
+        ])->assertSuccessful();
+        $this->assertSame($productCount, Product::query()->count());
+        $this->assertSame(1, Brand::query()->where('slug', 'eurotis')->count());
+        $this->assertSame($product->id, $item->fresh()->product_id);
+        $this->assertTrue((bool) $corrugated->fresh()->is_active);
+    }
 }
