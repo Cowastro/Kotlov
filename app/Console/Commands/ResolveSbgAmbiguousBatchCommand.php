@@ -173,6 +173,40 @@ class ResolveSbgAmbiguousBatchCommand extends Command
         ],
     ];
 
+    /** @var array<string, array{sku:string,item:list<string>,product:list<string>,search:bool,refresh:array<string,mixed>}> */
+    private const BATCH_EXACT_20261013_L = [
+        'УТ-00007818' => [
+            'sku' => 'PS-011.849',
+            'item' => ['КПД', 'Труба', '250мм', '2мм', 'ф150'],
+            'product' => ['КПД', 'Труба', '250мм', '2мм', 'ф150'],
+            'search' => true,
+            'refresh' => [
+                'name' => 'КПД Труба дымоходная 250 мм, Ø150, сталь 2 мм, чёрная',
+                'retail' => 42.70,
+                'images' => ['img/products/generated/kpd-black-pipe-l250-d150-2mm.png'],
+                'source_url' => 'https://x-kamin.ru/catalog/dymokhody/dymokhody-iz-nerzhaveyushchey-stali/odnokonturnye-dymokhody/truba-250-mm-d150-tolshchina-2-mm-kpd.html',
+                'short' => 'Одностенная дымоходная труба КПД длиной 250 мм и диаметром 150 мм из котловой стали 08ПС толщиной 2 мм, окрашенная термостойкой чёрной эмалью.',
+                'content' => '<p><strong>КПД Труба 250 мм Ø150</strong> — короткий прямой элемент одностенного дымохода для подключения дровяных печей и каминов.</p><p>Труба изготовлена из российской котловой стали 08ПС толщиной 2 мм и покрыта чёрной термостойкой эмалью, рассчитанной на температуру до 800 °C. Элемент предназначен для монтажа внутри помещений и не имеет теплоизоляции.</p>',
+                'specs' => [
+                    ['key' => 'Тип', 'value' => 'Труба дымоходная одностенная'],
+                    ['key' => 'Длина', 'value' => '250 мм'],
+                    ['key' => 'Диаметр', 'value' => '150 мм'],
+                    ['key' => 'Материал', 'value' => 'Котловая сталь'],
+                    ['key' => 'Марка стали', 'value' => '08ПС'],
+                    ['key' => 'Толщина стали', 'value' => '2 мм'],
+                    ['key' => 'Покрытие', 'value' => 'Термостойкая эмаль'],
+                    ['key' => 'Цвет', 'value' => 'Чёрный'],
+                    ['key' => 'Рабочая температура покрытия', 'value' => 'до 800 °C'],
+                    ['key' => 'Изоляция', 'value' => 'Нет'],
+                    ['key' => 'Вид топлива', 'value' => 'Дрова'],
+                    ['key' => 'Масса', 'value' => '2 кг'],
+                    ['key' => 'Гарантия производителя', 'value' => '2 года'],
+                    ['key' => 'Страна производства', 'value' => 'Россия'],
+                ],
+            ],
+        ],
+    ];
+
     public function handle(IntegrationProductMatchDecision $decision): int
     {
         $rows = match ($this->option('batch')) {
@@ -187,6 +221,7 @@ class ResolveSbgAmbiguousBatchCommand extends Command
             'exact-20261013-i' => self::BATCH_EXACT_20261013_I,
             'exact-20261013-j' => self::BATCH_EXACT_20261013_J,
             'exact-20261013-k' => self::BATCH_EXACT_20261013_K,
+            'exact-20261013-l' => self::BATCH_EXACT_20261013_L,
             default => null,
         };
 
@@ -202,7 +237,7 @@ class ResolveSbgAmbiguousBatchCommand extends Command
         }
 
         $apply = (bool) $this->option('apply');
-        $stats = array_fill_keys(['configured', 'ready', 'applied', 'already', 'missing_item', 'missing_product', 'wrong_source', 'unsafe_name', 'not_candidate', 'conflict'], 0);
+        $stats = array_fill_keys(['configured', 'ready', 'applied', 'refreshed', 'already', 'missing_item', 'missing_product', 'wrong_source', 'unsafe_name', 'unsafe_refresh', 'not_candidate', 'conflict'], 0);
         $stats['configured'] = count($rows);
         $details = [];
 
@@ -234,6 +269,19 @@ class ResolveSbgAmbiguousBatchCommand extends Command
             if (! $this->containsAll($item->name, $rule['item']) || ! $this->containsAll($product->name, $rule['product'])) {
                 $stats['unsafe_name']++;
                 $details[] = [$code, $rule['sku'], 'blocked', 'identity guard no longer matches'];
+
+                continue;
+            }
+
+            $refresh = $rule['refresh'] ?? null;
+            if ($refresh !== null && (! is_numeric($refresh['retail'] ?? null)
+                || (float) $refresh['retail'] <= 0
+                || ! is_array($refresh['images'] ?? null)
+                || $refresh['images'] === []
+                || collect($refresh['images'])->contains(fn ($image): bool => ! is_string($image)
+                    || str_contains(mb_strtolower($image), 'pechki66.ru')))) {
+                $stats['unsafe_refresh']++;
+                $details[] = [$code, $rule['sku'], 'blocked', 'public card refresh guard failed'];
 
                 continue;
             }
@@ -276,9 +324,25 @@ class ResolveSbgAmbiguousBatchCommand extends Command
 
                     continue;
                 }
+                if ($refresh !== null) {
+                    $name = (string) ($refresh['name'] ?? $product->name);
+                    $product->forceFill([
+                        'name' => $name,
+                        'h1' => $name,
+                        'price' => (float) $refresh['retail'],
+                        'short_description' => $refresh['short'] ?? $product->short_description,
+                        'content' => $refresh['content'] ?? $product->content,
+                        'images' => $refresh['images'],
+                        'specs' => $refresh['specs'] ?? $product->specs,
+                        'content_source_url' => $refresh['source_url'] ?? $product->content_source_url,
+                        'meta_title' => Str::limit($name.' — купить в Беларуси | KOTLOV', 255, ''),
+                        'meta_description' => Str::limit('Купить '.$name.' в KOTLOV. Характеристики, актуальная цена и наличие, доставка по Беларуси.', 255, ''),
+                    ])->save();
+                    $stats['refreshed']++;
+                }
                 $stats['applied']++;
             }
-            $details[] = [$code, $rule['sku'], $apply ? 'linked' : 'ready', Str::limit($product->name, 64)];
+            $details[] = [$code, $rule['sku'], $apply ? ($refresh !== null ? 'linked + refreshed' : 'linked') : 'ready', Str::limit($product->name, 64)];
         }
 
         $this->line($apply ? 'APPLY: verified links were persisted.' : 'DRY RUN: no database changes.');
@@ -286,7 +350,7 @@ class ResolveSbgAmbiguousBatchCommand extends Command
         $this->table(['metric', 'count'], collect($stats)->map(fn ($count, $metric) => [$metric, $count])->values()->all());
 
         $blocked = $stats['missing_item'] + $stats['missing_product'] + $stats['wrong_source']
-            + $stats['unsafe_name'] + $stats['not_candidate'] + $stats['conflict'];
+            + $stats['unsafe_name'] + $stats['unsafe_refresh'] + $stats['not_candidate'] + $stats['conflict'];
 
         return $blocked === 0 ? self::SUCCESS : self::FAILURE;
     }

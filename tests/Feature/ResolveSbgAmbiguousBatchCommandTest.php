@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\Brand;
 use App\Models\Category;
 use App\Models\IntegrationProduct;
 use App\Models\IntegrationSource;
@@ -524,6 +525,79 @@ class ResolveSbgAmbiguousBatchCommandTest extends TestCase
         $this->assertSame('manual_candidate', $item->match_method);
         $this->assertDatabaseHas('supplier_product_mappings', [
             'supplier_article' => 'УТ-00009655',
+            'product_id' => $product->id,
+            'confidence' => 'manual',
+        ]);
+    }
+
+    public function test_it_links_and_refreshes_the_exact_kpd_black_l250_d150_pipe(): void
+    {
+        $source = IntegrationSource::query()->create([
+            'code' => 'onec-sbg-kpd-black-l250-d150',
+            'name' => '1С СанБизнесГруп',
+            'settings' => ['partner_name' => 'ООО «СанБизнесГруп»'],
+            'is_active' => true,
+            'update_stock' => true,
+        ]);
+        $category = Category::query()->create([
+            'name' => 'Трубы одностенные',
+            'slug' => 'truby-mono-kpd-black-test',
+            'parent_id' => 0,
+        ]);
+        $brand = Brand::query()->create(['name' => 'КПД', 'slug' => 'kpd-black-pipe-test']);
+        $product = Product::query()->create([
+            'category_id' => $category->id,
+            'brand_id' => $brand->id,
+            'sku' => 'PS-011.849',
+            'name' => 'КПД ЧЕРНЫЙ Труба 250мм 2мм ф150',
+            'slug' => 'truba-kpd-250-mm-stal-2-mm-test',
+            'price' => 42,
+            'in_stock' => false,
+            'stock_qty' => null,
+            'images' => ['legacy/kpd-watermarked.jpg'],
+        ]);
+        $wrongCandidate = Product::query()->create([
+            'category_id' => $category->id,
+            'brand_id' => $brand->id,
+            'sku' => 'KOTLOV-022439',
+            'name' => 'КПД КПД ЧЕРНЫЙ Шибер 250мм 2мм ф150',
+            'slug' => 'kpd-black-d150-damper-wrong-candidate',
+        ]);
+        $item = IntegrationProduct::query()->create([
+            'integration_source_id' => $source->id,
+            'external_id' => 'kpd-black-pipe-l250-d150',
+            'external_code' => 'УТ-00007818',
+            'name' => 'КПД Труба ЧЁРНАЯ 250мм 2мм ф150',
+            'price_byn' => null,
+            'stock_quantity' => 2,
+            'match_status' => 'ambiguous',
+            'candidates' => [['product_id' => $wrongCandidate->id, 'score' => 0.7477]],
+        ]);
+
+        $this->artisan('integration:resolve-sbg-ambiguous', [
+            '--batch' => 'exact-20261013-l',
+            '--code' => ['УТ-00007818'],
+            '--apply' => true,
+        ])->assertSuccessful();
+
+        $item->refresh();
+        $product->refresh();
+        $this->assertSame($product->id, $item->product_id);
+        $this->assertSame('matched', $item->match_status);
+        $this->assertSame('manual_search', $item->match_method);
+        $this->assertSame('КПД Труба дымоходная 250 мм, Ø150, сталь 2 мм, чёрная', $product->name);
+        $this->assertSame('42.70', $product->price);
+        $this->assertTrue($product->in_stock);
+        $this->assertSame('2', (string) $product->stock_qty);
+        $this->assertSame(['img/products/generated/kpd-black-pipe-l250-d150-2mm.png'], $product->images);
+        $this->assertSame('08ПС', collect($product->specs)->firstWhere('key', 'Марка стали')['value']);
+        $this->assertStringContainsString('x-kamin.ru', $product->content_source_url);
+        $this->assertStringNotContainsString('кандидат', mb_strtolower($product->content));
+        $this->assertStringNotContainsString('нельзя объединять', mb_strtolower($product->content));
+        $this->assertStringNotContainsString('розничная цена', mb_strtolower($product->content));
+        $this->assertStringNotContainsString('rub', mb_strtolower($product->content));
+        $this->assertDatabaseHas('supplier_product_mappings', [
+            'supplier_article' => 'УТ-00007818',
             'product_id' => $product->id,
             'confidence' => 'manual',
         ]);
