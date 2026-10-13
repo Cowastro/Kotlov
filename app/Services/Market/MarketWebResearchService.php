@@ -116,6 +116,18 @@ class MarketWebResearchService
                     }
 
                     $result = $this->normalize($response->json(), $product, $quotePrice, $model);
+                    if ($safeMode && ($result['status'] ?? null) !== 'ready') {
+                        $repairResponse = $this->repairDeepSeekResponse($response->json(), $provider, $model);
+                        if ($repairResponse !== null) {
+                            $result = $this->normalize(
+                                $repairResponse,
+                                $product,
+                                $quotePrice,
+                                $model,
+                                $response->json()
+                            );
+                        }
+                    }
                     if (($result['status'] ?? null) === 'ready') {
                         Cache::put(
                             $cacheKey,
@@ -314,16 +326,61 @@ PROMPT;
     }
 
     /** @param array<string, mixed> $response
+     * @param array{name: string, label: string, api_key: string, responses_url: string, model: string} $provider
+     * @return array<string, mixed>|null
+     */
+    private function repairDeepSeekResponse(array $response, array $provider, string $model): ?array
+    {
+        $text = trim($this->outputText($response));
+        if ($text === '') {
+            return null;
+        }
+
+        $sources = collect($this->webSources($response))
+            ->map(fn (array $source): string => trim((string) $source['title']).' — '.(string) $source['url'])
+            ->implode("\n");
+
+        try {
+            $repair = Http::acceptJson()
+                ->timeout(min(60, (int) config('services.ai.openai_research_timeout', 180)))
+                ->withHeaders([
+                    'x-api-key' => $provider['api_key'],
+                    'anthropic-version' => '2023-06-01',
+                ])
+                ->post($provider['responses_url'], [
+                    'model' => $model,
+                    'max_tokens' => 2000,
+                    'system' => 'Преобразуй исходный отчёт в JSON. Не выполняй новый поиск, не добавляй факты, цены или ссылки. '.$this->deepSeekJsonContract(),
+                    'messages' => [[
+                        'role' => 'user',
+                        'content' => "Исходный отчёт:\n".$text."\n\nПодтверждённые источники:\n".($sources ?: 'нет'),
+                    ]],
+                ]);
+
+            return $repair->successful() ? $repair->json() : null;
+        } catch (Throwable) {
+            return null;
+        }
+    }
+
+    /** @param array<string, mixed> $response
+     * @param array<string, mixed>|null $sourceResponse
      * @return array<string, mixed>
      */
-    private function normalize(array $response, Product $product, float $quotePrice, string $model): array
+    private function normalize(
+        array $response,
+        Product $product,
+        float $quotePrice,
+        string $model,
+        ?array $sourceResponse = null
+    ): array
     {
-        $decoded = json_decode($this->outputText($response), true);
+        $decoded = $this->decodeStructuredReport($this->outputText($response));
         if (! is_array($decoded)) {
             return $this->failure('Поиск завершился, но модель не вернула структурированный отчёт.');
         }
 
-        $sources = $this->webSources($response);
+        $sources = $this->webSources($sourceResponse ?? $response);
         $sourceIndex = collect($sources)->keyBy(fn (array $source): string => $this->normalizeUrl((string) $source['url']));
         $offers = collect($decoded['offers'] ?? [])
             ->filter(fn ($offer): bool => is_array($offer) && trim((string) ($offer['url'] ?? '')) !== '')
@@ -386,6 +443,31 @@ PROMPT;
             'model' => $model,
             'searched_at' => now(),
         ];
+    }
+
+    /** @return array<string, mixed>|null */
+    private function decodeStructuredReport(string $text): ?array
+    {
+        $text = trim($text);
+        $decoded = json_decode($text, true);
+        if (is_array($decoded)) {
+            return $decoded;
+        }
+
+        if (preg_match('/```(?:json)?\s*(\{[\s\S]*\})\s*```/iu', $text, $matches) === 1) {
+            $decoded = json_decode(trim($matches[1]), true);
+            if (is_array($decoded)) {
+                return $decoded;
+            }
+        }
+
+        $start = strpos($text, '{');
+        $end = strrpos($text, '}');
+        if ($start !== false && $end !== false && $end > $start) {
+            $decoded = json_decode(substr($text, $start, $end - $start + 1), true);
+        }
+
+        return is_array($decoded) ? $decoded : null;
     }
 
     /** @param array<string, mixed> $response */

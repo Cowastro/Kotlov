@@ -331,6 +331,64 @@ class MarketWebResearchServiceTest extends TestCase
         });
     }
 
+    public function test_safe_mode_repairs_unstructured_flash_response_without_another_web_search(): void
+    {
+        config()->set([
+            'services.ai.market_research_provider' => 'deepseek',
+            'services.ai.api_key' => 'deepseek-secret-key',
+            'services.ai.deepseek_anthropic_url' => 'https://api.deepseek.test/anthropic/v1/messages',
+            'services.ai.deepseek_research_model' => 'deepseek-v4-pro',
+            'services.ai.deepseek_research_fallback_model' => 'deepseek-flash',
+            'services.ai.market_research_safe_mode' => true,
+        ]);
+
+        $report = [
+            'summary' => 'Найдено предложение.',
+            'verdict' => 'Проверить цену.',
+            'confidence' => 'low',
+            'search_queries' => ['TEST-REPAIR'],
+            'offers' => [$this->offer('Магазин', 'https://seller.by/product', 120)],
+            'rejected_candidates' => [],
+        ];
+
+        Http::fakeSequence('https://api.deepseek.test/anthropic/v1/messages')
+            ->push([
+                'content' => [
+                    [
+                        'type' => 'web_search_tool_result',
+                        'content' => [[
+                            'type' => 'web_search_result',
+                            'title' => 'Карточка товара',
+                            'url' => 'https://seller.by/product',
+                        ]],
+                    ],
+                    ['type' => 'text', 'text' => 'Нашёл предложение, но отвечаю обычным текстом.'],
+                ],
+            ])
+            ->push([
+                'content' => [[
+                    'type' => 'text',
+                    'text' => json_encode($report, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
+                ]],
+            ]);
+
+        $result = app(MarketWebResearchService::class)->research(new Product([
+            'name' => 'Безопасное исправление',
+            'sku' => 'TEST-REPAIR',
+        ]), 100);
+
+        $this->assertSame('ready', $result['status']);
+        $this->assertSame('deepseek-flash', $result['model']);
+        $this->assertCount(1, $result['offers']);
+        Http::assertSentCount(2);
+
+        $requests = Http::recorded();
+        $repairPayload = $requests[1][0]->data();
+        $this->assertSame('deepseek-flash', $repairPayload['model']);
+        $this->assertSame(2000, $repairPayload['max_tokens']);
+        $this->assertArrayNotHasKey('tools', $repairPayload);
+    }
+
     /** @return array<string, mixed> */
     private function offer(string $seller, string $url, float $price): array
     {
