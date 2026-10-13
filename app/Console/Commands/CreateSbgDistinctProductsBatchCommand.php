@@ -2448,6 +2448,39 @@ class CreateSbgDistinctProductsBatchCommand extends Command
         ],
     ];
 
+    private const BATCH_UNMATCHED_RESEARCHED_20261013_CA = [
+        'УТ-00001147' => [
+            'template_slug' => 'taim-slang-gazovyi-rezinovyi-12-10-m-stucer-gaika',
+            'allow_unmatched' => true,
+            'category_slug' => 'gibkaya-podvodka-dlya-vody',
+            'fragments' => ['Шланг водопроводный гибкий', 'ШВГ-ШК М10х1-0,8-Г1/2'],
+            'brand' => [
+                'name' => 'Тифлос',
+                'slug' => 'tiflos',
+                'country' => 'Беларусь',
+            ],
+            'name' => 'Тифлос Шланг водопроводный гибкий М10×1–G1/2″, 0,8 м',
+            'retail' => 4.50,
+            'images' => [
+                'img/products/tiflos/tiflos-water-hose-m10-g12-1000-1.jpg',
+            ],
+            'source_url' => 'https://catalog.onliner.by/tube_fitting/tiflos/1010812',
+            'short' => 'Гибкая подводка Тифлос длиной 0,8 м для подключения смесителя: штуцер M10×1 и накидная гайка G1/2″.',
+            'content' => '<p><strong>Тифлос ШВГ-ШК, 0,8 м</strong> — гибкая водопроводная подводка в оплётке из нержавеющей стали для присоединения смесителя к системе холодного или горячего водоснабжения.</p><p>На одном конце установлен штуцер M10×1 для корпуса смесителя, на другом — накидная гайка с внутренней трубной резьбой G1/2″. Длина подводки составляет 800 мм.</p>',
+            'specs' => [
+                ['key' => 'Тип', 'value' => 'Гибкая подводка для воды'],
+                ['key' => 'Модель', 'value' => 'ШВГ-ШК М10×1-0,8-G1/2'],
+                ['key' => 'Размер присоединения', 'value' => 'M10×1 НР × G1/2″ ВР'],
+                ['key' => 'Тип соединения', 'value' => 'Штуцер для смесителя/гайка'],
+                ['key' => 'Длина', 'value' => '800 мм'],
+                ['key' => 'Материал оплётки', 'value' => 'Нержавеющая сталь'],
+                ['key' => 'Назначение', 'value' => 'Подключение смесителя к водопроводу'],
+                ['key' => 'Страна производства', 'value' => 'Беларусь'],
+                ['key' => 'Бренд', 'value' => 'Тифлос'],
+            ],
+        ],
+    ];
+
     public function handle(
         IntegrationProductCreator $creator,
         IntegrationProductMatchDecision $matchDecision,
@@ -2531,6 +2564,7 @@ class CreateSbgDistinctProductsBatchCommand extends Command
             'unmatched-researched-20261013-bx' => self::BATCH_UNMATCHED_RESEARCHED_20261013_BX,
             'unmatched-researched-20261013-by' => self::BATCH_UNMATCHED_RESEARCHED_20261013_BY,
             'unmatched-researched-20261013-bz' => self::BATCH_UNMATCHED_RESEARCHED_20261013_BZ,
+            'unmatched-researched-20261013-ca' => self::BATCH_UNMATCHED_RESEARCHED_20261013_CA,
             default => null,
         };
 
