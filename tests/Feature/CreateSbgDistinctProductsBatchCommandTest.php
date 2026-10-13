@@ -2875,4 +2875,72 @@ class CreateSbgDistinctProductsBatchCommandTest extends TestCase
         $this->assertStringNotContainsString('грн', mb_strtolower($product->content));
         $this->assertSame('manual_created', $item->fresh()->match_method);
     }
+
+    public function test_it_creates_the_exact_engel_radiator_instead_of_linking_archived_lemax(): void
+    {
+        $source = IntegrationSource::query()->create([
+            'code' => 'onec-sbg-engel-22-500x500',
+            'name' => '1С СанБизнесГруп',
+            'settings' => ['partner_name' => 'ООО «СанБизнесГруп»'],
+            'is_active' => true,
+            'update_stock' => true,
+        ]);
+        $category = Category::query()->firstOrCreate(['slug' => 'radiatory'], [
+            'name' => 'Радиаторы',
+            'parent_id' => 0,
+        ]);
+        $lemax = Brand::query()->firstOrCreate(['slug' => 'lemax'], ['name' => 'LEMAX']);
+        $wrongArchivedLemaxCandidate = Product::query()->create([
+            'category_id' => $category->id,
+            'brand_id' => $lemax->id,
+            'sku' => 'PS-008.317',
+            'name' => 'Радиатор стальной LEMAX Compact 22 500х500 (боковое)',
+            'slug' => 'lemax-compact-22-500x500-archived-template',
+            'price' => 190,
+            'images' => ['product/008/008317/lemax-compact.png'],
+            'is_active' => false,
+        ]);
+        $item = IntegrationProduct::query()->create([
+            'integration_source_id' => $source->id,
+            'external_id' => 'engel-22-500x500-side',
+            'external_code' => 'УТ-00003377',
+            'external_sku' => null,
+            'name' => 'Радиатор стальной панельный ENGEL (22) 500x500 бок',
+            'price_byn' => null,
+            'stock_quantity' => 1,
+            'match_status' => 'ambiguous',
+            'candidates' => [['product_id' => $wrongArchivedLemaxCandidate->id, 'score' => 0.69]],
+        ]);
+
+        $this->artisan('integration:create-sbg-distinct-products', [
+            '--batch' => 'researched-priced-20261013-aw',
+            '--code' => ['УТ-00003377'],
+            '--apply' => true,
+        ])->assertSuccessful();
+
+        $product = $item->fresh()->product;
+        $this->assertNotNull($product);
+        $this->assertNotSame($wrongArchivedLemaxCandidate->id, $product->id);
+        $this->assertSame($category->id, $product->category_id);
+        $this->assertSame('ENGEL', $product->brand->name);
+        $this->assertSame('ENGEL тип 22 500×500 стальной панельный радиатор, боковое подключение', $product->name);
+        $this->assertSame('189.90', $product->price);
+        $this->assertSame('1', (string) $product->stock_qty);
+        $this->assertTrue((bool) $product->is_active);
+        $this->assertNull($item->fresh()->normalizedPriceByn());
+        $this->assertSame('22', collect($product->specs)->firstWhere('key', 'Тип панели')['value']);
+        $this->assertSame('Боковое', collect($product->specs)->firstWhere('key', 'Подключение')['value']);
+        $this->assertSame('904 Вт', collect($product->specs)->firstWhere('key', 'Тепловая мощность при ΔT50')['value']);
+        $this->assertSame('8 бар', collect($product->specs)->firstWhere('key', 'Рабочее давление')['value']);
+        $this->assertSame(['img/products/generated/engel-type-22-500x500-side-radiator.png'], $product->images);
+        $this->assertFileExists(public_path('img/products/generated/engel-type-22-500x500-side-radiator.png'));
+        $this->assertStringContainsString('rozetka.com.ua', $product->content_source_url);
+        $this->assertStringNotContainsString('LEMAX', $product->content);
+        $this->assertStringNotContainsString('кандидат', mb_strtolower($product->content));
+        $this->assertStringNotContainsString('розничная цена', mb_strtolower($product->content));
+        $this->assertStringNotContainsString('нбрб', mb_strtolower($product->content));
+        $this->assertStringNotContainsString('uah', mb_strtolower($product->content));
+        $this->assertStringNotContainsString('грн', mb_strtolower($product->content));
+        $this->assertSame('manual_created', $item->fresh()->match_method);
+    }
 }

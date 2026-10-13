@@ -1518,6 +1518,43 @@ class CreateSbgDistinctProductsBatchCommand extends Command
         ],
     ];
 
+    private const BATCH_RESEARCHED_PRICED_20261013_AW = [
+        'УТ-00003377' => [
+            'template' => 'PS-008.317',
+            'category_slug' => 'radiatory',
+            'fragments' => ['Радиатор', 'ENGEL', '(22)', '500x500', 'бок'],
+            'brand' => [
+                'name' => 'ENGEL',
+                'slug' => 'engel',
+                'country' => 'Украина',
+                'content' => '<p><strong>ENGEL</strong> — марка стальных панельных радиаторов украинского производства для систем водяного отопления.</p>',
+            ],
+            'name' => 'ENGEL тип 22 500×500 стальной панельный радиатор, боковое подключение',
+            'retail' => 189.90,
+            'images' => ['img/products/generated/engel-type-22-500x500-side-radiator.png'],
+            'source_url' => 'https://build.rozetka.com.ua/480731279/p480731279/',
+            'short' => 'Стальной панельный радиатор ENGEL тип 22 размером 500×500 мм с боковым подключением и теплоотдачей 904 Вт при ΔT50.',
+            'content' => '<p><strong>ENGEL тип 22 500×500</strong> — компактный стальной панельный радиатор с двумя нагревательными панелями и двумя рядами конвекционного оребрения. Боковое подключение подходит для классической разводки системы отопления.</p><p>Радиатор рассчитан на установку в закрытых системах водяного отопления. Тепловая мощность составляет 904 Вт при ΔT50, рабочее давление — до 8 бар, максимальная температура теплоносителя — 100 °C.</p>',
+            'specs' => [
+                ['key' => 'Тип', 'value' => 'Стальной панельный радиатор'],
+                ['key' => 'Тип панели', 'value' => '22'],
+                ['key' => 'Количество панелей', 'value' => '2'],
+                ['key' => 'Количество рядов оребрения', 'value' => '2'],
+                ['key' => 'Подключение', 'value' => 'Боковое'],
+                ['key' => 'Высота', 'value' => '500 мм'],
+                ['key' => 'Ширина', 'value' => '500 мм'],
+                ['key' => 'Глубина', 'value' => '100 мм'],
+                ['key' => 'Тепловая мощность при ΔT50', 'value' => '904 Вт'],
+                ['key' => 'Рабочее давление', 'value' => '8 бар'],
+                ['key' => 'Максимальная температура теплоносителя', 'value' => '100 °C'],
+                ['key' => 'Масса', 'value' => '12,5 кг'],
+                ['key' => 'Материал', 'value' => 'Сталь'],
+                ['key' => 'Цвет', 'value' => 'Белый'],
+                ['key' => 'Страна производства', 'value' => 'Украина'],
+            ],
+        ],
+    ];
+
     public function handle(IntegrationProductCreator $creator): int
     {
         $rows = match ($this->option('batch')) {
@@ -1569,6 +1606,7 @@ class CreateSbgDistinctProductsBatchCommand extends Command
             'researched-priced-20261013-at' => self::BATCH_RESEARCHED_PRICED_20261013_AT,
             'researched-priced-20261013-au' => self::BATCH_RESEARCHED_PRICED_20261013_AU,
             'researched-priced-20261013-av' => self::BATCH_RESEARCHED_PRICED_20261013_AV,
+            'researched-priced-20261013-aw' => self::BATCH_RESEARCHED_PRICED_20261013_AW,
             default => null,
         };
 
