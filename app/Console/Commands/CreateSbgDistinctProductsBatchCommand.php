@@ -3377,6 +3377,43 @@ class CreateSbgDistinctProductsBatchCommand extends Command
         ],
     ];
 
+    // GEMA lists the exact PLUM ecoTOUCH panel for ecoMAX 850i 4 (PT890) at
+    // 168 EUR. At the official NBRB rate of 3.3652 BYN/EUR on 2026-10-14 this
+    // is 565.35 BYN, rounded to 565 BYN retail.
+    private const BATCH_UNMATCHED_RESEARCHED_20261014_DA = [
+        'УТ-00000624' => [
+            'template_slug' => 'kontroller-salus-pc11',
+            'allow_unmatched' => true,
+            'category_slug' => 'regulyatory',
+            'fragments' => ['Панель сенсорная', 'ecoTOUCH', '850i 4', 'винт.соед.'],
+            'brand' => [
+                'name' => 'PLUM',
+                'slug' => 'plum',
+                'country' => 'Польша',
+                'content' => '<p><strong>PLUM</strong> — польский производитель электронных регуляторов и автоматики для систем отопления.</p>',
+            ],
+            'name' => 'PLUM ecoTOUCH Сенсорная панель для ecoMAX 850i 4, винтовое подключение',
+            'retail' => 565.00,
+            'images' => [
+                'img/products/plum/ecotouch-850i-4-front.webp',
+                'img/products/plum/ecotouch-850i-4-screw-terminal.webp',
+            ],
+            'source_url' => 'https://gemashop.de/products/plum-ecotouch-raumthermostat-zur-erweiterung-gc890',
+            'short' => 'Сенсорная панель PLUM ecoTOUCH для регулятора ecoMAX 850i 4 с винтовым клеммным подключением.',
+            'content' => '<p><strong>PLUM ecoTOUCH</strong> — дополнительная сенсорная панель для системы управления ecoMAX 850i 4. Панель отображает параметры отопления, работает как комнатный датчик и термостат.</p><p>Эта модификация имеет винтовой клеммный разъём. Перед заказом сверьте модель регулятора, версию панели и тип разъёма.</p>',
+            'specs' => [
+                ['key' => 'Тип', 'value' => 'Сенсорная панель управления'],
+                ['key' => 'Модель', 'value' => 'ecoTOUCH'],
+                ['key' => 'Совместимость', 'value' => 'PLUM ecoMAX 850i 4'],
+                ['key' => 'Тип подключения', 'value' => 'Винтовой клеммный разъём'],
+                ['key' => 'Функции', 'value' => 'Управление, комнатный датчик, термостат'],
+                ['key' => 'Вес', 'value' => '0,4 кг'],
+                ['key' => 'Бренд', 'value' => 'PLUM'],
+                ['key' => 'Страна бренда', 'value' => 'Польша'],
+            ],
+        ],
+    ];
+
     public function handle(
         IntegrationProductCreator $creator,
         IntegrationProductMatchDecision $matchDecision,
@@ -3486,6 +3523,7 @@ class CreateSbgDistinctProductsBatchCommand extends Command
             'unmatched-disputed-20261014-cx' => self::BATCH_UNMATCHED_DISPUTED_20261014_CX,
             'unmatched-researched-20261014-cy' => self::BATCH_UNMATCHED_RESEARCHED_20261014_CY,
             'unmatched-researched-20261014-cz' => self::BATCH_UNMATCHED_RESEARCHED_20261014_CZ,
+            'unmatched-researched-20261014-da' => self::BATCH_UNMATCHED_RESEARCHED_20261014_DA,
             default => null,
         };
 
