@@ -218,7 +218,7 @@ jobs:
                 echo "::error::Deployment stopped: Composer is not installed on the server."
                 exit 1
               fi
-              COMPOSER_ALLOW_SUPERUSER=1 "$PHP_BIN" "$composer_bin" install \
+              COMPOSER_ALLOW_SUPERUSER=1 "$composer_bin" install \
                 --no-dev \
                 --no-interaction \
                 --prefer-dist \
