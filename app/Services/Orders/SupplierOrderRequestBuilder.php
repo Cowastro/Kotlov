@@ -7,6 +7,7 @@ use App\Models\OrderItem;
 use App\Models\SupplierOrderRequest;
 use App\Models\SupplierOrderRequestItem;
 use App\Models\User;
+use App\Services\CrmMail\SupplierRequestMailDraftService;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -27,7 +28,7 @@ class SupplierOrderRequestBuilder
             ]);
         }
 
-        return DB::transaction(function () use ($order, $externalItems, $user): Collection {
+        $requests = DB::transaction(function () use ($order, $externalItems, $user): Collection {
             $requests = $externalItems
                 ->groupBy(fn (OrderItem $item): string => $item->fulfillment_supplier_id.'|'.$item->fulfillment_route)
                 ->map(function (Collection $items) use ($order, $user): SupplierOrderRequest {
@@ -98,6 +99,12 @@ class SupplierOrderRequestBuilder
 
             return $requests;
         });
+
+        foreach ($requests as $request) {
+            app(SupplierRequestMailDraftService::class)->sync($request, $user);
+        }
+
+        return $requests;
     }
 
     private function number(Order $order, OrderItem $item): string

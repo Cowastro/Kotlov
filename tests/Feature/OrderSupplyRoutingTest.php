@@ -8,6 +8,8 @@ use App\Filament\Resources\Products\ProductResource;
 use App\Models\Category;
 use App\Models\CrmContactPoint;
 use App\Models\CrmCounterparty;
+use App\Models\CrmMailMessage;
+use App\Models\CrmMailThread;
 use App\Models\IntegrationProduct;
 use App\Models\IntegrationSource;
 use App\Models\Order;
@@ -394,6 +396,8 @@ class OrderSupplyRoutingTest extends TestCase
         $this->assertCount(2, $secondBuild);
         $this->assertDatabaseCount('supplier_order_requests', 2);
         $this->assertDatabaseCount('supplier_order_request_items', 2);
+        $this->assertSame(2, CrmMailThread::query()->where('status', 'draft')->count());
+        $this->assertSame(2, CrmMailMessage::query()->where('direction', 'draft')->count());
         $this->assertDatabaseHas('supplier_order_requests', [
             'order_id' => $fixture['order']->id,
             'supplier_id' => $ownSupplier->id,

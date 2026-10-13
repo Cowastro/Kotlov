@@ -5,10 +5,13 @@ namespace App\Filament\Resources\CrmMailThreads;
 use App\Filament\Resources\CrmMailThreads\Pages\EditCrmMailThread;
 use App\Filament\Resources\CrmMailThreads\Pages\ListCrmMailThreads;
 use App\Filament\Resources\CrmMailThreads\Pages\ViewCrmMailThread;
+use App\Filament\Resources\Orders\OrderResource;
 use App\Models\CrmContact;
 use App\Models\CrmMailMessage;
 use App\Models\CrmMailThread;
 use App\Models\User;
+use App\Services\CrmMail\CrmMailSender;
+use App\Services\CrmMail\SupplierRequestMailDraftService;
 use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Actions\ActionGroup;
@@ -16,6 +19,8 @@ use Filament\Actions\EditAction;
 use Filament\Actions\ViewAction;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
+use Filament\Forms\Components\TextInput;
+use Filament\Notifications\Notification;
 use Filament\Infolists\Components\RepeatableEntry;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Resources\Resource;
@@ -26,6 +31,7 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Throwable;
 
 class CrmMailThreadResource extends Resource
 {
@@ -62,7 +68,9 @@ class CrmMailThreadResource extends Resource
 
     public static function getEloquentQuery(): Builder
     {
-        return parent::getEloquentQuery()->with(['mailbox', 'assignedUser', 'counterparty', 'contact']);
+        return parent::getEloquentQuery()->with([
+            'mailbox', 'assignedUser', 'counterparty', 'contact', 'supplierOrderRequest.order',
+        ]);
     }
 
     public static function form(Schema $schema): Schema
@@ -101,8 +109,15 @@ class CrmMailThreadResource extends Resource
                     ->color(fn (string $state): string => static::statusColor($state)),
                 TextEntry::make('priority')->label('Приоритет')->badge()
                     ->formatStateUsing(fn (string $state): string => CrmMailThread::PRIORITIES[$state] ?? $state),
-                TextEntry::make('mailbox.email')->label('Получено на'),
+                TextEntry::make('mailbox.email')->label('Почтовый ящик'),
                 TextEntry::make('last_message_at')->label('Последнее письмо')->dateTime('d.m.Y H:i', 'Europe/Minsk'),
+                TextEntry::make('supplierOrderRequest.order.number')
+                    ->label('Исходный заказ')
+                    ->visible(fn (CrmMailThread $record): bool => $record->supplier_order_request_id !== null)
+                    ->url(fn (CrmMailThread $record): string => OrderResource::getUrl('view', [
+                        'record' => $record->supplierOrderRequest->order_id,
+                    ]))
+                    ->color('primary'),
                 TextEntry::make('manager_note')->label('Итог / следующий шаг')->placeholder('Не заполнен')->columnSpanFull(),
             ]),
             Section::make('Переписка')
@@ -111,8 +126,16 @@ class CrmMailThreadResource extends Resource
                 ->schema([
                     RepeatableEntry::make('messages')->hiddenLabel()->columns(4)->schema([
                         TextEntry::make('direction')->label('Направление')->badge()
-                            ->formatStateUsing(fn (string $state): string => $state === 'outgoing' ? 'Ответ сотрудника' : 'Входящее')
-                            ->color(fn (string $state): string => $state === 'outgoing' ? 'success' : 'info'),
+                            ->formatStateUsing(fn (string $state): string => match ($state) {
+                                'draft' => 'Черновик',
+                                'outgoing' => 'Исходящее',
+                                default => 'Входящее',
+                            })
+                            ->color(fn (string $state): string => match ($state) {
+                                'draft' => 'warning',
+                                'outgoing' => 'success',
+                                default => 'info',
+                            }),
                         TextEntry::make('from_email')->label('От кого')->copyable(),
                         TextEntry::make('received_at')->label('Когда')->dateTime('d.m.Y H:i', 'Europe/Minsk'),
                         TextEntry::make('attachments_count')->label('Вложения')->formatStateUsing(fn (int $state): string => $state ? $state.' шт.' : 'Нет'),
@@ -154,23 +177,67 @@ class CrmMailThreadResource extends Resource
                 SelectFilter::make('mailbox_id')->label('Ящик')->relationship('mailbox', 'email'),
             ])
             ->recordActions([
-                ViewAction::make()
+                ViewAction::make()->label('Открыть')
                     ->visible(fn (CrmMailThread $record): bool => ! $record->trashed()),
                 ActionGroup::make([
+                    Action::make('edit_draft')
+                        ->label('Редактировать черновик')
+                        ->icon('heroicon-o-pencil-square')
+                        ->color('warning')
+                        ->visible(fn (CrmMailThread $record): bool => ! $record->trashed() && $record->status === 'draft')
+                        ->fillForm(fn (CrmMailThread $record): array => static::draftData($record))
+                        ->schema(static::draftFields(false))
+                        ->action(function (CrmMailThread $record, array $data): void {
+                            app(SupplierRequestMailDraftService::class)->update(
+                                $record,
+                                $data['recipient'] ?? null,
+                                $data['subject'],
+                                $data['body'],
+                                auth()->user(),
+                            );
+                            Notification::make()->success()->title('Черновик сохранён')->send();
+                        }),
+                    Action::make('send_draft')
+                        ->label('Отправить поставщику')
+                        ->icon('heroicon-o-paper-airplane')
+                        ->color('success')
+                        ->visible(fn (CrmMailThread $record): bool => ! $record->trashed() && $record->status === 'draft')
+                        ->fillForm(fn (CrmMailThread $record): array => static::draftData($record))
+                        ->schema(static::draftFields(true))
+                        ->requiresConfirmation()
+                        ->modalHeading('Отправить письмо поставщику?')
+                        ->action(function (CrmMailThread $record, array $data): void {
+                            try {
+                                $thread = app(SupplierRequestMailDraftService::class)->update(
+                                    $record,
+                                    $data['recipient'],
+                                    $data['subject'],
+                                    $data['body'],
+                                    auth()->user(),
+                                );
+                                app(CrmMailSender::class)->sendDraft($thread, auth()->user());
+                                Notification::make()->success()->title('Письмо поставщику отправлено')->send();
+                            } catch (Throwable $exception) {
+                                Notification::make()->danger()->title('Письмо не отправлено')->body($exception->getMessage())->send();
+                            }
+                        }),
                     Action::make('take')
                         ->label('Взять в работу')->icon('heroicon-o-hand-raised')->color('warning')
                         ->visible(fn (CrmMailThread $record): bool => ! $record->trashed()
+                            && $record->status !== 'draft'
                             && ($record->assigned_user_id !== auth()->id() || $record->status === 'new'))
                         ->action(fn (CrmMailThread $record) => $record->takeFor((int) auth()->id())),
                     Action::make('close')
                         ->label('Закрыть')->icon('heroicon-o-check-circle')->color('success')
-                        ->visible(fn (CrmMailThread $record): bool => ! $record->trashed() && $record->status !== 'closed')
+                        ->visible(fn (CrmMailThread $record): bool => ! $record->trashed()
+                            && ! in_array($record->status, ['draft', 'closed'], true))
                         ->action(fn (CrmMailThread $record) => $record->update(['status' => 'closed', 'handled_at' => now()])),
                     Action::make('mark_spam')
                         ->label('В спам')
                         ->icon('heroicon-o-no-symbol')
                         ->color('danger')
-                        ->visible(fn (CrmMailThread $record): bool => ! $record->trashed() && $record->status !== 'spam')
+                        ->visible(fn (CrmMailThread $record): bool => ! $record->trashed()
+                            && ! in_array($record->status, ['draft', 'spam'], true))
                         ->requiresConfirmation()
                         ->modalHeading('Пометить переписку как спам?')
                         ->modalDescription('Переписка исчезнет из рабочей почты и будет доступна во вкладке «Спам».')
@@ -182,7 +249,7 @@ class CrmMailThreadResource extends Resource
                         ->visible(fn (CrmMailThread $record): bool => ! $record->trashed() && $record->status === 'spam')
                         ->action(fn (CrmMailThread $record) => $record->restoreFromSpam()),
                     EditAction::make()
-                        ->visible(fn (CrmMailThread $record): bool => ! $record->trashed()),
+                        ->visible(fn (CrmMailThread $record): bool => ! $record->trashed() && $record->status !== 'draft'),
                     Action::make('trash')
                         ->label('В корзину')
                         ->icon('heroicon-o-trash')
@@ -214,12 +281,44 @@ class CrmMailThreadResource extends Resource
     public static function statusColor(string $state): string
     {
         return match ($state) {
+            'draft' => 'warning',
             'new', 'waiting_manager', 'spam' => 'danger',
             'in_progress' => 'warning',
             'waiting_customer' => 'info',
             'closed' => 'success',
             default => 'gray',
         };
+    }
+
+    /** @return array<int, TextInput|Textarea> */
+    public static function draftFields(bool $recipientRequired): array
+    {
+        $recipient = TextInput::make('recipient')
+            ->label('Email поставщика')
+            ->email()
+            ->helperText('Адрес подставляется из карточки контрагента. Если его нет, укажите вручную.');
+
+        if ($recipientRequired) {
+            $recipient->required();
+        }
+
+        return [
+            $recipient,
+            TextInput::make('subject')->label('Тема')->required()->maxLength(255),
+            Textarea::make('body')->label('Текст письма')->rows(14)->required()->maxLength(30000)->columnSpanFull(),
+        ];
+    }
+
+    /** @return array{recipient: string, subject: string, body: string} */
+    public static function draftData(CrmMailThread $record): array
+    {
+        $draft = $record->messages()->where('direction', 'draft')->first();
+
+        return [
+            'recipient' => (string) $record->participant_email,
+            'subject' => (string) $record->subject,
+            'body' => (string) $draft?->text_body,
+        ];
     }
 
     public static function getPages(): array

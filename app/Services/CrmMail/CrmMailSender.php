@@ -7,6 +7,7 @@ use App\Models\CrmMailMessage;
 use App\Models\CrmMailThread;
 use App\Models\User;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\DB;
 use RuntimeException;
 use Symfony\Component\Mailer\Mailer;
 use Symfony\Component\Mailer\Transport\Smtp\EsmtpTransport;
@@ -14,6 +15,64 @@ use Symfony\Component\Mime\Email;
 
 class CrmMailSender
 {
+    public function sendDraft(CrmMailThread $thread, User $user): CrmMailMessage
+    {
+        $thread->loadMissing(['mailbox', 'messages']);
+
+        if ($thread->status !== 'draft') {
+            throw new RuntimeException('Это письмо уже не является черновиком.');
+        }
+        if (! filter_var($thread->participant_email, FILTER_VALIDATE_EMAIL)) {
+            throw new RuntimeException('Укажите корректный email поставщика перед отправкой.');
+        }
+
+        $draft = $thread->messages->firstWhere('direction', 'draft');
+        if (! $draft) {
+            throw new RuntimeException('Текст почтового черновика не найден.');
+        }
+
+        $mailbox = $thread->mailbox;
+        $messageId = Str::uuid().'@'.parse_url(config('app.url'), PHP_URL_HOST);
+        $body = trim((string) $draft->text_body);
+        $htmlBody = $this->brandedHtml($body, $user);
+        $plainBody = $this->brandedText($body, $user);
+
+        $email = (new Email)
+            ->from(sprintf('%s <%s>', $mailbox->name, $mailbox->email))
+            ->replyTo(sprintf('%s <%s>', $mailbox->name, $mailbox->email))
+            ->to($thread->participant_email)
+            ->subject((string) $thread->subject)
+            ->text($plainBody)
+            ->html($htmlBody);
+        $email->getHeaders()->addIdHeader('Message-ID', $messageId);
+
+        $this->mailer($mailbox)->send($email);
+
+        return DB::transaction(function () use ($thread, $draft, $user, $messageId, $plainBody, $htmlBody): CrmMailMessage {
+            $draft->forceFill([
+                'sent_by_user_id' => $user->id,
+                'message_id' => $messageId,
+                'direction' => 'outgoing',
+                'to' => [['name' => $thread->participant_name, 'email' => $thread->participant_email]],
+                'subject' => $thread->subject,
+                'text_body' => $plainBody,
+                'html_body' => $htmlBody,
+                'sent_at' => now(),
+                'received_at' => now(),
+            ])->save();
+
+            $thread->forceFill([
+                'assigned_user_id' => $thread->assigned_user_id ?: $user->id,
+                'status' => 'waiting_customer',
+                'messages_count' => 1,
+                'last_message_at' => now(),
+                'handled_at' => now(),
+            ])->save();
+
+            return $draft->fresh();
+        });
+    }
+
     public function reply(CrmMailThread $thread, string $body, User $user): CrmMailMessage
     {
         $mailbox = $thread->mailbox;

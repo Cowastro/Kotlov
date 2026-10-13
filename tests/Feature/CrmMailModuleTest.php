@@ -10,6 +10,7 @@ use App\Models\CrmCounterparty;
 use App\Models\CrmMailbox;
 use App\Models\CrmMailThread;
 use App\Models\User;
+use App\Services\CrmMail\SupplierRequestMailDraftService;
 use App\Services\CrmMail\CrmMailSender;
 use App\Services\CrmMail\LeadMatcher;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -198,5 +199,53 @@ class CrmMailModuleTest extends TestCase
         $this->assertStringContainsString('Менеджер по продажам', $text);
         $this->assertStringContainsString('+375 (29) 000-00-00', $text);
         $this->assertStringContainsString('info@kotlov.by', $text);
+    }
+
+    public function test_supplier_mail_draft_can_be_edited_without_sending(): void
+    {
+        $manager = User::factory()->create(['role' => 'manager', 'is_active' => true]);
+        $mailbox = CrmMailbox::create([
+            'name' => 'KOTLOV',
+            'email' => 'supplier-drafts@kotlov.by',
+            'username' => 'supplier-drafts@kotlov.by',
+            'is_enabled' => true,
+        ]);
+        $thread = CrmMailThread::create([
+            'mailbox_id' => $mailbox->id,
+            'thread_key' => hash('sha256', 'supplier-draft-test'),
+            'participant_name' => 'Поставщик',
+            'participant_email' => '',
+            'subject' => 'Исходная тема',
+            'status' => 'draft',
+            'messages_count' => 1,
+        ]);
+        $thread->messages()->create([
+            'mailbox_id' => $mailbox->id,
+            'direction' => 'draft',
+            'from_email' => $mailbox->email,
+            'subject' => 'Исходная тема',
+            'text_body' => 'Исходный текст',
+            'is_read' => true,
+        ]);
+
+        app(SupplierRequestMailDraftService::class)->update(
+            $thread,
+            'orders@supplier.test',
+            'Новая тема',
+            'Новый текст письма',
+            $manager,
+        );
+
+        $this->assertDatabaseHas('crm_mail_threads', [
+            'id' => $thread->id,
+            'participant_email' => 'orders@supplier.test',
+            'subject' => 'Новая тема',
+            'status' => 'draft',
+        ]);
+        $this->assertDatabaseHas('crm_mail_messages', [
+            'thread_id' => $thread->id,
+            'direction' => 'draft',
+            'text_body' => 'Новый текст письма',
+        ]);
     }
 }

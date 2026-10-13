@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Orders\Schemas;
 
+use App\Filament\Resources\CrmMailThreads\CrmMailThreadResource;
 use App\Models\IntegrationIssue;
 use App\Models\Order;
 use App\Models\OrderEconomicSnapshot;
@@ -736,6 +737,15 @@ class OrderInfolist
                                         ? 'Запуск '.$record->automatic_transfer_run_uuid
                                         : null),
                                 TextEntry::make('supplier_contact')->label('Контакт поставщика')->copyable()->columnSpan(3),
+                                TextEntry::make('mailDraft.subject')
+                                    ->label('Почтовый черновик')
+                                    ->placeholder('Не создан')
+                                    ->url(fn (SupplierOrderRequest $record): ?string => $record->mailDraft
+                                        ? CrmMailThreadResource::getUrl('view', ['record' => $record->mailDraft->id])
+                                        : null)
+                                    ->color('primary')
+                                    ->icon(fn (SupplierOrderRequest $record): ?string => $record->mailDraft ? 'heroicon-o-envelope' : null)
+                                    ->columnSpan(3),
                                 TextEntry::make('creator.name')->label('Сформировал')->placeholder('Система'),
                                 TextEntry::make('created_at')->label('Создана')->dateTime('d.m.Y H:i', 'Europe/Minsk'),
                                 TextEntry::make('sent_at')

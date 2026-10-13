@@ -14,6 +14,7 @@ class CrmMailThread extends Model
     use SoftDeletes;
 
     public const STATUSES = [
+        'draft' => 'Черновик',
         'new' => 'Новый лид',
         'in_progress' => 'В работе',
         'waiting_customer' => 'Ждём клиента',
@@ -31,6 +32,7 @@ class CrmMailThread extends Model
 
     protected $fillable = [
         'mailbox_id', 'crm_counterparty_id', 'crm_contact_id', 'assigned_user_id',
+        'supplier_order_request_id',
         'thread_key', 'subject', 'participant_name', 'participant_email', 'status',
         'priority', 'messages_count', 'unread_count', 'last_message_at', 'handled_at',
         'manager_note',
@@ -60,6 +62,11 @@ class CrmMailThread extends Model
     public function assignedUser(): BelongsTo
     {
         return $this->belongsTo(User::class, 'assigned_user_id');
+    }
+
+    public function supplierOrderRequest(): BelongsTo
+    {
+        return $this->belongsTo(SupplierOrderRequest::class);
     }
 
     public function messages(): HasMany

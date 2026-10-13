@@ -42,6 +42,7 @@ class ViewOrder extends ViewRecord
             'latestSettlement.lines.supplier',
             'latestSettlement.confirmer',
             'supplierOrderRequests.items',
+            'supplierOrderRequests.mailDraft',
             'supplierOrderRequests.creator',
             'supplierOrderRequests.sentBy',
             'supplierOrderRequests.statusUpdatedBy',
@@ -190,7 +191,7 @@ class ViewOrder extends ViewRecord
                     Notification::make()
                         ->success()
                         ->title('Черновики заявок сформированы')
-                        ->body('Создано или обновлено заявок: '.$requests->count().'. Автоматической отправки не было.')
+                        ->body('Создано или обновлено заявок: '.$requests->count().'. Письма доступны в «Почта и лиды» → «Черновики». Автоматической отправки не было.')
                         ->send();
                 }),
             Action::make('confirmSettlement')
@@ -356,6 +357,7 @@ class ViewOrder extends ViewRecord
             'statusHistory.user',
             'manager',
             'supplierOrderRequests.items',
+            'supplierOrderRequests.mailDraft',
             'integrationDeliveries.source',
             'integrationDeliveries.queuedBy',
         ]);
