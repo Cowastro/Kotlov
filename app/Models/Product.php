@@ -161,10 +161,9 @@ class Product extends Model
     {
         $legacyAvailable = $this->relationLoaded('supplierProducts')
             ? $this->supplierProducts->contains(
-                fn (SupplierProduct $item): bool => $item->in_stock === true
-                    || (float) $item->stock_quantity > 0
+                fn (SupplierProduct $item): bool => (float) $item->stock_quantity > 0
             )
-            : $this->supplierProducts()->available()->exists();
+            : $this->supplierProducts()->where('stock_quantity', '>', 0)->exists();
 
         if ($legacyAvailable) {
             return true;
