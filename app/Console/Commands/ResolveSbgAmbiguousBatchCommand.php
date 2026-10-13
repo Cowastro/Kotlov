@@ -343,6 +343,12 @@ class ResolveSbgAmbiguousBatchCommand extends Command
                 'images' => ['product/008/008303/Unipump_cp1.jpg'],
                 'source_url' => 'https://unipump.ru/upload/iblock/da2/x7rbbfd0ljt5oi9s9spzrcj7lladq5ab/circularnye_leaflet_2025_V2411-_1_.pdf',
                 'replace_attributes' => true,
+                'remove_attribute_names' => ['Присоединительный размер , мм'],
+                'display_specs' => [
+                    ['key' => 'Назначение', 'value' => 'Системы отопления и водяного тёплого пола'],
+                    ['key' => 'Монтажная длина', 'value' => '180 мм'],
+                    ['key' => 'Присоединительный размер', 'value' => '1½″ × 1″'],
+                ],
                 'short' => 'Трёхскоростной циркуляционный насос UNIPUMP CP 25-40 с мокрым ротором, напором до 4 м и монтажной длиной 180 мм.',
                 'content' => '<p><strong>UNIPUMP CP 25-40 180</strong> — циркуляционный насос с мокрым ротором для принудительного движения теплоносителя в радиаторных системах отопления и контурах водяного тёплого пола.</p><p>Модель имеет монтажную длину 180 мм, максимальный напор 4 м и производительность до 2,9 м³/ч. Три ступени мощности позволяют подобрать режим под сопротивление системы. Чугунный корпус рассчитан на давление до 10 бар, а резьбовой монтажный комплект входит в поставку.</p>',
                 'specs' => [
@@ -461,9 +467,7 @@ class ResolveSbgAmbiguousBatchCommand extends Command
                 if ((int) $item->product_id === (int) $product->id && $item->match_status === 'matched') {
                     $stats['already']++;
                     if ($apply && $refresh !== null && ($refresh['replace_attributes'] ?? false) === true) {
-                        $product->allAttributeValues()->delete();
-                        $enricher->syncSpecsToAttributeValues($product, $refresh['specs'] ?? []);
-                        $product->forceFill(['specs' => []])->save();
+                        $this->replaceAttributes($product, $enricher, $refresh);
                         $stats['refreshed']++;
                         $details[] = [$code, $rule['sku'], 'attributes refreshed', Str::limit($product->name, 64)];
                     } else {
@@ -518,9 +522,7 @@ class ResolveSbgAmbiguousBatchCommand extends Command
                         'meta_description' => Str::limit('Купить '.$name.' в KOTLOV. Характеристики, актуальная цена и наличие, доставка по Беларуси.', 255, ''),
                     ])->save();
                     if (($refresh['replace_attributes'] ?? false) === true) {
-                        $product->allAttributeValues()->delete();
-                        $enricher->syncSpecsToAttributeValues($product, $refresh['specs'] ?? []);
-                        $product->forceFill(['specs' => []])->save();
+                        $this->replaceAttributes($product, $enricher, $refresh);
                     }
                     $stats['refreshed']++;
                 }
@@ -549,5 +551,21 @@ class ResolveSbgAmbiguousBatchCommand extends Command
 
             return str_contains($value, $fragment);
         });
+    }
+
+    /** @param array<string, mixed> $refresh */
+    private function replaceAttributes(Product $product, ProductSourceEnricher $enricher, array $refresh): void
+    {
+        $product->allAttributeValues()->delete();
+        $enricher->syncSpecsToAttributeValues($product, $refresh['specs'] ?? []);
+
+        $removeNames = array_values(array_filter($refresh['remove_attribute_names'] ?? [], 'is_string'));
+        if ($removeNames !== []) {
+            $product->allAttributeValues()
+                ->whereHas('attribute', fn ($query) => $query->whereIn('name', $removeNames))
+                ->delete();
+        }
+
+        $product->forceFill(['specs' => $refresh['display_specs'] ?? []])->save();
     }
 }

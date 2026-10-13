@@ -974,6 +974,28 @@ class ResolveSbgAmbiguousBatchCommandTest extends TestCase
             'created_at' => now(),
             'updated_at' => now(),
         ]);
+        $badConnectionAttributeId = DB::table('attributes')->insertGetId([
+            'category_id' => $category->id,
+            'group_id' => 0,
+            'sort_order' => 0,
+            'type' => 'value',
+            'name' => 'Присоединительный размер , мм',
+            'suffix' => 'мм',
+            'in_filter' => false,
+            'in_sort' => false,
+            'in_product' => true,
+            'in_brief' => false,
+            'is_comparable' => false,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+        DB::table('product_attribute_values')->insert([
+            'product_id' => $pump->id,
+            'attribute_id' => $badConnectionAttributeId,
+            'value' => '25',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
         $apc = Product::query()->create([
             'category_id' => $category->id,
             'sku' => 'PS-008.469',
@@ -1008,7 +1030,8 @@ class ResolveSbgAmbiguousBatchCommandTest extends TestCase
         $this->assertSame('1', (string) $pump->stock_qty);
         $this->assertSame('UNIPUMP CP 25-40 180 циркуляционный насос', $pump->name);
         $this->assertSame($pump->name, $pump->h1);
-        $this->assertSame([], $pump->specs);
+        $this->assertSame('180 мм', collect($pump->specs)->firstWhere('key', 'Монтажная длина')['value']);
+        $this->assertSame('1½″ × 1″', collect($pump->specs)->firstWhere('key', 'Присоединительный размер')['value']);
         $this->assertSame(['product/008/008303/Unipump_cp1.jpg'], $pump->images);
         $this->assertStringContainsString('unipump.ru', $pump->content_source_url);
         $this->assertStringNotContainsString('130 мм', $pump->short_description);
@@ -1022,6 +1045,10 @@ class ResolveSbgAmbiguousBatchCommandTest extends TestCase
         $this->assertDatabaseMissing('product_attribute_values', [
             'product_id' => $pump->id,
             'attribute_id' => $staleWidthAttributeId,
+        ]);
+        $this->assertDatabaseMissing('product_attribute_values', [
+            'product_id' => $pump->id,
+            'attribute_id' => $badConnectionAttributeId,
         ]);
         $this->assertGreaterThan(0, DB::table('product_attribute_values')->where('product_id', $pump->id)->count());
 
@@ -1049,6 +1076,10 @@ class ResolveSbgAmbiguousBatchCommandTest extends TestCase
         $this->assertDatabaseMissing('product_attribute_values', [
             'product_id' => $pump->id,
             'attribute_id' => $staleWidthAttributeId,
+        ]);
+        $this->assertDatabaseMissing('product_attribute_values', [
+            'product_id' => $pump->id,
+            'attribute_id' => $badConnectionAttributeId,
         ]);
         $this->assertDatabaseHas('supplier_product_mappings', [
             'supplier_article' => 'УТ-00003074',
