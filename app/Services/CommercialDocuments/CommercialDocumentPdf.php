@@ -43,7 +43,7 @@ class CommercialDocumentPdf
 
     private function logoDataUri(): ?string
     {
-        $path = public_path('img/logo.png');
+        $path = public_path('img/logo-black.png');
         if (! is_file($path)) {
             return null;
         }

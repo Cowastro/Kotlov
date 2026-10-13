@@ -8,8 +8,8 @@
         body { font-family: "DejaVu Sans", sans-serif; color: #171717; font-size: 10px; line-height: 1.35; }
         .header { width: 100%; border-collapse: collapse; table-layout: fixed; margin-bottom: 18px; }
         .header td { vertical-align: top; }
-        .logo { width: 155px; background: #171717; padding: 12px 10px; }
-        .logo img { width: 135px; max-height: 50px; object-fit: contain; }
+        .logo { width: 155px; padding: 7px 8px 7px 0; vertical-align: middle; }
+        .logo img { width: 145px; max-height: 42px; object-fit: contain; }
         .company { padding-left: 14px; font-size: 9px; color: #444; word-wrap: break-word; }
         .company strong { display: block; color: #111; font-size: 15px; margin-bottom: 4px; }
         .doc-box { width: 220px; text-align: right; }

@@ -65,8 +65,14 @@ class CommercialDocumentWorkflowTest extends TestCase
         $this->assertNotSame($quote->number, $invoice->number);
     }
 
-    public function test_pdf_has_brand_and_cyrillic_document_template(): void
+    public function test_pdf_has_clean_wordmark_and_cyrillic_document_template(): void
     {
+        $template = file_get_contents(resource_path('views/pdf/commercial-document.blade.php'));
+
+        $this->assertStringContainsString('<img src="{{ $logo }}" alt="KOTLOV.BY">', $template);
+        $this->assertStringNotContainsString('background: #171717', $template);
+        $this->assertFileExists(public_path('img/logo-black.png'));
+
         $document = CommercialDocument::query()->create([
             'type' => 'invoice',
             'client_name' => 'Иван Иванов',
