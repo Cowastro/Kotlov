@@ -875,4 +875,62 @@ class CreateSbgDistinctProductsBatchCommandTest extends TestCase
         $this->assertSame('4 мм', collect($product->specs)->firstWhere('key', 'Толщина')['value']);
         $this->assertSame('manual_created', $item->fresh()->match_method);
     }
+
+    public function test_it_creates_the_archived_ole_pro_burner_temperature_sensor_with_researched_price(): void
+    {
+        $source = IntegrationSource::query()->create([
+            'code' => 'onec-sbg-ole-pro-os-h-tp',
+            'name' => '1С СанБизнесГруп',
+            'settings' => ['partner_name' => 'ООО «СанБизнесГруп»'],
+            'is_active' => true,
+            'update_stock' => true,
+        ]);
+        $category = Category::query()->create([
+            'name' => 'Автоматика и терморегуляторы',
+            'slug' => 'regulyatory-sensor-test',
+            'parent_id' => 0,
+        ]);
+        $kospel = Brand::query()->create(['name' => 'Kospel', 'slug' => 'kospel-sensor-test']);
+        $wrongCandidate = Product::query()->create([
+            'category_id' => $category->id,
+            'brand_id' => $kospel->id,
+            'sku' => 'PS-000.17896',
+            'name' => 'Датчик температуры Kospel WE-019/01',
+            'slug' => 'kospel-we-019-01-sensor-test',
+            'price' => 40,
+            'images' => ['product/kospel/we-019-01.jpg'],
+        ]);
+        $item = IntegrationProduct::query()->create([
+            'integration_source_id' => $source->id,
+            'external_id' => 'ole-pro-os-h-tp-20-50',
+            'external_code' => 'УТ-00000144',
+            'name' => 'Датчик температуры OS-H-TP (20-50)',
+            'price_byn' => null,
+            'stock_quantity' => 6,
+            'match_status' => 'ambiguous',
+            'candidates' => [['product_id' => $wrongCandidate->id, 'score' => 0.8317]],
+        ]);
+
+        $this->artisan('integration:create-sbg-distinct-products', [
+            '--batch' => 'researched-priced-20261013-s',
+            '--code' => ['УТ-00000144'],
+            '--apply' => true,
+        ])->assertSuccessful();
+
+        $brand = Brand::query()->where('slug', 'ole-pro')->firstOrFail();
+        $product = $item->fresh()->product;
+        $this->assertNotNull($product);
+        $this->assertNotSame($wrongCandidate->id, $product->id);
+        $this->assertSame($category->id, $product->category_id);
+        $this->assertSame($brand->id, $product->brand_id);
+        $this->assertSame('OLE-PRO OS-H-TP датчик температуры горелки 20–50 кВт', $product->name);
+        $this->assertSame('61.00', $product->price);
+        $this->assertSame('6', (string) $product->stock_qty);
+        $this->assertNull($item->fresh()->normalizedPriceByn());
+        $this->assertSame('OS-H-TP', collect($product->specs)->firstWhere('key', 'Модель')['value']);
+        $this->assertSame('OFC-OXI-1, OFC-OXI-2', collect($product->specs)->firstWhere('key', 'Совместимые контроллеры')['value']);
+        $this->assertSame('20–50 кВт', collect($product->specs)->firstWhere('key', 'Диапазон мощности горелки')['value']);
+        $this->assertStringContainsString('OXI%20ARTTHERM.pdf', $product->content_source_url);
+        $this->assertSame('manual_created', $item->fresh()->match_method);
+    }
 }

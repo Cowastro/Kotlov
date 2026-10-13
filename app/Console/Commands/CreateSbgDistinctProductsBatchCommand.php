@@ -505,6 +505,34 @@ class CreateSbgDistinctProductsBatchCommand extends Command
         ],
     ];
 
+    private const BATCH_RESEARCHED_PRICED_20261013_S = [
+        'УТ-00000144' => [
+            'template' => 'PS-000.17896',
+            'fragments' => ['Датчик температуры', 'OS-H-TP', '20-50'],
+            'brand' => [
+                'name' => 'OLE-PRO',
+                'slug' => 'ole-pro',
+                'country' => 'Украина',
+                'content' => '<p><strong>OLE-PRO</strong> — украинский производитель оборудования и автоматики для систем отопления. Архивная линейка включала контроллеры и комплектующие для пеллетных горелок OXI/HOTTA.</p>',
+            ],
+            'name' => 'OLE-PRO OS-H-TP датчик температуры горелки 20–50 кВт',
+            'retail' => 61.00,
+            'images' => ['https://images.deal.by/117410925_datchik-temperatury-os-h-3.jpg'],
+            'source_url' => 'https://arttherm.dp.ua/DOCS/Oxi/OXI%20ARTTHERM.pdf',
+            'short' => 'Архивный датчик температуры горелки OLE-PRO OS-H-TP для горелок OXI/HOTTA мощностью 20–50 кВт и контроллеров OFC-OXI-1/2.',
+            'content' => '<p><strong>OLE-PRO OS-H-TP</strong> — датчик температуры горелки для автоматики пеллетных горелок OXI/HOTTA мощностью 20–50 кВт. Модель предназначена для контроллеров OFC-OXI-1 и OFC-OXI-2.</p><p>Это архивная запасная часть для оборудования прежних поколений. Перед заказом необходимо сверить маркировку датчика, модель контроллера и мощность горелки. Цена рассчитана по архивной цене производителя 18 EUR с НДС и официальному курсу НБРБ на 13.10.2026.</p>',
+            'specs' => [
+                ['key' => 'Тип', 'value' => 'Датчик температуры горелки'],
+                ['key' => 'Модель', 'value' => 'OS-H-TP'],
+                ['key' => 'Совместимые контроллеры', 'value' => 'OFC-OXI-1, OFC-OXI-2'],
+                ['key' => 'Совместимые горелки', 'value' => 'OXI/HOTTA'],
+                ['key' => 'Диапазон мощности горелки', 'value' => '20–50 кВт'],
+                ['key' => 'Статус модели', 'value' => 'Архивная'],
+                ['key' => 'Страна производства', 'value' => 'Украина'],
+            ],
+        ],
+    ];
+
     public function handle(IntegrationProductCreator $creator): int
     {
         $rows = match ($this->option('batch')) {
@@ -526,6 +554,7 @@ class CreateSbgDistinctProductsBatchCommand extends Command
             'researched-priced-20261013-p' => self::BATCH_RESEARCHED_PRICED_20261013_P,
             'researched-priced-20261013-q' => self::BATCH_RESEARCHED_PRICED_20261013_Q,
             'researched-priced-20261013-r' => self::BATCH_RESEARCHED_PRICED_20261013_R,
+            'researched-priced-20261013-s' => self::BATCH_RESEARCHED_PRICED_20261013_S,
             default => null,
         };
 
