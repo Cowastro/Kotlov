@@ -2144,4 +2144,69 @@ class CreateSbgDistinctProductsBatchCommandTest extends TestCase
         $this->assertStringNotContainsString('pln', mb_strtolower($product->content));
         $this->assertSame('manual_created', $item->fresh()->match_method);
     }
+
+    public function test_it_creates_the_diamond_dm02_boiler_blower_instead_of_linking_ballu(): void
+    {
+        $source = IntegrationSource::query()->create([
+            'code' => 'onec-sbg-diamond-dm02',
+            'name' => '1С СанБизнесГруп',
+            'settings' => ['partner_name' => 'ООО «СанБизнесГруп»'],
+            'is_active' => true,
+            'update_stock' => true,
+        ]);
+        $category = Category::query()->firstOrCreate(['slug' => 'regulyatory'], [
+            'name' => 'Автоматика и терморегуляторы',
+            'parent_id' => 0,
+        ]);
+        $ballu = Brand::query()->create(['slug' => 'ballu', 'name' => 'Ballu']);
+        $wrongBalluCandidate = Product::query()->create([
+            'category_id' => $category->id,
+            'brand_id' => $ballu->id,
+            'sku' => 'KOTLOV-003041',
+            'name' => 'Вентилятор промышленный центробежный Ballu BIF-10SB',
+            'slug' => 'ballu-bif-10sb-template-for-diamond-dm02',
+            'price' => 700,
+            'images' => ['product/0030/003041/ballu.jpg'],
+        ]);
+        $item = IntegrationProduct::query()->create([
+            'integration_source_id' => $source->id,
+            'external_id' => 'diamond-dm02-boiler-blower',
+            'external_code' => 'УТ-00005506',
+            'external_sku' => null,
+            'name' => 'Вентилятор центробежный DM02',
+            'price_byn' => null,
+            'stock_quantity' => 1,
+            'match_status' => 'ambiguous',
+            'candidates' => [['product_id' => $wrongBalluCandidate->id, 'score' => 0.6909]],
+        ]);
+
+        $this->artisan('integration:create-sbg-distinct-products', [
+            '--batch' => 'researched-priced-20261013-al',
+            '--code' => ['УТ-00005506'],
+            '--apply' => true,
+        ])->assertSuccessful();
+
+        $product = $item->fresh()->product;
+        $this->assertNotNull($product);
+        $this->assertNotSame($wrongBalluCandidate->id, $product->id);
+        $this->assertSame($category->id, $product->category_id);
+        $this->assertSame('Diamond', $product->brand->name);
+        $this->assertSame('Diamond DM-02, центробежный вентилятор наддува для котла', $product->name);
+        $this->assertSame('159.90', $product->price);
+        $this->assertSame('1', (string) $product->stock_qty);
+        $this->assertNull($item->fresh()->normalizedPriceByn());
+        $this->assertSame('R20/84', collect($product->specs)->firstWhere('key', 'Двигатель')['value']);
+        $this->assertSame('70 Вт', collect($product->specs)->firstWhere('key', 'Потребляемая мощность')['value']);
+        $this->assertSame('175 м³/ч', collect($product->specs)->firstWhere('key', 'Максимальная производительность')['value']);
+        $this->assertSame('215 Па', collect($product->specs)->firstWhere('key', 'Максимальное давление')['value']);
+        $this->assertSame(['img/products/diamond/diamond-dm-02.jpg'], $product->images);
+        $this->assertFileExists(public_path('img/products/diamond/diamond-dm-02.jpg'));
+        $this->assertStringContainsString('pex.pl', $product->content_source_url);
+        $this->assertStringNotContainsString('Ballu', $product->name);
+        $this->assertStringNotContainsString('кандидат', mb_strtolower($product->content));
+        $this->assertStringNotContainsString('розничная цена', mb_strtolower($product->content));
+        $this->assertStringNotContainsString('нбрб', mb_strtolower($product->content));
+        $this->assertStringNotContainsString('pln', mb_strtolower($product->content));
+        $this->assertSame('manual_created', $item->fresh()->match_method);
+    }
 }

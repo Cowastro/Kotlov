@@ -1131,6 +1131,43 @@ class CreateSbgDistinctProductsBatchCommand extends Command
         ],
     ];
 
+    private const BATCH_RESEARCHED_PRICED_20261013_AL = [
+        'УТ-00005506' => [
+            'template' => 'KOTLOV-003041',
+            'category_slug' => 'regulyatory',
+            'fragments' => ['Вентилятор', 'центробежный', 'DM02'],
+            'brand' => [
+                'name' => 'Diamond',
+                'slug' => 'diamond',
+                'country' => 'Польша',
+                'content' => '<p><strong>Diamond</strong> — польская марка оборудования и комплектующих для систем отопления и водоснабжения.</p>',
+            ],
+            'name' => 'Diamond DM-02, центробежный вентилятор наддува для котла',
+            'retail' => 159.90,
+            'images' => ['img/products/diamond/diamond-dm-02.jpg'],
+            'source_url' => 'https://pex.pl/pl/p/Dmuchawa-do-pieca-wentylator-DM-02/2463',
+            'short' => 'Центробежный вентилятор Diamond DM-02 для подачи воздуха в топку твердотопливного котла, 70 Вт, до 175 м³/ч.',
+            'content' => '<p><strong>Diamond DM-02</strong> — центробежный вентилятор наддува для подачи воздуха в топку твердотопливного котла. Принудительная подача воздуха помогает автоматике поддерживать заданную интенсивность горения и температуру теплоносителя.</p><p>Корпус изготовлен из алюминия. Вход защищён решёткой, а выходной патрубок выполнен с монтажным фланцем для установки на котёл. В комплект входит кабель питания.</p>',
+            'specs' => [
+                ['key' => 'Тип', 'value' => 'Центробежный вентилятор наддува'],
+                ['key' => 'Модель', 'value' => 'DM-02'],
+                ['key' => 'Назначение', 'value' => 'Подача воздуха в топку твердотопливного котла'],
+                ['key' => 'Двигатель', 'value' => 'R20/84'],
+                ['key' => 'Напряжение питания', 'value' => '230 В'],
+                ['key' => 'Потребляемая мощность', 'value' => '70 Вт'],
+                ['key' => 'Максимальная производительность', 'value' => '175 м³/ч'],
+                ['key' => 'Максимальное давление', 'value' => '215 Па'],
+                ['key' => 'Диапазон температуры окружающей среды', 'value' => '0…+40 °C'],
+                ['key' => 'Степень защиты', 'value' => 'IP20'],
+                ['key' => 'Материал корпуса', 'value' => 'Алюминий'],
+                ['key' => 'Масса', 'value' => '1,5 кг'],
+                ['key' => 'Комплектация', 'value' => 'Вентилятор, кабель питания'],
+                ['key' => 'EAN', 'value' => '5907547676390'],
+                ['key' => 'Страна производства', 'value' => 'Польша'],
+            ],
+        ],
+    ];
+
     public function handle(IntegrationProductCreator $creator): int
     {
         $rows = match ($this->option('batch')) {
@@ -1171,6 +1208,7 @@ class CreateSbgDistinctProductsBatchCommand extends Command
             'researched-priced-20261013-ai' => self::BATCH_RESEARCHED_PRICED_20261013_AI,
             'researched-priced-20261013-aj' => self::BATCH_RESEARCHED_PRICED_20261013_AJ,
             'researched-priced-20261013-ak' => self::BATCH_RESEARCHED_PRICED_20261013_AK,
+            'researched-priced-20261013-al' => self::BATCH_RESEARCHED_PRICED_20261013_AL,
             default => null,
         };
 
