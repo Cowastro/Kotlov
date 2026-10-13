@@ -27,4 +27,23 @@ class ImapMailboxSynchronizerEncodingTest extends TestCase
 
         $this->assertSame('Запрос клиента', $method->invoke($service, $encoded));
     }
+
+    public function test_it_selects_new_uids_locally_after_the_initial_import(): void
+    {
+        $service = (new ReflectionClass(ImapMailboxSynchronizer::class))->newInstanceWithoutConstructor();
+        $method = new \ReflectionMethod($service, 'candidateUids');
+
+        $this->assertSame(
+            [3, 4, 5, 6, 7, 8, 9, 10, 11],
+            $method->invoke($service, range(1, 11), 2),
+        );
+    }
+
+    public function test_it_rechecks_recent_uids_when_there_are_no_new_messages(): void
+    {
+        $service = (new ReflectionClass(ImapMailboxSynchronizer::class))->newInstanceWithoutConstructor();
+        $method = new \ReflectionMethod($service, 'candidateUids');
+
+        $this->assertSame([9, 10, 11], $method->invoke($service, range(1, 11), 11, 3));
+    }
 }

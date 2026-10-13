@@ -37,12 +37,22 @@ class ImapMailboxSynchronizer
         $skipped = 0;
 
         try {
-            $query = $mailbox->last_uid ? 'UID '.($mailbox->last_uid + 1).':*' : 'ALL';
-            $numbers = imap_search($imap, $query, SE_UID) ?: [];
-            sort($numbers, SORT_NUMERIC);
+            // `imap_search()` does not reliably support `UID n:*` as a search
+            // criterion. Some servers return an empty result with a warning,
+            // which made the first ALL import work and every later sync look
+            // successful while importing nothing. Fetch UIDs with the portable
+            // ALL criterion and select incremental candidates locally instead.
+            $serverUids = @imap_search($imap, 'ALL', SE_UID) ?: [];
+            $numbers = $this->candidateUids($serverUids, $mailbox->last_uid ? (int) $mailbox->last_uid : null);
+            $existingUids = CrmMailMessage::query()
+                ->where('mailbox_id', $mailbox->id)
+                ->whereIn('imap_uid', $numbers)
+                ->pluck('imap_uid')
+                ->mapWithKeys(fn ($uid): array => [(int) $uid => true])
+                ->all();
 
-            foreach (array_slice($numbers, -250) as $uid) {
-                if (CrmMailMessage::query()->where('mailbox_id', $mailbox->id)->where('imap_uid', $uid)->exists()) {
+            foreach ($numbers as $uid) {
+                if (isset($existingUids[(int) $uid])) {
                     $skipped++;
                     $mailbox->last_uid = max((int) $mailbox->last_uid, (int) $uid);
 
@@ -56,6 +66,7 @@ class ImapMailboxSynchronizer
 
                 if (! filter_var($fromEmail, FILTER_VALIDATE_EMAIL)) {
                     $skipped++;
+                    $mailbox->last_uid = max((int) $mailbox->last_uid, (int) $uid);
 
                     continue;
                 }
@@ -148,6 +159,33 @@ class ImapMailboxSynchronizer
         }
 
         return compact('imported', 'skipped');
+    }
+
+    /**
+     * Keep incremental imports bounded without trusting a server-specific UID
+     * search expression. When there are no new UIDs, revisit recent messages
+     * so a previously missed message can be recovered by the database check.
+     *
+     * @param  array<int|string>  $serverUids
+     * @return list<int>
+     */
+    private function candidateUids(array $serverUids, ?int $lastUid, int $limit = 250): array
+    {
+        $uids = collect($serverUids)
+            ->map(fn ($uid): int => (int) $uid)
+            ->filter(fn (int $uid): bool => $uid > 0)
+            ->unique()
+            ->sort()
+            ->values();
+
+        if ($lastUid !== null) {
+            $newUids = $uids->filter(fn (int $uid): bool => $uid > $lastUid)->take($limit)->values();
+            if ($newUids->isNotEmpty()) {
+                return $newUids->all();
+            }
+        }
+
+        return $uids->take(-$limit)->values()->all();
     }
 
     private function decodeHeader(?string $value): ?string
