@@ -6,9 +6,9 @@ use App\Filament\Resources\CommercialDocuments\CommercialDocumentResource;
 use App\Filament\Resources\CrmCounterparties\CrmCounterpartyResource;
 use App\Filament\Resources\CrmMailThreads\CrmMailThreadResource;
 use App\Filament\Resources\Suppliers\SupplierResource;
+use App\Services\CommercialDocuments\QuickCommercialOfferService;
 use App\Services\CrmMail\CrmMailSender;
 use App\Services\CrmMail\SupplierRequestMailDraftService;
-use App\Services\CommercialDocuments\QuickCommercialOfferService;
 use Filament\Actions\Action;
 use Filament\Actions\EditAction;
 use Filament\Forms\Components\FileUpload;
@@ -114,7 +114,7 @@ class ViewCrmMailThread extends ViewRecord
                 ->color('success')
                 ->visible(fn (): bool => $this->record->status !== 'draft')
                 ->modalHeading('Быстрое коммерческое предложение')
-                ->modalDescription('Компания и товары подобраны из письма. Проверьте их — после сохранения система подготовит PDF и черновик ответа.')
+                ->modalDescription('Для разбора тема и текст письма передаются настроенному DeepSeek. Проверьте найденные данные — после сохранения система подготовит PDF и черновик ответа.')
                 ->modalSubmitActionLabel('Создать КП и письмо')
                 ->modalWidth('5xl')
                 ->fillForm(function (): array {
@@ -122,12 +122,15 @@ class ViewCrmMailThread extends ViewRecord
 
                     return array_merge($prepared['prefill'], [
                         'product_ids' => $prepared['default_product_ids'],
+                        'analysis_summary' => $prepared['analysis_summary'],
                     ]);
                 })
                 ->schema([
                     TextInput::make('client_company')->label('Компания')->required()->maxLength(255),
                     TextInput::make('client_name')->label('Контактное лицо')->maxLength(255),
                     TextInput::make('client_email')->label('Email')->email()->required()->maxLength(255),
+                    Textarea::make('analysis_summary')->label('Результат автоматического разбора')
+                        ->disabled()->dehydrated(false)->rows(2)->columnSpanFull(),
                     Select::make('product_ids')
                         ->label('Товары для КП')
                         ->multiple()->required()->searchable()
@@ -144,6 +147,7 @@ class ViewCrmMailThread extends ViewRecord
                         'client_email' => $data['client_email'],
                     ]));
                     session()->put('commercial_document_product_ids', $data['product_ids']);
+                    session()->put('commercial_document_product_quantities', $prepared['product_quantities']);
                     session()->put('commercial_document_create_mail_draft', true);
 
                     return redirect(CommercialDocumentResource::getUrl('create'));

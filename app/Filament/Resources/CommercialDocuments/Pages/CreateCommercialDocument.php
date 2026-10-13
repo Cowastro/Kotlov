@@ -21,6 +21,7 @@ class CreateCommercialDocument extends CreateRecord
         $this->createMailDraft = (bool) session()->pull('commercial_document_create_mail_draft', false);
         $prefill = session()->pull('commercial_document_prefill', []);
         $productIds = collect(session()->pull('commercial_document_product_ids', []))->map(fn ($id): int => (int) $id)->filter()->unique();
+        $quantities = session()->pull('commercial_document_product_quantities', []);
         if ($productIds->isEmpty()) {
             if ($prefill !== []) {
                 $this->form->fill(array_merge($this->data, $prefill));
@@ -29,17 +30,21 @@ class CreateCommercialDocument extends CreateRecord
             return;
         }
 
-        $items = Product::query()->whereIn('id', $productIds)->get()->map(fn (Product $product): array => [
-            'product_id' => $product->id,
-            'name' => $product->name,
-            'sku' => $product->sku,
-            'unit' => $product->unit ?: 'шт.',
-            'quantity' => 1,
-            'unit_price' => (float) $product->price,
-            'discount_percent' => 0,
-            'vat_rate' => 20,
-            'line_total' => (float) $product->price,
-        ])->all();
+        $items = Product::query()->whereIn('id', $productIds)->get()->map(function (Product $product) use ($quantities): array {
+            $quantity = max(0.001, (float) ($quantities[$product->id] ?? 1));
+
+            return [
+                'product_id' => $product->id,
+                'name' => $product->name,
+                'sku' => $product->sku,
+                'unit' => $product->unit ?: 'шт.',
+                'quantity' => $quantity,
+                'unit_price' => (float) $product->price,
+                'discount_percent' => 0,
+                'vat_rate' => 20,
+                'line_total' => round((float) $product->price * $quantity, 2),
+            ];
+        })->all();
 
         $this->form->fill(array_merge($this->data, $prefill, ['items' => $items]));
     }

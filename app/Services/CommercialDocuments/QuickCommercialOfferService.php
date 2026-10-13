@@ -16,20 +16,27 @@ class QuickCommercialOfferService
         'для', 'или', 'как', 'что', 'это', 'нам', 'вам', 'вас', 'при', 'под', 'над', 'без', 'из', 'на', 'по', 'от', 'до',
     ];
 
+    public function __construct(private readonly CommercialOfferMailAnalyzer $mailAnalyzer) {}
+
     /**
-     * @return array{prefill: array<string, mixed>, suggestions: array<int, string>, default_product_ids: list<int>}
+     * @return array{prefill: array<string, mixed>, suggestions: array<int, string>, default_product_ids: list<int>, product_quantities: array<int, float>, analysis_summary: string}
      */
-    public function prepare(CrmMailThread $thread): array
+    public function prepare(CrmMailThread $thread, ?bool $useAi = null): array
     {
         $thread->loadMissing(['counterparty.contactPoints', 'contact.contactPoints', 'messages']);
         $text = $this->sourceText($thread);
-        $tokens = $this->tokens($text);
+        $analysis = $this->mailAnalyzer->analyze($thread, $text, $useAi);
+        $aiSearchText = collect($analysis['items'])
+            ->flatMap(fn (array $item): array => [$item['query'], $item['sku']])
+            ->filter()->implode(' ');
+        $searchText = trim($text."\n".$aiSearchText);
+        $tokens = $this->tokens($searchText);
         $products = $this->candidateProducts($tokens);
 
         $ranked = $products
             ->map(fn (Product $product): array => [
                 'product' => $product,
-                'score' => $this->score($product, $tokens, $text),
+                'score' => $this->score($product, $tokens, $searchText),
             ])
             ->sortByDesc(fn (array $item): array => [$item['score'], (int) $item['product']->in_stock, (int) $item['product']->views_count])
             ->values();
@@ -54,9 +61,13 @@ class QuickCommercialOfferService
             : [];
 
         return [
-            'prefill' => $this->clientPrefill($thread, $text),
+            'prefill' => $this->clientPrefill($thread, $text, $analysis),
             'suggestions' => $suggestions,
             'default_product_ids' => $defaults,
+            'product_quantities' => $ranked->take(12)->mapWithKeys(fn (array $item): array => [
+                $item['product']->id => $this->quantityForProduct($item['product'], $analysis['items']),
+            ])->all(),
+            'analysis_summary' => $this->analysisSummary($analysis),
         ];
     }
 
@@ -170,21 +181,63 @@ class QuickCommercialOfferService
     }
 
     /** @return array<string, mixed> */
-    private function clientPrefill(CrmMailThread $thread, string $text): array
+    private function clientPrefill(CrmMailThread $thread, string $text, array $analysis): array
     {
         $counterparty = $thread->counterparty;
-        $company = $counterparty?->legal_name ?: $counterparty?->name ?: $this->extractCompany($text);
+        $company = $counterparty?->legal_name ?: $counterparty?->name ?: $analysis['company'] ?: $this->extractCompany($text);
 
         return [
             'type' => 'quote',
             'crm_mail_thread_id' => $thread->id,
-            'client_name' => $thread->contact?->full_name ?: $thread->participant_name,
+            'client_name' => $thread->contact?->full_name ?: $analysis['contact_name'] ?: $thread->participant_name,
             'client_company' => $company,
             'client_email' => $thread->participant_email,
             'client_phone' => $thread->contact?->phones_list ?: $counterparty?->phones_list,
             'client_unp' => $counterparty?->unp,
             'client_address' => $counterparty?->legal_address,
         ];
+    }
+
+    /** @param list<array{query: string, sku: ?string, quantity: float}> $items */
+    private function quantityForProduct(Product $product, array $items): float
+    {
+        $productSku = Str::lower(trim((string) $product->sku));
+        $productName = Str::lower($product->name.' '.$product->h1);
+        $bestQuantity = 1.0;
+        $bestScore = 0;
+
+        foreach ($items as $item) {
+            $itemSku = Str::lower(trim((string) ($item['sku'] ?? '')));
+            if ($productSku !== '' && $itemSku !== '' && ($productSku === $itemSku || Str::contains($productSku, $itemSku))) {
+                return (float) $item['quantity'];
+            }
+
+            $overlap = $this->tokens((string) $item['query'])
+                ->filter(fn (string $token): bool => Str::contains($productName, $token))
+                ->count();
+            if ($overlap > $bestScore) {
+                $bestScore = $overlap;
+                $bestQuantity = (float) $item['quantity'];
+            }
+        }
+
+        return $bestScore > 0 ? $bestQuantity : 1.0;
+    }
+
+    private function analysisSummary(array $analysis): string
+    {
+        if (! $analysis['used']) {
+            return 'DeepSeek недоступен или не использован — выполнен быстрый подбор по артикулу и словам письма.';
+        }
+
+        $items = collect($analysis['items'])->map(function (array $item): string {
+            $name = $item['sku'] ?: $item['query'];
+
+            return $name.' × '.$item['quantity'];
+        })->implode('; ');
+
+        return 'DeepSeek: '.($analysis['company'] ?: 'компания не определена').'. '
+            .($items !== '' ? 'Распознано: '.$items.'.' : 'Позиции автоматически не распознаны — выберите товар вручную.');
     }
 
     private function extractCompany(string $text): ?string
