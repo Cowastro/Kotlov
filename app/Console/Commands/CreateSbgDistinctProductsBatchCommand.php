@@ -693,6 +693,38 @@ class CreateSbgDistinctProductsBatchCommand extends Command
         ],
     ];
 
+    private const BATCH_RESEARCHED_PRICED_20261013_Y = [
+        'УТ-00007827' => [
+            'template' => 'PS-009.743',
+            'external_sku' => 'TS.ST5.TRB.0115.79173',
+            'fragments' => ['Труба L250', 'ТМ-Р', '304-0.8', 'D115'],
+            'name' => 'Теплов и Сухов Труба L250 ТМ-Р 304-0.8 D115 (У)',
+            'retail' => 31.30,
+            'images' => ['img/products/generated/teplov-suhov-truba-l250-tm-r-304-08-d115.png'],
+            'source_url' => 'https://pechki66.ru/city/rostov-na-donu/product/truba-mono-l250-tm-r-304-0-8-d-115-tis-standart/',
+            'short' => 'Одностенная труба дымохода Теплов и Сухов ТМ-Р длиной 250 мм и диаметром 115 мм из AISI 304 толщиной 0,8 мм.',
+            'content' => '<p><strong>Теплов и Сухов ТМ-Р L250 D115</strong> — короткая одностенная дымоходная труба для подключения отопительного оборудования, сборки горизонтальных и вертикальных участков дымохода.</p><p>Труба изготовлена из нержавеющей стали AISI 304 толщиной 0,8 мм, сварена встык методом TIG и рассчитана на рабочую температуру до 600 °C. Подходит для оборудования, работающего на дровах, газе или пеллетах.</p>',
+            'specs' => [
+                ['key' => 'Тип', 'value' => 'Труба дымоходная одностенная'],
+                ['key' => 'Система', 'value' => 'Моно'],
+                ['key' => 'Серия', 'value' => 'ТиС Стандарт'],
+                ['key' => 'Модель', 'value' => 'ТМ-Р'],
+                ['key' => 'Длина', 'value' => '250 мм'],
+                ['key' => 'Диаметр', 'value' => '115 мм'],
+                ['key' => 'Материал', 'value' => 'Нержавеющая сталь'],
+                ['key' => 'Марка стали', 'value' => 'AISI 304'],
+                ['key' => 'Толщина стали', 'value' => '0,8 мм'],
+                ['key' => 'Тип сварки', 'value' => 'TIG, встык'],
+                ['key' => 'Рабочая температура', 'value' => 'до 600 °C'],
+                ['key' => 'Рекомендуемое топливо', 'value' => 'Дрова, газ, пеллеты'],
+                ['key' => 'Масса', 'value' => '0,6 кг'],
+                ['key' => 'Гарантия производителя', 'value' => '10 лет'],
+                ['key' => 'Артикул производителя', 'value' => 'TS.ST5.TRB.0115.79173'],
+                ['key' => 'Страна производства', 'value' => 'Россия'],
+            ],
+        ],
+    ];
+
     public function handle(IntegrationProductCreator $creator): int
     {
         $rows = match ($this->option('batch')) {
@@ -720,6 +752,7 @@ class CreateSbgDistinctProductsBatchCommand extends Command
             'researched-priced-20261013-v' => self::BATCH_RESEARCHED_PRICED_20261013_V,
             'researched-priced-20261013-w' => self::BATCH_RESEARCHED_PRICED_20261013_W,
             'researched-priced-20261013-x' => self::BATCH_RESEARCHED_PRICED_20261013_X,
+            'researched-priced-20261013-y' => self::BATCH_RESEARCHED_PRICED_20261013_Y,
             default => null,
         };
 

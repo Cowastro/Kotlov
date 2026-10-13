@@ -1281,4 +1281,69 @@ class CreateSbgDistinctProductsBatchCommandTest extends TestCase
         $this->assertStringNotContainsString('rub', mb_strtolower($product->content));
         $this->assertSame('manual_created', $item->fresh()->match_method);
     }
+
+    public function test_it_creates_the_aisi_304_l250_pipe_instead_of_linking_the_aisi_430_l1000_candidate(): void
+    {
+        $source = IntegrationSource::query()->create([
+            'code' => 'onec-sbg-teplov-standard-304-l250-d115',
+            'name' => '1С СанБизнесГруп',
+            'settings' => ['partner_name' => 'ООО «СанБизнесГруп»'],
+            'is_active' => true,
+            'update_stock' => true,
+        ]);
+        $category = Category::query()->create([
+            'name' => 'Трубы моно',
+            'slug' => 'mono-pipes-304-l250-test',
+            'parent_id' => 0,
+        ]);
+        $brand = Brand::query()->create(['name' => 'Теплов и Сухов', 'slug' => 'teplov-i-suhov-standard-l250-test']);
+        $wrongPipeCandidate = Product::query()->create([
+            'category_id' => $category->id,
+            'brand_id' => $brand->id,
+            'sku' => 'PS-009.743',
+            'name' => 'Труба моно L1000 ТМ-Р (430-1,0) D115',
+            'slug' => 'teplov-pipe-430-l1000-d115-template-for-l250',
+            'price' => 70,
+            'images' => ['product/009/009743/pipe.jpg'],
+        ]);
+        $item = IntegrationProduct::query()->create([
+            'integration_source_id' => $source->id,
+            'external_id' => 'teplov-standard-pipe-304-l250-d115',
+            'external_code' => 'УТ-00007827',
+            'external_sku' => 'TS.ST5.TRB.0115.79173',
+            'name' => 'Труба L250 ТМ-Р 304-0.8 D115 (У)',
+            'price_byn' => null,
+            'stock_quantity' => 2,
+            'match_status' => 'ambiguous',
+            'candidates' => [['product_id' => $wrongPipeCandidate->id, 'score' => 0.73]],
+        ]);
+
+        $this->artisan('integration:create-sbg-distinct-products', [
+            '--batch' => 'researched-priced-20261013-y',
+            '--code' => ['УТ-00007827'],
+            '--apply' => true,
+        ])->assertSuccessful();
+
+        $product = $item->fresh()->product;
+        $this->assertNotNull($product);
+        $this->assertNotSame($wrongPipeCandidate->id, $product->id);
+        $this->assertSame($category->id, $product->category_id);
+        $this->assertSame($brand->id, $product->brand_id);
+        $this->assertSame('Теплов и Сухов Труба L250 ТМ-Р 304-0.8 D115 (У)', $product->name);
+        $this->assertSame('31.30', $product->price);
+        $this->assertSame('2', (string) $product->stock_qty);
+        $this->assertNull($item->fresh()->normalizedPriceByn());
+        $this->assertSame('250 мм', collect($product->specs)->firstWhere('key', 'Длина')['value']);
+        $this->assertSame('115 мм', collect($product->specs)->firstWhere('key', 'Диаметр')['value']);
+        $this->assertSame('AISI 304', collect($product->specs)->firstWhere('key', 'Марка стали')['value']);
+        $this->assertSame('TS.ST5.TRB.0115.79173', collect($product->specs)->firstWhere('key', 'Артикул производителя')['value']);
+        $this->assertSame(['img/products/generated/teplov-suhov-truba-l250-tm-r-304-08-d115.png'], $product->images);
+        $this->assertStringContainsString('truba-mono-l250', $product->content_source_url);
+        $this->assertStringNotContainsString('кандидат', mb_strtolower($product->content));
+        $this->assertStringNotContainsString('нельзя объединять', mb_strtolower($product->content));
+        $this->assertStringNotContainsString('розничная цена', mb_strtolower($product->content));
+        $this->assertStringNotContainsString('нбрб', mb_strtolower($product->content));
+        $this->assertStringNotContainsString('rub', mb_strtolower($product->content));
+        $this->assertSame('manual_created', $item->fresh()->match_method);
+    }
 }
