@@ -3122,6 +3122,50 @@ class CreateSbgDistinctProductsBatchCommand extends Command
         ],
     ];
 
+    // The supplier's SKAC25 code follows the same Eurotis TFA diameter convention as
+    // the verified SKAC20 row: d25 is the 25.0 mm outside diameter, i.e. DN20 / 1".
+    // Metagas lists the exact TFA DN20 pipe at 21.19 EUR per metre; at the NBRB rate
+    // of 3.3660 BYN/EUR on 2026-10-13 that is 71.32 BYN, rounded to 72 BYN retail.
+    private const BATCH_UNMATCHED_RESEARCHED_20261013_CT = [
+        'УТ-00000969' => [
+            'template_slug' => 'truba-eurotis-italiya-iz-nerzhaveyushhej-stali-34',
+            'allow_unmatched' => true,
+            'category_slug' => 'gofrirovanye-truby',
+            'external_sku' => 'SKAC25',
+            'hydrate_external_sku' => true,
+            'fragments' => ['Труба гофрированная', 'Eurotis', 'd25', 'SKAC25'],
+            'brand' => [
+                'name' => 'Eurotis',
+                'slug' => 'eurotis',
+                'country' => 'Италия',
+            ],
+            'name' => 'Eurotis TFA Труба гофрированная CSST AISI 304 Ø25 мм (DN20, 1″), 1 м',
+            'retail' => 72.00,
+            'images' => [
+                'product/005/005763/765-truba-gofra.jpg',
+            ],
+            'source_url' => 'https://eshop.metagas.sk/produkt/ostatny-instalacny-material-a-naradie/pripojne-hadice-voda-a-plyn/vlnovce/eurotis-trubka-1-tfa-50m-dn-20-1173232',
+            'short' => 'Гибкая гофрированная труба Eurotis TFA из нержавеющей стали AISI 304: DN20, наружный Ø25 мм, присоединение 1″. Цена указана за 1 метр.',
+            'content' => '<p><strong>Eurotis TFA DN20</strong> — формуемая гофрированная труба CSST из нержавеющей стали AISI 304 для систем водоснабжения, отопления и солнечных установок.</p><p>Обозначение d25 относится к наружному диаметру 25,0 мм; номинальный размер трубы — DN20, а присоединение — 1″. Гофрированная конструкция позволяет прокладывать трассу с меньшим числом соединений.</p><p>Труба продаётся погонными метрами. Для герметичного монтажа используйте совместимые фитинги и инструмент Eurotis для развальцовки.</p>',
+            'specs' => [
+                ['key' => 'Тип', 'value' => 'Гофрированная труба CSST'],
+                ['key' => 'Код поставщика', 'value' => 'SKAC25'],
+                ['key' => 'Серия', 'value' => 'TFA'],
+                ['key' => 'Номинальный диаметр', 'value' => 'DN20'],
+                ['key' => 'Присоединительный размер', 'value' => '1″'],
+                ['key' => 'Наружный диаметр', 'value' => '25,0 мм'],
+                ['key' => 'Внутренний диаметр', 'value' => '19,7 мм'],
+                ['key' => 'Толщина стали', 'value' => '0,3 мм'],
+                ['key' => 'Материал', 'value' => 'Нержавеющая сталь AISI 304'],
+                ['key' => 'Номинальное давление', 'value' => '15 бар'],
+                ['key' => 'Назначение', 'value' => 'Водоснабжение, отопление, солнечные системы'],
+                ['key' => 'Единица продажи', 'value' => '1 погонный метр'],
+                ['key' => 'Бренд', 'value' => 'Eurotis'],
+                ['key' => 'Страна производства', 'value' => 'Италия'],
+            ],
+        ],
+    ];
+
     public function handle(
         IntegrationProductCreator $creator,
         IntegrationProductMatchDecision $matchDecision,
@@ -3224,6 +3268,7 @@ class CreateSbgDistinctProductsBatchCommand extends Command
             'unmatched-researched-20261013-cq' => self::BATCH_UNMATCHED_RESEARCHED_20261013_CQ,
             'unmatched-researched-20261013-cr' => self::BATCH_UNMATCHED_RESEARCHED_20261013_CR,
             'unmatched-disputed-20261013-cs' => self::BATCH_UNMATCHED_DISPUTED_20261013_CS,
+            'unmatched-researched-20261013-ct' => self::BATCH_UNMATCHED_RESEARCHED_20261013_CT,
             default => null,
         };
 

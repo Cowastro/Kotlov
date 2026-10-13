@@ -7391,4 +7391,107 @@ class CreateSbgDistinctProductsBatchCommandTest extends TestCase
         $this->assertSame($productCount, Product::query()->count());
         $this->assertSame('manual_research_unresolved', $item->fresh()->match_method);
     }
+
+    public function test_it_creates_the_exact_unmatched_eurotis_skac25_pipe(): void
+    {
+        $source = IntegrationSource::query()->create([
+            'code' => 'onec-sbg-unmatched-eurotis-skac25',
+            'name' => '1С СанБизнесГруп',
+            'settings' => ['partner_name' => 'ООО «СанБизнесГруп»'],
+            'is_active' => true,
+            'update_stock' => true,
+        ]);
+        $pipes = Category::query()->create([
+            'name' => 'Трубы и фитинги',
+            'slug' => 'truby-i-fitingi',
+            'parent_id' => 0,
+            'is_active' => true,
+        ]);
+        $category = Category::query()->create([
+            'name' => 'Гофрированные трубы',
+            'slug' => 'gofrirovanye-truby',
+            'parent_id' => $pipes->id,
+            'type' => 'catalog',
+            'is_active' => true,
+        ]);
+        Product::query()->create([
+            'category_id' => $category->id,
+            'sku' => 'PS-005.763',
+            'name' => 'Eurotis TFA Труба гофрированная CSST AISI 304 Ø20 мм (DN15, 3/4″), 1 м',
+            'slug' => 'truba-eurotis-italiya-iz-nerzhaveyushhej-stali-34',
+            'price' => 49,
+            'images' => ['product/005/005763/765-truba-gofra.jpg'],
+            'is_active' => true,
+            'is_archived' => false,
+        ]);
+        $item = IntegrationProduct::query()->create([
+            'integration_source_id' => $source->id,
+            'external_id' => 'bbd2cbd6-1f62-11e9-bad6-1c1b0d1de7c2',
+            'external_code' => 'УТ-00000969',
+            'external_sku' => null,
+            'name' => 'Труба гофрированная Eurotis d25 SKAC25',
+            'price' => 24.73,
+            'price_currency' => 'BYN',
+            'price_currency_rate' => 1,
+            'price_tax_mode' => IntegrationSource::PRICE_TAX_EXCLUSIVE,
+            'price_vat_rate' => 20,
+            'price_byn' => 29.68,
+            'stock_quantity' => 0.01,
+            'stock_confirmed_at' => now(),
+            'match_status' => 'unmatched',
+            'candidates' => null,
+        ]);
+        $productCount = Product::query()->count();
+
+        $dryRunStatus = \Illuminate\Support\Facades\Artisan::call('integration:create-sbg-distinct-products', [
+            '--batch' => 'unmatched-researched-20261013-ct',
+            '--code' => ['УТ-00000969'],
+        ]);
+        $this->assertSame(0, $dryRunStatus, \Illuminate\Support\Facades\Artisan::output());
+        $this->assertNull($item->fresh()->product_id);
+        $this->assertNull($item->fresh()->external_sku);
+
+        $this->artisan('integration:create-sbg-distinct-products', [
+            '--batch' => 'unmatched-researched-20261013-ct',
+            '--code' => ['УТ-00000969'],
+            '--apply' => true,
+        ])->assertSuccessful();
+
+        $item->refresh();
+        $product = $item->product()->sole();
+        $brand = Brand::query()->where('slug', 'eurotis')->sole();
+        $this->assertSame($productCount + 1, Product::query()->count());
+        $this->assertSame('SKAC25', $item->external_sku);
+        $this->assertSame('matched', $item->match_status);
+        $this->assertSame('manual_created', $item->match_method);
+        $this->assertSame($category->id, $item->target_category_id);
+        $this->assertSame('Eurotis TFA Труба гофрированная CSST AISI 304 Ø25 мм (DN20, 1″), 1 м', $product->name);
+        $this->assertSame('72.00', $product->price);
+        $this->assertSame('1', (string) $product->stock_qty);
+        $this->assertTrue((bool) $product->in_stock);
+        $this->assertSame(Product::AVAILABILITY_IN_STOCK, $product->effectiveAvailabilityStatus());
+        $this->assertSame($brand->id, $product->brand_id);
+        $this->assertSame($category->id, $product->category_id);
+        $this->assertSame('DN20', collect($product->specs)->firstWhere('key', 'Номинальный диаметр')['value']);
+        $this->assertSame('25,0 мм', collect($product->specs)->firstWhere('key', 'Наружный диаметр')['value']);
+        $this->assertSame('1″', collect($product->specs)->firstWhere('key', 'Присоединительный размер')['value']);
+        $this->assertSame(['product/005/005763/765-truba-gofra.jpg'], $product->images);
+        $this->assertStringContainsString('metagas.sk', $product->content_source_url);
+        $this->assertDatabaseHas('supplier_product_mappings', [
+            'supplier_code' => $source->matchingSupplierCode(),
+            'supplier_article' => 'SKAC25',
+            'product_id' => $product->id,
+            'product_sku' => $product->sku,
+            'confidence' => 'manual',
+            'is_active' => true,
+        ]);
+
+        $this->artisan('integration:create-sbg-distinct-products', [
+            '--batch' => 'unmatched-researched-20261013-ct',
+            '--code' => ['УТ-00000969'],
+            '--apply' => true,
+        ])->assertSuccessful();
+        $this->assertSame($productCount + 1, Product::query()->count());
+        $this->assertSame($product->id, $item->fresh()->product_id);
+    }
 }
