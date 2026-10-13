@@ -5,6 +5,7 @@ namespace App\Services\Market;
 use App\Models\Product;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\RequestException;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
 use Throwable;
@@ -31,6 +32,14 @@ class MarketWebResearchService
     public function research(Product $product, float $quotePrice): array
     {
         $provider = $this->provider();
+        $safeMode = $provider['name'] === 'deepseek'
+            && (bool) config('services.ai.market_research_safe_mode', true);
+        if ($safeMode) {
+            $provider['model'] = trim((string) config(
+                'services.ai.deepseek_research_fallback_model',
+                'deepseek-flash'
+            ));
+        }
         $apiKey = $provider['api_key'];
         if ($apiKey === '') {
             return $this->failure('Поиск не настроен: отсутствует API-ключ выбранного провайдера.');
@@ -40,71 +49,109 @@ class MarketWebResearchService
         }
 
         $product->loadMissing(['brand', 'category']);
-        $models = $provider['name'] === 'azure'
-            ? [$provider['model']]
-            : array_values(array_unique(array_filter([
-                $provider['model'],
-                $provider['name'] === 'deepseek'
-                    ? trim((string) config('services.ai.deepseek_research_fallback_model', 'deepseek-flash'))
-                    : trim((string) config('services.ai.openai_model', 'gpt-4.1')),
-            ])));
-        $lastError = null;
-
-        foreach ($models as $model) {
-            try {
-                $request = Http::acceptJson()
-                    ->timeout((int) config('services.ai.openai_research_timeout', 180))
-                    ->retry(2, 1500, throw: false);
-                if ($provider['name'] === 'azure') {
-                    $request = $request->withHeaders(['api-key' => $apiKey]);
-                } elseif ($provider['name'] === 'deepseek') {
-                    $request = $request->withHeaders([
-                        'x-api-key' => $apiKey,
-                        'anthropic-version' => '2023-06-01',
-                    ]);
-                } else {
-                    $request = $request->withToken($apiKey);
-                    $proxy = trim((string) config('services.ai.openai_proxy'));
-                    if ($proxy !== '') {
-                        $request = $request->withOptions(['proxy' => $proxy]);
-                    }
-                }
-
-                $response = $request->post(
-                    $provider['responses_url'],
-                    $this->payload($product, $quotePrice, $model, $provider['name'])
-                );
-
-                if (! $response->successful()) {
-                    $lastError = $this->apiError($response->json(), $response->status(), $provider['label']);
-
-                    continue;
-                }
-
-                $result = $this->normalize($response->json(), $product, $quotePrice, $model);
-                if (($result['status'] ?? null) === 'ready') {
-                    return $result;
-                }
-
-                $lastError = (string) ($result['message'] ?? 'модель не вернула структурированный отчёт');
-            } catch (ConnectionException|RequestException $exception) {
-                $lastError = $exception->getMessage();
-            } catch (Throwable $exception) {
-                report($exception);
-                $lastError = $exception->getMessage();
-            }
+        $cacheKey = 'market-research:'.hash('sha256', implode('|', [
+            $provider['name'],
+            $provider['model'],
+            (string) ($product->getKey() ?: $product->sku),
+            Str::lower(trim((string) $product->name)),
+            number_format($quotePrice, 2, '.', ''),
+        ]));
+        $cached = Cache::get($cacheKey);
+        if (is_array($cached) && ($cached['status'] ?? null) === 'ready') {
+            return $cached;
         }
 
-        return $this->failure('Веб-поиск не завершён. '.($lastError ?: 'Провайдер не вернул ответ.'));
+        $lock = Cache::lock($cacheKey.':lock', max(
+            30,
+            (int) config('services.ai.openai_research_timeout', 180) + 10
+        ));
+        if (! $lock->get()) {
+            return $this->failure('Этот поиск уже выполняется. Дождитесь результата, повторный запрос не отправлен.');
+        }
+
+        $models = $safeMode
+            ? [$provider['model']]
+            : ($provider['name'] === 'azure'
+                ? [$provider['model']]
+                : array_values(array_unique(array_filter([
+                    $provider['model'],
+                    $provider['name'] === 'deepseek'
+                        ? trim((string) config('services.ai.deepseek_research_fallback_model', 'deepseek-flash'))
+                        : trim((string) config('services.ai.openai_model', 'gpt-4.1')),
+                ]))));
+        $lastError = null;
+
+        try {
+            foreach ($models as $model) {
+                try {
+                    $request = Http::acceptJson()
+                        ->timeout((int) config('services.ai.openai_research_timeout', 180));
+                    if (! $safeMode) {
+                        $request = $request->retry(2, 1500, throw: false);
+                    }
+                    if ($provider['name'] === 'azure') {
+                        $request = $request->withHeaders(['api-key' => $apiKey]);
+                    } elseif ($provider['name'] === 'deepseek') {
+                        $request = $request->withHeaders([
+                            'x-api-key' => $apiKey,
+                            'anthropic-version' => '2023-06-01',
+                        ]);
+                    } else {
+                        $request = $request->withToken($apiKey);
+                        $proxy = trim((string) config('services.ai.openai_proxy'));
+                        if ($proxy !== '') {
+                            $request = $request->withOptions(['proxy' => $proxy]);
+                        }
+                    }
+
+                    $response = $request->post(
+                        $provider['responses_url'],
+                        $this->payload($product, $quotePrice, $model, $provider['name'])
+                    );
+
+                    if (! $response->successful()) {
+                        $lastError = $this->apiError($response->json(), $response->status(), $provider['label']);
+
+                        continue;
+                    }
+
+                    $result = $this->normalize($response->json(), $product, $quotePrice, $model);
+                    if (($result['status'] ?? null) === 'ready') {
+                        Cache::put(
+                            $cacheKey,
+                            $result,
+                            now()->addMinutes(max(1, (int) config('services.ai.market_research_cache_minutes', 360)))
+                        );
+
+                        return $result;
+                    }
+
+                    $lastError = (string) ($result['message'] ?? 'модель не вернула структурированный отчёт');
+                } catch (ConnectionException|RequestException $exception) {
+                    $lastError = $exception->getMessage();
+                } catch (Throwable $exception) {
+                    report($exception);
+                    $lastError = $exception->getMessage();
+                }
+            }
+
+            return $this->failure('Веб-поиск не завершён. '.($lastError ?: 'Провайдер не вернул ответ.'));
+        } finally {
+            $lock->release();
+        }
     }
 
     /** @return array<string, mixed> */
     private function payload(Product $product, float $quotePrice, string $model, string $provider): array
     {
         if ($provider === 'deepseek') {
+            $safeMode = (bool) config('services.ai.market_research_safe_mode', true);
+
             return [
                 'model' => $model,
-                'max_tokens' => 16000,
+                'max_tokens' => $safeMode
+                    ? max(512, min(4000, (int) config('services.ai.market_research_max_output_tokens', 2500)))
+                    : 16000,
                 'system' => $this->instructions()."\n\n".$this->deepSeekJsonContract(),
                 'messages' => [[
                     'role' => 'user',
@@ -113,7 +160,9 @@ class MarketWebResearchService
                 'tools' => [[
                     'type' => 'web_search_20250305',
                     'name' => 'web_search',
-                    'max_uses' => 12,
+                    'max_uses' => $safeMode
+                        ? max(1, min(3, (int) config('services.ai.market_research_max_search_uses', 2)))
+                        : 12,
                 ]],
             ];
         }

@@ -190,6 +190,7 @@ class MarketWebResearchServiceTest extends TestCase
             'services.ai.deepseek_anthropic_url' => 'https://api.deepseek.test/anthropic/v1/messages',
             'services.ai.deepseek_research_model' => 'deepseek-v4-pro',
             'services.ai.deepseek_research_fallback_model' => 'deepseek-flash',
+            'services.ai.market_research_safe_mode' => false,
         ]);
 
         $report = [
@@ -257,6 +258,7 @@ class MarketWebResearchServiceTest extends TestCase
             'services.ai.deepseek_anthropic_url' => 'https://api.deepseek.test/anthropic/v1/messages',
             'services.ai.deepseek_research_model' => 'deepseek-v4-pro',
             'services.ai.deepseek_research_fallback_model' => 'deepseek-flash',
+            'services.ai.market_research_safe_mode' => false,
         ]);
 
         Http::fakeSequence('https://api.deepseek.test/anthropic/v1/messages')
@@ -279,6 +281,54 @@ class MarketWebResearchServiceTest extends TestCase
         $this->assertSame('deepseek-flash', $result['model']);
 
         Http::assertSentCount(2);
+    }
+
+    public function test_safe_mode_uses_flash_limits_search_and_reuses_cached_result(): void
+    {
+        config()->set([
+            'services.ai.market_research_provider' => 'deepseek',
+            'services.ai.api_key' => 'deepseek-secret-key',
+            'services.ai.deepseek_anthropic_url' => 'https://api.deepseek.test/anthropic/v1/messages',
+            'services.ai.deepseek_research_model' => 'deepseek-v4-pro',
+            'services.ai.deepseek_research_fallback_model' => 'deepseek-flash',
+            'services.ai.market_research_safe_mode' => true,
+            'services.ai.market_research_max_search_uses' => 2,
+            'services.ai.market_research_max_output_tokens' => 2500,
+            'services.ai.market_research_cache_minutes' => 360,
+        ]);
+
+        Http::fake([
+            'https://api.deepseek.test/anthropic/v1/messages' => Http::response([
+                'type' => 'message',
+                'model' => 'deepseek-flash',
+                'content' => [[
+                    'type' => 'text',
+                    'text' => json_encode([
+                        'summary' => 'Поставщики не найдены.',
+                        'verdict' => 'Нужна ручная проверка.',
+                        'confidence' => 'low',
+                        'search_queries' => ['TEST-SAFE'],
+                        'offers' => [],
+                        'rejected_candidates' => [],
+                    ], JSON_UNESCAPED_UNICODE),
+                ]],
+            ]),
+        ]);
+
+        $product = new Product(['name' => 'Безопасный поиск', 'sku' => 'TEST-SAFE']);
+        $first = app(MarketWebResearchService::class)->research($product, 100);
+        $second = app(MarketWebResearchService::class)->research($product, 100);
+
+        $this->assertSame('ready', $first['status']);
+        $this->assertSame($first, $second);
+        Http::assertSentCount(1);
+        Http::assertSent(function (Request $request): bool {
+            $data = $request->data();
+
+            return $data['model'] === 'deepseek-flash'
+                && $data['tools'][0]['max_uses'] === 2
+                && $data['max_tokens'] === 2500;
+        });
     }
 
     /** @return array<string, mixed> */
