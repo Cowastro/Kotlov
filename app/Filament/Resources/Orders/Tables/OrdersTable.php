@@ -340,6 +340,11 @@ class OrdersTable
                             ->filter()
                             ->implode(' · ');
                     })
+                    ->extraCellAttributes(fn (Order $record): array => [
+                        'aria-label' => collect([$record->onecSyncLabel(), $record->onecSyncDescription()])
+                            ->filter()
+                            ->implode(' · '),
+                    ])
                     ->size(IconSize::Large)
                     ->alignCenter()
                     ->width('56px'),
