@@ -183,7 +183,10 @@ jobs:
                   --output=storage/app/reports/catalog/unlinked-products.csv
                 ;;
               audit-price-integrity)
-                "$PHP_BIN" artisan catalog:audit-price-integrity --stale-hours=24
+                "$PHP_BIN" artisan catalog:audit-price-integrity \
+                  --stale-hours=24 \
+                  --output=storage/app/private/catalog-price-audit.csv \
+                  --research-output=storage/app/reports/catalog/price-research-queue.csv
                 ;;
               verify-commercial-pdf)
                 "$PHP_BIN" artisan commercial-documents:verify-pdf "${ARTISAN_ARGV[@]}"
@@ -313,5 +316,30 @@ jobs:
         with:
           name: unlinked-products-audit
           path: audit-artifacts/unlinked-products.csv
+          if-no-files-found: error
+          retention-days: 7
+
+      - name: Download procurement-safe market research queue
+        if: inputs.task == 'audit-price-integrity'
+        env:
+          SERVER_HOST: ${{ secrets.SERVER_HOST }}
+          SERVER_PORT: ${{ secrets.SERVER_PORT }}
+          SERVER_USER: ${{ secrets.SERVER_USER }}
+          SERVER_PATH: ${{ secrets.SERVER_PATH }}
+        run: |
+          set -euo pipefail
+          port="${SERVER_PORT:-22}"
+          server_path="${SERVER_PATH:-/var/www/h209767/data/www/new.kotlov.by}"
+          mkdir -p audit-artifacts
+          scp -i ~/.ssh/server_key -P "$port" \
+            "$SERVER_USER@$SERVER_HOST:$server_path/storage/app/reports/catalog/price-research-queue.csv" \
+            audit-artifacts/price-research-queue.csv
+
+      - name: Upload procurement-safe market research queue
+        if: inputs.task == 'audit-price-integrity'
+        uses: actions/upload-artifact@v4
+        with:
+          name: price-research-queue
+          path: audit-artifacts/price-research-queue.csv
           if-no-files-found: error
           retention-days: 7

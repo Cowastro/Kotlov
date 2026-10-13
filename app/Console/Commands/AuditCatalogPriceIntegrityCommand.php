@@ -11,7 +11,8 @@ class AuditCatalogPriceIntegrityCommand extends Command
 {
     protected $signature = 'catalog:audit-price-integrity
         {--stale-hours=24 : Age after which a positive supplier stock snapshot requires attention}
-        {--output= : Optional CSV path for product-level price anomalies}';
+        {--output= : Optional private CSV path for product-level price anomalies}
+        {--research-output= : Optional procurement-safe CSV path for external market research}';
 
     protected $description = 'Read-only aggregate audit of catalog prices, margins, currencies and stock evidence.';
 
@@ -101,6 +102,15 @@ class AuditCatalogPriceIntegrityCommand extends Command
         if (filled($this->option('output'))) {
             $metrics['report_rows'] = $this->writeReport(
                 (string) $this->option('output'),
+                $active,
+                $supplierCost,
+                $minimumMargin,
+            );
+        }
+
+        if (filled($this->option('research-output'))) {
+            $metrics['research_rows'] = $this->writeResearchReport(
+                (string) $this->option('research-output'),
                 $active,
                 $supplierCost,
                 $minimumMargin,
@@ -204,6 +214,110 @@ class AuditCatalogPriceIntegrityCommand extends Command
             'issues', 'product_id', 'sku', 'name', 'category', 'path',
             'retail_price', 'old_price', 'minimum_supplier_cost', 'margin_percent',
             'currency', 'availability_status', 'updated_at',
+        ], ';', '"', '');
+        foreach ($rows as $row) {
+            fputcsv($handle, $row, ';', '"', '');
+        }
+        fclose($handle);
+
+        return $rows->count();
+    }
+
+    private function writeResearchReport(
+        string $output,
+        Builder $active,
+        Builder $supplierCost,
+        float $minimumMargin,
+    ): int {
+        $isAbsolute = preg_match('/^(?:[A-Za-z]:[\\\\\/]|[\\\\\/])/', $output) === 1;
+        $path = $isAbsolute ? $output : base_path($output);
+        File::ensureDirectoryExists(dirname($path));
+
+        $priority = [
+            'retail_below_supplier_cost' => 10,
+            'retail_margin_below_minimum' => 20,
+            'retail_above_four_times_supplier_cost' => 30,
+            'zero_or_missing_price' => 40,
+            'invalid_old_price' => 50,
+            'non_byn_currency' => 60,
+        ];
+
+        $rows = (clone $active)
+            ->leftJoinSub($supplierCost, 'costs', 'costs.product_id', '=', 'p.id')
+            ->leftJoin('categories as c', 'c.id', '=', 'p.category_id')
+            ->leftJoin('brands as b', 'b.id', '=', 'p.brand_id')
+            ->get([
+                'p.id', 'p.sku', 'p.name', 'p.slug', 'p.price', 'p.price_old',
+                'p.currency', 'p.availability_status', 'p.updated_at',
+                'c.name as category', 'c.slug as category_slug',
+                'b.name as brand', 'costs.minimum_cost',
+            ])
+            ->map(function (object $row) use ($minimumMargin, $priority): ?array {
+                $price = (float) $row->price;
+                $oldPrice = (float) $row->price_old;
+                $cost = $row->minimum_cost === null ? null : (float) $row->minimum_cost;
+                $margin = $price > 0 && $cost !== null
+                    ? round(($price - $cost) / $price * 100, 2)
+                    : null;
+                $issues = [];
+
+                if ($cost !== null && $price > 0 && $price < $cost) {
+                    $issues[] = 'retail_below_supplier_cost';
+                }
+                if ($margin !== null && $margin < $minimumMargin) {
+                    $issues[] = 'retail_margin_below_minimum';
+                }
+                if ($cost !== null && $cost > 0 && $price > $cost * 4) {
+                    $issues[] = 'retail_above_four_times_supplier_cost';
+                }
+                if ($price <= 0) {
+                    $issues[] = 'zero_or_missing_price';
+                }
+                if ($oldPrice > 0 && $oldPrice <= $price) {
+                    $issues[] = 'invalid_old_price';
+                }
+                if (filled($row->currency) && mb_strtoupper((string) $row->currency) !== 'BYN') {
+                    $issues[] = 'non_byn_currency';
+                }
+
+                if ($issues === []) {
+                    return null;
+                }
+
+                return [
+                    'priority' => min(array_map(fn (string $issue): int => $priority[$issue], $issues)),
+                    'issues' => implode('|', $issues),
+                    'product_id' => (int) $row->id,
+                    'sku' => (string) $row->sku,
+                    'name' => (string) $row->name,
+                    'brand' => (string) ($row->brand ?? ''),
+                    'category' => (string) ($row->category ?? ''),
+                    'path' => '/'.trim((string) $row->category_slug, '/').'/'.trim((string) $row->slug, '/'),
+                    'retail_price' => $price > 0 ? number_format($price, 2, '.', '') : '',
+                    'old_price' => $oldPrice > 0 ? number_format($oldPrice, 2, '.', '') : '',
+                    'currency' => (string) $row->currency,
+                    'availability_status' => (string) $row->availability_status,
+                    'updated_at' => (string) $row->updated_at,
+                ];
+            })
+            ->filter()
+            ->sortBy([
+                ['priority', 'asc'],
+                ['brand', 'asc'],
+                ['category', 'asc'],
+                ['product_id', 'asc'],
+            ])
+            ->values();
+
+        $handle = fopen($path, 'wb');
+        if ($handle === false) {
+            throw new \RuntimeException('Unable to create market research queue: '.$path);
+        }
+
+        fwrite($handle, "\xEF\xBB\xBF");
+        fputcsv($handle, [
+            'priority', 'issues', 'product_id', 'sku', 'name', 'brand', 'category', 'path',
+            'retail_price', 'old_price', 'currency', 'availability_status', 'updated_at',
         ], ';', '"', '');
         foreach ($rows as $row) {
             fputcsv($handle, $row, ';', '"', '');

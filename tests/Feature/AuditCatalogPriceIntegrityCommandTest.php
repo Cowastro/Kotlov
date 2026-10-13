@@ -17,6 +17,7 @@ class AuditCatalogPriceIntegrityCommandTest extends TestCase
     public function test_it_reports_price_and_margin_anomalies_without_changing_catalog_data(): void
     {
         $report = storage_path('app/testing/price-integrity.csv');
+        $researchReport = storage_path('app/testing/price-integrity-research.csv');
         $category = Category::query()->create([
             'name' => 'Ценовой аудит',
             'slug' => 'price-audit',
@@ -52,15 +53,23 @@ class AuditCatalogPriceIntegrityCommandTest extends TestCase
         $this->artisan('catalog:audit-price-integrity', [
             '--stale-hours' => 24,
             '--output' => $report,
+            '--research-output' => $researchReport,
         ])
             ->expectsOutputToContain('metric.invalid_old_price=1')
             ->expectsOutputToContain('metric.retail_below_supplier_cost=1')
             ->expectsOutputToContain('metric.retail_margin_below_minimum=1')
             ->expectsOutputToContain('metric.report_rows=1')
+            ->expectsOutputToContain('metric.research_rows=1')
             ->assertSuccessful();
 
         $this->assertSame('90.00', $product->fresh()->price);
         $this->assertStringContainsString('PRICE-AUDIT-1', File::get($report));
+        $research = File::get($researchReport);
+        $this->assertStringContainsString('PRICE-AUDIT-1', $research);
+        $this->assertStringContainsString('retail_below_supplier_cost|retail_margin_below_minimum|invalid_old_price', $research);
+        $this->assertStringNotContainsString('minimum_supplier_cost', $research);
+        $this->assertStringNotContainsString('margin_percent', $research);
         File::delete($report);
+        File::delete($researchReport);
     }
 }
