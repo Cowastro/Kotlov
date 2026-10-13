@@ -946,6 +946,7 @@ XML;
             'name' => 'Больше не в наличии',
             'stock_quantity' => 8,
             'last_offer_seen_at' => now()->subHour(),
+            'stock_confirmed_at' => now()->subMinutes(1441),
         ]);
         IntegrationProduct::query()->create([
             'integration_source_id' => $source->id,
@@ -1012,6 +1013,63 @@ XML;
             ->value('stock_confirmed_at'));
         $run = IntegrationExchangeRun::query()->latest('id')->firstOrFail();
         $this->assertSame(1, data_get($run->summary, 'stock_snapshot.zeroed'));
+    }
+
+    public function test_completed_catalog_subset_keeps_recent_positive_one_c_stock_for_a_day(): void
+    {
+        $source = IntegrationSource::query()->create([
+            'code' => 'onec',
+            'name' => '1С',
+            'driver' => 'commerceml',
+            'settings' => [
+                'zero_missing_stock_on_complete' => true,
+                'stale_after_minutes' => 15,
+            ],
+        ]);
+        IntegrationProduct::query()->create([
+            'integration_source_id' => $source->id,
+            'external_id' => 'recent-positive-missing-from-subset',
+            'name' => 'Недавний подтверждённый остаток',
+            'stock_quantity' => 8,
+            'last_offer_seen_at' => now()->subHour(),
+            'stock_confirmed_at' => now()->subMinutes(1439),
+        ]);
+
+        $this->withBasicAuth('onec-test', 'secret-test')
+            ->get('/1c/exchange?type=catalog&mode=init')
+            ->assertOk();
+
+        $xml = <<<'XML'
+<?xml version="1.0" encoding="UTF-8"?>
+<КоммерческаяИнформация>
+  <ПакетПредложений><Предложения><Предложение>
+    <Ид>another-current-offer</Ид>
+    <Наименование>Другая позиция порции</Наименование>
+    <Количество>5</Количество>
+  </Предложение></Предложения></ПакетПредложений>
+</КоммерческаяИнформация>
+XML;
+        $this->call(
+            'POST',
+            '/1c/exchange?type=catalog&mode=file&filename=offers.xml',
+            [],
+            [],
+            [],
+            ['PHP_AUTH_USER' => 'onec-test', 'PHP_AUTH_PW' => 'secret-test'],
+            $xml,
+        )->assertOk();
+        $this->withBasicAuth('onec-test', 'secret-test')
+            ->get('/1c/exchange?type=catalog&mode=import&filename=offers.xml')
+            ->assertOk();
+        $this->withBasicAuth('onec-test', 'secret-test')
+            ->get('/1c/exchange?type=catalog&mode=complete')
+            ->assertOk()
+            ->assertSeeText('stock_zeroed=0');
+
+        $this->assertDatabaseHas('integration_products', [
+            'external_id' => 'recent-positive-missing-from-subset',
+            'stock_quantity' => 8,
+        ]);
     }
 
     public function test_catalog_import_uses_only_the_explicitly_selected_commerceml_warehouse(): void

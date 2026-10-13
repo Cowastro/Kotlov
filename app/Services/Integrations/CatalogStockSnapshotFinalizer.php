@@ -25,8 +25,17 @@ class CatalogStockSnapshotFinalizer
                     ->orWhere('last_offer_seen_at', '<', $snapshotStartedAt);
             });
 
-        $zeroed = (clone $omitted)->where('stock_quantity', '>', 0)->count();
-        $productIds = (clone $omitted)
+        // A completed 1C upload may contain only a subset of the catalogue.
+        // Absence from that subset is weaker evidence than an explicit zero in
+        // an offer, so keep the last confirmed positive balance for its full
+        // validity window before treating the omitted row as unavailable.
+        $expiredOmitted = (clone $omitted)->where(function ($query) use ($source): void {
+            $query->whereNull('stock_confirmed_at')
+                ->orWhere('stock_confirmed_at', '<', now()->subMinutes($source->stockValidityMinutes()));
+        });
+
+        $zeroed = (clone $expiredOmitted)->where('stock_quantity', '>', 0)->count();
+        $productIds = (clone $expiredOmitted)
             ->where('match_status', 'matched')
             ->whereNotNull('product_id')
             ->pluck('product_id')
@@ -34,7 +43,7 @@ class CatalogStockSnapshotFinalizer
             ->unique()
             ->all();
 
-        $omitted->update([
+        $expiredOmitted->update([
             'stock_quantity' => 0,
             'stock_confirmed_at' => now(),
         ]);
