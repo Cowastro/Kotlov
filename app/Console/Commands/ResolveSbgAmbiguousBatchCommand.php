@@ -335,7 +335,7 @@ class ResolveSbgAmbiguousBatchCommand extends Command
         'УТ-00003074' => [
             'sku' => 'PS-008.303',
             'item' => ['Насос циркуляц', '25-40', '180', 'UNIPUMP'],
-            'product' => ['Насос', 'Unipump', 'CP', '25-40', '130'],
+            'product' => ['Насос', 'Unipump', 'CP', '25-40'],
             'search' => true,
             'refresh' => [
                 'name' => 'UNIPUMP CP 25-40 180 циркуляционный насос',
