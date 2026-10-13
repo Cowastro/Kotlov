@@ -2007,6 +2007,14 @@ class CreateSbgDistinctProductsBatchCommand extends Command
         ],
     ];
 
+    private const BATCH_ARCHIVED_HOTTA_SENSOR_20261013_BM = [
+        'УТ-00002594' => [
+            'ignore_not_for_site' => true,
+            'candidate_slug' => 'datchik-temperatury-goryachej-vody-as16',
+            'fragments' => ['Датчик температуры', 'OS-P-3', '75-150', 'HOTTA'],
+        ],
+    ];
+
     public function handle(
         IntegrationProductCreator $creator,
         IntegrationProductMatchDecision $matchDecision,
@@ -2076,6 +2084,7 @@ class CreateSbgDistinctProductsBatchCommand extends Command
             'archived-20261013-bj' => self::BATCH_ARCHIVED_20261013_BJ,
             'not-for-site-20261013-bk' => self::BATCH_NOT_FOR_SITE_20261013_BK,
             'archived-ole-pro-20261013-bl' => self::BATCH_ARCHIVED_OLE_PRO_20261013_BL,
+            'archived-hotta-sensor-20261013-bm' => self::BATCH_ARCHIVED_HOTTA_SENSOR_20261013_BM,
             default => null,
         };
 

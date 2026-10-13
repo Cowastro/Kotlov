@@ -3704,6 +3704,68 @@ class CreateSbgDistinctProductsBatchCommandTest extends TestCase
         $this->assertSame('ignored', $siblingItem->fresh()->match_status);
     }
 
+    public function test_it_excludes_the_archived_hotta_os_p_3_sensor_from_the_site(): void
+    {
+        $source = IntegrationSource::query()->create([
+            'code' => 'onec-sbg-archived-hotta-os-p-3',
+            'name' => '1С СанБизнесГруп',
+            'settings' => ['partner_name' => 'ООО «СанБизнесГруп»'],
+            'is_active' => true,
+            'update_stock' => true,
+        ]);
+        $category = Category::query()->firstOrCreate(['slug' => 'regulyatory'], [
+            'name' => 'Регуляторы',
+            'parent_id' => 0,
+        ]);
+        $wrongCandidate = Product::query()->create([
+            'category_id' => $category->id,
+            'sku' => 'PS-004.326',
+            'name' => 'Датчик температуры горячей воды AS1.6 (Buderus)',
+            'slug' => 'datchik-temperatury-goryachej-vody-as16',
+            'price' => 93.20,
+            'images' => ['product/buderus/as16.jpg'],
+        ]);
+        $item = IntegrationProduct::query()->create([
+            'integration_source_id' => $source->id,
+            'external_id' => 'archived-hotta-os-p-3',
+            'external_code' => 'УТ-00002594',
+            'name' => 'Датчик температуры горелки OS-P-3 (75-150) HOTTA',
+            'price_byn' => null,
+            'stock_quantity' => 4,
+            'match_status' => 'ambiguous',
+            'match_method' => 'fuzzy_name',
+            'match_confidence' => 0.71,
+            'candidates' => [['product_id' => $wrongCandidate->id, 'score' => 0.71]],
+        ]);
+
+        $this->artisan('integration:create-sbg-distinct-products', [
+            '--batch' => 'archived-hotta-sensor-20261013-bm',
+            '--code' => ['УТ-00002594'],
+        ])->assertSuccessful();
+        $this->assertSame('ambiguous', $item->fresh()->match_status);
+
+        $this->artisan('integration:create-sbg-distinct-products', [
+            '--batch' => 'archived-hotta-sensor-20261013-bm',
+            '--code' => ['УТ-00002594'],
+            '--apply' => true,
+        ])->assertSuccessful();
+
+        $item->refresh();
+        $this->assertNull($item->product_id);
+        $this->assertSame('ignored', $item->match_status);
+        $this->assertSame('manual_ignore', $item->match_method);
+        $this->assertNull($item->match_confidence);
+        $this->assertNull($item->matched_at);
+        $this->assertSame($wrongCandidate->id, (int) $item->candidates[0]['product_id']);
+
+        $this->artisan('integration:create-sbg-distinct-products', [
+            '--batch' => 'archived-hotta-sensor-20261013-bm',
+            '--code' => ['УТ-00002594'],
+            '--apply' => true,
+        ])->assertSuccessful();
+        $this->assertSame('ignored', $item->fresh()->match_status);
+    }
+
     public function test_it_creates_the_exact_teplov_i_suhov_l500_d120_200_pipe_instead_of_linking_the_l250_d120_180_candidate(): void
     {
         $source = IntegrationSource::query()->create([
