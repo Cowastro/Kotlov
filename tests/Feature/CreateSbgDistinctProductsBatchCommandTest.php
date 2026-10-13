@@ -4601,4 +4601,104 @@ class CreateSbgDistinctProductsBatchCommandTest extends TestCase
         $this->assertSame($productCount, Product::query()->count());
         $this->assertSame($product->id, $item->fresh()->product_id);
     }
+
+    public function test_it_creates_the_exact_unmatched_teplov_i_suhov_800x960_protective_screen(): void
+    {
+        $source = IntegrationSource::query()->create([
+            'code' => 'onec-sbg-unmatched-tis-screen-800x960',
+            'name' => '1С СанБизнесГруп',
+            'settings' => ['partner_name' => 'ООО «СанБизнесГруп»'],
+            'is_active' => true,
+            'update_stock' => true,
+        ]);
+        $category = Category::query()->firstOrCreate(['slug' => 'otdelka-dlya-parnoj'], [
+            'name' => 'Отделка для парной',
+            'parent_id' => 0,
+        ]);
+        $brand = Brand::query()->firstOrCreate(
+            ['slug' => 'teplov-i-suhov'],
+            ['name' => 'Теплов и Сухов'],
+        );
+        Product::query()->create([
+            'category_id' => $category->id,
+            'brand_id' => null,
+            'sku' => 'PS-012.089',
+            'name' => 'Скотч-фольга (алюминиевая клейкая лента) 50мм х 50м',
+            'slug' => 'skotch-folga-alyuminievaya-kleykaya-lenta-50mm-h-50m',
+            'price' => 15,
+            'images' => ['product/0012/012089/679b60b309e57.jpg'],
+            'is_active' => true,
+            'is_archived' => false,
+        ]);
+        $item = IntegrationProduct::query()->create([
+            'integration_source_id' => $source->id,
+            'external_id' => 'unmatched-tis-screen-800x960',
+            'external_code' => 'УТ-00001176',
+            'external_sku' => 'TS.KMP.LST.0000.65833',
+            'name' => 'Экран 800х960',
+            'price_byn' => 109.32,
+            'stock_quantity' => 5,
+            'match_status' => 'unmatched',
+            'candidates' => null,
+        ]);
+        $productCount = Product::query()->count();
+
+        $this->artisan('integration:create-sbg-distinct-products', [
+            '--batch' => 'unmatched-researched-20261013-br',
+            '--code' => ['УТ-00001176'],
+        ])->assertSuccessful();
+        $this->assertNull($item->fresh()->product_id);
+
+        $this->artisan('integration:create-sbg-distinct-products', [
+            '--batch' => 'unmatched-researched-20261013-br',
+            '--code' => ['УТ-00001176'],
+            '--apply' => true,
+        ])->assertSuccessful();
+
+        $item->refresh();
+        $product = $item->product;
+        $this->assertSame($productCount + 1, Product::query()->count());
+        $this->assertNotNull($product);
+        $this->assertSame('matched', $item->match_status);
+        $this->assertSame('manual_created', $item->match_method);
+        $this->assertSame($category->id, $item->target_category_id);
+        $this->assertNull($item->candidates);
+        $this->assertSame('Защитный экран Теплов и Сухов, 800 × 960 мм', $product->name);
+        $this->assertSame('139.00', $product->price);
+        $this->assertSame('5', (string) $product->stock_qty);
+        $this->assertTrue((bool) $product->in_stock);
+        $this->assertSame($brand->id, $product->brand_id);
+        $this->assertSame($category->id, $product->category_id);
+        $this->assertSame('800 × 960 мм', collect($product->specs)->firstWhere('key', 'Размер')['value']);
+        $this->assertSame('AISI 430', collect($product->specs)->firstWhere('key', 'Марка стали')['value']);
+        $this->assertSame('0,5 мм', collect($product->specs)->firstWhere('key', 'Толщина стали')['value']);
+        $this->assertSame('TS.KMP.LST.0000.65833', collect($product->specs)->firstWhere('key', 'Артикул производителя')['value']);
+        $this->assertSame([
+            'img/products/teplov-i-suhov/ekran-zashchitnyy-800x960-2.webp',
+            'img/products/teplov-i-suhov/ekran-zashchitnyy-800x960.webp',
+        ], $product->images);
+        $this->assertFileExists(public_path('img/products/teplov-i-suhov/ekran-zashchitnyy-800x960-2.webp'));
+        $this->assertFileExists(public_path('img/products/teplov-i-suhov/ekran-zashchitnyy-800x960.webp'));
+        $this->assertStringContainsString('domingo.su', $product->content_source_url);
+        $this->assertStringContainsString('снять защитную плёнку', mb_strtolower($product->content));
+        $this->assertStringNotContainsString('розничная цена', mb_strtolower($product->content));
+        $this->assertStringNotContainsString('rub', mb_strtolower($product->content));
+        $this->assertStringNotContainsString('13.10.2026', $product->content);
+        $this->assertDatabaseHas('supplier_product_mappings', [
+            'supplier_code' => $source->matchingSupplierCode(),
+            'supplier_article' => 'TS.KMP.LST.0000.65833',
+            'product_id' => $product->id,
+            'product_sku' => $product->sku,
+            'confidence' => 'manual',
+            'is_active' => true,
+        ]);
+
+        $this->artisan('integration:create-sbg-distinct-products', [
+            '--batch' => 'unmatched-researched-20261013-br',
+            '--code' => ['УТ-00001176'],
+            '--apply' => true,
+        ])->assertSuccessful();
+        $this->assertSame($productCount + 1, Product::query()->count());
+        $this->assertSame($product->id, $item->fresh()->product_id);
+    }
 }

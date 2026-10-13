@@ -2131,6 +2131,40 @@ class CreateSbgDistinctProductsBatchCommand extends Command
         ],
     ];
 
+    private const BATCH_UNMATCHED_RESEARCHED_20261013_BR = [
+        'УТ-00001176' => [
+            'template_slug' => 'skotch-folga-alyuminievaya-kleykaya-lenta-50mm-h-50m',
+            'allow_unmatched' => true,
+            'category_slug' => 'otdelka-dlya-parnoj',
+            'external_sku' => 'TS.KMP.LST.0000.65833',
+            'fragments' => ['Экран', '800х960'],
+            'brand' => [
+                'name' => 'Теплов и Сухов',
+                'slug' => 'teplov-i-suhov',
+                'country' => 'Россия',
+            ],
+            'name' => 'Защитный экран Теплов и Сухов, 800 × 960 мм',
+            'retail' => 139.00,
+            'images' => [
+                'img/products/teplov-i-suhov/ekran-zashchitnyy-800x960-2.webp',
+                'img/products/teplov-i-suhov/ekran-zashchitnyy-800x960.webp',
+            ],
+            'source_url' => 'https://domingo.su/product/ekran-tis-800h960-815575/',
+            'short' => 'Защитный экран Теплов и Сухов из нержавеющей стали AISI 430 для зоны рядом с печью, камином или дымоходом; размер 800 × 960 мм.',
+            'content' => '<p><strong>Защитный экран Теплов и Сухов 800 × 960 мм</strong> — металлическая панель для защиты стены или потолка рядом с печью, камином и дымоходом. Экран изготовлен из нержавеющей стали AISI 430 толщиной 0,5 мм и имеет отбортовку по краям.</p><p>Экран устанавливают через негорючий теплоизоляционный материал с соблюдением требований проекта и инструкции отопительного оборудования. Перед началом эксплуатации необходимо снять защитную плёнку с поверхности.</p>',
+            'specs' => [
+                ['key' => 'Тип', 'value' => 'Защитный экран'],
+                ['key' => 'Размер', 'value' => '800 × 960 мм'],
+                ['key' => 'Материал', 'value' => 'Нержавеющая сталь'],
+                ['key' => 'Марка стали', 'value' => 'AISI 430'],
+                ['key' => 'Толщина стали', 'value' => '0,5 мм'],
+                ['key' => 'Отбортовка по краям', 'value' => '10 мм'],
+                ['key' => 'Артикул производителя', 'value' => 'TS.KMP.LST.0000.65833'],
+                ['key' => 'Страна производства', 'value' => 'Россия'],
+            ],
+        ],
+    ];
+
     public function handle(
         IntegrationProductCreator $creator,
         IntegrationProductMatchDecision $matchDecision,
@@ -2205,6 +2239,7 @@ class CreateSbgDistinctProductsBatchCommand extends Command
             'unmatched-researched-20261013-bo' => self::BATCH_UNMATCHED_RESEARCHED_20261013_BO,
             'unmatched-researched-20261013-bp' => self::BATCH_UNMATCHED_RESEARCHED_20261013_BP,
             'unmatched-researched-20261013-bq' => self::BATCH_UNMATCHED_RESEARCHED_20261013_BQ,
+            'unmatched-researched-20261013-br' => self::BATCH_UNMATCHED_RESEARCHED_20261013_BR,
             default => null,
         };
 
