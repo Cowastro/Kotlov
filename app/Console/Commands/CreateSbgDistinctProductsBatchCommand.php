@@ -1629,6 +1629,42 @@ class CreateSbgDistinctProductsBatchCommand extends Command
         ],
     ];
 
+    private const BATCH_RESEARCHED_PRICED_20261013_AZ = [
+        'УТ-00002699' => [
+            'template' => 'PS-007.788',
+            'link_existing_sku' => 'PS-009.529',
+            'link_fragments' => ['Теплов и Сухов', 'ЗМ-Р', '304', '0,5-150'],
+            'refresh_existing' => true,
+            'category_slug' => 'zonty-deflektory',
+            'external_sku' => 'TS.ST5.ZNT.0150.32500',
+            'fragments' => ['Зонт', 'ЗМ-Р', '304-0.5', 'D150', 'TS.ST5.ZNT.0150.32500'],
+            'brand' => [
+                'name' => 'Теплов и Сухов',
+                'slug' => 'teplov-i-suhov',
+            ],
+            'name' => 'Теплов и Сухов ЗМ-Р AISI 304 0,5 мм D150 зонт для дымохода',
+            'retail' => 27.20,
+            'images' => ['img/products/teplov-i-suhov/teplov-i-suhov-zm-r-304-05-d150.png'],
+            'source_url' => 'https://banikaminy.ru/catalog/dymokhody_baki_ventilyatsiya/dymokhodnye_sistemy_teplov_i_sukhov_tis_energo/sistema_tis_energo_mono/9922/',
+            'short' => 'Одностенный зонт Теплов и Сухов ЗМ-Р диаметром 150 мм из нержавеющей стали AISI 304 толщиной 0,5 мм.',
+            'content' => '<p><strong>Теплов и Сухов ЗМ-Р AISI 304 0,5 мм D150</strong> — завершающий элемент одностенного дымохода, который защищает дымовой канал от дождя, снега, листьев и другого мусора. Коррозионностойкая сталь AISI 304 подходит для эксплуатации в условиях нагрева и воздействия конденсата.</p><p>Зонт устанавливается на окончание трубы диаметром 150 мм. При завершении утеплённого дымохода его монтируют на совместимый конус. Артикул производителя — TS.ST5.ZNT.0150.32500.</p>',
+            'specs' => [
+                ['key' => 'Тип элемента', 'value' => 'Зонт для дымохода'],
+                ['key' => 'Серия', 'value' => 'Моно ЗМ-Р'],
+                ['key' => 'Количество стенок', 'value' => 'Одностенный'],
+                ['key' => 'Диаметр подключения', 'value' => '150 мм'],
+                ['key' => 'Марка стали', 'value' => 'AISI 304'],
+                ['key' => 'Толщина стали', 'value' => '0,5 мм'],
+                ['key' => 'Диаметр колпака', 'value' => '260 мм'],
+                ['key' => 'Общая высота', 'value' => '215 мм'],
+                ['key' => 'Масса', 'value' => '0,41 кг'],
+                ['key' => 'Артикул производителя', 'value' => 'TS.ST5.ZNT.0150.32500'],
+                ['key' => 'Гарантия', 'value' => '12 месяцев'],
+                ['key' => 'Страна производства', 'value' => 'Россия'],
+            ],
+        ],
+    ];
+
     public function handle(
         IntegrationProductCreator $creator,
         IntegrationProductMatchDecision $matchDecision,
@@ -1686,6 +1722,7 @@ class CreateSbgDistinctProductsBatchCommand extends Command
             'researched-priced-20261013-aw' => self::BATCH_RESEARCHED_PRICED_20261013_AW,
             'researched-priced-20261013-ax' => self::BATCH_RESEARCHED_PRICED_20261013_AX,
             'researched-priced-20261013-ay' => self::BATCH_RESEARCHED_PRICED_20261013_AY,
+            'researched-priced-20261013-az' => self::BATCH_RESEARCHED_PRICED_20261013_AZ,
             default => null,
         };
 

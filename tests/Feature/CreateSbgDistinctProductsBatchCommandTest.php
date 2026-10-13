@@ -3111,4 +3111,101 @@ class CreateSbgDistinctProductsBatchCommandTest extends TestCase
         $this->assertSame($productCount, Product::query()->count());
         $this->assertSame($exactProduct->id, $item->fresh()->product_id);
     }
+
+    public function test_it_links_the_exact_aisi_304_d150_umbrella_without_using_the_ferrum_candidate(): void
+    {
+        $source = IntegrationSource::query()->create([
+            'code' => 'onec-sbg-zm-r-304-d150',
+            'name' => '1С СанБизнесГруп',
+            'settings' => ['partner_name' => 'ООО «СанБизнесГруп»'],
+            'is_active' => true,
+            'update_stock' => true,
+        ]);
+        $category = Category::query()->firstOrCreate(['slug' => 'zonty-deflektory'], [
+            'name' => 'Зонты и дефлекторы',
+            'parent_id' => 0,
+        ]);
+        $brand = Brand::query()->firstOrCreate(['slug' => 'teplov-i-suhov'], ['name' => 'Теплов и Сухов']);
+        $wrongFerrumCandidate = Product::query()->create([
+            'category_id' => $category->id,
+            'sku' => 'PS-007.788',
+            'name' => 'Зонт-К FERRUM (430/0,5) Ф150',
+            'slug' => 'ferrum-430-d150-wrong-candidate',
+            'price' => 26,
+            'images' => ['product/ferrum/zont-k-430-d150.jpg'],
+        ]);
+        $exactProduct = Product::query()->create([
+            'category_id' => $category->id,
+            'brand_id' => $brand->id,
+            'sku' => 'PS-009.529',
+            'name' => 'Зонт Теплов и Сухов ЗМ-Р AISI 304 0,5-150',
+            'slug' => 'zont-teplov-i-suhov-zm-r-aisi-304-0-5-150',
+            'price' => 27.20,
+            'images' => ['product/009/009529/zont_304_1.jpeg'],
+            'content' => '<p>Старое общее описание.</p>',
+            'is_active' => true,
+            'is_archived' => false,
+        ]);
+        $item = IntegrationProduct::query()->create([
+            'integration_source_id' => $source->id,
+            'external_id' => 'teplov-zm-r-304-d150',
+            'external_code' => 'УТ-00002699',
+            'external_sku' => 'TS.ST5.ZNT.0150.32500',
+            'name' => 'Зонт ЗМ-Р 304-0.5 D150 арт. TS.ST5.ZNT.0150.32500',
+            'price_byn' => null,
+            'stock_quantity' => 3,
+            'match_status' => 'ambiguous',
+            'candidates' => [['product_id' => $wrongFerrumCandidate->id, 'score' => 0.72]],
+        ]);
+        $productCount = Product::query()->count();
+
+        $this->artisan('integration:create-sbg-distinct-products', [
+            '--batch' => 'researched-priced-20261013-az',
+            '--code' => ['УТ-00002699'],
+            '--apply' => true,
+        ])->assertSuccessful();
+
+        $item->refresh();
+        $exactProduct->refresh();
+        $this->assertSame($productCount, Product::query()->count());
+        $this->assertSame($exactProduct->id, $item->product_id);
+        $this->assertNotSame($wrongFerrumCandidate->id, $item->product_id);
+        $this->assertSame('manual_search', $item->match_method);
+        $this->assertSame($category->id, $item->target_category_id);
+        $this->assertNull($item->candidates);
+        $this->assertSame('Теплов и Сухов ЗМ-Р AISI 304 0,5 мм D150 зонт для дымохода', $exactProduct->name);
+        $this->assertSame('27.20', $exactProduct->price);
+        $this->assertSame('3', (string) $exactProduct->stock_qty);
+        $this->assertTrue((bool) $exactProduct->in_stock);
+        $this->assertSame('AISI 304', collect($exactProduct->specs)->firstWhere('key', 'Марка стали')['value']);
+        $this->assertSame('150 мм', collect($exactProduct->specs)->firstWhere('key', 'Диаметр подключения')['value']);
+        $this->assertSame('260 мм', collect($exactProduct->specs)->firstWhere('key', 'Диаметр колпака')['value']);
+        $this->assertSame('TS.ST5.ZNT.0150.32500', collect($exactProduct->specs)->firstWhere('key', 'Артикул производителя')['value']);
+        $this->assertSame(['img/products/teplov-i-suhov/teplov-i-suhov-zm-r-304-05-d150.png'], $exactProduct->images);
+        $this->assertFileExists(public_path('img/products/teplov-i-suhov/teplov-i-suhov-zm-r-304-05-d150.png'));
+        $this->assertStringContainsString('banikaminy.ru', $exactProduct->content_source_url);
+        $this->assertStringContainsString('утеплённого дымохода', $exactProduct->content);
+        $this->assertStringNotContainsString('FERRUM', $exactProduct->content);
+        $this->assertStringNotContainsString('AISI 430', $exactProduct->content);
+        $this->assertStringNotContainsString('кандидат', mb_strtolower($exactProduct->content));
+        $this->assertStringNotContainsString('розничная цена', mb_strtolower($exactProduct->content));
+        $this->assertStringNotContainsString('нбрб', mb_strtolower($exactProduct->content));
+        $this->assertStringNotContainsString('rub', mb_strtolower($exactProduct->content));
+        $this->assertDatabaseHas('supplier_product_mappings', [
+            'supplier_code' => $source->matchingSupplierCode(),
+            'supplier_article' => 'TS.ST5.ZNT.0150.32500',
+            'product_id' => $exactProduct->id,
+            'product_sku' => 'PS-009.529',
+            'confidence' => 'manual',
+            'is_active' => true,
+        ]);
+
+        $this->artisan('integration:create-sbg-distinct-products', [
+            '--batch' => 'researched-priced-20261013-az',
+            '--code' => ['УТ-00002699'],
+            '--apply' => true,
+        ])->assertSuccessful();
+        $this->assertSame($productCount, Product::query()->count());
+        $this->assertSame($exactProduct->id, $item->fresh()->product_id);
+    }
 }
