@@ -93,9 +93,9 @@ class ViewCrmMailThread extends ViewRecord
                         ->storeFileNamesIn('attachment_file_names')
                         ->helperText('До 10 файлов, каждый не более 15 МБ.'),
                 ])
-                ->requiresConfirmation()
                 ->modalHeading('Отправить ответ клиенту')
                 ->modalDescription(fn (): string => 'Письмо будет отправлено на '.$this->record->participant_email)
+                ->modalSubmitActionLabel('Отправить письмо')
                 ->action(function (array $data): void {
                     try {
                         app(CrmMailSender::class)->reply(

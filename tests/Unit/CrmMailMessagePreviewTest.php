@@ -35,4 +35,30 @@ class CrmMailMessagePreviewTest extends TestCase
         $this->assertStringContainsString('Строка 1<br', $html);
         $this->assertStringContainsString('Строка 2', $html);
     }
+
+    #[Test]
+    public function it_builds_a_lightweight_preview_without_rendering_the_full_html_tree(): void
+    {
+        $message = new CrmMailMessage([
+            'html_body' => '<style>table{width:100%}</style><table><tr><td>Заказ поставщику</td></tr></table><img src="https://example.com/logo.png">',
+        ]);
+
+        $html = app(CrmMailMessagePreview::class)->compactHtml($message);
+
+        $this->assertStringContainsString('Заказ поставщику', $html);
+        $this->assertStringNotContainsString('<table', $html);
+        $this->assertStringNotContainsString('<img', $html);
+        $this->assertStringNotContainsString('<style', $html);
+    }
+
+    #[Test]
+    public function it_limits_the_fast_preview_of_a_large_message(): void
+    {
+        $message = new CrmMailMessage(['text_body' => str_repeat('А', 200)]);
+
+        $html = app(CrmMailMessagePreview::class)->compactHtml($message, 50);
+
+        $this->assertStringContainsString('Письмо сокращено', $html);
+        $this->assertLessThan(400, mb_strlen($html));
+    }
 }

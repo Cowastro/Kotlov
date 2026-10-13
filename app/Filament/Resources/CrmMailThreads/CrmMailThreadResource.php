@@ -149,7 +149,8 @@ class CrmMailThreadResource extends Resource
                         ViewEntry::make('mail_preview')->hiddenLabel()
                             ->view('filament.crm-mail.message-preview', fn (CrmMailMessage $record): array => [
                                 'message' => $record,
-                                'safeHtml' => app(CrmMailMessagePreview::class)->html($record),
+                                'safeHtml' => app(CrmMailMessagePreview::class)->compactHtml($record),
+                                'originalHtml' => filled($record->html_body) ? (string) $record->html_body : null,
                             ])
                             ->columnSpanFull(),
                     ]),

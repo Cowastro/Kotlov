@@ -12,7 +12,10 @@
     $date = $message->received_at ?? $message->sent_at;
 @endphp
 
-<article class="crm-mail-card {{ $isIncoming ? 'is-incoming' : 'is-outgoing' }}">
+<article
+    class="crm-mail-card {{ $isIncoming ? 'is-incoming' : 'is-outgoing' }}"
+    x-data="{ originalOpen: false }"
+>
     <header class="crm-mail-header">
         <div class="crm-mail-avatar" aria-hidden="true">
             {{ mb_strtoupper(mb_substr($message->from_name ?: $message->from_email ?: '?', 0, 1)) }}
@@ -38,6 +41,28 @@
     <div class="crm-mail-body">
         {!! $safeHtml !!}
     </div>
+
+    @if (filled($originalHtml))
+        <div class="crm-mail-original">
+            <button
+                type="button"
+                class="crm-mail-original-toggle"
+                x-on:click="originalOpen = ! originalOpen"
+                x-text="originalOpen ? 'Скрыть оригинальное оформление' : 'Показать оригинальное оформление'"
+            >Показать оригинальное оформление</button>
+
+            <template x-if="originalOpen">
+                <iframe
+                    class="crm-mail-original-frame"
+                    sandbox
+                    referrerpolicy="no-referrer"
+                    loading="lazy"
+                    title="Оригинальное HTML-оформление письма"
+                    srcdoc="{{ $originalHtml }}"
+                ></iframe>
+            </template>
+        </div>
+    @endif
 
     @if ($attachments->isNotEmpty())
         <footer class="crm-mail-attachments">
@@ -70,6 +95,10 @@
         .crm-mail-body td, .crm-mail-body th { border: 1px solid rgb(82 82 91); padding: 7px 10px; }
         .crm-mail-body a { color: rgb(96 165 250); text-decoration: underline; }
         .crm-mail-body blockquote { margin: 1em 0; border-left: 3px solid rgb(82 82 91); padding-left: 14px; color: rgb(161 161 170); }
+        .crm-mail-original { border-top: 1px solid rgb(63 63 70); padding: 14px 22px 18px; }
+        .crm-mail-original-toggle { border: 1px solid rgb(234 88 12); border-radius: 8px; padding: 8px 12px; color: rgb(251 146 60); font-size: 13px; font-weight: 600; transition: background-color .15s ease; }
+        .crm-mail-original-toggle:hover { background: rgb(234 88 12 / .12); }
+        .crm-mail-original-frame { width: 100%; height: min(760px, 72vh); margin-top: 14px; border: 1px solid rgb(82 82 91); border-radius: 10px; background: white; }
         .crm-mail-attachments { border-top: 1px solid rgb(63 63 70); padding: 14px 22px 18px; }
         .crm-mail-attachments-title { color: rgb(161 161 170); font-size: 13px; font-weight: 600; }
         .crm-mail-attachment-list { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 9px; }
