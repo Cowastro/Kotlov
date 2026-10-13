@@ -20,12 +20,47 @@ class BuildMarketPriceBatchCommandTest extends TestCase
 
     private string $contexts = 'storage/app/private/market-price-research/test-market-price-contexts.json';
 
+    private string $queue = 'storage/app/private/market-price-research/test-production-queue.csv';
+
     protected function tearDown(): void
     {
         File::delete(base_path($this->output));
         File::delete(base_path($this->contexts));
+        File::delete(base_path($this->queue));
         CarbonImmutable::setTestNow();
         parent::tearDown();
+    }
+
+    public function test_it_researches_only_unreviewed_zero_price_rows_from_a_production_queue(): void
+    {
+        File::ensureDirectoryExists(dirname(base_path($this->queue)));
+        File::put(base_path($this->queue), implode("\n", [
+            "\xEF\xBB\xBFpriority;issues;product_id;sku;name;brand;category;path;retail_price;old_price;currency;availability_status;updated_at;review_state;review_action;reviewed_at",
+            '40;zero_or_missing_price;200;QUEUE-REVIEWED;Уже проверенная печь;ТехноЛит;Печи;/reviewed;;;;check;;reviewed;market_price_confirmation_required;2026-10-13 18:00:00',
+            '40;zero_or_missing_price;201;QUEUE-NEW;Новая печь;ТехноЛит;Печи;/new;;;;check;;unreviewed;;',
+        ]));
+
+        $this->mock(MarketWebResearchService::class, function (MockInterface $mock): void {
+            $mock->shouldReceive('research')
+                ->once()
+                ->withArgs(fn (Product $product): bool => $product->id === 201 && $product->sku === 'QUEUE-NEW')
+                ->andReturn($this->readyReport([]));
+        });
+
+        $this->artisan('catalog:build-market-price-batch', [
+            'batch' => '2026-10-13-production-queue-test',
+            '--brand' => 'ТехноЛит',
+            '--input-queue' => $this->queue,
+            '--limit' => 10,
+            '--output' => $this->output,
+        ])
+            ->expectsOutputToContain('metric.selected_products=1')
+            ->expectsOutputToContain('metric.last_product_id=201')
+            ->assertSuccessful();
+
+        $batch = json_decode(File::get(base_path($this->output)), true, flags: JSON_THROW_ON_ERROR);
+        $this->assertSame(['QUEUE-NEW'], array_column($batch['products'], 'sku'));
+        $this->assertSame($this->queue, $batch['selection']['source_queue']);
     }
 
     public function test_it_exports_production_contexts_and_researches_them_without_a_database_query(): void

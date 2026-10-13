@@ -21,6 +21,7 @@ class BuildMarketPriceBatchCommand extends Command
         {--after-id=0 : Process products with a larger production ID}
         {--limit=10 : Maximum products to research}
         {--input-contexts= : Read previously exported production product contexts instead of querying a database}
+        {--input-queue= : Read unreviewed products from a downloaded production price-research CSV}
         {--export-contexts= : Export matching production product contexts without calling the research provider}
         {--output=storage/app/private/market-price-research/market-price-research-batch.json : Server-local JSON report path}';
 
@@ -45,16 +46,17 @@ class BuildMarketPriceBatchCommand extends Command
 
         $output = $this->safeResearchPath((string) $this->option('output'));
         $inputContexts = trim((string) $this->option('input-contexts'));
+        $inputQueue = trim((string) $this->option('input-queue'));
         $exportContexts = trim((string) $this->option('export-contexts'));
-        if ($inputContexts !== '' && $exportContexts !== '') {
-            $this->error('Input and export context modes cannot be combined.');
+        if ($inputContexts !== '' && $inputQueue !== '') {
+            $this->error('Only one input source can be used.');
 
             return self::INVALID;
         }
 
         $skus = collect((array) $this->option('sku'))->map(fn ($sku): string => trim((string) $sku))->filter()->values();
         $brand = trim((string) $this->option('brand'));
-        if ($inputContexts === '' && $skus->isEmpty() && $brand === '') {
+        if ($inputContexts === '' && $inputQueue === '' && $skus->isEmpty() && $brand === '') {
             $this->error('Provide --brand or at least one --sku.');
 
             return self::INVALID;
@@ -71,6 +73,15 @@ class BuildMarketPriceBatchCommand extends Command
         ];
         if ($inputContexts !== '') {
             [$products, $selection] = $this->readContexts($inputContexts);
+        } elseif ($inputQueue !== '') {
+            [$products, $selection] = $this->readQueue(
+                $inputQueue,
+                $selection,
+                $brand,
+                $skus->all(),
+                $afterId,
+                $limit,
+            );
         } else {
             $products = Product::query()
                 ->with(['brand', 'category'])
@@ -340,6 +351,75 @@ class BuildMarketPriceBatchCommand extends Command
     }
 
     /** @param array<string, mixed> $selection
+     *  @param list<string> $skus
+     *  @return array{0: \Illuminate\Support\Collection<int, Product>, 1: array<string, mixed>}
+     */
+    private function readQueue(
+        string $value,
+        array $selection,
+        string $brand,
+        array $skus,
+        int $afterId,
+        int $limit,
+    ): array {
+        $path = $this->safePrivateCsvPath($value);
+        $handle = fopen($path, 'rb');
+        if ($handle === false) {
+            throw new \InvalidArgumentException('Production research queue file not found.');
+        }
+
+        try {
+            $headers = fgetcsv($handle, separator: ';', enclosure: '"', escape: '');
+            if (! is_array($headers)) {
+                throw new \InvalidArgumentException('Production research queue is empty.');
+            }
+            $headers[0] = ltrim((string) $headers[0], "\xEF\xBB\xBF");
+            $rows = [];
+            while (($values = fgetcsv($handle, separator: ';', enclosure: '"', escape: '')) !== false) {
+                if (count($values) !== count($headers)) {
+                    throw new \InvalidArgumentException('Production research queue has an invalid row.');
+                }
+                $rows[] = array_combine($headers, $values);
+            }
+        } finally {
+            fclose($handle);
+        }
+
+        $products = collect($rows)
+            ->filter(fn (array $row): bool => ($row['review_state'] ?? '') === 'unreviewed'
+                && str_contains((string) ($row['issues'] ?? ''), 'zero_or_missing_price')
+                && (int) ($row['product_id'] ?? 0) > $afterId
+                && ($brand === '' || (string) ($row['brand'] ?? '') === $brand)
+                && ($skus === [] || in_array((string) ($row['sku'] ?? ''), $skus, true)))
+            ->sortBy(fn (array $row): int => (int) $row['product_id'])
+            ->take($limit)
+            ->map(function (array $row): Product {
+                $product = new Product;
+                $product->forceFill([
+                    'id' => (int) $row['product_id'],
+                    'sku' => (string) $row['sku'],
+                    'name' => (string) $row['name'],
+                    'specs' => [],
+                ]);
+                $product->setRelation('brand', filled($row['brand'] ?? null)
+                    ? new Brand(['name' => (string) $row['brand']])
+                    : null);
+                $product->setRelation('category', filled($row['category'] ?? null)
+                    ? new Category(['name' => (string) $row['category']])
+                    : null);
+
+                return $product;
+            })
+            ->values();
+
+        $selection['source_queue'] = str_replace('\\', '/', $value);
+        $selection['after_id'] = $afterId;
+        $selection['limit'] = $limit;
+
+        return [$products, $selection];
+    }
+
+    /** @param array<string, mixed> $selection
      *  @param \Illuminate\Support\Collection<int, Product> $products
      */
     private function writeContexts(string $value, array $selection, $products): void
@@ -368,6 +448,19 @@ class BuildMarketPriceBatchCommand extends Command
         $prefix = 'storage/app/private/market-price-research/';
         if (! str_starts_with($value, $prefix) || str_contains($value, '..') || ! str_ends_with($value, '.json')) {
             throw new \InvalidArgumentException('Output must be a JSON file inside '.$prefix);
+        }
+
+        return base_path($value);
+    }
+
+    private function safePrivateCsvPath(string $value): string
+    {
+        $value = str_replace('\\', '/', trim($value));
+        if (! str_starts_with($value, 'storage/app/private/')
+            || str_contains($value, '..')
+            || ! str_ends_with($value, '.csv')
+            || ! File::isFile(base_path($value))) {
+            throw new \InvalidArgumentException('Input queue must be an existing CSV inside storage/app/private.');
         }
 
         return base_path($value);
