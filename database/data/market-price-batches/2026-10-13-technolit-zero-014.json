@@ -1,0 +1,631 @@
+{
+    "code": "2026-10-13-technolit-zero-014",
+    "observed_at": "2026-10-13T21:58:04+00:00",
+    "review_required": true,
+    "selection": {
+        "production_only": true,
+        "active_only": true,
+        "unpriced_only": true,
+        "brand": "ТехноЛит",
+        "skus": [],
+        "after_id": 12466,
+        "limit": 5,
+        "source_queue": "storage/app/private/price-research-queue-38466265607/price-research-queue.csv"
+    },
+    "sources": [
+        {
+            "code": "web-548e2a8f803a25ab",
+            "name": "banipechi.by",
+            "kind": "competitor",
+            "base_url": "https://banipechi.by",
+            "currency": "BYN",
+            "region": "Открытый рынок",
+            "freshness_hours": 168,
+            "minimum_match_confidence": 0.99,
+            "notes": "Источник найден hosted web_search; batch требует ручной проверки до применения."
+        },
+        {
+            "code": "web-c2af9fd873f22732",
+            "name": "Maximal.by",
+            "kind": "competitor",
+            "base_url": "https://maximal.by",
+            "currency": "BYN",
+            "region": "Открытый рынок",
+            "freshness_hours": 168,
+            "minimum_match_confidence": 0.99,
+            "notes": "Источник найден hosted web_search; batch требует ручной проверки до применения."
+        },
+        {
+            "code": "web-66174494f7f95435",
+            "name": "banisauny.by",
+            "kind": "competitor",
+            "base_url": "https://banisauny.by",
+            "currency": "BYN",
+            "region": "Открытый рынок",
+            "freshness_hours": 168,
+            "minimum_match_confidence": 0.99,
+            "notes": "Источник найден hosted web_search; batch требует ручной проверки до применения."
+        },
+        {
+            "code": "web-8cde72c895d68935",
+            "name": "PechiBani.by",
+            "kind": "competitor",
+            "base_url": "https://pechibani.by",
+            "currency": "BYN",
+            "region": "Открытый рынок",
+            "freshness_hours": 168,
+            "minimum_match_confidence": 0.99,
+            "notes": "Источник найден hosted web_search; batch требует ручной проверки до применения."
+        }
+    ],
+    "products": [
+        {
+            "sku": "KOTLOV-000189",
+            "review_reason": "Live-web исследование точной production-модели нашло менее трёх независимых подтверждённых предложений; сохранить консультационный режим.",
+            "force_consultation_hold": true,
+            "observations": [],
+            "research": {
+                "summary": "Найдено одно подтверждённое ценовое предложение в Беларуси по базовой модели «Гефест Авангард ЗК 40 (П2)»: KOTLOV (kotlov.by) — 5810.20 BYN. Карточки pechnoy.by и teplone.by соответствуют модели, но цена в открытой выдаче не отобразилась. Артикул KOTLOV-000189 в найденных источниках не встречается. В РФ базовая модель представлена от 123000 до 152900 RUB; явный пересчёт в BYN не выполнялся, чтобы не смешивать валюты без курса на дату исследования.",
+                "verdict": "Клиентская цена 0.00 BYN не является рыночным ориентиром. Рыночный ориентир для Беларуси — 5810.20 BYN (KOTLOV). Для уточнения вилки нужно запросить цены в pechnoy.by и teplone.by. Автоматически менять цену не следует.",
+                "confidence": "medium",
+                "search_queries": [
+                    "Печь для бани Гефест Авангард ЗК 40 П2",
+                    "ТехноЛит Гефест Авангард ЗК 40",
+                    "Гефест Авангард ЗК 40 купить",
+                    "KOTLOV-000189",
+                    "teplone.by Авангард ЗК 40 П2 цена",
+                    "pechnoy.by Печь AVANGARD ЗК 40 П2 цена",
+                    "купить Авангард ЗК 40 П2 в Беларуси цена BYN",
+                    "\"Авангард ЗК 40\" \"П2\" купить Минск"
+                ],
+                "rejected_candidates": [
+                    {
+                        "title": "Печь для бани Гефест Авангард ЗК 40 (П2) Ураган в сетке Тюльпан",
+                        "url": "https://kotlov.by/drovianye-peci-bannye/pec-dlia-bani-gefest-avangard-zk-40-p2-uragan-v-setke-tiulpan",
+                        "reason": "Другое исполнение/комплектация: Ураган в сетке Тюльпан, цена 6 091.40 BYN, не базовая модель."
+                    },
+                    {
+                        "title": "Банная печь Авангард ЗК 40 (П2) Ураган в сетке Тюльпан",
+                        "url": "https://pechibani.by/pechi-dlya-bani/pech-avangard-zk-40-p2-uragan-v-setke-tyulpan/",
+                        "reason": "Другое исполнение/комплектация: Ураган в сетке Тюльпан, цена 6 252 BYN."
+                    },
+                    {
+                        "title": "Чугунная печь для бани Авангард ЗК 40 (П2) Pro Ураган в сетке Тюльпан",
+                        "url": "https://eurobani.by/katalog/bannie-pechi/drovjanye-pechi/bannyye-pechi-gefest-tekhnolit/chugunnaya-pech-dlya-bani-avangard-zk-40-p2-pro-uragan-v-setke-tyulpan",
+                        "reason": "Версия Pro и комплектация Ураган в сетке, цена 6 091 BYN."
+                    },
+                    {
+                        "title": "Печь для бани Гефест Авангард ЗК 40 (П2) Ураган круглая сетка",
+                        "url": "https://kotlov.by/drovianye-peci-bannye/pec-dlia-bani-gefest-avangard-zk-40-p2-uragan-kruglaia-setka",
+                        "reason": "Другое исполнение/комплектация: Ураган круглая сетка, не базовая модель."
+                    },
+                    {
+                        "title": "Чугунная печь для бани Комплект Авангард ЗК 40 (П2) Классика 1065/40 Змеевик кирпич",
+                        "url": "https://kamin53.ru/product/chugunnaya-pech-dlya-bani-komplekt-avangard-zk-40-p2-klassika-1065-40-zmeevik-kirpich/",
+                        "reason": "Комплект с облицовкой, другая единица продажи и цена 297 255 RUB."
+                    },
+                    {
+                        "title": "Авангард ЗК 40 (П2) Pro",
+                        "url": "https://technolitspb.ru/production/pechi-dlya-bani/pechi-pod-obkladku/",
+                        "reason": "Версия Pro, а не базовая модель; страница категории/списка."
+                    },
+                    {
+                        "title": "ТехноЛит Авангард ЗК 40 (П2) в списке товаров",
+                        "url": "https://technolit.shop/proizvoditel/tehnolit/?filter_obem-parnogo-pomescheniya-m3=40&shop_view=list&add-to-cart=17147",
+                        "reason": "Цена 145 600 руб. показана в списке/категории, отдельная подтверждаемая карточка товара не открывалась."
+                    }
+                ],
+                "excluded_offers": [
+                    {
+                        "title": "Печь для бани Гефест Авангард ЗК 40 (П2)",
+                        "url": "https://kotlov.by/drovianye-peci-bannye/pec-dlia-bani-gefest-avangard-zk-40-p2",
+                        "reason": "Собственный домен KOTLOV не является независимым рыночным источником."
+                    },
+                    {
+                        "title": "Чугунная банная печь Авангард ЗК 40 (П2)",
+                        "url": "https://teplone.by/chugunnaja-bannaja-pech-tehnolit-avangard-zk-40-p2-avangard-zk-40-p2/",
+                        "reason": "Нет положительной подтверждённой цены в BYN."
+                    },
+                    {
+                        "title": "Чугунная печь для бани Гефест Авангард ЗК 40 (П2)",
+                        "url": "https://3d-sauna.ru/chugunnaya-pech-dlya-bani-gefest-avangard-zk-40-p2-2",
+                        "reason": "Предложение не подтверждает точное совпадение модели."
+                    },
+                    {
+                        "title": "Печь для русской бани Гефест Avangard ЗК 40 (П2)",
+                        "url": "https://www.master-sauna.ru/catalog/drovyanye-pechi/gefest/drovyanyie-pechi-seriya-gefest-avangard/gefest-avangard-zk-40-p2.html",
+                        "reason": "Нет положительной подтверждённой цены в BYN."
+                    },
+                    {
+                        "title": "Печь для бани Авангард ЗК 40 (П2)",
+                        "url": "https://saunaopt.ru/pechi-dlya-bani/drovyanye-pechi/pech-dlya-bani-avangard-zk-40-p2",
+                        "reason": "Нет положительной подтверждённой цены в BYN."
+                    },
+                    {
+                        "title": "Печь Гефест Авангард ЗК 40 (П2)",
+                        "url": "https://prometey-spb.ru/pechi-dlya-bani/drovyannye-pechi/pechi-gefest/gefest-avangard/pech-gefest-avangard-zk-40-p2/",
+                        "reason": "Нет положительной подтверждённой цены в BYN."
+                    },
+                    {
+                        "title": "Гефест Avangard ЗК 40 П2",
+                        "url": "https://105c.ru/catalog/wood-heaters/avangard_zk/offer-avangard_zk_40_p2/",
+                        "reason": "Нет положительной подтверждённой цены в BYN."
+                    },
+                    {
+                        "title": "Авангард ЗК 40 (П2)",
+                        "url": "https://pechdoc.ru/product/avangard-zk-40-p2/?add-to-cart=18922",
+                        "reason": "Нет положительной подтверждённой цены в BYN."
+                    }
+                ],
+                "model": "deepseek-v4-pro",
+                "searched_at": "2026-10-13T21:52:56+00:00"
+            }
+        },
+        {
+            "sku": "KOTLOV-000190",
+            "review_reason": "Live-web исследование точной production-модели нашло менее трёх независимых подтверждённых предложений; сохранить консультационный режим.",
+            "force_consultation_hold": true,
+            "observations": [
+                {
+                    "source": "web-548e2a8f803a25ab",
+                    "url": "https://banipechi.by/catalog/pechi-dlya-banu/pechi-gefest/pechi-v-setke-uragan/pechi-v-setke/pech-dla-bani-iskander-18-m-v-setke",
+                    "external_name": "Печь для бани Искандер 18 (М) в сетке",
+                    "model": "Печь для бани Гефест ИСКАНДЕР 18 (М) в сетке",
+                    "package": "Чугунная печь Искандер 18, стальная сетка, зольный ящик, удлинитель портала, жаростойкий герметик, инструкция; камни не входят",
+                    "observed_price": 1922.49,
+                    "currency": "BYN",
+                    "exchange_rate_to_byn": 1,
+                    "price_includes_vat": null,
+                    "availability_status": "in_stock",
+                    "match_method": "exact_model",
+                    "match_confidence": 0.99,
+                    "is_confirmed": true,
+                    "is_comparable": true,
+                    "validation_flags": [],
+                    "evidence": "Карточка banipechi.by: модификация (М), стекло 255x225 мм, дымоход 115 мм, объём парной 8-16 м³; цена 1 922.49 р."
+                },
+                {
+                    "source": "web-c2af9fd873f22732",
+                    "url": "https://maximal.by/otopitelnoe-i-klimaticheskoe-oborudovanie/bannaya-pech-iskander-18-m-v-setke",
+                    "external_name": "Банная печь Искандер 18 (М) в сетке",
+                    "model": "Печь для бани Гефест ИСКАНДЕР 18 (М) в сетке",
+                    "package": "Стальная сетка для камней, зольный ящик, удлинитель портала, жаростойкий герметик, инструкция; камни не входят",
+                    "observed_price": 1927,
+                    "currency": "BYN",
+                    "exchange_rate_to_byn": 1,
+                    "price_includes_vat": null,
+                    "availability_status": "in_stock",
+                    "match_method": "exact_model",
+                    "match_confidence": 0.99,
+                    "is_confirmed": true,
+                    "is_comparable": true,
+                    "validation_flags": [],
+                    "evidence": "Карточка maximal.by: модель (М), стекло 255x225 мм, дымоход 115 мм, вынос портала 150 мм; цена 1927.00 руб."
+                }
+            ],
+            "research": {
+                "summary": "По товару «Печь для бани Гефест ИСКАНДЕР 18 (М) в сетке» ТехноЛит в Беларуси найдено 4 актуальных карточки с ценами: banipechi.by — 1 922.49 BYN, maximal.by — 1 927.00 BYN, kotlov.by — 2 002.60 BYN, hot.by — 2 055.00 BYN. Рыночная вилка в РБ составляет 1 922–2 055 BYN, наиболее конкурентная зона — 1 922–1 927 BYN. В РФ предложения шире: от 40 900 до 55 400 RUB. Артикул KOTLOV-000190 в открытых источниках не найден; товар идентифицирован по названию, бренду и характеристикам. Цена клиента 0.00 BYN не позволяет автоматически принять решение об изменении цены.",
+                "verdict": "В Беларуси модель представлена у нескольких независимых продавцов, поэтому ориентиром для ценообразования следует считать диапазон 1 922–2 055 BYN, с конкурентным уровнем около 1 922–1 927 BYN. Рекомендую проверить комплектность и наличие у поставщика и устанавливать цену не выше нижней половины рыночного диапазона, если планируется конкурентное предложение. Решение об изменении цены клиента не принимается автоматически: требуется подтверждение фактического наличия, закупочной цены, НДС и логистики.",
+                "confidence": "medium",
+                "search_queries": [
+                    "Печь для бани Гефест ИСКАНДЕР 18 (М) в сетке купить",
+                    "Гефест ИСКАНДЕР 18 (М) в сетке цена Беларусь",
+                    "KOTLOV-000190",
+                    "ТехноЛит ИСКАНДЕР 18 (М) печь для бани в сетке",
+                    "pechnoy.by Печь Искандер 18 M в сетке цена",
+                    "hot.by Печь для бани Технолит Искандер 18 М в сетке цена",
+                    "banipechi.by Искандер 18 М в сетке цена 1922",
+                    "Печь Искандер 18 М в сетке купить Минск цена BYN"
+                ],
+                "rejected_candidates": [
+                    {
+                        "title": "Печь для бани Гефест ИСКАНДЕР 18 в сетке",
+                        "url": "https://kotlov.by/drovianye-peci-bannye/pec-dlia-bani-gefest-iskander-18-v-setke",
+                        "reason": "Модификация без литеры М и с глухой дверцей без стекла, не совпадает с заявленной моделью (М)."
+                    },
+                    {
+                        "title": "Купить Печь Искандер 18 (M) в сетке на pechnoy.by",
+                        "url": "https://pechnoy.by/pechi-dlya-bani/drovyanyye-pechi/pechi-gefest/pechi-iskander/pech-iskander-18-m-v-setke/",
+                        "reason": "Карточка найдена, но цена не опубликована; нет подтверждённого коммерческого предложения."
+                    },
+                    {
+                        "title": "Печь банная Искандер 18 в сетке на ruspechka.shop",
+                        "url": "https://ruspechka.shop/product/iskander-18-v-setke",
+                        "reason": "В заголовке нет литеры М, наличие стекла не подтверждено; вероятно, модификация без стекла."
+                    },
+                    {
+                        "title": "Гефест ISKANDER, печи для бани на 3d-sauna.ru",
+                        "url": "https://3d-sauna.ru/chugunnye-pechi-gefest-iskander",
+                        "reason": "Каталожная страница серии без подтверждённой карточки именно Искандер 18 (М) в сетке; цены не привязаны однозначно к искомой модели."
+                    }
+                ],
+                "excluded_offers": [
+                    {
+                        "title": "Печь для бани Гефест ИСКАНДЕР 18 (М) в сетке",
+                        "url": "https://kotlov.by/drovianye-peci-bannye/pec-dlia-bani-gefest-iskander-18-m-v-setke",
+                        "reason": "Собственный домен KOTLOV не является независимым рыночным источником."
+                    },
+                    {
+                        "title": "Печь для бани Технолит Искандер 18 (М) в сетке",
+                        "url": "https://hot.by/pechi-dlya-bani/pech-dlya-bani-gefest-iskander-18-m-v-setke/?utm_source=google&utm_campaign=pmnew&utm_medium=cpc&utm_term=..c...",
+                        "reason": "Предложение не подтверждает точное совпадение модели."
+                    },
+                    {
+                        "title": "Чугунная печь для бани Искандер 18 (М) в сетке",
+                        "url": "https://www.kostroma.technolit.ru/production/pechi-dlya-bani/pechi-v-setke-uragan/pechi-v-setke/iskander-18-m-v-setke/",
+                        "reason": "Нет положительной подтверждённой цены в BYN."
+                    },
+                    {
+                        "title": "Печь для бани - Искандер 18 (М) в сетке",
+                        "url": "https://baniyuga.ru/shop/pech-dlya-bani---iskander-18-m-v-setke-25002",
+                        "reason": "Нет положительной подтверждённой цены в BYN."
+                    },
+                    {
+                        "title": "Чугунная печь для бани Гефест Искандер 18М в сетке",
+                        "url": "https://voronezh.teplomarket-m.ru/chugunnaya-pech-dlya-bani-gefest-iskander-18-m-v-setke",
+                        "reason": "Нет положительной подтверждённой цены в BYN."
+                    },
+                    {
+                        "title": "Искандер 18 (М) в сетке",
+                        "url": "https://planetapechey.ru/bani-i-sauny/drovyanye-pechi/chugunnye-pechi-dlya-bani-gefest/pechi-v-setke/iskander-18-m-v-setke",
+                        "reason": "Нет положительной подтверждённой цены в BYN."
+                    },
+                    {
+                        "title": "Чугунная печь для бани Технолит Искандер 18 (М) в сетке",
+                        "url": "https://technolit.shop/shop/?filter_obem-parnogo-pomescheniya-m3=18&shop_view=list",
+                        "reason": "Предложение не подтверждает точное совпадение модели."
+                    },
+                    {
+                        "title": "Чугунная печь для бани Искандер 18 (М) в сетке",
+                        "url": "https://kamin53.ru/product/chugunnaya-pech-dlya-bani-iskander-18-m-v-setke/",
+                        "reason": "Нет положительной подтверждённой цены в BYN."
+                    },
+                    {
+                        "title": "Банная печь Гефест Искандер 18(М) в сетке",
+                        "url": "https://www.avito.ru/moskva/remont_i_stroitelstvo/bannaya_pech_gefest_iskander_18m_v_setke_7970079216?context=H4sIAAAAAAAA_wE_AMD_YToyOntzOjEzOiJsb2NhbFByaW9yaXR5IjtiOjA7czoxOiJ4IjtzOjE2OiJZMmtJd01ZZk52OE5tQTdzIjt9D-qqJj8AAAA#1",
+                        "reason": "Нет положительной подтверждённой цены в BYN."
+                    }
+                ],
+                "model": "deepseek-v4-pro",
+                "searched_at": "2026-10-13T21:53:58+00:00"
+            }
+        },
+        {
+            "sku": "KOTLOV-000191",
+            "review_reason": "Live-web исследование точной production-модели нашло менее трёх независимых подтверждённых предложений; сохранить консультационный режим.",
+            "force_consultation_hold": true,
+            "observations": [
+                {
+                    "source": "web-548e2a8f803a25ab",
+                    "url": "https://banipechi.by/catalog/pechi-dlya-banu/pechi-gefest/pechi-v-setke-uragan/iskander-zk-25-p2-uragan",
+                    "external_name": "Печь для бани Искандер ЗК 25 (П2) Ураган",
+                    "model": "Банная печь Искандер ЗК 25 (П2) Ураган",
+                    "package": "Чугунная печь Искандер 25 П2; крышка закрытой каменки; наборное кольцо; 2 паровые пушки; дверца каменки с заслонкой; сетка; зольный ящик; удлинитель портала; герметик; инструкция. Камни и стартовая труба приобретаются отдельно.",
+                    "observed_price": 3071.43,
+                    "currency": "BYN",
+                    "exchange_rate_to_byn": 1,
+                    "price_includes_vat": null,
+                    "availability_status": "in_stock",
+                    "match_method": "exact_model",
+                    "match_confidence": 0.99,
+                    "is_confirmed": true,
+                    "is_comparable": true,
+                    "validation_flags": [],
+                    "evidence": "Карточка banipechi.by: точное название, статус 'В наличии', цена 3 071,43 BYN, комплектация и характеристики совпадают с моделью ЗК 25 (П2) Ураган."
+                }
+            ],
+            "research": {
+                "summary": "Найдены и проверены предложения точной модели «Банная печь Искандер ЗК 25 (П2) Ураган» (ТехноЛит). В Беларуси подтверждены две независимые карточки с явной ценой: kotlov.by — 3 085,60 BYN и banipechi.by — 3 071,43 BYN; hot.by ведет точную карточку, но цена доступна по запросу; unishop.by как агрегатор показывает 2 972 BYN. Российские продавцы дают 76 200–85 300 RUB, что номинально ниже, но без учета логистики и валютного пересчета. Артикул KOTLOV-000191 в найденных карточках не встречался. Цена клиента 0,00 BYN — это пустое/техническое значение, непригодное для сравнения.",
+                "verdict": "Ориентир белорусского рынка для этой модели — около 2 972–3 086 BYN, наиболее подтвержденные продавцы: kotlov.by (3 085,60 BYN) и banipechi.by (3 071,43 BYN, в наличии). Рекомендую не ориентироваться на 0,00 BYN, а проверять актуальное наличие и комплектацию у двух-трех BYN-продавцов и фиксировать цену в диапазоне ~3 070–3 090 BYN. Российские цены 76–85 тыс. RUB можно использовать как ориентир «нижнего» рынка, но с обязательным добавлением доставки/импортных расходов. Уверенность средняя: менее трех независимых белорусских продавцов с подтвержденной ценой.",
+                "confidence": "medium",
+                "search_queries": [
+                    "Банная печь Искандер ЗК 25 П2 Ураган ТехноЛит купить",
+                    "KOTLOV-000191 Искандер ЗК 25 Ураган",
+                    "\"Искандер ЗК 25\" \"Ураган\" печь",
+                    "\"Искандер ЗК 25\" \"П2\" купить Беларусь",
+                    "\"Искандер ЗК 25 (П2) Ураган\"",
+                    "site:by Искандер ЗК 25 Ураган"
+                ],
+                "rejected_candidates": [
+                    {
+                        "title": "Печь для бани Искандер ЗК 25 (M) Ураган чугун",
+                        "url": "https://kotlov.by/drovianye-peci-bannye/pec-dlia-bani-iskander-zk-25-m-uragan-cugun",
+                        "reason": "Модификация M, а не П2."
+                    },
+                    {
+                        "title": "Печь для бани Гефест ИСКАНДЕР ЗК 25 Ураган",
+                        "url": "https://kotlov.by/drovianye-peci-bannye/pec-dlia-bani-gefest-iskander-zk-25-uragan",
+                        "reason": "Нет индекса П2, глухая дверца и отличающиеся габариты."
+                    },
+                    {
+                        "title": "Чугунная печь для бани Искандер ЗК 25 (П2) Pro Ураган",
+                        "url": "https://eurobani.by/katalog/bannie-pechi/drovjanye-pechi/bannyye-pechi-gefest-tekhnolit/chugunnaya-pech-dlya-bani-iskander-zk-25-p2-pro-uragan",
+                        "reason": "Pro-исполнение с увеличенным объемом каменки, не базовая модель."
+                    },
+                    {
+                        "title": "Банная печь Искандер ЗК 25 (П2)",
+                        "url": "https://maximal.by/otopitelnoe-i-klimaticheskoe-oborudovanie/bannaya-pech-iskander-zk-25-p2",
+                        "reason": "В названии отсутствует 'Ураган'; возможна другая комплектация каменки."
+                    },
+                    {
+                        "title": "Печь для бани Технолит комплект Искандер ЗК 25 (П2) PRO Оптима 680/40 Змеевик",
+                        "url": "https://hot.by/pechi-dlya-bani/pech-dlya-bani-tehnolit-komplekt-iskander-zk-25-p2-pro-optima-680-40-zmeevik/",
+                        "reason": "Pro-комплект с каменной облицовкой, другая комплектация."
+                    },
+                    {
+                        "title": "Печь для бани Искандер ЗК 25 (M) Ураган круглая сетка",
+                        "url": "https://2gis.ru/kazan/firm/70000001081655075/tab/prices?m=122.315177%2C55.83628%2F2#2",
+                        "reason": "Модификация M и круглая сетка; это справочник 2ГИС, а не подтвержденная карточка интернет-магазина."
+                    }
+                ],
+                "excluded_offers": [
+                    {
+                        "title": "Банная печь Искандер ЗК 25 (П2) Ураган",
+                        "url": "https://kotlov.by/drovianye-peci-bannye/bannaia-pec-iskander-zk-25-p2-uragan",
+                        "reason": "Собственный домен KOTLOV не является независимым рыночным источником."
+                    },
+                    {
+                        "title": "Печь для бани Технолит Искандер ЗК 25 (П2) Ураган",
+                        "url": "https://hot.by/pechi-dlya-bani/pech-dlya-bani-gefest-iskander-zk-25-p2-uragan/?utm_source=google&utm_campaign=pmnew&utm_medium=cpc&utm_term=..c...",
+                        "reason": "Нет положительной подтверждённой цены в BYN."
+                    },
+                    {
+                        "title": "Банная печь Искандер ЗК 25 (П2) Ураган",
+                        "url": "https://unishop.by/catalog/2de25d28cbfc26fb412f1815a0eea22c/",
+                        "reason": "Предложение не подтверждает точное совпадение модели."
+                    },
+                    {
+                        "title": "Печь Гефест Искандер ЗК 25 (П2) Ураган",
+                        "url": "https://pechi-group.ru/product/pech-gefest-iskander-zk-25-p2-uragan/",
+                        "reason": "Нет положительной подтверждённой цены в BYN."
+                    },
+                    {
+                        "title": "Искандер ЗК 25 (П2) Ураган",
+                        "url": "https://bani-33.ru/iskander-zk-25-p2-uragan/#ymap",
+                        "reason": "Нет положительной подтверждённой цены в BYN."
+                    },
+                    {
+                        "title": "Чугунная банная печь Искандер ЗК 25 (П2) Ураган",
+                        "url": "https://xn--d1acamwekd3etb.xn--p1ai/catalog/technolit/chugunnaya-bannaya-pech-iskander-zk-25-p2-uragan/",
+                        "reason": "Нет положительной подтверждённой цены в BYN."
+                    },
+                    {
+                        "title": "Печь банная Искандер ЗК 25 (П2) Ураган, Техно Лит",
+                        "url": "https://betongarant.ru/catalog/pechi_dlya_bani/pech_bannaya_iskander_zk_25_p2_uragan_tekhno_lit/",
+                        "reason": "Нет положительной подтверждённой цены в BYN."
+                    }
+                ],
+                "model": "deepseek-v4-pro",
+                "searched_at": "2026-10-13T21:55:13+00:00"
+            }
+        },
+        {
+            "sku": "KOTLOV-000192",
+            "review_reason": "Live-web исследование точной production-модели нашло менее трёх независимых подтверждённых предложений; сохранить консультационный режим.",
+            "force_consultation_hold": true,
+            "observations": [
+                {
+                    "source": "web-66174494f7f95435",
+                    "url": "https://banisauny.by/pechi-dlya-bani/pech-iskander-18-p2-v-setke/#tab-review",
+                    "external_name": "Печь Искандер 18 (П2) в сетке",
+                    "model": "Печь для бани Гефест ИСКАНДЕР 18 (П2) в сетке",
+                    "package": "чугунная печь, стальная сетка, зольный ящик, удлинитель портала, жаростойкий герметик, инструкция",
+                    "observed_price": 2272,
+                    "currency": "BYN",
+                    "exchange_rate_to_byn": 1,
+                    "price_includes_vat": null,
+                    "availability_status": "unknown",
+                    "match_method": "exact_model",
+                    "match_confidence": 0.99,
+                    "is_confirmed": true,
+                    "is_comparable": true,
+                    "validation_flags": [],
+                    "evidence": "Карточка точной модели, производитель ТехноЛит, цена 2272 BYN, комплектность с удлинителем портала."
+                }
+            ],
+            "research": {
+                "summary": "Точная модель найдена. В Беларуси подтверждённые цены: kotlov.by — 2162.20 BYN (наличие под запрос), banisauny.by — 2272.00 BYN; точные карточки pechnoy.by и teplone.by — без опубликованной цены. Рыночный диапазон РБ по подтверждённым ценам: 2162.20–2272.00 BYN. Для контекста по РФ: 51 900–59 800 RUB без пересчёта в BYN. Важное расхождение — комплектность: у banisauny.by и pechnoy.by указан удлинитель портала, у части карточек он не отражён; камни в комплект не входят.",
+                "verdict": "Ориентир для Беларуси — 2160–2270 BYN. Если комплектность сопоставима (с удлинителем портала, без камней), можно стартовать около 2160–2200 BYN, но перед публикацией нужно подтвердить наличие, НДС и точный состав комплекта у конкурентов. Прямых BYN-предложений с подтверждённым наличием мало, поэтому confidence medium.",
+                "confidence": "medium",
+                "search_queries": [
+                    "Гефест Искандер 18 П2 в сетке купить",
+                    "ТехноЛит Искандер 18 П2 печь для бани",
+                    "KOTLOV-000192",
+                    "Гефест Искандер 18 (П2) в сетке",
+                    "Искандер 18 П2 в сетке цена BYN купить Минск",
+                    "\"Искандер 18\" \"П2\" \"в сетке\" купить Беларусь",
+                    "site:by Искандер 18 П2 в сетке",
+                    "banisauny.by печь Искандер 18 П2 в сетке"
+                ],
+                "rejected_candidates": [
+                    {
+                        "title": "Банная печь Искандер 18 (П2) в сетке — unishop.by",
+                        "url": "https://unishop.by/catalog/64bfb3d502c249c144d01b4fe6ed0c37/?idshop=2138",
+                        "reason": "Агрегатор/каталог продавцов без подтверждённой карточки конкретного магазина."
+                    },
+                    {
+                        "title": "Каталог чугунных печей Гефест 12–18 м³ — pechi-dimohody.by",
+                        "url": "https://disna.pechi-dimohody.by/pechi-dlya-bani/proizvoditeli1/pechi-dlya-bani-gefest/pjech-gjefjest-12-18-m",
+                        "reason": "Каталожная страница без конкретной карточки и цены точной модели."
+                    },
+                    {
+                        "title": "Комплект Искандер 18 (П2) Оптима 680/40 Талькохлорит",
+                        "url": "https://volgograd.technolit.ru/production/pechi-dlya-bani/pechekomplekty/iskander/komplekt-iskander-18-p2-optima-680-40-talkokhlorit/",
+                        "reason": "Другая комплектация: облицовка Оптима/талькохлорит, не модель 'в сетке'."
+                    },
+                    {
+                        "title": "Печь для бани Искандер ЗК 18 (П2) Ураган чугун",
+                        "url": "https://kotlov.by/drovianye-peci-bannye/pec-dlia-bani-iskander-zk-18-p2-uragan-cugun",
+                        "reason": "Другая модель: закрытая каменка ЗК/Ураган, не 'в сетке'."
+                    },
+                    {
+                        "title": "Печь Искандер ЗК 18 (П2) Pro Ураган",
+                        "url": "https://banisauny.by/pechi-dlya-bani/pech-iskander-zk-18-p2-pro-uragan/",
+                        "reason": "Другая модель: Pro Ураган с закрытой каменкой, не 'в сетке'."
+                    }
+                ],
+                "excluded_offers": [
+                    {
+                        "title": "Печь для бани Гефест ИСКАНДЕР 18 (П2) в сетке",
+                        "url": "https://kotlov.by/drovianye-peci-bannye/pec-dlia-bani-gefest-iskander-18-p2-v-setke",
+                        "reason": "Собственный домен KOTLOV не является независимым рыночным источником."
+                    },
+                    {
+                        "title": "Печь Искандер 18 (П2) в сетке",
+                        "url": "https://pechnoy.by/pechi-dlya-bani/drovyanyye-pechi/pechi-gefest/pechi-iskander/pech-iskander-18-p2-v-setke/",
+                        "reason": "Нет положительной подтверждённой цены в BYN."
+                    },
+                    {
+                        "title": "Чугунная банная печь Искандер 18 (П2) в сетке",
+                        "url": "https://teplone.by/chugunnaja-bannaja-pech-iskander-18-p2-v-setke-iskander-25-p2-setka/",
+                        "reason": "Предложение не подтверждает точное совпадение модели."
+                    },
+                    {
+                        "title": "Чугунная печь для бани Искандер 18 (П2) в сетке",
+                        "url": "https://kamin53.ru/product/chugunnaya-pech-dlya-bani-iskander-18-p2-v-setke/",
+                        "reason": "Нет положительной подтверждённой цены в BYN."
+                    },
+                    {
+                        "title": "Печь Гефест Искандер 18 (П2) в сетке",
+                        "url": "https://prometey-spb.ru/pechi-dlya-bani/drovyannye-pechi/pechi-gefest/gefest-iskander/pech-gefest-iskander-18-p2-v-setke/#product_tabs-6a6db6abc8ed7",
+                        "reason": "Нет положительной подтверждённой цены в BYN."
+                    },
+                    {
+                        "title": "Печь Гефест Искандер 18 (П2) в сетке",
+                        "url": "https://pechi-group.ru/product/pech-gefest-iskander-18-p2-v-setke/",
+                        "reason": "Нет положительной подтверждённой цены в BYN."
+                    },
+                    {
+                        "title": "Чугунная печь для бани Искандер 18 (П2) в сетке Гефест",
+                        "url": "https://magazin-pechi.ru/chugunnaya-pech-dlya-bani-iskander-18-p2-v-setke-gefest/",
+                        "reason": "Нет положительной подтверждённой цены в BYN."
+                    },
+                    {
+                        "title": "Печь для бани Гефест Искандер 18 (П2) в сетке",
+                        "url": "https://kaminvdom.ru/pech-dlya-bani-gefest-iskander-18-p2-v-setke",
+                        "reason": "Нет положительной подтверждённой цены в BYN."
+                    }
+                ],
+                "model": "deepseek-v4-pro",
+                "searched_at": "2026-10-13T21:56:29+00:00"
+            }
+        },
+        {
+            "sku": "KOTLOV-000193",
+            "review_reason": "Live-web исследование точной production-модели нашло менее трёх независимых подтверждённых предложений; сохранить консультационный режим.",
+            "force_consultation_hold": true,
+            "observations": [
+                {
+                    "source": "web-8cde72c895d68935",
+                    "url": "https://pechibani.by/pechi-dlya-bani/pech-iskander-18-v-setke/",
+                    "external_name": "Печь для бани Искандер 18 в сетке чугун",
+                    "model": "Печь для бани Гефест ИСКАНДЕР 18 в сетке",
+                    "package": "чугунная печь Искандер 18, стальная сетка, зольный ящик, удлинитель портала, жаростойкий герметик, инструкция с паспортом",
+                    "observed_price": 1920,
+                    "currency": "BYN",
+                    "exchange_rate_to_byn": 1,
+                    "price_includes_vat": null,
+                    "availability_status": "unknown",
+                    "match_method": "exact_model",
+                    "match_confidence": 0.99,
+                    "is_confirmed": true,
+                    "is_comparable": true,
+                    "validation_flags": [],
+                    "evidence": "Карточка с ценой 1 920 BYN, производитель ТехноЛит, комплектация соответствует базовой модели."
+                }
+            ],
+            "research": {
+                "summary": "На 13.10.2026 в Беларуси точная базовая модель «Гефест/ТехноЛит Искандер 18 в сетке» (глухая дверца, дрова, сетка, до 18 м³) найдена в прямых карточках: 1 877,20 BYN на kotlov.by (страница с SKU KOTLOV-000193, вероятно собственная витрина) и 1 920 BYN на pechibani.by. На категорийной странице pechi-dimohody.by в листинге видна цена 1 929 BYN, но отдельная карточка базовой версии не подтверждена. В РФ та же базовая версия представлена от 48 400 до 51 900 RUB на независимых доменах; пересчёт в BYN не выполнялся из-за отсутствия точного курса. Цена клиента 0.00 BYN выглядит как отсутствующая/техническая заглушка, а не рыночная.",
+                "verdict": "Рыночный коридор в РБ по точной модели — около 1 877–1 929 BYN, независимый конкурентный ориентир — 1 920 BYN. Цена 0.00 BYN в коммерческом предложении некорректна: с ней товар выглядит бесплатным или неработающей карточкой. Рекомендую установить розничную цену в диапазоне 1 875–1 930 BYN; при акции можно держаться ближе к 1 875–1 880 BYN, демпинговать ниже рынка не требуется.",
+                "confidence": "medium",
+                "search_queries": [
+                    "\"Гефест ИСКАНДЕР 18 в сетке\" цена",
+                    "\"Искандер 18\" \"сетке\" ТехноЛит печь для бани",
+                    "KOTLOV-000193",
+                    "ТехноЛит Искандер 18 в сетке купить Беларусь",
+                    "\"Искандер 18 в сетке\" site:by",
+                    "\"Гефест Искандер 18 в сетке\" Беларусь цена BYN",
+                    "\"Печь для бани Гефест ИСКАНДЕР 18 в сетке\" купить Минск",
+                    "\"Искандер 18\" \"в сетке\" цена Минск"
+                ],
+                "rejected_candidates": [
+                    {
+                        "title": "Печь для бани Технолит Искандер 18 (П2) в сетке",
+                        "url": "https://hot.by/pechi-dlya-bani/pech-dlya-bani-gefest-iskander-18-p2-v-setke/?utm_source=google&utm_campaign=pmnew&utm_medium=cpc&utm_term=..c...",
+                        "reason": "Модификация П2 с панорамной дверцей, не базовая «Искандер 18 в сетке»."
+                    },
+                    {
+                        "title": "Печь Искандер 18 (П2) в сетке ТехноЛит",
+                        "url": "https://banisauny.by/pechi-dlya-bani/pech-iskander-18-p2-v-setke/#tab-review",
+                        "reason": "Модификация П2, не базовая версия."
+                    },
+                    {
+                        "title": "Печь для бани Технолит Искандер 18 (М) в сетке",
+                        "url": "https://topkabel.by/pech-dlya-bani-tehnolit-iskander-18-m-v-setke",
+                        "reason": "Модификация М с дверцей со стеклом, не базовая версия."
+                    },
+                    {
+                        "title": "Печь для бани Искандер 18 (М) в сетке",
+                        "url": "https://banipechi.by/catalog/pechi-dlya-banu/pechi-gefest/pechi-v-setke-uragan/pechi-v-setke/pech-dla-bani-iskander-18-m-v-setke",
+                        "reason": "Модификация М, не базовая версия."
+                    },
+                    {
+                        "title": "Печь Гефест Искандер 18 (П2) в сетке",
+                        "url": "https://pechi-group.ru/product/pech-gefest-iskander-18-p2-v-setke/",
+                        "reason": "Карточка П2; базовая версия упоминается как сопутствующая, отдельного предложения нет."
+                    },
+                    {
+                        "title": "Печь Гефест Искандер для бани — Купить в Ганцевичах",
+                        "url": "https://gantsevichi.pechi-dimohody.by/pechi-dlya-bani/proizvoditeli1/pechi-dlya-bani-gefest/pjech-gjefjest-skandjer",
+                        "reason": "Категорийная страница: в листинге есть «Искандер 18 в сетке» за 1929 BYN, но отдельная карточка базовой модели не подтверждена."
+                    },
+                    {
+                        "title": "Банная печь Искандер 18 в сетке",
+                        "url": "https://unishop.by/catalog/4ca9340641ac9727ab59f9feb2a5c10d/?idshop=2138",
+                        "reason": "Агрегатор/витрина нескольких продавцов, не независимая подтверждённая карточка."
+                    },
+                    {
+                        "title": "Купить Печь Искандер 18 в сетке цена в Минске на pechnoy.by",
+                        "url": "https://pechnoy.by/pechi-dlya-bani/drovyanyye-pechi/pechi-gefest/pechi-iskander/pech-iskander-18-v-setke/",
+                        "reason": "Нет цены в выдаче; предположительно та же витрина, что и pechibani.by."
+                    },
+                    {
+                        "title": "Искандер 18 в сетке",
+                        "url": "https://dymohod-ferrum.ru/kartochka.html?m=%D0%98%D1%81%D0%BA%D0%B0%D0%BD%D0%B4%D0%B5%D1%80%2018&v=x88782472",
+                        "reason": "Цена ориентировочная «по сайту завода», не подтверждённое розничное предложение."
+                    }
+                ],
+                "excluded_offers": [
+                    {
+                        "title": "Печь для бани Гефест ИСКАНДЕР 18 в сетке",
+                        "url": "https://kotlov.by/drovianye-peci-bannye/pec-dlia-bani-gefest-iskander-18-v-setke",
+                        "reason": "Собственный домен KOTLOV не является независимым рыночным источником."
+                    },
+                    {
+                        "title": "Печь Гефест Искандер 18 в сетке",
+                        "url": "https://prometey-spb.ru/pechi-dlya-bani/drovyannye-pechi/pechi-gefest/gefest-iskander/pech-gefest-iskander-18-v-setke/",
+                        "reason": "Нет положительной подтверждённой цены в BYN."
+                    },
+                    {
+                        "title": "Печь Гефест Искандер 18 в сетке",
+                        "url": "https://kamin-studio.ru/product/pech-gefest-iskander-18-v-setke/",
+                        "reason": "Нет положительной подтверждённой цены в BYN."
+                    },
+                    {
+                        "title": "Чугунная печь для бани Гефест Искандер 18 в сетке",
+                        "url": "https://3d-sauna.ru/chugunnaya-pech-dlya-bani-gefest-iskander-18-v-setke",
+                        "reason": "Нет положительной подтверждённой цены в BYN."
+                    },
+                    {
+                        "title": "Искандер 18 в сетке",
+                        "url": "https://planetapechey.ru/bani-i-sauny/drovyanye-pechi/chugunnye-pechi-dlya-bani-gefest/pechi-v-setke/iskander-18-v-setke",
+                        "reason": "Нет положительной подтверждённой цены в BYN."
+                    }
+                ],
+                "model": "deepseek-v4-pro",
+                "searched_at": "2026-10-13T21:58:04+00:00"
+            }
+        }
+    ],
+    "failed_products": []
+}
