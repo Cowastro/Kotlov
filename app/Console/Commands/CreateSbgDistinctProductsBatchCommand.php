@@ -3091,6 +3091,37 @@ class CreateSbgDistinctProductsBatchCommand extends Command
         ],
     ];
 
+    private const BATCH_UNMATCHED_DISPUTED_20261013_CS = [
+        'УТ-00001010' => [
+            'document_dispute' => true,
+            'external_id' => 'bbd2cbff-1f62-11e9-bad6-1c1b0d1de7c2',
+            'fragments' => ['Угловое соединение', '10х10'],
+            'reason' => 'Название «Угловое соединение 10×10» без бренда, артикула, материала и назначения соответствует нескольким несовместимым типам товара. Точную модель, категорию, цену и изображение определить безопасно нельзя.',
+            'required_data' => [
+                'бренд или производитель',
+                'артикул производителя',
+                'назначение и тип соединения',
+                'материал',
+                'фотография упаковки или изделия',
+                'закупочная цена',
+            ],
+            'evidence' => [
+                [
+                    'url' => 'https://faeton-zp.com.ua/g38542508-fitingi-dlya-tormoznyh',
+                    'finding' => 'Фраза 10×10 используется для углового пневматического соединителя тормозной трубки.',
+                ],
+                [
+                    'url' => 'https://m.integration.vs.market.yandex.net/business--ip-pelevin-d-v/100596982',
+                    'finding' => 'Та же размерность используется для сантехнического уголка цанга-цанга.',
+                ],
+                [
+                    'url' => 'https://kit-engineering.ru/catalog/rezbovye_fitingi/profactor_fitingi_rezbovye_/amerikanka_khrom_1_2_vnutrennyaya_naruzhnyaya_rezba_profactor_pf_tf_185_s/',
+                    'finding' => 'Код УТ-00001010 не является идентификатором модели и встречается у другого товара.',
+                ],
+            ],
+        ],
+    ];
+
     public function handle(
         IntegrationProductCreator $creator,
         IntegrationProductMatchDecision $matchDecision,
@@ -3192,6 +3223,7 @@ class CreateSbgDistinctProductsBatchCommand extends Command
             'unmatched-researched-20261013-cp' => self::BATCH_UNMATCHED_RESEARCHED_20261013_CP,
             'unmatched-researched-20261013-cq' => self::BATCH_UNMATCHED_RESEARCHED_20261013_CQ,
             'unmatched-researched-20261013-cr' => self::BATCH_UNMATCHED_RESEARCHED_20261013_CR,
+            'unmatched-disputed-20261013-cs' => self::BATCH_UNMATCHED_DISPUTED_20261013_CS,
             default => null,
         };
 
@@ -3207,12 +3239,80 @@ class CreateSbgDistinctProductsBatchCommand extends Command
         }
 
         $apply = (bool) $this->option('apply');
-        $stats = array_fill_keys(['configured', 'ready', 'created', 'linked', 'refreshed', 'ignored', 'brands_created', 'categories_created', 'already', 'blocked'], 0);
+        $stats = array_fill_keys(['configured', 'ready', 'created', 'linked', 'refreshed', 'ignored', 'disputed', 'brands_created', 'categories_created', 'already', 'blocked'], 0);
         $stats['configured'] = count($rows);
         $details = [];
 
         foreach ($rows as $code => $rule) {
             $items = IntegrationProduct::query()->with(['source', 'product'])->where('external_code', $code)->get();
+
+            if ($rule['document_dispute'] ?? false) {
+                if ($items->count() !== 1) {
+                    $stats['blocked']++;
+                    $details[] = [$code, '-', 'blocked', 'missing unique 1C row'];
+
+                    continue;
+                }
+
+                $item = $items->first();
+                if ($item->match_status === 'ambiguous'
+                    && $item->match_method === 'manual_research_unresolved'
+                    && ! $item->product_id) {
+                    $stats['already']++;
+                    $details[] = [$code, '-', 'already', 'research dispute is already documented'];
+
+                    continue;
+                }
+
+                $valid = $item->source?->name === self::SOURCE_NAME
+                    && $item->source?->partnerName() === self::PARTNER_NAME
+                    && $item->match_status === 'unmatched'
+                    && ! $item->product_id
+                    && (float) $item->stock_quantity > 0
+                    && $item->external_id === $rule['external_id']
+                    && blank($item->external_sku)
+                    && blank($item->barcode)
+                    && $item->normalizedPriceByn() === null
+                    && $this->containsAll($item->name, $rule['fragments']);
+
+                if (! $valid) {
+                    $stats['blocked']++;
+                    $details[] = [$code, '-', 'blocked', 'source, identity, stock or missing-data guard failed'];
+
+                    continue;
+                }
+
+                $stats['ready']++;
+                if ($apply) {
+                    $item->forceFill([
+                        'product_id' => null,
+                        'match_status' => 'ambiguous',
+                        'match_method' => 'manual_research_unresolved',
+                        'match_confidence' => null,
+                        'candidates' => [[
+                            'type' => 'research_dispute',
+                            'name' => 'Спор: недостаточно данных 1С',
+                            'reason' => $rule['reason'],
+                            'required_data' => $rule['required_data'],
+                            'evidence' => $rule['evidence'],
+                            'source_identity' => [
+                                'external_id' => $item->external_id,
+                                'external_code' => $item->external_code,
+                                'external_sku' => $item->external_sku,
+                                'barcode' => $item->barcode,
+                                'name' => $item->name,
+                            ],
+                        ]],
+                        'matched_at' => null,
+                    ])->save();
+                    $stats['disputed']++;
+                    $details[] = [$code, '-', 'disputed', 'insufficient source identity; evidence and required data recorded'];
+                } else {
+                    $details[] = [$code, '-', 'ready', 'document unresolved research dispute'];
+                }
+
+                continue;
+            }
 
             if ($rule['archive_linked_product'] ?? false) {
                 $product = Product::query()

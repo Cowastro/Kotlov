@@ -8,6 +8,7 @@ use App\Models\IntegrationSource;
 use App\Models\IntegrationWarehouse;
 use App\Models\Product;
 use App\Services\SupplierProductAvailabilityService;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use SimpleXMLElement;
@@ -151,6 +152,10 @@ class CommerceMlCatalogImporter
             ->whereBelongsTo($source, 'source')
             ->whereNull('product_id')
             ->where('match_status', '!=', 'ignored')
+            ->where(function (Builder $query): void {
+                $query->whereNull('match_method')
+                    ->orWhere('match_method', '!=', 'manual_research_unresolved');
+            })
             ->orderBy('id')
             ->chunkById(250, function (Collection $items) use (&$stats): void {
                 foreach ($items as $item) {
@@ -161,6 +166,26 @@ class CommerceMlCatalogImporter
             });
 
         return $stats;
+    }
+
+    private function hasUnchangedResearchDispute(IntegrationProduct $item): bool
+    {
+        if ($item->match_method !== 'manual_research_unresolved') {
+            return false;
+        }
+
+        $identity = $item->candidates[0]['source_identity'] ?? null;
+        if (! is_array($identity)) {
+            return false;
+        }
+
+        foreach (['external_id', 'external_code', 'external_sku', 'barcode', 'name'] as $field) {
+            if (($identity[$field] ?? null) !== $item->{$field}) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     /** @return array<int, SimpleXMLElement> */
@@ -266,7 +291,9 @@ class CommerceMlCatalogImporter
             'last_seen_at' => now(),
         ]);
 
-        if (! $item->product_id && $item->match_status !== 'ignored') {
+        if (! $item->product_id
+            && $item->match_status !== 'ignored'
+            && ! $this->hasUnchangedResearchDispute($item)) {
             $item->fill($this->match($item));
         }
 

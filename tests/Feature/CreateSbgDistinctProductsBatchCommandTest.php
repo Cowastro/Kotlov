@@ -7328,4 +7328,67 @@ class CreateSbgDistinctProductsBatchCommandTest extends TestCase
         $this->assertSame($product->id, $item->fresh()->product_id);
         $this->assertTrue((bool) $corrugated->fresh()->is_active);
     }
+
+    public function test_it_documents_an_unidentifiable_positive_stock_item_as_a_durable_research_dispute(): void
+    {
+        $source = IntegrationSource::query()->create([
+            'code' => 'onec-sbg-unmatched-angular-10x10',
+            'name' => '1С СанБизнесГруп',
+            'settings' => ['partner_name' => 'ООО «СанБизнесГруп»'],
+            'is_active' => true,
+            'update_stock' => true,
+        ]);
+        $item = IntegrationProduct::query()->create([
+            'integration_source_id' => $source->id,
+            'external_id' => 'bbd2cbff-1f62-11e9-bad6-1c1b0d1de7c2',
+            'external_code' => 'УТ-00001010',
+            'external_sku' => null,
+            'barcode' => null,
+            'name' => 'Угловое соединение 10х10',
+            'price' => null,
+            'price_byn' => null,
+            'stock_quantity' => 25,
+            'match_status' => 'unmatched',
+            'candidates' => null,
+        ]);
+        $productCount = Product::query()->count();
+
+        $this->artisan('integration:create-sbg-distinct-products', [
+            '--batch' => 'unmatched-disputed-20261013-cs',
+            '--code' => ['УТ-00001010'],
+        ])->assertSuccessful();
+        $this->assertSame('unmatched', $item->fresh()->match_status);
+
+        $this->artisan('integration:create-sbg-distinct-products', [
+            '--batch' => 'unmatched-disputed-20261013-cs',
+            '--code' => ['УТ-00001010'],
+            '--apply' => true,
+        ])->assertSuccessful();
+
+        $item->refresh();
+        $dispute = $item->candidates[0];
+        $this->assertSame($productCount, Product::query()->count());
+        $this->assertNull($item->product_id);
+        $this->assertSame('ambiguous', $item->match_status);
+        $this->assertSame('manual_research_unresolved', $item->match_method);
+        $this->assertNull($item->match_confidence);
+        $this->assertSame('research_dispute', $dispute['type']);
+        $this->assertStringContainsString('нескольким несовместимым типам товара', $dispute['reason']);
+        $this->assertContains('артикул производителя', $dispute['required_data']);
+        $this->assertCount(3, $dispute['evidence']);
+        $this->assertSame('Угловое соединение 10х10', $dispute['source_identity']['name']);
+
+        $stats = app(\App\Services\Integrations\CommerceMlCatalogImporter::class)
+            ->rematchSource($source->code);
+        $this->assertSame(['matched' => 0, 'suggested' => 0, 'ambiguous' => 0, 'unmatched' => 0], $stats);
+        $this->assertSame('manual_research_unresolved', $item->fresh()->match_method);
+
+        $this->artisan('integration:create-sbg-distinct-products', [
+            '--batch' => 'unmatched-disputed-20261013-cs',
+            '--code' => ['УТ-00001010'],
+            '--apply' => true,
+        ])->assertSuccessful();
+        $this->assertSame($productCount, Product::query()->count());
+        $this->assertSame('manual_research_unresolved', $item->fresh()->match_method);
+    }
 }
