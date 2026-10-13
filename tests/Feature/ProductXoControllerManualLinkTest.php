@@ -38,8 +38,13 @@ class ProductXoControllerManualLinkTest extends TestCase
 
         $this->get('https://kotlov.by/pelletnye-gorelki/pelletnaya-gorelka-kotlov-xo-ceramic-pro-100-kvt')
             ->assertOk()
-            ->assertSee('Инструкция контроллера XO 1.0S/2.0S (PDF)')
+            ->assertSee('Контроллер XO 1.0S/2.0S:')
+            ->assertSee('открыть инструкцию (PDF)')
             ->assertSee('href="/docs/kotlov-xo-controller-1-2os-ru.pdf"', false)
+            ->assertSeeInOrder([
+                'Контроллер XO 1.0S/2.0S:',
+                'Описание горелки без ссылки на руководство.',
+            ])
             ->assertSee('href="#documents"', false);
     }
 }

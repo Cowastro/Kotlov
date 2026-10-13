@@ -687,14 +687,15 @@
                         @if ($product->content)
                             <div class="box-desc">
                                 <div class="desc_info cl-text-2">
-                                    {!! $product->content !!}
                                     @if ($isXoCeramicPro100 && !$contentHasXoControllerManual)
-                                        <p class="mt-4">
-                                            <a href="{{ $xoControllerManualUrl }}" target="_blank" rel="noopener">
-                                                <strong>Инструкция контроллера XO 1.0S/2.0S (PDF)</strong>
+                                        <p class="mb-4">
+                                            <strong>Контроллер XO 1.0S/2.0S:</strong>
+                                            <a href="{{ $xoControllerManualUrl }}" class="link fw-medium" target="_blank" rel="noopener">
+                                                открыть инструкцию (PDF)
                                             </a>
                                         </p>
                                     @endif
+                                    {!! $product->content !!}
                                 </div>
                             </div>
                         @else
