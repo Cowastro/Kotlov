@@ -9,8 +9,8 @@ use App\Models\OrderItem;
 use App\Models\Product;
 use App\Models\Supplier;
 use App\Models\User;
-use App\Services\Orders\OrderSettlementManager;
 use App\Services\Integrations\OneCOrderQueue;
+use App\Services\Orders\OrderSettlementManager;
 use Filament\Actions\Action;
 use Filament\Actions\ActionGroup;
 use Filament\Actions\BulkAction;
@@ -109,11 +109,15 @@ class OrdersTable
                     ->label('№ заказа')
                     ->searchable()
                     ->sortable()
+                    ->width('132px')
+                    ->grow(false)
                     ->weight('bold'),
 
                 TextColumn::make('created_at')
                     ->label('Дата')
                     ->dateTime('d.m.Y H:i')
+                    ->width('132px')
+                    ->grow(false)
                     ->sortable(),
 
                 TextColumn::make('customer_name')
@@ -123,6 +127,8 @@ class OrdersTable
                         $record->customer_phone,
                         $record->delivery_city,
                     ])->filter()->implode(' · ') ?: 'Контакты не указаны')
+                    ->width('180px')
+                    ->grow(false)
                     ->wrap(),
 
                 TextColumn::make('customer_phone')
@@ -176,6 +182,8 @@ class OrdersTable
                         $state === 'refunded' => 'heroicon-o-arrow-uturn-left',
                         default => null,
                     })
+                    ->width('170px')
+                    ->grow(false)
                     ->formatStateUsing(fn (?string $state, Order $record): string => $record->paymentStatusLabel()),
 
                 TextColumn::make('economics')
@@ -248,6 +256,8 @@ class OrdersTable
                     ->tooltip(fn (Order $record): string => $record->placedEconomicSnapshot
                         ? 'Неизменяемый снимок на момент оформления. Неизвестные расходы не считаются нулевыми.'
                         : 'Заказ без снимка: показана текущая оценка. Неизвестная цена не считается нулевой.')
+                    ->width('190px')
+                    ->grow(false)
                     ->wrap()
                     ->sortable(query: fn (Builder $query, string $direction): Builder => $query->orderBy('total', $direction)),
 
@@ -295,7 +305,9 @@ class OrdersTable
                         : null)
                     ->tooltip(fn (Order $record): ?string => $record->isArchivedAsIrrelevant()
                         ? $record->archive_reason
-                        : null),
+                        : null)
+                    ->width('150px')
+                    ->grow(false),
 
                 TextColumn::make('onec_sync_state')
                     ->label('Обмен')
@@ -317,6 +329,8 @@ class OrdersTable
                         default => 'heroicon-o-clock',
                     })
                     ->description(fn (Order $record): ?string => $record->onecSyncDescription())
+                    ->width('160px')
+                    ->grow(false)
                     ->wrap(),
 
                 TextColumn::make('management_attention')
@@ -339,6 +353,8 @@ class OrdersTable
                         'warning' => 'heroicon-o-eye',
                         default => 'heroicon-o-check-circle',
                     })
+                    ->width('220px')
+                    ->grow(false)
                     ->wrap(),
 
                 TextColumn::make('supply_route')
@@ -379,6 +395,8 @@ class OrdersTable
                         $record->supplySummary()['unresolved_count'] > 0 => 'danger',
                         default => 'success',
                     })
+                    ->width('190px')
+                    ->grow(false)
                     ->wrap(),
 
                 TextColumn::make('responsible')
@@ -388,6 +406,8 @@ class OrdersTable
                     ->getStateUsing(fn ($record) => $record->manager
                         ? $record->manager->name.($record->assigned_to ? ' ('.$record->assigned_to.')' : '')
                         : ($record->assigned_to ?? null))
+                    ->width('170px')
+                    ->grow(false)
                     ->searchable(query: fn (Builder $query, string $search) => $query
                         ->where('assigned_to', 'like', "%{$search}%")
                         ->orWhereHas('manager', fn ($q) => $q->where('name', 'like', "%{$search}%"))),
@@ -400,11 +420,17 @@ class OrdersTable
 
                 TextColumn::make('items_list')
                     ->label('Товары')
-                    ->state(fn (Order $record): string => $record->items
-                        ->map(fn (OrderItem $item): string => self::productLinks($item))
-                        ->filter()
-                        ->join('<div style="height:6px"></div>'))
+                    ->state(fn (Order $record): string => self::compactProductList($record))
                     ->html()
+                    ->tooltip(fn (Order $record): string => $record->items
+                        ->map(fn (OrderItem $item): string => collect([
+                            $item->product_name,
+                            $item->product_sku ? '['.$item->product_sku.']' : null,
+                        ])->filter()->implode(' '))
+                        ->filter()
+                        ->implode("\n"))
+                    ->width('250px')
+                    ->grow(false)
                     ->wrap()
                     ->searchable(query: function (Builder $query, string $search): Builder {
                         return $query->orWhereHas('items', function (Builder $itemsQuery) use ($search): void {
@@ -618,6 +644,36 @@ class OrdersTable
                     })
                     ->deselectRecordsAfterCompletion(),
             ]);
+    }
+
+    private static function compactProductList(Order $order): string
+    {
+        $items = $order->items->values();
+        $visibleItems = $items->take(2)
+            ->map(fn (OrderItem $item): string => self::productLinks($item))
+            ->filter();
+        $remainingItems = $items->slice(2)
+            ->map(fn (OrderItem $item): string => self::productLinks($item))
+            ->filter();
+
+        $html = $visibleItems->join('<div style="height:8px"></div>');
+
+        if ($remainingItems->isNotEmpty()) {
+            $count = $remainingItems->count();
+            $word = match (true) {
+                ($count % 100) >= 11 && ($count % 100) <= 14 => 'товаров',
+                ($count % 10) === 1 => 'товар',
+                ($count % 10) >= 2 && ($count % 10) <= 4 => 'товара',
+                default => 'товаров',
+            };
+            $html .= '<details style="margin-top:8px">'
+                .'<summary style="cursor:pointer;color:#f59e0b;font-weight:600">Показать ещё '.$count.' '.$word.'</summary>'
+                .'<div style="height:8px"></div>'
+                .$remainingItems->join('<div style="height:8px"></div>')
+                .'</details>';
+        }
+
+        return '<div style="width:250px;max-width:250px;overflow-wrap:anywhere">'.$html.'</div>';
     }
 
     private static function productLinks(OrderItem $item): string
