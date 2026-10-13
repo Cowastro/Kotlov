@@ -127,6 +127,14 @@ class MarketWebResearchService
                                 $response->json()
                             );
                         }
+                        if (($result['status'] ?? null) !== 'ready') {
+                            $result = $this->sourcesOnlyResult(
+                                $response->json(),
+                                $product,
+                                $quotePrice,
+                                $model
+                            );
+                        }
                     }
                     if (($result['status'] ?? null) === 'ready') {
                         Cache::put(
@@ -159,7 +167,7 @@ class MarketWebResearchService
         if ($provider === 'deepseek') {
             $safeMode = (bool) config('services.ai.market_research_safe_mode', true);
 
-            return [
+            $payload = [
                 'model' => $model,
                 'max_tokens' => $safeMode
                     ? max(512, min(4000, (int) config('services.ai.market_research_max_output_tokens', 2500)))
@@ -177,6 +185,12 @@ class MarketWebResearchService
                         : 12,
                 ]],
             ];
+
+            if ($safeMode) {
+                $payload['reasoning'] = ['effort' => 'none'];
+            }
+
+            return $payload;
         }
 
         $webSearch = [
@@ -350,6 +364,7 @@ PROMPT;
                 ->post($provider['responses_url'], [
                     'model' => $model,
                     'max_tokens' => 2000,
+                    'reasoning' => ['effort' => 'none'],
                     'system' => 'Преобразуй исходный отчёт в JSON. Не выполняй новый поиск, не добавляй факты, цены или ссылки. '.$this->deepSeekJsonContract(),
                     'messages' => [[
                         'role' => 'user',
@@ -361,6 +376,44 @@ PROMPT;
         } catch (Throwable) {
             return null;
         }
+    }
+
+    /** @param array<string, mixed> $response
+     * @return array<string, mixed>
+     */
+    private function sourcesOnlyResult(
+        array $response,
+        Product $product,
+        float $quotePrice,
+        string $model
+    ): array {
+        $sources = $this->webSources($response);
+        $count = count($sources);
+
+        return [
+            'status' => 'ready',
+            'product_name' => $product->name,
+            'sku' => $product->sku,
+            'quote_price' => $quotePrice > 0 ? $quotePrice : null,
+            'summary' => $count > 0
+                ? 'Поиск нашёл источники, но безопасный режим не смог достоверно извлечь из них цены.'
+                : 'Безопасный поиск завершён, подтверждённых карточек товара не найдено.',
+            'verdict' => 'Откройте найденные источники и проверьте цену вручную.',
+            'confidence' => 'low',
+            'search_queries' => [$product->name],
+            'offers' => [],
+            'rejected_candidates' => [],
+            'sources' => $sources,
+            'market' => [
+                'count' => 0,
+                'minimum' => null,
+                'median' => null,
+                'maximum' => null,
+                'quote_delta_percent' => null,
+            ],
+            'model' => $model,
+            'searched_at' => now(),
+        ];
     }
 
     /** @param array<string, mixed> $response

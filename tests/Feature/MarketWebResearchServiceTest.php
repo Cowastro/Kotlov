@@ -327,7 +327,8 @@ class MarketWebResearchServiceTest extends TestCase
 
             return $data['model'] === 'deepseek-flash'
                 && $data['tools'][0]['max_uses'] === 2
-                && $data['max_tokens'] === 2500;
+                && $data['max_tokens'] === 2500
+                && $data['reasoning']['effort'] === 'none';
         });
     }
 
@@ -386,7 +387,47 @@ class MarketWebResearchServiceTest extends TestCase
         $repairPayload = $requests[1][0]->data();
         $this->assertSame('deepseek-flash', $repairPayload['model']);
         $this->assertSame(2000, $repairPayload['max_tokens']);
+        $this->assertSame('none', $repairPayload['reasoning']['effort']);
         $this->assertArrayNotHasKey('tools', $repairPayload);
+    }
+
+    public function test_safe_mode_returns_found_sources_when_json_repair_also_fails(): void
+    {
+        config()->set([
+            'services.ai.market_research_provider' => 'deepseek',
+            'services.ai.api_key' => 'deepseek-secret-key',
+            'services.ai.deepseek_anthropic_url' => 'https://api.deepseek.test/anthropic/v1/messages',
+            'services.ai.deepseek_research_fallback_model' => 'deepseek-flash',
+            'services.ai.market_research_safe_mode' => true,
+        ]);
+
+        Http::fakeSequence('https://api.deepseek.test/anthropic/v1/messages')
+            ->push([
+                'content' => [
+                    [
+                        'type' => 'web_search_tool_result',
+                        'content' => [[
+                            'type' => 'web_search_result',
+                            'title' => 'Карточка товара',
+                            'url' => 'https://seller.by/fallback',
+                        ]],
+                    ],
+                    ['type' => 'text', 'text' => 'Ответ без JSON.'],
+                ],
+            ])
+            ->push(['content' => [['type' => 'text', 'text' => 'JSON снова не получен.']]]);
+
+        $result = app(MarketWebResearchService::class)->research(new Product([
+            'name' => 'Поиск с резервным отображением',
+            'sku' => 'TEST-SOURCES-ONLY',
+        ]), 100);
+
+        $this->assertSame('ready', $result['status']);
+        $this->assertSame('low', $result['confidence']);
+        $this->assertCount(1, $result['sources']);
+        $this->assertSame([], $result['offers']);
+        $this->assertStringContainsString('проверьте цену вручную', $result['verdict']);
+        Http::assertSentCount(2);
     }
 
     /** @return array<string, mixed> */
