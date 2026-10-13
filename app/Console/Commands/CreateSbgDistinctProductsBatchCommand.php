@@ -3244,6 +3244,36 @@ class CreateSbgDistinctProductsBatchCommand extends Command
         ],
     ];
 
+    // The 1C row identifies the trade name and 32-piece format but contains no
+    // manufacturer, barcode or supplier article. Keep the card brandless and
+    // use the current independent Belarus retail listing as the price source.
+    private const BATCH_UNMATCHED_RESEARCHED_20261014_CW = [
+        'УТ-00000850' => [
+            'template_slug' => 'nordflam-resetka-kaminnaia-aero-90800-belaia',
+            'allow_unmatched' => true,
+            'allow_brandless' => true,
+            'force_brandless' => true,
+            'category_slug' => 'aksessuary-kaminy',
+            'fragments' => ['Средство для разжигания огня', 'Первый огонек', '2017'],
+            'name' => 'Первый огонёк Средство для розжига, 32 брикета',
+            'retail' => 6.50,
+            'images' => [
+                'img/products/firelighters/pervyi-ogonek-32-briquettes.png',
+            ],
+            'source_url' => 'https://1000brest.by/tovary-dlya-piknika-i-turizma/ugol-i-sredstva-dlya-rozzhiga/',
+            'short' => 'Сухое средство «Первый огонёк» из 32 брикетов для розжига дров и угля в печах, каминах, мангалах и грилях.',
+            'content' => '<p><strong>«Первый огонёк», 32 брикета</strong> — готовое сухое средство для быстрого розжига дров и древесного угля.</p><p>Брикеты удобно дозировать поштучно. Средство подходит для печей, каминов, мангалов, грилей и костров.</p><p>Используйте по инструкции на упаковке. Храните в сухом месте вдали от детей, источников тепла и открытого огня.</p>',
+            'specs' => [
+                ['key' => 'Тип', 'value' => 'Сухое средство для розжига'],
+                ['key' => 'Торговое наименование', 'value' => 'Первый огонёк'],
+                ['key' => 'Форма', 'value' => 'Брикеты'],
+                ['key' => 'Количество в упаковке', 'value' => '32 шт.'],
+                ['key' => 'Назначение', 'value' => 'Розжиг дров и древесного угля'],
+                ['key' => 'Применение', 'value' => 'Печи, камины, мангалы, грили, костры'],
+            ],
+        ],
+    ];
+
     public function handle(
         IntegrationProductCreator $creator,
         IntegrationProductMatchDecision $matchDecision,
@@ -3349,6 +3379,7 @@ class CreateSbgDistinctProductsBatchCommand extends Command
             'unmatched-researched-20261013-ct' => self::BATCH_UNMATCHED_RESEARCHED_20261013_CT,
             'unmatched-researched-20261014-cu' => self::BATCH_UNMATCHED_RESEARCHED_20261014_CU,
             'unmatched-researched-20261014-cv' => self::BATCH_UNMATCHED_RESEARCHED_20261014_CV,
+            'unmatched-researched-20261014-cw' => self::BATCH_UNMATCHED_RESEARCHED_20261014_CW,
             default => null,
         };
 
