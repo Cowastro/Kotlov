@@ -47,7 +47,8 @@
             <strong>{{ $seller['short_name'] }}</strong>
             УНП {{ $seller['unp'] }}@if($seller['okpo'] ?? null), ОКПО {{ $seller['okpo'] }}@endif<br>
             {{ $seller['legal_address'] }}<br>
-            {{ implode(', ', $seller['phones'] ?? []) }} · {{ $seller['email'] }}
+            <strong style="display:inline;font-size:9px;margin:0">Тел.:</strong> {{ implode(' · ', $seller['phones'] ?? []) }}<br>
+            {{ $seller['email'] }} · {{ preg_replace('#^https?://#', '', $seller['website'] ?? 'kotlov.by') }}
         </td>
         <td class="doc-box">
             <div class="doc-type">{!! $document->type === 'invoice' ? 'Счёт<br>на оплату' : 'Коммерческое<br>предложение' !!}</div>

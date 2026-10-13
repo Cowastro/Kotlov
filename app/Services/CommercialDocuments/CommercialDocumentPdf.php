@@ -20,7 +20,7 @@ class CommercialDocumentPdf
         $dompdf = new Dompdf($options);
         $dompdf->loadHtml(view('pdf.commercial-document', [
             'document' => $document,
-            'seller' => $document->seller_snapshot,
+            'seller' => $this->sellerDetails($document),
             'logo' => $this->logoDataUri(),
             'amountWords' => $this->amountWords((float) $document->total),
         ])->render(), 'UTF-8');
@@ -39,6 +39,21 @@ class CommercialDocumentPdf
         Storage::disk('local')->put($path, $this->render($document));
 
         return ['path' => $path, 'name' => $filename];
+    }
+
+    /** @return array<string, mixed> */
+    public function sellerDetails(CommercialDocument $document): array
+    {
+        $seller = (array) $document->seller_snapshot;
+        $current = (array) config('legal.commercial_documents', []);
+
+        foreach (['phones', 'email', 'website'] as $contactField) {
+            if (! empty($current[$contactField])) {
+                $seller[$contactField] = $current[$contactField];
+            }
+        }
+
+        return $seller;
     }
 
     private function logoDataUri(): ?string

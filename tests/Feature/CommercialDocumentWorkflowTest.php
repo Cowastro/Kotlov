@@ -94,6 +94,29 @@ class CommercialDocumentWorkflowTest extends TestCase
         $this->assertGreaterThan(10_000, strlen($pdf));
     }
 
+    public function test_pdf_uses_current_website_contacts_even_for_an_older_document_snapshot(): void
+    {
+        config()->set('legal.commercial_documents.phones', [
+            '+375 (29) 354-40-41',
+            '+375 (33) 377-70-93',
+        ]);
+
+        $document = CommercialDocument::query()->create([
+            'type' => 'quote',
+            'seller_snapshot' => array_replace(config('legal.commercial_documents'), [
+                'phones' => ['+375 29 680-84-14', '+375 17 231-58-14'],
+            ]),
+        ]);
+
+        $seller = app(CommercialDocumentPdf::class)->sellerDetails($document);
+
+        $this->assertSame([
+            '+375 (29) 354-40-41',
+            '+375 (33) 377-70-93',
+        ], $seller['phones']);
+        $this->assertSame('ООО «СанБизнесГруп»', $seller['short_name']);
+    }
+
     public function test_mail_draft_contains_generated_pdf_attachment(): void
     {
         Storage::fake('local');
