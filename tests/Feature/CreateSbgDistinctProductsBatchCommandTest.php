@@ -1948,4 +1948,68 @@ class CreateSbgDistinctProductsBatchCommandTest extends TestCase
         $this->assertStringNotContainsString('rub', mb_strtolower($product->content));
         $this->assertSame('manual_created', $item->fresh()->match_method);
     }
+
+    public function test_it_creates_energia_as_an_atm_aluminium_single_section_instead_of_linking_royal_thermo(): void
+    {
+        $source = IntegrationSource::query()->create([
+            'code' => 'onec-sbg-atm-energia-500-100',
+            'name' => '1С СанБизнесГруп',
+            'settings' => ['partner_name' => 'ООО «СанБизнесГруп»'],
+            'is_active' => true,
+            'update_stock' => true,
+        ]);
+        $category = Category::query()->firstOrCreate(['slug' => 'alyuminievye-radiatory'], [
+            'name' => 'Алюминиевые радиаторы',
+            'parent_id' => 0,
+        ]);
+        $royalThermo = Brand::query()->create(['slug' => 'royal-thermo', 'name' => 'Royal Thermo']);
+        $wrongRoyalThermoCandidate = Product::query()->create([
+            'category_id' => $category->id,
+            'brand_id' => $royalThermo->id,
+            'sku' => 'KOTLOV-001413',
+            'name' => 'Радиатор алюминиевый Royal Thermo BILINER A 500, 10 секций',
+            'slug' => 'royal-thermo-biliner-template-for-energia',
+            'price' => 500,
+            'images' => ['product/0014/001413/royal-thermo.jpg'],
+        ]);
+        $item = IntegrationProduct::query()->create([
+            'integration_source_id' => $source->id,
+            'external_id' => 'atm-energia-500-100-one-section',
+            'external_code' => 'УТ-00005613',
+            'external_sku' => null,
+            'name' => 'Радиатор отопления алюминиевый "Energia" 500/100 1 секция, РФ',
+            'price_byn' => null,
+            'stock_quantity' => 1,
+            'match_status' => 'ambiguous',
+            'candidates' => [['product_id' => $wrongRoyalThermoCandidate->id, 'score' => 0.7093]],
+        ]);
+
+        $this->artisan('integration:create-sbg-distinct-products', [
+            '--batch' => 'researched-priced-20261013-ai',
+            '--code' => ['УТ-00005613'],
+            '--apply' => true,
+        ])->assertSuccessful();
+
+        $product = $item->fresh()->product;
+        $this->assertNotNull($product);
+        $this->assertNotSame($wrongRoyalThermoCandidate->id, $product->id);
+        $this->assertSame($category->id, $product->category_id);
+        $this->assertSame('ATM Thermo', $product->brand->name);
+        $this->assertSame('ATM Thermo Energia 500/100, алюминиевый радиатор, 1 секция', $product->name);
+        $this->assertSame('29.90', $product->price);
+        $this->assertSame('1', (string) $product->stock_qty);
+        $this->assertNull($item->fresh()->normalizedPriceByn());
+        $this->assertSame('Секционный алюминиевый радиатор', collect($product->specs)->firstWhere('key', 'Тип')['value']);
+        $this->assertSame('172 Вт', collect($product->specs)->firstWhere('key', 'Номинальный тепловой поток одной секции')['value']);
+        $this->assertSame('16 бар', collect($product->specs)->firstWhere('key', 'Рабочее давление')['value']);
+        $this->assertSame(['img/products/atm-thermo/atm-thermo-energia-500-100.jpg'], $product->images);
+        $this->assertFileExists(public_path('img/products/atm-thermo/atm-thermo-energia-500-100.jpg'));
+        $this->assertStringContainsString('progreem.by', $product->content_source_url);
+        $this->assertStringContainsString('Цена указана за одну секцию', $product->content);
+        $this->assertStringNotContainsString('кандидат', mb_strtolower($product->content));
+        $this->assertStringNotContainsString('розничная цена', mb_strtolower($product->content));
+        $this->assertStringNotContainsString('нбрб', mb_strtolower($product->content));
+        $this->assertStringNotContainsString('rub', mb_strtolower($product->content));
+        $this->assertSame('manual_created', $item->fresh()->match_method);
+    }
 }
