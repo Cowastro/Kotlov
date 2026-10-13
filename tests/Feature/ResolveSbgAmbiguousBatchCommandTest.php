@@ -899,4 +899,83 @@ class ResolveSbgAmbiguousBatchCommandTest extends TestCase
             'confidence' => 'manual',
         ]);
     }
+
+    public function test_it_links_and_corrects_the_existing_unipump_cp_25_40_180_instead_of_linking_apc(): void
+    {
+        $source = IntegrationSource::query()->create([
+            'code' => 'onec-sbg-unipump-cp-25-40-180',
+            'name' => '1С СанБизнесГруп',
+            'settings' => ['partner_name' => 'ООО «СанБизнесГруп»'],
+            'is_active' => true,
+            'update_stock' => true,
+        ]);
+        $category = Category::query()->create([
+            'name' => 'Циркуляционные насосы',
+            'slug' => 'circulation-pumps-unipump-test',
+            'parent_id' => 0,
+        ]);
+        $unipump = Brand::query()->create(['name' => 'UNIPUMP', 'slug' => 'unipump-cp-test']);
+        $pump = Product::query()->create([
+            'category_id' => $category->id,
+            'brand_id' => $unipump->id,
+            'sku' => 'PS-008.303',
+            'name' => 'Насос Unipump CP 25-40 180',
+            'h1' => 'Насос Unipump CP 25-40 180',
+            'slug' => 'unipump-cp-25-40-180-test',
+            'price' => 113.73,
+            'in_stock' => false,
+            'stock_qty' => null,
+            'short_description' => 'Ошибочное описание модификации 130 мм.',
+            'content' => '<p>Насос CP 25-40 с монтажной длиной 130 мм.</p>',
+            'images' => ['product/008/008303/Unipump_cp1.jpg'],
+        ]);
+        $apc = Product::query()->create([
+            'category_id' => $category->id,
+            'sku' => 'PS-008.469',
+            'name' => 'Насос циркуляционный APC GR 25-40 180',
+            'slug' => 'apc-gr-25-40-180-wrong-candidate',
+        ]);
+        $item = IntegrationProduct::query()->create([
+            'integration_source_id' => $source->id,
+            'external_id' => 'unipump-cp-25-40-180',
+            'external_code' => 'УТ-00003074',
+            'name' => 'Насос циркуляц. (отопл.) СР 25-40 180,UNIPUMP',
+            'price_byn' => null,
+            'stock_quantity' => 1,
+            'match_status' => 'ambiguous',
+            'candidates' => [['product_id' => $apc->id, 'score' => 0.74]],
+        ]);
+
+        $this->artisan('integration:resolve-sbg-ambiguous', [
+            '--batch' => 'exact-20261013-q',
+            '--code' => ['УТ-00003074'],
+            '--apply' => true,
+        ])->assertSuccessful();
+
+        $item->refresh();
+        $pump->refresh();
+        $this->assertSame($pump->id, $item->product_id);
+        $this->assertNotSame($apc->id, $item->product_id);
+        $this->assertSame('matched', $item->match_status);
+        $this->assertSame('manual_search', $item->match_method);
+        $this->assertSame('114.30', $pump->price);
+        $this->assertTrue($pump->in_stock);
+        $this->assertSame('1', (string) $pump->stock_qty);
+        $this->assertSame('UNIPUMP CP 25-40 180 циркуляционный насос', $pump->name);
+        $this->assertSame($pump->name, $pump->h1);
+        $this->assertSame('CP 25-40 180', collect($pump->specs)->firstWhere('key', 'Модель')['value']);
+        $this->assertSame('180 мм', collect($pump->specs)->firstWhere('key', 'Монтажная длина')['value']);
+        $this->assertSame('4 м', collect($pump->specs)->firstWhere('key', 'Максимальный напор')['value']);
+        $this->assertSame('38 / 53 / 72 Вт', collect($pump->specs)->firstWhere('key', 'Мощность по скоростям')['value']);
+        $this->assertSame(['product/008/008303/Unipump_cp1.jpg'], $pump->images);
+        $this->assertStringContainsString('unipump.ru', $pump->content_source_url);
+        $this->assertStringNotContainsString('130 мм', $pump->short_description);
+        $this->assertStringNotContainsString('130 мм', $pump->content);
+        $this->assertStringNotContainsString('APC', $pump->content);
+        $this->assertDatabaseHas('supplier_product_mappings', [
+            'supplier_article' => 'УТ-00003074',
+            'product_id' => $pump->id,
+            'confidence' => 'manual',
+        ]);
+    }
 }
