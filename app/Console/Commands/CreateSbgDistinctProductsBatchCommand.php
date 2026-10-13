@@ -2749,6 +2749,40 @@ class CreateSbgDistinctProductsBatchCommand extends Command
         ],
     ];
 
+    private const BATCH_UNMATCHED_RESEARCHED_20261013_CJ = [
+        'УТ-00001113' => [
+            'template_slug' => 'taim-slang-gazovyi-rezinovyi-12-10-m-stucer-gaika',
+            'allow_unmatched' => true,
+            'category_slug' => 'zhestkaya-podvodka-dlya-vody',
+            'fragments' => ['Хромовая трубка', '5м'],
+            'brand' => [
+                'name' => 'Albertoni',
+                'slug' => 'albertoni',
+                'country' => 'Италия',
+            ],
+            'name' => 'Albertoni 238/5 Трубка медная хромированная Ø10 мм, 5 м',
+            'retail' => 275.00,
+            'images' => [
+                'img/products/albertoni/albertoni-238-5-chrome-copper-tube-d10-5m.png',
+            ],
+            'source_url' => 'https://modernsys.com.ua/trubka-v-hromirovannoy-buhte-o10-buhta-4-8-m-va-albertoni-ru.html',
+            'short' => 'Мягкая хромированная медная трубка Albertoni 238/5 диаметром 10 мм в бухте около 5 м для жёсткого подключения сантехнического оборудования.',
+            'content' => '<p><strong>Albertoni 238/5</strong> — мягкая медная трубка с хромированным покрытием для открытого и скрытого монтажа жёсткой водопроводной подводки.</p><p>Наружный диаметр 10 мм подходит для стандартных цанговых соединений. Бухта длиной около 5 м позволяет отрезать участок нужного размера и аккуратно подвести воду к смесителю, унитазу, биде или другому сантехническому оборудованию.</p><p>Для монтажа используйте совместимые цанговые фитинги и инструмент для медных труб. Фитинги в комплект не входят.</p>',
+            'specs' => [
+                ['key' => 'Тип', 'value' => 'Трубка для жёсткой подводки воды'],
+                ['key' => 'Модель', 'value' => '238/5'],
+                ['key' => 'Материал', 'value' => 'Медь'],
+                ['key' => 'Покрытие', 'value' => 'Хром'],
+                ['key' => 'Наружный диаметр', 'value' => '10 мм'],
+                ['key' => 'Длина бухты', 'value' => 'Около 5 м'],
+                ['key' => 'Соединение', 'value' => 'Под цанговые фитинги'],
+                ['key' => 'Назначение', 'value' => 'Подключение сантехнического оборудования к водопроводу'],
+                ['key' => 'Страна бренда', 'value' => 'Италия'],
+                ['key' => 'Бренд', 'value' => 'Albertoni'],
+            ],
+        ],
+    ];
+
     public function handle(
         IntegrationProductCreator $creator,
         IntegrationProductMatchDecision $matchDecision,
@@ -2841,6 +2875,7 @@ class CreateSbgDistinctProductsBatchCommand extends Command
             'unmatched-researched-20261013-cg' => self::BATCH_UNMATCHED_RESEARCHED_20261013_CG,
             'unmatched-researched-20261013-ch' => self::BATCH_UNMATCHED_RESEARCHED_20261013_CH,
             'unmatched-researched-20261013-ci' => self::BATCH_UNMATCHED_RESEARCHED_20261013_CI,
+            'unmatched-researched-20261013-cj' => self::BATCH_UNMATCHED_RESEARCHED_20261013_CJ,
             default => null,
         };
 
