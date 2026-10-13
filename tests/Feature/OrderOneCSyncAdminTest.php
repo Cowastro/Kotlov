@@ -42,7 +42,7 @@ class OrderOneCSyncAdminTest extends TestCase
         $this->createIssue($conflict, 'order_status_conflict', 'Конфликт статусов', '1С пытается вернуть более ранний статус.');
         $this->createIssue($unknown, 'order_status_unknown', 'Неизвестный статус', 'Получено значение «Комплектуется».');
 
-        $this->assertSame('waiting', $waiting->onecSyncState());
+        $this->assertSame('not_queued', $waiting->onecSyncState());
         $this->assertSame('delayed', $delayed->onecSyncState());
         $this->assertSame('sent', $sent->onecSyncState());
         $this->assertSame('no_response', $noResponse->onecSyncState());
@@ -53,7 +53,7 @@ class OrderOneCSyncAdminTest extends TestCase
         $this->actingAs($admin)
             ->get(OrderResource::getUrl('index', panel: 'admin'))
             ->assertOk()
-            ->assertSeeText('Ожидает передачи')
+            ->assertSeeText('Не передан в 1С')
             ->assertSeeText('Передача задержана')
             ->assertSeeText('Передан')
             ->assertSeeText('Нет ответа 1С')

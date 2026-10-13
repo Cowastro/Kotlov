@@ -109,6 +109,8 @@ class OneCExchangeTest extends TestCase
                 $table->text('comment')->nullable();
                 $table->timestamp('onec_exported_at')->nullable();
                 $table->string('onec_external_id')->nullable();
+                $table->string('onec_order_guid')->nullable();
+                $table->string('onec_order_number')->nullable();
                 $table->string('onec_status')->nullable();
                 $table->timestamp('onec_status_received_at')->nullable();
                 $table->timestamps();
@@ -120,6 +122,12 @@ class OneCExchangeTest extends TestCase
                 }
                 if (! Schema::hasColumn('orders', 'onec_status')) {
                     $table->string('onec_status')->nullable();
+                }
+                if (! Schema::hasColumn('orders', 'onec_order_guid')) {
+                    $table->string('onec_order_guid')->nullable();
+                }
+                if (! Schema::hasColumn('orders', 'onec_order_number')) {
+                    $table->string('onec_order_number')->nullable();
                 }
                 if (! Schema::hasColumn('orders', 'onec_status_received_at')) {
                     $table->timestamp('onec_status_received_at')->nullable();
@@ -169,6 +177,10 @@ class OneCExchangeTest extends TestCase
                 $table->string('status', 24)->default('pending');
                 $table->string('external_id')->nullable();
                 $table->string('remote_status')->nullable();
+                $table->timestamp('queued_at')->nullable();
+                $table->unsignedBigInteger('queued_by')->nullable();
+                $table->string('remote_id')->nullable();
+                $table->string('remote_number')->nullable();
                 $table->timestamp('last_attempted_at')->nullable();
                 $table->timestamp('exported_at')->nullable();
                 $table->timestamp('status_received_at')->nullable();
@@ -177,6 +189,17 @@ class OneCExchangeTest extends TestCase
                 $table->timestamps();
                 $table->unique(['order_id', 'integration_source_id']);
             });
+        }
+
+        foreach ([
+            'queued_at' => 'timestamp',
+            'queued_by' => 'unsignedBigInteger',
+            'remote_id' => 'string',
+            'remote_number' => 'string',
+        ] as $column => $type) {
+            if (! Schema::hasColumn('order_integration_deliveries', $column)) {
+                Schema::table('order_integration_deliveries', fn (Blueprint $table) => $table->{$type}($column)->nullable());
+            }
         }
 
         if (! Schema::hasTable('products')) {
@@ -2005,6 +2028,8 @@ XML;
             'total' => 120,
         ]);
 
+        $this->queueOrder($order, $source);
+
         $response = $this->withBasicAuth('onec-test', 'secret-test')
             ->get('/1c/exchange?type=sale&mode=query');
 
@@ -2029,6 +2054,45 @@ XML;
             'status' => 'success',
             'orders_count' => 1,
         ]);
+    }
+
+    public function test_central_onec_exports_only_orders_explicitly_added_to_the_queue(): void
+    {
+        $source = IntegrationSource::query()->create([
+            'code' => 'onec',
+            'name' => '1С',
+        ]);
+        $queued = Order::query()->create([
+            'number' => 'ORD-EXPLICITLY-QUEUED',
+            'status' => 'processing',
+            'customer_name' => 'Переданный покупатель',
+            'customer_phone' => '+375291110010',
+            'delivery_type' => 'pickup',
+            'payment_type' => 'cash',
+            'payment_status' => 'pending',
+            'subtotal' => 10,
+            'total' => 10,
+        ]);
+        $notQueued = Order::query()->create([
+            'number' => 'ORD-NOT-QUEUED',
+            'status' => 'confirmed',
+            'customer_name' => 'Непереданный покупатель',
+            'customer_phone' => '+375291110011',
+            'delivery_type' => 'pickup',
+            'payment_type' => 'cash',
+            'payment_status' => 'pending',
+            'subtotal' => 20,
+            'total' => 20,
+        ]);
+        $this->queueOrder($queued, $source);
+
+        $this->withBasicAuth('onec-test', 'secret-test')
+            ->get('/1c/exchange?type=sale&mode=query')
+            ->assertOk()
+            ->assertSee($queued->number, false)
+            ->assertDontSee($notQueued->number, false)
+            ->assertSee('Заказ клиента', false)
+            ->assertSee('kotlov-order-'.$queued->id, false);
     }
 
     public function test_wholesale_onec_exports_only_linked_b2b_items(): void
@@ -2106,6 +2170,8 @@ XML;
                 'total' => $price,
             ]);
         }
+
+        $this->queueOrder($order, $source);
 
         $this->withBasicAuth('onec-test', 'secret-test')
             ->get('/1c/exchange?type=sale&mode=query')
@@ -2212,6 +2278,9 @@ XML;
             'quantity' => 1,
             'total' => 50,
         ]);
+
+        $this->queueOrder($order, $sourceA);
+        $this->queueOrder($legacyRetailOrder, $sourceA);
 
         $sourceAResponse = $this->withBasicAuth('onec-test', 'secret-test')
             ->get('/1c/exchange?type=sale&mode=query');
@@ -2374,6 +2443,8 @@ XML;
             'total' => 10,
         ]);
 
+        $this->queueOrder($firstOrder, $source);
+
         $firstResponse = $this->withBasicAuth('onec-test', 'secret-test')
             ->get('/1c/exchange?type=sale&mode=query');
         $firstResponse->assertOk()->assertSee('ORD-PERSISTENT-BATCH-1', false);
@@ -2425,6 +2496,8 @@ XML;
         $this->assertNull($secondOrder->fresh()->onec_exported_at);
         $this->assertSame(1, $source->exchangeRuns()->where('operation', 'orders')->count());
 
+        $this->queueOrder($secondOrder, $source);
+
         $nextResponse = $this->withBasicAuth('onec-test', 'secret-test')
             ->get('/1c/exchange?type=sale&mode=query');
         $nextResponse->assertOk()
@@ -2461,6 +2534,8 @@ XML;
             'total' => 30,
         ]);
 
+        $this->queueOrder($order, $source);
+
         $this->withBasicAuth('onec-test', 'secret-test')
             ->get('/1c/exchange?type=sale&mode=query')
             ->assertOk()
@@ -2474,7 +2549,7 @@ XML;
         );
     }
 
-    public function test_order_export_excludes_orders_created_before_source_monitoring_started(): void
+    public function test_explicit_order_queue_overrides_source_monitoring_start_date(): void
     {
         $source = IntegrationSource::query()->create([
             'code' => 'onec',
@@ -2505,20 +2580,23 @@ XML;
             'total' => 20,
         ]);
 
+        $this->queueOrder($oldOrder, $source);
+        $this->queueOrder($currentOrder, $source);
+
         $response = $this->withBasicAuth('onec-test', 'secret-test')
             ->get('/1c/exchange?type=sale&mode=query');
 
         $response->assertOk()
-            ->assertDontSee('ORD-LEGACY-NOT-FOR-1C', false)
+            ->assertSee('ORD-LEGACY-NOT-FOR-1C', false)
             ->assertSee('ORD-CURRENT-FOR-1C', false);
 
         $this->withBasicAuth('onec-test', 'secret-test')
             ->get('/1c/exchange?type=sale&mode=success')
             ->assertOk();
 
-        $this->assertNull($oldOrder->fresh()->onec_exported_at);
+        $this->assertNotNull($oldOrder->fresh()->onec_exported_at);
         $this->assertNotNull($currentOrder->fresh()->onec_exported_at);
-        $this->assertSame(1, $source->exchangeRuns()->where('operation', 'orders')->latest()->first()->orders_count);
+        $this->assertSame(2, $source->exchangeRuns()->where('operation', 'orders')->latest()->first()->orders_count);
     }
 
     public function test_order_statuses_are_received_from_onec_and_added_to_timeline(): void
@@ -2580,6 +2658,60 @@ XML;
             'direction' => 'inbound',
             'status' => 'success',
             'orders_count' => 1,
+        ]);
+    }
+
+    public function test_onec_order_number_and_guid_are_saved_separately_from_site_id(): void
+    {
+        $source = IntegrationSource::query()->create([
+            'code' => 'onec',
+            'name' => '1С',
+        ]);
+        $order = Order::query()->create([
+            'number' => 'ORD-REMOTE-REFERENCE',
+            'status' => 'processing',
+            'customer_name' => 'Тестовый покупатель',
+            'customer_phone' => '+375291112233',
+            'delivery_type' => 'pickup',
+            'payment_type' => 'cash',
+            'payment_status' => 'pending',
+            'subtotal' => 120,
+            'total' => 120,
+            'onec_exported_at' => now(),
+        ]);
+        $delivery = $this->queueOrder($order, $source);
+        $delivery->update([
+            'status' => OrderIntegrationDelivery::STATUS_SENT,
+            'exported_at' => now(),
+        ]);
+        $localId = 'kotlov-order-'.$order->id;
+        $xml = <<<XML
+<?xml version="1.0" encoding="UTF-8"?>
+<КоммерческаяИнформация>
+  <Документ>
+    <Ид>{$localId}</Ид>
+    <Номер>ORD-REMOTE-REFERENCE</Номер>
+    <ЗначенияРеквизитов>
+      <ЗначениеРеквизита><Наименование>GUID заказа 1С</Наименование><Значение>6f9619ff-8b86-d011-b42d-00cf4fc964ff</Значение></ЗначениеРеквизита>
+      <ЗначениеРеквизита><Наименование>Номер заказа 1С</Наименование><Значение>УТ-00000123</Значение></ЗначениеРеквизита>
+      <ЗначениеРеквизита><Наименование>Статус заказа</Наименование><Значение>В обработке</Значение></ЗначениеРеквизита>
+    </ЗначенияРеквизитов>
+  </Документ>
+</КоммерческаяИнформация>
+XML;
+
+        $result = app(CommerceMlOrderImporter::class)->import($xml, $source);
+
+        $this->assertSame(1, $result['matched']);
+        $this->assertSame('6f9619ff-8b86-d011-b42d-00cf4fc964ff', $order->fresh()->onec_order_guid);
+        $this->assertSame('УТ-00000123', $order->fresh()->onec_order_number);
+        $this->assertDatabaseHas('order_integration_deliveries', [
+            'order_id' => $order->id,
+            'integration_source_id' => $source->id,
+            'external_id' => $localId,
+            'remote_id' => '6f9619ff-8b86-d011-b42d-00cf4fc964ff',
+            'remote_number' => 'УТ-00000123',
+            'status' => OrderIntegrationDelivery::STATUS_ACKNOWLEDGED,
         ]);
     }
 
@@ -2903,7 +3035,7 @@ XML;
             'match_status' => 'unmatched',
         ]);
 
-        Order::query()->create([
+        $summaryOrder = Order::query()->create([
             'number' => 'SUMMARY-ORDER-1',
             'status' => 'new',
             'customer_name' => 'Тест',
@@ -2914,6 +3046,7 @@ XML;
             'subtotal' => 10,
             'total' => 10,
         ]);
+        $this->queueOrder($summaryOrder, $source);
 
         $summary = app(IntegrationOperationsSummary::class)->snapshot();
 
@@ -2974,7 +3107,7 @@ XML;
             'is_active' => true,
             'settings' => ['stale_after_minutes' => 15],
         ]);
-        IntegrationSource::query()->create([
+        $source = IntegrationSource::query()->create([
             'code' => 'summary-inactive',
             'name' => 'Выключенный источник',
             'is_active' => false,
@@ -3109,7 +3242,7 @@ XML;
 
     public function test_operations_summary_excludes_orders_before_integration_monitoring_started(): void
     {
-        IntegrationSource::query()->create([
+        $source = IntegrationSource::query()->create([
             'code' => 'onec',
             'name' => 'Новая 1С',
             'is_active' => true,
@@ -3129,7 +3262,7 @@ XML;
         ]);
         DB::table('orders')->where('id', $oldOrder->id)->update(['created_at' => now()->subHours(2)]);
 
-        Order::query()->create([
+        $currentOrder = Order::query()->create([
             'number' => 'SUMMARY-CURRENT-ORDER',
             'status' => 'new',
             'customer_name' => 'Новый заказ',
@@ -3140,6 +3273,7 @@ XML;
             'subtotal' => 10,
             'total' => 10,
         ]);
+        $this->queueOrder($currentOrder, $source);
 
         $this->assertSame(1, app(IntegrationOperationsSummary::class)->snapshot()['awaiting_orders']);
     }
@@ -3190,6 +3324,8 @@ XML;
             'total' => 10,
         ]);
         DB::table('orders')->where('id', $order->id)->update(['created_at' => now()->subMinutes(20)]);
+        $delivery = $this->queueOrder($order, $source);
+        $delivery->update(['queued_at' => now()->subMinutes(20)]);
 
         $detector = app(IntegrationIssueDetector::class);
         $first = $detector->scan();
@@ -3209,6 +3345,11 @@ XML;
 
         $product->update(['match_status' => 'ignored']);
         $order->update(['onec_exported_at' => now(), 'onec_status_received_at' => now()]);
+        $delivery->update([
+            'status' => OrderIntegrationDelivery::STATUS_ACKNOWLEDGED,
+            'exported_at' => now(),
+            'status_received_at' => now(),
+        ]);
         $resolved = $detector->scan();
 
         $this->assertSame(2, $resolved['resolved']);
@@ -3349,6 +3490,7 @@ XML;
             'integration_source_id' => $supplier->id,
             'status' => OrderIntegrationDelivery::STATUS_ACKNOWLEDGED,
             'external_id' => 'kotlov-order-'.$order->id,
+            'queued_at' => now()->subHour(),
             'last_attempted_at' => now(),
             'exported_at' => now(),
             'remote_status' => 'Принят',
@@ -3394,6 +3536,7 @@ XML;
             'integration_source_id' => $source->id,
             'status' => OrderIntegrationDelivery::STATUS_PENDING,
             'external_id' => 'kotlov-order-'.$order->id,
+            'queued_at' => now()->subHour(),
             'last_attempted_at' => now(),
         ]);
 
@@ -3637,6 +3780,17 @@ XML;
         return Product::query()->create([
             'category_id' => $category->id,
             ...$attributes,
+        ]);
+    }
+
+    private function queueOrder(Order $order, IntegrationSource $source): OrderIntegrationDelivery
+    {
+        return OrderIntegrationDelivery::query()->create([
+            'order_id' => $order->id,
+            'integration_source_id' => $source->id,
+            'status' => OrderIntegrationDelivery::STATUS_PENDING,
+            'external_id' => 'kotlov-order-'.$order->id,
+            'queued_at' => now(),
         ]);
     }
 }

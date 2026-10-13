@@ -37,7 +37,8 @@ class CommerceMlOrderImporter
                 $stats['documents']++;
                 $externalId = $this->text($node, './*[local-name()="Ид"]');
                 $number = $this->text($node, './*[local-name()="Номер"]');
-                $order = $this->findOrder($externalId, $number, $source);
+                $siteExternalId = $this->requisite($node, ['ID заказа KOTLOV', 'Внешний ID KOTLOV']);
+                $order = $this->findOrder($externalId, $number, $source, $siteExternalId);
 
                 if (! $order) {
                     $stats['unmatched']++;
@@ -51,6 +52,8 @@ class CommerceMlOrderImporter
                     'integration_source_id' => $source->id,
                 ]) : null;
                 $oldRemoteStatus = $delivery?->remote_status;
+                $remoteId = $this->remoteId($node, $externalId);
+                $remoteNumber = $this->remoteNumber($node, $number, $order);
                 $rawStatus = $this->text($node, './*[local-name()="Статус"]')
                     ?: $this->requisite($node, ['Статус заказа', 'Статус']);
                 $rawPaymentStatus = $this->requisite($node, ['Статус оплаты', 'Оплата']);
@@ -70,6 +73,8 @@ class CommerceMlOrderImporter
 
                 $changes = $updatesCentralOrder ? array_filter([
                     'onec_external_id' => $externalId ?: null,
+                    'onec_order_guid' => $remoteId ?: null,
+                    'onec_order_number' => $remoteNumber ?: null,
                     'onec_status' => $rawStatus ?: null,
                     'onec_status_received_at' => now(),
                     'status' => $statusConflict ? null : $status,
@@ -79,7 +84,9 @@ class CommerceMlOrderImporter
                 $meaningfulChange = $updatesCentralOrder
                     ? (($status !== null && ! $statusConflict && $status !== $order->status)
                         || ($paymentStatus !== null && ! $paymentConflict && $paymentStatus !== $order->payment_status)
-                        || ($rawStatus !== '' && $rawStatus !== $order->onec_status))
+                        || ($rawStatus !== '' && $rawStatus !== $order->onec_status)
+                        || ($remoteId !== '' && $remoteId !== $order->onec_order_guid)
+                        || ($remoteNumber !== '' && $remoteNumber !== $order->onec_order_number))
                     : ($rawStatus !== '' && $rawStatus !== $oldRemoteStatus);
 
                 if ($changes !== []) {
@@ -89,7 +96,9 @@ class CommerceMlOrderImporter
                 if ($delivery) {
                     $delivery->fill([
                         'status' => OrderIntegrationDelivery::STATUS_ACKNOWLEDGED,
-                        'external_id' => $externalId ?: $delivery->external_id,
+                        'external_id' => $delivery->external_id ?: 'kotlov-order-'.$order->id,
+                        'remote_id' => $remoteId ?: $delivery->remote_id,
+                        'remote_number' => $remoteNumber ?: $delivery->remote_number,
                         'remote_status' => $rawStatus ?: $delivery->remote_status,
                         'status_received_at' => now(),
                         'last_error' => null,
@@ -356,16 +365,23 @@ class CommerceMlOrderImporter
         string $externalId,
         string $number,
         ?IntegrationSource $source,
+        string $siteExternalId = '',
     ): ?Order {
-        if ($externalId === '' && $number === '') {
+        if ($externalId === '' && $number === '' && $siteExternalId === '') {
             return null;
         }
 
-        if ($source && $externalId !== '') {
+        if ($source && ($externalId !== '' || $siteExternalId !== '')) {
             $deliveryOrder = Order::query()
                 ->whereHas('integrationDeliveries', fn ($query) => $query
                     ->where('integration_source_id', $source->id)
-                    ->where('external_id', $externalId))
+                    ->where(function ($query) use ($externalId, $siteExternalId): void {
+                        $query->when($externalId !== '', fn ($query) => $query
+                            ->where('external_id', $externalId)
+                            ->orWhere('remote_id', $externalId));
+                        $query->when($siteExternalId !== '', fn ($query) => $query
+                            ->orWhere('external_id', $siteExternalId));
+                    }))
                 ->first();
             if ($deliveryOrder) {
                 return $deliveryOrder;
@@ -373,13 +389,16 @@ class CommerceMlOrderImporter
         }
 
         $order = null;
-        if (preg_match('/^kotlov-order-(\d+)$/', $externalId, $matches)) {
+        $localId = $siteExternalId ?: $externalId;
+        if (preg_match('/^kotlov-order-(\d+)$/', $localId, $matches)) {
             $order = Order::query()->find((int) $matches[1]);
         }
 
         $order ??= Order::query()
             ->when($number !== '', fn ($query) => $query->where('number', $number))
-            ->when($number === '' && $externalId !== '', fn ($query) => $query->where('onec_external_id', $externalId))
+            ->when($number === '' && $externalId !== '', fn ($query) => $query
+                ->where('onec_external_id', $externalId)
+                ->orWhere('onec_order_guid', $externalId))
             ->first();
 
         if ($order && $source && ! $this->orderRouter->orderBelongsToSource($order, $source)) {
@@ -387,6 +406,31 @@ class CommerceMlOrderImporter
         }
 
         return $order;
+    }
+
+    private function remoteId(SimpleXMLElement $node, string $externalId): string
+    {
+        $remoteId = $this->text($node, './*[local-name()="Ид1С"]')
+            ?: $this->text($node, './*[local-name()="GUID"]')
+            ?: $this->text($node, './*[local-name()="УИД"]')
+            ?: $this->requisite($node, ['GUID заказа 1С', 'Идентификатор заказа 1С', 'Ид заказа 1С']);
+
+        if ($remoteId === '' && $externalId !== '' && ! preg_match('/^kotlov-order-\d+$/', $externalId)) {
+            $remoteId = $externalId;
+        }
+
+        return $remoteId;
+    }
+
+    private function remoteNumber(SimpleXMLElement $node, string $number, Order $order): string
+    {
+        $remoteNumber = $this->requisite($node, ['Номер заказа 1С', 'Номер документа 1С']);
+
+        if ($remoteNumber === '' && $number !== '' && $number !== $order->number) {
+            $remoteNumber = $number;
+        }
+
+        return $remoteNumber;
     }
 
     /** @param array<int, string> $names */

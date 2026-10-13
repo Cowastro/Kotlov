@@ -31,6 +31,7 @@ class Order extends Model
         'confirmed' => 'Ответ получен',
         'sent' => 'Передан',
         'waiting' => 'Ожидает передачи',
+        'not_queued' => 'Не передан в 1С',
     ];
 
     public const OPERATIONAL_PROBLEMS = [
@@ -58,7 +59,7 @@ class Order extends Model
         'subtotal', 'total',
         'comment', 'admin_comment',
         'assigned_to', 'telegram_message_id', 'manager_id', 'onec_exported_at',
-        'onec_external_id', 'onec_status', 'onec_status_received_at',
+        'onec_external_id', 'onec_order_guid', 'onec_order_number', 'onec_status', 'onec_status_received_at',
         'archived_at', 'archived_by', 'archive_reason',
     ];
 
@@ -514,7 +515,7 @@ class Order extends Model
                 $this->currentIntegrationDeliveries()->isNotEmpty() => 'confirmed',
                 filled($this->onec_status_received_at) => 'confirmed',
                 filled($this->onec_exported_at) => 'sent',
-                default => 'waiting',
+                default => 'not_queued',
             },
         };
     }

@@ -49,8 +49,8 @@ class OrderLegacyLeadQueueTest extends TestCase
 
         $this->assertSame('warning', $oldLead->managementSummary()['severity']);
         $this->assertSame('Проверить', $oldLead->managementSummary()['attention_label']);
-        $this->assertSame('waiting', $oldLead->onecSyncState());
-        $this->assertSame('Ожидает передачи', $oldLead->onecSyncLabel());
+        $this->assertSame('not_queued', $oldLead->onecSyncState());
+        $this->assertSame('Не передан в 1С', $oldLead->onecSyncLabel());
         $this->assertTrue(Order::query()->operationallyActive()->whereKey($oldLead)->exists());
         $this->assertTrue(Order::query()->operationallyActive()->whereKey($current)->exists());
         $this->assertTrue(Order::query()->withOperationalProblem('needs_attention')->whereKey($oldLead)->exists());

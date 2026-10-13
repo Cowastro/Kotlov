@@ -10,6 +10,7 @@ use App\Models\Product;
 use App\Models\Supplier;
 use App\Models\User;
 use App\Services\Orders\OrderSettlementManager;
+use App\Services\Integrations\OneCOrderQueue;
 use Filament\Actions\Action;
 use Filament\Actions\ActionGroup;
 use Filament\Actions\BulkAction;
@@ -508,11 +509,32 @@ class OrdersTable
                         ->visible(fn ($record) => $record->status === 'new')
                         ->action(fn (Order $record) => $record->transitionTo('confirmed', 'Заказ принят в работу.')),
                     Action::make('processing')
-                        ->label('В обработке')
+                        ->label('Передать в обработку')
                         ->icon('heroicon-o-arrow-path')
                         ->color('primary')
                         ->visible(fn ($record) => $record->status === 'confirmed')
-                        ->action(fn (Order $record) => $record->transitionTo('processing', 'Заказ передан в обработку.')),
+                        ->disabled(fn (Order $record): bool => $record->items()
+                            ->whereNull('fulfillment_confirmed_at')->exists())
+                        ->requiresConfirmation()
+                        ->modalHeading('Передать заказ в очередь 1С?')
+                        ->modalDescription('Заказ будет выгружен в центральную 1С при следующем обмене.')
+                        ->action(function (Order $record): void {
+                            try {
+                                app(OneCOrderQueue::class)->queue($record, auth()->user(), [
+                                    'manager_id' => $record->manager_id ?: auth()->id(),
+                                    'assigned_to' => $record->assigned_to ?: '@'.(auth()->user()?->telegram_username ?: auth()->user()?->name),
+                                ]);
+
+                                Notification::make()->success()
+                                    ->title('Заказ поставлен в очередь 1С')
+                                    ->send();
+                            } catch (\Throwable $exception) {
+                                Notification::make()->danger()
+                                    ->title('Не удалось передать заказ')
+                                    ->body($exception->getMessage())
+                                    ->send();
+                            }
+                        }),
                     Action::make('shipped')
                         ->label('Отправлен')
                         ->icon('heroicon-o-truck')

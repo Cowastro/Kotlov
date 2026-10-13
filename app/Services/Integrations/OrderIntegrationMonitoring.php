@@ -21,7 +21,7 @@ class OrderIntegrationMonitoring
         return $this->orderRouter
             ->eligibleOrders($source)
             ->when(
-                $this->monitoringWindow->ordersStartAtFor($source),
+                $source->code !== 'onec' ? $this->monitoringWindow->ordersStartAtFor($source) : null,
                 fn (Builder $query, CarbonInterface $startAt): Builder => $query->where('created_at', '>=', $startAt),
             );
     }
@@ -32,7 +32,16 @@ class OrderIntegrationMonitoring
         $cutoff = $now->copy()->subMinutes($source->orderDispatchDelayMinutes());
 
         return $this->pendingDispatchQuery($source)
-            ->where('created_at', '<=', $cutoff)
+            ->when(
+                $source->code === 'onec',
+                fn (Builder $query): Builder => $query->whereHas(
+                    'integrationDeliveries',
+                    fn (Builder $query): Builder => $query
+                        ->where('integration_source_id', $source->id)
+                        ->where('queued_at', '<=', $cutoff),
+                ),
+                fn (Builder $query): Builder => $query->where('created_at', '<=', $cutoff),
+            )
             ->whereDoesntHave('integrationDeliveries', fn (Builder $query): Builder => $query
                 ->where('integration_source_id', $source->id)
                 ->where('last_attempted_at', '>', $cutoff));

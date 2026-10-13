@@ -476,7 +476,7 @@ class OneCExchangeController extends Controller
 
             $ids = $this->orderRouter->eligibleOrders($source)
                 ->when(
-                    $this->monitoringWindow->ordersStartAtFor($source),
+                    $source->code !== 'onec' ? $this->monitoringWindow->ordersStartAtFor($source) : null,
                     fn ($query, $startAt) => $query->where('created_at', '>=', $startAt),
                 )
                 ->orderBy('id')
@@ -528,18 +528,30 @@ class OneCExchangeController extends Controller
     private function markOrderBatchAttempt(array $ids, IntegrationSource $source): void
     {
         foreach ($ids as $orderId) {
-            OrderIntegrationDelivery::query()->updateOrCreate(
-                [
-                    'order_id' => $orderId,
-                    'integration_source_id' => $source->id,
-                ],
-                [
-                    'status' => OrderIntegrationDelivery::STATUS_PENDING,
-                    'external_id' => 'kotlov-order-'.$orderId,
-                    'last_attempted_at' => now(),
-                    'last_error' => null,
-                ],
-            );
+            $identity = [
+                'order_id' => $orderId,
+                'integration_source_id' => $source->id,
+            ];
+            $attributes = [
+                'status' => OrderIntegrationDelivery::STATUS_PENDING,
+                'external_id' => 'kotlov-order-'.$orderId,
+                'last_attempted_at' => now(),
+                'last_error' => null,
+            ];
+
+            if ($source->code === 'onec') {
+                // The central 1C receives only orders explicitly queued by a
+                // manager. Never create the queue marker from a polling request.
+                OrderIntegrationDelivery::query()
+                    ->where($identity)
+                    ->whereNotNull('queued_at')
+                    ->whereNull('exported_at')
+                    ->update($attributes);
+
+                continue;
+            }
+
+            OrderIntegrationDelivery::query()->updateOrCreate($identity, $attributes);
         }
     }
 
@@ -668,6 +680,8 @@ class OneCExchangeController extends Controller
             $order->delivery_address,
         ]))));
         $this->writeRequisite($xml, 'Комментарий', $order->comment ?: '');
+        $this->writeRequisite($xml, 'Тип документа 1С', 'Заказ клиента');
+        $this->writeRequisite($xml, 'ID заказа KOTLOV', 'kotlov-order-'.$order->id);
         if ($isB2bPartner) {
             $this->writeRequisite($xml, 'Канал заказа', 'B2B KOTLOV.BY');
             $this->writeRequisite($xml, 'ID партнёра KOTLOV', $partnerExternalId);

@@ -1,7 +1,7 @@
 <x-filament-panels::page>
 @php
     $order = $this->getRecord();
-    $order->loadMissing('items.product', 'user', 'statusHistory.user');
+    $order->loadMissing('items.product', 'user', 'statusHistory.user', 'integrationDeliveries.source', 'integrationDeliveries.queuedBy');
 
     $paymentNames  = collect(config('shop.payment_methods',  []))->mapWithKeys(fn($m,$k) => [$k => $m['name']])->toArray();
     $deliveryNames = collect(config('shop.delivery_methods', []))->mapWithKeys(fn($m,$k) => [$k => $m['name']])->toArray();
@@ -33,6 +33,7 @@
     $deliveryClarify = $isKitDelivery && $deliveryPrice === 0.0;
 
     $hasCompany = $order->company_name || $order->company_unp || $order->company_address || $order->company_email;
+    $onecDelivery = $order->integrationDeliveries->first(fn($delivery) => $delivery->source?->code === 'onec');
 @endphp
 
 <div class="space-y-4 max-w-none">
@@ -323,7 +324,48 @@
         </div>
     </div>
 
-    {{-- ── 4. Комментарии ───────────────────────────────────────────────────── --}}
+    {{-- ── 4. Передача в 1С ─────────────────────────────────────────────────── --}}
+    @if($onecDelivery)
+    <div class="fi-section rounded-xl bg-white shadow-sm ring-1 ring-gray-950/5 dark:bg-gray-900 dark:ring-white/10 p-5">
+        <div class="flex items-center gap-2 mb-4 border-b border-gray-100 dark:border-white/10 pb-3">
+            <x-heroicon-o-arrow-path class="h-4 w-4 text-primary-500 shrink-0"/>
+            <span class="text-sm font-semibold text-gray-700 dark:text-gray-200">Обмен с 1С</span>
+            <x-filament::badge :color="match($onecDelivery->status) {
+                'acknowledged' => 'success', 'sent' => 'info', 'failed' => 'danger', default => 'warning'
+            }">
+                {{ $onecDelivery->statusLabel() }}
+            </x-filament::badge>
+        </div>
+        <dl class="grid grid-cols-1 gap-4 text-sm sm:grid-cols-2 lg:grid-cols-5">
+            <div>
+                <dt class="text-xs text-gray-400 mb-1">Поставил в очередь</dt>
+                <dd class="font-medium text-gray-900 dark:text-white">{{ $onecDelivery->queuedBy?->name ?? 'Система' }}</dd>
+                <dd class="text-xs text-gray-500">{{ $onecDelivery->queued_at?->timezone('Europe/Minsk')->format('d.m.Y H:i') ?? '—' }}</dd>
+            </div>
+            <div>
+                <dt class="text-xs text-gray-400 mb-1">Передан в 1С</dt>
+                <dd class="text-gray-700 dark:text-gray-300">{{ $onecDelivery->exported_at?->timezone('Europe/Minsk')->format('d.m.Y H:i') ?? 'Ожидает обмена' }}</dd>
+            </div>
+            <div>
+                <dt class="text-xs text-gray-400 mb-1">Заказ клиента в 1С</dt>
+                <dd class="font-medium text-gray-900 dark:text-white">{{ $onecDelivery->remote_number ?: $order->onec_order_number ?: 'Номер ещё не получен' }}</dd>
+            </div>
+            <div>
+                <dt class="text-xs text-gray-400 mb-1">GUID документа 1С</dt>
+                <dd class="text-xs text-gray-600 dark:text-gray-400 break-all">{{ $onecDelivery->remote_id ?: $order->onec_order_guid ?: 'Ещё не получен' }}</dd>
+            </div>
+            <div>
+                <dt class="text-xs text-gray-400 mb-1">Статус 1С</dt>
+                <dd class="text-gray-700 dark:text-gray-300">{{ $onecDelivery->remote_status ?: 'Ответ ещё не получен' }}</dd>
+                @if($onecDelivery->last_error)
+                    <dd class="mt-1 text-xs text-danger-600 dark:text-danger-400">{{ $onecDelivery->last_error }}</dd>
+                @endif
+            </div>
+        </dl>
+    </div>
+    @endif
+
+    {{-- ── 5. Комментарии ───────────────────────────────────────────────────── --}}
     <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
 
         <div class="fi-section rounded-xl bg-white shadow-sm ring-1 ring-gray-950/5 dark:bg-gray-900 dark:ring-white/10 p-5">
@@ -352,7 +394,7 @@
 
     </div>
 
-    {{-- ── 5. История статусов ──────────────────────────────────────────────── --}}
+    {{-- ── 6. История статусов ──────────────────────────────────────────────── --}}
     <div class="fi-section rounded-xl bg-white shadow-sm ring-1 ring-gray-950/5 dark:bg-gray-900 dark:ring-white/10 p-5">
         <div class="flex items-center gap-2 mb-4 border-b border-gray-100 dark:border-white/10 pb-3">
             <x-heroicon-o-clock class="h-4 w-4 text-primary-500 shrink-0"/>

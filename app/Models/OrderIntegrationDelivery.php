@@ -17,10 +17,12 @@ class OrderIntegrationDelivery extends Model
 
     protected $fillable = [
         'order_id', 'integration_source_id', 'status', 'external_id', 'remote_status',
+        'queued_at', 'queued_by', 'remote_id', 'remote_number',
         'last_attempted_at', 'exported_at', 'status_received_at', 'last_error', 'metadata',
     ];
 
     protected $casts = [
+        'queued_at' => 'datetime',
         'last_attempted_at' => 'datetime',
         'exported_at' => 'datetime',
         'status_received_at' => 'datetime',
@@ -35,6 +37,11 @@ class OrderIntegrationDelivery extends Model
     public function source(): BelongsTo
     {
         return $this->belongsTo(IntegrationSource::class, 'integration_source_id');
+    }
+
+    public function queuedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'queued_by');
     }
 
     public function statusLabel(): string

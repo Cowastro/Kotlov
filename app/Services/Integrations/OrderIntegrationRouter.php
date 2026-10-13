@@ -4,6 +4,7 @@ namespace App\Services\Integrations;
 
 use App\Models\IntegrationSource;
 use App\Models\Order;
+use App\Models\OrderIntegrationDelivery;
 use App\Models\OrderItem;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
@@ -14,12 +15,14 @@ class OrderIntegrationRouter
     {
         return Order::query()
             ->when($source->code === 'onec', fn (Builder $query): Builder => $query
-                ->where(function (Builder $query) use ($source): void {
-                    $query->whereNull('onec_exported_at')
-                        ->orWhereHas('integrationDeliveries', fn (Builder $query): Builder => $query
-                            ->where('integration_source_id', $source->id)
-                            ->whereNull('exported_at'));
-                }))
+                ->whereHas('integrationDeliveries', fn (Builder $query): Builder => $query
+                    ->where('integration_source_id', $source->id)
+                    ->whereNotNull('queued_at')
+                    ->whereNull('exported_at')
+                    ->whereIn('status', [
+                        OrderIntegrationDelivery::STATUS_PENDING,
+                        OrderIntegrationDelivery::STATUS_FAILED,
+                    ])))
             ->whereDoesntHave('integrationDeliveries', fn (Builder $query): Builder => $query
                 ->where('integration_source_id', $source->id)
                 ->whereNotNull('exported_at'))

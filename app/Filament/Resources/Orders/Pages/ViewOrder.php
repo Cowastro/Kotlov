@@ -11,6 +11,7 @@ use App\Services\Orders\OrderItemFulfillmentManager;
 use App\Services\Orders\OrderSettlementManager;
 use App\Services\Orders\SupplierOrderRequestBuilder;
 use App\Services\Orders\SupplierOrderRequestWorkflow;
+use App\Services\Integrations\OneCOrderQueue;
 use Filament\Actions\Action;
 use Filament\Actions\EditAction;
 use Filament\Forms\Components\Select;
@@ -19,6 +20,7 @@ use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\ViewRecord;
 use Filament\Support\Enums\Width;
+use Throwable;
 
 class ViewOrder extends ViewRecord
 {
@@ -76,7 +78,11 @@ class ViewOrder extends ViewRecord
                 ->tooltip(fn (): ?string => $this->record->items->contains(fn (OrderItem $item): bool => blank($item->fulfillment_confirmed_at))
                     ? 'Сначала подтвердите исполнение всех позиций.'
                     : null)
-                ->action(fn () => $this->transitionOrder('processing', 'Заказ передан в обработку.')),
+                ->requiresConfirmation()
+                ->modalHeading('Передать заказ в очередь 1С?')
+                ->modalDescription('Заказ будет доступен центральной 1С при следующем обмене. Повторная передача после получения 1С будет заблокирована.')
+                ->modalSubmitActionLabel('Передать в 1С')
+                ->action(fn () => $this->queueForOneC()),
             Action::make('markShipped')
                 ->label('Передать в доставку')
                 ->icon('heroicon-o-truck')
@@ -307,6 +313,30 @@ class ViewOrder extends ViewRecord
             ->send();
     }
 
+    private function queueForOneC(): void
+    {
+        try {
+            app(OneCOrderQueue::class)->queue(
+                $this->record,
+                auth()->user(),
+                $this->managerAttributes(),
+            );
+            $this->reloadRecord();
+
+            Notification::make()
+                ->success()
+                ->title('Заказ поставлен в очередь 1С')
+                ->body('При следующем обмене 1С создаст документ «Заказ клиента».')
+                ->send();
+        } catch (Throwable $exception) {
+            Notification::make()
+                ->danger()
+                ->title('Не удалось передать заказ')
+                ->body($exception->getMessage())
+                ->send();
+        }
+    }
+
     /** @return array<string, mixed> */
     private function managerAttributes(): array
     {
@@ -326,6 +356,8 @@ class ViewOrder extends ViewRecord
             'statusHistory.user',
             'manager',
             'supplierOrderRequests.items',
+            'integrationDeliveries.source',
+            'integrationDeliveries.queuedBy',
         ]);
     }
 }
