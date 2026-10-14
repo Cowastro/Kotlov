@@ -141,6 +141,8 @@ class CrmMailAttachmentDownloadTest extends TestCase
 
         Http::assertSent(fn ($request): bool => $request->url() === 'https://api.deepseek.test/chat/completions'
             && data_get($request->data(), 'model') === 'deepseek-flash'
+            && data_get($request->data(), 'thinking.type') === 'disabled'
+            && data_get($request->data(), 'reasoning_effort') === 'none'
             && data_get($request->data(), 'messages.0.content.1.type') === 'image_url'
             && str_starts_with((string) data_get($request->data(), 'messages.0.content.1.image_url.url'), 'data:image/jpeg;base64,'));
     }

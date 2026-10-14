@@ -217,6 +217,9 @@ PROMPT,
                 ->post($url, [
                     'model' => (string) config('services.ai.deepseek_document_model', 'deepseek-flash'),
                     'max_tokens' => 6_000,
+                    'thinking' => ['type' => 'disabled'],
+                    'reasoning_effort' => 'none',
+                    'stream' => false,
                     'messages' => [[
                         'role' => 'user',
                         'content' => $content,
