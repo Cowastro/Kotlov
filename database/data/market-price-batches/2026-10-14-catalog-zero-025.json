@@ -1,0 +1,110 @@
+{
+    "code": "2026-10-14-catalog-zero-025",
+    "observed_at": "2026-10-14T06:02:07+00:00",
+    "review_required": true,
+    "selection": {
+        "production_only": true,
+        "active_only": true,
+        "unpriced_only": true,
+        "brand": "Viadrus",
+        "skus": [
+            "PS-002.034",
+            "PS-002.035",
+            "PS-002.036",
+            "PS-002.037",
+            "PS-002.038"
+        ],
+        "after_id": 2033,
+        "limit": 5,
+        "source_queue": "storage/app/private/audit-38483709846/price-research-queue.csv"
+    },
+    "sources": [],
+    "products": [
+        {
+            "sku": "PS-002.034",
+            "review_reason": "Найдено только одно собственное предложение KOTLOV для Viadrus Kolor 900/160; независимого подтверждения нет.",
+            "force_consultation_hold": true,
+            "observations": [],
+            "research": {
+                "summary": "Единственная точная карточка показывает 129.36 BYN за секцию на KOTLOV; другие белорусские продавцы не найдены.",
+                "confidence": "medium",
+                "search_queries": [
+                    "Viadrus Kolor 900/160 купить Беларусь",
+                    "Радиатор Viadrus Kolor 900/160 цена",
+                    "Viadrus KALOR 900/160 радиатор Беларусь"
+                ],
+                "model": "gpt-4.1",
+                "searched_at": "2026-10-14T06:00:37+00:00"
+            }
+        },
+        {
+            "sku": "PS-002.035",
+            "review_reason": "Точных белорусских предложений Viadrus Kolor 3 350/160 не найдено; зарубежные Kalor не являются точным совпадением.",
+            "force_consultation_hold": true,
+            "observations": [],
+            "research": {
+                "summary": "Белорусских предложений нет. Российская и молдавская серия Kalor отличается названием, рынком и неподтверждённой комплектацией.",
+                "confidence": "high",
+                "search_queries": [
+                    "Радиатор Viadrus Kolor 3 350/160 PS-002.035 купить Беларусь",
+                    "Viadrus Kolor 3 350/160 PS-002.035",
+                    "Viadrus Kalor 3 350/160 радиатор купить"
+                ],
+                "model": "gpt-4.1",
+                "searched_at": "2026-10-14T06:01:00+00:00"
+            }
+        },
+        {
+            "sku": "PS-002.036",
+            "review_reason": "Найдена одна неполная собственная карточка KOTLOV; независимых точных предложений Viadrus Kolor 3 500/70 нет.",
+            "force_consultation_hold": true,
+            "observations": [],
+            "research": {
+                "summary": "Белорусская карточка не подтверждает артикул, наличие, комплектность и НДС; зарубежные Kalor 3 не приняты как точное совпадение.",
+                "confidence": "low",
+                "search_queries": [
+                    "Viadrus Kolor 3 500/70 PS-002.036 Беларусь",
+                    "радиатор Viadrus Kolor 3 500/70 купить Беларусь",
+                    "Viadrus Kolor 3 500/70 цена"
+                ],
+                "model": "gpt-4.1",
+                "searched_at": "2026-10-14T06:01:23+00:00"
+            }
+        },
+        {
+            "sku": "PS-002.037",
+            "review_reason": "Найдено только одно белорусское предложение Viadrus Kolor 3 500/110; независимых продавцов недостаточно.",
+            "force_consultation_hold": true,
+            "observations": [],
+            "research": {
+                "summary": "Открытый рынок содержит одну подходящую карточку, чего недостаточно для подтверждения рыночной цены.",
+                "confidence": "medium",
+                "search_queries": [
+                    "Viadrus Kolor 3 500/110 PS-002.037 Беларусь",
+                    "Радиатор Viadrus Kolor 3 500/110 купить Беларусь",
+                    "Viadrus Kolor 3 500/110 радиатор цена BYN"
+                ],
+                "model": "gpt-4.1",
+                "searched_at": "2026-10-14T06:01:45+00:00"
+            }
+        },
+        {
+            "sku": "PS-002.038",
+            "review_reason": "Найдена только собственная карточка KOTLOV для Viadrus Kolor 3 500/160; независимого сравнения нет.",
+            "force_consultation_hold": true,
+            "observations": [],
+            "research": {
+                "summary": "Другие результаты относятся к серии Kalor, зарубежным рынкам либо не содержат актуальной цены и наличия.",
+                "confidence": "low",
+                "search_queries": [
+                    "Радиатор Viadrus Kolor 3 500/160 Беларусь",
+                    "Viadrus Kolor 3 500/160 купить",
+                    "Viadrus Kolor 3 500/160 цена BYN"
+                ],
+                "model": "gpt-4.1",
+                "searched_at": "2026-10-14T06:02:07+00:00"
+            }
+        }
+    ],
+    "failed_products": []
+}
