@@ -2,7 +2,10 @@
 
 namespace Tests\Feature;
 
+use App\Filament\Resources\CrmMailThreads\CrmMailThreadResource;
 use App\Filament\Resources\CrmMailThreads\Pages\ViewCrmMailThread;
+use App\Models\CrmContact;
+use App\Models\CrmContactPoint;
 use App\Models\CrmMailbox;
 use App\Models\CrmMailMessage;
 use App\Models\CrmMailThread;
@@ -83,5 +86,30 @@ class CrmMailReplyActionTest extends TestCase
                 'subject' => 'Fwd: Запрос прайса',
                 'original_attachments' => ['crm-mail-attachments/incoming/price.xlsx'],
             ]);
+    }
+
+    public function test_employee_can_be_saved_to_mail_address_book_without_duplicates(): void
+    {
+        $email = CrmMailThreadResource::createAddressBookContact([
+            'full_name' => 'Анна Бухгалтер',
+            'email' => 'ANNA@EXAMPLE.COM',
+            'position' => 'Бухгалтерия',
+        ]);
+
+        $this->assertSame('anna@example.com', $email);
+        $this->assertSame('Анна Бухгалтер — anna@example.com', CrmMailThreadResource::addressBookOptions()[$email]);
+        $this->assertDatabaseHas('crm_contacts', [
+            'full_name' => 'Анна Бухгалтер',
+            'position' => 'Бухгалтерия',
+            'is_active' => true,
+        ]);
+
+        CrmMailThreadResource::createAddressBookContact([
+            'full_name' => 'Другое имя',
+            'email' => 'anna@example.com',
+        ]);
+
+        $this->assertSame(1, CrmContact::query()->count());
+        $this->assertSame(1, CrmContactPoint::query()->where('normalized_value', 'anna@example.com')->count());
     }
 }

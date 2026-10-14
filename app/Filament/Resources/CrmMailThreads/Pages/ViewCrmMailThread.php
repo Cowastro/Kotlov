@@ -75,10 +75,7 @@ class ViewCrmMailThread extends ViewRecord
                 ->label('Ответить')->icon('heroicon-o-paper-airplane')->color('primary')
                 ->visible(fn (): bool => $this->record->status !== 'draft')
                 ->schema([
-                    Select::make('address_book_cc')
-                        ->label('Адресная книга — копия')
-                        ->options(fn (): array => CrmMailThreadResource::addressBookOptions())
-                        ->multiple()->searchable()->preload(),
+                    CrmMailThreadResource::addressBookSelect('address_book_cc', 'Адресная книга — копия'),
                     TagsInput::make('cc')
                         ->label('Копия (CC)')
                         ->placeholder('copy@example.com'),
@@ -123,18 +120,12 @@ class ViewCrmMailThread extends ViewRecord
                 ->visible(fn (): bool => $this->record->status !== 'draft')
                 ->fillForm(fn (): array => $this->forwardFormData())
                 ->schema([
-                    Select::make('address_book_to')
-                        ->label('Адресная книга — кому')
-                        ->options(fn (): array => CrmMailThreadResource::addressBookOptions())
-                        ->multiple()->searchable()->preload(),
+                    CrmMailThreadResource::addressBookSelect('address_book_to', 'Адресная книга — кому'),
                     TagsInput::make('recipients')
                         ->label('Кому')
                         ->placeholder('recipient@example.com')
                         ->helperText('Укажите хотя бы одного получателя вручную или выберите его из адресной книги.'),
-                    Select::make('address_book_cc')
-                        ->label('Адресная книга — копия')
-                        ->options(fn (): array => CrmMailThreadResource::addressBookOptions())
-                        ->multiple()->searchable()->preload(),
+                    CrmMailThreadResource::addressBookSelect('address_book_cc', 'Адресная книга — копия'),
                     TagsInput::make('cc')
                         ->label('Копия (CC)')
                         ->placeholder('copy@example.com'),

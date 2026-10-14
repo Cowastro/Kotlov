@@ -49,6 +49,8 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 use Throwable;
 
 class CrmMailThreadResource extends Resource
@@ -597,10 +599,7 @@ class CrmMailThreadResource extends Resource
                 ->description('Выберите контакты CRM либо введите новые адреса вручную.')
                 ->columns(2)
                 ->schema([
-                    Select::make('address_book_to')
-                        ->label('Адресная книга — кому')
-                        ->options(fn (): array => static::addressBookOptions())
-                        ->multiple()->searchable()->preload()
+                    static::addressBookSelect('address_book_to', 'Адресная книга — кому')
                         ->helperText('Контакты и компании из CRM.'),
                     TagsInput::make('recipients')
                         ->label('Кому')
@@ -608,10 +607,7 @@ class CrmMailThreadResource extends Resource
                         ->helperText($recipientRequired
                             ? 'Нужен хотя бы один email. После ввода нажмите Enter.'
                             : 'Можно указать несколько адресов.'),
-                    Select::make('address_book_cc')
-                        ->label('Адресная книга — копия')
-                        ->options(fn (): array => static::addressBookOptions())
-                        ->multiple()->searchable()->preload(),
+                    static::addressBookSelect('address_book_cc', 'Адресная книга — копия'),
                     TagsInput::make('cc')
                         ->label('Копия (CC)')
                         ->placeholder('copy@example.com')
@@ -670,6 +666,70 @@ class CrmMailThreadResource extends Resource
                     ? [$email => $owner.' — '.$email]
                     : [];
             })->all();
+    }
+
+    public static function addressBookSelect(string $name, string $label): Select
+    {
+        return Select::make($name)
+            ->label($label)
+            ->options(fn (): array => static::addressBookOptions())
+            ->multiple()
+            ->searchable()
+            ->preload()
+            ->createOptionForm([
+                TextInput::make('full_name')
+                    ->label('Имя сотрудника')
+                    ->required()
+                    ->maxLength(255),
+                TextInput::make('email')
+                    ->label('Email')
+                    ->email()
+                    ->required()
+                    ->maxLength(255),
+                TextInput::make('position')
+                    ->label('Должность / комментарий')
+                    ->maxLength(255),
+            ])
+            ->createOptionUsing(fn (array $data): string => static::createAddressBookContact($data));
+    }
+
+    /** @param array{full_name: string, email: string, position?: string|null} $data */
+    public static function createAddressBookContact(array $data): string
+    {
+        $email = mb_strtolower(trim($data['email']));
+        if (filter_var($email, FILTER_VALIDATE_EMAIL) === false) {
+            throw ValidationException::withMessages(['email' => 'Укажите корректный email.']);
+        }
+
+        $existing = CrmContactPoint::query()
+            ->where('type', 'email')
+            ->where('normalized_value', $email)
+            ->first();
+        if ($existing) {
+            $existing->forceFill(['is_active' => true])->save();
+
+            return $email;
+        }
+
+        return DB::transaction(function () use ($data, $email): string {
+            $contact = CrmContact::query()->create([
+                'full_name' => trim($data['full_name']),
+                'position' => filled($data['position'] ?? null) ? trim((string) $data['position']) : null,
+                'is_primary' => true,
+                'is_active' => true,
+                'notes' => 'Добавлен из адресной книги почты.',
+            ]);
+            CrmContactPoint::query()->create([
+                'contact_id' => $contact->id,
+                'type' => 'email',
+                'value' => $email,
+                'label' => 'рабочий',
+                'is_primary' => true,
+                'is_active' => true,
+            ]);
+
+            return $email;
+        });
     }
 
     /** @return list<string> */
