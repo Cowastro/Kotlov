@@ -167,8 +167,8 @@ class SupplierIntegrationAdminTest extends TestCase
         $this->actingAs($admin)
             ->get(SupplierResource::getUrl('index', panel: 'admin'))
             ->assertOk()
-            ->assertSeeText('Канал данных')
-            ->assertSeeText('Статус 1С');
+            ->assertSeeText('Прайсы и синхронизация')
+            ->assertSeeText('Товары');
         Livewire::actingAs($admin)
             ->test(ListSuppliers::class)
             ->searchTable('Поставщик со смешанным каналом')
@@ -178,7 +178,7 @@ class SupplierIntegrationAdminTest extends TestCase
             ->assertSeeText('CRM поставщика со смешанным каналом')
             ->assertSeeText('Смешанный')
             ->assertSeeText('Работает')
-            ->assertSeeText('Старые: 1')
+            ->assertSeeText('Прайсы: 1')
             ->assertSeeText('1С: 1')
             ->assertSeeText('Настроить интеграцию');
 

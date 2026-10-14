@@ -17,7 +17,7 @@ class ListSuppliers extends ListRecords
 
     public function getSubheading(): ?string
     {
-        return 'Валюта и курс к BYN применяются при синхронизации цен';
+        return 'Компании, бренды, контакты и источники актуальных цен в одном месте';
     }
 
     protected function getHeaderActions(): array

@@ -2,7 +2,6 @@
 
 namespace App\Filament\Resources\Suppliers;
 
-use App\Filament\Resources\CrmCounterparties\CrmCounterpartyResource;
 use App\Filament\Resources\IntegrationSources\IntegrationSourceResource;
 use App\Filament\Resources\Suppliers\Pages\CreateSupplier;
 use App\Filament\Resources\Suppliers\Pages\EditSupplier;
@@ -19,6 +18,7 @@ use App\Services\Orders\SupplierAutoTransferReadiness;
 use App\Services\Pricing\CurrencyPriceConverter;
 use BackedEnum;
 use Filament\Actions\Action;
+use Filament\Actions\ActionGroup;
 use Filament\Actions\EditAction;
 use Filament\Actions\ViewAction;
 use Filament\Forms\Components\Placeholder;
@@ -35,7 +35,6 @@ use Filament\Resources\Resource;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
-use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
@@ -247,201 +246,99 @@ class SupplierResource extends Resource
         return $table
             ->columns([
                 TextColumn::make('name')
-                    ->label('Поставщик')
+                    ->label('Компания')
                     ->searchable()
                     ->sortable()
-                    ->weight('bold'),
-
-                TextColumn::make('code')
-                    ->label('Код')
-                    ->searchable()
-                    ->copyable()
-                    ->badge()
-                    ->color('gray'),
+                    ->weight('bold')
+                    ->description(fn (Supplier $record): string => self::supplierIdentityDescription($record))
+                    ->url(fn (Supplier $record): string => self::getUrl('view', ['record' => $record])),
 
                 TextColumn::make('brands.name')
                     ->label('Бренды')
                     ->badge()
                     ->separator(',')
-                    ->limitList(4)
+                    ->limitList(3)
                     ->expandableLimitedList()
                     ->searchable()
-                    ->placeholder('Не указаны'),
+                    ->placeholder('Нужно указать'),
 
-                TextColumn::make('crm_phones')
-                    ->label('Телефоны')
-                    ->state(fn (Supplier $record): string => self::supplierPhones($record))
-                    ->placeholder('Не указаны')
-                    ->copyable()
+                TextColumn::make('manager_contacts')
+                    ->label('Контакты')
+                    ->state(fn (Supplier $record): array => self::managerContacts($record))
+                    ->listWithLineBreaks()
+                    ->limitList(3)
+                    ->placeholder('Нужно заполнить')
+                    ->description(fn (Supplier $record): ?string => $record->crmCounterparty?->name
+                        ? 'CRM: '.$record->crmCounterparty->name
+                        : 'Карточка CRM не связана')
                     ->wrap(),
-
-                TextColumn::make('crm_emails')
-                    ->label('Email')
-                    ->state(fn (Supplier $record): string => self::supplierEmails($record))
-                    ->placeholder('Не указан')
-                    ->copyable()
-                    ->wrap(),
-
-                TextColumn::make('crm_counterparty_name')
-                    ->label('Карточка CRM')
-                    ->state(fn (Supplier $record): ?string => $record->crmCounterparty?->name)
-                    ->placeholder('Не связана')
-                    ->badge()
-                    ->color(fn (?string $state): string => filled($state) ? 'success' : 'warning')
-                    ->url(fn (Supplier $record): ?string => $record->crmCounterparty
-                        ? CrmCounterpartyResource::getUrl('view', ['record' => $record->crmCounterparty], panel: 'admin')
-                        : null)
-                    ->toggleable(),
-
-                TextColumn::make('currency')
-                    ->label('Валюта')
-                    ->badge()
-                    ->color(fn (?string $state) => $state === CurrencyPriceConverter::BASE_CURRENCY ? 'success' : 'warning'),
-
-                TextColumn::make('currency_rate')
-                    ->label('Курс к BYN')
-                    ->alignRight()
-                    ->formatStateUsing(fn ($state) => rtrim(rtrim(number_format((float) $state, 4, '.', ' '), '0'), '.')),
 
                 TextColumn::make('data_channel')
-                    ->label('Канал данных')
+                    ->label('Прайсы и синхронизация')
                     ->state(fn (Supplier $record): string => self::dataChannelLabel($record))
-                    ->description(fn (Supplier $record): ?string => self::integrationSourceNames($record))
+                    ->description(fn (Supplier $record): string => self::syncSummary($record))
                     ->badge()
                     ->color(fn (string $state): string => match ($state) {
                         '1С' => 'success',
                         'Смешанный' => 'warning',
                         'Старый канал' => 'gray',
                         default => 'info',
-                    }),
-
-                TextColumn::make('price_sources')
-                    ->label('Прайсы и остатки')
-                    ->state(fn (Supplier $record): string => self::priceSourcesLabel($record))
-                    ->description(fn (Supplier $record): ?string => self::lastPriceUpdateLabel($record))
-                    ->badge()
-                    ->color(fn (Supplier $record): string => self::hasActivePriceSource($record) ? 'success' : 'warning')
-                    ->wrap(),
-
-                TextColumn::make('integration_health')
-                    ->label('Статус 1С')
-                    ->state(fn (Supplier $record): string => self::integrationHealthLabel($record))
-                    ->description(fn (Supplier $record): ?string => self::lastSuccessfulExchangeLabel($record))
-                    ->badge()
-                    ->color(fn (Supplier $record): string => self::integrationHealthColor($record)),
-
-                TextColumn::make('supplier_products_count')
-                    ->label('Связок товаров')
-                    ->state(fn (Supplier $record): string => 'Старые: '.number_format((int) $record->supplier_products_count, 0, ',', ' '))
-                    ->description(fn (Supplier $record): string => '1С: '.number_format(self::linkedIntegrationProductsCount($record), 0, ',', ' '))
-                    ->alignRight(),
-
-                TextColumn::make('marketplace_commission_rate')
-                    ->label('Комиссия')
-                    ->formatStateUsing(fn ($state): string => $state !== null
-                        ? rtrim(rtrim(number_format((float) $state, 4, '.', ' '), '0'), '.').' %'
-                        : 'Не задана')
-                    ->color(fn ($state): string => $state === null ? 'warning' : 'success')
-                    ->description(fn (Supplier $record): string => 'Расчёт через '.(int) $record->settlement_terms_days.' дн.')
-                    ->toggleable(),
-
-                TextColumn::make('automatic_order_transfer_enabled')
-                    ->label('Автопередача')
-                    ->state(fn (Supplier $record): string => self::autoTransferReadinessLabel($record))
-                    ->description(fn (Supplier $record): string => self::autoTransferReadinessDescription($record))
-                    ->badge()
-                    ->color(fn (Supplier $record): string => match (true) {
-                        $record->automatic_order_transfer_enabled && self::autoTransferReadiness($record)['ready'] => 'success',
-                        $record->automatic_order_transfer_enabled => 'warning',
-                        self::autoTransferReadiness($record)['ready'] => 'info',
-                        default => 'gray',
                     })
                     ->wrap(),
 
-                IconColumn::make('is_active')
-                    ->label('Активен')
-                    ->boolean(),
+                TextColumn::make('supplier_products_count')
+                    ->label('Товары')
+                    ->state(fn (Supplier $record): string => number_format(
+                        (int) $record->supplier_products_count + self::linkedIntegrationProductsCount($record),
+                        0,
+                        ',',
+                        ' ',
+                    ).' связок')
+                    ->description(fn (Supplier $record): string => 'Прайсы: '.number_format((int) $record->supplier_products_count, 0, ',', ' ')
+                        .' · 1С: '.number_format(self::linkedIntegrationProductsCount($record), 0, ',', ' '))
+                    ->alignRight()
+                    ->sortable(),
 
-                TextColumn::make('updated_at')
-                    ->label('Обновлён')
-                    ->dateTime('d.m.Y H:i')
-                    ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),
+                TextColumn::make('directory_status')
+                    ->label('Статус')
+                    ->state(fn (Supplier $record): string => $record->is_active ? 'Работаем' : 'Отключён')
+                    ->description(fn (Supplier $record): string => $record->automatic_order_transfer_enabled
+                        ? 'Автопередача заказов включена'
+                        : 'Автопередача выключена')
+                    ->badge()
+                    ->color(fn (Supplier $record): string => $record->is_active ? 'success' : 'gray'),
             ])
             ->defaultSort('name')
+            ->defaultPaginationPageOption(10)
+            ->paginationPageOptions([10, 25, 50])
+            ->striped()
             ->recordActions([
-                Action::make('fetchNbrb')
-                    ->label('Курс НБРБ')
-                    ->icon(Heroicon::OutlinedArrowPath)
-                    ->color('info')
-                    ->tooltip('Загрузить официальный курс НБРБ и пересчитать BYN цены')
-                    ->visible(fn (Supplier $record) => $record->currency !== CurrencyPriceConverter::BASE_CURRENCY)
-                    ->action(function (Supplier $record) {
-                        $url = 'https://api.nbrb.by/exrates/rates/'.$record->currency.'?parammode=2';
-                        $resp = Http::timeout(10)->get($url);
-                        if (!$resp->ok() || !($rate = $resp->json('Cur_OfficialRate'))) {
-                            Notification::make()
-                                ->title('Ошибка НБРБ')
-                                ->body('Не удалось получить курс '.$record->currency)
-                                ->danger()
-                                ->send();
-
-                            return;
-                        }
-                        $rate = round((float) $rate, 4);
-                        $record->update(['currency_rate' => $rate]);
-
-                        // Пересчитать price_byn в supplier_products
-                        DB::table('supplier_products')
-                            ->where('supplier_id', $record->id)
-                            ->where('currency', $record->currency)
-                            ->update([
-                                'currency_rate' => $rate,
-                                'price_byn' => DB::raw("ROUND(price * {$rate}, 2)"),
-                                'updated_at' => now(),
-                            ]);
-
-                        // Обновить products.price
-                        $sps = DB::table('supplier_products')
-                            ->where('supplier_id', $record->id)
-                            ->whereNotNull('product_id')
-                            ->get(['product_id', 'price_byn']);
-
-                        foreach ($sps as $sp) {
-                            if ($sp->price_byn > 0) {
-                                DB::table('products')
-                                    ->where('id', $sp->product_id)
-                                    ->update(['price' => $sp->price_byn, 'updated_at' => now()]);
-                            }
-                        }
-
-                        Notification::make()
-                            ->title("Курс обновлён: 1 {$record->currency} = {$rate} BYN")
-                            ->body("Пересчитано {$sps->count()} товаров.")
-                            ->success()
-                            ->send();
-                    }),
-
-                Action::make('integration')
-                    ->label(fn (Supplier $record): string => $record->integrationSources->isEmpty()
-                        ? 'Подключить 1С'
-                        : 'Настроить интеграцию')
-                    ->icon(Heroicon::OutlinedSignal)
-                    ->color('info')
-                    ->url(function (Supplier $record): string {
-                        $source = $record->integrationSources
-                            ->firstWhere('driver', 'commerceml')
-                            ?? $record->integrationSources->first();
-
-                        return $source
-                            ? IntegrationSourceResource::getUrl('edit', ['record' => $source])
-                            : IntegrationSourceResource::getUrl('create', ['supplier_id' => $record->id]);
-                    }),
-
-                self::automaticOrderTransferAction(),
-
                 ViewAction::make(),
-                EditAction::make(),
+                ActionGroup::make([
+                    EditAction::make(),
+                    Action::make('integration')
+                        ->label(fn (Supplier $record): string => $record->integrationSources->isEmpty()
+                            ? 'Подключить 1С'
+                            : 'Настроить интеграцию')
+                        ->icon(Heroicon::OutlinedSignal)
+                        ->color('info')
+                        ->url(function (Supplier $record): string {
+                            $source = $record->integrationSources
+                                ->firstWhere('driver', 'commerceml')
+                                ?? $record->integrationSources->first();
+
+                            return $source
+                                ? IntegrationSourceResource::getUrl('edit', ['record' => $source])
+                                : IntegrationSourceResource::getUrl('create', ['supplier_id' => $record->id]);
+                        }),
+                    Action::make('fetchNbrb')
+                        ->label('Обновить курс НБРБ')
+                        ->icon(Heroicon::OutlinedArrowPath)
+                        ->color('info')
+                        ->visible(fn (Supplier $record) => $record->currency !== CurrencyPriceConverter::BASE_CURRENCY)
+                        ->action(fn (Supplier $record) => self::refreshNbrbRate($record)),
+                    self::automaticOrderTransferAction(),
+                ]),
             ]);
     }
 
@@ -461,6 +358,92 @@ class SupplierResource extends Resource
             PriceSourcesRelationManager::class,
             PriceSyncsRelationManager::class,
         ];
+    }
+
+    private static function supplierIdentityDescription(Supplier $supplier): string
+    {
+        $currency = $supplier->currency ?: CurrencyPriceConverter::BASE_CURRENCY;
+        $rate = $currency !== CurrencyPriceConverter::BASE_CURRENCY
+            ? ' · курс '.rtrim(rtrim(number_format((float) $supplier->currency_rate, 4, '.', ' '), '0'), '.')
+            : '';
+
+        return $supplier->code.' · '.$currency.$rate;
+    }
+
+    /** @return array<int, string> */
+    private static function managerContacts(Supplier $supplier): array
+    {
+        $structuredChannels = collect($supplier->communication_channels ?? [])
+            ->map(function (array $channel): string {
+                $label = trim((string) ($channel['name'] ?? ''));
+                $value = trim((string) ($channel['value'] ?? ''));
+
+                return $label !== '' ? $label.': '.$value : $value;
+            });
+
+        return collect([
+            ...$supplier->contactPhoneNumbers(),
+            ...$supplier->contactEmailAddresses(),
+            ...$structuredChannels,
+        ])->filter()->unique()->values()->all();
+    }
+
+    private static function syncSummary(Supplier $supplier): string
+    {
+        $oneCSource = self::oneCSource($supplier);
+
+        return collect([
+            self::hasActivePriceSource($supplier) ? self::priceSourcesLabel($supplier) : 'Прайсы не указаны',
+            $oneCSource ? '1С: '.self::integrationHealthLabel($supplier) : null,
+            self::lastPriceUpdateLabel($supplier),
+        ])->filter()->implode(' · ');
+    }
+
+    private static function refreshNbrbRate(Supplier $supplier): void
+    {
+        $url = 'https://api.nbrb.by/exrates/rates/'.$supplier->currency.'?parammode=2';
+        $response = Http::timeout(10)->get($url);
+
+        if (!$response->ok() || !($rate = $response->json('Cur_OfficialRate'))) {
+            Notification::make()
+                ->title('Ошибка НБРБ')
+                ->body('Не удалось получить курс '.$supplier->currency)
+                ->danger()
+                ->send();
+
+            return;
+        }
+
+        $rate = round((float) $rate, 4);
+        $supplier->update(['currency_rate' => $rate]);
+
+        DB::table('supplier_products')
+            ->where('supplier_id', $supplier->id)
+            ->where('currency', $supplier->currency)
+            ->update([
+                'currency_rate' => $rate,
+                'price_byn' => DB::raw("ROUND(price * {$rate}, 2)"),
+                'updated_at' => now(),
+            ]);
+
+        $supplierProducts = DB::table('supplier_products')
+            ->where('supplier_id', $supplier->id)
+            ->whereNotNull('product_id')
+            ->get(['product_id', 'price_byn']);
+
+        foreach ($supplierProducts as $supplierProduct) {
+            if ($supplierProduct->price_byn > 0) {
+                DB::table('products')
+                    ->where('id', $supplierProduct->product_id)
+                    ->update(['price' => $supplierProduct->price_byn, 'updated_at' => now()]);
+            }
+        }
+
+        Notification::make()
+            ->title("Курс обновлён: 1 {$supplier->currency} = {$rate} BYN")
+            ->body("Пересчитано {$supplierProducts->count()} товаров.")
+            ->success()
+            ->send();
     }
 
     private static function dataChannelLabel(Supplier $supplier): string
