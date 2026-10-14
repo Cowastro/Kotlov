@@ -19,6 +19,7 @@ on:
           - audit-teplodar
           - audit-unlinked-products
           - audit-price-integrity
+          - audit-svah-group
           - verify-commercial-pdf
           - research-price-batch
           - upload-svah-pricelist
@@ -51,7 +52,7 @@ jobs:
           set -euo pipefail
 
           case "$TASK" in
-            optimize-clear|artisan-dry-run|artisan-apply|artisan-background|tail-log|ps-artisan|stop-varmega-image-repair|stop-product-image-repair|audit-teplodar|audit-unlinked-products|audit-price-integrity|verify-commercial-pdf|research-price-batch|upload-svah-pricelist|configure-openai|deploy-safe|deploy-recover) ;;
+            optimize-clear|artisan-dry-run|artisan-apply|artisan-background|tail-log|ps-artisan|stop-varmega-image-repair|stop-product-image-repair|audit-teplodar|audit-unlinked-products|audit-price-integrity|audit-svah-group|verify-commercial-pdf|research-price-batch|upload-svah-pricelist|configure-openai|deploy-safe|deploy-recover) ;;
             *) echo "::error::Unsupported task: $TASK"; exit 1 ;;
           esac
 
@@ -196,6 +197,11 @@ jobs:
                   --output=storage/app/private/catalog-price-audit.csv \
                   --research-output=storage/app/reports/catalog/price-research-queue.csv
                 ;;
+              audit-svah-group)
+                "$PHP_BIN" artisan supplier:sync-svah-group \
+                  --dry-run \
+                  --report=storage/app/reports/suppliers/svah-group/current-audit.csv
+                ;;
               verify-commercial-pdf)
                 "$PHP_BIN" artisan commercial-documents:verify-pdf "${ARTISAN_ARGV[@]}"
                 ;;
@@ -303,7 +309,7 @@ jobs:
             grep '^metric\.availability\.' "$detail_log" || true
             echo "safe_availability_metrics_end"
           fi
-          if [[ "${ARTISAN_ARGV[0]:-}" == "supplier:sync-svah-group" ]]; then
+          if [[ "$TASK" == "audit-svah-group" || "${ARTISAN_ARGV[0]:-}" == "supplier:sync-svah-group" ]]; then
             echo "safe_svah_group_metrics_begin"
             grep '^metric\.svah_group\.' "$detail_log" || true
             echo "safe_svah_group_metrics_end"
@@ -320,6 +326,31 @@ jobs:
           ssh -i ~/.ssh/server_key -p "$port" "$SERVER_USER@$SERVER_HOST" \
             "TASK='$TASK' ARTISAN_ARGS='$ARTISAN_ARGS' LOG_FILE='$LOG_FILE' SERVER_PATH='$server_path' PHP_BIN='$php_bin' bash -s" \
             <<< "$remote_script"
+
+      - name: Download SVAH Group audit
+        if: inputs.task == 'audit-svah-group'
+        env:
+          SERVER_HOST: ${{ secrets.SERVER_HOST }}
+          SERVER_PORT: ${{ secrets.SERVER_PORT }}
+          SERVER_USER: ${{ secrets.SERVER_USER }}
+          SERVER_PATH: ${{ secrets.SERVER_PATH }}
+        run: |
+          set -euo pipefail
+          port="${SERVER_PORT:-22}"
+          server_path="${SERVER_PATH:-/var/www/h209767/data/www/new.kotlov.by}"
+          mkdir -p artifacts
+          scp -q -i ~/.ssh/server_key -P "$port" \
+            "$SERVER_USER@$SERVER_HOST:$server_path/storage/app/reports/suppliers/svah-group/current-audit.csv" \
+            artifacts/svah-group-current-audit.csv
+
+      - name: Upload SVAH Group audit artifact
+        if: inputs.task == 'audit-svah-group'
+        uses: actions/upload-artifact@v6
+        with:
+          name: svah-group-current-audit
+          path: artifacts/svah-group-current-audit.csv
+          if-no-files-found: error
+          retention-days: 7
 
       - name: Upload SVAH Group price list
         if: inputs.task == 'upload-svah-pricelist'
