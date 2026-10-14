@@ -13,6 +13,7 @@ use App\Models\CrmContact;
 use App\Models\CrmCounterparty;
 use App\Models\Product;
 use App\Services\CommercialDocuments\CommercialDocumentReadiness;
+use App\Services\CommercialDocuments\CommercialDocumentRevisionComparison;
 use App\Services\CommercialDocuments\CommercialOfferCopilotService;
 use App\Services\CommercialDocuments\QuickCommercialOfferService;
 use App\Services\Crm\BelarusTaxpayerRegistry;
@@ -31,6 +32,7 @@ use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Infolists\Components\RepeatableEntry;
 use Filament\Infolists\Components\TextEntry;
+use Filament\Infolists\Components\ViewEntry;
 use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Schemas\Components\Actions as SchemaActions;
@@ -468,6 +470,17 @@ class CommercialDocumentResource extends Resource
                     ->badge()
                     ->color(fn (CommercialDocument $record): string => app(CommercialDocumentReadiness::class)->issues($record) === [] ? 'success' : 'warning'),
             ]),
+            Section::make('Что изменилось в редакции')
+                ->description(fn (CommercialDocument $record): string => 'Сравнение редакции №'.($record->revision_number ?: 1).' с предыдущей версией КП.')
+                ->visible(fn (CommercialDocument $record): bool => app(CommercialDocumentRevisionComparison::class)->previousRevision($record) !== null)
+                ->schema([
+                    ViewEntry::make('revision_comparison')->hiddenLabel()
+                        ->view('filament.commercial-documents.revision-comparison', fn (CommercialDocument $record): array => [
+                            'comparison' => app(CommercialDocumentRevisionComparison::class)->compare($record),
+                            'document' => $record,
+                        ])
+                        ->columnSpanFull(),
+                ]),
             Section::make('Позиции')->schema([
                 RepeatableEntry::make('items')->label('')->schema([
                     Grid::make(12)->schema([
@@ -537,10 +550,10 @@ class CommercialDocumentResource extends Resource
                     ->query(fn (Builder $query): Builder => $query->where('type', 'quote')->where(function (Builder $control): void {
                         $control->where('status', 'needs_revision')
                             ->orWhere(function (Builder $sent): void {
-                            $sent->where('status', 'sent')->whereDate('valid_until', '<=', today()->addDays(3));
-                        })->orWhere(function (Builder $accepted): void {
-                            $accepted->where('status', 'accepted')->whereDoesntHave('order');
-                        });
+                                $sent->where('status', 'sent')->whereDate('valid_until', '<=', today()->addDays(3));
+                            })->orWhere(function (Builder $accepted): void {
+                                $accepted->where('status', 'accepted')->whereDoesntHave('order');
+                            });
                     })),
             ])
             ->recordActions([
