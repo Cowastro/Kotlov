@@ -9725,4 +9725,57 @@ XML;
         $this->assertFileExists(public_path('img/products/teplov-i-suhov/adapter-mono-mm-430-05-d80-120.jpg'));
         $this->assertStringContainsString('virage24.ru', $product->content_source_url);
     }
+
+    public function test_it_creates_the_exact_teplov_i_suhov_d140_150_adapter(): void
+    {
+        $source = IntegrationSource::query()->create([
+            'code' => 'onec-sbg-adapter-d140-150',
+            'name' => '1С СанБизнесГруп',
+            'settings' => ['partner_name' => 'ООО «СанБизнесГруп»'],
+            'is_active' => true,
+            'update_stock' => true,
+        ]);
+        $category = Category::query()->firstOrCreate(
+            ['slug' => 'perehody-adaptery-dymohod'],
+            ['name' => 'Переходы и адаптеры дымохода', 'parent_id' => 0],
+        );
+        Product::query()->create([
+            'category_id' => $category->id,
+            'sku' => 'PS-008.995',
+            'name' => 'Теплов и Сухов Адаптер-переход Моно М-М 430-0.8 D150/200',
+            'slug' => 'teplov-i-suhov-adapter-perehod-mono-mm-150-200-ec-test',
+            'price' => 41,
+            'images' => ['img/products/template.jpg'],
+            'is_active' => true,
+            'is_archived' => false,
+        ]);
+        $item = IntegrationProduct::query()->create([
+            'integration_source_id' => $source->id,
+            'external_id' => '2b957294-2fcc-11ef-b2d3-1c1b0d1de7c2',
+            'external_code' => 'УТ-00008607',
+            'external_sku' => 'TS.FRT.AKP.0140.70054',
+            'name' => 'Адаптер переход Моно М-М 430-0.8 D140/150',
+            'price_byn' => 24.36,
+            'stock_quantity' => 16,
+            'stock_confirmed_at' => now(),
+            'match_status' => 'unmatched',
+        ]);
+
+        $this->artisan('integration:create-sbg-distinct-products', [
+            '--batch' => 'unmatched-researched-20261014-ec',
+            '--apply' => true,
+        ])->assertSuccessful();
+
+        $product = $item->fresh()->product()->sole();
+        $this->assertSame('24.36', $product->price);
+        $this->assertSame('16', (string) $product->stock_qty);
+        $this->assertTrue((bool) $product->in_stock);
+        $this->assertSame('matched', $item->fresh()->match_status);
+        $this->assertSame('TS.FRT.AKP.0140.70054', $item->fresh()->external_sku);
+        $this->assertSame('140 мм', collect($product->specs)->firstWhere('key', 'Входной диаметр')['value']);
+        $this->assertSame('150 мм', collect($product->specs)->firstWhere('key', 'Выходной диаметр')['value']);
+        $this->assertSame(['img/products/teplov-i-suhov/adapter-mono-mm-430-08-d140-150.jpg'], $product->images);
+        $this->assertFileExists(public_path('img/products/teplov-i-suhov/adapter-mono-mm-430-08-d140-150.jpg'));
+        $this->assertStringContainsString('virage24.ru', $product->content_source_url);
+    }
 }

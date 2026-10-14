@@ -4676,6 +4676,45 @@ class CreateSbgDistinctProductsBatchCommand extends Command
         ],
     ];
 
+    // Virage confirms the exact manufacturer article, diameters, AISI 430,
+    // 0.8 mm wall and Russian origin. The saved exact photo is clean.
+    private const BATCH_UNMATCHED_RESEARCHED_20261014_EC = [
+        'УТ-00008607' => [
+            'template' => 'PS-008.995',
+            'allow_unmatched' => true,
+            'category_slug' => 'perehody-adaptery-dymohod',
+            'external_id' => '2b957294-2fcc-11ef-b2d3-1c1b0d1de7c2',
+            'external_sku' => 'TS.FRT.AKP.0140.70054',
+            'fragments' => ['Адаптер переход', 'Моно М-М', '430-0.8', 'D140/150'],
+            'brand' => [
+                'name' => 'Теплов и Сухов',
+                'slug' => 'teplov-i-suhov',
+                'country' => 'Россия',
+            ],
+            'name' => 'Теплов и Сухов Адаптер-переход Моно М-М AISI 430 0,8 мм Ø140/150',
+            'retail' => 24.36,
+            'images' => [
+                'img/products/teplov-i-suhov/adapter-mono-mm-430-08-d140-150.jpg',
+            ],
+            'source_url' => 'https://www.virage24.ru/product/adapter-kotla-perexod-08mm-aisi-430-d140150-teplov-i-suxov-244181',
+            'short' => 'Одноконтурный адаптер-переход Теплов и Сухов для соединения патрубка Ø140 мм с дымоходом Ø150 мм, AISI 430 толщиной 0,8 мм.',
+            'content' => '<p><strong>Теплов и Сухов Адаптер-переход Моно М-М Ø140/150 мм</strong> — одноконтурный элемент для подключения теплогенерирующего аппарата к дымоходу другого диаметра.</p><p>Изделие изготовлено в России из ферритной нержавеющей стали AISI 430 толщиной 0,8 мм. Перед монтажом необходимо сверить диаметры, направление сборки и совместимость соседних элементов дымоходной системы.</p>',
+            'specs' => [
+                ['key' => 'Тип', 'value' => 'Одноконтурный адаптер-переход'],
+                ['key' => 'Система', 'value' => 'Моно'],
+                ['key' => 'Тип соединения', 'value' => 'М-М'],
+                ['key' => 'Входной диаметр', 'value' => '140 мм'],
+                ['key' => 'Выходной диаметр', 'value' => '150 мм'],
+                ['key' => 'Материал', 'value' => 'Нержавеющая сталь'],
+                ['key' => 'Марка стали', 'value' => 'AISI 430'],
+                ['key' => 'Толщина стали', 'value' => '0,8 мм'],
+                ['key' => 'Артикул', 'value' => 'TS.FRT.AKP.0140.70054'],
+                ['key' => 'Бренд', 'value' => 'Теплов и Сухов'],
+                ['key' => 'Страна производства', 'value' => 'Россия'],
+            ],
+        ],
+    ];
+
     public function handle(
         IntegrationProductCreator $creator,
         IntegrationProductMatchDecision $matchDecision,
@@ -4813,6 +4852,7 @@ class CreateSbgDistinctProductsBatchCommand extends Command
             'unmatched-researched-20261014-dz' => self::BATCH_UNMATCHED_RESEARCHED_20261014_DZ,
             'unmatched-researched-20261014-ea' => self::BATCH_UNMATCHED_RESEARCHED_20261014_EA,
             'unmatched-researched-20261014-eb' => self::BATCH_UNMATCHED_RESEARCHED_20261014_EB,
+            'unmatched-researched-20261014-ec' => self::BATCH_UNMATCHED_RESEARCHED_20261014_EC,
             default => null,
         };
 
