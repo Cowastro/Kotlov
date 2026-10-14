@@ -5,6 +5,7 @@ namespace Tests\Unit;
 use App\Models\CrmMailbox;
 use App\Models\CrmMailMessage;
 use App\Models\CrmMailThread;
+use App\Services\CrmMail\CrmMailMessagePreview;
 use App\Services\CrmMail\IncomingMailTelegramNotifier;
 use App\Services\TelegramApi;
 use Carbon\Carbon;
@@ -50,7 +51,7 @@ class IncomingMailTelegramNotifierTest extends TestCase
             })
             ->andReturn(['ok' => true, 'result' => ['message_id' => 501]]);
 
-        $this->assertTrue((new IncomingMailTelegramNotifier($telegram))->send($message));
+        $this->assertTrue((new IncomingMailTelegramNotifier($telegram, new CrmMailMessagePreview))->send($message));
         $this->assertSame('-100123456789', $sent['chatId']);
         $this->assertStringContainsString('Новое входящее письмо', $sent['text']);
         $this->assertStringContainsString('Иван &lt;Отдел продаж&gt; · client@example.com', $sent['text']);
@@ -65,6 +66,45 @@ class IncomingMailTelegramNotifierTest extends TestCase
         $this->assertStringContainsString('/admin/crm-mail-threads/77', $sent['options']['reply_markup']);
     }
 
+    public function test_it_removes_email_css_from_the_telegram_preview(): void
+    {
+        config([
+            'app.url' => 'https://kotlov.by',
+            'services.telegram.bot_token' => 'test-token',
+            'services.telegram.mail_chat_id' => '-100123456789',
+        ]);
+
+        $message = new CrmMailMessage([
+            'thread_id' => 88,
+            'from_email' => 'client@example.com',
+            'subject' => 'Документы',
+            'text_body' => 'blockquote.rt { margin: 0 0 15px; border-left: 4px solid #81c784; } Добрый день. Документы во вложении. p.cpr_body { background: #ffffff; font-family: Arial; }',
+        ]);
+        $message->id = 16;
+        $message->setRelation('thread', new CrmMailThread);
+        $message->setRelation('mailbox', new CrmMailbox(['email' => 'info@kotlov.by']));
+
+        $sentText = '';
+        $telegram = Mockery::mock(TelegramApi::class);
+        $telegram->shouldReceive('sendMessage')
+            ->once()
+            ->withArgs(function ($chatId, string $text) use (&$sentText): bool {
+                $sentText = $text;
+
+                return true;
+            })
+            ->andReturn(['ok' => true]);
+
+        $this->assertTrue((new IncomingMailTelegramNotifier(
+            $telegram,
+            new CrmMailMessagePreview,
+        ))->send($message));
+        $this->assertStringContainsString('Добрый день. Документы во вложении.', $sentText);
+        $this->assertStringNotContainsString('blockquote.rt', $sentText);
+        $this->assertStringNotContainsString('font-family', $sentText);
+        $this->assertStringNotContainsString('background:', $sentText);
+    }
+
     public function test_it_does_not_call_telegram_without_credentials(): void
     {
         config([
@@ -75,6 +115,9 @@ class IncomingMailTelegramNotifierTest extends TestCase
         $telegram = Mockery::mock(TelegramApi::class);
         $telegram->shouldNotReceive('sendMessage');
 
-        $this->assertFalse((new IncomingMailTelegramNotifier($telegram))->send(new CrmMailMessage));
+        $this->assertFalse((new IncomingMailTelegramNotifier(
+            $telegram,
+            new CrmMailMessagePreview,
+        ))->send(new CrmMailMessage));
     }
 }

@@ -41,6 +41,14 @@ class CrmMailMessagePreview
             $text = trim((string) $message->text_body);
         }
 
+        // Some mail generators put CSS into the text/plain MIME part. It is
+        // not HTML anymore, so strip_tags() cannot remove it. Drop ordinary
+        // selector blocks before this text is shown in CRM or Telegram.
+        $text = (string) preg_replace(
+            '~(?:^|\s)(?:[.#]?[a-z_][a-z0-9_.:#-]*(?:\s+[.#]?[a-z_][a-z0-9_.:#-]*)*(?:\s*,\s*[.#]?[a-z_][a-z0-9_.:#-]*)*)\s*\{[^{}]*[a-z-]+\s*:[^{}]*\}~iu',
+            ' ',
+            $text,
+        );
         $text = trim((string) preg_replace("/[\t ]+\n/u", "\n", $text));
         $text = (string) preg_replace("/\n{4,}/u", "\n\n\n", $text);
 

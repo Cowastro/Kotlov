@@ -10,7 +10,10 @@ use Throwable;
 
 class IncomingMailTelegramNotifier
 {
-    public function __construct(private readonly TelegramApi $telegram) {}
+    public function __construct(
+        private readonly TelegramApi $telegram,
+        private readonly CrmMailMessagePreview $messagePreview,
+    ) {}
 
     public function send(CrmMailMessage $message): bool
     {
@@ -35,9 +38,7 @@ class IncomingMailTelegramNotifier
             ->filter(fn ($value): bool => filled($value))
             ->unique()
             ->join(' · ');
-        $body = filled($message->text_body)
-            ? (string) $message->text_body
-            : html_entity_decode(strip_tags((string) $message->html_body), ENT_QUOTES | ENT_HTML5, 'UTF-8');
+        $body = $this->messagePreview->plainText($message);
         $preview = Str::limit(Str::squish($body), 900);
         $adminUrl = url('/admin/crm-mail-threads/'.$message->thread_id);
         $receivedAt = ($message->received_at ?? $message->created_at ?? now())
