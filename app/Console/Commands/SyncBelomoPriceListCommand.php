@@ -15,6 +15,7 @@ class SyncBelomoPriceListCommand extends Command
         {--apply : Записать поставщика, оптовые цены и связи}
         {--dry-run : Только аудит без записи}
         {--complete-cards : Заполнить и активировать карточки, используя безопасную розничную цену и изображения той же серии}
+        {--sync-elicon-retail : Установить розницу Эликона; отсутствующие цены рассчитать по наценке серии}
         {--report= : Путь CSV-отчёта}';
 
     protected $description = 'Import the static BelOMO wholesale price list without VAT, preserving Elicon retail prices.';
@@ -28,7 +29,10 @@ class SyncBelomoPriceListCommand extends Command
         $rows = $priceList->rows();
         $supplierId = (int) (DB::table('suppliers')->where('code', self::SUPPLIER_CODE)->value('id') ?? 0);
         $classified = $this->classify($rows, $priceList, $supplierId);
-        $reportPath = $this->writeReport($classified);
+        $retail = (bool) $this->option('sync-elicon-retail')
+            ? $this->eliconRetailPlan($classified, $priceList)
+            : ['rows' => [], 'metrics' => []];
+        $reportPath = $this->writeReport($classified, $retail['rows']);
         $counts = collect($classified)->countBy('status');
         $quality = $this->qualityMetrics($classified);
 
@@ -45,6 +49,9 @@ class SyncBelomoPriceListCommand extends Command
             foreach ($completion['metrics'] as $metric => $value) {
                 $this->line('metric.belomo.completion_'.$metric.'='.$value);
             }
+        }
+        foreach ($retail['metrics'] as $metric => $value) {
+            $this->line('metric.belomo.retail_'.$metric.'='.$value);
         }
         $this->line('metric.belomo.report='.$reportPath);
 
@@ -92,6 +99,19 @@ class SyncBelomoPriceListCommand extends Command
                     $completion['metrics']['activate'],
                     $completion['metrics']['price_update'],
                     $completion['metrics']['image_copy'],
+                ));
+            }
+
+            if ((bool) $this->option('sync-elicon-retail')) {
+                $fresh = $this->classify($rows, $priceList, $supplierId);
+                $retail = $this->eliconRetailPlan($fresh, $priceList);
+                $this->applyRetailPlan($retail['rows'], $now);
+                $this->info(sprintf(
+                    'Розница: точных цен Эликона %d; по идентичной модели %d; по стандартной наценке %d; изменено %d.',
+                    $retail['metrics']['exact'],
+                    $retail['metrics']['same_model'],
+                    $retail['metrics']['markup'],
+                    $retail['metrics']['update'],
                 ));
             }
 
@@ -152,8 +172,9 @@ class SyncBelomoPriceListCommand extends Command
         }, $rows);
     }
 
-    private function writeReport(array $classified): string
+    private function writeReport(array $classified, array $retailRows = []): string
     {
+        $retailByProduct = collect($retailRows)->keyBy('product_id');
         $path = trim((string) $this->option('report')) ?: storage_path('app/reports/suppliers/belomo/current-audit.csv');
         File::ensureDirectoryExists(dirname($path));
         $handle = fopen($path, 'wb');
@@ -162,9 +183,11 @@ class SyncBelomoPriceListCommand extends Command
             'status', 'article', 'name', 'price_without_vat_byn', 'partner_price_with_vat_byn',
             'product_id', 'sku', 'retail_price_byn', 'margin_byn', 'is_active',
             'images_count', 'has_description', 'specs_count', 'card_ready',
+            'target_retail_price_byn', 'retail_price_method', 'derived_markup_percent',
         ], ';');
         foreach ($classified as $item) {
             $product = $item['product'];
+            $retail = $product ? $retailByProduct->get((int) $product->id) : null;
             fputcsv($handle, [
                 $item['status'], $item['row']['article'], $item['row']['name'],
                 number_format($item['row']['partner_price_byn'], 2, '.', ''),
@@ -176,6 +199,9 @@ class SyncBelomoPriceListCommand extends Command
                 $product && (filled($product->short_description ?? null) || filled($product->content ?? null)) ? '1' : '0',
                 $product ? count($this->jsonArray($product->specs ?? null)) : 0,
                 $this->cardIsReady($product) ? '1' : '0',
+                $retail ? number_format((float) $retail['target_price'], 2, '.', '') : '',
+                $retail['method'] ?? '',
+                isset($retail['markup_percent']) ? number_format((float) $retail['markup_percent'], 2, '.', '') : '',
             ], ';');
         }
         fclose($handle);
@@ -317,6 +343,161 @@ class SyncBelomoPriceListCommand extends Command
     private function priceWithVat(float $priceWithoutVat): float
     {
         return round($priceWithoutVat * 1.20, 2);
+    }
+
+    /** @return array{rows: array<int, array<string, mixed>>, metrics: array<string, int>} */
+    private function eliconRetailPlan(array $classified, BelomoPriceList $priceList): array
+    {
+        $eliconId = (int) (DB::table('suppliers')->where('code', 'elicon')->value('id') ?? 0);
+        $offers = DB::table('supplier_products')
+            ->where('supplier_id', $eliconId)
+            ->whereNotNull('product_id')
+            ->where('price_byn', '>', 0)
+            ->orderByDesc('last_synced_at')
+            ->get(['supplier_article', 'price_byn', 'last_synced_at']);
+
+        $plans = [];
+        $exactPricesByName = [];
+        $markupsByVariant = [];
+        $markupsByFamily = [];
+        $globalMarkups = [];
+
+        foreach ($classified as $index => $item) {
+            if ($item['product'] === null || $item['status'] !== 'matched') {
+                continue;
+            }
+            $offer = $offers->first(function (object $offer) use ($item, $priceList): bool {
+                return $priceList->compactArticle((string) $offer->supplier_article) === $priceList->compactArticle($item['row']['article'])
+                    || $priceList->shortArticle((string) $offer->supplier_article) === $priceList->shortArticle($item['row']['article']);
+            });
+            if (! $offer) {
+                continue;
+            }
+
+            $price = round((float) $offer->price_byn, 2);
+            $markup = $this->markupPercent((float) $item['row']['partner_price_byn'], $price);
+            $plans[$index] = $this->retailPlanRow($item, $price, 'elicon_exact', $markup);
+            $exactPricesByName[$this->normalizedModelName($item['row']['name'])][] = $price;
+            if ($markup >= 0) {
+                $markupsByVariant[$this->retailVariantKey($item['row'])][] = $markup;
+                $markupsByFamily[$this->articleFamily($item['row']['article'])][] = $markup;
+                $globalMarkups[] = $markup;
+            }
+        }
+
+        $globalMarkup = $this->median($globalMarkups) ?? 15.0;
+        foreach ($classified as $index => $item) {
+            if ($item['product'] === null || $item['status'] !== 'matched' || isset($plans[$index])) {
+                continue;
+            }
+
+            $sameModelPrices = $exactPricesByName[$this->normalizedModelName($item['row']['name'])] ?? [];
+            if ($sameModelPrices !== []) {
+                $price = round((float) $this->median($sameModelPrices), 2);
+                $plans[$index] = $this->retailPlanRow(
+                    $item,
+                    $price,
+                    'elicon_same_model',
+                    $this->markupPercent((float) $item['row']['partner_price_byn'], $price),
+                );
+                continue;
+            }
+
+            $variantMarkups = $markupsByVariant[$this->retailVariantKey($item['row'])] ?? [];
+            $familyMarkups = $markupsByFamily[$this->articleFamily($item['row']['article'])] ?? [];
+            $markup = $this->median($variantMarkups) ?? $this->median($familyMarkups) ?? $globalMarkup;
+            $price = round($this->priceWithVat((float) $item['row']['partner_price_byn']) * (1 + $markup / 100), 2);
+            $plans[$index] = $this->retailPlanRow($item, $price, 'derived_markup', $markup);
+        }
+
+        $plans = array_values($plans);
+        $metrics = ['exact' => 0, 'same_model' => 0, 'markup' => 0, 'update' => 0, 'unchanged' => 0];
+        foreach ($plans as $plan) {
+            $metric = match ($plan['method']) {
+                'elicon_exact' => 'exact',
+                'elicon_same_model' => 'same_model',
+                default => 'markup',
+            };
+            $metrics[$metric]++;
+            $metrics[$plan['changed'] ? 'update' : 'unchanged']++;
+        }
+
+        return ['rows' => $plans, 'metrics' => $metrics];
+    }
+
+    private function applyRetailPlan(array $rows, $now): void
+    {
+        DB::transaction(function () use ($rows, $now): void {
+            foreach ($rows as $row) {
+                if (! $row['changed']) {
+                    continue;
+                }
+                DB::table('products')->where('id', $row['product_id'])->update([
+                    'price' => $row['target_price'],
+                    'currency' => 'BYN',
+                    'updated_at' => $now,
+                ]);
+            }
+        });
+    }
+
+    private function retailPlanRow(array $item, float $price, string $method, float $markup): array
+    {
+        $current = (float) ($item['product']->price ?? 0);
+
+        return [
+            'product_id' => (int) $item['product']->id,
+            'article' => $item['row']['article'],
+            'current_price' => $current,
+            'target_price' => $price,
+            'method' => $method,
+            'markup_percent' => round($markup, 2),
+            'changed' => abs($current - $price) >= 0.01,
+        ];
+    }
+
+    private function markupPercent(float $priceWithoutVat, float $retailPrice): float
+    {
+        $costWithVat = $this->priceWithVat($priceWithoutVat);
+        return $costWithVat > 0 ? round(($retailPrice / $costWithVat - 1) * 100, 4) : 0.0;
+    }
+
+    private function normalizedModelName(string $name): string
+    {
+        $name = mb_strtoupper(str_replace(['Ё', '–', '—', '−', '“', '”'], ['Е', '-', '-', '-', '', ''], $name));
+        return preg_replace('/[^\pL\pN]+/u', '', $name) ?? $name;
+    }
+
+    private function retailVariantKey(array $row): string
+    {
+        $family = $this->articleFamily($row['article']);
+        $name = mb_strtoupper(str_replace(['К', 'В', 'Р'], ['K', 'B', 'P'], $row['name']));
+        preg_match('/G\s*([0-9]+(?:[,.][0-9]+)?)/u', $name, $sizeMatch);
+        $size = str_replace(',', '.', $sizeMatch[1] ?? '');
+        $variant = match (true) {
+            preg_match('/RK?P/u', $name) === 1 => 'rkp',
+            preg_match('/RK/u', $name) === 1 => 'rk',
+            preg_match('/BP/u', $name) === 1 => 'bp',
+            preg_match('/(?:^|[\s-])R(?:[\s-]|$)/u', $name) === 1 => 'r',
+            preg_match('/(?:^|[\s-])B(?:[\s-]|$)/u', $name) === 1 => 'b',
+            preg_match('/(?:^|[\s-])P(?:[\s-]|$)/u', $name) === 1 => 'p',
+            default => 'base',
+        };
+
+        return $family.'|'.$size.'|'.$variant;
+    }
+
+    private function median(array $values): ?float
+    {
+        if ($values === []) {
+            return null;
+        }
+        sort($values, SORT_NUMERIC);
+        $count = count($values);
+        $middle = intdiv($count, 2);
+        return $count % 2 === 1
+            ? (float) $values[$middle]
+            : ((float) $values[$middle - 1] + (float) $values[$middle]) / 2;
     }
 
     /** @return array{rows: array<int, array<string, mixed>>, metrics: array<string, int>} */

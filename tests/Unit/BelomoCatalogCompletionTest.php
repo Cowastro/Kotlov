@@ -30,6 +30,22 @@ class BelomoCatalogCompletionTest extends TestCase
         );
     }
 
+    public function test_retail_markup_uses_the_median_and_distinguishes_meter_execution(): void
+    {
+        $command = new SyncBelomoPriceListCommand();
+        $median = new ReflectionMethod($command, 'median');
+        $variant = new ReflectionMethod($command, 'retailVariantKey');
+
+        $this->assertSame(15.0, $median->invoke($command, [10.5, 15.0, 25.0]));
+        $this->assertSame(
+            '8349|6|rkp',
+            $variant->invoke($command, [
+                'article' => '8349.00.00.000-07',
+                'name' => 'Счетчик газа ультразвуковой СКАТ-G6 RKР',
+            ]),
+        );
+    }
+
     private function item(string $article, string $name): array
     {
         return [
